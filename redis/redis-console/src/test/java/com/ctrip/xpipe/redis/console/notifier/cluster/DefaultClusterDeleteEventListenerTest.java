@@ -11,12 +11,12 @@ import org.mockito.Spy;
 
 import java.util.concurrent.Executors;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 
 /**
  * @author chen.zhu
- * <p>
- * Feb 11, 2018
+ *         <p>
+ *         Feb 11, 2018
  */
 public class DefaultClusterDeleteEventListenerTest {
 
@@ -36,7 +36,8 @@ public class DefaultClusterDeleteEventListenerTest {
 
     @Test
     public void update() throws Exception {
-        ClusterDeleteEvent clusterDeleteEvent = new ClusterDeleteEvent("cluster", 0, Executors.newScheduledThreadPool(1));
+        ClusterDeleteEvent clusterDeleteEvent = new ClusterDeleteEvent("cluster", 0,
+                Executors.newScheduledThreadPool(1));
 
         shardDeleteEvent.addObserver(shardDeleteEventListener);
 

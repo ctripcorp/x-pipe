@@ -29,13 +29,13 @@ import org.mockito.MockitoAnnotations;
 import java.util.Random;
 import java.util.concurrent.Executors;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  * @author chen.zhu
- * <p>
- * Sep 19, 2018
+ *         <p>
+ *         Sep 19, 2018
  */
 public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
@@ -83,7 +83,8 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         MockitoAnnotations.initMocks(this);
 
         instance = mock(RedisHealthCheckInstance.class);
-        RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", localHostport(randomPort()), "dc2", ClusterType.ONE_WAY);
+        RedisInstanceInfo info = new DefaultRedisInstanceInfo("dc", "cluster", "shard", localHostport(randomPort()),
+                "dc2", ClusterType.ONE_WAY);
         when(instance.getCheckInfo()).thenReturn(info);
 
         HealthCheckConfig config = mock(HealthCheckConfig.class);
@@ -99,12 +100,14 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
     @Test
     public void testTryMarkDown() {
-        HostPort master = new HostPort("master",1111);
+        HostPort master = new HostPort("master", 1111);
         when(metaCache.findMasterInSameShard(any())).thenReturn(master);
         doAnswer(inv -> {
             HostPort hostPort = inv.getArgument(0);
-            if (hostPort.equals(master)) return HEALTH_STATE.HEALTHY;
-            else return HEALTH_STATE.DOWN;
+            if (hostPort.equals(master))
+                return HEALTH_STATE.HEALTHY;
+            else
+                return HEALTH_STATE.DOWN;
         }).when(defaultDelayPingActionCollector).getState(any());
 
         when(siteStability.isSiteStable()).thenReturn(false);
@@ -154,7 +157,8 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         when(metaCache.inBackupDc(any())).thenReturn(true);
         future.setSuccess(true);
         when(defaultDelayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.HEALTHY);
-        when(defaultDelayPingActionCollector.getState(instance.getCheckInfo().getHostPort())).thenReturn(HEALTH_STATE.DOWN);
+        when(defaultDelayPingActionCollector.getState(instance.getCheckInfo().getHostPort()))
+                .thenReturn(HEALTH_STATE.DOWN);
 
         AbstractInstanceEvent event = new InstanceUp(instance);
         upHandler.handle(event);
@@ -168,15 +172,15 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         sickHandler.handle(event);
         verify(outerClientAggregator, times(2)).markInstance(any());
 
-        //do not markdown cross region instance
-        DefaultRedisInstanceInfo instanceInfo= (DefaultRedisInstanceInfo) instance.getCheckInfo();
+        // do not markdown cross region instance
+        DefaultRedisInstanceInfo instanceInfo = (DefaultRedisInstanceInfo) instance.getCheckInfo();
         instanceInfo.setCrossRegion(true);
         upHandler.handle(event);
         downHandler.handle(event);
         sickHandler.handle(event);
         verify(outerClientAggregator, times(2)).markInstance(any());
 
-        //do not markdown instance which dcs distance is -1
+        // do not markdown instance which dcs distance is -1
         instanceInfo.setCrossRegion(false);
         HealthCheckConfig config = instance.getHealthCheckConfig();
         when(config.getDelayConfig(any(), any(), any())).thenReturn(
@@ -196,7 +200,8 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
     private RedisHealthCheckInstance randomInstance(String dc) {
         RedisHealthCheckInstance instance = mock(RedisHealthCheckInstance.class);
-        RedisInstanceInfo info = new DefaultRedisInstanceInfo(dc, "cluster", "shard", localHostport(randomPort()), "dc2", ClusterType.ONE_WAY);
+        RedisInstanceInfo info = new DefaultRedisInstanceInfo(dc, "cluster", "shard", localHostport(randomPort()),
+                "dc2", ClusterType.ONE_WAY);
         when(instance.getCheckInfo()).thenReturn(info);
         return instance;
     }

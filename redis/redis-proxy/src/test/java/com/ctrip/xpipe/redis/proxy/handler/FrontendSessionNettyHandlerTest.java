@@ -21,13 +21,13 @@ import org.mockito.stubbing.Answer;
 
 import java.nio.charset.Charset;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  * @author chen.zhu
- * <p>
- * May 29, 2018
+ *         <p>
+ *         May 29, 2018
  */
 public class FrontendSessionNettyHandlerTest extends AbstractNettyTest {
 
@@ -83,7 +83,7 @@ public class FrontendSessionNettyHandlerTest extends AbstractNettyTest {
             public Object answer(InvocationOnMock invocation) throws Throwable {
                 Object object = invocation.getArguments()[0];
                 Assert.assertTrue(object instanceof ByteBuf);
-                Assert.assertEquals(expected, ((ByteBuf)object).toString(Charset.defaultCharset()));
+                Assert.assertEquals(expected, ((ByteBuf) object).toString(Charset.defaultCharset()));
                 return null;
             }
         }).when(tunnel).forwardToBackend(any());

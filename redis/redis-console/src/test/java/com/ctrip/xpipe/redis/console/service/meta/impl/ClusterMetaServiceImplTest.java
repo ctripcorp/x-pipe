@@ -23,86 +23,85 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 
 /**
  * @author wenchao.meng
  *
- * Mar 17, 2017
+ *         Mar 17, 2017
  */
-public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
+public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest {
 
 	@Autowired
-	private ClusterMetaServiceImpl  clusterMetaServiceImpl;
-	
+	private ClusterMetaServiceImpl clusterMetaServiceImpl;
+
 	@Mock
 	private MigrationService migrationService;
 
-
-	
 	@Before
-	public void beforeClusterMetaServiceImplTest(){
+	public void beforeClusterMetaServiceImplTest() {
 		MockitoAnnotations.initMocks(this);
-//		clusterMetaServiceImpl = new ClusterMetaServiceImpl();
+		// clusterMetaServiceImpl = new ClusterMetaServiceImpl();
 		clusterMetaServiceImpl.setMigrationService(migrationService);
 	}
-	
-	
+
 	@Test
-	public void testGetClusterMetaCurrentPrimaryDcMigrating(){
-		
+	public void testGetClusterMetaCurrentPrimaryDcMigrating() {
+
 		long currentActiveDcId = randomInt();
 		long clusterId = randomInt();
 		long destinationDcId = currentActiveDcId + 1;
 		long migrationEventId = randomInt();
-		
+
 		DcTbl dcTbl = new DcTbl();
-		
+
 		ClusterTbl clusterTbl = new ClusterTbl();
 		clusterTbl.setId(clusterId);
 		clusterTbl.setActivedcId(currentActiveDcId);
 		clusterTbl.setStatus(ClusterStatus.Migrating.toString());
 		clusterTbl.setMigrationEventId(migrationEventId);
-		
-		
-		when(migrationService.findMigrationCluster(migrationEventId, clusterId)).thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
-		
+
+		when(migrationService.findMigrationCluster(migrationEventId, clusterId))
+				.thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
+
 		dcTbl.setId(destinationDcId);
 		Assert.assertEquals(destinationDcId, clusterMetaServiceImpl.getClusterMetaCurrentPrimaryDc(dcTbl, clusterTbl));
 
 		dcTbl.setId(destinationDcId + 1);
-		Assert.assertEquals(currentActiveDcId, clusterMetaServiceImpl.getClusterMetaCurrentPrimaryDc(dcTbl, clusterTbl));
+		Assert.assertEquals(currentActiveDcId,
+				clusterMetaServiceImpl.getClusterMetaCurrentPrimaryDc(dcTbl, clusterTbl));
 		dcTbl.setId(currentActiveDcId);
-		Assert.assertEquals(currentActiveDcId, clusterMetaServiceImpl.getClusterMetaCurrentPrimaryDc(dcTbl, clusterTbl));
+		Assert.assertEquals(currentActiveDcId,
+				clusterMetaServiceImpl.getClusterMetaCurrentPrimaryDc(dcTbl, clusterTbl));
 
 	}
 
 	@Test
-	public void testGetClusterMetaCurrentPrimaryDcNotMigrating(){
-		
+	public void testGetClusterMetaCurrentPrimaryDcNotMigrating() {
+
 		long currentActiveDcId = randomInt();
 		long clusterId = randomInt();
 		long destinationDcId = currentActiveDcId + 1;
-		
+
 		DcTbl dcTbl = new DcTbl();
-		
+
 		ClusterTbl clusterTbl = new ClusterTbl();
 		clusterTbl.setId(clusterId);
 		clusterTbl.setActivedcId(currentActiveDcId);
-		
-		
-		when(migrationService.findMigrationCluster(anyLong(), anyLong())).thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
+
+		when(migrationService.findMigrationCluster(anyLong(), anyLong()))
+				.thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
 
 		dcTbl.setId(destinationDcId);
-		for(ClusterStatus clusterStatus : ClusterStatus.values()){
-			if(clusterStatus == ClusterStatus.Migrating){
+		for (ClusterStatus clusterStatus : ClusterStatus.values()) {
+			if (clusterStatus == ClusterStatus.Migrating) {
 				continue;
 			}
 			clusterTbl.setStatus(clusterStatus.toString());
-			Assert.assertEquals(currentActiveDcId, clusterMetaServiceImpl.getClusterMetaCurrentPrimaryDc(dcTbl, clusterTbl));
+			Assert.assertEquals(currentActiveDcId,
+					clusterMetaServiceImpl.getClusterMetaCurrentPrimaryDc(dcTbl, clusterTbl));
 		}
 	}
 
@@ -122,8 +121,8 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
 		clusterTbl.setStatus(ClusterStatus.Migrating.name());
 		clusterTbl.setMigrationEventId(migrationEventId);
 
-
-		when(migrationService.findMigrationCluster(migrationEventId, clusterId)).thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
+		when(migrationService.findMigrationCluster(migrationEventId, clusterId))
+				.thenReturn(new MigrationClusterTbl().setDestinationDcId(destinationDcId));
 		long target = clusterMetaServiceImpl.getClusterMetaCurrentPrimaryDc(dcTbl, clusterTbl);
 		Assert.assertEquals(destinationDcId, target);
 	}
@@ -145,7 +144,8 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
 
 		Map<Long, DcClusterTbl> dcClusterMap = new HashMap<>();
 
-		ClusterMeta clusterMeta = clusterMetaServiceImpl.generateBasicClusterMeta(dcInfo, clusterInfo, dcClusterInfo, null,
+		ClusterMeta clusterMeta = clusterMetaServiceImpl.generateBasicClusterMeta(dcInfo, clusterInfo, dcClusterInfo,
+				null,
 				clusterRelatedDc);
 
 		Assert.assertEquals(clusterName, clusterMeta.getId());
@@ -182,7 +182,8 @@ public class ClusterMetaServiceImplTest extends AbstractConsoleIntegrationTest{
 		replDirectionTbl.setClusterId(1L);
 		replDirectionTbl.setToDcId(1L);
 		replDirectionTblList.add(replDirectionTbl);
-		when(replDirectionService.findAllReplDirectionTblsByClusterWithSrcDcAndFromDc(anyLong())).thenReturn(replDirectionTblList);
+		when(replDirectionService.findAllReplDirectionTblsByClusterWithSrcDcAndFromDc(anyLong()))
+				.thenReturn(replDirectionTblList);
 		clusterMetaServiceImpl.setReplDirectionService(replDirectionService);
 
 		ZoneService zoneService = mock(ZoneService.class);

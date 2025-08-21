@@ -21,7 +21,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
@@ -39,19 +39,24 @@ public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
 
     private RedisHealthCheckInstance instance;
 
-//    private List<RedisTbl> redisTbls = new ArrayList<RedisTbl>(){{
-//        add(new RedisTbl().setRedisIp("127.0.0.1").setRedisPort(6379).setMaster(true));
-//        add(new RedisTbl().setRedisIp("127.0.0.1").setRedisPort(6479).setMaster(false));
-//        add(new RedisTbl().setRedisIp("127.0.0.1").setRedisPort(6579).setMaster(false));
-//    }};
-//
-//    private List<RedisTbl> updatedRedisTbls;
+    // private List<RedisTbl> redisTbls = new ArrayList<RedisTbl>(){{
+    // add(new
+    // RedisTbl().setRedisIp("127.0.0.1").setRedisPort(6379).setMaster(true));
+    // add(new
+    // RedisTbl().setRedisIp("127.0.0.1").setRedisPort(6479).setMaster(false));
+    // add(new
+    // RedisTbl().setRedisIp("127.0.0.1").setRedisPort(6579).setMaster(false));
+    // }};
+    //
+    // private List<RedisTbl> updatedRedisTbls;
 
-    private List<Pair<HostPort, Boolean>> redises = new ArrayList<Pair<HostPort, Boolean>>() {{
-        add(new Pair<>(new HostPort("127.0.0.1", 6379), true));
-        add(new Pair<>(new HostPort("127.0.0.1", 6479), false));
-        add(new Pair<>(new HostPort("127.0.0.1", 6579), false));
-    }};
+    private List<Pair<HostPort, Boolean>> redises = new ArrayList<Pair<HostPort, Boolean>>() {
+        {
+            add(new Pair<>(new HostPort("127.0.0.1", 6379), true));
+            add(new Pair<>(new HostPort("127.0.0.1", 6479), false));
+            add(new Pair<>(new HostPort("127.0.0.1", 6579), false));
+        }
+    };
 
     private HostPort updateRedis;
 
@@ -63,15 +68,16 @@ public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
         listener = Mockito.spy(listener);
         instance = newRandomRedisHealthCheckInstance(6379);
 
-//        Mockito.when(metaServerConsoleServiceManagerWrapper.getFastService(Mockito.anyString())).thenReturn(metaServerConsoleService);
-
+        // Mockito.when(metaServerConsoleServiceManagerWrapper.getFastService(Mockito.anyString())).thenReturn(metaServerConsoleService);
 
         Mockito.doAnswer((invocation) -> mockXpipeMeta()).when(metaCache).getXpipeMeta();
-//        Mockito.doAnswer((invocation) -> redisTbls).when(redisService).findRedisesByDcClusterShard(Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
-//        Mockito.doAnswer(invocation -> {
-//            updatedRedisTbls = invocation.getArgument(0, List.class);
-//            return null;
-//        }).when(redisService).updateBatchMaster(Mockito.anyList());
+        // Mockito.doAnswer((invocation) ->
+        // redisTbls).when(redisService).findRedisesByDcClusterShard(Mockito.anyString(),
+        // Mockito.anyString(), Mockito.anyString());
+        // Mockito.doAnswer(invocation -> {
+        // updatedRedisTbls = invocation.getArgument(0, List.class);
+        // return null;
+        // }).when(redisService).updateBatchMaster(Mockito.anyList());
         Mockito.doAnswer(invocation -> {
             RedisHealthCheckInstance instance = invocation.getArgument(0, RedisHealthCheckInstance.class);
             this.updateRole = invocation.getArgument(1, Server.SERVER_ROLE.class);
@@ -207,9 +213,11 @@ public class DefaultRedisMasterActionListenerTest extends AbstractCheckerTest {
         ShardMeta shardMeta = new ShardMeta(shardId);
         redises.forEach(redis -> {
             if (redis.getValue()) {
-                shardMeta.addRedis(new RedisMeta().setIp(redis.getKey().getHost()).setPort(redis.getKey().getPort()).setMaster(""));
+                shardMeta.addRedis(new RedisMeta().setIp(redis.getKey().getHost()).setPort(redis.getKey().getPort())
+                        .setMaster(""));
             } else {
-                shardMeta.addRedis(new RedisMeta().setIp(redis.getKey().getHost()).setPort(redis.getKey().getPort()).setMaster("0.0.0.0:0"));
+                shardMeta.addRedis(new RedisMeta().setIp(redis.getKey().getHost()).setPort(redis.getKey().getPort())
+                        .setMaster("0.0.0.0:0"));
             }
         });
 

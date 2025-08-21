@@ -12,18 +12,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeoutException;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.when;
 
 /**
  * @author lishanglin
- * date 2021/11/19
+ *         date 2021/11/19
  */
 @RunWith(MockitoJUnitRunner.class)
 public class MasterOverOneMonitorTest extends AbstractCheckerTest {
@@ -67,17 +67,19 @@ public class MasterOverOneMonitorTest extends AbstractCheckerTest {
         redis2 = startServer(randomPort(), () -> redis2Master ? ROLE_MASTER : ROLE_SLAVE);
 
         redis1Meta = new RedisMeta().setIp("127.0.0.1").setPort(redis1.getPort());
-        redis2Meta = new RedisMeta().setIp("127.0.0.1").setPort(redis2.getPort()).setMaster("127.0.0.1:"+redis1.getPort());
+        redis2Meta = new RedisMeta().setIp("127.0.0.1").setPort(redis2.getPort())
+                .setMaster("127.0.0.1:" + redis1.getPort());
         when(metaCache.getRedisOfDcClusterShard(anyString(), anyString(), anyString())).thenReturn(Arrays.asList(
-                redis1Meta, redis2Meta
-        ));
+                redis1Meta, redis2Meta));
         when(masterRole.getServerRole()).thenReturn(com.ctrip.xpipe.api.server.Server.SERVER_ROLE.MASTER);
     }
 
     @After
     public void afterMasterOverOneMonitorTest() throws Exception {
-        if (null != redis1) redis1.stop();
-        if (null != redis2) redis2.stop();
+        if (null != redis1)
+            redis1.stop();
+        if (null != redis2)
+            redis2.stop();
         redis1 = redis2 = null;
     }
 
@@ -87,10 +89,9 @@ public class MasterOverOneMonitorTest extends AbstractCheckerTest {
         redis1Master = true;
         redis2Master = true;
         masterOverOneMonitor.onAction(mockMasterRoleContext(redis1.getPort()));
-        waitConditionUntilTimeOut(() ->
-                1 == mockingDetails(alertManager).getInvocations()
-                        .stream().filter(inv -> inv.getMethod().getName().equals("alert"))
-                        .count(), 1000);
+        waitConditionUntilTimeOut(() -> 1 == mockingDetails(alertManager).getInvocations()
+                .stream().filter(inv -> inv.getMethod().getName().equals("alert"))
+                .count(), 1000);
     }
 
     @Test(expected = TimeoutException.class)
@@ -100,19 +101,17 @@ public class MasterOverOneMonitorTest extends AbstractCheckerTest {
         redis2.stop();
         redis2 = null;
         masterOverOneMonitor.onAction(mockMasterRoleContext(redis1.getPort()));
-        waitConditionUntilTimeOut(() ->
-                1 == mockingDetails(alertManager).getInvocations()
-                        .stream().filter(inv -> inv.getMethod().getName().equals("alert"))
-                        .count(), 1000);
+        waitConditionUntilTimeOut(() -> 1 == mockingDetails(alertManager).getInvocations()
+                .stream().filter(inv -> inv.getMethod().getName().equals("alert"))
+                .count(), 1000);
     }
 
     @Test(expected = TimeoutException.class)
     public void testOnlyMaster_doNothing() throws Exception {
         masterOverOneMonitor.onAction(mockMasterRoleContext(redis1.getPort()));
-        waitConditionUntilTimeOut(() ->
-                1 == mockingDetails(alertManager).getInvocations()
-                        .stream().filter(inv -> inv.getMethod().getName().equals("alert"))
-                        .count(), 1000);
+        waitConditionUntilTimeOut(() -> 1 == mockingDetails(alertManager).getInvocations()
+                .stream().filter(inv -> inv.getMethod().getName().equals("alert"))
+                .count(), 1000);
     }
 
     @Test(expected = TimeoutException.class)
@@ -120,10 +119,9 @@ public class MasterOverOneMonitorTest extends AbstractCheckerTest {
         redis2Master = false;
         redis2Meta.setMaster(null);
         masterOverOneMonitor.onAction(mockMasterRoleContext(redis1.getPort()));
-        waitConditionUntilTimeOut(() ->
-                1 == mockingDetails(alertManager).getInvocations()
-                        .stream().filter(inv -> inv.getMethod().getName().equals("alert"))
-                        .count(), 1000);
+        waitConditionUntilTimeOut(() -> 1 == mockingDetails(alertManager).getInvocations()
+                .stream().filter(inv -> inv.getMethod().getName().equals("alert"))
+                .count(), 1000);
     }
 
     private RedisMasterActionContext mockFailRoleContext(int port) throws Exception {

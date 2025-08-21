@@ -22,7 +22,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.*;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
@@ -52,21 +52,24 @@ public class SentinelConfigCheckTest {
 
     private List<String> mockShards = Arrays.asList("shard1", "shard2");
 
-    private Map<String, String> activeDcMap = new HashMap<String, String>() {{
-        put("cluster1", "jq");
-        put("cluster2", "fra");
-    }};
+    private Map<String, String> activeDcMap = new HashMap<String, String>() {
+        {
+            put("cluster1", "jq");
+            put("cluster2", "fra");
+        }
+    };
 
-    private List<Set<String> > regions = Arrays.asList(
+    private List<Set<String>> regions = Arrays.asList(
             Sets.newHashSet("jq", "oy"),
-            Sets.newHashSet("fra")
-    );
+            Sets.newHashSet("fra"));
 
-    private Map<String, Set<String> > expectedUnsafeClusters = new HashMap<String, Set<String> >() {{
-        put("jq", Sets.newHashSet("cluster1"));
-        put("oy", Sets.newHashSet("cluster1"));
-        put("fra", Sets.newHashSet("cluster2"));
-    }};
+    private Map<String, Set<String>> expectedUnsafeClusters = new HashMap<String, Set<String>>() {
+        {
+            put("jq", Sets.newHashSet("cluster1"));
+            put("oy", Sets.newHashSet("cluster1"));
+            put("fra", Sets.newHashSet("cluster2"));
+        }
+    };
 
     @Before
     public void beforeSentinelConfigCheckTest() {
@@ -80,8 +83,9 @@ public class SentinelConfigCheckTest {
         when(metaCache.isCrossRegion(Mockito.anyString(), Mockito.anyString())).then(invocationOnMock -> {
             String activeDc = invocationOnMock.getArgument(0, String.class);
             String backupDc = invocationOnMock.getArgument(1, String.class);
-            for (Set<String> dcSet: regions) {
-                if (dcSet.contains(activeDc)) return !dcSet.contains(backupDc);
+            for (Set<String> dcSet : regions) {
+                if (dcSet.contains(activeDc))
+                    return !dcSet.contains(backupDc);
             }
 
             return false;
@@ -91,25 +95,25 @@ public class SentinelConfigCheckTest {
     @Test
     public void testDoCheckWithOneWayCluster() {
         Mockito.doAnswer(invocationOnMock -> {
-           String dc = invocationOnMock.getArgument(0, String.class);
-           String cluster = invocationOnMock.getArgument(1, String.class);
-           String shard = invocationOnMock.getArgument(2, String.class);
+            String dc = invocationOnMock.getArgument(0, String.class);
+            String cluster = invocationOnMock.getArgument(1, String.class);
+            String shard = invocationOnMock.getArgument(2, String.class);
 
-           Assert.assertTrue(expectedUnsafeClusters.get(dc).contains(cluster));
-           Assert.assertTrue(mockShards.contains(shard));
+            Assert.assertTrue(expectedUnsafeClusters.get(dc).contains(cluster));
+            Assert.assertTrue(mockShards.contains(shard));
 
-           return null;
+            return null;
         }).when(alertManager).alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
                 Mockito.any(), Mockito.any(), Mockito.any());
 
-        when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(false);
+        when(consoleConfig.supportSentinelHealthCheck(any(), any())).thenReturn(false);
         sentinelConfigCheck.doAction();
 
         Mockito.verify(alertManager, never())
                 .alert(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
                         Mockito.any(), Mockito.any(), Mockito.anyString());
 
-        when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
+        when(consoleConfig.supportSentinelHealthCheck(any(), any())).thenReturn(true);
         sentinelConfigCheck.doAction();
 
         Mockito.verify(alertManager, Mockito.times(6))
@@ -121,7 +125,7 @@ public class SentinelConfigCheckTest {
     public void testDoCheckWithBiDirectionCluster() {
         this.mockClusterType = ClusterType.BI_DIRECTION;
         when(metaCache.getXpipeMeta()).thenReturn(mockXpipeMeta());
-        when(consoleConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
+        when(consoleConfig.supportSentinelHealthCheck(any(), any())).thenReturn(true);
         sentinelConfigCheck.doAction();
 
         Mockito.verify(alertManager, Mockito.times(12))
@@ -193,7 +197,7 @@ public class SentinelConfigCheckTest {
     private XpipeMeta mockXpipeMeta() {
         XpipeMeta meta = new XpipeMeta();
 
-        for (String dc: mockDcs) {
+        for (String dc : mockDcs) {
             meta.addDc(mockDcMeta(dc));
         }
 
@@ -204,7 +208,7 @@ public class SentinelConfigCheckTest {
         DcMeta dcMeta = new DcMeta();
         dcMeta.setId(dc);
 
-        for (String cluster: mockClusters) {
+        for (String cluster : mockClusters) {
             dcMeta.addCluster(mockClusterMeta(cluster));
         }
 
@@ -216,7 +220,7 @@ public class SentinelConfigCheckTest {
         clusterMeta.setId(cluster);
         clusterMeta.setType(mockClusterType.toString());
 
-        for (String shard: mockShards) {
+        for (String shard : mockShards) {
             clusterMeta.addShard(mockShardMeta(shard));
         }
 

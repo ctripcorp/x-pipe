@@ -29,7 +29,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.*;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.Silent.class)

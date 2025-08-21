@@ -22,7 +22,7 @@ import org.mockito.stubbing.Answer;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class ProxyPingHandlerTest extends AbstractProxyIntegrationTest {
@@ -55,7 +55,7 @@ public class ProxyPingHandlerTest extends AbstractProxyIntegrationTest {
                 return null;
             }
         }).when(channel).writeAndFlush(any(ByteBuf.class));
-        handler.handle(channel, new String[]{"PING"});
+        handler.handle(channel, new String[] { "PING" });
         String expected = "PROXY PONG 127.0.0.1:" + addr.getPort();
         Assert.assertEquals(expected, actual.get());
     }
@@ -79,10 +79,10 @@ public class ProxyPingHandlerTest extends AbstractProxyIntegrationTest {
         NettyClient client = pool.borrowObject();
         pool.returnObject(client);
 
-        handler.handle(channel, new String[]{"PING", "TCP://127.0.0.1:" + server.getPort()});
+        handler.handle(channel, new String[] { "PING", "TCP://127.0.0.1:" + server.getPort() });
 
         String expected = String.format("PROXY PONG 127.0.0.1:%d 127.0.0.1:%d", server.getPort(), server.getPort());
-        waitConditionUntilTimeOut(()->actual.get() != null, 1000);
+        waitConditionUntilTimeOut(() -> actual.get() != null, 1000);
 
         logger.info("[receive] {}", actual.get());
         Assert.assertTrue(actual.get().startsWith(expected));

@@ -41,13 +41,13 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  * @author chen.zhu
- * <p>
- * May 29, 2018
+ *         <p>
+ *         May 29, 2018
  */
 public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
 
@@ -89,14 +89,13 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
                 new DefaultTunnelMonitorManager(proxyResourceManager), scheduled);
 
         frontChannel.pipeline().addLast(new FrontendSessionNettyHandler(tunnel),
-                new SessionTrafficReporter(6000, ()->true, frontend));
-
+                new SessionTrafficReporter(6000, () -> true, frontend));
 
         tunnel.setFrontend(frontend);
         tunnel.setBackend(backend);
 
         EmbeddedChannel backendChannel = new EmbeddedChannel(new BackendSessionHandler(tunnel),
-                new SessionTrafficReporter(6000, ()->true, backend));
+                new SessionTrafficReporter(6000, () -> true, backend));
         when(backend.getChannel()).thenReturn(backendChannel);
         when(frontend.getChannel()).thenReturn(frontChannel);
 
@@ -119,9 +118,8 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
 
     @Test
     public void testAddCompressOptionToProtocolIfNeeded() {
-        ((TestProxyConfig)config).setCompress(true);
-        ProxyConnectProtocol proxyConnectProtocol1 =
-                new DefaultProxyConnectProtocolParser().read(PROXY_PROTOCOL);
+        ((TestProxyConfig) config).setCompress(true);
+        ProxyConnectProtocol proxyConnectProtocol1 = new DefaultProxyConnectProtocolParser().read(PROXY_PROTOCOL);
 
         DefaultTunnel tunnel1 = new DefaultTunnel(frontChannel, proxyConnectProtocol1, config, proxyResourceManager,
                 new DefaultTunnelMonitorManager(proxyResourceManager), scheduled);
@@ -247,14 +245,16 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
 
     @Test
     public void testUpdate2() {
-        tunnel.update(new SessionStateChangeEvent(new SessionInit(frontend), new SessionEstablished(frontend)), frontend);
+        tunnel.update(new SessionStateChangeEvent(new SessionInit(frontend), new SessionEstablished(frontend)),
+                frontend);
         Assert.assertEquals(new TunnelHalfEstablished(tunnel), tunnel.getState());
     }
 
     @Test
     public void testUpdate3() {
         tunnel.setState(new TunnelEstablished(tunnel));
-        tunnel.update(new SessionStateChangeEvent(new SessionInit(frontend), new SessionEstablished(frontend)), frontend);
+        tunnel.update(new SessionStateChangeEvent(new SessionInit(frontend), new SessionEstablished(frontend)),
+                frontend);
         Assert.assertEquals(new TunnelEstablished(tunnel), tunnel.getState());
     }
 
@@ -289,7 +289,8 @@ public class DefaultTunnelTest extends AbstractRedisProxyServerTest {
 
     @Test
     public void testUpdate7() {
-        DefaultProxyEndpointSelector selector = new DefaultProxyEndpointSelector(Lists.newArrayList(), endpointManager());
+        DefaultProxyEndpointSelector selector = new DefaultProxyEndpointSelector(Lists.newArrayList(),
+                endpointManager());
         ResourceManager resourceManager = mock(ResourceManager.class);
         when(resourceManager.createProxyEndpointSelector(any())).thenReturn(selector);
         backend = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 1, resourceManager);

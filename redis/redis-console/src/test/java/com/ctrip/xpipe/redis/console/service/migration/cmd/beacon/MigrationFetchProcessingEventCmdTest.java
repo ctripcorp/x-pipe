@@ -20,12 +20,12 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 /**
  * @author lishanglin
- * date 2021/4/19
+ *         date 2021/4/19
  */
 @RunWith(MockitoJUnitRunner.class)
 public class MigrationFetchProcessingEventCmdTest extends AbstractConsoleTest {
@@ -55,7 +55,8 @@ public class MigrationFetchProcessingEventCmdTest extends AbstractConsoleTest {
         clusterTbl = new ClusterTbl();
         sourceDcTbl = new DcTbl();
         migrationClusterTbl = new MigrationClusterTbl();
-        fetchProcessingEventCmd = new MigrationFetchProcessingEventCmd(migrationRequest, clusterService, migrationClusterDao, dcCache);
+        fetchProcessingEventCmd = new MigrationFetchProcessingEventCmd(migrationRequest, clusterService,
+                migrationClusterDao, dcCache);
 
         migrationRequest.setClusterName("cluster1");
         migrationRequest.setClusterTbl(clusterTbl);

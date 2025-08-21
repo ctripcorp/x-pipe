@@ -23,7 +23,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -42,11 +42,13 @@ public class CrossDcRedisMasterActionListenerTest extends AbstractCheckerTest {
 
     private RedisHealthCheckInstance instance;
 
-    private List<Pair<HostPort, Boolean>> redises = new ArrayList<Pair<HostPort, Boolean>>() {{
-        add(new Pair<>(new HostPort("127.0.0.1", 6379), true));
-        add(new Pair<>(new HostPort("127.0.0.1", 6479), false));
-        add(new Pair<>(new HostPort("127.0.0.1", 6579), false));
-    }};
+    private List<Pair<HostPort, Boolean>> redises = new ArrayList<Pair<HostPort, Boolean>>() {
+        {
+            add(new Pair<>(new HostPort("127.0.0.1", 6379), true));
+            add(new Pair<>(new HostPort("127.0.0.1", 6479), false));
+            add(new Pair<>(new HostPort("127.0.0.1", 6579), false));
+        }
+    };
 
     private HostPort updateRedis;
 
@@ -152,7 +154,8 @@ public class CrossDcRedisMasterActionListenerTest extends AbstractCheckerTest {
     public void testUnknownAndMasterAndOutClientTakeThis() throws Exception {
         redises.get(1).setValue(true); // multi master
         instance.getCheckInfo().isMaster(true);
-        doReturn(new RedisMeta().setIp("127.0.0.1").setPort(6379)).when(listener).finalMaster(anyString(), anyString(), anyString());
+        doReturn(new RedisMeta().setIp("127.0.0.1").setPort(6379)).when(listener).finalMaster(anyString(), anyString(),
+                anyString());
         listener.onAction(new RedisMasterActionContext(instance, new Exception("role fail")));
         sleep(30);
         Mockito.verify(persistenceCache, Mockito.never()).updateRedisRole(Mockito.any(), Mockito.any());
@@ -162,7 +165,8 @@ public class CrossDcRedisMasterActionListenerTest extends AbstractCheckerTest {
     public void testUnknownAndMasterButOutClientTakeTheOther() {
         redises.get(1).setValue(true);
         instance.getCheckInfo().isMaster(true);
-        doReturn(new RedisMeta().setIp("127.0.0.1").setPort(6479)).when(listener).finalMaster(anyString(), anyString(), anyString());
+        doReturn(new RedisMeta().setIp("127.0.0.1").setPort(6479)).when(listener).finalMaster(anyString(), anyString(),
+                anyString());
         listener.onAction(new RedisMasterActionContext(instance, new Exception("role fail")));
         sleep(30);
         Mockito.verify(persistenceCache, Mockito.times(1)).updateRedisRole(Mockito.any(), Mockito.any());
@@ -192,9 +196,11 @@ public class CrossDcRedisMasterActionListenerTest extends AbstractCheckerTest {
         ShardMeta shardMeta = new ShardMeta(shardId);
         redises.forEach(redis -> {
             if (redis.getValue()) {
-                shardMeta.addRedis(new RedisMeta().setIp(redis.getKey().getHost()).setPort(redis.getKey().getPort()).setMaster(""));
+                shardMeta.addRedis(new RedisMeta().setIp(redis.getKey().getHost()).setPort(redis.getKey().getPort())
+                        .setMaster(""));
             } else {
-                shardMeta.addRedis(new RedisMeta().setIp(redis.getKey().getHost()).setPort(redis.getKey().getPort()).setMaster("0.0.0.0:0"));
+                shardMeta.addRedis(new RedisMeta().setIp(redis.getKey().getHost()).setPort(redis.getKey().getPort())
+                        .setMaster("0.0.0.0:0"));
             }
         });
 
@@ -215,25 +221,34 @@ public class CrossDcRedisMasterActionListenerTest extends AbstractCheckerTest {
         when(outerClientService.getClusterInfo(anyString())).thenReturn(
                 new OuterClientService.ClusterInfo().setGroups(Lists.newArrayList(
                         new OuterClientService.GroupInfo().setName("shard1").setInstances(Lists.newArrayList(
-                                new OuterClientService.InstanceInfo().setIsMaster(true).setIPAddress(LOCAL_HOST).setPort(6379).setEnv("dc1").setStatus(true),
-                                new OuterClientService.InstanceInfo().setIsMaster(true).setIPAddress(LOCAL_HOST).setPort(6380).setEnv("dc1").setStatus(false),
-                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST).setPort(6381).setEnv("dc1").setStatus(true),
-                                new OuterClientService.InstanceInfo().setIsMaster(true).setIPAddress(LOCAL_HOST).setPort(6382).setEnv("dc2").setStatus(true),
-                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST).setPort(6383).setEnv("dc2").setStatus(true)
-                        )),
+                                new OuterClientService.InstanceInfo().setIsMaster(true).setIPAddress(LOCAL_HOST)
+                                        .setPort(6379).setEnv("dc1").setStatus(true),
+                                new OuterClientService.InstanceInfo().setIsMaster(true).setIPAddress(LOCAL_HOST)
+                                        .setPort(6380).setEnv("dc1").setStatus(false),
+                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST)
+                                        .setPort(6381).setEnv("dc1").setStatus(true),
+                                new OuterClientService.InstanceInfo().setIsMaster(true).setIPAddress(LOCAL_HOST)
+                                        .setPort(6382).setEnv("dc2").setStatus(true),
+                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST)
+                                        .setPort(6383).setEnv("dc2").setStatus(true))),
                         new OuterClientService.GroupInfo().setName("shard2").setInstances(Lists.newArrayList(
-                                new OuterClientService.InstanceInfo().setIsMaster(true).setIPAddress(LOCAL_HOST).setPort(6384).setEnv("dc1").setStatus(true),
-                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST).setPort(6386).setEnv("dc1").setStatus(true),
-                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST).setPort(6387).setEnv("dc2").setStatus(true),
-                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST).setPort(6388).setEnv("dc2").setStatus(true)
-                        )),
+                                new OuterClientService.InstanceInfo().setIsMaster(true).setIPAddress(LOCAL_HOST)
+                                        .setPort(6384).setEnv("dc1").setStatus(true),
+                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST)
+                                        .setPort(6386).setEnv("dc1").setStatus(true),
+                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST)
+                                        .setPort(6387).setEnv("dc2").setStatus(true),
+                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST)
+                                        .setPort(6388).setEnv("dc2").setStatus(true))),
                         new OuterClientService.GroupInfo().setName("shard3").setInstances(Lists.newArrayList(
-                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST).setPort(6384).setEnv("dc1").setStatus(true),
-                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST).setPort(6386).setEnv("dc1").setStatus(true),
-                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST).setPort(6387).setEnv("dc2").setStatus(true),
-                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST).setPort(6388).setEnv("dc2").setStatus(true)
-                        ))
-                )));
+                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST)
+                                        .setPort(6384).setEnv("dc1").setStatus(true),
+                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST)
+                                        .setPort(6386).setEnv("dc1").setStatus(true),
+                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST)
+                                        .setPort(6387).setEnv("dc2").setStatus(true),
+                                new OuterClientService.InstanceInfo().setIsMaster(false).setIPAddress(LOCAL_HOST)
+                                        .setPort(6388).setEnv("dc2").setStatus(true))))));
 
         RedisMeta finalMaster = listener.finalMaster("dc1", "cluster1", "shard2");
         Assert.assertEquals(6384, finalMaster.getPort().intValue());
@@ -251,6 +266,5 @@ public class CrossDcRedisMasterActionListenerTest extends AbstractCheckerTest {
         }
 
     }
-
 
 }

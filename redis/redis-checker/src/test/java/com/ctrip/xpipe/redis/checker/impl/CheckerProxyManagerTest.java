@@ -20,11 +20,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 
 /**
  * @author lishanglin
- * date 2021/3/17
+ *         date 2021/3/17
  */
 @RunWith(MockitoJUnitRunner.class)
 public class CheckerProxyManagerTest extends AbstractCheckerTest {
@@ -86,7 +86,8 @@ public class CheckerProxyManagerTest extends AbstractCheckerTest {
         tunnels.add(new TunnelStatsInfo().setBackend(new HostPort("", 2001))
                 .setFrontend(new HostPort("", 80)).setProxyHost(new HostPort("10.0.0.2", 8080)));
 
-        proxyTunnelInfo.setBackupDcId(backupDcId).setClusterId(clusterId).setShardId(shardId).setPeerDcId(peerDcId).setTunnelStatsInfos(tunnels);
+        proxyTunnelInfo.setBackupDcId(backupDcId).setClusterId(clusterId).setShardId(shardId).setPeerDcId(peerDcId)
+                .setTunnelStatsInfos(tunnels);
         return proxyTunnelInfo;
     }
 

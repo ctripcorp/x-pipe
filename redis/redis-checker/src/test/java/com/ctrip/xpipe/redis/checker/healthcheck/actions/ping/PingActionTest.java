@@ -17,14 +17,14 @@ import org.mockito.stubbing.Answer;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu
- * <p>
- * Sep 13, 2018
+ *         <p>
+ *         Sep 13, 2018
  */
 public class PingActionTest extends AbstractRedisTest {
 
@@ -72,6 +72,6 @@ public class PingActionTest extends AbstractRedisTest {
             }
         });
         action.doTask();
-        waitConditionUntilTimeOut(()->result.get(), 1000);
+        waitConditionUntilTimeOut(() -> result.get(), 1000);
     }
 }

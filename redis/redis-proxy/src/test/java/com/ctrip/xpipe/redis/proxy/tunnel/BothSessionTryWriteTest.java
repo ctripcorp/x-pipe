@@ -32,13 +32,13 @@ import org.mockito.MockitoAnnotations;
 import java.util.Queue;
 import java.util.concurrent.TimeoutException;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  * @author chen.zhu
- * <p>
- * May 30, 2018
+ *         <p>
+ *         May 30, 2018
  */
 public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
 
@@ -79,7 +79,9 @@ public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
         frontChannel = new EmbeddedChannel(new LineBasedFrameDecoder(2048), new StringDecoder());
 
         proxyConnectProtocol = new DefaultProxyConnectProtocolParser().read(PROXY_PROTOCOL);
+
         tunnel = new DefaultTunnel(frontChannel, proxyConnectProtocol, config, proxyResourceManager, new DefaultTunnelMonitorManager(proxyResourceManager), scheduled);
+
 
         frontend = new DefaultFrontendSession(tunnel, frontChannel, 300000);
         ResourceManager resourceManager = mock(ResourceManager.class);
@@ -92,7 +94,6 @@ public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
         backendChannel = new EmbeddedChannel(new LineBasedFrameDecoder(2048), new StringDecoder());
         backend.setChannel(backendChannel);
 
-
         tunnel.setFrontend(frontend);
         tunnel.setBackend(backend);
 
@@ -104,7 +105,7 @@ public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
     private static final String CRLF = "\r\n";
 
     private ByteBuf getByteBuf(String str) {
-        return Unpooled.copiedBuffer((str+CRLF).getBytes());
+        return Unpooled.copiedBuffer((str + CRLF).getBytes());
     }
 
     @Test
@@ -121,28 +122,28 @@ public class BothSessionTryWriteTest extends AbstractRedisProxyServerTest {
     public void testTryWriteBothSide() throws TimeoutException {
         int N = 1000;
         Queue<String> sample = Lists.newLinkedList();
-        while(N-- > 0) {
+        while (N-- > 0) {
             String str = randomString();
             sample.offer(str);
             tunnel.forwardToFrontend(getByteBuf(str));
             tunnel.forwardToBackend(getByteBuf(str));
         }
 
-        while(!frontChannel.outboundMessages().isEmpty()) {
+        while (!frontChannel.outboundMessages().isEmpty()) {
             ByteBuf buf = frontChannel.readOutbound();
             backendChannel.writeInbound(buf);
         }
-        while(!backendChannel.outboundMessages().isEmpty()) {
+        while (!backendChannel.outboundMessages().isEmpty()) {
             ByteBuf buf = backendChannel.readOutbound();
             frontChannel.writeInbound(buf);
         }
-        waitConditionUntilTimeOut(()-> backendChannel.outboundMessages().isEmpty()
+        waitConditionUntilTimeOut(() -> backendChannel.outboundMessages().isEmpty()
                 && frontChannel.outboundMessages().isEmpty(), 500);
 
         Assert.assertEquals(backendChannel.inboundMessages().size(), frontChannel.inboundMessages().size());
         Assert.assertEquals(sample.size(), frontChannel.inboundMessages().size());
 
-        while(!backendChannel.inboundMessages().isEmpty()) {
+        while (!backendChannel.inboundMessages().isEmpty()) {
             String frontStr = (String) frontChannel.readInbound();
             String backStr = (String) backendChannel.readInbound();
             Assert.assertEquals(sample.peek(), frontStr);

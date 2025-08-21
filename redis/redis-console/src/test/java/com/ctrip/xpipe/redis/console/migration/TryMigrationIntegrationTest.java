@@ -19,8 +19,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 public class TryMigrationIntegrationTest extends AbstractMigrationIntegrationTest {
@@ -32,16 +32,18 @@ public class TryMigrationIntegrationTest extends AbstractMigrationIntegrationTes
             @Override
             public ClusterTbl answer(InvocationOnMock invocationOnMock) throws Throwable {
                 Thread.sleep(randomInt(5, 25));
-                return new ClusterTbl().setId(10000L).setActivedcId(100L).setClusterType(ClusterType.ONE_WAY.toString());
+                return new ClusterTbl().setId(10000L).setActivedcId(100L)
+                        .setClusterType(ClusterType.ONE_WAY.toString());
             }
         });
-        when(migrationClusterDao.findUnfinishedByClusterId(anyLong())).thenAnswer(new Answer<List<MigrationClusterTbl>>() {
-            @Override
-            public List<MigrationClusterTbl> answer(InvocationOnMock invocationOnMock) throws Throwable {
-                Thread.sleep(randomInt(4, 29));
-                return Lists.newArrayListWithCapacity(1);
-            }
-        });
+        when(migrationClusterDao.findUnfinishedByClusterId(anyLong()))
+                .thenAnswer(new Answer<List<MigrationClusterTbl>>() {
+                    @Override
+                    public List<MigrationClusterTbl> answer(InvocationOnMock invocationOnMock) throws Throwable {
+                        Thread.sleep(randomInt(4, 29));
+                        return Lists.newArrayListWithCapacity(1);
+                    }
+                });
         when(dcService.find(anyLong())).thenAnswer(new Answer<DcTbl>() {
             @Override
             public DcTbl answer(InvocationOnMock invocationOnMock) throws Throwable {
@@ -53,7 +55,8 @@ public class TryMigrationIntegrationTest extends AbstractMigrationIntegrationTes
             @Override
             public List<DcTbl> answer(InvocationOnMock invocationOnMock) throws Throwable {
                 Thread.sleep(randomInt(5, 29));
-                return Lists.newArrayList(new DcTbl().setDcName(fromIdc).setZoneId(1L), new DcTbl().setDcName(toIdc).setZoneId(1L));
+                return Lists.newArrayList(new DcTbl().setDcName(fromIdc).setZoneId(1L),
+                        new DcTbl().setDcName(toIdc).setZoneId(1L));
             }
         });
     }
@@ -64,7 +67,8 @@ public class TryMigrationIntegrationTest extends AbstractMigrationIntegrationTes
             @Override
             public ClusterTbl answer(InvocationOnMock invocationOnMock) throws Throwable {
                 Thread.sleep(randomInt(5, 25));
-                return new ClusterTbl().setId(10000L).setActivedcId(100L).setClusterType(ClusterType.BI_DIRECTION.toString());
+                return new ClusterTbl().setId(10000L).setActivedcId(100L)
+                        .setClusterType(ClusterType.BI_DIRECTION.toString());
             }
         });
 
@@ -72,7 +76,9 @@ public class TryMigrationIntegrationTest extends AbstractMigrationIntegrationTes
     }
 
     @Test
-    public void testConsoleTryMigration() throws ClusterMigratingNow, ToIdcNotFoundException, ClusterNotFoundException, MigrationNotSupportException, MigrationSystemNotHealthyException, ClusterActiveDcNotRequest, ClusterMigratingNowButMisMatch {
+    public void testConsoleTryMigration()
+            throws ClusterMigratingNow, ToIdcNotFoundException, ClusterNotFoundException, MigrationNotSupportException,
+            MigrationSystemNotHealthyException, ClusterActiveDcNotRequest, ClusterMigratingNowButMisMatch {
 
         migrationService.tryMigrate("cluster-", fromIdc, toIdc);
     }

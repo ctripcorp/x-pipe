@@ -35,7 +35,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
@@ -65,10 +65,12 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
         SessionMonitor backend = mock(SessionMonitor.class);
 
         SocketStats socketStats1 = mock(SocketStats.class);
-        when(socketStats1.getSocketStatsResult()).thenReturn(new SocketStatsResult(Lists.newArrayList(template1, template2)));
+        when(socketStats1.getSocketStatsResult())
+                .thenReturn(new SocketStatsResult(Lists.newArrayList(template1, template2)));
         when(frontend.getSocketStats()).thenReturn(socketStats1);
         SocketStats socketStats2 = mock(SocketStats.class);
-        when(socketStats2.getSocketStatsResult()).thenReturn(new SocketStatsResult(Lists.newArrayList(template3, template4)));
+        when(socketStats2.getSocketStatsResult())
+                .thenReturn(new SocketStatsResult(Lists.newArrayList(template3, template4)));
         when(backend.getSocketStats()).thenReturn(socketStats2);
 
         SessionStats frontendSessionStats = mock(SessionStats.class);
@@ -101,12 +103,12 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
 
         AtomicReference<ByteBuf> result = new AtomicReference<>();
         Channel channel = getWriteBackChannel(result);
-        handler.handle(channel, new String[]{"SocketStats"});
-        waitConditionUntilTimeOut(()->result.get() != null, 1000);
-//        logger.info("{}", ByteBufUtils.readToString(result.get()));
+        handler.handle(channel, new String[] { "SocketStats" });
+        waitConditionUntilTimeOut(() -> result.get() != null, 1000);
+        // logger.info("{}", ByteBufUtils.readToString(result.get()));
         ArrayParser parser = (ArrayParser) new ArrayParser().read(result.get());
         Object[] objects = parser.getPayload();
-        for(Object object : objects) {
+        for (Object object : objects) {
             TunnelSocketStatsResult tunnelSocketStatsResult = TunnelSocketStatsResult.parse(object);
             String tunnelId = tunnelSocketStatsResult.getTunnelId();
             logger.info("{}", tunnelId);
@@ -125,7 +127,7 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
         ProxyMonitorHandler handler = new ProxyMonitorHandler(null, null, new TestProxyConfig());
         AtomicReference<ByteBuf> result = new AtomicReference<>();
         Channel channel = getWriteBackChannel(result);
-        handler.handle(channel, new String[]{"PingStats"});
+        handler.handle(channel, new String[] { "PingStats" });
 
         RedisError error = new RedisErrorParser().read(result.get()).getPayload();
         assertTrue(error.getMessage().startsWith("-PROXY THROWABLE java.lang.NullPointerException"));
@@ -141,12 +143,12 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
 
         AtomicReference<ByteBuf> result = new AtomicReference<>();
         Channel channel = getWriteBackChannel(result);
-        handler.doHandle(channel, new String[]{"PingStats"});
-        waitConditionUntilTimeOut(()->result.get() != null, 1000);
-//        logger.info("{}", ByteBufUtils.readToString(result.get()));
+        handler.doHandle(channel, new String[] { "PingStats" });
+        waitConditionUntilTimeOut(() -> result.get() != null, 1000);
+        // logger.info("{}", ByteBufUtils.readToString(result.get()));
         ArrayParser parser = (ArrayParser) new ArrayParser().read(result.get());
         Object[] objects = parser.getPayload();
-        for(Object object : objects) {
+        for (Object object : objects) {
             PingStatsResult pingStatsResult = PingStatsResult.parse(object);
             logger.info("{}", pingStatsResult.getDirect());
             logger.info("{}", pingStatsResult.getReal());
@@ -155,7 +157,6 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
         }
 
     }
-
 
     @Test
     public void testTunnelStatsResponser() throws Exception {
@@ -166,18 +167,19 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
 
         Tunnel tunnel = tunnelManager.tunnels().get(0);
         TunnelStatsResult tunnelStatsResult = new TunnelStatsResult(tunnel.identity().toString(),
-                new TunnelEstablished(null).name(), System.currentTimeMillis(), System.currentTimeMillis() + 10, frontend, backend);
+                new TunnelEstablished(null).name(), System.currentTimeMillis(), System.currentTimeMillis() + 10,
+                frontend, backend);
         when(tunnelStats.getTunnelStatsResult()).thenReturn(tunnelStatsResult);
         when(tunnelMonitor.getTunnelStats()).thenReturn(tunnelStats);
 
         AtomicReference<ByteBuf> result = new AtomicReference<>();
         Channel channel = getWriteBackChannel(result);
-        handler.doHandle(channel, new String[]{"TunnelStats"});
-        waitConditionUntilTimeOut(()->result.get() != null, 1000);
-//        logger.info("{}", ByteBufUtils.readToString(result.get()));
+        handler.doHandle(channel, new String[] { "TunnelStats" });
+        waitConditionUntilTimeOut(() -> result.get() != null, 1000);
+        // logger.info("{}", ByteBufUtils.readToString(result.get()));
         ArrayParser parser = (ArrayParser) new ArrayParser().read(result.get());
         Object[] objects = parser.getPayload();
-        for(Object object : objects) {
+        for (Object object : objects) {
             TunnelStatsResult other = TunnelStatsResult.parse(object);
             logger.info("{}", other.getTunnelId());
             logger.info("{}", other.getTunnelState());
@@ -196,7 +198,7 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
         when(tunnelStats.getTunnelStatsResult()).thenReturn(null);
         when(tunnelMonitor.getTunnelStats()).thenReturn(tunnelStats);
 
-        handler.handle(channel, new String[]{"TunnelStats"});
+        handler.handle(channel, new String[] { "TunnelStats" });
         Assert.assertEquals("*0\r\n", ByteBufUtils.readToString(result.get()));
     }
 
@@ -208,20 +210,25 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
 
         Tunnel tunnel = tunnelManager.tunnels().get(0);
         TunnelTrafficResult trafficResult = new TunnelTrafficResult(tunnel.identity().toString(), frontend, backend);
-        when(tunnel.getTunnelMonitor().getFrontendSessionMonitor().getSessionStats().getInputBytes()).thenReturn(frontend.getInputBytes());
-        when(tunnel.getTunnelMonitor().getFrontendSessionMonitor().getSessionStats().getOutputBytes()).thenReturn(frontend.getOutputBytes());
-        when(tunnel.getTunnelMonitor().getFrontendSessionMonitor().getSessionStats().lastUpdateTime()).thenReturn(frontend.getTimestamp());
+        when(tunnel.getTunnelMonitor().getFrontendSessionMonitor().getSessionStats().getInputBytes())
+                .thenReturn(frontend.getInputBytes());
+        when(tunnel.getTunnelMonitor().getFrontendSessionMonitor().getSessionStats().getOutputBytes())
+                .thenReturn(frontend.getOutputBytes());
+        when(tunnel.getTunnelMonitor().getFrontendSessionMonitor().getSessionStats().lastUpdateTime())
+                .thenReturn(frontend.getTimestamp());
 
-        when(tunnel.getTunnelMonitor().getBackendSessionMonitor().getSessionStats().getInputBytes()).thenReturn(backend.getInputBytes());
-        when(tunnel.getTunnelMonitor().getBackendSessionMonitor().getSessionStats().getOutputBytes()).thenReturn(backend.getOutputBytes());
-        when(tunnel.getTunnelMonitor().getBackendSessionMonitor().getSessionStats().lastUpdateTime()).thenReturn(backend.getTimestamp());
-
+        when(tunnel.getTunnelMonitor().getBackendSessionMonitor().getSessionStats().getInputBytes())
+                .thenReturn(backend.getInputBytes());
+        when(tunnel.getTunnelMonitor().getBackendSessionMonitor().getSessionStats().getOutputBytes())
+                .thenReturn(backend.getOutputBytes());
+        when(tunnel.getTunnelMonitor().getBackendSessionMonitor().getSessionStats().lastUpdateTime())
+                .thenReturn(backend.getTimestamp());
 
         AtomicReference<ByteBuf> result = new AtomicReference<>();
         Channel channel = getWriteBackChannel(result);
-        handler.doHandle(channel, new String[]{"TrafficStats"});
-        waitConditionUntilTimeOut(()->result.get() != null, 1000);
-//        logger.info("{}", ByteBufUtils.readToString(result.get()));
+        handler.doHandle(channel, new String[] { "TrafficStats" });
+        waitConditionUntilTimeOut(() -> result.get() != null, 1000);
+        // logger.info("{}", ByteBufUtils.readToString(result.get()));
         TunnelTrafficResult result1 = TunnelTrafficResult.parse(new ArrayParser().read(result.get()).getPayload()[0]);
         logger.info("{}", result1);
     }
@@ -235,7 +242,7 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
                 return null;
             }
         }).when(channel).writeAndFlush(any(ByteBuf.class));
-        return  channel;
+        return channel;
     }
 
     @Ignore
@@ -259,7 +266,7 @@ public class ProxyMonitorHandlerTest extends AbstractProxyIntegrationTest {
 
         Object[] objects = receiver.getPayload();
         Assert.assertNotNull(objects);
-        for(Object obj : objects) {
+        for (Object obj : objects) {
             logger.info("{}", obj);
         }
     }

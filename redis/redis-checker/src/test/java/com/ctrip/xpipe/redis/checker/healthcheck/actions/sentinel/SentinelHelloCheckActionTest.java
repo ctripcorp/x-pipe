@@ -31,13 +31,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.HELLO_CHANNEL;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  * @author chen.zhu
- * <p>
- * Oct 09, 2018
+ *         <p>
+ *         Oct 09, 2018
  */
 public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
 
@@ -65,13 +65,11 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     private static final String BACKUP_DC_SHARD1_SLAVE1 = "backUpDcShard1Slave1";
     private static final String BACKUP_DC_SHARD1_SLAVE2 = "backUpDcShard1Slave2";
 
-
     private static final String ACTIVE_DC_SHARD2_MASTER = "activeDcShard2Master";
     private static final String ACTIVE_DC_SHARD2_SLAVE = "activeDcShard2Slave";
     private static final String BACKUP_DC_SHARD2_SLAVE1 = "backUpDcShard2Slave1";
     private static final String BACKUP_DC_SHARD2_SLAVE2 = "backUpDcShard2Slave2";
-
-
+    
     private static final String ACTIVE_DC_SHARD3_MASTER = "activeDcShard3Master";
     private static final String ACTIVE_DC_SHARD3_SLAVE = "activeDcShard3Slave";
 
@@ -102,8 +100,10 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     @Before
     public void beforeSentinelHelloCheckActionTest() throws Exception {
         MockitoAnnotations.initMocks(this);
-        redisNames = Lists.newArrayList(ACTIVE_DC_SHARD1_MASTER, ACTIVE_DC_SHARD1_SLAVE, BACKUP_DC_SHARD1_SLAVE1, BACKUP_DC_SHARD1_SLAVE2,
-                ACTIVE_DC_SHARD2_MASTER, ACTIVE_DC_SHARD2_SLAVE, BACKUP_DC_SHARD2_SLAVE1, BACKUP_DC_SHARD2_SLAVE2, ACTIVE_DC_SHARD3_MASTER, ACTIVE_DC_SHARD3_SLAVE);
+
+        redisNames = Lists.newArrayList(ACTIVE_DC_SHARD1_MASTER, ACTIVE_DC_SHARD1_SLAVE, BACKUP_DC_SHARD1_SLAVE1,
+                BACKUP_DC_SHARD1_SLAVE2,
+                ACTIVE_DC_SHARD2_MASTER, ACTIVE_DC_SHARD2_SLAVE, BACKUP_DC_SHARD2_SLAVE1, BACKUP_DC_SHARD2_SLAVE2);
 
         for (String redisIp : redisNames) {
             serverResults.put(redisIp, new Supplier<String>() {
@@ -124,9 +124,11 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
             }));
             redisMetas.put(redisIp, newRandomFakeRedisMeta().setPort(servers.get(redisIp).getPort()));
 
-            redisHealthCheckInstances.put(redisIp, newRandomRedisHealthCheckInstance("dc1", servers.get(redisIp).getPort()));
+            redisHealthCheckInstances.put(redisIp,
+                    newRandomRedisHealthCheckInstance("dc1", servers.get(redisIp).getPort()));
 
-            when(instanceManager.findRedisHealthCheckInstance(new HostPort(LOCAL_HOST, servers.get(redisIp).getPort()))).thenReturn(redisHealthCheckInstances.get(redisIp));
+            when(instanceManager.findRedisHealthCheckInstance(new HostPort(LOCAL_HOST, servers.get(redisIp).getPort())))
+                    .thenReturn(redisHealthCheckInstances.get(redisIp));
 
             if (redisIp.contains("activeDc"))
                 when(healthCheckActionController.shouldCheck(redisHealthCheckInstances.get(redisIp))).thenReturn(false);
@@ -140,7 +142,8 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
 
         prepareMetaCache();
         when(persistenceCache.isClusterOnMigration(anyString())).thenReturn(false);
-        action = new SentinelHelloCheckAction(scheduled, instance, executors, config, persistenceCache, metaCache, instanceManager);
+        action = new SentinelHelloCheckAction(scheduled, instance, executors, config, persistenceCache, metaCache,
+                instanceManager);
         action.addController(healthCheckActionController);
     }
 
@@ -186,7 +189,8 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     public void testDoScheduleTaskInterval() {
         action = spy(action);
         SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL = 10;
-        ScheduledFuture f = scheduled.scheduleWithFixedDelay(action.new ScheduledHealthCheckTask(), 0, 200, TimeUnit.MILLISECONDS);
+        ScheduledFuture f = scheduled.scheduleWithFixedDelay(action.new ScheduledHealthCheckTask(), 0, 200,
+                TimeUnit.MILLISECONDS);
 
         sleep(1000);
         f.cancel(false);
@@ -198,7 +202,8 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     public void testDoScheduleTaskWithSentinelHelloSuccess() throws Exception {
         StringBuilder shard1Builder = new StringBuilder(SUBSCRIBE_HEADER);
         for (int i = 0; i < 5; i++) {
-            shard1Builder.append(String.format(SENTINEL_HELLO_TEMPLATE, 5000 + i, servers.get(ACTIVE_DC_SHARD1_MASTER).getPort()));
+            shard1Builder.append(
+                    String.format(SENTINEL_HELLO_TEMPLATE, 5000 + i, servers.get(ACTIVE_DC_SHARD1_MASTER).getPort()));
         }
         for (String redisIp : serverResults.keySet()) {
             if (redisIp.contains("Shard1"))
@@ -211,7 +216,8 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         }
         StringBuilder shard2Builder = new StringBuilder(SUBSCRIBE_HEADER);
         for (int i = 0; i < 5; i++) {
-            shard2Builder.append(String.format(SENTINEL_HELLO_TEMPLATE, 5005 + i, servers.get(ACTIVE_DC_SHARD2_MASTER).getPort()));
+            shard2Builder.append(
+                    String.format(SENTINEL_HELLO_TEMPLATE, 5005 + i, servers.get(ACTIVE_DC_SHARD2_MASTER).getPort()));
         }
         for (String redisIp : serverResults.keySet()) {
             if (redisIp.contains("Shard2"))
@@ -251,7 +257,8 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         Assert.assertEquals(1, action.getListeners().size());
         action.doTask();
 
-        waitConditionUntilTimeOut(() -> counter.get() == 4, SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL+1000);
+        waitConditionUntilTimeOut(() -> counter.get() == 4,
+                SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL + 1000);
 
         Assert.assertEquals(1, servers.get(BACKUP_DC_SHARD1_SLAVE1).getConnected());
         Assert.assertEquals(1, servers.get(BACKUP_DC_SHARD1_SLAVE2).getConnected());
@@ -270,7 +277,8 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     public void testDoScheduleTaskWithSentinelHelloFailed() throws Exception {
         StringBuilder shard1Builder = new StringBuilder(SUBSCRIBE_HEADER);
         for (int i = 0; i < 5; i++) {
-            shard1Builder.append(String.format(SENTINEL_HELLO_TEMPLATE, 5000 + i, servers.get(ACTIVE_DC_SHARD1_MASTER).getPort()));
+            shard1Builder.append(
+                    String.format(SENTINEL_HELLO_TEMPLATE, 5000 + i, servers.get(ACTIVE_DC_SHARD1_MASTER).getPort()));
         }
         serverResults.put(BACKUP_DC_SHARD1_SLAVE1, new Supplier<String>() {
             @Override
@@ -281,7 +289,8 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
 
         StringBuilder consistentBuilder = new StringBuilder(SUBSCRIBE_HEADER);
         for (int i = 0; i < 3; i++) {
-            consistentBuilder.append(String.format(SENTINEL_HELLO_TEMPLATE, 5000 + i, servers.get(ACTIVE_DC_SHARD1_SLAVE).getPort()));
+            consistentBuilder.append(
+                    String.format(SENTINEL_HELLO_TEMPLATE, 5000 + i, servers.get(ACTIVE_DC_SHARD1_SLAVE).getPort()));
         }
         serverResults.put(BACKUP_DC_SHARD1_SLAVE2, new Supplier<String>() {
             @Override
@@ -292,7 +301,8 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
 
         StringBuilder shard2Builder = new StringBuilder(SUBSCRIBE_HEADER);
         for (int i = 0; i < 3; i++) {
-            shard2Builder.append(String.format(SENTINEL_HELLO_TEMPLATE, 5005 + i, servers.get(ACTIVE_DC_SHARD2_MASTER).getPort()));
+            shard2Builder.append(
+                    String.format(SENTINEL_HELLO_TEMPLATE, 5005 + i, servers.get(ACTIVE_DC_SHARD2_MASTER).getPort()));
         }
         serverResults.put(BACKUP_DC_SHARD2_SLAVE2, new Supplier<String>() {
             @Override
@@ -314,18 +324,24 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
                 if (context.instance().getEndpoint().getPort() == servers.get(BACKUP_DC_SHARD1_SLAVE1).getPort()) {
                     successResults.incrementAndGet();
                     Assert.assertEquals(5, context.getResult().size());
-                    Assert.assertEquals(redisMetas.get(ACTIVE_DC_SHARD1_MASTER).getPort().intValue(), context.getResult().iterator().next().getMasterAddr().getPort());
-                } else if (context.instance().getEndpoint().getPort() == servers.get(BACKUP_DC_SHARD1_SLAVE2).getPort()) {
+                    Assert.assertEquals(redisMetas.get(ACTIVE_DC_SHARD1_MASTER).getPort().intValue(),
+                            context.getResult().iterator().next().getMasterAddr().getPort());
+                } else if (context.instance().getEndpoint().getPort() == servers.get(BACKUP_DC_SHARD1_SLAVE2)
+                        .getPort()) {
                     successResults.incrementAndGet();
                     Assert.assertEquals(3, context.getResult().size());
-                    Assert.assertEquals(redisMetas.get(ACTIVE_DC_SHARD1_SLAVE).getPort().intValue(), context.getResult().iterator().next().getMasterAddr().getPort());
-                } else if (context.instance().getEndpoint().getPort() == servers.get(BACKUP_DC_SHARD2_SLAVE2).getPort()) {
+                    Assert.assertEquals(redisMetas.get(ACTIVE_DC_SHARD1_SLAVE).getPort().intValue(),
+                            context.getResult().iterator().next().getMasterAddr().getPort());
+                } else if (context.instance().getEndpoint().getPort() == servers.get(BACKUP_DC_SHARD2_SLAVE2)
+                        .getPort()) {
                     successResults.incrementAndGet();
                     Assert.assertEquals(5, context.getResult().size());
-                    Assert.assertEquals(redisMetas.get(ACTIVE_DC_SHARD2_MASTER).getPort().intValue(), context.getResult().iterator().next().getMasterAddr().getPort());
+                    Assert.assertEquals(redisMetas.get(ACTIVE_DC_SHARD2_MASTER).getPort().intValue(),
+                            context.getResult().iterator().next().getMasterAddr().getPort());
                 } else {
                     failedResults.incrementAndGet();
-                    Assert.assertEquals(servers.get(BACKUP_DC_SHARD2_SLAVE1).getPort(), context.instance().getEndpoint().getPort());
+                    Assert.assertEquals(servers.get(BACKUP_DC_SHARD2_SLAVE1).getPort(),
+                            context.instance().getEndpoint().getPort());
                     Assert.assertFalse(context.isSuccess());
                 }
             }
@@ -342,10 +358,11 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         });
         Assert.assertEquals(1, action.getListeners().size());
         action.doTask();
-        waitConditionUntilTimeOut(() -> successResults.get() == 3, SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL+1000);
-        waitConditionUntilTimeOut(() -> failedResults.get() == 1, SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL+1000);
+        waitConditionUntilTimeOut(() -> successResults.get() == 3,
+                SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL + 1000);
+        waitConditionUntilTimeOut(() -> failedResults.get() == 1,
+                SentinelHelloCheckAction.SENTINEL_COLLECT_INFO_INTERVAL + 1000);
     }
-
 
     @Ignore
     @Test
@@ -361,18 +378,19 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
             }
         });
 
-        redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_MASTER).getRedisSession().subscribeIfAbsent(new RedisSession.SubscribeCallback() {
-            @Override
-            public void message(String channel, String message) {
-                SentinelHello hello = SentinelHello.fromString(message);
-                System.out.println("hello: " + hello);
-            }
+        redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_MASTER).getRedisSession()
+                .subscribeIfAbsent(new RedisSession.SubscribeCallback() {
+                    @Override
+                    public void message(String channel, String message) {
+                        SentinelHello hello = SentinelHello.fromString(message);
+                        System.out.println("hello: " + hello);
+                    }
 
-            @Override
-            public void fail(Throwable e) {
-                logger.error("[sub-failed]", e);
-            }
-        }, HELLO_CHANNEL);
+                    @Override
+                    public void fail(Throwable e) {
+                        logger.error("[sub-failed]", e);
+                    }
+                }, HELLO_CHANNEL);
         sleep(100);
     }
 
@@ -386,7 +404,6 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         backupDcShard1Meta.setId(shardName1);
         backupDcShard1Meta.addRedis(redisMetas.get(BACKUP_DC_SHARD1_SLAVE1));
         backupDcShard1Meta.addRedis(redisMetas.get(BACKUP_DC_SHARD1_SLAVE2));
-
 
         ShardMeta activeDcShard2Meta = new ShardMeta();
         activeDcShard2Meta.setId(shardName2);
@@ -443,9 +460,11 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         SentinelHello sentinelHello5 = new SentinelHello(new HostPort(LOCAL_HOST, 5004), master, monitorName);
 
         Map<RedisHealthCheckInstance, SentinelHelloCheckAction.SentinelHellos> hellos = Maps.newConcurrentMap();
-        hellos.put(redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_MASTER), action.new SentinelHellos().addSentinelHellos(Sets.newHashSet(sentinelHello1, sentinelHello2, sentinelHello3, sentinelHello4, sentinelHello5)));
-        hellos.put(redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_SLAVE), action.new SentinelHellos().addSentinelHellos(Sets.newHashSet(sentinelHello1, sentinelHello3, sentinelHello5)));
-
+        hellos.put(redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_MASTER),
+                action.new SentinelHellos().addSentinelHellos(Sets.newHashSet(sentinelHello1, sentinelHello2,
+                        sentinelHello3, sentinelHello4, sentinelHello5)));
+        hellos.put(redisHealthCheckInstances.get(ACTIVE_DC_SHARD1_SLAVE), action.new SentinelHellos()
+                .addSentinelHellos(Sets.newHashSet(sentinelHello1, sentinelHello3, sentinelHello5)));
 
         Map<RedisHealthCheckInstance, Throwable> errors = new HashMap<>();
         errors.put(redisHealthCheckInstances.get(BACKUP_DC_SHARD1_SLAVE1), new ConnectTimeoutException("test"));

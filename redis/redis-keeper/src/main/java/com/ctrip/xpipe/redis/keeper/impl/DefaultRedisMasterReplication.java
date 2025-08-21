@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.PartialOnlyPsync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
-import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;

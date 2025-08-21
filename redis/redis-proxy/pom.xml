@@ -12,7 +12,7 @@
     <artifactId>redis-proxy</artifactId>
 
     <properties>
-        <netty4.version>4.1.52.Final</netty4.version>
+        <netty4.version>4.1.92.Final</netty4.version>
     </properties>
 
     <dependencies>

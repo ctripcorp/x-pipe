@@ -26,13 +26,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu
- * <p>
- * Dec 27, 2017
+ *         <p>
+ *         Dec 27, 2017
  */
 public class SentinelUpdateControllerTest {
 
@@ -59,7 +59,7 @@ public class SentinelUpdateControllerTest {
     @InjectMocks
     SentinelUpdateController controller = new SentinelUpdateController();
 
-    private String[] clusters = {"cluster1", "cluster2", "cluster3", "cluster4"};
+    private String[] clusters = { "cluster1", "cluster2", "cluster3", "cluster4" };
 
     private JsonCodec jsonCodec = new JsonCodec(true, true);
 
@@ -105,17 +105,21 @@ public class SentinelUpdateControllerTest {
         logger.info("{}", message.getState());
     }
 
-
     private void mockSentinel() {
-        ClusterTbl cluster = new ClusterTbl().setId(1L).setClusterName(clusterName).setClusterType(ClusterType.ONE_WAY.toString()).setTag("");
+        ClusterTbl cluster = new ClusterTbl().setId(1L).setClusterName(clusterName)
+                .setClusterType(ClusterType.ONE_WAY.toString()).setTag("");
         DcClusterShardTbl dcClusterShard = new DcClusterShardTbl().setSetinelId(1L);
         when(clusterService.find(clusterName)).thenReturn(cluster);
         when(dcClusterShardService.find(dcName, clusterName, shardName)).thenReturn(dcClusterShard);
 
-        SentinelInstanceModel instanceModel1 = new SentinelInstanceModel().setSentinelIp("127.0.0.1").setSentinelPort(7000);
-        SentinelInstanceModel instanceModel2 = new SentinelInstanceModel().setSentinelIp("127.0.0.1").setSentinelPort(7001);
-        SentinelGroupModel model1 = new SentinelGroupModel().setSentinelGroupId(1L).setSentinels(Collections.singletonList(instanceModel1));
-        SentinelGroupModel model2 = new SentinelGroupModel().setSentinelGroupId(2L).setSentinels(Collections.singletonList(instanceModel2));
+        SentinelInstanceModel instanceModel1 = new SentinelInstanceModel().setSentinelIp("127.0.0.1")
+                .setSentinelPort(7000);
+        SentinelInstanceModel instanceModel2 = new SentinelInstanceModel().setSentinelIp("127.0.0.1")
+                .setSentinelPort(7001);
+        SentinelGroupModel model1 = new SentinelGroupModel().setSentinelGroupId(1L)
+                .setSentinels(Collections.singletonList(instanceModel1));
+        SentinelGroupModel model2 = new SentinelGroupModel().setSentinelGroupId(2L)
+                .setSentinels(Collections.singletonList(instanceModel2));
         when(sentinelBalanceService.selectSentinel(dcName, ClusterType.ONE_WAY, "")).thenReturn(model1);
         when(sentinelBalanceService.selectSentinel(dcName, ClusterType.SINGLE_DC, "")).thenReturn(model2);
     }
@@ -123,7 +127,8 @@ public class SentinelUpdateControllerTest {
     @Test
     public void testUpdateDcShardSentinels1() {
         mockSentinel();
-        AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity().setAzGroupClusterType(ClusterType.ONE_WAY.toString());
+        AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity()
+                .setAzGroupClusterType(ClusterType.ONE_WAY.toString());
         when(azGroupClusterRepository.selectByClusterIdAndAz(1L, dcName)).thenReturn(azGroupCluster);
 
         RetMessage ret = controller.updateDcShardSentinels(dcName, clusterName, shardName);
@@ -134,7 +139,8 @@ public class SentinelUpdateControllerTest {
     @Test
     public void testUpdateDcShardSentinel2() {
         mockSentinel();
-        AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity().setAzGroupClusterType(ClusterType.SINGLE_DC.toString());
+        AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity()
+                .setAzGroupClusterType(ClusterType.SINGLE_DC.toString());
         when(azGroupClusterRepository.selectByClusterIdAndAz(1L, dcName)).thenReturn(azGroupCluster);
 
         RetMessage ret = controller.updateDcShardSentinels(dcName, clusterName, shardName);

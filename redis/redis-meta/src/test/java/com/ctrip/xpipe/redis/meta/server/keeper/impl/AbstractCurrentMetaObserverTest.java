@@ -21,14 +21,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 
 /**
  * @author chen.zhu
- * <p>
- * Sep 28, 2020
+ *         <p>
+ *         Sep 28, 2020
  */
 public class AbstractCurrentMetaObserverTest extends AbstractTest {
 
@@ -93,7 +93,7 @@ public class AbstractCurrentMetaObserverTest extends AbstractTest {
 
         @Override
         public void release() throws Exception {
-            if(started.compareAndSet(true, false)) {
+            if (started.compareAndSet(true, false)) {
                 getLogger().info("[release]");
             }
         }
@@ -101,7 +101,7 @@ public class AbstractCurrentMetaObserverTest extends AbstractTest {
         @Override
         protected void doExecute() throws Exception {
             started.set(true);
-            while(started.get() && !Thread.currentThread().isInterrupted()) {
+            while (started.get() && !Thread.currentThread().isInterrupted()) {
                 counter.incrementAndGet();
                 sleep(10);
             }

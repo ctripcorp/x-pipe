@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.migration.OuterClientService;
+import com.ctrip.xpipe.api.migration.OuterClientService.*;
 import com.ctrip.xpipe.redis.checker.OuterClientCache;
 import com.ctrip.xpipe.cache.TimeBoundCache;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderAware;
@@ -19,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import com.ctrip.xpipe.api.migration.OuterClientService.*;
 
 /**
  * @author lishanglin
@@ -97,7 +97,7 @@ public class DefaultOuterClientCache implements ConsoleLeaderAware, OuterClientC
     private Map<String, ClusterInfo> loadCurrentDcClusters(String dc) {
         Map<String, ClusterInfo> clusters = new HashMap<>();
         try {
-            DcMeta currentDcClusterInfos = outerClientService.getOutClientDcMeta(dc);
+            OuterClientService.DcMeta currentDcClusterInfos = outerClientService.getOutClientDcMeta(dc);
             for (ClusterMeta clusterMeta: currentDcClusterInfos.getClusters().values()) {
                 if (!ClusterType.XPIPE_ONE_WAY.equals(clusterMeta.getClusterType())) continue;
                 ClusterInfo clusterInfo = buildClusterModel(clusterMeta);

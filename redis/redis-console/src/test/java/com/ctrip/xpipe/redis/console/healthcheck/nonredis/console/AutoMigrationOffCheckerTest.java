@@ -14,14 +14,14 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 /**
  * @author lishanglin
- * date 2021/5/13
+ *         date 2021/5/13
  */
 @RunWith(MockitoJUnitRunner.class)
 public class AutoMigrationOffCheckerTest extends AbstractConsoleTest {

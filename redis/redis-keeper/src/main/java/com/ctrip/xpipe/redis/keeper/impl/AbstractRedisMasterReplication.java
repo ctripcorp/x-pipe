@@ -22,7 +22,6 @@ import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
-import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.store.RdbStore;

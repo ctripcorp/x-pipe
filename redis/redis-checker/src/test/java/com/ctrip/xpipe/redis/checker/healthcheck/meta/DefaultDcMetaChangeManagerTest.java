@@ -29,7 +29,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
@@ -38,7 +38,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Mock
     private HealthCheckInstanceManager instanceManager;
-    
+
     @Mock
     private HealthCheckEndpointFactory factory;
 
@@ -76,7 +76,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
         when(checkerConfig.getConsoleAddress()).thenReturn("127.0.0.1");
         when(metaCache.isCrossRegion("jq", "fra-aws")).thenReturn(true);
-        
+
         manager = new DefaultDcMetaChangeManager("oy", instanceManager, factory, metaCache);
     }
 
@@ -88,23 +88,22 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         return cloneDcMeta(getDcMeta(dc));
     }
 
-    private DcMeta cloneDcMeta(DcMeta source){
+    private DcMeta cloneDcMeta(DcMeta source) {
         DcMeta dcMeta = MetaCloneFacade.INSTANCE.clone(source);
-        for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
+        for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
             clusterMeta.setParent(dcMeta);
-            for (ShardMeta shardMeta: clusterMeta.getShards().values()) {
+            for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
                 shardMeta.setParent(clusterMeta);
-                for (RedisMeta redisMeta: shardMeta.getRedises()) {
+                for (RedisMeta redisMeta : shardMeta.getRedises()) {
                     redisMeta.setParent(shardMeta);
                 }
-                for (KeeperMeta keeperMeta: shardMeta.getKeepers()) {
+                for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
                     keeperMeta.setParent(shardMeta);
                 }
             }
         }
         return dcMeta;
     }
-
 
     @Test
     public void visitModified() {
@@ -167,7 +166,8 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
         Mockito.verify(instanceManager, times(2)).getOrCreate(any(RedisMeta.class));
         Mockito.verify(instanceManager, never()).remove(any(HostPort.class));
-        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.2", 8100), new HostPort("127.0.0.2", 8101)), addedRedises);
+        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.2", 8100), new HostPort("127.0.0.2", 8101)),
+                addedRedises);
     }
 
     @Test
@@ -180,7 +180,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         Mockito.verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
         Mockito.verify(instanceManager, times(4)).remove(any(HostPort.class));
         Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.1", 8100), new HostPort("127.0.0.1", 8101),
-                 new HostPort("127.0.0.1", 16479), new HostPort("127.0.0.1", 17479)), deletedRedised);
+                new HostPort("127.0.0.1", 16479), new HostPort("127.0.0.1", 17479)), deletedRedised);
     }
 
     @Test
@@ -269,7 +269,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     }
 
     @Test
-    public void visitRemovedClusterActiveDc(){
+    public void visitRemovedClusterActiveDc() {
         manager = spy(new DefaultDcMetaChangeManager("jq", instanceManager, factory, metaCache));
         manager.compare(getDcMeta("jq"));
 
@@ -283,7 +283,8 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         verify(instanceManager, times(1)).remove("cluster1");
     }
 
-    private ClusterHealthCheckInstance mockClusterHealthCheckInstance(String clusterId, String activeDc, ClusterType clusterType, int orgId) {
+    private ClusterHealthCheckInstance mockClusterHealthCheckInstance(String clusterId, String activeDc,
+            ClusterType clusterType, int orgId) {
         DefaultClusterHealthCheckInstance instance = new DefaultClusterHealthCheckInstance();
         DefaultClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterId, activeDc, clusterType, orgId);
         instance.setInstanceInfo(info);
@@ -338,7 +339,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void testSwitchClusterShards() throws Exception {
-       DcMeta dcMeta= getDcMeta("oy");
+        DcMeta dcMeta = getDcMeta("oy");
         ClusterMeta cluster1 = dcMeta.findCluster("cluster1");
         changeClusterShardId(cluster1);
 
@@ -353,8 +354,8 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         ClusterMeta cluster2Future = future.findCluster("cluster2");
         Map<String, ShardMeta> cluster2ShardsCopy = new HashMap<>(cluster2Future.getShards());
 
-        changeClusterShards(cluster1Future,cluster2ShardsCopy);
-        changeClusterShards(cluster2Future,cluster1ShardsCopy);
+        changeClusterShards(cluster1Future, cluster2ShardsCopy);
+        changeClusterShards(cluster2Future, cluster1ShardsCopy);
 
         manager.compare(future);
 
@@ -366,13 +367,12 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void testHeteroClusterModified() throws Exception {
-        DefaultDcMetaChangeManager  manager = new DefaultDcMetaChangeManager("jq", instanceManager, factory, metaCache);
-        DcMeta dcMeta= getDcMeta("jq");
+        DefaultDcMetaChangeManager manager = new DefaultDcMetaChangeManager("jq", instanceManager, factory, metaCache);
+        DcMeta dcMeta = getDcMeta("jq");
         ClusterMeta cluster1 = dcMeta.findCluster("cluster2");
         cluster1.setBackupDcs("ali");
         cluster1.setAzGroupType(ClusterType.ONE_WAY.toString());
         manager.compare(dcMeta);
-
 
         DcMeta future = cloneDcMeta(dcMeta);
         ClusterMeta futureCluster = future.findCluster("cluster2");
@@ -388,15 +388,13 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     }
 
-
     @Test
     public void testBackupDcClusterModified() throws Exception {
-        DefaultDcMetaChangeManager  manager = new DefaultDcMetaChangeManager("jq", instanceManager, factory, metaCache);
-        DcMeta dcMeta= getDcMeta("jq");
+        DefaultDcMetaChangeManager manager = new DefaultDcMetaChangeManager("jq", instanceManager, factory, metaCache);
+        DcMeta dcMeta = getDcMeta("jq");
         ClusterMeta cluster1 = dcMeta.findCluster("cluster2");
         cluster1.setBackupDcs("jq,ali");
         manager.compare(dcMeta);
-
 
         DcMeta future = cloneDcMeta(dcMeta);
         ClusterMeta futureCluster = future.findCluster("cluster2");
@@ -413,8 +411,10 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void generateCRossDCHealthCheckInstancesTest() throws Exception {
-        ClusterMeta jqClusterMeta = new ClusterMeta().setId("cross_dc_cluster").setType("CROSS_DC").setActiveDc("oy").setDcs("jq,oy").setParent(new DcMeta("jq"));
-        ClusterMeta oyClusterMeta = new ClusterMeta().setId("cross_dc_cluster").setType("CROSS_DC").setActiveDc("oy").setDcs("jq,oy").setParent(new DcMeta("oy"));
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("cross_dc_cluster").setType("CROSS_DC").setActiveDc("oy")
+                .setDcs("jq,oy").setParent(new DcMeta("jq"));
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("cross_dc_cluster").setType("CROSS_DC").setActiveDc("oy")
+                .setDcs("jq,oy").setParent(new DcMeta("oy"));
 
         Assert.assertFalse(manager.isInterestedInCluster(jqClusterMeta));
         Assert.assertFalse(manager.isInterestedInCluster(oyClusterMeta));
@@ -428,7 +428,8 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void generateSingleDcHealthCheckInstancesTest() throws Exception {
-        ClusterMeta clusterMeta = new ClusterMeta().setId("single_dc_cluster").setType("SINGLE_DC").setActiveDc("jq").setParent(new DcMeta("jq"));
+        ClusterMeta clusterMeta = new ClusterMeta().setId("single_dc_cluster").setType("SINGLE_DC").setActiveDc("jq")
+                .setParent(new DcMeta("jq"));
         Assert.assertTrue(manager.isInterestedInCluster(clusterMeta));
 
         clusterMeta.setActiveDc("oy").setAzGroupName("oy");
@@ -437,8 +438,10 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void generateLocalDCHealthCheckInstancesTest() throws Exception {
-        ClusterMeta jqClusterMeta = new ClusterMeta().setId("local_dc_cluster").setType("LOCAL_DC").setDcs("jq,oy").setParent(new DcMeta("jq"));
-        ClusterMeta oyClusterMeta = new ClusterMeta().setId("local_dc_cluster").setType("LOCAL_DC").setDcs("jq,oy").setParent(new DcMeta("oy"));
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("local_dc_cluster").setType("LOCAL_DC").setDcs("jq,oy")
+                .setParent(new DcMeta("jq"));
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("local_dc_cluster").setType("LOCAL_DC").setDcs("jq,oy")
+                .setParent(new DcMeta("oy"));
 
         Assert.assertTrue(manager.isInterestedInCluster(jqClusterMeta));
         Assert.assertTrue(manager.isInterestedInCluster(oyClusterMeta));
@@ -446,8 +449,10 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void generateOneWayHealthCheckInstancesTest() throws Exception {
-        ClusterMeta jqClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("jq")).setAzGroupType("ONE_WAY");
-        ClusterMeta oyClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("oy")).setAzGroupType("ONE_WAY");
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq")
+                .setBackupDcs("oy").setParent(new DcMeta("jq")).setAzGroupType("ONE_WAY");
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq")
+                .setBackupDcs("oy").setParent(new DcMeta("oy")).setAzGroupType("ONE_WAY");
         Assert.assertTrue(manager.isInterestedInCluster(jqClusterMeta));
         Assert.assertTrue(manager.isInterestedInCluster(oyClusterMeta));
 
@@ -459,17 +464,19 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void generateHeteroHealthCheckInstancesTest() throws Exception {
-        ClusterMeta jqClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("jq")).setAzGroupType("ONE_WAY");
-        ClusterMeta oyClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("oy")).setAzGroupType("ONE_WAY");
-        ClusterMeta awsClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("aws")).setAzGroupType("SINGLE_DC");
-
+        ClusterMeta jqClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq")
+                .setBackupDcs("oy").setParent(new DcMeta("jq")).setAzGroupType("ONE_WAY");
+        ClusterMeta oyClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq")
+                .setBackupDcs("oy").setParent(new DcMeta("oy")).setAzGroupType("ONE_WAY");
+        ClusterMeta awsClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq")
+                .setBackupDcs("oy").setParent(new DcMeta("aws")).setAzGroupType("SINGLE_DC");
 
         // current dc is active dc
         Assert.assertTrue(manager.isInterestedInCluster(jqClusterMeta));
         Assert.assertTrue(manager.isInterestedInCluster(oyClusterMeta));
         Assert.assertTrue(manager.isInterestedInCluster(awsClusterMeta));
 
-        //current dc is not active dc but in dr master type
+        // current dc is not active dc but in dr master type
         jqClusterMeta.setActiveDc("oy");
         oyClusterMeta.setActiveDc("oy");
         awsClusterMeta.setActiveDc("oy");
@@ -477,7 +484,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         Assert.assertFalse(manager.isInterestedInCluster(oyClusterMeta));
         Assert.assertFalse(manager.isInterestedInCluster(awsClusterMeta));
 
-        //current dc is in master type
+        // current dc is in master type
         jqClusterMeta.setAzGroupType("SINGLE_DC");
         oyClusterMeta.setAzGroupType("ONE_WAY");
         awsClusterMeta.setAzGroupType("ONE_WAY");
@@ -518,7 +525,8 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
         Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
         Mockito.verify(instanceManager, times(2)).removeRedisInstanceForPingAction(any(HostPort.class));
-        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.4", 8200), new HostPort("127.0.0.4", 8201)), deletedRedised);
+        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.4", 8200), new HostPort("127.0.0.4", 8201)),
+                deletedRedised);
     }
 
     @Test
@@ -530,7 +538,8 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
         Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
         Mockito.verify(instanceManager, times(2)).removeRedisInstanceForPingAction(any(HostPort.class));
-        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.3", 8200), new HostPort("127.0.0.3", 8201)), deletedRedised);
+        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.3", 8200), new HostPort("127.0.0.3", 8201)),
+                deletedRedised);
     }
 
     @Test
@@ -566,7 +575,8 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         manager.compare(future);
 
         Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
-        Mockito.verify(instanceManager, times(2)).removeRedisInstanceForPingAction(any(HostPort.class)); // delete anyway
+        Mockito.verify(instanceManager, times(2)).removeRedisInstanceForPingAction(any(HostPort.class)); // delete
+                                                                                                         // anyway
     }
 
     @Test
@@ -578,7 +588,8 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
         Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
         Mockito.verify(instanceManager, times(2)).removeRedisInstanceForPingAction(any(HostPort.class));
-        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.3", 8200), new HostPort("127.0.0.3", 8201)), deletedRedised);
+        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.3", 8200), new HostPort("127.0.0.3", 8201)),
+                deletedRedised);
     }
 
     @Test
@@ -618,7 +629,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     }
 
     @Test
-    public void visitCrossRegionRemovedClusterActiveDc(){
+    public void visitCrossRegionRemovedClusterActiveDc() {
         manager = spy(new DefaultDcMetaChangeManager("fra-aws", instanceManager, factory, metaCache));
         manager.compare(getDcMeta("fra-aws"));
 
@@ -650,7 +661,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void testCrossRegionSwitchClusterShards() throws Exception {
-        DcMeta dcMeta= getDcMeta("fra-aws");
+        DcMeta dcMeta = getDcMeta("fra-aws");
         ClusterMeta cluster5 = dcMeta.findCluster("cluster5");
         changeClusterShardId(cluster5);
 
@@ -665,8 +676,8 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         ClusterMeta cluster6Future = future.findCluster("cluster6");
         Map<String, ShardMeta> cluster2ShardsCopy = new HashMap<>(cluster6Future.getShards());
 
-        changeClusterShards(cluster5Future,cluster2ShardsCopy);
-        changeClusterShards(cluster6Future,cluster1ShardsCopy);
+        changeClusterShards(cluster5Future, cluster2ShardsCopy);
+        changeClusterShards(cluster6Future, cluster1ShardsCopy);
 
         manager.compare(future);
 
@@ -676,13 +687,13 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void testCrossRegionHeteroClusterModified() throws Exception {
-        DefaultDcMetaChangeManager  manager = new DefaultDcMetaChangeManager("fra-aws", instanceManager, factory, metaCache);
-        DcMeta dcMeta= getDcMeta("fra-aws");
+        DefaultDcMetaChangeManager manager = new DefaultDcMetaChangeManager("fra-aws", instanceManager, factory,
+                metaCache);
+        DcMeta dcMeta = getDcMeta("fra-aws");
         ClusterMeta cluster1 = dcMeta.findCluster("cluster5");
         cluster1.setBackupDcs("ali");
         cluster1.setAzGroupType(ClusterType.ONE_WAY.toString());
         manager.compare(dcMeta);
-
 
         DcMeta future = cloneDcMeta(dcMeta);
         ClusterMeta futureCluster = future.findCluster("cluster5");
@@ -698,12 +709,12 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     @Test
     public void testCrossRegionBackupDcClusterModified() throws Exception {
-        DefaultDcMetaChangeManager  manager = new DefaultDcMetaChangeManager("fra-aws", instanceManager, factory, metaCache);
-        DcMeta dcMeta= getDcMeta("fra-aws");
+        DefaultDcMetaChangeManager manager = new DefaultDcMetaChangeManager("fra-aws", instanceManager, factory,
+                metaCache);
+        DcMeta dcMeta = getDcMeta("fra-aws");
         ClusterMeta cluster5 = dcMeta.findCluster("cluster5");
         cluster5.setBackupDcs("fra-aws,fra-ali");
         manager.compare(dcMeta);
-
 
         DcMeta future = cloneDcMeta(dcMeta);
         ClusterMeta futureCluster = future.findCluster("cluster5");

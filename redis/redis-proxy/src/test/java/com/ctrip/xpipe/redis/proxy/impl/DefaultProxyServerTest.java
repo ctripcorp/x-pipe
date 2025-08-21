@@ -20,13 +20,13 @@ import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu
- * <p>
- * May 10, 2018
+ *         <p>
+ *         May 10, 2018
  */
 public class DefaultProxyServerTest {
 
@@ -37,7 +37,6 @@ public class DefaultProxyServerTest {
 
     @Mock
     private Tunnel tunnel;
-
 
     @Before
     public void beforeDefaultProxyTest() {

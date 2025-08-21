@@ -73,7 +73,7 @@ public class ConsoleNotifycationTaskTest extends AbstractMetaServerTest{
 		task.initialize();
 		task.setConsoleService(consoleService);
 		
-		doThrow(new Exception()).when(consoleService).keeperActiveChanged(anyString(), anyString(), anyString(), (KeeperMeta) anyObject());
+		doThrow(new Exception()).when(consoleService).keeperActiveChanged(anyString(), anyString(), anyString(), any(KeeperMeta.class));
 
 		task.keeperActiveElected(getClusterDbId(), getShardDbId(), new KeeperMeta());
 		

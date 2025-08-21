@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.utils.log;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.*;
 
 public class MdcUtilTest {
 

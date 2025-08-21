@@ -20,7 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -29,17 +29,15 @@ import static org.mockito.Mockito.*;
  *         <p>
  *         Jul 05, 2017
  */
-public class MigrationServiceImplTest extends AbstractMigrationTest{
+public class MigrationServiceImplTest extends AbstractMigrationTest {
 
     @Autowired
     private MigrationServiceImpl migrationService;
 
-
     @Before
-    public void prepare(){
+    public void prepare() {
 
     }
-
 
     @Test
     public void testFindToDc() throws ToIdcNotFoundException {
@@ -47,38 +45,45 @@ public class MigrationServiceImplTest extends AbstractMigrationTest{
         migrationService.setDcRelationsService(dcRelationsService);
         List<DcTbl> relatedDcs = new LinkedList<>();
 
-        try{
-            Assert.assertEquals("dc2", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", null, relatedDcs).getDcName());
+        try {
+            Assert.assertEquals("dc2", migrationService
+                    .findToDc(new ClusterTbl().setClusterName("test").setId(1L), "dc1", null, relatedDcs).getDcName());
             Assert.fail();
-        }catch (ToIdcNotFoundException e){
+        } catch (ToIdcNotFoundException e) {
         }
 
-        try{
-            Assert.assertEquals("dc2", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", "dc2", relatedDcs).getDcName());
+        try {
+            Assert.assertEquals("dc2", migrationService
+                    .findToDc(new ClusterTbl().setClusterName("test").setId(1L), "dc1", "dc2", relatedDcs).getDcName());
             Assert.fail();
-        }catch (ToIdcNotFoundException e){
+        } catch (ToIdcNotFoundException e) {
         }
 
         relatedDcs.add(new DcTbl().setDcName("dc1"));
         relatedDcs.add(new DcTbl().setDcName("dc2"));
         relatedDcs.add(new DcTbl().setDcName("dc3"));
 
-        when(dcRelationsService.getClusterTargetDcByPriority(anyLong(),anyString(),anyString(),anyList())).thenReturn("dc2");
-        Assert.assertEquals("dc2", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", null, relatedDcs).getDcName());
-        Assert.assertEquals("dc2", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", "dc2", relatedDcs).getDcName());
-        Assert.assertEquals("dc3", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", "dc3", relatedDcs).getDcName());
+        when(dcRelationsService.getClusterTargetDcByPriority(anyLong(), anyString(), anyString(), anyList()))
+                .thenReturn("dc2");
+        Assert.assertEquals("dc2", migrationService
+                .findToDc(new ClusterTbl().setClusterName("test").setId(1L), "dc1", null, relatedDcs).getDcName());
+        Assert.assertEquals("dc2", migrationService
+                .findToDc(new ClusterTbl().setClusterName("test").setId(1L), "dc1", "dc2", relatedDcs).getDcName());
+        Assert.assertEquals("dc3", migrationService
+                .findToDc(new ClusterTbl().setClusterName("test").setId(1L), "dc1", "dc3", relatedDcs).getDcName());
 
         try {
-            Assert.assertEquals("dc3", migrationService.findToDc(new ClusterTbl(),"dc1", "dc1", relatedDcs).getDcName());
+            Assert.assertEquals("dc3",
+                    migrationService.findToDc(new ClusterTbl(), "dc1", "dc1", relatedDcs).getDcName());
             Assert.fail();
-        }catch (ToIdcNotFoundException e){
+        } catch (ToIdcNotFoundException e) {
         }
 
-
-        try{
-            Assert.assertEquals("dc2", migrationService.findToDc(new ClusterTbl(),"dc1", "dc4", relatedDcs).getDcName());
+        try {
+            Assert.assertEquals("dc2",
+                    migrationService.findToDc(new ClusterTbl(), "dc1", "dc4", relatedDcs).getDcName());
             Assert.fail();
-        }catch (ToIdcNotFoundException e){
+        } catch (ToIdcNotFoundException e) {
         }
     }
 
@@ -92,21 +97,26 @@ public class MigrationServiceImplTest extends AbstractMigrationTest{
         relatedDcs.add(new DcTbl().setZoneId(2).setDcName("dc2"));
         relatedDcs.add(new DcTbl().setZoneId(2).setDcName("dc3"));
 
-        when(dcRelationsService.getClusterTargetDcByPriority(anyLong(), anyString(), anyString(), anyList())).thenReturn("dc2");
-        try{
-            Assert.assertEquals("dc2", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", null, relatedDcs).getDcName());
+        when(dcRelationsService.getClusterTargetDcByPriority(anyLong(), anyString(), anyString(), anyList()))
+                .thenReturn("dc2");
+        try {
+            Assert.assertEquals("dc2", migrationService
+                    .findToDc(new ClusterTbl().setClusterName("test").setId(1L), "dc1", null, relatedDcs).getDcName());
             Assert.fail();
-        }catch (ToIdcNotFoundException e){
+        } catch (ToIdcNotFoundException e) {
         }
 
         dcTbl1.setZoneId(2);
-        Assert.assertEquals("dc2", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", null, relatedDcs).getDcName());
+        Assert.assertEquals("dc2", migrationService
+                .findToDc(new ClusterTbl().setClusterName("test").setId(1L), "dc1", null, relatedDcs).getDcName());
 
-        when(dcRelationsService.getClusterTargetDcByPriority(anyLong(), anyString(), anyString(), anyList())).thenReturn(null);
-        try{
-            Assert.assertEquals("dc2", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", null, relatedDcs).getDcName());
+        when(dcRelationsService.getClusterTargetDcByPriority(anyLong(), anyString(), anyString(), anyList()))
+                .thenReturn(null);
+        try {
+            Assert.assertEquals("dc2", migrationService
+                    .findToDc(new ClusterTbl().setClusterName("test").setId(1L), "dc1", null, relatedDcs).getDcName());
             Assert.fail();
-        }catch (ToIdcNotFoundException e){
+        } catch (ToIdcNotFoundException e) {
         }
 
     }
@@ -126,8 +136,8 @@ public class MigrationServiceImplTest extends AbstractMigrationTest{
         migrationService.updateMigrationShardLogById(887L, "test");
     }
 
-//    @Test
-//    @Ignore
+    // @Test
+    // @Ignore
     public void testOverDueMigrationSysCheck() {
         migrationService = new MigrationServiceImpl();
         AlertManager alertManager = mock(AlertManager.class);
@@ -135,9 +145,11 @@ public class MigrationServiceImplTest extends AbstractMigrationTest{
         DefaultMigrationSystemAvailableChecker checker = new DefaultMigrationSystemAvailableChecker();
         migrationService.setChecker(checker);
         sleep(2 * 60 * 1000);
-        MigrationSystemAvailableChecker.MigrationSystemAvailability availability = migrationService.getMigrationSystemAvailability();
+        MigrationSystemAvailableChecker.MigrationSystemAvailability availability = migrationService
+                .getMigrationSystemAvailability();
         Assert.assertTrue(availability.isAvaiable());
         Assert.assertTrue(availability.isWarning());
-        verify(alertManager, atLeastOnce()).alert(eq(""), eq(""), eq(new HostPort()), eq(ALERT_TYPE.MIGRATION_SYSTEM_CHECK_OVER_DUE), anyString());
+        verify(alertManager, atLeastOnce()).alert(eq(""), eq(""), eq(new HostPort()),
+                eq(ALERT_TYPE.MIGRATION_SYSTEM_CHECK_OVER_DUE), anyString());
     }
 }
