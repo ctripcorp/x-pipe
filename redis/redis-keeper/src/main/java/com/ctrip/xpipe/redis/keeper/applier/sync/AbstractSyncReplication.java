@@ -137,7 +137,7 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
 
                     Command<Object> command = null;
                     // 定时发送 repl 避免处理 rdb 时间太长导致被 idle 检测给干掉了
-                    if(!onContinueCommand) {
+                    if(onContinueCommand) {
                         command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.ACK, scheduled, String.valueOf(offsetRecorder.get()));
                     } else {
                         command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.CAPA, scheduled, CAPA.EOF.toString());

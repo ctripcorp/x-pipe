@@ -288,7 +288,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         sequenceCommand.future().addListener((f) -> {
             if (f.isSuccess()) {
                 offsetRecorder.addAndGet(commandOffset);
-                execGtidSet.get().intersectionGtidSet(gtidSet);
+                if(gtidSet != null && gtidSet.itemCnt() > 0) {
+                    execGtidSet.get().intersectionGtidSet(gtidSet);
+                }
             }
         });
     }
