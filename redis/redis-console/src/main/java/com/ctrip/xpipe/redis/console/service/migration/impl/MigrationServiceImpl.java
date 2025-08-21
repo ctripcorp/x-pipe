@@ -38,14 +38,14 @@ import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.rmi.ServerException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;

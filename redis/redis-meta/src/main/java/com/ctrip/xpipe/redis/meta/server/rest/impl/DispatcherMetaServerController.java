@@ -12,12 +12,12 @@ import com.ctrip.xpipe.redis.meta.server.MetaServer;
 import com.ctrip.xpipe.redis.meta.server.impl.RemoteMetaServer;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import jakarta.annotation.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.context.request.async.DeferredResult;
 
-import javax.annotation.Resource;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 

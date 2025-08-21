@@ -20,7 +20,7 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.collect.Sets;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import jakarta.annotation.PostConstruct;
 import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,11 +40,8 @@ import org.unidal.dal.jdbc.query.ReadHandler;
 import org.unidal.dal.jdbc.query.WriteHandler;
 import org.unidal.lookup.ContainerLoader;
 
-import javax.annotation.PostConstruct;
 import java.beans.PropertyDescriptor;
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -380,7 +377,6 @@ public class BeaconSyncMigrationTest extends AbstractCtripConsoleIntegrationTest
             return true;
         }
 
-        @Override
         public PropertyValues postProcessPropertyValues(PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeansException {
             return pvs;
         }

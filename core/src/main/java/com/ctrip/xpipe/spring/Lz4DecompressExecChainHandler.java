@@ -2,28 +2,27 @@ package com.ctrip.xpipe.spring;
 
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4SafeDecompressor;
-import org.apache.http.Header;
-import org.apache.http.HttpException;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpResponseInterceptor;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.protocol.HttpContext;
+import org.apache.hc.client5.http.classic.ExecChain;
+import org.apache.hc.client5.http.classic.ExecChainHandler;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class LZ4DecompressionInterceptor implements HttpResponseInterceptor {
+public class Lz4DecompressExecChainHandler implements ExecChainHandler {
 
     private static LZ4Factory factory = LZ4Factory.fastestInstance();
 
     @Override
-    public void process(HttpResponse response, HttpContext context) throws HttpException, IOException {
-        Header head = response.getFirstHeader("Content-Encoding");
-        if (head == null) {
-            return;
-        }
-        String encoding = head.getValue();
+    public ClassicHttpResponse execute(ClassicHttpRequest classicHttpRequest, ExecChain.Scope scope, ExecChain execChain) throws IOException, HttpException {
+        ClassicHttpResponse response = execChain.proceed(classicHttpRequest, scope);
+        String encoding = response.getFirstHeader("Content-Encoding") != null ?
+                response.getFirstHeader("Content-Encoding").getValue() : null;
         if ("lz4".equalsIgnoreCase(encoding)) {
             // 获取响应实体
             InputStream entityStream = response.getEntity().getContent();
@@ -40,9 +39,8 @@ public class LZ4DecompressionInterceptor implements HttpResponseInterceptor {
             byte[] deCompressedData = decompressor.decompress(compressed, compressed.length * 20);
 
             // 将解压缩后的数据设置回响应实体
-            response.setEntity(new ByteArrayEntity(deCompressedData));
-
+            response.setEntity(new ByteArrayEntity(deCompressedData, ContentType.create(response.getEntity().getContentType())));
         }
+        return response;
     }
-
 }

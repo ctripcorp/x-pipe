@@ -33,7 +33,7 @@
         <unidal.plexus.version>2.5.8</unidal.plexus.version>
         <commons-pool.version>2.3</commons-pool.version>
         <commons-lang3.version>3.4</commons-lang3.version>
-        <commons-httpclient.version>5.3.1</commons-httpclient.version>
+        <commons-httpclient.version>5.2</commons-httpclient.version>
         <spring-boot.version>3.2.5</spring-boot.version>
         <spring-boot-test.version>3.2.5</spring-boot-test.version>
         <spring.version>6.1.6</spring.version>
@@ -63,7 +63,7 @@
         <qunar.suprule.version>1.0.56</qunar.suprule.version>
         <qconfig.client.version>1.100.70-ctrip</qconfig.client.version>
         <qtracer.version>1.2.4</qtracer.version>
-        <netty.boringssl.version>2.0.61.Final</netty.boringssl.version>
+        <netty.boringssl.version>2.0.65.Final</netty.boringssl.version>
         <netty4.version>4.1.92.Final</netty4.version>
         <zstd.version>1.3.6-1</zstd.version>
         <jackson.version>2.10.3</jackson.version>
@@ -396,7 +396,7 @@
                 <version>${commons-io.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
+                <groupId>org.apache.httpcomponents.client5</groupId>
                 <artifactId>httpclient</artifactId>
                 <version>${commons-httpclient.version}</version>
                 <exclusions>

@@ -1,8 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.config;
 
 import com.ctrip.xpipe.api.config.Config;
-
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 /**
  * @author Jason Song(song_s@ctrip.com)

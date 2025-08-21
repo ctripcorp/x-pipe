@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.http;
 
-import org.apache.http.HttpResponse;
+import org.apache.hc.core5.http.HttpResponse;
 
 /**
  * @author wenchao.meng
@@ -16,12 +16,12 @@ public class SimpleHttpResponse {
 	}
 	
 	public int getStatusCode(){
-		return httpResponse.getStatusLine().getStatusCode();
+		return httpResponse.getCode();
 	}
 	
 	public boolean isSuccess(){
 		
-		return httpResponse.getStatusLine().getStatusCode() == HttpClientUtil.HTTP_STATUS_CODE_200; 
+		return httpResponse.getCode() == HttpClientUtil.HTTP_STATUS_CODE_200;
 	}
 	
 

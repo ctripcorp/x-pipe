@@ -6,7 +6,8 @@ import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
 
 /**
  * @author wenchao.meng
@@ -14,7 +15,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
  *         Apr 06, 2017
  */
 @Component
-public class MvcConfig extends WebMvcConfigurerAdapter{
+public class MvcConfig implements WebMvcConfigurer {
 
     @Autowired
     private MetaCache metaCache;

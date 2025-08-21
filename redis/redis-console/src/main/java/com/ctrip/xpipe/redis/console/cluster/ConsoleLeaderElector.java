@@ -5,8 +5,8 @@ import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.cluster.AbstractLeaderElector;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
+import jakarta.annotation.PreDestroy;
 
-import javax.annotation.PreDestroy;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**

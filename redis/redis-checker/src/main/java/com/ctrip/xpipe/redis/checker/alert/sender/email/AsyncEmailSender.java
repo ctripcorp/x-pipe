@@ -10,13 +10,13 @@ import com.ctrip.xpipe.redis.checker.alert.sender.AbstractSender;
 import com.ctrip.xpipe.redis.checker.alert.sender.email.listener.AsyncEmailSenderCallback;
 import com.ctrip.xpipe.redis.checker.alert.sender.email.listener.EmailSendErrorReporter;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.util.concurrent.ExecutorService;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;

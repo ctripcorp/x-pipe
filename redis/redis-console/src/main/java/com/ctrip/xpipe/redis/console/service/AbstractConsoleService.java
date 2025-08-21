@@ -3,12 +3,12 @@ package com.ctrip.xpipe.redis.console.service;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.query.DalQueryHandler;
 import com.ctrip.xpipe.redis.console.util.SetOperationUtil;
+import jakarta.annotation.PostConstruct;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.lookup.ContainerLoader;
 
-import javax.annotation.PostConstruct;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 

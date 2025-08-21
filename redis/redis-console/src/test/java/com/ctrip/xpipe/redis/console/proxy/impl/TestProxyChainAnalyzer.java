@@ -7,12 +7,12 @@ import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.SerializationUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;

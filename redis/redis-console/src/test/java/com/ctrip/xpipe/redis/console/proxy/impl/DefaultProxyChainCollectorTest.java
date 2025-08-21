@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.console.model.ProxyModel;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
 import com.ctrip.xpipe.redis.console.reporter.DefaultHttpService;
-import org.apache.http.HttpException;
+import org.apache.hc.core5.http.HttpException;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

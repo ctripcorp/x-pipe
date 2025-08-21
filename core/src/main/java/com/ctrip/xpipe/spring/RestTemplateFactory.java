@@ -9,10 +9,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.config.SocketConfig;
-import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.io.HttpClientConnectionManager;
+import org.apache.hc.core5.util.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
@@ -78,13 +80,25 @@ public class RestTemplateFactory {
 
     public static RestOperations createCommonsHttpRestTemplate(int maxConnPerRoute, int maxConnTotal,
                                                                int connectTimeout, int soTimeout, int retryTimes, RetryPolicyFactory retryPolicyFactory) {
-        HttpClient httpClient = HttpClientBuilder.create()
+        // 1. Create Connection Manager for HttpClient 5
+        HttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
                 .setMaxConnPerRoute(maxConnPerRoute)
                 .setMaxConnTotal(maxConnTotal)
-                .setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(soTimeout).build())
-                .setDefaultRequestConfig(RequestConfig.custom().setConnectTimeout(connectTimeout).build())
-                .addInterceptorLast(new LZ4DecompressionInterceptor())
                 .build();
+
+        // 2. Create RequestConfig for timeouts using the new Timeout class
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(Timeout.ofMilliseconds(connectTimeout))
+                .setResponseTimeout(Timeout.ofMilliseconds(soTimeout)) // soTimeout is now responseTimeout
+                .build();
+
+        // 3. Build the HttpClient using the new builder and configurations
+        HttpClient httpClient = HttpClientBuilder.create()
+                .setConnectionManager(connectionManager)
+                .setDefaultRequestConfig(requestConfig)
+                .addExecInterceptorLast("lz4", new Lz4DecompressExecChainHandler())
+                .build();
+
         ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient) {
             @Override
             public ClientHttpRequest createRequest(URI uri, HttpMethod httpMethod) throws IOException {

@@ -10,11 +10,11 @@ import com.ctrip.xpipe.redis.console.model.consoleportal.DcListDcModel;
 import com.ctrip.xpipe.redis.console.resources.ConsolePortalService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.utils.StringUtil;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 
 import static com.ctrip.xpipe.redis.console.service.impl.DcServiceImpl.convertDcTblToDcModel;

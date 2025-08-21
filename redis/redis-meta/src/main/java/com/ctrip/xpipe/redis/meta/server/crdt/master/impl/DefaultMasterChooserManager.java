@@ -8,10 +8,9 @@ import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.MasterChooser;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.Resource;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

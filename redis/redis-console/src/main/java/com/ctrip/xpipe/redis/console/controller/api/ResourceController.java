@@ -5,6 +5,7 @@ import com.ctrip.xpipe.database.ConnectionPoolHolder;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ResourceInfo;
 import com.ctrip.xpipe.redis.console.ds.XPipeDataSource;
 import com.ctrip.xpipe.spring.AbstractController;
+import jakarta.annotation.Resource;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,7 +14,6 @@ import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
 import org.unidal.lookup.ContainerLoader;
 
-import javax.annotation.Resource;
 import java.lang.reflect.Field;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;

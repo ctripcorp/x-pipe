@@ -11,9 +11,9 @@ import com.ctrip.xpipe.redis.checker.alert.event.EventBus;
 import com.ctrip.xpipe.redis.checker.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.redis.checker.resource.CheckLeaderService;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.Lock;
