@@ -3,13 +3,12 @@ package com.ctrip.xpipe.redis.keeper.applier.sync;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
-import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
-import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
+import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandLister;
+import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
@@ -19,10 +18,8 @@ import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.Unpooled;
 
-import java.nio.charset.Charset;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,7 +33,7 @@ import static com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol.ASTERISK_B
  * <p>
  * Jun 05, 2022 18:21
  */
-public class DefaultCommandDispatcher extends AbstractInstanceComponent implements ApplierCommandDispatcher {
+public class DefaultCommandDispatcher extends AbstractInstanceComponent implements ApplierCommandDispatcher, StreamCommandLister {
     @InstanceDependency
     public ApplierSequenceController sequenceController;
 
@@ -71,8 +68,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @InstanceDependency
     public AtomicReference<String> replId;
 
-    private RedisClientProtocol<Object[]> protocolParser = new ArrayParser();
-
+    private StreamCommandParser streamCommandParser;
     // in order to aggregate the entire transaction into one command
     private AtomicReference<TransactionCommand> transactionCommand;
 
@@ -128,38 +124,14 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     private ByteBuf remainingBuf;
     @Override
     public void doOnAppendCommand(ByteBuf byteBuf) {
-        CompositeByteBuf mergeBuf = Unpooled.compositeBuffer();
-        if(remainingBuf != null && remainingBuf.readableBytes() > 0) {
-            mergeBuf.addComponent(true, remainingBuf);
-            remainingBuf = null;
+        if(streamCommandParser == null) {
+            streamCommandParser = new StreamCommandParser(parser, this);
         }
-        mergeBuf.addComponent(true, byteBuf);
-        while (mergeBuf.readableBytes() > 0) {
-            int pre = mergeBuf.readerIndex();
-            RedisClientProtocol<Object[]> protocol = null;
-            try {
-                protocol = protocolParser.read(mergeBuf);
-            } catch (RedisRuntimeException | NumberFormatException exception) {
-                logger.error("[doOnAppendCommand]{}", exception);
-                int starIndex = findFirstStar(mergeBuf, pre + 1);
-                if(starIndex != -1) {
-                    logger.info("[skip some data] from {}", mergeBuf.slice(pre, starIndex - pre).toString(Charset.defaultCharset()));
-                    mergeBuf.readerIndex(starIndex);
-                    this.protocolParser.reset();
-                    continue;
-                }
-            }
-            if (protocol == null) {
-                remainingBuf = Unpooled.copiedBuffer(mergeBuf.slice(pre,  mergeBuf.writerIndex() - pre));
-                this.protocolParser.reset();
-                break;
-            }
-            Object[] payload = protocol.getPayload();
-            RedisOp redisOp = parser.parse(payload);
-            String gtid = redisOp.getOpGtid();
-            doOnRedisOp(redisOp, mergeBuf.readerIndex() - pre, gtid);
-            this.protocolParser.reset();
-            byteBuf.skipBytes(byteBuf.readableBytes());
+        try {
+            streamCommandParser.doRead(byteBuf);
+        } catch (IOException ioException) {
+            // 这里没有写文件 其实不会出现 IOException
+            logger.error("parser error", ioException);
         }
     }
 
@@ -183,6 +155,14 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             return ref.clone();
         }
         return null;
+    }
+
+    @Override
+    public void onCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
+        RedisOp redisOp = parser.parse(payload);
+        String gtid = redisOp.getOpGtid();
+        doOnRedisOp(redisOp, commandBuf.readableBytes(), gtid);
+        commandBuf.skipBytes(commandBuf.readableBytes());
     }
 
     private class GtidRiseJob implements Runnable {
