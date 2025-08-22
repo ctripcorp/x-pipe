@@ -155,11 +155,13 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
     @Override
     public void doOnFullSync(String replId, long replOffset) {
         this.rdbParser.reset();
+        scheduleReplconf();
     }
 
     @Override
     public void doOnXFullSync(GtidSet lost, long replOffset) {
         this.rdbParser.reset();
+        scheduleReplconf();
     }
 
     @Override
