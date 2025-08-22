@@ -800,6 +800,15 @@ public abstract class AbstractMetaCache implements MetaCache {
         return isCrossRegion(activeDc, currentDc) && dcs.contains(currentDc.toLowerCase());
     }
 
+    @Override
+    public List<String> regionDcs(String dc) {
+        Map<String, DcMeta> dcs = meta.getKey().getDcs();
+        DcMeta dcMeta = dcs.get(dc);
+        if (null == dcMeta) return Collections.emptyList();
+        String zone = dcMeta.getZone();
+        return dcs.values().stream().filter(dcMeta1 -> dcMeta1.getZone().equalsIgnoreCase(zone)).map(DcMeta::getId).collect(Collectors.toList());
+    }
+
     @VisibleForTesting
     public AbstractMetaCache setMeta(Pair<XpipeMeta, XpipeMetaManager> meta) {
         this.meta = meta;

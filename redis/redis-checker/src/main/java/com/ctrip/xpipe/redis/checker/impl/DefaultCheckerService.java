@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.impl;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
@@ -55,5 +56,10 @@ public class DefaultCheckerService extends AbstractService implements CheckerSer
     @Override
     public Map<HostPort, HealthStatusDesc> getAllInstanceHealthStatus() {
         return restTemplate.getForObject(host + PATH_GET_ALL_INSTANCE_HEALTH_STATUS, AllInstanceHealthStatus.class);
+    }
+
+    @Override
+    public CommandFuture<Boolean> connect(int connectTimeoutMilli) {
+        throw new UnsupportedOperationException();
     }
 }

@@ -31,12 +31,16 @@ public class TcpPortCheckCommand extends AbstractCommand<Boolean> {
     private Bootstrap b = new Bootstrap();
 
     public TcpPortCheckCommand(String host, int port) {
+        this(host, port, CHECK_TIMEOUT_MILLI);
+    }
+
+    public TcpPortCheckCommand(String host, int port, int connectTimeoutMilli) {
         this.host = host;
         this.port = port;
         this.b.group(nioEventLoopGroup);
         this.b.option(ChannelOption.ALLOCATOR, UnpooledByteBufAllocator.DEFAULT);
         this.b.channel(NioSocketChannel.class);
-        this.b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CHECK_TIMEOUT_MILLI);
+        this.b.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMilli);
 
         this.b.handler(new ChannelInitializer<SocketChannel>() {
             @Override

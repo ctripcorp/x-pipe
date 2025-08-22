@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.CheckerService;
@@ -10,9 +11,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatu
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
+import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -87,6 +88,29 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return new ArrayList<>(loadAllConsoleServices().values());
     }
 
+    @Override
+    public Map<String, Boolean> getAllDcIsolatedCheckResult() {
+        Map<String, Boolean> result = new HashMap<>();
+        Map<String, ConsoleService> consoleServiceMap = loadAllConsoleServices();
+        consoleServiceMap.forEach((key, value) -> result.put(key, value.getInnerDcIsolated()));
+        return result;
+    }
+
+    @Override
+    public Boolean getDcIsolatedCheckResult(String dcId) {
+        ConsoleService consoleService = getServiceByDc(dcId);
+        if (consoleService == null) {
+            return null;
+        }
+        return consoleService.getDcIsolated();
+    }
+
+    @Override
+    public CommandFuture<Boolean> connectDc(String dc, int connectTimeoutMilli) {
+        ConsoleService consoleService = getServiceByDc(dc);
+        return consoleService.connect(connectTimeoutMilli);
+    }
+
     public List<ShardCheckerHealthCheckModel> getShardAllCheckerGroupHealthCheck(String activeDc, String dcId, String clusterId, String shardId) {
         ConsoleService service = getServiceByDc(activeDc);
         return service.getShardAllCheckerGroupHealthCheck(dcId, clusterId, shardId);
@@ -154,7 +178,7 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
                         throw new XpipeRuntimeException("unknown dc id " + dcId);
                     }
 
-                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(optionalKey.get()));
+                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(optionalKey.get()), 80);
                     services.put(upperCaseDcId, service);
                 }
             }
@@ -206,10 +230,11 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
 
         Map<String, ConsoleService> result = new HashMap<>();
 
-        for(String url : getConsoleUrls()){
+        for(HostPort hostPort : getConsoleUrls()){
+            String url = hostPort.toString();
             ConsoleService service = services.get(url);
             if (service == null) {
-                service = new DefaultConsoleService(url);
+                service = new DefaultConsoleService(hostPort.getHost(), hostPort.getPort());
                 services.put(url, service);
             }
             result.put(url, service);
@@ -217,14 +242,14 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return result;
     }
 
-    private Set<String>  getConsoleUrls(){
+    private Set<HostPort>  getConsoleUrls(){
 
-        Set<String> consoleUrls = new HashSet<>();
+        Set<HostPort> consoleUrls = new HashSet<>();
         String port = System.getProperty("server.port", "8080");
         if(leaderElector != null) {
            List<String> servers = leaderElector.getAllServers();
            for(String server : servers){
-               consoleUrls.add(server + ":" + port);
+               consoleUrls.add(new HostPort(server, Integer.parseInt(port)));
            }
         }
 

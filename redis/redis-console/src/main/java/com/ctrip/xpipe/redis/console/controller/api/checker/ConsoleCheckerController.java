@@ -3,26 +3,35 @@ package com.ctrip.xpipe.redis.console.controller.api.checker;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.*;
+import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
+import com.ctrip.xpipe.redis.checker.OuterClientCache;
+import com.ctrip.xpipe.redis.checker.PersistenceCache;
+import com.ctrip.xpipe.redis.checker.ProxyManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.model.*;
+import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
+import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
+import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
+import com.ctrip.xpipe.redis.checker.model.RedisMsg;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.checker.CheckerManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
+import com.ctrip.xpipe.redis.console.healthcheck.stability.NetworkStabilityHolder;
+import com.ctrip.xpipe.redis.console.healthcheck.stability.NetworkStabilityInspector;
 import com.ctrip.xpipe.redis.console.keeper.impl.KeeperContainerUsedInfoMsgCollector;
 import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,7 +43,10 @@ import org.springframework.web.context.request.async.DeferredResult;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -84,6 +96,12 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     private Logger logger = LoggerFactory.getLogger(ConsoleCheckerController.class);
     @Autowired
     private ConsoleConfig consoleConfig;
+
+    @Autowired
+    private NetworkStabilityHolder networkStabilityHolder;
+
+    @Autowired
+    private NetworkStabilityInspector networkStabilityInspector;
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_META)
     public String getDividedMeta(@PathVariable int index, @RequestParam(value="format", required = false) String format) {
@@ -162,6 +180,16 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_CLUSTER_ON_MIGRATION, method = RequestMethod.GET)
     public boolean isClusterOnMigration(@PathVariable String clusterName) {
         return persistenceCache.isClusterOnMigration(clusterName);
+    }
+
+    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_INNER_DC_ISOLATED, method = RequestMethod.GET)
+    public boolean isInnerNetworkIsolated() {
+        return networkStabilityInspector.isolated();
+    }
+
+    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_DC_ISOLATED, method = RequestMethod.GET)
+    public boolean isNetworkIsolated() {
+        return networkStabilityHolder.isolated();
     }
 
     ObjectMapper objectMapper = new ObjectMapper();

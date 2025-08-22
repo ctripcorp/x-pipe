@@ -1,14 +1,17 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.netty.TcpPortCheckCommand;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
+import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.core.ParameterizedTypeReference;
@@ -20,12 +23,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath.PATH_GET_DC_ISOLATED;
+import static com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath.PATH_GET_INNER_DC_ISOLATED;
+
 /**
  * @author wenchao.meng
  *         <p>
  *         Jun 07, 2017
  */
 public class DefaultConsoleService extends AbstractService implements ConsoleService{
+
+    private String host;
+
+    private int port;
 
     private String address;
 
@@ -65,18 +75,24 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String shardAllMetaUrl;
 
+    private final String innerDcIsolatedUrl;
+
+    private final String dcIsolatedUrl;
+
     private static final ParameterizedTypeReference<Map<HostPort, Long>> hostDelayTypeDef =
             new ParameterizedTypeReference<Map<HostPort, Long>>(){};
 
     private static final ParameterizedTypeReference<Map<String, Pair<HostPort, Long>>> crossMasterDelayDef =
             new ParameterizedTypeReference<Map<String, Pair<HostPort, Long>>>(){};
 
-    public DefaultConsoleService(String address){
-
-        this.address = address;
-        if(!this.address.startsWith("http://")){
-            this.address = "http://" + this.address;
+    public DefaultConsoleService(String host, int port) {
+        if (host.startsWith("http://")) {
+            this.host = host.split("http://")[1];
+        } else {
+            this.host = host;
         }
+        this.port = port;
+        this.address = "http://" + host + ":" + port;
         healthStatusUrl = String.format("%s/api/health/{ip}/{port}", this.address);
         crossRegionHealthStatusUrl = String.format("%s/api/cross/region/health/{ip}/{port}", this.address);
         allHealthStatusUrl = String.format("%s/api/health/check/status/all", this.address);
@@ -95,6 +111,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         allLocalRedisInfosUrl = String.format("%s/api/redis/info/local", this.address);
         shardAllCheckerGroupHealthCheckUrl = String.format("%s/api/shard/checker/group/health/check/{dcId}/{clusterId}/{shardId}", this.address);
         shardAllMetaUrl = String.format("%s/api/shard/meta/{dcId}/{clusterId}/{shardId}", this.address);
+        innerDcIsolatedUrl = String.format("%s%s", this.address, PATH_GET_INNER_DC_ISOLATED);
+        dcIsolatedUrl = String.format("%s%s", this.address, PATH_GET_DC_ISOLATED);
     }
 
     @Override
@@ -196,6 +214,29 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         } catch (Throwable t) {
             return Collections.emptyMap();
         }
+    }
+
+    @Override
+    public Boolean getInnerDcIsolated() {
+        return restTemplate.getForObject(innerDcIsolatedUrl, Boolean.class);
+    }
+
+    @Override
+    public Boolean getDcIsolated() {
+        return restTemplate.getForObject(dcIsolatedUrl, Boolean.class);
+    }
+
+    @Override
+    public CommandFuture<Boolean> connect(int connectTimeoutMilli) {
+        CommandFuture<Boolean> future = new DefaultCommandFuture<>();
+        new TcpPortCheckCommand(host, port, connectTimeoutMilli).execute().addListener(connectFuture -> {
+            if (connectFuture.isSuccess()) {
+                future.setSuccess(true);
+            } else {
+                future.setSuccess(false);
+            }
+        });
+        return future;
     }
 
     @Override

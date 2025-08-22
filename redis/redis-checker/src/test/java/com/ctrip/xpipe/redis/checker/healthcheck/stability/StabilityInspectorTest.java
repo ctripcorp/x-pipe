@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.stability;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
@@ -38,11 +39,14 @@ public class StabilityInspectorTest extends AbstractTest {
     @Mock
     private CheckerConfig config;
 
+    @Mock
+    private CheckerConsoleService consoleService;
+
     private StabilityInspector inspector;
 
     @Before
     public void setupStabilityInspectorTest() {
-        inspector = new StabilityInspector(collector, metaCache, config);
+        inspector = new StabilityInspector(collector, metaCache, config, consoleService);
 
         when(metaCache.getDc(any())).thenReturn(FoundationService.DEFAULT.getDataCenter());
         when(metaCache.getActiveDc(any(HostPort.class))).thenReturn(FoundationService.DEFAULT.getDataCenter());
@@ -55,7 +59,7 @@ public class StabilityInspectorTest extends AbstractTest {
 
     @Test
     public void testBecomeUnstable() {
-        inspector.setStable(true);
+        inspector.setSiteStable(true);
         when(collector.getAllCachedState()).thenReturn(mockStates(HEALTH_STATE.DOWN, HEALTH_STATE.DOWN, HEALTH_STATE.DOWN, HEALTH_STATE.DOWN));
 
         inspector.inspect();
@@ -66,7 +70,7 @@ public class StabilityInspectorTest extends AbstractTest {
 
     @Test
     public void testBecomeStable() {
-        inspector.setStable(false);
+        inspector.setSiteStable(false);
         when(collector.getAllCachedState()).thenReturn(mockStates(HEALTH_STATE.HEALTHY, HEALTH_STATE.HEALTHY, HEALTH_STATE.HEALTHY, HEALTH_STATE.HEALTHY));
 
         inspector.inspect();
@@ -77,7 +81,7 @@ public class StabilityInspectorTest extends AbstractTest {
 
     @Test
     public void testHalfDown() {
-        inspector.setStable(true);
+        inspector.setSiteStable(true);
         when(collector.getAllCachedState()).thenReturn(mockStates(HEALTH_STATE.HEALTHY, HEALTH_STATE.HEALTHY, HEALTH_STATE.DOWN, HEALTH_STATE.DOWN));
 
         IntStream.range(0, 100).forEach(i -> inspector.inspect());
@@ -86,7 +90,7 @@ public class StabilityInspectorTest extends AbstractTest {
 
     @Test
     public void testHealthStateChangeTimeToTime() {
-        inspector.setStable(true);
+        inspector.setSiteStable(true);
         IntStream.range(0, 100).forEach(i -> {
             if (0 == i % 2) {
                 when(collector.getAllCachedState()).thenReturn(mockStates(HEALTH_STATE.HEALTHY, HEALTH_STATE.HEALTHY, HEALTH_STATE.HEALTHY, HEALTH_STATE.HEALTHY));
@@ -101,7 +105,7 @@ public class StabilityInspectorTest extends AbstractTest {
 
     @Test
     public void testNoInterestedAndReset() {
-        inspector.setStable(false);
+        inspector.setSiteStable(false);
         when(collector.getAllCachedState()).thenReturn(Collections.emptyMap());
 
         inspector.inspect();
@@ -113,7 +117,7 @@ public class StabilityInspectorTest extends AbstractTest {
     @Test
     // healthStatus may remain after active dc loss
     public void testUnexpectedHealthStatusAndReset() {
-        inspector.setStable(false);
+        inspector.setSiteStable(false);
         when(metaCache.getActiveDc(any(HostPort.class))).thenReturn("otherDc");
         when(collector.getAllCachedState()).thenReturn(mockStates(HEALTH_STATE.DOWN, HEALTH_STATE.DOWN, HEALTH_STATE.DOWN, HEALTH_STATE.DOWN));
 

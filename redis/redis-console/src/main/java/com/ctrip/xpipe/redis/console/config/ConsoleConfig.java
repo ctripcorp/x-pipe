@@ -55,6 +55,14 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getQuorum();
 
+	int getIsolateAfterRounds();
+
+	int getIsolateRecoverAfterRounds();
+
+	boolean checkDcNetwork();
+
+	String delegateDc();
+
 	int getRedisConfCheckIntervalMilli();
 
 	int getSentinelCheckIntervalMilli();
