@@ -135,13 +135,7 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
                         getLogger().debug("[run][send ack]{}", ((ApplierGapAllowSync) currentSync).toString());
                     }
 
-                    Command<Object> command = null;
-                    // 定时发送 repl 避免处理 rdb 时间太长导致被 idle 检测给干掉了
-                    if(onContinueCommand) {
-                        command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.ACK, scheduled, String.valueOf(offsetRecorder.get()));
-                    } else {
-                        command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.CAPA, scheduled, CAPA.EOF.toString());
-                    }
+                    Command<Object> command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.ACK, scheduled, String.valueOf(offsetRecorder.get()));
                     command.execute();
                 } catch (Throwable t) {
                     logger.error("[scheduleReplconf] sync {} error", currentSync, t);
@@ -152,16 +146,19 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
         }, 0, 1000, TimeUnit.MILLISECONDS);
     }
 
+    protected void sendCapa() {
+        Command<Object> command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.CAPA, scheduled, CAPA.EOF.toString());
+        command.execute();
+    }
+
     @Override
     public void doOnFullSync(String replId, long replOffset) {
         this.rdbParser.reset();
-        scheduleReplconf();
     }
 
     @Override
     public void doOnXFullSync(GtidSet lost, long replOffset) {
         this.rdbParser.reset();
-        scheduleReplconf();
     }
 
     @Override
