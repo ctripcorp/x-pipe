@@ -290,8 +290,7 @@ public class InfoHandler extends AbstractCommandHandler {
 			sb.append("repl_backlog_active:1" + RedisProtocol.CRLF);
 			sb.append("repl_backlog_first_byte_offset:" + beginOffset+ RedisProtocol.CRLF);
 			try {
-				long endOffset = keeperRepl.backlogBeginOffset();
-				sb.append("master_repl_offset:" + endOffset + RedisProtocol.CRLF);
+				long endOffset = keeperRepl.backlogEndOffset();
 				sb.append("repl_backlog_size:" + (endOffset - beginOffset + 1) + RedisProtocol.CRLF);
 				sb.append("repl_backlog_histlen:" + (endOffset - beginOffset + 1)+ RedisProtocol.CRLF);
 			} catch (Throwable ex) {
