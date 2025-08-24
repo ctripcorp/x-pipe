@@ -133,10 +133,10 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
                     if(endpoint == null) {
                         return;
                     }
+
                     NettyClient nettyClient = ((ApplierGapAllowSync) currentSync).getNettyClient();
-                    if(currentSync != null) {
-                        getLogger().debug("[run][send ack]{}", nettyClient.channel().toString());
-                    }
+
+                    getLogger().debug("[run][send ack]{}", nettyClient.channel().toString());
 
                     Command<Object> command = new Replconf(new FixedObjectPool<>(nettyClient), Replconf.ReplConfType.ACK, scheduled, String.valueOf(offsetRecorder.get()));
                     command.execute();
