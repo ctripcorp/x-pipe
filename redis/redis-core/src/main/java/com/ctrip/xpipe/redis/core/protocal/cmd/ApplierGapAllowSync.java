@@ -1,10 +1,15 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.pool.ReturnObjectException;
 import com.ctrip.xpipe.redis.core.protocal.ApplierSyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
@@ -33,11 +38,15 @@ public class ApplierGapAllowSync extends AbstractGapAllowedSync {
 
     List<ApplierSyncObserver> observers;
 
+    private NettyClient nettyClient;
+
+    private int listenPort;
+
 
     public ApplierGapAllowSync(SimpleObjectPool<NettyClient> objectPool, ScheduledExecutorService scheduled, AtomicReference<String> replId,
                                AtomicReference<GtidSet> execGtidSet, AtomicLong offsetRecorder, RdbParser<?> rdbParser,
                                AtomicReference<GtidSet> startGtidSet, AtomicReference<GtidSet> lostGtidSet,
-                               AtomicReference<String> proto) {
+                               AtomicReference<String> proto, int listenPort) {
         super(objectPool, true, scheduled);
         this.replId = replId;
         this.execGtidSet = execGtidSet;
@@ -47,6 +56,7 @@ public class ApplierGapAllowSync extends AbstractGapAllowedSync {
         this.startGtidSet = startGtidSet;
         this.lostGtidSet = lostGtidSet;
         this.replProto = proto;
+        this.listenPort = listenPort;
     }
 
     public void addObserver(ApplierSyncObserver observer) {
@@ -173,7 +183,62 @@ public class ApplierGapAllowSync extends AbstractGapAllowedSync {
         for (ApplierSyncObserver observer : observers) {
             observer.doOnXContinue(repl.getGtidLost(), repl.getReplOff());
         }
+    }
 
+    @Override
+    protected void afterCommandExecute(NettyClient nettyClient) {
+        // temporary solution, handle channel evicted by channel pool
+
+        this.nettyClient = nettyClient;
+
+        replConfListeningPort().execute().addListener(new CommandFutureListener<Object>() {
+            @Override
+            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                if (!commandFuture.isSuccess()) {
+                    close();
+                }
+            }
+        });
+
+        nettyClient.channel().closeFuture().addListener(closeFuture -> {
+            if (!future().isDone()) {
+                future().setFailure(new XpipeRuntimeException("channel closed"));
+            }
+
+            try {
+                getClientPool().returnObject(nettyClient);
+            } catch (ReturnObjectException e) {
+                getLogger().error("[afterCommandExecute]", e);
+            }
+        });
+
+        future().addListener(new CommandFutureListener<Object>() {
+            @Override
+            public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
+                if (nettyClient.channel().isOpen()) {
+                    nettyClient.channel().close();
+                }
+
+                if (isPoolCreated()) {
+                    LifecycleHelper.stopIfPossible(getClientPool());
+                    LifecycleHelper.disposeIfPossible(getClientPool());
+                }
+            }
+        });
+    }
+
+    protected Command<Object> replConfListeningPort() {
+
+        return new Replconf(getClientPool(), Replconf.ReplConfType.LISTENING_PORT, scheduled,
+                String.valueOf(listenPort));
+    }
+
+    @Override
+    public void close() {
+        super.close();
+        if (nettyClient != null && nettyClient.channel() != null) {
+            nettyClient.channel().close();
+        }
     }
 
 }

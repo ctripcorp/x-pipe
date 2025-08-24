@@ -50,7 +50,7 @@ public class DefaultGapAllowReplication extends AbstractSyncReplication implemen
         sendCapa();
         rdbParser.registerListener(dispatcher);
         ApplierGapAllowSync sync = new ApplierGapAllowSync(objectPool, scheduled, replId, execGtidSet, offsetRecorder, rdbParser,
-                startGtidSet, lostGtidSet, replProto);
+                startGtidSet, lostGtidSet, replProto, applierServer.getListeningPort());
         sync.addObserver(dispatcher);
         sync.addObserver(this);
         this.currentSync = sync;
