@@ -47,7 +47,6 @@ public class DefaultGapAllowReplication extends AbstractSyncReplication implemen
     @Override
     public Command<Object> connectCommand() throws Exception {
         SimpleObjectPool<NettyClient> objectPool = pool.getKeyPool(endpoint);
-        sendCapa();
         rdbParser.registerListener(dispatcher);
         ApplierGapAllowSync sync = new ApplierGapAllowSync(objectPool, scheduled, replId, execGtidSet, offsetRecorder, rdbParser,
                 startGtidSet, lostGtidSet, replProto, applierServer.getListeningPort());

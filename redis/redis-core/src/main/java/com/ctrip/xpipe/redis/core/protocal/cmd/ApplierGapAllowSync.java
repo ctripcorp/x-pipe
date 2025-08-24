@@ -228,7 +228,7 @@ public class ApplierGapAllowSync extends AbstractGapAllowedSync {
     }
 
     protected Command<Object> replConfListeningPort() {
-
+        log.info("send replof listen port: {}", listenPort);
         return new Replconf(getClientPool(), Replconf.ReplConfType.LISTENING_PORT, scheduled,
                 String.valueOf(listenPort));
     }

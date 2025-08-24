@@ -146,11 +146,6 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
         }, 0, 1000, TimeUnit.MILLISECONDS);
     }
 
-    protected void sendCapa() {
-        Command<Object> command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.CAPA, scheduled, CAPA.EOF.toString());
-        command.execute();
-    }
-
     @Override
     public void doOnFullSync(String replId, long replOffset) {
         this.rdbParser.reset();
