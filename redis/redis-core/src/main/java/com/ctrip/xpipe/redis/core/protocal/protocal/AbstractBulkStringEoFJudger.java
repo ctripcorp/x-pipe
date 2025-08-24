@@ -113,12 +113,6 @@ public abstract class AbstractBulkStringEoFJudger implements BulkStringEofJudger
 			
 			System.arraycopy(lastData, dataLen, lastData, 0, remLen);
 			used.readBytes(lastData, remLen, dataLen);
-
-			if(raw.slice().toString(Charset.defaultCharset()).contains("ea049eb68b631407bab2a85266934d971b4fc250")) {
-				log.info(raw.slice().toString(Charset.defaultCharset()));
-				log.info("last_data:" + lastData);
-			}
-
 			boolean ends = Arrays.equals(eofmark, lastData);
 			if(ends){
 				alreadyFinished = true;

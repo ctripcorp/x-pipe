@@ -137,7 +137,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void endReadRdb() {
-        logger.info("[endReadRdb] start {}, lost: {}, offset: {} ", startGtidStr, lostGtidStr, offsetRecorder);
+        logger.info("[endReadRdb] start {}, lost: {}, offset: {} ", startGtidStr, lostGtidStr, startOffset);
         this.offsetRecorder.set(startOffset);
         this.lostGtidSet.set(new GtidSet(lostGtidStr));
         this.startGtidSet.set(new GtidSet(startGtidStr));

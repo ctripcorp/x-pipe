@@ -226,4 +226,8 @@ public class ApplierGapAllowSync extends AbstractGapAllowedSync {
         }
     }
 
+    public NettyClient getNettyClient() {
+        return nettyClient;
+    }
+
 }

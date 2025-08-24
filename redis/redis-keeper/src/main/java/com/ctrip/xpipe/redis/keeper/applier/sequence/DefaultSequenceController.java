@@ -64,7 +64,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     private long bytesPerSecondThresholdValue;
 
-    public static final long DEFAULT_QPS_THRESHOLD = 5000;
+    public static final long DEFAULT_QPS_THRESHOLD = 50000000;
 
     // 100MB
     public static final long DEFAULT_BYTES_PER_SECOND_THRESHOLD = 100 * 1024 * 1024;

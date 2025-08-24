@@ -4,6 +4,8 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.protocal.ApplierSyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
@@ -131,11 +133,12 @@ public abstract class AbstractSyncReplication extends StubbornNetworkCommunicati
                     if(endpoint == null) {
                         return;
                     }
+                    NettyClient nettyClient = ((ApplierGapAllowSync) currentSync).getNettyClient();
                     if(currentSync != null) {
-                        getLogger().debug("[run][send ack]{}", ((ApplierGapAllowSync) currentSync).toString());
+                        getLogger().debug("[run][send ack]{}", nettyClient.channel().toString());
                     }
 
-                    Command<Object> command = new Replconf(pool.getKeyPool(endpoint), Replconf.ReplConfType.ACK, scheduled, String.valueOf(offsetRecorder.get()));
+                    Command<Object> command = new Replconf(new FixedObjectPool<>(nettyClient), Replconf.ReplConfType.ACK, scheduled, String.valueOf(offsetRecorder.get()));
                     command.execute();
                 } catch (Throwable t) {
                     logger.error("[scheduleReplconf] sync {} error", currentSync, t);
