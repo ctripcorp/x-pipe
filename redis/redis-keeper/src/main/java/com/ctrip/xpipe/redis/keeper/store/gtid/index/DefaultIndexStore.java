@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.gtid.GtidSet;
@@ -167,6 +168,7 @@ public class DefaultIndexStore implements IndexStore {
             }
             long remainBytes = this.streamCommandReader.getRemainLength();
             if(remainBytes > 0) {
+                EventMonitor.DEFAULT.logAlertEvent("TRUNCATE_CMD_FILE");
                 controllableFile.setLength((int)controllableFile.size() - (int) remainBytes);
                 this.streamCommandReader.relaseRemainBuf();
             }
