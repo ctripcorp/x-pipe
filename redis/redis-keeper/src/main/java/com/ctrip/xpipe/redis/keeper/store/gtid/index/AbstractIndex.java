@@ -111,4 +111,8 @@ public abstract class AbstractIndex {
     public long getStartOffset() {
         return extractOffset(fileName);
     }
+
+    public String getBaseDir() {
+        return baseDir;
+    }
 }

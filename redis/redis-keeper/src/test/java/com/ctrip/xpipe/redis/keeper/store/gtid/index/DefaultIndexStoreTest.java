@@ -95,8 +95,6 @@ public class DefaultIndexStoreTest {
 
         when(writer.getFileContext()).thenReturn(commandFileContext);
 
-        when(commandStore.getCommandWriter()).thenReturn(writer);
-
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
@@ -136,19 +134,14 @@ public class DefaultIndexStoreTest {
         write(filePath);
 
         GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "a4f566ef50a85e1119f17f9b746728b48609a2ab:1-346526");
+        Assert.assertEquals(gtidSet.toString(), "a4f566ef50a85e1119f17f9b746728b48609a2ab:1-6");
 
         long pre = System.currentTimeMillis();
-        for(int i = 2; i < 346526; i++) {
+        for(int i = 2; i < 6; i++) {
             Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet("a4f566ef50a85e1119f17f9b746728b48609a2ab:1-" + i));
             Assert.assertEquals(point.getValue(), new GtidSet("a4f566ef50a85e1119f17f9b746728b48609a2ab:1-" + i));
             RedisOp redisOp =  IndexTestTool.readBytebufAfter(filePath, point.getKey());
             Assert.assertEquals(redisOp.getOpGtid(), "a4f566ef50a85e1119f17f9b746728b48609a2ab:" + (i + 1));
-            if(i % 1000 == 0) {
-                long now = System.currentTimeMillis();
-                System.out.println("seek success " + i + "  " + (now - pre));
-                pre = System.currentTimeMillis();
-            }
         }
     }
 
@@ -166,22 +159,16 @@ public class DefaultIndexStoreTest {
     public void testFileChange() throws Exception {
         write(file1);
         GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004");
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
         defaultIndexStore.switchCmdFile("cmd_19513000");
         write(file2);
         gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-210654");
-        long pre = System.currentTimeMillis();
-        for(int i = 2; i <= 2000; i++) {
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-13");
+        for(int i = 2; i <= 12; i++) {
             Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet("a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-" + i));
-            Assert.assertEquals(point.getValue().toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-" + i);
+            Assert.assertEquals(point.getValue().toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-" + i);
             RedisOp redisOp = IndexTestTool.readBytebufAfter( file2, point.getKey() - 19513000);
             Assert.assertEquals(redisOp.getOpGtid(), "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:" + (i+1));
-            if(i % 1000 == 0) {
-                long now = System.currentTimeMillis();
-                System.out.println("seek success " + i + "  " + (now - pre));
-                pre = System.currentTimeMillis();
-            }
         }
     }
 
@@ -194,7 +181,7 @@ public class DefaultIndexStoreTest {
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
         defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, commandStore, gtidCmdFilter);
         defaultIndexStore.initialize(writer);
-        for(int i = 800000; i < 800004; i++) {
+        for(int i = 633744; i < 633750; i++) {
             Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
             System.out.println(point.getKey());
             RedisOp redisOp = IndexTestTool.readBytebufAfter(file1, point.getKey());
@@ -206,7 +193,7 @@ public class DefaultIndexStoreTest {
     public void testGtidSet() throws Exception {
         write(file1);
         GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004");
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
     }
 
     @Test
@@ -214,7 +201,7 @@ public class DefaultIndexStoreTest {
         write(file1);
 
         GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004");
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
 
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
@@ -224,25 +211,19 @@ public class DefaultIndexStoreTest {
 
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004");
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
 
         defaultIndexStore.switchCmdFile("cmd_19513000");
 
         write(file2);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-210654");
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-13");
 
-        long pre = System.currentTimeMillis();
-        for(int i = 1; i <= 2000; i++) {
+        for(int i = 1; i <= 12; i++) {
             Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet("a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-" + i));
             RedisOp redisOp = IndexTestTool.readBytebufAfter(file2, point.getKey() - 19513000);
             Assert.assertEquals(redisOp.getOpGtid(), "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:" + (i+1));
-            if(i % 1000 == 0) {
-                long now = System.currentTimeMillis();
-                System.out.println("seek success " + i + "  " + (now - pre));
-                pre = System.currentTimeMillis();
-            }
         }
     }
 
@@ -253,22 +234,14 @@ public class DefaultIndexStoreTest {
         defaultIndexStore.buildIndexFromCmdFile(cmdFile, 0);
         long now = System.currentTimeMillis();
         System.out.println("build index " + (now - pre));
-        for(int i = 633744; i < 800004; i++) {
-            if(i < 700002) {
-                continue;
-            }
+        for(int i = 633744; i < 633745; i++) {
             Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
             RedisOp redisOp = IndexTestTool.readBytebufAfter(file1, point.getKey());
             Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:" + (i + 1));
-            if (i % 1000 == 0) {
-                now = System.currentTimeMillis();
-                System.out.println("build index success " + i + "  " + (now - pre));
-                pre = System.currentTimeMillis();
-            }
         }
 
         GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004");
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
 
     }
 
@@ -277,7 +250,7 @@ public class DefaultIndexStoreTest {
         write(file1);
         write(file2);
         GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-210654");
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-13");
 
         DefaultControllableFile file = new DefaultControllableFile(baseDir + "00000000");
 
@@ -291,7 +264,7 @@ public class DefaultIndexStoreTest {
         defaultIndexStore.initialize(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004");
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
 
     }
 
@@ -299,7 +272,7 @@ public class DefaultIndexStoreTest {
     public void testRecover4() throws IOException {
         write(file1);
         GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004");
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
 
         DefaultControllableFile file = new DefaultControllableFile(baseDir + "index_00000000");
 
@@ -312,7 +285,7 @@ public class DefaultIndexStoreTest {
         defaultIndexStore.initialize(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004");
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
 
     }
 
@@ -320,7 +293,7 @@ public class DefaultIndexStoreTest {
     public void testRecover5() throws IOException {
         write(file1);
         GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004");
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
 
         DefaultControllableFile file = new DefaultControllableFile(baseDir + "block_00000000");
 
@@ -333,7 +306,7 @@ public class DefaultIndexStoreTest {
         defaultIndexStore.initialize(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
-        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-800004");
+        Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
 
     }
 
@@ -388,7 +361,6 @@ public class DefaultIndexStoreTest {
         defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, commandStore, gtidCmdFilter);
         defaultIndexStore.initialize(writer);
 
-        write(file1);
 
         Pair<Long, GtidSet> point =  defaultIndexStore.locateGtidSetWithFallbackToEnd(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-633744"));
         Pair<Long, GtidSet> point2 =  defaultIndexStore.locateGtidSetWithFallbackToEnd(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-633745"));

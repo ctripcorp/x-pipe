@@ -92,6 +92,8 @@ import org.junit.runners.Suite.SuiteClasses;
         GtidCmdOneSegmentReaderTest.class,
         GtidSetStreamCommandReaderTest.class,
 
+        DefaultIndexStoreTest.class,
+
         DiskHealthCheckerTest.class,
 
         RordbReplicationSupportTest.class,

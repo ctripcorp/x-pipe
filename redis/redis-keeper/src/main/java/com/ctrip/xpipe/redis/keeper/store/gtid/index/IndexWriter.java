@@ -84,6 +84,9 @@ public class IndexWriter extends AbstractIndex implements Closeable {
                 setBlockWriter(null);
                 this.indexEntry = null;
                 defaultIndexStore.buildIndexFromCmdFile(super.getFileName(), index.getCmdStartOffset());
+            } else {
+                this.indexEntry = null;
+                defaultIndexStore.buildIndexFromCmdFile(super.getFileName(), 0);
             }
         } finally {
             if(cmdFile != null) {
