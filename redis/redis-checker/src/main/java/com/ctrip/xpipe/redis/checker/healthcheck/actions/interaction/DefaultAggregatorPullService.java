@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.migration.OuterClientService.HostPortDcStatus;
@@ -23,10 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -52,7 +50,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
 
     private OuterClientService outerClientService = OuterClientService.DEFAULT;
     private static final Logger logger =  LoggerFactory.getLogger(DefaultAggregatorPullService.class);
-
+    private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
     private Executor executors;
 
     @PostConstruct
@@ -100,6 +98,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
 
     @Override
     public void doMarkInstances(String clusterName, String activeDc, Set<HostPortDcStatus> instances) throws OuterClientException {
+        setSuspectIfNeeded(instances);
         alertMarkInstance(clusterName, instances);
         Map<String, Integer> dcInstancesCnt = metaCache.getClusterCntMap(clusterName);
         MarkInstanceRequest markInstanceRequest = new MarkInstanceRequest(instances, clusterName, activeDc, dcInstancesCnt);
@@ -108,6 +107,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
 
     @Override
     public void doMarkInstancesIfNoModifyFor(String clusterName, String activeDc, Set<HostPortDcStatus> instances, long seconds) throws OuterClientException {
+        setSuspectIfNeeded(instances);
         alertMarkInstance(clusterName, instances);
         Map<String, Integer> dcInstancesCnt = metaCache.getClusterCntMap(clusterName);
         MarkInstanceRequest markInstanceRequest = new MarkInstanceRequest(instances, clusterName, activeDc, dcInstancesCnt, (int) seconds);
@@ -161,6 +161,9 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
 
         try {
             for (HostPortDcStatus instance : instances) {
+                if (instance.isSuspect())
+                    continue;
+
                 if (instance.isCanRead()) {
                     alertManager.alert(clusterName, null,
                             new HostPort(instance.getHost(), instance.getPort()), ALERT_TYPE.MARK_INSTANCE_UP, "Mark Instance Up");
@@ -172,6 +175,15 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
         } catch (Throwable th) {
             logger.info("[alertMarkInstance][{}] fail", clusterName, th);
         }
+    }
+
+    private void setSuspectIfNeeded(Set<HostPortDcStatus> instances) {
+        instances.forEach(instance -> {
+            if (!instance.isCanRead() && metaCache.isCrossRegion(currentDc, instance.getDc())) {
+                instance.setCanRead(true);
+                instance.setSuspect(true);
+            }
+        });
     }
 
     protected class QueryXPipeInstanceStatusCmd extends AbstractCommand<XPipeInstanceHealthHolder> {
@@ -217,7 +229,17 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
 
         @Override
         protected void doExecute() throws Throwable {
-            future().setSuccess(outerClientService.batchQueryInstanceStatus(cluster, instances));
+            Map<HostPort, OuterClientService.OutClientInstanceStatus> outClientInstanceStatus = outerClientService.batchQueryInstanceStatus(cluster, instances);
+            Map<HostPort, Boolean> localInstanceStatus = new HashMap<>();
+            for (Map.Entry<HostPort, OuterClientService.OutClientInstanceStatus> entry : outClientInstanceStatus.entrySet()) {
+                OuterClientService.OutClientInstanceStatus outStatus = entry.getValue();
+                if (outStatus.isSuspect() && metaCache.isCrossRegion(currentDc, entry.getValue().getEnv())) {
+                    localInstanceStatus.put(entry.getKey(), false);
+                } else {
+                    localInstanceStatus.put(entry.getKey(), outStatus.isCanRead());
+                }
+            }
+            future().setSuccess(localInstanceStatus);
         }
 
         @Override

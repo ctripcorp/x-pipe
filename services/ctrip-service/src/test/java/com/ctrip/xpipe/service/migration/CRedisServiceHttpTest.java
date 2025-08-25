@@ -3,12 +3,11 @@ package com.ctrip.xpipe.service.migration;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.migration.OuterClientService;
-import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
-import com.ctrip.xpipe.service.AbstractServiceTest;
 import com.ctrip.xpipe.metric.MockMetricProxy;
+import com.ctrip.xpipe.service.AbstractServiceTest;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -59,62 +58,6 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
     public void afterCRedisServiceHttpTest() throws Exception {
         credisService.setMetricProxy(MetricProxy.DEFAULT);
         webServer.shutdown();
-    }
-
-    @Test
-    public void testMarkInstanceDown() throws Exception {
-        webServer.enqueue(new MockResponse().setBody("{\n" +
-                "    \"success\": true,\n" +
-                "    \"message\": \"success\"" +
-                "}")
-                .setHeader("Content-Type", "application/json"));
-
-        ClusterShardHostPort clusterShardHostPort = new ClusterShardHostPort("test-cluster", "shard1",
-                new HostPort("10.0.0.1", 6379));
-        credisService.markInstanceDown(clusterShardHostPort);
-
-        Assert.assertEquals(1, webServer.getRequestCount());
-
-        RecordedRequest request = webServer.takeRequest();
-        Assert.assertEquals("/keeperApi/switchReadStatus?clusterName=test-cluster&ip=10.0.0.1&port=6379&canRead=false",
-                request.getPath());
-        Assert.assertEquals("POST", request.getMethod());
-
-        MetricData metricData = metricProxy.poll();
-        Assert.assertNotNull(metricData);
-        Assert.assertEquals("call.credis", metricData.getMetricType());
-        Assert.assertEquals("markInstanceDown", metricData.getTags().get("api"));
-        Assert.assertEquals("test-cluster", metricData.getClusterName());
-        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
-        Assert.assertNull(metricProxy.poll());
-    }
-
-    @Test
-    public void testMarkInstanceDownWithActiveDc() throws Exception {
-        webServer.enqueue(new MockResponse().setBody("{\n" +
-                "    \"success\": true,\n" +
-                "    \"message\": \"success\"" +
-                "}")
-                .setHeader("Content-Type", "application/json"));
-
-        ClusterShardHostPort clusterShardHostPort = new ClusterShardHostPort("test-cluster", "shard1",
-                "jq", new HostPort("10.0.0.1", 6379));
-        credisService.markInstanceDown(clusterShardHostPort);
-
-        Assert.assertEquals(1, webServer.getRequestCount());
-
-        RecordedRequest request = webServer.takeRequest();
-        Assert.assertEquals("/keeperApi/switchReadStatus?clusterName=test-cluster&ip=10.0.0.1&port=6379&canRead=false&activeDc=jq",
-                request.getPath());
-        Assert.assertEquals("POST", request.getMethod());
-
-        MetricData metricData = metricProxy.poll();
-        Assert.assertNotNull(metricData);
-        Assert.assertEquals("call.credis", metricData.getMetricType());
-        Assert.assertEquals("markInstanceDown", metricData.getTags().get("api"));
-        Assert.assertEquals("test-cluster", metricData.getClusterName());
-        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
-        Assert.assertNull(metricProxy.poll());
     }
 
     @Test
@@ -242,33 +185,6 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
     }
 
     @Test
-    public void testMarkInstanceDownIfNoModifyFor() throws Exception {
-        webServer.enqueue(new MockResponse().setBody("{\n" +
-                "    \"success\": true,\n" +
-                "    \"message\": \"success\"" +
-                "}")
-                .setHeader("Content-Type", "application/json"));
-
-        ClusterShardHostPort clusterShardHostPort = new ClusterShardHostPort("cluster1", "shard1",
-                new HostPort("10.0.0.1", 6379));
-        credisService.markInstanceDownIfNoModifyFor(clusterShardHostPort, 60);
-
-        Assert.assertEquals(1, webServer.getRequestCount());
-        RecordedRequest req = webServer.takeRequest();
-        Assert.assertEquals("/keeperApi/switchReadStatus?clusterName=cluster1&ip=10.0.0.1&port=6379&canRead=false&noModifySeconds=60",
-                req.getPath());
-        Assert.assertEquals("POST", req.getMethod());
-
-        MetricData metricData = metricProxy.poll();
-        Assert.assertNotNull(metricData);
-        Assert.assertEquals("call.credis", metricData.getMetricType());
-        Assert.assertEquals("markInstanceDownIfNoModify", metricData.getTags().get("api"));
-        Assert.assertEquals("cluster1", metricData.getClusterName());
-        Assert.assertEquals("SUCCESS", metricData.getTags().get("status"));
-        Assert.assertNull(metricProxy.poll());
-    }
-
-    @Test
     public void testGetActiveDcClusters() throws Exception {
         OuterClientService.ClusterInfo cluster1 = mockClusterInfo("cluster1", "jq", "oy", "10.0.0.1");
         OuterClientService.ClusterInfo cluster2 = mockClusterInfo("cluster2", "jq", "oy", "10.0.0.2");
@@ -331,7 +247,7 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
             add(new HostPort("10.118.79.225", 21051));
             add(new HostPort("10.118.79.225", 21052));
         }};
-        Map<HostPort, Boolean> resp =credisService.batchQueryInstanceStatus("cluster1", instances);
+        Map<HostPort, OuterClientService.OutClientInstanceStatus> resp =credisService.batchQueryInstanceStatus("cluster1", instances);
         Assert.assertEquals(new HashMap<HostPort, Boolean>(){{
             put(new HostPort("10.118.79.225", 21050), true);
             put(new HostPort("10.118.79.225", 21051), false);

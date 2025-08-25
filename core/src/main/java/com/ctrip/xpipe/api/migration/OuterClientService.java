@@ -2,7 +2,6 @@ package com.ctrip.xpipe.api.migration;
 
 import com.ctrip.xpipe.api.lifecycle.Ordered;
 import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -26,17 +25,7 @@ public interface OuterClientService extends Ordered{
 
 	String serviceName();
 
-	void markInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
-
-	void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException;
-
-	boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
-
-	Map<HostPort, Boolean> batchQueryInstanceStatus(String cluster, Set<HostPort> instances) throws OuterClientException;
-
-	void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException;
-
-	void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException;
+	Map<HostPort, OutClientInstanceStatus> batchQueryInstanceStatus(String cluster, Set<HostPort> instances) throws OuterClientException;
 
 	void batchMarkInstance(MarkInstanceRequest markInstanceRequest) throws OuterClientException;
 
@@ -808,6 +797,7 @@ public interface OuterClientService extends Ordered{
 		private int port;
 		private String dc;
 		private boolean canRead;
+		private boolean suspect;
 
 		public HostPortDcStatus() {
 		}
@@ -851,9 +841,17 @@ public interface OuterClientService extends Ordered{
 			this.canRead = canRead;
 		}
 
+		public boolean isSuspect() {
+			return suspect;
+		}
+
+		public void setSuspect(boolean suspect) {
+			this.suspect = suspect;
+		}
+
 		@Override
 		public String toString() {
-			return String.format("{%s:%d-%s|%s}", host, port, dc, canRead);
+			return String.format("{%s:%d-%s|%s|%s}", host, port, dc, canRead, suspect);
 		}
 	}
 
@@ -939,6 +937,62 @@ public interface OuterClientService extends Ordered{
 				}
 			}
 			return InstanceStatus.INACTIVE;
+		}
+	}
+
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	class OutClientInstanceStatus {
+
+		private boolean canRead;
+		private String  env;
+		private String IPAddress;
+		private int port;
+		private boolean suspect;
+
+		public int getPort() {
+			return port;
+		}
+
+		public void setPort(int port) {
+			this.port = port;
+		}
+
+		public String getIPAddress() {
+
+			return IPAddress;
+		}
+
+		public void setIPAddress(String IPAddress) {
+			this.IPAddress = IPAddress;
+		}
+
+		public String getEnv() {
+			return env;
+		}
+
+		public void setEnv(String env) {
+			this.env = env;
+		}
+
+		public boolean isCanRead() {
+			return canRead;
+		}
+
+		public void setCanRead(boolean canRead) {
+			this.canRead = canRead;
+		}
+
+		public boolean isSuspect() {
+			return suspect;
+		}
+
+		public void setSuspect(boolean suspect) {
+			this.suspect = suspect;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("canRead:%s, env:%s, %s:%d, suspect:%s", canRead, env, IPAddress, port, suspect);
 		}
 	}
 
