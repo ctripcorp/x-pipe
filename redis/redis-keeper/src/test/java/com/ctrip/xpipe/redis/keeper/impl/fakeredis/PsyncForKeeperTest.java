@@ -28,7 +28,7 @@ public class PsyncForKeeperTest extends AbstractFakeRedisTest {
         RedisKeeperServer keeperServer = startRedisKeeperServerAndConnectToFakeRedis();
         waitRedisKeeperServerConnected(keeperServer);
 
-        RedisKeeperServer newKeeperServer = restartKeeperServer(keeperServer, 1, 1);
+        RedisKeeperServer newKeeperServer = restartKeeperServer(keeperServer, 1, 6);
         Assert.assertNull(newKeeperServer.getKeeperRepl().replId());
     }
 
