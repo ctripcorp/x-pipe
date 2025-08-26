@@ -1,11 +1,15 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStore;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 import io.netty.buffer.ByteBuf;
@@ -25,6 +29,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
+
+import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.BLOCK;
+import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
 
 /**
  * @author lishanglin
@@ -80,6 +87,14 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private AtomicBoolean initialized = new AtomicBoolean(false);
 
     private AtomicReference<SyncRateLimiter> rateLimiterRef = new AtomicReference<>();
+
+    private IndexStore indexStore;
+
+    private RedisOpParser redisOpParser;
+
+    private GtidCmdFilter gtidCmdFilter;
+
+    private boolean buildIndex = true;
     
     public abstract Logger getLogger();
 
@@ -87,7 +102,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                                int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
                                long commandReaderFlyingThreshold,
                                CommandReaderWriterFactory cmdReaderWriterFactory,
-                               KeeperMonitor keeperMonitor) throws IOException {
+                               KeeperMonitor keeperMonitor,RedisOpParser redisOpParser,
+                               GtidCmdFilter  gtidCmdFilter
+    ) throws IOException {
 
         this.baseDir = file.getParentFile();
         this.fileNamePrefix = file.getName();
@@ -98,6 +115,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
         this.cmdReaderWriterFactory = cmdReaderWriterFactory;
         this.commandStoreDelay = keeperMonitor.createCommandStoreDelay(this);
+        this.redisOpParser = redisOpParser;
+        this.gtidCmdFilter = gtidCmdFilter;
 
         cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
@@ -105,13 +124,16 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
+        indexStore = new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
+                this, this,  gtidCmdFilter);
     }
 
     @Override
-    public void initialize() throws Exception {
+    public void initialize() throws IOException {
         if (initialized.compareAndSet(false, true)) {
             cmdWriter.initialize();
             offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
+            indexStore.initialize(cmdWriter);
         }
     }
 
@@ -229,6 +251,20 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                     .collect(Collectors.toCollection(CopyOnWriteArrayList::new));
         }
 
+        File indexFile = new File(baseDir, INDEX + cmdFile.getName());
+        if(indexFile.exists()) {
+            if(!indexFile.delete()) {
+                getLogger().warn("[delCmdFile][{}] del index file fail", indexFile);
+            }
+        }
+
+        File blockFile = new File(baseDir, BLOCK + cmdFile.getName());
+        if(blockFile.exists()) {
+            if(!blockFile.delete()) {
+                getLogger().warn("[delCmdFile][{}] del block file fail", indexFile);
+            }
+        }
+
         return cmdFile.delete();
     }
 
@@ -246,11 +282,20 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         makeSureOpen();
 
-        cmdWriter.rotateFileIfNecessary();
+        if(buildIndex) {
+            return appendCommandsWithIndex(byteBuf);
+        } else {
+            cmdWriter.rotateFileIfNecessary();
+            return onlyAppendCommand(byteBuf);
+        }
+    }
+
+    @Override
+    public int onlyAppendCommand(ByteBuf byteBuf) throws IOException {
 
         SyncRateLimiter rateLimiter = rateLimiterRef.get();
-        if (null != rateLimiter) rateLimiter.acquire(byteBuf.readableBytes());
 
+        if (null != rateLimiter) rateLimiter.acquire(byteBuf.readableBytes());
         commandStoreDelay.beginWrite();
 
         int wrote = cmdWriter.write(byteBuf);
@@ -263,13 +308,34 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         return wrote;
     }
 
+    private int appendCommandsWithIndex(ByteBuf byteBuf) throws IOException {
+
+        // index 和 cmd 一起 rotate，这个工作交给 index store一起封装
+        indexStore.rotateFileIfNecessary();
+
+        commandStoreDelay.beginWrite();
+
+        long beginOffset = cmdWriter.totalLength() - 1;
+
+        long offset = cmdWriter.totalLength() - 1;
+        indexStore.write(byteBuf);
+        int writer = (int)(offset - beginOffset);
+
+        return writer;
+    }
+
+
     @Override
     public long totalLength() {
         return cmdWriter.totalLength();
     }
 
     public void rotateFileIfNecessary() throws IOException {
-        cmdWriter.rotateFileIfNecessary();
+        if(!buildIndex) {
+            cmdWriter.rotateFileIfNecessary();
+        } else {
+            indexStore.rotateFileIfNecessary();
+        }
     }
 
     public CommandFile findFileForOffset(long targetStartOffset) {
@@ -435,6 +501,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if(cmpAndSetClosed()){
             getLogger().info("[close]{}", this);
             cmdWriter.close();
+            if(indexStore != null) {
+                indexStore.close();
+            }
         }else{
             getLogger().warn("[close][already closed]{}", this);
         }
@@ -491,7 +560,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     public boolean retainCommands(CommandsGuarantee commandsGuarantee) {
         try {
             gcLock.lock();
-            long needCmdOffset = commandsGuarantee.getNeededCommandOffset();
+            long needCmdOffset = commandsGuarantee.getBacklogOffset();
             long minOffset = lowestAvailableOffset();
             if (minOffset <= needCmdOffset) {
                 this.commandsGuarantees.add(commandsGuarantee);
@@ -517,7 +586,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private long minGuaranteeOffset() {
         long minOffset = Long.MAX_VALUE;
         for (CommandsGuarantee commandsGuarantee : commandsGuarantees) {
-            long offset = commandsGuarantee.getNeededCommandOffset();
+            long offset = commandsGuarantee.getBacklogOffset();
             minOffset = Long.min(offset, minOffset);
         }
 
@@ -536,8 +605,13 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             timeoutGuarantees();
             finishGuarantees();
 
+            long maxStartOffset = findMaxStartOffset();
             for (File cmdFile : allCmdFiles()) {
                 long fileStartOffset = extractStartOffset(cmdFile);
+                if (fileStartOffset >= maxStartOffset) {
+                    getLogger().info("[GC][skip writing cmd] writing:{} file:{}", maxStartOffset, fileStartOffset);
+                    continue;
+                }
                 if (canDeleteCmdFile(Long.min(lowestReadingOffset(), minGuaranteeOffset()), fileStartOffset, cmdFile.length(),
                         cmdFile.lastModified())) {
                     getLogger().info("[GC] delete command file {}", cmdFile);
@@ -581,6 +655,63 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             return false;
         }
         return true;
+    }
+
+    @Override
+    public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet gtidSet) throws IOException {
+        return indexStore.locateContinueGtidSet(gtidSet);
+    }
+
+    @Override
+    public Pair<Long, GtidSet> locateContinueGtidSetWithFallbackToEnd(GtidSet gtidSet) throws IOException {
+        return indexStore.locateGtidSetWithFallbackToEnd(gtidSet);
+    }
+
+    @Override
+    public Pair<Long, GtidSet> locateTailOfCmd() {
+        if(indexStore != null) {
+            return this.indexStore.locateTailOfCmd();
+        }
+        return null;
+    }
+
+    @Override
+    public GtidSet getIndexGtidSet() {
+        if(indexStore == null) {
+            throw new IllegalStateException("indexStore is null");
+        }
+        return indexStore.getIndexGtidSet();
+    }
+
+    @Override
+    public synchronized void switchToXSync(GtidSet gtidSet) throws IOException {
+        if(buildIndex)return;
+        if(indexStore != null) {
+            indexStore.closeWithDeleteIndexFiles();
+        }
+        indexStore = new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
+                this, this, gtidCmdFilter);
+        indexStore.initialize(cmdWriter);
+        buildIndex = true;
+    }
+
+    @Override
+    public synchronized void switchToPsync(String replId, long offset) throws IOException {
+        if(!buildIndex)return;
+        buildIndex = false;
+        if(indexStore != null) {
+            indexStore.close();
+        }
+    }
+
+    @Override
+    public boolean increaseLostNotInCmdStore(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException {
+        return indexStore.increaseLost(lost, supplier);
+    }
+
+    @Override
+    public CommandWriter getCommandWriter() {
+        return cmdWriter;
     }
 
 }

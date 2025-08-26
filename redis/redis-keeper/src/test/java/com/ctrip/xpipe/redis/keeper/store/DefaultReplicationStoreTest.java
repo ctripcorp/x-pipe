@@ -2,9 +2,14 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
@@ -17,6 +22,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,15 +33,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 
 public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 
 	private File baseDir;
 	
-	private DefaultReplicationStore store; 
+	private DefaultReplicationStore store;
+
+	private RedisOpParser redisOpParser;
 
 	@Before
 	public void beforeDefaultReplicationStoreTest() throws IOException{
+		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+		redisOpParser = new GeneralRedisOpParser(redisOpParserManager);
 		baseDir = new File(getTestFileDir());
 	}
 
@@ -48,32 +61,9 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	}
 
 	@Test
-	public void testInterruptedException() throws IOException {
-
-		String keeperRunid = randomKeeperRunid();
-		int dataLen = 100;
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
-		RdbStore rdbStore = beginRdb(store, dataLen);
-
-		rdbStore.writeRdb(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
-		rdbStore.endRdb();
-
-		Thread.currentThread().interrupt();
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
-
-
-		//clear interrupt
-		Thread.interrupted();
-
-		store.appendCommands(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
-
-	}
-	
-	@Test
 	public void testReadWhileDestroy() throws Exception{
 
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
 		store.getMetaStore().becomeActive();
 
 		int dataLen = 1000;
@@ -121,6 +111,11 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 						}
 
 						@Override
+						public void onCommandEnd() {
+
+						}
+
+						@Override
 						public void beforeCommand() {
 							
 						}
@@ -136,7 +131,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 						}
 
 						@Override
-						public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
+						public void onFileData(DefaultReferenceFileRegion referenceFileRegion) throws IOException {
 							sleep(100);
 						}
 						
@@ -157,7 +152,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 						}
 
 						@Override
-						public Long processedOffset() {
+						public Long processedBacklogOffset() {
 							return null;
 						}
 					});
@@ -179,7 +174,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	@Test
 	public void testReadWrite() throws Exception {
 
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
 		store.getMetaStore().becomeActive();
 
 
@@ -205,17 +200,20 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	@Test
 	public void testGcNotContinueRdb() throws Exception {
 		TestKeeperConfig config = new TestKeeperConfig(100, 1, 1024, 0);
-		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
+		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
 		store.getMetaStore().becomeActive();
 
 		int dataLen = 100;
 		RdbStore rdbStore = beginRdb(store, dataLen);
+
+		store.psyncContinueFrom("repl", 1);
 
 		rdbStore.writeRdb(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
 		rdbStore.endRdb();
 
 		IntStream.range(0,5).forEach(i -> {
 			try {
+				ReflectionTestUtils.setField(store.cmdStore, "buildIndex", false);
 				store.cmdStore.appendCommands(Unpooled.wrappedBuffer(randomString(100).getBytes()));
 			} catch (Exception e) {
 				logger.info("[testGcNotContinueRdb][append cmd fail]", e);
@@ -229,5 +227,5 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertNull(store.getRdbStore());
 		Assert.assertNull(store.getMetaStore().dupReplicationStoreMeta().getRdbFile());
 	}
-	
+
 }

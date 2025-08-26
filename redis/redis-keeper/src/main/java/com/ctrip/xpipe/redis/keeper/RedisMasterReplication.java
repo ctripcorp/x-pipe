@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.redis.core.protocal.GapAllowedSyncObserver;
 import com.ctrip.xpipe.redis.keeper.ratelimit.PsyncChecker;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -12,7 +13,7 @@ import io.netty.channel.Channel;
  *
  * Aug 24, 2016
  */
-public interface RedisMasterReplication extends PsyncChecker, Lifecycle{
+public interface RedisMasterReplication extends GapAllowedSyncObserver, PsyncChecker, Lifecycle{
 
 	boolean tryRordb();
 
@@ -30,7 +31,7 @@ public interface RedisMasterReplication extends PsyncChecker, Lifecycle{
 
 	void updateReplicationObserver(RedisMasterReplicationObserver observer);
 
-	public interface RedisMasterReplicationObserver extends PsyncChecker {
+	public interface RedisMasterReplicationObserver extends GapAllowedSyncObserver, PsyncChecker {
 
 		void onMasterConnected();
 

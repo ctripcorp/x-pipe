@@ -34,6 +34,11 @@ public class ApplierRedisClient extends AbstractRedisClient<ApplierServer> imple
     }
 
     @Override
+    public GapAllowRedisSlave becomeGapAllowRedisSlave() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void setClientIpAddress(String host) {
         throw new UnsupportedOperationException();
     }

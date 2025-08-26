@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 
 import java.io.IOException;
@@ -12,11 +13,17 @@ import java.io.IOException;
  */
 public interface MetaStore {
 
-	public static final String META_FILE = "meta.json";
-	
+	public static final String META_V1_FILE = "meta.json";
+
+	public static final String META_V2_FILE = "meta.v2.json";
+
 	public static final String METHOD_BECOME_ACTIVE = "becomeActive";
 	
 	public static final String METHOD_BECOME_BACKUP = "becomeBackup";
+
+	ReplStage getPreReplStage();
+
+	ReplStage getCurrentReplStage();
 
 	String getReplId();
 	
@@ -25,7 +32,7 @@ public interface MetaStore {
 	Long getSecondReplIdOffset();
 	
 	ReplicationStoreMeta shiftReplicationId(String newReplId, Long currentOffset) throws IOException;
-	
+
 	/**
 	 * the first byte offset,
 	 * 
@@ -78,4 +85,34 @@ public interface MetaStore {
 	boolean isFresh();
 
 	void releaseRdbFile(String rdbFile) throws IOException ;
+
+	String getCurReplStageReplId();
+
+	Long backlogOffsetToReplOffset(Long backlogOffset);
+
+	Long replOffsetToBacklogOffset(Long replOff);
+
+	ReplicationStoreMeta rdbConfirmPsync(String replId, long beginReplOffset, long backlogOff, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException;
+
+	ReplicationStoreMeta psyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String cmdFilePrefix) throws IOException;
+
+	ReplicationStoreMeta psyncContinue(String newReplId, long backlogOff) throws IOException;
+
+	ReplicationStoreMeta switchToPsync(String replId, long beginReplOffset, long backlogOff) throws IOException;
+
+	ReplicationStoreMeta rdbConfirmXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException;
+
+	ReplicationStoreMeta xsyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String cmdFilePrefix) throws IOException;
+
+	boolean increaseLost(GtidSet lost) throws IOException;
+
+	boolean xsyncContinue(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidCont, GtidSet gtidIndexed) throws IOException;
+
+	ReplicationStoreMeta switchToXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException;
+
+	UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoPsync(String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, String rdbReplId, long backlogBeginOffset, long backlogEndOffset) throws IOException;
+
+	UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoXsync(String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, String rdbReplId, String rdbMasterUuid, GtidSet rdbGtidExecuted, GtidSet rdbGtidLost, long backlogBeginOffset, long backlogEndOffset, long indexedOffsetBacklog, GtidSet indexedGtidSet) throws IOException;
+
+	GtidCmdFilter generateGtidCmdFilter();
 }

@@ -2,38 +2,26 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.FreshRdbOnlyPsync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
-import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
-import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncCommandFailException;
-import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
-import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;
 import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
-import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationListener;
-import io.netty.channel.Channel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Mockito.*;
 
@@ -115,74 +103,6 @@ public class RdbonlyRedisMasterReplicationTest extends AbstractRedisKeeperContex
 
         verify(rdbStore, times(1)).close();
         verify(rdbStore, times(1)).destroy();
-    }
-
-    @Test
-    public void testFailForNotContinue_retryWithRefreshOnlyOnce() throws Exception {
-        AtomicInteger reconnectCnt = new AtomicInteger(0);
-        RedisMasterNewRdbDumper dumper = (RedisMasterNewRdbDumper)keeperRedisMaster.createRdbDumper(false, false);
-        RdbonlyRedisMasterReplication rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(keeperServer,
-                keeperRedisMaster, false, false, masterEventLoopGroup, scheduled, dumper, getRegistry().getComponent(KeeperResourceManager.class)) {
-            @Override
-            protected void scheduleReconnect(int timeMilli) {
-                reconnectCnt.incrementAndGet();
-            }
-        };
-        Psync psync = rdbonlyRedisMasterReplication.createPsync();
-        Assert.assertEquals(RdbOnlyPsync.class, psync.getClass());
-
-        when(replicationStore.firstAvailableOffset()).thenReturn(120L);
-        rdbonlyRedisMasterReplication.onFullSync(100);
-        Assert.assertFalse(dumper.future().isDone());
-
-        rdbonlyRedisMasterReplication.masterDisconnected(Mockito.mock(Channel.class));
-        Assert.assertEquals(1, reconnectCnt.get());
-        Assert.assertFalse(dumper.future().isDone());
-
-        psync = rdbonlyRedisMasterReplication.createPsync();
-        Assert.assertEquals(FreshRdbOnlyPsync.class, psync.getClass());
-
-        when(replicationStore.firstAvailableOffset()).thenReturn(120L);
-        rdbonlyRedisMasterReplication.onFullSync(100);
-        Assert.assertTrue(dumper.future().isDone());
-        Assert.assertEquals(PsyncMasterRdbOffsetNotContinuousRuntimeException.class, dumper.future().cause().getClass());
-    }
-
-    @Test
-    public void testFailForNotContinue_reconnectMasterOnlyOnce() throws Exception {
-        AtomicInteger reconnectCnt = new AtomicInteger(0);
-        RedisMasterNewRdbDumper dumper = (RedisMasterNewRdbDumper)keeperRedisMaster.createRdbDumper(false, false);
-        RdbonlyRedisMasterReplication rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(keeperServer,
-                keeperRedisMaster, false, false, masterEventLoopGroup, scheduled, dumper, getRegistry().getComponent(KeeperResourceManager.class)) {
-            @Override
-            protected void scheduleReconnect(int timeMilli) {
-                reconnectCnt.incrementAndGet();
-            }
-        };
-
-        Psync psync = rdbonlyRedisMasterReplication.createPsync();
-        Assert.assertTrue(psync instanceof RdbOnlyPsync);
-
-        psync.future().addListener(commandFuture -> {
-            if (!commandFuture.isSuccess()) {
-                rdbonlyRedisMasterReplication.dumpFail(new PsyncCommandFailException(commandFuture.cause()));
-            }
-        });
-        when(replicationStore.firstAvailableOffset()).thenReturn(120L);
-        rdbonlyRedisMasterReplication.onFullSync(100);
-        Assert.assertFalse(dumper.future().isDone());
-
-        rdbonlyRedisMasterReplication.masterDisconnected(Mockito.mock(Channel.class));
-        Assert.assertEquals(1, reconnectCnt.get());
-        Assert.assertFalse(dumper.future().isDone());
-
-        psync = rdbonlyRedisMasterReplication.createPsync();
-        Assert.assertTrue(psync instanceof FreshRdbOnlyPsync);
-
-        rdbonlyRedisMasterReplication.masterDisconnected(Mockito.mock(Channel.class));
-        Assert.assertEquals(1, reconnectCnt.get());
-        Assert.assertTrue(dumper.future().isDone());
-        Assert.assertNotNull(dumper.future().cause());
     }
 
 }

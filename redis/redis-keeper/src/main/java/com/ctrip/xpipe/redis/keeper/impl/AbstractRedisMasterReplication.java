@@ -272,9 +272,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
                     CAPA.EOF.toString(), CAPA.PSYNC2.toString());
         }
         chain.add(new FailSafeCommandWrapper<>(capa));
-
-        Replconf crdt = new Replconf(clientPool, ReplConfType.CRDT, scheduled, commandTimeoutMilli, REPL_CONF_CRDT_MARK);
-        chain.add(new FailSafeCommandWrapper<>(crdt));
         chain.add(new FailSafeCommandWrapper<>(keeperIdcCommand()));
 
         try {
@@ -480,9 +477,15 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
     @Override
     public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
-        String gtidSet = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID, GtidSet.EMPTY_GTIDSET);
-        logger.info("[readAuxEnd][gtid] {}", gtidSet);
-        rdbStore.updateRdbGtidSet(gtidSet);
+        String gtidExecuted = auxMap.get(RdbConstant.REDIS_RDB_AUX_KEY_GTID_EXECUTED);
+        if (gtidExecuted != null) {
+            logger.info("[readAuxEnd][gtid-executed] {}", gtidExecuted);
+            rdbStore.updateRdbGtidSet(gtidExecuted);
+        } else {
+            String gtidSet = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID, GtidSet.EMPTY_GTIDSET);
+            logger.info("[readAuxEnd][gtid] {}", gtidSet);
+            rdbStore.updateRdbGtidSet(gtidSet);
+        }
 
         RdbStore.Type rdbType = auxMap.containsKey(RdbConstant.REDIS_RDB_AUX_KEY_RORDB) ? RdbStore.Type.RORDB : RdbStore.Type.NORMAL;
         logger.info("[readAuxEnd][rdb] {}", rdbType);
@@ -497,7 +500,11 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
     protected void doRdbTypeConfirm(RdbStore rdbStore) {
         try {
-            redisMaster.getCurrentReplicationStore().confirmRdb(rdbStore);
+            if (rdbStore.isGapAllowed()) {
+                redisMaster.getCurrentReplicationStore().confirmRdbGapAllowed(rdbStore);
+            } else {
+                redisMaster.getCurrentReplicationStore().confirmRdb(rdbStore);
+            }
         } catch (Throwable th) {
             dumpFail(th);
         }
@@ -533,6 +540,41 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
     }
 
     protected abstract void doOnContinue();
+
+    @Override
+    public void onXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
+        doOnXFullSync(replId, replOff, masterUuid, gtidLost);
+    }
+
+    protected abstract void doOnXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost);
+
+    @Override
+    public void onXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+        doOnXContinue(replId, replOff, masterUuid, gtidCont);
+    }
+
+    protected abstract void doOnXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont);
+
+    @Override
+    public void onSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) {
+        doOnSwitchToXsync(replId, replOff, masterUuid, gtidCont, gtidLost);
+    }
+
+    protected abstract void doOnSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost);
+
+    @Override
+    public void onSwitchToPsync(String replId, long replOff) {
+        doOnSwitchToPsync(replId, replOff);
+    }
+
+    protected abstract void doOnSwitchToPsync(String replId, long replOff);
+
+    @Override
+    public void onUpdateXsync() {
+        doOnUpdateXsync();
+    }
+
+    protected abstract void doOnUpdateXsync();
 
     protected void dumpFinished() {
         logger.info("[dumpFinished]{}", this);
@@ -579,5 +621,4 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
     protected int commandTimeoutMilli() {
         return commandTimeoutMilli;
     }
-
 }

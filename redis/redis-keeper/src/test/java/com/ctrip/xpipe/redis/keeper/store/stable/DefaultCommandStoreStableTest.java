@@ -2,18 +2,21 @@ package com.ctrip.xpipe.redis.keeper.store.stable;
 
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
-import com.ctrip.xpipe.redis.core.store.CommandFile;
-import com.ctrip.xpipe.redis.core.store.CommandStore;
-import com.ctrip.xpipe.redis.core.store.CommandsListener;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
-import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,12 +41,19 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 
 	private OffsetCommandReaderWriterFactory commandReaderWriterFactory = new OffsetCommandReaderWriterFactory();
 
+	@Mock
+	private GtidCmdFilter gtidCmdFilter;
+
+
 	@Before
 	public void beforeDefaultCommandStoreTest() throws IOException, Exception {
 
 		String testDir = getTestFileDir();
 		File commandTemplate = new File(testDir, getTestName());
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory, createkeeperMonitor());
+		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+		RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter);
 		commandStore.initialize();
 	}
 
@@ -76,11 +86,16 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 					@Override
 					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 
-						String result = readFileChannelInfoMessageAsString((ReferenceFileRegion) cmd);
+						String result = readFileChannelInfoMessageAsString((DefaultReferenceFileRegion) cmd);
 						if (!comparator.compare(readIndex, result)) {
 							future.setFailure(new Exception("not equals:" + result));
 						}
 						return null;
+					}
+
+					@Override
+					public void onCommandEnd() {
+
 					}
 
 					@Override
@@ -94,7 +109,7 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 					}
 
 					@Override
-					public Long processedOffset() {
+					public Long processedBacklogOffset() {
 						return null;
 					}
 				});

@@ -73,7 +73,7 @@ public class KeeperSwitchTest extends AbstractKeeperIntegratedSingleDc {
         Assert.assertEquals(originFsync, currentFsync);
     }
 
-    private void setRedisMaster(RedisMeta redis, HostPort redisMaster) throws Exception {
+    protected void setRedisMaster(RedisMeta redis, HostPort redisMaster) throws Exception {
         SimpleObjectPool<NettyClient> slaveClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(redis.getIp(), redis.getPort()));
         new SlaveOfCommand(slaveClientPool, redisMaster.getHost(), redisMaster.getPort(), scheduled).execute().get();
     }

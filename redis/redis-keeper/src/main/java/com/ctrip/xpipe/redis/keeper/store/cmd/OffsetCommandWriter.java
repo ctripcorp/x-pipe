@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -102,6 +103,11 @@ public class OffsetCommandWriter implements CommandWriter {
     }
 
     @Override
+    public CommandFileContext getFileContext() {
+        return cmdFileCtxRef.get();
+    }
+
+    @Override
     public void close() throws IOException {
         CommandFileContext cmdFileCtx = cmdFileCtxRef.get();
         if (null != cmdFileCtx) {
@@ -121,5 +127,6 @@ public class OffsetCommandWriter implements CommandWriter {
     protected int getMaxFileSize() {
         return maxFileSize;
     }
+
 
 }

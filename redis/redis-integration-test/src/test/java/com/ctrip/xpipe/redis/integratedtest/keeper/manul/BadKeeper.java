@@ -44,7 +44,7 @@ public class BadKeeper extends AbstractKeeperIntegratedSingleDc{
 														SyncRateManager syncRateManager) {
 		
 		return new DefaultRedisKeeperServer(keeperMeta.parent().getDbId(), keeperMeta, keeperConfig, baseDir, leaderElectorManager,
-				keeperMonitorManager, resourceManager, syncRateManager){
+				keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser()){
 			@Override
 			public void endWriteRdb() {
 				super.endWriteRdb();

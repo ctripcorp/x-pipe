@@ -26,16 +26,6 @@ public class KeeperCommandHandlerTest {
     }
 
     @Test
-    public void testSetindexOn() throws Exception {
-        RedisKeeperServer server = mock(RedisKeeperServer.class);
-        RedisClient client = mock(RedisClient.class);
-        when(client.getRedisServer()).thenReturn(server);
-
-        handler.doHandle("setindex ON".split(WHITE_SPACE), client);
-        verify(server, times(1)).startIndexing();
-    }
-
-    @Test
     public void testSetindexOff() throws Exception {
 
         String message = null;
@@ -44,7 +34,7 @@ public class KeeperCommandHandlerTest {
         } catch (Throwable t) {
             message = t.getMessage();
         }
-        assertEquals("setstate OFF not supported", message);
+        assertEquals("unknown command:setindex", message);
     }
 
     @Test
@@ -56,7 +46,7 @@ public class KeeperCommandHandlerTest {
         } catch (Throwable t) {
             message = t.getMessage();
         }
-        assertEquals("No enum constant com.ctrip.xpipe.redis.core.meta.KeeperIndexState.ABC", message);
+        assertEquals("unknown command:setindex", message);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.core.store.ReplStage;
 
 import java.io.IOException;
 
@@ -10,13 +11,21 @@ import java.io.IOException;
  * May 23, 2016
  */
 public interface KeeperRepl {
-	
+
+	ReplStage preStage();
+
+	ReplStage currentStage();
+
 	String replId();
 	
 	String replId2();
 	
 	Long   secondReplIdOffset();
-	
+
+	long backlogBeginOffset();
+
+	long backlogEndOffset();
+
 	long getBeginOffset();
 	
 	long getEndOffset();
@@ -24,6 +33,8 @@ public interface KeeperRepl {
 	GtidSet getBeginGtidSet() throws IOException;
 
 	GtidSet getEndGtidSet() throws IOException;
+
+	GtidSet getBacklogGtidSet() throws IOException;
 
 	boolean supportGtidSet();
 

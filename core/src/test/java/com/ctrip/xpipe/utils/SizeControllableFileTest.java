@@ -3,6 +3,7 @@ package com.ctrip.xpipe.utils;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.utils.FileSize;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -13,6 +14,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongSupplier;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author wenchao.meng
@@ -84,9 +87,15 @@ public class SizeControllableFileTest extends AbstractTest {
 		sizeControllableFile.close();
 
 		for (int i = 0; i < testCount; i++) {
-			sizeControllableFile.getFileChannel();
-			sizeControllableFile.size();
-			Assert.assertEquals(2, openCount.get());
+			assertThrows(XpipeRuntimeException.class , () -> {
+				sizeControllableFile.getFileChannel();
+			});
+
+			assertThrows(XpipeRuntimeException.class , () -> {
+				sizeControllableFile.size();
+			});
+
+
 		}
 	}
 

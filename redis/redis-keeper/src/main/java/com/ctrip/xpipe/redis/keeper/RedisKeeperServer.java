@@ -2,11 +2,14 @@ package com.ctrip.xpipe.redis.keeper;
 
 
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.protocal.GapAllowedSyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.XSyncContinue;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.impl.SetRdbDumperException;
@@ -21,11 +24,23 @@ import java.util.Set;
  *
  * 2016年3月29日 下午3:09:23
  */
-public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyable{
+public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, Destroyable{
 	
 	int getListeningPort();
 	
 	KeeperRepl getKeeperRepl();
+
+	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception;
+
+	XSyncContinue locateContinueGtidSetWithFallbackToEnd(GtidSet gtidSet) throws Exception;
+
+	XSyncContinue locateTailOfCmd();
+
+	void switchToPSync(String replId, long replOff) throws IOException;
+
+	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException;
+
+	boolean increaseLost(GtidSet lost, RedisSlave from) throws IOException;
 
 	void clientDisconnected(Channel channel);
 	
@@ -48,6 +63,8 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	void setRedisKeeperServerState(RedisKeeperServerState redisKeeperServerState);
 	
 	RedisKeeperServerState getRedisKeeperServerState();
+
+	boolean gapAllowSyncEnabled();
 	
 	KeeperMeta getCurrentKeeperMeta();
 	
@@ -71,14 +88,11 @@ public interface RedisKeeperServer extends RedisServer, PsyncObserver, Destroyab
 	}
 
 	default void fullSyncToSlave(RedisSlave redisSlave) throws IOException {
+		// getKeeperMonitor().getKeeperStats().increaseFullSync();
 		fullSyncToSlave(redisSlave, false);
 	}
 
 	void fullSyncToSlave(RedisSlave redisSlave, boolean freshRdbNeeded) throws IOException;
-
-	void startIndexing() throws IOException;
-
-	boolean isStartIndexing();
 	
 	KeeperInstanceMeta getKeeperInstanceMeta();
 	

@@ -1,9 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.FreshRdbOnlyPsync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
@@ -35,7 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplication{
 
-	private RdbOnlyReplicationStore rdbOnlyReplicationStore;
+	protected RdbOnlyReplicationStore rdbOnlyReplicationStore;
 
 	@VisibleForTesting DumpedRdbStore dumpedRdbStore;
 
@@ -48,9 +47,9 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 		FAIL
 	}
 
-	private REPL_STATE state;
+	protected REPL_STATE state;
 
-	private AtomicReference<Psync> currentPsync = new AtomicReference<>();
+	protected AtomicReference<Psync> currentPsync = new AtomicReference<>();
 
 	public RdbonlyRedisMasterReplication(RedisKeeperServer redisKeeperServer, RedisMaster redisMaster,
 										 boolean tryRordb, boolean freshRdbNeeded,
@@ -135,16 +134,16 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 			throw new PsyncRuntimeException("prepare ReplicationStore fail", th);
 		}
 
-		if (state.equals(REPL_STATE.FRESH_SYNC)) {
-			psync = new FreshRdbOnlyPsync(clientPool, replicationStore, scheduled);
-		} else {
-			psync = new RdbOnlyPsync(clientPool, replicationStore, scheduled);
-		}
+		psync = doCreatePsync(replicationStore);
 
 		psync.addPsyncObserver(this);
 		psync.addPsyncObserver(redisKeeperServer.createPsyncObserverForRdbOnlyRepl());
 		currentPsync.set(psync);
 		return psync;
+	}
+
+	protected Psync doCreatePsync(RdbOnlyReplicationStore rdbOnlyReplicationStore) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -206,7 +205,7 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 		}
 	}
 
-	private synchronized void resetReplicationStore() {
+	protected synchronized void resetReplicationStore() {
 		dumpedRdbStore = null;
 		rdbOnlyReplicationStore = null;
 	}
@@ -232,6 +231,30 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 		}
 
 		super.dumpFail(th);
+	}
+
+	protected void doOnXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
+		throw new UnsupportedOperationException("xfullresync not supported");
+	}
+
+	@Override
+	protected void doOnXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+		throw new IllegalStateException("impossible to be here");
+	}
+
+	@Override
+	protected void doOnSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) {
+		throw new IllegalStateException("impossible to be here");
+	}
+
+	@Override
+	protected void doOnSwitchToPsync(String replId, long replOff) {
+		throw new IllegalStateException("impossible to be here");
+	}
+
+	@Override
+	protected void doOnUpdateXsync() {
+		throw new IllegalStateException("impossible to be here");
 	}
 
 	@Override

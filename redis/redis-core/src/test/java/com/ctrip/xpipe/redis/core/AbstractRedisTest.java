@@ -465,9 +465,13 @@ public abstract class AbstractRedisTest extends AbstractTest {
         return startFakeRedisServer(port);
     }
 
+    protected String getProto() {
+        return "psync";
+    }
+
     protected FakeRedisServer startFakeRedisServer(int serverPort) throws Exception {
 
-        FakeRedisServer fakeRedisServer = new FakeRedisServer(serverPort);
+        FakeRedisServer fakeRedisServer = new FakeRedisServer(serverPort, getProto());
         fakeRedisServer.initialize();
         fakeRedisServer.start();
         add(fakeRedisServer);

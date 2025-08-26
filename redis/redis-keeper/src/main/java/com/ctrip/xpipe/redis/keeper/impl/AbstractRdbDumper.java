@@ -42,6 +42,13 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 	public void setRdbDumpState(RdbDumpState rdbDumpState) {
 		lock.writeLock().lock();
 		try {
+			// if rdb dumper is waiting retry(lack backlog), it will ignore aux_parsed event so that keeper
+			// will not continue sending rdb to waiting slaves.
+			if (this.rdbDumpState == WAIT_RETRY && rdbDumpState == AUX_PARSED) {
+				getLogger().info("[setRdbDumpState][set rdbDumpState to AUX_PARSED ignored] {}", this);
+				return;
+			}
+
 			RdbDumpState preState = this.rdbDumpState;
 			this.rdbDumpState = rdbDumpState;
 			switch (rdbDumpState) {
@@ -60,6 +67,8 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 					redisKeeperServer.clearRdbDumper(this, false);
 					break;
 				case WAIT_DUMPPING:
+					break;
+				case WAIT_RETRY:
 					break;
 			}
 		} finally {
@@ -186,6 +195,11 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 		getLogger().info("[dumpFail]{}, {}", this, th.getMessage());
 		setRdbDumpState(RdbDumpState.FAIL);
 		future().setFailure(th);
+	}
+
+	public void waitRetry() {
+		getLogger().info("[waitRetry]{}", this);
+		setRdbDumpState(RdbDumpState.WAIT_RETRY);
 	}
 
 	@Override

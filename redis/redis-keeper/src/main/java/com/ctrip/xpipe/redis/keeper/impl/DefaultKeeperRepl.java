@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
+import com.ctrip.xpipe.redis.core.store.ReplStage;
 
 import java.io.IOException;
 
@@ -13,11 +14,31 @@ import java.io.IOException;
  */
 public class DefaultKeeperRepl implements KeeperRepl {
 
+	@Override
+	public ReplStage preStage() {
+		return replicationStore.getMetaStore().getPreReplStage();
+	}
+
+	@Override
+	public ReplStage currentStage() {
+		return replicationStore.getMetaStore().getCurrentReplStage();
+	}
+
 	private ReplicationStore replicationStore;
 
 	public DefaultKeeperRepl(ReplicationStore replicationStore) {
 
 		this.replicationStore = replicationStore;
+	}
+
+	@Override
+	public long backlogBeginOffset() {
+		return replicationStore.backlogBeginOffset();
+	}
+
+	@Override
+	public long backlogEndOffset() {
+		return replicationStore.backlogEndOffset();
 	}
 
 	@Override
@@ -27,12 +48,14 @@ public class DefaultKeeperRepl implements KeeperRepl {
 
 	@Override
 	public long getEndOffset() {
-		return replicationStore.getEndOffset();
+		return replicationStore.getCurReplStageReplOff();
 	}
 
 	@Override
 	public String replId() {
-		return replicationStore.getMetaStore().getReplId();
+		//TODO remove
+		if (replicationStore.getMetaStore().getCurReplStageReplId() == null) return replicationStore.getMetaStore().getReplId();
+		return replicationStore.getMetaStore().getCurReplStageReplId();
 	}
 
 	@Override
@@ -57,6 +80,13 @@ public class DefaultKeeperRepl implements KeeperRepl {
 		    end = getBeginGtidSet();
 		}
 		return end;
+	}
+
+	@Override
+	public GtidSet getBacklogGtidSet() throws IOException {
+		GtidSet begin = getBeginGtidSet();
+		if (null == begin) return new GtidSet("");
+		return begin.union(getEndGtidSet());
 	}
 
 	@Override

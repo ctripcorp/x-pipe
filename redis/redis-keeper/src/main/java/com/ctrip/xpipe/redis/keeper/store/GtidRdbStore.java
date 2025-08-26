@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
+import com.ctrip.xpipe.redis.core.store.ReplStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,17 +22,23 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
     private static final Logger logger = LoggerFactory.getLogger(GtidRdbStore.class);
 
     private AtomicReference<String> gtidSet = new AtomicReference<>();
+    protected AtomicReference<String> gtidLost = new AtomicReference<>();
+    protected ReplStage.ReplProto replProto;
+    protected String masterUuid;
 
-    public GtidRdbStore(File file, String replId, long rdbOffset, EofType eofType, String gtidSet) throws IOException {
+    public GtidRdbStore(File file, String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
+                        String gtidSet, String gtidLost, String masterUuid) throws IOException {
         super(file, replId, rdbOffset, eofType);
+        this.replProto = replProto;
         this.gtidSet.set(gtidSet);
+        this.gtidLost.set(gtidLost);
+        this.masterUuid = masterUuid;
     }
 
     @Override
     public String getGtidSet() {
         return gtidSet.get();
     }
-
     @Override
     public boolean isGtidSetInit() {
         return getGtidSet() != null;
@@ -45,6 +52,25 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
     @Override
     public boolean updateRdbGtidSet(String gtidSet) {
         return this.gtidSet.compareAndSet(null, gtidSet);
+    }
+
+    public ReplStage.ReplProto getReplProto() {
+        return this.replProto;
+    }
+
+    @Override
+    public String getGtidLost() {
+        return this.gtidLost.get();
+    }
+
+    @Override
+    public String getMasterUuid() {
+        return this.masterUuid;
+    }
+
+    @Override
+    public boolean isGapAllowed() {
+        return this.replProto != null;
     }
 
     @Override

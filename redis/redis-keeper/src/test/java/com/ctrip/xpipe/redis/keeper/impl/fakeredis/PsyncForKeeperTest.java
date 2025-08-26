@@ -28,7 +28,7 @@ public class PsyncForKeeperTest extends AbstractFakeRedisTest {
         RedisKeeperServer keeperServer = startRedisKeeperServerAndConnectToFakeRedis();
         waitRedisKeeperServerConnected(keeperServer);
 
-        RedisKeeperServer newKeeperServer = restartKeeperServer(keeperServer, 1, 1);
+        RedisKeeperServer newKeeperServer = restartKeeperServer(keeperServer, 1, 6);
         Assert.assertNull(newKeeperServer.getKeeperRepl().replId());
     }
 
@@ -126,24 +126,9 @@ public class PsyncForKeeperTest extends AbstractFakeRedisTest {
         Assert.assertEquals(originFsyncCnt + 1, keeperStats.getFullSyncCount());
     }
 
-    private RedisKeeperServer restartKeeperServer(RedisKeeperServer keeperServer, long replKeepSecondsAfterDown, long waitSecondsAfterDown) throws Exception {
-        int keeperPort = keeperServer.getListeningPort();
-        String keeperRunId = keeperServer.getKeeperRunid();
-
-        LifecycleHelper.stopIfPossible(keeperServer);
-        LifecycleHelper.disposeIfPossible(keeperServer);
-
-        KeeperConfig keeperConfig = newTestKeeperConfig();
-        ((TestKeeperConfig)keeperConfig).setReplKeepSecondsAfterDown(replKeepSecondsAfterDown);
-        KeeperMeta keeperMeta = createKeeperMeta(keeperPort, keeperRunId);
-        ReplId replId = getReplId();
-        TimeUnit.SECONDS.sleep(waitSecondsAfterDown);
-
-        return startRedisKeeperServer(replId.id(), keeperConfig, keeperMeta);
-    }
 
     private void waitKeeperSyncWithRedis(RedisKeeperServer keeperServer) throws Exception {
-        waitConditionUntilTimeOut(() -> keeperServer.getKeeperRepl().getEndOffset() == fakeRedisServer.getRdbOffset() + fakeRedisServer.getCommandsLength());
+        waitConditionUntilTimeOut(() -> keeperServer.getKeeperRepl().currentStage() != null && keeperServer.getKeeperRepl().getEndOffset() == fakeRedisServer.getRdbOffset() + fakeRedisServer.getCommandsLength());
     }
 
     private void waitCmdNotContinueWithRdb(RedisKeeperServer keeperServer) throws Exception {

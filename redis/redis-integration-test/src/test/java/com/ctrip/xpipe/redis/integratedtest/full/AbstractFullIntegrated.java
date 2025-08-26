@@ -241,7 +241,7 @@ public abstract class AbstractFullIntegrated extends AbstractIntegratedTest{
 
 	@After
 	public void afterAbstractIntegratedTest(){
-		
+		super.afterAbstractIntegratedTest();
 	}
 
 }

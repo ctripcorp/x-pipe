@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import io.netty.buffer.ByteBuf;
 
@@ -190,4 +191,18 @@ public abstract class ConfigGetCommand<T> extends AbstractConfigCommand<T>{
 			return super.getName() + args;
 		}
 	}
+
+	public static class ConfigGetGtidEnabled extends ConfigGetBool {
+
+		public ConfigGetGtidEnabled(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
+		}
+
+		@Override
+		protected String getConfigName() {
+			return REDIS_CONFIG_TYPE.GTID_ENABLED.getConfigName();
+		}
+
+	}
+
 }

@@ -4,15 +4,11 @@ import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.api.utils.FileSize;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
-import com.ctrip.xpipe.redis.core.store.RdbFileListener;
-import com.ctrip.xpipe.redis.core.store.RdbStore;
-import com.ctrip.xpipe.redis.core.store.RdbStoreListener;
-import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
-import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
+import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import com.ctrip.xpipe.utils.SizeControllableFile;
@@ -27,7 +23,6 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
@@ -52,6 +47,8 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	protected long rdbOffset;
 
+	protected long contiguousBacklogOffset = 0;
+
 	private AtomicInteger refCount = new AtomicInteger(0);
 	
 	protected List<RdbStoreListener> rdbStoreListeners = new LinkedList<>();
@@ -61,7 +58,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	private AtomicReference<Type> typeRef;
 
 	private AtomicReference<SyncRateLimiter> rateLimiterRef = new AtomicReference<>();
-	
+
 	public DefaultRdbStore(File file, String replId, long rdbOffset, EofType eofType) throws IOException {
 
 		this.replId = replId;
@@ -76,6 +73,16 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 			writeFile = new RandomAccessFile(file, "rw");
 			channel = writeFile.getChannel();
 		}
+	}
+
+	@Override
+	public long getContiguousBacklogOffset() {
+		return contiguousBacklogOffset;
+	}
+
+	@Override
+	public void setContiguousBacklogOffset(long contiguousBacklogOffset) {
+		this.contiguousBacklogOffset = contiguousBacklogOffset;
 	}
 
 	@Override
@@ -106,6 +113,25 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	@Override
 	public Type getRdbType() {
 		return typeRef.get();
+	}
+
+	@Override
+	public String getGtidLost() {
+		return null;
+	}
+
+	@Override
+	public String getMasterUuid() {
+		return null;
+	}
+
+	@Override
+	public boolean isGapAllowed() {
+		return false;
+	}
+
+	public ReplStage.ReplProto getReplProto() {
+		return null;
 	}
 
 	@Override
@@ -246,10 +272,13 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	protected void doReadRdbFileInfo(RdbFileListener rdbFileListener) {
-		if (!rdbFileListener.supportProgress(OffsetReplicationProgress.class)) {
+		if (rdbFileListener.supportProgress(BacklogOffsetReplicationProgress.class) && contiguousBacklogOffset >= 0) {
+			rdbFileListener.setRdbFileInfo(eofType, new BacklogOffsetReplicationProgress(contiguousBacklogOffset));
+		} else if (rdbFileListener.supportProgress(OffsetReplicationProgress.class)) {
+			rdbFileListener.setRdbFileInfo(eofType, new OffsetReplicationProgress(rdbOffset));
+		} else {
 			throw new UnsupportedOperationException("offset progress not support");
 		}
-		rdbFileListener.setRdbFileInfo(eofType, new OffsetReplicationProgress(rdbOffset));
 	}
 
 	protected void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
@@ -258,14 +287,20 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		RateLimiter rateLimiter = RateLimiter.create(Double.MAX_VALUE);
 		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && referenceFileChannel.hasAnythingToRead()))) {
 			int limitBytes = rdbFileListener.getLimitBytesPerSecond();
-			ReferenceFileRegion referenceFileRegion = referenceFileChannel.read(limitBytes);
+			DefaultReferenceFileRegion referenceFileRegion = referenceFileChannel.read(limitBytes);
 
 			if (limitBytes > 0 && referenceFileRegion.count() > 0) {
 				if (((int)rateLimiter.getRate()) != limitBytes) rateLimiter.setRate(limitBytes);
 				int readBytes = (int)Math.min(referenceFileRegion.count(), limitBytes);
 				rateLimiter.acquire(readBytes);
 			}
-			rdbFileListener.onFileData(referenceFileRegion);
+			try {
+				rdbFileListener.onFileData(referenceFileRegion);
+			} catch (Throwable t) {
+				logger.info("[doReadRdbFile] exception on send file data", t);
+				referenceFileRegion.deallocate();
+				throw t;
+			}
 			if(referenceFileRegion.count() <= 0) {
 				try {
 					Thread.sleep(1);

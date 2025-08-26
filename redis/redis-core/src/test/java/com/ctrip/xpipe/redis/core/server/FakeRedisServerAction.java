@@ -2,26 +2,24 @@ package com.ctrip.xpipe.redis.core.server;
 
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
-import com.ctrip.xpipe.payload.StringInOutPayload;
-import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractPsync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.apache.commons.lang3.ArrayUtils;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import static com.ctrip.xpipe.redis.core.protocal.Psync.FULL_SYNC;
+import static com.ctrip.xpipe.redis.core.protocal.Psync.PARTIAL_SYNC;
 
 /**
  * @author wenchao.meng
@@ -37,6 +35,12 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 	public FakeRedisServerAction(FakeRedisServer fakeRedisServer, Socket socket) {
 		super(socket);
 		this.fakeRedisServer = fakeRedisServer;
+	}
+
+	public FakeRedisServerAction(FakeRedisServer fakeRedisServer, Socket socket, String proto) {
+		super(socket);
+		this.fakeRedisServer = fakeRedisServer;
+		this.proto = proto;
 	}
 
 	@Override
@@ -59,6 +63,78 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 		handlePartialSync(ous, offset);
 	}
 
+	@Override
+	protected void handleXsync(OutputStream ous, String line) throws IOException, InterruptedException {
+
+		logger.info("[handleXsync]{}", line);
+		fakeRedisServer.increasePsyncCount();
+		String []sp = line.split("\\s+");
+		if(sp[1].equalsIgnoreCase("?")){
+			handleXsynFull(ous);
+			return;
+		}
+		handleXsynContinue(ous);
+	}
+
+	protected void handleXsynContinue(OutputStream ous) throws IOException, InterruptedException {
+		logger.info("[handleContinueXSync]{}", getSocket());
+		fakeRedisServer.addCommandsListener(this);
+		String info = "+XCONTINUE GTID.SET 7ca392ffb0fa8415cbf6a88bb7937f323c7367ac:1-21,1777955e932bed5eb321a58fbc2132cba48f026f:1-2 MASTER.UUID f804ec9202b78f93ec8fe10df9b5b60b627dda2f REPLID eafdcd2f70b9344ca97d997663566a48e0e913ad REPLOFF 589\r\n";
+		ous.write(info.getBytes());
+		ous.flush();
+
+		if(!waitAckToSendCommands){
+			writeCommands(ous);
+		}
+	}
+
+	protected void handleXsynFull(OutputStream ous) throws IOException, InterruptedException {
+
+		logger.info("[handleFullXSync]{}", getSocket());
+		//fakeRedisServer.reGenerateRdb(this.capaRordb);
+		fakeRedisServer.addCommandsListener(this);
+
+		try {
+			Thread.sleep(fakeRedisServer.getSleepBeforeSendFullSyncInfo());
+		} catch (InterruptedException e) {
+		}
+
+		String info = "+XFULLRESYNC GTID.LOST \"\" MASTER.UUID 7ca392ffb0fa8415cbf6a88bb7937f323c7367ac REPLID d52148a01c3302e95874864a98b3e9f5bc421f3c REPLOFF 0\r\n";
+		ous.write(info.getBytes());
+		ous.flush();
+
+		ScheduledFuture<?> future = null;
+		if(fakeRedisServer.isSendLFBeforeSendRdb()){
+			future = sendLfToSlave(ous);
+		}
+
+		try {
+			Thread.sleep(fakeRedisServer.getSleepBeforeSendRdb());
+		} catch (InterruptedException e) {
+		}
+
+		if(future != null){
+			future.cancel(true);
+		}
+
+		ous.write("$316\r\n".getBytes());
+		String rdbFilePath = "src/test/resources/GtidTest/dump.rdb";
+		try (FileInputStream fileInputStream = new FileInputStream(rdbFilePath)) {
+			byte[] buffer = new byte[8192]; // 缓冲区大小
+			int bytesRead;
+			while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+				// 将读取的字节写入 OutputStream
+				ous.write(buffer, 0, bytesRead);
+			}
+		}
+
+		ous.flush();
+
+		if(!waitAckToSendCommands){
+			writeCommands(ous);
+		}
+	}
+
 	private void handlePartialSync(OutputStream ous, long offset) throws IOException, InterruptedException {
 
 		if(fakeRedisServer.isPartialSyncFail()){
@@ -75,7 +151,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 			return;
 		}
 
-		String info = String.format("+%s\r\n", AbstractPsync.PARTIAL_SYNC);
+		String info = String.format("+%s\r\n", PARTIAL_SYNC);
 		ous.write(info.getBytes());
 
 		fakeRedisServer.addCommandsListener(this);
@@ -145,7 +221,7 @@ public class FakeRedisServerAction extends AbstractRedisAction{
 		} catch (InterruptedException e) {
 		}
 
-		String info = String.format("+%s %s %d\r\n", AbstractPsync.FULL_SYNC, fakeRedisServer.getRunId(), fakeRedisServer.getRdbOffset());
+		String info = String.format("+%s %s %d\r\n", FULL_SYNC, fakeRedisServer.getRunId(), fakeRedisServer.getRdbOffset());
 		ous.write(info.getBytes());
 		ous.flush();
 		

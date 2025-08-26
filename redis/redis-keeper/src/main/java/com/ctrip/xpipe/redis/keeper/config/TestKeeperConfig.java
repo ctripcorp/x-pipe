@@ -3,8 +3,7 @@ package com.ctrip.xpipe.redis.keeper.config;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 
-import java.util.Collections;
-import java.util.List;
+import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
 
 /**
  * @author wenchao.meng
@@ -23,6 +22,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int maxPartialSyncKeepTokenRounds = 3;
 	private int partialSyncTrafficMonitorIntervalTimes = 10;
 	private long commandReaderFlyingThreshold = DefaultCommandStore.DEFAULT_COMMAND_READER_FLYING_THRESHOLD;
+	private int maxAllowedMaxGap = DEFAULT_XSYNC_MAXGAP;
 	
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
 	
@@ -281,5 +281,14 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public boolean tryRorRdb() {
 		return true;
+	}
+
+	@Override
+	public int getXsyncMaxGap() {
+		return maxAllowedMaxGap;
+	}
+
+	public void setXsyncMaxGap(int maxGap) {
+		this.maxAllowedMaxGap = maxGap;
 	}
 }

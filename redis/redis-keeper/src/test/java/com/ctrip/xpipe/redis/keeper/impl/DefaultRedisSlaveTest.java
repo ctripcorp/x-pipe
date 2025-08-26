@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
@@ -82,7 +82,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         redisSlave.sendMessage(Unpooled.wrappedBuffer(randomString(10).getBytes()));
 
         //should fail
-        shouldThrowException(() -> redisSlave.onCommand(null, 0L, mock(ReferenceFileRegion.class)));
+        shouldThrowException(() -> redisSlave.onCommand(null, 0L, mock(DefaultReferenceFileRegion.class)));
         shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), new OffsetReplicationProgress(0L)));
         shouldThrowException(() -> redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L)));
 
@@ -90,7 +90,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         //all should fail
         shouldThrowException(() -> redisSlave.sendMessage(randomString(10).getBytes()));
         shouldThrowException(() -> redisSlave.sendMessage(Unpooled.wrappedBuffer(randomString(10).getBytes())));
-        shouldThrowException(() -> redisSlave.onCommand(null, 0L, mock(ReferenceFileRegion.class)));
+        shouldThrowException(() -> redisSlave.onCommand(null, 0L, mock(DefaultReferenceFileRegion.class)));
         shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), new OffsetReplicationProgress(0L)));
         shouldThrowException(() -> redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L)));
 

@@ -197,7 +197,14 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 		Long replId = keeperMeta.parent().getDbId();
 		return new DefaultRedisKeeperServer(replId, keeperMeta, keeperConfig, baseDir,
-				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager);
+				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser());
+	}
+
+	public static RedisOpParser generateRedisOpParser() {
+		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+		RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+		return opParser;
 	}
 
 	protected LeaderElectorManager createLeaderElectorManager(DcMeta dcMeta) throws Exception {
@@ -216,6 +223,10 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		return leaderElectorManager;
 	}
 
+	protected File getRedisDataDir(RedisMeta redisMeta, File redisDir) {
+		return new File(redisDir, "data");
+	}
+
 	protected void startRedis(RedisMeta redisMeta, RedisMeta redisMaster) throws IOException {
 
 		stopServerListeningPort(redisMeta.getPort());
@@ -224,7 +235,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 		File testDir = new File(getTestFileDir());
 		File redisDir = new File(testDir, "redisconfig");
-		File dataDir = new File(redisDir, "data");
+		File dataDir = getRedisDataDir(redisMeta, redisDir);
 		File logDir = new File(redisDir, "logs");
 
 		FileUtils.forceMkdir(dataDir);

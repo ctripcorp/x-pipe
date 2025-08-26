@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryPsync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryGapAllowedSync;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -60,12 +60,12 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 
 		int rdbDumpCount1 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
 
-		InMemoryPsync psync = sendInmemoryPsync("localhost", keeperPort);
-		waitConditionUntilTimeOut(() -> psync.getCommands().length >= fakeRedisServer.getCommandsLength());
+		InMemoryGapAllowedSync gasync = sendInmemoryGAsync("localhost", keeperPort);
+		waitConditionUntilTimeOut(() -> gasync.getCommands().length >= fakeRedisServer.getCommandsLength());
 		int rdbDumpCount2 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
 		Assert.assertEquals(rdbDumpCount1 + 1, rdbDumpCount2);
 
-		assertPsyncResultEquals(psync);
+		assertGAsyncResultEquals(gasync);
 	}
 
 
@@ -86,7 +86,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		int keeperPort = redisKeeperServer.getListeningPort();
 		logger.info(remarkableMessage("send psync to keeper port:{}"), keeperPort);
 
-		InMemoryPsync psync = sendInmemoryPsync("localhost", keeperPort, "?", -1L);
+		InMemoryGapAllowedSync gasync = sendInmemoryGAsync("localhost", keeperPort, "?", -1L);
 
 		sleep(1000);
 		int rdbDumpCount2 = ((DefaultRedisKeeperServer)redisKeeperServer).getRdbDumpTryCount();
@@ -94,7 +94,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 
 		sleep(sleepBeforeSendRdb);
 
-		waitForPsyncResultEquals(psync);
+		waitForGAsyncResultEquals(gasync);
 	}
 
 }

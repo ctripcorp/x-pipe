@@ -9,6 +9,8 @@ import com.ctrip.xpipe.config.DefaultPropertyConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
 
+import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
+
 /**
  * @author marsqing
  *
@@ -51,6 +53,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	private static String KEY_FSYNC_RATE_LIMIT = "keeper.repl.fsync.rate.limit";
 	private static String KEY_TRY_ROR_RDB = "keeper.try.ror.rdb";
+	private static String KEY_XSYNC_MAX_GAP = "keeper.xsync.max.gap";
 
 	public DefaultKeeperConfig(){
 
@@ -202,5 +205,10 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 		// capa rordb as default
 		// if the master support rordb, the slaves will most likely support it too
 		return getBooleanProperty(KEY_TRY_ROR_RDB, true);
+	}
+
+	@Override
+	public int getXsyncMaxGap() {
+		return getIntProperty(KEY_XSYNC_MAX_GAP, DEFAULT_XSYNC_MAXGAP);
 	}
 }

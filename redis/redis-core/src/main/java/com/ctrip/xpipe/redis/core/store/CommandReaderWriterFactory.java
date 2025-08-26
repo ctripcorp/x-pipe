@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.store;
 
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
@@ -16,7 +17,7 @@ public interface CommandReaderWriterFactory {
 
     CommandWriter createCmdWriter(CommandStore cmdStore, int maxFileSize, Logger delayTraceLogger) throws IOException;
 
-    CommandReader<ReferenceFileRegion> createCmdReader(OffsetReplicationProgress replProgress, CommandStore cmdStore,
+    CommandReader<ReferenceFileRegion> createCmdReader(ReplicationProgress<Long> replProgress, CommandStore cmdStore,
                                                        OffsetNotifier offsetNotifier, ReplDelayConfig replDelayConfig, long commandReaderFlyingThreshold) throws IOException;
 
     CommandReader<RedisOp> createCmdReader(GtidSetReplicationProgress replProgress, CommandStore cmdStore,

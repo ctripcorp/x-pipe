@@ -8,6 +8,7 @@ import com.ctrip.xpipe.simpleserver.IoActionFactory;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 
+import javax.swing.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -29,6 +30,8 @@ public class FakeRedisServer extends AbstractLifecycle{
 	
 	private int port;
 	private byte[] rdbContent = new byte[0];
+	private byte[] rordbContent = new byte[0];
+	private byte[] normalContent = new byte[0];
 	private String commands = "";
 	private int    rdbOffset = 1;
 	private Server server; 
@@ -52,7 +55,11 @@ public class FakeRedisServer extends AbstractLifecycle{
 	private boolean partialSyncFail = false;
 
 	public FakeRedisServer(int port){
-		this(port, 0);
+		this(port, 0, "psync");
+	}
+
+	public FakeRedisServer(int port, String proto){
+		this(port, 0, proto);
 	}
 
 	public FakeRedisServer(int port, int sleepBeforeSendRdb){
@@ -64,6 +71,19 @@ public class FakeRedisServer extends AbstractLifecycle{
 			@Override
 			public IoAction createIoAction(Socket socket) {
 				return new FakeRedisServerAction(FakeRedisServer.this, socket);
+			}
+		});
+	}
+
+	public FakeRedisServer(int port, int sleepBeforeSendRdb, String proto){
+
+		this.port = port;
+		this.sleepBeforeSendRdb = sleepBeforeSendRdb;
+		this.server = new Server(port, new IoActionFactory() {
+
+			@Override
+			public IoAction createIoAction(Socket socket) {
+				return new FakeRedisServerAction(FakeRedisServer.this, socket, proto);
 			}
 		});
 	}
@@ -95,6 +115,14 @@ public class FakeRedisServer extends AbstractLifecycle{
 		return rdbContent;
 	}
 
+	public byte[] getRordbContent() {
+		return rordbContent;
+	}
+
+	public byte[] getNormalRdbContent() {
+		return normalContent;
+	}
+
 	public int getRdbOffset() {
 		return rdbOffset;
 	}
@@ -121,15 +149,25 @@ public class FakeRedisServer extends AbstractLifecycle{
 		os.write(magic);
 		os.write(aux);
 		// AUX(rordb:00001)
-		if (capaRordb && this.supportRordb) os.write(new byte[] {(byte)0xfa, 0x05, 0x72, 0x6f, 0x72, 0x64, 0x62, 0x05, 0x30, 0x30, 0x30, 0x30, 0x31});
+		boolean isRordb = capaRordb && this.supportRordb;
+		if (isRordb) os.write(new byte[] {(byte)0xfa, 0x05, 0x72, 0x6f, 0x72, 0x64, 0x62, 0x05, 0x30, 0x30, 0x30, 0x30, 0x31});
 		os.write(selectDb0);
 		os.write(prefix.getBytes());
 		os.write(AbstractTest.randomString(rdbSize - prefix.length()).getBytes());
 		rdbContent = os.toByteArray();
 
+		logger.info("[reGenerateRdb] support:{}, capa:{}, isRordb:{}, len:{}", this.supportRordb, capaRordb, isRordb, rdbContent.length);
+		if (isRordb) rordbContent = os.toByteArray();
+		else normalContent = os.toByteArray();
+
 		if (commandsLength < 0) return;
 		prefix = String.format("cmd_rdboffset:%d--", rdbOffset);
 		commands = prefix + AbstractTest.randomString(commandsLength - prefix.length());
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			logger.error("[reGenerateRdb]", e);
+		}
 		addCommands(commands);
 	}
 

@@ -6,9 +6,8 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.NettyPoolUtil;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
-import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyPsync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.RdbOnlyGapAllowedSync;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
-import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
 import com.ctrip.xpipe.simpleserver.Server;
 import org.junit.Assert;
 import org.junit.Test;
@@ -26,9 +25,9 @@ public class RdbOnlyPsyncTest extends AbstractRedisTest {
         Endpoint redisEndpoint = new DefaultEndPoint("127.0.0.1", redisServer.getPort());
         DumpedRdbStore rdbStore = Mockito.mock(DumpedRdbStore.class);
         RdbOnlyReplicationStore replicationStore = new RdbOnlyReplicationStore(rdbStore);
-        RdbOnlyPsync psync = new RdbOnlyPsync(NettyPoolUtil.createNettyPool(redisEndpoint), replicationStore, scheduled);
+        RdbOnlyGapAllowedSync gasync = new RdbOnlyGapAllowedSync(NettyPoolUtil.createNettyPool(redisEndpoint), replicationStore, scheduled);
 
-        CommandFuture<Object> future = psync.execute();
+        CommandFuture<Object> future = gasync.execute();
         waitConditionUntilTimeOut(future::isDone);
         Assert.assertFalse(future.isSuccess());
         Mockito.verify(rdbStore, Mockito.timeout(3000).atLeastOnce()).close();
@@ -41,14 +40,14 @@ public class RdbOnlyPsyncTest extends AbstractRedisTest {
         PsyncObserver failObserver = Mockito.mock(PsyncObserver.class);
         DumpedRdbStore rdbStore = Mockito.mock(DumpedRdbStore.class);
         RdbOnlyReplicationStore replicationStore = new RdbOnlyReplicationStore(rdbStore);
-        RdbOnlyPsync psync = new RdbOnlyPsync(NettyPoolUtil.createNettyPool(redisEndpoint), replicationStore, scheduled);
-        psync.addPsyncObserver(failObserver);
-        Mockito.doThrow(new PsyncMasterRdbOffsetNotContinuousRuntimeException(100, 1)).when(failObserver).onFullSync(Mockito.anyLong());
+        RdbOnlyGapAllowedSync gasync = new RdbOnlyGapAllowedSync(NettyPoolUtil.createNettyPool(redisEndpoint), replicationStore, scheduled);
+        gasync.addPsyncObserver(failObserver);
+        Mockito.doThrow(new IllegalStateException("checkReplIdAndUpdateRdbGapAllowed fail")).when(failObserver).onFullSync(Mockito.anyLong());
 
-        CommandFuture<Object> future = psync.execute();
+        CommandFuture<Object> future = gasync.execute();
         waitConditionUntilTimeOut(future::isDone);
         Assert.assertFalse(future.isSuccess());
-        Assert.assertTrue(future.cause() instanceof PsyncMasterRdbOffsetNotContinuousRuntimeException);
+        Assert.assertTrue(future.cause() instanceof IllegalStateException);
         Mockito.verify(rdbStore, Mockito.timeout(3000).atLeastOnce()).close();
     }
 
