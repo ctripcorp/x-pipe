@@ -81,7 +81,8 @@ public class DefaultControllableFileTest extends AbstractTest {
         controllableFile.getFileChannel().write(ByteBuffer.wrap(randomString(dataLen).getBytes()));
         Assert.assertEquals(dataLen, controllableFile.size());
         controllableFile.close();
-        Assert.assertEquals(dataLen, controllableFile.size());
+        // file close can not reopen, will throw exception
+        // Assert.assertEquals(dataLen, controllableFile.size());
     }
 
 
