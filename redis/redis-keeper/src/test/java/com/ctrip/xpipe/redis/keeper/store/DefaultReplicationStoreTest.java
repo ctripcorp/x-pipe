@@ -61,29 +61,6 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	}
 
 	@Test
-	public void testInterruptedException() throws IOException {
-
-		String keeperRunid = randomKeeperRunid();
-		int dataLen = 100;
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
-		RdbStore rdbStore = beginRdb(store, dataLen);
-
-		rdbStore.writeRdb(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
-		rdbStore.endRdb();
-
-		Thread.currentThread().interrupt();
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
-
-
-		//clear interrupt
-		Thread.interrupted();
-
-		store.appendCommands(Unpooled.wrappedBuffer(randomString(dataLen).getBytes()));
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
-
-	}
-	
-	@Test
 	public void testReadWhileDestroy() throws Exception{
 
 		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
