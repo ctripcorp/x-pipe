@@ -36,9 +36,9 @@ public class DefaultMetaServerMultiDcService extends AbstractMetaService impleme
 	}
 
 	@Override
-	public void upstreamChange(String clusterId, String shardId, String ip, int port) {
+	public void upstreamChange(String dcName, String clusterId, String shardId, String ip, int port) {
 		
-		restTemplate.put(upstreamchangePath, null, clusterId, shardId, ip, port);
+		restTemplate.put(upstreamchangePath, null, dcName, clusterId, shardId, ip, port);
 	}
 
 	@Override

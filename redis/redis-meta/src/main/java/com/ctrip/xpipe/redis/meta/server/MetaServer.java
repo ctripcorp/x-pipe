@@ -40,7 +40,7 @@ public interface MetaServer extends ClusterServer, TopElement{
 
 	RedisMeta getRedisMaster(String clusterId, String shardId);
 
-	void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo);
+	void updateUpstream(String dcName, String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo);
 
 	void upstreamPeerChange(String upstreamDcId, String clusterId, String shardId, ForwardInfo forwardInfo);
 

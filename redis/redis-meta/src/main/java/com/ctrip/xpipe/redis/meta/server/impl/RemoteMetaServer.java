@@ -152,13 +152,13 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 	}
 
 	@Override
-	public void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo) {
+	public void updateUpstream(String dcName, String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo) {
 		
 		HttpHeaders headers = checkCircularAndGetHttpHeaders(forwardInfo, META_SERVER_SERVICE.UPSTREAM_CHANGE.getForwardType());
-		logger.info("[updateUpstream][forward]{},{},{}:{}, {}--> {}", clusterId, shardId, ip, port, forwardInfo, this);
+		logger.info("[updateUpstream][forward]{},{},{},{}:{}, {}--> {}", dcName, clusterId, shardId, ip, port, forwardInfo, this);
 		
 		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
-		restTemplate.exchange(upstreamChangePath, HttpMethod.PUT, entity, String.class, clusterId, shardId, ip, port);
+		restTemplate.exchange(upstreamChangePath, HttpMethod.PUT, entity, String.class, dcName, clusterId, shardId, ip, port);
 		
 	}
 

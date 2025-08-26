@@ -84,7 +84,7 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 			
 			String path = META_SERVER_SERVICE.UPSTREAM_CHANGE.getRealPath(server.getAddress());
 			logger.info("[testClusterChanged]{}", path);
-			restTemplate.put(path, null, "cluster1", "shard1", "localhost", 7777);
+			restTemplate.put(path, null, "jq", "cluster1", "shard1", "localhost", 7777);
 		}
 	}
 
