@@ -84,7 +84,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 			}
 		});
 		
-		sleep(1000);
+		sleep(1500);
 		verify(replicationStoreManager).create();
 	}
 
