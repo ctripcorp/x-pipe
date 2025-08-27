@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
-import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
@@ -11,6 +11,7 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.pool.ReturnObjectException;
 import com.ctrip.xpipe.redis.core.protocal.ApplierSyncObserver;
+import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -112,7 +113,7 @@ public class ApplierGapAllowSync extends AbstractGapAllowedSync {
     @Override
     protected RdbBulkStringParser createRdbReader() {
         ByteArrayOutputStreamPayload rdb = new ByteArrayOutputStreamPayload();
-        return new RdbBulkStringParser(rdb, rdbParser);
+        return new ParserOnlyRdbBulkStringParser(rdb, rdbParser);
     }
 
 
@@ -228,6 +229,36 @@ public class ApplierGapAllowSync extends AbstractGapAllowedSync {
 
     public NettyClient getNettyClient() {
         return nettyClient;
+    }
+
+    public static class ParserOnlyRdbBulkStringParser extends RdbBulkStringParser {
+
+        private static final Logger logger = LoggerFactory.getLogger(ParserOnlyRdbBulkStringParser.class);
+
+        private RdbParser<?> rdbParser;
+        public ParserOnlyRdbBulkStringParser(InOutPayload payload, RdbParser<?> rdbParser) {
+            super(payload);
+            this.rdbParser = rdbParser;
+        }
+
+        @Override
+        protected int readContent(ByteBuf byteBuf) {
+            // only parser,not save data
+            if (null != rdbParser && !rdbParser.isFinish()) rdbParser.read(byteBuf.slice());
+            int len = byteBuf.readableBytes();
+            byteBuf.skipBytes(len);
+            return len;
+        }
+
+        @Override
+        protected RedisClientProtocol<InOutPayload> readEnd(ByteBuf byteBuf) {
+            return new RdbBulkStringParser(payload);
+        }
+
+        @Override
+        protected Logger getLogger() {
+            return logger;
+        }
     }
 
 }
