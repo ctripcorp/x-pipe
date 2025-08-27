@@ -243,8 +243,8 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		    if (dcMetaCache.isCurrentDcPrimary(clusterShard.getKey(), clusterShard.getValue())) {
 				logger.warn("[updateUpstream][current is primary dc, do not update]{},{},{},{}", clusterShard.getKey(), clusterShard.getValue(), ip,
 						port);
-			} else if (!StringUtil.isEmpty(dcName) && !Objects.equals(dcMetaCache.getPrimaryDc(clusterShard.getKey(), clusterShard.getValue()), dcName)) {
-				logger.warn("[updateUpstream][{} is not primary dc, do not update]{}-{},{},{},{}", dcName, dcMetaCache.getPrimaryDc(clusterShard.getKey(), clusterShard.getValue()), clusterShard.getKey(), clusterShard.getValue(), ip,
+			} else if (!StringUtil.isEmpty(dcName) && dcName.equalsIgnoreCase(dcMetaCache.getPrimaryDc(clusterShard.getKey(), clusterShard.getValue()))) {
+				logger.warn("[updateUpstream][{} is not primary dc, do not update]{}-{},{},{},{}", dcName.toLowerCase(), dcMetaCache.getPrimaryDc(clusterShard.getKey(), clusterShard.getValue()), clusterShard.getKey(), clusterShard.getValue(), ip,
 						port);
 			} else {
 				logger.info("[updateUpstream]{},{},{},{}", clusterId, shardId, ip, port);
