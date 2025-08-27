@@ -119,7 +119,7 @@ public enum META_SERVER_SERVICE {
         public static final String PATH_GET_CURRENT_MASTER = "/getcurrentmaster/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE;
 
         //multi dc
-        public static final String PATH_UPSTREAM_CHANGE = "/upstreamchange/" + DC_NAME_PATH_VARIABLE + "/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE + "/{ip}/{port}";
+        public static final String PATH_UPSTREAM_CHANGE = "/upstreamchange/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE + "/{ip}/{port}";
         public static final String GET_PEER_MASTER = "/getpeermaster/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE;
         public static final String PATH_UPSTREAM_PEER_CHANGE = "/upstreampeerchange/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE;
         public static final String GET_SIDS = "/getsids/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE;

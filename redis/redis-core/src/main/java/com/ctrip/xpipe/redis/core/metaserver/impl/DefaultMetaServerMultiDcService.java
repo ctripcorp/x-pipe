@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.core.metaserver.impl;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.metaserver.META_SERVER_SERVICE;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerMultiDcService;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,8 +39,9 @@ public class DefaultMetaServerMultiDcService extends AbstractMetaService impleme
 
 	@Override
 	public void upstreamChange(String dcName, String clusterId, String shardId, String ip, int port) {
-		
-		restTemplate.put(upstreamchangePath, null, dcName, clusterId, shardId, ip, port);
+		UriComponents uriComponents = UriComponentsBuilder.fromUriString(upstreamchangePath).queryParam("dcName", dcName).build();
+
+		restTemplate.put(uriComponents.toUriString(), null, clusterId, shardId, ip, port);
 	}
 
 	@Override

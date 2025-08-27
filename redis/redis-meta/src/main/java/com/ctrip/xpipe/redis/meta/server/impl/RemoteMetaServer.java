@@ -17,6 +17,8 @@ import com.ctrip.xpipe.redis.meta.server.rest.exception.CircularForwardException
 import com.ctrip.xpipe.rest.ForwardType;
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.http.*;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 
@@ -158,7 +160,8 @@ public class RemoteMetaServer extends AbstractRemoteClusterServer implements Met
 		logger.info("[updateUpstream][forward]{},{},{},{}:{}, {}--> {}", dcName, clusterId, shardId, ip, port, forwardInfo, this);
 		
 		HttpEntity<ClusterMeta> entity = new HttpEntity<>(headers);
-		restTemplate.exchange(upstreamChangePath, HttpMethod.PUT, entity, String.class, dcName, clusterId, shardId, ip, port);
+		UriComponents uriComponents = UriComponentsBuilder.fromUriString(upstreamChangePath).queryParam("dcName", dcName).build();
+		restTemplate.exchange(uriComponents.toUriString(), HttpMethod.PUT, entity, String.class, clusterId, shardId, ip, port);
 		
 	}
 

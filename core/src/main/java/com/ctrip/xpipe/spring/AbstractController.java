@@ -26,7 +26,6 @@ public class AbstractController {
 	public static final String REGION_NAME_PATH_VARIABLE = "{regionName:.+}";
 	public static final String AZ_NAME_PATH_VARIABLE = "{azName:.+}";
 	public static final String SHARD_NAME_PATH_VARIABLE = "{shardName:.+}";
-	public static final String DC_NAME_PATH_VARIABLE = "{dcName:.+}";
 	public static final String CLUSTER_ID_PATH_VARIABLE = "{clusterId:.+}";
 	public static final String SHARD_ID_PATH_VARIABLE = "{shardId:.+}";
 	public static final String IP_ADDRESS_VARIABLE = "{ipAddress:.+}";
