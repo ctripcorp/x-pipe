@@ -287,7 +287,8 @@ public class GtidSetTest {
 
     @Test
     public void testEmptySet() throws Exception {
-        Assert.assertEquals(new GtidSet("").toString(), "");
+        Assert.assertEquals(new GtidSet("\"\"").toString(), "\"\"");
+        Assert.assertEquals(new GtidSet("").toString(), "\"\"");
     }
 
     @Test
@@ -414,24 +415,29 @@ public class GtidSetTest {
         GtidSet res = big.subtract(small);
         Assert.assertEquals(res.toString(), UUID + ":1-2:9-10");
 
+        big = new GtidSet(UUID + ":2-3");
+        small = new GtidSet(UUID + ":1-2");
+        res = big.subtract(small);
+        Assert.assertEquals(res.toString(), UUID + ":3");
+
         big = new GtidSet(UUID + ":1-10:50-100");
         small = new GtidSet(UUID + ":3-8:75-85:98");
         res = big.subtract(small);
         Assert.assertEquals(res.toString(), UUID + ":1-2:9-10:50-74:86-97:99-100");
         res = small.subtract(big);
-        Assert.assertEquals(res.toString(), "");
+        Assert.assertEquals(res.toString(), "\"\"");
 
         big = new GtidSet(UUID + ":1-10:100");
         small = new GtidSet(UUID + ":100");
         res = big.subtract(small);
         Assert.assertEquals(res.toString(), UUID + ":1-10");
         res = small.subtract(big);
-        Assert.assertEquals(res.toString(), "");
+        Assert.assertEquals(res.toString(), "\"\"");
 
         big = new GtidSet("");
         small = new GtidSet(UUID + ":3-8:75-85:98");
         res = big.subtract(small);
-        Assert.assertEquals(res.toString(), "");
+        Assert.assertEquals(res.toString(), "\"\"");
 
         big = new GtidSet(UUID + ":1-10:50-100");
         small = new GtidSet(UUID + ":3-8:75-85:98-99");
@@ -472,7 +478,7 @@ public class GtidSetTest {
         big = new GtidSet(UUID + ":1-10");
         small = new GtidSet(UUID + ":1-10");
         res = big.subtract(small);
-        Assert.assertEquals(res.toString(), "");
+        Assert.assertEquals(res.toString(), "\"\"");
 
         big = new GtidSet(UUID + ":1-10");
         small = new GtidSet(UUID + ":1-9");
@@ -720,7 +726,7 @@ public class GtidSetTest {
         big = new GtidSet("");
         small = new GtidSet("");
         res = small.union(big);
-        Assert.assertEquals(res.toString(), "");
+        Assert.assertEquals(res.toString(), "\"\"");
 
         big = new GtidSet("cb190774-6bf1-11ea-9799-fa163e02998c:1-18912721");
         small = new GtidSet("cb190774-6bf1-11ea-9799-fa163e02998c:1-16504165:16504173-16541256:16541260-16545608:16545610-18913165");
@@ -767,6 +773,26 @@ public class GtidSetTest {
         GtidSet current = new GtidSet("a1:1-10:15-25,b1:1-100");
         GtidSet other = new GtidSet("a1:5-30,c1:1-100");
         Assert.assertEquals(new GtidSet("a1:5-10:15-25"), current.retainAll(other));
+    }
+
+    @Test
+    public void testSymmetricDiff() {
+        GtidSet self = new GtidSet("A:1-10:15-25,B:1-100");
+        GtidSet other = new GtidSet("A:11-14,B:25-50,C:1-30:50-60");
+        Assert.assertEquals(new GtidSet("A:1-25,B:1-24:51-100,C:1-30:50-60"), self.symmetricDiff(other));
+        self = new GtidSet("A:1-100");
+        other = new GtidSet("B:1-25");
+        Assert.assertEquals(new GtidSet("A:1-100,B:1-25"), self.symmetricDiff(other));
+        self = new GtidSet("B:1-15");
+        other = new GtidSet("A:1-10,B:1-30,C:1-15");
+        Assert.assertEquals(new GtidSet("A:1-10,B:16-30,C:1-15"), self.symmetricDiff(other));
+        Assert.assertEquals(new GtidSet("A:1-10,B:16-30,C:1-15"), other.symmetricDiff(self));
+    }
+
+    @Test
+    public void testItemCnt() {
+        GtidSet gtidSet = new GtidSet("A:1-10:15-20:35-35,B:1-50,C:0");
+        Assert.assertEquals(67, gtidSet.itemCnt());
     }
 
 }

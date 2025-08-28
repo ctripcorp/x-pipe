@@ -132,8 +132,8 @@ public class MultiDcNotifier implements MetaServerStateChangeHandler {
 		@Override
 		protected void doRun() throws Exception {
 
-			logger.info("[doRun]{}, {}, {}, {}", metaServerMultiDcService, clusterId, shardId, activeKeeper);
-			metaServerMultiDcService.upstreamChange(clusterId, shardId, activeKeeper.getIp(), activeKeeper.getPort());
+			logger.info("[doRun]{}, {}, {}, {}, {}", metaServerMultiDcService, dcMetaCache.getCurrentDc(), clusterId, shardId, activeKeeper);
+			metaServerMultiDcService.upstreamChange(dcMetaCache.getCurrentDc(), clusterId, shardId, activeKeeper.getIp(), activeKeeper.getPort());
 
 		}
 

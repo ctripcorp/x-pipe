@@ -11,6 +11,8 @@ public class ApplierConfig {
 
     private AtomicBoolean useXsync = new AtomicBoolean(false);
 
+    private AtomicBoolean protoChangeAllow = new AtomicBoolean(false);
+
     public int getDropAllowRation() {
         return dropAllowRation.get();
     }
@@ -33,5 +35,13 @@ public class ApplierConfig {
 
     public void setUseXsync(boolean useXsync) {
         this.useXsync.set(useXsync);
+    }
+
+    public void setProtoChangeAllow(boolean protoChangeAllow) {
+        this.protoChangeAllow.set(protoChangeAllow);
+    }
+
+    public boolean getProtoChangeAllow() {
+        return protoChangeAllow.get();
     }
 }

@@ -20,4 +20,6 @@ public interface CommandWriter extends Closeable {
     long totalLength();
 
     long getFileLastModified();
+
+    CommandFileContext getFileContext();
 }

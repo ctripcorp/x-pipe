@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
+import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandLister;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.ApplierStatistic;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
@@ -11,7 +13,9 @@ import com.ctrip.xpipe.redis.keeper.applier.threshold.ConcurrencyThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.MemoryThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThreshold;
 import com.ctrip.xpipe.utils.CloseState;
+import io.netty.buffer.ByteBuf;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -39,6 +43,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     public AtomicLong offsetRecorder;
 
     @InstanceDependency
+    public AtomicReference<GtidSet> execGtidSet;
+
+    @InstanceDependency
     public AtomicReference<ApplierStatistic> applierStatisticRef;
 
     public MemoryThreshold memoryThreshold;
@@ -57,7 +64,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     private long bytesPerSecondThresholdValue;
 
-    public static final long DEFAULT_QPS_THRESHOLD = 5000;
+    public static final long DEFAULT_QPS_THRESHOLD = 50000000;
 
     // 100MB
     public static final long DEFAULT_BYTES_PER_SECOND_THRESHOLD = 100 * 1024 * 1024;
@@ -97,6 +104,11 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     @Override
     public void submit(RedisOpCommand<?> command, long commandOffsetToAccumulate) {
+        submit(command, commandOffsetToAccumulate, null);
+    }
+
+    @Override
+    public void submit(RedisOpCommand<?> command, long commandOffsetToAccumulate, GtidSet gtidSet) {
 
         if (closeState.isClosed()) {
            logger.debug("[submit] already closed");
@@ -121,16 +133,16 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             }
             switch (command.type()) {
                 case SINGLE_KEY:
-                    submitSingleKeyCommand((RedisOpDataCommand<?>) command, commandOffsetToAccumulate);
+                    submitSingleKeyCommand((RedisOpDataCommand<?>) command, commandOffsetToAccumulate, gtidSet);
                     break;
                 case MULTI_KEY:
-                    submitMultiKeyCommand((RedisOpDataCommand<?>) command, commandOffsetToAccumulate);
+                    submitMultiKeyCommand((RedisOpDataCommand<?>) command, commandOffsetToAccumulate, gtidSet);
                     break;
                 case NONE_KEY:
-                    submitNoneKeyCommand(command, commandOffsetToAccumulate);
+                    submitNoneKeyCommand(command, commandOffsetToAccumulate, gtidSet);
                     break;
                 case OTHER:
-                    submitObstacle(command, commandOffsetToAccumulate);
+                    submitObstacle(command, commandOffsetToAccumulate, gtidSet);
                     break;
             }
         });
@@ -146,7 +158,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         }
     }
 
-    private void submitNoneKeyCommand(RedisOpCommand<?> command, long commandOffset) {
+    private void submitNoneKeyCommand(RedisOpCommand<?> command, long commandOffset, GtidSet gtidSet) {
 
         /* find dependencies */
 
@@ -162,7 +174,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        increaseOffsetWhenSuccess(current, commandOffset);
+        increaseOffsetWhenSuccessAndGtidSet(current, commandOffset, gtidSet);
         releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         /* run self */
@@ -170,7 +182,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         current.execute();
     }
 
-    private void submitSingleKeyCommand(RedisOpDataCommand<?> command, long commandOffset) {
+    private void submitSingleKeyCommand(RedisOpDataCommand<?> command, long commandOffset, GtidSet gtidSet) {
 
         /* find dependencies */
 
@@ -197,7 +209,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        increaseOffsetWhenSuccess(current, commandOffset);
+        increaseOffsetWhenSuccessAndGtidSet(current, commandOffset, gtidSet);
         releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         /* run self */
@@ -205,7 +217,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         current.execute();
     }
 
-    private void submitMultiKeyCommand(RedisOpDataCommand<?> command, long commandOffset) {
+    private void submitMultiKeyCommand(RedisOpDataCommand<?> command, long commandOffset, GtidSet gtidSet) {
 
         List<RedisKey> keys = command.keys();
         List<SequenceCommand<?>> dependencies = keys.stream().map(runningCommands::get).filter(Objects::nonNull).collect(Collectors.toList());
@@ -220,13 +232,13 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             forgetWhenDone(current, key);
         }
 
-        increaseOffsetWhenSuccess(current, commandOffset);
+        increaseOffsetWhenSuccessAndGtidSet(current, commandOffset, gtidSet);
         releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         current.execute();
     }
 
-    private void submitObstacle(RedisOpCommand<?> command, long commandOffset) {
+    private void submitObstacle(RedisOpCommand<?> command, long commandOffset, GtidSet gtidSet) {
 
         /* find dependencies */
 
@@ -248,7 +260,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         /* do some stuff when finish */
 
-        increaseOffsetWhenSuccess(current, commandOffset);
+        increaseOffsetWhenSuccessAndGtidSet(current, commandOffset, gtidSet);
         releaseMemoryThresholdWhenDone(current, command.redisOp().estimatedSize());
 
         /* run self */
@@ -280,11 +292,15 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         });
     }
 
-    private void increaseOffsetWhenSuccess(SequenceCommand<?> sequenceCommand, long commandOffset) {
+    private void increaseOffsetWhenSuccessAndGtidSet(SequenceCommand<?> sequenceCommand, long commandOffset, GtidSet gtidSet) {
         sequenceCommand.future().addListener((f) -> {
             if (f.isSuccess()) {
                 offsetRecorder.addAndGet(commandOffset);
+                if(gtidSet != null && gtidSet.itemCnt() > 0) {
+                    execGtidSet.get().intersectionGtidSet(gtidSet);
+                }
             }
         });
     }
+
 }

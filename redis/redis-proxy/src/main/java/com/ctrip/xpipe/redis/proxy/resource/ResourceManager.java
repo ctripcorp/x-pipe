@@ -28,4 +28,10 @@ public interface ResourceManager extends ProxyResourceManager {
     SocketStatsManager getSocketStatsManager();
 
     SimpleKeyedObjectPool<Endpoint, NettyClient> getKeyedObjectPool();
+
+    /**
+     * Get the global traffic control manager
+     * @return GlobalTrafficControlManager instance
+     */
+    GlobalTrafficControlManager getGlobalTrafficControlManager();
 }

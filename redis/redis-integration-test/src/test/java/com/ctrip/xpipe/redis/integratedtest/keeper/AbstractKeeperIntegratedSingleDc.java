@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.tuple.Pair;
 import org.apache.commons.exec.ExecuteException;
+import org.junit.After;
 import org.junit.Before;
 
 import java.io.IOException;
@@ -55,6 +56,11 @@ public class AbstractKeeperIntegratedSingleDc extends AbstractKeeperIntegrated{
 		slaves = getRedisSlaves();
 
 		sleep(getInitSleepMilli());//wait for structure to build
+	}
+
+	@After
+	public void relaseServers() {
+		super.afterAbstractIntegratedTest();
 	}
 
 	protected boolean startServers() {

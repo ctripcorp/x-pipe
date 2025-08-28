@@ -268,4 +268,18 @@ public class StringUtil {
         }
     }
 
+    public static String unwrap(final String str, final char wrapChar) {
+        if (isEmpty(str) || wrapChar == '\0' || str.length() == 1) {
+            return str;
+        }
+
+        if (str.charAt(0) == wrapChar && str.charAt(str.length() - 1) == wrapChar) {
+            final int startIndex = 0;
+            final int endIndex = str.length() - 1;
+
+            return str.substring(startIndex + 1, endIndex);
+        }
+
+        return str;
+    }
 }

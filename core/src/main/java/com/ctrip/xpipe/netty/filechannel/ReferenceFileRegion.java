@@ -1,58 +1,100 @@
 package com.ctrip.xpipe.netty.filechannel;
 
-import io.netty.channel.DefaultFileRegion;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.netty.channel.FileRegion;
 
-import java.nio.channels.FileChannel;
+import java.io.IOException;
+import java.nio.channels.WritableByteChannel;
 
-/**
- * @author wenchao.meng
- *
- * Nov 10, 2016
- */
-public class ReferenceFileRegion extends DefaultFileRegion{
-	
-	protected static Logger logger = LoggerFactory.getLogger(ReferenceFileRegion.class);
-	
-	private ReferenceFileChannel referenceFileChannel;
-	
-	/**
-	 * for debug purpose, ignore
-	 */
-	private long totalPos;
-	
-	public ReferenceFileRegion(FileChannel fileChannel, long position, long count, ReferenceFileChannel referenceFileChannel) {
-		
-		super(fileChannel, position, count);
-		this.referenceFileChannel = referenceFileChannel;
-	}
+public interface ReferenceFileRegion extends FileRegion {
 
-	
-	@Override
-	public void deallocate() {
-		
-		try {
-			referenceFileChannel.release();
-		} catch (Exception e) {
-			logger.error("[deallocate]" + referenceFileChannel, e);
-		}
-	}
-	
-	@Override
-	public String toString() {
-		
-		return String.format("(%s), pos:%d, len:%d", referenceFileChannel, position(), count());
-	}
+    ReferenceFileRegion EOF = new EOFFileRegion();
 
+    void deallocate();
 
-	public long getTotalPos() {
-		return totalPos;
-	}
+    long getTotalPos();
 
+    void setTotalPos(long totalPos);
 
-	public void setTotalPos(long totalPos) {
-		this.totalPos = totalPos;
-	}
+    class EOFFileRegion implements ReferenceFileRegion {
+
+        private EOFFileRegion() {
+
+        }
+
+        @Override
+        public long getTotalPos() {
+            return 0;
+        }
+
+        @Override
+        public void setTotalPos(long totalPos) {
+
+        }
+
+        @Override
+        public long position() {
+            return 0;
+        }
+
+        @Override
+        public long transfered() {
+            return 0;
+        }
+
+        @Override
+        public long transferred() {
+            return 0;
+        }
+
+        @Override
+        public long count() {
+            return 0;
+        }
+
+        @Override
+        public long transferTo(WritableByteChannel target, long position) throws IOException {
+            return 0;
+        }
+
+        @Override
+        public FileRegion retain() {
+            return null;
+        }
+
+        @Override
+        public FileRegion retain(int increment) {
+            return null;
+        }
+
+        @Override
+        public FileRegion touch() {
+            return null;
+        }
+
+        @Override
+        public FileRegion touch(Object hint) {
+            return null;
+        }
+
+        @Override
+        public int refCnt() {
+            return 0;
+        }
+
+        @Override
+        public boolean release() {
+            return false;
+        }
+
+        @Override
+        public boolean release(int decrement) {
+            return false;
+        }
+
+        @Override
+        public void deallocate() {
+
+        }
+    }
 
 }

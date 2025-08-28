@@ -4,9 +4,11 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -24,6 +26,16 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	public RdbOnlyReplicationStore(DumpedRdbStore dumpedRdbStore) {
 		this.dumpedRdbStore = dumpedRdbStore;
 		metaStore = new MetaStore() {
+
+			@Override
+			public ReplStage getPreReplStage() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public ReplStage getCurrentReplStage() {
+				return null;
+			}
 
 			@Override
 			public ReplicationStoreMeta rdbConfirm(String replId, long beginOffset, String gtidSet, String rdbFile,
@@ -143,7 +155,162 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			public void releaseRdbFile(String rdbFile) throws IOException {
 				throw new UnsupportedOperationException();
 			}
+
+			@Override
+			public String getCurReplStageReplId() {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Long backlogOffsetToReplOffset(Long backlogOffset) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Long replOffsetToBacklogOffset(Long replOff) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public ReplicationStoreMeta rdbConfirmPsync(String replId, long replOff, long backlogOff, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public ReplicationStoreMeta psyncContinueFrom(String replId, long beginOffset, long backlogOff, String cmdFilePrefix) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public ReplicationStoreMeta psyncContinue(String newReplId, long backlogOff) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public ReplicationStoreMeta switchToPsync(String replId, long replOff, long backlogOff) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public ReplicationStoreMeta rdbConfirmXsync(String replId, long replOff, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public ReplicationStoreMeta xsyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String cmdFilePrefix) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public boolean xsyncContinue(String replId, long replOff, long backlogOff, String masterUuid, GtidSet gtidCont, GtidSet gtidIndexed) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public ReplicationStoreMeta switchToXsync(String replId, long replOff, long backlogOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public boolean increaseLost(GtidSet lost) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoPsync(String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, String rdbReplId, long backlogBeginOffset, long backlogEndOffset) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoXsync(String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, String rdbReplId, String rdbMasterUuid,  GtidSet rdbGtidExecuted, GtidSet rdbGtidLost, long backlogBeginOffset, long backlogEndOffset, long indexedOffsetBacklog, GtidSet indexedGtidSet) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public GtidCmdFilter generateGtidCmdFilter() {
+				throw new UnsupportedOperationException();
+			}
 		};
+	}
+
+	@Override
+	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public XSyncContinue locateContinueGtidSetWithFallbackToEnd(GtidSet gtidSet) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public XSyncContinue locateTailOfCmd() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
+							   GtidSet gtidLost, String masterUuid) throws IOException {
+		prepareRdb(replId, rdbOffset, eofType);
+		dumpedRdbStore.setReplProto(replProto);
+		dumpedRdbStore.setGtidLost(gtidLost == null ? null : gtidLost.toString());
+		dumpedRdbStore.setMasterUuid(masterUuid);
+		return dumpedRdbStore;
+	}
+
+	@Override
+	public void confirmRdbGapAllowed(RdbStore rdbStore) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void psyncContinueFrom(String replId, long continueOffset) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbGapAllowed(RdbStore rdbStore) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void switchToPSync(String replId, long offset) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void psyncContinue(String replId) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void xsyncContinueFrom(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidSet, GtidSet gtidLost) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean increaseLost(GtidSet lost) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public long getCurReplStageReplOff() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public Pair<GtidSet, GtidSet> getGtidSet() {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -193,6 +360,16 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	
 	@Override
 	public long firstAvailableOffset() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public long backlogBeginOffset() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public long backlogEndOffset() {
 		throw new UnsupportedOperationException();
 	}
 
@@ -248,11 +425,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public void addCommandsListener(ReplicationProgress<?> progress, CommandsListener commandsListener) throws IOException {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public FULLSYNC_FAIL_CAUSE createIndexIfPossible(ExecutorService indexingExecutors) {
 		throw new UnsupportedOperationException();
 	}
 

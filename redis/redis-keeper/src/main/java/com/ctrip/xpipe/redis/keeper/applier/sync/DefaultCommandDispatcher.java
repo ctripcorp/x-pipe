@@ -2,36 +2,38 @@ package com.ctrip.xpipe.redis.keeper.applier.sync;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
+import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandLister;
+import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandParser;
+import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
-import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParser;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
 import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.*;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol.ASTERISK_BYTE;
+
 /**
  * @author Slight
  * <p>
  * Jun 05, 2022 18:21
  */
-public class DefaultCommandDispatcher extends AbstractInstanceComponent implements ApplierCommandDispatcher {
+public class DefaultCommandDispatcher extends AbstractInstanceComponent implements ApplierCommandDispatcher, StreamCommandLister {
     @InstanceDependency
     public ApplierSequenceController sequenceController;
 
@@ -48,7 +50,14 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public ScheduledExecutorService workerThreads;
 
     @InstanceDependency
-    public AtomicReference<GtidSet> gtid_executed;
+    public AtomicReference<GtidSet> execGtidSet;
+
+    @InstanceDependency
+    public AtomicReference<GtidSet> startGtidSet;
+
+    @InstanceDependency
+    public AtomicReference<GtidSet> lostGtidSet;
+
 
     @InstanceDependency
     public AtomicReference<GTIDDistanceThreshold> gtidDistanceThreshold;
@@ -56,106 +65,104 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @InstanceDependency
     public AtomicLong offsetRecorder;
 
-    /* why not a global resource */
-    @VisibleForTesting
-    RdbParser<?> rdbParser;
+    @InstanceDependency
+    public AtomicReference<String> replId;
 
-    @VisibleForTesting
-    Set<String> receivedSids;
-
-    @VisibleForTesting
-    GtidSet gtid_received;
-
-    private GtidSet rdbGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
-
+    private StreamCommandParser streamCommandParser;
     // in order to aggregate the entire transaction into one command
     private AtomicReference<TransactionCommand> transactionCommand;
 
     private int dbNumber = 0;
 
-    public DefaultCommandDispatcher() {
-        this.rdbParser = createRdbParser();
+    private String startGtidStr = "";
+    private String lostGtidStr = "";
+    private long startOffset = -1;
 
-        this.receivedSids = new HashSet<>();
+    public DefaultCommandDispatcher() {
 
         this.transactionCommand = new AtomicReference<>();
     }
 
-    private RdbParser<?> createRdbParser() {
-        RdbParser<?> rdbParser = new DefaultRdbParser();
-        rdbParser.registerListener(this);
-        return rdbParser;
-    }
-
     @VisibleForTesting
-    void resetState(GtidSet gtidSet) {
-        this.gtid_received = gtidSet.clone();
-        this.receivedSids = new HashSet<>();
-        this.gtid_executed.set(gtidSet.clone());
+    void resetState() {
         this.gtidDistanceThreshold.set(new GTIDDistanceThreshold(2000));
         this.transactionCommand.set(null);
+        this.execGtidSet.set(new GtidSet(GtidSet.EMPTY_GTIDSET));
+        this.remainingBuf = null;
+        startGtidStr = "";
+        startOffset = -1;
+        lostGtidStr = "";
     }
 
     @Override
-    public void onFullSync(GtidSet rdbGtidSet, long rdbOffset) {
+    public void doOnFullSync(String replId, long replOff) {
+        this.replId.set(replId);
+        this.startOffset = replOff;
+    }
 
-        logger.info("[onFullSync] rdbGtidSet={}", rdbGtidSet);
+    @Override
+    public void doOnXFullSync(GtidSet lost, long replOff) {
+        this.lostGtidStr = lost.toString();
+        this.startOffset = replOff;
+        this.remainingBuf = null;
+    }
 
-        this.resetState(rdbGtidSet);
-        if (this.rdbParser != null) {
-            this.rdbParser.reset();
+    @Override
+    public void doOnXContinue(GtidSet lost, long replOffset) {
+        this.offsetRecorder.set(replOffset);
+        this.remainingBuf = null;
+        this.resetState();
+    }
+
+    @Override
+    public void doOnContinue(String newReplId) {
+        replId.set(newReplId);
+        this.remainingBuf = null;
+        this.resetState();
+    }
+
+    private ByteBuf remainingBuf;
+    @Override
+    public void doOnAppendCommand(ByteBuf byteBuf) {
+        if(streamCommandParser == null) {
+            streamCommandParser = new StreamCommandParser(parser, this);
         }
-        this.rdbParser = createRdbParser();
-    }
-
-    @Override
-    public void beginReadRdb(EofType eofType, GtidSet rdbGtidSet, long rdbOffset) {
-        logger.info("[beginReadRdb] eofType={}, rdbGtidSet={}", eofType, rdbGtidSet);
-    }
-
-    @Override
-    public void onRdbData(ByteBuf rdbData) {
         try {
-            rdbParser.read(rdbData);
-        } catch (Throwable t) {
-            logger.error("[onRdbData] unlikely - error", t);
-            throw t;
+            streamCommandParser.doRead(byteBuf);
+        } catch (IOException ioException) {
+            // 这里没有写文件 其实不会出现 IOException
+            logger.error("parser error", ioException);
         }
     }
 
     @Override
-    public void endReadRdb(EofType eofType, GtidSet emptyGtidSet, long rdbOffset) {
-        logger.info("[endReadRdb] eofType={}", eofType);
+    public void endReadRdb() {
+        logger.info("[endReadRdb] start {}, lost: {}, offset: {} ", startGtidStr, lostGtidStr, startOffset);
+        this.offsetRecorder.set(startOffset);
+        this.lostGtidSet.set(new GtidSet(lostGtidStr));
+        this.startGtidSet.set(new GtidSet(startGtidStr));
     }
 
     @Override
-    public void onContinue(GtidSet gtidSetExcluded, long continueOffset) {
-        logger.info("[onContinue]");
-        this.resetState(gtidSetExcluded);
-    }
+    public void protoChange() {
 
-    @Override
-    public void onCommand(long commandOffset, Object[] rawCmdArgs) {
-        RedisOp redisOp = null;
-        try {
-            redisOp = parser.parse(rawCmdArgs);
-            doOnRedisOp(redisOp, commandOffset);
-        } catch (Throwable unlikely) {
-            try {
-                logger.error("[onCommand] unlikely - when doing partial sync]", unlikely);
-                logger.error("[onCommand] unlikely {}, {}", redisOp, gtid_received.toString());
-            } catch (Throwable ignore) {
-            }
-        }
     }
 
     @Override
     public GtidSet getGtidReceived() {
-        GtidSet ref = gtid_received;
+        GtidSet ref = execGtidSet.get();
         if (ref != null) {
             return ref.clone();
         }
         return null;
+    }
+
+    @Override
+    public void onCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
+        RedisOp redisOp = parser.parse(payload);
+        String gtid = redisOp.getOpGtid();
+        doOnRedisOp(redisOp, commandBuf.readableBytes(), gtid);
+        commandBuf.skipBytes(commandBuf.readableBytes());
     }
 
     private class GtidRiseJob implements Runnable {
@@ -168,68 +175,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
         @Override
         public void run() {
-            logger.debug("[updateGtidState] rise gtid {} to gtid_executed {}", gtid, gtid_executed.get());
-            gtid_executed.get().rise(gtid);
+            logger.debug("[updateGtidState] rise gtid {} to gtid_executed {}", gtid, execGtidSet.get());
+            execGtidSet.get().rise(gtid);
         }
-    }
-
-    private class GtidCompensateJob implements Runnable {
-
-        private final String sourceId;
-
-        private final long last;
-
-        private final long current;
-
-        public GtidCompensateJob(String sourceId, long last, long current) {
-            this.sourceId = sourceId;
-            this.last = last;
-            this.current = current;
-        }
-
-        @Override
-        public void run() {
-            logger.debug("[updateGtidState] add leap gtid {}:{}-{} to gtid_executed {}", sourceId, last + 1, current - 1, gtid_executed.get());
-            gtid_executed.get().compensate(sourceId, last + 1, current - 1);
-        }
-    }
-
-    public boolean /* skip? */ updateGtidState(String gtid) {
-
-        if (null == gtid) {
-            return false;
-        }
-
-        Pair<String, Long> parsed = Objects.requireNonNull(GtidSet.parseGtid(gtid));
-
-        if (receivedSids.add(parsed.getKey())) {
-            //sid first received
-            gtid_received.rise(gtid);
-
-            stateThread.execute(new GtidRiseJob(gtid));
-        } else {
-            //sid already received, transactionId may leap
-            long last = gtid_received.rise(gtid);
-            long current = parsed.getValue();
-            if (current <= last) {
-                //gtid under low watermark
-                return true;
-            }
-            if (current - last > 10000) {
-                logger.info("[updateGtidState] gtid leap a lot - last: {}, current: {}, gtid: {}, gtid_received: {}", last, current, gtid, gtid_received.toString());
-            }
-            if (current > last + 1) {
-                stateThread.execute(new GtidCompensateJob(parsed.getKey(), last, current));
-            }
-        }
-
-        try {
-            gtidDistanceThreshold.get().tryPass(gtid_received.lwmSum());
-        } catch (InterruptedException interrupted) {
-            logger.info("[updateGtidState] gtidDistanceThreshold.tryPass() interrupted, probably quit.");
-            throw new XpipeRuntimeException("gtidDistanceThreshold.tryPass() interrupted, probably quit", interrupted);
-        }
-        return false;
     }
 
     protected int toInt(byte[] value) {
@@ -242,22 +190,24 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         return rt;
     }
 
-    private void addTransactionStart(RedisOpCommand<?> multiCommand, long commandOffsetToAccumulate) {
+    private void addTransactionStart(RedisOpCommand<?> multiCommand, long commandOffsetToAccumulate, String gtid) {
         transactionCommand.set(new TransactionCommand());
-        transactionCommand.get().addTransactionStart(multiCommand, commandOffsetToAccumulate);
+        transactionCommand.get().addTransactionStart(multiCommand, commandOffsetToAccumulate, gtid);
     }
 
-    private void addTransactionEndAndSubmit(RedisOpCommand<?> execCommand, long commandOffsetToAccumulate) {
-        transactionCommand.get().addTransactionEnd(execCommand, commandOffsetToAccumulate);
+    private void addTransactionEndAndSubmit(RedisOpCommand<?> execCommand, long commandOffsetToAccumulate, String gtid) {
+        transactionCommand.get().addTransactionEnd(execCommand, commandOffsetToAccumulate, gtid);
         TransactionCommand command = transactionCommand.getAndSet(null);
-        sequenceController.submit(command, command.commandOffset());
+        sequenceController.submit(command, command.commandOffset(), command.getGtidSet());
     }
 
-    private void addIfTransactionCommandsOrSubmit(RedisOpCommand<?> redisOpCommand, long commandOffsetToAccumulate) {
+    private void addIfTransactionCommandsOrSubmit(RedisOpCommand<?> redisOpCommand, long commandOffsetToAccumulate, String gtid) {
         if (transactionCommand.get() != null) {
-            transactionCommand.get().addTransactionCommands(redisOpCommand, commandOffsetToAccumulate);
+            transactionCommand.get().addTransactionCommands(redisOpCommand, commandOffsetToAccumulate, gtid);
         } else {
-            sequenceController.submit(redisOpCommand, commandOffsetToAccumulate);
+            GtidSet gtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
+            gtidSet.add(gtid);
+            sequenceController.submit(redisOpCommand, commandOffsetToAccumulate, gtidSet);
         }
     }
 
@@ -297,9 +247,10 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         return redisOp.getOpType().name();
     }
 
-    private void doOnRedisOp(RedisOp redisOp, long commandOffsetToAccumulate) {
+    private void doOnRedisOp(RedisOp redisOp, long commandOffsetToAccumulate, String gtid) {
         logger.debug("[onRedisOp] redisOpType={}, gtid={}", redisOp.getOpType(), redisOp.getOpGtid());
 
+        redisOp.clearGtid();
         if (RedisOpType.PING.equals(redisOp.getOpType())) {
             offsetRecorder.addAndGet(commandOffsetToAccumulate);
             return;
@@ -321,19 +272,21 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         }
 
         if (RedisOpType.MULTI.equals(redisOp.getOpType())) {
-            addTransactionStart(new DefaultMultiCommand(client, redisOp), commandOffsetToAccumulate);
+            addTransactionStart(new DefaultMultiCommand(client, redisOp), commandOffsetToAccumulate, gtid);
         } else if (RedisOpType.EXEC.equals(redisOp.getOpType())) {
-            addTransactionEndAndSubmit(new DefaultExecCommand(client, redisOp), commandOffsetToAccumulate);
+            addTransactionEndAndSubmit(new DefaultExecCommand(client, redisOp), commandOffsetToAccumulate, gtid);
         } else if (redisOp instanceof RedisMultiKeyOp) {
-            addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, dbNumber, workerThreads), commandOffsetToAccumulate);
+            addIfTransactionCommandsOrSubmit(new MultiDataCommand(client, (RedisMultiKeyOp) redisOp, dbNumber, workerThreads),
+                    commandOffsetToAccumulate, gtid);
         } else {
-            addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp, dbNumber), commandOffsetToAccumulate);
+            addIfTransactionCommandsOrSubmit(new DefaultDataCommand(client, redisOp, dbNumber),
+                    commandOffsetToAccumulate, gtid);
         }
     }
 
     @Override
     public void onRedisOp(RedisOp redisOp) {
-        doOnRedisOp(redisOp, 0);
+        doOnRedisOp(redisOp, 0, null);
     }
 
     @Override
@@ -347,6 +300,18 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @Override
     public void onAuxFinish(Map<String, String> auxMap) {
+        startGtidStr = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID_EXECUTED, GtidSet.EMPTY_GTIDSET);
+        lostGtidStr = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID_LOST, GtidSet.EMPTY_GTIDSET);
+        logger.info("[onAuxFinish] startGtidStr: {}, lostGtidStr: {}", startGtidSet, lostGtidStr);
+    }
 
+    private int findFirstStar(ByteBuf byteBuf, int beginOffset) {
+        for(int i = beginOffset; i < byteBuf.writerIndex(); i++) {
+            byte b = byteBuf.getByte(i);
+            if(b == ASTERISK_BYTE) {
+                return i;
+            }
+        }
+        return -1;
     }
 }

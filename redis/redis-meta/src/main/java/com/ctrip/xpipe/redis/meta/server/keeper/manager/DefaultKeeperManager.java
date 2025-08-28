@@ -26,6 +26,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.exception.KeeperStateInCorrectException;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperIndexChangeJob;
+import com.ctrip.xpipe.redis.meta.server.job.KeeperMasterProcessJob;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
@@ -440,7 +441,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			if(!isCurrentMetaKeeperMasterMatch(clusterDbId, shardDbId)) {
 				return;
 			}
-			KeeperStateChangeJob job = createKeeperStateChangeJob(clusterDbId, shardDbId, survivedKeepers,
+			KeeperMasterProcessJob job = createKeeperMasterProcessJob(clusterDbId, shardDbId, survivedKeepers,
 					currentMetaManager.getKeeperMaster(clusterDbId, shardDbId));
 			job.future().addListener(new CommandFutureListener<Void>() {
 				@Override
@@ -506,7 +507,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		return new KeeperIndexChangeJob(keepers, indexState, clientPool, scheduled, executors);
 	}
 
-	private KeeperStateChangeJob createKeeperStateChangeJob(Long clusterDbId, Long shardDbId,
+	private KeeperMasterProcessJob createKeeperMasterProcessJob(Long clusterDbId, Long shardDbId,
 															List<KeeperMeta> keepers,
 															Pair<String, Integer> master) {
 
@@ -518,7 +519,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dstDcId, clusterDbId);
 
-		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, scheduled, executors);
+		return new KeeperMasterProcessJob(clusterDbId, shardDbId, keepers, routeMeta, metaCache, master, clientPool, scheduled, executors);
 	}
 
 	protected abstract class AbstractKeeperInfoChecker {

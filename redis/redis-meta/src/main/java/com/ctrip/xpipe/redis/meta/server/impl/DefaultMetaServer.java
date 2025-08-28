@@ -26,12 +26,14 @@ import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfo;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -233,13 +235,16 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 	}
 
 	@Override
-	public void updateUpstream(String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo) {
+	public void updateUpstream(String dcName, String clusterId, String shardId, String ip, int port, ForwardInfo forwardInfo) {
 
 		Pair<Long, Long> clusterShard = dcMetaCache.clusterShardId2DbId(clusterId, shardId);
 
 		if (dcMetaCache.isCurrentShardParentCluster(clusterShard.getKey(), clusterShard.getValue())) {
 		    if (dcMetaCache.isCurrentDcPrimary(clusterShard.getKey(), clusterShard.getValue())) {
 				logger.warn("[updateUpstream][current is primary dc, do not update]{},{},{},{}", clusterShard.getKey(), clusterShard.getValue(), ip,
+						port);
+			} else if (!StringUtil.isEmpty(dcName) && !dcName.equalsIgnoreCase(dcMetaCache.getPrimaryDc(clusterShard.getKey(), clusterShard.getValue()))) {
+				logger.warn("[updateUpstream][{} is not primary dc, do not update]{}-{},{},{},{}", dcName.toLowerCase(), dcMetaCache.getPrimaryDc(clusterShard.getKey(), clusterShard.getValue()), clusterShard.getKey(), clusterShard.getValue(), ip,
 						port);
 			} else {
 				logger.info("[updateUpstream]{},{},{},{}", clusterId, shardId, ip, port);

@@ -3,13 +3,18 @@ package com.ctrip.xpipe.redis.keeper;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -24,6 +29,7 @@ import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.channel.ChannelFuture;
 import org.junit.BeforeClass;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -37,7 +43,6 @@ import java.util.concurrent.TimeUnit;
  *         Jun 12, 2016
  */
 public class AbstractRedisKeeperTest extends AbstractRedisTest {
-
 	@BeforeClass
 	public static void beforeAbstractCheckerTest(){
 		System.setProperty("DisableLoadProxyAgentJar", "true");
@@ -106,8 +111,8 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected ReplicationStoreManager createReplicationStoreManager(ReplId replId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
 		
-		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, replId, keeperRunid, storeDir, createkeeperMonitor(), Mockito.mock(SyncRateManager.class));
-		
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, replId, keeperRunid, storeDir, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), createRedisOpParser());
+
 		replicationStoreManager.addObserver(new Observer() {
 			
 			@Override
@@ -126,7 +131,13 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		});
 		return replicationStoreManager;
 	}
-	
+
+	protected RedisOpParser createRedisOpParser() {
+		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+		return new GeneralRedisOpParser(redisOpParserManager);
+	}
+
 	protected KeepersMonitorManager createkeepersMonitorManager(){
 		return new NoneKeepersMonitorManager();
 	}
@@ -174,7 +185,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 
 			@Override
-			public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
+			public void onFileData(DefaultReferenceFileRegion referenceFileRegion) throws IOException {
 				if (referenceFileRegion == null) {
 					latch.countDown();
 					return;
@@ -220,7 +231,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 			
 			private void doRun() throws IOException{
-				replicationStore.addCommandsListener(new OffsetReplicationProgress(replicationStore.beginOffsetWhenCreated() + beginOffset), new CommandsListener() {
+				replicationStore.addCommandsListener(new BacklogOffsetReplicationProgress(replicationStore.backlogBeginOffset() + beginOffset), new CommandsListener() {
 					
 					@Override
 					public boolean isOpen() {
@@ -232,7 +243,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					}
 
 					@Override
-					public Long processedOffset() {
+					public Long processedBacklogOffset() {
 						return null;
 					}
 
@@ -240,7 +251,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 						
 						try {
-							byte [] message = readFileChannelInfoMessageAsBytes((ReferenceFileRegion) cmd);
+							byte [] message = readFileChannelInfoMessageAsBytes((DefaultReferenceFileRegion) cmd);
 							baous.write(message);
 						} catch (IOException e) {
 							logger.error("[onCommand]" + cmd, e);
@@ -248,6 +259,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 						return null;
 					}
 
+					@Override
+					public void onCommandEnd() {
+
+					}
 				});
 			}
 		}.start();
@@ -273,7 +288,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return new String(baous.toByteArray());
 	}
 
-	protected byte[] readFileChannelInfoMessageAsBytes(ReferenceFileRegion referenceFileRegion) {
+	protected byte[] readFileChannelInfoMessageAsBytes(DefaultReferenceFileRegion referenceFileRegion) {
 
 		try {
 			ByteArrayWritableByteChannel bach = new ByteArrayWritableByteChannel(); 
@@ -284,7 +299,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		}
 	}
 
-	protected String readFileChannelInfoMessageAsString(ReferenceFileRegion referenceFileRegion) {
+	protected String readFileChannelInfoMessageAsString(DefaultReferenceFileRegion referenceFileRegion) {
 
 		return new String(readFileChannelInfoMessageAsBytes(referenceFileRegion), Codec.defaultCharset);
 	}

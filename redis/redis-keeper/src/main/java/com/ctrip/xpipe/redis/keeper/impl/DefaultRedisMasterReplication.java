@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.commands.DefaultNettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
@@ -174,7 +175,7 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
     protected Command<Object> createReplConf() {
 
-        return new Replconf(clientPool, ReplConfType.ACK, scheduled, String.valueOf(redisMaster.getCurrentReplicationStore().getEndOffset()));
+        return new Replconf(clientPool, ReplConfType.ACK, scheduled, String.valueOf(redisMaster.getCurrentReplicationStore().getCurReplStageReplOff()));
     }
 
     @Override
@@ -189,9 +190,9 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
         Psync psync;
         if (redisKeeperServer.getRedisKeeperServerState().keeperState().isBackup()) {
-            psync = new PartialOnlyPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
+            psync = new PartialOnlyGapAllowedSync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled, redisKeeperServer.getKeeperConfig()::getXsyncMaxGap);
         } else {
-            psync = new DefaultPsync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled);
+            psync = new DefaultGapAllowedSync(clientPool, redisMaster.masterEndPoint(), redisMaster.getReplicationStoreManager(), scheduled, redisKeeperServer.getKeeperConfig()::getXsyncMaxGap);
         }
 
         psync.addPsyncObserver(this);
@@ -230,15 +231,13 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
 
     }
 
-    @Override
-    protected void doOnContinue() {
-
-        logger.info("[doOnContinue]{}", this);
+    private void doOnContinue0(String logPrefix) {
+        logger.info("[{}]{}", logPrefix, this);
         redisMaster.setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
         try {
             redisMaster.getCurrentReplicationStore().getMetaStore().setMasterAddress((DefaultEndPoint) redisMaster.masterEndPoint());
         } catch (IOException e) {
-            logger.error("[doOnContinue]" + this, e);
+            logger.error("[" + logPrefix + "]" + this, e);
         }
 
         scheduleReplconf();
@@ -247,24 +246,56 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
     }
 
     @Override
+    protected void doOnContinue() {
+        doOnContinue0("doOnContinue");
+    }
+
+    @Override
     protected void doReFullSync() {
         redisKeeperServer.getRedisKeeperServerState().initPromotionState();
     }
 
-    @Override
-    protected void doOnFullSync(long masterRdbOffset) {
-
+    private void doOnFullSync0(String logPrefix) {
         try {
-            logger.info("[doOnFullSync]{}", this);
+            logger.info("[{}]{}", logPrefix, this);
             RdbDumper rdbDumper = new RedisMasterReplicationRdbDumper(this, redisKeeperServer, resourceManager);
             setRdbDumper(rdbDumper);
             redisKeeperServer.setRdbDumper(rdbDumper, true);
         } catch (SetRdbDumperException e) {
             //impossible to happen
-            logger.error("[doOnFullSync][impossible to happen]", e);
+            logger.error("[{}][impossible to happen]", logPrefix, e);
         }
     }
 
+    @Override
+    protected void doOnFullSync(long masterRdbOffset) {
+        doOnFullSync0("doOnFullSync");
+    }
+
+    @Override
+    protected void doOnXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
+        doOnFullSync0("doOnXFullSync");
+    }
+
+    @Override
+    protected void doOnXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+        doOnContinue0("doOnXContinue");
+    }
+
+    @Override
+    protected void doOnSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) {
+        doOnContinue0("doOnSwitchToXsync");
+    }
+
+    @Override
+    protected void doOnSwitchToPsync(String replId, long replOff) {
+        doOnContinue0("doOnSwitchToPsync");
+    }
+
+    @Override
+    protected void doOnUpdateXsync() {
+
+    }
     @Override
     protected String getSimpleName() {
         return "DefRep";

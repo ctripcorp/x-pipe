@@ -31,11 +31,9 @@ import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
-import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.config.KeeperReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
@@ -127,9 +125,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private String threadPoolName;
 
-	private volatile boolean isStartIndexing;
-	private volatile ExecutorService indexingExecutors; //also treated as a state
-
 	private ScheduledExecutorService scheduled;
 	private ExecutorService clientExecutors;
 
@@ -169,9 +164,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager,
-									KeeperResourceManager resourceManager, SyncRateManager syncRateManager){
+									KeeperResourceManager resourceManager, SyncRateManager syncRateManager, RedisOpParser redisOpParser){
 
-		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, null, null);
+		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, redisOpParser, null);
 	}
 
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
@@ -264,10 +259,49 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	}
 
+	@Override
+	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception {
+		return getCurrentReplicationStore().locateContinueGtidSet(gtidSet);
+	}
+
+	@Override
+	public XSyncContinue locateContinueGtidSetWithFallbackToEnd(GtidSet gtidSet) throws Exception {
+		return getCurrentReplicationStore().locateContinueGtidSetWithFallbackToEnd(gtidSet);
+	}
+
+	@Override
+	public XSyncContinue locateTailOfCmd() {
+		return getCurrentReplicationStore().locateTailOfCmd();
+	}
+
+	@Override
+	public void switchToPSync(String replId, long offset) throws IOException {
+		getCurrentReplicationStore().switchToPSync(replId, offset);
+		closeSlaves("toPSync " + replId + ":" + offset);
+	}
+
+	@Override
+	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
+		getCurrentReplicationStore().switchToXSync(replId, replOff, masterUuid, gtidCont, gtidLost);
+		closeSlaves("toXSync " + gtidCont);
+	}
+
+	@Override
+	public boolean increaseLost(GtidSet lost, RedisSlave from) throws IOException {
+		if (getCurrentReplicationStore().increaseLost(lost)) {
+			logger.info("[increaseLost] resync with master & slaves");
+			keeperRedisMaster.reconnect();
+			closeSlavesExcept("increaseLost", from);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	private void resetReplAfterLongTimeDown() {
 		try {
 			ReplicationStore replicationStore = replicationStoreManager.getCurrent();
-			if (null == replicationStore || null == replicationStore.getMetaStore().getReplId()) {
+			if (null == replicationStore || null == replicationStore.getMetaStore().getCurReplStageReplId()) {
 				logger.debug("[resetReplAfterLongTimeDown][empty] skip");
 				return;
 			}
@@ -430,7 +464,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		replicationStoreManager.dispose();
 		this.scheduled.shutdownNow();
 		this.clientExecutors.shutdownNow();
-		if (null != indexingExecutors) indexingExecutors.shutdown();
 		super.doDispose();
 	}
 
@@ -661,21 +694,17 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
-		String gtidSet = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID, GtidSet.EMPTY_GTIDSET);
-		try {
-			if (isStartIndexing) {
-				EventMonitor.DEFAULT.logEvent("INDEX.START", replId + " - " + gtidSet);
-				startIndexing();
-			}
-		} catch (Throwable t) {
-			EventMonitor.DEFAULT.logAlertEvent("INDEX.START.FAIL: " + replId + " - " + gtidSet);
-		}
 	}
 
 	@Override
 	public void closeSlaves(String reason) {
 		
-		for(RedisSlave redisSlave : slaves()){
+		closeSlavesExcept(reason, null);
+	}
+
+	private void closeSlavesExcept(String reason, RedisSlave slave) {
+		for (RedisSlave redisSlave : slaves()) {
+			if (redisSlave.equals(slave)) continue;
 			try {
 				logger.info("[{}][close slave]{}", reason, redisSlave);
 				redisSlave.close();
@@ -755,6 +784,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public RedisKeeperServerState getRedisKeeperServerState() {
 		return this.redisKeeperServerState;
+	}
+
+	@Override
+	public boolean gapAllowSyncEnabled() {
+		//TODO enable by config
+		return true;
 	}
 
 	@Override
@@ -848,37 +883,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private synchronized void clearLoadingSlaves() {
 		loadingSlaves.clear();
-	}
-
-	@Override
-	public synchronized void startIndexing() throws IOException {
-
-		logger.info("[startIndexing]{}, {}", this, rdbDumper.get());
-
-		if (indexingExecutors == null) {
-			indexingExecutors = Executors.newSingleThreadExecutor(KeeperReplIdAwareThreadFactory.create(replId, "Indexing-" + threadPoolName));
-		}
-
-		isStartIndexing = true;
-
-		FULLSYNC_FAIL_CAUSE failCause = getCurrentReplicationStore().createIndexIfPossible(indexingExecutors);
-
-		if(rdbDumper.get() == null) {
-
-			if (failCause != null) {
-				try {
-					dumpNewRdb(false);
-				} catch (Throwable t) {
-					logger.error("[startIndexing][dumpNewRdb] fail {}, {}", this, rdbDumper.get());
-					logger.error("[startIndexing][dumpNewRdb] fail", t);
-				}
-			}
-		}
-	}
-
-	@Override
-	public boolean isStartIndexing() {
-	    return isStartIndexing;
 	}
 
 	private RdbDumper dumpNewRdb(boolean tryRordb) throws CreateRdbDumperException, SetRdbDumperException {
@@ -1014,6 +1018,37 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	public int getRdbDumpTryCount() {
 		return rdbDumpTryCount.get();
+	}
+
+	@Override
+	public void onXFullSync(String replId, long replOff, String masterUuid, GtidSet gtidLost) {
+		//alert full sync
+		String alert = String.format("XFULL(S)->%s[%s]", getRedisMaster().metaInfo(), getReplId());
+		EventMonitor.DEFAULT.logAlertEvent(alert);
+	}
+
+	@Override
+	public void onXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
+
+	}
+
+	@Override
+	public void onSwitchToXsync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) {
+		String alert = String.format("SWITCH2XSYNC(S)->%s[%s]", getRedisMaster().metaInfo(), getReplId());
+		EventMonitor.DEFAULT.logAlertEvent(alert);
+		closeSlaves("switch2xsync");
+	}
+
+	@Override
+	public void onSwitchToPsync(String replId, long replOff) {
+		String alert = String.format("SWITCH2PSYNC(S)->%s[%s]", getRedisMaster().metaInfo(), getReplId());
+		EventMonitor.DEFAULT.logAlertEvent(alert);
+		closeSlaves("switch2psync");
+	}
+
+	@Override
+	public void onUpdateXsync() {
+		closeSlaves("updateXsync");
 	}
 
 	public class ReplicationStoreManagerListener implements Observer{

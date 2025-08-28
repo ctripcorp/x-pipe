@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.exception.psync.GapAllowedSyncRdbNotContinuousRuntimeException;
 import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotContinuousRuntimeException;
 import com.ctrip.xpipe.redis.keeper.exception.psync.RdbOnlyPsyncReplIdNotSameException;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
@@ -71,7 +72,8 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
             public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
                 releaseResource();
                 if (!commandFuture.isSuccess()) {
-                    if (commandFuture.cause() instanceof PsyncMasterRdbOffsetNotContinuousRuntimeException) {
+                    if (commandFuture.cause() instanceof PsyncMasterRdbOffsetNotContinuousRuntimeException ||
+                            commandFuture.cause() instanceof  GapAllowedSyncRdbNotContinuousRuntimeException) {
                         redisKeeperServer.resetDefaultReplication();
                     }
                 }
@@ -91,8 +93,13 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
     }
 
     protected void startRdbOnlyReplication() throws Exception {
-        rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, tryRordb, freshRdbNeeded,
-                nioEventLoopGroup, scheduled, this, resourceManager);
+        if (redisKeeperServer.gapAllowSyncEnabled()) {
+            rdbonlyRedisMasterReplication = new GapAllowedRdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, tryRordb, freshRdbNeeded,
+                    nioEventLoopGroup, scheduled, this, resourceManager);
+        } else {
+            rdbonlyRedisMasterReplication = new RdbonlyRedisMasterReplication(redisKeeperServer, redisMaster, tryRordb, freshRdbNeeded,
+                    nioEventLoopGroup, scheduled, this, resourceManager);
+        }
 
         rdbonlyRedisMasterReplication.initialize();
         rdbonlyRedisMasterReplication.start();

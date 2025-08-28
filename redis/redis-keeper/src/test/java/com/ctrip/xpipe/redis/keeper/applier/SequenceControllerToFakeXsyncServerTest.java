@@ -14,14 +14,23 @@ import com.ctrip.xpipe.redis.keeper.applier.command.DefaultDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.command.RedisOpDataCommand;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.util.concurrent.MoreExecutors;
 import io.netty.buffer.ByteBuf;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.THREAD_POOL_TIME_OUT;
 
 /**
  * @author Slight
@@ -42,8 +51,16 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
 
     private AsyncRedisClient client;
 
+    private ScheduledExecutorService scheduled;
+
     @Before
     public void setup() throws Exception {
+
+        scheduled = MoreExecutors.getExitingScheduledExecutorService(
+                new ScheduledThreadPoolExecutor(10, XpipeThreadFactory.create(SCHEDULED_EXECUTOR)),
+                THREAD_POOL_TIME_OUT, TimeUnit.SECONDS
+        );
+
         server = startFakeXsyncServer(randomPort(), null);
         xsync = new DefaultXsync(getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint("127.0.0.1", server.getPort())),
                 gtidSet, null, scheduled, 0);
@@ -52,6 +69,7 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
 
         client = AsyncRedisClientFactory.DEFAULT.getOrCreateClient("ApplierTest", null, executors);
         sequenceController = new DefaultSequenceController();
+        ReflectionTestUtils.setField(sequenceController, "scheduled", scheduled);
         sequenceController.initialize();
     }
 
@@ -113,6 +131,6 @@ public class SequenceControllerToFakeXsyncServerTest extends AbstractRedisOpPars
         RedisOp redisOp = parser.parse(rawCmdArgs);
         RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp, 0);
 
-        sequenceController.submit(command, 0);
+        sequenceController.submit(command, 0, new GtidSet(""));
     }
 }

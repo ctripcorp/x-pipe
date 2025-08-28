@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.applier.sequence;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.mocks.TestSetCommand;
 import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
 import org.junit.After;
@@ -50,8 +51,8 @@ public class DefaultSequenceControllerTest extends AbstractTest {
 
         assertEquals(first.key(), second.key());
 
-        controller.submit(first, 0);
-        controller.submit(second, 0);
+        controller.submit(first, 0, new GtidSet(""));
+        controller.submit(second, 0, new GtidSet(""));
 
         first.future().get();
         second.future().get();

@@ -10,10 +10,11 @@ import com.ctrip.xpipe.redis.keeper.RedisServer;
  * @author Slight
  * <p>
  * Jun 10, 2022 11:38
+ *
  */
 public interface ApplierServer extends Lifecycle, RedisServer {
 
-    enum STATE { NONE, ACTIVE, BACKUP }
+    enum STATE { NONE, ACTIVE, BACKUP}
 
     int getListeningPort();
 
@@ -34,6 +35,12 @@ public interface ApplierServer extends Lifecycle, RedisServer {
     Endpoint getUpstreamEndpoint();
 
     long getEndOffset();
+
+    GtidSet getStartGtidSet();
+
+    GtidSet getLostGtidSet();
+
+    GtidSet getExecGtidSet();
 
     ApplierHealth checkHealth();
 

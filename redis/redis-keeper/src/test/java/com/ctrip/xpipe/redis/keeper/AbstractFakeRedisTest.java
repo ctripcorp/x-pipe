@@ -3,28 +3,28 @@ package com.ctrip.xpipe.redis.keeper;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.FixedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryPsync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryGapAllowedSync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf.ReplConfType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
-import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
-import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng
@@ -41,7 +41,7 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 	@Before
 	public void beforeAbstractFakeRedisTest() throws Exception{
 		fakeRedisServer = startFakeRedisServer();
-		
+
 		allCommandsSize = fakeRedisServer.getCommandsLength();
 		commandFileSize = fakeRedisServer.getSendBatchSize();
 	}
@@ -95,6 +95,23 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 		return redisKeeperServer;
 	}
 
+	public  RedisKeeperServer startRedisKeeperServer(KeeperConfig keeperConfig) throws Exception {
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperConfig);
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		add(redisKeeperServer);
+		return redisKeeperServer;
+	}
+
+	public  RedisKeeperServer startRedisKeeperServerAndConnectToFakeRedis(KeeperConfig keeperConfig) throws Exception {
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperConfig);
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		add(redisKeeperServer);
+		connectToFakeRedis(redisKeeperServer);
+		return redisKeeperServer;
+	}
+
 	protected RedisKeeperServer startRedisKeeperServer(int replicationStoreCommandFileNumToKeep,
 		   int replicationStoreMaxCommandsToTransferBeforeCreateRdb, int minTimeMilliToGcAfterCreate, int replicationTimeout) throws Exception {
 
@@ -145,22 +162,22 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 		
 	}
 
-	protected void waitForPsyncResultEquals(InMemoryPsync psync) throws Exception {
-		waitConditionUntilTimeOut(() -> Arrays.equals(psync.getRdb(), fakeRedisServer.getRdbContent())
-						&& new String(psync.getCommands()).equals(fakeRedisServer.currentCommands()));
+	protected void waitForGAsyncResultEquals(InMemoryGapAllowedSync gasync) throws Exception {
+		waitConditionUntilTimeOut(() -> Arrays.equals(gasync.getRdb(), fakeRedisServer.getRdbContent())
+						&& new String(gasync.getCommands()).equals(fakeRedisServer.currentCommands()));
 	}
 
-	protected void assertPsyncResultEquals(InMemoryPsync psync) {
+	protected void assertGAsyncResultEquals(InMemoryGapAllowedSync gasync) {
 
 		try{
-			Assert.assertArrayEquals(fakeRedisServer.getRdbContent(), psync.getRdb());
-			Assert.assertEquals(fakeRedisServer.currentCommands(), new String(psync.getCommands()));
+			Assert.assertArrayEquals(fakeRedisServer.getRdbContent(), gasync.getRdb());
+			Assert.assertEquals(fakeRedisServer.currentCommands(), new String(gasync.getCommands()));
 		}catch(Exception e){
 			logger.error("[assertPsyncResultEquals]", e);
 		}
 
-		Assert.assertArrayEquals(fakeRedisServer.getRdbContent(), psync.getRdb());
-		Assert.assertEquals(fakeRedisServer.currentCommands(), new String(psync.getCommands()));
+		Assert.assertArrayEquals(fakeRedisServer.getRdbContent(), gasync.getRdb());
+		Assert.assertEquals(fakeRedisServer.currentCommands(), new String(gasync.getCommands()));
 	}
 
 	@Override
@@ -168,25 +185,25 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 		return "keeper-test.xml";
 	}
 
-	protected InMemoryPsync sendInmemoryPsync(String ip, int port) throws Exception {
+	protected InMemoryGapAllowedSync sendInmemoryGAsync(String ip, int port) throws Exception {
 
-		return sendInmemoryPsync(ip, port, "?", -1, null);
+		return sendInmemoryGAsync(ip, port, "?", -1, null);
 	}
 
-	protected InMemoryPsync sendInmemoryPsync(String ip, int port, PsyncObserver psyncObserver) throws Exception {
+	protected InMemoryGapAllowedSync sendInmemoryGAsync(String ip, int port, PsyncObserver psyncObserver) throws Exception {
 
-		return sendInmemoryPsync(ip, port, "?", -1, psyncObserver);
+		return sendInmemoryGAsync(ip, port, "?", -1, psyncObserver);
 	}
 
-	protected InMemoryPsync sendInmemoryPsync(String ip, int port, String runid, long offset) throws Exception {
-		return sendInmemoryPsync(ip, port, "?", -1, null);
+	protected InMemoryGapAllowedSync sendInmemoryGAsync(String ip, int port, String runid, long offset) throws Exception {
+		return sendInmemoryGAsync(ip, port, "?", -1, null);
 	}
 
-	protected InMemoryPsync sendInmemoryPsync(String ip, int port, String runid, long offset, PsyncObserver psyncObserver) throws Exception {
+	protected InMemoryGapAllowedSync sendInmemoryGAsync(String ip, int port, String runid, long offset, PsyncObserver psyncObserver) throws Exception {
 		SimpleObjectPool<NettyClient> pool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
 		NettyClient nettyClient = pool.borrowObject();
 		try {
-			return sendInmemoryPsync(new FixedObjectPool<>(nettyClient), runid, offset, psyncObserver);
+			return sendInmemoryGAsync(new FixedObjectPool<>(nettyClient), runid, offset, psyncObserver);
 		} finally {
 			if(nettyClient != null){
 				pool.returnObject(nettyClient);
@@ -194,12 +211,12 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 		}
 	}
 
-	protected InMemoryPsync sendInmemoryPsync(SimpleObjectPool<NettyClient> clientPool, String runid, long offset, PsyncObserver psyncObserver) throws Exception {
+	protected InMemoryGapAllowedSync sendInmemoryGAsync(SimpleObjectPool<NettyClient> clientPool, String runid, long offset, PsyncObserver psyncObserver) throws Exception {
 
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 		chain.add(new Replconf(clientPool,
 				ReplConfType.CAPA, scheduled, CAPA.EOF.toString()));
-		InMemoryPsync psync = new InMemoryPsync(clientPool, runid, offset, scheduled);
+		InMemoryGapAllowedSync psync = new InMemoryGapAllowedSync(clientPool, runid, offset, scheduled);
 		chain.add(psync);
 
 		if(psyncObserver != null){
@@ -246,5 +263,21 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 
 		chain.execute();
 		return psync;
+	}
+
+	protected RedisKeeperServer restartKeeperServer(RedisKeeperServer keeperServer, long replKeepSecondsAfterDown, long waitSecondsAfterDown) throws Exception {
+		int keeperPort = keeperServer.getListeningPort();
+		String keeperRunId = keeperServer.getKeeperRunid();
+
+		LifecycleHelper.stopIfPossible(keeperServer);
+		LifecycleHelper.disposeIfPossible(keeperServer);
+
+		KeeperConfig keeperConfig = newTestKeeperConfig();
+		((TestKeeperConfig)keeperConfig).setReplKeepSecondsAfterDown(replKeepSecondsAfterDown);
+		KeeperMeta keeperMeta = createKeeperMeta(keeperPort, keeperRunId);
+		ReplId replId = getReplId();
+		TimeUnit.SECONDS.sleep(waitSecondsAfterDown);
+
+		return startRedisKeeperServer(replId.id(), keeperConfig, keeperMeta);
 	}
 }

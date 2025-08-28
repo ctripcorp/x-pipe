@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
+import com.ctrip.xpipe.redis.keeper.impl.GapAllowRedisSlave;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
@@ -27,6 +28,8 @@ public interface RedisClient<T extends RedisServer> extends Observable, Infoable
 
 	// for xsync
 	RedisSlave becomeXSlave();
+
+	GapAllowRedisSlave becomeGapAllowRedisSlave();
 	
 	T getRedisServer();
 

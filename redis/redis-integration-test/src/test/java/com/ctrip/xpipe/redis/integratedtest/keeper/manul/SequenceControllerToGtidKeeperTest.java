@@ -78,6 +78,6 @@ public class SequenceControllerToGtidKeeperTest extends GtidKeeperTest {
             return;
         }
         RedisOpDataCommand<Boolean> command = new DefaultDataCommand(client, redisOp, 0);
-        sequenceController.submit(command, commandOffset);
+        sequenceController.submit(command, commandOffset, new GtidSet(""));
     }
 }

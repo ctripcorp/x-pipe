@@ -2,8 +2,10 @@ package com.ctrip.xpipe.redis.core.store;
 
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.api.lifecycle.Initializable;
+import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
+import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
 import java.io.Closeable;
@@ -67,4 +69,23 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 	}
 
 	void attachRateLimiter(SyncRateLimiter rateLimiter);
+
+	Pair<Long, GtidSet> locateContinueGtidSet(GtidSet gtidSet) throws IOException;
+
+	Pair<Long, GtidSet> locateContinueGtidSetWithFallbackToEnd(GtidSet gtidSet) throws IOException;
+
+	Pair<Long, GtidSet> locateTailOfCmd();
+
+	GtidSet getIndexGtidSet();
+
+	void switchToXSync(GtidSet gtidSet) throws IOException;
+
+	void switchToPsync(String replId, long offset) throws IOException;
+
+	int onlyAppendCommand(ByteBuf byteBuf) throws IOException;
+
+	CommandWriter getCommandWriter();
+
+	boolean increaseLostNotInCmdStore(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException ;
+
 }

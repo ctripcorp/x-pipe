@@ -53,6 +53,8 @@ public class ProxyRelatedResourceManager implements ResourceManager {
 
     private volatile SimpleKeyedObjectPool<Endpoint, NettyClient> keyedObjectPool;
 
+    private volatile GlobalTrafficControlManager globalTrafficControlManager;
+
     @Override
     public NettySslHandlerFactory getClientSslHandlerFactory() {
         return clientSslHandlerFactory;
@@ -96,6 +98,18 @@ public class ProxyRelatedResourceManager implements ResourceManager {
         selector.setNextHopAlgorithm(algorithm);
         selector.setSelectStrategy(new SelectOneCycle(selector));
         return selector;
+    }
+
+    @Override
+    public GlobalTrafficControlManager getGlobalTrafficControlManager() {
+        if (globalTrafficControlManager == null) {
+            synchronized (this) {
+                if (globalTrafficControlManager == null) {
+                    globalTrafficControlManager = new GlobalTrafficControlManager(config, scheduled);
+                }
+            }
+        }
+        return globalTrafficControlManager;
     }
 
     private void createKeyedObjectPool() {

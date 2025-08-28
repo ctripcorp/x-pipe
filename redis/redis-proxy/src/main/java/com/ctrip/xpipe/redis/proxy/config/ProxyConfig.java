@@ -49,4 +49,16 @@ public interface ProxyConfig extends TLSConfig {
 
     int getBlockWaitRate();
 
+    /**
+     * Check if cross-region traffic control is enabled
+     * @return true if enabled, false otherwise
+     */
+    boolean isCrossRegionTrafficControlEnabled();
+
+    /**
+     * Get the global throughput limit for cross-region traffic control in bytes per second
+     * @return throughput limit in bytes per second
+     */
+    long getCrossRegionTrafficControlLimit();
+
 }

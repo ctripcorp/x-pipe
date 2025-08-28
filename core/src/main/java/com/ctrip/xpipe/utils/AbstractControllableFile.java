@@ -49,10 +49,11 @@ public abstract class AbstractControllableFile implements ControllableFile{
 	}
 
 	@Override
-	public void close() throws IOException {
+	public synchronized void close() throws IOException {
 		
 		closed.set(true);
 		if(randomAccessFile.get() != null){
+			logger.info("[doClose]{}", file);
 			randomAccessFile.get().close();
 		}
 	}
@@ -85,13 +86,16 @@ public abstract class AbstractControllableFile implements ControllableFile{
 	}
 
 	protected synchronized void doOpen() throws IOException {
-		
+
+		if(closed.get()) {
+			throw new XpipeRuntimeException(String.format("file has closed:%s", file));
+		}
+
 		if(randomAccessFile.get() != null && randomAccessFile.get().getChannel().isOpen()){
 			return;
 		}
 		
-		logger.debug("[doOpen]{}", file);
-		closed.set(false);
+		logger.info("[doOpen]{}", file);
 		randomAccessFile.set(new RandomAccessFile(file, "rw"));
 		FileChannel fileChannel = randomAccessFile.get().getChannel();
 		fileChannel.position(fileChannel.size());
@@ -112,5 +116,11 @@ public abstract class AbstractControllableFile implements ControllableFile{
 	@Override
 	public String toString() {
 		return FileUtils.shortPath(file.getPath());
+	}
+
+	@Override
+	public void setLength(int size) throws IOException {
+		tryOpen();
+		randomAccessFile.get().setLength(size);
 	}
 }

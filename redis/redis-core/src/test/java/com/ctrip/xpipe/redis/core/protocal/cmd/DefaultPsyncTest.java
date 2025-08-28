@@ -17,8 +17,6 @@ import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.simpleserver.Server;
-import io.netty.buffer.ByteBuf;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,7 +39,7 @@ import static org.mockito.Mockito.*;
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultPsyncTest extends AbstractRedisTest{
 	
-	private DefaultPsync defaultPsync;
+	private DefaultGapAllowedSync defaultGAsync;
 	
 	@Mock
 	private ReplicationStoreManager replicationStoreManager;
@@ -59,7 +57,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 	private SimpleObjectPool<NettyClient> pool;
 
 	@Before
-	public void beforeDefaultPsyncTest() throws Exception{
+	public void beforeDefaultGAsyncTest() throws Exception{
 		
 		fakeRedisServer = startFakeRedisServer();
 		masterEndPoint = new DefaultEndPoint("localhost", fakeRedisServer.getPort());
@@ -67,9 +65,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 		
 		when(replicationStoreManager.createIfNotExist()).thenReturn(replicationStore);
 		when(replicationStore.getMetaStore()).thenReturn(metaStore);
-		when(metaStore.getReplId()).thenReturn("?");
-		when(replicationStore.getEndOffset()).thenReturn(-1L);
-		defaultPsync = new DefaultPsync(pool, masterEndPoint, replicationStoreManager, scheduled);
+		defaultGAsync = new DefaultGapAllowedSync(pool, masterEndPoint, replicationStoreManager, scheduled, null);
 		
 	}
 	
@@ -78,7 +74,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 		
 		when(replicationStore.isFresh()).thenReturn(false);
 		
-		defaultPsync.execute().addListener(new CommandFutureListener<Object>() {
+		defaultGAsync.execute().addListener(new CommandFutureListener<Object>() {
 			
 			@Override
 			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -88,7 +84,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 			}
 		});
 		
-		sleep(1000);
+		sleep(1500);
 		verify(replicationStoreManager).create();
 	}
 
@@ -100,7 +96,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 			@Override
 			public String apply(String s) {
 				logger.info("[testKeeperPartialSync] {}", s);
-				if (s.trim().equals("psync ? -2")) {
+				if (s.trim().equalsIgnoreCase("psync ? -2")) {
 					return String.format("+CONTINUE %s %d\r\n", replId, offset);
 				} else {
 					return "+OK\r\n";
@@ -108,12 +104,12 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 			}
 		});
 		Endpoint redisEndpoint = new DefaultEndPoint("localhost", redisServer.getPort());
-		PartialOnlyPsync partialOnlyPsync = new PartialOnlyPsync(NettyPoolUtil.createNettyPool(redisEndpoint), redisEndpoint, replicationStoreManager, scheduled);
+		PartialOnlyGapAllowedSync partialOnlyGAsync = new PartialOnlyGapAllowedSync(NettyPoolUtil.createNettyPool(redisEndpoint), redisEndpoint, replicationStoreManager, scheduled, null);
 
 		when(replicationStore.isFresh()).thenReturn(true);
 
 		CountDownLatch latch = new CountDownLatch(1);
-		partialOnlyPsync.addPsyncObserver(new PsyncObserver() {
+		partialOnlyGAsync.addPsyncObserver(new PsyncObserver() {
 			@Override
 			public void onFullSync(long masterRdbOffset) {
 			}
@@ -137,7 +133,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 			public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
 			}
 		});
-		partialOnlyPsync.execute().addListener(new CommandFutureListener<Object>() {
+		partialOnlyGAsync.execute().addListener(new CommandFutureListener<Object>() {
 
 			@Override
 			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -148,7 +144,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 		});
 
 		latch.await(1000, TimeUnit.SECONDS);
-		verify(replicationStore, times(1)).continueFromOffset(replId, offset);
+		verify(replicationStore, times(1)).psyncContinueFrom(replId, offset);
 	}
 
 }

@@ -5,7 +5,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryPsync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryGapAllowedSync;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import org.junit.Before;
@@ -38,7 +38,7 @@ public class TwoKeepers extends AbstractKeeperIntegratedMultiDc {
     }
 
     private boolean psync(KeeperMeta downstreamKeeper) throws InterruptedException, ExecutionException {
-        Psync psync = new InMemoryPsync(downstreamKeeper.getIp(), downstreamKeeper.getPort(), "?", -1, scheduled) {
+        Psync psync = new InMemoryGapAllowedSync(downstreamKeeper.getIp(), downstreamKeeper.getPort(), "?", -1, scheduled) {
             @Override
             protected void endReadRdb() {
                 super.endReadRdb();

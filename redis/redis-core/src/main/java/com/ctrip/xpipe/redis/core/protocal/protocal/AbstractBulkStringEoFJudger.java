@@ -3,7 +3,10 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -14,6 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public abstract class AbstractBulkStringEoFJudger implements BulkStringEofJudger{
 
+	private static final Logger log = LoggerFactory.getLogger(AbstractBulkStringEoFJudger.class);
 	protected AtomicLong realLen = new AtomicLong();
 
 	@Override
@@ -109,7 +113,6 @@ public abstract class AbstractBulkStringEoFJudger implements BulkStringEofJudger
 			
 			System.arraycopy(lastData, dataLen, lastData, 0, remLen);
 			used.readBytes(lastData, remLen, dataLen);
-			
 			boolean ends = Arrays.equals(eofmark, lastData);
 			if(ends){
 				alreadyFinished = true;

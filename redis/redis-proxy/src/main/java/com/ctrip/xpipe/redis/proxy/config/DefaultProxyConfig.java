@@ -3,24 +3,19 @@ package com.ctrip.xpipe.redis.proxy.config;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.proxy.CompressAlgorithm;
+import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.config.CompositeConfig;
 import com.ctrip.xpipe.config.DefaultFileConfig;
 import com.ctrip.xpipe.redis.proxy.handler.ZstdDecoder;
 import com.ctrip.xpipe.redis.proxy.handler.ZstdEncoder;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.IpUtils;
-import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.MessageToByteEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
-
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 
 /**
  * @author chen.zhu
@@ -29,11 +24,9 @@ import java.util.concurrent.TimeUnit;
  */
 
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-public class DefaultProxyConfig implements ProxyConfig {
+public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultProxyConfig.class);
-
-    private Config config;
 
     private static final String PROXY_PROPERTIES_PATH = String.format("/opt/data/%s", FoundationService.DEFAULT.getAppId());
 
@@ -71,24 +64,13 @@ public class DefaultProxyConfig implements ProxyConfig {
 
     private static final String KEY_PROXY_BLOCK_RATE = "proxy.block.rate";
 
-    private ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("DefaultProxyConfig"));
+    private static final String KEY_CROSS_REGION_TRAFFIC_CONTROL_ENABLED = "proxy.cross.region.traffic.control.enabled";
+
+    private static final String KEY_CROSS_REGION_TRAFFIC_CONTROL_LIMIT = "proxy.cross.region.traffic.control.limit";
 
     public DefaultProxyConfig() {
-        config = initConfig();
-        scheduledFresh();
-    }
-
-    public void scheduledFresh() {
-        scheduled.scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-                config = initConfig();
-            }
-        }, 1, 1, TimeUnit.MINUTES);
-    }
-
-    private Config initConfig() {
         CompositeConfig compositeConfig = new CompositeConfig();
+        compositeConfig.addConfig(Config.DEFAULT);
         try {
             compositeConfig.addConfig(new DefaultFileConfig(PROXY_PROPERTIES_PATH, PROXY_PROPERTIES_FILE));
         } catch (Exception e) {
@@ -100,7 +82,7 @@ public class DefaultProxyConfig implements ProxyConfig {
         } catch (Exception e) {
             logger.info("[DefaultProxyConfig]{}", e);
         }
-        return compositeConfig;
+        setConfig(compositeConfig);
     }
 
     @Override
@@ -224,38 +206,13 @@ public class DefaultProxyConfig implements ProxyConfig {
         return getIntProperty(KEY_PROXY_BLOCK_RATE, 1000000);
     }
 
-    protected String getProperty(String key, String defaultValue){
-        return config.get(key, defaultValue);
+    @Override
+    public boolean isCrossRegionTrafficControlEnabled() {
+        return getBooleanProperty(KEY_CROSS_REGION_TRAFFIC_CONTROL_ENABLED, false);
     }
 
-    protected Integer getIntProperty(String key, Integer defaultValue){
-
-        String value = config.get(key);
-        if(value == null){
-            return defaultValue;
-        }
-        return Integer.parseInt(value.trim());
-
-    }
-
-    protected Long getLongProperty(String key, Long defaultValue){
-
-        String value = config.get(key);
-        if(value == null){
-            return defaultValue;
-        }
-        //TODO cache value to avoid convert each time
-        return Long.parseLong(value.trim());
-
-    }
-
-    protected Boolean getBooleanProperty(String key, Boolean defaultValue){
-
-        String value = config.get(key);
-        if(value == null){
-            return defaultValue;
-        }
-
-        return Boolean.parseBoolean(value.trim());
+    @Override
+    public long getCrossRegionTrafficControlLimit() {
+        return getLongProperty(KEY_CROSS_REGION_TRAFFIC_CONTROL_LIMIT, 200 * 1024 * 1024L); // 100MB/s default
     }
 }

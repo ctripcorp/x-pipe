@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.gtid;
 
 import com.ctrip.xpipe.tuple.Pair;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
@@ -15,6 +17,8 @@ public class GtidSet {
     public static final String EMPTY_GTIDSET = "";
 
     public static final String PLACE_HOLDER = "0:0";
+
+    public static final long GTID_GNO_INITIAL = 1;
 
     public static Pair<String, Long> parseGtid(String gtid) {
         String[] split = gtid.split(":");
@@ -41,8 +45,9 @@ public class GtidSet {
     /**
      * @param gtidSet gtid set comprised of closed intervals (like MySQL's executed_gtid_set).
      */
+    @JsonCreator
     public GtidSet(String gtidSet) {
-        String[] uuidSets = (gtidSet == null || gtidSet.isEmpty()) ? new String[0] :
+        String[] uuidSets = (gtidSet == null || gtidSet.isEmpty() || gtidSet.equals("\"\"")) ? new String[0] :
                 gtidSet.replace("\n", "").split(",");
         for (String uuidSet : uuidSets) {
             int uuidSeparatorIndex = uuidSet.indexOf(":");
@@ -62,6 +67,15 @@ public class GtidSet {
             }
             map.put(sourceId, new UUIDSet(sourceId, intervals));
         }
+    }
+
+    public int itemCnt() {
+        int cnt = 0;
+        for (UUIDSet uuidSet: map.values()) {
+            if (uuidSet.isZero()) continue;
+            cnt += uuidSet.itemCnt();
+        }
+        return cnt;
     }
 
     public byte[] encode() throws IOException {
@@ -266,6 +280,16 @@ public class GtidSet {
         return new GtidSet(clone.toString());  // transfer UUID:1-10:11-20 to UUID:1-20
     }
 
+    public GtidSet symmetricDiff(GtidSet other) {
+        if (null == other || other.map.isEmpty()) {
+            return clone();
+        }
+
+        GtidSet union = union(other);
+        GtidSet inter = retainAll(other);
+        return union.subtract(inter);
+    }
+
     private void removeInterval(UUIDSet uuidSet, Interval other) {
         List<Interval> intervals = uuidSet.getMutableIntervals();
         if (intervals == null || intervals.isEmpty()) {
@@ -308,7 +332,7 @@ public class GtidSet {
             }
         }
 
-        if (intervals.get(index).start < other.end) {
+        if (intervals.get(index).start <= other.end) {
             intervals.get(index).start = other.end + 1;
         }
     }
@@ -466,7 +490,10 @@ public class GtidSet {
     }
 
     @Override
+    @JsonValue
     public String toString() {
+        if (isEmpty()) return "\"\"";
+
         List<String> gtids = new ArrayList<String>();
         for (UUIDSet uuidSet : map.values()) {
             gtids.add(uuidSet.getUUID() + ":" + join(uuidSet.intervals, ":"));
@@ -483,6 +510,18 @@ public class GtidSet {
             sb.append(o1).append(delimiter);
         }
         return sb.substring(0, sb.length() - delimiter.length());
+    }
+
+    public boolean contains(String uuid) {
+        return this.map.containsKey(uuid);
+    }
+
+    public boolean contains(String uuid, long gno) {
+        UUIDSet uuidSet = this.map.get(uuid);
+        if (null == uuidSet) {
+            return false;
+        }
+        return uuidSet.contains(gno);
     }
 
     /**
@@ -504,6 +543,24 @@ public class GtidSet {
             if (intervals.size() > 1) {
                 joinAdjacentIntervals(0);
             }
+        }
+
+        public int itemCnt() {
+            int cnt = 0;
+            for (Interval interval: intervals) {
+                cnt += interval.end + 1 - interval.start;
+            }
+
+            return cnt;
+        }
+
+        public boolean contains(long gno) {
+            for (Interval interval: intervals) {
+                if(gno <= interval.end && gno >= interval.start) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private boolean isZero() {
@@ -811,6 +868,11 @@ public class GtidSet {
             return intersection;
         }
 
+        public long getLastGno() {
+             GtidSet.Interval lastInterval = getIntervals().get(getIntervals().size() - 1);
+             return lastInterval.end;
+        }
+
         @Override
         public int hashCode() {
             return uuid.hashCode();
@@ -845,6 +907,11 @@ public class GtidSet {
                 sb.append(iter.next());
             }
             return sb.toString();
+        }
+
+        @Override
+        protected UUIDSet clone() {
+            return new UUIDSet();
         }
     }
 

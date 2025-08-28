@@ -18,6 +18,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import static com.ctrip.xpipe.redis.core.protocal.Sync.SIDNO_SEPARATOR;
+import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.XFULL_SYNC;
 
 /**
  * @author lishanglin
@@ -63,6 +64,13 @@ public class FakeXsyncAction extends AbstractIoAction implements SocketAware {
             } catch (InterruptedException e) {
                 logger.warn("[doWrite][xsync] fail", e);
             }
+        } else if (Sync.PSYNC.equalsIgnoreCase(args[0])) {
+            try {
+                handleFullSync(new GtidSet(GtidSet.EMPTY_GTIDSET), ous);
+            } catch (Exception ex) {
+                ous.write("+ERR\r\n".getBytes());
+                ous.flush();
+            }
         } else {
             ous.write("+OK\r\n".getBytes());
             ous.flush();
@@ -79,11 +87,16 @@ public class FakeXsyncAction extends AbstractIoAction implements SocketAware {
     }
 
     private void handleFullSync(GtidSet rdbDataGtidSet, OutputStream ous) throws IOException, InterruptedException {
-        String resp = String.format("+%s %s\r\n", Sync.FULL_SYNC, rdbDataGtidSet.toString());
+        String resp = StringUtil.join(" ", "+" + XFULL_SYNC, "GTID.LOST", " \"\"",
+                "MASTER.UUID", "fake_master_uuid", "REPLID", "fake_reple_id",
+                "REPLOFF", 10001) + "\r\n";
         ous.write(resp.getBytes());
         ous.flush();
 
         fakeXsyncServer.addCommandListener(this);
+
+        byte[] data = fakeXsyncServer.genRdbData();
+        ous.write(("$" +  data.length + "\r\n").getBytes());
         ous.write(fakeXsyncServer.genRdbData());
         ous.flush();
 

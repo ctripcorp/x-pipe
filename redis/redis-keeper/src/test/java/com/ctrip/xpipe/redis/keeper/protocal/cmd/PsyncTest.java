@@ -10,11 +10,13 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.NettyPoolUtil;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
-import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultPsync;
+import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultGapAllowedSync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
+import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
+import com.ctrip.xpipe.redis.core.store.ReplStage;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
@@ -27,15 +29,20 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
+import static com.ctrip.xpipe.redis.core.protocal.Psync.FULL_SYNC;
+import static com.ctrip.xpipe.redis.core.protocal.Psync.PARTIAL_SYNC;
+import static com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
+import static com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta.EMPTY_REPL_ID;
+
 /**
  * @author wenchao.meng
  *
  * 2016年4月21日 下午3:11:30
  */
 public class PsyncTest extends AbstractRedisKeeperTest{
-	
-	private DefaultPsync psync;
-	
+
+	private DefaultGapAllowedSync gasync;
+
 	private ReplicationStoreManager replicationStoreManager;
 	private DefaultReplicationStore replicationStore;
 
@@ -58,8 +65,8 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		replicationStore = (DefaultReplicationStore) replicationStoreManager.create();
 		
 		SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new DefaultEndPoint("127.0.0.1", 1234));
-		psync = new DefaultPsync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager, scheduled);
-		psync.future().addListener(new CommandFutureListener<Object>() {
+		gasync = new DefaultGapAllowedSync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager, scheduled, null);
+		gasync.future().addListener(new CommandFutureListener<Object>() {
 			
 			@Override
 			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
@@ -68,7 +75,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 				}
 			}
 		});
-		psync.addPsyncObserver(new PsyncObserver() {
+		gasync.addPsyncObserver(new PsyncObserver() {
 			@Override
 			public void onFullSync(long masterRdbOffset) {
 			}
@@ -83,12 +90,28 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 
 			@Override
 			public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
+				String gtidExecuted = auxMap.get(RdbConstant.REDIS_RDB_AUX_KEY_GTID_EXECUTED);
+				if (gtidExecuted != null) {
+					logger.info("[readAuxEnd][gtid-executed] {}", gtidExecuted);
+					rdbStore.updateRdbGtidSet(gtidExecuted);
+				} else {
+					String gtidSet = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID, GtidSet.EMPTY_GTIDSET);
+					logger.info("[readAuxEnd][gtid] {}", gtidSet);
+					rdbStore.updateRdbGtidSet(gtidSet);
+				}
+
+				RdbStore.Type rdbType = auxMap.containsKey(RdbConstant.REDIS_RDB_AUX_KEY_RORDB) ? RdbStore.Type.RORDB : RdbStore.Type.NORMAL;
+				logger.info("[readAuxEnd][rdb] {}", rdbType);
+				rdbStore.updateRdbType(rdbType);
+
 				try {
-					rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
-					rdbStore.updateRdbType(RdbStore.Type.NORMAL);
-					replicationStore.confirmRdb(rdbStore);
-				} catch (Throwable th) {
-					logger.info("[readAuxEnd][confirmRdb] fail", th);
+					if (rdbStore.isGapAllowed()) {
+						replicationStoreManager.getCurrent().confirmRdbGapAllowed(rdbStore);
+					} else {
+						replicationStoreManager.getCurrent().confirmRdb(rdbStore);
+					}
+				} catch (IOException e) {
+					throw new RuntimeException(e);
 				}
 			}
 
@@ -107,10 +130,10 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 	}
 
 	private void initRdbStore() throws IOException {
-		RdbStore rdbStore = replicationStore.prepareRdb(masterId, masterOffset, new LenEofType(0));
+		RdbStore rdbStore = replicationStore.prepareRdb(masterId, masterOffset, new LenEofType(0), ReplStage.ReplProto.PSYNC, null, null);
 		rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
 		rdbStore.updateRdbType(RdbStore.Type.NORMAL);
-		replicationStore.confirmRdb(rdbStore);
+		replicationStore.confirmRdbGapAllowed(rdbStore);
 		replicationStore.getRdbStore().endRdb();
 	}
 
@@ -119,12 +142,18 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 
 		isPartial = true;
 		byte [][]data = new byte[][]{
-				("+" + DefaultPsync.PARTIAL_SYNC + "\r\n").getBytes(),
+				("+" + PARTIAL_SYNC + "\r\n").getBytes(),
 				commandContent.getBytes()
 		};
 		initRdbStore();
-		
+
+		gasync.getRequest();
 		runData(data);
+
+		ReplStage replStage = replicationStore.getMetaStore().getCurrentReplStage();
+		Assert.assertEquals(masterId, replStage.getReplId());
+		Assert.assertEquals(EMPTY_REPL_ID, replStage.getReplId2());
+		Assert.assertEquals(DEFAULT_SECOND_REPLID_OFFSET, replStage.getSecondReplIdOffset());
 	}
 
 	@Test
@@ -134,18 +163,20 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		
 		String newReplId = RunidGenerator.DEFAULT.generateRunid();
 		byte [][]data = new byte[][]{
-				("+" + DefaultPsync.PARTIAL_SYNC + " " + newReplId + "\r\n").getBytes(),
+				("+" + PARTIAL_SYNC + " " + newReplId + "\r\n").getBytes(),
 				commandContent.getBytes()
 		};
 		initRdbStore();
 		
-		Long secondReplIdOffset = replicationStore.getEndOffset() + 1;
-		
+		long secondReplIdOffset = replicationStore.getCurReplStageReplOff() + 1;
+
+		gasync.getRequest();
 		runData(data);
-		
-		Assert.assertEquals(newReplId, replicationStore.getMetaStore().getReplId());
-		Assert.assertEquals(masterId, replicationStore.getMetaStore().getReplId2());
-		Assert.assertEquals(secondReplIdOffset, replicationStore.getMetaStore().getSecondReplIdOffset());
+
+		ReplStage replStage = replicationStore.getMetaStore().getCurrentReplStage();
+		Assert.assertEquals(newReplId, replStage.getReplId());
+		Assert.assertEquals(masterId, replStage.getReplId2());
+		Assert.assertEquals(secondReplIdOffset, replStage.getSecondReplIdOffset());
 	}
 
 	@Test
@@ -155,18 +186,20 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		String newReplId = RunidGenerator.DEFAULT.generateRunid();
 
 		byte [][]data = new byte[][]{
-				("+" + DefaultPsync.PARTIAL_SYNC + "   " + newReplId + "  \r\n").getBytes(),
+				("+" + PARTIAL_SYNC + "   " + newReplId + "  \r\n").getBytes(),
 				commandContent.getBytes()
 		};
 		initRdbStore();
 		
-		Long secondReplIdOffset = replicationStore.getEndOffset() + 1;
+		long secondReplIdOffset = replicationStore.getCurReplStageReplOff() + 1;
 
+		gasync.getRequest();
 		runData(data);
-		
-		Assert.assertEquals(newReplId, replicationStore.getMetaStore().getReplId());
-		Assert.assertEquals(masterId, replicationStore.getMetaStore().getReplId2());
-		Assert.assertEquals(secondReplIdOffset, replicationStore.getMetaStore().getSecondReplIdOffset());
+
+		ReplStage replStage = replicationStore.getMetaStore().getCurrentReplStage();
+		Assert.assertEquals(newReplId, replStage.getReplId());
+		Assert.assertEquals(masterId, replStage.getReplId2());
+		Assert.assertEquals(secondReplIdOffset, replStage.getSecondReplIdOffset());
 	}
 	
 	@Test
@@ -176,19 +209,21 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		String newReplId = RunidGenerator.DEFAULT.generateRunid();
 
 		byte [][]data = new byte[][]{
-				("+" + DefaultPsync.PARTIAL_SYNC).getBytes(),
+				("+" + PARTIAL_SYNC).getBytes(),
 				("  " + newReplId + "  \r\n").getBytes(),
 				commandContent.getBytes()
 		};
 		initRdbStore();
 		
-		Long secondReplIdOffset = replicationStore.getEndOffset() + 1;
+		long secondReplIdOffset = replicationStore.getCurReplStageReplOff() + 1;
 
+		gasync.getRequest();
 		runData(data);
-		
-		Assert.assertEquals(newReplId, replicationStore.getMetaStore().getReplId());
-		Assert.assertEquals(masterId, replicationStore.getMetaStore().getReplId2());
-		Assert.assertEquals(secondReplIdOffset, replicationStore.getMetaStore().getSecondReplIdOffset());
+
+		ReplStage replStage = replicationStore.getMetaStore().getCurrentReplStage();
+		Assert.assertEquals(newReplId, replStage.getReplId());
+		Assert.assertEquals(masterId, replStage.getReplId2());
+		Assert.assertEquals(secondReplIdOffset, replStage.getSecondReplIdOffset());
 	}
 
 	
@@ -197,15 +232,22 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		
 		String eof = RunidGenerator.DEFAULT.generateRunid();
 		byte [][]data = new byte[][]{
-				("+" + DefaultPsync.FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n").getBytes(),
+				("+" + FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n").getBytes(),
 				("$EOF:" + eof + "\r\n").getBytes(),
 				rdbHeader,
 				rdbContent.getBytes(),
 				eof.getBytes(),
 				commandContent.getBytes()
 		};
-		
+
+		gasync.getRequest();
 		runData(data);
+
+		ReplStage replStage = replicationStore.getMetaStore().getCurrentReplStage();
+		Assert.assertEquals(masterId, replStage.getReplId());
+		Assert.assertEquals(EMPTY_REPL_ID, replStage.getReplId2());
+		Assert.assertEquals(DEFAULT_SECOND_REPLID_OFFSET, replStage.getSecondReplIdOffset());
+		Assert.assertNull(replicationStore.getMetaStore().getPreReplStage());
 	}
 
 	
@@ -214,14 +256,21 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 
 		int rdbLen = rdbContent.length() + rdbHeader.length;
 		byte [][]data = new byte[][]{
-				("+" + DefaultPsync.FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n").getBytes(),
+				("+" + FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n").getBytes(),
 				("$" + rdbLen + "\r\n").getBytes(),
 				rdbHeader,
 				rdbContent.getBytes(),
 				commandContent.getBytes()
 		};
-		
+
+		gasync.getRequest();
 		runData(data);
+
+		ReplStage replStage = replicationStore.getMetaStore().getCurrentReplStage();
+		Assert.assertEquals(masterId, replStage.getReplId());
+		Assert.assertEquals(EMPTY_REPL_ID, replStage.getReplId2());
+		Assert.assertEquals(DEFAULT_SECOND_REPLID_OFFSET, replStage.getSecondReplIdOffset());
+		Assert.assertNull(replicationStore.getMetaStore().getPreReplStage());
 	}
 
 	@Test
@@ -229,7 +278,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 
 		int rdbLen = rdbContent.length() + rdbHeader.length;
 		byte [][]data = new byte[][]{
-				("+" + DefaultPsync.FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n").getBytes(),
+				("+" + FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n").getBytes(),
 				("$" + rdbLen + "\r\n").getBytes(),
 				rdbHeader,
 				(rdbContent + "\r\n").getBytes(),
@@ -244,7 +293,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 
 		int rdbLen = rdbContent.length() + rdbHeader.length;
 		byte [][]data = new byte[][]{
-				("+" + DefaultPsync.FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n").getBytes(),
+				("+" + FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n").getBytes(),
 				("$" + rdbLen).getBytes() ,
 				"\r\n".getBytes(),
 				rdbHeader,
@@ -259,19 +308,19 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 	@Test
 	public void testPsyncFailHalfRdb() throws Exception{
 		
-		psync.addFutureListener();
+		gasync.addFutureListener();
 
 		int rdbLen = rdbContent.length() + rdbHeader.length;
 		int midIndex = rdbContent.length()/2;
 		byte [][]data = new byte[][]{
-				("+" + DefaultPsync.FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n").getBytes(),
+				("+" + FULL_SYNC + " " + masterId + " " + masterOffset + "\r\n").getBytes(),
 				("$" + rdbLen + "\r\n").getBytes(),
 				rdbHeader,
 				(rdbContent.substring(0, midIndex) + "\r\n").getBytes(),
 		};
 		runData(data, false);
 		
-		psync.clientClosed(null);
+		gasync.clientClosed(null);
 		
 		Assert.assertFalse(replicationStore.getRdbStore().checkOk());
 	}
@@ -293,7 +342,7 @@ public class PsyncTest extends AbstractRedisKeeperTest{
 		}
 		
 		for(ByteBuf byteBuf : byteBufs){
-			psync.receive(null, byteBuf);
+			gasync.receive(null, byteBuf);
 		}
 
 		if(assertResult){

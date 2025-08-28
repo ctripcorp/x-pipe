@@ -17,7 +17,7 @@ public interface MetaServerMultiDcService extends MetaServerService{
 	 * @param ip
 	 * @param port
 	 */
-	void upstreamChange(String clusterId, String shardId, String ip, int port);
+	void upstreamChange(String dcName, String clusterId, String shardId, String ip, int port);
 
 	void upstreamPeerChange(String dcId, String clusterId, String shardId);
 

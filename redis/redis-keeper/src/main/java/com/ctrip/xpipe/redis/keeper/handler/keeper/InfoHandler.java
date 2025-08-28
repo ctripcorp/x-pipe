@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 import com.ctrip.xpipe.api.server.Server;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.CommandBulkStringParser;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
+import com.ctrip.xpipe.redis.core.store.ReplStage;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.*;
@@ -11,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;
 import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
@@ -33,6 +36,7 @@ public class InfoHandler extends AbstractCommandHandler {
 		register(new InfoReplication());
 		register(new InfoStats());
 		register(new InfoKeeper());
+		register(new InfoGtid());
 	}
 
 	private void register(InfoSection section) {
@@ -109,6 +113,8 @@ public class InfoHandler extends AbstractCommandHandler {
 			sb.append(sections.get("replication").getInfo(keeperServer));
 			sb.append(RedisProtocol.CRLF);
 			sb.append(sections.get("stats").getInfo(keeperServer));
+			sb.append(RedisProtocol.CRLF);
+			sb.append(sections.get("gtid").getInfo(keeperServer));
 			return sb.toString();
 		}
 
@@ -231,7 +237,7 @@ public class InfoHandler extends AbstractCommandHandler {
 		public String getInfo(RedisKeeperServer redisKeeperServer) {
 			StringBuilder sb = new StringBuilder();
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
-			long slaveReplOffset = replicationStore.getEndOffset();
+			long slaveReplOffset = replicationStore.getCurReplStageReplOff();
 			KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
 			sb.append(getHeader());
 			sb.append("role:" + Server.SERVER_ROLE.SLAVE + RedisProtocol.CRLF);
@@ -263,11 +269,11 @@ public class InfoHandler extends AbstractCommandHandler {
 				slaveIndex++;
 			}
 
-			long beginOffset = keeperRepl.getBeginOffset();
+			long beginOffset = keeperRepl.backlogBeginOffset();
 			MetaStore metaStore = replicationStore.getMetaStore();
 			String replid = metaStore == null? ReplicationStoreMeta.EMPTY_REPL_ID : metaStore.getReplId();
 			String replid2 = metaStore == null? ReplicationStoreMeta.EMPTY_REPL_ID : metaStore.getReplId2();
-			long  secondReplIdOffset = metaStore == null? ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET : metaStore.getSecondReplIdOffset();
+			long  secondReplIdOffset = (metaStore == null || metaStore.getSecondReplIdOffset() == null) ? ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET : metaStore.getSecondReplIdOffset();
 
 			if(replid == null){
 				replid = ReplicationStoreMeta.EMPTY_REPL_ID;
@@ -284,8 +290,7 @@ public class InfoHandler extends AbstractCommandHandler {
 			sb.append("repl_backlog_active:1" + RedisProtocol.CRLF);
 			sb.append("repl_backlog_first_byte_offset:" + beginOffset+ RedisProtocol.CRLF);
 			try {
-				long endOffset = keeperRepl.getEndOffset();
-				sb.append("master_repl_offset:" + endOffset + RedisProtocol.CRLF);
+				long endOffset = keeperRepl.backlogEndOffset();
 				sb.append("repl_backlog_size:" + (endOffset - beginOffset + 1) + RedisProtocol.CRLF);
 				sb.append("repl_backlog_histlen:" + (endOffset - beginOffset + 1)+ RedisProtocol.CRLF);
 			} catch (Throwable ex) {
@@ -312,6 +317,29 @@ public class InfoHandler extends AbstractCommandHandler {
 		@Override
 		public String name() {
 			return "Replication";
+		}
+	}
+
+	private class InfoGtid extends AbstractInfoSection {
+
+		@Override
+		public String getInfo(RedisKeeperServer keeperServer) {
+			StringBuilder sb = new StringBuilder();
+			ReplStage curStage = keeperServer.getReplicationStore().getMetaStore().getCurrentReplStage();
+			ReplStage preStage = keeperServer.getReplicationStore().getMetaStore().getPreReplStage();
+			Pair<GtidSet, GtidSet> gtidSetPair = keeperServer.getReplicationStore().getGtidSet();
+			sb.append(getHeader());
+			sb.append("gtid_master_uuid:" + curStage.getMasterUuid() + RedisProtocol.CRLF);
+			sb.append("gtid_executed:" + gtidSetPair.getKey() + RedisProtocol.CRLF);
+			sb.append("gtid_lost:" + gtidSetPair.getValue() + RedisProtocol.CRLF);
+			sb.append("cur_repl:" + curStage + RedisProtocol.CRLF);
+			sb.append("prev_repl:" + preStage + RedisProtocol.CRLF);
+			return sb.toString();
+		}
+
+		@Override
+		public String name() {
+			return "Gtid";
 		}
 	}
 

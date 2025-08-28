@@ -46,7 +46,7 @@ public class MetaInfoChange extends AbstractMetaServerClusterTest{
 	public void testUpstreamChange() throws IOException{
 		
 		try{
-			metaServerMultiDcService.upstreamChange(clusterId, shardId, "127.0.0.1", 6379);
+			metaServerMultiDcService.upstreamChange(dc, clusterId, shardId, "127.0.0.1", 6379);
 		}catch(HttpServerErrorException e){
 			//500 expected
 		}

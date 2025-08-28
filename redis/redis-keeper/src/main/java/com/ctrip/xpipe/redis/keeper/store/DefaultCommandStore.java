@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
@@ -25,20 +26,21 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
 
-	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor) throws IOException {
-		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor);
+	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser,  GtidCmdFilter gtidCmdFilter) throws IOException {
+		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter);
 	}
 
 	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
 										   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
 										   long commandReaderFlyingThreshold,
 										   CommandReaderWriterFactory cmdReaderWriterFactory,
-										   KeeperMonitor keeperMonitor) throws IOException {
+										   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter
+	) throws IOException {
 		super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor);
+				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter);
 	}
 
-	private CommandReader<ReferenceFileRegion> beginRead(OffsetReplicationProgress replicationProgress, ReplDelayConfig replDelayConfig) throws IOException {
+	private CommandReader<ReferenceFileRegion> beginRead(ReplicationProgress<Long> replicationProgress, ReplDelayConfig replDelayConfig) throws IOException {
 
 		makeSureOpen();
 
@@ -51,7 +53,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 	@Override
 	public void addCommandsListener(ReplicationProgress<?> progress, final CommandsListener listener) throws IOException {
 
-		if (!(progress instanceof OffsetReplicationProgress)) {
+		if (!(progress instanceof OffsetReplicationProgress) && !(progress instanceof BacklogOffsetReplicationProgress)) {
 			throw new UnsupportedOperationException("unsupported progress " + progress);
 		}
 
@@ -60,9 +62,10 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 
 		CommandReader<ReferenceFileRegion> cmdReader = null;
 		RateLimiter rateLimiter = RateLimiter.create(Double.MAX_VALUE);
+		ChannelFuture lastWriteFuture = null;
 
 		try {
-			cmdReader = beginRead((OffsetReplicationProgress) progress, listener);
+			cmdReader = beginRead((ReplicationProgress<Long>)progress, listener);
 		} finally {
 			// ensure beforeCommand() is always called
 			listener.beforeCommand();
@@ -75,6 +78,18 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 
 				final ReferenceFileRegion referenceFileRegion = cmdReader.read(1000);
 				if (null == referenceFileRegion) continue;
+				if (ReferenceFileRegion.EOF == referenceFileRegion) {
+					logger.info("[addCommandsListener][read end] {}", progress);
+					if (null != lastWriteFuture) {
+						try {
+							lastWriteFuture.get(30, TimeUnit.SECONDS);
+						} catch (Throwable th) {
+							logger.info("[addCommandsListener][read end][wait flush fail]", th);
+						}
+					}
+					listener.onCommandEnd();
+					break;
+				}
 
 				logger.debug("[addCommandsListener] {}", referenceFileRegion);
 				getCommandStoreDelay().endRead(listener, referenceFileRegion.getTotalPos());
@@ -107,6 +122,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 							}
 						}
 					});
+					lastWriteFuture = future;
 				}
 
 				if (referenceFileRegion.count() <= 0) {
