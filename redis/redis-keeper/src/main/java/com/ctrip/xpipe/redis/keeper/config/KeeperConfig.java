@@ -66,6 +66,8 @@ public interface KeeperConfig extends CoreConfig{
 
 	int getApplierReadIdleSeconds();
 
+	int getKeeperIdleSeconds();
+
     int getKeyReplicationTimeoutMilli();
 
 	/**

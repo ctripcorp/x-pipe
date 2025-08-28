@@ -274,6 +274,11 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	}
 
 	@Override
+	public int getKeeperIdleSeconds() {
+		return 0;
+	}
+
+	@Override
 	public boolean fsyncRateLimit() {
 		return true;
 	}

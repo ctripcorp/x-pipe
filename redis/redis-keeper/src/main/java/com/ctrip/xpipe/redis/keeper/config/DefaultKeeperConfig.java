@@ -49,6 +49,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	private static String KEY_APPLIER_READ_IDLE_SECONDS = "applier.read.idle.seconds";
 
+	private static String KEY_KEEPER_IDLE_SECONDS = "keeper.idle.seconds";
+
 	private static String KEY_CROSS_REGION_MAX_FSYNC_SLAVES = "crossregion.replication.loading.slaves.max";
 
 	private static String KEY_FSYNC_RATE_LIMIT = "keeper.repl.fsync.rate.limit";
@@ -183,6 +185,12 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getApplierReadIdleSeconds() {
 		return getIntProperty(KEY_APPLIER_READ_IDLE_SECONDS, 60);
+	}
+
+	@Override
+	public int getKeeperIdleSeconds() {
+		// Same as credis, for applier keeper, it is recommended to set the timeout to 0.
+		return getIntProperty(KEY_KEEPER_IDLE_SECONDS, 900);
 	}
 
 	@Override
