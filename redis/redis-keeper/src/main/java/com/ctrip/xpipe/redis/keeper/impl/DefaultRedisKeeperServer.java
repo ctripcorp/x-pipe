@@ -161,8 +161,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private ReplDelayConfigCache replDelayConfigCache;
 
-	private static final int IDLE_TIME = 180;
-
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager,
@@ -528,7 +526,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	protected void startServer() throws InterruptedException {
-		
+
+		int idleSeconds = keeperConfig.getKeeperIdleSeconds();
+
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup)
          .channel(NioServerSocketChannel.class)
@@ -537,7 +537,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
              @Override
              public void initChannel(SocketChannel ch) throws Exception {
                  ChannelPipeline p = ch.pipeline();
-				 p.addLast(new IdleStateHandler(IDLE_TIME, IDLE_TIME, IDLE_TIME, TimeUnit.SECONDS));
+				 p.addLast(new IdleStateHandler(idleSeconds, idleSeconds, idleSeconds, TimeUnit.SECONDS));
 				 p.addLast(new MyIdleHandler());
                  p.addLast(debugLoggingHandler);
                  p.addLast(new NettySimpleMessageHandler());
