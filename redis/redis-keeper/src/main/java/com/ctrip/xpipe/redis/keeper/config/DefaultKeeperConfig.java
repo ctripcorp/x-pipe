@@ -190,7 +190,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getKeeperIdleSeconds() {
 		// Same as credis, for applier keeper, it is recommended to set the timeout to 0.
-		return getIntProperty(KEY_KEEPER_IDLE_SECONDS, 300);
+		return getIntProperty(KEY_KEEPER_IDLE_SECONDS, 900);
 	}
 
 	@Override

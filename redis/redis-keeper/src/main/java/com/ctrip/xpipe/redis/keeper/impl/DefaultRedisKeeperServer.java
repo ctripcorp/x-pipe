@@ -537,8 +537,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
              @Override
              public void initChannel(SocketChannel ch) throws Exception {
                  ChannelPipeline p = ch.pipeline();
-				 p.addLast(new IdleStateHandler(idleSeconds, idleSeconds, idleSeconds, TimeUnit.SECONDS));
-				 p.addLast(new MyIdleHandler());
+				 p.addLast(new IdleStateHandler(0, 0, idleSeconds, TimeUnit.SECONDS));
+				 p.addLast(new KeeperConnectionIdleHandler());
                  p.addLast(debugLoggingHandler);
                  p.addLast(new NettySimpleMessageHandler());
                  p.addLast(new NettyMasterHandler(DefaultRedisKeeperServer.this, new CommandHandlerManager(), keeperConfig.getTrafficReportIntervalMillis()));
@@ -1170,7 +1170,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.replicationStoreManager = replicationStoreManager;
 	}
 
-	class MyIdleHandler extends ChannelInboundHandlerAdapter {
+	class KeeperConnectionIdleHandler extends ChannelInboundHandlerAdapter {
 		@Override
 		public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
 			if (evt instanceof IdleStateEvent) {
