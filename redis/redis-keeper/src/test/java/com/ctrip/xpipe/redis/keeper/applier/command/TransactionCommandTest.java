@@ -21,12 +21,12 @@ public class TransactionCommandTest extends AbstractTest {
     public void testCreate() throws ExecutionException, InterruptedException {
 
         TransactionCommand transactionCommand = new TransactionCommand();
-        TestMultiCommand multiCommand = spy(new TestMultiCommand(100, "MULTI"));
-        transactionCommand.addTransactionStart(multiCommand, 30);
-        TestSetCommand dataCommand = spy(new TestSetCommand(100, "SET", "K", "V"));
-        transactionCommand.addTransactionCommands(dataCommand, 20);
-        TestExecCommand execCommand = spy(new TestExecCommand(100, "GTID", "A:2", "0", "EXEC"));
-        transactionCommand.addTransactionEnd(execCommand, 10);
+        TestMultiCommand multiCommand = spy(new TestMultiCommand(500, "MULTI"));
+        transactionCommand.addTransactionStart(multiCommand, 30, null);
+        TestSetCommand dataCommand = spy(new TestSetCommand(500, "SET", "K", "V"));
+        transactionCommand.addTransactionCommands(dataCommand, 20, null);
+        TestExecCommand execCommand = spy(new TestExecCommand(500, "GTID", "A:2", "0", "EXEC"));
+        transactionCommand.addTransactionEnd(execCommand, 10, null);
 
         Assert.assertEquals(transactionCommand.redisOp().getOpType(), RedisOpType.MULTI);
         Assert.assertEquals(transactionCommand.gtid(), "A:2");

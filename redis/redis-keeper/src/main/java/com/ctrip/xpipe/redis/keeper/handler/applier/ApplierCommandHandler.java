@@ -104,6 +104,11 @@ public class ApplierCommandHandler extends AbstractCommandHandler {
             } else if (opt.equals("PROXY")) {
                 // PROXY OPT only in the end of args
                 break;
+            } else if (opt.equals("PROTO_CHANGE_ALLOW")) {
+                boolean protoChangeAllow = RedisProtocol.stringToBoolean(args[i+1]);
+                i += 2;
+                config.setProtoChangeAllow(protoChangeAllow);
+
             } else {
                 throw new IllegalStateException("unknown opt:" + args[i]);
             }

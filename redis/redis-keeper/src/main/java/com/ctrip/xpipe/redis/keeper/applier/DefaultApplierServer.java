@@ -14,19 +14,19 @@ import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.ApplierInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.redis.core.protocal.ApplierSyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
+import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParser;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
-import com.ctrip.xpipe.redis.keeper.applier.lwm.ApplierLwmManager;
-import com.ctrip.xpipe.redis.keeper.applier.lwm.DefaultLwmManager;
 import com.ctrip.xpipe.redis.keeper.applier.sync.*;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import com.ctrip.xpipe.redis.keeper.handler.ApplierCommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.impl.ApplierRedisClient;
 import com.ctrip.xpipe.redis.keeper.netty.ApplierChannelHandlerFactory;
@@ -36,6 +36,7 @@ import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -47,8 +48,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -57,7 +58,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>
  * Jun 01, 2022 08:16
  */
-public class DefaultApplierServer extends AbstractInstanceNode implements ApplierServer {
+public class DefaultApplierServer extends AbstractInstanceNode implements ApplierServer, ApplierSyncObserver {
 
     /* component */
 
@@ -88,10 +89,10 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     public AsyncRedisClient client;
 
     @InstanceDependency
-    public AtomicReference<GtidSet> gtid_executed;
+    public AtomicReference<String> replId;
 
     @InstanceDependency
-    public AtomicReference<String> replId;
+    public AtomicReference<String> replProto;
 
     public final int listeningPort;
 
@@ -129,6 +130,21 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     @InstanceDependency
     public AtomicReference<ApplierConfig> applierConfigRef;
 
+    @InstanceDependency
+    public AtomicReference<GtidSet> lostGtidSet;
+
+    @InstanceDependency
+    public AtomicReference<GtidSet> startGtidSet;
+
+    @InstanceDependency
+    public AtomicReference<GtidSet> execGtidSet;
+
+    @InstanceDependency
+    public RdbParser<?> rdbParser;
+
+    @InstanceDependency
+    public AtomicBoolean protoChanged;
+
     private long startTime;
 
     private final Map<Channel, RedisClient> redisClients = new ConcurrentHashMap<Channel, RedisClient>();
@@ -162,7 +178,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
                                 Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold, String subenv) throws Exception {
         this.sequenceController = new DefaultSequenceController(qpsThreshold, bytesPerSecondThreshold, memoryThreshold, concurrencyThreshold);
         this.dispatcher = new DefaultCommandDispatcher();
-        this.replication = new DefaultPsyncReplication(this);
+        this.replication = new DefaultGapAllowReplication(this);
         this.offsetRecorder = new AtomicLong(-1);
         this.replId = new AtomicReference<>("?");
 
@@ -171,7 +187,6 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
                 leaderElectorManager));
 
         this.gtidDistanceThreshold = new AtomicReference<>();
-        this.gtid_executed = new AtomicReference<>();
         this.listeningPort = applierMeta.getPort();
         this.clusterId = clusterId;
         this.shardId = shardId;
@@ -198,6 +213,12 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
         applierConfigRef = new AtomicReference<>(new ApplierConfig());
         applierStatisticRef = new AtomicReference<>(new ApplierStatistic());
+        startGtidSet = new AtomicReference<>(new GtidSet(GtidSet.EMPTY_GTIDSET));
+        lostGtidSet = new AtomicReference<>(new GtidSet(GtidSet.EMPTY_GTIDSET));
+        execGtidSet = new AtomicReference<>(new GtidSet(GtidSet.EMPTY_GTIDSET));
+        rdbParser = new DefaultRdbParser();
+        protoChanged = new AtomicBoolean(false);
+        replProto = new AtomicReference<>();
     }
 
     private LeaderElector createLeaderElector(ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
@@ -302,6 +323,21 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     }
 
     @Override
+    public GtidSet getStartGtidSet() {
+        return startGtidSet.get();
+    }
+
+    @Override
+    public GtidSet getLostGtidSet() {
+        return lostGtidSet.get();
+    }
+
+    @Override
+    public GtidSet getExecGtidSet() {
+        return execGtidSet.get();
+    }
+
+    @Override
     public void processCommandSequentially(Runnable runnable) {
         clientExecutors.execute(new LongTimeAlertTask(runnable, DEFAULT_LONG_TIME_ALERT_TASK_MILLI));
     }
@@ -389,6 +425,11 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
             return ApplierHealth.unhealthy("DROP_RATION");
         }
 
+        if(!config.getProtoChangeAllow() && protoChanged.get()) {
+            return ApplierHealth.unhealthy("PROTO_CHANGE");
+        }
+
+
         return ApplierHealth.healthy();
     }
 
@@ -407,5 +448,41 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
     @Override
     public SERVER_ROLE role() {
         return SERVER_ROLE.APPLIER;
+    }
+
+    @Override
+    public void doOnFullSync(String replId, long replOffset) {
+
+    }
+
+    @Override
+    public void doOnXFullSync(GtidSet lost, long replOffset) {
+
+    }
+
+    @Override
+    public void doOnXContinue(GtidSet lost, long replOffset) {
+
+    }
+
+    @Override
+    public void doOnContinue(String newReplId) {
+
+    }
+
+    @Override
+    public void doOnAppendCommand(ByteBuf byteBuf) {
+
+    }
+
+    @Override
+    public void endReadRdb() {
+
+    }
+
+    @Override
+    public void protoChange() {
+        logger.info("PROTO changed");
+        protoChanged.set(true);
     }
 }

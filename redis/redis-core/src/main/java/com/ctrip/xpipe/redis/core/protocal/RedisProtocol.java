@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.protocal;
 
+import com.ctrip.xpipe.utils.StringUtil;
+
 /**
  * @author wenchao.meng
  *
@@ -24,6 +26,14 @@ public interface RedisProtocol {
 			return "yes";
 		}
 		return "no";
+	}
+
+	static Boolean stringToBoolean(String val){
+		if(StringUtil.trimEquals("yes", val)) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 

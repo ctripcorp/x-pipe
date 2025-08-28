@@ -15,9 +15,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Field;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.ctrip.xpipe.redis.keeper.applier.sequence.DefaultSequenceController.*;
 import static org.junit.Assert.*;
@@ -58,7 +60,7 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
         assertEquals(server.parser, ((DefaultCommandDispatcher) server.dispatcher).parser);
         assertEquals(server.sequenceController, ((DefaultCommandDispatcher) server.dispatcher).sequenceController);
 
-        assertEquals(server.gtid_executed, ((DefaultCommandDispatcher) server.dispatcher).gtid_executed);
+        assertEquals(server.execGtidSet, ((DefaultCommandDispatcher) server.dispatcher).execGtidSet);
 
         assertEquals(server.stateThread, ((DefaultSequenceController) server.sequenceController).stateThread);
         assertEquals(server.workerThreads, ((DefaultSequenceController) server.sequenceController).workerThreads);
@@ -119,7 +121,7 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
         assertEquals(server.parser, ((DefaultCommandDispatcher) server.dispatcher).parser);
         assertEquals(server.sequenceController, ((DefaultCommandDispatcher) server.dispatcher).sequenceController);
 
-        assertEquals(server.gtid_executed, ((DefaultCommandDispatcher) server.dispatcher).gtid_executed);
+        assertEquals(server.execGtidSet, ((DefaultCommandDispatcher) server.dispatcher).execGtidSet);
 
         assertEquals(server.stateThread, ((DefaultSequenceController) server.sequenceController).stateThread);
         assertEquals(server.workerThreads, ((DefaultSequenceController) server.sequenceController).workerThreads);
@@ -174,6 +176,7 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
         ApplierConfig config = new ApplierConfig();
         config.setDropAllowKeys(1000);
         config.setDropAllowRation(10);
+        config.setProtoChangeAllow(false);
         ApplierStatistic statistic = new ApplierStatistic();
         statistic.setDroppedKeys(5);
         statistic.setTransKeys(20);
@@ -196,5 +199,14 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
 
         server.setState(ApplierServer.STATE.BACKUP, config, statistic);
         Assert.assertTrue(server.checkHealth().isHealthy());
+
+        statistic.setDroppedKeys(0);
+        server.setState(ApplierServer.STATE.ACTIVE, config, statistic);
+
+        ReflectionTestUtils.setField(server,"protoChanged", new AtomicBoolean(true));
+        health = server.checkHealth();
+        Assert.assertFalse(health.isHealthy());
+        Assert.assertEquals("PROTO_CHANGE", health.getCause());
+
     }
 }
