@@ -609,7 +609,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             for (File cmdFile : allCmdFiles()) {
                 long fileStartOffset = extractStartOffset(cmdFile);
                 if (fileStartOffset >= maxStartOffset) {
-                    getLogger().info("[GC][skip writing cmd] writing:{} file:{}", maxStartOffset, fileStartOffset);
+                    getLogger().debug("[GC][skip writing cmd] writing:{} file:{}", maxStartOffset, fileStartOffset);
                     continue;
                 }
                 if (canDeleteCmdFile(Long.min(lowestReadingOffset(), minGuaranteeOffset()), fileStartOffset, cmdFile.length(),
