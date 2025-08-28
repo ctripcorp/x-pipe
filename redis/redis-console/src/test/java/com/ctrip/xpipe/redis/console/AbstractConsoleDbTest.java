@@ -70,8 +70,6 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
     public void before() throws Exception {
         PlexusManualLoaderConfiguration config = new PlexusManualLoaderConfiguration();
         plexusContainer = config.plexusContainer();
-        XpipeDataSourceProvider dataSourceProvider = (XpipeDataSourceProvider)plexusContainer.lookup(DataSourceProvider.class);
-        dataSourceProvider.initialize();
         setUpTestDataSource();
     }
 
