@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import com.google.common.base.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +40,7 @@ public class ConsoleNetworkStabilityHolder implements ConsoleLeaderAware, Networ
     protected AtomicBoolean taskTrigger = new AtomicBoolean(false);
 
     private static final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
+    private Logger logger = LoggerFactory.getLogger(ConsoleNetworkStabilityHolder.class);
 
     private AtomicBoolean dcIsolated = new AtomicBoolean(false);
 
@@ -52,7 +55,7 @@ public class ConsoleNetworkStabilityHolder implements ConsoleLeaderAware, Networ
                 stop();
                 start();
             } catch (Exception e) {
-
+                logger.error("[isleader]", e);
             }
         }
     }
@@ -63,7 +66,7 @@ public class ConsoleNetworkStabilityHolder implements ConsoleLeaderAware, Networ
             try {
                 stop();
             } catch (Exception e) {
-
+                logger.error("[notleader]", e);
             }
         }
     }
@@ -85,8 +88,7 @@ public class ConsoleNetworkStabilityHolder implements ConsoleLeaderAware, Networ
         task.start();
     }
 
-    private void check() {
-
+    void check() {
         if (!config.checkDcNetwork()) {
             dcIsolated.set(false);
             return;
@@ -96,40 +98,47 @@ public class ConsoleNetworkStabilityHolder implements ConsoleLeaderAware, Networ
         dcsInCurrentRegion.remove(CURRENT_DC);
 
         if (dcsInCurrentRegion.size() < config.getQuorum()) {
-            // CFT e.g.
-            String delegateDc = config.delegateDc();
-            if (Strings.isNullOrEmpty(delegateDc)) {
-                dcIsolated.set(false);
-                return;
-            }
-
-            Boolean delegateDcCheckResult = consoleServiceManager.getDcIsolatedCheckResult(delegateDc);
-            if (delegateDcCheckResult == null)
-                return;
-
-            dcIsolated.set(delegateDcCheckResult);
+            getResultFromDelegateDcConsole();
         } else {
-            AtomicBoolean mayIsolated = new AtomicBoolean(inspector.isolated());
+            aggregateResultsFromDcServers();
+        }
+    }
 
-            if (!mayIsolated.get()) {
-                dcIsolated.set(false);
-            } else {
-                Map<String, Boolean> allConsoleResults = consoleServiceManager.getAllDcIsolatedCheckResult();
-
-                allConsoleResults.forEach((s, v) -> {
-                    if(!s.equalsIgnoreCase(CURRENT_DC)){
-                        mayIsolated.set(mayIsolated.get() & v);
-                    }
-                });
-
-                if (mayIsolated.get()) {
-                    dcIsolated.set(true);
-                } else {
-                    dcIsolated.set(false);
-                }
-            }
+    void getResultFromDelegateDcConsole() {
+        // CFT e.g.
+        String delegateDc = config.delegateDc();
+        if (Strings.isNullOrEmpty(delegateDc)) {
+            dcIsolated.set(false);
+            return;
         }
 
+        Boolean delegateDcCheckResult = consoleServiceManager.getDcIsolatedCheckResult(delegateDc);
+        if (delegateDcCheckResult == null) {
+            logger.warn("[check]get check result from dc {}, but not found", delegateDc);
+            return;
+        }
+
+        dcIsolated.set(delegateDcCheckResult);
+    }
+
+    void aggregateResultsFromDcServers() {
+        AtomicBoolean mayIsolated = new AtomicBoolean(inspector.isolated());
+
+        if (!mayIsolated.get()) {
+            dcIsolated.set(false);
+        } else {
+            try {
+                Map<String, Boolean> allConsoleResults = consoleServiceManager.getAllDcIsolatedCheckResult();
+                logger.info("[aggregateResultsFromAllServers]results: {}", allConsoleResults);
+                allConsoleResults.forEach((s, v) -> {
+                    mayIsolated.set(mayIsolated.get() & v);
+                });
+
+                dcIsolated.set(mayIsolated.get());
+            } catch (Throwable throwable) {
+                logger.error("[aggregateResultsFromAllServers]keep current result:{}", dcIsolated.get(), throwable);
+            }
+        }
     }
 
     @Override

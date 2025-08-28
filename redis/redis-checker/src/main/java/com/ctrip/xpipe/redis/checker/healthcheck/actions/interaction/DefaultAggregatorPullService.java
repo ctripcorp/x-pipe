@@ -180,7 +180,6 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
     private void setSuspectIfNeeded(Set<HostPortDcStatus> instances) {
         instances.forEach(instance -> {
             if (!instance.isCanRead() && metaCache.isCrossRegion(currentDc, instance.getDc())) {
-                instance.setCanRead(true);
                 instance.setSuspect(true);
             }
         });
@@ -233,7 +232,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
             Map<HostPort, Boolean> localInstanceStatus = new HashMap<>();
             for (Map.Entry<HostPort, OuterClientService.OutClientInstanceStatus> entry : outClientInstanceStatus.entrySet()) {
                 OuterClientService.OutClientInstanceStatus outStatus = entry.getValue();
-                if (outStatus.isSuspect() && metaCache.isCrossRegion(currentDc, entry.getValue().getEnv())) {
+                if (outStatus.isSuspect() && metaCache.isCrossRegion(currentDc, outStatus.getEnv())) {
                     localInstanceStatus.put(entry.getKey(), false);
                 } else {
                     localInstanceStatus.put(entry.getKey(), outStatus.isCanRead());

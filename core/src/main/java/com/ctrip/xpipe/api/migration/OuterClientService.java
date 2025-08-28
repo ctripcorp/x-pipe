@@ -845,8 +845,9 @@ public interface OuterClientService extends Ordered{
 			return suspect;
 		}
 
-		public void setSuspect(boolean suspect) {
+		public HostPortDcStatus setSuspect(boolean suspect) {
 			this.suspect = suspect;
+			return this;
 		}
 
 		@Override
@@ -953,8 +954,9 @@ public interface OuterClientService extends Ordered{
 			return port;
 		}
 
-		public void setPort(int port) {
+		public OutClientInstanceStatus setPort(int port) {
 			this.port = port;
+			return this;
 		}
 
 		public String getIPAddress() {
@@ -962,32 +964,36 @@ public interface OuterClientService extends Ordered{
 			return IPAddress;
 		}
 
-		public void setIPAddress(String IPAddress) {
+		public OutClientInstanceStatus setIPAddress(String IPAddress) {
 			this.IPAddress = IPAddress;
+			return this;
 		}
 
 		public String getEnv() {
 			return env;
 		}
 
-		public void setEnv(String env) {
+		public OutClientInstanceStatus setEnv(String env) {
 			this.env = env;
+			return this;
 		}
 
 		public boolean isCanRead() {
 			return canRead;
 		}
 
-		public void setCanRead(boolean canRead) {
+		public OutClientInstanceStatus setCanRead(boolean canRead) {
 			this.canRead = canRead;
+			return this;
 		}
 
 		public boolean isSuspect() {
 			return suspect;
 		}
 
-		public void setSuspect(boolean suspect) {
+		public OutClientInstanceStatus setSuspect(boolean suspect) {
 			this.suspect = suspect;
+			return this;
 		}
 
 		@Override

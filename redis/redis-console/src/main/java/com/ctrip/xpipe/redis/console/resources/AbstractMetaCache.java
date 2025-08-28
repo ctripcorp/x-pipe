@@ -803,10 +803,18 @@ public abstract class AbstractMetaCache implements MetaCache {
     @Override
     public List<String> regionDcs(String dc) {
         Map<String, DcMeta> dcs = meta.getKey().getDcs();
-        DcMeta dcMeta = dcs.get(dc);
-        if (null == dcMeta) return Collections.emptyList();
-        String zone = dcMeta.getZone();
-        return dcs.values().stream().filter(dcMeta1 -> dcMeta1.getZone().equalsIgnoreCase(zone)).map(DcMeta::getId).collect(Collectors.toList());
+        DcMeta targetDcMeta = dcs.get(dc);
+        if (null == targetDcMeta)
+            return Collections.emptyList();
+
+        String zone = targetDcMeta.getZone();
+        List<String> regionDcs = new ArrayList<>();
+        for (DcMeta dcMeta : dcs.values()) {
+            if (dcMeta.getZone().equalsIgnoreCase(zone)) {
+                regionDcs.add(dcMeta.getId());
+            }
+        }
+        return regionDcs;
     }
 
     @VisibleForTesting

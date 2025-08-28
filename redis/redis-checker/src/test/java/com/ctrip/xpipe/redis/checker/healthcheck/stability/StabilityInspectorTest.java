@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.stability;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
@@ -21,7 +22,8 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 /**
  * @author lishanglin
@@ -55,6 +57,7 @@ public class StabilityInspectorTest extends AbstractTest {
         when(config.getStableResetAfterRounds()).thenReturn(2);
         when(config.getSiteStableThreshold()).thenReturn(0.8f);
         when(config.getSiteUnstableThreshold()).thenReturn(0.8f);
+        when(config.getConsoleAddress()).thenReturn("http://127.0.0.1:8080");
     }
 
     @Test
@@ -75,6 +78,32 @@ public class StabilityInspectorTest extends AbstractTest {
 
         inspector.inspect();
         Assert.assertFalse(inspector.isSiteStable());
+        inspector.inspect();
+        Assert.assertTrue(inspector.isSiteStable());
+    }
+
+    @Test
+    public void testDcIsolated() {
+        inspector.setSiteStable(true);
+        inspector.setDcIsolated(false);
+
+        when(consoleService.dcIsolated(anyString())).thenReturn(true);
+        inspector.inspect();
+        Assert.assertFalse(inspector.isSiteStable());
+
+        when(consoleService.dcIsolated(anyString())).thenReturn(false);
+        inspector.inspect();
+        Assert.assertFalse(inspector.isSiteStable());
+
+        doThrow(new XpipeRuntimeException("test")).when(consoleService).dcIsolated(anyString());
+        inspector.inspect();
+        Assert.assertFalse(inspector.isSiteStable());
+
+        doReturn(false).when(consoleService).dcIsolated(anyString());
+        inspector.inspect();
+        Assert.assertTrue(inspector.isSiteStable());
+
+        doThrow(new XpipeRuntimeException("test")).when(consoleService).dcIsolated(anyString());
         inspector.inspect();
         Assert.assertTrue(inspector.isSiteStable());
     }

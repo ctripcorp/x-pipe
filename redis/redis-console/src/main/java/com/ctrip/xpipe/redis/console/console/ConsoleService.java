@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.console;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
@@ -49,6 +50,8 @@ public interface ConsoleService extends CheckerService {
     Boolean getInnerDcIsolated();
 
     Boolean getDcIsolated();
+
+    CommandFuture<Boolean> connect(int connectTimeoutMilli);
 
     class ShardCheckerHealthCheckModels extends ArrayList<ShardCheckerHealthCheckModel> {}
 

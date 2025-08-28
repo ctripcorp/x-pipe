@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
@@ -27,5 +26,4 @@ public interface CheckerService {
 
     Map<HostPort, HealthStatusDesc> getAllClusterInstanceHealthStatus(Set<HostPort> hostPorts);
 
-    CommandFuture<Boolean> connect(int connectTimeoutMilli);
 }

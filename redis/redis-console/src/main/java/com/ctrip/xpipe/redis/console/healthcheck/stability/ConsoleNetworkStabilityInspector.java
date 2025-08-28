@@ -44,11 +44,10 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
 
     private static final String DC_ISOLATED_TYPE = "isolated";
     private static final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
-    private static final int CONNECT_TIMEOUT = 1200;
-    private static final int COMMAND_TIMEOUT = 1500;
+    static final int CONNECT_TIMEOUT = 1200;
+    static final int COMMAND_TIMEOUT = 1500;
 
 
-    @Autowired
     public ConsoleNetworkStabilityInspector(MetaCache metaCache, ConsoleConfig consoleConfig, ConsoleServiceManager consoleServiceManager) {
         this.metaCache = metaCache;
         this.config = consoleConfig;
@@ -77,6 +76,11 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
             List<String> dcsInCurrentRegion = metaCache.regionDcs(CURRENT_DC);
             dcsInCurrentRegion.remove(CURRENT_DC);
 
+            if (dcsInCurrentRegion.isEmpty()) {
+                logger.warn("[checkDcIsolated]No other dcs found in current region, current dc: {}", CURRENT_DC);
+                return;
+            }
+
             boolean mayIsolated;
             ParallelCommandChain chain = new ParallelCommandChain();
             Map<String, Boolean> allDcResults = new ConcurrentHashMap<>();
@@ -84,12 +88,13 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
                 chain.add(new AbstractCommand<Boolean>() {
                     @Override
                     protected void doExecute() throws Throwable {
-                        consoleServiceManager.connectDc(dcId, CONNECT_TIMEOUT).addListener(future -> {
-                            if (future.isSuccess()) {
-                                allDcResults.put(dcId, future.get());
-                                future().setSuccess(future.get());
+                        consoleServiceManager.connectDc(dcId, CONNECT_TIMEOUT).addListener(connectFuture -> {
+                            if (connectFuture.isSuccess()) {
+                                allDcResults.put(dcId, connectFuture.get());
+                                future().setSuccess(true);
                             } else {
-                                future().setFailure(future.cause());
+                                logger.error("[checkDcIsolated]{}", dcId, connectFuture.cause());
+                                future().setSuccess(false);
                             }
                         });
                     }
@@ -101,7 +106,7 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
 
                     @Override
                     public String getName() {
-                        return "";
+                        return "connectConsole";
                     }
                 });
             }
@@ -109,12 +114,7 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
             try {
                 chain.execute().get(COMMAND_TIMEOUT, TimeUnit.MILLISECONDS);
             } catch (Throwable th) {
-                logger.warn("[NetworkStability]command timeout, expected dcs:{}, actual results:{}", dcsInCurrentRegion, allDcResults);
-            }
-
-            if (allDcResults.isEmpty()) {
-                logger.warn("[NetworkStability]missing result, expected dcs:{}", dcsInCurrentRegion);
-                return;
+                logger.warn("[checkDcIsolated]command timeout, expected dcs:{}, actual results:{}", dcsInCurrentRegion, allDcResults);
             }
 
             boolean dcConnected = connected(allDcResults);
@@ -127,12 +127,13 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
                 mayIsolated = true;
             } else {
                 //results not enough
+                logger.warn("[checkDcIsolated]missing result, expected dcs:{}, actual dcs:{}", dcsInCurrentRegion, allDcResults);
                 return;
             }
 
             incrMismatchIfNeeded(mayIsolated);
-            toggleStableIfNeeded();
-            EventMonitor.DEFAULT.logEvent(DC_ISOLATED_TYPE, dcIsolated.get() ? "isolated" : "non-isolated");
+            toggleIsolatedIfNeeded();
+            EventMonitor.DEFAULT.logEvent(DC_ISOLATED_TYPE, dcIsolated.get() ? "isolated" : "unisolated");
         } catch (Throwable th) {
             logger.error("[checkDcIsolated]", th);
         }
@@ -157,12 +158,12 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
         }
     }
 
-    private void toggleStableIfNeeded() {
+    private void toggleIsolatedIfNeeded() {
         if (dcIsolated.get() && continuousMismatchTimes.get() >= config.getIsolateRecoverAfterRounds()) {
-            logger.info("[toggleStableIfNeeded] become unisolated");
+            logger.info("[toggleIsolatedIfNeeded] become unisolated");
             setDcIsolated(false);
         } else if (!dcIsolated.get() && continuousMismatchTimes.get() >= config.getIsolateAfterRounds()) {
-            logger.info("[toggleStableIfNeeded] become isolated");
+            logger.info("[toggleIsolatedIfNeeded] become isolated");
             setDcIsolated(true);
         }
     }

@@ -160,19 +160,19 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
     private void incrIsolatedMismatchIfNeeded(boolean mayIsolated) {
         if (mayIsolated != dcIsolated.get()) {
             int after = isolatedContinuousMismatchTimes.incrementAndGet();
-            logger.info("[incrMismatchIfNeeded] may {}:{}", mayIsolated ? "isolated":"unisolated", after);
+            logger.info("[incrIsolatedMismatchIfNeeded] may {}:{}", mayIsolated ? "isolated":"unisolated", after);
         } else if (isolatedContinuousMismatchTimes.get() > 0) {
-            logger.info("[incrMismatchIfNeeded][reset]");
+            logger.info("[incrIsolatedMismatchIfNeeded][reset]");
             this.isolatedContinuousMismatchTimes.set(0);
         }
     }
 
     private void toggleDcIsolatedIfNeeded() {
         if (dcIsolated.get() && isolatedContinuousMismatchTimes.get() >= config.getStableRecoverAfterRounds()) {
-            logger.info("[toggleStableIfNeeded] become unisolated");
+            logger.info("[toggleDcIsolatedIfNeeded] become unisolated");
             setDcIsolated(false);
-        } else if (!dcIsolated.get() && continuousMismatchTimes.get() >0) {
-            logger.info("[toggleStableIfNeeded] become stable");
+        } else if (!dcIsolated.get() && isolatedContinuousMismatchTimes.get() > 0) {
+            logger.info("[toggleDcIsolatedIfNeeded] become isolated");
             setDcIsolated(true);
         }
     }
@@ -184,6 +184,7 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
         this.continuousMismatchTimes.set(0);
     }
 
+    @VisibleForTesting
     protected void setDcIsolated(boolean isolated) {
         this.dcIsolated.set(isolated);
         this.isolatedContinuousMismatchTimes.set(0);

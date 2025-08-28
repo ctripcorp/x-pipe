@@ -206,40 +206,31 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
     @Test
     public void testBatchGetInstances() throws Exception {
         webServer.enqueue(new MockResponse().setBody("{\n" +
-                "    \"Success\": true,\n" +
-                "    \"Result\": [\n" +
-                "        {\n" +
-                "            \"ID\": 118991,\n" +
-                "            \"ParentID\": 0,\n" +
-                "            \"GroupID\": 1000079389,\n" +
-                "            \"PoolID\": 0,\n" +
-                "            \"IPAddress\": \"10.118.79.225\",\n" +
-                "            \"Port\": 21050,\n" +
-                "            \"Status\": 1,\n" +
-                "            \"CreateTime\": \"2021-06-07 16:56:27\",\n" +
-                "            \"UpdateTime\": \"2021-06-07 16:56:27\",\n" +
-                "            \"Remark\": null,\n" +
-                "            \"CanRead\": true,\n" +
-                "            \"Env\": \"PTOY\",\n" +
-                "            \"Token\": null\n" +
-                "        },\n" +
-                "        {\n" +
-                "            \"ID\": 118992,\n" +
-                "            \"ParentID\": 0,\n" +
-                "            \"GroupID\": 1000079389,\n" +
-                "            \"PoolID\": 0,\n" +
-                "            \"IPAddress\": \"10.118.79.225\",\n" +
-                "            \"Port\": 21051,\n" +
-                "            \"Status\": 1,\n" +
-                "            \"CreateTime\": \"2021-06-07 16:56:27\",\n" +
-                "            \"UpdateTime\": \"2021-06-07 16:56:27\",\n" +
-                "            \"Remark\": null,\n" +
-                "            \"CanRead\": false,\n" +
-                "            \"Env\": \"PTOY\",\n" +
-                "            \"Token\": null\n" +
-                "        }\n" +
-                "    ]\n" +
-                "}")
+                        "    \"Success\": true,\n" +
+                        "    \"Result\": [\n" +
+                        "{\n" +
+                        "            \"canRead\": true,\n" +
+                        "            \"env\": \"PTOY\",\n" +
+                        "            \"port\": 21050,\n" +
+                        "            \"suspect\": false,\n" +
+                        "            \"ipaddress\": \"10.118.79.225\"\n" +
+                        "        }," +
+                        "{\n" +
+                        "            \"canRead\": false,\n" +
+                        "            \"env\": \"PTOY\",\n" +
+                        "            \"port\": 21051,\n" +
+                        "            \"suspect\": false,\n" +
+                        "            \"ipaddress\": \"10.118.79.225\"\n" +
+                        "        }," +
+                        "{\n" +
+                        "            \"canRead\": true,\n" +
+                        "            \"env\": \"PTOY\",\n" +
+                        "            \"port\": 21052,\n" +
+                        "            \"suspect\": true,\n" +
+                        "            \"ipaddress\": \"10.118.79.225\"\n" +
+                        "        }" +
+                        "    ]\n" +
+                        "}")
                 .setHeader("Content-Type", "application/json"));
 
         Set<HostPort> instances = new HashSet<HostPort>() {{
@@ -248,10 +239,25 @@ public class CRedisServiceHttpTest extends AbstractServiceTest {
             add(new HostPort("10.118.79.225", 21052));
         }};
         Map<HostPort, OuterClientService.OutClientInstanceStatus> resp =credisService.batchQueryInstanceStatus("cluster1", instances);
-        Assert.assertEquals(new HashMap<HostPort, Boolean>(){{
-            put(new HostPort("10.118.79.225", 21050), true);
-            put(new HostPort("10.118.79.225", 21051), false);
-        }}, resp);
+        Assert.assertEquals(3,resp.size());
+        OuterClientService.OutClientInstanceStatus status0=resp.get(new HostPort("10.118.79.225", 21050));
+        Assert.assertNotNull(status0);
+        Assert.assertTrue(status0.isCanRead());
+        Assert.assertFalse(status0.isSuspect());
+        Assert.assertEquals("PTOY",status0.getEnv());
+
+
+        OuterClientService.OutClientInstanceStatus status1=resp.get(new HostPort("10.118.79.225", 21051));
+        Assert.assertNotNull(status1);
+        Assert.assertFalse(status1.isCanRead());
+        Assert.assertFalse(status1.isSuspect());
+        Assert.assertEquals("PTOY",status1.getEnv());
+
+        OuterClientService.OutClientInstanceStatus status2 = resp.get(new HostPort("10.118.79.225", 21052));
+        Assert.assertNotNull(status2);
+        Assert.assertTrue(status2.isCanRead());
+        Assert.assertTrue(status2.isSuspect());
+        Assert.assertEquals("PTOY", status2.getEnv());
 
         Assert.assertEquals(1, webServer.getRequestCount());
         RecordedRequest req = webServer.takeRequest();

@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.netty.TcpPortCheckCommand;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
@@ -92,7 +91,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
             this.host = host;
         }
         this.port = port;
-        this.address = "http://" + host + ":" + port;
+        this.address = "http://" + this.host + ":" + this.port;
         healthStatusUrl = String.format("%s/api/health/{ip}/{port}", this.address);
         crossRegionHealthStatusUrl = String.format("%s/api/cross/region/health/{ip}/{port}", this.address);
         allHealthStatusUrl = String.format("%s/api/health/check/status/all", this.address);
@@ -228,15 +227,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     @Override
     public CommandFuture<Boolean> connect(int connectTimeoutMilli) {
-        CommandFuture<Boolean> future = new DefaultCommandFuture<>();
-        new TcpPortCheckCommand(host, port, connectTimeoutMilli).execute().addListener(connectFuture -> {
-            if (connectFuture.isSuccess()) {
-                future.setSuccess(true);
-            } else {
-                future.setSuccess(false);
-            }
-        });
-        return future;
+        return new TcpPortCheckCommand(host, port, connectTimeoutMilli).execute();
     }
 
     @Override

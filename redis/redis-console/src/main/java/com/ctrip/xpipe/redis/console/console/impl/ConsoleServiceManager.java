@@ -11,10 +11,12 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatu
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
+import com.ctrip.xpipe.redis.console.exception.NotEnoughResultsException;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +94,18 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
     public Map<String, Boolean> getAllDcIsolatedCheckResult() {
         Map<String, Boolean> result = new HashMap<>();
         Map<String, ConsoleService> consoleServiceMap = loadAllConsoleServices();
-        consoleServiceMap.forEach((key, value) -> result.put(key, value.getInnerDcIsolated()));
+        consoleServiceMap.forEach((key, value) -> {
+            try {
+                Boolean innerIsolated = value.getInnerDcIsolated();
+                if (innerIsolated != null)
+                    result.put(key, innerIsolated);
+            } catch (Throwable th) {
+                logger.error("[getAllDcIsolatedCheckResult]{}", key, th);
+            }
+        });
+        if (result.size() < consoleServiceMap.size()) {
+            throw new NotEnoughResultsException("getAllDcIsolatedCheckResult");
+        }
         return result;
     }
 
@@ -226,7 +239,8 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return consoleConfig.getQuorum();
     }
 
-    private Map<String,ConsoleService> loadAllConsoleServices() {
+    @VisibleForTesting
+    Map<String,ConsoleService> loadAllConsoleServices() {
 
         Map<String, ConsoleService> result = new HashMap<>();
 

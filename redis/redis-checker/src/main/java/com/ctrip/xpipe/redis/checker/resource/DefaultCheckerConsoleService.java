@@ -209,7 +209,7 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     public boolean dcIsolated(String console) {
         Boolean result = restTemplate.getForObject(console + ConsoleCheckerPath.PATH_GET_DC_ISOLATED, Boolean.class);
         if (result == null) {
-            throw new XpipeRuntimeException("result of isNetworkIsolated is null");
+            throw new XpipeRuntimeException("result of dcIsolated is null");
         }
         return result;
     }
