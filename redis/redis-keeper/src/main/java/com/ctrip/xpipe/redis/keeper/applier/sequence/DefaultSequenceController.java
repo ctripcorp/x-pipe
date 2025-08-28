@@ -103,6 +103,11 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     }
 
     @Override
+    public void submit(RedisOpCommand<?> command, long commandOffsetToAccumulate) {
+        submit(command, commandOffsetToAccumulate, null);
+    }
+
+    @Override
     public void submit(RedisOpCommand<?> command, long commandOffsetToAccumulate, GtidSet gtidSet) {
 
         if (closeState.isClosed()) {
