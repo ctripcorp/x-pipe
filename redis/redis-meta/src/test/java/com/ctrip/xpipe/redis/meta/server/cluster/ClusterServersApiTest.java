@@ -14,7 +14,9 @@ import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.meta.server.TestMetaServer;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import org.junit.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestOperations;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * @author wenchao.meng
@@ -83,8 +85,27 @@ public class ClusterServersApiTest extends AbstractMetaServerClusterTest{
 		for(TestMetaServer server : getServers()){
 			
 			String path = META_SERVER_SERVICE.UPSTREAM_CHANGE.getRealPath(server.getAddress());
+			restTemplate.put(path, null, "cluster1", "shard1", "localhost", 7777);
+			restTemplate.exchange(path, HttpMethod.PUT, null, String.class, "cluster1", "shard1", "localhost", 7777);
+
+			String dcName = "jq";
+			path = UriComponentsBuilder.fromUriString(path).queryParam("dcName", "jq").build().toUriString();
 			logger.info("[testClusterChanged]{}", path);
 			restTemplate.put(path, null, "cluster1", "shard1", "localhost", 7777);
+			restTemplate.exchange(path, HttpMethod.PUT, null, String.class, "cluster1", "shard1", "localhost", 7777);
+
+			dcName = null;
+			path = UriComponentsBuilder.fromUriString(path).queryParam("dcName", dcName).build().toUriString();
+			logger.info("[testClusterChanged]{}", path);
+			restTemplate.put(path, null, "cluster1", "shard1", "localhost", 7777);
+			restTemplate.exchange(path, HttpMethod.PUT, null, String.class, "cluster1", "shard1", "localhost", 7777);
+
+			dcName = "";
+			path = UriComponentsBuilder.fromUriString(path).queryParam("dcName", dcName).build().toUriString();
+			logger.info("[testClusterChanged]{}", path);
+			restTemplate.put(path, null, "cluster1", "shard1", "localhost", 7777);
+			restTemplate.exchange(path, HttpMethod.PUT, null, String.class, "cluster1", "shard1", "localhost", 7777);
+
 		}
 	}
 
