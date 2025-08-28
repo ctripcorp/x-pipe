@@ -122,7 +122,7 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
     }
 
     @Override
-    protected HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance) {
+    protected synchronized HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance) {
 
         return MapUtils.getOrCreate(allHealthStatus, instance, new ObjectFactory<HealthStatus>() {
             @Override
