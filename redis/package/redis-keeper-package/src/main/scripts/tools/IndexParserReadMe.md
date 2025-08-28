@@ -2,7 +2,7 @@
 #### 使用示例
 
 ```bash
-python parser.py <输入路径> [选项]
+python IndexParser.py <输入路径> [选项]
 ```
 
 ##### **参数说明**
@@ -29,7 +29,7 @@ python parser.py <输入路径> [选项]
 
 **示例 1：解析目录中的所有索引文件，不解析block**
 ```bash
-python parser.py  /opt/data/100004376/rsd/replication_store_6480/repl_787907/7ed31054-43f7-4f33-98aa-1f6f78ade1f3/ --no-block
+python IndexParser.py  /opt/data/100004376/rsd/replication_store_6480/repl_787907/7ed31054-43f7-4f33-98aa-1f6f78ade1f3/ --no-block
 ```
 > 这会解析 `/opt/data/100004376/rsd/replication_store_6480/repl_787907/7ed31054-43f7-4f33-98aa-1f6f78ade1f3/` 目录下所有的 `index_*` 文件。
 
@@ -88,7 +88,7 @@ python parser.py  /opt/data/100004376/rsd/replication_store_6480/repl_787907/7ed
 
 **示例 2：解析指定的索引文件，不解析block**
 ```bash
-python parser.py  /opt/data/100004376/rsd/replication_store_6480/repl_787907/7ed31054-43f7-4f33-98aa-1f6f78ade1f3/index_cmd_ca73e222-28e2-4477-a485-d366d0692130_145655346072 --no-block
+python IndexParser.py  /opt/data/100004376/rsd/replication_store_6480/repl_787907/7ed31054-43f7-4f33-98aa-1f6f78ade1f3/index_cmd_ca73e222-28e2-4477-a485-d366d0692130_145655346072 --no-block
 ```
 > 这会解析 `index_cmd_ca73e222-28e2-4477-a485-d366d0692130_145655346072` 这个索引文件。
 
@@ -136,7 +136,7 @@ python parser.py  /opt/data/100004376/rsd/replication_store_6480/repl_787907/7ed
 
 **示例 3：解析指定的索引文件，并指定Entry, 并解析block**
 ```bash
-python parser.py  /opt/data/100004376/rsd/replication_store_6480/repl_787907/7ed31054-43f7-4f33-98aa-1f6f78ade1f3/index_cmd_ca73e222-28e2-4477-a485-d366d0692130_145655346072 --entry 3
+python IndexParser.py  /opt/data/100004376/rsd/replication_store_6480/repl_787907/7ed31054-43f7-4f33-98aa-1f6f78ade1f3/index_cmd_ca73e222-28e2-4477-a485-d366d0692130_145655346072 --entry 3
 ```
 > 这会解析 `index_cmd_ca73e222-28e2-4477-a485-d366d0692130_145655346072` 这个索引文件第三个索引块和对应的block信息。block会带有gno, 增量信息和cmd_offset
 
