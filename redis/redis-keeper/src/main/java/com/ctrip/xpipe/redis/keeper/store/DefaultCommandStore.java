@@ -34,10 +34,19 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 										   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
 										   long commandReaderFlyingThreshold,
 										   CommandReaderWriterFactory cmdReaderWriterFactory,
-										   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter
+										   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex
 	) throws IOException {
 		super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter);
+				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex);
+	}
+
+	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
+							   long commandReaderFlyingThreshold,
+							   CommandReaderWriterFactory cmdReaderWriterFactory,
+							   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter) throws IOException {
+		super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, true);
 	}
 
 	private CommandReader<ReferenceFileRegion> beginRead(ReplicationProgress<Long> replicationProgress, ReplDelayConfig replDelayConfig) throws IOException {
