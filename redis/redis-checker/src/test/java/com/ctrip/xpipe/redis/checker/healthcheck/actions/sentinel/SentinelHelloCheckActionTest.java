@@ -103,7 +103,8 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
 
         redisNames = Lists.newArrayList(ACTIVE_DC_SHARD1_MASTER, ACTIVE_DC_SHARD1_SLAVE, BACKUP_DC_SHARD1_SLAVE1,
                 BACKUP_DC_SHARD1_SLAVE2,
-                ACTIVE_DC_SHARD2_MASTER, ACTIVE_DC_SHARD2_SLAVE, BACKUP_DC_SHARD2_SLAVE1, BACKUP_DC_SHARD2_SLAVE2);
+                ACTIVE_DC_SHARD2_MASTER, ACTIVE_DC_SHARD2_SLAVE, BACKUP_DC_SHARD2_SLAVE1, BACKUP_DC_SHARD2_SLAVE2,
+                ACTIVE_DC_SHARD3_MASTER, ACTIVE_DC_SHARD3_SLAVE);
 
         for (String redisIp : redisNames) {
             serverResults.put(redisIp, new Supplier<String>() {
