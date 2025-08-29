@@ -255,4 +255,18 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
         Assert.assertEquals(2, dcMetaCache.keeperMigrateOnlyNums(comparator));
     }
 
+    @Test
+    public void testKeeperMigrateOnlyNums1() {
+        DcMeta current = (DcMeta) getXpipeMeta().getDcs().values().toArray()[0];
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
+
+        future.getClusters().get("cluster1").getShards().get("shard1").getKeepers().get(0).setIp("10.0.0.1").setActive(false);
+        future.getClusters().get("cluster1").getShards().get("shard1").getKeepers().get(1).setActive(true);
+        DcMetaComparator comparator = new DcMetaComparator(current, future);
+        comparator.setShardMigrateSupport();
+        comparator.compare();
+
+        Assert.assertEquals(1, dcMetaCache.keeperMigrateOnlyNums(comparator));
+    }
+
 }
