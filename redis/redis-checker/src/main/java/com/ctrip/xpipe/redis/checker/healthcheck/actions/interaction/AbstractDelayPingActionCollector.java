@@ -28,7 +28,7 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
 
     protected abstract HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance);
 
-    protected void removeHealthStatus(HealthCheckAction action) {
+    protected synchronized void removeHealthStatus(HealthCheckAction action) {
         HealthStatus healthStatus = allHealthStatus.remove(action.getActionInstance());
         if(healthStatus != null) {
             healthStatus.stop();
