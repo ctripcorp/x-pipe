@@ -94,7 +94,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     private GtidCmdFilter gtidCmdFilter;
 
-    private boolean buildIndex = true;
+    private boolean buildIndex;
     
     public abstract Logger getLogger();
 
@@ -103,7 +103,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                                long commandReaderFlyingThreshold,
                                CommandReaderWriterFactory cmdReaderWriterFactory,
                                KeeperMonitor keeperMonitor,RedisOpParser redisOpParser,
-                               GtidCmdFilter  gtidCmdFilter
+                               GtidCmdFilter  gtidCmdFilter, boolean buildIndex
     ) throws IOException {
 
         this.baseDir = file.getParentFile();
@@ -124,8 +124,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
-        indexStore = new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
+        this.buildIndex = buildIndex;
+        if(buildIndex) {
+            indexStore = new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
                 this, this,  gtidCmdFilter);
+        }
     }
 
     @Override
@@ -133,7 +136,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (initialized.compareAndSet(false, true)) {
             cmdWriter.initialize();
             offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
-            indexStore.initialize(cmdWriter);
+            if(buildIndex) {
+                indexStore.initialize(cmdWriter);
+            }
         }
     }
 

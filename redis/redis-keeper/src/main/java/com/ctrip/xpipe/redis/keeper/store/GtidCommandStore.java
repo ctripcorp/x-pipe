@@ -25,9 +25,9 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
     public GtidCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                             int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
                             CommandReaderWriterFactory cmdReaderWriterFactory,
-                            KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter) throws IOException {
+                            KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter, boolean buildIndex) throws IOException {
         super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-                commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter);
+                commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex);
     }
 
     @Override
