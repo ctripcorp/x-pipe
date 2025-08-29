@@ -256,7 +256,7 @@ public class DefaultDcMetaCacheTest extends AbstractMetaServerTest{
     }
 
     @Test
-    public void testKeeperMigrateOnlyNums1() {
+    public void testKeeperMigrateOnlyNums_OnlyKeeperChange() {
         DcMeta current = (DcMeta) getXpipeMeta().getDcs().values().toArray()[0];
         DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
 
