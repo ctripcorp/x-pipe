@@ -78,7 +78,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
             buildIndex = false;
         }
         replMeta.getCurReplStage().getProto();
-        logger.info("[createCommandStore], replRdbGtidSet={}", replRdbGtidSet);
+        logger.info("[createCommandStore], replRdbGtidSet={}, buildIndex={}", replRdbGtidSet, buildIndex);
         GtidCommandStore cmdStore = new GtidCommandStore(new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
                 config::getReplicationStoreCommandFileKeepTimeSeconds,
                 config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
