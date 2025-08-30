@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.migration;
 
 import com.ctrip.xpipe.api.migration.OuterClientException;
-import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.DateTimeUtils;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 
 import java.net.InetSocketAddress;
@@ -18,40 +16,32 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class DefaultOuterClientService extends AbstractOuterClientService {
 
-	private Map<HostPort, Boolean> instanceStatus = new ConcurrentHashMap<>();
+	private Map<HostPort, HostPortDcStatus> instanceStatus = new ConcurrentHashMap<>();
 
 	private Map<String, Integer> cntMap = new ConcurrentHashMap<>();
 
-	@Override
-	public void markInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
-		logger.info("[markInstanceUp]{}", clusterShardHostPort);
-		instanceStatus.put(clusterShardHostPort.getHostPort(), true);
 
-	}
-
-	@Override
-	public boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
-
-		Boolean result = instanceStatus.get(clusterShardHostPort.getHostPort());
-		if(result == null){
-			return Boolean.parseBoolean(System.getProperty("InstanceUp", "true"));
+	private OutClientInstanceStatus instanceStatus(HostPort hostPort) throws OuterClientException {
+		HostPortDcStatus result = instanceStatus.get(hostPort);
+		if (result == null) {
+			return new OutClientInstanceStatus();
 		}
-		return result;
+		OutClientInstanceStatus outClientInstanceStatus = new OutClientInstanceStatus();
+		outClientInstanceStatus.setEnv(result.getDc());
+		outClientInstanceStatus.setIPAddress(result.getHost());
+		outClientInstanceStatus.setPort(result.getPort());
+		outClientInstanceStatus.setCanRead(result.isCanRead());
+		outClientInstanceStatus.setSuspect(result.isSuspect());
+		return outClientInstanceStatus;
 	}
 
 	@Override
-	public Map<HostPort, Boolean> batchQueryInstanceStatus(String cluster, Set<HostPort> instances) throws OuterClientException {
-		Map<HostPort, Boolean> result = new HashMap<>();
+	public Map<HostPort, OutClientInstanceStatus> batchQueryInstanceStatus(String cluster, Set<HostPort> instances) throws OuterClientException {
+		Map<HostPort, OutClientInstanceStatus> result = new HashMap<>();
 		for (HostPort instance: instances) {
-			result.put(instance, isInstanceUp(new ClusterShardHostPort(instance)));
+			result.put(instance, instanceStatus(instance));
 		}
 		return result;
-	}
-
-	@Override
-	public void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
-		logger.info("[markInstanceDown]{}", clusterShardHostPort);
-		instanceStatus.put(clusterShardHostPort.getHostPort(), false);
 	}
 
 	@Override
@@ -117,22 +107,10 @@ public class DefaultOuterClientService extends AbstractOuterClientService {
 	}
 
 	@Override
-	public void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
-		logger.info("[markInstanceUpIfNoModifyFor]{}", clusterShardHostPort);
-		instanceStatus.put(clusterShardHostPort.getHostPort(), true);
-	}
-
-	@Override
-	public void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
-		logger.info("[markInstanceDownIfNoModifyFor]{}", clusterShardHostPort);
-		instanceStatus.put(clusterShardHostPort.getHostPort(), false);
-	}
-
-	@Override
 	public void batchMarkInstance(MarkInstanceRequest markInstanceRequest) throws OuterClientException {
 		logger.info("[batchMarkInstance]{}", markInstanceRequest);
 		for (HostPortDcStatus hostPortDcStatus : markInstanceRequest.getHostPortDcStatuses()) {
-			instanceStatus.put(new HostPort(hostPortDcStatus.getHost(), hostPortDcStatus.getPort()), hostPortDcStatus.isCanRead());
+			instanceStatus.put(new HostPort(hostPortDcStatus.getHost(), hostPortDcStatus.getPort()), hostPortDcStatus);
 		}
 		this.cntMap = markInstanceRequest.getInstanceCnt();
 	}

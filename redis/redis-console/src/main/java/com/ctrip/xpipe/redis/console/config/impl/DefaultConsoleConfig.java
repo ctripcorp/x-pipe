@@ -177,6 +177,26 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public int getIsolateAfterRounds() {
+        return consoleConfigBean.getIsolateAfterRounds();
+    }
+
+    @Override
+    public int getIsolateRecoverAfterRounds() {
+        return consoleConfigBean.getIsolateRecoverAfterRounds();
+    }
+
+    @Override
+    public boolean checkDcNetwork() {
+        return consoleConfigBean.checkDcNetwork();
+    }
+
+    @Override
+    public String delegateDc() {
+        return consoleConfigBean.delegateDc();
+    }
+
+    @Override
     public int getRedisConfCheckIntervalMilli() {
         return checkConfigBean.getRedisConfCheckIntervalMilli();
     }

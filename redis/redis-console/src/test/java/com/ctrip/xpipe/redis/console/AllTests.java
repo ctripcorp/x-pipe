@@ -2,8 +2,6 @@ package com.ctrip.xpipe.redis.console;
 
 
 import com.ctrip.xpipe.redis.console.alert.EmailSentCounterTest;
-import com.ctrip.xpipe.redis.console.keeper.impl.*;
-import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorClusterManagerTest;
 import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorManagerTest;
 import com.ctrip.xpipe.redis.console.checker.DefaultCheckerManagerTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
@@ -40,10 +38,14 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSys
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.redisconfig.RedisConfigCheckMonitorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.sentinelconfig.SentinelConfigCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.unhealthycluster.UnhealthyClusterCheckerTest;
+import com.ctrip.xpipe.redis.console.healthcheck.stability.NetworkStabilityHolderTest;
+import com.ctrip.xpipe.redis.console.healthcheck.stability.NetworkStabilityInspectorTest;
 import com.ctrip.xpipe.redis.console.keeper.AutoMigrateOverloadKeeperContainerActionTest;
+import com.ctrip.xpipe.redis.console.keeper.impl.*;
 import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
 import com.ctrip.xpipe.redis.console.migration.MultiClusterMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
+import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorClusterManagerTest;
 import com.ctrip.xpipe.redis.console.migration.manager.DefaultMigrationEventManagerTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
@@ -242,7 +244,10 @@ import org.junit.runners.Suite.SuiteClasses;
         DcRelationsServiceTest.class,
         DefaultMigrationProcessReporterTest.class,
         ShardModelServiceTest.class,
-        KeeperContainerUsedInfoMsgCollectorTest.class
+        KeeperContainerUsedInfoMsgCollectorTest.class,
+
+        NetworkStabilityInspectorTest.class,
+        NetworkStabilityHolderTest.class
 })
 public class AllTests {
 
