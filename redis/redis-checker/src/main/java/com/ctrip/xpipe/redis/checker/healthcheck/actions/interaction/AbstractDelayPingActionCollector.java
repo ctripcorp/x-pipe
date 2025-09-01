@@ -12,8 +12,10 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.HeteroDelayAction
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionListener;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AbstractDelayPingActionCollector implements DelayPingActionCollector {
@@ -21,6 +23,7 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
     protected static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
     protected Map<RedisHealthCheckInstance, HealthStatus> allHealthStatus = Maps.newConcurrentMap();
+    protected Set<RedisHealthCheckInstance> instancePresentStatus = Sets.newConcurrentHashSet();
 
     protected PingActionListener pingActionListener = new AbstractDelayPingActionCollector.CollectorPingActionListener();
 
@@ -29,6 +32,7 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
     protected abstract HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance);
 
     protected synchronized void removeHealthStatus(HealthCheckAction action) {
+        instancePresentStatus.remove(action.getActionInstance());
         HealthStatus healthStatus = allHealthStatus.remove(action.getActionInstance());
         if(healthStatus != null) {
             healthStatus.stop();
@@ -49,12 +53,14 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
     }
 
     @Override
-    public PingActionListener createPingActionListener() {
+    public PingActionListener createPingActionListener(RedisHealthCheckInstance instance) {
+        instancePresentStatus.add(instance);
         return pingActionListener;
     }
 
     @Override
-    public DelayActionListener createDelayActionListener() {
+    public DelayActionListener createDelayActionListener(RedisHealthCheckInstance instance) {
+        instancePresentStatus.add(instance);
         return delayActionListener;
     }
 

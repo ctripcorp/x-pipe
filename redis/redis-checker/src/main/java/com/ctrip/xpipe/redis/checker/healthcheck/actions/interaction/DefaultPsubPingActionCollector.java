@@ -100,8 +100,10 @@ public class DefaultPsubPingActionCollector extends AbstractPsubPingActionCollec
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    protected HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance) {
+    protected synchronized HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance) {
+        if (!instancePresentStatus.contains(instance)) {
+            logger.warn("[createOrGetHealthStatus] instance: {}, status: removed", instance);
+        }
         return MapUtils.getOrCreate(allHealthStatus, instance, new ObjectFactory<HealthStatus>() {
             @Override
             public HealthStatus create() {

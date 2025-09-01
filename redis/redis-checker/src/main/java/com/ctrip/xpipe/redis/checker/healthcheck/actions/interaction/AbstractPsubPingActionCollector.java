@@ -10,12 +10,16 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubActionCo
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubPingActionCollector;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import java.util.Map;
+import java.util.Set;
 
 public abstract class AbstractPsubPingActionCollector implements PsubPingActionCollector {
 
     protected Map<RedisHealthCheckInstance, HealthStatus> allHealthStatus = Maps.newConcurrentMap();
+
+    protected Set<RedisHealthCheckInstance> instancePresentStatus = Sets.newConcurrentHashSet();
 
     protected PingActionListener pingActionListener = new AbstractPsubPingActionCollector.CollectorPingActionListener();
 
@@ -23,7 +27,8 @@ public abstract class AbstractPsubPingActionCollector implements PsubPingActionC
 
     protected abstract HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance);
 
-    protected void removeHealthStatus(HealthCheckAction<RedisHealthCheckInstance> action) {
+    protected synchronized void removeHealthStatus(HealthCheckAction<RedisHealthCheckInstance> action) {
+        instancePresentStatus.remove(action.getActionInstance());
         HealthStatus healthStatus = allHealthStatus.remove(action.getActionInstance());
         if(healthStatus != null) {
             healthStatus.stop();
@@ -36,12 +41,14 @@ public abstract class AbstractPsubPingActionCollector implements PsubPingActionC
     }
 
     @Override
-    public PingActionListener createPingActionListener() {
+    public PingActionListener createPingActionListener(RedisHealthCheckInstance instance) {
+        instancePresentStatus.add(instance);
         return pingActionListener;
     }
 
     @Override
-    public PsubActionListener createPsubActionListener() {
+    public PsubActionListener createPsubActionListener(RedisHealthCheckInstance instance) {
+        instancePresentStatus.add(instance);
         return psubActionListener;
     }
 

@@ -51,6 +51,9 @@ public class CRDTDelayPingActionCollector extends AbstractDelayPingActionCollect
 
     @Override
     protected synchronized HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance) {
+        if (!instancePresentStatus.contains(instance)) {
+            logger.warn("[createOrGetHealthStatus] instance: {}, status: removed", instance);
+        }
 
         return MapUtils.getOrCreate(allHealthStatus, instance, new ObjectFactory<HealthStatus>() {
             @Override

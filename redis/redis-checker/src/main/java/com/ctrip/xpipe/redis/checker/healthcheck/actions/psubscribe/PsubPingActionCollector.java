@@ -7,8 +7,8 @@ public interface PsubPingActionCollector {
 
     boolean supportInstance(RedisHealthCheckInstance instance);
 
-    PingActionListener createPingActionListener();
+    PingActionListener createPingActionListener(RedisHealthCheckInstance instance);
 
-    PsubActionListener createPsubActionListener();
+    PsubActionListener createPsubActionListener(RedisHealthCheckInstance instance);
 
 }

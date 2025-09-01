@@ -61,8 +61,8 @@ public class CRDTDelayPingActionCollectorTest extends AbstractCheckerTest {
                         setDcLevelHealthyDelayMilli(healthyDelayMilli).setClusterLevelHealthyDelayMilli(healthyDelayMilli).
                         setClusterLevelDelayDownAfterMilli(downAfterMilli).setDcLevelDelayDownAfterMilli(downAfterMilli));
         Mockito.when(healthCheckConfig.checkIntervalMilli()).thenReturn(checkIntervalMilli);
-        delayActionListener = collector.createDelayActionListener();
-        pingActionListener = collector.createPingActionListener();
+        delayActionListener = collector.createDelayActionListener(instance);
+        pingActionListener = collector.createPingActionListener(instance);
         collector.setScheduled(scheduled);
     }
 

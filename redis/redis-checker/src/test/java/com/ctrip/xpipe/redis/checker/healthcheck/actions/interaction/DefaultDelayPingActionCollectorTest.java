@@ -6,9 +6,10 @@ import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.ClusterHealthManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -16,7 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import static org.mockito.Mockito.when;
@@ -43,6 +44,10 @@ public class DefaultDelayPingActionCollectorTest extends AbstractCheckerTest {
     private RedisHealthCheckInstance instance;
 
     private int lastMarkTimeout = 20;
+
+    protected Map<String, String> map = Maps.newConcurrentMap();
+    protected Set<String> set = Sets.newHashSet();
+
 
     @Before
     public void setupDefaultDelayPingActionCollectorTest() throws Exception {
@@ -73,8 +78,8 @@ public class DefaultDelayPingActionCollectorTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void testProblematicBehavior() throws InterruptedException {
-        Map<String, String> map = new ConcurrentHashMap<>();
+    public void testCreateAfterRemove() throws InterruptedException {
+        map.clear();
         CountDownLatch latch = new CountDownLatch(2);
 
         Thread t1 = new Thread(() -> {
@@ -83,7 +88,7 @@ public class DefaultDelayPingActionCollectorTest extends AbstractCheckerTest {
         });
 
         Thread t2 = new Thread(() -> {
-            remove(map, "key1");
+            remove("key1");
             latch.countDown();
         });
 
@@ -94,17 +99,17 @@ public class DefaultDelayPingActionCollectorTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void testSynchronizedBehavior() throws InterruptedException {
-        Map<String, String> map = new ConcurrentHashMap<>();
+    public void testCreateAfterRemoveSynchronized() throws InterruptedException {
+        map.clear();
         CountDownLatch latch = new CountDownLatch(2);
 
         Thread t1 = new Thread(() -> {
-            getOrCreate(map, "key1", "value1");
+            createOrGet("key1", "value1");
             latch.countDown();
         });
 
         Thread t2 = new Thread(() -> {
-            removeSynchronized(map, "key1");
+            removeSynchronized("key1");
             latch.countDown();
         });
 
@@ -115,20 +120,21 @@ public class DefaultDelayPingActionCollectorTest extends AbstractCheckerTest {
     }
 
     @Test
-    @Ignore
-    public void testComputeIfAbsent() throws InterruptedException {
-        Map<String, String> map = new ConcurrentHashMap<>();
+    public void testRemoveBeforeGet() throws InterruptedException {
+        map.clear();
         CountDownLatch latch = new CountDownLatch(2);
 
         Thread t1 = new Thread(() -> {
-            getOrCreateComputeIfAbsent(map, "key1", "value1");
+            removeSynchronized("key1");
             latch.countDown();
         });
 
         Thread t2 = new Thread(() -> {
-            remove(map, "key1");
+            createOrGet("key1", "value1");
             latch.countDown();
         });
+
+        set.add("key1");
 
         t1.start();
         t2.start();
@@ -136,8 +142,18 @@ public class DefaultDelayPingActionCollectorTest extends AbstractCheckerTest {
         Assert.assertNull(map.get("key1"));
     }
 
+    private synchronized String createOrGet(String key, String value) {
+        if (!set.contains(key)) {
+            return null;
+        }
+        if (map.containsKey(key)) {
+            return map.get(key);
+        } else {
+            return getOrCreate(map, key, value);
+        }
+    }
 
-    public <K, V>  V getOrCreate(Map<K, V> map, K key, V val){
+    private  <K, V>  V getOrCreate(Map<K, V> map, K key, V val){
 
         V value = map.get(key);
         if(value != null){
@@ -157,21 +173,15 @@ public class DefaultDelayPingActionCollectorTest extends AbstractCheckerTest {
         return value;
     }
 
-    public void getOrCreateComputeIfAbsent(Map<String, String> map, String key, String val){
-        map.computeIfAbsent(key, k -> val);
-        System.out.println("create: " + key);
-    }
-
-    public void remove(Map<String, String> map, String key) {
+    private void remove(String key) {
         map.remove(key);
         System.out.println("remove: " + key);
     }
 
-    public void removeSynchronized(Map<String, String> map, String key) {
-        synchronized (map) {
-            System.out.println("remove: get lock");
-            map.remove(key);
-        }
+    private synchronized void removeSynchronized(String key) {
+        System.out.println("remove: get lock");
+        set.remove(key);
+        map.remove(key);
         System.out.println("remove: " + key);
     }
 
