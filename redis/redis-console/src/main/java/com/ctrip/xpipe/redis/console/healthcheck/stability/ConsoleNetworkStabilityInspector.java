@@ -77,7 +77,7 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
             dcsInCurrentRegion.remove(CURRENT_DC);
 
             if (dcsInCurrentRegion.isEmpty()) {
-                logger.warn("[checkDcIsolated]No other dcs found in current region, current dc: {}", CURRENT_DC);
+                logger.debug("[checkDcIsolated]No other dcs found in current region, current dc: {}", CURRENT_DC);
                 return;
             }
 

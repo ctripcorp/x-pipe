@@ -59,6 +59,7 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
     public StabilityInspector() {
     }
 
+    @Autowired
     public StabilityInspector(DefaultDelayPingActionCollector defaultDelayPingActionCollector, MetaCache metaCache,
                               CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
         this.collector = defaultDelayPingActionCollector;
