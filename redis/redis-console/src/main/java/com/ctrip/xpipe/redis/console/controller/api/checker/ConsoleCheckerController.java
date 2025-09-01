@@ -192,6 +192,11 @@ public class ConsoleCheckerController extends AbstractConsoleController {
         return networkStabilityHolder.isolated();
     }
 
+    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_REGION_DCS, method = RequestMethod.GET)
+    public List<String> regionDcs(@PathVariable String dcName) {
+        return metaCache.regionDcs(dcName);
+    }
+
     ObjectMapper objectMapper = new ObjectMapper();
     @RequestMapping(value = ConsoleCheckerPath.PATH_PUT_UPDATE_REDIS_ROLE, method = RequestMethod.PUT)
     public RetMessage updateRedisRole(@PathVariable String role, @RequestBody String body) {

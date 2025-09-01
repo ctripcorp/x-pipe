@@ -2,10 +2,11 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.cache.TimeBoundCache;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderAware;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.model.RedisCheckRuleTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -59,6 +60,9 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     protected ConsoleConfig consoleConfig;
 
     @Autowired
+    private ConsoleServiceManager consoleServiceManager;
+
+    @Autowired
     private RouteChooseStrategyFactory routeChooseStrategyFactory;
 
     private RouteChooseStrategy strategy = null;
@@ -74,14 +78,14 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     protected ScheduledFuture<?> future;
 
-    protected AtomicBoolean taskTrigger = new AtomicBoolean(false);
+    protected AtomicBoolean isLeader = new AtomicBoolean(false);
 
     private final Lock lock = new ReentrantLock();
     protected final Condition condition = lock.newCondition();
 
     @Override
     public void isleader() {
-        if (taskTrigger.compareAndSet(false, true)) {
+        if (isLeader.compareAndSet(false, true)) {
             stopLoadMeta();
             startLoadMeta();
         }
@@ -89,7 +93,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     @Override
     public void notLeader() {
-        if (taskTrigger.compareAndSet(true, false))
+        if (isLeader.compareAndSet(true, false))
             stopLoadMeta();
     }
 
@@ -134,7 +138,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
-                if(!taskTrigger.get())
+                if(!isLeader.get())
                     return;
                 if(lock.tryLock(consoleConfig.getCacheRefreshInterval(), TimeUnit.MILLISECONDS)) {
                     try {
@@ -303,13 +307,22 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         return localParts.get(partIndex).getData();
     }
 
+    @Override
+    public List<String> regionDcs(String dc) {
+        if (isLeader.get())
+            return super.regionDcs(dc);
+        else {
+            return consoleServiceManager.dcsInSameRegion(dc);
+        }
+    }
+
     @VisibleForTesting
     ScheduledFuture<?> getFuture() {
         return future;
     }
 
     @VisibleForTesting
-    AtomicBoolean getTaskTrigger() {
-        return taskTrigger;
+    AtomicBoolean getIsLeader() {
+        return isLeader;
     }
 }

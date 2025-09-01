@@ -53,8 +53,7 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
 
     private ScheduledExecutorService scheduled;
 
-    private static final String TYPE = "stability";
-    private static final String DC_ISOLATED_TYPE = "isolated";
+    public static final String TYPE = "stability";
 
     public StabilityInspector() {
     }
@@ -152,7 +151,7 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
             boolean mayIsolated = checkerConsoleService.dcIsolated(config.getConsoleAddress());
             incrIsolatedMismatchIfNeeded(mayIsolated);
             toggleDcIsolatedIfNeeded();
-            EventMonitor.DEFAULT.logEvent(DC_ISOLATED_TYPE, dcIsolated.get() ? "isolated" : "unisolated");
+            EventMonitor.DEFAULT.logEvent(TYPE, dcIsolated.get() ? "isolated" : "unisolated");
         } catch (Throwable th) {
             logger.error("[dcIsolated]get from console:{} failed", config.getConsoleAddress(), th);
         }

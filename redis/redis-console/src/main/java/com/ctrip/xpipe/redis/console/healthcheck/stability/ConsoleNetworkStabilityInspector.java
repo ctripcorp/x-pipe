@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityInspector.TYPE;
+
 @Component
 public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implements TopElement, NetworkStabilityInspector {
 
@@ -42,7 +44,6 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
 
     private ScheduledExecutorService scheduled;
 
-    private static final String DC_ISOLATED_TYPE = "isolated";
     private static final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
     static final int CONNECT_TIMEOUT = 1200;
     static final int COMMAND_TIMEOUT = 1500;
@@ -133,7 +134,7 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
 
             incrMismatchIfNeeded(mayIsolated);
             toggleIsolatedIfNeeded();
-            EventMonitor.DEFAULT.logEvent(DC_ISOLATED_TYPE, dcIsolated.get() ? "isolated" : "unisolated");
+            EventMonitor.DEFAULT.logEvent(TYPE, dcIsolated.get() ? "isolated" : "unisolated");
         } catch (Throwable th) {
             logger.error("[checkDcIsolated]", th);
         }

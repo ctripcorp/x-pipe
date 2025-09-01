@@ -110,6 +110,11 @@ public class DefaultRemoteCheckerManager implements RemoteCheckerManager {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public List<String> dcsInSameRegion(String dc) {
+        throw new UnsupportedOperationException();
+    }
+
     private Set<String> getAllCheckerAddress() {
         Set<String> result = new HashSet<>();
         List<String> servers = checkerLeaderElector.getAllServers();

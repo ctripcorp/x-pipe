@@ -67,12 +67,12 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
     public void leaderTest() throws Exception {
         when(consoleConfig.getCacheRefreshInterval()).thenReturn(10);
         metaCache.isleader();
-        Assert.assertTrue(metaCache.getTaskTrigger().get());
+        Assert.assertTrue(metaCache.getIsLeader().get());
         Assert.assertNotNull(metaCache.getFuture());
 
         metaCache.notLeader();
 
-        Assert.assertFalse(metaCache.getTaskTrigger().get());
+        Assert.assertFalse(metaCache.getIsLeader().get());
         Assert.assertNull(metaCache.getFuture());
         Assert.assertNull(metaCache.meta);
         Assert.assertEquals(metaCache.DEFAULT_KEEPER_NUMBERS, metaCache.allKeeperSize);
@@ -80,7 +80,7 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertNull(metaCache.allKeepers);
 
         metaCache.isleader();
-        Assert.assertTrue(metaCache.getTaskTrigger().get());
+        Assert.assertTrue(metaCache.getIsLeader().get());
         Assert.assertNotNull(metaCache.getFuture());
     }
 

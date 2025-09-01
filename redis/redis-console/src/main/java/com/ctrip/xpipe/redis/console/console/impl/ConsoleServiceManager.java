@@ -124,6 +124,12 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return consoleService.connect(connectTimeoutMilli);
     }
 
+    @Override
+    public List<String> dcsInSameRegion(String dc) {
+        ConsoleService consoleService = getServiceByDc(dc);
+        return consoleService.dcsInSameRegion(dc);
+    }
+
     public List<ShardCheckerHealthCheckModel> getShardAllCheckerGroupHealthCheck(String activeDc, String dcId, String clusterId, String shardId) {
         ConsoleService service = getServiceByDc(activeDc);
         return service.getShardAllCheckerGroupHealthCheck(dcId, clusterId, shardId);

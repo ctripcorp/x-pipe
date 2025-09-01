@@ -28,6 +28,8 @@ public class ConsoleCheckerPath {
 
     public static final String PATH_GET_DC_ISOLATED = "/api/dc/isolated";
 
+    public static final String PATH_GET_REGION_DCS = "/api/region/dcs/{dcName}";
+
     public static final String PATH_PERSISTENCE = "/api/persistence/";
 
     public static final String PATH_GET_IS_CLUSTER_ON_MIGRATION = PATH_PERSISTENCE + "isClusterOnMigration/{clusterName}";

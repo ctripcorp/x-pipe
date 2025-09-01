@@ -22,8 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath.PATH_GET_DC_ISOLATED;
-import static com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath.PATH_GET_INNER_DC_ISOLATED;
+import static com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath.*;
 
 /**
  * @author wenchao.meng
@@ -78,6 +77,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String dcIsolatedUrl;
 
+    private final String dcsInSameRegionUrl;
+
     private static final ParameterizedTypeReference<Map<HostPort, Long>> hostDelayTypeDef =
             new ParameterizedTypeReference<Map<HostPort, Long>>(){};
 
@@ -112,6 +113,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         shardAllMetaUrl = String.format("%s/api/shard/meta/{dcId}/{clusterId}/{shardId}", this.address);
         innerDcIsolatedUrl = String.format("%s%s", this.address, PATH_GET_INNER_DC_ISOLATED);
         dcIsolatedUrl = String.format("%s%s", this.address, PATH_GET_DC_ISOLATED);
+        dcsInSameRegionUrl = String.format("%s%s", this.address, PATH_GET_REGION_DCS);
     }
 
     @Override
@@ -228,6 +230,11 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     @Override
     public CommandFuture<Boolean> connect(int connectTimeoutMilli) {
         return new TcpPortCheckCommand(host, port, connectTimeoutMilli).execute();
+    }
+
+    @Override
+    public List<String> dcsInSameRegion(String dc) {
+        return restTemplate.getForObject(dcsInSameRegionUrl, List.class, dc);
     }
 
     @Override

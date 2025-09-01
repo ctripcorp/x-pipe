@@ -26,4 +26,5 @@ public interface RemoteCheckerManager {
 
     CommandFuture<Boolean> connectDc(String dc, int connectTimeoutMilli);
 
+    List<String> dcsInSameRegion(String dc);
 }

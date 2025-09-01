@@ -53,6 +53,8 @@ public interface ConsoleService extends CheckerService {
 
     CommandFuture<Boolean> connect(int connectTimeoutMilli);
 
+    List<String> dcsInSameRegion(String dc);
+
     class ShardCheckerHealthCheckModels extends ArrayList<ShardCheckerHealthCheckModel> {}
 
     class InstancesDelayStatusModels extends HashMap<HostPort, Long> {};
