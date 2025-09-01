@@ -73,12 +73,16 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                                               KeeperMonitor keeperMonitor,GtidCmdFilter filter) throws IOException {
 
         String replRdbGtidSet = replMeta.getRdbGtidSet();
-        logger.info("[createCommandStore], replRdbGtidSet={}", replRdbGtidSet);
+        boolean buildIndex = true;
+        if(replMeta.getCurReplStage() != null && replMeta.getCurReplStage().getProto() == ReplStage.ReplProto.PSYNC) {
+            buildIndex = false;
+        }
+        logger.info("[createCommandStore], replRdbGtidSet={}, buildIndex={}", replRdbGtidSet, buildIndex);
         GtidCommandStore cmdStore = new GtidCommandStore(new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
                 config::getReplicationStoreCommandFileKeepTimeSeconds,
                 config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
                 config::getReplicationStoreCommandFileNumToKeep,
-                config.getCommandReaderFlyingThreshold(), cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, filter);
+                config.getCommandReaderFlyingThreshold(), cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, filter, buildIndex);
         cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 
         try {
