@@ -633,6 +633,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public long getCheckIsolateInterval() {
+        return consoleConfigBean.getIsolateCheckIntervalMilli();
+    }
+
+    @Override
     public void addListener(ConfigKeyListener listener) {
         this.listenersSet.add(listener);
     }

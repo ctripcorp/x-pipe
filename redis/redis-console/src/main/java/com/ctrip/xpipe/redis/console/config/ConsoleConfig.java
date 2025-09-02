@@ -171,4 +171,5 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getDcMetaBuildConcurrent();
 
+	long getCheckIsolateInterval();
 }

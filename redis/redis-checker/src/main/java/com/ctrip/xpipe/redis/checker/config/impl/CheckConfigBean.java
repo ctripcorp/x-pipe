@@ -311,7 +311,7 @@ public class CheckConfigBean extends AbstractConfigBean {
     }
 
     public int getStableRecoverAfterRounds() {
-        return getIntProperty(KEY_CHECKER_STABLE_RECOVER_AFTER_ROUNDS, 30 * 30);
+        return getIntProperty(KEY_CHECKER_STABLE_RECOVER_AFTER_ROUNDS, 30);
     }
 
     public float getSiteStableThreshold() {

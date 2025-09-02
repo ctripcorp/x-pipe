@@ -84,7 +84,7 @@ public class ConsoleNetworkStabilityHolder implements ConsoleLeaderAware, Networ
             protected void doRun() throws Exception {
                 check();
             }
-        }, () -> config.getRedisReplicationHealthCheckInterval(), scheduled);
+        }, () -> config.getCheckIsolateInterval(), scheduled);
         task.start();
     }
 

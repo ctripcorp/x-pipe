@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
+import io.netty.channel.ConnectTimeoutException;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Test;
@@ -44,29 +45,36 @@ public class NetworkStabilityInspectorTest {
 
     @Test
     public void testIsolated() throws Exception {
+        when(config.getQuorum()).thenReturn(2);
         ConsoleNetworkStabilityInspector inspector = new ConsoleNetworkStabilityInspector(metaCache, config, consoleServiceManager);
         when(config.checkDcNetwork()).thenReturn(false);
 
+        //switch turn off
         inspector.inspect();
         Assert.assertFalse(inspector.isolated());
         verify(metaCache, never()).regionDcs(any());
 
+        //switch turn on
         when(config.checkDcNetwork()).thenReturn(true);
-        when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ));
+
+        //other dcs in current region less than quorum
+        when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY));
         inspector.inspect();
         Assert.assertFalse(inspector.isolated());
         verify(metaCache, times(1)).regionDcs(any());
         verify(consoleServiceManager, never()).connectDc(any(), anyInt());
 
 
+        //has enough other dcs in current region
         when(config.getIsolateAfterRounds()).thenReturn(2);
         when(config.getIsolateRecoverAfterRounds()).thenReturn(1);
         when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY, ALI));
 
+        // all connected failed
         doAnswer(invocation -> new AbstractCommand<Boolean>() {
             @Override
             protected void doExecute() throws Throwable {
-                future().setSuccess(false);
+                future().setFailure(new ConnectTimeoutException("test"));
             }
 
             @Override
@@ -80,11 +88,12 @@ public class NetworkStabilityInspectorTest {
             }
         }.execute(executor)).when(consoleServiceManager).connectDc(any(), anyInt());
 
-        // all connected failed after 1 rounds
+        // after 1 rounds
         inspector.inspect();
         Assert.assertFalse(inspector.isolated());
 
-        // command timeout, result not enough
+        when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY, ALI));
+        // command timeout, result not enough, ignore
         doAnswer(invocation -> new AbstractCommand<Boolean>() {
             @Override
             protected void doExecute() throws Throwable {
@@ -105,11 +114,12 @@ public class NetworkStabilityInspectorTest {
         inspector.inspect();
         Assert.assertFalse(inspector.isolated());
 
-        // all connected failed after 2 rounds
+        when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY, ALI));
+        // all connected failed
         doAnswer(invocation -> new AbstractCommand<Boolean>() {
             @Override
             protected void doExecute() throws Throwable {
-                future().setSuccess(false);
+                future().setFailure(new ConnectTimeoutException("test"));
             }
 
             @Override
@@ -121,12 +131,13 @@ public class NetworkStabilityInspectorTest {
             public String getName() {
                 return "";
             }
-        }.execute(executor)).when(consoleServiceManager).connectDc(OY, CONNECT_TIMEOUT);
+        }.execute(executor)).when(consoleServiceManager).connectDc(anyString(), anyInt());
+        //after 2 rounds
         inspector.inspect();
         Assert.assertTrue(inspector.isolated());
 
-
-        //1 dc connected after 1 round
+        when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY, ALI));
+        //1 dc connected
         doAnswer(invocation -> new AbstractCommand<Boolean>() {
             @Override
             protected void doExecute() throws Throwable {
@@ -143,6 +154,7 @@ public class NetworkStabilityInspectorTest {
                 return "";
             }
         }.execute()).when(consoleServiceManager).connectDc(OY, CONNECT_TIMEOUT);
+        //after 1 round
         inspector.inspect();
         Assert.assertFalse(inspector.isolated());
 

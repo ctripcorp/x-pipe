@@ -69,6 +69,8 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     private static final String KEY_CONSOLE_DELEGATE_DC = "console.delegate.dc";
 
+    public static final String KEY_CONSOLE_CHECK_ISOLATE_INTERVAL_MILLI = "console.check.isolate.interval.milli";
+
     private FoundationService foundationService;
 
     @Autowired
@@ -181,7 +183,7 @@ public class ConsoleConfigBean extends AbstractConfigBean {
     }
 
     public int getIsolateAfterRounds() {
-        return getIntProperty(KEY_CONSOLE_ISOLATE_AFTER_ROUNDS, 30);
+        return getIntProperty(KEY_CONSOLE_ISOLATE_AFTER_ROUNDS, 6);
     }
 
     public int getIsolateRecoverAfterRounds() {
@@ -194,5 +196,9 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     public String delegateDc() {
         return getProperty(KEY_CONSOLE_DELEGATE_DC, "");
+    }
+
+    public long getIsolateCheckIntervalMilli() {
+        return getLongProperty(KEY_CONSOLE_CHECK_ISOLATE_INTERVAL_MILLI, 10 * 1000L);
     }
 }

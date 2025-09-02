@@ -77,8 +77,8 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
             List<String> dcsInCurrentRegion = metaCache.regionDcs(CURRENT_DC);
             dcsInCurrentRegion.remove(CURRENT_DC);
 
-            if (dcsInCurrentRegion.isEmpty()) {
-                logger.debug("[checkDcIsolated]No other dcs found in current region, current dc: {}", CURRENT_DC);
+            if (dcsInCurrentRegion.size() < config.getQuorum()) {
+                logger.debug("[checkDcIsolated]other dcs in current region less than quorum, current dc:{}, other dcs:{}, quorum:{} ", CURRENT_DC, dcsInCurrentRegion, config.getQuorum());
                 return;
             }
 
@@ -86,17 +86,17 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
             ParallelCommandChain chain = new ParallelCommandChain();
             Map<String, Boolean> allDcResults = new ConcurrentHashMap<>();
             for (String dcId : dcsInCurrentRegion) {
-                chain.add(new AbstractCommand<Boolean>() {
+                chain.add(new AbstractCommand<Void>() {
                     @Override
                     protected void doExecute() throws Throwable {
                         consoleServiceManager.connectDc(dcId, CONNECT_TIMEOUT).addListener(connectFuture -> {
                             if (connectFuture.isSuccess()) {
-                                allDcResults.put(dcId, connectFuture.get());
-                                future().setSuccess(true);
+                                allDcResults.put(dcId, true);
                             } else {
                                 logger.error("[checkDcIsolated]{}", dcId, connectFuture.cause());
-                                future().setSuccess(false);
+                                allDcResults.put(dcId, false);
                             }
+                            future().setSuccess();
                         });
                     }
 
@@ -183,7 +183,7 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
             protected void doRun() throws Exception {
                 inspect();
             }
-        }, config::getRedisReplicationHealthCheckInterval, scheduled);
+        }, config::getCheckIsolateInterval, scheduled);
     }
 
     @Override
