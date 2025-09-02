@@ -21,7 +21,7 @@ public abstract class AbstractPsubPingActionCollector implements PsubPingActionC
 
     protected PsubActionListener psubActionListener = new AbstractPsubPingActionCollector.CollectorPsubActionListener();
 
-    protected abstract HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance);
+    protected abstract HealthStatus getHealthStatus(RedisHealthCheckInstance instance);
 
     protected void removeHealthStatus(HealthCheckAction<RedisHealthCheckInstance> action) {
         HealthStatus healthStatus = allHealthStatus.remove(action.getActionInstance());
@@ -57,7 +57,10 @@ public abstract class AbstractPsubPingActionCollector implements PsubPingActionC
 
         @Override
         public void onAction(PingActionContext pingActionContext) {
-            HealthStatus healthStatus = createOrGetHealthStatus(pingActionContext.instance());
+            HealthStatus healthStatus = getHealthStatus(pingActionContext.instance());
+            if(healthStatus == null) {
+                return;
+            }
             if (!pingActionContext.isSuccess()) {
                 if (pingActionContext.getCause().getMessage().contains("LOADING")) {
                     healthStatus.loading();
@@ -89,7 +92,10 @@ public abstract class AbstractPsubPingActionCollector implements PsubPingActionC
 
         @Override
         public void onAction(PsubActionContext psubActionContext) {
-            HealthStatus healthStatus = createOrGetHealthStatus(psubActionContext.instance());
+            HealthStatus healthStatus = getHealthStatus(psubActionContext.instance());
+            if(healthStatus == null) {
+                return;
+            }
             if (!psubActionContext.getResult().isEmpty()) {
                 healthStatus.subSuccess();
             }

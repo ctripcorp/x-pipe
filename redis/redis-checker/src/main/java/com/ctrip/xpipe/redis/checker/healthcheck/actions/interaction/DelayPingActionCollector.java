@@ -13,6 +13,8 @@ public interface DelayPingActionCollector {
 
     boolean supportInstance(RedisHealthCheckInstance instance);
 
+    HealthStatus createHealthStatus(RedisHealthCheckInstance instance);
+
     PingActionListener createPingActionListener();
 
     DelayActionListener createDelayActionListener();

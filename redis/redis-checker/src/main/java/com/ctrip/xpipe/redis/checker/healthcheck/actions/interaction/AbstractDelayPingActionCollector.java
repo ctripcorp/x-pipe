@@ -26,9 +26,9 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
 
     protected DelayActionListener delayActionListener = new AbstractDelayPingActionCollector.CollectorDelayActionListener();
 
-    protected abstract HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance);
+    protected abstract HealthStatus getHealthStatus(RedisHealthCheckInstance instance);
 
-    protected synchronized void removeHealthStatus(HealthCheckAction action) {
+    protected void removeHealthStatus(HealthCheckAction action) {
         HealthStatus healthStatus = allHealthStatus.remove(action.getActionInstance());
         if(healthStatus != null) {
             healthStatus.stop();
@@ -62,7 +62,10 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
 
         @Override
         public void onAction(PingActionContext pingActionContext) {
-            HealthStatus healthStatus = createOrGetHealthStatus(pingActionContext.instance());
+            HealthStatus healthStatus = getHealthStatus(pingActionContext.instance());
+            if (null == healthStatus) {
+                return;
+            }
             if (!pingActionContext.isSuccess()) {
                 if (pingActionContext.getCause().getMessage().contains("LOADING")) {
                     healthStatus.loading();
@@ -97,9 +100,9 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
         public void onAction(DelayActionContext context) {
             long delayNano = context.getResult();
             if (context instanceof HeteroDelayActionContext)
-                createOrGetHealthStatus(context.instance()).delay(TimeUnit.NANOSECONDS.toMillis(delayNano), ((HeteroDelayActionContext) context).getShardDbId());
+                getHealthStatus(context.instance()).delay(TimeUnit.NANOSECONDS.toMillis(delayNano), ((HeteroDelayActionContext) context).getShardDbId());
             else
-                createOrGetHealthStatus(context.instance()).delay(TimeUnit.NANOSECONDS.toMillis(delayNano));
+                getHealthStatus(context.instance()).delay(TimeUnit.NANOSECONDS.toMillis(delayNano));
         }
 
         @Override

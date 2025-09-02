@@ -100,26 +100,6 @@ public class DefaultPsubPingActionCollector extends AbstractPsubPingActionCollec
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    protected HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance) {
-        return MapUtils.getOrCreate(allHealthStatus, instance, new ObjectFactory<HealthStatus>() {
-            @Override
-            public HealthStatus create() {
-
-                HealthStatus healthStatus = new CrossRegionRedisHealthStatus(instance, scheduled);
-
-                healthStatus.addObserver(new Observer() {
-                    @Override
-                    public void update(Object args, Observable observable) {
-                        onInstanceStateChange(args);
-                    }
-                });
-                healthStatus.start();
-                return healthStatus;
-            }
-        });
-    }
-
     private void onInstanceStateChange(Object args) {
 
         logger.info("[onInstanceStateChange]{}", args);
@@ -136,4 +116,28 @@ public class DefaultPsubPingActionCollector extends AbstractPsubPingActionCollec
         }
     }
 
+    @Override
+    protected HealthStatus getHealthStatus(RedisHealthCheckInstance instance) {
+        if (allHealthStatus.containsKey(instance)) {
+            return allHealthStatus.get(instance);
+        }
+        logger.warn("[getHealthStatus] instance:{}, status: removed", instance);
+        return null;
+    }
+
+    @Override
+    public HealthStatus createHealthStatus(RedisHealthCheckInstance instance) {
+        return allHealthStatus.computeIfAbsent(instance, key -> {
+            HealthStatus healthStatus = new CrossRegionRedisHealthStatus(key, scheduled);
+
+            healthStatus.addObserver(new Observer() {
+                @Override
+                public void update(Object args, Observable observable) {
+                    onInstanceStateChange(args);
+                }
+            });
+            healthStatus.start();
+            return healthStatus;
+        });
+    }
 }

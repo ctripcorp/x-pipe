@@ -58,7 +58,10 @@ public class PsubActionFactory implements RedisHealthCheckActionFactory<PsubActi
 
         psubAction.addControllers(controllersByClusterType.get(clusterType));
         psubPingActionCollectorsByClusterType.get(clusterType).forEach(collector -> {
-            if (collector.supportInstance(instance)) psubAction.addListener(collector.createPsubActionListener());
+            if (collector.supportInstance(instance)) {
+                psubAction.addListener(collector.createPsubActionListener());
+                collector.createHealthStatus(instance);
+            }
         });
         return psubAction;
     }

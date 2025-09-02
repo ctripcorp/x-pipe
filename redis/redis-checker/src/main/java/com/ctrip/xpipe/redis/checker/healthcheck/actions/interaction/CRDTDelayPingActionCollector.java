@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
-import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
@@ -12,7 +11,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessor;
-import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -50,21 +48,26 @@ public class CRDTDelayPingActionCollector extends AbstractDelayPingActionCollect
     private Map<ClusterShardHostPort, Boolean> instanceHealthStatusMap = Maps.newConcurrentMap();
 
     @Override
-    protected synchronized HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance) {
+    protected HealthStatus getHealthStatus(RedisHealthCheckInstance instance) {
+        if (allHealthStatus.containsKey(instance)) {
+            return allHealthStatus.get(instance);
+        }
+        logger.warn("[getHealthStatus] instance:{}, status: removed", instance);
+        return null;
+    }
 
-        return MapUtils.getOrCreate(allHealthStatus, instance, new ObjectFactory<HealthStatus>() {
-            @Override
-            public HealthStatus create() {
-                HealthStatus healthStatus = new HealthStatus(instance, scheduled);
-                if (currentDcId.equals(instance.getCheckInfo().getDcId())) {
-                    healthStatus.addObserver(new CurrentDCInstanceObserver(instance));
-                } else {
-                    healthStatus.addObserver(new PeerObserver(instance));
-                }
-                healthStatus.addObserver((args, observable) -> onInstanceHealthStateChange(args));
-                healthStatus.start();
-                return healthStatus;
+    @Override
+    public HealthStatus createHealthStatus(RedisHealthCheckInstance instance) {
+        return allHealthStatus.computeIfAbsent(instance, key -> {
+            HealthStatus healthStatus = new HealthStatus(key, scheduled);
+            if (currentDcId.equals(key.getCheckInfo().getDcId())) {
+                healthStatus.addObserver(new CurrentDCInstanceObserver(key));
+            } else {
+                healthStatus.addObserver(new PeerObserver(key));
             }
+            healthStatus.addObserver((args, observable) -> onInstanceHealthStateChange(args));
+            healthStatus.start();
+            return healthStatus;
         });
     }
 

@@ -122,28 +122,32 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
     }
 
     @Override
-    protected synchronized HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance) {
+    protected HealthStatus getHealthStatus(RedisHealthCheckInstance instance) {
+        if (allHealthStatus.containsKey(instance)) {
+            return allHealthStatus.get(instance);
+        }
+        logger.warn("[getHealthStatus] instance:{}, status: removed", instance);
+        return null;
+    }
 
-        return MapUtils.getOrCreate(allHealthStatus, instance, new ObjectFactory<HealthStatus>() {
-            @Override
-            public HealthStatus create() {
-
-                HealthStatus healthStatus;
-                if (activeDcCheckerSubscribeMasterTypeInstance(instance))
-                    healthStatus = new HeteroHealthStatus(instance, scheduled);
-                else {
-                    healthStatus = new HealthStatus(instance, scheduled);
-                    healthStatus.addObserver(clusterHealthManager.createHealthStatusObserver());
-                }
-                healthStatus.addObserver(new Observer() {
-                    @Override
-                    public void update(Object args, Observable observable) {
-                        onInstanceStateChange((AbstractInstanceEvent) args);
-                    }
-                });
-                healthStatus.start();
-                return healthStatus;
+    @Override
+    public HealthStatus createHealthStatus(RedisHealthCheckInstance instance) {
+        return allHealthStatus.computeIfAbsent(instance, key -> {
+            HealthStatus healthStatus;
+            if (activeDcCheckerSubscribeMasterTypeInstance(key))
+                healthStatus = new HeteroHealthStatus(key, scheduled);
+            else {
+                healthStatus = new HealthStatus(key, scheduled);
+                healthStatus.addObserver(clusterHealthManager.createHealthStatusObserver());
             }
+            healthStatus.addObserver(new Observer() {
+                @Override
+                public void update(Object args, Observable observable) {
+                    onInstanceStateChange((AbstractInstanceEvent) args);
+                }
+            });
+            healthStatus.start();
+            return healthStatus;
         });
     }
 
