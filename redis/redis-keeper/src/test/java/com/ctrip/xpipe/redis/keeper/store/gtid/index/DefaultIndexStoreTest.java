@@ -83,6 +83,13 @@ public class DefaultIndexStoreTest {
         Path destinationPath = Paths.get(baseDir, "00000000");
         File tmpFile = new File(file1);
         if(!Files.exists(destinationPath)) {
+            File destDir = new File(baseDir);
+            if (!destDir.exists()) {
+                boolean created = destDir.mkdirs();
+                if (!created) {
+                    throw new IOException("create folder fail" + destDir.getAbsolutePath());
+                }
+            }
             Files.copy(tmpFile.toPath(), destinationPath);
         }
 
