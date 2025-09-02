@@ -41,7 +41,7 @@ public class DefaultIndexStoreTest {
     private static final Logger log = LoggerFactory.getLogger(DefaultIndexStoreTest.class);
     String tempDir = System.getProperty("java.io.tmpdir");
 
-    String baseDir = tempDir + "IndexStoreTest/";
+    String baseDir = Paths.get(tempDir, "IndexStoreTest").toString();
 
     String filePath = "src/test/resources/GtidTest/appendonly.aof";
 
