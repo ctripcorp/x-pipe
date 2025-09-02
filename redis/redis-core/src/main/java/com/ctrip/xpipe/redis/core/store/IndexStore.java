@@ -12,7 +12,7 @@ public interface IndexStore extends Closeable {
 
     void write(ByteBuf byteBuf) throws IOException;
     void rotateFileIfNecessary() throws IOException;
-    void initialize(CommandWriter cmdWriter) throws IOException;
+    void initialize(CommandWriter cmdWriter, boolean buildIndex) throws IOException;
     Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws IOException;
     Pair<Long, GtidSet> locateGtidSetWithFallbackToEnd(GtidSet request) throws IOException;
     boolean increaseLost(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException;

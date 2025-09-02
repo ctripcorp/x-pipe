@@ -125,10 +125,12 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
         this.buildIndex = buildIndex;
-        if(buildIndex) {
-            indexStore = new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
+        indexStore = createIndexStore();
+    }
+
+    private IndexStore createIndexStore() {
+        return new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
                 this, this,  gtidCmdFilter);
-        }
     }
 
     @Override
@@ -136,9 +138,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (initialized.compareAndSet(false, true)) {
             cmdWriter.initialize();
             offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
-            if(buildIndex) {
-                indexStore.initialize(cmdWriter);
-            }
+            indexStore.initialize(cmdWriter, buildIndex);
         }
     }
 
@@ -694,9 +694,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if(indexStore != null) {
             indexStore.closeWithDeleteIndexFiles();
         }
-        indexStore = new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
-                this, this, gtidCmdFilter);
-        indexStore.initialize(cmdWriter);
+        indexStore = createIndexStore();
+        indexStore.initialize(cmdWriter, true);
         buildIndex = true;
     }
 

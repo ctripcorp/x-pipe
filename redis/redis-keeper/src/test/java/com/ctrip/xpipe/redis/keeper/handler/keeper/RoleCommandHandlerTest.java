@@ -11,6 +11,8 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.handler.keeper.RoleCommandHandler;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
+import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
@@ -39,6 +41,12 @@ public class RoleCommandHandlerTest extends AbstractRedisKeeperTest{
 	
 	@Mock
 	private RedisKeeperServer redisKeeperServer;
+
+	@Mock
+	private DefaultReplicationStore replicationStore;
+
+	@Mock
+	private DefaultMetaStore metaStore;
 	
 	@Mock
 	private RedisMaster redisMaster;
@@ -59,6 +67,8 @@ public class RoleCommandHandlerTest extends AbstractRedisKeeperTest{
 		when(redisClient.getRedisServer()).thenReturn(redisKeeperServer);
 		when(redisKeeperServer.getRedisMaster()).thenReturn(redisMaster);
 		when(redisKeeperServer.role()).thenReturn(SERVER_ROLE.KEEPER);
+		when(replicationStore.getMetaStore()).thenReturn(metaStore);
+		when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
 		when(redisMaster.masterEndPoint()).thenReturn(new DefaultEndPoint(host, port));
 		when(redisMaster.getMasterState()).thenReturn(masterState);
 	}

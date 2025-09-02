@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.api.utils.IOSupplier;
+import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
@@ -58,11 +60,14 @@ public class DefaultIndexStore implements IndexStore {
     }
 
     @Override
-    public void initialize(CommandWriter cmdWriter) throws IOException {
+    public void initialize(CommandWriter cmdWriter, boolean buildIndex) throws IOException {
         this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
         this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size(), this.opParser);
-        this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
-        this.indexWriter.init();
+        // if not build index, the indexWriter is null.
+        if(buildIndex) {
+            this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
+            this.indexWriter.init();
+        }
     }
 
     @Override
@@ -115,7 +120,9 @@ public class DefaultIndexStore implements IndexStore {
 
     @Override
     public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws IOException {
-        this.indexWriter.saveIndexEntry();
+        if(indexWriter != null) {
+            this.indexWriter.saveIndexEntry();
+        }
         try (IndexReader indexReader = new IndexReader(baseDir, currentCmdFileName)) {
             indexReader.init();
             Pair<Long, GtidSet> continuePoint = indexReader.seek(request);
@@ -137,6 +144,9 @@ public class DefaultIndexStore implements IndexStore {
 
     @Override
     public synchronized GtidSet getIndexGtidSet() {
+        if(indexWriter == null) {
+            return new GtidSet(GtidSet.EMPTY_GTIDSET);
+        }
         return indexWriter.getGtidSet();
     }
 
@@ -184,6 +194,7 @@ public class DefaultIndexStore implements IndexStore {
 
     @Override
     public synchronized void close() throws IOException {
+        // close = close writer
         if(this.streamCommandReader != null) {
             this.streamCommandReader.relaseRemainBuf();
         }
