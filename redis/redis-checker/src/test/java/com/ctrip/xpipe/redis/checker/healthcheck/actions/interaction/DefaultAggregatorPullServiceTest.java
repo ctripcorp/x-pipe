@@ -7,7 +7,9 @@ import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.Assert;
@@ -52,6 +54,11 @@ public class DefaultAggregatorPullServiceTest extends AbstractCheckerTest {
 
     @Mock
     private CheckerConfig config;
+
+    @Mock
+    private DefaultDelayPingActionCollector defaultDelayPingActionCollector;
+    @Mock
+    private DefaultPsubPingActionCollector defaultPsubPingActionCollector;
 
     private static final String LOCAL_IP = "127.0.0.1";
     private HostPort hostPort1 = new HostPort(LOCAL_IP, 6379);
@@ -254,5 +261,43 @@ public class DefaultAggregatorPullServiceTest extends AbstractCheckerTest {
         verify(outerClientService, times(1)).batchMarkInstance(ArgumentMatchers.argThat(argument -> argument.getNoModifySeconds() == 1));
     }
 
+    @Test
+    public void dcInstancesAllUpTest() throws Exception {
+        Map<String, List<RedisMeta>> dcInstances = new HashMap<>();
+        dcInstances.put(JQ, Lists.newArrayList(new RedisMeta().setIp(LOCAL_IP).setPort(6379), new RedisMeta().setIp(LOCAL_IP).setPort(6380)));
+        dcInstances.put(OY, Lists.newArrayList(new RedisMeta().setIp(LOCAL_IP).setPort(6381), new RedisMeta().setIp(LOCAL_IP).setPort(6382)));
+        dcInstances.put(AWS, Lists.newArrayList(new RedisMeta().setIp(LOCAL_IP).setPort(6383), new RedisMeta().setIp(LOCAL_IP).setPort(6384)));
+        when(metaCache.getAllInstance("test")).thenReturn(dcInstances);
 
+        when(metaCache.getDc(new HostPort(LOCAL_HOST, 6379))).thenReturn(JQ);
+        when(metaCache.getDc(new HostPort(LOCAL_HOST, 6380))).thenReturn(JQ);
+        when(metaCache.getDc(new HostPort(LOCAL_HOST, 6381))).thenReturn(OY);
+        when(metaCache.getDc(new HostPort(LOCAL_HOST, 6382))).thenReturn(OY);
+        when(metaCache.getDc(new HostPort(LOCAL_HOST, 6383))).thenReturn(AWS);
+        when(metaCache.getDc(new HostPort(LOCAL_HOST, 6384))).thenReturn(AWS);
+
+        Map<HostPort, HealthStatusDesc> allStatus = new HashMap<>();
+        allStatus.put(new HostPort(LOCAL_IP, 6379), new HealthStatusDesc(new HostPort(LOCAL_IP, 6379), HEALTH_STATE.HEALTHY));
+        allStatus.put(new HostPort(LOCAL_IP, 6380), new HealthStatusDesc(new HostPort(LOCAL_IP, 6380), HEALTH_STATE.HEALTHY));
+        allStatus.put(new HostPort(LOCAL_IP, 6381), new HealthStatusDesc(new HostPort(LOCAL_IP, 6381), HEALTH_STATE.DOWN));
+        allStatus.put(new HostPort(LOCAL_IP, 6382), new HealthStatusDesc(new HostPort(LOCAL_IP, 6382), HEALTH_STATE.SICK));
+        allStatus.put(new HostPort(LOCAL_IP, 6383), new HealthStatusDesc(new HostPort(LOCAL_IP, 6383), HEALTH_STATE.HEALTHY));
+        allStatus.put(new HostPort(LOCAL_IP, 6384), new HealthStatusDesc(new HostPort(LOCAL_IP, 6384), HEALTH_STATE.HEALTHY));
+
+        when(defaultDelayPingActionCollector.getAllHealthStatus()).thenReturn(allStatus);
+        Assert.assertNull(aggregatorPullService.dcInstancesAllUp("test", JQ, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6381, OY, true))));
+        Assert.assertNotNull(aggregatorPullService.dcInstancesAllUp("test", JQ, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6383, AWS, true))));
+        Assert.assertEquals(AWS, aggregatorPullService.dcInstancesAllUp("test", JQ, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6381, OY, true), new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6383, AWS, true))));
+        verify(defaultPsubPingActionCollector, never()).getAllHealthStatus();
+        verify(defaultDelayPingActionCollector, times(4)).getAllHealthStatus();
+
+
+        Map<HostPort, HealthStatusDesc> allStatusCrossRegion = new HashMap<>();
+        allStatusCrossRegion.put(new HostPort(LOCAL_IP, 6383), new HealthStatusDesc(new HostPort(LOCAL_IP, 6383), HEALTH_STATE.DOWN));
+        allStatusCrossRegion.put(new HostPort(LOCAL_IP, 6384), new HealthStatusDesc(new HostPort(LOCAL_IP, 6384), HEALTH_STATE.DOWN));
+        when(defaultPsubPingActionCollector.getAllHealthStatus()).thenReturn(allStatusCrossRegion);
+        Assert.assertNull(aggregatorPullService.dcInstancesAllUp("test", AWS, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6383, AWS, true))));
+        verify(defaultPsubPingActionCollector, times(1)).getAllHealthStatus();
+        verify(defaultDelayPingActionCollector, times(4)).getAllHealthStatus();
+    }
 }
