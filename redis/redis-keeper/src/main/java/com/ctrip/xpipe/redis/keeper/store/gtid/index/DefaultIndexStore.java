@@ -49,7 +49,7 @@ public class DefaultIndexStore implements IndexStore {
     private CommandStore parentCommandStore;
 
     public DefaultIndexStore(String baseDir, RedisOpParser redisOpParser,
-                             CommandStore commandStore, CommandStore cmdStore, GtidCmdFilter gtidCmdFilter) {
+                             CommandStore commandStore, GtidCmdFilter gtidCmdFilter, String currentCmdFileName) {
         this.baseDir = baseDir;
         this.opParser = redisOpParser;
         this.commandStore = commandStore;
@@ -57,17 +57,15 @@ public class DefaultIndexStore implements IndexStore {
         this.parentCommandStore = commandStore;
         this.gtidCmdFilter = gtidCmdFilter;
         this.writerCmdEnabled = true;
+        this.currentCmdFileName = currentCmdFileName;
     }
 
     @Override
-    public void initialize(CommandWriter cmdWriter, boolean buildIndex) throws IOException {
+    public void openWriter(CommandWriter cmdWriter) throws IOException {
         this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
         this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size(), this.opParser);
-        // if not build index, the indexWriter is null.
-        if(buildIndex) {
-            this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
-            this.indexWriter.init();
-        }
+        this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
+        this.indexWriter.init();
     }
 
     @Override
@@ -193,7 +191,7 @@ public class DefaultIndexStore implements IndexStore {
     }
 
     @Override
-    public synchronized void close() throws IOException {
+    public synchronized void closeWriter() throws IOException {
         // close = close writer
         if(this.streamCommandReader != null) {
             this.streamCommandReader.relaseRemainBuf();
@@ -206,7 +204,7 @@ public class DefaultIndexStore implements IndexStore {
 
     @Override
     public void closeWithDeleteIndexFiles() throws IOException {
-        this.close();
+        this.closeWriter();
         deleteAllIndexFile();
     }
 

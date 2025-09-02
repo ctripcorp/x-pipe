@@ -98,8 +98,8 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, commandStore, gtidCmdFilter);
-        defaultIndexStore.initialize(writer, true);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
 
     }
 
@@ -179,8 +179,8 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, commandStore, gtidCmdFilter);
-        defaultIndexStore.initialize(writer, true);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
         for(int i = 633744; i < 633750; i++) {
             Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
             System.out.println(point.getKey());
@@ -206,8 +206,8 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, commandStore, gtidCmdFilter);
-        defaultIndexStore.initialize(writer, true);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
 
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
@@ -260,8 +260,8 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, commandStore, gtidCmdFilter);
-        defaultIndexStore.initialize(writer, true);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
@@ -281,8 +281,8 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, commandStore, gtidCmdFilter);
-        defaultIndexStore.initialize(writer, true);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
@@ -302,8 +302,8 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, commandStore, gtidCmdFilter);
-        defaultIndexStore.initialize(writer, true);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
@@ -358,8 +358,8 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, commandStore, gtidCmdFilter);
-        defaultIndexStore.initialize(writer, true);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
 
 
         Pair<Long, GtidSet> point =  defaultIndexStore.locateGtidSetWithFallbackToEnd(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-633744"));

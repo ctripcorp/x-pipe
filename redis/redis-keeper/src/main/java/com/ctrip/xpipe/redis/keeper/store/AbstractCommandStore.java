@@ -128,9 +128,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         indexStore = createIndexStore();
     }
 
-    private IndexStore createIndexStore() {
+    private IndexStore createIndexStore() throws IOException {
         return new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
-                this, this,  gtidCmdFilter);
+                this, gtidCmdFilter, findLatestFile().getFile().getName());
     }
 
     @Override
@@ -138,7 +138,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (initialized.compareAndSet(false, true)) {
             cmdWriter.initialize();
             offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
-            indexStore.initialize(cmdWriter, buildIndex);
+            if(buildIndex) {
+                indexStore.openWriter(cmdWriter);
+            }
         }
     }
 
@@ -507,7 +509,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             getLogger().info("[close]{}", this);
             cmdWriter.close();
             if(indexStore != null) {
-                indexStore.close();
+                indexStore.closeWriter();
             }
         }else{
             getLogger().warn("[close][already closed]{}", this);
@@ -695,7 +697,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             indexStore.closeWithDeleteIndexFiles();
         }
         indexStore = createIndexStore();
-        indexStore.initialize(cmdWriter, true);
+        indexStore.openWriter(cmdWriter);
         buildIndex = true;
     }
 
@@ -704,7 +706,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if(!buildIndex)return;
         buildIndex = false;
         if(indexStore != null) {
-            indexStore.close();
+            indexStore.closeWriter();
         }
     }
 
