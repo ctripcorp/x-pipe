@@ -281,7 +281,7 @@ public class DefaultIndexStoreTest {
         GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
 
-        DefaultControllableFile file = new DefaultControllableFile(baseDir + "index_00000000");
+        DefaultControllableFile file = new DefaultControllableFile(baseDir + "/index_00000000");
 
         file.setLength((int)file.size() - 10);
 
@@ -302,7 +302,7 @@ public class DefaultIndexStoreTest {
         GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
 
-        DefaultControllableFile file = new DefaultControllableFile(baseDir + "block_00000000");
+        DefaultControllableFile file = new DefaultControllableFile(baseDir + "/block_00000000");
 
         file.setLength((int)file.size() - 10);
 
