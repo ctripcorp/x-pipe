@@ -70,6 +70,9 @@ public class DefaultIndexStore implements IndexStore {
 
     @Override
     public synchronized void write(ByteBuf byteBuf) throws IOException {
+        if(indexWriter == null) {
+            throw new IllegalStateException("index writer not open");
+        }
         streamCommandReader.doRead(byteBuf);
     }
 
@@ -121,10 +124,23 @@ public class DefaultIndexStore implements IndexStore {
         if(indexWriter != null) {
             this.indexWriter.saveIndexEntry();
         }
-        try (IndexReader indexReader = new IndexReader(baseDir, currentCmdFileName)) {
+        try (IndexReader indexReader = createIndexReader()) {
+            if(indexReader == null) {
+                // no index file
+                log.info("[locateContinueGtidSet] index reader is null");
+                return new Pair<>(-1l, new GtidSet(GtidSet.EMPTY_GTIDSET));
+            }
             indexReader.init();
             Pair<Long, GtidSet> continuePoint = indexReader.seek(request);
             return continuePoint;
+        }
+    }
+
+    private IndexReader createIndexReader() throws IOException {
+        if(indexWriter != null) {
+            return new IndexReader(baseDir, currentCmdFileName);
+        } else {
+            return IndexReader.getLastIndexReader(baseDir);
         }
     }
 
@@ -143,7 +159,8 @@ public class DefaultIndexStore implements IndexStore {
     @Override
     public synchronized GtidSet getIndexGtidSet() {
         if(indexWriter == null) {
-            return new GtidSet(GtidSet.EMPTY_GTIDSET);
+            // search from reader
+            return getIndexGtidSetByIndexReader();
         }
         return indexWriter.getGtidSet();
     }
@@ -236,6 +253,31 @@ public class DefaultIndexStore implements IndexStore {
 
     private void enableWriterCmd() {
         this.writerCmdEnabled = true;
+    }
+
+    private GtidSet getIndexGtidSetByIndexReader() {
+        try {
+            return tryGetIndexGtidSet();
+        } catch (IOException ioException) {
+            log.error("[getIndexGtidSetByIndexReader] {}", ioException);
+            throw new XpipeRuntimeException("index reader error", ioException);
+        }
+    }
+
+    private GtidSet tryGetIndexGtidSet() throws IOException {
+        IndexReader indexReader = null;
+        try {
+            indexReader = IndexReader.getLastIndexReader(baseDir);
+            if(indexReader == null) {
+                return new GtidSet(GtidSet.EMPTY_GTIDSET);
+            }
+            indexReader.init();
+            return indexReader.getAllGtidSet();
+        } finally {
+            if(indexReader != null) {
+                indexReader.close();
+            }
+        }
     }
 
 }

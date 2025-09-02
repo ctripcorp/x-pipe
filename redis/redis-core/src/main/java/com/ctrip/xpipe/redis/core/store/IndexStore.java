@@ -5,7 +5,6 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
-import java.io.Closeable;
 import java.io.IOException;
 
 public interface IndexStore {
