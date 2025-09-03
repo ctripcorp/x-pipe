@@ -357,10 +357,8 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
         CurrentShardMeta currentShardMeta = currentClusterMetas.get(0).getClusterMetas().get(heteroShardDbId);
 		List<RedisMeta> redisMetas = ((CurrentOneWayShardMeta) currentShardMeta).getRedisMetas();
 		setRedisesSidsAndGtids(redisMetas);
-
 		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, "a1");
 		Assert.assertEquals("a1:1-10:15-20", gtidSet.toString());
-
 		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, "b1");
 		Assert.assertEquals("\"\"", gtidSet.toString());
 	}

@@ -27,12 +27,12 @@ public class PingActionFactoryTest extends AbstractCheckerIntegrationTest {
     public void testCreate() throws Exception {
         RedisHealthCheckInstance biInstance = newRandomRedisHealthCheckInstance("jq", ClusterType.BI_DIRECTION, 6379);
         PingAction biPingAction = pingActionFactory.create(biInstance);
-        Assert.assertEquals(biPingAction.getControllers().size(), 1);
-        Assert.assertEquals(biPingAction.getListeners().size(), 3);
+        Assert.assertEquals(1, biPingAction.getControllers().size());
+        Assert.assertEquals(3, biPingAction.getListeners().size());
         RedisHealthCheckInstance oneWayInstance = newRandomRedisHealthCheckInstance("jq", ClusterType.ONE_WAY, 6379);
         PingAction oneWayPingAction = pingActionFactory.create(oneWayInstance);
-        Assert.assertEquals(oneWayPingAction.getControllers().size(), 1);
-        Assert.assertEquals(oneWayPingAction.getListeners().size(), 0);
+        Assert.assertEquals(1, oneWayPingAction.getControllers().size());
+        Assert.assertEquals(0, oneWayPingAction.getListeners().size());
 
     }
 
