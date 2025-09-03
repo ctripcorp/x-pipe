@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionListener
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubPingActionCollector;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 
 import java.util.Map;
@@ -43,6 +44,12 @@ public abstract class AbstractPsubPingActionCollector implements PsubPingActionC
     @Override
     public PsubActionListener createPsubActionListener() {
         return psubActionListener;
+    }
+
+    @Override
+    @VisibleForTesting
+    public Map<RedisHealthCheckInstance, HealthStatus> getAllInstancesHealthStatus() {
+        return allHealthStatus;
     }
 
     protected HealthStatus getHealthStatus(HostPort hostPort) {

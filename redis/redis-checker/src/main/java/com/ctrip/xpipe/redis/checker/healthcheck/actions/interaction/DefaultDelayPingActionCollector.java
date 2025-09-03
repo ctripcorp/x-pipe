@@ -123,11 +123,15 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
 
     @Override
     protected HealthStatus getHealthStatus(RedisHealthCheckInstance instance) {
-        if (allHealthStatus.containsKey(instance)) {
-            return allHealthStatus.get(instance);
+        if (!allHealthStatus.containsKey(instance)) {
+            logger.warn("[getHealthStatus] instance:{}, status: removed", instance);
         }
-        logger.warn("[getHealthStatus] instance:{}, status: removed", instance);
-        return null;
+        return allHealthStatus.getOrDefault(instance, null);
+    }
+
+    @VisibleForTesting
+    public HealthStatus getHealthStatus4Test(RedisHealthCheckInstance instance) {
+        return getHealthStatus(instance);
     }
 
     @Override

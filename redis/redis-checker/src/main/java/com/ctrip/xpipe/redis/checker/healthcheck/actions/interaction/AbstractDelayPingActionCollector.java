@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListen
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.HeteroDelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionListener;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 
 import java.util.Map;
@@ -56,6 +57,12 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
     @Override
     public DelayActionListener createDelayActionListener() {
         return delayActionListener;
+    }
+
+    @Override
+    @VisibleForTesting
+    public Map<RedisHealthCheckInstance, HealthStatus> getAllInstancesHealthStatus() {
+        return allHealthStatus;
     }
 
     protected class CollectorPingActionListener implements PingActionListener {

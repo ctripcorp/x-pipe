@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubPingActi
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -101,4 +102,10 @@ public class PingActionFactory implements RedisHealthCheckActionFactory<PingActi
 
         return pingAction;
     }
+
+    @VisibleForTesting
+    public Map<ClusterType, List<DelayPingActionCollector>> getDelayPingCollectorsByClusterType() {
+        return delayPingCollectorsByClusterType;
+    }
+
 }

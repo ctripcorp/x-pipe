@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.Abstr
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessor;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubPingActionCollector;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -118,11 +119,15 @@ public class DefaultPsubPingActionCollector extends AbstractPsubPingActionCollec
 
     @Override
     protected HealthStatus getHealthStatus(RedisHealthCheckInstance instance) {
-        if (allHealthStatus.containsKey(instance)) {
-            return allHealthStatus.get(instance);
+        if (!allHealthStatus.containsKey(instance)) {
+            logger.warn("[getHealthStatus] instance:{}, status: removed", instance);
         }
-        logger.warn("[getHealthStatus] instance:{}, status: removed", instance);
-        return null;
+        return allHealthStatus.getOrDefault(instance, null);
+    }
+
+    @VisibleForTesting
+    public HealthStatus getHealthStatus4Test(RedisHealthCheckInstance instance) {
+        return getHealthStatus(instance);
     }
 
     @Override
