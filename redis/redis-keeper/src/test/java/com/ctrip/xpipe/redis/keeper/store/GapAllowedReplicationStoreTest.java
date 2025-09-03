@@ -22,10 +22,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-
 public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 
 	private String replidA = "000000000000000000000000000000000000000A";

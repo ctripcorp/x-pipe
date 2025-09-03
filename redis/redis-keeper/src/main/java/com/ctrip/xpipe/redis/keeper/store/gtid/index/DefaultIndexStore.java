@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.api.utils.IOSupplier;
+import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
@@ -47,7 +49,7 @@ public class DefaultIndexStore implements IndexStore {
     private CommandStore parentCommandStore;
 
     public DefaultIndexStore(String baseDir, RedisOpParser redisOpParser,
-                             CommandStore commandStore, CommandStore cmdStore, GtidCmdFilter gtidCmdFilter) {
+                             CommandStore commandStore, GtidCmdFilter gtidCmdFilter, String currentCmdFileName) {
         this.baseDir = baseDir;
         this.opParser = redisOpParser;
         this.commandStore = commandStore;
@@ -55,10 +57,11 @@ public class DefaultIndexStore implements IndexStore {
         this.parentCommandStore = commandStore;
         this.gtidCmdFilter = gtidCmdFilter;
         this.writerCmdEnabled = true;
+        this.currentCmdFileName = currentCmdFileName;
     }
 
     @Override
-    public void initialize(CommandWriter cmdWriter) throws IOException {
+    public void openWriter(CommandWriter cmdWriter) throws IOException {
         this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
         this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size(), this.opParser);
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
@@ -67,6 +70,9 @@ public class DefaultIndexStore implements IndexStore {
 
     @Override
     public synchronized void write(ByteBuf byteBuf) throws IOException {
+        if(indexWriter == null) {
+            throw new IllegalStateException("index writer not open");
+        }
         streamCommandReader.doRead(byteBuf);
     }
 
@@ -115,11 +121,26 @@ public class DefaultIndexStore implements IndexStore {
 
     @Override
     public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws IOException {
-        this.indexWriter.saveIndexEntry();
-        try (IndexReader indexReader = new IndexReader(baseDir, currentCmdFileName)) {
+        if(indexWriter != null) {
+            this.indexWriter.saveIndexEntry();
+        }
+        try (IndexReader indexReader = createIndexReader()) {
+            if(indexReader == null) {
+                // no index file
+                log.info("[locateContinueGtidSet] index reader is null");
+                return new Pair<>(-1l, new GtidSet(GtidSet.EMPTY_GTIDSET));
+            }
             indexReader.init();
             Pair<Long, GtidSet> continuePoint = indexReader.seek(request);
             return continuePoint;
+        }
+    }
+
+    private IndexReader createIndexReader() throws IOException {
+        if(indexWriter != null) {
+            return new IndexReader(baseDir, currentCmdFileName);
+        } else {
+            return IndexReader.getLastIndexReader(baseDir);
         }
     }
 
@@ -137,6 +158,10 @@ public class DefaultIndexStore implements IndexStore {
 
     @Override
     public synchronized GtidSet getIndexGtidSet() {
+        if(indexWriter == null) {
+            // search from reader
+            return getIndexGtidSetByIndexReader();
+        }
         return indexWriter.getGtidSet();
     }
 
@@ -183,7 +208,8 @@ public class DefaultIndexStore implements IndexStore {
     }
 
     @Override
-    public synchronized void close() throws IOException {
+    public synchronized void closeWriter() throws IOException {
+        // close = close writer
         if(this.streamCommandReader != null) {
             this.streamCommandReader.relaseRemainBuf();
         }
@@ -195,7 +221,7 @@ public class DefaultIndexStore implements IndexStore {
 
     @Override
     public void closeWithDeleteIndexFiles() throws IOException {
-        this.close();
+        this.closeWriter();
         deleteAllIndexFile();
     }
 
@@ -227,6 +253,31 @@ public class DefaultIndexStore implements IndexStore {
 
     private void enableWriterCmd() {
         this.writerCmdEnabled = true;
+    }
+
+    private GtidSet getIndexGtidSetByIndexReader() {
+        try {
+            return tryGetIndexGtidSet();
+        } catch (IOException ioException) {
+            log.error("[getIndexGtidSetByIndexReader] {}", ioException);
+            throw new XpipeRuntimeException("index reader error", ioException);
+        }
+    }
+
+    private GtidSet tryGetIndexGtidSet() throws IOException {
+        IndexReader indexReader = null;
+        try {
+            indexReader = IndexReader.getLastIndexReader(baseDir);
+            if(indexReader == null) {
+                return new GtidSet(GtidSet.EMPTY_GTIDSET);
+            }
+            indexReader.init();
+            return indexReader.getAllGtidSet();
+        } finally {
+            if(indexReader != null) {
+                indexReader.close();
+            }
+        }
     }
 
 }

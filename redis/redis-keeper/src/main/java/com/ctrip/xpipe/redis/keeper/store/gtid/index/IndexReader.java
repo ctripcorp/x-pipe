@@ -175,4 +175,19 @@ public class IndexReader extends AbstractIndex implements Closeable {
     public void close() throws IOException {
         super.closeIndexFile();
     }
+
+    public GtidSet getAllGtidSet() {
+        int len = indexItemList.size();
+        return calculateGtidSet(len);
+    }
+
+    public static IndexReader getLastIndexReader(String baseDir) {
+        File lastIndexFile = findFloorIndexFileByOffset(baseDir, -1);
+        if(lastIndexFile == null) {
+            return null;
+        }
+        String fileName = lastIndexFile.getName().replace(INDEX, "");
+        IndexReader indexReader = new IndexReader(baseDir, fileName);
+        return indexReader;
+    }
 }

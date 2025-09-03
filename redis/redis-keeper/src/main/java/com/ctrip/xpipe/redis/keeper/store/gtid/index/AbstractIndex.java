@@ -53,7 +53,7 @@ public abstract class AbstractIndex {
         return file;
     }
 
-    public File findPreIndex() {
+    public static File findFloorIndexFileByOffset(String baseDir, long currentOffset) {
         File directory = new File(baseDir);
         if (!directory.isDirectory()) {
             throw new IllegalArgumentException("is not a directory");
@@ -63,13 +63,11 @@ public abstract class AbstractIndex {
             return null;
         }
 
-        long currentOffset = extractOffset(fileName);
-
         File targetFile = Arrays.stream(files)
                 .filter(file -> {
                     String fileName = file.getName();
                     long offset = extractOffset(fileName);
-                    return offset < currentOffset;
+                    return offset < currentOffset || currentOffset < 0;
                 })
                 .max(Comparator.comparingLong(file -> {
                     String fileName = file.getName();
@@ -89,7 +87,7 @@ public abstract class AbstractIndex {
     }
 
     public boolean changeToPre() throws IOException {
-        File pre = findPreIndex();
+        File pre = findFloorIndexFileByOffset(baseDir, extractOffset(fileName));
         if(pre == null) {
             return false;
         }

@@ -125,10 +125,12 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
         this.buildIndex = buildIndex;
-        if(buildIndex) {
-            indexStore = new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
-                this, this,  gtidCmdFilter);
-        }
+        indexStore = createIndexStore();
+    }
+
+    private IndexStore createIndexStore() throws IOException {
+        return new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
+                this, gtidCmdFilter, findLatestFile().getFile().getName());
     }
 
     @Override
@@ -137,7 +139,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             cmdWriter.initialize();
             offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
             if(buildIndex) {
-                indexStore.initialize(cmdWriter);
+                indexStore.openWriter(cmdWriter);
             }
         }
     }
@@ -507,7 +509,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             getLogger().info("[close]{}", this);
             cmdWriter.close();
             if(indexStore != null) {
-                indexStore.close();
+                indexStore.closeWriter();
             }
         }else{
             getLogger().warn("[close][already closed]{}", this);
@@ -694,9 +696,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if(indexStore != null) {
             indexStore.closeWithDeleteIndexFiles();
         }
-        indexStore = new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
-                this, this, gtidCmdFilter);
-        indexStore.initialize(cmdWriter);
+        indexStore = createIndexStore();
+        indexStore.openWriter(cmdWriter);
         buildIndex = true;
     }
 
@@ -705,7 +706,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if(!buildIndex)return;
         buildIndex = false;
         if(indexStore != null) {
-            indexStore.close();
+            indexStore.closeWriter();
         }
     }
 
