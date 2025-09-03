@@ -69,8 +69,9 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
 
     void checkDcIsolated() {
         try {
-            if (!config.checkDcNetwork()) {
-                dcIsolated.set(false);
+            Boolean configIsolated = config.getDcIsolated();
+            if (configIsolated != null) {
+                dcIsolated.set(configIsolated);
                 return;
             }
 

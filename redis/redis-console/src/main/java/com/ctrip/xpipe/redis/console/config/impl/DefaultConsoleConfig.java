@@ -187,8 +187,8 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
-    public boolean checkDcNetwork() {
-        return consoleConfigBean.checkDcNetwork();
+    public Boolean getDcIsolated() {
+        return consoleConfigBean.getDcIsolated();
     }
 
     @Override

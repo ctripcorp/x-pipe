@@ -51,12 +51,18 @@ public class NetworkStabilityHolderTest {
 
     @Test
     public void testDelegateDc() {
-        when(config.checkDcNetwork()).thenReturn(false);
+        when(config.getDcIsolated()).thenReturn(true);
+        networkStabilityHolder.check();
+        Assert.assertTrue(networkStabilityHolder.isolated());
+        verify(metaCache, never()).regionDcs(JQ);
+
+
+        when(config.getDcIsolated()).thenReturn(false);
         networkStabilityHolder.check();
         Assert.assertFalse(networkStabilityHolder.isolated());
         verify(metaCache, never()).regionDcs(JQ);
 
-        when(config.checkDcNetwork()).thenReturn(true);
+        when(config.getDcIsolated()).thenReturn(null);
         when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY));
         when(config.delegateDc()).thenReturn("");
 
@@ -85,7 +91,7 @@ public class NetworkStabilityHolderTest {
     @Test
     public void testAggregate() throws Exception {
 
-        when(config.checkDcNetwork()).thenReturn(true);
+        when(config.getDcIsolated()).thenReturn(true);
         when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY, ALI));
 
         when(inspector.isolated()).thenReturn(false);

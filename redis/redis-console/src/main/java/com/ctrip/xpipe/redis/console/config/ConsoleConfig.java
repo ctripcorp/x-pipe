@@ -59,7 +59,7 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getIsolateRecoverAfterRounds();
 
-	boolean checkDcNetwork();
+	Boolean getDcIsolated();
 
 	String delegateDc();
 

@@ -89,8 +89,10 @@ public class ConsoleNetworkStabilityHolder implements ConsoleLeaderAware, Networ
     }
 
     void check() {
-        if (!config.checkDcNetwork()) {
-            dcIsolated.set(false);
+        Boolean configIsolated = config.getDcIsolated();
+
+        if (configIsolated != null) {
+            dcIsolated.set(configIsolated);
             return;
         }
 

@@ -65,7 +65,7 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     private static final String KEY_CONSOLE_ISOLATE_RECOVER_AFTER_ROUNDS = "console.isolate.recover.after.rounds";
 
-    private static final String KEY_CONSOLE_CHECK_DC_ISOLATE = "console.check.dc.isolate";
+    private static final String KEY_CONSOLE_DC_ISOLATE = "console.dc.isolate";
 
     private static final String KEY_CONSOLE_DELEGATE_DC = "console.delegate.dc";
 
@@ -190,8 +190,8 @@ public class ConsoleConfigBean extends AbstractConfigBean {
         return getIntProperty(KEY_CONSOLE_ISOLATE_RECOVER_AFTER_ROUNDS, 1);
     }
 
-    public boolean checkDcNetwork() {
-        return getBooleanProperty(KEY_CONSOLE_CHECK_DC_ISOLATE, false);
+    public Boolean getDcIsolated() {
+        return getBooleanProperty(KEY_CONSOLE_DC_ISOLATE, null);
     }
 
     public String delegateDc() {

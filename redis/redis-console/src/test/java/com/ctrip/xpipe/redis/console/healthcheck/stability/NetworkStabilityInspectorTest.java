@@ -47,16 +47,21 @@ public class NetworkStabilityInspectorTest {
     public void testIsolated() throws Exception {
         when(config.getQuorum()).thenReturn(2);
         ConsoleNetworkStabilityInspector inspector = new ConsoleNetworkStabilityInspector(metaCache, config, consoleServiceManager);
-        when(config.checkDcNetwork()).thenReturn(false);
+        when(config.getDcIsolated()).thenReturn(true);
 
-        //switch turn off
+        //config true
+        inspector.inspect();
+        Assert.assertTrue(inspector.isolated());
+        verify(metaCache, never()).regionDcs(any());
+
+        //config false
+        when(config.getDcIsolated()).thenReturn(false);
         inspector.inspect();
         Assert.assertFalse(inspector.isolated());
         verify(metaCache, never()).regionDcs(any());
 
-        //switch turn on
-        when(config.checkDcNetwork()).thenReturn(true);
-
+        //no config
+        when(config.getDcIsolated()).thenReturn(null);
         //other dcs in current region less than quorum
         when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY));
         inspector.inspect();
