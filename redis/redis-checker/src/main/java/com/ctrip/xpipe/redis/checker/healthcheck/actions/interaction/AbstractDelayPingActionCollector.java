@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListen
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.HeteroDelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionListener;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 
 import java.util.Map;
@@ -26,7 +27,7 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
 
     protected DelayActionListener delayActionListener = new AbstractDelayPingActionCollector.CollectorDelayActionListener();
 
-    protected abstract HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance);
+    protected abstract HealthStatus getHealthStatus(RedisHealthCheckInstance instance);
 
     protected void removeHealthStatus(HealthCheckAction action) {
         HealthStatus healthStatus = allHealthStatus.remove(action.getActionInstance());
@@ -58,11 +59,20 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
         return delayActionListener;
     }
 
+    @Override
+    @VisibleForTesting
+    public Map<RedisHealthCheckInstance, HealthStatus> getAllInstancesHealthStatus() {
+        return allHealthStatus;
+    }
+
     protected class CollectorPingActionListener implements PingActionListener {
 
         @Override
         public void onAction(PingActionContext pingActionContext) {
-            HealthStatus healthStatus = createOrGetHealthStatus(pingActionContext.instance());
+            HealthStatus healthStatus = getHealthStatus(pingActionContext.instance());
+            if (null == healthStatus) {
+                return;
+            }
             if (!pingActionContext.isSuccess()) {
                 if (pingActionContext.getCause().getMessage().contains("LOADING")) {
                     healthStatus.loading();
@@ -96,10 +106,14 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
         @Override
         public void onAction(DelayActionContext context) {
             long delayNano = context.getResult();
+            HealthStatus healthStatus = getHealthStatus(context.instance());
+            if (null == healthStatus) {
+                return;
+            }
             if (context instanceof HeteroDelayActionContext)
-                createOrGetHealthStatus(context.instance()).delay(TimeUnit.NANOSECONDS.toMillis(delayNano), ((HeteroDelayActionContext) context).getShardDbId());
+                healthStatus.delay(TimeUnit.NANOSECONDS.toMillis(delayNano), ((HeteroDelayActionContext) context).getShardDbId());
             else
-                createOrGetHealthStatus(context.instance()).delay(TimeUnit.NANOSECONDS.toMillis(delayNano));
+                healthStatus.delay(TimeUnit.NANOSECONDS.toMillis(delayNano));
         }
 
         @Override

@@ -89,7 +89,10 @@ public class DelayActionFactory implements RedisHealthCheckActionFactory<DelayAc
 
         List<DelayPingActionCollector> delayPingActionCollectors = delayPingCollectorByClusterType.get(clusterType);
         delayPingActionCollectors.forEach(collector -> {
-            if (collector.supportInstance(instance)) delayAction.addListener(collector.createDelayActionListener());
+            if (collector.supportInstance(instance)) {
+                delayAction.addListener(collector.createDelayActionListener());
+                collector.createHealthStatus(instance);
+            }
         });
 
         return delayAction;

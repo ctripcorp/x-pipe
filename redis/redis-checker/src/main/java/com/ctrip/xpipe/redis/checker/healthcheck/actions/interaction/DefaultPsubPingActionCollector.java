@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.Abstr
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessor;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubPingActionCollector;
 import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,26 +101,6 @@ public class DefaultPsubPingActionCollector extends AbstractPsubPingActionCollec
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    protected HealthStatus createOrGetHealthStatus(RedisHealthCheckInstance instance) {
-        return MapUtils.getOrCreate(allHealthStatus, instance, new ObjectFactory<HealthStatus>() {
-            @Override
-            public HealthStatus create() {
-
-                HealthStatus healthStatus = new CrossRegionRedisHealthStatus(instance, scheduled);
-
-                healthStatus.addObserver(new Observer() {
-                    @Override
-                    public void update(Object args, Observable observable) {
-                        onInstanceStateChange(args);
-                    }
-                });
-                healthStatus.start();
-                return healthStatus;
-            }
-        });
-    }
-
     private void onInstanceStateChange(Object args) {
 
         logger.info("[onInstanceStateChange]{}", args);
@@ -136,4 +117,33 @@ public class DefaultPsubPingActionCollector extends AbstractPsubPingActionCollec
         }
     }
 
+    @Override
+    protected HealthStatus getHealthStatus(RedisHealthCheckInstance instance) {
+        if (!allHealthStatus.containsKey(instance)) {
+            logger.warn("[getHealthStatus] instance:{}, status: removed", instance);
+            return null;
+        }
+        return allHealthStatus.get(instance);
+    }
+
+    @VisibleForTesting
+    public HealthStatus getHealthStatus4Test(RedisHealthCheckInstance instance) {
+        return getHealthStatus(instance);
+    }
+
+    @Override
+    public HealthStatus createHealthStatus(RedisHealthCheckInstance instance) {
+        return allHealthStatus.computeIfAbsent(instance, key -> {
+            HealthStatus healthStatus = new CrossRegionRedisHealthStatus(key, scheduled);
+
+            healthStatus.addObserver(new Observer() {
+                @Override
+                public void update(Object args, Observable observable) {
+                    onInstanceStateChange(args);
+                }
+            });
+            healthStatus.start();
+            return healthStatus;
+        });
+    }
 }

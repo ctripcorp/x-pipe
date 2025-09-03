@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -58,7 +59,10 @@ public class PsubActionFactory implements RedisHealthCheckActionFactory<PsubActi
 
         psubAction.addControllers(controllersByClusterType.get(clusterType));
         psubPingActionCollectorsByClusterType.get(clusterType).forEach(collector -> {
-            if (collector.supportInstance(instance)) psubAction.addListener(collector.createPsubActionListener());
+            if (collector.supportInstance(instance)) {
+                psubAction.addListener(collector.createPsubActionListener());
+                collector.createHealthStatus(instance);
+            }
         });
         return psubAction;
     }
@@ -67,5 +71,10 @@ public class PsubActionFactory implements RedisHealthCheckActionFactory<PsubActi
     public boolean supportInstnace(RedisHealthCheckInstance instance) {
         RedisInstanceInfo info = instance.getCheckInfo();
         return metaCache.isCrossRegion(currentDcId, info.getActiveDc()) && currentDcId.equalsIgnoreCase(info.getDcId());
+    }
+
+    @VisibleForTesting
+    public Map<ClusterType, List<PsubPingActionCollector>> getPsubPingActionCollectorsByClusterType() {
+        return psubPingActionCollectorsByClusterType;
     }
 }

@@ -11,10 +11,7 @@ import com.ctrip.xpipe.redis.core.console.ConsoleService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.DcMetaManager;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
-import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.comparator.DcRouteMetaComparator;
-import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.*;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
@@ -220,10 +217,11 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 
 			for (MetaComparator innerMetaComparator : clusterMetaComparator.getMofified()) {
 				ShardMetaComparator shardMetaComparator = (ShardMetaComparator) innerMetaComparator;
-				if (shardMetaComparator.isConfigChange() || !shardMetaComparator.getMofified().isEmpty()) continue ClusterCompare;
+				if (shardMetaComparator.isConfigChange()) continue ClusterCompare;
 				if (shardMetaComparator.getAdded().isEmpty() && shardMetaComparator.getRemoved().isEmpty()) continue ClusterCompare;
 				if (shardMetaComparator.getAdded().stream().anyMatch(node -> !(node instanceof KeeperMeta))) continue ClusterCompare;
 				if (shardMetaComparator.getRemoved().stream().anyMatch(node -> !(node instanceof KeeperMeta))) continue ClusterCompare;
+				if (shardMetaComparator.getMofified().stream().anyMatch(comparator1 -> !(((InstanceNodeComparator)comparator1).getCurrent() instanceof KeeperMeta))) continue ClusterCompare;
 			}
 			EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, "KeeperMigrate");
 			keeperMigOnlyCnt++;

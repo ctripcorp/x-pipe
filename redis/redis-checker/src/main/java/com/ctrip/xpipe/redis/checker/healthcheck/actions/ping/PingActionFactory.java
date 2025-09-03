@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubPingActi
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -85,14 +86,26 @@ public class PingActionFactory implements RedisHealthCheckActionFactory<PingActi
                 pingAction.addListener(((DefaultRedisHealthCheckInstance)instance).createPingListener());
             }
             delayPingCollectorsByClusterType.get(clusterType).forEach(collector -> {
-                if (collector.supportInstance(instance)) pingAction.addListener(collector.createPingActionListener());
+                if (collector.supportInstance(instance)) {
+                    pingAction.addListener(collector.createPingActionListener());
+                    collector.createHealthStatus(instance);
+                }
             });
         } else if (activeDc != null && metaCache.isCrossRegion(currentDcId, activeDc)) {
             psubPingActionCollectorsByClusterType.get(clusterType).forEach(collector -> {
-                if (collector.supportInstance(instance)) pingAction.addListener(collector.createPingActionListener());
+                if (collector.supportInstance(instance)) {
+                    pingAction.addListener(collector.createPingActionListener());
+                    collector.createHealthStatus(instance);
+                }
             });
         }
 
         return pingAction;
     }
+
+    @VisibleForTesting
+    public Map<ClusterType, List<DelayPingActionCollector>> getDelayPingCollectorsByClusterType() {
+        return delayPingCollectorsByClusterType;
+    }
+
 }

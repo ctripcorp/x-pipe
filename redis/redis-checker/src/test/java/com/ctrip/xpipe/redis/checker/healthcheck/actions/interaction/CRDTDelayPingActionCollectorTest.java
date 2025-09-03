@@ -64,6 +64,7 @@ public class CRDTDelayPingActionCollectorTest extends AbstractCheckerTest {
         delayActionListener = collector.createDelayActionListener();
         pingActionListener = collector.createPingActionListener();
         collector.setScheduled(scheduled);
+        collector.createHealthStatus(instance);
     }
 
     @Test

@@ -78,7 +78,7 @@ public class DelayPingActionCollectorTest extends AbstractCheckerIntegrationTest
         while(!Thread.currentThread().isInterrupted()) {
             sleep(1000);
             HostPort hostPort = action.getActionInstance().getCheckInfo().getHostPort();
-            HEALTH_STATE health_state = collector.createOrGetHealthStatus(instance).getState();
+            HEALTH_STATE health_state = collector.createHealthStatus(instance).getState();
             logger.info("[{}]", health_state);
             logger.info("[Health State][{}] {}", hostPort, collector.getState(hostPort));
         }
