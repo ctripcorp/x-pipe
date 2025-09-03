@@ -1,6 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.impl.fakeredis.xsync;
 
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.redis.core.proxy.ProxyConnectProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
+import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocol;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -96,7 +100,7 @@ public class XsyncForKeeperAndKeeperTest extends AbstractFakeRedisTest {
         Assert.assertEquals(keeperServer.getReplicationStore().getGtidSet().getKey().toString(), "7ca392ffb0fa8415cbf6a88bb7937f323c7367ac:1-2");
 
         RedisKeeperServer backUp = startRedisKeeperServer(100, 5000, 1000000000);
-        backUp.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("localhost", keeperServer.getListeningPort()));
+        backUp.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("localhost", keeperServer.getListeningPort(), new DefaultProxyConnectProtocol(new DefaultProxyConnectProtocolParser())));
         writeCommands();
         sleep(1000);
 
@@ -116,7 +120,7 @@ public class XsyncForKeeperAndKeeperTest extends AbstractFakeRedisTest {
         logger.info("wait data send writeCommands");
         Thread.sleep(1000);
         Assert.assertEquals(keeperServer2.getReplicationStore().getGtidSet().getKey().toString(), "7ca392ffb0fa8415cbf6a88bb7937f323c7367ac:1-2,b50c0ac6608a3351a6ed0c6a92d93ec736b390a1:622000-622009,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:622000-622009");
-        backUp.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("localhost", keeperServer2.getListeningPort()));
+        backUp.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("localhost", keeperServer2.getListeningPort(),new DefaultProxyConnectProtocol(new DefaultProxyConnectProtocolParser())));
 
         Thread.sleep(2000);
         Assert.assertEquals(keeperServer2.getKeeperMonitor().getKeeperStats().getFullSyncCount(), 0);
