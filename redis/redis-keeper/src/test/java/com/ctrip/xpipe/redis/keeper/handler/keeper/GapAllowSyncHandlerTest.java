@@ -233,6 +233,18 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     }
 
     @Test
+    public void testKeeperOffsetVerySmaller() throws Exception {
+        GapAllowSyncHandler.SyncRequest request = GapAllowSyncHandler.SyncRequest.psync("test-repl-id2", 1);
+        ReplStage curStage = new ReplStage("test-repl-id", 1, 1001, "test-master-uuid", new GtidSet("A:1-10"), new GtidSet("A:1-20"));
+        ReplStage preStage = new ReplStage("test-repl-id2", 100, 1);
+        Mockito.when(keeperRepl.currentStage()).thenReturn(curStage);
+        Mockito.when(keeperRepl.preStage()).thenReturn(preStage);
+
+        GapAllowSyncHandler.SyncAction action = handler.anaRequest(request, keeperServer, slave);
+        Assert.assertTrue(action.full);
+    }
+
+    @Test
     public void testKeeperPartialSync_continue() throws Exception {
         ReplStage replStage = new ReplStage("test-repl-id1", 1, 11);
         Mockito.when(keeperRepl.currentStage()).thenReturn(replStage);

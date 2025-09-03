@@ -362,7 +362,7 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 		Assert.assertEquals("a1:1-10:15-20", gtidSet.toString());
 
 		gtidSet = currentMeta.getGtidSet(heteroClusterDbId, "b1");
-		Assert.assertEquals("", gtidSet.toString());
+		Assert.assertEquals("\"\"", gtidSet.toString());
 	}
 
 	@Test
