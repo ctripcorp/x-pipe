@@ -2,7 +2,6 @@ package com.ctrip.xpipe.migration;
 
 import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.api.migration.OuterClientService;
-import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,23 +32,8 @@ public abstract class AbstractOuterClientService implements OuterClientService {
 	}
 
 	@Override
-	public void markInstanceUp(ClusterShardHostPort hostPort) throws OuterClientException {
-
-	}
-
-	@Override
-	public boolean isInstanceUp(ClusterShardHostPort hostPort) throws OuterClientException {
-		return false;
-	}
-
-	@Override
-	public Map<HostPort, Boolean> batchQueryInstanceStatus(String cluster, Set<HostPort> instances) throws OuterClientException {
+	public Map<HostPort, OutClientInstanceStatus> batchQueryInstanceStatus(String cluster, Set<HostPort> instances) throws OuterClientException {
 		return Collections.emptyMap();
-	}
-
-	@Override
-	public void markInstanceDown(ClusterShardHostPort hostPort) throws OuterClientException {
-
 	}
 
 	@Override
@@ -85,16 +69,6 @@ public abstract class AbstractOuterClientService implements OuterClientService {
 	@Override
 	public boolean batchExcludeIdcs(List<ClusterExcludedIdcInfo> excludedClusterIdcs) throws Exception {
 		return true;
-	}
-
-	@Override
-	public void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
-
-	}
-
-	@Override
-	public void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
-
 	}
 
 	@Override

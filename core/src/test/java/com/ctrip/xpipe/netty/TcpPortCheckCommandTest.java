@@ -3,6 +3,7 @@ package com.ctrip.xpipe.netty;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.simpleserver.Server;
+import io.netty.channel.ConnectTimeoutException;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -46,7 +47,28 @@ public class TcpPortCheckCommandTest extends AbstractTest {
                 future.get(500, TimeUnit.SECONDS);
                 Assert.fail();
             } catch (Exception e) {
+                e.printStackTrace();
             }
+        }
+
+    }
+
+    @Test
+    public void testFail2() throws InterruptedException, ExecutionException, TimeoutException {
+
+        int port = randomPort();
+
+        long start = System.currentTimeMillis();
+
+        TcpPortCheckCommand checkCommand = new TcpPortCheckCommand("10.0.0.1", port, 500);
+        CommandFuture<Boolean> future = checkCommand.execute();
+        try {
+            future.get(5, TimeUnit.SECONDS);
+            Assert.fail();
+        } catch (Exception e) {
+            long end = System.currentTimeMillis();
+            Assert.assertTrue(end - start < 1000);
+            Assert.assertTrue(e.getCause() instanceof ConnectTimeoutException);
         }
 
     }

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
@@ -18,5 +19,11 @@ public interface RemoteCheckerManager {
     List<Map<HostPort, HealthStatusDesc>> allInstanceHealthStatus();
 
     List<CheckerService> getAllCheckerServices();
+
+    Map<String,Boolean> getAllDcIsolatedCheckResult();
+
+    Boolean getDcIsolatedCheckResult(String dcId);
+
+    CommandFuture<Boolean> connectDc(String dc, int connectTimeoutMilli);
 
 }

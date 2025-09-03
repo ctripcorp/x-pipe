@@ -7,8 +7,6 @@ package com.ctrip.xpipe.redis.core.console;
 public class ConsoleCheckerPath {
 
     private ConsoleCheckerPath() {}
-
-    public static final String PATH_BIND_SHARD_SENTINEL = "/api/bind/shard/sentinels";
     
     public static final String PATH_GET_ALL_META = "/api/meta/divide";
 
@@ -25,11 +23,15 @@ public class ConsoleCheckerPath {
     public static final String PATH_PUT_HEALTH_CHECK_RESULT = "/api/health/check/result";
 
     public static final String PATH_POST_KEEPER_CONTAINER_INFO_RESULT = "/api/keeperContainer/info/result/{index}";
-    
+
+    public static final String PATH_GET_INNER_DC_ISOLATED = "/api/inner/dc/isolated";
+
+    public static final String PATH_GET_DC_ISOLATED = "/api/dc/isolated";
+
     public static final String PATH_PERSISTENCE = "/api/persistence/";
 
     public static final String PATH_GET_IS_CLUSTER_ON_MIGRATION = PATH_PERSISTENCE + "isClusterOnMigration/{clusterName}";
-    
+
     public static final String PATH_PUT_UPDATE_REDIS_ROLE = PATH_PERSISTENCE + "updateRedisRole/{role}";
     
     public static final String PATH_GET_SENTINEL_CHECKER_WHITE_LIST = PATH_PERSISTENCE + "sentinelCheckerWhiteList";
