@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DelayPingAc
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatus;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
@@ -18,6 +20,8 @@ public class PingActionFactoryTest extends AbstractCheckerIntegrationTest {
 
     @Autowired
     private PingActionFactory pingActionFactory;
+
+    private static final Logger logger = LoggerFactory.getLogger(PingActionFactoryTest.class);
 
     @Test
     public void testCreate() throws Exception {
@@ -46,16 +50,16 @@ public class PingActionFactoryTest extends AbstractCheckerIntegrationTest {
             Map<RedisHealthCheckInstance, HealthStatus> allStatus = collector.getAllInstancesHealthStatus();
             Assert.assertNotEquals(0, allStatus.size());
             Assert.assertTrue(allStatus.containsKey(instance));
-            System.out.println("[testGetAndRemove4OneWay]add success");
+            logger.info("[testGetAndRemove4OneWay] add success");
         });
         pingAction.getListeners().forEach(listener -> {
             listener.stopWatch(pingAction);
         });
-        System.out.println("[testGetAndRemove4OneWay]remove success");
+        logger.info("[testGetAndRemove4OneWay] remove success");
         collectors.forEach(collector -> {
             if (collector instanceof DefaultDelayPingActionCollector) {
                 Assert.assertNull(((DefaultDelayPingActionCollector) collector).getHealthStatus4Test(instance));
-                System.out.println("[testGetAndRemove4OneWay]get fail");
+                logger.info("[testGetAndRemove4OneWay] get fail");
             }
         });
     }
@@ -73,16 +77,16 @@ public class PingActionFactoryTest extends AbstractCheckerIntegrationTest {
             Map<RedisHealthCheckInstance, HealthStatus> allStatus = collector.getAllInstancesHealthStatus();
             Assert.assertNotEquals(0, allStatus.size());
             Assert.assertTrue(allStatus.containsKey(instance));
-            System.out.println("[testGetAndRemove4Bi]add success");
+            logger.info("[testGetAndRemove4Bi] add success");
         });
         pingAction.getListeners().forEach(listener -> {
             listener.stopWatch(pingAction);
         });
-        System.out.println("[testGetAndRemove4Bi]remove success");
+        logger.info("[testGetAndRemove4Bi] remove success");
         collectors.forEach(collector -> {
             if (collector instanceof CRDTDelayPingActionCollector) {
                 Assert.assertNull(((CRDTDelayPingActionCollector) collector).getHealthStatus4Test(instance));
-                System.out.println("[testGetAndRemove4Bi]get fail");
+                logger.info("[testGetAndRemove4Bi] get fail");
             }
         });
     }

@@ -106,10 +106,14 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
         @Override
         public void onAction(DelayActionContext context) {
             long delayNano = context.getResult();
+            HealthStatus healthStatus = getHealthStatus(context.instance());
+            if (null == healthStatus) {
+                return;
+            }
             if (context instanceof HeteroDelayActionContext)
-                getHealthStatus(context.instance()).delay(TimeUnit.NANOSECONDS.toMillis(delayNano), ((HeteroDelayActionContext) context).getShardDbId());
+                healthStatus.delay(TimeUnit.NANOSECONDS.toMillis(delayNano), ((HeteroDelayActionContext) context).getShardDbId());
             else
-                getHealthStatus(context.instance()).delay(TimeUnit.NANOSECONDS.toMillis(delayNano));
+                healthStatus.delay(TimeUnit.NANOSECONDS.toMillis(delayNano));
         }
 
         @Override

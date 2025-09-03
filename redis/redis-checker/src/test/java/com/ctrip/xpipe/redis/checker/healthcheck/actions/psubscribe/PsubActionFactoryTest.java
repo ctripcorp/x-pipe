@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.*;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
@@ -15,6 +17,8 @@ public class PsubActionFactoryTest extends AbstractCheckerIntegrationTest {
 
     @Autowired
     private PsubActionFactory psubActionFactory;
+
+    public static final Logger logger = LoggerFactory.getLogger(PsubActionFactoryTest.class);
 
     @Test
     @SuppressWarnings("unchecked")
@@ -30,16 +34,16 @@ public class PsubActionFactoryTest extends AbstractCheckerIntegrationTest {
             Map<RedisHealthCheckInstance, HealthStatus> allStatus = collector.getAllInstancesHealthStatus();
             Assert.assertNotEquals(0, allStatus.size());
             Assert.assertTrue(allStatus.containsKey(instance));
-            System.out.println("[testGetAndRemove]add success");
+            logger.info("[testGetAndRemove] add success");
         });
         psubAction.getListeners().forEach(listener -> {
             listener.stopWatch(psubAction);
         });
-        System.out.println("[testGetAndRemove]remove success");
+        logger.info("[testGetAndRemove] remove success");
         collectors.forEach(collector -> {
             if (collector instanceof DefaultPsubPingActionCollector) {
                 Assert.assertNull(((DefaultPsubPingActionCollector) collector).getHealthStatus4Test(instance));
-                System.out.println("[testGetAndRemove]get fail");
+                logger.info("[testGetAndRemove]get fail");
             }
         });
     }

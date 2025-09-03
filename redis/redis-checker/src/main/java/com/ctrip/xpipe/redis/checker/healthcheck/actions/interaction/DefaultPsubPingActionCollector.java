@@ -121,8 +121,9 @@ public class DefaultPsubPingActionCollector extends AbstractPsubPingActionCollec
     protected HealthStatus getHealthStatus(RedisHealthCheckInstance instance) {
         if (!allHealthStatus.containsKey(instance)) {
             logger.warn("[getHealthStatus] instance:{}, status: removed", instance);
+            return null;
         }
-        return allHealthStatus.getOrDefault(instance, null);
+        return allHealthStatus.get(instance);
     }
 
     @VisibleForTesting
