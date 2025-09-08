@@ -1176,8 +1176,20 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			if (evt instanceof IdleStateEvent) {
 				IdleStateEvent e = (IdleStateEvent) evt;
 				if (e.state() == IdleState.ALL_IDLE) {
-					logger.info("[long time no read and writer][close] {}", ctx.channel().remoteAddress());
-					ctx.close();
+					try {
+						RedisClient client = redisClients.get(ctx.channel());
+						if(client == null) {
+							logger.error("[idle handler while client is null]");
+							ctx.close();
+						} else if (client instanceof RedisSlave) {
+							// do nothing
+						} else {
+							logger.info("[long time no read and writer][close] {}", ctx.channel().remoteAddress());
+							ctx.close();
+						}
+					} catch (Exception exception) {
+						logger.error("handler Idle error", exception);
+					}
 				}
 			} else {
 				super.userEventTriggered(ctx, evt);
