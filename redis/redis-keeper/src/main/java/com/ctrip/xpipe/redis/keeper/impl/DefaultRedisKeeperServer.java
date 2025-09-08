@@ -527,8 +527,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	protected void startServer() throws InterruptedException {
 
-		int idleSeconds = keeperConfig.getKeeperIdleSeconds();
-
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup)
          .channel(NioServerSocketChannel.class)
@@ -537,7 +535,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
              @Override
              public void initChannel(SocketChannel ch) throws Exception {
                  ChannelPipeline p = ch.pipeline();
-				 p.addLast(new IdleStateHandler(0, 0, idleSeconds, TimeUnit.SECONDS));
+				 p.addLast(new IdleStateHandler(0, 0, keeperConfig.getKeeperIdleSeconds(), TimeUnit.SECONDS));
 				 p.addLast(new KeeperConnectionIdleHandler());
                  p.addLast(debugLoggingHandler);
                  p.addLast(new NettySimpleMessageHandler());
@@ -1188,6 +1186,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 							ctx.close();
 						}
 					} catch (Exception exception) {
+						ctx.close();
 						logger.error("handler Idle error", exception);
 					}
 				}
