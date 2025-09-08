@@ -1175,19 +1175,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				IdleStateEvent e = (IdleStateEvent) evt;
 				if (e.state() == IdleState.ALL_IDLE) {
 					try {
+						logger.info("[KeeperConnectionIdleHandler][close idle connection] {}", ctx.channel().remoteAddress());
 						RedisClient client = redisClients.get(ctx.channel());
-						if(client == null) {
-							logger.error("[idle handler while client is null]");
-							ctx.close();
-						} else if (client instanceof RedisSlave) {
-							// do nothing
+						if (client instanceof RedisSlave) {
+							logger.info("[KeeperConnectionIdleHandler][skip redis slave]");
 						} else {
-							logger.info("[long time no read and writer][close] {}", ctx.channel().remoteAddress());
 							ctx.close();
 						}
 					} catch (Exception exception) {
-						ctx.close();
-						logger.error("handler Idle error", exception);
+						logger.error("[KeeperConnectionIdleHandler][fail]", exception);
 					}
 				}
 			} else {
