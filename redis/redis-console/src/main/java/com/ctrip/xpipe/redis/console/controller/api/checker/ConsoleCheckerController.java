@@ -193,8 +193,8 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     }
 
     @RequestMapping(value = ConsoleCheckerPath.PATH_GET_REGION_DCS, method = RequestMethod.GET)
-    public List<String> regionDcs(@PathVariable String dcName) {
-        return metaCache.regionDcs(dcName);
+    public List<String> regionDcs() {
+        return metaCache.currentRegionDcs();
     }
 
     ObjectMapper objectMapper = new ObjectMapper();

@@ -638,6 +638,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public long getRegionDcsRefreshIntervalMilli() {
+        return consoleConfigBean.getRegionDcsRefreshIntervalMilli();
+    }
+
+    @Override
     public void addListener(ConfigKeyListener listener) {
         this.listenersSet.add(listener);
     }

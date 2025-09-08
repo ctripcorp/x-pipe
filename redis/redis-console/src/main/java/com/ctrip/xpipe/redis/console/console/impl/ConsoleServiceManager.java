@@ -27,6 +27,8 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.function.Function;
 
+import static com.ctrip.xpipe.redis.console.resources.AbstractMetaCache.CURRENT_IDC;
+
 /**
  * @author wenchao.meng
  *         <p>
@@ -125,9 +127,9 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
     }
 
     @Override
-    public List<String> dcsInSameRegion(String dc) {
-        ConsoleService consoleService = getServiceByDc(dc);
-        return consoleService.dcsInSameRegion(dc);
+    public List<String> dcsInCurrentRegion() {
+        ConsoleService consoleService = getServiceByDc(CURRENT_IDC);
+        return consoleService.dcsInCurrentRegion();
     }
 
     public List<ShardCheckerHealthCheckModel> getShardAllCheckerGroupHealthCheck(String activeDc, String dcId, String clusterId, String shardId) {

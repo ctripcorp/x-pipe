@@ -111,7 +111,7 @@ public class DefaultRemoteCheckerManager implements RemoteCheckerManager {
     }
 
     @Override
-    public List<String> dcsInSameRegion(String dc) {
+    public List<String> dcsInCurrentRegion() {
         throw new UnsupportedOperationException();
     }
 

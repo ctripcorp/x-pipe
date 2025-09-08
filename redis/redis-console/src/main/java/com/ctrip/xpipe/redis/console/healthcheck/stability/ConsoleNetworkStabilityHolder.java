@@ -96,7 +96,7 @@ public class ConsoleNetworkStabilityHolder implements ConsoleLeaderAware, Networ
             return;
         }
 
-        List<String> dcsInCurrentRegion = metaCache.regionDcs(CURRENT_DC);
+        List<String> dcsInCurrentRegion = metaCache.currentRegionDcs();
         dcsInCurrentRegion.remove(CURRENT_DC);
 
         if (dcsInCurrentRegion.size() < config.getQuorum()) {

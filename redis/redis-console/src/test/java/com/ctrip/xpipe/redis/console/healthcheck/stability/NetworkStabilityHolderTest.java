@@ -54,22 +54,22 @@ public class NetworkStabilityHolderTest {
         when(config.getDcIsolated()).thenReturn(true);
         networkStabilityHolder.check();
         Assert.assertTrue(networkStabilityHolder.isolated());
-        verify(metaCache, never()).regionDcs(JQ);
+        verify(metaCache, never()).currentRegionDcs();
 
 
         when(config.getDcIsolated()).thenReturn(false);
         networkStabilityHolder.check();
         Assert.assertFalse(networkStabilityHolder.isolated());
-        verify(metaCache, never()).regionDcs(JQ);
+        verify(metaCache, never()).currentRegionDcs();
 
         when(config.getDcIsolated()).thenReturn(null);
-        when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY));
+        when(metaCache.currentRegionDcs()).thenReturn(Lists.newArrayList(JQ, OY));
         when(config.delegateDc()).thenReturn("");
 
 
         networkStabilityHolder.check();
         Assert.assertFalse(networkStabilityHolder.isolated());
-        verify(metaCache, times(1)).regionDcs(JQ);
+        verify(metaCache, times(1)).currentRegionDcs();
         verify(config, times(1)).delegateDc();
         verify(consoleServiceManager, never()).getDcIsolatedCheckResult(anyString());
 
@@ -91,13 +91,13 @@ public class NetworkStabilityHolderTest {
     @Test
     public void testAggregate() throws Exception {
 
-        when(config.getDcIsolated()).thenReturn(true);
-        when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY, ALI));
+        when(config.getDcIsolated()).thenReturn(null);
+        when(metaCache.currentRegionDcs()).thenReturn(Lists.newArrayList(JQ, OY, ALI));
 
         when(inspector.isolated()).thenReturn(false);
         networkStabilityHolder.check();
         Assert.assertFalse(networkStabilityHolder.isolated());
-        verify(metaCache, times(1)).regionDcs(JQ);
+        verify(metaCache, times(1)).currentRegionDcs();
         verify(config, never()).delegateDc();
         verify(consoleServiceManager, never()).getDcIsolatedCheckResult(anyString());
         verify(consoleServiceManager, never()).getAllDcIsolatedCheckResult();

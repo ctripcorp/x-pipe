@@ -75,7 +75,7 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
                 return;
             }
 
-            List<String> dcsInCurrentRegion = metaCache.regionDcs(CURRENT_DC);
+            List<String> dcsInCurrentRegion = metaCache.currentRegionDcs();
             dcsInCurrentRegion.remove(CURRENT_DC);
 
             if (dcsInCurrentRegion.size() < config.getQuorum()) {

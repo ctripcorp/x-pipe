@@ -120,5 +120,5 @@ public interface MetaCache {
 
     boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs);
 
-    List<String> regionDcs(String dc);
+    List<String> currentRegionDcs();
 }

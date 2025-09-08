@@ -233,8 +233,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     }
 
     @Override
-    public List<String> dcsInSameRegion(String dc) {
-        return restTemplate.getForObject(dcsInSameRegionUrl, List.class, dc);
+    public List<String> dcsInCurrentRegion() {
+        return restTemplate.getForObject(dcsInSameRegionUrl, List.class);
     }
 
     @Override

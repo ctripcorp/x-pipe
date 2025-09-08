@@ -52,28 +52,28 @@ public class NetworkStabilityInspectorTest {
         //config true
         inspector.inspect();
         Assert.assertTrue(inspector.isolated());
-        verify(metaCache, never()).regionDcs(any());
+        verify(metaCache, never()).currentRegionDcs();
 
         //config false
         when(config.getDcIsolated()).thenReturn(false);
         inspector.inspect();
         Assert.assertFalse(inspector.isolated());
-        verify(metaCache, never()).regionDcs(any());
+        verify(metaCache, never()).currentRegionDcs();
 
         //no config
         when(config.getDcIsolated()).thenReturn(null);
         //other dcs in current region less than quorum
-        when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY));
+        when(metaCache.currentRegionDcs()).thenReturn(Lists.newArrayList(JQ, OY));
         inspector.inspect();
         Assert.assertFalse(inspector.isolated());
-        verify(metaCache, times(1)).regionDcs(any());
+        verify(metaCache, times(1)).currentRegionDcs();
         verify(consoleServiceManager, never()).connectDc(any(), anyInt());
 
 
         //has enough other dcs in current region
         when(config.getIsolateAfterRounds()).thenReturn(2);
         when(config.getIsolateRecoverAfterRounds()).thenReturn(1);
-        when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY, ALI));
+        when(metaCache.currentRegionDcs()).thenReturn(Lists.newArrayList(JQ, OY, ALI));
 
         // all connected failed
         doAnswer(invocation -> new AbstractCommand<Boolean>() {
@@ -97,7 +97,7 @@ public class NetworkStabilityInspectorTest {
         inspector.inspect();
         Assert.assertFalse(inspector.isolated());
 
-        when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY, ALI));
+        when(metaCache.currentRegionDcs()).thenReturn(Lists.newArrayList(JQ, OY, ALI));
         // command timeout, result not enough, ignore
         doAnswer(invocation -> new AbstractCommand<Boolean>() {
             @Override
@@ -119,7 +119,7 @@ public class NetworkStabilityInspectorTest {
         inspector.inspect();
         Assert.assertFalse(inspector.isolated());
 
-        when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY, ALI));
+        when(metaCache.currentRegionDcs()).thenReturn(Lists.newArrayList(JQ, OY, ALI));
         // all connected failed
         doAnswer(invocation -> new AbstractCommand<Boolean>() {
             @Override
@@ -141,7 +141,7 @@ public class NetworkStabilityInspectorTest {
         inspector.inspect();
         Assert.assertTrue(inspector.isolated());
 
-        when(metaCache.regionDcs(JQ)).thenReturn(Lists.newArrayList(JQ, OY, ALI));
+        when(metaCache.currentRegionDcs()).thenReturn(Lists.newArrayList(JQ, OY, ALI));
         //1 dc connected
         doAnswer(invocation -> new AbstractCommand<Boolean>() {
             @Override

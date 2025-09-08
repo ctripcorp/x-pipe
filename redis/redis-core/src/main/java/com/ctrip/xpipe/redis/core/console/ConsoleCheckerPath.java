@@ -28,7 +28,7 @@ public class ConsoleCheckerPath {
 
     public static final String PATH_GET_DC_ISOLATED = "/api/dc/isolated";
 
-    public static final String PATH_GET_REGION_DCS = "/api/region/dcs/{dcName}";
+    public static final String PATH_GET_REGION_DCS = "/api/region/dcs";
 
     public static final String PATH_PERSISTENCE = "/api/persistence/";
 

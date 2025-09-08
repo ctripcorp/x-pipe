@@ -73,6 +73,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     private List<TimeBoundCache<String>> xmlFormatXPipeMetaParts = null;
 
+    private TimeBoundCache<List<String>> dcsInCurrentRegion = null;
     protected ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1,
             XpipeThreadFactory.create("MetaCacheLoad"));
 
@@ -308,11 +309,36 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     }
 
     @Override
-    public List<String> regionDcs(String dc) {
+    public List<String> currentRegionDcs() {
+        if (dcsInCurrentRegion == null) {
+            synchronized (this) {
+                if (dcsInCurrentRegion == null) {
+                    dcsInCurrentRegion = new TimeBoundCache<>(() -> consoleConfig.getRegionDcsRefreshIntervalMilli(), this::doGetCurrentRegionDcs);
+                }
+            }
+        }
+
+        List<String> regionDcs;
+        try {
+            regionDcs = dcsInCurrentRegion.getData();
+        } catch (Throwable th) {
+            logger.warn("[getCurrentRegionDcs] fail, try to use cached data", th);
+            regionDcs = dcsInCurrentRegion.getCurrentData();
+        }
+
+
+        if (regionDcs == null) {
+            throw new DataNotFoundException("data not ready");
+        }
+
+        return regionDcs;
+    }
+
+    List<String> doGetCurrentRegionDcs() {
         if (isLeader.get())
-            return super.regionDcs(dc);
+            return super.currentRegionDcs();
         else {
-            return consoleServiceManager.dcsInSameRegion(dc);
+            return consoleServiceManager.dcsInCurrentRegion();
         }
     }
 

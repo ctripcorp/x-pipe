@@ -273,7 +273,7 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public List<String> regionDcs(String dc) {
+    public List<String> currentRegionDcs() {
         return Lists.newArrayList();
     }
 }

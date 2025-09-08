@@ -70,6 +70,7 @@ public class ConsoleConfigBean extends AbstractConfigBean {
     private static final String KEY_CONSOLE_DELEGATE_DC = "console.delegate.dc";
 
     public static final String KEY_CONSOLE_CHECK_ISOLATE_INTERVAL_MILLI = "console.check.isolate.interval.milli";
+    public static final String KEY_CONSOLE_REGION_DCS_REFRESH_INTERVAL_MILLI = "console.region.dcs.refresh.interval.milli";
 
     private FoundationService foundationService;
 
@@ -200,5 +201,9 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     public long getIsolateCheckIntervalMilli() {
         return getLongProperty(KEY_CONSOLE_CHECK_ISOLATE_INTERVAL_MILLI, 10 * 1000L);
+    }
+
+    public long getRegionDcsRefreshIntervalMilli() {
+        return getLongProperty(KEY_CONSOLE_REGION_DCS_REFRESH_INTERVAL_MILLI, 60 * 1000L);
     }
 }
