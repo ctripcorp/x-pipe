@@ -527,8 +527,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	protected void startServer() throws InterruptedException {
 
-		int idleSeconds = keeperConfig.getKeeperIdleSeconds();
-
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup)
          .channel(NioServerSocketChannel.class)
@@ -537,7 +535,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
              @Override
              public void initChannel(SocketChannel ch) throws Exception {
                  ChannelPipeline p = ch.pipeline();
-				 p.addLast(new IdleStateHandler(0, 0, idleSeconds, TimeUnit.SECONDS));
+				 p.addLast(new IdleStateHandler(0, 0, keeperConfig.getKeeperIdleSeconds(), TimeUnit.SECONDS));
 				 p.addLast(new KeeperConnectionIdleHandler());
                  p.addLast(debugLoggingHandler);
                  p.addLast(new NettySimpleMessageHandler());
@@ -1176,8 +1174,17 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			if (evt instanceof IdleStateEvent) {
 				IdleStateEvent e = (IdleStateEvent) evt;
 				if (e.state() == IdleState.ALL_IDLE) {
-					logger.info("[long time no read and writer][close] {}", ctx.channel().remoteAddress());
-					ctx.close();
+					try {
+						logger.info("[KeeperConnectionIdleHandler][close idle connection] {}", ctx.channel().remoteAddress());
+						RedisClient client = redisClients.get(ctx.channel());
+						if (client instanceof RedisSlave) {
+							logger.info("[KeeperConnectionIdleHandler][skip redis slave]");
+						} else {
+							ctx.close();
+						}
+					} catch (Exception exception) {
+						logger.error("[KeeperConnectionIdleHandler][fail]", exception);
+					}
 				}
 			} else {
 				super.userEventTriggered(ctx, evt);
