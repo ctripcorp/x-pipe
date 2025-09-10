@@ -37,20 +37,8 @@ public class StreamCommandParser {
         allocator = ByteBufAllocator.DEFAULT;
     }
 
+
     public void doRead(ByteBuf byteBuf) throws IOException {
-        try {
-            tryDoRead(byteBuf);
-        } catch (Exception e) {
-            log.error("[doRead]", e);
-            this.relaseRemainBuf();
-            this.protocolParser.reset();
-            byteBuf.skipBytes(byteBuf.readableBytes());
-            throw e;
-        }
-    }
-
-
-    public void tryDoRead(ByteBuf byteBuf) throws IOException {
 
         if (opParser == null) {
             throw new XpipeRuntimeException("unlikely: opParser is null");
@@ -81,7 +69,9 @@ public class StreamCommandParser {
                 if (protocol == null) {
                     this.protocolParser.reset();
                     this.relaseRemainBuf();
-                    remainingBuf = mergeBuf.slice(pre,  mergeBuf.writerIndex() - pre).retain();
+                    remainingBuf = allocator.buffer(mergeBuf.writerIndex() - pre);
+                    // Avoid referencing too many byteBufs using, copy it
+                    remainingBuf.writeBytes(mergeBuf.slice(pre,  mergeBuf.writerIndex() - pre));
                     break;
                 }
 
@@ -91,8 +81,12 @@ public class StreamCommandParser {
                 commandLister.onCommand(payload, finishBuf);
                 this.protocolParser.reset();
             }
+        } catch (Exception e) {
+            this.relaseRemainBuf();
+            this.protocolParser.reset();
+        }
+         finally {
             byteBuf.skipBytes(byteBuf.readableBytes());
-        } finally {
             mergeBuf.release();
         }
     }
