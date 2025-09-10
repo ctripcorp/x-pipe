@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.tuple.Pair;
+import com.google.common.collect.Lists;
 import org.unidal.tuple.Triple;
 
 import java.util.*;
@@ -271,4 +272,8 @@ public class TestMetaCache implements MetaCache {
         return false;
     }
 
+    @Override
+    public List<String> currentRegionDcs() {
+        return Lists.newArrayList();
+    }
 }

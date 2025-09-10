@@ -2,10 +2,11 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.cache.TimeBoundCache;
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderAware;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.model.RedisCheckRuleTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -59,6 +60,9 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     protected ConsoleConfig consoleConfig;
 
     @Autowired
+    private ConsoleServiceManager consoleServiceManager;
+
+    @Autowired
     private RouteChooseStrategyFactory routeChooseStrategyFactory;
 
     private RouteChooseStrategy strategy = null;
@@ -69,19 +73,20 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     private List<TimeBoundCache<String>> xmlFormatXPipeMetaParts = null;
 
+    private TimeBoundCache<List<String>> dcsInCurrentRegion = null;
     protected ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(1,
             XpipeThreadFactory.create("MetaCacheLoad"));
 
     protected ScheduledFuture<?> future;
 
-    protected AtomicBoolean taskTrigger = new AtomicBoolean(false);
+    protected AtomicBoolean isLeader = new AtomicBoolean(false);
 
     private final Lock lock = new ReentrantLock();
     protected final Condition condition = lock.newCondition();
 
     @Override
     public void isleader() {
-        if (taskTrigger.compareAndSet(false, true)) {
+        if (isLeader.compareAndSet(false, true)) {
             stopLoadMeta();
             startLoadMeta();
         }
@@ -89,7 +94,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     @Override
     public void notLeader() {
-        if (taskTrigger.compareAndSet(true, false))
+        if (isLeader.compareAndSet(true, false))
             stopLoadMeta();
     }
 
@@ -134,7 +139,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
-                if(!taskTrigger.get())
+                if(!isLeader.get())
                     return;
                 if(lock.tryLock(consoleConfig.getCacheRefreshInterval(), TimeUnit.MILLISECONDS)) {
                     try {
@@ -303,13 +308,47 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         return localParts.get(partIndex).getData();
     }
 
+    @Override
+    public List<String> currentRegionDcs() {
+        if (dcsInCurrentRegion == null) {
+            synchronized (this) {
+                if (dcsInCurrentRegion == null) {
+                    dcsInCurrentRegion = new TimeBoundCache<>(() -> consoleConfig.getRegionDcsRefreshIntervalMilli(), this::doGetCurrentRegionDcs);
+                }
+            }
+        }
+
+        List<String> regionDcs;
+        try {
+            regionDcs = dcsInCurrentRegion.getData();
+        } catch (Throwable th) {
+            logger.warn("[getCurrentRegionDcs] fail, try to use cached data", th);
+            regionDcs = dcsInCurrentRegion.getCurrentData();
+        }
+
+
+        if (regionDcs == null) {
+            throw new DataNotFoundException("data not ready");
+        }
+
+        return regionDcs;
+    }
+
+    List<String> doGetCurrentRegionDcs() {
+        if (isLeader.get())
+            return super.currentRegionDcs();
+        else {
+            return consoleServiceManager.dcsInCurrentRegion();
+        }
+    }
+
     @VisibleForTesting
     ScheduledFuture<?> getFuture() {
         return future;
     }
 
     @VisibleForTesting
-    AtomicBoolean getTaskTrigger() {
-        return taskTrigger;
+    AtomicBoolean getIsLeader() {
+        return isLeader;
     }
 }

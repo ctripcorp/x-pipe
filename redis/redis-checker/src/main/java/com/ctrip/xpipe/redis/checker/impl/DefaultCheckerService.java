@@ -56,4 +56,5 @@ public class DefaultCheckerService extends AbstractService implements CheckerSer
     public Map<HostPort, HealthStatusDesc> getAllInstanceHealthStatus() {
         return restTemplate.getForObject(host + PATH_GET_ALL_INSTANCE_HEALTH_STATUS, AllInstanceHealthStatus.class);
     }
+
 }

@@ -1,18 +1,12 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
 import com.ctrip.xpipe.api.factory.ObjectFactory;
-import com.ctrip.xpipe.api.migration.OuterClientException;
-import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
-import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.ClusterHealthManager;
-import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
@@ -28,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.HashMap;
@@ -66,41 +59,7 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
     private HealthCheckInstanceManager instanceManager;
 
     @Autowired
-    private AlertManager alertManager;
-
-    @Autowired
     private CheckerConfig config;
-
-    private OuterClientService outerClientService = OuterClientService.DEFAULT;
-
-    private FinalStateSetterManager<ClusterShardHostPort, Boolean> finalStateSetterManager;
-
-    @PostConstruct
-    public void postConstruct() {
-        finalStateSetterManager = new FinalStateSetterManager<>(executors, (clusterShardHostPort) -> {
-
-            try {
-                return outerClientService.isInstanceUp(clusterShardHostPort);
-            } catch (OuterClientException e) {
-                throw new IllegalStateException("findRedisHealthCheckInstance error:" + clusterShardHostPort, e);
-            }
-        }, ((clusterShardHostPort, result) -> {
-            try {
-                if (result) {
-                    alertManager.alert(clusterShardHostPort.getClusterName(), clusterShardHostPort.getShardName(),
-                            clusterShardHostPort.getHostPort(), ALERT_TYPE.MARK_INSTANCE_UP, "Mark Instance Up");
-                    outerClientService.markInstanceUp(clusterShardHostPort);
-                } else {
-                    alertManager.alert(clusterShardHostPort.getClusterName(), clusterShardHostPort.getShardName(),
-                            clusterShardHostPort.getHostPort(), ALERT_TYPE.MARK_INSTANCE_DOWN, "Mark Instance Down");
-                    outerClientService.markInstanceDown(clusterShardHostPort);
-                }
-            } catch (OuterClientException e) {
-                throw new IllegalStateException("set error:" + clusterShardHostPort + "," + result, e);
-            }
-        })
-        );
-    }
 
     public HEALTH_STATE getState(HostPort hostPort) {
         try {
@@ -115,10 +74,6 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
         for(HealthStatus healthStatus : allHealthStatus.values()) {
             healthStatus.stop();
         }
-    }
-
-    public FinalStateSetterManager<ClusterShardHostPort, Boolean> getHealthStateSetterManager() {
-        return finalStateSetterManager;
     }
 
     @Override

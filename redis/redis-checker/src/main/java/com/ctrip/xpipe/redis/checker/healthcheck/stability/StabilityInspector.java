@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
@@ -37,78 +38,93 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
 
     private CheckerConfig config;
 
-    private AtomicBoolean stable = new AtomicBoolean(true);
+    private CheckerConsoleService checkerConsoleService;
+
+    private AtomicBoolean siteStable = new AtomicBoolean(true);
+    private AtomicBoolean dcIsolated = new AtomicBoolean(false);
 
     private AtomicInteger continuousMismatchTimes = new AtomicInteger();
 
     private AtomicInteger continuousNoInterested = new AtomicInteger();
 
+    private AtomicInteger isolatedContinuousMismatchTimes = new AtomicInteger();
+
     private DynamicDelayPeriodTask task;
 
     private ScheduledExecutorService scheduled;
 
-    private static final String TYPE = "stability";
+    public static final String TYPE = "stability";
 
     public StabilityInspector() {
     }
 
+    @Autowired
     public StabilityInspector(DefaultDelayPingActionCollector defaultDelayPingActionCollector, MetaCache metaCache,
-                              CheckerConfig checkerConfig) {
+                              CheckerConfig checkerConfig, CheckerConsoleService checkerConsoleService) {
         this.collector = defaultDelayPingActionCollector;
         this.metaCache = metaCache;
         this.config = checkerConfig;
+        this.checkerConsoleService = checkerConsoleService;
     }
 
     protected boolean isSiteStable() {
-        return stable.get();
+        return siteStable.get() && !dcIsolated.get();
     }
 
     @VisibleForTesting
     protected void inspect() {
         logger.debug("[inspect] begin");
+        checkSiteStable();
+        checkDcIsolated();
+    }
 
-        Map<HostPort, HEALTH_STATE> currentAllHealthStates = collector.getAllCachedState();
-        String currentDc = FoundationService.DEFAULT.getDataCenter();
-        Set<HostPort> interested = currentAllHealthStates.keySet().stream()
-                .filter(hostPort -> {
-                    try {
-                        return currentDc.equalsIgnoreCase(metaCache.getDc(hostPort))
-                                && currentDc.equalsIgnoreCase(metaCache.getActiveDc(hostPort));
-                    } catch (Throwable th) {
-                        logger.debug("[inspect][ignore instance] {}", hostPort, th);
-                        return false;
-                    }
-                }).collect(Collectors.toSet());
+    void checkSiteStable() {
+        try {
+            Map<HostPort, HEALTH_STATE> currentAllHealthStates = collector.getAllCachedState();
+            String currentDc = FoundationService.DEFAULT.getDataCenter();
+            Set<HostPort> interested = currentAllHealthStates.keySet().stream()
+                    .filter(hostPort -> {
+                        try {
+                            return currentDc.equalsIgnoreCase(metaCache.getDc(hostPort))
+                                    && currentDc.equalsIgnoreCase(metaCache.getActiveDc(hostPort));
+                        } catch (Throwable th) {
+                            logger.debug("[inspect][ignore instance] {}", hostPort, th);
+                            return false;
+                        }
+                    }).collect(Collectors.toSet());
 
-        if (interested.isEmpty()) {
-            if (continuousNoInterested.incrementAndGet() < 0) continuousNoInterested.set(0);
-        } else {
-            continuousNoInterested.set(0);
+            if (interested.isEmpty()) {
+                if (continuousNoInterested.incrementAndGet() < 0) continuousNoInterested.set(0);
+            } else {
+                continuousNoInterested.set(0);
 
-            int upCnt = 0;
-            int downCnt = 0;
-            for (HostPort hostPort : interested) {
-                HEALTH_STATE healthState = currentAllHealthStates.get(hostPort);
-                if (HEALTH_STATE.HEALTHY.equals(healthState)) upCnt++;
-                if (HEALTH_STATE.DOWN.equals(healthState)) downCnt++;
+                int upCnt = 0;
+                int downCnt = 0;
+                for (HostPort hostPort : interested) {
+                    HEALTH_STATE healthState = currentAllHealthStates.get(hostPort);
+                    if (HEALTH_STATE.HEALTHY.equals(healthState)) upCnt++;
+                    if (HEALTH_STATE.DOWN.equals(healthState)) downCnt++;
+                }
+
+                boolean mayStable = siteStable.get();
+                if ((upCnt * 1.0 / interested.size()) > config.getSiteStableThreshold()) {
+                    mayStable = true;
+                } else if ((downCnt * 1.0 / interested.size()) > config.getSiteUnstableThreshold()) {
+                    mayStable = false;
+                }
+
+                incrMismatchIfNeeded(mayStable);
             }
 
-            boolean mayStable = stable.get();
-            if ((upCnt * 1.0/interested.size()) > config.getSiteStableThreshold()) {
-                mayStable = true;
-            } else if ((downCnt * 1.0/interested.size()) > config.getSiteUnstableThreshold()) {
-                mayStable = false;
-            }
-
-            incrMismatchIfNeeded(mayStable);
+            toggleStableIfNeeded();
+            EventMonitor.DEFAULT.logEvent(TYPE, siteStable.get() ? "stable" : "unstable");
+        } catch (Throwable th) {
+            logger.error("[checkSiteStable]", th);
         }
-
-        toggleStableIfNeeded();
-        EventMonitor.DEFAULT.logEvent(TYPE, stable.get() ? "stable" : "unstable");
     }
 
     private void incrMismatchIfNeeded(boolean mayStable) {
-        if (mayStable != stable.get()) {
+        if (mayStable != siteStable.get()) {
             int after = continuousMismatchTimes.incrementAndGet();
             logger.info("[incrMismatchIfNeeded] may {}:{}", mayStable ? "stable":"unstable", after);
         } else if (continuousMismatchTimes.get() > 0) {
@@ -118,22 +134,60 @@ public class StabilityInspector extends AbstractLifecycle implements TopElement 
     }
 
     private void toggleStableIfNeeded() {
-        if (stable.get() && continuousMismatchTimes.get() >= config.getStableLossAfterRounds()) {
+        if (siteStable.get() && continuousMismatchTimes.get() >= config.getStableLossAfterRounds()) {
             logger.info("[toggleStableIfNeeded] become unstable");
-            setStable(false);
-        } else if (!stable.get() && continuousMismatchTimes.get() >= config.getStableRecoverAfterRounds()) {
+            setSiteStable(false);
+        } else if (!siteStable.get() && continuousMismatchTimes.get() >= config.getStableRecoverAfterRounds()) {
             logger.info("[toggleStableIfNeeded] become stable");
-            setStable(true);
-        } else if (!stable.get() && continuousNoInterested.get() >= config.getStableResetAfterRounds()) {
+            setSiteStable(true);
+        } else if (!siteStable.get() && continuousNoInterested.get() >= config.getStableResetAfterRounds()) {
             logger.info("[toggleStableIfNeeded][continue no interested] become stable");
-            setStable(true);
+            setSiteStable(true);
         }
     }
 
+    private void checkDcIsolated() {
+        try {
+            boolean mayIsolated = checkerConsoleService.dcIsolated(config.getConsoleAddress());
+            incrIsolatedMismatchIfNeeded(mayIsolated);
+            toggleDcIsolatedIfNeeded();
+            EventMonitor.DEFAULT.logEvent(TYPE, dcIsolated.get() ? "isolated" : "unisolated");
+        } catch (Throwable th) {
+            logger.error("[dcIsolated]get from console:{} failed", config.getConsoleAddress(), th);
+        }
+    }
+
+    private void incrIsolatedMismatchIfNeeded(boolean mayIsolated) {
+        if (mayIsolated != dcIsolated.get()) {
+            int after = isolatedContinuousMismatchTimes.incrementAndGet();
+            logger.info("[incrIsolatedMismatchIfNeeded] may {}:{}", mayIsolated ? "isolated":"unisolated", after);
+        } else if (isolatedContinuousMismatchTimes.get() > 0) {
+            logger.info("[incrIsolatedMismatchIfNeeded][reset]");
+            this.isolatedContinuousMismatchTimes.set(0);
+        }
+    }
+
+    private void toggleDcIsolatedIfNeeded() {
+        if (dcIsolated.get() && isolatedContinuousMismatchTimes.get() >= config.getStableRecoverAfterRounds()) {
+            logger.info("[toggleDcIsolatedIfNeeded] become unisolated");
+            setDcIsolated(false);
+        } else if (!dcIsolated.get() && isolatedContinuousMismatchTimes.get() > 0) {
+            logger.info("[toggleDcIsolatedIfNeeded] become isolated");
+            setDcIsolated(true);
+        }
+    }
+
+
     @VisibleForTesting
-    protected void setStable(boolean stable) {
-        this.stable.set(stable);
+    protected void setSiteStable(boolean siteStable) {
+        this.siteStable.set(siteStable);
         this.continuousMismatchTimes.set(0);
+    }
+
+    @VisibleForTesting
+    protected void setDcIsolated(boolean isolated) {
+        this.dcIsolated.set(isolated);
+        this.isolatedContinuousMismatchTimes.set(0);
     }
 
     @Override

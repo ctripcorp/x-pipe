@@ -7,9 +7,8 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import org.xml.sax.SAXException;
 
-
 import java.io.IOException;
-import java.util.*;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ConsoleMetaCacheWithoutDB extends DefaultMetaCache {
@@ -58,7 +57,7 @@ public class ConsoleMetaCacheWithoutDB extends DefaultMetaCache {
         future = scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
             @Override
             protected void doRun() throws Exception {
-                if(!taskTrigger.get())
+                if(!isLeader.get())
                     return;
                 loadCache();
             }

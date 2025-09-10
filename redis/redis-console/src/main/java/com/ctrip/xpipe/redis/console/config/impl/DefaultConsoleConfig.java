@@ -177,6 +177,26 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public int getIsolateAfterRounds() {
+        return consoleConfigBean.getIsolateAfterRounds();
+    }
+
+    @Override
+    public int getIsolateRecoverAfterRounds() {
+        return consoleConfigBean.getIsolateRecoverAfterRounds();
+    }
+
+    @Override
+    public Boolean getDcIsolated() {
+        return consoleConfigBean.getDcIsolated();
+    }
+
+    @Override
+    public String delegateDc() {
+        return consoleConfigBean.delegateDc();
+    }
+
+    @Override
     public int getRedisConfCheckIntervalMilli() {
         return checkConfigBean.getRedisConfCheckIntervalMilli();
     }
@@ -610,6 +630,16 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     @Override
     public boolean getShouldDoAfterNettyClientConnected() {
         return dataCenterConfigBean.getDoAfterNettyClientConnected();
+    }
+
+    @Override
+    public long getCheckIsolateInterval() {
+        return consoleConfigBean.getIsolateCheckIntervalMilli();
+    }
+
+    @Override
+    public long getRegionDcsRefreshIntervalMilli() {
+        return consoleConfigBean.getRegionDcsRefreshIntervalMilli();
     }
 
     @Override

@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.console.resources;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
+import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.TooManyClustersRemovedException;
 import com.ctrip.xpipe.redis.console.exception.TooManyDcsRemovedException;
 import com.ctrip.xpipe.redis.console.service.DcService;
@@ -30,8 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class DefaultMetaCacheTest extends AbstractRedisTest {
 
@@ -53,6 +54,9 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
     @Mock
     private RouteChooseStrategyFactory routeChooseStrategyFactory;
 
+    @Mock
+    private ConsoleServiceManager consoleServiceManager;
+
     @InjectMocks
     private DefaultMetaCache metaCache = new DefaultMetaCache();
 
@@ -67,12 +71,12 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
     public void leaderTest() throws Exception {
         when(consoleConfig.getCacheRefreshInterval()).thenReturn(10);
         metaCache.isleader();
-        Assert.assertTrue(metaCache.getTaskTrigger().get());
+        Assert.assertTrue(metaCache.getIsLeader().get());
         Assert.assertNotNull(metaCache.getFuture());
 
         metaCache.notLeader();
 
-        Assert.assertFalse(metaCache.getTaskTrigger().get());
+        Assert.assertFalse(metaCache.getIsLeader().get());
         Assert.assertNull(metaCache.getFuture());
         Assert.assertNull(metaCache.meta);
         Assert.assertEquals(metaCache.DEFAULT_KEEPER_NUMBERS, metaCache.allKeeperSize);
@@ -80,7 +84,7 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertNull(metaCache.allKeepers);
 
         metaCache.isleader();
-        Assert.assertTrue(metaCache.getTaskTrigger().get());
+        Assert.assertTrue(metaCache.getIsLeader().get());
         Assert.assertNotNull(metaCache.getFuture());
     }
 
@@ -378,6 +382,53 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertEquals(1, allDcClusters.get("jq").intValue());
         Assert.assertEquals(2, allDcClusters.get("oy").intValue());
         Assert.assertEquals(0, allDcClusters.get("fra-aws").intValue());
+    }
+
+    @Test
+    public void testGetCurrentRegionDcs() throws InterruptedException {
+        when(consoleConfig.getCacheRefreshInterval()).thenReturn(10);
+        when(consoleConfig.getRegionDcsRefreshIntervalMilli()).thenReturn(100L);
+        metaCache.isleader();
+
+        List<String> regionDcs = null;
+        // is leader, no cache ,no meta
+        try {
+            regionDcs = metaCache.currentRegionDcs();
+            Assert.fail();
+        } catch (Throwable th) {
+            Assert.assertNull(regionDcs);
+            Assert.assertTrue(th instanceof DataNotFoundException);
+        }
+
+        // meta not null
+        metaCache.setMeta(Pair.of(getXpipeMeta(), xpipeMetaManager));
+        metaCache.setMonitor2ClusterShard(Maps.newHashMap());
+
+        regionDcs = metaCache.currentRegionDcs();
+        Assert.assertEquals(2, regionDcs.size());
+        Assert.assertTrue(regionDcs.contains("jq"));
+        Assert.assertTrue(regionDcs.contains("oy"));
+        verify(consoleServiceManager, never()).dcsInCurrentRegion();
+
+        //meta is null, cache expired
+        Thread.sleep(150);
+        metaCache.notLeader();
+        metaCache.isleader();
+        regionDcs = metaCache.currentRegionDcs();
+        Assert.assertEquals(2, regionDcs.size());
+        Assert.assertTrue(regionDcs.contains("jq"));
+        Assert.assertTrue(regionDcs.contains("oy"));
+        verify(consoleServiceManager, never()).dcsInCurrentRegion();
+
+        //not leader, use cache
+        metaCache.notLeader();
+        doThrow(new DataNotFoundException("data not ready")).when(consoleServiceManager).dcsInCurrentRegion();
+        regionDcs = metaCache.currentRegionDcs();
+        Assert.assertEquals(2, regionDcs.size());
+        Assert.assertTrue(regionDcs.contains("jq"));
+        Assert.assertTrue(regionDcs.contains("oy"));
+        verify(consoleServiceManager, times(1)).dcsInCurrentRegion();
+
     }
 
     protected String getXpipeMetaConfigFile() {

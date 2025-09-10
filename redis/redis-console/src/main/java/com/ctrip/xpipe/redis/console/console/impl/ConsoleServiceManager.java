@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.CheckerService;
@@ -10,10 +11,12 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatu
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
+import com.ctrip.xpipe.redis.console.exception.NotEnoughResultsException;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
+import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +26,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.function.Function;
+
+import static com.ctrip.xpipe.redis.console.resources.AbstractMetaCache.CURRENT_IDC;
 
 /**
  * @author wenchao.meng
@@ -85,6 +90,46 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
     @Override
     public List<CheckerService> getAllCheckerServices() {
         return new ArrayList<>(loadAllConsoleServices().values());
+    }
+
+    @Override
+    public Map<String, Boolean> getAllDcIsolatedCheckResult() {
+        Map<String, Boolean> result = new HashMap<>();
+        Map<String, ConsoleService> consoleServiceMap = loadAllConsoleServices();
+        consoleServiceMap.forEach((key, value) -> {
+            try {
+                Boolean innerIsolated = value.getInnerDcIsolated();
+                if (innerIsolated != null)
+                    result.put(key, innerIsolated);
+            } catch (Throwable th) {
+                logger.error("[getAllDcIsolatedCheckResult]{}", key, th);
+            }
+        });
+        if (result.size() < consoleServiceMap.size()) {
+            throw new NotEnoughResultsException("getAllDcIsolatedCheckResult");
+        }
+        return result;
+    }
+
+    @Override
+    public Boolean getDcIsolatedCheckResult(String dcId) {
+        ConsoleService consoleService = getServiceByDc(dcId);
+        if (consoleService == null) {
+            return null;
+        }
+        return consoleService.getDcIsolated();
+    }
+
+    @Override
+    public CommandFuture<Boolean> connectDc(String dc, int connectTimeoutMilli) {
+        ConsoleService consoleService = getServiceByDc(dc);
+        return consoleService.connect(connectTimeoutMilli);
+    }
+
+    @Override
+    public List<String> dcsInCurrentRegion() {
+        ConsoleService consoleService = getServiceByDc(CURRENT_IDC);
+        return consoleService.dcsInCurrentRegion();
     }
 
     public List<ShardCheckerHealthCheckModel> getShardAllCheckerGroupHealthCheck(String activeDc, String dcId, String clusterId, String shardId) {
@@ -154,7 +199,7 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
                         throw new XpipeRuntimeException("unknown dc id " + dcId);
                     }
 
-                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(optionalKey.get()));
+                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(optionalKey.get()), 80);
                     services.put(upperCaseDcId, service);
                 }
             }
@@ -202,14 +247,16 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return consoleConfig.getQuorum();
     }
 
-    private Map<String,ConsoleService> loadAllConsoleServices() {
+    @VisibleForTesting
+    Map<String,ConsoleService> loadAllConsoleServices() {
 
         Map<String, ConsoleService> result = new HashMap<>();
 
-        for(String url : getConsoleUrls()){
+        for(HostPort hostPort : getConsoleUrls()){
+            String url = hostPort.toString();
             ConsoleService service = services.get(url);
             if (service == null) {
-                service = new DefaultConsoleService(url);
+                service = new DefaultConsoleService(hostPort.getHost(), hostPort.getPort());
                 services.put(url, service);
             }
             result.put(url, service);
@@ -217,14 +264,14 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return result;
     }
 
-    private Set<String>  getConsoleUrls(){
+    private Set<HostPort>  getConsoleUrls(){
 
-        Set<String> consoleUrls = new HashSet<>();
+        Set<HostPort> consoleUrls = new HashSet<>();
         String port = System.getProperty("server.port", "8080");
         if(leaderElector != null) {
            List<String> servers = leaderElector.getAllServers();
            for(String server : servers){
-               consoleUrls.add(server + ":" + port);
+               consoleUrls.add(new HostPort(server, Integer.parseInt(port)));
            }
         }
 

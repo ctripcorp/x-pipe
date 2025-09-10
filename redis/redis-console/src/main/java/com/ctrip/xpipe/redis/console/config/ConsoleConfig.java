@@ -55,6 +55,14 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getQuorum();
 
+	int getIsolateAfterRounds();
+
+	int getIsolateRecoverAfterRounds();
+
+	Boolean getDcIsolated();
+
+	String delegateDc();
+
 	int getRedisConfCheckIntervalMilli();
 
 	int getSentinelCheckIntervalMilli();
@@ -163,4 +171,7 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getDcMetaBuildConcurrent();
 
+	long getCheckIsolateInterval();
+
+	long getRegionDcsRefreshIntervalMilli();
 }

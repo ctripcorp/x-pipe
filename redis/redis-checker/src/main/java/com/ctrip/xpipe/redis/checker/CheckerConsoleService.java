@@ -6,8 +6,10 @@ import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.model.*;
-import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
+import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
+import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
+import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
+import com.ctrip.xpipe.redis.checker.model.RedisMsg;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.xml.sax.SAXException;
@@ -55,9 +57,9 @@ public interface CheckerConsoleService {
 
     Map<String, OuterClientService.ClusterInfo> loadCurrentDcOneWayClusterInfo(String console, String dc);
 
-    void bindShardSentinel(String console, String dc, String cluster, String shard, SentinelMeta sentinelMeta);
+    boolean dcIsolated(String console);
 
-    public class AlertMessage {
+    class AlertMessage {
         private AlertMessageEntity message;
         private Properties properties;
         private String eventOperator;

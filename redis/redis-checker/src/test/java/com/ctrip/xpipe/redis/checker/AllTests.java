@@ -21,7 +21,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.ClusterStatusAdjustCommandTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.InstanceHealthStatusCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.InstanceHealthStatusConsistenceInspectorTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.InstanceStatusAdjustCommandTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.DefaultOuterClientAggregatorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.TestAbstractHealthEventHandlerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.OuterClientServiceProcessorTest;
@@ -157,7 +156,6 @@ import org.junit.runners.Suite;
         OuterClientServiceProcessorTest.class,
         InstanceHealthStatusCollectorTest.class,
         InstanceHealthStatusConsistenceInspectorTest.class,
-        InstanceStatusAdjustCommandTest.class,
         ClusterStatusAdjustCommandTest.class,
         StabilityInspectorTest.class,
 

@@ -38,7 +38,7 @@ public abstract class AbstractMetaCache implements MetaCache {
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected static final String CURRENT_IDC = FoundationService.DEFAULT.getDataCenter();
+    public static final String CURRENT_IDC = FoundationService.DEFAULT.getDataCenter();
 
     protected Pair<XpipeMeta, XpipeMetaManager> meta;
 
@@ -798,6 +798,26 @@ public abstract class AbstractMetaCache implements MetaCache {
         if (activeDc == null || dcs == null || dcs.isEmpty()) return false;
         dcs = dcs.stream().map(String::toLowerCase).collect(Collectors.toList());
         return isCrossRegion(activeDc, currentDc) && dcs.contains(currentDc.toLowerCase());
+    }
+
+    @Override
+    public List<String> currentRegionDcs() {
+        if (meta == null)
+            throw new LoadConsoleMetaException("xpipe meta from console is null");
+
+        Map<String, DcMeta> dcs = meta.getKey().getDcs();
+        DcMeta targetDcMeta = dcs.get(currentDc);
+        if (null == targetDcMeta)
+            return Collections.emptyList();
+
+        String zone = targetDcMeta.getZone();
+        List<String> regionDcs = new ArrayList<>();
+        for (DcMeta dcMeta : dcs.values()) {
+            if (dcMeta.getZone().equalsIgnoreCase(zone)) {
+                regionDcs.add(dcMeta.getId());
+            }
+        }
+        return regionDcs;
     }
 
     @VisibleForTesting

@@ -23,11 +23,11 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestOperations;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 /**
  * @author shyin
@@ -61,17 +61,6 @@ public class CRedisService extends AbstractOuterClientService {
 		return "CRedis";
 	}
 
-	@Override
-	public void markInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
-		doMarkInstance(clusterShardHostPort, true);
-	}
-
-	@Override
-	public void markInstanceUpIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
-		doMarkInstanceIfNoModifyFor(clusterShardHostPort, true, noModifySeconds);
-	}
-
-	@Override
 	public boolean isInstanceUp(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
 
 		GetInstanceResult instance = getInstance(clusterShardHostPort);
@@ -83,120 +72,14 @@ public class CRedisService extends AbstractOuterClientService {
 	}
 
 	@Override
-	public Map<HostPort, Boolean> batchQueryInstanceStatus(String cluster, Set<HostPort> instances) throws OuterClientException {
-		CRedisGeneralResp<List<InstanceStatus>> credisResp = batchGetInstances(cluster, instances);
+	public Map<HostPort, OutClientInstanceStatus> batchQueryInstanceStatus(String cluster, Set<HostPort> instances) throws OuterClientException {
+		CRedisGeneralResp<List<OutClientInstanceStatus>> credisResp = batchGetInstances(cluster, instances);
 		if (!credisResp.isSuccess()) {
 			throw new IllegalStateException("[batchQueryInstanceStatus][" + cluster + "]" + credisResp.getMessage());
 		}
 
-		List<InstanceStatus> credisInstances = credisResp.getResult();
-		Map<HostPort, Boolean> result = new HashMap<>();
-		for (InstanceStatus credisInstance: credisInstances) {
-			HostPort instance = new HostPort(credisInstance.getIPAddress(), credisInstance.getPort());
-			if (instances.contains(instance)) {
-				result.put(instance, credisInstance.isCanRead());
-			}
-		}
-
-		return result;
-	}
-
-	@Override
-	public void markInstanceDown(ClusterShardHostPort clusterShardHostPort) throws OuterClientException {
-		doMarkInstance(clusterShardHostPort, false);
-	}
-
-	@Override
-	public void markInstanceDownIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, long noModifySeconds) throws OuterClientException {
-		doMarkInstanceIfNoModifyFor(clusterShardHostPort, false, noModifySeconds);
-	}
-
-	private void doMarkInstanceIfNoModifyFor(ClusterShardHostPort clusterShardHostPort, boolean state, long noModifySeconds) throws OuterClientException {
-
-		try {
-			catTransactionMonitor.logTransaction(TYPE, String.format("doMarkInstanceIfNoModifyFor-%s", clusterShardHostPort.getClusterName()), new Task() {
-				@Override
-				public void go() throws Exception {
-
-					logger.info("[doMarkInstanceIfNoModifyFor][begin]{},{},{}", clusterShardHostPort, state, noModifySeconds);
-					String address = CREDIS_SERVICE.SWITCH_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
-					String cluster = clusterShardHostPort.getClusterName();
-					HostPort hostPort = clusterShardHostPort.getHostPort();
-					String reqType = state ? "markInstanceUpIfNoModify" : "markInstanceDownIfNoModify";
-
-					MarkInstanceResponse response = doRequest(reqType, cluster, () ->
-							restOperations.postForObject(
-									address + "?clusterName={cluster}&ip={ip}&port={port}&canRead={canRead}&noModifySeconds={noModifySeconds}",
-									null, MarkInstanceResponse.class, cluster, hostPort.getHost(), hostPort.getPort(), state, noModifySeconds)
-					);
-					logger.info("[doMarkInstanceIfNoModifyFor][end]{},{},{},{}", clusterShardHostPort, state, noModifySeconds, response);
-					if(!response.isSuccess()){
-						throw new IllegalStateException(String.format("%s %s, response:%s", clusterShardHostPort, state, response));
-					}
-				}
-
-				@Override
-				public Map getData() {
-					return new HashMap<String, Object>() {{
-						put("cluster", clusterShardHostPort.getClusterName());
-						put("shard", clusterShardHostPort.getShardName());
-						put("hostport", clusterShardHostPort.getHostPort());
-						put("state", state);
-						put("noModifySeconds", noModifySeconds);
-					}};
-				}
-			});
-		} catch (Exception e) {
-			throw new OuterClientException("mark:" + clusterShardHostPort+ ":" + state, e);
-		}
-
-	}
-
-	private void doMarkInstance(ClusterShardHostPort clusterShardHostPort, boolean state) throws OuterClientException {
-
-		try {
-			catTransactionMonitor.logTransaction(TYPE, String.format("doMarkInstance-%s", clusterShardHostPort.getClusterName()), new Task() {
-                @Override
-                public void go() throws Exception {
-
-					logger.info("[doMarkInstance][begin]{},{}", clusterShardHostPort, state);
-					String address = CREDIS_SERVICE.SWITCH_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
-					String cluster = clusterShardHostPort.getClusterName();
-                    HostPort hostPort = clusterShardHostPort.getHostPort();
-                    String reqType = state ? "markInstanceUp" : "markInstanceDown";
-
-                    MarkInstanceResponse response = doRequest(reqType, cluster, () -> {
-								UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(address);
-								uriBuilder.queryParam("clusterName", cluster)
-										.queryParam("ip", hostPort.getHost())
-										.queryParam("port", hostPort.getPort())
-										.queryParam("canRead", state);
-								if (null != clusterShardHostPort.getActiveDc()) {
-									uriBuilder.queryParam("activeDc", clusterShardHostPort.getActiveDc());
-								}
-								return restOperations.postForObject(uriBuilder.toUriString(), null, MarkInstanceResponse.class);
-							}
-					);
-                    logger.info("[doMarkInstance][end]{},{},{}", clusterShardHostPort, state, response);
-                    if(!response.isSuccess()){
-                        throw new IllegalStateException(String.format("%s %s, response:%s", clusterShardHostPort, state, response));
-                    }
-				}
-
-				@Override
-				public Map getData() {
-					return new HashMap<String, Object>() {{
-						put("cluster", clusterShardHostPort.getClusterName());
-						put("shard", clusterShardHostPort.getShardName());
-						put("hostport", clusterShardHostPort.getHostPort());
-						put("state", state);
-					}};
-				}
-            });
-		} catch (Exception e) {
-			throw new OuterClientException("mark:" + clusterShardHostPort+ ":" + state, e);
-		}
-
+		List<OutClientInstanceStatus> credisInstances = credisResp.getResult();
+		return credisInstances.stream().collect(Collectors.toMap(outClientInstanceStatus -> new HostPort(outClientInstanceStatus.getIPAddress(),outClientInstanceStatus.getPort()),outClientInstanceStatus -> outClientInstanceStatus));
 	}
 
 	@Override
@@ -421,17 +304,17 @@ public class CRedisService extends AbstractOuterClientService {
 		}
 	}
 
-	private static final ParameterizedTypeReference<CRedisGeneralResp<List<InstanceStatus>>> batchInstancesRespType =
-			new ParameterizedTypeReference<CRedisGeneralResp<List<InstanceStatus>>>(){};
-	public CRedisGeneralResp<List<InstanceStatus>> batchGetInstances(String cluster, Set<HostPort> instances) throws OuterClientException {
+	private static final ParameterizedTypeReference<CRedisGeneralResp<List<OutClientInstanceStatus>>> batchInstancesRespType =
+			new ParameterizedTypeReference<CRedisGeneralResp<List<OutClientInstanceStatus>>>(){};
+	public CRedisGeneralResp<List<OutClientInstanceStatus>> batchGetInstances(String cluster, Set<HostPort> instances) throws OuterClientException {
 
 		try {
-			return catTransactionMonitor.logTransaction(TYPE, "batchGetInstances", new Callable<CRedisGeneralResp<List<InstanceStatus>>>() {
+			return catTransactionMonitor.logTransaction(TYPE, "batchGetInstances", new Callable<CRedisGeneralResp<List<OutClientInstanceStatus>>>() {
 				@Override
-				public CRedisGeneralResp<List<InstanceStatus>> call() throws Exception {
+				public CRedisGeneralResp<List<OutClientInstanceStatus>> call() throws Exception {
 
 					String address = CREDIS_SERVICE.BATCH_QUERY_STATUS.getRealPath(credisConfig.getCredisServiceAddress());
-					ResponseEntity<CRedisGeneralResp<List<InstanceStatus>>> resp = doRequest("batchGetInstances", cluster,
+					ResponseEntity<CRedisGeneralResp<List<OutClientInstanceStatus>>> resp = doRequest("batchGetInstances", cluster,
 							() -> {
 								HttpEntity<Set<HostPort>> httpEntity = new HttpEntity<>(instances);
 						return restOperations.exchange(address, HttpMethod.POST, httpEntity, batchInstancesRespType);
@@ -582,13 +465,13 @@ public class CRedisService extends AbstractOuterClientService {
 
 		private String message;
 
-		private InstanceStatus result;
+		private OutClientInstanceStatus result;
 
-		public InstanceStatus getResult() {
+		public OutClientInstanceStatus getResult() {
 			return result;
 		}
 
-		public void setResult(InstanceStatus result) {
+		public void setResult(OutClientInstanceStatus result) {
 			this.result = result;
 		}
 		public boolean isSuccess() {
@@ -612,53 +495,5 @@ public class CRedisService extends AbstractOuterClientService {
 			return String.format("success:%s, message:%s, result:%s", success, message, result);
 		}
 	}
-
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	public static class InstanceStatus{
-
-		private boolean canRead;
-		private String  env;
-		private String IPAddress;
-		private int port;
-
-		public int getPort() {
-			return port;
-		}
-
-		public void setPort(int port) {
-			this.port = port;
-		}
-
-		public String getIPAddress() {
-
-			return IPAddress;
-		}
-
-		public void setIPAddress(String IPAddress) {
-			this.IPAddress = IPAddress;
-		}
-
-		public String getEnv() {
-			return env;
-		}
-
-		public void setEnv(String env) {
-			this.env = env;
-		}
-
-		public boolean isCanRead() {
-			return canRead;
-		}
-
-		public void setCanRead(boolean canRead) {
-			this.canRead = canRead;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("canRead:%s, env:%s, %s:%d", canRead, env, IPAddress, port);
-		}
-	}
-
 
 }

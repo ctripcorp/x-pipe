@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.checker.config.impl;
 
 import com.ctrip.xpipe.api.config.ConfigProvider;
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -61,6 +60,17 @@ public class ConsoleConfigBean extends AbstractConfigBean {
     private static final String KEY_KEEPERCONTAINER_SYNC_LIMIT_ON = "keepercontainer.sync.limit.on";
 
     private static final String KEY_DC_META_BUILD_CONCURRENT = "console.dcmeta.build.concurrent";
+
+    private static final String KEY_CONSOLE_ISOLATE_AFTER_ROUNDS = "console.isolate.after.rounds";
+
+    private static final String KEY_CONSOLE_ISOLATE_RECOVER_AFTER_ROUNDS = "console.isolate.recover.after.rounds";
+
+    private static final String KEY_CONSOLE_DC_ISOLATE = "console.dc.isolate";
+
+    private static final String KEY_CONSOLE_DELEGATE_DC = "console.delegate.dc";
+
+    public static final String KEY_CONSOLE_CHECK_ISOLATE_INTERVAL_MILLI = "console.check.isolate.interval.milli";
+    public static final String KEY_CONSOLE_REGION_DCS_REFRESH_INTERVAL_MILLI = "console.region.dcs.refresh.interval.milli";
 
     private FoundationService foundationService;
 
@@ -173,4 +183,27 @@ public class ConsoleConfigBean extends AbstractConfigBean {
         return getIntProperty(KEY_DC_META_BUILD_CONCURRENT, 3);
     }
 
+    public int getIsolateAfterRounds() {
+        return getIntProperty(KEY_CONSOLE_ISOLATE_AFTER_ROUNDS, 6);
+    }
+
+    public int getIsolateRecoverAfterRounds() {
+        return getIntProperty(KEY_CONSOLE_ISOLATE_RECOVER_AFTER_ROUNDS, 1);
+    }
+
+    public Boolean getDcIsolated() {
+        return getBooleanProperty(KEY_CONSOLE_DC_ISOLATE, null);
+    }
+
+    public String delegateDc() {
+        return getProperty(KEY_CONSOLE_DELEGATE_DC, "");
+    }
+
+    public long getIsolateCheckIntervalMilli() {
+        return getLongProperty(KEY_CONSOLE_CHECK_ISOLATE_INTERVAL_MILLI, 10 * 1000L);
+    }
+
+    public long getRegionDcsRefreshIntervalMilli() {
+        return getLongProperty(KEY_CONSOLE_REGION_DCS_REFRESH_INTERVAL_MILLI, 60 * 1000L);
+    }
 }

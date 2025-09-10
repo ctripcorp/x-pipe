@@ -10,9 +10,11 @@ import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.model.*;
+import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
+import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
+import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
+import com.ctrip.xpipe.redis.checker.model.RedisMsg;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
-import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
@@ -204,7 +206,11 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     }
 
     @Override
-    public void bindShardSentinel(String console, String dc, String cluster, String shard, SentinelMeta sentinelMeta) {
-        restTemplate.postForObject(console + ConsoleCheckerPath.PATH_BIND_SHARD_SENTINEL+"/"+dc+"/"+cluster+"/"+shard, sentinelMeta, RetMessage.class);
+    public boolean dcIsolated(String console) {
+        Boolean result = restTemplate.getForObject(console + ConsoleCheckerPath.PATH_GET_DC_ISOLATED, Boolean.class);
+        if (result == null) {
+            throw new XpipeRuntimeException("result of dcIsolated is null");
+        }
+        return result;
     }
 }

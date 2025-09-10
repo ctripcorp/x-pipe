@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.migration.OuterClientException;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.migration.OuterClientService.HostPortDcStatus;
@@ -17,16 +18,14 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -52,7 +51,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
 
     private OuterClientService outerClientService = OuterClientService.DEFAULT;
     private static final Logger logger =  LoggerFactory.getLogger(DefaultAggregatorPullService.class);
-
+    private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
     private Executor executors;
 
     @PostConstruct
@@ -100,6 +99,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
 
     @Override
     public void doMarkInstances(String clusterName, String activeDc, Set<HostPortDcStatus> instances) throws OuterClientException {
+        setSuspectIfNeeded(instances);
         alertMarkInstance(clusterName, instances);
         Map<String, Integer> dcInstancesCnt = metaCache.getClusterCntMap(clusterName);
         MarkInstanceRequest markInstanceRequest = new MarkInstanceRequest(instances, clusterName, activeDc, dcInstancesCnt);
@@ -108,6 +108,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
 
     @Override
     public void doMarkInstancesIfNoModifyFor(String clusterName, String activeDc, Set<HostPortDcStatus> instances, long seconds) throws OuterClientException {
+        setSuspectIfNeeded(instances);
         alertMarkInstance(clusterName, instances);
         Map<String, Integer> dcInstancesCnt = metaCache.getClusterCntMap(clusterName);
         MarkInstanceRequest markInstanceRequest = new MarkInstanceRequest(instances, clusterName, activeDc, dcInstancesCnt, (int) seconds);
@@ -116,31 +117,27 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
 
     @Override
     public String dcInstancesAllUp(String clusterName, String activeDc, Set<HostPortDcStatus> instancesToMarkup) {
-        Set<String> relatedDcs = new HashSet<>();
-        instancesToMarkup.forEach(hostPortDcStatus -> relatedDcs.add(metaCache.getDc(new HostPort(hostPortDcStatus.getHost(), hostPortDcStatus.getPort()))));
+        Map<String, List<HostPortDcStatus>> relatedDcs = new HashMap<>();
+        instancesToMarkup.forEach(hostPortDcStatus -> {
+            List<HostPortDcStatus> dcInstancesStatus = relatedDcs.computeIfAbsent(metaCache.getDc(new HostPort(hostPortDcStatus.getHost(), hostPortDcStatus.getPort())), s -> Lists.newArrayList());
+            dcInstancesStatus.add(hostPortDcStatus);
+        });
 
         Map<String, List<RedisMeta>> dcInstances = metaCache.getAllInstance(clusterName);
-        Map<HostPort, HealthStatusDesc> allStatus;
-        if (crossRegion(relatedDcs, activeDc)) {
-            allStatus = defaultPsubPingActionCollector.getAllHealthStatus();
-        } else {
-            allStatus = defaultDelayPingActionCollector.getAllHealthStatus();
-        }
 
-        for (String dc : relatedDcs) {
-            List<HostPort> allDcInstances = dcInstances.get(dc).stream().map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort())).collect(Collectors.toList());
+        for (String relatedDc : relatedDcs.keySet()) {
+            Map<HostPort, HealthStatusDesc> allStatus;
+            if (currentDc.equalsIgnoreCase(activeDc)) {
+                allStatus = defaultDelayPingActionCollector.getAllHealthStatus();
+            } else {
+                allStatus = defaultPsubPingActionCollector.getAllHealthStatus();
+            }
+            List<HostPort> allDcInstances = dcInstances.get(relatedDc).stream().map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort())).collect(Collectors.toList());
             if (allInstancesUp(allDcInstances, allStatus))
-                return dc;
+                return relatedDc;
         }
-        return null;
-    }
 
-    boolean crossRegion(Set<String> relatedDcs, String activeDc) {
-        for (String relatedDc : relatedDcs) {
-            if (metaCache.isCrossRegion(activeDc, relatedDc))
-                return true;
-        }
-        return false;
+        return null;
     }
 
     boolean allInstancesUp(List<HostPort> instances, Map<HostPort, HealthStatusDesc> allStatus) {
@@ -161,6 +158,9 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
 
         try {
             for (HostPortDcStatus instance : instances) {
+                if (instance.isSuspect())
+                    continue;
+
                 if (instance.isCanRead()) {
                     alertManager.alert(clusterName, null,
                             new HostPort(instance.getHost(), instance.getPort()), ALERT_TYPE.MARK_INSTANCE_UP, "Mark Instance Up");
@@ -172,6 +172,14 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
         } catch (Throwable th) {
             logger.info("[alertMarkInstance][{}] fail", clusterName, th);
         }
+    }
+
+    private void setSuspectIfNeeded(Set<HostPortDcStatus> instances) {
+        instances.forEach(instance -> {
+            if (!instance.isCanRead() && metaCache.isCrossRegion(currentDc, instance.getDc())) {
+                instance.setSuspect(true);
+            }
+        });
     }
 
     protected class QueryXPipeInstanceStatusCmd extends AbstractCommand<XPipeInstanceHealthHolder> {
@@ -217,7 +225,17 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
 
         @Override
         protected void doExecute() throws Throwable {
-            future().setSuccess(outerClientService.batchQueryInstanceStatus(cluster, instances));
+            Map<HostPort, OuterClientService.OutClientInstanceStatus> outClientInstanceStatus = outerClientService.batchQueryInstanceStatus(cluster, instances);
+            Map<HostPort, Boolean> localInstanceStatus = new HashMap<>();
+            for (Map.Entry<HostPort, OuterClientService.OutClientInstanceStatus> entry : outClientInstanceStatus.entrySet()) {
+                OuterClientService.OutClientInstanceStatus outStatus = entry.getValue();
+                if (outStatus.isSuspect() && metaCache.isCrossRegion(currentDc, outStatus.getEnv())) {
+                    localInstanceStatus.put(entry.getKey(), false);
+                } else {
+                    localInstanceStatus.put(entry.getKey(), outStatus.isCanRead());
+                }
+            }
+            future().setSuccess(localInstanceStatus);
         }
 
         @Override
