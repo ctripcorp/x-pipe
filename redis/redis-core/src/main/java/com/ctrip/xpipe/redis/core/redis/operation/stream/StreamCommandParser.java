@@ -38,6 +38,19 @@ public class StreamCommandParser {
     }
 
     public void doRead(ByteBuf byteBuf) throws IOException {
+        try {
+            tryDoRead(byteBuf);
+        } catch (Exception e) {
+            log.error("[doRead]", e);
+            this.relaseRemainBuf();
+            this.protocolParser.reset();
+            byteBuf.skipBytes(byteBuf.readableBytes());
+            throw e;
+        }
+    }
+
+
+    public void tryDoRead(ByteBuf byteBuf) throws IOException {
 
         if (opParser == null) {
             throw new XpipeRuntimeException("unlikely: opParser is null");
