@@ -40,7 +40,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -101,10 +101,12 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
     @Before
     public void beforeSentinelHelloActionDowngradeTest() throws Exception {
         instance = newRandomClusterHealthCheckInstance(activeDc, ClusterType.ONE_WAY);
-        ((DefaultClusterHealthCheckInstance)instance).setHealthCheckConfig(healthCheckConfig);
-        when(healthCheckConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
-        checkAction = new SentinelHelloCheckAction(scheduled, instance, executors, config, persistence,metaCache,instanceManager);
-        downgradeController = new OneWaySentinelCheckAggregationCollector(metaCache, sentinelHelloCollector, clusterName, shardName, checkerConfig);
+        ((DefaultClusterHealthCheckInstance) instance).setHealthCheckConfig(healthCheckConfig);
+        when(healthCheckConfig.supportSentinelHealthCheck(any(), any())).thenReturn(true);
+        checkAction = new SentinelHelloCheckAction(scheduled, instance, executors, config, persistence, metaCache,
+                instanceManager);
+        downgradeController = new OneWaySentinelCheckAggregationCollector(metaCache, sentinelHelloCollector,
+                clusterName, shardName, checkerConfig);
         downgradeController = Mockito.spy(downgradeController);
         Mockito.when(healthCheckConfig.getSentinelCheckIntervalMilli()).thenReturn(sentinelCheckInterval);
         checkActionController.addCheckCollectorController(clusterName, shardName, downgradeController);
@@ -117,25 +119,37 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
         when(config.isSentinelAutoProcess()).thenReturn(true);
         when(config.shouldSentinelCheck(Mockito.anyString())).thenReturn(true);
         when(persistence.isClusterOnMigration(anyString())).thenReturn(false);
-        when(instanceManager.findRedisHealthCheckInstance(new HostPort(activeDcMasterMeta.getIp(),activeDcMasterMeta.getPort()))).thenReturn(activeDcMaster.getRedisCheckInstance());
-        when(instanceManager.findRedisHealthCheckInstance(new HostPort(activeDcSlaveMeta.getIp(),activeDcSlaveMeta.getPort()))).thenReturn(activeDcSlave.getRedisCheckInstance());
-        when(instanceManager.findRedisHealthCheckInstance(new HostPort(backupDcSlave1Meta.getIp(),backupDcSlave1Meta.getPort()))).thenReturn(backupDcSlave1.getRedisCheckInstance());
-        when(instanceManager.findRedisHealthCheckInstance(new HostPort(backupDcSlave2Meta.getIp(),backupDcSlave2Meta.getPort()))).thenReturn(backupDcSlave2.getRedisCheckInstance());
+        when(instanceManager
+                .findRedisHealthCheckInstance(new HostPort(activeDcMasterMeta.getIp(), activeDcMasterMeta.getPort())))
+                .thenReturn(activeDcMaster.getRedisCheckInstance());
+        when(instanceManager
+                .findRedisHealthCheckInstance(new HostPort(activeDcSlaveMeta.getIp(), activeDcSlaveMeta.getPort())))
+                .thenReturn(activeDcSlave.getRedisCheckInstance());
+        when(instanceManager
+                .findRedisHealthCheckInstance(new HostPort(backupDcSlave1Meta.getIp(), backupDcSlave1Meta.getPort())))
+                .thenReturn(backupDcSlave1.getRedisCheckInstance());
+        when(instanceManager
+                .findRedisHealthCheckInstance(new HostPort(backupDcSlave2Meta.getIp(), backupDcSlave2Meta.getPort())))
+                .thenReturn(backupDcSlave2.getRedisCheckInstance());
     }
 
     @After
     public void afterSentinelHelloActionDowngradeTest() throws Exception {
-        if (null != activeDcMaster.redisServer) activeDcMaster.redisServer.stop();
-        if (null != activeDcSlave.redisServer) activeDcSlave.redisServer.stop();
-        if (null != backupDcSlave1.redisServer) backupDcSlave1.redisServer.stop();
-        if (null != backupDcSlave2.redisServer) backupDcSlave2.redisServer.stop();
+        if (null != activeDcMaster.redisServer)
+            activeDcMaster.redisServer.stop();
+        if (null != activeDcSlave.redisServer)
+            activeDcSlave.redisServer.stop();
+        if (null != backupDcSlave1.redisServer)
+            backupDcSlave1.redisServer.stop();
+        if (null != backupDcSlave2.redisServer)
+            backupDcSlave2.redisServer.stop();
     }
 
     @Test
     public void allUpTest() {
         when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
-        //make command do not easily timeout on github
+        // make command do not easily timeout on github
         allActionDoTask();
 
         assertServerCalled(false, false, true, true);
@@ -193,7 +207,7 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
         setServerErrResp(false, false, true, true);
         allActionDoTask();
 
-        //unsubscribe if subscribe failed
+        // unsubscribe if subscribe failed
         Assert.assertEquals(0, backupDcSlave1.redisServer.getConnected());
         Assert.assertEquals(0, backupDcSlave2.redisServer.getConnected());
         Assert.assertEquals(0, activeDcMaster.redisServer.getConnected());
@@ -206,7 +220,7 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
         resetCalled();
         allActionDoTask();
 
-        //downgrade active dc slave duo to sub failed, both subscribe dr slaves
+        // downgrade active dc slave duo to sub failed, both subscribe dr slaves
         Assert.assertEquals(0, backupDcSlave1.redisServer.getConnected());
         Assert.assertEquals(0, backupDcSlave2.redisServer.getConnected());
         Assert.assertEquals(0, activeDcMaster.redisServer.getConnected());
@@ -220,7 +234,7 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
         resetCalled();
         allActionDoTask();
 
-        //not downgrade
+        // not downgrade
         Assert.assertEquals(1, backupDcSlave1.redisServer.getConnected());
         Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
         Assert.assertEquals(0, activeDcMaster.redisServer.getConnected());
@@ -234,7 +248,7 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
         resetCalled();
         allActionDoTask();
 
-        //unsubscribe master dc slave when not downgrade
+        // unsubscribe master dc slave when not downgrade
         Assert.assertEquals(1, backupDcSlave1.redisServer.getConnected());
         Assert.assertEquals(1, backupDcSlave2.redisServer.getConnected());
         Assert.assertEquals(0, activeDcMaster.redisServer.getConnected());
@@ -265,7 +279,6 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
         setServerHang(false, false, false, false);
         resetCalled();
         allActionDoTask();
-
 
         assertServerCalled(false, false, true, true);
         verify(downgradeController, times(7)).onAction(Mockito.any());
@@ -323,7 +336,7 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
     }
 
     @Test
-    public void lessThenHalfDowngradeTest() throws Exception{
+    public void lessThenHalfDowngradeTest() throws Exception {
         when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
 
@@ -346,7 +359,7 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
     }
 
     @Test
-    public void lessThenHalfNotDowngradeTest() throws Exception{
+    public void lessThenHalfNotDowngradeTest() throws Exception {
         when(checkerConfig.sentinelCheckDowngradeStrategy()).thenReturn("lessThanHalf");
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig());
 
@@ -452,28 +465,31 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
     private void allActionDoTask() {
         sleep(sentinelCheckInterval); // wait for check interval
         allActionDoTaskWithoutWait();
-        sleep( sentinelCollectInterval+100); // wait for hello collect
+        sleep(sentinelCollectInterval + 100); // wait for hello collect
     }
 
     private void allActionDoTaskWithoutWait() {
         checkAction.new ScheduledHealthCheckTask().run();
     }
 
-    private void setServerHang(boolean activeDcMasterHang, boolean activeDcSlaveHang, boolean backupDcSlave1Hang, boolean backupDcSlave2Hang) {
+    private void setServerHang(boolean activeDcMasterHang, boolean activeDcSlaveHang, boolean backupDcSlave1Hang,
+            boolean backupDcSlave2Hang) {
         activeDcMaster.serverHang = activeDcMasterHang;
         activeDcSlave.serverHang = activeDcSlaveHang;
         backupDcSlave1.serverHang = backupDcSlave1Hang;
         backupDcSlave2.serverHang = backupDcSlave2Hang;
     }
 
-    private void setServerErrResp(boolean activeDcMasterErrResp, boolean activeDcSlaveErrResp, boolean backupDcSlave1ErrResp, boolean backupDcSlave2ErrResp) {
+    private void setServerErrResp(boolean activeDcMasterErrResp, boolean activeDcSlaveErrResp,
+            boolean backupDcSlave1ErrResp, boolean backupDcSlave2ErrResp) {
         activeDcMaster.errorResp = activeDcMasterErrResp;
         activeDcSlave.errorResp = activeDcSlaveErrResp;
         backupDcSlave1.errorResp = backupDcSlave1ErrResp;
         backupDcSlave2.errorResp = backupDcSlave2ErrResp;
     }
 
-    private void assertServerCalled(boolean activeDcMasterCalled, boolean activeDcSlaveCalled, boolean backupDcSlave1Called, boolean backDcSlave2Called) {
+    private void assertServerCalled(boolean activeDcMasterCalled, boolean activeDcSlaveCalled,
+            boolean backupDcSlave1Called, boolean backDcSlave2Called) {
         Assert.assertEquals(activeDcMasterCalled, activeDcMaster.called);
         Assert.assertEquals(activeDcSlaveCalled, activeDcSlave.called);
         Assert.assertEquals(backupDcSlave1Called, backupDcSlave1.called);
@@ -482,8 +498,9 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
 
     private String buildSentinelHello(int sentinelNum) {
         StringBuilder sb = new StringBuilder(SentinelHelloCheckActionTest.SUBSCRIBE_HEADER);
-        for(int i = 0; i < sentinelNum; i++) {
-            sb.append(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5000 + i,activeDcMaster.redisServer.getPort()));
+        for (int i = 0; i < sentinelNum; i++) {
+            sb.append(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5000 + i,
+                    activeDcMaster.redisServer.getPort()));
         }
         return sb.toString();
     }
@@ -509,11 +526,11 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
 
         private void initMeta(String currentDc, String activeDc, boolean isMaster) throws Exception {
             checkInstance = newRandomRedisHealthCheckInstance(currentDc, activeDc, redisServer.getPort());
-            ((DefaultRedisHealthCheckInstance)checkInstance).setHealthCheckConfig(healthCheckConfig);
+            ((DefaultRedisHealthCheckInstance) checkInstance).setHealthCheckConfig(healthCheckConfig);
             checkInstance.getCheckInfo().isMaster(isMaster);
         }
 
-        public RedisHealthCheckInstance getRedisCheckInstance(){
+        public RedisHealthCheckInstance getRedisCheckInstance() {
             return checkInstance;
         }
 
@@ -539,11 +556,13 @@ public class OneWaySentinelHelloCheckControllerTest extends AbstractCheckerTest 
                                     response = buildSentinelHello(sentinelNum);
                                 }
 
-                                if (null != response) ous.write(response.getBytes());
+                                if (null != response)
+                                    ous.write(response.getBytes());
 
                                 while (!(errorResp || serverHang)) {
-                                    ous.write(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5001, activeDcMaster.redisServer.getPort()).getBytes());
-//                                    ous.write(buildSentinelHello().getBytes());
+                                    ous.write(String.format(SentinelHelloCheckActionTest.SENTINEL_HELLO_TEMPLATE, 5001,
+                                            activeDcMaster.redisServer.getPort()).getBytes());
+                                    // ous.write(buildSentinelHello().getBytes());
                                     sleep(10);
                                 }
                             } catch (Exception e) {

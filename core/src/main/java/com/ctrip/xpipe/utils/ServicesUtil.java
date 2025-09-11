@@ -12,7 +12,6 @@ import com.ctrip.xpipe.api.organization.Organization;
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfo;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
-import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import com.ctrip.xpipe.lifecycle.OrderedComparator;
 import com.ctrip.xpipe.metric.MetricProxy;

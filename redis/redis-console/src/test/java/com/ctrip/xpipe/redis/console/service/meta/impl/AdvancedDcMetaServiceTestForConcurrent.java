@@ -7,11 +7,13 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.comparator.AbstractMetaComparator;
 import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.codehaus.plexus.PlexusContainer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,6 +51,9 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
 
     @Autowired
     private RedisService redisService;
+
+    @Autowired
+    private PlexusContainer plexusContainer;
 
     @Test
     public void testGetDcMeta() throws Exception {
@@ -373,7 +378,7 @@ public class AdvancedDcMetaServiceTestForConcurrent extends AbstractConsoleInteg
             }
         }
 
-        KeepercontainerTblDao dao = ContainerLoader.getDefaultContainer().lookup(KeepercontainerTblDao.class);
+        KeepercontainerTblDao dao = plexusContainer.lookup(KeepercontainerTblDao.class);
         for(DcMeta dcMeta : getXpipeMeta().getDcs().values()) {
             dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
                 try {

@@ -12,13 +12,13 @@ import org.mockito.Mock;
 
 import java.net.InetSocketAddress;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  * @author chen.zhu
- * <p>
- * May 15, 2018
+ *         <p>
+ *         May 15, 2018
  */
 public class DefaultTunnelManagerTest extends AbstractRedisProxyServerTest {
 

@@ -9,7 +9,7 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import javax.servlet.FilterChain;
+import jakarta.servlet.FilterChain;
 
 import static com.ctrip.xpipe.spring.DomainValidateFilter.HTTP_REQUEST_HEADER_HOST;
 import static com.ctrip.xpipe.spring.DomainValidateFilter.START_CHECK_URI;

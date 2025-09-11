@@ -19,11 +19,12 @@ import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
-import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -35,9 +36,6 @@ import java.util.stream.Collectors;
 public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> implements ApplierService {
 
     @Autowired
-    private DcClusterShardService dcClusterShardService;
-
-    @Autowired
     private AppliercontainerService appliercontainerService;
 
     @Autowired
@@ -47,6 +45,7 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
     private ConsoleConfig consoleConfig;
 
     @Autowired
+    @Lazy
     private ClusterMetaModifiedNotifier notifier;
 
     @Autowired
@@ -62,6 +61,7 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
     private RedisService redisService;
 
     @Autowired
+    @Lazy
     private ReplDirectionService replDirectionService;
 
     @Autowired

@@ -13,11 +13,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 
 /**
  * @author lishanglin
- * date 2021/6/24
+ *         date 2021/6/24
  */
 @RunWith(MockitoJUnitRunner.class)
 public class ClusterCheckInterceptorTest extends AbstractConsoleTest {
@@ -45,7 +45,8 @@ public class ClusterCheckInterceptorTest extends AbstractConsoleTest {
     @Test
     public void testFindClusterTypeCacheMiss() {
         Mockito.when(metaCache.getClusterType(anyString())).thenThrow(new IllegalStateException("unfound cluster"));
-        Mockito.when(clusterService.find("cluster1")).thenReturn(new ClusterTbl().setClusterType(ClusterType.ONE_WAY.name()));
+        Mockito.when(clusterService.find("cluster1"))
+                .thenReturn(new ClusterTbl().setClusterType(ClusterType.ONE_WAY.name()));
         Assert.assertEquals(ClusterType.ONE_WAY, interceptor.tryParseClusterType("cluster1"));
     }
 

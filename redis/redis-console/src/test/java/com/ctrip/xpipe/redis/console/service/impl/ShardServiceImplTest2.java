@@ -21,15 +21,14 @@ import org.unidal.dal.jdbc.DalException;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-
 /**
  * @author chen.zhu
- * <p>
- * Jan 29, 2018
+ *         <p>
+ *         Jan 29, 2018
  */
 public class ShardServiceImplTest2 {
 
@@ -53,9 +52,11 @@ public class ShardServiceImplTest2 {
         MockitoAnnotations.initMocks(this);
     }
 
-    /**==========================================================================
-    * no monitor name is posted
-     ==========================================================================* */
+    /**
+     * ==========================================================================
+     * no monitor name is posted
+     * ==========================================================================*
+     */
     // monitor name exist, no shard exist
     @Test
     public void findOrCreateShardIfNotExist1() throws Exception {
@@ -66,7 +67,8 @@ public class ShardServiceImplTest2 {
         when(shardDao.queryAllShardMonitorNames()).thenReturn(Sets.newHashSet("shard1"));
         when(shardDao.insertShard(cluster, proto)).thenReturn(proto);
 
-//        ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(cluster, proto, Maps.newHashMap());
+        // ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(cluster, proto,
+        // Maps.newHashMap());
 
         try {
             ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(cluster, proto, anyList(), Maps.newHashMap());
@@ -109,10 +111,11 @@ public class ShardServiceImplTest2 {
         Assert.assertTrue(expected == shardTbl);
     }
 
-
-    /**==========================================================================
+    /**
+     * ==========================================================================
      * monitor name is posted
-     ==========================================================================* */
+     * ==========================================================================*
+     */
     // shard exist
     @Test
     public void findOrCreateShardIfNotExist5() throws Exception {
@@ -130,7 +133,6 @@ public class ShardServiceImplTest2 {
 
         Assert.assertTrue(expected == shardTbl);
     }
-
 
     // shard exist with diff monitor name
     @Test(expected = java.lang.IllegalArgumentException.class)
@@ -177,7 +179,8 @@ public class ShardServiceImplTest2 {
     public void findOrCreateSHardIfNotExistWithCreateDcClusterShard() throws DalException {
         String cluster = "cluster-test", shard = "shard1";
         // TODO: 2022/10/10 remove hetero
-//        ClusterTbl clusterTbl = new ClusterTbl().setClusterName(cluster).setClusterType(ClusterType.HETERO.toString());
+        // ClusterTbl clusterTbl = new
+        // ClusterTbl().setClusterName(cluster).setClusterType(ClusterType.HETERO.toString());
         ClusterTbl clusterTbl = new ClusterTbl().setClusterName(cluster).setClusterType(ClusterType.ONE_WAY.toString());
         ShardTbl proto = new ShardTbl().setShardName(shard).setSetinelMonitorName(shard);
 
@@ -185,7 +188,8 @@ public class ShardServiceImplTest2 {
         when(consoleConfig.supportSentinelHealthCheck(any(), anyString())).thenReturn(true);
         when(shardDao.insertShard(cluster, proto)).thenReturn(proto);
 
-        shardService.findOrCreateShardIfNotExist(cluster, proto, Lists.newArrayList(new DcClusterTbl()), Maps.newHashMap());
+        shardService.findOrCreateShardIfNotExist(cluster, proto, Lists.newArrayList(new DcClusterTbl()),
+                Maps.newHashMap());
         verify(dcClusterShardService).insertBatch(anyList());
     }
 }

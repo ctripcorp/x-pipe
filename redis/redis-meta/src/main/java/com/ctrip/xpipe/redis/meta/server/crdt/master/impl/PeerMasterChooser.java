@@ -4,17 +4,16 @@ import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.MasterChooseCommandFactory;
-import com.ctrip.xpipe.redis.meta.server.crdt.master.command.RedundantMasterClearCommand;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.MasterChooser;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class PeerMasterChooser extends CurrentMasterChooser implements MasterChooser {
 

@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthM
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.LeveledEmbededSet;
-import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.OsUtils;

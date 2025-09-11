@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.service.console;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.SourceMeta;
 import com.ctrip.xpipe.retry.RetryPolicyFactories;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import okhttp3.mockwebserver.MockResponse;
@@ -10,12 +13,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.web.client.RestOperations;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author ayq

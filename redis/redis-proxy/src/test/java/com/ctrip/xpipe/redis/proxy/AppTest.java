@@ -4,7 +4,6 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.proxy.echoserver.AdvancedEchoClient;
 import com.ctrip.xpipe.redis.proxy.echoserver.EchoServer;
 import com.ctrip.xpipe.redis.proxy.integrate.AbstractProxyIntegrationTest;
-import com.ctrip.xpipe.redis.proxy.monitor.stats.impl.DefaultPingStatsManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.dianping.cat.Cat;
 import io.netty.util.ResourceLeakDetector;

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.migration.cmd.beacon;
 
-import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;

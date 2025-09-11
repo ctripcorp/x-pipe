@@ -14,14 +14,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.util.List;
 
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu
- * <p>
- * Feb 11, 2018
+ *         <p>
+ *         Feb 11, 2018
  */
 public class ClusterDeleteEventFactoryTest extends AbstractConsoleIntegrationTest {
 
@@ -35,11 +35,12 @@ public class ClusterDeleteEventFactoryTest extends AbstractConsoleIntegrationTes
     public void createClusterEvent() throws Exception {
 
         List<ClusterTbl> clusters = clusterService.findAllClustersWithOrgInfo();
-        ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusters.get(0).getClusterName(), clusters.get(0));
+        ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusters.get(0).getClusterName(),
+                clusters.get(0));
 
         Assert.assertTrue(clusterEvent instanceof ClusterDeleteEvent);
 
-        for(ShardEvent shardEvent : clusterEvent.getShardEvents()) {
+        for (ShardEvent shardEvent : clusterEvent.getShardEvents()) {
             Assert.assertTrue(shardEvent instanceof ShardDeleteEvent);
             Assert.assertEquals(clusterEvent.getClusterName(), shardEvent.getClusterName());
         }
@@ -51,7 +52,8 @@ public class ClusterDeleteEventFactoryTest extends AbstractConsoleIntegrationTes
         MetaCache metaCache = mock(MetaCache.class);
         clusterDeleteEventFactory.setMetaCache(metaCache);
         when(metaCache.getSentinelMonitorName(anyString(), anyString())).thenThrow(new RuntimeException());
-        ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusters.get(0).getClusterName(), clusters.get(0));
+        ClusterEvent clusterEvent = clusterDeleteEventFactory.createClusterEvent(clusters.get(0).getClusterName(),
+                clusters.get(0));
 
     }
 

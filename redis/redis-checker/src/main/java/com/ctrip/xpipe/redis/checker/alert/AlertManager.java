@@ -2,8 +2,6 @@ package com.ctrip.xpipe.redis.checker.alert;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.metric.MetricData;
-import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.alert.manager.NotificationManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
@@ -11,13 +9,13 @@ import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;

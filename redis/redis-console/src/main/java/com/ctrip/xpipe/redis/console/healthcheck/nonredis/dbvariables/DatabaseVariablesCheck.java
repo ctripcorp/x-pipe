@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables;
 import com.ctrip.xpipe.api.lifecycle.Disposable;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.endpoint.HostPort;
+import org.codehaus.plexus.PlexusContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.dal.jdbc.datasource.DataSource;
@@ -10,7 +11,10 @@ import org.unidal.dal.jdbc.datasource.DataSourceDescriptor;
 import org.unidal.dal.jdbc.datasource.JdbcDataSourceDescriptor;
 import org.unidal.lookup.ContainerLoader;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,6 +31,12 @@ public class DatabaseVariablesCheck implements Releasable, VariableChecker {
     List<VariableChecker> checkers = new ArrayList<>();
 
     List<DataSource> instanceDataSources = new ArrayList<>();
+
+    private PlexusContainer plexusContainer;
+
+    public void setPlexusContainer(PlexusContainer plexusContainer) {
+        this.plexusContainer = plexusContainer;
+    }
 
     public void check(DataSource dataSource) {
         if (null == this.checkId) init(dataSource);
@@ -84,7 +94,7 @@ public class DatabaseVariablesCheck implements Releasable, VariableChecker {
     private DataSource makeDataSource(DataSourceDescriptor descriptor) {
         DataSource dataSource = null;
         try {
-            dataSource = ContainerLoader.getDefaultContainer().lookup(DataSource.class, descriptor.getType());
+            dataSource = plexusContainer.lookup(DataSource.class, descriptor.getType());
             dataSource.initialize(descriptor);
         } catch (Exception e) {
             logger.error("getDatasource type {} url {} fail",

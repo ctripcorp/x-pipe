@@ -12,10 +12,10 @@ import com.ctrip.xpipe.redis.checker.alert.manager.SenderManager;
 import com.ctrip.xpipe.redis.checker.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.redis.checker.alert.sender.AbstractSender;
 import com.ctrip.xpipe.tuple.Pair;
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.Resource;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;

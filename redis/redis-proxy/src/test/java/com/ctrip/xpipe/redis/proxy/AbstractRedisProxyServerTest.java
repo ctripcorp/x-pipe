@@ -48,13 +48,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.proxy.spring.Production.*;
 import static io.netty.handler.codec.ByteToMessageDecoder.MERGE_CUMULATOR;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
  * @author chen.zhu
- * <p>
- * May 12, 2018
+ *         <p>
+ *         May 12, 2018
  */
 
 public class AbstractRedisProxyServerTest extends AbstractTest {
@@ -62,7 +62,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     private ProxyConfig config = new TestProxyConfig();
 
     private ProxyEndpointManager endpointManager = new DefaultProxyEndpointManager(
-            ()->config.endpointHealthCheckIntervalSec());
+            () -> config.endpointHealthCheckIntervalSec());
 
     private TunnelManager tunnelManager;
 
@@ -93,7 +93,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     @Before
     public void beforeAbstractRedisProxyTest() {
         MockitoAnnotations.initMocks(this);
-        ((DefaultProxyEndpointManager)endpointManager).setHealthChecker(new ProxyEndpointHealthChecker() {
+        ((DefaultProxyEndpointManager) endpointManager).setHealthChecker(new ProxyEndpointHealthChecker() {
             @Override
             public boolean checkConnectivity(ProxyEndpoint endpoint) {
                 return true;
@@ -114,12 +114,15 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
                 .thenReturn(new NettyServerSslHandlerFactory(new TestProxyConfig()));
         ComponentRegistryHolder.initializeRegistry(registry);
 
+
         tunnel =  new DefaultTunnel(new EmbeddedChannel(), protocol(), new TestProxyConfig(),
                 resourceManager, new DefaultTunnelMonitorManager(resourceManager), scheduled);
+
         tunnel = spy(tunnel);
         doReturn(tunnel).when(tunnelManager).create(any(), any());
 
-        BackendSession backend = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 3000, mock(ProxyRelatedResourceManager.class));
+        BackendSession backend = new DefaultBackendSession(tunnel, new NioEventLoopGroup(1), 3000,
+                mock(ProxyRelatedResourceManager.class));
         doReturn(backend).when(tunnel).backend();
 
         FrontendSession frontend = new DefaultFrontendSession(tunnel, new EmbeddedChannel(), 30000);
@@ -128,7 +131,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
 
     @After
     public void afterAbstractRedisProxyServerTest() throws Exception {
-        if(server != null) {
+        if (server != null) {
             server.stop();
         }
     }
@@ -167,7 +170,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     }
 
     public ProxyConnectProtocol protocol() {
-        if(proxyConnectProtocol == null) {
+        if (proxyConnectProtocol == null) {
             String protocolStr = String.format("Proxy ROUTE %s,%s,%s %s,%s %s;FORWARD_FOR %s",
                     newProxyEndpoint(true, false), newProxyEndpoint(false, true), newProxyEndpoint(true, true),
                     newProxyEndpoint(true, true), newProxyEndpoint(false, true),
@@ -179,7 +182,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     }
 
     public ProxyConnectProtocol protocol(String route) {
-        if(proxyConnectProtocol == null) {
+        if (proxyConnectProtocol == null) {
             String protocolStr = route;
             proxyConnectProtocol = new DefaultProxyConnectProtocolParser().read(protocolStr);
         }
@@ -209,7 +212,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
     }
 
     public void startServer() throws Exception {
-        if(serverStarted.compareAndSet(false, true)) {
+        if (serverStarted.compareAndSet(false, true)) {
             server = new DefaultProxyServer();
             server.setConfig(config());
             server.setTunnelManager(tunnelManager());
@@ -309,7 +312,7 @@ public class AbstractRedisProxyServerTest extends AbstractTest {
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             ByteBuf byteBuf = (ByteBuf) msg;
             byteBuf.retain();
-//            logger.info("[channelRead] {}", byteBuf.toString(Charset.defaultCharset()));
+            // logger.info("[channelRead] {}", byteBuf.toString(Charset.defaultCharset()));
             cumulator.cumulate(ctx.channel().alloc(), cumulation, byteBuf);
             buffer.set(cumulation);
             super.channelRead(ctx, msg);

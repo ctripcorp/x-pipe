@@ -8,7 +8,10 @@ import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -34,7 +37,7 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public static final String KEY_HICKWALL_CLUSTER_METRIC_FORMAT = "console.hickwall.cluster.metric.format";
 
-    public static final String KEY_DATASOURCE = "datasource";
+    public static final String KEY_DATASOURCE = "dal.datasource";
 
     public static final String KEY_HICKWALL_METRIC_INFO = "console.hickwall.metric.info";
 

@@ -22,20 +22,23 @@ import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.dianping.cat.utils.StringUtils;
-import org.apache.commons.collections.CollectionUtils;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
+import org.springframework.util.CollectionUtils;
 
-
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
-import static com.ctrip.xpipe.redis.checker.resource.Resource.*;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.KEEPER_KEYED_NETTY_CLIENT_POOL;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_COMMAND_EXECUTOR;
 import static com.ctrip.xpipe.redis.console.keeper.AutoMigrateOverloadKeeperContainerAction.KEEPER_MIGRATION_ACTIVE_ROLLBACK_ERROR;
 
 @Service

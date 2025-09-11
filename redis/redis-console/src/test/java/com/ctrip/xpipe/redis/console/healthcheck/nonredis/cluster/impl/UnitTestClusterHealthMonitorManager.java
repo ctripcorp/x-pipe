@@ -6,10 +6,10 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthM
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.google.common.collect.Sets;
+import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.Map;
 import java.util.Set;
 

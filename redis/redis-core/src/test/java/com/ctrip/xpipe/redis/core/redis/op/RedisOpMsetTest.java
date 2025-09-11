@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.core.redis.op;
 
-import com.ctrip.xpipe.redis.core.redis.operation.*;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.google.common.collect.Sets;
 import org.junit.Assert;

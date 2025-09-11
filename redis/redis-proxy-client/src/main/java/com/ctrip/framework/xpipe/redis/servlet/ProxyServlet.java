@@ -1,9 +1,9 @@
 package com.ctrip.framework.xpipe.redis.servlet;
 
 import com.ctrip.framework.xpipe.redis.instrument.ProxyAgentTool;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 
 public class ProxyServlet extends HttpServlet {
 

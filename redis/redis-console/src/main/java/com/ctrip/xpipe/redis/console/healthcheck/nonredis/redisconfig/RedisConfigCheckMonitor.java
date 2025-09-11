@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.impl.DcClusterServiceImpl;
-import com.ctrip.xpipe.redis.console.service.impl.DcServiceImpl;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;

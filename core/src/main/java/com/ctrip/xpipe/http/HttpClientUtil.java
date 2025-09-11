@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.http;
 
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 
 import java.io.IOException;
 
@@ -40,18 +42,19 @@ public class HttpClientUtil {
         return httpclient;
 	}
 	
-	public String getResultAsString(String address) throws IOException{
+	public String getResultAsString(String address) throws IOException, ParseException {
 		
 		HttpGet get = new HttpGet(address);
 		CloseableHttpResponse response = null;
 		try{
 			response = httpClient.execute(get);
-			String result = EntityUtils.toString(response.getEntity()); 
-			if(response.getStatusLine().getStatusCode() != HTTP_STATUS_CODE_200){
+			if(response.getCode() != HTTP_STATUS_CODE_200){
+				EntityUtils.consume(response.getEntity());
 				throw new IllegalStateException("response code not 200");
 			}
-			return result; 
-		}finally{
+			HttpEntity entity = response.getEntity();
+			return EntityUtils.toString(entity);
+		} finally{
 			if(response != null){
 				response.close();
 			}

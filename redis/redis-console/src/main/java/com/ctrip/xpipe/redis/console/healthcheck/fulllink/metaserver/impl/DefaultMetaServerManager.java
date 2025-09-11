@@ -8,10 +8,10 @@ import com.ctrip.xpipe.redis.console.healthcheck.fulllink.metaserver.MetaServerM
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.metaserver.model.ClusterDebugInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.metaserver.model.ClusterServerInfo;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.metaserver.model.SlotInfo;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.spring;
 
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import jakarta.annotation.PreDestroy;
 import org.apache.tomcat.util.threads.TaskQueue;
 import org.apache.tomcat.util.threads.TaskThreadFactory;
 import org.apache.tomcat.util.threads.ThreadPoolExecutor;
@@ -11,7 +12,6 @@ import org.springframework.web.servlet.HandlerAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 import org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod;
 
-import javax.annotation.PreDestroy;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 

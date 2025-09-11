@@ -17,6 +17,7 @@ import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V1_FILE;
 import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V2_FILE;
 import static com.ctrip.xpipe.redis.keeper.store.meta.AbstractMetaStore.deserializeFromStringV1;
 import static com.ctrip.xpipe.redis.keeper.store.meta.AbstractMetaStore.deserializeFromStringV2;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author chen.zhu

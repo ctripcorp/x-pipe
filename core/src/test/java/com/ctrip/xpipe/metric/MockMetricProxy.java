@@ -1,9 +1,5 @@
 package com.ctrip.xpipe.metric;
 
-import com.ctrip.xpipe.metric.MetricData;
-import com.ctrip.xpipe.metric.MetricProxy;
-import com.ctrip.xpipe.metric.MetricProxyException;
-
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 

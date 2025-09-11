@@ -10,6 +10,11 @@ import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.checker.model.RedisMsg;
+import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
+import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
+import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
+import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
+import com.ctrip.xpipe.redis.checker.model.RedisMsg;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.xml.sax.SAXException;
@@ -69,7 +74,7 @@ public interface CheckerConsoleService {
         }
         public AlertMessage(String eventOperator, AlertMessageEntity message, EmailResponse response) {
             this.message = message;
-            this.properties = response.getProperties();
+            this.properties = response != null ? response.getProperties() : new Properties();
             this.eventOperator = eventOperator;
         }
 

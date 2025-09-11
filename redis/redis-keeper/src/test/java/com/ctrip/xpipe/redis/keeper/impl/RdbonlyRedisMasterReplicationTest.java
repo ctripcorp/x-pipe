@@ -12,12 +12,14 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;
 import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
+import io.netty.channel.Channel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;

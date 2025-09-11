@@ -7,10 +7,10 @@ import com.ctrip.xpipe.redis.console.healthcheck.fulllink.metaserver.MetaServerL
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.metaserver.MetaServerManager;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.metaserver.command.ShardCurrentMetaGetCommand;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardCurrentMetaModel;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.concurrent.ExecutorService;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;

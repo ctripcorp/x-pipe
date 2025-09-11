@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.meta.server.dcchange;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
-import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
@@ -11,30 +10,22 @@ import com.ctrip.xpipe.redis.meta.server.job.ChangePrimaryDcJob;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
-import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
-import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.Resource;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 /**
  * @author chen.zhu
- * <p>
- * Feb 26, 2020
+ *         <p>
+ *         Feb 26, 2020
  */
 public class DefaultChangePrimaryDcActionTest extends AbstractTest {
 
@@ -72,8 +63,9 @@ public class DefaultChangePrimaryDcActionTest extends AbstractTest {
         expectedResult = new MetaServerConsoleService.PrimaryDcChangeMessage("Succeed", "127.0.0.1", 12345);
         action = new DefaultChangePrimaryDcAction() {
             @Override
-            protected ChangePrimaryDcJob createChangePrimaryDcJob(ChangePrimaryDcAction changePrimaryDcAction, Long clusterDbId,
-                                                                  Long shardDbId, String newPrimaryDc, MasterInfo masterInfo) {
+            protected ChangePrimaryDcJob createChangePrimaryDcJob(ChangePrimaryDcAction changePrimaryDcAction,
+                    Long clusterDbId,
+                    Long shardDbId, String newPrimaryDc, MasterInfo masterInfo) {
                 return new ChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId, newPrimaryDc, masterInfo) {
                     @Override
                     protected void doExecute() throws Exception {
@@ -85,8 +77,10 @@ public class DefaultChangePrimaryDcActionTest extends AbstractTest {
         doNothing().when(clusterShardExecutors).clearAndExecute(any(), any());
         when(metaServerConfig.getWaitforOffsetMilli()).thenReturn(1000);
         action.setExecutors(executors).setScheduled(scheduled).setClusterShardExecutors(clusterShardExecutors)
-        .setCurrentClusterServer(currentClusterServer).setOffsetWaiter(offsetWaiter).setMultiDcService(multiDcService)
-        .setCurrentMetaManager(currentMetaManager).setDcMetaCache(dcMetaCache).setSentinelManager(sentinelManager)
+                .setCurrentClusterServer(currentClusterServer).setOffsetWaiter(offsetWaiter)
+                .setMultiDcService(multiDcService)
+                .setCurrentMetaManager(currentMetaManager).setDcMetaCache(dcMetaCache)
+                .setSentinelManager(sentinelManager)
                 .setMetaServerConfig(metaServerConfig);
     }
 
@@ -94,7 +88,8 @@ public class DefaultChangePrimaryDcActionTest extends AbstractTest {
     public void testChangePrimaryDcFirstTimeout() {
         when(currentMetaManager.hasCluster(anyLong())).thenReturn(true);
         when(dcMetaCache.getCurrentDc()).thenReturn("SHAOY");
-        MetaServerConsoleService.PrimaryDcChangeMessage result = action.changePrimaryDc(1L, 1L, "SHAOY", new MasterInfo());
+        MetaServerConsoleService.PrimaryDcChangeMessage result = action.changePrimaryDc(1L, 1L, "SHAOY",
+                new MasterInfo());
         Assert.assertEquals(expectedResult, result);
     }
 
@@ -102,7 +97,8 @@ public class DefaultChangePrimaryDcActionTest extends AbstractTest {
     public void testChangePrimaryDcNotHavingCluster() {
         when(currentMetaManager.hasCluster(anyLong())).thenReturn(false);
         when(dcMetaCache.getCurrentDc()).thenReturn("SHAOY");
-        MetaServerConsoleService.PrimaryDcChangeMessage result = action.changePrimaryDc(1L, 1L, "SHAOY", new MasterInfo());
+        MetaServerConsoleService.PrimaryDcChangeMessage result = action.changePrimaryDc(1L, 1L, "SHAOY",
+                new MasterInfo());
         Assert.assertEquals(MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT.FAIL, result.getErrorType());
         logger.info("\n{}", result.getErrorMessage());
     }

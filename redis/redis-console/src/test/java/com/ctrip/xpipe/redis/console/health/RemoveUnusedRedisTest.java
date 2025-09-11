@@ -25,8 +25,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.Callable;
 
-import static org.mockito.Mockito.when;
-
 /**
  * @author chen.zhu
  * <p>

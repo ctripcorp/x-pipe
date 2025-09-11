@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckActionFactory
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.List;
 
@@ -15,6 +16,7 @@ public abstract class AbstractClusterLeaderAwareHealthCheckActionFactory extends
         implements ClusterHealthCheckActionFactory<SiteLeaderAwareHealthCheckAction> {
 
     @Autowired
+    @Lazy
     protected HealthCheckInstanceManager healthCheckInstanceManager;
 
     @Override

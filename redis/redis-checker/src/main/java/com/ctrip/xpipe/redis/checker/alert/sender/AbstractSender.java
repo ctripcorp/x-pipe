@@ -16,17 +16,10 @@ import java.util.List;
 public abstract class AbstractSender implements Sender {
 
     @Autowired
-    private SenderManager senderManager;
-
-    @Autowired
     private AlertConfig alertConfig;
 
     public static final String CC_ER = "ccers";
 
-    public Sender querySender() {
-        String id = getId();
-        return senderManager.querySender(id);
-    }
 
     protected Email createEmail(AlertMessageEntity message) {
         Email email = new Email();
@@ -39,7 +32,12 @@ public abstract class AbstractSender implements Sender {
             email.setcCers(ccers);
         }
         email.setRecipients(message.getReceivers());
-        email.setBodyContent(message.getContent());
+        // 确保bodyContent不为空
+        String content = message.getContent();
+        if(content == null || content.trim().isEmpty()) {
+            content = "Alert notification - no content available";
+        }
+        email.setBodyContent(content);
         return email;
     }
 }

@@ -1,29 +1,28 @@
 package com.ctrip.xpipe.redis.console.controller.config;
 
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author wenchao.meng
  *         <p>
  *         Apr 06, 2017
  */
-public class LogInterceptor extends HandlerInterceptorAdapter{
+public class LogInterceptor implements HandlerInterceptor {
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
 
-
         logApiRequest(request, "pre");
-        return super.preHandle(request, response, handler);
+        return true;
     }
 
     @Override

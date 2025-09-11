@@ -9,9 +9,10 @@ import com.ctrip.xpipe.redis.console.entity.MigrationBiClusterEntity;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
-import org.springframework.core.ParameterizedTypeReference;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class ClusterMigrationStatusV2 {

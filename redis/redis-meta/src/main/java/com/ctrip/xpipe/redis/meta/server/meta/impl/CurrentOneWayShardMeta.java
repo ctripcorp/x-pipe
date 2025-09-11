@@ -3,7 +3,10 @@ package com.ctrip.xpipe.redis.meta.server.meta.impl;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author ayq

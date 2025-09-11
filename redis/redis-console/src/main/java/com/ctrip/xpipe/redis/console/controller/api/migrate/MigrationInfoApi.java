@@ -7,13 +7,13 @@ import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgre
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationSystemStatus;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.PostConstruct;
 
 /**
  * @author lishanglin

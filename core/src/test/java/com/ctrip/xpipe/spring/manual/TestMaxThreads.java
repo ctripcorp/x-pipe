@@ -4,18 +4,15 @@ import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.codec.Person;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.testutils.SpringApplicationStarter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestOperations;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author wenchao.meng

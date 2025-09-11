@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.meta.server.cluster.impl;
 
-import com.ctrip.xpipe.api.cluster.LeaderAware;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
@@ -14,10 +13,10 @@ import com.ctrip.xpipe.redis.meta.server.cluster.task.InitResharding;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.zk.ZkClient;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;

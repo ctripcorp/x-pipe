@@ -9,11 +9,17 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.spring.AbstractController;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping(AbstractController.API_PREFIX)
@@ -21,6 +27,19 @@ public class CrossDcController extends AbstractConsoleController {
 
     @Autowired(required = false)
     private ConsoleCrossDcServer crossDcClusterServer;
+
+    @Autowired
+    protected TemplateEngine templateEngine;
+
+    @RequestMapping("/test")
+    public String test() {
+        Context context = new Context();
+        // CHANGED: Use context.setVariable() instead of context.put()
+        context.setVariable("localIpAddr", "10.10.10.10");
+        context.setVariable("environment", "'asd'");
+        context.setVariable("redisAlerts", new HashMap<String, Object>());
+        return templateEngine.process("RecoverTemplate", context);
+    }
 
     private static final int DEFAULT_LEASE_PERIOD = 10;
 

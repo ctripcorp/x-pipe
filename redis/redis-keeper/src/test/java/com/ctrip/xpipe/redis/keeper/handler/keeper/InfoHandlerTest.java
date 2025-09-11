@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.keeper.handler.keeper;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
-import com.ctrip.xpipe.redis.keeper.handler.keeper.InfoHandler;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisClient;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import io.netty.channel.embedded.EmbeddedChannel;

@@ -1,13 +1,8 @@
 package com.ctrip.xpipe.redis.console.migration;
 
-import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
-import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultMigrationEvent;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.collect.Maps;
-import io.netty.util.concurrent.DefaultThreadFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.model.SentinelUsageModel;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceTask;
 import com.ctrip.xpipe.redis.console.service.SentinelGroupService;
-import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;

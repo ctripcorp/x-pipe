@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
-import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.cluster.ClusterType;
@@ -14,16 +13,16 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessor;
-import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.annotations.VisibleForTesting;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +55,7 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
     private ClusterHealthManager clusterHealthManager;
 
     @Autowired
+    @Lazy
     private HealthCheckInstanceManager instanceManager;
 
     @Autowired

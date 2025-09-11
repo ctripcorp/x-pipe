@@ -11,7 +11,10 @@ import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.repository.DcClusterRepository;
-import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcClusterService;
+import com.ctrip.xpipe.redis.console.service.ReplDirectionService;
+import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -33,7 +36,8 @@ import java.util.concurrent.RejectedExecutionException;
 
 import static com.ctrip.xpipe.redis.checker.controller.result.RetMessage.FAIL_STATE;
 import static com.ctrip.xpipe.redis.checker.controller.result.RetMessage.SUCCESS_STATE;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)

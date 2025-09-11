@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.console.cmd;
 
-import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
-
 import java.util.concurrent.ExecutorService;
 
 public class CrdtRedisStartCmd extends RedisStartCmd {

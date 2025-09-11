@@ -12,9 +12,9 @@ import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
+import jakarta.annotation.PreDestroy;
 import org.springframework.web.client.RestOperations;
 
-import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

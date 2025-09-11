@@ -7,12 +7,12 @@ import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.simpleserver.Server;
+import jakarta.annotation.Resource;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.annotation.Resource;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 

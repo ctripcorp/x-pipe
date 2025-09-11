@@ -3,12 +3,12 @@ package com.ctrip.xpipe.redis.console.repository;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.ctrip.xpipe.redis.console.entity.MigrationBiClusterEntity;
 import com.ctrip.xpipe.redis.console.mapper.MigrationBiClusterMapper;
+import jakarta.annotation.Resource;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.stereotype.Repository;
 
-import javax.annotation.Resource;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;

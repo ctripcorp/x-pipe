@@ -4,8 +4,6 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.crdt.master.PeerMasterChooseAction;
-import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
-import com.ctrip.xpipe.redis.meta.server.dcchange.PrimaryDcPrepareToChange;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Before;

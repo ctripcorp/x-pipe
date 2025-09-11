@@ -14,13 +14,13 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthState
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ExecutorService;

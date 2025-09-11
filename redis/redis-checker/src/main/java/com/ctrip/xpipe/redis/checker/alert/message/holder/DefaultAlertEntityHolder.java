@@ -6,7 +6,8 @@ import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHolder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 public class DefaultAlertEntityHolder implements AlertEntityHolder {

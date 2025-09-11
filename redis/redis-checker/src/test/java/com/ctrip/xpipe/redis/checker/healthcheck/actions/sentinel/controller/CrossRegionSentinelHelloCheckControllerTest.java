@@ -39,7 +39,6 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Arrays;
 
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)

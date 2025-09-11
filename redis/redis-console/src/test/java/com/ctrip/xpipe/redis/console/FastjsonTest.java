@@ -1,11 +1,9 @@
 package com.ctrip.xpipe.redis.console;
 
 import com.ctrip.xpipe.api.codec.Codec;
-import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class FastjsonTest {
 
