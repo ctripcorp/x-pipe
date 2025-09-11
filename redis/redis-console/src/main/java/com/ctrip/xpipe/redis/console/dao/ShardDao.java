@@ -6,13 +6,14 @@ import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.google.common.collect.Sets;
+import jakarta.annotation.PostConstruct;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 
 
@@ -31,13 +32,16 @@ public class ShardDao extends AbstractXpipeConsoleDAO{
 	@Autowired
 	private DcClusterShardDao dcClusterShardDao;
 
+	@Autowired
+	private PlexusContainer plexusContainer;
+
 	@PostConstruct
 	private void postConstruct() {
 		try {
-			clusterTblDao = ContainerLoader.getDefaultContainer().lookup(ClusterTblDao.class);
-			dcClusterTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterTblDao.class);
-			shardTblDao = ContainerLoader.getDefaultContainer().lookup(ShardTblDao.class);
-			dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
+			clusterTblDao = plexusContainer.lookup(ClusterTblDao.class);
+			dcClusterTblDao = plexusContainer.lookup(DcClusterTblDao.class);
+			shardTblDao = plexusContainer.lookup(ShardTblDao.class);
+			dcClusterShardTblDao = plexusContainer.lookup(DcClusterShardTblDao.class);
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.", e);
 		}

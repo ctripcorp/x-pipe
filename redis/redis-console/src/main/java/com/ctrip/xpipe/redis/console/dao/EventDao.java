@@ -5,12 +5,14 @@ import com.ctrip.xpipe.redis.console.model.EventTbl;
 import com.ctrip.xpipe.redis.console.model.EventTblDao;
 import com.ctrip.xpipe.redis.console.model.EventTblEntity;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
+import jakarta.annotation.PostConstruct;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
-import javax.annotation.PostConstruct;
 import java.util.Date;
 import java.util.List;
 
@@ -25,10 +27,13 @@ public class EventDao extends AbstractXpipeConsoleDAO {
 
     protected EventTblDao eventTblDao;
 
+    @Autowired
+    private PlexusContainer container;
+
     @PostConstruct
     private void postConstruct() {
         try {
-            eventTblDao = ContainerLoader.getDefaultContainer().lookup(EventTblDao.class);
+            eventTblDao = container.lookup(EventTblDao.class);
         } catch (ComponentLookupException e) {
             throw new ServerException("Cannot construct dao.", e);
         }

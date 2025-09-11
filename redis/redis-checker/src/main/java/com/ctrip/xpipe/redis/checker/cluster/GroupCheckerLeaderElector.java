@@ -3,9 +3,7 @@ package com.ctrip.xpipe.redis.checker.cluster;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 
 /**
  * @author lishanglin

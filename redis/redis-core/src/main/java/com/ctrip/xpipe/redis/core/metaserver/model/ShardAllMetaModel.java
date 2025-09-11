@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.core.metaserver.model;
 
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-
 public class ShardAllMetaModel {
 
     private String MetaHost;

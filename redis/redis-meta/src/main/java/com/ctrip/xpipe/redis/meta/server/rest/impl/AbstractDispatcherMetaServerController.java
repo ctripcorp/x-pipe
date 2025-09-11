@@ -14,13 +14,13 @@ import com.ctrip.xpipe.redis.meta.server.rest.exception.MovingTargetException;
 import com.ctrip.xpipe.redis.meta.server.rest.exception.UnfoundAliveSererException;
 import com.ctrip.xpipe.rest.ForwardType;
 import com.ctrip.xpipe.spring.AbstractController;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.LinkedList;
 import java.util.Set;
 

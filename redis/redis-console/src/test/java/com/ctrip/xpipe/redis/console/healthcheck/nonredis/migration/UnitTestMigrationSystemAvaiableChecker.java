@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration;
 
-import com.ctrip.xpipe.redis.console.service.migration.exception.NoResponseException;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;

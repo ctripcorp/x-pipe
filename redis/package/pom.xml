@@ -16,7 +16,6 @@
 		<module>redis-proxy-package</module>
     </modules>
 
-
 	<profiles>
 		<profile>
 			<id>ctrip</id>

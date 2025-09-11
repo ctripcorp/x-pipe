@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.config;
 
+import jakarta.servlet.http.HttpServletRequest;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import org.springframework.core.MethodParameter;
@@ -13,7 +14,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 
 @RestControllerAdvice

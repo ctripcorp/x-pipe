@@ -4,8 +4,6 @@ import org.junit.Test;
 
 import java.util.concurrent.Semaphore;
 
-import static org.junit.Assert.*;
-
 /**
  * @author chen.zhu
  * <p>

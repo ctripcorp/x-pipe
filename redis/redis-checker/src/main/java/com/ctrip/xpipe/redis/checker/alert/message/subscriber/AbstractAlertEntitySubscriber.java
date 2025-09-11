@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.checker.alert.message.subscriber;
 
-import com.ctrip.xpipe.redis.checker.alert.*;
+import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.checker.alert.AlertConfig;
+import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
+import com.ctrip.xpipe.redis.checker.alert.AlertMessageEntity;
 import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHandler;
 import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHolderManager;
 import com.ctrip.xpipe.redis.checker.alert.message.AlertEntitySubscriber;
@@ -8,9 +11,9 @@ import com.ctrip.xpipe.redis.checker.alert.event.EventBus;
 import com.ctrip.xpipe.redis.checker.alert.policy.receiver.EmailReceiverModel;
 import com.ctrip.xpipe.redis.checker.resource.CheckLeaderService;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.Lock;
@@ -112,6 +115,7 @@ public abstract class AbstractAlertEntitySubscriber extends AlertEntityHandler i
                 continue;
             }
             AlertMessageEntity message = getMessage(mailGroup.getKey(), alerts, isAlert);
+            getLogger().info("[AlertEntitySubscriber] Message sent: {}", message);
             emailMessage(message);
             tryMetric(alerts, isAlert);
         }

@@ -8,7 +8,6 @@ import org.springframework.web.client.HttpStatusCodeException;
 
 import java.lang.reflect.Type;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * @author Jason Song(song_s@ctrip.com)

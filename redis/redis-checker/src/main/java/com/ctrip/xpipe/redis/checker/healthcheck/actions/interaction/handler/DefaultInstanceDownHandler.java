@@ -1,12 +1,8 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler;
 
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceDown;
-import com.google.common.collect.Lists;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * @author chen.zhu

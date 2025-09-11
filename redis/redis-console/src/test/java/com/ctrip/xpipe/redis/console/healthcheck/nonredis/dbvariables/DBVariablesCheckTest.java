@@ -7,7 +7,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -22,6 +21,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.mockito.ArgumentMatchers.any;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DBVariablesCheckTest extends AbstractTest {
@@ -80,7 +81,7 @@ public class DBVariablesCheckTest extends AbstractTest {
 
             checkCnt.incrementAndGet();
             return null;
-        }).when(checker).check(Matchers.any());
+        }).when(checker).check(any());
 
         dbVariablesCheck.doAction();
         Assert.assertEquals(2, checkCnt.get());

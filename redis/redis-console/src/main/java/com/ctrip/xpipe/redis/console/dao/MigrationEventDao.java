@@ -26,6 +26,9 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -34,8 +37,6 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.helper.Lists;
 import org.unidal.lookup.ContainerLoader;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
@@ -72,6 +73,8 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	@Autowired
 	private ReactorMigrationCommandBuilderImpl reactorMigrationCommandBuilder;
 
+	@Autowired
+	private PlexusContainer plexusContainer;
 
 	private MigrationEventTblDao migrationEventTblDao;
 	private MigrationClusterTblDao migrationClusterTblDao;
@@ -83,12 +86,12 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	@PostConstruct
 	private void postConstruct() {
 		try {
-			migrationEventTblDao = ContainerLoader.getDefaultContainer().lookup(MigrationEventTblDao.class);
-			migrationClusterTblDao = ContainerLoader.getDefaultContainer().lookup(MigrationClusterTblDao.class);
-			migrationShardTblDao = ContainerLoader.getDefaultContainer().lookup(MigrationShardTblDao.class);
-			clusterTblDao = ContainerLoader.getDefaultContainer().lookup(ClusterTblDao.class);
-			shardTblDao = ContainerLoader.getDefaultContainer().lookup(ShardTblDao.class);
-			dcClusterShardTblDao = ContainerLoader.getDefaultContainer().lookup(DcClusterShardTblDao.class);
+			migrationEventTblDao = plexusContainer.lookup(MigrationEventTblDao.class);
+			migrationClusterTblDao = plexusContainer.lookup(MigrationClusterTblDao.class);
+			migrationShardTblDao = plexusContainer.lookup(MigrationShardTblDao.class);
+			clusterTblDao = plexusContainer.lookup(ClusterTblDao.class);
+			shardTblDao = plexusContainer.lookup(ShardTblDao.class);
+			dcClusterShardTblDao = plexusContainer.lookup(DcClusterShardTblDao.class);
 		} catch (ComponentLookupException e) {
 			throw new ServerException("Cannot construct dao.", e);
 		}

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.core.redis.rdb.parser;
 
-import com.ctrip.xpipe.redis.core.redis.exception.RdbParseFailException;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpSingleKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbLength;

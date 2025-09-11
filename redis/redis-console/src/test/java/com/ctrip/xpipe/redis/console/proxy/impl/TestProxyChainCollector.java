@@ -8,11 +8,11 @@ import com.ctrip.xpipe.redis.console.proxy.ProxyChainCollector;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

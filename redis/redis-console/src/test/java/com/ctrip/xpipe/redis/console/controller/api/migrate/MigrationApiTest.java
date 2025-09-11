@@ -18,12 +18,12 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
  * @author wenchao.meng
- * May 12, 2021
+ *         May 12, 2021
  */
 @RunWith(MockitoJUnitRunner.class)
 public class MigrationApiTest extends AbstractConsoleTest {
@@ -33,12 +33,10 @@ public class MigrationApiTest extends AbstractConsoleTest {
     @Mock
     private MigrationService migrationService;
 
-
-    private String[] clusters = new String[]{"cluster1", "cluster2", "cluster3"};
+    private String[] clusters = new String[] { "cluster1", "cluster2", "cluster3" };
     private String fromIdc = "shaoy", toIdc = "shajq";
     private CheckPrepareRequest checkPrepareRequest = new CheckPrepareRequest();
     private Long eventId;
-
 
     @Before
     public void beforeMigrationApi() {
@@ -55,10 +53,13 @@ public class MigrationApiTest extends AbstractConsoleTest {
     }
 
     @Test
-    public void testCheckAndPrepareNewCluster() throws MigrationNotSupportException, ToIdcNotFoundException, ClusterMigratingNow, ClusterNotFoundException, MigrationSystemNotHealthyException, ClusterActiveDcNotRequest, ClusterMigratingNowButMisMatch {
+    public void testCheckAndPrepareNewCluster()
+            throws MigrationNotSupportException, ToIdcNotFoundException, ClusterMigratingNow, ClusterNotFoundException,
+            MigrationSystemNotHealthyException, ClusterActiveDcNotRequest, ClusterMigratingNowButMisMatch {
 
         for (String cluster : clusters) {
-            when(migrationService.tryMigrate(cluster, fromIdc, toIdc)).thenReturn(newTryMigrateResult(cluster, fromIdc, toIdc));
+            when(migrationService.tryMigrate(cluster, fromIdc, toIdc))
+                    .thenReturn(newTryMigrateResult(cluster, fromIdc, toIdc));
         }
         CheckPrepareResponse checkPrepareResponse = migrationApi.checkAndPrepare(checkPrepareRequest);
 
@@ -68,17 +69,17 @@ public class MigrationApiTest extends AbstractConsoleTest {
             Assert.assertEquals(true, checkPrepareClusterResponse.isSuccess());
         });
 
-
     }
 
-
     @Test
-    public void testCheckAndPrepareAlreadyMigratingCluster() throws MigrationNotSupportException, ToIdcNotFoundException, ClusterMigratingNow, ClusterNotFoundException, MigrationSystemNotHealthyException, ClusterActiveDcNotRequest, ClusterMigratingNowButMisMatch {
+    public void testCheckAndPrepareAlreadyMigratingCluster()
+            throws MigrationNotSupportException, ToIdcNotFoundException, ClusterMigratingNow, ClusterNotFoundException,
+            MigrationSystemNotHealthyException, ClusterActiveDcNotRequest, ClusterMigratingNowButMisMatch {
 
         int i = 0;
         for (String cluster : clusters) {
-            when(migrationService.tryMigrate(cluster, fromIdc, toIdc)).
-                    thenThrow(new ClusterMigratingNow(cluster, fromIdc, toIdc, eventId + i));
+            when(migrationService.tryMigrate(cluster, fromIdc, toIdc))
+                    .thenThrow(new ClusterMigratingNow(cluster, fromIdc, toIdc, eventId + i));
             i++;
         }
 
@@ -98,23 +99,23 @@ public class MigrationApiTest extends AbstractConsoleTest {
             Assert.assertEquals(1, count.get());
         }
 
-        //choose randomly
+        // choose randomly
         for (i = 0; i < clusters.length; i++) {
-            Assert.assertTrue(eventIds.contains(eventId+i));
+            Assert.assertTrue(eventIds.contains(eventId + i));
         }
-
 
     }
 
     @Test
-    public void testCheckAndPrepareException() throws MigrationNotSupportException, ToIdcNotFoundException, ClusterMigratingNow, ClusterNotFoundException, MigrationSystemNotHealthyException, ClusterActiveDcNotRequest, ClusterMigratingNowButMisMatch {
+    public void testCheckAndPrepareException()
+            throws MigrationNotSupportException, ToIdcNotFoundException, ClusterMigratingNow, ClusterNotFoundException,
+            MigrationSystemNotHealthyException, ClusterActiveDcNotRequest, ClusterMigratingNowButMisMatch {
 
         int i = 0;
         for (String cluster : clusters) {
 
             when(migrationService.tryMigrate(cluster, fromIdc, toIdc)).thenThrow(new ClusterMigratingNowButMisMatch(
-                    cluster, fromIdc + "R", toIdc + "R", eventId, fromIdc, toIdc
-            ));
+                    cluster, fromIdc + "R", toIdc + "R", eventId, fromIdc, toIdc));
         }
 
         CheckPrepareResponse checkPrepareResponse = migrationApi.checkAndPrepare(checkPrepareRequest);
@@ -135,6 +136,5 @@ public class MigrationApiTest extends AbstractConsoleTest {
         result.setToDcName(toIdc);
         return result;
     }
-
 
 }

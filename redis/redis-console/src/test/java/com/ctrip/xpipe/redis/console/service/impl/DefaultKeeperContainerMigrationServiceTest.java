@@ -4,21 +4,27 @@ import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
+import com.ctrip.xpipe.redis.console.model.ReplDirectionInfoModel;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.google.common.collect.Maps;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static org.mockito.ArgumentMatchers.any;
 
 /**
  * @author yu
@@ -37,12 +43,31 @@ public class DefaultKeeperContainerMigrationServiceTest {
     @Before
     public void before() {
         ShardModel shardModel = new ShardModel();
-        Mockito.when(shardModelService.getShardModel(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),  Mockito.anyObject()))
+        // Fix 1: Use correct argument matchers for getShardModel
+        Mockito.when(shardModelService.getShardModel(
+                        ArgumentMatchers.anyString(),
+                        ArgumentMatchers.anyString(),
+                        ArgumentMatchers.anyString(),
+                        ArgumentMatchers.anyBoolean(),
+                        ArgumentMatchers.<ReplDirectionInfoModel>any()))
                 .thenReturn(shardModel);
-        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(),  Mockito.any(), Mockito.anyString(), Mockito.anyString()))
+
+        // Fix 2: Use correct argument matchers for migrateBackupKeeper
+        Mockito.when(shardModelService.migrateBackupKeeper(
+                        ArgumentMatchers.anyString(),
+                        ArgumentMatchers.anyString(),
+                        ArgumentMatchers.any(ShardModel.class),
+                        ArgumentMatchers.anyString(),
+                        ArgumentMatchers.anyString()))
                 .thenReturn(true);
-        Mockito.when(shardModelService.switchActiveKeeper(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
+
+        // Fix 3: Use correct argument matchers for switchActiveKeeper
+        Mockito.when(shardModelService.switchActiveKeeper(
+                        ArgumentMatchers.anyString(),
+                        ArgumentMatchers.anyString(),
+                        ArgumentMatchers.any(ShardModel.class)))
                 .thenReturn(true);
+        ReflectionTestUtils.setField(service, "shardModelService", shardModelService);
     }
 
     @Test

@@ -1,7 +1,5 @@
 package com.ctrip.xpipe.redis.console.keeper.entity;
 
-import com.ctrip.xpipe.utils.StringUtil;
-
 public enum KeeperContainerDiskType {
 
     DEFAULT("DEFAULT");

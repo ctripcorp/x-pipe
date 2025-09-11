@@ -12,8 +12,8 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeoutException;
 
-import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.*;
+
 
 /**
  * @author wenchao.meng

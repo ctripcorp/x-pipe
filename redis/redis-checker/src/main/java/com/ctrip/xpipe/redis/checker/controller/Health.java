@@ -1,12 +1,18 @@
 package com.ctrip.xpipe.redis.checker.controller;
 
+import com.ctrip.xpipe.redis.checker.alert.manager.DecoratorManager;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.tuple.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author lishanglin
@@ -20,6 +26,15 @@ public class Health {
     @RequestMapping(value = "/health", method = RequestMethod.GET)
     public boolean health() {
         return true;
+    }
+
+
+    @Autowired
+    DecoratorManager decoratorManager;
+
+    @RequestMapping(value = "/test")
+    public Pair<String, String> test() {
+        return decoratorManager.generateTitleAndContent(new HashMap<>(), true);
     }
 
 }

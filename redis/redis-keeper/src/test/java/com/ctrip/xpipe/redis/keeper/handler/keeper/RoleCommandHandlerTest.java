@@ -47,7 +47,7 @@ public class RoleCommandHandlerTest extends AbstractRedisKeeperTest{
 
 	@Mock
 	private DefaultMetaStore metaStore;
-	
+
 	@Mock
 	private RedisMaster redisMaster;
 	

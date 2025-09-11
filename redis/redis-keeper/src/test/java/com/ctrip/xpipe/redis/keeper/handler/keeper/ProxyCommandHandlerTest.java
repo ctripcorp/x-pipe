@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
-import com.ctrip.xpipe.redis.keeper.handler.keeper.ProxyCommandHandler;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisClient;
 import io.netty.channel.Channel;
 import io.netty.channel.socket.nio.NioSocketChannel;

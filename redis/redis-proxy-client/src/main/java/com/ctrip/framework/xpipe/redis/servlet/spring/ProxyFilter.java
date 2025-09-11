@@ -1,9 +1,8 @@
 package com.ctrip.framework.xpipe.redis.servlet.spring;
 
 import com.ctrip.framework.xpipe.redis.servlet.ProxyServlet;
-import com.ctrip.framework.xpipe.redis.utils.Tools;
+import jakarta.servlet.*;
 
-import javax.servlet.*;
 import java.io.IOException;
 
 public class ProxyFilter implements Filter {

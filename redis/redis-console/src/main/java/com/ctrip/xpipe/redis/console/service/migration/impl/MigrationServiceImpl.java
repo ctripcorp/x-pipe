@@ -38,14 +38,16 @@ import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Resource;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.rmi.ServerException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -58,9 +60,11 @@ import static com.ctrip.xpipe.api.migration.OuterClientService.DEFAULT;
 public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventTblDao> implements MigrationService {
 
     @Autowired
+    @Lazy
     private MigrationEventDao migrationEventDao;
 
     @Autowired
+    @Lazy
     private MigrationEventManager migrationEventManager;
 
     @Autowired
@@ -101,10 +105,13 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     private MigrationShardTblDao migrationShardTblDao;
 
+    @Autowired
+    private PlexusContainer plexusContainer;
+
     @PostConstruct
     private void postConstruct() throws ServerException {
         try {
-            migrationShardTblDao = ContainerLoader.getDefaultContainer().lookup(MigrationShardTblDao.class);
+            migrationShardTblDao = plexusContainer.lookup(MigrationShardTblDao.class);
         } catch (ComponentLookupException e) {
             throw new ServerException("Cannot construct dao.");
         }

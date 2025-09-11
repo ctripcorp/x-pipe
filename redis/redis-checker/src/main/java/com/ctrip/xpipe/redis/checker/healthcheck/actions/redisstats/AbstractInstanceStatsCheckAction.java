@@ -1,7 +1,8 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 

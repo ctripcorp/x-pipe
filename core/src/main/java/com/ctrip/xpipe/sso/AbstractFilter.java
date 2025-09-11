@@ -2,16 +2,16 @@ package com.ctrip.xpipe.sso;
 
 import com.ctrip.xpipe.api.sso.SsoConfig;
 
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author wenchao.meng
  *         <p>
  *         Jun 16, 2017
  */
-public abstract class AbstractFilter implements javax.servlet.Filter{
+public abstract class AbstractFilter implements jakarta.servlet.Filter {
 
 
     @Override

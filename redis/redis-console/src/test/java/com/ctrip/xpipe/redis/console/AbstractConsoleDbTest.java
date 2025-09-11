@@ -1,12 +1,17 @@
 package com.ctrip.xpipe.redis.console;
 
 import com.ctrip.xpipe.redis.console.build.ComponentsConfigurator;
+import com.ctrip.xpipe.redis.console.ds.XpipeDataSourceProvider;
 import com.ctrip.xpipe.redis.console.h2.FunctionsMySQL;
+import com.ctrip.xpipe.redis.console.model.ConfigTblDao;
+import com.ctrip.xpipe.redis.console.model.ConfigTblEntity;
+import com.ctrip.xpipe.redis.console.spring.PlexusManualLoaderConfiguration;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.util.Strings;
+import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.h2.tools.Server;
 import org.junit.After;
@@ -14,8 +19,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.dal.jdbc.datasource.DataSource;
 import org.unidal.dal.jdbc.datasource.DataSourceManager;
+import org.unidal.dal.jdbc.datasource.DataSourceProvider;
 import org.unidal.lookup.ContainerLoader;
 
 import java.io.IOException;
@@ -42,6 +49,8 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
 
     protected String[] dcNames = new String[]{"jq", "oy"};
 
+    private PlexusContainer plexusContainer;
+
     @BeforeClass
     public static void setUp() {
 
@@ -59,6 +68,8 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
 
     @Before
     public void before() throws Exception {
+        PlexusManualLoaderConfiguration config = new PlexusManualLoaderConfiguration();
+        plexusContainer = config.plexusContainer();
         setUpTestDataSource();
     }
 
@@ -70,9 +81,10 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
     protected void setUpTestDataSource() throws ComponentLookupException, SQLException, IOException, TimeoutException {
         logger.info("[AbstractConsoleDbTest] setUpTestDataSource");
 
-        DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
+        DataSourceManager dsManager = plexusContainer.lookup(DataSourceManager.class);
         waitConditionUntilTimeOut(() -> {
             try {
+                dsManager.getDataSourceNames();
                 return dsManager.getDataSource(DATA_SOURCE) != null;
             } catch (Exception e) {
                 return false;
@@ -95,7 +107,7 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
 
     private void registerMySQLFunctions() {
         try {
-            DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
+            DataSourceManager dsManager = plexusContainer.lookup(DataSourceManager.class);
             Connection conn = dsManager.getDataSource(DATA_SOURCE).getConnection();
             FunctionsMySQL.register(conn);
         } catch (Exception e) {
@@ -105,7 +117,7 @@ public class AbstractConsoleDbTest extends AbstractConsoleTest {
 
     protected void executeSqlScript(String prepareSql) throws ComponentLookupException, SQLException {
 
-        DataSourceManager dsManager = ContainerLoader.getDefaultContainer().lookup(DataSourceManager.class);
+        DataSourceManager dsManager = plexusContainer.lookup(DataSourceManager.class);
 
         Connection conn = null;
         PreparedStatement stmt = null;

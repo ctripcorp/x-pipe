@@ -11,9 +11,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-
 /**
  * @author chen.zhu
  * <p>
