@@ -47,7 +47,9 @@ public class StreamCommandParser {
         CompositeByteBuf mergeBuf = allocator.compositeBuffer();
         try {
             if (remainingBuf != null && remainingBuf.readableBytes() > 0) {
-                mergeBuf.addComponent(true, remainingBuf);
+                mergeBuf.addComponent(true, remainingBuf.retain());
+                remainingBuf.release();
+                // retain once and release release, avoid cycle
                 remainingBuf = null; // 旧的引用置空，其生命周期由mergeBuf管理
             }
             mergeBuf.addComponent(true, byteBuf);
