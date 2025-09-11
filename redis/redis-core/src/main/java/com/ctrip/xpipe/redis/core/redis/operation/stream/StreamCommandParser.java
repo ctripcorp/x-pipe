@@ -50,8 +50,8 @@ public class StreamCommandParser {
                 mergeBuf.addComponent(true, remainingBuf);
                 remainingBuf = null; // 旧的引用置空，其生命周期由mergeBuf管理
             }
-            mergeBuf.addComponent(false, byteBuf);
-            mergeBuf.writerIndex(mergeBuf.writerIndex() + byteBuf.readableBytes());
+            mergeBuf.addComponent(true, byteBuf);
+            byteBuf.retain();
             while (mergeBuf.readableBytes() > 0) {
                 int pre = mergeBuf.readerIndex();
                 RedisClientProtocol<Object[]> protocol = null;
