@@ -16,10 +16,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelInvali
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.MasterSlavesInfo;
 import com.ctrip.xpipe.redis.core.exception.SentinelsException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
-import com.ctrip.xpipe.redis.core.protocal.pojo.MasterRole;
 import com.ctrip.xpipe.redis.core.protocal.pojo.RedisInfo;
-import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -232,9 +229,9 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
                     future().setFailure(new SentinelsException("over half sentinels unavailable"));
                 } else {
                     ParallelCommandChain checkCommands = new ParallelCommandChain(resetExecutor, false);
-                    for (SentinelHello hello : hellos) {
-                        HostPort sentinelAddr = hello.getSentinelAddr();
-                        List<HostPort> slaves = allSentinels.get(sentinelAddr);
+                    for (Map.Entry<HostPort, List<HostPort>> entry : allSentinels.entrySet()) {
+                        HostPort sentinelAddr = entry.getKey();
+                        List<HostPort> slaves = entry.getValue();
                         CheckSentinelSlaves checkSentinel = new CheckSentinelSlaves(slaves);
                         checkSentinel.future().addListener(checkSentinelFuture -> {
                             SentinelInvalidSlaves invalidSlaves = checkSentinelFuture.get();
