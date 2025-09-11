@@ -51,6 +51,7 @@ public class StreamCommandParser {
                 remainingBuf = null; // 旧的引用置空，其生命周期由mergeBuf管理
             }
             mergeBuf.addComponent(true, byteBuf);
+            // relase by mergeBuf.release()
             byteBuf.retain();
             while (mergeBuf.readableBytes() > 0) {
                 int pre = mergeBuf.readerIndex();
@@ -70,9 +71,7 @@ public class StreamCommandParser {
                 if (protocol == null) {
                     this.protocolParser.reset();
                     this.relaseRemainBuf();
-                    remainingBuf = allocator.buffer(mergeBuf.writerIndex() - pre);
-                    // Avoid referencing too many byteBufs using, copy it
-                    remainingBuf.writeBytes(mergeBuf.slice(pre,  mergeBuf.writerIndex() - pre));
+                    remainingBuf = mergeBuf.slice(pre,  mergeBuf.writerIndex() - pre).retain();
                     break;
                 }
 
