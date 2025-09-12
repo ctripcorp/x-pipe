@@ -42,6 +42,8 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 
 	protected InOutPayloadFactory inOutPayloadFactory;
 
+	protected RedisProtocolParser redisProtocolParser;
+
 	public AbstractRedisCommand(String host, int port, ScheduledExecutorService scheduled){
 		super(host, port, scheduled);
 	}
@@ -60,23 +62,14 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 		this.commandTimeoutMilli = commandTimeoutMilli;
 	}
 
-	public static enum COMMAND_RESPONSE_STATE{
-		READING_SIGN,
-		READING_CONTENT;
-	}
-	
-	protected COMMAND_RESPONSE_STATE commandResponseState = COMMAND_RESPONSE_STATE.READING_SIGN;
-	
-	private int sign;
-	
 	private RedisClientProtocol<?> redisClientProtocol;
 
-	
 	@Override
 	protected void doReset() {
-		commandResponseState = COMMAND_RESPONSE_STATE.READING_SIGN;
+		if (redisProtocolParser != null) {
+			redisProtocolParser.reset();
+		}
 	}
-	
 	
 	protected String[] splitSpace(String buff) {
 		
@@ -85,64 +78,23 @@ public abstract class AbstractRedisCommand<T> extends AbstractNettyRequestRespon
 	
 	@Override
 	protected T doReceiveResponse(Channel channel, ByteBuf byteBuf) throws Exception {
-		
-		switch(commandResponseState){
-		
-		case READING_SIGN:
-			int readable = byteBuf.readableBytes();
-			for(int i = 0; i < readable ; i++){
-				
-				sign = byteBuf.readByte();
-				switch(sign){
-					case '\r':
-						break;
-					case '\n':
-						break;
-					case RedisClientProtocol.MINUS_BYTE:
-						redisClientProtocol = new RedisErrorParser();
-						break;
-					case RedisClientProtocol.ASTERISK_BYTE:
-						redisClientProtocol = new ArrayParser().setInOutPayloadFactory(inOutPayloadFactory);
-						break;
-					case RedisClientProtocol.DOLLAR_BYTE:
-						if(inOutPayloadFactory != null) {
-							redisClientProtocol = new CommandBulkStringParser(inOutPayloadFactory.create());
-						} else {
-							redisClientProtocol = new CommandBulkStringParser(getBulkStringPayload());
-						}
-						break;
-					case RedisClientProtocol.COLON_BYTE:
-						redisClientProtocol = new LongParser();
-						break;
-					case RedisClientProtocol.PLUS_BYTE:
-						redisClientProtocol = new SimpleStringParser();
-						break;
-					default:
-						throw new RedisRuntimeException("unkonwn sign:" + (char)sign);
-				}
-				
-				if(redisClientProtocol != null){
-					commandResponseState = COMMAND_RESPONSE_STATE.READING_CONTENT;
-					break;
-				}
-			}
-			
-			if(redisClientProtocol == null){
-				break;
-			}
-			case READING_CONTENT:
-				RedisClientProtocol<?> result = redisClientProtocol.read(byteBuf);
-				if(result != null){
-					Object payload = result.getPayload();
-					if(payload instanceof Exception){
-						handleRedisException((Exception)payload);
-					}
-					return format(payload);
-				}
-				break;
-			default:
-				break;
+
+		if (redisProtocolParser == null) {
+			// Lazily initialize the parser, passing along the payload factory
+			redisProtocolParser = new RedisProtocolParser(inOutPayloadFactory);
 		}
+
+		Object payload = redisProtocolParser.parse(byteBuf);
+
+		if(payload != null) {
+			// A complete response has been received
+			if(payload instanceof Exception) {
+				handleRedisException((Exception)payload);
+			}
+			return format(payload);
+		}
+
+		// Response is not complete yet, need more data
 		return null;
 	}
 	

@@ -140,7 +140,9 @@ public abstract class AbstractSync extends AbstractRedisCommand<Object> implemen
 
     // reset state for next query parse
     protected void resetClient() {
-        commandResponseState = COMMAND_RESPONSE_STATE.READING_SIGN;
+        if (redisProtocolParser != null) {
+            redisProtocolParser.reset();
+        }
     }
 
 

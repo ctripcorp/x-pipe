@@ -3,6 +3,9 @@ package com.ctrip.xpipe.redis.keeper.applier.sync;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.payload.InOutPayloadFactory;
+import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.core.protocal.cmd.RedisProtocolParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
@@ -16,6 +19,7 @@ import com.ctrip.xpipe.redis.keeper.applier.InstanceDependency;
 import com.ctrip.xpipe.redis.keeper.applier.command.*;
 import com.ctrip.xpipe.redis.keeper.applier.sequence.ApplierSequenceController;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.GTIDDistanceThreshold;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 
@@ -27,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol.ASTERISK_BYTE;
+import static com.ctrip.xpipe.redis.core.protocal.Sync.SYNC_STATE.READING_COMMANDS;
 
 /**
  * @author Slight
@@ -67,6 +72,9 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
 
     @InstanceDependency
     public AtomicReference<String> replId;
+
+    @InstanceDependency
+    public AtomicReference<String> replProto;
 
     private StreamCommandParser streamCommandParser;
     // in order to aggregate the entire transaction into one command
@@ -124,6 +132,43 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     private ByteBuf remainingBuf;
     @Override
     public void doOnAppendCommand(ByteBuf byteBuf) {
+        if(StringUtil.trimEquals(replProto.get(), "PSYNC")) {
+            parserPsyncCommand(byteBuf);
+        } else {
+            parserXsyncCommand(byteBuf);
+        }
+    }
+
+    private RedisProtocolParser redisProtocolParser;
+
+    private void parserPsyncCommand(ByteBuf byteBuf) {
+        if(redisProtocolParser == null) {
+            redisProtocolParser = new RedisProtocolParser(new InOutPayloadFactory.DirectByteBufInOutPayloadFactory());
+        }
+
+        int prevIndex = byteBuf.readerIndex();
+        Object cmdPayload = redisProtocolParser.parse(byteBuf);
+        int len = byteBuf.readerIndex() - prevIndex;
+        if (cmdPayload instanceof Object[]) {
+            RedisOp redisOp = null;
+            try {
+                Object[] rawCmdArgs = (Object[]) cmdPayload;
+                redisOp = parser.parse(rawCmdArgs);
+                doOnRedisOp(redisOp, len, null);
+            } catch (Throwable unlikely) {
+                try {
+                    logger.error("[onCommand] unlikely - when doing partial sync]", unlikely);
+                    logger.error("[onCommand] unlikely {}", redisOp);
+                } catch (Throwable ignore) {
+                }
+            }
+        } else if (null != cmdPayload) {
+            logger.info("[doReceiveResponse][{}][unknown payload] {}, {}", READING_COMMANDS, this, cmdPayload);
+            throw new RedisRuntimeException("unknown payload:" + cmdPayload);
+        }
+    }
+
+    private void parserXsyncCommand(ByteBuf byteBuf) {
         if(streamCommandParser == null) {
             streamCommandParser = new StreamCommandParser(parser, this);
         }
@@ -134,6 +179,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             logger.error("parser error", ioException);
         }
     }
+
 
     @Override
     public void endReadRdb() {
@@ -163,21 +209,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         String gtid = redisOp.getOpGtid();
         doOnRedisOp(redisOp, commandBuf.readableBytes(), gtid);
         commandBuf.skipBytes(commandBuf.readableBytes());
-    }
-
-    private class GtidRiseJob implements Runnable {
-
-        private final String gtid;
-
-        private GtidRiseJob(String gtid) {
-            this.gtid = gtid;
-        }
-
-        @Override
-        public void run() {
-            logger.debug("[updateGtidState] rise gtid {} to gtid_executed {}", gtid, execGtidSet.get());
-            execGtidSet.get().rise(gtid);
-        }
     }
 
     protected int toInt(byte[] value) {
