@@ -45,11 +45,11 @@ public class StreamCommandReader implements StreamCommandLister {
 
     }
 
-    public void relaseRemainBuf() {
-        streamCommandParser.relaseRemainBuf();
+    public void resetParser() {
+        streamCommandParser.reset();
     }
 
-    public long getRemainLength() {
+    public int getRemainLength() {
         return streamCommandParser.getRemainLength();
     }
 

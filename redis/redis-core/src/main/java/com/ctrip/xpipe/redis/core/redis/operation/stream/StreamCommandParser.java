@@ -1,13 +1,12 @@
 package com.ctrip.xpipe.redis.core.redis.operation.stream;
 
-import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,55 +25,74 @@ public class StreamCommandParser {
 
     private ByteBuf remainingBuf;
 
+
     private StreamCommandLister commandLister;
+
+    private ByteBufAllocator allocator;
 
     public StreamCommandParser(RedisOpParser opParser, StreamCommandLister commandLister) {
         this.protocolParser = new ArrayParser();
-        this.opParser = opParser;
         this.commandLister = commandLister;
+        allocator = ByteBufAllocator.DEFAULT;
+        this.opParser = opParser;
     }
 
 
     public void doRead(ByteBuf byteBuf) throws IOException {
 
-        if (opParser == null) {
-            throw new XpipeRuntimeException("unlikely: opParser is null");
-        }
-        CompositeByteBuf mergeBuf = Unpooled.compositeBuffer();
-        if(remainingBuf != null && remainingBuf.readableBytes() > 0) {
-            mergeBuf.addComponent(true, remainingBuf);
-            remainingBuf = null;
-        }
-        mergeBuf.addComponent(true, byteBuf);
-        while (mergeBuf.readableBytes() > 0) {
-            int pre = mergeBuf.readerIndex();
-            RedisClientProtocol<Object[]> protocol = null;
-            try {
-                protocol = protocolParser.read(mergeBuf);
-            } catch (RedisRuntimeException | NumberFormatException exception) {
-                log.error("[doRead] {}", exception.getMessage());
-                int starIndex = findFirstStar(mergeBuf, pre + 1);
-                if(starIndex != -1) {
-                    log.info("[skip some data] from {}", mergeBuf.slice(pre, starIndex - pre).toString(Charset.defaultCharset()));
-                    mergeBuf.readerIndex(starIndex);
-                    this.protocolParser.reset();
-                    continue;
+        try {
+            while (byteBuf.readableBytes() > 0) {
+                int pre = byteBuf.readerIndex();
+                RedisClientProtocol<Object[]> protocol = null;
+                try {
+                    protocol = protocolParser.read(byteBuf);
+                } catch (RedisRuntimeException | NumberFormatException exception) {
+                    // 错误处理，碰到脏数据需要跳过，预期不会用脏数据
+                    log.error("[doRead] {}", exception.getMessage());
+                    int starIndex = findFirstStar(byteBuf, pre + 1);
+                    if(starIndex != -1) {
+                        log.info("[skip some data] from {}", byteBuf.slice(pre, starIndex - pre).toString(Charset.defaultCharset()));
+                        byteBuf.readerIndex(starIndex);
+                        this.reset();
+                        continue;
+                    } else {
+                        throw exception;
+                    }
                 }
-            }
-            if (protocol == null) {
+                if (protocol == null) {
+                    ByteBuf  newRemainingBuf = allocator.buffer(getRemainLength() + byteBuf.writerIndex() - pre);
+                    if(remainingBuf != null && remainingBuf.readableBytes() > 0) {
+                        newRemainingBuf.writeBytes(remainingBuf);
+                    }
+                    newRemainingBuf.writeBytes(byteBuf.slice(pre,  byteBuf.writerIndex() - pre));
+                    this.relaseReaminBuf();
+                    this.remainingBuf = newRemainingBuf;
+                    break;
+                }
+
+                CompositeByteBuf mergeBuf = allocator.compositeBuffer();
+                try {
+                    if(remainingBuf != null && remainingBuf.readableBytes() > 0) {
+                        mergeBuf.addComponent(true, remainingBuf);
+                        remainingBuf = null; // 旧的引用置空，其生命周期由mergeBuf管理
+                    }
+                    ByteBuf finishBuf = byteBuf.slice(pre, byteBuf.readerIndex() - pre);
+                    finishBuf.retain();
+                    mergeBuf.addComponent(true, finishBuf);
+                    Object[] payload = protocol.getPayload();
+                    commandLister.onCommand(payload, mergeBuf);
+                } finally {
+                    mergeBuf.release();
+                }
                 this.protocolParser.reset();
-                this.relaseRemainBuf();
-                remainingBuf = Unpooled.copiedBuffer(mergeBuf.slice(pre,  mergeBuf.writerIndex() - pre));
-                break;
             }
-
-            ByteBuf finishBuf = mergeBuf.slice(pre, mergeBuf.readerIndex() - pre);
-
-            Object[] payload = protocol.getPayload();
-            commandLister.onCommand(payload, finishBuf);
+        } catch (Exception e) {
+            this.reset();
             this.protocolParser.reset();
         }
-        byteBuf.skipBytes(byteBuf.readableBytes());
+        finally {
+            byteBuf.skipBytes(byteBuf.readableBytes());
+        }
     }
 
     private int findFirstStar(ByteBuf byteBuf, int beginOffset) {
@@ -87,11 +105,22 @@ public class StreamCommandParser {
         return -1;
     }
 
-    public void relaseRemainBuf() {
-        this.remainingBuf = null;
+    private void relaseReaminBuf() {
+        if(remainingBuf != null) {
+            remainingBuf.release();
+            remainingBuf = null;
+        }
     }
 
-    public long getRemainLength() {
+    public void reset() {
+        if(remainingBuf != null) {
+            this.remainingBuf.release();
+            this.remainingBuf = null;
+        }
+        this.protocolParser.reset();
+    }
+
+    public int getRemainLength() {
         if(remainingBuf == null) {
             return 0;
         }

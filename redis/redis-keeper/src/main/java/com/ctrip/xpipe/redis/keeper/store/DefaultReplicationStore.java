@@ -937,6 +937,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		return true;
 	}
 
+	@Override
+	public void resetStateForContinue() {
+		cmdStore.resetStateForContinue();
+	}
+
 	protected Logger getLogger() {
 		return logger;
 	}
