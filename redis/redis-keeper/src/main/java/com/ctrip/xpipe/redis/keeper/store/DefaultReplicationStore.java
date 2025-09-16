@@ -198,7 +198,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public void switchToPSync(String replId, long replOff) throws IOException {
 		getLogger().info("[switchToPSync] replId:{}, replOff:{}", replId, replOff);
-		metaStore.switchToPsync(replId, replOff+1, backlogEndOffset());
+		metaStore.switchToPsync(replId, replOff, backlogEndOffset());
 		cmdStore.switchToPsync(replId, replOff);
 	}
 
@@ -213,7 +213,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		GtidSet gtidEmpty = new GtidSet(GtidSet.EMPTY_GTIDSET);
 		GtidSet gtidExecuted = gtidCont.subtract(gtidLost);
-		ReplicationStoreMeta newMeta =  metaStore.xsyncContinueFrom(replId,replOff+1, backlogEndOffset(),
+		ReplicationStoreMeta newMeta =  metaStore.xsyncContinueFrom(replId,replOff, backlogEndOffset(),
 				masterUuid,gtidLost,gtidExecuted,cmdFilePrefix);
 
 		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
@@ -225,14 +225,14 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
 		getLogger().info("[switchToXSync] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}, gtidLost:{}", replId, replOff, masterUuid, gtidCont, gtidLost);
-		metaStore.switchToXsync(replId, replOff+1, backlogEndOffset(), masterUuid, gtidCont, gtidLost);
+		metaStore.switchToXsync(replId, replOff, backlogEndOffset(), masterUuid, gtidCont, gtidLost);
 		cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
 	}
 
 	@Override
 	public boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
 		getLogger().info("[xsyncContinue] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}", replId, replOff, masterUuid, gtidCont);
-		return metaStore.xsyncContinue(replId,replOff+1, backlogEndOffset(),masterUuid,gtidCont,cmdStore.getIndexGtidSet());
+		return metaStore.xsyncContinue(replId, replOff, backlogEndOffset(),masterUuid,gtidCont,cmdStore.getIndexGtidSet());
 	}
 
 	@Override
@@ -493,7 +493,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		baseDir.mkdirs();
 
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
-		ReplicationStoreMeta newMeta = metaStore.psyncContinueFrom(replId, replOff+1, backlogEndOffset(), cmdFilePrefix);
+		ReplicationStoreMeta newMeta = metaStore.psyncContinueFrom(replId, replOff, backlogEndOffset(), cmdFilePrefix);
 
 		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
 				metaStore.generateGtidCmdFilter());
