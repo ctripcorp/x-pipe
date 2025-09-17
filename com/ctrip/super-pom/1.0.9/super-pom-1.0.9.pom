@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.ctrip</groupId>
         <artifactId>ctrip-super-rule</artifactId>
-        <version>RELEASE</version>
+        <version>1.0.27</version>
     </parent>
     <groupId>com.ctrip</groupId>
     <artifactId>super-pom</artifactId>
