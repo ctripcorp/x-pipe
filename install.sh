@@ -100,7 +100,7 @@ done
 
 
 
-for _Version in `ls org/unidal/framework/parent/`; do
+for _Version in `ls org/unidal/framework/parent/ | grep -v maven-metadata`; do
 	mvn install:install-file -Dfile=org/unidal/framework/parent/$_Version/parent-$_Version.pom -DpomFile=org/unidal/framework/parent/$_Version/parent-$_Version.pom -Dpackaging=pom
 done
 
