@@ -154,10 +154,29 @@ public abstract class AbstractMetaStore implements MetaStore{
 			File metaV1File = new File(baseDir, META_V1_FILE);
 			File metaV2File = new File(baseDir, META_V2_FILE);
 
-			if(metaV2File.isFile()){
+			// 时间戳差异阈值。只有v1比v2新超过这个时间，才认为v1是有效的。
+			final long META_TIMESTAMP_THRESHOLD_MS = 60000L;
+
+			boolean v1Exists = metaV1File.isFile();
+			boolean v2Exists = metaV2File.isFile();
+			if (v1Exists && v2Exists) {
+
+				long v1LastModified = metaV1File.lastModified();
+				long v2LastModified = metaV2File.lastModified();
+
+				if (v1LastModified - v2LastModified > META_TIMESTAMP_THRESHOLD_MS) {
+					// v2一直没修改, 超过1分钟 认为v2无效
+					meta = loadMetaFromFileV1(metaV1File);
+					source = metaV1File;
+					logger.warn("[loadMeta] v1 is much newer than v2, loading v1. v1_time:{}, v2_time:{}", v1LastModified, v2LastModified);
+				} else {
+					meta = loadMetaFromFileV2(metaV2File);
+					source = metaV2File;
+				}
+			} else if(v2Exists){
 				meta = loadMetaFromFileV2(metaV2File);
 				source = metaV2File;
-			} else if (metaV1File.isFile()) {
+			} else if(v1Exists) {
 				meta = loadMetaFromFileV1(metaV1File);
 				source = metaV1File;
 			} else {
