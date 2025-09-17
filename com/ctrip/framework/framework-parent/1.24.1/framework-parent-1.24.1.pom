@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ctrip</groupId>
+        <artifactId>super-pom</artifactId>
+        <version>1.0.5</version>
+    </parent>
+
+    <groupId>com.ctrip.framework</groupId>
+    <artifactId>framework-parent</artifactId>
+    <version>1.24.1</version>
+    <packaging>pom</packaging>
+    <name>Ctrip Framework Parent</name>
+    <description>Ctrip Framework Parent</description>
+    <organization>
+        <name>Ctrip, Inc.</name>
+        <url>http://www.ctrip.com</url>
+    </organization>
+    <properties>
+        <!-- Maven Release Repository URL -->
+        <releases.repo>http://maven.release.ctripcorp.com/nexus/content/repositories/fxrelease</releases.repo>
+        <!-- Maven Snapshot Repository URL -->
+        <snapshots.repo>http://maven.release.ctripcorp.com/nexus/content/repositories/fxsnapshot</snapshots.repo>
+        <!-- Common Dependencies Version -->
+        <commons-beanutils.version>1.9.3</commons-beanutils.version>
+        <commons-codec.version>1.10</commons-codec.version>
+        <commons-lang.version>2.6</commons-lang.version>
+        <foundation-service.version>3.0.8</foundation-service.version>
+        <plexus-container-default.version>3.0.8</plexus-container-default.version>
+        <gson.version>2.8.0</gson.version>
+        <guava.version>31.0.1-jre</guava.version>
+        <hamcrest-core.version>1.3</hamcrest-core.version>
+        <hibernate-validator.version>5.3.3.Final</hibernate-validator.version>
+        <httpasyncclient.version>4.1.2</httpasyncclient.version>
+        <httpclient.version>4.5.6</httpclient.version>
+        <httpcore.version>4.4.10</httpcore.version>
+        <jackson2.version>2.10.3</jackson2.version>
+        <junit.version>4.12</junit.version>
+        <libthrift.version>0.9.3</libthrift.version>
+        <netty4.version>4.1.68.Final</netty4.version>
+        <snappy-java.version>1.1.2.6</snappy-java.version>
+        <testng.version>6.10</testng.version>
+        <validation-api.version>1.1.0.Final</validation-api.version>
+    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <!-- json -->
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson2.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>${gson.version}</version>
+            </dependency>
+
+            <!-- guava -->
+            <dependency>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>${guava.version}</version>
+            </dependency>
+
+            <!-- commons -->
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>${commons-beanutils.version}</version>
+                <exclusions>
+                    <!-- commons-logging is banned -->
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>${commons-codec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>${commons-lang.version}</version>
+            </dependency>
+
+            <!-- validator -->
+            <dependency>
+                <groupId>javax.validation</groupId>
+                <artifactId>validation-api</artifactId>
+                <version>${validation-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-validator</artifactId>
+                <version>${hibernate-validator.version}</version>
+            </dependency>
+
+            <!-- httpclient -->
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient.version}</version>
+                <exclusions>
+                    <!-- commons-logging is banned -->
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>${httpcore.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore-nio</artifactId>
+                <version>${httpcore.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpasyncclient</artifactId>
+                <version>${httpasyncclient.version}</version>
+                <exclusions>
+                    <!-- commons-logging is banned -->
+                    <exclusion>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <!-- log is defined in super pom -->
+
+            <!-- spring is defined in super pom -->
+
+            <!-- unidal -->
+            <dependency>
+                <groupId>org.unidal.framework</groupId>
+                <artifactId>foundation-service</artifactId>
+                <version>${foundation-service.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-container-default</artifactId>
+                <version>${plexus-container-default.version}</version>
+            </dependency>
+
+            <!-- others -->
+            <dependency>
+                <groupId>org.apache.thrift</groupId>
+                <artifactId>libthrift</artifactId>
+                <version>${libthrift.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-all</artifactId>
+                <version>${netty4.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.xerial.snappy</groupId>
+                <artifactId>snappy-java</artifactId>
+                <version>${snappy-java.version}</version>
+            </dependency>
+
+            <!-- test -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-core</artifactId>
+                <version>${hamcrest-core.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>${testng.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>${maven-surefire-plugin.version}</version>
+                    <configuration>
+                        <includes>
+                            <include>**/AllTests.java</include>
+                        </includes>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>framework-parent-check</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <evaluateBeanshell>
+                                    <condition>
+                                        print("[INFO] [Framework] framework-parent enforcer");1==1
+                                    </condition>
+                                </evaluateBeanshell>
+                                <requireMavenVersion>
+                                    <version>[3.2.5,)</version>
+                                    <message>** projects must use Maven 3.2.5 or later version.
+                                    </message>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <version>[1.7.0,)</version>
+                                    <message>** Projects must use Java 7 or later version</message>
+                                </requireJavaVersion>
+                                <requireFilesDontExist>
+                                    <files>
+                                        <file>src/java</file>
+                                        <file>src/java.test</file>
+                                        <file>src/conf</file>
+                                        <file>src/conf.test</file>
+                                    </files>
+                                    <message>** projects must use standard Maven directory layout(src/main/java etc.)
+                                    </message>
+                                </requireFilesDontExist>
+                                <bannedDependencies>
+                                    <excludes>
+                                        <exclude>javax.servlet:servlet-api</exclude>
+                                        <exclude>org.mortbay.jetty:servlet-api-2.5</exclude>
+                                    </excludes>
+                                    <message>** prefer javax.servlet:javax.servlet-api</message>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
