@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>ctripgroup.scm</groupId>
+        <artifactId>super-rule</artifactId>
+        <version>1.0.33</version>
+    </parent>
+    <groupId>com.ctrip</groupId>
+    <artifactId>ctrip-super-rule</artifactId>
+    <version>1.0.27</version>
+    <packaging>pom</packaging>
+    <name>Ctrip Super Rule</name>
+    <description>Ctrip Super Rule</description>
+    <organization>
+        <name>Ctrip, Inc.</name>
+        <url>http://www.ctrip.com</url>
+    </organization>
+    <properties>
+        <!-- enforcer api url -->
+        <enforcer.custom.api.url>http://cmapi.release.ctripcorp.com</enforcer.custom.api.url>
+        <!-- enforcer api timeout in seconds -->
+        <enforcer.custom.api.timeout>3</enforcer.custom.api.timeout>
+        <!-- enforcer api on error(timeout, error status, etc) strategy -->
+        <!-- i.e the value specifies whether to fail this build or not -->
+        <enforcer.custom.api.onerror.fail>false</enforcer.custom.api.onerror.fail>
+        <enforcer.requireReleaseTag.skip>false</enforcer.requireReleaseTag.skip>
+        <!-- the 'ctrip' value in order to match all the rules with scope 'all' or 'ctrip' among cmapi  -->
+        <enforcer.customDependencyRules.checkScope>ctrip</enforcer.customDependencyRules.checkScope>
+        <enforcer.qBanDuplicateClasses.checkScope>ctrip</enforcer.qBanDuplicateClasses.checkScope>
+    </properties>
+</project>
