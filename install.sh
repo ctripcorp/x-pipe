@@ -56,6 +56,9 @@ for _Version in `ls ctripgroup/scm/super-rule/ | grep -v maven-metadata`; do
 	mvn install:install-file -Dfile=ctripgroup/scm/super-rule/$_Version/super-rule-$_Version.pom -DpomFile=ctripgroup/scm/super-rule/$_Version/super-rule-$_Version.pom -Dpackaging=pom
 done
 
+for _Version in `ls ctripgroup/scm/enforcer-custom-rules/`; do
+	mvn install:install-file -Dfile=ctripgroup/scm/enforcer-custom-rules/$_Version/enforcer-custom-rules-$_Version.pom -DpomFile=ctripgroup/scm/enforcer-custom-rules/$_Version/enforcer-custom-rules-$_Version.pom -Dpackaging=pom
+done
 
 for _Version in `ls com/ctrip/ctrip-super-rule/ | grep -v maven-metadata | grep -v resolver-status`; do
 	mvn install:install-file -Dfile=com/ctrip/ctrip-super-rule/$_Version/ctrip-super-rule-$_Version.pom -DpomFile=com/ctrip/ctrip-super-rule/$_Version/ctrip-super-rule-$_Version.pom -Dpackaging=pom
