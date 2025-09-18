@@ -25,7 +25,7 @@ for _Version in `ls com/ctrip/framework/framework-parent/ `; do
 done
 
 for _Version in `ls com/ctrip/framework/xpipe/`; do
-	mvn install:install-file -Dfile=com/ctrip/framework/xpipe/$_Version/xpipe-parent-$_Version.pom -DpomFile=com/ctrip/framework/xpipe/$_Version/xpipe-parent-$_Version.pom -Dpackaging=pom
+	mvn install:install-file -Dfile=com/ctrip/framework/xpipe/$_Version/xpipe-parent-$_Version.pom -DpomFile=com/ctrip/framework/xpipe/$_Version/xpipe-parent-$_Version.pom -Dpackaging=pom -DgroupId=com.ctrip.framework.xpipe -DartifactId=xpipe-parent -Dversion=$_Version
 done
 
 for _Version in `ls com/ctrip/framework/maven/plugins/common/`; do
