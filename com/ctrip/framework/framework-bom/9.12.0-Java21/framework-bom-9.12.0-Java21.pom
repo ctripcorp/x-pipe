@@ -1,0 +1,704 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.ctrip</groupId>
+        <artifactId>super-pom</artifactId>
+        <version>1.0.5.3-Java21</version>
+    </parent>
+
+    <groupId>com.ctrip.framework</groupId>
+    <artifactId>framework-bom</artifactId>
+    <version>9.12.0-Java21</version>
+    <packaging>pom</packaging>
+    <name>Ctrip Framework BOM</name>
+    <description>Ctrip Framework BOM</description>
+    <organization>
+        <name>Ctrip, Inc.</name>
+        <url>http://www.ctrip.com</url>
+    </organization>
+    <developers>
+        <developer>
+            <email>rdkjbom@ctrip.com</email>
+        </developer>
+    </developers>
+    <properties>
+        <!--ctrip third party bom -->
+        <ctrip-thirdparty-bom.version>0.24.0-Java21</ctrip-thirdparty-bom.version>
+        <!-- framework -->
+        <common-toolkit.version>1.0.1</common-toolkit.version>
+        <cat.version>3.7.1-Java21</cat.version>
+        <clogging.version>5.0.3-Java21</clogging.version>
+        <ckafka.version>0.2.4-Java21</ckafka.version>
+        <triplog.version>0.1.11-Java21</triplog.version>
+        <dal.version>3.1.24</dal.version>
+        <ctrip-datasource.version>3.1.24</ctrip-datasource.version>
+        <idgen-client.version>1.2.15</idgen-client.version>
+        <order-idgen-client.version>1.2.13</order-idgen-client.version>
+        <soa.version>2.24.79-Java21</soa.version>
+        <artemis.version>1.9.24-Java21</artemis.version>
+        <caravan.version>1.19.32-Java21</caravan.version>
+        <order-idgen-soa-plugin.version>1.2.11</order-idgen-soa-plugin.version>
+        <framework-foundation.version>1.8.33-Java21</framework-foundation.version>
+        <cdubbo.version>1.7.55-Java21</cdubbo.version>
+        <dubbo.version>3.2.6-ctrip.3</dubbo.version>
+        <dubbo-serialization.version>2.1.3-Java21</dubbo-serialization.version>
+        <hystrix.version>1.5.12-ctrip.2</hystrix.version>
+        <cmongo-client-sync.version>1.0.4</cmongo-client-sync.version>
+        <mongodb-driver.version>4.10.2</mongodb-driver.version>
+        <ucs.version>0.8.5</ucs.version>
+        <jredis.version>2.8.1.5-ctrip</jredis.version>
+        <credis.version>4.4.12</credis.version>
+        <hermes.version>1.0.4</hermes.version>
+        <apollo.version>0.6.7</apollo.version>
+        <vi.version>0.11.75-Java21</vi.version>
+        <session-client.version>1.0.5</session-client.version>
+        <jobapi.version>1.2.6</jobapi.version>
+        <distlock-client.version>1.1.12</distlock-client.version>
+        <idempotent-checker.version>2.1.13</idempotent-checker.version>
+        <coreinfo-service-client.version>1.0.30</coreinfo-service-client.version>
+        <!-- Cscmws2 Client -->
+        <com-ctrip-arch-cscmws.version>1.0.3</com-ctrip-arch-cscmws.version>
+        <!-- QSchedule -->
+        <qschedule.version>1.1.104-Java21</qschedule.version>
+        <!-- QConfig -->
+        <qconfig.version>1.100.72-ctrip</qconfig.version>
+        <!-- QMQ -->
+        <qmq.version>6.3.19-ctrip</qmq.version>
+        <!-- Qunar TC -->
+        <qunar-tcdev.version>3.1.74</qunar-tcdev.version>
+        <!-- Qunar Wrapper -->
+        <qunar-dubbo-wrapper.version>2.0.0</qunar-dubbo-wrapper.version>
+        <!-- Hickwall -->
+        <hickwall.version>0.1.18</hickwall.version>
+        <!-- ES -->
+        <elasticsearch6.version>6.8.23-8</elasticsearch6.version>
+        <elasticsearch7.version>7.17.5-8</elasticsearch7.version>
+        <!-- CS2J -->
+        <cs2j.version>1.0.0</cs2j.version>
+        <!-- Starter -->
+        <starter.version>0.0.8</starter.version>
+
+        <!-- third party -->
+        <foundation-service.version>3.0.8</foundation-service.version>
+        <plexus-container-default.version>3.0.8</plexus-container-default.version>
+
+        <!-- mysql connector -->
+        <mysql-connector.version>8.0.33-ctrip.3</mysql-connector.version>
+
+        <!-- mssql connector -->
+        <mssql-jdbc.version>6.4.0.jre7.ctrip</mssql-jdbc.version>
+
+        <!-- framework bom repository path, only used for framework bom deployment -->
+        <!-- Maven Release Repository URL -->
+        <releases.repo>http://maven.release.ctripcorp.com/nexus/content/repositories/fxrelease</releases.repo>
+        <!-- Maven Snapshot Repository URL -->
+        <snapshots.repo>http://maven.release.ctripcorp.com/nexus/content/repositories/fxsnapshot</snapshots.repo>
+    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <!-- Third Party-->
+            <dependency>
+                <groupId>com.ctrip.thirdparty</groupId>
+                <artifactId>ctrip-thirdparty-bom</artifactId>
+                <version>${ctrip-thirdparty-bom.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- common-toolkit -->
+            <dependency>
+                <groupId>com.ctrip.framework.common-tools</groupId>
+                <artifactId>common-toolkit</artifactId>
+                <version>${common-toolkit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework.common-tools</groupId>
+                <artifactId>common-toolkit-java8</artifactId>
+                <version>${common-toolkit.version}</version>
+            </dependency>
+            <!-- Framework Foundation -->
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>framework-foundation</artifactId>
+                <version>${framework-foundation.version}</version>
+            </dependency>
+            <!-- CAT -->
+            <dependency>
+                <groupId>com.dianping.cat</groupId>
+                <artifactId>cat-client</artifactId>
+                <version>${cat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dianping.cat</groupId>
+                <artifactId>cat-exporter</artifactId>
+                <version>${cat.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.dianping.cat</groupId>
+                <artifactId>cat-prometheus-exporter</artifactId>
+                <version>${cat.version}</version>
+            </dependency>
+            <!-- CLogging -->
+            <dependency>
+                <groupId>com.ctrip.framework.clogging</groupId>
+                <artifactId>clogging-agent</artifactId>
+                <version>${clogging.version}</version>
+            </dependency>
+            <!-- TripLog -->
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>triplog-client</artifactId>
+                <version>${triplog.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>triplog-client-impl</artifactId>
+                <version>${triplog.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>triplog-common</artifactId>
+                <version>${triplog.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>triplog-protobuf </artifactId>
+                <version>${triplog.version}</version>
+            </dependency>
+            <!-- DAL -->
+            <dependency>
+                <groupId>com.microsoft.sqlserver</groupId>
+                <artifactId>mssql-jdbc</artifactId>
+                <version>${mssql-jdbc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.platform</groupId>
+                <artifactId>ctrip-dal-client</artifactId>
+                <version>${dal.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.platform</groupId>
+                <artifactId>dal-spring</artifactId>
+                <version>${dal.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.platform</groupId>
+                <artifactId>ctrip-datasource</artifactId>
+                <version>${ctrip-datasource.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework.idgen</groupId>
+                <artifactId>idgen-client</artifactId>
+                <version>${idgen-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework.idgen</groupId>
+                <artifactId>order-idgen-client</artifactId>
+                <version>${order-idgen-client.version}</version>
+            </dependency>
+            <!-- SOA -->
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-core</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-common</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-client</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-server</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-mobile-request-filter</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-extensions</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-formatter-protobuf</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-formatter-fury</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-mobile-cryptography</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctriposs.baiji</groupId>
+                <artifactId>baiji-rpc-extension-sentinel</artifactId>
+                <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework.idgen</groupId>
+                <artifactId>order-idgen-soa-plugin</artifactId>
+                <version>${order-idgen-soa-plugin.version}</version>
+            </dependency>
+
+            <!-- CDubbo -->
+            <dependency>
+                <groupId>com.ctrip.framework.cdubbo</groupId>
+                <artifactId>cdubbo-client</artifactId>
+                <version>${cdubbo.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.dubbo</groupId>
+                <artifactId>dubbo</artifactId>
+                <version>${dubbo.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.dubbo</groupId>
+                <artifactId>dubbo-metadata-definition-protobuf</artifactId>
+                <version>${dubbo.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.dubbo</groupId>
+                        <artifactId>dubbo-common</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.dubbo</groupId>
+                        <artifactId>dubbo-metadata-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework.cdubbo</groupId>
+                <artifactId>cdubbo-serialization</artifactId>
+                <version>${dubbo-serialization.version}</version>
+            </dependency>
+
+            <!-- Hystrix -->
+            <dependency>
+                <groupId>com.netflix.hystrix</groupId>
+                <artifactId>hystrix-core</artifactId>
+                <version>${hystrix.version}</version>
+            </dependency>
+            <!-- Cavaran -->
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-common</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-configuration</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-ribbon</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-web</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-util</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-ctrip</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-etcd</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-hystrix</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.caravan</groupId>
+                <artifactId>caravan-protobuf</artifactId>
+                <version>${caravan.version}</version>
+            </dependency>
+            <!-- Artemis -->
+            <dependency>
+                <groupId>com.ctrip.soa.artemis</groupId>
+                <artifactId>artemis-client</artifactId>
+                <version>${artemis.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.artemis</groupId>
+                <artifactId>artemis-common</artifactId>
+                <version>${artemis.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.artemis</groupId>
+                <artifactId>artemis-client-ctrip</artifactId>
+                <version>${artemis.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.soa.artemis</groupId>
+                <artifactId>artemis-common-client</artifactId>
+                <version>${artemis.version}</version>
+            </dependency>
+
+            <!-- unidal -->
+            <dependency>
+                <groupId>org.unidal.framework</groupId>
+                <artifactId>foundation-service</artifactId>
+                <version>${foundation-service.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-container-default</artifactId>
+                <version>${plexus-container-default.version}</version>
+            </dependency>
+
+            <!-- cs2j -->
+            <dependency>
+                <groupId>com.ctrip.framework.cs2j</groupId>
+                <artifactId>cs2j-support</artifactId>
+                <version>${cs2j.version}</version>
+            </dependency>
+
+            <!-- cmongo-client-sync -->
+            <dependency>
+                <groupId>com.ctrip.framework.cmongo</groupId>
+                <artifactId>cmongo-client-sync</artifactId>
+                <version>${cmongo-client-sync.version}</version>
+            </dependency>
+            <!-- mongodb-driver -->
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongodb-driver-sync</artifactId>
+                <version>${mongodb-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>mongodb-driver-core</artifactId>
+                <version>${mongodb-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mongodb</groupId>
+                <artifactId>bson</artifactId>
+                <version>${mongodb-driver.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework.fx</groupId>
+                <artifactId>ucs-client</artifactId>
+                <version>${ucs.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>org.jacoco.agent</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework.fx</groupId>
+                <artifactId>ucs-helper</artifactId>
+                <version>${ucs.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>org.jacoco.agent</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <!-- CRedis -->
+            <dependency>
+                <groupId>com.ctrip.credis</groupId>
+                <artifactId>credis</artifactId>
+                <version>${credis.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>redis.clients</groupId>
+                <artifactId>jedis</artifactId>
+                <version>${jredis.version}</version>
+            </dependency>
+
+            <!-- QConfig  -->
+            <dependency>
+                <groupId>qunar.tc.qconfig</groupId>
+                <artifactId>qconfig-common</artifactId>
+                <version>${qconfig.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc.qconfig</groupId>
+                <artifactId>qconfig-client</artifactId>
+                <version>${qconfig.version}</version>
+            </dependency>
+            <!-- QSchedule  -->
+            <dependency>
+                <groupId>qunar.tc.qschedule</groupId>
+                <artifactId>qschedule-client</artifactId>
+                <version>${qschedule.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc.qschedule</groupId>
+                <artifactId>qschedule-executor</artifactId>
+                <version>${qschedule.version}</version>
+            </dependency>
+
+            <!--QMQ-->
+            <dependency>
+                <groupId>qunar.tc</groupId>
+                <artifactId>qmq-api</artifactId>
+                <version>${qmq.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc</groupId>
+                <artifactId>qmq-client</artifactId>
+                <version>${qmq.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc</groupId>
+                <artifactId>qmq-common</artifactId>
+                <version>${qmq.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>qunar.tc</groupId>
+                <artifactId>qmq-dal</artifactId>
+                <version>${qmq.version}</version>
+            </dependency>
+
+            <!-- Hermes -->
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>hermes-producer</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>hermes-consumer</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>hermes-kafka</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>hermes-env</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>ctrip-hermes-env</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.hermes</groupId>
+                <artifactId>hermes-core</artifactId>
+                <version>${hermes.version}</version>
+            </dependency>
+            <!-- Apollo -->
+            <dependency>
+                <groupId>com.ctrip.framework.apollo</groupId>
+                <artifactId>apollo-client</artifactId>
+                <version>${apollo.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework.apollo</groupId>
+                <artifactId>apollo-core</artifactId>
+                <version>${apollo.version}</version>
+            </dependency>
+            <!-- VI -->
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>vi</artifactId>
+                <version>${vi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>vi-core</artifactId>
+                <version>${vi.version}</version>
+            </dependency>
+            <!-- Session Client -->
+            <dependency>
+                <groupId>com.ctrip.arch</groupId>
+                <artifactId>session-client</artifactId>
+                <version>${session-client.version}</version>
+            </dependency>
+            <!-- Job API -->
+            <dependency>
+                <groupId>com.ctrip.framework.job</groupId>
+                <artifactId>jobapi</artifactId>
+                <version>${jobapi.version}</version>
+            </dependency>
+            <!-- Qunar TC -->
+            <dependency>
+                <groupId>qunar.tc</groupId>
+                <artifactId>tcdev</artifactId>
+                <version>${qunar-tcdev.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- DistLock -->
+            <dependency>
+                <groupId>com.ctrip.arch</groupId>
+                <artifactId>distlock-client</artifactId>
+                <version>${distlock-client.version}</version>
+            </dependency>
+            <!-- Idempotent -->
+            <dependency>
+                <groupId>com.ctrip.arch</groupId>
+                <artifactId>idempotent-checker</artifactId>
+                <version>${idempotent-checker.version}</version>
+            </dependency>
+
+            <!-- coreinfo-service-client -->
+            <dependency>
+                <groupId>com.ctrip.arch</groupId>
+                <artifactId>coreinfo-service-client</artifactId>
+                <version>${coreinfo-service-client.version}</version>
+            </dependency>
+            <!-- for qunar.tc -->
+            <dependency>
+                <groupId>qunar.tc.dubbo-wrapper</groupId>
+                <artifactId>dubbo-wrapper</artifactId>
+                <version>${qunar-dubbo-wrapper.version}</version>
+            </dependency>
+
+            <!-- Cscmws2 Client -->
+            <dependency>
+                <groupId>com.ctrip.arch.cscmws</groupId>
+                <artifactId>service-java-cscmws2-client</artifactId>
+                <version>${com-ctrip-arch-cscmws.version}</version>
+            </dependency>
+
+            <!-- CKafka -->
+            <dependency>
+                <groupId>com.ctrip.framework.ckafka</groupId>
+                <artifactId>client</artifactId>
+                <version>${ckafka.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.ctrip.framework.ckafka</groupId>
+                <artifactId>codec</artifactId>
+                <version>${ckafka.version}</version>
+            </dependency>
+
+            <!-- Starter -->
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot-starter</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot-starter-cdubbo</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot-starter-credis</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot-starter-dal</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot-starter-distlock</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot-starter-idempotent</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot-starter-idgen</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot-starter-monitor</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot-starter-native</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot-starter-qconfig</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot-starter-qmq</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot-starter-qschedule</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>fx-spring-boot-starter-soa</artifactId>
+                <version>${starter.version}</version>
+            </dependency>
+
+            <!-- Hickwall -->
+            <dependency>
+                <groupId>com.ctrip.ops</groupId>
+                <artifactId>hickwall-sdk</artifactId>
+                <version>${hickwall.version}</version>
+            </dependency>
+
+            <!-- ES -->
+            <dependency>
+                <groupId>com.ctrip.sysdev.elasticsearch6</groupId>
+                <artifactId>rest-high-level-client</artifactId>
+                <version>${elasticsearch6.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.sysdev.elasticsearch7</groupId>
+                <artifactId>rest-high-level-client</artifactId>
+                <version>${elasticsearch7.version}</version>
+            </dependency>
+
+            <!-- mysql connector -->
+            <dependency>
+                <groupId>mysql</groupId>
+                <artifactId>mysql-connector-java</artifactId>
+                <version>${mysql-connector.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
