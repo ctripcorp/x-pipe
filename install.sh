@@ -57,7 +57,7 @@ for _Version in `ls ctripgroup/scm/super-rule/ | grep -v maven-metadata`; do
 done
 
 for _Version in `ls ctripgroup/scm/enforcer-custom-rules/`; do
-	mvn install:install-file -Dfile=ctripgroup/scm/enforcer-custom-rules/$_Version/enforcer-custom-rules-$_Version.jar -DpomFile=ctripgroup/scm/enforcer-custom-rules/$_Version/enforcer-custom-rules-$_Version.pom -Dpackaging=jar -DgroupId=ctripgroup.scm.enforcer-custom-rules -DartifactId=enforcer-custom-rules -Dversion=$_Version
+	mvn install:install-file -Dfile=ctripgroup/scm/enforcer-custom-rules/$_Version/enforcer-custom-rules-$_Version.jar -DpomFile=ctripgroup/scm/enforcer-custom-rules/$_Version/enforcer-custom-rules-$_Version.pom -DgroupId=ctripgroup.scm -DartifactId=enforcer-custom-rules -Dversion=$_Version
 done
 
 for _Version in `ls com/ctrip/ctrip-super-rule/ | grep -v maven-metadata | grep -v resolver-status`; do
