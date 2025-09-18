@@ -1,0 +1,6 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Tue Mar 18 15:50:05 CST 2025
+enforcer-custom-rules-1.0.27.pom>trip-maven-prod=
+enforcer-custom-rules-1.0.27.pom>nexus=
+enforcer-custom-rules-1.0.27.jar>nexus=
+enforcer-custom-rules-1.0.27.jar>trip-maven-prod=

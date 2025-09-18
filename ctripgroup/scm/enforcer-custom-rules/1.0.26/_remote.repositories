@@ -1,0 +1,4 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Tue Jun 18 19:48:35 CST 2024
+enforcer-custom-rules-1.0.26.pom>nexus=
+enforcer-custom-rules-1.0.26.jar>nexus=
