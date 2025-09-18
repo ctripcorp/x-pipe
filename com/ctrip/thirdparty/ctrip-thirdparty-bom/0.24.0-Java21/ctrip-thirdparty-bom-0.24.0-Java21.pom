@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.ctrip</groupId>
+    <artifactId>super-pom</artifactId>
+    <version>1.0.5.3-Java21</version>
+  </parent>
+
+  <groupId>com.ctrip.thirdparty</groupId>
+  <artifactId>ctrip-thirdparty-bom</artifactId>
+  <version>0.24.0-Java21</version>
+
+  <packaging>pom</packaging>
+  <name>Ctrip 3rd-party BOM</name>
+  <description>List ctrip common 3rd party dependencies</description>
+  <organization>
+    <name>Ctrip, Inc.</name>
+    <url>http://www.ctrip.com</url>
+  </organization>
+  <properties>
+    <commons-beanutils.version>1.9.4</commons-beanutils.version>
+    <commons-collections.version>3.2.2</commons-collections.version>
+    <commons-io.version>2.13.0</commons-io.version>
+    <commons-lang.version>2.6</commons-lang.version>
+    <guava.version>31.0.1-jre</guava.version>
+    <error_prone_annotations.version>2.21.1</error_prone_annotations.version>
+    <httpclient.version>4.5.14</httpclient.version>
+    <httpcore.version>4.4.16</httpcore.version>
+    <javassist.version>3.29.2-GA</javassist.version>
+    <j2obc-annotation.version>2.8</j2obc-annotation.version>
+    <libthrift.version>0.9.3</libthrift.version>
+    <netty4.version>4.1.93.Final</netty4.version>
+    <protobuf.version>3.24.0</protobuf.version>
+    <grpc-bom.version>1.58.1</grpc-bom.version>
+    <snappy-java.version>1.1.10.3</snappy-java.version>
+    <zstd.version>1.5.5-5</zstd.version>
+
+    <!-- ctrip 3rd party bom repository path, only used for ctrip 3rd party bom deployment -->
+    <!-- Maven Release Repository URL -->
+    <releases.repo>http://maven.release.ctripcorp.com/nexus/content/repositories/releases/</releases.repo>
+    <!-- Maven Snapshot Repository URL -->
+    <snapshots.repo>http://maven.release.ctripcorp.com/nexus/content/repositories/snapshots/</snapshots.repo>
+  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <!-- guava -->
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>${guava.version}</version>
+      </dependency>
+
+      <!-- error_prone_annotations -->
+      <dependency>
+        <groupId>com.google.errorprone</groupId>
+        <artifactId>error_prone_annotations</artifactId>
+        <version>${error_prone_annotations.version}</version>
+      </dependency>
+
+      <!-- commons -->
+      <dependency>
+        <groupId>commons-beanutils</groupId>
+        <artifactId>commons-beanutils</artifactId>
+        <version>${commons-beanutils.version}</version>
+        <exclusions>
+          <!-- commons-logging is banned -->
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+        <version>${commons-lang.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-collections</groupId>
+        <artifactId>commons-collections</artifactId>
+        <version>${commons-collections.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons-io.version}</version>
+      </dependency>
+
+      <!-- httpclient -->
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+        <version>${httpclient.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+        <version>${httpcore.version}</version>
+      </dependency>
+
+      <!-- compression -->
+      <dependency>
+        <groupId>org.xerial.snappy</groupId>
+        <artifactId>snappy-java</artifactId>
+        <version>${snappy-java.version}</version>
+      </dependency>
+
+      <!-- netty -->
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty4.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- serialization -->
+      <dependency>
+        <groupId>org.apache.thrift</groupId>
+        <artifactId>libthrift</artifactId>
+        <version>${libthrift.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-bom</artifactId>
+        <version>${protobuf.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-bom</artifactId>
+        <version>${grpc-bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- others -->
+      <dependency>
+        <groupId>org.javassist</groupId>
+        <artifactId>javassist</artifactId>
+        <version>${javassist.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.luben</groupId>
+        <artifactId>zstd-jni</artifactId>
+        <version>${zstd.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.j2objc</groupId>
+        <artifactId>j2objc-annotations</artifactId>
+        <version>${j2obc-annotation.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>
