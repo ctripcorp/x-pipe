@@ -24,6 +24,18 @@ for _Version in `ls com/ctrip/framework/framework-parent/ `; do
 	mvn install:install-file -Dfile=com/ctrip/framework/framework-parent/$_Version/framework-parent-$_Version.pom -DpomFile=com/ctrip/framework/framework-parent/$_Version/framework-parent-$_Version.pom -Dpackaging=pom
 done
 
+for _Version in `ls com/ctrip/framework/maven/plugins/common/`; do
+	mvn install:install-file -Dfile=com/ctrip/framework/maven/plugins/common/$_Version/common-$_Version.jar -DpomFile=com/ctrip/framework/maven/plugins/common/$_Version/common-$_Version.pom
+done
+
+for _Version in `ls com/ctrip/framework/maven/plugins/fx-maven-plugins/`; do
+	mvn install:install-file -Dfile=com/ctrip/framework/maven/plugins/fx-maven-plugins/$_Version/fx-maven-plugins-$_Version.pom -DpomFile=com/ctrip/framework/maven/plugins/fx-maven-plugins/$_Version/fx-maven-plugins-$_Version.pom -Dpackaging=pom
+done
+
+for _Version in `ls com/ctrip/framework/maven/plugins/vi-indexer-maven-plugin/`; do
+	mvn install:install-file -Dfile=com/ctrip/framework/maven/plugins/vi-indexer-maven-plugin/$_Version/vi-indexer-maven-plugin-$_Version.jar -DpomFile=com/ctrip/framework/maven/plugins/vi-indexer-maven-plugin/$_Version/vi-indexer-maven-plugin-$_Version.pom
+done
+
 for _Version in `ls com/ctrip/super-pom/`; do
 	mvn install:install-file -Dfile=com/ctrip/super-pom/$_Version/super-pom-$_Version.pom -DpomFile=com/ctrip/super-pom/$_Version/super-pom-$_Version.pom -Dpackaging=pom
 done
