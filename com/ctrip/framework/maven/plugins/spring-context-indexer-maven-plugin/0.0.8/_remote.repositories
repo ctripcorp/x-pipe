@@ -1,0 +1,6 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Tue Apr 22 19:11:34 CST 2025
+spring-context-indexer-maven-plugin-0.0.8.jar>trip-maven-prod=
+spring-context-indexer-maven-plugin-0.0.8.pom>nexus=
+spring-context-indexer-maven-plugin-0.0.8.jar>nexus=
+spring-context-indexer-maven-plugin-0.0.8.pom>trip-maven-prod=

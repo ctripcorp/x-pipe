@@ -36,6 +36,14 @@ for _Version in `ls com/ctrip/framework/maven/plugins/vi-indexer-maven-plugin/`;
 	mvn install:install-file -Dfile=com/ctrip/framework/maven/plugins/vi-indexer-maven-plugin/$_Version/vi-indexer-maven-plugin-$_Version.jar -DpomFile=com/ctrip/framework/maven/plugins/vi-indexer-maven-plugin/$_Version/vi-indexer-maven-plugin-$_Version.pom
 done
 
+for _Version in `ls com/ctrip/framework/maven/plugins/spring-context-indexer-maven-plugin/`; do
+	mvn install:install-file -Dfile=com/ctrip/framework/maven/plugins/spring-context-indexer-maven-plugin/$_Version/spring-context-indexer-maven-plugin-$_Version.jar -DpomFile=com/ctrip/framework/maven/plugins/spring-context-indexer-maven-plugin/$_Version/spring-context-indexer-maven-plugin-$_Version.pom
+done
+
+for _Version in `ls com/ctrip/framework/maven/plugins/tomcat-indexer-maven-plugin/`; do
+	mvn install:install-file -Dfile=com/ctrip/framework/maven/plugins/tomcat-indexer-maven-plugin/$_Version/tomcat-indexer-maven-plugin-$_Version.jar -DpomFile=com/ctrip/framework/maven/plugins/tomcat-indexer-maven-plugin/$_Version/tomcat-indexer-maven-plugin-$_Version.pom
+done
+
 for _Version in `ls com/ctrip/super-pom/`; do
 	mvn install:install-file -Dfile=com/ctrip/super-pom/$_Version/super-pom-$_Version.pom -DpomFile=com/ctrip/super-pom/$_Version/super-pom-$_Version.pom -Dpackaging=pom
 done
