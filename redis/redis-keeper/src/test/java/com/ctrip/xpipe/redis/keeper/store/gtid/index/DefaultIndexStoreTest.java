@@ -352,6 +352,21 @@ public class DefaultIndexStoreTest {
     }
 
     @Test
+    public void parserdirty2() throws Exception {
+        String dirtyPath = "src/test/resources/GtidTest/dirty2";
+        write(dirtyPath);
+        GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
+        Assert.assertEquals(gtidSet.toString(), "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-10");
+        for(int i = 2; i <= 9; i++) {
+            Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet("a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-" + i));
+            Assert.assertEquals(point.getValue().toString(), "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-" + i);
+            RedisOp redisOp = IndexTestTool.readBytebufAfter(dirtyPath, point.getKey());
+            Assert.assertEquals(redisOp.getOpGtid(), "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:" + (i+1));
+        }
+
+    }
+
+    @Test
     public void testMetaStoreFilter() throws IOException {
         gtidCmdFilter = mock(GtidCmdFilter.class);
         when(gtidCmdFilter.gtidSetContains(anyString(), anyLong())).thenAnswer(invocation -> {
