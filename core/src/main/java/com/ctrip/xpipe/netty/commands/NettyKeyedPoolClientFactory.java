@@ -65,7 +65,7 @@ public class NettyKeyedPoolClientFactory extends AbstractStartStoppable implemen
 
 	protected void initBootstrap() {
 		b.group(eventLoopGroup).channel(NioSocketChannel.class)
-				.option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(512))
+//				.option(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(512))
 				.option(ChannelOption.TCP_NODELAY, true)
 				.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connectTimeoutMilli)
 				.handler(new ChannelInitializer<SocketChannel>() {

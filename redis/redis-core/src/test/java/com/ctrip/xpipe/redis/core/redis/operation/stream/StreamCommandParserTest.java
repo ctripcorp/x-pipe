@@ -39,10 +39,10 @@ public class StreamCommandParserTest {
 
         long start = System.nanoTime();
         // wholeBuf拆分，要考虑不能整除的情况，最终要处理所有数据，不能缺失
-        int piece = wholeBuf.readableBytes() / 65536;
+        int piece = wholeBuf.readableBytes() / 512;
         try {
             for (int i = 0; i < piece; i++) {
-                ByteBuf part = wholeBuf.readSlice(65536);
+                ByteBuf part = wholeBuf.readSlice(512);
                 streamCommandParser.doRead(part);
             }
             ByteBuf lastPart = wholeBuf.readSlice(wholeBuf.readableBytes());
