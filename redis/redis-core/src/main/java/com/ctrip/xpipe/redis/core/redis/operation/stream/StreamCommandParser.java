@@ -37,6 +37,7 @@ public class StreamCommandParser {
 
     public void doRead(ByteBuf byteBuf) throws IOException {
 
+        long start = System.nanoTime();
         if (opParser == null) {
             throw new XpipeRuntimeException("unlikely: opParser is null");
         }
@@ -62,6 +63,9 @@ public class StreamCommandParser {
                 }
             }
             if (protocol == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug(((ArrayParser) protocolParser).getPayloadAsString());
+                }
                 this.protocolParser.reset();
                 this.relaseRemainBuf();
                 remainingBuf = Unpooled.copiedBuffer(mergeBuf.slice(pre,  mergeBuf.writerIndex() - pre));
@@ -75,6 +79,10 @@ public class StreamCommandParser {
             this.protocolParser.reset();
         }
         byteBuf.skipBytes(byteBuf.readableBytes());
+        long end = System.nanoTime();
+        if (log.isDebugEnabled()) {
+            log.debug("[doRead] cost: {} ms", (end - start) / 1_000_000);
+        }
     }
 
     private int findFirstStar(ByteBuf byteBuf, int beginOffset) {
