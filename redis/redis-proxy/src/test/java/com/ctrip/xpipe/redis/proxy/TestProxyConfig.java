@@ -186,4 +186,9 @@ public class TestProxyConfig implements ProxyConfig {
     public void setCompress(boolean compress) {
         this.compress = compress;
     }
+
+    @Override
+    public boolean allowCloseChannel() {
+        return true;
+    }
 }
