@@ -134,6 +134,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
                 Object[] rawCmdArgs = (Object[]) cmdPayload;
                 redisOp = parser.parse(rawCmdArgs);
                 doOnRedisOp(redisOp, redisProtocolParser.getCurrentCommandOffset(), redisOp.getOpGtid());
+                redisProtocolParser.reset();
             } catch (Throwable unlikely) {
                 try {
                     logger.error("[onCommand] unlikely - when doing partial sync]", unlikely);
