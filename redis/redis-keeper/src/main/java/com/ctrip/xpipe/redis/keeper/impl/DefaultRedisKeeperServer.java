@@ -1031,7 +1031,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void onXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
-
+		getCurrentReplicationStore().resetStateForContinue();
 	}
 
 	@Override
