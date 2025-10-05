@@ -36,8 +36,10 @@ public class GapAllowXSyncHandler extends GapAllowSyncHandler {
                 gtidLost = args[pos + 1];
                 pos += 2;
             } else {
-                redisSlave.sendMessage(new RedisErrorParser(new RedisError("Invalid option " + opt)).format());
-                return null;
+                // the processing logic is consistent with redis, ignore invalid xsync option
+                // redisSlave.sendMessage(new RedisErrorParser(new RedisError("Invalid option " + opt)).format());
+                logger.warn("[parseRequest][{}][ignore invalidated xsync option] {}", redisSlave, opt);
+                pos += 2;
             }
         }
 
