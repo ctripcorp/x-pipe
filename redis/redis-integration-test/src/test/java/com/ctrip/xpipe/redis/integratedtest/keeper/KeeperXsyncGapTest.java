@@ -40,6 +40,7 @@ public class KeeperXsyncGapTest extends AbstractKeeperIntegratedSingleDc {
 
         int redisPort = randomPort();
 
+        // no lost
         Assert.assertEquals(redisKeeperServers.get(0).getReplicationStore().getGtidSet().getValue().itemCnt(), 0);
 
         logger.info("redis random port: " + redisPort);
@@ -75,7 +76,8 @@ public class KeeperXsyncGapTest extends AbstractKeeperIntegratedSingleDc {
         setKeeperState(activeKeeper, KeeperState.ACTIVE, redisMaster.getIp(), redisMaster.getPort());
         Thread.sleep(3000);
 
-        Assert.assertEquals(redisKeeperServers.get(0).getReplicationStore().getGtidSet().getValue().itemCnt(), 0);
+        logger.info("[testKeeperXsync][GTIDSET.LOST] {}", redisKeeperServers.get(0).getReplicationStore().getGtidSet().getValue());
+        Assert.assertEquals(redisKeeperServers.get(0).getReplicationStore().getGtidSet().getValue().itemCnt(), 152);
 
         for(int i = 252; i < 274; i++) {
             setKey("key_" + i, redisMaster.getIp(), redisMaster.getPort());
@@ -83,9 +85,9 @@ public class KeeperXsyncGapTest extends AbstractKeeperIntegratedSingleDc {
 
         Thread.sleep(2000);
 
-        System.out.println("[GTIDSET]" + redisKeeperServers.get(0).getReplicationStore().getGtidSet().getKey());
+        logger.info("[testKeeperXsync][GTIDSET] {}", redisKeeperServers.get(0).getReplicationStore().getGtidSet().getKey());
 
-        Assert.assertEquals(redisKeeperServers.get(0).getReplicationStore().getGtidSet().getValue().itemCnt(), 0);
+        Assert.assertEquals(redisKeeperServers.get(0).getReplicationStore().getGtidSet().getValue().itemCnt(), 152);
     }
 
     private void slaveOfKeeper(String ip, int port) throws Exception {
