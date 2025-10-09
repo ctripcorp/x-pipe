@@ -92,7 +92,11 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
             this.host = host;
         }
         this.port = port;
-        this.address = "http://" + this.host + ":" + this.port;
+        if (port == DOMAIN_PORT) {
+            this.address = "http://" + this.host;
+        } else {
+            this.address = "http://" + this.host + ":" + this.port;
+        }
         healthStatusUrl = String.format("%s/api/health/{ip}/{port}", this.address);
         crossRegionHealthStatusUrl = String.format("%s/api/cross/region/health/{ip}/{port}", this.address);
         allHealthStatusUrl = String.format("%s/api/health/check/status/all", this.address);

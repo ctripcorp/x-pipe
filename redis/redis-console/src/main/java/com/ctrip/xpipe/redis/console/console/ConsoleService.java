@@ -21,6 +21,9 @@ import java.util.Map;
  */
 public interface ConsoleService extends CheckerService {
 
+    int SERVER_PORT = 8080;
+    int DOMAIN_PORT = 80;
+
     Boolean getInstancePingStatus(String ip, int port);
 
     Long getInstanceDelayStatus(String ip, int port);

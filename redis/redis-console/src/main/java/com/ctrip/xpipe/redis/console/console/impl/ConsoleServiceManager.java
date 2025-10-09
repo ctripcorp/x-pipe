@@ -27,6 +27,8 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.function.Function;
 
+import static com.ctrip.xpipe.redis.console.console.ConsoleService.DOMAIN_PORT;
+import static com.ctrip.xpipe.redis.console.console.ConsoleService.SERVER_PORT;
 import static com.ctrip.xpipe.redis.console.resources.AbstractMetaCache.CURRENT_IDC;
 
 /**
@@ -199,7 +201,7 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
                         throw new XpipeRuntimeException("unknown dc id " + dcId);
                     }
 
-                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(optionalKey.get()), 80);
+                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(optionalKey.get()), DOMAIN_PORT);
                     services.put(upperCaseDcId, service);
                 }
             }
@@ -267,7 +269,7 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
     private Set<HostPort>  getConsoleUrls(){
 
         Set<HostPort> consoleUrls = new HashSet<>();
-        String port = System.getProperty("server.port", "8080");
+        String port = System.getProperty("server.port", String.valueOf(SERVER_PORT));
         if(leaderElector != null) {
            List<String> servers = leaderElector.getAllServers();
            for(String server : servers){
