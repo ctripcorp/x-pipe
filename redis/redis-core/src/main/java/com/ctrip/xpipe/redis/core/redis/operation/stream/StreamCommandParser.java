@@ -42,9 +42,8 @@ public class StreamCommandParser {
                         Object[] payload = protocol.getPayload();
                         commandLister.onCommand(payload, remainingBuf);
                     } finally {
-                        relaseReaminBuf();
+                        this.reset();
                     }
-                    this.protocolParser.reset();
                 }
             }
         } catch (Throwable e) {
