@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.netty.TcpPortCheckCommand;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
@@ -30,10 +28,6 @@ import static com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath.*;
  *         Jun 07, 2017
  */
 public class DefaultConsoleService extends AbstractService implements ConsoleService{
-
-    private String host;
-
-    private int port;
 
     private String address;
 
@@ -85,17 +79,10 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     private static final ParameterizedTypeReference<Map<String, Pair<HostPort, Long>>> crossMasterDelayDef =
             new ParameterizedTypeReference<Map<String, Pair<HostPort, Long>>>(){};
 
-    public DefaultConsoleService(String host, int port) {
-        if (host.startsWith("http://")) {
-            this.host = host.split("http://")[1];
-        } else {
-            this.host = host;
-        }
-        this.port = port;
-        if (port == DOMAIN_PORT) {
-            this.address = "http://" + this.host;
-        } else {
-            this.address = "http://" + this.host + ":" + this.port;
+    public DefaultConsoleService(String address) {
+        this.address = address;
+        if(!this.address.startsWith("http://")) {
+            this.address = "http://" + this.address;
         }
         healthStatusUrl = String.format("%s/api/health/{ip}/{port}", this.address);
         crossRegionHealthStatusUrl = String.format("%s/api/cross/region/health/{ip}/{port}", this.address);
@@ -229,11 +216,6 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     @Override
     public Boolean getDcIsolated() {
         return restTemplate.getForObject(dcIsolatedUrl, Boolean.class);
-    }
-
-    @Override
-    public CommandFuture<Boolean> connect(int connectTimeoutMilli) {
-        return new TcpPortCheckCommand(host, port, connectTimeoutMilli).execute();
     }
 
     @Override

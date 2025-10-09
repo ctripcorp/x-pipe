@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
+
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.CheckerService;
@@ -27,8 +27,6 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.function.Function;
 
-import static com.ctrip.xpipe.redis.console.console.ConsoleService.DOMAIN_PORT;
-import static com.ctrip.xpipe.redis.console.console.ConsoleService.SERVER_PORT;
 import static com.ctrip.xpipe.redis.console.resources.AbstractMetaCache.CURRENT_IDC;
 
 /**
@@ -94,7 +92,7 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return new ArrayList<>(loadAllConsoleServices().values());
     }
 
-    @Override
+
     public Map<String, Boolean> getAllDcIsolatedCheckResult() {
         Map<String, Boolean> result = new HashMap<>();
         Map<String, ConsoleService> consoleServiceMap = loadAllConsoleServices();
@@ -113,7 +111,7 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return result;
     }
 
-    @Override
+
     public Boolean getDcIsolatedCheckResult(String dcId) {
         ConsoleService consoleService = getServiceByDc(dcId);
         if (consoleService == null) {
@@ -122,13 +120,6 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return consoleService.getDcIsolated();
     }
 
-    @Override
-    public CommandFuture<Boolean> connectDc(String dc, int connectTimeoutMilli) {
-        ConsoleService consoleService = getServiceByDc(dc);
-        return consoleService.connect(connectTimeoutMilli);
-    }
-
-    @Override
     public List<String> dcsInCurrentRegion() {
         ConsoleService consoleService = getServiceByDc(CURRENT_IDC);
         return consoleService.dcsInCurrentRegion();
@@ -201,7 +192,7 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
                         throw new XpipeRuntimeException("unknown dc id " + dcId);
                     }
 
-                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(optionalKey.get()), DOMAIN_PORT);
+                    service = new DefaultConsoleService(consoleConfig.getConsoleDomains().get(optionalKey.get()));
                     services.put(upperCaseDcId, service);
                 }
             }
@@ -254,11 +245,10 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
 
         Map<String, ConsoleService> result = new HashMap<>();
 
-        for(HostPort hostPort : getConsoleUrls()){
-            String url = hostPort.toString();
+        for(String url : getConsoleUrls()){
             ConsoleService service = services.get(url);
             if (service == null) {
-                service = new DefaultConsoleService(hostPort.getHost(), hostPort.getPort());
+                service = new DefaultConsoleService(url);
                 services.put(url, service);
             }
             result.put(url, service);
@@ -266,14 +256,14 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return result;
     }
 
-    private Set<HostPort>  getConsoleUrls(){
+    private Set<String>  getConsoleUrls(){
 
-        Set<HostPort> consoleUrls = new HashSet<>();
-        String port = System.getProperty("server.port", String.valueOf(SERVER_PORT));
+        Set<String> consoleUrls = new HashSet<>();
+        String port = System.getProperty("server.port", "8080");
         if(leaderElector != null) {
            List<String> servers = leaderElector.getAllServers();
            for(String server : servers){
-               consoleUrls.add(new HostPort(server, Integer.parseInt(port)));
+               consoleUrls.add(server + ":" + port);
            }
         }
 

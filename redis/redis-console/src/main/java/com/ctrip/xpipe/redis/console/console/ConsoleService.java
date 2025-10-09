@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.console;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
@@ -20,9 +19,6 @@ import java.util.Map;
  *         Jun 07, 2017
  */
 public interface ConsoleService extends CheckerService {
-
-    int SERVER_PORT = 8080;
-    int DOMAIN_PORT = 80;
 
     Boolean getInstancePingStatus(String ip, int port);
 
@@ -53,8 +49,6 @@ public interface ConsoleService extends CheckerService {
     Boolean getInnerDcIsolated();
 
     Boolean getDcIsolated();
-
-    CommandFuture<Boolean> connect(int connectTimeoutMilli);
 
     List<String> dcsInCurrentRegion();
 
