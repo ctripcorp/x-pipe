@@ -62,36 +62,19 @@ public class StreamCommandParserTest {
         };
         StreamCommandParser streamCommandParser = new StreamCommandParser(streamCommandLister);
 
-        ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer();
-        byteBuf.writeBytes(getArraysRepl(Lists.newArrayList(
+        ByteBuf rightData = getArraysRepl(Lists.newArrayList(
                 "set",
                 "key1",
                 "value1"
-        )));
+        ));
 
-        int readableBytes = byteBuf.readableBytes();
+        int readableBytes = rightData.readableBytes();
 
         // build some dirty data in the head
         String dirty = "hello\r\nworld\r\n";
         ByteBuf newBuf = UnpooledByteBufAllocator.DEFAULT.buffer(readableBytes + dirty.length());
         newBuf.writeBytes(dirty.getBytes());
-        newBuf.writeBytes(byteBuf);
-        try {
-            streamCommandParser.doRead(newBuf);
-        } catch (IOException e) {
-            fail();
-        }
-        assertEquals(0, command.size());
-
-        // dirty data in the tail
-        command.clear();
-        newBuf.clear();
-        newBuf.writeBytes(getArraysRepl(Lists.newArrayList(
-                "set",
-                "key1",
-                "value1"
-        )));
-        newBuf.writeBytes(dirty.getBytes());
+        newBuf.writeBytes(rightData);
         try {
             streamCommandParser.doRead(newBuf);
         } catch (IOException e) {
@@ -103,18 +86,53 @@ public class StreamCommandParserTest {
         assertEquals("set", ((Object[]) first[0])[0].toString());
         assertEquals("key1", ((Object[]) first[0])[1].toString());
         assertEquals("value1", ((Object[]) first[0])[2].toString());
+
+        // dirty data in the tail
+        command.clear();
+        newBuf.clear();
+        rightData.readerIndex(0);
+        newBuf.writeBytes(rightData);
+        newBuf.writeBytes(dirty.getBytes());
+        try {
+            streamCommandParser.doRead(newBuf);
+        } catch (IOException e) {
+            fail();
+        }
+        assertEquals(1, command.size());
+        first = (Object[]) command.get(0);
+        assertEquals(3, ((Object[]) first[0]).length);
+        assertEquals("set", ((Object[]) first[0])[0].toString());
+        assertEquals("key1", ((Object[]) first[0])[1].toString());
+        assertEquals("value1", ((Object[]) first[0])[2].toString());
         ByteBuf cmdBuf = (ByteBuf) first[1];
         assertEquals(readableBytes, cmdBuf.readableBytes());
 
-        // dirty data in the middle
         command.clear();
-        byteBuf.readerIndex(0);
         newBuf.clear();
-        newBuf.writeBytes(getArraysRepl(Lists.newArrayList(
-                "set",
 
-                "key1"
-        )));
+        // error data span 2 buffers
+        String dirty2 = "*3\r\n$3\r\nval$2";
+        newBuf.writeBytes(dirty2.getBytes());
+        try {
+            streamCommandParser.doRead(newBuf);
+        } catch (IOException e) {
+            fail();
+        }
+        newBuf.clear();
+        newBuf.writeBytes("ue1\r\n".getBytes());
+        rightData.readerIndex(0);
+        newBuf.writeBytes(rightData);
+        try {
+            streamCommandParser.doRead(newBuf);
+        } catch (IOException e) {
+            fail();
+        }
+        assertEquals(1, command.size());
+        first = (Object[]) command.get(0);
+        assertEquals(3, ((Object[]) first[0]).length);
+        assertEquals("set", ((Object[]) first[0])[0].toString());
+        assertEquals("key1", ((Object[]) first[0])[1].toString());
+        assertEquals("value1", ((Object[]) first[0])[2].toString());
 
     }
 
