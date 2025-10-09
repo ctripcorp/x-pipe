@@ -63,7 +63,6 @@ public class StreamCommandParserTest {
         StreamCommandParser streamCommandParser = new StreamCommandParser(streamCommandLister);
 
         ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer();
-        byteBuf.writeBytes("xxxxxx".getBytes());
         byteBuf.writeBytes(getArraysRepl(Lists.newArrayList(
                 "set",
                 "key1",
@@ -72,8 +71,29 @@ public class StreamCommandParserTest {
 
         int readableBytes = byteBuf.readableBytes();
 
+        // build some dirty data in the head
+        String dirty = "hello\r\nworld\r\n";
+        ByteBuf newBuf = UnpooledByteBufAllocator.DEFAULT.buffer(readableBytes + dirty.length());
+        newBuf.writeBytes(dirty.getBytes());
+        newBuf.writeBytes(byteBuf);
         try {
-            streamCommandParser.doRead(byteBuf);
+            streamCommandParser.doRead(newBuf);
+        } catch (IOException e) {
+            fail();
+        }
+        assertEquals(0, command.size());
+
+        // dirty data in the tail
+        command.clear();
+        newBuf.clear();
+        newBuf.writeBytes(getArraysRepl(Lists.newArrayList(
+                "set",
+                "key1",
+                "value1"
+        )));
+        newBuf.writeBytes(dirty.getBytes());
+        try {
+            streamCommandParser.doRead(newBuf);
         } catch (IOException e) {
             fail();
         }
@@ -84,7 +104,18 @@ public class StreamCommandParserTest {
         assertEquals("key1", ((Object[]) first[0])[1].toString());
         assertEquals("value1", ((Object[]) first[0])[2].toString());
         ByteBuf cmdBuf = (ByteBuf) first[1];
-        assertEquals(readableBytes - 6, cmdBuf.readableBytes());
+        assertEquals(readableBytes, cmdBuf.readableBytes());
+
+        // dirty data in the middle
+        command.clear();
+        byteBuf.readerIndex(0);
+        newBuf.clear();
+        newBuf.writeBytes(getArraysRepl(Lists.newArrayList(
+                "set",
+
+                "key1"
+        )));
+
     }
 
     @Test
@@ -145,12 +176,13 @@ public class StreamCommandParserTest {
                 "key1",
                 getString(20_000_000)
         ));
+        System.out.println("wholeBuf: " + wholeBuf.readableBytes());
+        int size = 65536;
+        int piece = wholeBuf.readableBytes() / size;
 
         for (int r = 0; r < 10; r++) {
             long start = System.nanoTime();
             // wholeBuf拆分，要考虑不能整除的情况，最终要处理所有数据，不能缺失
-            int size = 65536;
-            int piece = wholeBuf.readableBytes() / size;
             try {
                 for (int i = 0; i < piece; i++) {
                     ByteBuf part = wholeBuf.readSlice(size);
@@ -179,12 +211,19 @@ public class StreamCommandParserTest {
         buffer.writeBytes((String.valueOf(expected.size())).getBytes());
         buffer.writeBytes("\r\n".getBytes());
         for (String s : expected) {
-            buffer.writeByte(RedisClientProtocol.DOLLAR_BYTE);
-            buffer.writeBytes((String.valueOf(s.length())).getBytes());
-            buffer.writeBytes("\r\n".getBytes());
-            buffer.writeBytes(s.getBytes());
-            buffer.writeBytes("\r\n".getBytes());
+            buffer.writeBytes(getBulkStringRepl(s));
         }
+        return buffer;
+    }
+
+    private ByteBuf getBulkStringRepl(String expected) {
+        // $<number-of-bytes>\r\n<bytes>\r\n
+        ByteBuf buffer = UnpooledByteBufAllocator.DEFAULT.buffer();
+        buffer.writeByte(RedisClientProtocol.DOLLAR_BYTE);
+        buffer.writeBytes((String.valueOf(expected.length())).getBytes());
+        buffer.writeBytes("\r\n".getBytes());
+        buffer.writeBytes(expected.getBytes());
+        buffer.writeBytes("\r\n".getBytes());
         return buffer;
     }
 
