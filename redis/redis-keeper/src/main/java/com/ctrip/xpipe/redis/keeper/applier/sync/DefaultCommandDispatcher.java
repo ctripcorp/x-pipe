@@ -136,11 +136,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
                 doOnRedisOp(redisOp, redisProtocolParser.getCurrentCommandOffset(), redisOp.getOpGtid());
                 redisProtocolParser.reset();
             } catch (Throwable unlikely) {
-                try {
-                    logger.error("[onCommand] unlikely - when doing partial sync]", unlikely);
-                    logger.error("[onCommand] unlikely {}", redisOp);
-                } catch (Throwable ignore) {
-                }
+                logger.error("[onCommand] unlikely - when doing partial sync] " + redisOp, unlikely);
             }
         } else if (null != cmdPayload) {
             logger.info("[doReceiveResponse][{}][unknown payload] {}, {}", READING_COMMANDS, this, cmdPayload);
