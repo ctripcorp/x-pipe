@@ -32,6 +32,7 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		logger.info(remarkableMessage("[testReplicationData][read replication store]"));
 
 		ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+		waitRedisKeeperServerConnected(redisKeeperServer);
 		byte[] rdbContent = readRdbFileTilEnd(replicationStore);
 		Assert.assertArrayEquals(fakeRedisServer.getRdbContent(), rdbContent);
 
