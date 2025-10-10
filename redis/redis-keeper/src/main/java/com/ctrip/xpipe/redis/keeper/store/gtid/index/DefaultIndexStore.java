@@ -62,7 +62,7 @@ public class DefaultIndexStore implements IndexStore {
     @Override
     public void openWriter(CommandWriter cmdWriter) throws IOException {
         this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
-        this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size(), this.opParser);
+        this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size());
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
         this.indexWriter.init();
     }
@@ -175,7 +175,7 @@ public class DefaultIndexStore implements IndexStore {
     }
 
     public void buildIndexFromCmdFile(String cmdFileName, long cmdFileOffset) throws IOException {
-        this.streamCommandReader = new StreamCommandReader(this, cmdFileOffset, this.opParser);
+        this.streamCommandReader = new StreamCommandReader(this, cmdFileOffset);
         this.disableWriterCmd();
         ControllableFile controllableFile = null;
         try {

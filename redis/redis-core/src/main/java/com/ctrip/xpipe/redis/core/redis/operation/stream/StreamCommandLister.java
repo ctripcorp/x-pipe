@@ -6,5 +6,5 @@ import java.io.IOException;
 
 public interface StreamCommandLister {
 
-    public void onCommand(Object[] payload, ByteBuf commandBuf) throws IOException;
+    void onCommand(Object[] payload, ByteBuf commandBuf) throws IOException;
 }
