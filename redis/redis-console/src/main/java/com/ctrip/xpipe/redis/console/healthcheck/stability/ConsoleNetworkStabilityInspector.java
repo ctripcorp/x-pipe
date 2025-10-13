@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.healthcheck.stability;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
@@ -7,8 +8,8 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.netty.TcpPortCheckCommand;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -16,8 +17,10 @@ import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -34,8 +37,6 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
 
     private ConsoleConfig config;
 
-    private ConsoleServiceManager consoleServiceManager;
-
     private AtomicBoolean dcIsolated = new AtomicBoolean(false);
 
     private AtomicInteger continuousMismatchTimes = new AtomicInteger();
@@ -49,10 +50,9 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
     static final int COMMAND_TIMEOUT = 1500;
 
 
-    public ConsoleNetworkStabilityInspector(MetaCache metaCache, ConsoleConfig consoleConfig, ConsoleServiceManager consoleServiceManager) {
+    public ConsoleNetworkStabilityInspector(MetaCache metaCache, ConsoleConfig consoleConfig) {
         this.metaCache = metaCache;
         this.config = consoleConfig;
-        this.consoleServiceManager = consoleServiceManager;
     }
 
 
@@ -83,14 +83,20 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
                 return;
             }
 
+            Map<String, String> targetConsoleDomains = consoleDomainsInCurrentRegion(dcsInCurrentRegion);
+            if (targetConsoleDomains.size() < dcsInCurrentRegion.size()) {
+                logger.debug("[checkDcIsolated]missing console domains, expect:{}. actual:{}", dcsInCurrentRegion, targetConsoleDomains);
+                return;
+            }
+
             boolean mayIsolated;
             ParallelCommandChain chain = new ParallelCommandChain();
             Map<String, Boolean> allDcResults = new ConcurrentHashMap<>();
-            for (String dcId : dcsInCurrentRegion) {
+            targetConsoleDomains.forEach((dcId, consoleDomain) -> {
                 chain.add(new AbstractCommand<Void>() {
                     @Override
                     protected void doExecute() throws Throwable {
-                        consoleServiceManager.connectDc(dcId, CONNECT_TIMEOUT).addListener(connectFuture -> {
+                        connectDcConsole(consoleDomain).addListener(connectFuture -> {
                             if (connectFuture.isSuccess()) {
                                 allDcResults.put(dcId, true);
                             } else {
@@ -111,7 +117,7 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
                         return "connectConsole";
                     }
                 });
-            }
+            });
 
             try {
                 chain.execute().get(COMMAND_TIMEOUT, TimeUnit.MILLISECONDS);
@@ -141,6 +147,22 @@ public class ConsoleNetworkStabilityInspector extends AbstractLifecycle implemen
         }
     }
 
+    Map<String, String> consoleDomainsInCurrentRegion(List<String> dcsInCurrentRegion){
+        Map<String, String> consoleDomainsInCurrentRegion = new HashMap<>();
+        dcsInCurrentRegion.forEach(dcId -> {
+            Optional<String> optionalKey = config.getConsoleDomains().keySet().stream().filter(dcId::equalsIgnoreCase).findFirst();
+            optionalKey.ifPresent(s -> consoleDomainsInCurrentRegion.put(dcId, config.getConsoleDomains().get(s)));
+        });
+        return consoleDomainsInCurrentRegion;
+    }
+
+    CommandFuture<Boolean> connectDcConsole(String consoleDomain) {
+        String host = consoleDomain;
+        if (consoleDomain.startsWith("http://")) {
+            host = consoleDomain.split("http://")[1];
+        }
+        return new TcpPortCheckCommand(host, 80, CONNECT_TIMEOUT).execute();
+    }
 
     boolean connected(Map<String, Boolean> allDcResults) {
         for (Map.Entry<String, Boolean> entry : allDcResults.entrySet()) {
