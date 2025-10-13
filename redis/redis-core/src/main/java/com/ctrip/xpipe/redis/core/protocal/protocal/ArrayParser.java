@@ -171,35 +171,4 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 		this.inOutPayloadFactory = inOutPayloadFactory;
 		return this;
 	}
-
-	@Override
-	public Object[] getPayload() {
-		if (payload == null) {
-			return resultArray;
-		}
-		return payload;
-	}
-
-	@Override
-	public String getPayloadAsString() {
-		Object[] data = payload == null ? resultArray : payload;
-		if (data == null) {
-			return "null";
-		}
-		StringBuilder sb = new StringBuilder();
-		sb.append("[");
-		for (int i = 0; i < data.length; i++) {
-			if (i != 0) {
-				sb.append(", ");
-			}
-			Object obj = data[i];
-			if (obj instanceof byte[]) {
-				sb.append(new String((byte[]) obj));
-			} else {
-				sb.append(obj.toString());
-			}
-		}
-		sb.append("]");
-		return sb.toString();
-	}
 }

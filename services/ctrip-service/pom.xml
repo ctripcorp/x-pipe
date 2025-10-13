@@ -45,6 +45,11 @@
                 <artifactId>qtracer-instrument-asm</artifactId>
                 <version>${qtracer.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-netty</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -206,10 +211,6 @@
                 <exclusion>
                     <groupId>org.apache.dubbo</groupId>
                     <artifactId>dubbo</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.grpc</groupId>
-                    <artifactId>grpc-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
