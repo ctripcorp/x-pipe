@@ -493,7 +493,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		baseDir.mkdirs();
 
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
-		ReplicationStoreMeta newMeta = metaStore.psyncContinueFrom(replId, replOff+1, backlogEndOffset(), cmdFilePrefix);
+		ReplicationStoreMeta newMeta = metaStore.psyncContinueFrom(replId, replOff, backlogEndOffset(), cmdFilePrefix);
 
 		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
 				metaStore.generateGtidCmdFilter());
@@ -935,6 +935,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			cmdStore.gc();
 		}
 		return true;
+	}
+
+	@Override
+	public void resetStateForContinue() {
+		cmdStore.resetStateForContinue();
 	}
 
 	protected Logger getLogger() {

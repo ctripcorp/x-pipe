@@ -3,12 +3,13 @@ package com.ctrip.xpipe.redis.keeper.applier.sync;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.payload.InOutPayloadFactory;
+import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.core.protocal.cmd.RedisProtocolParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
-import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandLister;
-import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandParser;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import com.ctrip.xpipe.redis.keeper.applier.AbstractInstanceComponent;
@@ -20,20 +21,23 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol.ASTERISK_BYTE;
+import static com.ctrip.xpipe.redis.core.protocal.Sync.SYNC_STATE.READING_COMMANDS;
 
 /**
  * @author Slight
  * <p>
  * Jun 05, 2022 18:21
  */
-public class DefaultCommandDispatcher extends AbstractInstanceComponent implements ApplierCommandDispatcher, StreamCommandLister {
+public class DefaultCommandDispatcher extends AbstractInstanceComponent implements ApplierCommandDispatcher {
     @InstanceDependency
     public ApplierSequenceController sequenceController;
 
@@ -68,7 +72,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     @InstanceDependency
     public AtomicReference<String> replId;
 
-    private StreamCommandParser streamCommandParser;
     // in order to aggregate the entire transaction into one command
     private AtomicReference<TransactionCommand> transactionCommand;
 
@@ -77,6 +80,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     private String startGtidStr = "";
     private String lostGtidStr = "";
     private long startOffset = -1;
+    private RedisProtocolParser redisProtocolParser;
 
     public DefaultCommandDispatcher() {
 
@@ -88,7 +92,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         this.gtidDistanceThreshold.set(new GTIDDistanceThreshold(2000));
         this.transactionCommand.set(null);
         this.execGtidSet.set(new GtidSet(GtidSet.EMPTY_GTIDSET));
-        this.remainingBuf = null;
         startGtidStr = "";
         startOffset = -1;
         lostGtidStr = "";
@@ -104,34 +107,40 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public void doOnXFullSync(GtidSet lost, long replOff) {
         this.lostGtidStr = lost.toString();
         this.startOffset = replOff;
-        this.remainingBuf = null;
     }
 
     @Override
     public void doOnXContinue(GtidSet lost, long replOffset) {
         this.offsetRecorder.set(replOffset);
-        this.remainingBuf = null;
         this.resetState();
     }
 
     @Override
     public void doOnContinue(String newReplId) {
         replId.set(newReplId);
-        this.remainingBuf = null;
         this.resetState();
     }
 
-    private ByteBuf remainingBuf;
     @Override
     public void doOnAppendCommand(ByteBuf byteBuf) {
-        if(streamCommandParser == null) {
-            streamCommandParser = new StreamCommandParser(parser, this);
+        if(redisProtocolParser == null) {
+            redisProtocolParser = new RedisProtocolParser();
         }
-        try {
-            streamCommandParser.doRead(byteBuf);
-        } catch (IOException ioException) {
-            // 这里没有写文件 其实不会出现 IOException
-            logger.error("parser error", ioException);
+
+        Object cmdPayload = redisProtocolParser.parse(byteBuf);
+        if (cmdPayload instanceof Object[]) {
+            RedisOp redisOp = null;
+            try {
+                Object[] rawCmdArgs = (Object[]) cmdPayload;
+                redisOp = parser.parse(rawCmdArgs);
+                doOnRedisOp(redisOp, redisProtocolParser.getCurrentCommandOffset(), redisOp.getOpGtid());
+                redisProtocolParser.reset();
+            } catch (Throwable unlikely) {
+                logger.error("[onCommand] unlikely - when doing partial sync] " + redisOp, unlikely);
+            }
+        } else if (null != cmdPayload) {
+            logger.info("[doReceiveResponse][{}][unknown payload] {}, {}", READING_COMMANDS, this, cmdPayload);
+            throw new RedisRuntimeException("unknown payload:" + cmdPayload);
         }
     }
 
@@ -155,29 +164,6 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
             return ref.clone();
         }
         return null;
-    }
-
-    @Override
-    public void onCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
-        RedisOp redisOp = parser.parse(payload);
-        String gtid = redisOp.getOpGtid();
-        doOnRedisOp(redisOp, commandBuf.readableBytes(), gtid);
-        commandBuf.skipBytes(commandBuf.readableBytes());
-    }
-
-    private class GtidRiseJob implements Runnable {
-
-        private final String gtid;
-
-        private GtidRiseJob(String gtid) {
-            this.gtid = gtid;
-        }
-
-        @Override
-        public void run() {
-            logger.debug("[updateGtidState] rise gtid {} to gtid_executed {}", gtid, execGtidSet.get());
-            execGtidSet.get().rise(gtid);
-        }
     }
 
     protected int toInt(byte[] value) {
@@ -303,15 +289,5 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
         startGtidStr = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID_EXECUTED, GtidSet.EMPTY_GTIDSET);
         lostGtidStr = auxMap.getOrDefault(RdbConstant.REDIS_RDB_AUX_KEY_GTID_LOST, GtidSet.EMPTY_GTIDSET);
         logger.info("[onAuxFinish] startGtidStr: {}, lostGtidStr: {}", startGtidSet, lostGtidStr);
-    }
-
-    private int findFirstStar(ByteBuf byteBuf, int beginOffset) {
-        for(int i = beginOffset; i < byteBuf.writerIndex(); i++) {
-            byte b = byteBuf.getByte(i);
-            if(b == ASTERISK_BYTE) {
-                return i;
-            }
-        }
-        return -1;
     }
 }

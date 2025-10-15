@@ -19,4 +19,5 @@ public interface IndexStore {
     GtidSet getIndexGtidSet();
     void closeWithDeleteIndexFiles() throws IOException;
     void closeWriter() throws IOException;
+    void resetParserState();
 }

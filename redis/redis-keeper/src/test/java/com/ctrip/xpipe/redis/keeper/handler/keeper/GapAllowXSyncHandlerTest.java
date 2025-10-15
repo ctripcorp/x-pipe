@@ -26,12 +26,13 @@ public class GapAllowXSyncHandlerTest extends AbstractTest {
 
     @Test
     public void testXSyncParse() {
-        String[] args = new String[] {"*", "A:1-10", "MAXGAP", "100"};
+        String[] args = new String[] {"*", "A:1-10,B:1-5", "MAXGAP", "100", "GTID.LOST", "B:1-5"};
         GapAllowSyncHandler.SyncRequest request = xsyncHandler.parseRequest(args, slave);
         Assert.assertEquals(ReplStage.ReplProto.XSYNC, request.proto);
         Assert.assertEquals("*", request.replId);
-        Assert.assertEquals(new GtidSet("A:1-10"), request.slaveGtidSet);
+        Assert.assertEquals(new GtidSet("A:1-10,B:1-5"), request.slaveGtidSet);
         Assert.assertEquals(100, request.maxGap);
+        Assert.assertEquals(new GtidSet("B:1-5"), request.slaveGtidLost);
     }
 
 }

@@ -88,4 +88,6 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	boolean increaseLostNotInCmdStore(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException ;
 
+	void resetStateForContinue();
+
 }

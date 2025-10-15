@@ -176,11 +176,7 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
     }
 
     protected int getMaxGap() {
-        if(!redisMaster.usingProxy()) {
-            return 0;
-        } else {
-            return redisKeeperServer.getKeeperConfig().getXsyncMaxGap();
-        }
+        return redisKeeperServer.getKeeperConfig().getXsyncMaxGap();
     }
 
     private void doConnect0(Bootstrap b) {

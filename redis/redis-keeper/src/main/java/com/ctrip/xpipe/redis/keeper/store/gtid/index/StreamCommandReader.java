@@ -17,11 +17,11 @@ public class StreamCommandReader implements StreamCommandLister {
 
     private StreamCommandParser streamCommandParser;
 
-    public StreamCommandReader(DefaultIndexStore defaultIndexStore, long offset, RedisOpParser opParser) {
+    public StreamCommandReader(DefaultIndexStore defaultIndexStore, long offset) {
         this.defaultIndexStore = defaultIndexStore;
         this.currentOffset = offset;
         this.lastOffset = offset;
-        streamCommandParser = new StreamCommandParser(opParser, this);
+        streamCommandParser = new StreamCommandParser(this);
     }
 
     public void doRead(ByteBuf byteBuf) throws IOException {
@@ -45,11 +45,11 @@ public class StreamCommandReader implements StreamCommandLister {
 
     }
 
-    public void relaseRemainBuf() {
-        streamCommandParser.relaseRemainBuf();
+    public void resetParser() {
+        streamCommandParser.reset();
     }
 
-    public long getRemainLength() {
+    public int getRemainLength() {
         return streamCommandParser.getRemainLength();
     }
 

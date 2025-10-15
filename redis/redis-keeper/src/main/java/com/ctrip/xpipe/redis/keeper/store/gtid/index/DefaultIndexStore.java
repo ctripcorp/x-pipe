@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.api.utils.IOSupplier;
-import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
@@ -63,7 +62,7 @@ public class DefaultIndexStore implements IndexStore {
     @Override
     public void openWriter(CommandWriter cmdWriter) throws IOException {
         this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
-        this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size(), this.opParser);
+        this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size());
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
         this.indexWriter.init();
     }
@@ -176,7 +175,7 @@ public class DefaultIndexStore implements IndexStore {
     }
 
     public void buildIndexFromCmdFile(String cmdFileName, long cmdFileOffset) throws IOException {
-        this.streamCommandReader = new StreamCommandReader(this, cmdFileOffset, this.opParser);
+        this.streamCommandReader = new StreamCommandReader(this, cmdFileOffset);
         this.disableWriterCmd();
         ControllableFile controllableFile = null;
         try {
@@ -191,11 +190,11 @@ public class DefaultIndexStore implements IndexStore {
                 ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.array());
                 this.write(byteBuf);
             }
-            long remainBytes = this.streamCommandReader.getRemainLength();
+            int remainBytes = this.streamCommandReader.getRemainLength();
             if(remainBytes > 0) {
                 EventMonitor.DEFAULT.logAlertEvent("TRUNCATE_CMD_FILE");
                 controllableFile.setLength((int)controllableFile.size() - (int) remainBytes);
-                this.streamCommandReader.relaseRemainBuf();
+                this.streamCommandReader.resetParser();
             }
 
         } finally {
@@ -211,11 +210,18 @@ public class DefaultIndexStore implements IndexStore {
     public synchronized void closeWriter() throws IOException {
         // close = close writer
         if(this.streamCommandReader != null) {
-            this.streamCommandReader.relaseRemainBuf();
+            this.streamCommandReader.resetParser();
         }
         if(this.indexWriter != null) {
             log.debug("[doClose] close index writer {}", indexWriter.getFileName());
             this.indexWriter.close();
+        }
+    }
+
+    @Override
+    public void resetParserState() {
+        if(streamCommandReader != null) {
+            streamCommandReader.resetParser();
         }
     }
 

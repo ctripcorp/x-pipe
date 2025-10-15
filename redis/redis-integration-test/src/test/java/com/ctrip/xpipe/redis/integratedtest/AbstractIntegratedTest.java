@@ -248,6 +248,22 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 		allRedisStarted.add(redisMeta);
 	}
 
+	protected void startExistRedis(RedisMeta redisMeta) throws IOException {
+		stopServerListeningPort(redisMeta.getPort());
+
+		logger.info(remarkableMessage("[startExistRedis]{}"), redisMeta);
+
+		File testDir = new File(getTestFileDir());
+		File redisDir = new File(testDir, "redisconfig");
+		File logDir = new File(redisDir, "logs");
+
+		File configFile = new File(redisDir, redisMeta.getPort() + ".conf");
+		executeScript("start_redis.sh", configFile.getAbsolutePath(),
+				new File(logDir, String.format("%d.log", redisMeta.getPort())).getAbsolutePath());
+
+		allRedisStarted.add(redisMeta);
+	}
+
 	protected void startRedis(RedisMeta redisMeta) throws IOException {
 
 		startRedis(redisMeta, null);

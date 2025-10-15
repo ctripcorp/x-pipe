@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -321,34 +322,34 @@ public class DefaultIndexStoreTest {
     public void parseDirty() throws Exception {
         String path = "src/test/resources/GtidTest/dirty";
 
-        write(path);
-
-        String dirtyLength = "*7\r\n" +
-                "$4\r\n" +
-                "GTID\r\n" +
-                "$47\r\n" +
-                "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99";
-
-        String dirtyLenth2 = "*7\r\n" +
-                "$4\r\n" +
-                "GTID\r\n" +
-                "$47\r\n" +
-                "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633746\r\n" +
-                "$1\r\n" +
-                "0\r\n" +
-                "$4\r\n" +
-                "HSET\r\n" +
-                "$6\r\n" +
-                "myhash\r\n" +
-                "$20\r\n" +
-                "element:__rand_int__\r\n" +
-                "$";
-
-        for(int i = 633747; i < 633758; i++) {
-            Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
-            RedisOp redisOp = IndexTestTool.readBytebufAfter(path, point.getKey() + dirtyLength.getBytes().length + dirtyLenth2.getBytes().length);
-            Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:" + (i+1));
+        try {
+            write(path);
+            fail("should parse error");
+        } catch (Exception ignore){
         }
+
+        GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
+        Assert.assertEquals(gtidSet.toString(), "\"\"");
+    }
+
+    @Test
+    public void parserdirty2() throws Exception {
+        String dirtyPath = "src/test/resources/GtidTest/dirty2";
+        try {
+            write(dirtyPath);
+            fail("should parse error");
+        } catch (Exception ignored) {
+            Assert.assertTrue(ignored.getMessage().contains("For input string: \"*6\""));
+        }
+        GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
+        Assert.assertEquals(gtidSet.toString(), "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-10");
+        for(int i = 2; i <= 9; i++) {
+            Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet("a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-" + i));
+            Assert.assertEquals(point.getValue().toString(), "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-" + i);
+            RedisOp redisOp = IndexTestTool.readBytebufAfter(dirtyPath, point.getKey());
+            Assert.assertEquals(redisOp.getOpGtid(), "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:" + (i+1));
+        }
+
     }
 
     @Test
