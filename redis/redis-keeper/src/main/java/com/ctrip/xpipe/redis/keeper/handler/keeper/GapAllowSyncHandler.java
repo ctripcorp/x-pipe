@@ -98,8 +98,8 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         }
 
         if (request.replId.equals("?")) {
-            logger.info("[anaRequest][{}] req full", slave);
             if (request.offset == -2) {
+                logger.info("[anaRequest][{}] req keeper partial", slave);
                 SyncAction action;
                 if (curStage.getProto() == ReplStage.ReplProto.PSYNC) {
                     long offset = keeperRepl.getEndOffset() + 1;
@@ -111,8 +111,10 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 }
                 return action;
             } else if (request.offset == -3) {
+                logger.info("[anaRequest][{}] req keeper fresh rdb", slave);
                 return SyncAction.full("req fresh rdb fsync", true);
             } else {
+                logger.info("[anaRequest][{}] req full", slave);
                 return SyncAction.full("req fsync");
             }
         } else if (null != curStage && curStage.getProto() == request.proto) {
@@ -144,9 +146,11 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 reqBacklogOffset = xsyncCont.getBacklogOffset();
             }
 
-            if (reqBacklogOffset == curStage.getBegOffsetBacklog() ||
-                    // "-1" means all commands in backlog have already exists in slave
-                    (request.proto == ReplStage.ReplProto.XSYNC && reqBacklogOffset == -1)) {
+            if (request.proto == ReplStage.ReplProto.PSYNC && request.replId.equalsIgnoreCase(preStage.getReplId()) && reqBacklogOffset == curStage.getBegOffsetBacklog()) {
+                logger.info("[anaRequest][{}] PSYNC -> XSYNC", slave);
+                return switchProto(curStage);
+            } else if (request.proto == ReplStage.ReplProto.XSYNC && (reqBacklogOffset == curStage.getBegOffsetBacklog() || reqBacklogOffset == -1)) {
+                logger.info("[anaRequest][{}] XSYNC -> PSYNC", slave);
                 return switchProto(curStage);
             }
 

@@ -69,6 +69,12 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 				replicationStoreMaxCommandsToTransferBeforeCreateRdb, minTimeMilliToGcAfterCreate);
 	}
 
+	protected void configRewrite(String ip, int port) throws Exception {
+		SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
+		new ConfigRewrite(keyPool, scheduled).execute().get();
+		logger.info("[configRewrite]{}", ip + ":" + port);
+	}
+
 	protected void setRedisToGtidEnabled(String ip, Integer port) throws Exception {
 		setRedisToGtidEnabled(ip, port, true);
 	}
