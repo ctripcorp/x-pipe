@@ -335,7 +335,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             String respStr;
             if (action.replStage.getProto() == ReplStage.ReplProto.PSYNC) {
                 respStr = String.format("%s %s", PARTIAL_SYNC, action.replId)
-                        + (action.protoSwitch || action.keeperPartial ? " "+(action.replOffset - 1):"");
+                        + (action.protoSwitch ? " "+(action.replOffset - 1): action.keeperPartial ? " "+action.replOffset : "");
             } else {
                 respStr = String.format("XCONTINUE GTID.SET %s GTID.LOST %s MASTER.UUID %s REPLID %s REPLOFF %d",
                         action.gtidSet.toString(), action.gtidLost.toString(), action.replStage.getMasterUuid(), action.replId, action.replOffset - 1);
