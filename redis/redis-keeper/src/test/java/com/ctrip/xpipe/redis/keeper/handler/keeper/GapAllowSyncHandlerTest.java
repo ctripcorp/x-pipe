@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -260,6 +261,17 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         Assert.assertEquals(1001, action.replOffset);
         Assert.assertEquals(1011, action.backlogOffset);
         Assert.assertEquals(-1, action.backlogEndOffsetExcluded);
+
+        handler.runAction(action,keeperServer,slave);
+        ArgumentCaptor<ByteBuf> byteBufCaptor = ArgumentCaptor.forClass(ByteBuf.class);
+
+        Mockito.verify(slave).sendMessage(byteBufCaptor.capture());
+        ByteBuf byteBuf = byteBufCaptor.getValue();
+        byte[] offset = new byte[4];
+        byteBuf.getBytes(byteBuf.readerIndex()+"+CONTINUE".length()+replStage.getReplId().length()+2,offset);
+        String reploffStr = new String(offset);
+        long replOffset = Long.parseLong(reploffStr);
+        Assert.assertEquals(1001, replOffset);
     }
 
     @Test
