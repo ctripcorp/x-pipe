@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker.impl;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.CheckerService;
@@ -93,26 +92,6 @@ public class DefaultRemoteCheckerManager implements RemoteCheckerManager {
         });
 
         return checkerServices;
-    }
-
-    @Override
-    public Map<String, Boolean> getAllDcIsolatedCheckResult() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Boolean getDcIsolatedCheckResult(String dcId) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CommandFuture<Boolean> connectDc(String dc, int connectTimeoutMilli) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<String> dcsInCurrentRegion() {
-        throw new UnsupportedOperationException();
     }
 
     private Set<String> getAllCheckerAddress() {

@@ -14,9 +14,10 @@ public class DefaultConsoleServiceTest extends AbstractConsoleTest {
     @Test
     public void testManual(){
 
-        DefaultConsoleService defaultConsoleService = new DefaultConsoleService("http://10.2.45.29",8080);
+        DefaultConsoleService defaultConsoleService = new DefaultConsoleService("http://10.2.45.29");
         HEALTH_STATE instanceStatus = defaultConsoleService.getInstanceStatus("10.2.24.215", 6379);
         logger.info("{}", instanceStatus);
 
     }
+
 }
