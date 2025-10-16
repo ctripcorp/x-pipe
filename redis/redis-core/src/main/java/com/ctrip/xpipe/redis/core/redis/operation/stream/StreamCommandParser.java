@@ -36,15 +36,13 @@ public class StreamCommandParser {
                 int pre = byteBuf.readerIndex();
                 RedisClientProtocol<Object[]> protocol = protocolParser.read(byteBuf);
 
-                ByteBuf slice = byteBuf.slice(pre, byteBuf.readerIndex() - pre);
-                slice.retain();
                 if (protocol == null) {
-                    compositeUnCompletedBuffer(slice);
+                    compositeUnCompletedBuffer(byteBuf.retainedSlice(pre, byteBuf.readerIndex() - pre));
                     break;
                 } else {
                     try {
                         Object[] payload = protocol.getPayload();
-                        commandLister.onCommand(payload, getCurrentPayloadBuf(slice));
+                        commandLister.onCommand(payload, getCurrentPayloadBuf(byteBuf.slice(pre, byteBuf.readerIndex() - pre)));
                     } finally {
                         this.reset();
                     }
@@ -61,6 +59,7 @@ public class StreamCommandParser {
 
     private ByteBuf getCurrentPayloadBuf(ByteBuf slice) {
         if (remainingBuf != null) {
+            slice.retain();
             remainingBuf.addComponent(true, slice);
             return remainingBuf;
         } else {

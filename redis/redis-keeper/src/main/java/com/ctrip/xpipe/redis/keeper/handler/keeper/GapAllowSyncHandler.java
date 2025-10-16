@@ -130,7 +130,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 return anaPSync(request, curStage, keeperRepl, keeperConfig);
             } else {
                 XSyncContinue xsyncCont = redisKeeperServer.locateContinueGtidSetWithFallbackToEnd(request.slaveGtidSet);
-                return anaXSync(request, curStage, xsyncCont, keeperRepl, keeperConfig);
+                return anaXSync(request, curStage, xsyncCont, keeperRepl, keeperConfig, true);
             }
         } else if (null != curStage && null != preStage && preStage.getProto() == request.proto) {
             logger.info("[anaRequest][{}] usePreReplStage pre:{} cur:{}", slave, preStage, curStage);
@@ -158,7 +158,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             if (request.proto == ReplStage.ReplProto.PSYNC) {
                 action = anaPSync(request, preStage, keeperRepl, keeperConfig);
             } else {
-                action = anaXSync(request, preStage, xsyncCont, keeperRepl, keeperConfig);
+                action = anaXSync(request, preStage, xsyncCont, keeperRepl, keeperConfig, false);
             }
             if (!action.isFull()) action.setBacklogEndExcluded(curStage.getBegOffsetBacklog());
             return action;
@@ -268,7 +268,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         }
     }
 
-    protected SyncAction anaXSync(SyncRequest request, ReplStage xsyncStage, XSyncContinue xsyncCont, KeeperRepl keeperRepl, KeeperConfig config) {
+    protected SyncAction anaXSync(SyncRequest request, ReplStage xsyncStage, XSyncContinue xsyncCont, KeeperRepl keeperRepl, KeeperConfig config, boolean recordDeltaLost) {
         GtidSet lost = xsyncStage.getGtidLost();
         GtidSet cont = xsyncCont.getContinueGtidSet();
         GtidSet req = request.slaveGtidSet;
@@ -282,10 +282,6 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         if ("*".equals(request.replId) || xsyncStage.getReplId().equalsIgnoreCase(request.replId)) {
             GtidSet masterGtidSet = cont.union(lost);
             boolean gtidNotRelated = masterGtidSet.retainAll(req).isEmpty();
-            GtidSet deltaLost = req.subtract(masterGtidSet);
-            if (!deltaLost.isEmpty()) {
-                logger.info("[deltaLost] deltaLost:{} = locateGtidSet:{} + lostGtidSet:{} - requestGtidSet:{}", deltaLost, cont, lost, req);
-            }
 
             GtidSet gap = masterGtidSet.symmetricDiff(req);
             if (!request.slaveGtidLost.isEmpty()) {
@@ -293,6 +289,16 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 gap = gap.subtract(lost);
             }
             int gapCnt = gap.itemCnt();
+
+            GtidSet deltaLost = null;
+            if (!recordDeltaLost){
+                logger.info("[deltaLost] not compute deltaLost, preStage: {}, curStage: {}, requestProto: {}", keeperRepl.preStage(), keeperRepl.currentStage(), request.proto);
+            } else {
+                deltaLost = req.subtract(masterGtidSet);
+                if (!deltaLost.isEmpty()) {
+                    logger.info("[deltaLost] deltaLost:{} = locateGtidSet:{} + lostGtidSet:{} - requestGtidSet:{}", deltaLost, cont, lost, req);
+                }
+            }
 
             if (gtidNotRelated) {
                 return SyncAction.full(String.format("[gtid not related] req:{}, my:{}", req, masterGtidSet));

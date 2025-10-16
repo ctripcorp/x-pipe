@@ -225,4 +225,32 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		dumpedRdbStore.close();
 	}
 
+	@Test
+	public void testReXContinue() throws IOException {
+		RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.XSYNC, new GtidSet(masterUuidC + ":1-100"), masterUuidA);
+		rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+		rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+		store.confirmRdbGapAllowed(rdbStore);
+		Pair<GtidSet, GtidSet> gtidSet = store.getGtidSet();
+
+		byte[] wholeCommandBytes = generateGtidCommands(masterUuidA, 101, 100);
+		// wholeCommandBytes拆成两个bytes
+		byte[] part1 = new byte[20];
+		System.arraycopy(wholeCommandBytes, 0, part1, 0, 20);
+		byte[] part2 = new byte[wholeCommandBytes.length - 20];
+		System.arraycopy(wholeCommandBytes, 20, part2, 0, wholeCommandBytes.length - 20);
+		// now just write some bytes
+		store.appendCommands(Unpooled.wrappedBuffer(part1));
+		Pair<GtidSet, GtidSet> gtidSet2 = store.getGtidSet();
+		Assert.assertEquals(gtidSet2, gtidSet);
+		// disconnected
+		store.resetStateForContinue();
+		// continue
+		store.appendCommands(Unpooled.wrappedBuffer(part1));
+		store.appendCommands(Unpooled.wrappedBuffer(part2));
+		gtidSet = store.getGtidSet();
+		Assert.assertEquals(gtidSet.getKey(), new GtidSet(masterUuidA + ":101-200"));
+		Assert.assertEquals(gtidSet.getValue(), new GtidSet(masterUuidC + ":1-100"));
+	}
+
 }

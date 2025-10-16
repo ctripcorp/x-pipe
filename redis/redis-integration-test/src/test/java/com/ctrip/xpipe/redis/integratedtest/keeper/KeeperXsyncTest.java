@@ -196,4 +196,8 @@ public class KeeperXsyncTest extends AbstractKeeperIntegratedSingleDc {
         return new TestKeeperConfig(1 << 20, 1 << 10, Long.MAX_VALUE, 60 * 1000);
     }
 
+    @Override
+    protected int getInitSleepMilli() {
+        return 10000;
+    }
 }
