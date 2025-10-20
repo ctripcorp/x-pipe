@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.List;
 
@@ -15,6 +16,7 @@ public abstract class AbstractRedisLeaderAwareHealthCheckActionFactory extends A
         implements RedisHealthCheckActionFactory<SiteLeaderAwareHealthCheckAction> {
 
     @Autowired
+    @Lazy
     private HealthCheckInstanceManager healthCheckInstanceManager;
 
     @Override

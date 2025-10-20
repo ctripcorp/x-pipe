@@ -22,6 +22,7 @@ import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 
 import javax.annotation.PreDestroy;
 import java.util.*;
@@ -60,6 +61,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     protected ConsoleConfig consoleConfig;
 
     @Autowired
+    @Lazy
     private ConsoleServiceManager consoleServiceManager;
 
     @Autowired

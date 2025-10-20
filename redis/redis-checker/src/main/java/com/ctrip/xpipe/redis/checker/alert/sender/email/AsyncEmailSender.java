@@ -13,7 +13,6 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -61,7 +60,11 @@ public class AsyncEmailSender extends AbstractSender {
         CommandFuture<EmailResponse> future = EmailService.DEFAULT.sendEmailAsync(createEmail(message), executor);
         future.addListener(commandFuture -> {
             EmailResponse response = commandFuture.getNow();
-            persistenceCache.recordAlert(foundationService.getLocalIp(), message, response);
+            if (response != null) {
+                persistenceCache.recordAlert(foundationService.getLocalIp(), message, response);
+            } else {
+                logger.warn("[send]EmailResponse is null, skip recording alert for message: {}", message);
+            }
         });
         if(future.isDone() && !future.isSuccess()) {
             callbackFunction.fail(future.cause());

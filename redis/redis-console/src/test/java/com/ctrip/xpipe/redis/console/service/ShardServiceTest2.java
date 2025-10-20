@@ -17,9 +17,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.List;
@@ -32,8 +32,8 @@ import static org.mockito.Mockito.*;
  * 2020/10/13
  */
 @RunWith(MockitoJUnitRunner.class)
-public class ShardServiceTest2 extends AbstractConsoleTest {
-    @InjectMocks
+public class ShardServiceTest2  extends AbstractConsoleTest {
+
     private ShardServiceImpl shardService;
     @Mock
     private ShardTblDao shardTblDao;
@@ -57,29 +57,37 @@ public class ShardServiceTest2 extends AbstractConsoleTest {
     @Mock
     private ConsoleConfig consoleConfig;
     private String clusterName = "clusterName";
-
-    String shardName1 = "shard1";
-    String shardName2 = "shard2";
-    long shardId1 = 1;
-    long shardId2 = 2;
+    private String shardName1 = "shard1";
+    private String shardName2 = "shard2";
+    private long shardId1 = 1;
+    private long shardId2 = 2;
     private List<String> shardNames = Lists.newArrayList(shardName1, shardName2);
 
-    ShardTbl shardTbl1 = mock(ShardTbl.class);
-    ShardTbl shardTbl2 = mock(ShardTbl.class);
+    private ShardTbl shardTbl1 = mock(ShardTbl.class);
+    private ShardTbl shardTbl2 = mock(ShardTbl.class);
+    private List<ShardTbl> shardTbls = Lists.newArrayList(shardTbl1, shardTbl2);
 
-    List<ShardTbl> shardTbls = Lists.newArrayList(shardTbl1, shardTbl2);
-    DcTbl dcTbl1 = mock(DcTbl.class);
-    DcTbl dcTbl2 = mock(DcTbl.class);
-    String idc1 = "idc1";
-    String idc2 = "idc2";
-
-    List<DcTbl> dcTbls = Lists.newArrayList(dcTbl1, dcTbl2);
     @Mock
-    ClusterTbl clusterTbl;
+    private ClusterTbl clusterTbl;
 
     @Before
     public void setUp() throws Exception {
-        shardService.dao = shardTblDao;
+        // 4. 手动创建被测试对象
+        shardService = new ShardServiceImpl();
+
+        // 5. 手动注入所有依赖
+        ReflectionTestUtils.setField(shardService, "dao", shardTblDao); // 注入父类的 dao 字段
+        ReflectionTestUtils.setField(shardService, "shardDao", shardDao);
+        ReflectionTestUtils.setField(shardService, "dcService", dcService);
+        ReflectionTestUtils.setField(shardService, "notifier", notifier);
+        ReflectionTestUtils.setField(shardService, "clusterService", clusterService);
+        ReflectionTestUtils.setField(shardService, "sentinelService", sentinelService);
+        ReflectionTestUtils.setField(shardService, "metaCache", metaCache);
+        ReflectionTestUtils.setField(shardService, "shardEventListeners", shardEventListeners);
+        ReflectionTestUtils.setField(shardService, "monitorNotifier", monitorNotifier);
+        ReflectionTestUtils.setField(shardService, "consoleConfig", consoleConfig);
+
+        // 设置 Mock 行为
         when(clusterTbl.getClusterName()).thenReturn(clusterName);
         when(shardTbl1.getId()).thenReturn(shardId1);
         when(shardTbl2.getId()).thenReturn(shardId2);
@@ -87,7 +95,7 @@ public class ShardServiceTest2 extends AbstractConsoleTest {
 //                .thenReturn(null);
         when(shardTblDao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_NAME_AND_MONITOR_NAME))
                 .thenReturn(shardTbls);
-        when(consoleConfig.shouldNotifyClusterTypes()).thenReturn(Sets.newHashSet(ClusterType.ONE_WAY.name(),ClusterType.BI_DIRECTION.name()));
+        when(consoleConfig.shouldNotifyClusterTypes()).thenReturn(Sets.newHashSet(ClusterType.ONE_WAY.name(), ClusterType.BI_DIRECTION.name()));
         when(metaCache.anyDcMigratable(anyString())).thenReturn(true);
     }
 

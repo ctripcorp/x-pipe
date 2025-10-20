@@ -27,7 +27,11 @@ public class XPipeFiremanDependency implements FiremanDependency {
 
     @Override
     public ForceSwitchableDataSource getDataSource() {
-        return ForceSwitchableDataSourceHolder.getInstance().getDataSource();
+        ForceSwitchableDataSource dataSource = ForceSwitchableDataSourceHolder.getInstance().getDataSource();
+        if (dataSource == null) {
+            logger.warn("[getDataSource] ForceSwitchableDataSource is null, fireman may not work properly");
+        }
+        return dataSource;
     }
 
     @Override

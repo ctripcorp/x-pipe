@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.utils.ObjectUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author wenchao.meng
