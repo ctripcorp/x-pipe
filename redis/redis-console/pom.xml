@@ -16,7 +16,37 @@
                <groupId>org.codehaus.plexus</groupId>
                <artifactId>plexus-container-default</artifactId>
             </exclusion>
+            <exclusion>
+               <groupId>com.google.collections</groupId>
+               <artifactId>google-collections</artifactId>
+            </exclusion>
          </exclusions>
+      </dependency>
+      <!-- Explicitly add Plexus dependencies required by DAO and data source implementations -->
+      <dependency>
+         <groupId>org.codehaus.plexus</groupId>
+         <artifactId>plexus-container-default</artifactId>
+         <version>1.7.1</version>
+         <exclusions>
+            <exclusion>
+               <groupId>org.codehaus.plexus</groupId>
+               <artifactId>plexus-utils</artifactId>
+            </exclusion>
+            <exclusion>
+               <groupId>com.google.collections</groupId>
+               <artifactId>google-collections</artifactId>
+            </exclusion>
+         </exclusions>
+      </dependency>
+      <dependency>
+         <groupId>org.codehaus.plexus</groupId>
+         <artifactId>plexus-component-annotations</artifactId>
+         <version>1.7.1</version>
+      </dependency>
+      <dependency>
+         <groupId>org.codehaus.plexus</groupId>
+         <artifactId>plexus-utils</artifactId>
+         <version>${plexus-utils.version}</version>
       </dependency>
       <dependency>
          <groupId>com.ctrip.framework.xpipe.redis</groupId>
@@ -89,6 +119,10 @@
             <exclusion>
                <groupId>org.codehaus.plexus</groupId>
                <artifactId>plexus-component-annotations</artifactId>
+            </exclusion>
+            <exclusion>
+               <groupId>com.google.collections</groupId>
+               <artifactId>google-collections</artifactId>
             </exclusion>
          </exclusions>
       </dependency>
