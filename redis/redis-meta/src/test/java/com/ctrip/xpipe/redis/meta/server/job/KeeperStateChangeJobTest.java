@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
  * @author wenchao.meng
@@ -128,7 +128,7 @@ public class KeeperStateChangeJobTest extends AbstractMetaServerTest{
 		}catch(TimeoutException e){
 		}
 		
-		verifyZeroInteractions(activeSuccessCommand);
+		verifyNoMoreInteractions(activeSuccessCommand);
 	}
 
 	@Ignore

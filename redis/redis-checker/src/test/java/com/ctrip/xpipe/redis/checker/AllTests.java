@@ -8,6 +8,8 @@ package com.ctrip.xpipe.redis.checker;
 import com.ctrip.xpipe.redis.checker.alert.AlertManagerTest;
 import com.ctrip.xpipe.redis.checker.alert.manager.AlertPolicyManagerTest;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderTest;
+import com.ctrip.xpipe.redis.checker.alert.message.subscriber.AlertEntityDelaySubscriberTest;
+import com.ctrip.xpipe.redis.checker.alert.message.subscriber.AlertRecoverySubscriberTest;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfigTest;
 import com.ctrip.xpipe.redis.checker.controller.CheckerHealthControllerTest;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessageTest;
@@ -100,6 +102,8 @@ import org.junit.runners.Suite;
         ResetSentinelsTest.class,
         SentinelCollector4KeeperTest.class,
         AlertPolicyManagerTest.class,
+        AlertEntityDelaySubscriberTest.class,
+        AlertRecoverySubscriberTest.class,
 
         HealthCheckEndpointFactoryTest.class,
         DefaultHealthCheckEndpointFactoryTest.class,

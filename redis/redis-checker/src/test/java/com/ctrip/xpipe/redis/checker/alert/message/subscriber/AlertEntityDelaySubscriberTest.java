@@ -37,6 +37,7 @@ public class AlertEntityDelaySubscriberTest extends AbstractCheckerIntegrationTe
     public void beforeAlertRecoverySubscriberTest() {
         alert = new AlertEntity(new HostPort("192.168.1.10", 6379), dcNames[0],
                 "clusterId", "shardId", "test message", ALERT_TYPE.CLIENT_INCONSIS);
+        subscriber.setReportInterval(0);
     }
 
     private AlertEntity newAlert(AlertEntity alert) {

@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.DcClusterDao;
-import com.ctrip.xpipe.redis.console.dao.RouteDao;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.dto.*;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
@@ -52,9 +51,9 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.mysql.jdbc.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -84,56 +83,76 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private DcClusterDao dcClusterDao;
 	@Autowired
 	private ShardDao shardDao;
-	@Autowired
-	private RouteDao routeDao;
 
 	@Autowired
+	@Lazy
 	private ApplierService applierService;
+
 	@Autowired
+	@Lazy
 	private ClusterMetaModifiedNotifier notifier;
+
 	@Autowired
+	@Lazy
 	private ShardService shardService;
+
 	@Autowired
 	private OrganizationService organizationService;
 	@Autowired
 	private DcClusterShardService dcClusterShardService;
+
 	@Autowired
+	@Lazy
 	private DelayService delayService;
+
 	@Autowired
+	@Lazy
 	private RouteService routeService;
+
 	@Autowired
+	@Lazy
 	private ProxyService proxyService;
+
 	@Autowired
+	@Lazy
 	private MetaCache metaCache;
 
 	@Autowired
+	@Lazy
 	private ClusterDeleteEventFactory clusterDeleteEventFactory;
 
 	@Autowired
+	@Lazy
 	private DcClusterService dcClusterService;
 
 	@Autowired
+	@Lazy
 	private RedisService redisService;
 
 	@Autowired
+	@Lazy
 	private SentinelBalanceService sentinelBalanceService;
 
 	@Autowired
 	private ConsoleConfig consoleConfig;
 
 	@Autowired
+	@Lazy
 	private ReplDirectionService replDirectionService;
 
 	@Autowired
+	@Lazy
 	private SourceModelService sourceModelService;
 
 	@Autowired
+	@Lazy
 	private ShardModelService shardModelService;
 
 	@Autowired
 	private ShardRepository shardRepository;
 
 	@Autowired
+	@Lazy
 	private KeeperAdvancedService keeperAdvancedService;
 
     @Autowired
@@ -1454,12 +1473,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByAzGroupIds(azGroupIds);
 			if (!CollectionUtils.isEmpty(azGroupClusters)) {
 				Map<Long, List<AzGroupClusterEntity>> clusterId2AzGroupCluster = azGroupClusters.stream().collect(Collectors.groupingBy(AzGroupClusterEntity::getClusterId));
-				long activeDcId = StringUtils.isNullOrEmpty(activeDc) ? -1L : dcService.find(activeDc).getId();
+				long activeDcId = StringUtil.isEmpty(activeDc) ? -1L : dcService.find(activeDc).getId();
 				heteroClusters.forEach(clusterTbl -> {
 					if (clusterId2AzGroupCluster.containsKey(clusterTbl.getId())) {
 						clusterId2AzGroupCluster.get(clusterTbl.getId()).forEach(azGroupClusterEntity -> {
-							if (StringUtils.isNullOrEmpty(activeDc) || azGroupClusterEntity.getActiveAzId().equals(activeDcId)) {
-								if (StringUtils.isNullOrEmpty(clusterType) || azGroupClusterEntity.getAzGroupClusterType().equalsIgnoreCase(clusterType)) {
+							if (StringUtil.isEmpty(activeDc) || azGroupClusterEntity.getActiveAzId().equals(activeDcId)) {
+								if (StringUtil.isEmpty(clusterType) || azGroupClusterEntity.getAzGroupClusterType().equalsIgnoreCase(clusterType)) {
 									result.add(clusterTbl);
 								}
 							}

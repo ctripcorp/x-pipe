@@ -12,6 +12,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
@@ -22,18 +23,23 @@ public class AppliercontainerServiceImpl extends AbstractConsoleService<Applierc
         implements AppliercontainerService {
 
     @Autowired
+    @Lazy
     private ClusterService clusterService;
 
     @Autowired
+    @Lazy
     private AzService azService;
 
     @Autowired
+    @Lazy
     private DcService dcService;
 
     @Autowired
+    @Lazy
     private OrganizationService organizationService;
 
     @Autowired
+    @Lazy
     private ApplierService applierService;
 
     @Override

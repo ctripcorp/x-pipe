@@ -1,0 +1,54 @@
+<html xmlns:th="http://www.thymeleaf.org">
+    <body>
+        <th:block>
+            <script async defer src="https://buttons.github.io/buttons.js"></script>
+            <h5 id="toc_0">[XPipe 异常告警]
+                <a class="github-button" href="https://github.com/ctripcorp/x-pipe" data-size="large" data-show-count="true" aria-label="Star ctripcorp/x-pipe on GitHub">点赞XPipe</a>
+            </h5>
+            环境信息: <font color="red" th:text="'[' + ${environment} + ']'">[PRO]</font><br/>
+            <span th:text="'[时间: ' + ${time} + ']'">[时间: 2023-10-27]</span><br/>
+            <span th:text="|XPipe相关事宜请联系 [${xpipeAdminEmails}]|"></span><br/>
+            <hr>
+            <strong th:text="|发送自XPipe Console，源 IP 地址： ${localIpAddr}|">发送自XPipe Console，源 IP 地址： 127.0.0.1</strong>
+
+            <th:block th:each="entity : ${redisAlerts.entrySet()}">
+                <hr>
+                <h6 id="toc_1" th:text="|${entity.key.name()} : ${entity.key.detailDesc()?.title}|">ALERT_TYPE : Alert Title</h6>
+                <blockquote>
+                    <p th:text="${entity.key.detailDesc()?.desc}">Alert description here.</p>
+                </blockquote>
+
+                <table border="1">
+                    <thead>
+                    <tr>
+                        <th>报错类型</th>
+                        <th>Redis DC</th>
+                        <th>Redis集群</th>
+                        <th>Redis分片</th>
+                        <th>Redis-IP</th>
+                        <th>Redis-Port</th>
+                        <th>错误信息</th>
+                        <th>最近一次报错时间</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="redisAlert : ${entity.value}">
+                        <td th:text="${redisAlert?.alertType}"></td>
+                        <td th:text="${redisAlert?.dc}"></td>
+                        <td>
+                            <a th:href="@{|http://${xpipeurl}/#/cluster_dc_shards/${redisAlert.clusterId}/${redisAlert.dc}|}"
+                               th:text="${redisAlert.clusterId}">cluster-name</a>
+                        </td>
+                        <td th:text="${redisAlert?.shardId}"></td>
+                        <td th:text="${redisAlert?.hostPort?.host}"></td>
+                        <td th:text="${redisAlert?.hostPort?.port}"></td>
+                        <td th:text="${redisAlert?.message}"></td>
+                        <td th:text="${T(com.ctrip.xpipe.utils.DateTimeUtils).timeAsString(redisAlert.date)}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </th:block>
+        </th:block>
+    </body>
+</html>
+

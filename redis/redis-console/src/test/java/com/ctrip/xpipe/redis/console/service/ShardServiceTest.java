@@ -11,6 +11,9 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.util.ReflectionUtils;
+
+import java.lang.reflect.Field;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
@@ -23,7 +26,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class ShardServiceTest extends AbstractConsoleTest {
 	@Mock
-	private ShardTblDao mockedShardTblDao;
+	private ShardTblDao shardTblDao;
 	@InjectMocks
 	private ShardServiceImpl shardService;
 
@@ -38,7 +41,10 @@ public class ShardServiceTest extends AbstractConsoleTest {
 
 	@Before
 	public void initMockData() throws Exception {
-		when(mockedShardTblDao.findShard("cluster1", "shard1", ShardTblEntity.READSET_FULL))
+		Field daoField = ReflectionUtils.findField(ShardServiceImpl.class, "dao");
+		ReflectionUtils.makeAccessible(daoField);
+		ReflectionUtils.setField(daoField, shardService, shardTblDao);
+		when(shardTblDao.findShard("cluster1", "shard1", ShardTblEntity.READSET_FULL))
 				.thenReturn(new ShardTbl().setId(1).setClusterId(1).setShardName("shard1"));
 	}
 }

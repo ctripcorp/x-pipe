@@ -166,16 +166,27 @@ public class CtripPlatformEmailService implements EmailService {
         @Override
         protected void doExecute() {
             try {
+                logger.info("[SendEmailResponse] Sending email - Subject: {}, BodyContent length: {}, Recipients: {}",
+                    email.getSubject(), 
+                    email.getBodyContent() != null ? email.getBodyContent().length() : 0,
+                    email.getRecipients());
+                
                 SendEmailResponse response = client.sendEmail(createSendEmailRequest(email));
                 if (response == null || response.getResultCode() != 1) {
                     String message = response == null ? "no response from email service" : response.getResultMsg();
-                    logger.error("[SendEmailResponse] code: {}, message: {}", response.getResultCode(), response.getResultMsg());
+                    logger.error("[SendEmailResponse] code: {}, message: {}, Subject: {}, BodyContent: {}", 
+                        response != null ? response.getResultCode() : -1, 
+                        message, 
+                        email.getSubject(), 
+                        email.getBodyContent());
                     future().setFailure(new XpipeRuntimeException(message));
                     return;
                 }
 
                 future().setSuccess(new CtripEmailResponse(response));
             } catch (Exception e) {
+                logger.error("[SendEmailResponse] do error, Subject: {}, BodyContent: {}", 
+                    email.getSubject(), email.getBodyContent(), e);
                 future().setFailure(e);
             }
         }

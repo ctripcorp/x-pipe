@@ -40,7 +40,8 @@ public class ClusterDaoTest  extends AbstractConsoleIntegrationTest {
             .setIsXpipeInterested(true)
             .setClusterLastModifiedTime("test-last-modified")
             .setStatus("normal")
-            .setClusterDesignatedRouteIds("");
+            .setClusterDesignatedRouteIds("")
+            .setTag("");
     }
 
 

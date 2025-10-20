@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
@@ -45,12 +46,15 @@ public class ConfigServiceImpl implements ConfigService {
     private ConsoleConfig consoleConfig;
 
     @Autowired
+    @Lazy
     private AlertSystemOffChecker alertSystemOffChecker;
 
     @Autowired
+    @Lazy
     private SentinelAutoProcessChecker sentinelAutoProcessChecker;
 
     @Autowired
+    @Lazy
     private AutoMigrationOffChecker autoMigrationOffChecker;
 
     private String crossDcLeaderLeaseName;
