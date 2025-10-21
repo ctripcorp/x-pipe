@@ -1,0 +1,5 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Thu Jul 31 15:40:51 CST 2025
+framework-foundation-1.8.33-sources.jar>trip-maven-prod=
+framework-foundation-1.8.33.jar>trip-maven-prod=
+framework-foundation-1.8.33.pom>trip-maven-prod=
