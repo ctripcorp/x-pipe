@@ -1,0 +1,6 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Tue Mar 18 15:49:15 CST 2025
+plexus-container-default-3.0.8.jar>trip-maven-prod=
+plexus-container-default-3.0.8.pom>nexus=
+plexus-container-default-3.0.8.jar>nexus=
+plexus-container-default-3.0.8.pom>trip-maven-prod=
