@@ -61,7 +61,23 @@
 			<artifactId>mockwebserver</artifactId>
 			<scope>test</scope>
 		</dependency>
-	</dependencies>
+        <dependency>
+            <groupId>antlr</groupId>
+            <artifactId>antlr</artifactId>
+        </dependency>
+
+		<dependency>
+			<groupId>org.apache.kafka</groupId>
+			<artifactId>kafka-clients</artifactId>
+		</dependency>
+
+
+		<!-- CKafka -->
+		<dependency>
+			<groupId>com.ctrip.framework.ckafka</groupId>
+			<artifactId>client</artifactId>
+		</dependency>
+    </dependencies>
 
 	<build>
 		<plugins>

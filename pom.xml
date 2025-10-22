@@ -44,12 +44,12 @@
         <ctrip-framework-foundation.version>1.8.26</ctrip-framework-foundation.version>
         <ctrip-super-rule.version>1.0.25</ctrip-super-rule.version>
         <ctrip-apollo.version>0.6.7</ctrip-apollo.version>
-        <cat.version>3.6.13</cat.version>
+        <cat.version>3.7.13</cat.version>
         <pyrolite.version>4.9</pyrolite.version>
         <plexus-utils.version>3.1.0</plexus-utils.version>
         <git-commit-id-plugin.version>2.2.3</git-commit-id-plugin.version>
         <log4j2.version>2.17.1</log4j2.version>
-        <disruptor.version>3.3.6</disruptor.version>
+        <disruptor.version>3.3.9</disruptor.version>
         <dnsjava.version>2.1.6</dnsjava.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <tomcat.version>8.0.33</tomcat.version>
@@ -86,6 +86,8 @@
         <javassist.version>3.20.0-GA</javassist.version>
         <joda-time.version>2.9</joda-time.version>
         <guava-version>31.0.1-jre</guava-version>
+        <ckafka.version>0.2.5</ckafka.version>
+        <kafka.version>3.3.0</kafka.version>
     </properties>
 
     <modules>
@@ -619,26 +621,26 @@
                 <artifactId>disruptor</artifactId>
                 <version>${disruptor.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-api</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-core</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-slf4j-impl</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-web</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>org.apache.logging.log4j</groupId>-->
+<!--                <artifactId>log4j-api</artifactId>-->
+<!--                <version>${log4j2.version}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>org.apache.logging.log4j</groupId>-->
+<!--                <artifactId>log4j-core</artifactId>-->
+<!--                <version>${log4j2.version}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>org.apache.logging.log4j</groupId>-->
+<!--                <artifactId>log4j-slf4j-impl</artifactId>-->
+<!--                <version>${log4j2.version}</version>-->
+<!--            </dependency>-->
+<!--            <dependency>-->
+<!--                <groupId>org.apache.logging.log4j</groupId>-->
+<!--                <artifactId>log4j-web</artifactId>-->
+<!--                <version>${log4j2.version}</version>-->
+<!--            </dependency>-->
             <dependency>
                 <groupId>org.influxdb</groupId>
                 <artifactId>influxdb-java</artifactId>
@@ -944,6 +946,29 @@
                 <artifactId>joda-time</artifactId>
                 <version>${joda-time.version}</version>
             </dependency>
+
+            <!-- CKafka -->
+            <dependency>
+                <groupId>org.apache.kafka</groupId>
+                <artifactId>kafka-clients</artifactId>
+                <version>${kafka.version}</version>
+            </dependency>
+
+            <!-- CKafka -->
+            <dependency>
+                <groupId>com.ctrip.framework.ckafka</groupId>
+                <artifactId>client</artifactId>
+                <version>${ckafka.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-log4j12</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+
+
         </dependencies>
     </dependencyManagement>
 
