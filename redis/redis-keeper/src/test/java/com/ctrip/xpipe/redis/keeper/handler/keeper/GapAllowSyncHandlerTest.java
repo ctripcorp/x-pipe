@@ -208,6 +208,18 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     }
 
     @Test
+    public void testPSync2XSync_butInconsistent() throws Exception {
+        GapAllowSyncHandler.SyncRequest request = GapAllowSyncHandler.SyncRequest.psync("test-repl-id2", 2001);
+        ReplStage curStage = new ReplStage("test-repl-id", 1, 1001, "test-master-uuid", new GtidSet("A:1-10"), new GtidSet("A:1-20"));
+        ReplStage preStage = new ReplStage("test-repl-id2", 1, 1);
+        Mockito.when(keeperRepl.currentStage()).thenReturn(curStage);
+        Mockito.when(keeperRepl.preStage()).thenReturn(preStage);
+
+        GapAllowSyncHandler.SyncAction action = handler.anaRequest(request, keeperServer, slave);
+        Assert.assertTrue(action.full);
+    }
+
+    @Test
     public void testAnaXSync2PSync() throws Exception {
 
     }

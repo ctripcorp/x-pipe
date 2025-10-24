@@ -69,8 +69,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
     public static String KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS = "KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS";
 
-    private static String REPL_CONF_CRDT_MARK = "1";
-
     public static int DEFAULT_REPLICATION_TIMEOUT_MILLI = 60000;
 
     protected int masterConnectRetryDelaySeconds = Integer.parseInt(System.getProperty(KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS, "2"));

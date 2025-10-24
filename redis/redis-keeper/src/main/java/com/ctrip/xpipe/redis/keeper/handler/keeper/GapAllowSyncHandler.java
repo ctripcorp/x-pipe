@@ -146,9 +146,14 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 reqBacklogOffset = xsyncCont.getBacklogOffset();
             }
 
-            if (request.proto == ReplStage.ReplProto.PSYNC && request.replId.equalsIgnoreCase(preStage.getReplId()) && reqBacklogOffset == curStage.getBegOffsetBacklog()) {
-                logger.info("[anaRequest][{}] PSYNC -> XSYNC", slave);
-                return switchProto(curStage);
+            if (request.proto == ReplStage.ReplProto.PSYNC && request.replId.equalsIgnoreCase(preStage.getReplId())) {
+                if (reqBacklogOffset == curStage.getBegOffsetBacklog()) {
+                    logger.info("[anaRequest][{}] PSYNC -> XSYNC", slave);
+                    return switchProto(curStage);
+                } else if (reqBacklogOffset > curStage.getBegOffsetBacklog()) {
+                    logger.info("[anaRequest][{}] offset {} GT switch point {}", slave, reqBacklogOffset, curStage.getBegOffsetBacklog());
+                    return SyncAction.full("request offset GT switch point");
+                }
             } else if (request.proto == ReplStage.ReplProto.XSYNC && (reqBacklogOffset == curStage.getBegOffsetBacklog() || reqBacklogOffset == -1)) {
                 logger.info("[anaRequest][{}] XSYNC -> PSYNC", slave);
                 return switchProto(curStage);
@@ -278,6 +283,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         long backlogBeginOffset = Math.max(xsyncStage.getBegOffsetBacklog(), keeperRepl.backlogBeginOffset());
 
         logger.info("[anaXsync] lost : {}, cont: {}, req: {}, backlogCont: {}", lost, cont, req, backlogCont);
+        lost = lost.subtract(cont); // avoid gtid.lost contain gtid.exec in some concurrent cases
 
         if ("*".equals(request.replId) || xsyncStage.getReplId().equalsIgnoreCase(request.replId)) {
             GtidSet masterGtidSet = cont.union(lost);
@@ -300,7 +306,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 }
             }
 
-            if (gtidNotRelated) {
+            if (!req.isEmpty() && gtidNotRelated) {
                 return SyncAction.full(String.format("[gtid not related] req:{}, my:{}", req, masterGtidSet));
             } else if (request.maxGap >= 0 && request.maxGap < gapCnt) {
                 return SyncAction.full(String.format("[gap][%d > %d]", gapCnt, request.maxGap), deltaLost);

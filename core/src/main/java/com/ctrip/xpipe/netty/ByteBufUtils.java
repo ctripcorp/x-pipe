@@ -58,34 +58,46 @@ public class ByteBufUtils {
 		final int readerIndex = byteBuf.readerIndex();
 		final int readable = byteBuf.readableBytes();
 		try{
-			ByteBuffer buf = byteBuf.internalNioBuffer(readerIndex, readable);
-			if(logger.isDebugEnabled()){
-				logger.debug("[appendCommands]{}", ByteBufferUtils.readToString(buf.slice()));
+			if (byteBuf instanceof CompositeByteBuf) {
+				wrote += writeDividedBufToFileChannel(byteBuf, fileChannel, tracelogger);
+			} else {
+				ByteBuffer buf = byteBuf.internalNioBuffer(readerIndex, readable);
+				if(logger.isDebugEnabled()){
+					logger.debug("[appendCommands]{}", ByteBufferUtils.readToString(buf.slice()));
+				}
+				if(tracelogger != null){
+					tracelogger.debug("[writeByteBufToFileChannel][begin real write]");
+				}
+				wrote += fileChannel.write(buf);
 			}
-			
-			if(tracelogger != null){
-				tracelogger.debug("[writeByteBufToFileChannel][begin real write]");
-			}
-			wrote += fileChannel.write(buf);
 		}catch(Exception e){
 			
 			logger.info("[appendCommands]", e);
-			ByteBuffer[] buffers = byteBuf.nioBuffers();
-			// TODO ensure all read
-			if (buffers != null) {
-				for (ByteBuffer buf : buffers) {
-					if(logger.isDebugEnabled()){
-						logger.debug("[appendCommands]{}", ByteBufferUtils.readToString(buf.slice()));
-					}
-					wrote += fileChannel.write(buf);
-				}
-			}
+			writeDividedBufToFileChannel(byteBuf,fileChannel,tracelogger);
 		}
 		
 		if(wrote < readable){
 			logger.warn("[writeByteBufToFileChannel][wrote < readable]{} < {}", wrote, readable);
 		}
 		byteBuf.readerIndex(readerIndex + wrote);
+		return wrote;
+	}
+
+	public static int writeDividedBufToFileChannel(ByteBuf byteBuf, FileChannel fileChannel, Logger tracelogger) throws IOException {
+		int wrote = 0;
+		ByteBuffer[] buffers = byteBuf.nioBuffers();
+		// TODO ensure all read
+		if (buffers != null) {
+			for (ByteBuffer buf : buffers) {
+				if(logger.isDebugEnabled()){
+					logger.debug("[appendCommands]{}", ByteBufferUtils.readToString(buf.slice()));
+				}
+				if(tracelogger != null){
+					tracelogger.debug("[writeByteBufToFileChannel][begin real write]");
+				}
+				wrote += fileChannel.write(buf);
+			}
+		}
 		return wrote;
 	}
 
