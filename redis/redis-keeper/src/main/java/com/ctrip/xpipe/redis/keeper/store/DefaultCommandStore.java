@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
-import com.ctrip.xpipe.redis.core.store.ck.CKStore;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.utils.CloseState;

@@ -5,7 +5,7 @@ import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
-import com.ctrip.xpipe.redis.core.store.ck.CKStore;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.core.util.NonFinalizeFileInputStream;
 import com.ctrip.xpipe.redis.core.util.NonFinalizeFileOutputStream;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
@@ -88,6 +88,13 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         this.keeperBaseDir = baseDir;
         this.redisOpParser = redisOpParser;
         this.syncRateManager = syncRateManager;
+    }
+
+    public DefaultReplicationStoreManager(CKStore ckStore, KeeperConfig keeperConfig, ReplId replId,
+                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
+                                          SyncRateManager syncRateManager, RedisOpParser redisOpParser) {
+        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser);
+        this.ckStore = ckStore;
     }
 
     @Override
@@ -334,10 +341,10 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         private ShardId deprecatedShardId;
 
-        public ClusterAndShardCompatible(KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
+        public ClusterAndShardCompatible(CKStore ckStore,KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
                                          File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
                                          SyncRateManager syncRateManager) {
-            super(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser);
+            super(ckStore,keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser);
             this.keeperBaseDir = baseDir;
             this.replId = replId;
         }
