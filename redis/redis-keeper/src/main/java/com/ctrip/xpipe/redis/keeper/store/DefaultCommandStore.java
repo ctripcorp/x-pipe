@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.core.store.ck.CKStore;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.utils.CloseState;
@@ -27,16 +28,27 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 	private static final Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
 
 	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser,  GtidCmdFilter gtidCmdFilter) throws IOException {
-		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter);
+		this(null,file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter);
 	}
 
 	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-										   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
-										   long commandReaderFlyingThreshold,
-										   CommandReaderWriterFactory cmdReaderWriterFactory,
-										   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex
+							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
+							   long commandReaderFlyingThreshold,
+							   CommandReaderWriterFactory cmdReaderWriterFactory,
+							   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex
 	) throws IOException {
-		super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+		super(null,file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex);
+	}
+
+
+	public DefaultCommandStore(CKStore ckStore, File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
+							   long commandReaderFlyingThreshold,
+							   CommandReaderWriterFactory cmdReaderWriterFactory,
+							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex
+	) throws IOException {
+		super(ckStore,file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
 				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex);
 	}
 
@@ -45,7 +57,16 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 							   long commandReaderFlyingThreshold,
 							   CommandReaderWriterFactory cmdReaderWriterFactory,
 							   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter) throws IOException {
-		super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+		super(null,file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, true);
+	}
+
+	public DefaultCommandStore(CKStore ckStore,File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
+							   long commandReaderFlyingThreshold,
+							   CommandReaderWriterFactory cmdReaderWriterFactory,
+							   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter) throws IOException {
+		super(ckStore,file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
 				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, true);
 	}
 

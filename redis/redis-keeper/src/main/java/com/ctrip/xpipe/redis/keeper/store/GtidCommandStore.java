@@ -4,6 +4,7 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.core.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -22,11 +23,11 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
 
     private static final Logger logger = LoggerFactory.getLogger(GtidCommandStore.class);
 
-    public GtidCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+    public GtidCommandStore(CKStore ckStore, File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                             int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
                             CommandReaderWriterFactory cmdReaderWriterFactory,
                             KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter, boolean buildIndex) throws IOException {
-        super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+        super(ckStore,file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
                 commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex);
     }
 

@@ -6,10 +6,8 @@ import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
-import com.ctrip.xpipe.redis.core.store.CommandStore;
-import com.ctrip.xpipe.redis.core.store.CommandWriter;
-import com.ctrip.xpipe.redis.core.store.GtidCmdFilter;
-import com.ctrip.xpipe.redis.core.store.IndexStore;
+import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.core.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.exception.replication.LostGtidsetBacklogConflictException;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
@@ -46,6 +44,22 @@ public class DefaultIndexStore implements IndexStore {
     private boolean writerCmdEnabled;
 
     private CommandStore parentCommandStore;
+
+    private CKStore ckStore;
+
+    public DefaultIndexStore(CKStore ckStore, String baseDir, RedisOpParser redisOpParser,
+                             CommandStore commandStore, GtidCmdFilter gtidCmdFilter, String currentCmdFileName) {
+        this.baseDir = baseDir;
+        this.opParser = redisOpParser;
+        this.commandStore = commandStore;
+        this.startGtidSet = new GtidSet("");
+        this.parentCommandStore = commandStore;
+        this.gtidCmdFilter = gtidCmdFilter;
+        this.writerCmdEnabled = true;
+        this.currentCmdFileName = currentCmdFileName;
+        this.ckStore = ckStore;
+    }
+
 
     public DefaultIndexStore(String baseDir, RedisOpParser redisOpParser,
                              CommandStore commandStore, GtidCmdFilter gtidCmdFilter, String currentCmdFileName) {
@@ -285,5 +299,11 @@ public class DefaultIndexStore implements IndexStore {
             }
         }
     }
+
+    public CKStore getCkStore(){
+        return this.ckStore;
+    }
+
+
 
 }
