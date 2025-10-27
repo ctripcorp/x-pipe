@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.core.store.ck;
+package com.ctrip.xpipe.redis.keeper.store.ck;
 
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.YieldingWaitStrategy;

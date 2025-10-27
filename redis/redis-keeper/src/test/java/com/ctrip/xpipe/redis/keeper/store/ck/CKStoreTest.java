@@ -9,9 +9,6 @@ import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ReplStage;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
-import com.ctrip.xpipe.redis.core.store.ck.CKStore;
-import com.ctrip.xpipe.redis.core.store.ck.MessageEvent;
-import com.ctrip.xpipe.redis.core.store.ck.MessageEventFactory;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
@@ -22,13 +19,11 @@ import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
 import com.lmax.disruptor.util.DaemonThreadFactory;
 import io.netty.buffer.Unpooled;
-import org.apache.kafka.clients.producer.Producer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -56,9 +51,6 @@ public class CKStoreTest  extends AbstractRedisKeeperTest {
 
     private ReplicationStore store;
 
-    @Mock
-    private Producer producer;
-
     private String uuid = "000000000000000000000000000000000000000A";
     private String replId = "000000000000000000000000000000000000000A";
 
@@ -69,9 +61,6 @@ public class CKStoreTest  extends AbstractRedisKeeperTest {
         redisOpParser = new GeneralRedisOpParser(redisOpParserManager);
         baseDir = new File(getTestFileDir());
         CKStore ckStore = new CKStore(ReplId.from(1l),redisOpParser);
-        Field producerField = CKStore.class.getDeclaredField("producer");
-        producerField.setAccessible(true);
-        producerField.set(ckStore,producer);
 
         MessageEventFactory factory = new MessageEventFactory();
         int ringBufferSize = 1024 * 1024; // 1M个槽位
@@ -121,8 +110,8 @@ public class CKStoreTest  extends AbstractRedisKeeperTest {
         // Then - 等待事件被处理
         boolean processed = latch.await(10, TimeUnit.SECONDS);
         Assert.assertTrue("Event should be processed within timeout", processed);
-        RedisSingleKeyOp redisOpSingleKey = (RedisSingleKeyOp) redisOpCaptor.getValue();
-        Assert.assertEquals("FOO",redisOpSingleKey.getKey().toString());
+        RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOpCaptor.getValue();
+        Assert.assertEquals("FOO",redisSingleKeyOp.getKey().toString());
     }
 
 

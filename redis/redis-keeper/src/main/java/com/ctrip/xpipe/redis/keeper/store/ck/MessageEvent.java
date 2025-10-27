@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.core.store.ck;
+package com.ctrip.xpipe.redis.keeper.store.ck;
 
 import java.util.List;
 

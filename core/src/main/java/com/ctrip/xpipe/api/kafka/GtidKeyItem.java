@@ -1,25 +1,30 @@
-package com.ctrip.xpipe.redis.core.store.ck;
-
-import java.util.List;
+package com.ctrip.xpipe.api.kafka;
 
 public class GtidKeyItem {
+    private String cmd;
     private String uuid;
     private String seq;
     private byte[] key;
-    private String subkey;
+    private byte[] subkey;
     private String dbid;
-    private long timestamp;
-    private String shardid;
-    private List<Integer> rediskey;
+    private long shardid;
 
-    public GtidKeyItem(String uuid,String seq,byte[] key,String subkey,String dbid,String shardid,List<Integer> rediskey){
+    public GtidKeyItem(String cmd,String uuid, String seq, byte[] key, byte[] subkey, String dbid, long shardid){
+        this.cmd = cmd;
         this.uuid = uuid;
         this.seq = seq;
         this.key = key;
         this.subkey = subkey;
         this.dbid = dbid;
         this.shardid = shardid;
-//        this.rediskey = rediskey;
+    }
+
+    public String getCmd() {
+        return cmd;
+    }
+
+    public void setCmd(String cmd) {
+        this.cmd = cmd;
     }
 
     public String getUuid() {
@@ -46,11 +51,11 @@ public class GtidKeyItem {
         this.key = key;
     }
 
-    public String getSubkey() {
+    public byte[] getSubkey() {
         return subkey;
     }
 
-    public void setSubkey(String subkey) {
+    public void setSubkey(byte[] subkey) {
         this.subkey = subkey;
     }
 
@@ -62,19 +67,11 @@ public class GtidKeyItem {
         this.dbid = dbid;
     }
 
-    public String getShardid() {
+    public long getShardid() {
         return shardid;
     }
 
-    public void setShardid(String shardid) {
+    public void setShardid(long shardid) {
         this.shardid = shardid;
-    }
-
-    public List<Integer> getRediskey() {
-        return rediskey;
-    }
-
-    public void setRediskey(List<Integer> rediskey) {
-        this.rediskey = rediskey;
     }
 }
