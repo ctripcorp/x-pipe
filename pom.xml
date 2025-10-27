@@ -44,7 +44,7 @@
         <ctrip-framework-foundation.version>1.8.26</ctrip-framework-foundation.version>
         <ctrip-super-rule.version>1.0.25</ctrip-super-rule.version>
         <ctrip-apollo.version>0.6.7</ctrip-apollo.version>
-        <cat.version>3.7.13</cat.version>
+        <cat.version>3.6.13</cat.version>
         <pyrolite.version>4.9</pyrolite.version>
         <plexus-utils.version>3.1.0</plexus-utils.version>
         <git-commit-id-plugin.version>2.2.3</git-commit-id-plugin.version>
@@ -88,6 +88,7 @@
         <guava-version>31.0.1-jre</guava-version>
         <ckafka.version>0.2.5</ckafka.version>
         <kafka.version>3.3.0</kafka.version>
+        <grpc.version>1.40.1-ctrip.1</grpc.version>
     </properties>
 
     <modules>
@@ -98,6 +99,11 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-api</artifactId>
+                <version>${grpc.version}</version>
+            </dependency>
             <!-- jackson -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>

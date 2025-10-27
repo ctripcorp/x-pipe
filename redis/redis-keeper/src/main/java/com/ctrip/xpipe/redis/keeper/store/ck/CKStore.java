@@ -34,7 +34,7 @@ public class CKStore implements Keeperable {
 
     private final MetricProxy metricProxy;
 
-    private boolean isKeeper;
+    private volatile boolean isKeeper;
 
     private static final String schemaJson = "{\n" +
             "  \"type\": \"record\",\n" +
@@ -86,6 +86,11 @@ public class CKStore implements Keeperable {
     public void setKeeper(){
         this.isKeeper = true;
     }
+
+    public void setMaster(){
+        this.isKeeper = false;
+    }
+
 
 
 

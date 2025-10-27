@@ -103,9 +103,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         this.baseDir = new File(keeperBaseDir, replId.toString());
         this.metaFile = new File(this.baseDir, META_FILE);
 
-        this.ckStore = new CKStore(replId,redisOpParser);
-
-
         scheduled = Executors.newScheduledThreadPool(1,
                 KeeperReplIdAwareThreadFactory.create(replId.toString(), "gc-" + replId.toString()));
 

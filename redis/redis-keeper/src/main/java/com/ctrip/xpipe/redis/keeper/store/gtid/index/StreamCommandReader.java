@@ -85,16 +85,16 @@ public class StreamCommandReader implements StreamCommandLister {
         ByteArrayOutputStreamPayload byteArrayOutputStreamPayload0 = (ByteArrayOutputStreamPayload) payload[0];
         byte[] bs0 = byteArrayOutputStreamPayload0.getBytes();
 
-        if (isIgnoredCommand(bs0)) {
-            return;
-        }
-
-        String gtid = readGtid(payload);
-
         if (isGtidCommand(bs0)) {
+            String gtid = readGtid(payload);
             handleGtidCommand(gtid,payload, commandBuf);
             lastOffset = this.currentOffset;
             return;
+        }else {
+            if(TX_CONTEXT.get() == null && !isMultiCommand(bs0)){
+                writeCommandBufs(Arrays.asList(commandBuf));
+                lastOffset = this.currentOffset;
+            }
         }
 
         if (isMultiCommand(bs0)) {
@@ -112,7 +112,7 @@ public class StreamCommandReader implements StreamCommandLister {
         processTransactionCommand(payload, commandBuf);
     }
 
-    private boolean isIgnoredCommand(byte[] command) {
+    private boolean isPingOrSelectCommand(byte[] command) {
         return Arrays.equals(PING_BYTES, command) ||
                 Arrays.equals(SELECT_BYTES, command) ||
                 Arrays.equals(PING_LOWWER_BYTES, command) ||
