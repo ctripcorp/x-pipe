@@ -79,6 +79,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 							  KeeperResourceManager resourceManager) {
 		this(redisKeeperServer, endpoint, masterEventLoopGroup, rdbOnlyEventLoopGroup, masterConfigEventLoopGroup, replicationStoreManager,  scheduled, resourceManager);
 		this.ckStore = ckStore;
+		this.ckStore.setMaster();
 	}
 	
 	@Override
