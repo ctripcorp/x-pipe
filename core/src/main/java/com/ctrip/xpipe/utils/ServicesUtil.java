@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.utils;
 
+import com.ctrip.xpipe.api.kafka.KafkaService;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.config.ConfigProvider;
 import com.ctrip.xpipe.api.email.EmailService;
@@ -12,7 +13,6 @@ import com.ctrip.xpipe.api.organization.Organization;
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfo;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
-import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import com.ctrip.xpipe.lifecycle.OrderedComparator;
 import com.ctrip.xpipe.metric.MetricProxy;
@@ -84,6 +84,11 @@ public class ServicesUtil {
 	public static MonitorServiceFactory getMonitorServiceFactory() {
 		return load(MonitorServiceFactory.class);
 	}
+
+	public static KafkaService getKafkaService() {
+		return load(KafkaService.class);
+	}
+
 
 	@SuppressWarnings("unchecked")
 	public static <T extends Ordered> T load(Class<T> clazz) {

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.redis.operation.parser;
 
 import com.ctrip.xpipe.redis.core.redis.operation.*;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisMultiKeyOpGtidWrapper;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisMultiSubKeyOpGtidWrapper;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisSingleKeyOpGtidWrapper;
 
 import java.util.Arrays;
@@ -26,7 +27,7 @@ public class RedisOpGtidParser extends AbstractRedisOpParser implements RedisOpP
         if (args.length < 4) throw new IllegalArgumentException("no enough args found for gtid");
         String gtid = bytes2Str(args[1]);
         byte[][] gtidArgs = Arrays.copyOfRange(args, 0, 3);
-
+        String dbid = bytes2Str(args[2]);
         String subCmd = bytes2Str(args[3]);
         RedisOpType subOpType = RedisOpType.lookup(subCmd);
         byte[][] subArgs = Arrays.copyOfRange(args, 3, args.length);
@@ -38,8 +39,9 @@ public class RedisOpGtidParser extends AbstractRedisOpParser implements RedisOpP
         if (null == subParser) throw new UnsupportedOperationException("no parser for " + subCmd);
         RedisOp redisOp = subParser.parse(subArgs);
 
-        if (redisOp instanceof RedisSingleKeyOp) return new RedisSingleKeyOpGtidWrapper(gtidArgs, gtid, (RedisSingleKeyOp)redisOp);
-        else if (redisOp instanceof RedisMultiKeyOp) return new RedisMultiKeyOpGtidWrapper(gtidArgs, gtid, (RedisMultiKeyOp)redisOp);
+        if (redisOp instanceof RedisSingleKeyOp) return new RedisSingleKeyOpGtidWrapper(gtidArgs, gtid,dbid, (RedisSingleKeyOp)redisOp);
+        else if (redisOp instanceof RedisMultiKeyOp) return new RedisMultiKeyOpGtidWrapper(gtidArgs, gtid, dbid,(RedisMultiKeyOp)redisOp);
+        else if (redisOp instanceof RedisMultiSubKeyOp) return new RedisMultiSubKeyOpGtidWrapper(gtidArgs, gtid, dbid,(RedisMultiSubKeyOp)redisOp);
         else throw new UnsupportedOperationException("unsupport inner redis op " + redisOp);
     }
 

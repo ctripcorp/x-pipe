@@ -36,23 +36,23 @@ public enum RedisOpSingleKeyEnum {
     LTRIM(RedisOpType.LTRIM, 1, null),
 
     // Hash
-    HDEL(RedisOpType.HDEL, 1, 2),
-    HINCRBY(RedisOpType.HINCRBY, 1, 2),
-    HINCRBYFLOAT(RedisOpType.HINCRBYFLOAT, 1, 2),
-    HMSET(RedisOpType.HMSET, 1, 2),
-    HSET(RedisOpType.HSET, 1, 2),
-    HSETNX(RedisOpType.HSETNX, 1, 2),
+//    HDEL(RedisOpType.HDEL, 1, 2),
+//    HINCRBY(RedisOpType.HINCRBY, 1, 2),
+//    HINCRBYFLOAT(RedisOpType.HINCRBYFLOAT, 1, 2),
+//    HMSET(RedisOpType.HMSET, 1, 2),
+//    HSET(RedisOpType.HSET, 1, 2),
+//    HSETNX(RedisOpType.HSETNX, 1, 2),
 
 
     // Set
-    SADD(RedisOpType.SADD, 1, 2),
+//    SADD(RedisOpType.SADD, 1, 2),
     SPOP(RedisOpType.SPOP, 1, null),
-    SREM(RedisOpType.SREM, 1, 2),
+//    SREM(RedisOpType.SREM, 1, 2),
 
     // ZSet
-    ZADD(RedisOpType.ZADD, 1, null),
-    ZINCRBY(RedisOpType.ZINCRBY, 1, null),
-    ZREM(RedisOpType.ZREM, 1, null),
+//    ZADD(RedisOpType.ZADD, 1, null),
+//    ZINCRBY(RedisOpType.ZINCRBY, 1, null),
+//    ZREM(RedisOpType.ZREM, 1, null),
     ZREMRANGEBYLEX(RedisOpType.ZREMRANGEBYLEX, 1, null),
     ZREMRANGEBYRANK(RedisOpType.ZREMRANGEBYRANK, 1, null),
     ZREMRANGEBYSCORE(RedisOpType.ZREMRANGEBYSCORE, 1, null),
@@ -72,7 +72,7 @@ public enum RedisOpSingleKeyEnum {
     PERSIST(RedisOpType.PERSIST, 1, null),
 
     // Geo
-    GEOADD(RedisOpType.GEOADD, 1, 2),
+//    GEOADD(RedisOpType.GEOADD, 1, 2),
     GEORADIUS(RedisOpType.GEORADIUS, 1, 2),
 
     // Bit

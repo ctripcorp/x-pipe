@@ -1,24 +1,22 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.core.util.NonFinalizeFileInputStream;
 import com.ctrip.xpipe.redis.core.util.NonFinalizeFileOutputStream;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
-import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.unidal.helper.Files.IO;
 
 import java.io.*;
 import java.util.Date;
@@ -72,6 +70,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private SyncRateManager syncRateManager;
 
+    private CKStore ckStore;
+
     public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) {
         this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, null);
@@ -88,6 +88,13 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         this.keeperBaseDir = baseDir;
         this.redisOpParser = redisOpParser;
         this.syncRateManager = syncRateManager;
+    }
+
+    public DefaultReplicationStoreManager(CKStore ckStore, KeeperConfig keeperConfig, ReplId replId,
+                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
+                                          SyncRateManager syncRateManager, RedisOpParser redisOpParser) {
+        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser);
+        this.ckStore = ckStore;
     }
 
     @Override
@@ -175,7 +182,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid,
                                                       KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
-        return new GtidReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, redisOpParser, syncRateManager);
+        return new GtidReplicationStore(this.ckStore,storeBaseDir,keeperConfig,keeperRunid, keeperMonitor, redisOpParser, syncRateManager);
     }
 
     private void recrodLatestStore(String storeDir) throws IOException {
@@ -331,10 +338,10 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         private ShardId deprecatedShardId;
 
-        public ClusterAndShardCompatible(KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
+        public ClusterAndShardCompatible(CKStore ckStore,KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
                                          File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
                                          SyncRateManager syncRateManager) {
-            super(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser);
+            super(ckStore,keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser);
             this.keeperBaseDir = baseDir;
             this.replId = replId;
         }

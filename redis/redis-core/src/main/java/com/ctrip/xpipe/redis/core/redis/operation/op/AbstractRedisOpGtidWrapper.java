@@ -13,11 +13,14 @@ public abstract class AbstractRedisOpGtidWrapper extends AbstractRedisOp impleme
 
     private String gtid;
 
+    private String dbid;
+
     private RedisOp innerRedisOp;
 
-    public AbstractRedisOpGtidWrapper(byte[][] rawGtidArgs, String gtid, RedisOp innerRedisOp) {
+    public AbstractRedisOpGtidWrapper(byte[][] rawGtidArgs, String gtid, String dbid,RedisOp innerRedisOp) {
         this.rawGtidArgs = rawGtidArgs;
         this.gtid = gtid;
+        this.dbid = dbid;
         this.innerRedisOp = innerRedisOp;
 
         this.estimateSize(rawGtidArgs, innerRedisOp.estimatedSize());
@@ -26,6 +29,11 @@ public abstract class AbstractRedisOpGtidWrapper extends AbstractRedisOp impleme
     @Override
     public RedisOpType getOpType() {
         return innerRedisOp.getOpType();
+    }
+
+    @Override
+    public String getDbId(){
+        return dbid;
     }
 
     @Override

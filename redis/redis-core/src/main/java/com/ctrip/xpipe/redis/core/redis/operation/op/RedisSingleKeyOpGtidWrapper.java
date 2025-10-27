@@ -10,8 +10,8 @@ public class RedisSingleKeyOpGtidWrapper extends AbstractRedisOpGtidWrapper impl
 
     private RedisSingleKeyOp innerRedisSingleKeyOp;
 
-    public RedisSingleKeyOpGtidWrapper(byte[][] rawGtidArgs, String gtid, RedisSingleKeyOp innerRedisSingleKeyOp) {
-        super(rawGtidArgs, gtid, innerRedisSingleKeyOp);
+    public RedisSingleKeyOpGtidWrapper(byte[][] rawGtidArgs, String gtid,String dbid, RedisSingleKeyOp innerRedisSingleKeyOp) {
+        super(rawGtidArgs, gtid, dbid,innerRedisSingleKeyOp);
         this.innerRedisSingleKeyOp = innerRedisSingleKeyOp;
     }
 

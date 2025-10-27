@@ -15,8 +15,8 @@ public class RedisMultiKeyOpGtidWrapper extends AbstractRedisOpGtidWrapper imple
 
     private RedisMultiKeyOp innerRedisMultiKeyOp;
 
-    public RedisMultiKeyOpGtidWrapper(byte[][] rawGtidArgs, String gtid, RedisMultiKeyOp innerRedisMultiKeyOp) {
-        super(rawGtidArgs, gtid, innerRedisMultiKeyOp);
+    public RedisMultiKeyOpGtidWrapper(byte[][] rawGtidArgs, String gtid, String dbid,RedisMultiKeyOp innerRedisMultiKeyOp) {
+        super(rawGtidArgs, gtid, dbid,innerRedisMultiKeyOp);
         this.innerRedisMultiKeyOp = innerRedisMultiKeyOp;
     }
 
@@ -37,7 +37,7 @@ public class RedisMultiKeyOpGtidWrapper extends AbstractRedisOpGtidWrapper imple
 
     @Override
     public RedisMultiKeyOp subOp(Set<Integer> needKeys) {
-        return new RedisMultiKeyOpGtidWrapper(getRawGtidArgs(), getOpGtid(), innerRedisMultiKeyOp.subOp(needKeys));
+        return new RedisMultiKeyOpGtidWrapper(getRawGtidArgs(), getOpGtid(), getDbId(),innerRedisMultiKeyOp.subOp(needKeys));
     }
 
 }

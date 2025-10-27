@@ -9,6 +9,33 @@
     <artifactId>services</artifactId>
     <packaging>pom</packaging>
 
+    <properties>
+        <grpc.version>1.40.1-ctrip.1</grpc.version>
+    </properties>
+
+    <dependencyManagement>
+    <dependencies>
+    <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-api</artifactId>
+        <version>${grpc.version}</version>
+    </dependency>
+    </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+
+    <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-api</artifactId>
+        <exclusions>
+            <exclusion>
+                <groupId>com.google.errorprone</groupId>
+                <artifactId>error_prone_annotations</artifactId>
+            </exclusion>
+        </exclusions>
+    </dependency>
+    </dependencies>
     <profiles>
         <profile>
             <id>local</id>

@@ -247,4 +247,58 @@ public class GeneralRedisOpParserTest extends AbstractRedisOpParserTest {
             parser.parse(parserList.toArray());
         }
     }
+
+    @Test
+    public void testGTIDHashCmdWithSubKeys(){
+        RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "0", "HMSET","hash1", "k1", "v1", "k2", "v2").toArray());
+        Assert.assertEquals(RedisOpType.HMSET, redisOp.getOpType());
+        Assert.assertEquals("a1:10", redisOp.getOpGtid());
+
+
+        redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "0", "SADD","set1", "m1","m2").toArray());
+        Assert.assertEquals(RedisOpType.SADD, redisOp.getOpType());
+        Assert.assertEquals("a1:10", redisOp.getOpGtid());
+    }
+
+    @Test
+    public void testGTIDSetCmdWithSubKeys(){
+        RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "0", "SADD","set1", "m1","m2").toArray());
+        Assert.assertEquals(RedisOpType.SADD, redisOp.getOpType());
+        Assert.assertEquals("a1:10", redisOp.getOpGtid());
+    }
+
+    @Test
+    public void testGTIDZSetCmdWithSubKeys(){
+        RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "0", "ZADD","zset1", "1000","zm1","2000","zm2").toArray());
+        Assert.assertEquals(RedisOpType.ZADD, redisOp.getOpType());
+        Assert.assertEquals("a1:10", redisOp.getOpGtid());
+    }
+
+    @Test
+    public void testGTIDZSetAddCmdWithSubKeys(){
+        RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "0", "ZADD","zset1","XX","CH","INCR", "1000","zm1","2000","zm2").toArray());
+
+        Assert.assertEquals(RedisOpType.ZADD, redisOp.getOpType());
+        Assert.assertEquals("a1:10", redisOp.getOpGtid());
+    }
+
+
+    @Test
+    public void testGTIDZGeoCmdWithSubKeys(){
+        RedisOp redisOp = parser.parse(Arrays.asList("GTID", "a1:10", "0", "GEOADD","geoset1", "13.361389", "38.115556", "BJ", "15.087269", "37.502669", "SHA").toArray());
+        Assert.assertEquals(RedisOpType.GEOADD, redisOp.getOpType());
+        Assert.assertEquals("a1:10", redisOp.getOpGtid());
+    }
+
+    @Test
+    public void testGTIDTransactionCmdWithSubKeys(){
+        RedisOp multiRedisOp = parser.parse(Arrays.asList("MULTI").toArray());
+        Assert.assertEquals(RedisOpType.MULTI, multiRedisOp.getOpType());
+        RedisOp normalSetRedisOp = parser.parse(Arrays.asList("set","key1","val1").toArray());
+        Assert.assertEquals(RedisOpType.SET,normalSetRedisOp.getOpType());
+        RedisOp nomarlHMSetRedisOp = parser.parse(Arrays.asList("HMSET","hash1", "k1", "v1", "k2", "v2").toArray());
+        Assert.assertEquals(RedisOpType.HMSET,nomarlHMSetRedisOp.getOpType());
+        RedisOp execRedisOp = parser.parse(Arrays.asList("GTID", "a1:10", "0", "exec").toArray());
+        Assert.assertEquals("a1:10", execRedisOp.getOpGtid());
+    }
 }

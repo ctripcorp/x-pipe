@@ -73,6 +73,11 @@ public abstract class AbstractRedisOp implements RedisOp {
     }
 
     @Override
+    public String getDbId(){
+        return "";
+    }
+
+    @Override
     public String getOpGtid() {
         return gtid;
     }

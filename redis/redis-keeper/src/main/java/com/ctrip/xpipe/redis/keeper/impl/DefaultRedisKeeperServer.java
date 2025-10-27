@@ -44,6 +44,7 @@ import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.*;
 import io.netty.bootstrap.ServerBootstrap;
@@ -161,6 +162,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private ReplDelayConfigCache replDelayConfigCache;
 
+	private CKStore ckStore;
+
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager,
@@ -188,11 +191,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.crossRegion = new AtomicBoolean(false);
 		this.syncRateManager = syncRateManager;
 		this.replDelayConfigCache = replDelayConfigCache;
+		this.ckStore = new CKStore(this.replId,this.redisOpParser);
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
 																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor) {
-		return new DefaultReplicationStoreManager.ClusterAndShardCompatible(keeperConfig, replId, currentKeeperMeta.getId(),
+		return new DefaultReplicationStoreManager.ClusterAndShardCompatible(this.ckStore,keeperConfig, replId, currentKeeperMeta.getId(),
 				baseDir, keeperMonitor, redisOpParser, syncRateManager).setDeprecatedClusterAndShard(clusterId, shardId);
 	}
 
@@ -238,7 +242,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				currentKeeperMeta, baseDir, keeperMonitor);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		replicationStoreManager.initialize();
-		
+
 		threadPoolName = String.format("keeper:%s", replId);
 		logger.info("[doInitialize][keeper config]{}", keeperConfig);
 
@@ -504,7 +508,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private void initAndStartMaster(Endpoint target) {
 		try {
-			this.keeperRedisMaster = new DefaultRedisMaster(this, (DefaultEndPoint)target, masterEventLoopGroup,
+			this.keeperRedisMaster = new DefaultRedisMaster(this.ckStore,this, (DefaultEndPoint)target, masterEventLoopGroup,
 					rdbOnlyEventLoopGroup, masterConfigEventLoopGroup, replicationStoreManager, scheduled, resourceManager);
 
 			if(getLifecycleState().isStopping() || getLifecycleState().isStopped()){
