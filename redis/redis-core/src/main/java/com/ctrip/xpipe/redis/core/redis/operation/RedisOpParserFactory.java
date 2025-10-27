@@ -21,6 +21,7 @@ public class RedisOpParserFactory {
         registerNoneKey(redisOpParserManager);
         registerSingleKey(redisOpParserManager);
         registerMultiKeys(redisOpParserManager);
+        registerWithSubKeys(redisOpParserManager);
     }
 
     private void registerNoneKey(RedisOpParserManager redisOpParserManager) {
@@ -44,6 +45,14 @@ public class RedisOpParserFactory {
             redisOpParserManager.registerParser(
                     cmd.getRedisOpType(),
                     new RedisOpMultiKeysParser(cmd.getRedisOpType(), cmd.getKeyStartIndex(), cmd.getKvNum()));
+        }
+    }
+
+    private void registerWithSubKeys(RedisOpParserManager redisOpParserManager) {
+        for (RedisOpWithSubKeysEnum cmd : RedisOpWithSubKeysEnum.values()) {
+            redisOpParserManager.registerParser(
+                    cmd.getRedisOpType(),
+                    new RedisOpWithSubKeysParser(cmd.getRedisOpType(), cmd.getKeyStartIndex(), cmd.getKvNum(), cmd.getKvReverse()));
         }
     }
 }
