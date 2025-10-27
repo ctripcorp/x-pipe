@@ -537,7 +537,7 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		ReplStage curReplStage = metaStore.getCurrentReplStage();
 		Assert.assertEquals(curReplStage.getProto(), ReplStage.ReplProto.PSYNC);
 		Assert.assertEquals(curReplStage.getReplId(), replIdC);
-		Assert.assertEquals(curReplStage.getBegOffsetRepl(), reploffC+1);
+		Assert.assertEquals(curReplStage.getBegOffsetRepl(), reploffC);
 	}
 
 	@Test

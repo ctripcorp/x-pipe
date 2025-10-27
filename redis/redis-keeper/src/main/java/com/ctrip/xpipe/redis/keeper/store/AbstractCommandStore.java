@@ -724,4 +724,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         return cmdWriter;
     }
 
+    @Override
+    public void resetStateForContinue() {
+        if(indexStore != null) {
+            indexStore.resetParserState();
+        }
+    }
+
 }

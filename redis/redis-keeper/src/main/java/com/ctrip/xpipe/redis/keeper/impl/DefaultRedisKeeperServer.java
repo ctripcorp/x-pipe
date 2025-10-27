@@ -722,7 +722,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void onContinue(String requestReplId, String responseReplId) {
-		
+
 		if( responseReplId != null && !requestReplId.equals(responseReplId) ){
 			closeSlaves(String.format("replid changed: %s->%s", requestReplId, responseReplId));
 		}
@@ -1035,7 +1035,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void onXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
-
+		getCurrentReplicationStore().resetStateForContinue();
 	}
 
 	@Override
