@@ -16,6 +16,7 @@ public class GapAllowXSyncHandler extends GapAllowSyncHandler {
         String gtidset = args[1];
         int pos = 2;
         long maxGap = -1;
+        String gtidLost = "";
         while (pos < args.length) {
             String opt = args[pos];
             if (opt.equalsIgnoreCase("maxgap")) {
@@ -26,13 +27,23 @@ public class GapAllowXSyncHandler extends GapAllowSyncHandler {
 
                 maxGap = Long.parseLong(args[pos + 1]);
                 pos += 2;
+            } else if (opt.equalsIgnoreCase("GTID.LOST")) {
+                if (args.length < pos + 2) {
+                    redisSlave.sendMessage(new RedisErrorParser(new RedisError("Invalid maxgap")).format());
+                    return null;
+                }
+
+                gtidLost = args[pos + 1];
+                pos += 2;
             } else {
-                redisSlave.sendMessage(new RedisErrorParser(new RedisError("Invalid option " + opt)).format());
-                return null;
+                // the processing logic is consistent with redis, ignore invalid xsync option
+                // redisSlave.sendMessage(new RedisErrorParser(new RedisError("Invalid option " + opt)).format());
+                logger.warn("[parseRequest][{}][ignore invalidated xsync option] {}", redisSlave, opt);
+                pos += 2;
             }
         }
 
-        return SyncRequest.xsync(replId, gtidset, maxGap);
+        return SyncRequest.xsync(replId, gtidset, maxGap, gtidLost);
     }
 
     @Override

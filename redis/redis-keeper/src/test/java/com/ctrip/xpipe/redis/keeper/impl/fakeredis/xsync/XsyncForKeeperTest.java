@@ -1,8 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.impl.fakeredis.xsync;
 
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.tuple.Pair;
+import com.google.common.base.Preconditions;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -105,5 +108,49 @@ public class XsyncForKeeperTest extends AbstractFakeRedisTest {
 
         Assert.assertEquals(newKeeperServer.getReplicationStore().getGtidSet().getValue().toString(), "7ca392ffb0fa8415cbf6a88bb7937f323c7367ac:3-21,1777955e932bed5eb321a58fbc2132cba48f026f:1-2");
         Assert.assertEquals(length + 589, newKeeperServer.getReplicationStore().getCurReplStageReplOff());
+    }
+
+    @Test
+    public void testKeeperReXContinue() throws Exception {
+        RedisKeeperServer keeperServer = startRedisKeeperServerAndConnectToFakeRedis();
+        waitRedisKeeperServerConnected(keeperServer);
+        Pair<GtidSet, GtidSet> gtidSet = keeperServer.getReplicationStore().getGtidSet();
+
+        String s = geneCommand("testKeeperReXContinueReplId1234567qweras", 1);
+        fakeRedisServer.propagate(s.substring(0, 20));
+
+        Thread.sleep(2000);
+        // keeper disconnected with redis
+        keeperServer.stopAndDisposeMaster();
+        Assert.assertEquals(gtidSet, keeperServer.getReplicationStore().getGtidSet());
+
+        // reconnect
+        keeperServer.reconnectMaster();
+        waitRedisKeeperServerConnected(keeperServer);
+        fakeRedisServer.propagate(s.substring(0, 20));
+        fakeRedisServer.propagate(s.substring(20));
+        Thread.sleep(2000);
+        Pair<GtidSet, GtidSet> finalGtidSet = keeperServer.getReplicationStore().getGtidSet();
+        Assert.assertNotEquals(gtidSet, finalGtidSet);
+        Assert.assertEquals("testKeeperReXContinueReplId1234567qweras:1", finalGtidSet.getKey().getUUIDSet("testKeeperReXContinueReplId1234567qweras").toString());
+
+    }
+
+    public String geneCommand(String replId, int gno) {
+        Preconditions.checkArgument(replId.length() == 40, "replId length must be 40");
+        int len = 41 + String.valueOf(gno).length();
+        return "*6\r\n" +
+                "$4\r\n" +
+                "GTID\r\n" +
+                "$" + len + "\r\n" +
+                replId + ":" + gno + "\r\n" +
+                "$1\r\n" +
+                "0\r\n" +
+                "$3\r\n" +
+                "SET\r\n" +
+                "$16\r\n" +
+                "key:__rand_int__\r\n" +
+                "$3\r\n" +
+                "VXK\r\n";
     }
 }
