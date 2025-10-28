@@ -27,7 +27,7 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     $scope.showCrossMasterHealthStatus = false;
     $scope.gotoCrossMasterHickwall = gotoCrossMasterHickwall;
     $scope._clusterType = ClusterType.default();
-    $scope.clusterType = ClusterType.default();
+    $scope.clusterType = ClusterType.default().value;
     $scope.unfoldAllUnhealthyDelay = unfoldAllUnhealthyDelay;
     $scope.setClusterType = setClusterType;
 

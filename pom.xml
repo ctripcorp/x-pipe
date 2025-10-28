@@ -65,10 +65,10 @@
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
         <qunaer.common.version>9.2.37</qunaer.common.version>
         <qunar.suprule.version>1.0.56</qunar.suprule.version>
-        <qconfig.client.version>1.100.74-ctrip</qconfig.client.version>
+        <qconfig.client.version>1.100.70-ctrip</qconfig.client.version>
         <qtracer.version>1.2.4</qtracer.version>
-        <netty.boringssl.version>2.0.65.Final</netty.boringssl.version>
-        <netty4.version>4.1.92.Final</netty4.version>
+        <netty.boringssl.version>2.0.61.Final</netty.boringssl.version>
+        <netty4.version>4.1.68.Final</netty4.version>
         <zstd.version>1.3.6-1</zstd.version>
         <jackson.version>2.15.0</jackson.version>
         <jedis.version>2.8.1.4-ctrip</jedis.version>

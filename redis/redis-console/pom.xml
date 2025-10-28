@@ -20,6 +20,18 @@
                <groupId>com.google.collections</groupId>
                <artifactId>google-collections</artifactId>
             </exclusion>
+            <exclusion>
+               <groupId>io.netty</groupId>
+               <artifactId>netty-resolver-dns-classes-macos</artifactId>
+            </exclusion>
+            <exclusion>
+               <groupId>io.netty</groupId>
+               <artifactId>netty-resolver</artifactId>
+            </exclusion>
+            <exclusion>
+               <groupId>io.netty</groupId>
+               <artifactId>netty-resolver-dns</artifactId>
+            </exclusion>
          </exclusions>
       </dependency>
       <!-- Explicitly add Plexus dependencies required by DAO and data source implementations -->
