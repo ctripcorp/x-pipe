@@ -182,15 +182,15 @@ else
     fi
     JAVA_OPTS="$JAVA_OPTS -Xms${USED_MEM}m -Xmx${USED_MEM}m -Xmn${XMN}m -XX:+AlwaysPreTouch  -XX:MaxDirectMemorySize=${MAX_DIRECT}m -XX:MetaspaceSize=${META_SPACE}m -XX:MaxMetaspaceSize=${MAX_META_SPACE}m"
 fi
-export JAVA_OPTS="$JAVA_OPTS -XX:+UseParNewGC -XX:MaxTenuringThreshold=5 -XX:+UseConcMarkSweepGC -XX:+UseCMSInitiatingOccupancyOnly -XX:+ScavengeBeforeFullGC -XX:+UseCMSCompactAtFullCollection -XX:+CMSParallelRemarkEnabled -XX:CMSFullGCsBeforeCompaction=9 -XX:CMSInitiatingOccupancyFraction=60 -XX:-CMSClassUnloadingEnabled -XX:SoftRefLRUPolicyMSPerMB=1000 -XX:-ReduceInitialCardMarks -XX:+CMSPermGenSweepingEnabled -XX:CMSInitiatingPermOccupancyFraction=70 -XX:+ExplicitGCInvokesConcurrent -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationConcurrentTime -XX:+PrintHeapAtGC -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -Xloggc:$LOG_DIR/heap_trace.txt -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=${IP} -XX:+UnlockCommercialFeatures -XX:+FlightRecorder -Dio.netty.allocator.useCacheForAllThreads=false -Djava.security.egd=file:/dev/./urandom"
+export JAVA_OPTS="$JAVA_OPTS -Xlog:gc*:file=$LOG_DIR/gc.log:time,uptime,level,tags -XX:MaxTenuringThreshold=5 -XX:SoftRefLRUPolicyMSPerMB=1000 -Xlog:safepoint*:file=$LOG_DIR/safepoint.log:time,uptime,level,tags -Xlog:gc+heap*=debug:file=$LOG_DIR/heap_debug.log:time,uptime,level,tags -XX:+HeapDumpOnOutOfMemoryError -XX:-OmitStackTraceInFastThrow -Duser.timezone=Asia/Shanghai -Dclient.encoding.override=UTF-8 -Dfile.encoding=UTF-8 -XX:HeapDumpPath=$LOG_DIR/HeapDumpOnOutOfMemoryError/  -Dcom.sun.management.jmxremote.port=$JMX_PORT -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=${IP} -XX:+FlightRecorder -Dio.netty.allocator.useCacheForAllThreads=false -Djava.security.egd=file:/dev/./urandom -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
 
 PATH_TO_JAR=$SERVICE_NAME".jar"
 SERVER_URL="http://localhost:$SERVER_PORT"
 STARTUP_LOG=$LOG_DIR"/startup.logger"
 
-#set the jdk to 1.8 version
-if [[ -z "$JAVA_HOME" && -d /usr/java/jdk1.8.0_121/ ]]; then
-    export JAVA_HOME=/usr/java/jdk1.8.0_121
+#set the jdk to 21 version
+if [[ -z "$JAVA_HOME" && -d /usr/java/jdk21/ ]]; then
+    export JAVA_HOME=/usr/java/jdk21
 elif [[ -z "$JAVA_HOME" && -d /usr/java/latest/ ]]; then
     export JAVA_HOME=/usr/java/latest/
 fi

@@ -73,7 +73,11 @@ function ClusterType() {
             }
         },
         lookup(typeName) {
-            return (typeName && this._values[typeName.toLowerCase()]) || null
+            if (!typeName) return null;
+            const key = typeof typeName === 'string'
+                ? typeName.toLowerCase()
+                : (typeName.value && typeName.value.toLowerCase());
+            return key ? this._values[key] || null : null;
         },
         values() {
             return Object.values(this._values)

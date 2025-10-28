@@ -110,7 +110,7 @@ public class CommonConfigBean extends AbstractConfigBean {
     }
 
     public String getDatasource() {
-        return getProperty(KEY_DATASOURCE, "fxxpipe");
+        return getProperty(KEY_DATASOURCE, "fxxpipedb_dalcluster");
     }
 
     public Map<String,String> getHickwallClusterMetricFormat() {
