@@ -162,7 +162,7 @@ public class StreamCommandReader implements StreamCommandLister {
         commandBufs.add(commandBuf);
 
         writeCommandBufs(commandBufs);
-        if (!ckStore.isKeeper()) {
+        if (ckStore != null && !ckStore.isKeeper()) {
             ckStore.sendPayloads(payloads);
         }
     }
@@ -183,7 +183,7 @@ public class StreamCommandReader implements StreamCommandLister {
         if (payloads != null) {
             payloads.add(payload);
             try {
-                if (!ckStore.isKeeper()) {
+                if (ckStore != null && !ckStore.isKeeper()) {
                     ckStore.sendPayloads(payloads);
                 }
             } finally {
