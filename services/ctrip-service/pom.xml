@@ -44,6 +44,16 @@
                 <artifactId>qtracer-instrument-asm</artifactId>
                 <version>${qtracer.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
+                <version>1.58.1</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-util</artifactId>
+                <version>1.58.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -229,6 +239,10 @@
             <version>1.3.12</version>
             <exclusions>
                 <exclusion>
+                    <artifactId>protobuf-java</artifactId>
+                    <groupId>com.google.protobuf</groupId>
+                </exclusion>
+                <exclusion>
                     <artifactId>error_prone_annotations</artifactId>
                     <groupId>com.google.errorprone</groupId>
                 </exclusion>
@@ -236,9 +250,14 @@
                     <groupId>org.apache.dubbo</groupId>
                     <artifactId>dubbo</artifactId>
                 </exclusion>
+                <!-- 排除 gRPC 依赖以避免版本冲突，使用 clogging-agent 引入的更高版本 1.58.1 -->
                 <exclusion>
                     <groupId>io.grpc</groupId>
                     <artifactId>grpc-stub</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.grpc</groupId>
+                    <artifactId>grpc-protobuf</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>io.grpc</groupId>
@@ -246,17 +265,39 @@
                 </exclusion>
                 <exclusion>
                     <groupId>io.grpc</groupId>
-                    <artifactId>grpc-protobuf</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.xerial.snappy</groupId>
-                    <artifactId>snappy-java</artifactId>
+                    <artifactId>grpc-netty</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>io.grpc</groupId>
-                    <artifactId>grpc-netty</artifactId>
+                    <artifactId>grpc-context</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.grpc</groupId>
+                    <artifactId>grpc-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.grpc</groupId>
+                    <artifactId>grpc-util</artifactId>
+                </exclusion>
+                <!-- 排除 guice 以避免版本冲突 -->
+                <exclusion>
+                    <groupId>com.google.inject</groupId>
+                    <artifactId>guice</artifactId>
+                </exclusion>
+                <!-- 排除 emailservice 传递依赖中可能存在的旧版本 httpclient5，使用显式引入的新版本 -->
+                <exclusion>
+                    <groupId>org.apache.httpcomponents.client5</groupId>
+                    <artifactId>httpclient5</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <!-- 显式引入 HttpClient 5.x 较新版本以支持 ConnectionConfig -->
+        <!-- emailservice 传递依赖可能引入较旧版本，显式引入确保有 ConnectionConfig 类 -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+            <version>5.2.1</version>
         </dependency>
 
         <dependency>

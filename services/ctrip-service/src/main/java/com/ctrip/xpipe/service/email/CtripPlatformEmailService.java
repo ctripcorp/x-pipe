@@ -38,7 +38,24 @@ public class CtripPlatformEmailService implements EmailService {
 
     private static final String TYPE = "SOA.EMAIL.SERVICE";
 
-    private static EmailServiceClient client = EmailServiceClient.getInstance();
+    private static volatile EmailServiceClient client;
+
+    private static EmailServiceClient getClient() {
+        if (client == null) {
+            synchronized (CtripPlatformEmailService.class) {
+                if (client == null) {
+                    try {
+                        client = EmailServiceClient.getInstance();
+                        logger.info("[getClient]EmailServiceClient initialized successfully");
+                    } catch (Exception e) {
+                        logger.error("[getClient]Failed to initialize EmailServiceClient, will use null client", e);
+                        // Don't throw exception, allow class loading to succeed
+                    }
+                }
+            }
+        }
+        return client;
+    }
 
     @Override
     public void sendEmail(Email email) {
@@ -48,7 +65,11 @@ public class CtripPlatformEmailService implements EmailService {
                     "send email", new Callable<SendEmailResponse>() {
                         @Override
                         public SendEmailResponse call() throws Exception {
-                            return client.sendEmail(createSendEmailRequest(email));
+                            EmailServiceClient currentClient = getClient();
+                            if (currentClient == null) {
+                                throw new IllegalStateException("EmailServiceClient not initialized");
+                            }
+                            return currentClient.sendEmail(createSendEmailRequest(email));
                         }
                     });
 
@@ -100,7 +121,12 @@ public class CtripPlatformEmailService implements EmailService {
 
             List<Integer> brands = Arrays.asList(1);
 
-            GetEmailStatusResponse emailStatusResponse = client.getEmailStatus(
+            EmailServiceClient currentClient = getClient();
+            if (currentClient == null) {
+                logger.error("[checkAsyncEmailResult]EmailServiceClient not initialized");
+                return false;
+            }
+            GetEmailStatusResponse emailStatusResponse = currentClient.getEmailStatus(
                     new GetEmailStatusRequest(CtripAlertEmailTemplate.SEND_CODE, emailIDList, EMAIL_TYPE_ALERT, oneHourAgo, current,brands));
 
             logger.debug("[checkAsyncEmailResult]Email sent out result: {}", emailStatusResponse);
@@ -171,7 +197,13 @@ public class CtripPlatformEmailService implements EmailService {
                     email.getBodyContent() != null ? email.getBodyContent().length() : 0,
                     email.getRecipients());
                 
-                SendEmailResponse response = client.sendEmail(createSendEmailRequest(email));
+                EmailServiceClient currentClient = getClient();
+                if (currentClient == null) {
+                    logger.error("[SendEmailResponse]EmailServiceClient not initialized");
+                    future().setFailure(new IllegalStateException("EmailServiceClient not initialized"));
+                    return;
+                }
+                SendEmailResponse response = currentClient.sendEmail(createSendEmailRequest(email));
                 if (response == null || response.getResultCode() != 1) {
                     String message = response == null ? "no response from email service" : response.getResultMsg();
                     logger.error("[SendEmailResponse] code: {}, message: {}, Subject: {}, BodyContent: {}", 
