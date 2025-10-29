@@ -92,21 +92,20 @@ public class CKStore implements Keeperable {
     }
 
 
-
-
     public void sendPayloads(List<Object[]> payloads) {
-        long sequence = -1;  // 非阻塞获取序列号
-        try {
-            sequence = ringBuffer.tryNext();
-            MessageEvent event = ringBuffer.get(sequence);
-            event.setPayloads(payloads);
-        } catch (Exception e){
-            reportHickwall(CK_BLOCK);
-        } finally {
-            if(sequence != -1) {
+        if(ringBuffer.hasAvailableCapacity(1)){
+            long sequence = -1;
+            try {
+                sequence = ringBuffer.next();
+                MessageEvent event = ringBuffer.get(sequence);
+                event.setPayloads(payloads);
+            } finally {
                 ringBuffer.publish(sequence);
             }
+        }else {
+            reportHickwall(CK_BLOCK);
         }
+
     }
 
     private static final ThreadLocal<List<RedisOp>> TX_CONTEXT = new ThreadLocal<>();

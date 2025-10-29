@@ -22,9 +22,7 @@ import java.io.IOException;
 import java.util.*;
 
 public class CtripKafkaService implements KafkaService {
-    private static final Logger logger = LoggerFactory.getLogger(CtripKafkaService.class);
 
-    private static final String TOPIC_TEST = "fx.cat.log.bbz-fx-xpipe-gtid";
     private static final String TOPIC = "bbz.fx.xpipe.ck.gtid";
     private static final String ACL_USER = "kMTApwMDMzNzAws";
     private static final String CUSTOM_CLIENT_ID = "bbzfxxpipeckgtid";
@@ -35,7 +33,6 @@ public class CtripKafkaService implements KafkaService {
     private final Schema schema;
 
     private static final String XPIPE_CK_KAFKA = "xpipe.ck.kafka";
-    private static final String CK_BLOCK = "ck.block";
 
     private static final String schemaJson = "{\n" +
             "  \"type\": \"record\",\n" +
@@ -60,7 +57,7 @@ public class CtripKafkaService implements KafkaService {
         // 自定义配置，按需配置
         Properties properties = new Properties();
         properties.put(ProducerConfig.BATCH_SIZE_CONFIG, "1048576");
-        properties.put(ProducerConfig.BUFFER_MEMORY_CONFIG,"268435456");
+        properties.put(ProducerConfig.BUFFER_MEMORY_CONFIG,"10737418240");
         properties.put(ProducerConfig.COMPRESSION_TYPE_CONFIG,"snappy");
         properties.put(ProducerConfig.LINGER_MS_CONFIG,"50");
         properties.put(ProducerConfig.MAX_BLOCK_MS_CONFIG,"0");
