@@ -37,7 +37,7 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public static final String KEY_HICKWALL_CLUSTER_METRIC_FORMAT = "console.hickwall.cluster.metric.format";
 
-    public static final String KEY_DATASOURCE = "dal.datasource";
+    public static final String KEY_DATASOURCE = "datasource";
 
     public static final String KEY_HICKWALL_METRIC_INFO = "console.hickwall.metric.info";
 
@@ -110,7 +110,7 @@ public class CommonConfigBean extends AbstractConfigBean {
     }
 
     public String getDatasource() {
-        return getProperty(KEY_DATASOURCE, "fxxpipedb_dalcluster");
+        return getProperty(KEY_DATASOURCE, "fxxpipe");
     }
 
     public Map<String,String> getHickwallClusterMetricFormat() {
