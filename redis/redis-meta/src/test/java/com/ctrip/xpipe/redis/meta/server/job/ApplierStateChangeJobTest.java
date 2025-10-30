@@ -18,8 +18,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.*;
 
 /**
  * @author ayq
@@ -77,7 +76,7 @@ public class ApplierStateChangeJobTest extends AbstractMetaServerTest {
         } catch (TimeoutException e) {
         }
 
-        verifyZeroInteractions(activeSuccessCommand);
+        verifyNoMoreInteractions(activeSuccessCommand);
 
     }
 }

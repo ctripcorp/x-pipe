@@ -28,16 +28,7 @@ public class CatConfig {
 		return catEnabled;
 	}
 
-	@Bean
-	public FilterRegistrationBean catFilter() {
-		
-		FilterRegistrationBean bean = new FilterRegistrationBean();
-		bean.setFilter(new CatFilter());
-		bean.setName("cat-filter");
-		bean.addUrlPatterns("/*");
-		bean.setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.FORWARD);
-		return bean;
-	}
+	// catFilter() delete, because of @WebFilter has register it
 
 	@Bean(name="cat-listener")
 	public ServletListenerRegistrationBean<CatListener> catListener() {

@@ -11,6 +11,54 @@
       <dependency>
          <groupId>com.ctrip.framework.xpipe.redis</groupId>
          <artifactId>redis-core</artifactId>
+         <exclusions>
+            <exclusion>
+               <groupId>org.codehaus.plexus</groupId>
+               <artifactId>plexus-container-default</artifactId>
+            </exclusion>
+            <exclusion>
+               <groupId>com.google.collections</groupId>
+               <artifactId>google-collections</artifactId>
+            </exclusion>
+            <exclusion>
+               <groupId>io.netty</groupId>
+               <artifactId>netty-resolver-dns-classes-macos</artifactId>
+            </exclusion>
+            <exclusion>
+               <groupId>io.netty</groupId>
+               <artifactId>netty-resolver</artifactId>
+            </exclusion>
+            <exclusion>
+               <groupId>io.netty</groupId>
+               <artifactId>netty-resolver-dns</artifactId>
+            </exclusion>
+         </exclusions>
+      </dependency>
+      <!-- Explicitly add Plexus dependencies required by DAO and data source implementations -->
+      <dependency>
+         <groupId>org.codehaus.plexus</groupId>
+         <artifactId>plexus-container-default</artifactId>
+         <version>1.7.1</version>
+         <exclusions>
+            <exclusion>
+               <groupId>org.codehaus.plexus</groupId>
+               <artifactId>plexus-utils</artifactId>
+            </exclusion>
+            <exclusion>
+               <groupId>com.google.collections</groupId>
+               <artifactId>google-collections</artifactId>
+            </exclusion>
+         </exclusions>
+      </dependency>
+      <dependency>
+         <groupId>org.codehaus.plexus</groupId>
+         <artifactId>plexus-component-annotations</artifactId>
+         <version>1.7.1</version>
+      </dependency>
+      <dependency>
+         <groupId>org.codehaus.plexus</groupId>
+         <artifactId>plexus-utils</artifactId>
+         <version>${plexus-utils.version}</version>
       </dependency>
       <dependency>
          <groupId>com.ctrip.framework.xpipe.redis</groupId>
@@ -27,10 +75,22 @@
       <dependency>
          <groupId>org.springframework.boot</groupId>
          <artifactId>spring-boot-starter-web</artifactId>
+         <exclusions>
+            <exclusion>
+               <groupId>jakarta.annotation</groupId>
+               <artifactId>jakarta.annotation-api</artifactId>
+            </exclusion>
+         </exclusions>
       </dependency>
       <dependency>
          <groupId>org.springframework.boot</groupId>
          <artifactId>spring-boot-starter-aop</artifactId>
+         <exclusions>
+            <exclusion>
+               <groupId>jakarta.annotation</groupId>
+               <artifactId>jakarta.annotation-api</artifactId>
+            </exclusion>
+         </exclusions>
       </dependency>
       <dependency>
          <groupId>dnsjava</groupId>
@@ -63,6 +123,20 @@
       <dependency>
          <groupId>org.unidal.framework</groupId>
          <artifactId>dal-jdbc</artifactId>
+         <exclusions>
+            <exclusion>
+               <groupId>org.codehaus.plexus</groupId>
+               <artifactId>plexus-container-default</artifactId>
+            </exclusion>
+            <exclusion>
+               <groupId>org.codehaus.plexus</groupId>
+               <artifactId>plexus-component-annotations</artifactId>
+            </exclusion>
+            <exclusion>
+               <groupId>com.google.collections</groupId>
+               <artifactId>google-collections</artifactId>
+            </exclusion>
+         </exclusions>
       </dependency>
       <dependency>
          <groupId>mysql</groupId>
@@ -77,17 +151,24 @@
       <dependency>
          <groupId>com.baomidou</groupId>
          <artifactId>mybatis-plus-boot-starter</artifactId>
-         <version>3.5.3.1</version>
+         <version>3.5.12</version>
       </dependency>
 
-      <!-- https://mvnrepository.com/artifact/org.apache.velocity/velocity -->
+<!--      <dependency>-->
+<!--         <groupId>org.eclipse.sisu</groupId>-->
+<!--         <artifactId>org.eclipse.sisu.plexus</artifactId>-->
+<!--         <version>0.9.0.M4</version>-->
+<!--      </dependency>-->
       <dependency>
-         <groupId>org.springframework.boot</groupId>
-         <artifactId>spring-boot-starter-velocity</artifactId>
-      </dependency>
-      <dependency>
-         <groupId>org.apache.velocity</groupId>
-         <artifactId>velocity</artifactId>
+         <groupId>com.google.inject</groupId>
+         <artifactId>guice</artifactId>
+         <version>5.1.0</version>
+         <exclusions>
+            <exclusion>
+               <groupId>aopalliance</groupId>
+               <artifactId>aopalliance</artifactId>
+            </exclusion>
+         </exclusions>
       </dependency>
       <!-- test -->
       <dependency>
@@ -102,6 +183,17 @@
          <type>test-jar</type>
          <scope>test</scope>
       </dependency>
+
+      <dependency>
+         <groupId>com.google.protobuf</groupId>
+         <artifactId>protobuf-java</artifactId>
+      </dependency>
+
+      <dependency>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot-starter-thymeleaf</artifactId>
+      </dependency>
+
       <dependency>
          <groupId>org.apache.curator</groupId>
          <artifactId>curator-test</artifactId>
@@ -115,8 +207,13 @@
       <dependency>
          <groupId>com.baomidou</groupId>
          <artifactId>mybatis-plus-generator</artifactId>
-         <version>3.5.3.1</version>
+         <version>3.5.12</version>
          <scope>test</scope>
+      </dependency>
+      <dependency>
+         <groupId>org.apache.commons</groupId>
+         <artifactId>commons-collections4</artifactId>
+         <version>4.4</version>
       </dependency>
    </dependencies>
    <profiles>

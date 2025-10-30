@@ -4,6 +4,7 @@ import com.ctrip.platform.dal.dao.configure.FirstAidKit;
 import com.ctrip.platform.dal.dao.configure.SerializableDataSourceConfig;
 import com.ctrip.platform.dal.dao.datasource.ClusterDynamicDataSource;
 import com.ctrip.platform.dal.dao.datasource.ForceSwitchableDataSourceAdapter;
+import com.ctrip.platform.dal.dao.datasource.mirror.ShardDataSource;
 import com.ctrip.xpipe.database.ConnectionPoolDesc;
 import com.ctrip.xpipe.database.ConnectionPoolHolder;
 import com.ctrip.xpipe.datasource.DataSourceFactory;
@@ -30,16 +31,16 @@ public class CtripDynamicDataSource implements DataSource, ConnectionPoolHolder 
 
     private static final Logger logger = LoggerFactory.getLogger(CtripDynamicDataSource.class);
 
-    private ClusterDynamicDataSource dataSource;
+    private ShardDataSource dataSource;
 
     private DataSourceDescriptor descriptor;
 
     public CtripDynamicDataSource(DataSourceFactory factory) throws Exception {
         javax.sql.DataSource dataSource = factory.getOrCreateDataSource();
-        if (dataSource instanceof ClusterDynamicDataSource) {
-            this.dataSource = (ClusterDynamicDataSource) dataSource;
+        if (dataSource instanceof ShardDataSource) {
+            this.dataSource = (ShardDataSource) dataSource;
         } else {
-            throw new DataSourceException("not a cluster dynamic datasource");
+            throw new DataSourceException("not a shardDataSource");
         }
     }
 
@@ -75,7 +76,7 @@ public class CtripDynamicDataSource implements DataSource, ConnectionPoolHolder 
 
     @Override
     public ConnectionPoolDesc getConnectionPoolDesc() {
-        javax.sql.DataSource innerDataSource = dataSource.getSingleDataSource().getDataSource();
+        javax.sql.DataSource innerDataSource = dataSource.getGroupDataSource().getWriteDataSource().getSingleDataSource().getDataSource();
         if (innerDataSource instanceof org.apache.tomcat.jdbc.pool.DataSource) {
             ConnectionPool connectionPool = ((org.apache.tomcat.jdbc.pool.DataSource) innerDataSource).getPool();
             return buildConnectionPoolDesc(connectionPool);
