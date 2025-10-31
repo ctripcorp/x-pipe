@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
  * 2025/10/24 10:47
  */
 public class DefaultKafkaService implements KafkaService {
-    private static Logger logger = LoggerFactory.getLogger(DefaultFoundationService.class);
 
     @Override
     public void sendKafka(GtidKeyItem gtidKeyItem) {
