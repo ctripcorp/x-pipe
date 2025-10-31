@@ -36,23 +36,6 @@ public class CKStore implements Keeperable {
 
     private volatile boolean isKeeper;
 
-    private static final String schemaJson = "{\n" +
-            "  \"type\": \"record\",\n" +
-            "  \"name\": \"GtidKeyItem\",\n" +
-            "  \"namespace\": \"com.ctrip.xpipe.redis.core.store.ck\",\n" +
-            "  \"fields\": [\n" +
-            "    {\"name\": \"uuid\", \"type\": \"string\"},\n" +
-            "    {\"name\": \"cmd\", \"type\": \"string\"},\n" +
-            "    {\"name\": \"address\", \"type\": \"string\"},\n" +
-            "    {\"name\": \"seq\", \"type\": \"string\"},\n" +
-            "    {\"name\": \"key\", \"type\": {\"type\": \"array\", \"items\": [\"null\",\"int\"]}, \"default\": []},\n" +
-            "    {\"name\": \"subkey\", \"type\": {\"type\": \"array\", \"items\": [\"null\",\"int\"]}, \"default\": []},\n" +
-            "    {\"name\": \"dbid\", \"type\": \"string\"},\n" +
-            "    {\"name\": \"timestamp\", \"type\": [\"null\",\"long\"], \"default\": null},\n" +
-            "    {\"name\": \"shardid\", \"type\": \"int\"}\n" +
-            "  ]\n" +
-            "}";
-
     public CKStore(ReplId replId, RedisOpParser redisOpParser){
         this.replId = replId != null ? replId.id() : -1;
 

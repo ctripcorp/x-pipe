@@ -24,8 +24,6 @@ public class RedisOpWithSubKeysParser extends AbstractRedisOpParser implements R
     private Integer kvNum;
     private boolean kvReverse;
 
-    private byte[] EMPTY = new byte[0];
-
     private byte[] NX_BYTES = new byte[]{'N','X'};
     private byte[] XX_BYTES = new byte[]{'X','X'};
     private byte[] GT_BYTES = new byte[]{'G','T'};
