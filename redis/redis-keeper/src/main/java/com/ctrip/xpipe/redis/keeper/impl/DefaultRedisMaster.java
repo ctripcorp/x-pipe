@@ -79,7 +79,6 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 							  KeeperResourceManager resourceManager) {
 		this(redisKeeperServer, endpoint, masterEventLoopGroup, rdbOnlyEventLoopGroup, masterConfigEventLoopGroup, replicationStoreManager,  scheduled, resourceManager);
 		this.ckStore = ckStore;
-		this.ckStore.setMaster();
 	}
 	
 	@Override
@@ -96,6 +95,8 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		masterConfigClientPool.initialize();
 
 		rordbConfigFutureCache = new TimeBoundCache<>(() -> 60000, this::refreshMasterConfigRordb);
+
+		this.ckStore.setMaster();
 	}
 
 	@Override
@@ -188,7 +189,9 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public void setKeeper() {
 		isKeeper.set(true);
-		ckStore.setKeeper();
+		if(getLifecycleState().isStarted()) {
+			ckStore.setKeeper();
+		}
 		//for monitor
 		redisKeeperServer.getKeeperMonitor().getMasterStats().setMasterRole(endpoint, SERVER_TYPE.KEEPER);
 		logger.info("[setKeeper]{}", this);
