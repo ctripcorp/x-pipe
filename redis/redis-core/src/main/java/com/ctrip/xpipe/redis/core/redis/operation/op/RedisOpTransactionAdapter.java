@@ -50,6 +50,11 @@ public class RedisOpTransactionAdapter implements RedisOp {
         return RedisOpType.MULTI;
     }
 
+    @Override
+    public String getDbId() {
+        return "";
+    }
+
     /*
      * MUTLI
      * SET K V

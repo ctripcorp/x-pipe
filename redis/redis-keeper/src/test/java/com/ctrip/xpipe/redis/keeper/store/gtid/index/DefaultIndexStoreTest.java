@@ -113,6 +113,7 @@ public class DefaultIndexStoreTest {
 
     @After
     public void tearDown() throws IOException {
+        defaultIndexStore.closeWriter();
         // 删除basedir文件夹
         File dir = new File(baseDir);
         if (dir.exists()) {
@@ -187,6 +188,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+        defaultIndexStore.closeWriter();
         defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
         for(int i = 633744; i < 633750; i++) {
@@ -214,6 +216,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+        defaultIndexStore.closeWriter();
         defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
@@ -268,12 +271,12 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+        defaultIndexStore.closeWriter();
         defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
-
     }
 
     @Test
@@ -289,12 +292,13 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+        defaultIndexStore.closeWriter();
         defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
+        file.close();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
-
     }
 
     @Test
@@ -310,12 +314,13 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+        defaultIndexStore.closeWriter();
         defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
+        file.close();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
-
     }
 
     @Test
@@ -366,6 +371,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+        defaultIndexStore.closeWriter();
         defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
