@@ -43,7 +43,7 @@ public class CKStore implements Keeperable {
         kafkaService = KafkaService.DEFAULT;
 
         MessageEventFactory factory = new MessageEventFactory();
-        int ringBufferSize = 1024 * 1024/10; // 1M个槽位
+        int ringBufferSize = 131072; // must be a power of 2
 
         disruptor = new Disruptor<>(
                 factory,                    // 事件工厂
