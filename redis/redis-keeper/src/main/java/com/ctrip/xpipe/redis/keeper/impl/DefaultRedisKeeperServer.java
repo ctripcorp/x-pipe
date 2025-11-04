@@ -191,7 +191,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.crossRegion = new AtomicBoolean(false);
 		this.syncRateManager = syncRateManager;
 		this.replDelayConfigCache = replDelayConfigCache;
-		this.ckStore = new CKStore(this.replId,this.redisOpParser);
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
@@ -255,6 +254,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		masterConfigEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_CONFIG_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "masterConfig-" + threadPoolName));
 
 
+		ckStore = new CKStore(this.replId,this.redisOpParser);
 		this.resetReplAfterLongTimeDown();
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
