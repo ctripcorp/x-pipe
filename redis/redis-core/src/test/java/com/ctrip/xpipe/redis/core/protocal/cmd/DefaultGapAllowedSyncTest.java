@@ -15,7 +15,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.nio.charset.Charset;
 
-import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -32,7 +31,7 @@ public class DefaultGapAllowedSyncTest extends AbstractRedisTest{
 	@Before
 	public void beforeDefaultPsyncTest() throws Exception{
 		when(replicationStoreManager.createIfNotExist()).thenReturn(replicationStore);
-		defaultGAsync = new DefaultGapAllowedSync(null, null, replicationStoreManager, scheduled, ()->DEFAULT_XSYNC_MAXGAP);
+		defaultGAsync = new DefaultGapAllowedSync(null, null, replicationStoreManager, scheduled);
 	}
 
 	@Test
@@ -47,8 +46,9 @@ public class DefaultGapAllowedSyncTest extends AbstractRedisTest{
 		AbstractGapAllowedSync.XsyncRequest xsync = new AbstractGapAllowedSync.XsyncRequest();
 		xsync.setUuidIntrested("*");
 		xsync.setGtidSet(new GtidSet("A:1,B:2"));
+		xsync.setLost(new GtidSet("C:1-5"));
 		xsync.setMaxGap(1000);
-		Assert.assertEquals(xsync.format().toString(Charset.defaultCharset()), "XSYNC * A:1,B:2 MAXGAP 1000\r\n");
+		Assert.assertEquals(xsync.format().toString(Charset.defaultCharset()), "XSYNC * A:1,B:2 MAXGAP 1000 GTID.LOST C:1-5\r\n");
 	}
 
 	@Test

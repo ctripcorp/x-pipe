@@ -5,6 +5,8 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Before;
@@ -38,6 +40,13 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 	@Override
 	protected File getRedisDataDir(RedisMeta redisMeta, File redisDir) {
 		return new File(new File(redisDir, "data"), redisMeta.getPort().toString());
+	}
+
+	@Override
+	protected KeeperConfig getKeeperConfig() {
+		KeeperConfig config = super.getKeeperConfig();
+		((TestKeeperConfig) config).setXsyncMaxGap(10000);
+		return config;
 	}
 
 	private RedisMeta getSlaveMeta() {
@@ -571,34 +580,6 @@ public class KeeperGapAllowedSync extends AbstractKeeperIntegratedSingleDc {
 
 		long fullSyncCount2 = getRedisKeeperServer(activeKeeper).getKeeperMonitor().getKeeperStats().getFullSyncCount();
 		Assert.assertEquals(fullSyncCount+1, fullSyncCount2);
-	}
-
-	private Object jedisExecCommand(String host, int port, String method, String... args) {
-		Object result = null;
-
-		try (Jedis jedis = new Jedis(host, port)) {
-			if (method.equalsIgnoreCase("SET")) {
-				jedis.set(args[0], args[1]);
-			} else if (method.equalsIgnoreCase("SLAVEOF")) {
-				if ("NO".equalsIgnoreCase(args[0])) {
-					jedis.slaveofNoOne();
-				} else {
-					jedis.slaveof(args[0], Integer.parseInt(args[1]));
-				}
-			} else if (method.equalsIgnoreCase("CONFIG")) {
-				if ("SET".equalsIgnoreCase(args[0])) {
-					jedis.configSet(args[1], args[2]);
-				} else {
-					result = jedis.configGet(args[1]);
-				}
-			} else if (method.equalsIgnoreCase("GET")) {
-				result = jedis.get(args[0]);
-			} else {
-				throw new IllegalArgumentException("method not supported:" + method);
-			}
-		}
-
-		return result;
 	}
 
 	private Object masterExecCommand(String method, String... args) {

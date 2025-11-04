@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
+import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP_CROSSREGION;
 
 /**
  * @author wenchao.meng
@@ -23,6 +24,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int partialSyncTrafficMonitorIntervalTimes = 10;
 	private long commandReaderFlyingThreshold = DefaultCommandStore.DEFAULT_COMMAND_READER_FLYING_THRESHOLD;
 	private int maxAllowedMaxGap = DEFAULT_XSYNC_MAXGAP;
+	private int maxMaxGapCrossRegion = DEFAULT_XSYNC_MAXGAP_CROSSREGION;
 	
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
 	
@@ -293,7 +295,17 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return maxAllowedMaxGap;
 	}
 
+	@Override
+	public int getXsyncMaxGapCrossRegion() {
+		return maxMaxGapCrossRegion;
+	}
+
 	public void setXsyncMaxGap(int maxGap) {
 		this.maxAllowedMaxGap = maxGap;
 	}
+
+	public void setXsyncMaxGapCrossRegion(int maxGapCrossRegion) {
+		this.maxMaxGapCrossRegion = maxGapCrossRegion;
+	}
+
 }

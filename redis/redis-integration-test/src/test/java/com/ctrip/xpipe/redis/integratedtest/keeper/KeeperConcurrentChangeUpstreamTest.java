@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.integratedtest.keeper;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -97,7 +98,7 @@ public class KeeperConcurrentChangeUpstreamTest extends AbstractKeeperIntegrated
                     store.shiftReplicationId(replId);
                 }
                 return null;
-            }).when(spyStore).shiftReplicationId(anyString());
+            }).when(spyStore).psyncContinue(anyString());
             return spyStore;
         }).when(spyStoreManager).createIfNotExist();
 

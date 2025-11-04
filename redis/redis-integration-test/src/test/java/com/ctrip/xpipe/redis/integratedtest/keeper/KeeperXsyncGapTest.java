@@ -9,9 +9,13 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigSetCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.SetValueCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -21,6 +25,13 @@ public class KeeperXsyncGapTest extends AbstractKeeperIntegratedSingleDc {
 
     private List<RedisKeeperServer> redisKeeperServers = new LinkedList<>();
 
+    @Override
+    protected KeeperConfig getKeeperConfig() {
+        TestKeeperConfig config = (TestKeeperConfig) super.getKeeperConfig();
+        config.setXsyncMaxGap(10000);
+        config.setReplicationStoreMaxCommandsToTransferBeforeCreateRdb(1024 * 1024);
+        return config;
+    }
 
     @Test
     public void testKeeperXsync() throws Exception {

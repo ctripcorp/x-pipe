@@ -18,7 +18,12 @@ public class DefaultGapAllowedSync extends AbstractReplicationStoreGapAllowedSyn
 	private Endpoint masterEndPoint;
 
 	public DefaultGapAllowedSync(SimpleObjectPool<NettyClient> clientPool,
-								 Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled, IntSupplier maxGap) {
+								 Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled) {
+		this(clientPool, masterEndPoint, replicationStoreManager, scheduled, DEFAULT_XSYNC_MAXGAP);
+	}
+
+	public DefaultGapAllowedSync(SimpleObjectPool<NettyClient> clientPool,
+								 Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled, int maxGap) {
 		super(clientPool, true, scheduled, maxGap);
 		this.masterEndPoint = masterEndPoint;
 		this.replicationStoreManager = replicationStoreManager;

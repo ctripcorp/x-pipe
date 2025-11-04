@@ -116,8 +116,13 @@ public class InMemoryGapAllowedSync extends AbstractGapAllowedSync {
     }
 
     public void setXsyncRequest(GtidSet gtidSet, IntSupplier maxGap) {
+        setXsyncRequest(gtidSet, new GtidSet(""), maxGap);
+    }
+
+    public void setXsyncRequest(GtidSet gtidSet, GtidSet lost, IntSupplier maxGap) {
         AbstractGapAllowedSync.XsyncRequest xsync = new AbstractGapAllowedSync.XsyncRequest();
         xsync.setGtidSet(gtidSet);
+        xsync.setLost(lost);
         xsync.setUuidIntrested(UUID_INSTRESTED_DEFAULT);
         xsync.setMaxGap(maxGap == null ? DEFAULT_XSYNC_MAXGAP : maxGap.getAsInt());
         this.request = xsync;

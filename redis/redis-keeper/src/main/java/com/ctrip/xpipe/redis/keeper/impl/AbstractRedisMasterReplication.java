@@ -173,10 +173,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
         doConnect0(b);
     }
 
-    protected int getMaxGap() {
-        return redisKeeperServer.getKeeperConfig().getXsyncMaxGap();
-    }
-
     private void doConnect0(Bootstrap b) {
         try {
             doConnect(b);

@@ -21,7 +21,12 @@ public class PartialOnlyGapAllowedSync extends AbstractReplicationStoreGapAllowe
     private Endpoint masterEndPoint;
 
     public PartialOnlyGapAllowedSync(SimpleObjectPool<NettyClient> clientPool,
-                                     Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled, IntSupplier maxGap) {
+                                     Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled) {
+        this(clientPool, masterEndPoint, replicationStoreManager, scheduled, DEFAULT_XSYNC_MAXGAP);
+    }
+
+    public PartialOnlyGapAllowedSync(SimpleObjectPool<NettyClient> clientPool,
+                                     Endpoint masterEndPoint, ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled, int maxGap) {
         super(clientPool, true, scheduled, maxGap);
         this.masterEndPoint = masterEndPoint;
         this.replicationStoreManager = replicationStoreManager;

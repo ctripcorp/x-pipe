@@ -93,10 +93,12 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         ReplStage curStage = keeperRepl.currentStage();
 
         if (null == preStage && null == curStage) {
+            logger.info("[anaRequest][{}] sync stage fresh", slave);
             slave.sendMessage(new RedisErrorParser(new NoMasterlinkRedisError("Can't SYNC while replicationstore fresh")).format());
             return null;
         }
 
+        logger.info("[anaRequest][{}] {}", slave, request);
         if (request.replId.equals("?")) {
             if (request.offset == -2) {
                 logger.info("[anaRequest][{}] req keeper partial", slave);
@@ -277,12 +279,13 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         GtidSet lost = xsyncStage.getGtidLost();
         GtidSet cont = xsyncCont.getContinueGtidSet();
         GtidSet req = request.slaveGtidSet;
+        GtidSet reqLost = request.slaveGtidLost;
         long backlogCont = xsyncCont.getBacklogOffset();
         long backlogEnd = keeperRepl.backlogEndOffset();
         long maxTransfer = config.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
         long backlogBeginOffset = Math.max(xsyncStage.getBegOffsetBacklog(), keeperRepl.backlogBeginOffset());
 
-        logger.info("[anaXsync] lost : {}, cont: {}, req: {}, backlogCont: {}", lost, cont, req, backlogCont);
+        logger.info("[anaXsync] KeeperLost: {}, keeperCont: {}, backlogCont: {}", lost, cont, backlogCont);
         lost = lost.subtract(cont); // avoid gtid.lost contain gtid.exec in some concurrent cases
 
         if ("*".equals(request.replId) || xsyncStage.getReplId().equalsIgnoreCase(request.replId)) {
@@ -290,8 +293,8 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             boolean gtidNotRelated = masterGtidSet.retainAll(req).isEmpty();
 
             GtidSet gap = masterGtidSet.symmetricDiff(req);
-            if (!request.slaveGtidLost.isEmpty()) {
-                gap = gap.subtract(request.slaveGtidLost);
+            if (!reqLost.isEmpty()) {
+                gap = gap.subtract(reqLost);
                 gap = gap.subtract(lost);
             }
             int gapCnt = gap.itemCnt();
@@ -307,13 +310,14 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             }
 
             if (!req.isEmpty() && gtidNotRelated) {
-                return SyncAction.full(String.format("[gtid not related] req:{}, my:{}", req, masterGtidSet));
+                return SyncAction.full(String.format("[gtid not related] req:%s, my:%s", req, masterGtidSet));
             } else if (request.maxGap >= 0 && request.maxGap < gapCnt) {
-                return SyncAction.full(String.format("[gap][%d > %d]", gapCnt, request.maxGap), deltaLost);
+                logger.info("[anaXSync][full] gap: {} maxGap: {}", gap, request.maxGap);
+                return SyncAction.full(String.format("[gap][%d > %d]", gapCnt, request.maxGap));
             } else if (backlogEnd - backlogCont >= maxTransfer) {
-                return SyncAction.full(String.format("[too much commands to transfer]%d - %d < %d", backlogEnd, backlogCont, maxTransfer), deltaLost);
+                return SyncAction.full(String.format("[too much commands to transfer]%d - %d < %d", backlogEnd, backlogCont, maxTransfer));
             } else if (backlogCont < backlogBeginOffset) {
-                return SyncAction.full(String.format("[continue offset miss][backlog][continue: %d, sup:%d], ", backlogCont, backlogBeginOffset), deltaLost);
+                return SyncAction.full(String.format("[continue offset miss][backlog][continue: %d, sup:%d], ", backlogCont, backlogBeginOffset));
             } else {
                 return SyncAction.XContinue(xsyncStage, masterGtidSet, backlogCont, deltaLost);
             }
@@ -323,27 +327,27 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
     }
 
     protected void runAction(SyncAction action, RedisKeeperServer keeperServer, RedisSlave slave) throws IOException {
-        if (null != action.deltaLost && !action.deltaLost.isEmpty()) {
-            try {
-                logger.info("[runAction][increaseLost][{}] {}", slave, action.deltaLost);
-                keeperServer.increaseLost(action.deltaLost, slave);
-            } catch (LostGtidsetBacklogConflictException | IOException e) {
-                logger.error("[runAction][increaseLost]", e);
-                try {
-                    slave.close();
-                } catch (Throwable th) {
-                    logger.info("[runAction][close fail]");
-                }
-                return;
-            }
-        }
-
         if (action.isFull()) {
             logger.info("[runAction][full][{}] {}", slave, action.fullCause);
             slave.markPsyncProcessed();
             keeperServer.fullSyncToSlave(slave, action.freshRdb);
             keeperServer.getKeeperMonitor().getKeeperStats().increaseFullSync();
         } else {
+            if (null != action.deltaLost && !action.deltaLost.isEmpty()) {
+                try {
+                    logger.info("[runAction][increaseLost][{}] {}", slave, action.deltaLost);
+                    keeperServer.increaseLost(action.deltaLost, slave);
+                } catch (LostGtidsetBacklogConflictException | IOException e) {
+                    logger.error("[runAction][increaseLost]", e);
+                    try {
+                        slave.close();
+                    } catch (Throwable th) {
+                        logger.info("[runAction][close fail]");
+                    }
+                    return;
+                }
+            }
+
             String respStr;
             if (action.replStage.getProto() == ReplStage.ReplProto.PSYNC) {
                 respStr = String.format("%s %s", PARTIAL_SYNC, action.replId)
@@ -391,23 +395,14 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         GtidSet gtidLost;
 
         public static SyncAction full(String fullCause) {
-            return full(fullCause, false, null);
-        }
-
-        public static SyncAction full(String fullCause, GtidSet deltaLost) {
-            return full(fullCause, false, deltaLost);
+            return full(fullCause, false);
         }
 
         public static SyncAction full(String fullCause, boolean freshRdb) {
-            return full(fullCause, freshRdb, null);
-        }
-
-        public static SyncAction full(String fullCause, boolean freshRdb, GtidSet deltaLost) {
             SyncAction action = new SyncAction();
             action.full = true;
             action.freshRdb = freshRdb;
             action.fullCause = fullCause;
-            action.deltaLost = deltaLost;
             return action;
         }
 
@@ -514,7 +509,8 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             if (proto.equals(ReplStage.ReplProto.PSYNC)) {
                 return String.format("%s %s %d", proto.name(), replId, offset);
             } else {
-                return String.format("%s %s %s MAXGAP %d", proto.name(), replId, slaveGtidSet, maxGap);
+                return String.format("%s %s %s MAXGAP %d GTID.LOST %s", proto.name(), replId, slaveGtidSet, maxGap,
+                        null != slaveGtidLost ? slaveGtidLost : "");
             }
         }
     }
