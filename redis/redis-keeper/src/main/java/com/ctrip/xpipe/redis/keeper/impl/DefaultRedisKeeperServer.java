@@ -468,6 +468,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		replicationStoreManager.dispose();
 		this.scheduled.shutdownNow();
 		this.clientExecutors.shutdownNow();
+		this.ckStore.shutDown();
 		super.doDispose();
 	}
 

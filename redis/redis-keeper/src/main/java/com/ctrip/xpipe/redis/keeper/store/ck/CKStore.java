@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.Keeperable;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.lmax.disruptor.LiteBlockingWaitStrategy;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.SleepingWaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
@@ -43,14 +44,14 @@ public class CKStore implements Keeperable {
         kafkaService = KafkaService.DEFAULT;
 
         MessageEventFactory factory = new MessageEventFactory();
-        int ringBufferSize = 131072; // must be a power of 2
+        int ringBufferSize = 4096; // must be a power of 2
 
         disruptor = new Disruptor<>(
                 factory,                    // 事件工厂
                 ringBufferSize,             // RingBuffer大小
                 DaemonThreadFactory.INSTANCE,
                 ProducerType.SINGLE,
-                new SleepingWaitStrategy()
+                new LiteBlockingWaitStrategy()
         );
 
         disruptor.handleEventsWith((event, sequence, endOfBatch) -> {
@@ -184,5 +185,9 @@ public class CKStore implements Keeperable {
         } catch (Exception e) {
             logger.warn("[xpipe][ck.reportHickwall]",e);
         }
+    }
+
+    public void shutDown(){
+        disruptor.shutdown();
     }
 }
