@@ -37,7 +37,7 @@ import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
  * @author lishanglin
  * date 2022/5/24
  */
-public abstract class AbstractCommandStore extends AbstractStore implements CommandStore {
+public abstract class AbstractCommandStore extends AbstractStore implements CommandStore, CommandWriterCallback {
 
     private final static Logger delayTraceLogger = KeeperLogger.getDelayTraceLog();
 
@@ -131,6 +131,21 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private IndexStore createIndexStore() throws IOException {
         return new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
                 this, gtidCmdFilter, findLatestFile().getFile().getName());
+    }
+
+    @Override
+    public int writeCommand(ByteBuf commandBuf) throws IOException {
+        return onlyAppendCommand(commandBuf);
+    }
+
+    @Override
+    public long getCurrentOffset() {
+        return cmdWriter.totalLength() - 1;
+    }
+
+    @Override
+    public CommandWriter getCommandWriter() {
+        return cmdWriter;
     }
 
     @Override
@@ -323,11 +338,13 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         commandStoreDelay.beginWrite();
 
         long beginOffset = cmdWriter.totalLength() - 1;
-
-        long offset = cmdWriter.totalLength() - 1;
         indexStore.write(byteBuf);
-        int writer = (int)(offset - beginOffset);
+        long offset = cmdWriter.totalLength() - 1;
 
+        commandStoreDelay.endWrite(offset);
+        offsetNotifier.offsetIncreased(offset);
+
+        int writer = (int)(offset - beginOffset);
         return writer;
     }
 
@@ -713,11 +730,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     @Override
     public boolean increaseLostNotInCmdStore(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException {
         return indexStore.increaseLost(lost, supplier);
-    }
-
-    @Override
-    public CommandWriter getCommandWriter() {
-        return cmdWriter;
     }
 
     @Override

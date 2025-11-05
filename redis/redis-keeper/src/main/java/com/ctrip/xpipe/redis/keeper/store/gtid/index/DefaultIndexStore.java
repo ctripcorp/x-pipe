@@ -6,8 +6,8 @@ import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
-import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
+import com.ctrip.xpipe.redis.core.store.CommandWriterCallback;
 import com.ctrip.xpipe.redis.core.store.GtidCmdFilter;
 import com.ctrip.xpipe.redis.core.store.IndexStore;
 import com.ctrip.xpipe.redis.keeper.exception.replication.LostGtidsetBacklogConflictException;
@@ -39,21 +39,18 @@ public class DefaultIndexStore implements IndexStore {
 
     private GtidSet startGtidSet;
 
-    private CommandStore commandStore;
+    private CommandWriterCallback commandWriterCallback;
 
     private GtidCmdFilter gtidCmdFilter;
 
     private boolean writerCmdEnabled;
 
-    private CommandStore parentCommandStore;
-
     public DefaultIndexStore(String baseDir, RedisOpParser redisOpParser,
-                             CommandStore commandStore, GtidCmdFilter gtidCmdFilter, String currentCmdFileName) {
+                             CommandWriterCallback commandWriterCallback, GtidCmdFilter gtidCmdFilter, String currentCmdFileName) {
         this.baseDir = baseDir;
         this.opParser = redisOpParser;
-        this.commandStore = commandStore;
+        this.commandWriterCallback = commandWriterCallback;
         this.startGtidSet = new GtidSet("");
-        this.parentCommandStore = commandStore;
         this.gtidCmdFilter = gtidCmdFilter;
         this.writerCmdEnabled = true;
         this.currentCmdFileName = currentCmdFileName;
@@ -92,15 +89,15 @@ public class DefaultIndexStore implements IndexStore {
 
     @Override
     public synchronized void rotateFileIfNecessary() throws IOException {
-        boolean rotate = parentCommandStore.getCommandWriter().rotateFileIfNecessary();
+        boolean rotate = commandWriterCallback.getCommandWriter().rotateFileIfNecessary();
         if(rotate) {
-            this.switchCmdFile(parentCommandStore.getCommandWriter());
+            this.switchCmdFile(commandWriterCallback.getCommandWriter());
         }
     }
 
     @Override
     public synchronized Pair<Long, GtidSet> locateTailOfCmd() {
-        return new Pair<>(parentCommandStore.getCommandWriter().totalLength(), this.getIndexGtidSet());
+        return new Pair<>(commandWriterCallback.getCommandWriter().totalLength(), this.getIndexGtidSet());
     }
 
     public boolean onCommand(String gtid, long offset) throws IOException {
@@ -248,8 +245,8 @@ public class DefaultIndexStore implements IndexStore {
     }
 
     public void onFinishParse(ByteBuf byteBuf) throws IOException {
-        if(writerCmdEnabled) {
-            commandStore.onlyAppendCommand(byteBuf);
+        if(writerCmdEnabled && commandWriterCallback != null) {
+            commandWriterCallback.writeCommand(byteBuf);
         }
     }
 
