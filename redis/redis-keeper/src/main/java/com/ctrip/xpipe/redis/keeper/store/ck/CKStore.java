@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ThreadFactory;
 
 public class CKStore implements Keeperable {
     private static final Logger logger = LoggerFactory.getLogger(CKStore.class);
@@ -49,7 +50,11 @@ public class CKStore implements Keeperable {
         disruptor = new Disruptor<>(
                 factory,                    // 事件工厂
                 ringBufferSize,             // RingBuffer大小
-                DaemonThreadFactory.INSTANCE,
+                r -> {
+                    Thread thread = new Thread(r,  "disruptor-repl-" + replId);
+                    thread.setDaemon(true);
+                    return thread;
+                    },
                 ProducerType.SINGLE,
                 new LiteBlockingWaitStrategy()
         );
