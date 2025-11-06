@@ -36,7 +36,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class DefaultIndexStoreTest {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultIndexStoreTest.class);
@@ -175,7 +175,7 @@ public class DefaultIndexStoreTest {
         write(file1);
         GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
-        defaultIndexStore.switchCmdFile("cmd_19513000");
+        defaultIndexStore.doSwitchCmdFile("cmd_19513000");
         write(file2);
         gtidSet = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-13");
@@ -228,7 +228,7 @@ public class DefaultIndexStoreTest {
         gtidSet = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
 
-        defaultIndexStore.switchCmdFile("cmd_19513000");
+        defaultIndexStore.doSwitchCmdFile("cmd_19513000");
 
         write(file2);
 

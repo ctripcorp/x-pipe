@@ -74,10 +74,10 @@ public class DefaultIndexStore implements IndexStore {
 
     public void switchCmdFile(CommandWriter cmdWriter) throws IOException {
         String fileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
-        switchCmdFile(fileName);
+        doSwitchCmdFile(fileName);
     }
 
-    public synchronized void switchCmdFile(String cmdFileName) throws IOException {
+    public synchronized void doSwitchCmdFile(String cmdFileName) throws IOException {
         GtidSet continueGtidSet = this.indexWriter.getGtidSet();
         this.currentCmdFileName = cmdFileName;
         this.indexWriter.close();
@@ -176,8 +176,7 @@ public class DefaultIndexStore implements IndexStore {
         this.disableWriterCmd();
         ControllableFile controllableFile = null;
         try {
-            File f = new File(Paths.get(baseDir, cmdFileName).toString());
-            controllableFile = new DefaultControllableFile(f);
+            controllableFile = new DefaultControllableFile(new File(Paths.get(baseDir, cmdFileName).toString()));
             controllableFile.getFileChannel().position(cmdFileOffset);
             while(controllableFile.getFileChannel().position() < controllableFile.getFileChannel().size()) {
                 int size = (int)Math.min(1024*8, controllableFile.getFileChannel().size() - controllableFile.getFileChannel().position());

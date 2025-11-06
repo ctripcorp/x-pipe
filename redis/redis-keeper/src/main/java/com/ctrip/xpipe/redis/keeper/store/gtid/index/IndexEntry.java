@@ -21,16 +21,6 @@ public class IndexEntry {
 
     private long position;
 
-    private FileChannel channel;
-
-    public FileChannel getChannel() {
-        return channel;
-    }
-
-    public void setChannel(FileChannel channel) {
-        this.channel = channel;
-    }
-
     public long getPosition() {
         return position;
     }
@@ -54,7 +44,6 @@ public class IndexEntry {
         this.blockStartOffset = blockStartOffset;
         this.blockEndOffset = -1;
         this.position = -1;
-        this.channel = null;
         this.size = 0;
         // -1 表示没有写完
     }
@@ -168,19 +157,7 @@ public class IndexEntry {
         ByteBuffer buffer = ByteBuffer.allocate(SEGMENT_LENGTH);
         channel.read(buffer);
         IndexEntry indexEntry = fromBuffer(buffer);
-        indexEntry.setChannel(channel);
         return indexEntry;
-    }
-
-    public IndexEntry changeToPre() throws IOException {
-        long preIndex = position - SEGMENT_LENGTH;
-        if(preIndex <= 0) {
-            return null;
-        }
-        channel.position(preIndex);
-        IndexEntry result = IndexEntry.readFromFile(channel);
-        result.setPosition(preIndex);
-        return result;
     }
 
     @Override
