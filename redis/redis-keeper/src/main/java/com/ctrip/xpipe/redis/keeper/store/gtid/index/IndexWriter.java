@@ -91,10 +91,8 @@ public class IndexWriter extends AbstractIndex implements Closeable {
 
         if(blockWriter == null) {
             this.createNewBlock(uuid, gno, commandOffset);
-        } else {
-            if(needChangeBlock(uuid, gno)) {
-                changeBlock(uuid, gno, commandOffset);
-            }
+        } else if(needChangeBlock(uuid, gno)) {
+            changeBlock(uuid, gno, commandOffset);
         }
         this.blockWriter.append(uuid, gno, commandOffset);
     }

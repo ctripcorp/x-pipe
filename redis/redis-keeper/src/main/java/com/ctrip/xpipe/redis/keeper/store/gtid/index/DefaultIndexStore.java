@@ -89,6 +89,12 @@ public class DefaultIndexStore implements IndexStore {
 
     @Override
     public synchronized void rotateFileIfNecessary() throws IOException {
+        if (streamCommandReader != null && streamCommandReader.isTransactionActive()) {
+            log.debug("[rotateFileIfNecessary] transaction active (size: {}), defer rotation", 
+                      streamCommandReader.getTransactionSize());
+            return;
+        }
+
         boolean rotate = commandWriterCallback.getCommandWriter().rotateFileIfNecessary();
         if(rotate) {
             this.switchCmdFile(commandWriterCallback.getCommandWriter());
@@ -186,10 +192,34 @@ public class DefaultIndexStore implements IndexStore {
                 ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.array());
                 this.write(byteBuf);
             }
+            
+            // Check for incomplete protocol parsing
             int remainBytes = this.streamCommandReader.getRemainLength();
-            if(remainBytes > 0) {
+            if (this.streamCommandReader.isTransactionActive()) {
+                // Check for incomplete transaction (MULTI without EXEC)
+                // If there's an active transaction, it means the transaction was not committed
+                // We need to rollback by truncating the file to the transaction start offset
+                long transactionStartOffset = this.streamCommandReader.getTransactionStartOffset();
+                if (transactionStartOffset >= 0) {
+                    // transactionStartOffset is relative to cmdFileOffset, convert to absolute offset
+                    log.warn("[buildIndexFromCmdFile] incomplete transaction detected (size: {}), " +
+                            "rollback from offset {} to offset: {}", 
+                            this.streamCommandReader.getTransactionSize(), 
+                            controllableFile.size(), transactionStartOffset);
+                    EventMonitor.DEFAULT.logAlertEvent("INCOMPLETE_TRANSACTION");
+                    // Truncate file to transaction start offset to rollback incomplete transaction
+                    controllableFile.setLength((int)transactionStartOffset);
+                    this.streamCommandReader.resetParser();
+                } else {
+                    // If startOffset is invalid, just reset parser to clear transaction state
+                    log.warn("[buildIndexFromCmdFile] incomplete transaction detected but invalid startOffset, " +
+                            "clearing transaction state");
+                    this.streamCommandReader.resetParser();
+                }
+            } else if (remainBytes > 0) {
+                // Check for incomplete protocol parsing
                 EventMonitor.DEFAULT.logAlertEvent("TRUNCATE_CMD_FILE");
-                controllableFile.setLength((int)controllableFile.size() - (int) remainBytes);
+                controllableFile.setLength((int)controllableFile.size() - remainBytes);
                 this.streamCommandReader.resetParser();
             }
 
