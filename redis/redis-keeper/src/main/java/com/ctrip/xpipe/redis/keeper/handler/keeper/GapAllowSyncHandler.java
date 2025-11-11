@@ -85,7 +85,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
     protected abstract SyncRequest parseRequest(final String[] args, RedisSlave redisSlave);
 
-    protected SyncAction anaRequest(SyncRequest request, RedisKeeperServer redisKeeperServer, RedisSlave slave) throws Exception {
+    protected SyncAction  anaRequest(SyncRequest request, RedisKeeperServer redisKeeperServer, RedisSlave slave) throws Exception {
         KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
         KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
 
