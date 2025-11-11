@@ -36,7 +36,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class DefaultIndexStoreTest {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultIndexStoreTest.class);
@@ -69,10 +69,16 @@ public class DefaultIndexStoreTest {
     CommandFile commandFile;
 
     @Mock
-    CommandStore commandStore;
+    CommandWriterCallback commandWriterCallback;
+
+    @Mock
+    CommandWriter commandWriterForCallback;
 
     @Mock
     GtidCmdFilter gtidCmdFilter;
+
+    @Mock
+    IndexWriter indexWriter;
 
     @Before
     public void setUp() throws IOException {
@@ -103,10 +109,14 @@ public class DefaultIndexStoreTest {
 
         when(writer.getFileContext()).thenReturn(commandFileContext);
 
+        when(commandWriterCallback.getCommandWriter()).thenReturn(commandWriterForCallback);
+        when(commandWriterForCallback.rotateFileIfNecessary()).thenReturn(false);
+        when(commandWriterForCallback.totalLength()).thenReturn(0L);
+
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
     }
@@ -168,7 +178,7 @@ public class DefaultIndexStoreTest {
         write(file1);
         GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
-        defaultIndexStore.switchCmdFile("cmd_19513000");
+        defaultIndexStore.doSwitchCmdFile("cmd_19513000");
         write(file2);
         gtidSet = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750,a50c0ac6608a3351a6ed0c6a92d93ec736b390a0:1-13");
@@ -187,7 +197,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
         for(int i = 633744; i < 633750; i++) {
             Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
@@ -214,14 +224,14 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
 
-        defaultIndexStore.switchCmdFile("cmd_19513000");
+        defaultIndexStore.doSwitchCmdFile("cmd_19513000");
 
         write(file2);
 
@@ -268,7 +278,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
@@ -289,7 +299,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
@@ -310,7 +320,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
@@ -366,7 +376,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandStore, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
 
@@ -381,5 +391,199 @@ public class DefaultIndexStoreTest {
         RedisOp redisOp = IndexTestTool.readBytebufAfter(file1, point.getKey() + 133);
         Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633747");
 
+    }
+
+    @Test
+    public void testBuildIndexFromCmdFileWithIncompleteTransaction() throws IOException {
+        // Create a cmd file with incomplete transaction (MULTI + commands but no EXEC)
+        baseDir = Paths.get(tempDir, "IndexStoreTest-testBuildIndexFromCmdFileWithIncompleteTransaction").toString();
+        File dir = new File(baseDir);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        String testCmdFile = "cmd_test_incomplete_transaction_0";
+        String testIndexFile = "index_cmd_test_incomplete_transaction_0";
+        File cmdFile = new File(baseDir, testCmdFile);
+        File indexFile = new File(baseDir, testIndexFile);
+        
+        // First, write some valid commands with GTID
+        String gtid1 = "a4f566ef50a85e1119f17f9b746728b48609a2ab:1";
+        String gtid2 = "a4f566ef50a85e1119f17f9b746728b48609a2ab:2";
+        
+        // Write first complete GTID command
+        writeCommandToFile(cmdFile, createGtidCommand(gtid1, "SET", "key1", "value1"));
+        writeGtidSetToFile(indexFile, new GtidSet(""));
+        // Record the position before MULTI (this will be the rollback point)
+        long positionBeforeMulti = cmdFile.length();
+        
+        // Write MULTI command
+        writeCommandToFile(cmdFile, createMultiCommand());
+        
+        // Write commands in transaction
+        writeCommandToFile(cmdFile, createSetCommand("key2", "value2"));
+        writeCommandToFile(cmdFile, createSetCommand("key3", "value3"));
+        
+        // Note: We intentionally don't write EXEC, creating an incomplete transaction
+
+        when(commandFile.getFile()).thenReturn(cmdFile);
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+        
+        // Build index from cmd file
+        RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+        RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+        DefaultIndexStore testIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, testCmdFile);
+        testIndexStore.openWriter(writer); // do buildIO
+
+        // Verify file was truncated to position before MULTI
+        Assert.assertEquals("File should be truncated to position before incomplete transaction",
+                positionBeforeMulti, cmdFile.length());
+        
+        // Verify the incomplete transaction commands were not indexed
+        GtidSet gtidSet = testIndexStore.getIndexGtidSet();
+        // Should only contain gtid1, not gtid2 (which would be in the incomplete transaction)
+        Assert.assertTrue("GTID set should contain gtid1", gtidSet.contains("a4f566ef50a85e1119f17f9b746728b48609a2ab", 1));
+        Assert.assertFalse("GTID set should not contain gtid2 from incomplete transaction", 
+                gtidSet.contains("a4f566ef50a85e1119f17f9b746728b48609a2ab", 2));
+        
+        // Verify we can locate the last valid command
+        Pair<Long, GtidSet> point = testIndexStore.locateContinueGtidSet(new GtidSet(gtid1));
+        Assert.assertNotNull("Should be able to locate gtid1", point);
+        Assert.assertEquals("Should locate gtid1", gtid1, point.getValue().toString());
+
+        testIndexStore.closeWriter();
+    }
+
+    @Test
+    public void testBuildIndexFromCmdFileWithIncompleteTransactionAfterValidCommands() throws IOException {
+        // Create a cmd file with valid commands followed by incomplete transaction
+        baseDir = Paths.get(tempDir, "IndexStoreTest-testBuildIndexFromCmdFileWithIncompleteTransactionAfterValidCommands").toString();
+        File dir = new File(baseDir);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        String testCmdFile = "cmd_test_incomplete_transaction2_0";
+        String testIndexFile = "index_cmd_test_incomplete_transaction2_0";
+        File cmdFile = new File(baseDir, testCmdFile);
+        File indexFile = new File(baseDir, testIndexFile);
+        
+        // Write multiple valid GTID commands
+        String gtid1 = "a4f566ef50a85e1119f17f9b746728b48609a2ab:1";
+        String gtid2 = "a4f566ef50a85e1119f17f9b746728b48609a2ab:2";
+        String gtid3 = "a4f566ef50a85e1119f17f9b746728b48609a2ab:3";
+
+        writeGtidSetToFile(indexFile, new GtidSet(""));
+        writeCommandToFile(cmdFile, createGtidCommand(gtid1, "SET", "key1", "value1"));
+        writeCommandToFile(cmdFile, createGtidCommand(gtid2, "SET", "key2", "value2"));
+        
+        // Record position before incomplete transaction
+        long positionBeforeIncompleteTransaction = cmdFile.length();
+        
+        // Write incomplete transaction (MULTI + commands but no EXEC)
+        writeCommandToFile(cmdFile, createMultiCommand());
+        writeCommandToFile(cmdFile, createSetCommand("key3", "value3"));
+        writeCommandToFile(cmdFile, createSetCommand("key4", "value4"));
+        // No EXEC - transaction is incomplete
+
+        when(commandFile.getFile()).thenReturn(cmdFile);
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+        
+        // Build index from cmd file
+        RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+        RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+        DefaultIndexStore testIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, testCmdFile);
+        testIndexStore.openWriter(writer);
+
+        // Verify file was truncated to position before incomplete transaction
+        Assert.assertEquals("File should be truncated to position before incomplete transaction", 
+                positionBeforeIncompleteTransaction, cmdFile.length());
+        
+        // Verify only valid commands were indexed
+        GtidSet gtidSet = testIndexStore.getIndexGtidSet();
+        Assert.assertTrue("GTID set should contain gtid1", gtidSet.contains("a4f566ef50a85e1119f17f9b746728b48609a2ab", 1));
+        Assert.assertTrue("GTID set should contain gtid2", gtidSet.contains("a4f566ef50a85e1119f17f9b746728b48609a2ab", 2));
+        Assert.assertFalse("GTID set should not contain gtid3 from incomplete transaction", 
+                gtidSet.toString().contains(gtid3));
+        
+        // Verify we can locate both valid commands
+        Pair<Long, GtidSet> point1 = testIndexStore.locateContinueGtidSet(new GtidSet(gtid1));
+        Assert.assertNotNull("Should be able to locate gtid1", point1);
+        
+        Pair<Long, GtidSet> point2 = testIndexStore.locateContinueGtidSet(new GtidSet(gtid2));
+        Assert.assertNotNull("Should be able to locate gtid2", point2);
+
+        testIndexStore.closeWriter();
+    }
+
+    // Helper methods to create Redis protocol commands
+    
+    private void writeCommandToFile(File file, ByteBuf command) throws IOException {
+        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file, true);
+             java.nio.channels.FileChannel channel = fos.getChannel()) {
+            int readableBytes = command.readableBytes();
+            byte[] bytes = new byte[readableBytes];
+            int readerIndex = command.readerIndex();
+            command.getBytes(readerIndex, bytes);
+            channel.write(java.nio.ByteBuffer.wrap(bytes));
+        }
+    }
+    private void writeGtidSetToFile(File file, GtidSet gtidSet) throws IOException {
+        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file, true);
+             java.nio.channels.FileChannel channel = fos.getChannel()) {
+            GtidSetWrapper gtidSetWrapper = new GtidSetWrapper(gtidSet);
+            gtidSetWrapper.saveGtidSet(channel);
+        }
+    }
+    
+    private ByteBuf createGtidCommand(String gtid, String... args) {
+        ByteBuf buffer = Unpooled.buffer();
+        // Format: *N\r\n$4\r\nGTID\r\n$40\r\n<gtid>\r\n$1\r\n0\r\n$M\r\n<command>...
+        int totalArgs = 3 + args.length; // GTID + gtid + "0" + command args
+        buffer.writeByte((byte)'*');
+        buffer.writeBytes(String.valueOf(totalArgs).getBytes());
+        buffer.writeBytes("\r\n".getBytes());
+        
+        // GTID
+        writeBulkString(buffer, "GTID");
+        // GTID value
+        writeBulkString(buffer, gtid);
+        // "0" (database number)
+        writeBulkString(buffer, "0");
+        // Command args
+        for (String arg : args) {
+            writeBulkString(buffer, arg);
+        }
+        return buffer;
+    }
+    
+    private ByteBuf createMultiCommand() {
+        ByteBuf buffer = Unpooled.buffer();
+        buffer.writeByte((byte)'*');
+        buffer.writeBytes("1".getBytes());
+        buffer.writeBytes("\r\n".getBytes());
+        writeBulkString(buffer, "MULTI");
+        return buffer;
+    }
+    
+    private ByteBuf createSetCommand(String key, String value) {
+        ByteBuf buffer = Unpooled.buffer();
+        buffer.writeByte((byte)'*');
+        buffer.writeBytes("3".getBytes());
+        buffer.writeBytes("\r\n".getBytes());
+        writeBulkString(buffer, "SET");
+        writeBulkString(buffer, key);
+        writeBulkString(buffer, value);
+        return buffer;
+    }
+    
+    private void writeBulkString(ByteBuf buffer, String str) {
+        buffer.writeByte((byte)'$');
+        buffer.writeBytes(String.valueOf(str.length()).getBytes());
+        buffer.writeBytes("\r\n".getBytes());
+        buffer.writeBytes(str.getBytes());
+        buffer.writeBytes("\r\n".getBytes());
     }
 }

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.cache.TimeBoundCache;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
@@ -15,6 +16,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
@@ -190,6 +192,13 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public CommandFuture<Boolean> checkMasterSupportRordb() {
 		return rordbConfigFutureCache.getData();
+	}
+
+	@VisibleForTesting
+	public void setEndpointProtocol(ProxyConnectProtocol protocol) {
+		if (endpoint instanceof DefaultEndPoint) {
+			((DefaultEndPoint) endpoint).setProtocol(protocol);
+		}
 	}
 
 	private CommandFuture<Boolean> refreshMasterConfigRordb() {

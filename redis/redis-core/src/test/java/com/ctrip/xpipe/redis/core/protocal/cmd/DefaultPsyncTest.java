@@ -65,7 +65,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 		
 		when(replicationStoreManager.createIfNotExist()).thenReturn(replicationStore);
 		when(replicationStore.getMetaStore()).thenReturn(metaStore);
-		defaultGAsync = new DefaultGapAllowedSync(pool, masterEndPoint, replicationStoreManager, scheduled, null);
+		defaultGAsync = new DefaultGapAllowedSync(pool, masterEndPoint, replicationStoreManager, scheduled);
 		
 	}
 	
@@ -104,7 +104,7 @@ public class DefaultPsyncTest extends AbstractRedisTest{
 			}
 		});
 		Endpoint redisEndpoint = new DefaultEndPoint("localhost", redisServer.getPort());
-		PartialOnlyGapAllowedSync partialOnlyGAsync = new PartialOnlyGapAllowedSync(NettyPoolUtil.createNettyPool(redisEndpoint), redisEndpoint, replicationStoreManager, scheduled, null);
+		PartialOnlyGapAllowedSync partialOnlyGAsync = new PartialOnlyGapAllowedSync(NettyPoolUtil.createNettyPool(redisEndpoint), redisEndpoint, replicationStoreManager, scheduled);
 
 		when(replicationStore.isFresh()).thenReturn(true);
 

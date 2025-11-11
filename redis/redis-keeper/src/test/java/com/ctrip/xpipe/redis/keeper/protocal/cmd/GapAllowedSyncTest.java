@@ -31,7 +31,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
-import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
 import static com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant.REDIS_RDB_AUX_KEY_GTID_EXECUTED;
 import static com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant.REDIS_RDB_AUX_KEY_REPL_MODE;
 
@@ -187,7 +186,7 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		replicationStore = replicationStoreManager.create();
 
 		SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new DefaultEndPoint("127.0.0.1", 1234));
-		gasync = new DefaultGapAllowedSync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager, scheduled, ()->DEFAULT_XSYNC_MAXGAP);
+		gasync = new DefaultGapAllowedSync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager, scheduled);
 		gasync.future().addListener(new CommandFutureListener<Object>() {
 			@Override
 			public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {

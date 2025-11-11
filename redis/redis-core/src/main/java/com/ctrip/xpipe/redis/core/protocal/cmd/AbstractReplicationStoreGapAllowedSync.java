@@ -28,11 +28,15 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 
 	private volatile InOutPayloadReplicationStore inOutPayloadReplicationStore;
 
-	private final IntSupplier maxGap;
+	private final int maxGap;
 
-	public AbstractReplicationStoreGapAllowedSync(SimpleObjectPool<NettyClient> clientPool, boolean saveCommands, ScheduledExecutorService scheduled, IntSupplier maxGap) {
+	public AbstractReplicationStoreGapAllowedSync(SimpleObjectPool<NettyClient> clientPool, boolean saveCommands, ScheduledExecutorService scheduled) {
+		this(clientPool, saveCommands, scheduled, DEFAULT_XSYNC_MAXGAP);
+	}
+
+	public AbstractReplicationStoreGapAllowedSync(SimpleObjectPool<NettyClient> clientPool, boolean saveCommands, ScheduledExecutorService scheduled, int maxGap) {
 		super(clientPool, saveCommands, scheduled);
-		this.maxGap = maxGap;
+		this.maxGap = Math.max(maxGap, 0);
 	}
 
 	protected abstract ReplicationStore getCurrentReplicationStore();
@@ -48,9 +52,11 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 			XsyncRequest xsync = new XsyncRequest();
 			Pair<GtidSet, GtidSet> gtidSets = currentReplicationStore.getGtidSet();
 			GtidSet gtidSet = gtidSets.getKey().union(gtidSets.getValue());
+			GtidSet lost = gtidSets.getValue();
 			xsync.setGtidSet(gtidSet);
+			xsync.setLost(lost);
 			xsync.setUuidIntrested(UUID_INSTRESTED_DEFAULT);
-			xsync.setMaxGap(maxGap == null ? DEFAULT_XSYNC_MAXGAP : maxGap.getAsInt());
+			xsync.setMaxGap(maxGap);
 			return xsync;
 		}
 	}

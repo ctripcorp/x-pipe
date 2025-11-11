@@ -12,7 +12,8 @@ import org.junit.runners.Suite;
         KeeperSwitchXsyncTest.class,
         KeeperXsyncGapTest.class,
         KeeperXsyncTest.class,
-        MasterSwitchMultDcTest.class
+        MasterSwitchMultDcTest.class,
+        KeeperXSyncCrossRegionTest.class
 })
 public class AllXsyncTest {
 }

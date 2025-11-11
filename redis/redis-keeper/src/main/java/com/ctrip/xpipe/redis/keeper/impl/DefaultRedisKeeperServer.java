@@ -11,6 +11,7 @@ import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
+import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.cluster.ElectContext;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
@@ -1166,6 +1167,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@VisibleForTesting
 	public void setReplicationStoreManager(ReplicationStoreManager replicationStoreManager) {
 		this.replicationStoreManager = replicationStoreManager;
+	}
+
+	@VisibleForTesting
+	public void setRedisMasterProtocol(ProxyConnectProtocol protocol) {
+		if (keeperRedisMaster instanceof DefaultRedisMaster) {
+			((DefaultRedisMaster) keeperRedisMaster).setEndpointProtocol(protocol);
+		}
 	}
 
 	class KeeperConnectionIdleHandler extends ChannelInboundHandlerAdapter {

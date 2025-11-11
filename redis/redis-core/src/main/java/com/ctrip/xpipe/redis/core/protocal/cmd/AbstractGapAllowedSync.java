@@ -124,6 +124,7 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
     static class XsyncRequest implements SyncRequest {
         String uuidIntrested;
         GtidSet gtidSet;
+        GtidSet lost = null;
         long maxGap = 0;
 
         public String getUuidIntrested() {
@@ -150,10 +151,24 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
             this.maxGap = maxGap;
         }
 
+        public GtidSet getLost() {
+            return lost;
+        }
+
+        public void setLost(GtidSet lost) {
+            this.lost = lost;
+        }
+
         @Override
         public ByteBuf format() {
-            RequestStringParser requestString = new RequestStringParser(XSYNC, uuidIntrested,
-                    gtidSet.toString(), XSYNC_OPT_MAXGAP, String.valueOf(maxGap));
+            RequestStringParser requestString;
+            if (null != lost) {
+                requestString = new RequestStringParser(XSYNC, uuidIntrested,
+                        gtidSet.toString(), XSYNC_OPT_MAXGAP, String.valueOf(maxGap), XSYNC_OPT_LOST, lost.toString());
+            } else {
+                requestString = new RequestStringParser(XSYNC, uuidIntrested,
+                        gtidSet.toString(), XSYNC_OPT_MAXGAP, String.valueOf(maxGap));
+            }
             return requestString.format();
         }
     }

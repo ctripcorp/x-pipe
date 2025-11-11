@@ -19,9 +19,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-
-import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
-
 /**
  * @author TB
  * <p>
@@ -40,7 +37,7 @@ public class PartialOnlyGapAllowedSyncTest extends AbstractRedisKeeperTest {
         replicationStore = replicationStoreManager.create();
 
         SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new DefaultEndPoint("127.0.0.1", 1234));
-        gasync = new PartialOnlyGapAllowedSync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager, scheduled, ()->DEFAULT_XSYNC_MAXGAP);
+        gasync = new PartialOnlyGapAllowedSync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager, scheduled);
         gasync.future().addListener(commandFuture -> {
             if(!commandFuture.isSuccess()){
                 logger.error("[operationComplete]", commandFuture.cause());

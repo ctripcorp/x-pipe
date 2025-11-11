@@ -82,4 +82,6 @@ public interface KeeperConfig extends CoreConfig{
 	boolean tryRorRdb();
 
 	int getXsyncMaxGap();
+
+	int getXsyncMaxGapCrossRegion();
 }

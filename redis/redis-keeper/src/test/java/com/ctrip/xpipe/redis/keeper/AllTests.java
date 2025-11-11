@@ -27,6 +27,7 @@ import com.ctrip.xpipe.redis.keeper.store.*;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidCmdOneSegmentReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetStreamCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStoreTest;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
 import org.junit.runner.RunWith;
@@ -93,6 +94,7 @@ import org.junit.runners.Suite.SuiteClasses;
         GtidSetStreamCommandReaderTest.class,
 
         DefaultIndexStoreTest.class,
+        StreamCommandReaderTest.class,
 
         DiskHealthCheckerTest.class,
 

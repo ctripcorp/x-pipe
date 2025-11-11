@@ -324,7 +324,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     }
 
     @Test
-    public void testFullSync_lostIncreased() throws Exception {
+    public void testFullSync_lostNotIncreased() throws Exception {
         ReplStage replStage = new ReplStage("test-repl-id1", 1, 1, "A", new GtidSet(""), new GtidSet(""));
         Mockito.when(keeperServer.getKeeperRepl()).thenReturn(keeperRepl);
         Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
@@ -339,7 +339,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
 
         handler.runAction(action, keeperServer, slave);
         Mockito.verify(keeperServer, Mockito.times(1)).fullSyncToSlave(slave, false);
-        Mockito.verify(keeperServer, Mockito.times(1)).increaseLost(new GtidSet("B:1-5"), slave);
+        Mockito.verify(keeperServer, Mockito.never()).increaseLost(any(), any());
     }
 
     @Test

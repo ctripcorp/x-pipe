@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
 
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
+import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP_CROSSREGION;
 
 /**
  * @author marsqing
@@ -56,6 +57,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	private static String KEY_FSYNC_RATE_LIMIT = "keeper.repl.fsync.rate.limit";
 	private static String KEY_TRY_ROR_RDB = "keeper.try.ror.rdb";
 	private static String KEY_XSYNC_MAX_GAP = "keeper.xsync.max.gap";
+	private static String KEY_XSYNC_MAX_GAP_CROSSREGION = "keeper.xsync.max.gap.crossregion";
 
 	public DefaultKeeperConfig(){
 
@@ -218,5 +220,10 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getXsyncMaxGap() {
 		return getIntProperty(KEY_XSYNC_MAX_GAP, DEFAULT_XSYNC_MAXGAP);
+	}
+
+	@Override
+	public int getXsyncMaxGapCrossRegion() {
+		return getIntProperty(KEY_XSYNC_MAX_GAP_CROSSREGION, DEFAULT_XSYNC_MAXGAP_CROSSREGION);
 	}
 }

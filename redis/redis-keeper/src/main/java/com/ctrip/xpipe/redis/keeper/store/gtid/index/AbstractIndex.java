@@ -98,6 +98,17 @@ public abstract class AbstractIndex {
         return true;
     }
 
+    protected IndexEntry readPreIIndexEntry(IndexEntry currentEntry) throws IOException {
+        long preIndex = currentEntry.getPosition() - IndexEntry.SEGMENT_LENGTH;
+        if(preIndex <= 0) {
+            return null;
+        }
+        this.indexFile.getFileChannel().position(preIndex);
+        IndexEntry result = IndexEntry.readFromFile(this.indexFile.getFileChannel());
+        result.setPosition(preIndex);
+        return result;
+    }
+
     public void closeIndexFile() throws IOException {
         this.indexFile.close();
     }

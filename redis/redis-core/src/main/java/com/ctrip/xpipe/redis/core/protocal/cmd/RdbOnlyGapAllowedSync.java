@@ -9,7 +9,7 @@ import java.util.concurrent.ScheduledExecutorService;
 public class RdbOnlyGapAllowedSync extends AbstractReplicationStoreGapAllowedSync{
 
 	public RdbOnlyGapAllowedSync(SimpleObjectPool<NettyClient> clientPool, ReplicationStore store, ScheduledExecutorService scheduled) {
-		super(clientPool, false, scheduled, null);
+		super(clientPool, false, scheduled, DEFAULT_XSYNC_MAXGAP);
 		currentReplicationStore = store;
 	}
 

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.endpoint;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -160,5 +161,10 @@ public class DefaultEndPoint implements Endpoint, Serializable {
     @JsonIgnore
     public ProxyConnectProtocol getProxyProtocol() {
         return protocol;
+    }
+
+    @VisibleForTesting
+    public void setProtocol(ProxyConnectProtocol protocol) {
+        this.protocol = protocol;
     }
 }

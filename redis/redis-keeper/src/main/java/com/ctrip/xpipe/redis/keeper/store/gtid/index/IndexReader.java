@@ -82,7 +82,7 @@ public class IndexReader extends AbstractIndex implements Closeable {
 
     public Pair<Long, GtidSet> seek(GtidSet request) throws IOException {
 
-        long offset = -1l;
+        long offset = -1L;
         GtidSet gtidSet = null;
         boolean changeFileSuccess = true;
         boolean finish = false;

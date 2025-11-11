@@ -69,7 +69,7 @@ public class PartialOnlyPsyncTest extends AbstractRedisTest {
 			}
 		});
 		Endpoint redisEndpoint = new DefaultEndPoint("127.0.0.1", redisServer.getPort());
-		PartialOnlyGapAllowedSync gasync = new PartialOnlyGapAllowedSync(NettyPoolUtil.createNettyPool(redisEndpoint), redisEndpoint, replicationStoreManager, scheduled, null);
+		PartialOnlyGapAllowedSync gasync = new PartialOnlyGapAllowedSync(NettyPoolUtil.createNettyPool(redisEndpoint), redisEndpoint, replicationStoreManager, scheduled);
 
 		when(replicationStore.isFresh()).thenReturn(true);
 

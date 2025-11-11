@@ -44,21 +44,10 @@ public class IndexWriter extends AbstractIndex implements Closeable {
             gtidSetWrapper = new GtidSetWrapper(new GtidSet(Maps.newLinkedHashMap()));
         }
         gtidSetWrapper.saveGtidSet(indexFile.getFileChannel());
-
     }
 
     private void initForContinue() throws IOException {
-
-        gtidSetWrapper = new GtidSetWrapper(new GtidSet(Maps.newLinkedHashMap()));
         this.indexEntry = gtidSetWrapper.recover(indexFile.getFileChannel());
-
-        if(this.indexEntry != null) {
-            // recover block writer
-            this.blockWriter = new BlockWriter(this.indexEntry.getUuid(),
-                   this.indexEntry.getStartGno() - 1, (int) indexEntry.getCmdStartOffset(), generateBlockName());
-            this.blockWriter.recover(indexEntry.getBlockStartOffset(), this.indexEntry.getStartGno());
-        }
-
         recoverIndex();
         gtidSetWrapper.recover(indexFile.getFileChannel());
     }
@@ -77,11 +66,11 @@ public class IndexWriter extends AbstractIndex implements Closeable {
             while(index != null && (index.getCmdStartOffset()  > cmdFilePosition ||
                     index.getBlockStartOffset() > blockFilePosition)) {
                 // find a IndexEntry which BlockEndOffset and cmd offset is exit.
-                index = index.changeToPre();
+                index = readPreIIndexEntry(index);
             }
             if(index != null) {
                 this.indexFile.setLength((int)index.getPosition());
-                setBlockWriter(null);
+                closeBlockWriter();
                 this.indexEntry = null;
                 defaultIndexStore.buildIndexFromCmdFile(super.getFileName(), index.getCmdStartOffset());
             } else {
@@ -102,10 +91,8 @@ public class IndexWriter extends AbstractIndex implements Closeable {
 
         if(blockWriter == null) {
             this.createNewBlock(uuid, gno, commandOffset);
-        } else {
-            if(needChangeBlock(uuid, gno)) {
-                changeBlock(uuid, gno, commandOffset);
-            }
+        } else if(needChangeBlock(uuid, gno)) {
+            changeBlock(uuid, gno, commandOffset);
         }
         this.blockWriter.append(uuid, gno, commandOffset);
     }
@@ -119,10 +106,7 @@ public class IndexWriter extends AbstractIndex implements Closeable {
     private void finishBlock() throws IOException {
         saveIndexEntry();
         gtidSetWrapper.compensate(indexEntry);
-        if(blockWriter != null) {
-            blockWriter.close();
-            blockWriter = null;
-        }
+        closeBlockWriter();
     }
 
 
@@ -150,9 +134,7 @@ public class IndexWriter extends AbstractIndex implements Closeable {
             return;
         }
         super.closeIndexFile();
-        if(blockWriter != null) {
-            this.blockWriter.close();
-        }
+        closeBlockWriter();
     }
 
     public GtidSet getGtidSet() {
@@ -169,11 +151,11 @@ public class IndexWriter extends AbstractIndex implements Closeable {
         }
     }
 
-    private void setBlockWriter(BlockWriter blockWriter) throws IOException {
+    private void closeBlockWriter() throws IOException {
         if(this.blockWriter != null) {
             this.blockWriter.close();
+            this.blockWriter = null;
         }
-        this.blockWriter = blockWriter;
     }
 
 }
