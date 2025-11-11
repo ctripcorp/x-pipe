@@ -34,9 +34,11 @@ public class StreamCommandReader implements StreamCommandLister {
     private static final byte[] GTID_LOWWER_BYTES = new byte[]{'g','t','i','d'};
     private static final byte[] EXEC_LOWWER_BYTES = new byte[]{'e','x','e','c'};
 
-    private static final String EVENT_TYPE = "MULTI";
+    private static final String EVENT_TYPE = "STREAM";
     private static final String EVENT_MULTI_DUP = "MULTI_DUP";
     private static final String EVENT_MULTI_MISS = "MULTI_MISS";
+    private static final String EVENT_OFFSET_MISMATCH = "OFFSET_MISMATCH";
+    private int writeCnt = 0;
 
     private static final Logger logger = LoggerFactory.getLogger(StreamCommandReader.class);
 
@@ -98,6 +100,14 @@ public class StreamCommandReader implements StreamCommandLister {
      */
     public long getTransactionStartOffset() {
         return transactionContext.getStartOffset();
+    }
+
+    /**
+     * Get the current offset
+     * @return the current offset
+     */
+    public long getCurrentOffset() {
+        return currentOffset;
     }
 
     @Override
@@ -216,8 +226,18 @@ public class StreamCommandReader implements StreamCommandLister {
     }
 
     private void writeSingleCommand(ByteBuf commandBuf) throws IOException {
+        int cmdLen = commandBuf.readableBytes();
         defaultIndexStore.onFinishParse(commandBuf);
-        this.currentOffset += commandBuf.readableBytes();
+        this.currentOffset += cmdLen;
+
+        if (writeCnt++ % 8192 == 0) {
+            // check offset match
+            long cmdFileLen = defaultIndexStore.getCurrentCmdFileLen();
+            if (-1 != cmdFileLen && cmdFileLen != this.currentOffset) {
+                logger.info("[checkOffset][mismatch] nextCmdBegin:{} cmdFileLen{}", this.currentOffset, cmdFileLen);
+                EventMonitor.DEFAULT.logEvent(EVENT_TYPE, EVENT_OFFSET_MISMATCH);
+            }
+        }
     }
 
     private static class TransactionContext {
@@ -267,8 +287,7 @@ public class StreamCommandReader implements StreamCommandLister {
                         // Write all commands and update offset
                         for (ByteBuf buf : commandBufs) {
                             if (buf != null) {
-                                reader.currentOffset += buf.readableBytes();
-                                indexStore.onFinishParse(buf);
+                                reader.writeSingleCommand(buf);
                             }
                         }
                     }
@@ -276,8 +295,7 @@ public class StreamCommandReader implements StreamCommandLister {
                     // No GTID, write commands directly
                     for (ByteBuf buf : commandBufs) {
                         if (buf != null) {
-                            reader.currentOffset += buf.readableBytes();
-                            indexStore.onFinishParse(buf);
+                            reader.writeSingleCommand(buf);
                         }
                     }
                 }

@@ -133,8 +133,7 @@ public class DefaultIndexStore implements IndexStore {
                 return new Pair<>(-1l, new GtidSet(GtidSet.EMPTY_GTIDSET));
             }
             indexReader.init();
-            Pair<Long, GtidSet> continuePoint = indexReader.seek(request);
-            return continuePoint;
+            return indexReader.seek(request);
         }
     }
 
@@ -273,10 +272,18 @@ public class DefaultIndexStore implements IndexStore {
         }
     }
 
-    public void onFinishParse(ByteBuf byteBuf) throws IOException {
-        if(writerCmdEnabled && commandWriterCallback != null) {
-            commandWriterCallback.writeCommand(byteBuf);
+    public long getCurrentCmdFileLen() {
+        if (commandWriterCallback != null) {
+            return commandWriterCallback.getCmdFileLen();
         }
+        return -1L;
+    }
+
+    public int onFinishParse(ByteBuf byteBuf) throws IOException {
+        if(writerCmdEnabled && commandWriterCallback != null) {
+            return commandWriterCallback.writeCommand(byteBuf);
+        }
+        return 0;
     }
 
     private void disableWriterCmd() {

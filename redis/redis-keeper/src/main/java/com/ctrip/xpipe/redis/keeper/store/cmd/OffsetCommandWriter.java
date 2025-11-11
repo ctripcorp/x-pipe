@@ -98,6 +98,11 @@ public class OffsetCommandWriter implements CommandWriter {
     }
 
     @Override
+    public long fileLength() {
+        return cmdFileCtxRef.get().fileLength();
+    }
+
+    @Override
     public long getFileLastModified() {
         return cmdFileCtxRef.get().getLastModified();
     }

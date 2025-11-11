@@ -281,6 +281,170 @@ public class StreamCommandReaderTest {
         Assert.assertEquals(0, streamCommandReader.getTransactionSize());
     }
 
+    @Test
+    public void testCurrentOffsetSingleCommand() throws IOException {
+        // Test that currentOffset is correctly updated for a single command
+        long initialOffset = 100;
+        streamCommandReader = new StreamCommandReader(defaultIndexStore, initialOffset);
+        
+        ByteBuf commandBuf = createRedisArrayCommand("SET", "key", "value");
+        int expectedCmdLen = commandBuf.readableBytes();
+        Object[] payload = createCommandPayload("SET", "key", "value");
+        
+        streamCommandReader.onCommand(payload, commandBuf);
+        
+        // Verify currentOffset was updated correctly
+        Assert.assertEquals("currentOffset should be initialOffset + command length", 
+                initialOffset + expectedCmdLen, streamCommandReader.getCurrentOffset());
+        
+        verify(defaultIndexStore, times(1)).onFinishParse(any(ByteBuf.class));
+    }
+
+    @Test
+    public void testCurrentOffsetMultipleCommands() throws IOException {
+        // Test that currentOffset is correctly accumulated for multiple commands
+        long initialOffset = 0;
+        streamCommandReader = new StreamCommandReader(defaultIndexStore, initialOffset);
+        
+        long expectedOffset = initialOffset;
+        
+        // Process multiple commands
+        for (int i = 0; i < 5; i++) {
+            ByteBuf commandBuf = createRedisArrayCommand("SET", "key" + i, "value" + i);
+            int cmdLen = commandBuf.readableBytes();
+            Object[] payload = createCommandPayload("SET", "key" + i, "value" + i);
+            
+            streamCommandReader.onCommand(payload, commandBuf);
+            
+            expectedOffset += cmdLen;
+            Assert.assertEquals("currentOffset should accumulate correctly after command " + i,
+                    expectedOffset, streamCommandReader.getCurrentOffset());
+        }
+        
+        verify(defaultIndexStore, times(5)).onFinishParse(any(ByteBuf.class));
+    }
+
+    @Test
+    public void testCurrentOffsetWithOnFinishParseModifyingByteBuf() throws IOException {
+        // Test that currentOffset is correct even if onFinishParse modifies the ByteBuf
+        long initialOffset = 50;
+        streamCommandReader = new StreamCommandReader(defaultIndexStore, initialOffset);
+        
+        // Setup mock to modify ByteBuf (simulate reading from it)
+        doAnswer(invocation -> {
+            ByteBuf buf = invocation.getArgument(0);
+            if (buf != null && buf.readableBytes() > 0) {
+                // Simulate reading from ByteBuf (this would normally change readableBytes)
+                // But we already captured the length before calling onFinishParse
+                int len = buf.readableBytes();
+                // Read some bytes to simulate modification
+                if (len > 10) {
+                    buf.readBytes(10);
+                }
+            }
+            return null;
+        }).when(defaultIndexStore).onFinishParse(any(ByteBuf.class));
+        
+        ByteBuf commandBuf = createRedisArrayCommand("SET", "key", "value");
+        int expectedCmdLen = commandBuf.readableBytes(); // Capture length before processing
+        
+        Object[] payload = createCommandPayload("SET", "key", "value");
+        streamCommandReader.onCommand(payload, commandBuf);
+        
+        // Verify currentOffset was updated with the original length, not the modified length
+        Assert.assertEquals("currentOffset should use original command length even if ByteBuf is modified",
+                initialOffset + expectedCmdLen, streamCommandReader.getCurrentOffset());
+        
+        verify(defaultIndexStore, times(1)).onFinishParse(any(ByteBuf.class));
+    }
+
+    @Test
+    public void testCurrentOffsetInTransaction() throws IOException {
+        // Test that currentOffset is correctly handled in transaction
+        long initialOffset = 200;
+        streamCommandReader = new StreamCommandReader(defaultIndexStore, initialOffset);
+        
+        String gtid = "a4f566ef50a85e1119f17f9b746728b48609a2ab:6";
+        
+        // Step 1: MULTI command
+        ByteBuf multiBuf = createRedisArrayCommand("MULTI");
+        int multiLen = multiBuf.readableBytes();
+        Object[] multiPayload = createCommandPayload("MULTI");
+        streamCommandReader.onCommand(multiPayload, multiBuf);
+        
+        // Offset should not change yet (transaction not committed)
+        Assert.assertEquals("currentOffset should not change after MULTI (transaction not committed)",
+                initialOffset, streamCommandReader.getCurrentOffset());
+        Assert.assertEquals("Transaction start offset should be initialOffset",
+                initialOffset, streamCommandReader.getTransactionStartOffset());
+        
+        // Step 2: Command in transaction
+        ByteBuf setBuf = createRedisArrayCommand("SET", "key1", "value1");
+        int setLen = setBuf.readableBytes();
+        Object[] setPayload = createCommandPayload("SET", "key1", "value1");
+        streamCommandReader.onCommand(setPayload, setBuf);
+        
+        // Offset should still not change
+        Assert.assertEquals("currentOffset should not change during transaction",
+                initialOffset, streamCommandReader.getCurrentOffset());
+        
+        // Step 3: GTID + EXEC command
+        ByteBuf execBuf = createRedisArrayCommand("GTID", gtid, "0", "EXEC");
+        int execLen = execBuf.readableBytes();
+        Object[] execPayload = createCommandPayload("GTID", gtid, "0", "EXEC");
+        streamCommandReader.onCommand(execPayload, execBuf);
+        
+        // After transaction commit, offset should be updated with all command lengths
+        long expectedOffset = initialOffset + multiLen + setLen + execLen;
+        Assert.assertEquals("currentOffset should be updated with all transaction command lengths",
+                expectedOffset, streamCommandReader.getCurrentOffset());
+        
+        // Verify all commands were written
+        verify(defaultIndexStore, times(1)).onCommand(eq(gtid), eq(initialOffset));
+        verify(defaultIndexStore, times(3)).onFinishParse(any(ByteBuf.class));
+    }
+
+    @Test
+    public void testCurrentOffsetWithGtidCommand() throws IOException {
+        // Test that currentOffset is correctly updated for GTID command
+        long initialOffset = 300;
+        streamCommandReader = new StreamCommandReader(defaultIndexStore, initialOffset);
+        
+        String gtid = "a4f566ef50a85e1119f17f9b746728b48609a2ab:7";
+        ByteBuf commandBuf = createRedisArrayCommand("GTID", gtid, "0", "SET", "key", "value");
+        int expectedCmdLen = commandBuf.readableBytes();
+        Object[] payload = createCommandPayload("GTID", gtid, "0", "SET", "key", "value");
+        
+        streamCommandReader.onCommand(payload, commandBuf);
+        
+        // Verify currentOffset was updated correctly
+        Assert.assertEquals("currentOffset should be updated for GTID command",
+                initialOffset + expectedCmdLen, streamCommandReader.getCurrentOffset());
+        
+        verify(defaultIndexStore, times(1)).onCommand(eq(gtid), eq(initialOffset));
+        verify(defaultIndexStore, times(1)).onFinishParse(any(ByteBuf.class));
+    }
+
+    @Test
+    public void testCurrentOffsetReset() throws IOException {
+        // Test resetOffset functionality
+        long initialOffset = 500;
+        streamCommandReader = new StreamCommandReader(defaultIndexStore, initialOffset);
+        
+        // Process a command
+        ByteBuf commandBuf = createRedisArrayCommand("SET", "key", "value");
+        Object[] payload = createCommandPayload("SET", "key", "value");
+        streamCommandReader.onCommand(payload, commandBuf);
+        
+        Assert.assertTrue("currentOffset should be greater than initial after command",
+                streamCommandReader.getCurrentOffset() > initialOffset);
+        
+        // Reset offset
+        streamCommandReader.resetOffset();
+        
+        Assert.assertEquals("currentOffset should be reset to 0", 0, streamCommandReader.getCurrentOffset());
+    }
+
     // Helper methods to create Redis protocol commands
 
     private ByteBuf createRedisArrayCommand(String... args) {

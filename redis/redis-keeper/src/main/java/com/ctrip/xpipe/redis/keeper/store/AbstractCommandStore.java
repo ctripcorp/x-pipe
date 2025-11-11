@@ -144,6 +144,12 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
+    public long getCmdFileLen() {
+        if (null == cmdWriter) return -1;
+        return cmdWriter.fileLength();
+    }
+
+    @Override
     public CommandWriter getCommandWriter() {
         return cmdWriter;
     }
