@@ -23,6 +23,9 @@ import java.util.*;
 
 public class CtripKafkaService implements KafkaService {
 
+    private static final Logger logger = LoggerFactory.getLogger(CtripKafkaService.class);
+
+
     private static final String TOPIC = "bbz.fx.xpipe.ck.gtid";
     private static final String ACL_USER = "kMTApwMDMzNzAws";
     private static final String CUSTOM_CLIENT_ID = "bbzfxxpipeckgtid";
@@ -60,7 +63,7 @@ public class CtripKafkaService implements KafkaService {
         properties.put(ProducerConfig.BUFFER_MEMORY_CONFIG,"10737418240");
         properties.put(ProducerConfig.COMPRESSION_TYPE_CONFIG,"snappy");
         properties.put(ProducerConfig.LINGER_MS_CONFIG,"50");
-        properties.put(ProducerConfig.MAX_BLOCK_MS_CONFIG,"0");
+        properties.put(ProducerConfig.MAX_BLOCK_MS_CONFIG,"1000");
         properties.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG,"4000000");
         properties.put(ProducerConfig.RETRIES_CONFIG,"2");
         properties.put(ProducerConfig.PARTITIONER_AVAILABILITY_TIMEOUT_MS_CONFIG,"100");
@@ -78,7 +81,11 @@ public class CtripKafkaService implements KafkaService {
                         .topic(TOPIC) // 要发送的topic
                         .aclUser(ACL_USER) // acl token如有则替换填入此处，无则忽略
                         .build();
-                producer.partitionsFor(TOPIC);
+                try {
+                    producer.partitionsFor(TOPIC);
+                }catch (Throwable t){
+                    logger.warn("init partition wait meta ready",t);
+                }
             }
 
         } catch (IOException e) {
