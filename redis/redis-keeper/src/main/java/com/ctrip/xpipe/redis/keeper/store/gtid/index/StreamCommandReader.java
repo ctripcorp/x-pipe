@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandLister;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandParser;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
@@ -21,6 +22,8 @@ public class StreamCommandReader implements StreamCommandLister {
     private DefaultIndexStore defaultIndexStore;
 
     private StreamCommandParser streamCommandParser;
+
+    private CKStore ckStore;
 
     private final int GTID_PAYLOADS_COMMAND_OFFSET = 3;
 
@@ -46,6 +49,7 @@ public class StreamCommandReader implements StreamCommandLister {
         this.defaultIndexStore = defaultIndexStore;
         this.currentOffset = offset;
         streamCommandParser = new StreamCommandParser(this);
+        this.ckStore = defaultIndexStore.getCkStore();
     }
 
     public void doRead(ByteBuf byteBuf) throws IOException {
@@ -184,6 +188,9 @@ public class StreamCommandReader implements StreamCommandLister {
         long offset = this.currentOffset;
         if (defaultIndexStore.onCommand(gtid, offset)) {
             writeSingleCommand(commandBuf);
+            List<Object[]> payloads = new ArrayList<>(1);
+            payloads.add(payload);
+            sendPayloadsToCk(payloads);
         }
     }
 
@@ -240,8 +247,14 @@ public class StreamCommandReader implements StreamCommandLister {
         }
     }
 
+    private void sendPayloadsToCk(List<Object[]> payloads){
+        if (ckStore != null && !ckStore.isKeeper()) {
+            ckStore.sendPayloads(payloads);
+        }
+    }
+
     private static class TransactionContext {
-        private final List<Object[]> payloads = new ArrayList<>();
+        private List<Object[]> payloads;
         private final List<ByteBuf> commandBufs = new ArrayList<>();
         private boolean active = false;
         private long startOffset = -1;
@@ -249,6 +262,7 @@ public class StreamCommandReader implements StreamCommandLister {
 
         public void start(long offset) {
             clear();
+            payloads = new ArrayList<>();
             active = true;
             startOffset = offset;
         }
@@ -290,6 +304,7 @@ public class StreamCommandReader implements StreamCommandLister {
                                 reader.writeSingleCommand(buf);
                             }
                         }
+                        reader.sendPayloadsToCk(payloads);
                     }
                 } else {
                     // No GTID, write commands directly
@@ -311,7 +326,7 @@ public class StreamCommandReader implements StreamCommandLister {
                     buf.release();
                 }
             }
-            payloads.clear();
+            payloads = null;
             commandBufs.clear();
             active = false;
             startOffset = -1;

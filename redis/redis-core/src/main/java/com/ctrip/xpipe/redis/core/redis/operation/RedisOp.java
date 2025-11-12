@@ -10,6 +10,8 @@ public interface RedisOp {
 
     RedisOpType getOpType();
 
+    String getDbId();
+
     String getOpGtid();
 
     Long getTimestamp();

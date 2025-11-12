@@ -5,6 +5,7 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
@@ -26,7 +27,14 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager) throws IOException {
-        super(baseDir, config, keeperRunid,
+        super(null,baseDir, config, keeperRunid,
+                new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
+                keeperMonitor, syncRateManager, redisOpParser);
+    }
+
+    public GtidReplicationStore(CKStore ckStore,File baseDir, KeeperConfig config,String keeperRunid,
+                                KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager) throws IOException {
+        super(ckStore,baseDir, config,keeperRunid,
                 new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
                 keeperMonitor, syncRateManager, redisOpParser);
     }
@@ -78,7 +86,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
             buildIndex = false;
         }
         logger.info("[createCommandStore], replRdbGtidSet={}, buildIndex={}", replRdbGtidSet, buildIndex);
-        GtidCommandStore cmdStore = new GtidCommandStore(new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
+        GtidCommandStore cmdStore = new GtidCommandStore(this.ckStore,new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
                 config::getReplicationStoreCommandFileKeepTimeSeconds,
                 config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
                 config::getReplicationStoreCommandFileNumToKeep,

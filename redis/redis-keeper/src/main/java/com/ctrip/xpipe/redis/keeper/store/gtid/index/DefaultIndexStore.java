@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.store.CommandWriterCallback;
 import com.ctrip.xpipe.redis.core.store.GtidCmdFilter;
 import com.ctrip.xpipe.redis.core.store.IndexStore;
 import com.ctrip.xpipe.redis.keeper.exception.replication.LostGtidsetBacklogConflictException;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import io.netty.buffer.ByteBuf;
@@ -45,6 +46,8 @@ public class DefaultIndexStore implements IndexStore {
 
     private boolean writerCmdEnabled;
 
+    private CKStore ckStore;
+
     public DefaultIndexStore(String baseDir, RedisOpParser redisOpParser,
                              CommandWriterCallback commandWriterCallback, GtidCmdFilter gtidCmdFilter, String currentCmdFileName) {
         this.baseDir = baseDir;
@@ -54,6 +57,12 @@ public class DefaultIndexStore implements IndexStore {
         this.gtidCmdFilter = gtidCmdFilter;
         this.writerCmdEnabled = true;
         this.currentCmdFileName = currentCmdFileName;
+    }
+
+    public DefaultIndexStore(CKStore ckStore, String baseDir, RedisOpParser redisOpParser,
+                             CommandWriterCallback commandWriterCallback, GtidCmdFilter gtidCmdFilter, String currentCmdFileName) {
+        this(baseDir,redisOpParser,commandWriterCallback,gtidCmdFilter,currentCmdFileName);
+        this.ckStore = ckStore;
     }
 
     @Override
@@ -318,5 +327,11 @@ public class DefaultIndexStore implements IndexStore {
             }
         }
     }
+
+    public CKStore getCkStore(){
+        return this.ckStore;
+    }
+
+
 
 }
