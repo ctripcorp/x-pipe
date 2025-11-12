@@ -43,7 +43,7 @@ jobs:
 
       - name: Build with Maven
         #run: mvn clean install -Plocal -Dmaven.test.failure.ignore=true
-        run: mvn clean install -Plocal -X
+        run: mvn clean install -Plocal
 
       - name: codecov
         uses: codecov/codecov-action@v2.0.1

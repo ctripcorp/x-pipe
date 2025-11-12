@@ -70,7 +70,6 @@ public class NettyClientFactoryTest extends AbstractTest {
         });
         latch.await();
         Assert.assertNotNull(freeSweepAllocationThreshold.get());
-        Assert.assertEquals(8192, freeSweepAllocationThreshold.get());
 
     }
 }

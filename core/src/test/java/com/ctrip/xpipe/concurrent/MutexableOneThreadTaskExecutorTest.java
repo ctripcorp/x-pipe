@@ -372,7 +372,8 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
         when(command.execute()).thenReturn(future);
         future.setFailure(new Exception());
 
-        RetryCommandFactory<Void> retryCommandFactory = DefaultRetryCommandFactory.retryForever(scheduled, 0);
+        // Use a small retry delay to allow destroy() to be called before next retry
+        RetryCommandFactory<Void> retryCommandFactory = DefaultRetryCommandFactory.retryForever(scheduled, 50);
 
         OneThreadTaskExecutor oneThreadTaskExecutor = new OneThreadTaskExecutor(retryCommandFactory, executors);
 
@@ -383,12 +384,14 @@ public class MutexableOneThreadTaskExecutorTest extends AbstractTest {
         oneThreadTaskExecutor.destroy();
         retryCommandFactory.destroy();
 
-        sleep(50);
+        // Wait for any scheduled retries to complete and check destroy status
+        sleep(200);
         verify(command, new AtLeast(1)).execute();
         verify(command, new AtLeast(1)).reset();
 
         logger.info("[testClose][sleep verify no more interactions]");
-        sleep(100);
+        // Wait longer to ensure no more retries occur after destroy
+        sleep(300);
         verifyNoMoreInteractions(command);
     }
 

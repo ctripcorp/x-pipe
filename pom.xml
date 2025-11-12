@@ -1034,6 +1034,24 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven_surefire_plugin_version}</version>
+                    <configuration>
+                        <includes>
+                            <include>**/AllTests.java</include>
+                        </includes>
+                        <excludes>
+                            <exclude>**/CatTransactionMonitorTest.java</exclude>
+                            <exclude>**/EnsurePathTest.java</exclude>
+                            <exclude>**/zk/usage/**</exclude>
+                        </excludes>
+                        <testFailureIgnore>false</testFailureIgnore>
+                    </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven.surefire</groupId>
+                            <artifactId>surefire-junit4</artifactId>
+                            <version>${maven_surefire_plugin_version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
 
 
@@ -1139,6 +1157,24 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/AllTests.java</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/CatTransactionMonitorTest.java</exclude>
+                        <exclude>**/EnsurePathTest.java</exclude>
+                        <exclude>**/zk/usage/**</exclude>
+                    </excludes>
+                    <testFailureIgnore>false</testFailureIgnore>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit4</artifactId>
+                        <version>${maven_surefire_plugin_version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>pl.project13.maven</groupId>

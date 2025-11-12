@@ -31,6 +31,9 @@
         <logger name="org.hibernate" level="INFO"/>
         <logger name="io.netty" level="INFO"/>
         <logger name="org.apache" level="WARN"/>
+        <logger name="org.apache.curator" level="ERROR"/>
+        <logger name="org.apache.zookeeper" level="ERROR"/>
+        <logger name="org.apache.zookeeper.ClientCnxn" level="ERROR"/>
 
         <logger name="com.ctrip.xpipe.lifecycle.CreatedComponentRedistry" level="WARN"/>
 		<logger name="com.ctrip.xpipe.lifecycle.SpringComponentRegistry" level="WARN"/>

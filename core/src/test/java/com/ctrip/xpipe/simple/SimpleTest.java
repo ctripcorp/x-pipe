@@ -124,10 +124,23 @@ public class SimpleTest extends AbstractTest{
 		sleep(6000);
 		logger.info("[testThread]{}", thread.isAlive());
 
-		thread.start();
+		// Create a new thread instead of restarting the old one
+		// Starting a thread that has already finished will throw IllegalThreadStateException
+		Thread thread2 = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					logger.info("[run2][begin sleep]");
+					TimeUnit.SECONDS.sleep(1);
+					logger.info("[run2][end   sleep]");
+				} catch (InterruptedException e) {
+				}
+			}
+		});
+		thread2.start();
 
 		sleep(1000);
-		logger.info("[testThread]{}", thread.isAlive());
+		logger.info("[testThread]{}", thread2.isAlive());
 	}
 
 	@Test
