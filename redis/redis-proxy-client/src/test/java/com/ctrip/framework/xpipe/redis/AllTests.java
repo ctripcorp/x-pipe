@@ -49,6 +49,8 @@ public class AllTests {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        webServer.close();
+        if (webServer != null) {
+            webServer.close();
+        }
     }
 }

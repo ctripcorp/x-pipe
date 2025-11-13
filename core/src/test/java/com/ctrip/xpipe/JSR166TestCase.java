@@ -6,7 +6,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.Method;
 import java.security.CodeSource;
 import java.security.Permission;
 import java.security.PermissionCollection;
@@ -36,11 +35,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Pattern;
 import junit.framework.AssertionFailedError;
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.junit.Assert;
 
 /**
@@ -143,7 +138,12 @@ public class JSR166TestCase {
                 // give thread some time to terminate
                 thread.join(LONG_DELAY_MS);
                 if (!thread.isAlive()) continue;
-                thread.stop();
+                /*
+                 * `Thread.stop()` always throws a `new UnsupportedOperationException()` in Java 21+.
+                 * For detailed migration instructions see the migration guide available at
+                 * https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/doc-files/threadPrimitiveDeprecation.html
+                 */
+                thread.interrupt();
                 throw new AssertionFailedError
                         (String.format("Found leaked ForkJoinPool thread test=%s thread=%s%n",
                                 toString(), name));

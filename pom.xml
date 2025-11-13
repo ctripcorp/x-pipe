@@ -2,9 +2,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
-        <groupId>com.ctrip.framework</groupId>
-        <artifactId>framework-parent</artifactId>
-        <version>1.5.0</version>
+        <groupId>com.ctrip</groupId>
+        <artifactId>super-pom</artifactId>
+        <version>1.0.9</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -16,12 +16,15 @@
     <!-- trigger cache-->
 
     <properties>
+        <maven_compiler_plugin.version>3.11.0</maven_compiler_plugin.version>
+        <maven_surefire_plugin_version>3.1.2</maven_surefire_plugin_version>
+        <maven_assembly_plugin_version>3.7.0</maven_assembly_plugin_version>
+        <maven-jar-plugin_version>3.3.0</maven-jar-plugin_version>
+        <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
+        <framework-parent.version>1.23.0</framework-parent.version>
         <commons-io.version>2.4</commons-io.version>
         <curator.version>5.7.0</curator.version>
         <zookeeper.version>3.8.2</zookeeper.version>
-        <maven-jar-plugin.version>2.6</maven-jar-plugin.version>
-        <maven-assembly-plugin.version>2.6</maven-assembly-plugin.version>
-        <maven-source-plugin.version>3.0.0</maven-source-plugin.version>
         <coveralls-maven-plugin.version>4.3.0</coveralls-maven-plugin.version>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
         <jersey.version>2.19</jersey.version>
@@ -34,29 +37,30 @@
         <commons-pool.version>2.3</commons-pool.version>
         <commons-lang3.version>3.4</commons-lang3.version>
         <commons-httpclient.version>4.5.2</commons-httpclient.version>
-        <spring-boot.version>2.3.12.RELEASE</spring-boot.version>
-        <spring-boot-test.version>2.3.12.RELEASE</spring-boot-test.version>
-        <spring.version>5.2.20.RELEASE</spring.version>
-        <spring-core.version>5.2.20.RELEASE</spring-core.version>
-        <spring-boot-maven-plugin.version>2.3.12.RELEASE</spring-boot-maven-plugin.version>
+        <spring-boot.version>2.5.15</spring-boot.version>
+        <spring-boot-test.version>2.5.15</spring-boot-test.version>
+        <spring.version>5.3.27</spring.version>
+        <spring-core.version>5.3.27</spring-core.version>
+        <spring-boot-maven-plugin.version>2.5.15</spring-boot-maven-plugin.version>
         <spring.velocity.version>1.4.3.RELEASE</spring.velocity.version>
         <netty3.version>3.10.5.Final</netty3.version>
-        <ctrip-framework-foundation.version>1.8.26</ctrip-framework-foundation.version>
+        <ctrip-framework-foundation.version>1.8.33</ctrip-framework-foundation.version>
         <ctrip-super-rule.version>1.0.25</ctrip-super-rule.version>
         <ctrip-apollo.version>0.6.7</ctrip-apollo.version>
         <cat.version>3.6.13</cat.version>
         <pyrolite.version>4.9</pyrolite.version>
-        <plexus-utils.version>3.1.0</plexus-utils.version>
+        <plexus-utils.version>3.3.0</plexus-utils.version>
         <git-commit-id-plugin.version>2.2.3</git-commit-id-plugin.version>
-        <log4j2.version>2.17.1</log4j2.version>
+        <log4j2.version>2.21.1</log4j2.version>
+        <slf4j.version>1.7.28</slf4j.version>
         <disruptor.version>3.3.6</disruptor.version>
         <dnsjava.version>2.1.6</dnsjava.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <tomcat.version>8.0.33</tomcat.version>
-        <okhttp3.version>3.12.0</okhttp3.version>
+        <okhttp3.version>4.12.0</okhttp3.version>
         <influxdb.version>2.7</influxdb.version>
-        <hickwall.client.version>1.10-SNAPSHOT</hickwall.client.version>
-        <clogging.version>4.9.0</clogging.version>
+        <hickwall.client.version>1.1.17</hickwall.client.version>
+        <clogging.version>5.0.5-Java21</clogging.version>
         <credis.version>4.4.10-SNAPSHOT</credis.version>
         <qconfig.sso.version>1.0.7-SNAPSHOT</qconfig.sso.version>
         <qunaer.common.version>9.2.37</qunaer.common.version>
@@ -66,23 +70,22 @@
         <netty.boringssl.version>2.0.61.Final</netty.boringssl.version>
         <netty4.version>4.1.68.Final</netty4.version>
         <zstd.version>1.3.6-1</zstd.version>
-        <jackson.version>2.10.3</jackson.version>
+        <jackson.version>2.15.0</jackson.version>
         <jedis.version>2.8.1.4-ctrip</jedis.version>
         <soa.version>2.24.55</soa.version>
         <sso.version>0.1.3</sso.version>
-        <vi.version>0.11.49</vi.version>
-        <dal.version>2.4.50</dal.version>
+        <vi.version>0.11.77-Java21</vi.version>
+        <dal.version>3.1.30-SNAPSHOT</dal.version>
         <ucs.version>0.7.0</ucs.version>
-        <artemis.version>1.9.22</artemis.version>
-        <caravan.version>1.19.30</caravan.version>
-        <velocity.version>1.7</velocity.version>
+        <artemis.version>1.9.24-Java21</artemis.version>
+        <caravan.version>1.19.36-Java21</caravan.version>
         <lettuce.version>3.2.Final</lettuce.version>
         <commons-collections.version>3.2.2</commons-collections.version>
         <commons-digester.version>2.1</commons-digester.version>
         <h2.version>1.4.191</h2.version>
         <asm.version>5.2</asm.version>
-        <mockwebserver.version>3.12.0</mockwebserver.version>
-        <mysql-connector.version>5.1.48</mysql-connector.version>
+        <mockwebserver.version>4.12.0</mockwebserver.version>
+        <mysql-connector.version>8.0.33</mysql-connector.version>
         <javassist.version>3.20.0-GA</javassist.version>
         <joda-time.version>2.9</joda-time.version>
         <guava-version>31.0.1-jre</guava-version>
@@ -96,12 +99,38 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.ctrip.framework</groupId>
+                <artifactId>framework-parent</artifactId>
+                <version>${framework-parent.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <!-- jackson -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils</artifactId>
+                <version>1.9.4</version>
+            </dependency>
+
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.13.2</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>2.6</version>
+            </dependency>
+
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
@@ -152,11 +181,6 @@
             <dependency>
                 <groupId>qunar.common</groupId>
                 <artifactId>common-concurrent</artifactId>
-                <version>${qunaer.common.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>qunar.common</groupId>
-                <artifactId>common-core</artifactId>
                 <version>${qunaer.common.version}</version>
             </dependency>
             <dependency>
@@ -269,14 +293,18 @@
                 <version>${project.version}</version>
                 <scope>test</scope>
             </dependency>
-            <dependency>
-                <groupId>com.ctrip.framework.xpipe</groupId>
-                <artifactId>ctrip-service</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+            <!-- Define both service versions for dependencyManagement -->
+            <!-- Local service - used for local development -->
             <dependency>
                 <groupId>com.ctrip.framework.xpipe</groupId>
                 <artifactId>local-service</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- Ctrip service - used for ctrip deployment (via profile) -->
+            <!-- Always define version for other modules to reference -->
+            <dependency>
+                <groupId>com.ctrip.framework.xpipe</groupId>
+                <artifactId>ctrip-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- xpipe related -->
@@ -393,6 +421,16 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>jcl-over-slf4j</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-recipes</artifactId>
                 <version>${curator.version}</version>
@@ -445,6 +483,11 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>${commons-lang3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-thymeleaf</artifactId>
+                <version>${spring-boot.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
@@ -516,22 +559,12 @@
             </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-velocity</artifactId>
-                <version>${spring.velocity.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.velocity</groupId>
-                <artifactId>velocity</artifactId>
-                <version>${velocity.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-tomcat</artifactId>
                 <version>${spring-boot.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>jakarta.annotation</groupId>
-                        <artifactId>jakarta.annotation-api</artifactId>
+                        <groupId>javax.annotation</groupId>
+                        <artifactId>javax.annotation-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -546,8 +579,8 @@
                 <version>${spring-boot.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>jakarta.annotation</groupId>
-                        <artifactId>jakarta.annotation-api</artifactId>
+                        <groupId>javax.annotation</groupId>
+                        <artifactId>javax.annotation-api</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.springframework.boot</groupId>
@@ -582,8 +615,8 @@
                         <artifactId>tomcat-embed-el</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>jakarta.annotation</groupId>
-                        <artifactId>jakarta.annotation-api</artifactId>
+                        <groupId>javax.annotation</groupId>
+                        <artifactId>javax.annotation-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -658,11 +691,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            <dependency>
-                <groupId>com.squareup.okhttp3</groupId>
-                <artifactId>okhttp</artifactId>
-                <version>${okhttp3.version}</version>
-            </dependency>
 
             <dependency>
                 <groupId>io.netty</groupId>
@@ -705,16 +733,18 @@
                 <version>${cat.version}</version>
                 <exclusions>
                     <exclusion>
+                        <groupId>io.netty</groupId>
+                        <artifactId>netty-all</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>org.lz4</groupId>
                         <artifactId>lz4-java</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.xerial.snappy</groupId>
+                        <artifactId>snappy-java</artifactId>
+                    </exclusion>
                 </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>com.google.code.gson</groupId>
-                <artifactId>gson</artifactId>
-                <version>${gson.version}</version>
             </dependency>
 
             <dependency>
@@ -726,8 +756,14 @@
             <!-- unit test -->
             <dependency>
                 <groupId>com.squareup.okhttp3</groupId>
-                <artifactId>mockwebserver</artifactId>
+                <artifactId>okhttp</artifactId>
                 <version>${okhttp3.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>mockwebserver</artifactId>
+                <version>${mockwebserver.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
@@ -799,6 +835,11 @@
                 <groupId>com.ctriposs.baiji</groupId>
                 <artifactId>baiji-rpc-formatter-protobuf</artifactId>
                 <version>${soa.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>3.25.1</version>
             </dependency>
             <dependency>
                 <groupId>com.ctriposs.baiji</groupId>
@@ -898,11 +939,6 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.apache.velocity</groupId>
-                <artifactId>velocity</artifactId>
-                <version>${velocity.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>biz.paluch.redis</groupId>
                 <artifactId>lettuce</artifactId>
                 <version>${lettuce.version}</version>
@@ -929,12 +965,6 @@
                 <version>${asm.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.squareup.okhttp3</groupId>
-                <artifactId>mockwebserver</artifactId>
-                <version>${mockwebserver.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.javassist</groupId>
                 <artifactId>javassist</artifactId>
                 <version>${javassist.version}</version>
@@ -943,6 +973,28 @@
                 <groupId>joda-time</groupId>
                 <artifactId>joda-time</artifactId>
                 <version>${joda-time.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.annotation</groupId>
+                <artifactId>javax.annotation-api</artifactId>
+                <version>1.3.2</version>
+            </dependency>
+            <!-- 统一管理 gRPC 版本，强制使用 1.58.1 版本来避免版本冲突 -->
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
+                <version>1.58.1</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-util</artifactId>
+                <version>1.58.1</version>
+            </dependency>
+            <!-- 统一管理 plexus-utils 版本，强制使用 3.3.0 版本来避免版本冲突 -->
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-utils</artifactId>
+                <version>3.3.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -954,7 +1006,7 @@
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.8.8</version>
+                    <version>0.8.11</version>
                     <executions>
                         <execution>
                             <id>prepare-agent</id>
@@ -981,7 +1033,25 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.22.2</version>
+                    <version>${maven_surefire_plugin_version}</version>
+                    <configuration>
+                        <includes>
+                            <include>**/AllTests.java</include>
+                        </includes>
+                        <excludes>
+                            <exclude>**/CatTransactionMonitorTest.java</exclude>
+                            <exclude>**/EnsurePathTest.java</exclude>
+                            <exclude>**/zk/usage/**</exclude>
+                        </excludes>
+                        <testFailureIgnore>false</testFailureIgnore>
+                    </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven.surefire</groupId>
+                            <artifactId>surefire-junit4</artifactId>
+                            <version>${maven_surefire_plugin_version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
 
 
@@ -1000,7 +1070,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <version>${maven-assembly-plugin.version}</version>
+                    <version>${maven_assembly_plugin_version}</version>
                     <executions>
                         <execution>
                             <phase>package</phase>
@@ -1020,7 +1090,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>${maven-jar-plugin.version}</version>
+                    <version>${maven-jar-plugin_version}</version>
                     <executions>
                         <execution>
                             <configuration>
@@ -1087,6 +1157,24 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/AllTests.java</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/CatTransactionMonitorTest.java</exclude>
+                        <exclude>**/EnsurePathTest.java</exclude>
+                        <exclude>**/zk/usage/**</exclude>
+                    </excludes>
+                    <testFailureIgnore>false</testFailureIgnore>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit4</artifactId>
+                        <version>${maven_surefire_plugin_version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>pl.project13.maven</groupId>
@@ -1110,8 +1198,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>21</source>
+                    <target>21</target>
                 </configuration>
             </plugin>
         </plugins>
@@ -1129,6 +1217,16 @@
         <dependency>
             <groupId>com.dianping.cat</groupId>
             <artifactId>cat-client</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-all</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.xerial.snapp</groupId>
+                    <artifactId>snappy-java</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.ctrip.framework</groupId>
@@ -1145,6 +1243,12 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-web</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

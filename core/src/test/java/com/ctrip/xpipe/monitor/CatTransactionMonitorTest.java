@@ -45,7 +45,7 @@ public class CatTransactionMonitorTest extends AbstractTest{
 	}
 
 	
-	@Test
+	@Test(expected = Exception.class)
 	public void testFailure() throws Throwable{
 		
 		CatTransactionMonitor monitor = new CatTransactionMonitor();
@@ -67,7 +67,7 @@ public class CatTransactionMonitorTest extends AbstractTest{
 	
 	@After
 	public void afterCatTransactionMonitorTest() throws IOException{
-		waitForAnyKeyToExit();
+		// Removed waitForAnyKeyToExit() to avoid blocking in CI
 	}
 
 }

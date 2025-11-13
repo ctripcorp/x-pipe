@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.ds;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import org.codehaus.plexus.logging.LogEnabled;
 import org.codehaus.plexus.logging.Logger;
 import org.codehaus.plexus.personality.plexus.lifecycle.phase.Initializable;
@@ -20,7 +21,8 @@ public class XpipeDataSourceProvider implements DataSourceProvider, LogEnabled, 
     private String m_datasourceFile;
     private String m_baseDirRef;
     private String m_defaultBaseDir;
-    private DataSourceProvider m_delegate;
+    private volatile DataSourceProvider m_delegate;
+    private volatile boolean delayedInitialized = false;
 
     private org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -31,6 +33,9 @@ public class XpipeDataSourceProvider implements DataSourceProvider, LogEnabled, 
 
     @Override
     public void initialize() throws InitializationException {
+        if (!delayedInitialized) {
+            return;
+        }
         if (qconfigDataSourceProviderPresent) {
             try {
                 m_delegate = (DataSourceProvider)(Class.forName(qconfigDataSourceProviderClass).newInstance());
@@ -55,6 +60,22 @@ public class XpipeDataSourceProvider implements DataSourceProvider, LogEnabled, 
         return ds;
     }
 
+    private DataSourceProvider getDelegate() {
+        if (!delayedInitialized) {
+            synchronized (this) {
+                if (!delayedInitialized) {
+                    try {
+                        delayedInitialized = true;
+                        initialize();
+                    } catch (InitializationException e) {
+                        throw new XpipeRuntimeException("Failed to initialize DataSourceProvider", e);
+                    }
+                }
+            }
+        }
+        return m_delegate;
+    }
+
     @Override
     public void enableLogging(Logger logger) {
         m_logger = logger;
@@ -62,7 +83,7 @@ public class XpipeDataSourceProvider implements DataSourceProvider, LogEnabled, 
 
     @Override
     public DataSourcesDef defineDatasources() {
-        return m_delegate.defineDatasources();
+        return getDelegate().defineDatasources();
     }
 
     public void setBaseDirRef(String baseDirRef) {

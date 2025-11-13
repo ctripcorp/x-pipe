@@ -4,7 +4,6 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
 import com.ctrip.xpipe.redis.checker.alert.message.AlertEntityHolderManager;
 import com.ctrip.xpipe.redis.checker.alert.message.DelayAlertRecoverySubscriber;
-import com.ctrip.xpipe.redis.checker.alert.message.forward.ForwardAlertService;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderManager;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -33,7 +32,7 @@ public class AlertEntityDelaySubscriber extends AbstractAlertEntitySubscriber {
 
     protected static final Logger logger = LoggerFactory.getLogger(AlertEntityDelaySubscriber.class);
 
-    private final static long reportInterval = 3 * 60 * 1000;
+    private long reportInterval = 3 * 60 * 1000;
 
     // value is the alert time of first appearance and has been sent
     private Map<AlertEntity, Pair<Long, Boolean>> existingAlerts = Maps.newConcurrentMap();
@@ -152,6 +151,11 @@ public class AlertEntityDelaySubscriber extends AbstractAlertEntitySubscriber {
     @VisibleForTesting
     public Set<AlertEntity> getSendingAlerts() {
         return sendingAlerts;
+    }
+
+    @VisibleForTesting
+    public void setReportInterval(long reportInterval) {
+        this.reportInterval = reportInterval;
     }
 
     @Override

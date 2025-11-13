@@ -4,6 +4,7 @@ import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.zk.ZkConfig;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 import org.apache.curator.framework.CuratorFramework;
+import org.junit.After;
 import org.junit.Before;
 
 /**
@@ -21,6 +22,18 @@ public class AbstractZkUsageTest extends AbstractTest{
 		
 		ZkConfig zkConfig = new DefaultZkConfig(zkAddress);
 		client = zkConfig.create();
+	}
+	
+	@After
+	public void afterAbstractZkUsageTest() {
+		if (client != null) {
+			try {
+				client.close();
+			} catch (Exception e) {
+				logger.error("[afterAbstractZkUsageTest][close client]", e);
+			}
+			client = null;
+		}
 	}
 	
 	public CuratorFramework getClient() {

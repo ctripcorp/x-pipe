@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console;
 import com.ctrip.xpipe.monitor.CatConfig;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
-import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.junit.After;
 import org.junit.Before;
@@ -70,7 +69,7 @@ public class AppTest extends AbstratAppTest {
 
 		try {
 			startZk(2181);
-			System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_PRODUCTION);
+			System.setProperty(AbstractProfile.PROFILE_KEY, AbstractProfile.PROFILE_NAME_TEST);
 			System.setProperty("server.port", "8080");
 			start();
 		}catch (Throwable e){

@@ -14,8 +14,8 @@
 
     <properties>
         <enforcer.qBanDuplicateClasses.skip>true</enforcer.qBanDuplicateClasses.skip>
-        <javax.servlet.version>3.1.0</javax.servlet.version>
-        <arthas-repackage.version>0.0.13</arthas-repackage.version>
+        <javax.servlet.version>4.0.1</javax.servlet.version>
+        <arthas-repackage.version>0.0.17</arthas-repackage.version>
     </properties>
 
     <dependencies>
@@ -42,8 +42,17 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -59,8 +68,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>21</source>
+                    <target>21</target>
                     <encoding>utf-8</encoding>
                 </configuration>
             </plugin>

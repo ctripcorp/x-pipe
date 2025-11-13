@@ -8,7 +8,10 @@ import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Configuration

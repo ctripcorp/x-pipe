@@ -16,6 +16,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -31,6 +32,7 @@ public class RedisCheckRuleServiceImpl extends AbstractConsoleService<RedisCheck
     private DcClusterServiceImpl dcClusterService;
 
     @Autowired
+    @Lazy
     private MetaCache metaCache;
 
     @Override

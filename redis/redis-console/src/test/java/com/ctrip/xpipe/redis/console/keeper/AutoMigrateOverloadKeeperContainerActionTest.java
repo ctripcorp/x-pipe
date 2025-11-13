@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
+import com.ctrip.xpipe.redis.console.model.ReplDirectionInfoModel;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import org.junit.Assert;
@@ -13,9 +14,12 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
 
 /**
  * @author yu
@@ -26,7 +30,6 @@ import java.util.List;
 @RunWith(org.mockito.junit.MockitoJUnitRunner.class)
 public class AutoMigrateOverloadKeeperContainerActionTest {
 
-    @InjectMocks
     AutoMigrateOverloadKeeperContainerAction action;
 
     @Mock
@@ -37,11 +40,22 @@ public class AutoMigrateOverloadKeeperContainerActionTest {
 
     @Before
     public void beforeAutoMigrateOverloadKeeperContainerActionTest() {
+
+        action = new AutoMigrateOverloadKeeperContainerAction();
+
         ShardModel shardModel = new ShardModel();
-        Mockito.when(shardModelService.getShardModel(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),  Mockito.anyObject()))
+
+        // 修改第一个mock配置，使用Mockito.nullable()来匹配null值
+        Mockito.when(shardModelService.getShardModel(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(), Mockito.nullable(ReplDirectionInfoModel.class)))
                 .thenReturn(shardModel);
-        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(),  Mockito.any(), Mockito.anyString(), Mockito.anyString()))
+
+        // 修改第二个mock配置，使用Mockito.any()来匹配任何对象
+        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(), Mockito.any(), Mockito.anyString(), Mockito.anyString()))
                 .thenReturn(true);
+
+        ReflectionTestUtils.setField(action, "shardModelService", shardModelService);
+        ReflectionTestUtils.setField(action, "alertManager", alertManager);
+
     }
 
     @Test
@@ -100,7 +114,7 @@ public class AutoMigrateOverloadKeeperContainerActionTest {
                 .setSrcKeeperContainer(model2).setTargetKeeperContainer(model4).setMigrateKeeperCount(4).setMigrateShards(migrationShards2);
         readyToMigrationKeeperContainers.add(migrationKeeperContainerDetailModel2);
 
-        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(),  Mockito.any(), Mockito.anyString(), Mockito.anyString())).thenReturn(false);
+        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(),  any(), Mockito.anyString(), Mockito.anyString())).thenReturn(false);
         action.migrateAllKeepers(readyToMigrationKeeperContainers);
 
         Assert.assertEquals(0, migrationKeeperContainerDetailModel1.getMigrateKeeperCompleteCount());

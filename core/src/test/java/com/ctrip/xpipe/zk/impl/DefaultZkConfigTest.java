@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.zk.impl;
 
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /**
  * @author chen.zhu
@@ -15,8 +13,17 @@ public class DefaultZkConfigTest {
 
     private DefaultZkConfig zkConfig;
 
+    @After
+    public void afterDefaultZkConfigTest() {
+        // Clean up system properties to avoid test interference
+        System.clearProperty("ZK.CONN.TIMEOUT");
+        System.clearProperty("ZK.SESSION.TIMEOUT");
+    }
+
     @Test
     public void testGetZkConnectionTimeoutMillisDefaultValue() {
+        // Ensure property is cleared before test
+        System.clearProperty("ZK.CONN.TIMEOUT");
         zkConfig = new DefaultZkConfig("localhost:2181");
         Assert.assertEquals(3000, zkConfig.getZkConnectionTimeoutMillis());
     }
@@ -30,6 +37,8 @@ public class DefaultZkConfigTest {
 
     @Test
     public void testGetZkSessionTimeoutMillisDefaultValue() {
+        // Ensure property is cleared before test
+        System.clearProperty("ZK.SESSION.TIMEOUT");
         zkConfig = new DefaultZkConfig("localhost:2181");
         Assert.assertEquals(5000, zkConfig.getZkSessionTimeoutMillis());
     }

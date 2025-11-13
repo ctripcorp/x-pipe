@@ -5,6 +5,7 @@ import com.ctrip.xpipe.zk.ZkConfig;
 import com.ctrip.xpipe.zk.ZkTestServer;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 import org.apache.curator.framework.CuratorFramework;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,6 +28,18 @@ public class DefaultLeaderElectorTest extends AbstractTest{
 		ZkConfig config = new DefaultZkConfig(String.format("localhost:%d", zkTestServer.getZkPort()));
 		client = config.create();
 		
+	}
+	
+	@After
+	public void afterDefaultLeaderElectorTest() {
+		if (client != null) {
+			try {
+				client.close();
+			} catch (Exception e) {
+				logger.error("[afterDefaultLeaderElectorTest][close client]", e);
+			}
+			client = null;
+		}
 	}
 	
 	@Test

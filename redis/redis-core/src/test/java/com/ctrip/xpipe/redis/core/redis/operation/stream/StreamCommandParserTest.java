@@ -5,16 +5,12 @@ import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.Assert;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class StreamCommandParserTest {
 
@@ -40,16 +36,16 @@ public class StreamCommandParserTest {
         try {
             streamCommandParser.doRead(byteBuf);
         } catch (IOException e) {
-            fail();
+            Assert.fail();
         }
-        assertEquals(1, command.size());
+        Assert.assertEquals(1, command.size());
         Object[] first = (Object[]) command.get(0);
-        assertEquals(3, ((Object[]) first[0]).length);
-        assertEquals("set", ((Object[]) first[0])[0].toString());
-        assertEquals("key1", ((Object[]) first[0])[1].toString());
-        assertEquals("value1", ((Object[]) first[0])[2].toString());
+        Assert.assertEquals(3, ((Object[]) first[0]).length);
+        Assert.assertEquals("set", ((Object[]) first[0])[0].toString());
+        Assert.assertEquals("key1", ((Object[]) first[0])[1].toString());
+        Assert.assertEquals("value1", ((Object[]) first[0])[2].toString());
         ByteBuf cmdBuf = (ByteBuf) first[1];
-        assertEquals(readableBytes, cmdBuf.readableBytes());
+        Assert.assertEquals(readableBytes, cmdBuf.readableBytes());
     }
 
     @Test
@@ -79,9 +75,9 @@ public class StreamCommandParserTest {
         newBuf.writeBytes(rightData);
         try {
             streamCommandParser.doRead(newBuf);
-            fail("should fail as dirty data in the head");
+            Assert.fail("should fail as dirty data in the head");
         } catch (Exception e) {
-            Assertions.assertTrue(e.getMessage().contains("For input string: \"hello\""));
+            Assert.assertTrue(e.getMessage().contains("For input string: \"hello\""));
         }
 
         // dirty data in the tail
@@ -92,9 +88,9 @@ public class StreamCommandParserTest {
         newBuf.writeBytes(dirty.getBytes());
         try {
             streamCommandParser.doRead(newBuf);
-            fail("should fail as dirty data in the tail");
+            Assert.fail("should fail as dirty data in the tail");
         } catch (Exception e) {
-            Assertions.assertTrue(e.getMessage().contains("For input string: \"hello\""));
+            Assert.assertTrue(e.getMessage().contains("For input string: \"hello\""));
         }
 
         command.clear();
@@ -105,9 +101,9 @@ public class StreamCommandParserTest {
         newBuf.writeBytes(dirty2.getBytes());
         try {
             streamCommandParser.doRead(newBuf);
-            fail("should fail as dirty data span 2 buffers");
+            Assert.fail("should fail as dirty data span 2 buffers");
         } catch (Exception e) {
-            Assertions.assertTrue(e.getMessage().contains("command eof not '\\r'"));
+            Assert.assertTrue(e.getMessage().contains("command eof not '\\r'"));
         }
         newBuf.clear();
         newBuf.writeBytes("ue1\r\n".getBytes());
@@ -115,9 +111,9 @@ public class StreamCommandParserTest {
         newBuf.writeBytes(rightData);
         try {
             streamCommandParser.doRead(newBuf);
-            fail("should fail as dirty data span 2 buffers");
+            Assert.fail("should fail as dirty data span 2 buffers");
         } catch (Exception e) {
-            Assertions.assertTrue(e.getMessage().contains("For input string: \"ue1\""));
+            Assert.assertTrue(e.getMessage().contains("For input string: \"ue1\""));
         }
     }
 
@@ -142,9 +138,9 @@ public class StreamCommandParserTest {
         try {
             streamCommandParser.doRead(part);
         } catch (IOException e) {
-            fail();
+            Assert.fail();
         }
-        assertEquals(0, command.size());
+        Assert.assertEquals(0, command.size());
         // 重连
         streamCommandParser.reset();
         // 重新发送所有
@@ -152,14 +148,14 @@ public class StreamCommandParserTest {
         try {
             streamCommandParser.doRead(wholeBuf);
         } catch (IOException e) {
-            fail();
+            Assert.fail();
         }
-        assertEquals(1, command.size());
+        Assert.assertEquals(1, command.size());
         Object[] first = (Object[]) command.get(0);
-        assertEquals(3, ((Object[]) first[0]).length);
-        assertEquals("set", ((Object[]) first[0])[0].toString());
-        assertEquals("key1", ((Object[]) first[0])[1].toString());
-        assertEquals("value1", ((Object[]) first[0])[2].toString());
+        Assert.assertEquals(3, ((Object[]) first[0]).length);
+        Assert.assertEquals("set", ((Object[]) first[0])[0].toString());
+        Assert.assertEquals("key1", ((Object[]) first[0])[1].toString());
+        Assert.assertEquals("value1", ((Object[]) first[0])[2].toString());
     }
 
     @Test
@@ -194,7 +190,7 @@ public class StreamCommandParserTest {
                 ByteBuf lastPart = wholeBuf.readSlice(wholeBuf.readableBytes());
                 streamCommandParser.doRead(lastPart);
             } catch (IOException e) {
-                fail();
+                Assert.fail();
             }
             long end = System.nanoTime();
             System.out.println("cost: " + (end - start) / 1_000_000 + " ms");
