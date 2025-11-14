@@ -32,6 +32,9 @@ public interface KeeperConfig extends CoreConfig{
 
 	int getReplicationStoreCommandFileNumToKeep();
 
+	int getReplicationStoreCommandFileRetainTimeoutMilli();
+
+
 	/**
 	 * max commands transfered before create new rdb
 	 * @return

@@ -89,7 +89,12 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getReplicationStoreCommandFileNumToKeep() {
 		return replicationStoreCommandFileNumToKeep;
 	}
-	
+
+	@Override
+	public int getReplicationStoreCommandFileRetainTimeoutMilli() {
+		return 2 * 3600 * 1000;
+	}
+
 	@Override
 	public long getReplicationStoreMaxCommandsToTransferBeforeCreateRdb() {
 		return replicationStoreMaxCommandsToTransferBeforeCreateRdb;
