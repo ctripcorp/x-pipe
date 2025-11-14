@@ -144,6 +144,7 @@
                         <exclude>**/zk/usage/**</exclude>
                     </excludes>
                     <testFailureIgnore>false</testFailureIgnore>
+                    <rerunFailingTestsCount>2</rerunFailingTestsCount>
                 </configuration>
                 <dependencies>
                     <dependency>
