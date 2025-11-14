@@ -19,7 +19,7 @@ import java.nio.channels.FileChannel;
 public class StreamTest extends AbstractTest{
 	
 	@SuppressWarnings("resource")
-	@Test
+	@Test(expected = IOException.class)
 	public void testClose() throws Exception{
 		
 		Server server = startEchoServer();
@@ -31,6 +31,7 @@ public class StreamTest extends AbstractTest{
 		ous.write("123".getBytes());
 		
 		ous.close();
+		// This should throw IOException after stream is closed
 		ous.write("123".getBytes());
 		
 	}
@@ -38,7 +39,13 @@ public class StreamTest extends AbstractTest{
 	@Test
 	public void testIoOf() throws IOException{
 		
-		RandomAccessFile randomAccessFile = new RandomAccessFile("/opt/logs/test.log", "r");
+		// Use a temporary file that exists in test environment
+		String testFile = getTestFileDir() + "/test.log";
+		RandomAccessFile randomAccessFile = new RandomAccessFile(testFile, "rw");
+		randomAccessFile.write("test".getBytes());
+		randomAccessFile.close();
+		
+		randomAccessFile = new RandomAccessFile(testFile, "r");
 		
 		logger.info("[testIoOf]{}", randomAccessFile);
 		FileChannel channel = randomAccessFile.getChannel();

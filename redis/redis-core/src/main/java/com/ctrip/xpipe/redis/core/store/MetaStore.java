@@ -106,6 +106,8 @@ public interface MetaStore {
 
 	boolean increaseLost(GtidSet lost) throws IOException;
 
+	int removeLost(GtidSet gtidSet) throws IOException;
+
 	boolean xsyncContinue(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidCont, GtidSet gtidIndexed) throws IOException;
 
 	ReplicationStoreMeta switchToXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException;

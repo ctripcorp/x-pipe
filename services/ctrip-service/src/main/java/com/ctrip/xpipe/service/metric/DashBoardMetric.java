@@ -30,13 +30,17 @@ public class DashBoardMetric implements MetricProxy{
 
     public DashBoardMetric(){
 
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                logger.info("[run][shutdown]");
-                MessageManager.getInstance().shutdown();
-            }
-        }));
+        try {
+            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    logger.info("[run][shutdown]");
+                    MessageManager.getInstance().shutdown();
+                }
+            }));
+        } catch (IllegalStateException e) {
+            logger.error("[run][shutdown]", e);
+        }
         aggregators.put("delay", createAggregator("delay"));
     }
 

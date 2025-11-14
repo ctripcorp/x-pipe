@@ -7,7 +7,22 @@
 	   <version>1.2.16</version>
    </parent>
    <artifactId>redis-console-package</artifactId>
-  
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.codehaus.plexus</groupId>
+				<artifactId>plexus-utils</artifactId>
+				<version>3.5.1</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.inject</groupId>
+				<artifactId>guice</artifactId>
+				<version>5.1.0</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
   	<dependencies>
 		<dependency>
 			<groupId>com.ctrip.framework.xpipe.redis</groupId>

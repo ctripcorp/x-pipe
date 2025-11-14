@@ -43,6 +43,7 @@ public class CommandHandlerManager extends AbstractCommandHandler {
 		putHandler(new ConfigHandler());
 		putHandler(new GapAllowPSyncHandler());
 		putHandler(new GapAllowXSyncHandler());
+		putHandler(new GtidxHandler());
 	}
 
 	protected void putHandler(CommandHandler handler) {

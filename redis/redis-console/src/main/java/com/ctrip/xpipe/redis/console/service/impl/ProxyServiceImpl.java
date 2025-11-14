@@ -31,6 +31,7 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
@@ -59,9 +60,11 @@ public class ProxyServiceImpl extends AbstractService implements ProxyService {
     private DcService dcService;
 
     @Autowired
+    @Lazy
     private ProxyChainCollector proxyChainCollector;
 
     @Autowired
+    @Lazy
     private ProxyMonitorCollectorManager proxyMonitorCollectorManager;
 
     @Autowired

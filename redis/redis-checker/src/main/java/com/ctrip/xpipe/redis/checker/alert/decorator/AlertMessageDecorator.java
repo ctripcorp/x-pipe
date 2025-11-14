@@ -1,8 +1,9 @@
 package com.ctrip.xpipe.redis.checker.alert.decorator;
 
 import com.ctrip.xpipe.redis.checker.alert.AlertEntity;
-import org.apache.velocity.VelocityContext;
 import org.springframework.stereotype.Component;
+// CHANGED: Import Thymeleaf's Context instead of Velocity's
+import org.thymeleaf.context.Context;
 
 /**
  * @author chen.zhu
@@ -14,7 +15,8 @@ public class AlertMessageDecorator extends Decorator {
 
     public static final String ID = "alert.message.email.decorator";
 
-    private static final String TEMPLATE_NAME = "templates/RedisAlertTemplate.vm";
+    // CHANGED: Template file extension is now .html
+    private static final String TEMPLATE_NAME = "RedisAlertTemplate";
 
     @Override
     protected String getTemplateName() {
@@ -23,16 +25,22 @@ public class AlertMessageDecorator extends Decorator {
 
     @Override
     public String doGenerateTitle(AlertEntity alert) {
+        // This method does not need any changes as it's pure Java logic.
         return String.format("[%s][XPipe 报警]%s",
                 alertConfig.getXpipeRuntimeEnvironment(),
                 alert.getKey());
     }
 
+    /**
+     * Fills the Thymeleaf context with alert-specific data.
+     * Note the changed method signature: it now returns void and accepts a Thymeleaf Context.
+     */
     @Override
-    protected VelocityContext fillInContext(AlertEntity alert, VelocityContext context) {
-        context.put(alert.getAlertType().name(), alert.getAlertType());
-        context.put("redisAlert", alert);
-        context.put("title", generateTitle(alert));
-        return context;
+    protected void fillInContext(AlertEntity alert, Context context) {
+        // CHANGED: Use context.setVariable() instead of context.put()
+        context.setVariable(alert.getAlertType().name(), alert.getAlertType());
+        context.setVariable("redisAlert", alert);
+        context.setVariable("title", generateTitle(alert));
+        // CHANGED: No 'return context;' statement is needed as the method returns void.
     }
 }

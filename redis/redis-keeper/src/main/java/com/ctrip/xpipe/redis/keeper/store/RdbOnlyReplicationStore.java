@@ -217,6 +217,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public int removeLost(GtidSet gtidSet) throws IOException {
+				return 0;
+			}
+
+			@Override
 			public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoPsync(String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, String rdbReplId, long backlogBeginOffset, long backlogEndOffset) throws IOException {
 				throw new UnsupportedOperationException();
 			}

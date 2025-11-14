@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <data-sources>
-   <data-source id="fxxpipe">
+   <data-source id="fxxpipedb_dalcluster">
       <maximum-pool-size>20</maximum-pool-size>
       <connection-timeout>1s</connection-timeout>
       <idle-timeout>1m</idle-timeout>

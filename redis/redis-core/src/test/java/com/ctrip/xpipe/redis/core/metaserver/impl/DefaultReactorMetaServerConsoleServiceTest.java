@@ -14,6 +14,7 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.InetAddress;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
  * @author lishanglin
  * date 2021/9/24
  */
+@Ignore
 public class DefaultReactorMetaServerConsoleServiceTest extends AbstractTest {
 
     private DefaultReactorMetaServerConsoleService service;

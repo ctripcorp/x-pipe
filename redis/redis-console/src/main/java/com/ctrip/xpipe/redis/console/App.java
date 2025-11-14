@@ -14,7 +14,9 @@ import org.springframework.context.annotation.Profile;
  * Jul 28, 2016
  */
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-@SpringBootApplication(exclude = DataSourceAutoConfiguration.class)
+@SpringBootApplication(exclude = {
+	DataSourceAutoConfiguration.class
+})
 @ComponentScan("com.ctrip.xpipe.redis.console.spring")
 public class App {
 	public static void main(String[] args){
