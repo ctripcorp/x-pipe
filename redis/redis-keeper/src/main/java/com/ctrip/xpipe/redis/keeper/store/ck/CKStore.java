@@ -50,7 +50,7 @@ public class CKStore implements Keeperable {
         metricProxy = MetricProxy.DEFAULT;
         kafkaService = KafkaService.DEFAULT;
         MessageEventFactory factory = new MessageEventFactory();
-        int ringBufferSize = 4096; // must be a power of 2
+        int ringBufferSize = 1024; // must be a power of 2
 
         disruptor = new Disruptor<>(
                 factory,                    // 事件工厂
@@ -68,6 +68,7 @@ public class CKStore implements Keeperable {
             for(Object[] payload: event.getPayloads()){
                 storeGtidWithKeyOrSubKey(payload,redisOpParser);
             }
+            event.setPayloads(null);
         });
         ringBuffer = disruptor.start();
     }
@@ -105,6 +106,7 @@ public class CKStore implements Keeperable {
 
     public void storeGtidWithKeyOrSubKey(Object[] payload, RedisOpParser opParser) {
         RedisOp redisOp = opParser.parse(payload);
+        payload = null;
 
         // 使用位运算快速判断是否为普通命令（假设MULTI和EXEC是少数特定值）
         if (isNormalCommand(redisOp.getOpType())) {
