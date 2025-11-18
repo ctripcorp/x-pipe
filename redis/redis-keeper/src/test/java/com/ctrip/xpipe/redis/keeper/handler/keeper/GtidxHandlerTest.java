@@ -76,7 +76,7 @@ public class GtidxHandlerTest extends AbstractRedisKeeperTest {
         Mockito.when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
 
         SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new DefaultEndPoint("127.0.0.1", 1234));
-        gasync = new DefaultGapAllowedSync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager, scheduled, ()->DEFAULT_XSYNC_MAXGAP);
+        gasync = new DefaultGapAllowedSync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager, scheduled, DEFAULT_XSYNC_MAXGAP);
         gasync.future().addListener(new CommandFutureListener<Object>() {
             @Override
             public void operationComplete(CommandFuture<Object> commandFuture) throws Exception {
