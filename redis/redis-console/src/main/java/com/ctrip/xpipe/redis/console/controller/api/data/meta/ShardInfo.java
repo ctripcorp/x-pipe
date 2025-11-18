@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.dto.ShardDTO;
 
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author lishanglin
@@ -14,6 +16,10 @@ public class ShardInfo {
 
     private String shardName;
 
+    private Set<HostPort> redises;
+
+    private Set<HostPort> keepers;
+
     public ShardInfo() {
 
     }
@@ -21,6 +27,8 @@ public class ShardInfo {
     public ShardInfo(ShardDTO shardDTO) {
         this.id = shardDTO.getShardId();
         this.shardName = shardDTO.getShardName();
+        this.redises = shardDTO.getRedises();
+        this.keepers = shardDTO.getKeepers();
     }
 
     public long getId() {
@@ -37,6 +45,22 @@ public class ShardInfo {
 
     public void setShardName(String shardName) {
         this.shardName = shardName;
+    }
+
+    public Set<HostPort> getKeepers() {
+        return keepers;
+    }
+
+    public void setKeepers(Set<HostPort> keepers) {
+        this.keepers = keepers;
+    }
+
+    public Set<HostPort> getRedises() {
+        return redises;
+    }
+
+    public void setRedises(Set<HostPort> redises) {
+        this.redises = redises;
     }
 
     @Override

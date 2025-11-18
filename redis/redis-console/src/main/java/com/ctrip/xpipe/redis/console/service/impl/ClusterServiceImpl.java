@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
@@ -32,11 +33,7 @@ import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterDeleteEventFactory;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterEvent;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
-import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
-import com.ctrip.xpipe.redis.console.repository.AzGroupRepository;
-import com.ctrip.xpipe.redis.console.repository.ClusterRepository;
-import com.ctrip.xpipe.redis.console.repository.DcClusterRepository;
-import com.ctrip.xpipe.redis.console.repository.ShardRepository;
+import com.ctrip.xpipe.redis.console.repository.*;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
@@ -408,7 +405,57 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		return clusters;
 	}
 
-    @Override
+	@Override
+	public ClusterDTO getOneWayClusterAll(String clusterName) {
+		XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+		if (null == xpipeMeta) {
+			throw new RuntimeException("cache not ready");
+		}
+
+		ClusterTbl clusterTbl = find(clusterName);
+		if (clusterTbl == null)
+			throw new RuntimeException("cluster " + clusterName + " not found");
+
+		if (!ClusterType.lookup(clusterTbl.getClusterType()).equals(ClusterType.ONE_WAY)
+				&& !ClusterType.lookup(clusterTbl.getClusterType()).equals(HETERO))
+			throw new RuntimeException("cluster " + clusterName + " is not one way");
+
+		ClusterDTO cluster = getCluster(clusterName);
+		if (ClusterType.lookup(clusterTbl.getClusterType()).equals(HETERO) && !hasOneWayAzGroupCluster(cluster)) {
+			throw new RuntimeException("cluster " + clusterName + " is not one way");
+		}
+
+		Map<Long, ShardDTO> shardId2Shard = new HashMap<>();
+		for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+			if (null == dcMeta.getClusters()) continue;
+			ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterTbl.getClusterName());
+			if (null == clusterMeta) continue;
+			if (null == clusterMeta.getShards()) continue;
+			for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+				ShardDTO shardDTO = shardId2Shard.computeIfAbsent(shardMeta.getDbId(), aLong -> new ShardDTO(shardMeta));
+				shardMeta.getRedises().forEach(redis -> {
+					shardDTO.addRedis(new HostPort(redis.getIp(), redis.getPort()));
+				});
+				shardMeta.getKeepers().forEach(keeper -> {
+					shardDTO.addKeeper(new HostPort(keeper.getIp(), keeper.getPort()));
+				});
+			}
+		}
+
+		cluster.setShards(Sets.newHashSet(shardId2Shard.values()));
+		return cluster;
+	}
+
+	boolean hasOneWayAzGroupCluster(ClusterDTO cluster) {
+		for (AzGroupDTO azGroupDTO : cluster.getAzGroups()) {
+			if (ClusterType.lookup(azGroupDTO.getClusterType()).equals(ClusterType.ONE_WAY)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
 	@Transactional
     @DalTransaction
     public synchronized ClusterTbl createCluster(ClusterModel clusterModel) {
