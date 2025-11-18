@@ -376,6 +376,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		replicationStoreManager.start();
 		keeperStartTime = System.currentTimeMillis();
 		startServer();
+		ckStore.start();
 		LifecycleHelper.startIfPossible(keeperRedisMaster);
 		this.leaderElector.start();
 		fsyncSeqScheduledFuture = this.scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
@@ -460,6 +461,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doDispose() throws Exception {
 
 		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
+		this.ckStore.dispose();
 		this.leaderElector.dispose();
 		masterConfigEventLoopGroup.shutdownGracefully();
 		masterEventLoopGroup.shutdownGracefully();
@@ -469,7 +471,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		replicationStoreManager.dispose();
 		this.scheduled.shutdownNow();
 		this.clientExecutors.shutdownNow();
-		this.ckStore.shutDown();
 		super.doDispose();
 	}
 

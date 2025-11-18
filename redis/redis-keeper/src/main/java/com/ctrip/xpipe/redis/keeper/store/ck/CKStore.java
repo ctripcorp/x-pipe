@@ -24,26 +24,31 @@ import java.util.concurrent.ThreadFactory;
 public class CKStore implements Keeperable {
     private static final Logger logger = LoggerFactory.getLogger(CKStore.class);
 
-    private  final Disruptor<MessageEvent> disruptor;
+    private Disruptor<MessageEvent> disruptor;
 
-    private  final RingBuffer<MessageEvent> ringBuffer;
+    private RingBuffer<MessageEvent> ringBuffer;
 
     private final long replId;
 
     private static final String CK_BLOCK = "ck.block";
 
-    private final KafkaService kafkaService;
+    private KafkaService kafkaService;
 
-    private final MetricProxy metricProxy;
+    private MetricProxy metricProxy;
 
     private volatile boolean isKeeper;
 
+    private RedisOpParser redisOpParser;
+
     public CKStore(ReplId replId, RedisOpParser redisOpParser){
         this.replId = replId != null ? replId.id() : -1;
+        this.redisOpParser = redisOpParser;
+    }
+
+    public void start(){
 
         metricProxy = MetricProxy.DEFAULT;
         kafkaService = KafkaService.DEFAULT;
-
         MessageEventFactory factory = new MessageEventFactory();
         int ringBufferSize = 4096; // must be a power of 2
 
@@ -54,7 +59,7 @@ public class CKStore implements Keeperable {
                     Thread thread = new Thread(r,  "disruptor-repl-" + replId);
                     thread.setDaemon(true);
                     return thread;
-                    },
+                },
                 ProducerType.SINGLE,
                 new LiteBlockingWaitStrategy()
         );
@@ -65,7 +70,6 @@ public class CKStore implements Keeperable {
             }
         });
         ringBuffer = disruptor.start();
-
     }
 
     public boolean isKeeper(){
@@ -192,7 +196,7 @@ public class CKStore implements Keeperable {
         }
     }
 
-    public void shutDown(){
+    public void dispose(){
         disruptor.shutdown();
     }
 }
