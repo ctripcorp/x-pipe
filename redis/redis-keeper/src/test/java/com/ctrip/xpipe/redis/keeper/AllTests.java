@@ -104,6 +104,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         GapAllowSyncHandlerTest.class,
         GapAllowXSyncHandlerTest.class,
+        GtidxHandlerTest.class,
 
         XsyncForKeeperAndKeeperTest.class,
         XsyncForKeeperSlaveTest.class,
