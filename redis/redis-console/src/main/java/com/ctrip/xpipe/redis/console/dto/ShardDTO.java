@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -17,9 +18,9 @@ public class ShardDTO {
 
     private String shardName;
 
-    private Set<HostPort> redises;
+    private Set<HostPort> redises = new HashSet<>();
 
-    private Set<HostPort> keepers;
+    private Set<HostPort> keepers = new HashSet<>();
 
     public ShardDTO() {
 
