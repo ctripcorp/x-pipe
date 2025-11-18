@@ -186,11 +186,8 @@ public class ClusterUpdateController extends AbstractController {
     }
 
     @GetMapping(value = "/cluster/all")
-    public ClusterInfo getOneWayCluster(@RequestParam String clusterName) throws CheckFailException {
+    public ClusterInfo getOneWayCluster(@RequestParam String clusterName) {
         logger.info("[cluster all]clusterName-{}", clusterName);
-        if (!ClusterType.isTypeValidate(clusterName)) {
-            throw new CheckFailException("empty cluster name");
-        }
 
         ClusterDTO cluster = clusterService.getOneWayClusterAll(clusterName);
         return new ClusterInfo(cluster);
