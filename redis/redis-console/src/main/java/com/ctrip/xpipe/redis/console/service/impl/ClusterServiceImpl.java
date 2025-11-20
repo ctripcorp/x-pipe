@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.api.email.EmailService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
@@ -11,6 +10,7 @@ import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.InstanceInfo;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.DcClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
@@ -434,10 +434,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
 				ShardDTO shardDTO = shardId2Shard.computeIfAbsent(shardMeta.getDbId(), aLong -> new ShardDTO(shardMeta));
 				shardMeta.getRedises().forEach(redis -> {
-					shardDTO.addRedis(new HostPort(redis.getIp(), redis.getPort()));
+					shardDTO.addRedis(new InstanceInfo(redis.getIp(), redis.getPort(), dcMeta.getId()));
 				});
 				shardMeta.getKeepers().forEach(keeper -> {
-					shardDTO.addKeeper(new HostPort(keeper.getIp(), keeper.getPort()));
+					shardDTO.addKeeper(new InstanceInfo(keeper.getIp(), keeper.getPort(), dcMeta.getId()));
 				});
 			}
 		}

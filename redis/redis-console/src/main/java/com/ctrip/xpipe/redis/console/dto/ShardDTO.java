@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.dto;
 
-import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.InstanceInfo;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 
@@ -18,9 +18,9 @@ public class ShardDTO {
 
     private String shardName;
 
-    private Set<HostPort> redises = new HashSet<>();
+    private Set<InstanceInfo> redises = new HashSet<>();
 
-    private Set<HostPort> keepers = new HashSet<>();
+    private Set<InstanceInfo> keepers = new HashSet<>();
 
     public ShardDTO() {
 
@@ -52,19 +52,19 @@ public class ShardDTO {
         this.shardName = shardName;
     }
 
-    public Set<HostPort> getRedises() {
+    public Set<InstanceInfo> getRedises() {
         return redises;
     }
 
-    public Set<HostPort> getKeepers() {
+    public Set<InstanceInfo> getKeepers() {
         return keepers;
     }
 
-    public void addRedis(HostPort redis) {
+    public void addRedis(InstanceInfo redis) {
         this.redises.add(redis);
     }
 
-    public void addKeeper(HostPort keeper) {
+    public void addKeeper(InstanceInfo keeper) {
         this.keepers.add(keeper);
     }
 
