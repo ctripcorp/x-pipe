@@ -328,7 +328,7 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
     public void checkClustersCntTest() {
         //removed too many clusters
         XpipeMeta currentMeta = new XpipeMeta();
-        currentMeta.addDc(new DcMeta("dc1").addCluster(new ClusterMeta("cluster1")).addCluster(new ClusterMeta("cluster2")).addCluster(new ClusterMeta("cluster3")))
+        currentMeta.addDc(new DcMeta("dc1").addCluster(new ClusterMeta("cluster1")).addCluster(new ClusterMeta("cluster2")).addCluster(new ClusterMeta("cluster3")).addCluster(new ClusterMeta("cluster4")).addCluster(new ClusterMeta("cluster5")).addCluster(new ClusterMeta("cluster6")).addCluster(new ClusterMeta("cluster7")))
                 .addDc(new DcMeta("dc2").addCluster(new ClusterMeta("cluster1")));
 
 
@@ -345,7 +345,7 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
             Assert.assertTrue(th instanceof TooManyClustersRemovedException);
         }
         try {
-            metaCache.checkMeta(futureMeta, 1, 80);
+            metaCache.checkMeta(futureMeta, 1, 90);
         } catch (Throwable th) {
             Assert.fail();
         }
