@@ -60,6 +60,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	private static String KEY_XSYNC_MAX_GAP = "keeper.xsync.max.gap";
 	private static String KEY_XSYNC_MAX_GAP_CROSSREGION = "keeper.xsync.max.gap.crossregion";
 
+    private static String KEY_APPLIER_NETTY_RECV_BUFFER_SIZE = "applier.netty.recv.buffer.size";
+
 	public DefaultKeeperConfig(){
 
 		CompositeConfig compositeConfig = new CompositeConfig();
@@ -232,4 +234,9 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public int getXsyncMaxGapCrossRegion() {
 		return getIntProperty(KEY_XSYNC_MAX_GAP_CROSSREGION, DEFAULT_XSYNC_MAXGAP_CROSSREGION);
 	}
+
+    @Override
+    public int getApplierNettyRecvBufferSize() {
+        return getIntProperty(KEY_APPLIER_NETTY_RECV_BUFFER_SIZE, 512);
+    }
 }
