@@ -11,15 +11,13 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.lmax.disruptor.LiteBlockingWaitStrategy;
 import com.lmax.disruptor.RingBuffer;
-import com.lmax.disruptor.SleepingWaitStrategy;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
-import com.lmax.disruptor.util.DaemonThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.ThreadFactory;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CKStore implements Keeperable {
     private static final Logger logger = LoggerFactory.getLogger(CKStore.class);
@@ -97,12 +95,16 @@ public class CKStore implements Keeperable {
                 ringBuffer.publish(sequence);
             }
         }else {
+            payloads.clear();
+            payloads = null;
             reportHickwall(CK_BLOCK);
         }
 
     }
 
-    private static final ThreadLocal<List<RedisOp>> TX_CONTEXT = new ThreadLocal<>();
+    private static final ThreadLocal<List<RedisOp>> TX_CONTEXT = ThreadLocal.withInitial(() -> {
+        return new ArrayList<>(16); // 预设容量减少扩容
+    });
 
     public void storeGtidWithKeyOrSubKey(Object[] payload, RedisOpParser opParser) {
         RedisOp redisOp = opParser.parse(payload);
@@ -135,7 +137,7 @@ public class CKStore implements Keeperable {
     private  void processTransactionCommand(RedisOp redisOp) {
         switch (redisOp.getOpType()) {
             case MULTI:
-                TX_CONTEXT.set(new ArrayList<>());
+                TX_CONTEXT.get().clear();
                 break;
             case EXEC:
                 commitTransaction(redisOp);
@@ -151,7 +153,7 @@ public class CKStore implements Keeperable {
                     writeCK(execOp.getOpGtid(), execOp.getDbId(), ops);
                 }
             }finally {
-                TX_CONTEXT.remove();
+                TX_CONTEXT.get().clear();
             }
         }
     }
@@ -198,7 +200,9 @@ public class CKStore implements Keeperable {
         }
     }
 
-    public void dispose(){
-        disruptor.shutdown();
+    public void dispose() {
+        if (disruptor != null){
+            disruptor.shutdown();
+        }
     }
 }

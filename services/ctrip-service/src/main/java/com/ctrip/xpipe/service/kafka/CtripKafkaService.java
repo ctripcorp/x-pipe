@@ -60,7 +60,8 @@ public class CtripKafkaService implements KafkaService {
         // 自定义配置，按需配置
         Properties properties = new Properties();
         properties.put(ProducerConfig.BATCH_SIZE_CONFIG, "1048576");
-        properties.put(ProducerConfig.BUFFER_MEMORY_CONFIG,"10737418240");
+        long bufferMemory = Runtime.getRuntime().maxMemory()/16;
+        properties.put(ProducerConfig.BUFFER_MEMORY_CONFIG,bufferMemory+"");
         properties.put(ProducerConfig.COMPRESSION_TYPE_CONFIG,"snappy");
         properties.put(ProducerConfig.LINGER_MS_CONFIG,"50");
         properties.put(ProducerConfig.MAX_BLOCK_MS_CONFIG,"1000");
