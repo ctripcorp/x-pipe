@@ -8,6 +8,7 @@ import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
@@ -335,6 +336,16 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener, boolean masterSupportRordb) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, int begGno, int endGno) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public boolean retainCommands(CommandsGuarantee commandsGuarantee) {
 		throw new UnsupportedOperationException();
 	}
 
