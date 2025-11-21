@@ -63,10 +63,15 @@ public class CKStore implements Keeperable {
         );
 
         disruptor.handleEventsWith((event, sequence, endOfBatch) -> {
-            for(Object[] payload: event.getPayloads()){
-                storeGtidWithKeyOrSubKey(payload,redisOpParser);
-            }
-            event.setPayloads(null);
+//            for(Object[] payload: event.getPayloads()){
+//                storeGtidWithKeyOrSubKey(payload,redisOpParser);
+//            }
+//
+//            event.setPayloads(null);
+
+              for(RedisOpItem redisOpItem:event.getRedisOpItems()){
+                  storeGtidWithKeyOrSubKeyItem(redisOpItem);
+              }
         });
         ringBuffer = disruptor.start();
     }
@@ -85,13 +90,17 @@ public class CKStore implements Keeperable {
 
 
     public void sendPayloads(List<Object[]> payloads) {
+        if(ringBuffer == null) return;
         if(ringBuffer.hasAvailableCapacity(1)){
             long sequence = -1;
             try {
                 sequence = ringBuffer.next();
                 MessageEvent event = ringBuffer.get(sequence);
-                event.setPayloads(payloads);
+                List<RedisOpItem> redisOpItems = parsePayloads(payloads);
+                event.setRedisOpItems(redisOpItems);
             } finally {
+                payloads.clear();
+                payloads = null;
                 ringBuffer.publish(sequence);
             }
         }else {
@@ -102,9 +111,43 @@ public class CKStore implements Keeperable {
 
     }
 
-    private static final ThreadLocal<List<RedisOp>> TX_CONTEXT = ThreadLocal.withInitial(() -> {
+    private static final ThreadLocal<List<RedisOpItem>> TX_CONTEXT_ITEM = new ThreadLocal<>();
+
+    private static final ThreadLocal<List<RedisOp>> TX_CONTEXT= ThreadLocal.withInitial(() -> {
         return new ArrayList<>(16); // 预设容量减少扩容
     });
+
+
+    private List<RedisOpItem> parsePayloads(List<Object[]> payloads){
+        List<RedisOpItem> redisOpItems = new ArrayList<>(payloads.size());
+        try {
+            for (Object[] payload : payloads) {
+                RedisOp redisOp = redisOpParser.parse(payload);
+                RedisOpItem redisOpItem = new RedisOpItem();
+                redisOpItem.setRedisOpType(redisOp.getOpType());
+                redisOpItem.setGtid(redisOp.getOpGtid());
+                redisOpItem.setDbId(redisOp.getDbId());
+                if (redisOp instanceof RedisMultiKeyOp) {
+                    RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) redisOp;
+                    List<RedisKey> keys = redisMultiKeyOp.getKeys();
+                    redisOpItem.setRedisKeyList(keys);
+                } else if (redisOp instanceof RedisMultiSubKeyOp) {
+                    RedisMultiSubKeyOp redisMultiSubKeyOp = (RedisMultiSubKeyOp) redisOp;
+                    RedisKey key = redisMultiSubKeyOp.getKey();
+                    List<RedisKey> subKeys = redisMultiSubKeyOp.getAllSubKeys();
+                    redisOpItem.setRedisKey(key);
+                    redisOpItem.setRedisKeyList(subKeys);
+                } else if (redisOp instanceof RedisSingleKeyOp) {
+                    RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
+                    redisOpItem.setRedisKey(redisSingleKeyOp.getKey());
+                }
+                redisOpItems.add(redisOpItem);
+            }
+        }catch (Throwable th){
+            logger.warn("[CKStore]parsePayloads{},error{}",payloads,th.getMessage());
+        }
+        return redisOpItems;
+    }
 
     public void storeGtidWithKeyOrSubKey(Object[] payload, RedisOpParser opParser) {
         RedisOp redisOp = opParser.parse(payload);
@@ -118,6 +161,51 @@ public class CKStore implements Keeperable {
         }
     }
 
+    public void storeGtidWithKeyOrSubKeyItem(RedisOpItem redisOpItem) {
+
+        // 使用位运算快速判断是否为普通命令（假设MULTI和EXEC是少数特定值）
+        if (isNormalCommand(redisOpItem.getRedisOpType())) {
+            processNormalCommandItem(redisOpItem);
+        } else {
+            processTransactionCommandItem(redisOpItem);
+        }
+    }
+
+    private  void processNormalCommandItem(RedisOpItem redisOp) {
+        List<RedisOpItem> txOps = TX_CONTEXT_ITEM.get();
+        if (txOps == null) {
+            // 快速路径：不在事务中
+            writeCKItem(redisOp.getGtid(), redisOp.getDbId(), redisOp);
+        } else {
+            // 慢速路径：在事务中
+            txOps.add(redisOp);
+        }
+    }
+
+    private  void processTransactionCommandItem(RedisOpItem redisOp) {
+        switch (redisOp.getRedisOpType()) {
+            case MULTI:
+                TX_CONTEXT_ITEM.set(new ArrayList<>());
+                break;
+            case EXEC:
+                commitTransactionItem(redisOp);
+                break;
+        }
+    }
+
+    private  void commitTransactionItem(RedisOpItem execOp) {
+        List<RedisOpItem> ops = TX_CONTEXT_ITEM.get();
+        if (ops != null) {
+            try {
+                if (!ops.isEmpty()) {
+                    writeCKItem(execOp.getGtid(), execOp.getDbId(), ops);
+                }
+            }finally {
+                TX_CONTEXT_ITEM.remove();
+            }
+        }
+    }
+
     // 快速判断是否为普通命令（非MULTI、非EXEC）
     private static boolean isNormalCommand(RedisOpType opType) {
         return opType != RedisOpType.MULTI && opType != RedisOpType.EXEC;
@@ -125,7 +213,7 @@ public class CKStore implements Keeperable {
 
     private  void processNormalCommand(RedisOp redisOp) {
         List<RedisOp> txOps = TX_CONTEXT.get();
-        if (txOps == null) {
+        if (txOps.isEmpty()) {
             // 快速路径：不在事务中
             writeCK(redisOp.getOpGtid(), redisOp.getDbId(), redisOp);
         } else {
@@ -185,6 +273,33 @@ public class CKStore implements Keeperable {
     public  void writeCK(String gtid,String dbId,List<RedisOp> redisOpList){
         for(RedisOp redisOp:redisOpList) {
             writeCK(gtid, dbId,redisOp);
+        }
+    }
+
+    public void writeCKItem(String gtid,String dbId, RedisOpItem redisOp){
+        if(StringUtil.isEmpty(gtid)) return;
+        String[] gtidSeq = gtid.split(":");
+
+        RedisKey redisKey = redisOp.getRedisKey();
+        List<RedisKey> redisKeyList = redisOp.getRedisKeyList();
+
+        if(redisKey == null && redisKeyList != null){
+            for(RedisKey item:redisKeyList){
+                kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],item.get(),null,dbId,replId));
+            }
+        }else if(redisKey != null && redisKeyList != null){
+            //包含子key的命令
+            for(RedisKey subKey:redisKeyList) {
+                kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],redisKey.get(),subKey.get(),dbId,replId));
+            }
+        }else if(redisKey != null && redisKeyList == null) {
+            kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],redisKey.get(),null,dbId,replId));
+        }
+    }
+
+    public  void writeCKItem(String gtid,String dbId,List<RedisOpItem> redisOpList){
+        for(RedisOpItem redisOp:redisOpList) {
+            writeCKItem(gtid, dbId,redisOp);
         }
     }
 
