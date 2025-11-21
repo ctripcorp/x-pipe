@@ -8,6 +8,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @author wenchao.meng
@@ -60,6 +61,10 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException;
 
 	FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener, boolean masterSupportRordb) throws IOException;
+
+	boolean retainCommands(CommandsGuarantee commandsGuarantee);
+
+	List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, int begGno, int endGno) throws IOException;
 
 	void addCommandsListener(ReplicationProgress<?> progress, CommandsListener commandsListener) throws IOException;
 	// meta related

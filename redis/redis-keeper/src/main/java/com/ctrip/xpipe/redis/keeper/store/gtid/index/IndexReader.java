@@ -190,4 +190,83 @@ public class IndexReader extends AbstractIndex implements Closeable {
         IndexReader indexReader = new IndexReader(baseDir, fileName);
         return indexReader;
     }
+
+    public static IndexReader getFirstIndexReader(String baseDir) {
+        File firstIndexFile = findFirstIndexFileByOffset(baseDir);
+        if(firstIndexFile == null) {
+            return null;
+        }
+        String fileName = firstIndexFile.getName().replace(INDEX, "");
+        IndexReader indexReader = new IndexReader(baseDir, fileName);
+        return indexReader;
+    }
+
+    /**
+     * Calculate the cmdStartOffset for a specific GNO within an IndexEntry.
+     */
+    private long calculateOffsetForGno(IndexEntry item, long gno) throws IOException {
+        if(gno == item.getStartGno()) {
+            return item.getCmdStartOffset();
+        }
+        
+        int arrayIndex = (int) (gno - item.getStartGno());
+        try (BlockReader blockReader = new BlockReader(item.getBlockStartOffset(), item.getBlockEndOffset(),
+                new File(generateBlockName()))
+        ){
+            return blockReader.seek(arrayIndex) + item.getCmdStartOffset();
+        }
+    }
+
+    /**
+     * Find all matching ranges in [begGno, endGno] for the given uuid in current index file.
+     * Returns a list of pairs, each pair represents a range (startOffset, endOffset) in cmdStartOffset.
+     * endOffset is the start offset of the next command, or null if it's the last command in the file.
+     */
+    public List<Pair<Long, Long>> findMatchingRanges(String uuid, long begGno, long endGno) throws IOException {
+        List<Pair<Long, Long>> ranges = new ArrayList<>();
+        
+        for(int i = 0; i < indexItemList.size(); i++) {
+            IndexEntry item = indexItemList.get(i);
+            if(!StringUtil.trimEquals(item.getUuid(), uuid)) {
+                continue;
+            }
+            
+            long entryStartGno = item.getStartGno();
+            long entryEndGno = item.getEndGno();
+            
+            // Check if ranges overlap: [begGno, endGno] and [entryStartGno, entryEndGno]
+            if(entryEndGno < begGno || entryStartGno > endGno) {
+                continue; // No overlap
+            }
+            
+            // Skip if entry is not fully written
+            if(item.getBlockEndOffset() == -1) {
+                continue;
+            }
+            
+            // Calculate the actual range within the entry
+            long rangeStartGno = Math.max(entryStartGno, begGno);
+            long rangeEndGno = Math.min(entryEndGno, endGno);
+            
+            // Calculate start offset
+            long startOffset = calculateOffsetForGno(item, rangeStartGno);
+            
+            // Calculate end offset (next command's start, or null if last)
+            Long endOffset;
+            if(rangeEndGno < item.getEndGno()) {
+                // Not the last gno in this entry, get next gno's start offset
+                endOffset = calculateOffsetForGno(item, rangeEndGno + 1);
+            } else if (i + 1 < indexItemList.size()) {
+                IndexEntry nextEntry = indexItemList.get(i + 1);
+                endOffset = nextEntry.getCmdStartOffset();
+            } else {
+                // If no next entry found, endOffset remains null (will use file end)
+                endOffset = null;
+            }
+            
+            ranges.add(new Pair<>(startOffset, endOffset));
+        }
+        
+        return ranges;
+    }
 }

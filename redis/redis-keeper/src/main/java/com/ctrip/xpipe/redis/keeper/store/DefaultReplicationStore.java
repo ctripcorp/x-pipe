@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -778,6 +779,16 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		} else {
 			cmdStore.addCommandsListener(progress, commandsListener);
 		}
+	}
+
+	@Override
+	public List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, int begGno, int endGno) throws IOException {
+		return cmdStore.locateCmdSegment(uuid, begGno, endGno);
+	}
+
+	@Override
+	public boolean retainCommands(CommandsGuarantee commandsGuarantee) {
+		return cmdStore.retainCommands(commandsGuarantee);
 	}
 
 	@Override

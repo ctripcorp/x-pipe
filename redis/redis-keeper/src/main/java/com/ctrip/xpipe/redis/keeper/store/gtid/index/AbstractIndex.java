@@ -78,6 +78,26 @@ public abstract class AbstractIndex {
         return targetFile;
     }
 
+    public static File findFirstIndexFileByOffset(String baseDir) {
+        File directory = new File(baseDir);
+        if (!directory.isDirectory()) {
+            throw new IllegalArgumentException("is not a directory");
+        }
+        File[] files = directory.listFiles((dir, name) -> name.matches("index_.*\\d+$"));
+        if (files == null || files.length == 0) {
+            return null;
+        }
+
+        File targetFile = Arrays.stream(files)
+                .min(Comparator.comparingLong(file -> {
+                    String fileName = file.getName();
+                    return Long.parseLong(fileName.substring(fileName.lastIndexOf('_') + 1));
+                }))
+                .orElse(null);
+
+        return targetFile;
+    }
+
     public static long extractOffset(String fileName) {
         if(fileName.contains("_")) {
             return Long.parseLong(fileName.substring(fileName.lastIndexOf("_") + 1));
@@ -94,6 +114,45 @@ public abstract class AbstractIndex {
         fileName = pre.getName().replace(INDEX, "");
         closeIndexFile();
         indexFile = new DefaultControllableFile(pre);
+        this.init();
+        return true;
+    }
+
+    public File findNextFile() {
+        File directory = new File(baseDir);
+        if (!directory.isDirectory()) {
+            throw new IllegalArgumentException("is not a directory");
+        }
+        File[] files = directory.listFiles((dir, name) -> name.matches("index_.*\\d+$"));
+        if (files == null || files.length == 0) {
+            return null;
+        }
+
+        long currentOffset = extractOffset(fileName);
+        File nextFile = Arrays.stream(files)
+                .filter(file -> {
+                    String fileName = file.getName();
+                    long offset = extractOffset(fileName);
+                    return offset > currentOffset;
+                })
+                .min(Comparator.comparingLong(file -> {
+                    String fileName = file.getName();
+                    return Long.parseLong(fileName.substring(fileName.lastIndexOf('_') + 1));
+                }))
+                .orElse(null);
+
+        return nextFile;
+    }
+
+    public boolean changeToNext() throws IOException {
+        File nextFile = findNextFile();
+        if (nextFile == null) {
+            return false;
+        }
+
+        fileName = nextFile.getName().replace(INDEX, "");
+        closeIndexFile();
+        indexFile = new DefaultControllableFile(nextFile);
         this.init();
         return true;
     }
