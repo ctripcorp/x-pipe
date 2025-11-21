@@ -12,4 +12,6 @@ public interface CommandsGuarantee {
 
     boolean isTimeout();
 
+    void cancel();
+
 }

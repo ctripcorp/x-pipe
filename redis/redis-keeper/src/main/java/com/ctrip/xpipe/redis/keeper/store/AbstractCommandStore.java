@@ -624,6 +624,20 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
+    public List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, int begGno, int endGno) throws IOException {
+        if (null == indexStore) {
+            return Collections.emptyList();
+        }
+
+        List<Pair<Long, Long>> backlogOffsetRanges = indexStore.locateGtidRange(uuid, begGno, endGno);
+        List<BacklogOffsetReplicationProgress> cmdSegments = new ArrayList<>();
+        for (Pair<Long, Long> range : backlogOffsetRanges) {
+            cmdSegments.add(new BacklogOffsetReplicationProgress(range.getKey(), range.getValue()));
+        }
+        return cmdSegments;
+    }
+
+    @Override
     public long getCommandsLastUpdatedAt() {
         return cmdWriter.getFileLastModified();
     }
