@@ -1,17 +1,22 @@
 package com.ctrip.xpipe.redis.keeper.container;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.container.resp.RestResp;
 import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucket;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.store.searcher.CmdKeyItem;
 import com.ctrip.xpipe.spring.AbstractController;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.async.DeferredResult;
 
 import java.io.IOException;
 import java.util.List;
@@ -133,6 +138,31 @@ public class KeeperContainerController extends AbstractController {
     @RequestMapping(value = "/leakybucket", method = RequestMethod.GET)
     public LeakyBucketInfo getLeakyBucketInfo() {
         return new LeakyBucketInfo(!leakyBucket.isClosed(), leakyBucket.getTotalSize(), leakyBucket.references());
+    }
+
+    @GetMapping(value = "/repl/{repl_id}/command/keys")
+    public DeferredResult<RestResp<List<CmdKeyItem>>> searchCmdKeys(@PathVariable String repl_id, @RequestParam String uuid,
+                                                                    @RequestParam int begGno, @RequestParam int endGno) throws Exception {
+        DeferredResult<RestResp<List<CmdKeyItem>>> response = new DeferredResult<>(600 * 1000L);
+        if (null == repl_id || StringUtil.isEmpty(uuid) || begGno <= 0 || endGno <= 0 || begGno > endGno) {
+            response.setResult(RestResp.fail(400, "Invalidate params"));
+        } else {
+            try {
+                ReplId replId = new ReplId(Long.parseLong(repl_id));
+                CommandFuture<List<CmdKeyItem>> future = keeperContainerService.searchKeeperCmdKeys(replId, uuid, begGno, endGno);
+                future.addListener(commandFuture -> {
+                    if (commandFuture.isSuccess()) {
+                        response.setResult(RestResp.success(commandFuture.get()));
+                    } else {
+                        response.setResult(RestResp.fail(500, commandFuture.cause().getMessage()));
+                    }
+                });
+            } catch (Exception e) {
+                response.setResult(RestResp.fail(500, e.getMessage()));
+            }
+        }
+
+        return response;
     }
 
     private class LeakyBucketInfo {

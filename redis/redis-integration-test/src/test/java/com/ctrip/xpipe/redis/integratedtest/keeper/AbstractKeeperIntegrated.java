@@ -154,6 +154,10 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 				}
 			} else if (method.equalsIgnoreCase("GET")) {
 				result = jedis.get(args[0]);
+			} else if (method.equalsIgnoreCase("MSET")) {
+				result = jedis.mset(args);
+			} else if (method.equalsIgnoreCase("SELECT")) {
+				result = jedis.select(Integer.parseInt(args[0]));
 			} else {
 				throw new IllegalArgumentException("method not supported:" + method);
 			}

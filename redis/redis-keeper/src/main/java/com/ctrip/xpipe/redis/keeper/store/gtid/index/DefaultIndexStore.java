@@ -161,21 +161,6 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         return 0;
     }
 
-/*    public boolean onCommand(String gtid, long offset) throws IOException {
-        String[] parts = gtid.split(":");
-        if (parts.length != 2 || parts[0].length() != 40) {
-            throw new IllegalArgumentException("Invalid gtid: " + gtid);
-        }
-        String uuid = parts[0];
-        long gno = Long.parseLong(parts[1]);
-        if(gtidCmdFilter.gtidSetContains(uuid, gno)) {
-            logger.info("[onCommand] gtid command {} in lost, ignored", gtid);
-            return false;
-        }
-        indexWriter.append(uuid, gno, (int)offset);
-        return true;
-    }*/
-
     @Override
     public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws IOException {
         if(indexWriter != null) {

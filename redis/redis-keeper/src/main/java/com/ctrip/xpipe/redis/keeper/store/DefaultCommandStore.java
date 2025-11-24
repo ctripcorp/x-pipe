@@ -132,6 +132,9 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 						}
 					});
 					lastWriteFuture = future;
+				} else {
+					cmdReader.flushed(referenceFileRegion);
+					getCommandStoreDelay().flushSucceed(listener, referenceFileRegion.getTotalPos());
 				}
 
 				if (referenceFileRegion.count() <= 0) {

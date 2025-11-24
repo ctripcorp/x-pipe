@@ -1,18 +1,23 @@
 package com.ctrip.xpipe.redis.keeper.store.searcher;
 
+import com.ctrip.xpipe.api.codec.RawByteArraySerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 public class CmdKeyItem {
 
-    String uuid;
+    public String uuid;
 
-    int seq;
+    public int seq;
 
-    int dbId;
+    public int dbId;
 
-    String cmd;
+    public String cmd;
 
-    byte[] key;
+    @JsonSerialize(using = RawByteArraySerializer.class)
+    public byte[] key;
 
-    byte[] subkey;
+    @JsonSerialize(using = RawByteArraySerializer.class)
+    public byte[] subkey;
 
     public CmdKeyItem(String uuid, int seq, int dbId, String cmd, byte[] key, byte[] subkey) {
         this.uuid = uuid;

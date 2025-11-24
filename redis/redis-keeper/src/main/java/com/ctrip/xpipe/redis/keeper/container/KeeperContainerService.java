@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.container;
 
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
@@ -23,7 +24,10 @@ import com.ctrip.xpipe.redis.keeper.health.HealthState;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.store.searcher.CmdKeyItem;
+import com.ctrip.xpipe.redis.keeper.store.searcher.GtidCommandSearcher;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
@@ -36,7 +40,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
@@ -67,11 +71,20 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
 
     private Map<String, RedisKeeperServer> redisKeeperServers = Maps.newConcurrentMap();
 
+    private ExecutorService searcherExecutor;
+
     private Logger logger = LoggerFactory.getLogger(KeeperContainerService.class);
 
     @Override
     protected void doInitialize() throws Exception {
         this.diskHealthChecker.addObserver(this);
+        this.searcherExecutor = new ThreadPoolExecutor(1, 5, 1L, TimeUnit.MINUTES,
+                new ArrayBlockingQueue<>(128), XpipeThreadFactory.create("keeper-searcher"));
+    }
+
+    @Override
+    protected void doDispose() throws Exception {
+        this.searcherExecutor.shutdown();
     }
 
     @Override
@@ -152,6 +165,18 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
                 new ErrorMessage<>(KeeperContainerErrorCode.KEEPER_ALREADY_EXIST,
                         String.format("Keeper already exists for cluster %d shard %d",
                                 keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId())), null);
+    }
+
+    public CommandFuture<List<CmdKeyItem>> searchKeeperCmdKeys(ReplId replId, String uuid, int begGno, int endGno) {
+        RedisKeeperServer redisKeeperServer = redisKeeperServers.get(replId.toString());
+        if (null == redisKeeperServer) {
+            throw new RedisKeeperRuntimeException("unfound keeper " + replId);
+        } else if (!redisKeeperServer.getLifecycleState().isStarted()) {
+            throw new RedisKeeperRuntimeException("keeper state " + redisKeeperServer.getLifecycleState().getPhaseName());
+        }
+
+        GtidCommandSearcher searcher = redisKeeperServer.createCmdKeySearcher(uuid, begGno, endGno);
+        return searcher.execute(searcherExecutor);
     }
 
     public RedisKeeperServer addOrStart(KeeperTransMeta keeperTransMeta) {
