@@ -209,7 +209,7 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
                 ClusterShardAwareThreadFactory.create(clusterId, shardId, "sch-" + makeApplierThreadName()));
 
         pool = new InstanceComponentWrapper<>(new XpipeNettyClientKeyedObjectPool(DEFAULT_KEYED_CLIENT_POOL_SIZE,
-                new NettyKeyedPoolClientFactory(new ApplierChannelHandlerFactory(keeperConfig.getApplierReadIdleSeconds()))));
+                new ApplierNettyPoolClientFactory(new ApplierChannelHandlerFactory(keeperConfig.getApplierReadIdleSeconds()), keeperConfig.getApplierNettyRecvBufferSize())));
 
         applierConfigRef = new AtomicReference<>(new ApplierConfig());
         applierStatisticRef = new AtomicReference<>(new ApplierStatistic());

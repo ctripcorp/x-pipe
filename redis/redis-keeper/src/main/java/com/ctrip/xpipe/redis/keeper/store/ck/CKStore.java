@@ -63,12 +63,6 @@ public class CKStore implements Keeperable {
         );
 
         disruptor.handleEventsWith((event, sequence, endOfBatch) -> {
-//            for(Object[] payload: event.getPayloads()){
-//                storeGtidWithKeyOrSubKey(payload,redisOpParser);
-//            }
-//
-//            event.setPayloads(null);
-
               for(RedisOpItem redisOpItem:event.getRedisOpItems()){
                   storeGtidWithKeyOrSubKeyItem(redisOpItem);
               }
@@ -113,11 +107,6 @@ public class CKStore implements Keeperable {
 
     private static final ThreadLocal<List<RedisOpItem>> TX_CONTEXT_ITEM = new ThreadLocal<>();
 
-    private static final ThreadLocal<List<RedisOp>> TX_CONTEXT= ThreadLocal.withInitial(() -> {
-        return new ArrayList<>(16); // 预设容量减少扩容
-    });
-
-
     private List<RedisOpItem> parsePayloads(List<Object[]> payloads){
         List<RedisOpItem> redisOpItems = new ArrayList<>(payloads.size());
         try {
@@ -147,18 +136,6 @@ public class CKStore implements Keeperable {
             logger.warn("[CKStore]parsePayloads{},error{}",payloads,th.getMessage());
         }
         return redisOpItems;
-    }
-
-    public void storeGtidWithKeyOrSubKey(Object[] payload, RedisOpParser opParser) {
-        RedisOp redisOp = opParser.parse(payload);
-        payload = null;
-
-        // 使用位运算快速判断是否为普通命令（假设MULTI和EXEC是少数特定值）
-        if (isNormalCommand(redisOp.getOpType())) {
-            processNormalCommand(redisOp);
-        } else {
-            processTransactionCommand(redisOp);
-        }
     }
 
     public void storeGtidWithKeyOrSubKeyItem(RedisOpItem redisOpItem) {
@@ -211,89 +188,23 @@ public class CKStore implements Keeperable {
         return opType != RedisOpType.MULTI && opType != RedisOpType.EXEC;
     }
 
-    private  void processNormalCommand(RedisOp redisOp) {
-        List<RedisOp> txOps = TX_CONTEXT.get();
-        if (txOps.isEmpty()) {
-            // 快速路径：不在事务中
-            writeCK(redisOp.getOpGtid(), redisOp.getDbId(), redisOp);
-        } else {
-            // 慢速路径：在事务中
-            txOps.add(redisOp);
-        }
-    }
-
-    private  void processTransactionCommand(RedisOp redisOp) {
-        switch (redisOp.getOpType()) {
-            case MULTI:
-                TX_CONTEXT.get().clear();
-                break;
-            case EXEC:
-                commitTransaction(redisOp);
-                break;
-        }
-    }
-
-    private  void commitTransaction(RedisOp execOp) {
-        List<RedisOp> ops = TX_CONTEXT.get();
-        if (ops != null) {
-            try {
-                if (!ops.isEmpty()) {
-                    writeCK(execOp.getOpGtid(), execOp.getDbId(), ops);
-                }
-            }finally {
-                TX_CONTEXT.get().clear();
-            }
-        }
-    }
-
-    public void writeCK(String gtid,String dbId, RedisOp redisOp){
-        if(StringUtil.isEmpty(gtid)) return;
-        String[] gtidSeq = gtid.split(":");
-
-        if(redisOp instanceof RedisMultiKeyOp){
-            RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) redisOp;
-            List<Pair<RedisKey,byte[]>> keyValues = redisMultiKeyOp.getAllKeyValues();
-            for(Pair<RedisKey,byte[]> pair: keyValues){
-                kafkaService.sendKafka(new GtidKeyItem(redisOp.getOpType().name(),gtidSeq[0],gtidSeq[1],pair.getKey().get(),null,dbId,replId));
-            }
-        }else if(redisOp instanceof RedisMultiSubKeyOp){
-            RedisMultiSubKeyOp redisMultiSubKeyOp = (RedisMultiSubKeyOp) redisOp;
-            RedisKey key = redisMultiSubKeyOp.getKey();
-            List<RedisKey> subKeys = redisMultiSubKeyOp.getAllSubKeys();
-            //包含子key的命令
-            for(RedisKey subKey:subKeys) {
-                kafkaService.sendKafka(new GtidKeyItem(redisOp.getOpType().name(),gtidSeq[0],gtidSeq[1],key.get(),subKey.get(),dbId,replId));
-            }
-        }else if(redisOp instanceof RedisSingleKeyOp) {
-            RedisSingleKeyOp  redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
-            kafkaService.sendKafka(new GtidKeyItem(redisOp.getOpType().name(),gtidSeq[0],gtidSeq[1],redisSingleKeyOp.getKey().get(),null,dbId,replId));
-        }
-    }
-
-    public  void writeCK(String gtid,String dbId,List<RedisOp> redisOpList){
-        for(RedisOp redisOp:redisOpList) {
-            writeCK(gtid, dbId,redisOp);
-        }
-    }
-
     public void writeCKItem(String gtid,String dbId, RedisOpItem redisOp){
         if(StringUtil.isEmpty(gtid)) return;
         String[] gtidSeq = gtid.split(":");
 
         RedisKey redisKey = redisOp.getRedisKey();
         List<RedisKey> redisKeyList = redisOp.getRedisKeyList();
-
-        if(redisKey == null && redisKeyList != null){
-            for(RedisKey item:redisKeyList){
-                kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],item.get(),null,dbId,replId));
-            }
+        if(redisKey != null && redisKeyList == null) {
+            kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],redisKey.get(),null,dbId,replId));
         }else if(redisKey != null && redisKeyList != null){
             //包含子key的命令
             for(RedisKey subKey:redisKeyList) {
                 kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],redisKey.get(),subKey.get(),dbId,replId));
             }
-        }else if(redisKey != null && redisKeyList == null) {
-            kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],redisKey.get(),null,dbId,replId));
+        }else if(redisKey == null && redisKeyList != null){
+            for(RedisKey item:redisKeyList){
+                kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],item.get(),null,dbId,replId));
+            }
         }
     }
 

@@ -67,9 +67,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private KeeperMonitor keeperMonitor;
 
-	public static final String KEY_CMD_RETAIN_TIMEOUT_MILLI = "commandsRetainTimeoutMilli";
-
-	protected int commandsRetainTimeoutMilli = Integer.parseInt(System.getProperty(KEY_CMD_RETAIN_TIMEOUT_MILLI, "1800000"));
+	protected int commandsRetainTimeoutMilli;
 
 	private CommandReaderWriterFactory cmdReaderWriterFactory;
 
@@ -90,6 +88,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
+        this.commandsRetainTimeoutMilli = config.getReplicationStoreCommandFileRetainTimeoutMilli();
 		this.config = config;
 		this.keeperMonitor = keeperMonitor;
 		this.cmdReaderWriterFactory = cmdReaderWriterFactory;

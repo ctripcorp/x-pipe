@@ -5,11 +5,15 @@ import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamTransactionListener;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.redis.core.store.CommandWriterCallback;
 import com.ctrip.xpipe.redis.core.store.GtidCmdFilter;
 import com.ctrip.xpipe.redis.core.store.IndexStore;
+import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.exception.replication.LostGtidsetBacklogConflictException;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.tuple.Pair;
@@ -23,10 +27,20 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
-public class DefaultIndexStore implements IndexStore {
+public class DefaultIndexStore implements IndexStore, StreamTransactionListener {
 
-    private static final Logger log = LoggerFactory.getLogger(DefaultIndexStore.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultIndexStore.class);
+
+    private static final byte[] PING_BYTES = new byte[]{'P','I','N','G'};
+    private static final byte[] SELECT_BYTES = new byte[]{'S','E','L','E','C','T'};
+
+    private static final byte[] PING_LOWWER_BYTES = new byte[]{'p','i','n','g'};
+    private static final byte[] SELECT_LOWWER_BYTES = new byte[]{'s','e','l','e','c','t'};
 
     private IndexWriter indexWriter;
 
@@ -93,13 +107,13 @@ public class DefaultIndexStore implements IndexStore {
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, continueGtidSet, this);
         this.indexWriter.init();
         this.streamCommandReader.resetOffset();
-        log.info("[switchCmdFile] index_store switch to {}", currentCmdFileName);
+        logger.info("[switchCmdFile] index_store switch to {}", currentCmdFileName);
     }
 
     @Override
     public synchronized void rotateFileIfNecessary() throws IOException {
         if (streamCommandReader != null && streamCommandReader.isTransactionActive()) {
-            log.debug("[rotateFileIfNecessary] transaction active (size: {}), defer rotation", 
+            logger.debug("[rotateFileIfNecessary] transaction active (size: {}), defer rotation",
                       streamCommandReader.getTransactionSize());
             return;
         }
@@ -115,7 +129,8 @@ public class DefaultIndexStore implements IndexStore {
         return new Pair<>(commandWriterCallback.getCommandWriter().totalLength(), this.getIndexGtidSet());
     }
 
-    public boolean onCommand(String gtid, long offset) throws IOException {
+    @Override
+    public boolean preAppend(String gtid, long offset) throws IOException {
         String[] parts = gtid.split(":");
         if (parts.length != 2 || parts[0].length() != 40) {
             throw new IllegalArgumentException("Invalid gtid: " + gtid);
@@ -123,12 +138,79 @@ public class DefaultIndexStore implements IndexStore {
         String uuid = parts[0];
         long gno = Long.parseLong(parts[1]);
         if(gtidCmdFilter.gtidSetContains(uuid, gno)) {
-            log.info("[onCommand] gtid command {} in lost, ignored", gtid);
+            logger.info("[onCommand] gtid command {} in lost, ignored", gtid);
             return false;
         }
         indexWriter.append(uuid, gno, (int)offset);
         return true;
     }
+
+    @Override
+    public int postAppend(ByteBuf commandBuf, Object[] payload) throws IOException {
+        int written = appendCmdBuf(commandBuf);
+        ByteArrayOutputStreamPayload command = (ByteArrayOutputStreamPayload) payload[0];
+        if(isPingOrSelectCmd(command.getBytes())) return written;
+        ArrayList<Object[]> payloads = new ArrayList<>(1);
+        payloads.add(payload);
+        sendPayloadsToCk(payloads);
+        return written;
+    }
+
+    @Override
+    public int batchPostAppend(List<ByteBuf> commandBufs, List<Object[]> payloads) throws IOException {
+        int written = 0;
+        for (ByteBuf buf : commandBufs) {
+            if (buf != null) {
+                written += appendCmdBuf(buf);
+            }
+        }
+        sendPayloadsToCk(payloads);
+        
+        return written;
+    }
+
+    @Override
+    public boolean checkOffset(long offset) {
+        long cmdFileLen = getCurrentCmdFileLen();
+        if (-1 != cmdFileLen && cmdFileLen != offset) {
+            logger.info("[checkOffset][mismatch] nextCmdBegin:{} cmdFileLen{}", offset, cmdFileLen);
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isPingOrSelectCmd(byte[] command){
+        return Arrays.equals(PING_BYTES, command) || Arrays.equals(SELECT_BYTES,command)
+                || Arrays.equals(PING_LOWWER_BYTES, command) || Arrays.equals(SELECT_BYTES,command);
+    }
+
+    public int appendCmdBuf(ByteBuf byteBuf) throws IOException {
+        if(writerCmdEnabled && commandWriterCallback != null) {
+            return commandWriterCallback.writeCommand(byteBuf);
+        }
+        return 0;
+    }
+
+    private void sendPayloadsToCk(List<Object[]> payloads){
+        if (ckStore != null && !ckStore.isKeeper()) {
+            ckStore.sendPayloads(payloads);
+        }
+    }
+
+/*    public boolean onCommand(String gtid, long offset) throws IOException {
+        String[] parts = gtid.split(":");
+        if (parts.length != 2 || parts[0].length() != 40) {
+            throw new IllegalArgumentException("Invalid gtid: " + gtid);
+        }
+        String uuid = parts[0];
+        long gno = Long.parseLong(parts[1]);
+        if(gtidCmdFilter.gtidSetContains(uuid, gno)) {
+            logger.info("[onCommand] gtid command {} in lost, ignored", gtid);
+            return false;
+        }
+        indexWriter.append(uuid, gno, (int)offset);
+        return true;
+    }*/
 
     @Override
     public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws IOException {
@@ -138,7 +220,7 @@ public class DefaultIndexStore implements IndexStore {
         try (IndexReader indexReader = createIndexReader()) {
             if(indexReader == null) {
                 // no index file
-                log.info("[locateContinueGtidSet] index reader is null");
+                logger.info("[locateContinueGtidSet] index reader is null");
                 return new Pair<>(-1l, new GtidSet(GtidSet.EMPTY_GTIDSET));
             }
             indexReader.init();
@@ -158,10 +240,10 @@ public class DefaultIndexStore implements IndexStore {
     public synchronized Pair<Long, GtidSet> locateGtidSetWithFallbackToEnd(GtidSet request) throws IOException {
         Pair<Long, GtidSet> continuePoint = locateContinueGtidSet(request);
         if(continuePoint.getKey() == -1) {
-            log.info("[locateGtidSetWithFallbackToEnd] not found next, return tail of cmd, request:{}", request);
+            logger.info("[locateGtidSetWithFallbackToEnd] not found next, return tail of cmd, request:{}", request);
             continuePoint = locateTailOfCmd();
         }
-        log.info("backlog gtid set: {}, request gtid set {}, continue gtid set {}", getIndexGtidSet(),
+        logger.info("backlog gtid set: {}, request gtid set {}, continue gtid set {}", getIndexGtidSet(),
                 request, continuePoint.getValue());
         return continuePoint;
     }
@@ -210,7 +292,7 @@ public class DefaultIndexStore implements IndexStore {
                 long transactionStartOffset = this.streamCommandReader.getTransactionStartOffset();
                 if (transactionStartOffset >= 0) {
                     // transactionStartOffset is relative to cmdFileOffset, convert to absolute offset
-                    log.warn("[buildIndexFromCmdFile] incomplete transaction detected (size: {}), " +
+                    logger.warn("[buildIndexFromCmdFile] incomplete transaction detected (size: {}), " +
                             "rollback from offset {} to offset: {}", 
                             this.streamCommandReader.getTransactionSize(), 
                             controllableFile.size(), transactionStartOffset);
@@ -220,7 +302,7 @@ public class DefaultIndexStore implements IndexStore {
                     this.streamCommandReader.resetParser();
                 } else {
                     // If startOffset is invalid, just reset parser to clear transaction state
-                    log.warn("[buildIndexFromCmdFile] incomplete transaction detected but invalid startOffset, " +
+                    logger.warn("[buildIndexFromCmdFile] incomplete transaction detected but invalid startOffset, " +
                             "clearing transaction state");
                     this.streamCommandReader.resetParser();
                 }
@@ -247,7 +329,7 @@ public class DefaultIndexStore implements IndexStore {
             this.streamCommandReader.resetParser();
         }
         if(this.indexWriter != null) {
-            log.debug("[doClose] close index writer {}", indexWriter.getFileName());
+            logger.debug("[doClose] close index writer {}", indexWriter.getFileName());
             this.indexWriter.close();
         }
     }
@@ -268,7 +350,7 @@ public class DefaultIndexStore implements IndexStore {
     public void deleteAllIndexFile() {
         File directory = new File(baseDir);
 
-        log.info("[deleteAllIndexFile] {}", baseDir);
+        logger.info("[deleteAllIndexFile] {}", baseDir);
         if (!directory.exists() || !directory.isDirectory()) {
             return;
         }
@@ -288,13 +370,6 @@ public class DefaultIndexStore implements IndexStore {
         return -1L;
     }
 
-    public int onFinishParse(ByteBuf byteBuf) throws IOException {
-        if(writerCmdEnabled && commandWriterCallback != null) {
-            return commandWriterCallback.writeCommand(byteBuf);
-        }
-        return 0;
-    }
-
     private void disableWriterCmd() {
         this.writerCmdEnabled = false;
     }
@@ -307,7 +382,7 @@ public class DefaultIndexStore implements IndexStore {
         try {
             return tryGetIndexGtidSet();
         } catch (IOException ioException) {
-            log.error("[getIndexGtidSetByIndexReader] {}", ioException);
+            logger.error("[getIndexGtidSetByIndexReader] {}", ioException);
             throw new XpipeRuntimeException("index reader error", ioException);
         }
     }
@@ -327,11 +402,5 @@ public class DefaultIndexStore implements IndexStore {
             }
         }
     }
-
-    public CKStore getCkStore(){
-        return this.ckStore;
-    }
-
-
 
 }

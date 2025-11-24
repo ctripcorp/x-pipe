@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.ctrip.framework.xpipe</groupId>
     <artifactId>xpipe-parent</artifactId>
-    <version>1.2.16</version>
+    <version>1.2.17</version>
     <packaging>pom</packaging>
 
     <!-- trigger cache-->
@@ -1036,9 +1036,6 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-
-
-
         </dependencies>
     </dependencyManagement>
 

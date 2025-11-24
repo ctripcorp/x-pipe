@@ -73,8 +73,8 @@ public class CKStoreTest  extends AbstractRedisKeeperTest {
         );
 
         disruptor.handleEventsWith((event, sequence, endOfBatch) -> {
-            for(Object[] payload: event.getPayloads()){
-                this.ckStore.storeGtidWithKeyOrSubKey(payload,redisOpParser);
+            for(RedisOpItem redisOpItem:event.getRedisOpItems()){
+                this.ckStore.storeGtidWithKeyOrSubKeyItem(redisOpItem);
             }
         });
         RingBuffer ringBuffer = disruptor.start();
@@ -98,20 +98,20 @@ public class CKStoreTest  extends AbstractRedisKeeperTest {
         store.confirmRdbGapAllowed(rdbStore);
         ArgumentCaptor<String> gtidCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> dbidCaptor = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<RedisOp> redisOpCaptor = ArgumentCaptor.forClass(RedisOp.class);
+        ArgumentCaptor<RedisOpItem> redisOpCaptor = ArgumentCaptor.forClass(RedisOpItem.class);
 
         CountDownLatch latch = new CountDownLatch(1);
         // 设置mock行为，在方法调用时countDown
         Mockito.doAnswer(invocation -> {
             latch.countDown();
             return null; // 或者返回适当的值
-        }).when(ckStore).writeCK(gtidCaptor.capture(),dbidCaptor.capture(),redisOpCaptor.capture());
+        }).when(ckStore).writeCKItem(gtidCaptor.capture(),dbidCaptor.capture(),redisOpCaptor.capture());
         store.appendCommands(Unpooled.wrappedBuffer(generateGtidCommands(uuid,1,1)));
         // Then - 等待事件被处理
         boolean processed = latch.await(10, TimeUnit.SECONDS);
         Assert.assertTrue("Event should be processed within timeout", processed);
-        RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOpCaptor.getValue();
-        Assert.assertEquals("FOO",redisSingleKeyOp.getKey().toString());
+        RedisOpItem redisOpItem = (RedisOpItem) redisOpCaptor.getValue();
+        Assert.assertEquals("FOO",redisOpItem.getRedisKey().toString());
     }
 
 
@@ -130,7 +130,7 @@ public class CKStoreTest  extends AbstractRedisKeeperTest {
         Mockito.doAnswer(invocation -> {
             latch.countDown();
             return null; // 或者返回适当的值
-        }).when(ckStore).writeCK(gtidCaptor.capture(),dbidCaptor.capture(),redisOpCaptor.capture());
+        }).when(ckStore).writeCKItem(gtidCaptor.capture(),dbidCaptor.capture(),redisOpCaptor.capture());
         store.appendCommands(Unpooled.wrappedBuffer(generateMultiCommands(uuid,1,1)));
         store.appendCommands(Unpooled.wrappedBuffer(generateNormalSetCommands(uuid,1,1)));
         store.appendCommands(Unpooled.wrappedBuffer(generateNormalHSetCommands(uuid,1,1)));
@@ -138,11 +138,11 @@ public class CKStoreTest  extends AbstractRedisKeeperTest {
         // Then - 等待事件被处理
         boolean processed = latch.await(10, TimeUnit.SECONDS);
         Assert.assertTrue("Event should be processed within timeout", processed);
-        RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOpCaptor.getValue().get(0);
-        RedisMultiSubKeyOp redisMultiSubKeyOp = (RedisMultiSubKeyOp) redisOpCaptor.getValue().get(1);
-        Assert.assertEquals("FOO",redisSingleKeyOp.getKey().toString());
-        Assert.assertEquals("HFOO",redisMultiSubKeyOp.getKey().toString());
-        Assert.assertEquals("HGOO",redisMultiSubKeyOp.getAllSubKeys().get(0).toString());
+        RedisOpItem redisOpSingleItem = (RedisOpItem) redisOpCaptor.getValue().get(0);
+        RedisOpItem redisMultiSubKeyOpItem = (RedisOpItem) redisOpCaptor.getValue().get(1);
+        Assert.assertEquals("FOO",redisOpSingleItem.getRedisKey().toString());
+        Assert.assertEquals("HFOO",redisMultiSubKeyOpItem.getRedisKey().toString());
+        Assert.assertEquals("HGOO",redisMultiSubKeyOpItem.getRedisKeyList().get(0).toString());
     }
 
     private byte[] generateGtidCommands(String uuid, long startGno, int cmdCount) throws IOException {

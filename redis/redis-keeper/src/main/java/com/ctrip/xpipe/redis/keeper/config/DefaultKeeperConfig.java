@@ -26,6 +26,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public static final String KEY_REPLICATION_STORE_MINITIME_GC_AFTERCREATE = "replicationstore.mintime.gc.aftercreate";
 	public static final String KEY_REPLICATION_STORE_MAX_COMMANDS_TO_TRANSFER_BEFORE_CREATE_RDB = "replicationstore.max.commands.to.transfer";
 	public static final String KEY_REPLICATION_STORE_MAX_LWM_DISTANCE_TO_TRANSFER_BEFORE_CREATE_RDB = "replicationstore.max.lwm.distance.to.transfer";
+	public static final String KEY_REPLICATION_STORE_COMMANDFILE_RETAIN_TIMEOUT_MILLI = "replicationstore.commandfile.retain.timeout.milli";
 	public static final String KEY_COMMAND_READER_FLYING_THRESHOLD = "command.reader.flying.threshold";
 	private static final String KEY_COMMAND_INDEX_BYTES_INTERVAL = "command.index.bytes.interval";
 	public static final String KEY_RDB_DUMP_MIN_INTERVAL = "rdbdump.min.interval";
@@ -58,6 +59,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	private static String KEY_TRY_ROR_RDB = "keeper.try.ror.rdb";
 	private static String KEY_XSYNC_MAX_GAP = "keeper.xsync.max.gap";
 	private static String KEY_XSYNC_MAX_GAP_CROSSREGION = "keeper.xsync.max.gap.crossregion";
+
+    private static String KEY_APPLIER_NETTY_RECV_BUFFER_SIZE = "applier.netty.recv.buffer.size";
 
 	public DefaultKeeperConfig(){
 
@@ -111,6 +114,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getReplicationStoreCommandFileNumToKeep() {
 		return getIntProperty(KEY_REPLICATION_STORE_COMMANDFILE_NUM_KEEP, 2);
+	}
+
+	@Override
+	public int getReplicationStoreCommandFileRetainTimeoutMilli() {
+		return getIntProperty(KEY_REPLICATION_STORE_COMMANDFILE_RETAIN_TIMEOUT_MILLI,1800 * 1000);
 	}
 
 	@Override
@@ -226,4 +234,9 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public int getXsyncMaxGapCrossRegion() {
 		return getIntProperty(KEY_XSYNC_MAX_GAP_CROSSREGION, DEFAULT_XSYNC_MAXGAP_CROSSREGION);
 	}
+
+    @Override
+    public int getApplierNettyRecvBufferSize() {
+        return getIntProperty(KEY_APPLIER_NETTY_RECV_BUFFER_SIZE, 512);
+    }
 }

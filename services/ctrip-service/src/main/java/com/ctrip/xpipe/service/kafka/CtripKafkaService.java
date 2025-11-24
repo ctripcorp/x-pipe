@@ -25,7 +25,6 @@ public class CtripKafkaService implements KafkaService {
 
     private static final Logger logger = LoggerFactory.getLogger(CtripKafkaService.class);
 
-
     private static final String TOPIC = "bbz.fx.xpipe.ck.gtid";
     private static final String ACL_USER = "kMTApwMDMzNzAws";
     private static final String CUSTOM_CLIENT_ID = "bbzfxxpipeckgtid";
