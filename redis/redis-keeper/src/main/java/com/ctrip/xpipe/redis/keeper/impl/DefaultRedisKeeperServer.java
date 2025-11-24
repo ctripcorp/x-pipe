@@ -46,6 +46,7 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
+import com.ctrip.xpipe.redis.keeper.store.searcher.GtidCommandSearcher;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.*;
 import io.netty.bootstrap.ServerBootstrap;
@@ -277,6 +278,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public XSyncContinue locateTailOfCmd() {
 		return getCurrentReplicationStore().locateTailOfCmd();
+	}
+
+	@Override
+	public GtidCommandSearcher createCmdKeySearcher(String uuid, int begGno, int endGno) {
+		return new GtidCommandSearcher(uuid, begGno, endGno, this, redisOpParser);
 	}
 
 	@Override
