@@ -65,7 +65,9 @@ public class CKStore implements Keeperable {
         disruptor.handleEventsWith((event, sequence, endOfBatch) -> {
               for(RedisOpItem redisOpItem:event.getRedisOpItems()){
                   storeGtidWithKeyOrSubKeyItem(redisOpItem);
+                  redisOpItem = null;
               }
+              event.setRedisOpItems(null);
         });
         ringBuffer = disruptor.start();
     }
