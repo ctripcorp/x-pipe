@@ -83,8 +83,9 @@ public interface KeeperConfig extends CoreConfig{
     boolean fsyncRateLimit();
 
 	boolean tryRorRdb();
-
 	int getXsyncMaxGap();
 
 	int getXsyncMaxGapCrossRegion();
+
+    int getApplierNettyRecvBufferSize();
 }

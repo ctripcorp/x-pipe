@@ -313,4 +313,8 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		this.maxMaxGapCrossRegion = maxGapCrossRegion;
 	}
 
+    @Override
+    public int getApplierNettyRecvBufferSize() {
+        return 512;
+    }
 }
