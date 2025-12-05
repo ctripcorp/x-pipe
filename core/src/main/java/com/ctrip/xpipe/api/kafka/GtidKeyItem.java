@@ -8,8 +8,9 @@ public class GtidKeyItem {
     private byte[] subkey;
     private String dbid;
     private long shardid;
+    private String address;
 
-    public GtidKeyItem(String cmd,String uuid, String seq, byte[] key, byte[] subkey, String dbid, long shardid){
+    public GtidKeyItem(String cmd,String uuid, String seq, byte[] key, byte[] subkey, String dbid, long shardid,String address){
         this.cmd = cmd;
         this.uuid = uuid;
         this.seq = seq;
@@ -17,6 +18,7 @@ public class GtidKeyItem {
         this.subkey = subkey;
         this.dbid = dbid;
         this.shardid = shardid;
+        this.address = address;
     }
 
     public String getCmd() {
@@ -73,5 +75,13 @@ public class GtidKeyItem {
 
     public void setShardid(long shardid) {
         this.shardid = shardid;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 }

@@ -60,7 +60,7 @@ public class CKStoreTest  extends AbstractRedisKeeperTest {
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         redisOpParser = new GeneralRedisOpParser(redisOpParserManager);
         baseDir = new File(getTestFileDir());
-        CKStore ckStore = new CKStore(ReplId.from(1l),redisOpParser);
+        CKStore ckStore = new CKStore(ReplId.from(1l),redisOpParser,"");
 
         MessageEventFactory factory = new MessageEventFactory();
         int ringBufferSize = 1024 * 1024; // 1M个槽位

@@ -26,9 +26,12 @@ public class CtripKafkaService implements KafkaService {
     private static final Logger logger = LoggerFactory.getLogger(CtripKafkaService.class);
 
     private static final String TOPIC = "bbz.fx.xpipe.ck.gtid";
-    private static final String ACL_USER = "kMTApwMDMzNzAws";
-    private static final String CUSTOM_CLIENT_ID = "bbzfxxpipeckgtid";
 
+    private static final String ACL_USER = "kMTApwMDMzNzAws";
+
+    private static final String ACL_PRO_USER = "kMTApwMDA0Mzc2s";
+
+    private static final String CUSTOM_CLIENT_ID = "bbzfxxpipeckgtid";
 
     private  Producer<String, Object> producer;
 
@@ -74,13 +77,24 @@ public class CtripKafkaService implements KafkaService {
         // 默认为value为HermesJson序列化
         try {
             if(Foundation.server().getEnv() != Env.LOCAL){
-                producer = CKafkaClientBuilder // producer单例需要用户自己维护
-                        .newProducerBuilder()
-                        .hermesAvroSerializer()
-                        .customProperties(properties) // 从此传入自定义配置，无则不需要关心
-                        .topic(TOPIC) // 要发送的topic
-                        .aclUser(ACL_USER) // acl token如有则替换填入此处，无则忽略
-                        .build();
+                if(Foundation.server().getEnv() == Env.PRO){
+                    producer = CKafkaClientBuilder // producer单例需要用户自己维护
+                            .newProducerBuilder()
+                            .hermesAvroSerializer()
+                            .customProperties(properties) // 从此传入自定义配置，无则不需要关心
+                            .topic(TOPIC) // 要发送的topic
+                            .aclUser(ACL_PRO_USER) // acl token如有则替换填入此处，无则忽略
+                            .build();
+                }else {
+                    producer = CKafkaClientBuilder // producer单例需要用户自己维护
+                            .newProducerBuilder()
+                            .hermesAvroSerializer()
+                            .customProperties(properties) // 从此传入自定义配置，无则不需要关心
+                            .topic(TOPIC) // 要发送的topic
+                            .aclUser(ACL_USER) // acl token如有则替换填入此处，无则忽略
+                            .build();
+                }
+
                 try {
                     producer.partitionsFor(TOPIC);
                 }catch (Throwable t){
@@ -97,7 +111,7 @@ public class CtripKafkaService implements KafkaService {
         GenericRecord record = new GenericData.Record(schema);
         record.put("cmd",gtidKeyItem.getCmd());
         record.put("uuid",gtidKeyItem.getUuid());
-        record.put("address","");
+        record.put("address",gtidKeyItem.getAddress());
         record.put("seq",gtidKeyItem.getSeq());
         record.put("key", generateAvroArray("key",gtidKeyItem.getKey()));
         record.put("subkey",generateAvroArray("subkey",gtidKeyItem.getSubkey()));

@@ -239,7 +239,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 
-		ckStore = new CKStore(this.replId,this.redisOpParser);
+		ckStore = new CKStore(this.replId,this.redisOpParser,String.format("%s:%d",currentKeeperMeta.getIp(),currentKeeperMeta.getPort()));
 		replicationStoreManager = createReplicationStoreManager(keeperConfig, clusterId, shardId, replId,
 				currentKeeperMeta, baseDir, keeperMonitor);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());

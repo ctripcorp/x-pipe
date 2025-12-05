@@ -1,13 +1,14 @@
 package com.ctrip.xpipe.redis.keeper.store.ck;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
 import com.ctrip.xpipe.api.kafka.KafkaService;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
+import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.*;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.Keeperable;
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.lmax.disruptor.LiteBlockingWaitStrategy;
 import com.lmax.disruptor.RingBuffer;
@@ -34,13 +35,17 @@ public class CKStore implements Keeperable {
 
     private MetricProxy metricProxy;
 
+    private FoundationService foundationService;
     private volatile boolean isKeeper;
 
     private RedisOpParser redisOpParser;
 
-    public CKStore(ReplId replId, RedisOpParser redisOpParser){
+    private String address;
+
+    public CKStore(ReplId replId, RedisOpParser redisOpParser,String address){
         this.replId = replId != null ? replId.id() : -1;
         this.redisOpParser = redisOpParser;
+        this.address = address;
     }
 
     public void start(){
@@ -65,8 +70,8 @@ public class CKStore implements Keeperable {
         disruptor.handleEventsWith((event, sequence, endOfBatch) -> {
               for(RedisOpItem redisOpItem:event.getRedisOpItems()){
                   storeGtidWithKeyOrSubKeyItem(redisOpItem);
-                  redisOpItem = null;
               }
+              event.getRedisOpItems().clear();
               event.setRedisOpItems(null);
         });
         ringBuffer = disruptor.start();
@@ -95,16 +100,28 @@ public class CKStore implements Keeperable {
                 List<RedisOpItem> redisOpItems = parsePayloads(payloads);
                 event.setRedisOpItems(redisOpItems);
             } finally {
-                payloads.clear();
-                payloads = null;
                 ringBuffer.publish(sequence);
+                releasePayloads(payloads);
             }
         }else {
-            payloads.clear();
-            payloads = null;
+            releasePayloads(payloads);
             reportHickwall(CK_BLOCK);
         }
 
+    }
+
+    private void releasePayloads(List<Object[]> payloads){
+        for(Object[] payload:payloads){
+            for(Object obj:payload){
+                if(obj instanceof ByteArrayOutputStreamPayload){
+                    ByteArrayOutputStreamPayload byteArrayOutputStreamPayload = (ByteArrayOutputStreamPayload) obj;
+                    byteArrayOutputStreamPayload.clear();
+                }
+                obj = null;
+            }
+            payload = null;
+        }
+        payloads = null;
     }
 
     private static final ThreadLocal<List<RedisOpItem>> TX_CONTEXT_ITEM = new ThreadLocal<>();
@@ -197,15 +214,15 @@ public class CKStore implements Keeperable {
         RedisKey redisKey = redisOp.getRedisKey();
         List<RedisKey> redisKeyList = redisOp.getRedisKeyList();
         if(redisKey != null && redisKeyList == null) {
-            kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],redisKey.get(),null,dbId,replId));
+            kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],redisKey.get(),null,dbId,replId,address));
         }else if(redisKey != null && redisKeyList != null){
             //包含子key的命令
             for(RedisKey subKey:redisKeyList) {
-                kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],redisKey.get(),subKey.get(),dbId,replId));
+                kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],redisKey.get(),subKey.get(),dbId,replId,address));
             }
         }else if(redisKey == null && redisKeyList != null){
             for(RedisKey item:redisKeyList){
-                kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],item.get(),null,dbId,replId));
+                kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],item.get(),null,dbId,replId,address));
             }
         }
     }

@@ -91,12 +91,17 @@ public abstract class AbstractRedisClient<T extends RedisServer> extends Abstrac
 
                     commandState = DefaultRedisClient.COMMAND_STATE.READ_SIGN ;
                     String []ret = null;
-                    if(result instanceof String){
-                        ret = handleString((String)result);
-                    }else if(result instanceof Object[]){
-                        ret = handleArray((Object[])result);
-                    }else{
-                        throw new IllegalStateException("unkonw result array:" + result);
+                    try {
+                        if (result instanceof String) {
+                            ret = handleString((String) result);
+                        } else if (result instanceof Object[]) {
+                            ret = handleArray((Object[]) result);
+                        } else {
+                            throw new IllegalStateException("unkonw result array:" + result);
+                        }
+                    }finally {
+                        resultParser.reset();
+                        redisClientProtocol.reset();
                     }
                     return ret;
                 default:
@@ -115,7 +120,9 @@ public abstract class AbstractRedisClient<T extends RedisServer> extends Abstrac
                 strArray[index] = (String) param;
             }else if(param instanceof ByteArrayOutputStreamPayload){
 
-                byte [] bytes = ((ByteArrayOutputStreamPayload)param).getBytes();
+                ByteArrayOutputStreamPayload payload = (ByteArrayOutputStreamPayload)param;
+                byte [] bytes = payload.getBytes();
+                payload.clear();
                 strArray[index] = new String(bytes, Codec.defaultCharset);
             }else{
                 throw new RedisRuntimeException("request unkonwn, can not be transformed to string!");
