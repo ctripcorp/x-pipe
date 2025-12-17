@@ -19,6 +19,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class CKStore implements Keeperable {
     private static final Logger logger = LoggerFactory.getLogger(CKStore.class);
@@ -41,6 +44,10 @@ public class CKStore implements Keeperable {
     private RedisOpParser redisOpParser;
 
     private String address;
+
+    private volatile boolean isSendCkFail;
+
+    private ScheduledExecutorService hickwallReporterService = Executors.newSingleThreadScheduledExecutor();
 
     public CKStore(ReplId replId, RedisOpParser redisOpParser,String address){
         this.replId = replId != null ? replId.id() : -1;
@@ -75,6 +82,16 @@ public class CKStore implements Keeperable {
               event.setRedisOpItems(null);
         });
         ringBuffer = disruptor.start();
+
+        hickwallReporterService.scheduleWithFixedDelay(
+                () -> {
+                    if(isSendCkFail) {
+                        reportHickwall(CK_BLOCK);
+                        isSendCkFail = false;
+                    }
+                    },
+                1,1, TimeUnit.MINUTES
+        );
     }
 
     public boolean isKeeper(){
@@ -105,7 +122,7 @@ public class CKStore implements Keeperable {
             }
         }else {
             releasePayloads(payloads);
-            reportHickwall(CK_BLOCK);
+            isSendCkFail = true;
         }
 
     }

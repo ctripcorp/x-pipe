@@ -35,6 +35,13 @@ public class CtripKafkaService implements KafkaService {
 
     private  Producer<String, Object> producer;
 
+    private Producer<String,Object>[] producerPool;
+
+    private final int PRODUCER_POOL_SIZE = 16;
+
+    private final int PRODUCER_POOL_MASK = PRODUCER_POOL_SIZE - 1;
+
+
     private final Schema schema;
 
     private static final String XPIPE_CK_KAFKA = "xpipe.ck.kafka";
@@ -59,25 +66,34 @@ public class CtripKafkaService implements KafkaService {
     public CtripKafkaService(){
         schema = new Schema.Parser().parse(schemaJson);
 
+        long bufferMemory = Runtime.getRuntime().maxMemory()/16/PRODUCER_POOL_SIZE;
+        producerPool = new Producer[PRODUCER_POOL_SIZE];
+        for(int i = 0; i < PRODUCER_POOL_SIZE;i++){
+            producerPool[i] = createKafkaProducer(bufferMemory);
+        }
+
+    }
+
+    private Producer<String,Object> createKafkaProducer(long bufferMemory) {
+        Producer<String, Object> producer = null;
         // 自定义配置，按需配置
         Properties properties = new Properties();
         properties.put(ProducerConfig.BATCH_SIZE_CONFIG, "1048576");
-        long bufferMemory = Runtime.getRuntime().maxMemory()/16;
-        properties.put(ProducerConfig.BUFFER_MEMORY_CONFIG,bufferMemory+"");
-        properties.put(ProducerConfig.COMPRESSION_TYPE_CONFIG,"snappy");
-        properties.put(ProducerConfig.LINGER_MS_CONFIG,"50");
-        properties.put(ProducerConfig.MAX_BLOCK_MS_CONFIG,"1000");
-        properties.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG,"4000000");
-        properties.put(ProducerConfig.RETRIES_CONFIG,"2");
-        properties.put(ProducerConfig.PARTITIONER_AVAILABILITY_TIMEOUT_MS_CONFIG,"100");
-        properties.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG,"50");
-        properties.put(ProducerConfig.CLIENT_ID_CONFIG,ACL_USER+"-"+CUSTOM_CLIENT_ID);
+        properties.put(ProducerConfig.BUFFER_MEMORY_CONFIG, bufferMemory + "");
+        properties.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
+        properties.put(ProducerConfig.LINGER_MS_CONFIG, "50");
+        properties.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, "1000");
+        properties.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "4000000");
+        properties.put(ProducerConfig.RETRIES_CONFIG, "2");
+        properties.put(ProducerConfig.PARTITIONER_AVAILABILITY_TIMEOUT_MS_CONFIG, "100");
+        properties.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, "50");
+        properties.put(ProducerConfig.CLIENT_ID_CONFIG, ACL_USER + "-" + CUSTOM_CLIENT_ID);
 
         // 默认key为String序列化
         // 默认为value为HermesJson序列化
         try {
-            if(Foundation.server().getEnv() != Env.LOCAL){
-                if(Foundation.server().getEnv() == Env.PRO){
+            if (Foundation.server().getEnv() != Env.LOCAL) {
+                if (Foundation.server().getEnv() == Env.PRO) {
                     producer = CKafkaClientBuilder // producer单例需要用户自己维护
                             .newProducerBuilder()
                             .hermesAvroSerializer()
@@ -85,7 +101,7 @@ public class CtripKafkaService implements KafkaService {
                             .topic(TOPIC) // 要发送的topic
                             .aclUser(ACL_PRO_USER) // acl token如有则替换填入此处，无则忽略
                             .build();
-                }else {
+                } else {
                     producer = CKafkaClientBuilder // producer单例需要用户自己维护
                             .newProducerBuilder()
                             .hermesAvroSerializer()
@@ -97,16 +113,15 @@ public class CtripKafkaService implements KafkaService {
 
                 try {
                     producer.partitionsFor(TOPIC);
-                }catch (Throwable t){
-                    logger.warn("init partition wait meta ready",t);
+                } catch (Throwable t) {
+                    logger.warn("init partition wait meta ready", t);
                 }
             }
-
+            return producer;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
-
     private GenericRecord genericRecord(GtidKeyItem gtidKeyItem){
         GenericRecord record = new GenericData.Record(schema);
         record.put("cmd",gtidKeyItem.getCmd());
@@ -137,8 +152,10 @@ public class CtripKafkaService implements KafkaService {
 
     @Override
     public void sendKafka(GtidKeyItem gtidKeyItem){
+        long threadId =  Thread.currentThread().threadId();
+        int index = Long.hashCode(threadId) & PRODUCER_POOL_MASK;
         try{
-            producer.send(new ProducerRecord<>(TOPIC,genericRecord(gtidKeyItem)));
+            producerPool[index].send(new ProducerRecord<>(TOPIC,genericRecord(gtidKeyItem)));
         }catch (Exception e){
             EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA,e.getClass().getName(),convertProducerMetrics(producer.metrics(),e));
         }

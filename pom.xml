@@ -1134,6 +1134,7 @@
                     <version>${maven-jar-plugin_version}</version>
                     <executions>
                         <execution>
+                            <id>create-test-jar</id>
                             <configuration>
                                 <skipIfEmpty>true</skipIfEmpty>
                             </configuration>
