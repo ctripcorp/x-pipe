@@ -1120,7 +1120,7 @@
                             </goals>
                             <configuration>
                                 <finalName>${project.artifactId}-${project.version}</finalName>
-                                <appendAssemblyId>false</appendAssemblyId>
+<!--                                <appendAssemblyId>false</appendAssemblyId>-->
                                 <descriptors>
                                     <descriptor>src/assembly/assembly-descriptor.xml</descriptor>
                                 </descriptors>
@@ -1134,7 +1134,6 @@
                     <version>${maven-jar-plugin_version}</version>
                     <executions>
                         <execution>
-                            <id>create-test-jar</id>
                             <configuration>
                                 <skipIfEmpty>true</skipIfEmpty>
                             </configuration>

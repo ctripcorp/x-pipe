@@ -78,7 +78,7 @@ public class CtripKafkaService implements KafkaService {
         Producer<String, Object> producer = null;
         // 自定义配置，按需配置
         Properties properties = new Properties();
-        properties.put(ProducerConfig.BATCH_SIZE_CONFIG, "1048576");
+        properties.put(ProducerConfig.BATCH_SIZE_CONFIG, "65536");
         properties.put(ProducerConfig.BUFFER_MEMORY_CONFIG, bufferMemory + "");
         properties.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
         properties.put(ProducerConfig.LINGER_MS_CONFIG, "50");
@@ -116,6 +116,10 @@ public class CtripKafkaService implements KafkaService {
                 } catch (Throwable t) {
                     logger.warn("init partition wait meta ready", t);
                 }
+
+                //preheat
+                producer.send(new ProducerRecord<>(TOPIC, genericRecord(new GtidKeyItem("test","uuid","0",
+                                "testk".getBytes(),"testv".getBytes(),"0",0,"localhost"))));
             }
             return producer;
         } catch (IOException e) {
