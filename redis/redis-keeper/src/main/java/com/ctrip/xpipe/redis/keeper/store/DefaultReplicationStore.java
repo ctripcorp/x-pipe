@@ -306,16 +306,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public void checkReplId(String expectReplId) {
-		String currentReplId = metaStore.getCurReplStageReplId();
-		if (!Objects.equals(expectReplId, currentReplId)) {
-			if(metaStore.getPreReplStage() != null) {
-				String prevReplId = metaStore.getPreReplStage().getReplId();
-				if(Objects.equals(expectReplId, prevReplId)){
-					return;
-				}
-			}
-			throw new UnexpectedReplIdException(expectReplId, currentReplId);
-		}
 	}
 
 	public void confirmRdb(RdbStore rdbStore) throws IOException {

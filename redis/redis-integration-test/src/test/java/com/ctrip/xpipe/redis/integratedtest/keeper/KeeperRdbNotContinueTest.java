@@ -55,4 +55,34 @@ public class KeeperRdbNotContinueTest extends AbstractKeeperIntegratedMultiDc {
         sendMessageToMasterAndTestSlaveRedis(128);
     }
 
+
+    @Test
+    public void testSwitchProtocolRdbStoreSyncFail() throws Exception {
+        KeeperMeta backupDcKeeper = getKeeperActive("oy");
+        RedisKeeperServer backupDcKeeperServer = getRedisKeeperServerActive("oy");
+        RedisMeta backupDcSlave = getRedisSlaves("oy").get(0);
+
+        sendMessageToMasterAndTestSlaveRedis(128);
+        backupDcKeeperServer.getReplicationStore().gc();
+
+
+        setRedisToGtidEnabled(getRedisMaster().getIp(), getRedisMaster().getPort());
+
+        SimpleObjectPool<NettyClient> slaveClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(backupDcSlave.getIp(), backupDcSlave.getPort()));
+        new SlaveOfCommand(slaveClientPool, scheduled).execute().get();
+        new SlaveOfCommand(slaveClientPool, backupDcKeeper.getIp(), backupDcKeeper.getPort(), scheduled).execute().get();
+
+        waitConditionUntilTimeOut(() -> {
+            try {
+                String info = new InfoCommand(slaveClientPool, InfoCommand.INFO_TYPE.REPLICATION, scheduled).execute().get();
+                InfoResultExtractor extractor = new InfoResultExtractor(info);
+                return extractor.extract("master_link_status").equalsIgnoreCase("up");
+            } catch (Exception e) {
+                return false;
+            }
+        }, 10000, 1000);
+
+        sendMessageToMasterAndTestSlaveRedis(128);
+    }
+
 }
