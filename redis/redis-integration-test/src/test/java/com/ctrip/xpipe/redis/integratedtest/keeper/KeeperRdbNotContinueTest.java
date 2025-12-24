@@ -57,20 +57,89 @@ public class KeeperRdbNotContinueTest extends AbstractKeeperIntegratedMultiDc {
 
 
     @Test
-    public void testSwitchProtocolRdbStoreSyncFail() throws Exception {
+    public void testBackupDcPSYNCKeeperRDBStoreFailWhenSwitchXSYNC() throws Exception {
         KeeperMeta backupDcKeeper = getKeeperActive("oy");
         RedisKeeperServer backupDcKeeperServer = getRedisKeeperServerActive("oy");
+
         RedisMeta backupDcSlave = getRedisSlaves("oy").get(0);
+        RedisMeta activeDcSlave = getRedisSlaves("jq").get(0);
+
+
+        SimpleObjectPool<NettyClient> activeDcSlaveClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(activeDcSlave.getIp(), activeDcSlave.getPort()));
+        waitConditionUntilTimeOut(() -> {
+            try {
+                String info = new InfoCommand(activeDcSlaveClientPool, InfoCommand.INFO_TYPE.REPLICATION, scheduled).execute().get();
+                InfoResultExtractor extractor = new InfoResultExtractor(info);
+                return extractor.extract("master_link_status").equalsIgnoreCase("up");
+            } catch (Exception e) {
+                return false;
+            }
+        }, 30000, 1000);
+
+
+        SimpleObjectPool<NettyClient> backupDcKeeperSlaveClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(backupDcKeeper.getIp(), backupDcKeeper.getPort()));
+        waitConditionUntilTimeOut(() -> {
+            try {
+                String info = new InfoCommand(backupDcKeeperSlaveClientPool, InfoCommand.INFO_TYPE.REPLICATION, scheduled).execute().get();
+                InfoResultExtractor extractor = new InfoResultExtractor(info);
+                return extractor.extract("master_link_status").equalsIgnoreCase("up");
+            } catch (Exception e) {
+                return false;
+            }
+        }, 30000, 1000);
+
+
+        SimpleObjectPool<NettyClient> slaveClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(backupDcSlave.getIp(), backupDcSlave.getPort()));
+        waitConditionUntilTimeOut(() -> {
+            try {
+                String info = new InfoCommand(slaveClientPool, InfoCommand.INFO_TYPE.REPLICATION, scheduled).execute().get();
+                InfoResultExtractor extractor = new InfoResultExtractor(info);
+                return extractor.extract("master_link_status").equalsIgnoreCase("up");
+            } catch (Exception e) {
+                return false;
+            }
+        }, 30000, 1000);
+
+        jedisExecCommand(getRedisMaster().getIp(), getRedisMaster().getPort(),"FLUSHALL");
+
+        setRedisToGtidNotEnabled(getRedisMaster().getIp(), getRedisMaster().getPort());
+
+        waitConditionUntilTimeOut(() -> {
+            try {
+                String info = new InfoCommand(slaveClientPool, InfoCommand.INFO_TYPE.GTID, scheduled).execute().get();
+                InfoResultExtractor extractor = new InfoResultExtractor(info);
+                return extractor.extract("gtid_repl_mode").equalsIgnoreCase("psync");
+            } catch (Exception e) {
+                return false;
+            }
+        }, 30000, 1000);
 
         sendMessageToMasterAndTestSlaveRedis(128);
+
+
+
+        backupDcKeeperServer.releaseRdb();
         backupDcKeeperServer.getReplicationStore().gc();
 
 
         setRedisToGtidEnabled(getRedisMaster().getIp(), getRedisMaster().getPort());
 
-        SimpleObjectPool<NettyClient> slaveClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(backupDcSlave.getIp(), backupDcSlave.getPort()));
+        waitConditionUntilTimeOut(() -> {
+            try {
+                String info = new InfoCommand(slaveClientPool, InfoCommand.INFO_TYPE.GTID, scheduled).execute().get();
+                InfoResultExtractor extractor = new InfoResultExtractor(info);
+                return extractor.extract("gtid_repl_mode").equalsIgnoreCase("xsync");
+            } catch (Exception e) {
+                return false;
+            }
+        }, 30000, 1000);
+
         new SlaveOfCommand(slaveClientPool, scheduled).execute().get();
+
+        jedisExecCommand(backupDcSlave.getIp(),backupDcSlave.getPort(),"FLUSHALL");
+
         new SlaveOfCommand(slaveClientPool, backupDcKeeper.getIp(), backupDcKeeper.getPort(), scheduled).execute().get();
+
 
         waitConditionUntilTimeOut(() -> {
             try {
@@ -80,9 +149,9 @@ public class KeeperRdbNotContinueTest extends AbstractKeeperIntegratedMultiDc {
             } catch (Exception e) {
                 return false;
             }
-        }, 10000, 1000);
-
+        }, 30000, 1000);
         sendMessageToMasterAndTestSlaveRedis(128);
     }
+
 
 }
