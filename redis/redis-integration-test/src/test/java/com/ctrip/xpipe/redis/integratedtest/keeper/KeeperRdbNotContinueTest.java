@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -60,6 +61,7 @@ public class KeeperRdbNotContinueTest extends AbstractKeeperIntegratedMultiDc {
     public void testBackupDcPSYNCKeeperRDBStoreFailWhenSwitchXSYNC() throws Exception {
         KeeperMeta backupDcKeeper = getKeeperActive("oy");
         RedisKeeperServer backupDcKeeperServer = getRedisKeeperServerActive("oy");
+        RedisKeeperServer activeDcKeeperServer = getRedisKeeperServerActive("jq");
 
         RedisMeta backupDcSlave = getRedisSlaves("oy").get(0);
         RedisMeta activeDcSlave = getRedisSlaves("jq").get(0);
@@ -100,10 +102,9 @@ public class KeeperRdbNotContinueTest extends AbstractKeeperIntegratedMultiDc {
             }
         }, 30000, 1000);
 
-        jedisExecCommand(getRedisMaster().getIp(), getRedisMaster().getPort(),"FLUSHALL");
+        Assert.assertNotNull(activeDcKeeperServer.getReplicationStore().getMetaStore().dupReplicationStoreMeta().getRdbFile());
 
-        setRedisToGtidNotEnabled(getRedisMaster().getIp(), getRedisMaster().getPort());
-
+        Assert.assertEquals(4,activeDcKeeperServer.getKeeperMonitor().getKeeperStats().getFullSyncCount());
         waitConditionUntilTimeOut(() -> {
             try {
                 String info = new InfoCommand(slaveClientPool, InfoCommand.INFO_TYPE.GTID, scheduled).execute().get();
@@ -115,8 +116,6 @@ public class KeeperRdbNotContinueTest extends AbstractKeeperIntegratedMultiDc {
         }, 30000, 1000);
 
         sendMessageToMasterAndTestSlaveRedis(128);
-
-
 
         backupDcKeeperServer.releaseRdb();
         backupDcKeeperServer.getReplicationStore().gc();
@@ -136,8 +135,6 @@ public class KeeperRdbNotContinueTest extends AbstractKeeperIntegratedMultiDc {
 
         new SlaveOfCommand(slaveClientPool, scheduled).execute().get();
 
-        jedisExecCommand(backupDcSlave.getIp(),backupDcSlave.getPort(),"FLUSHALL");
-
         new SlaveOfCommand(slaveClientPool, backupDcKeeper.getIp(), backupDcKeeper.getPort(), scheduled).execute().get();
 
 
@@ -150,6 +147,8 @@ public class KeeperRdbNotContinueTest extends AbstractKeeperIntegratedMultiDc {
                 return false;
             }
         }, 30000, 1000);
+        Assert.assertEquals(6,activeDcKeeperServer.getKeeperMonitor().getKeeperStats().getFullSyncCount());
+
         sendMessageToMasterAndTestSlaveRedis(128);
     }
 
