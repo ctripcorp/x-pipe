@@ -390,6 +390,19 @@ public abstract class AbstractRedisTest extends AbstractTest {
         return null;
     }
 
+    protected List<RedisMeta> getAllRedisMaster() {
+        List<RedisMeta> redisMetas = new ArrayList<>();
+        for (DcMeta dcMeta : getXpipeMeta().getDcs().values()) {
+            List<RedisMeta> redises = getRedises(dcMeta.getId());
+            for (RedisMeta redisMeta : redises) {
+                if (redisMeta.isMaster()) {
+                    redisMetas.add(redisMeta);
+                }
+            }
+        }
+        return redisMetas;
+    }
+
 
     protected DcMeta activeDc() {
 

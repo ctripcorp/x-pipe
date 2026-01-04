@@ -111,7 +111,7 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	protected String buildThreadPrefix(Channel channel) {
 		String getRemoteIpLocalPort = ChannelUtil.getRemoteAddr(channel);
-		return  "RedisClientPsync-" + getRemoteIpLocalPort;
+		return  "RedisClientPsync-" + getRemoteIpLocalPort+"[slaveListeningPort] "+getSlaveListeningPort();
 	}
 
 	@Override

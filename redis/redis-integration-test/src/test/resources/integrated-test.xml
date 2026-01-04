@@ -6,6 +6,9 @@
 		<cluster id="cluster1" db-id="1" active-dc="jq" backup-dcs="oy">
 			<shard id="shard1" db-id="1">
 				<redis ip="127.0.0.1" port="6379" master="" />
+				<redis ip="127.0.0.1" port="9379" master="" />
+				<redis ip="127.0.0.1" port="9319" master="" />
+				<redis ip="127.0.0.1" port="9329" master="" />
 				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6000" active="false" />
 				<keeper id="0123456789012345678901234567890123456789" ip="127.0.0.1" port="6001" active="false" />
 				<redis ip="127.0.0.1" port="8000" master="127.0.0.1:6000" />

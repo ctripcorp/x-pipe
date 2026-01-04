@@ -250,10 +250,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		clientExecutors = Executors.newSingleThreadExecutor(KeeperReplIdAwareThreadFactory.create(replId, "RedisClient-" + threadPoolName));
 		scheduled = Executors.newScheduledThreadPool(DEFAULT_SCHEDULED_CORE_POOL_SIZE , KeeperReplIdAwareThreadFactory.create(replId, "sch-" + threadPoolName));
-		bossGroup = new NioEventLoopGroup(DEFAULT_BOSS_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "boss-" + threadPoolName));
-		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, KeeperReplIdAwareThreadFactory.create(replId, "work-"+ threadPoolName));
-		masterEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "master-" + threadPoolName));
-		rdbOnlyEventLoopGroup = new NioEventLoopGroup(DEFAULT_RDB_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "rdbOnly-" + threadPoolName));
+		bossGroup = new NioEventLoopGroup(DEFAULT_BOSS_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "boss-" + currentKeeperMeta.getPort()+"-"+threadPoolName));
+		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, KeeperReplIdAwareThreadFactory.create(replId, "work-"+currentKeeperMeta.getPort()+"-"+ threadPoolName));
+		masterEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "master-"+currentKeeperMeta.getPort()+"-" + threadPoolName));
+		rdbOnlyEventLoopGroup = new NioEventLoopGroup(DEFAULT_RDB_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "rdbOnly-"+currentKeeperMeta.getPort()+"-" + threadPoolName));
 		masterConfigEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_CONFIG_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "masterConfig-" + threadPoolName));
 
 
