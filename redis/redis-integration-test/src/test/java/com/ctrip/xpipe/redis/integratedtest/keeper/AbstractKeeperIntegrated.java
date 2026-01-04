@@ -23,6 +23,7 @@ import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import redis.clients.jedis.Jedis;
 
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -36,6 +37,9 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 	private int replicationStoreCommandFileNumToKeep = 2;
 	private int replicationStoreMaxCommandsToTransferBeforeCreateRdb = 1024;
 	private int minTimeMilliToGcAfterCreate = 2000;
+
+	private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	private static final Random RANDOM = new Random();
 
 	protected KeeperMeta getKeeperActive(RedisMeta redisMeta) {
 		
@@ -164,6 +168,18 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 		}
 
 		return result;
+	}
+
+	protected static String generateRandomString(int length) {
+		if (length <= 0) {
+			throw new IllegalArgumentException("illegal length:" + length);
+		}
+		StringBuilder sb = new StringBuilder(length);
+		for (int i = 0; i < length; i++) {
+			int index = RANDOM.nextInt(CHARACTERS.length());
+			sb.append(CHARACTERS.charAt(index));
+		}
+		return sb.toString();
 	}
 
 }
