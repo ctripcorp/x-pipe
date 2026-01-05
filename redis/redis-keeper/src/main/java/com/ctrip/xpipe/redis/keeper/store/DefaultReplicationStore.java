@@ -240,7 +240,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		Pair<GtidSet, GtidSet> gtidSets = getBeginGtidSetAndLost();
 		GtidSet beginGtidSet = gtidSets.getKey();
 		GtidSet lostGtidSet = gtidSets.getValue();
-		return Pair.of(beginGtidSet.union(cmdStore.getIndexGtidSet()), lostGtidSet);
+		GtidSet executedGtidSet = beginGtidSet;
+		if (null != cmdStore) {
+			executedGtidSet = beginGtidSet.union(cmdStore.getIndexGtidSet());
+		}
+		return Pair.of(executedGtidSet, lostGtidSet);
 	}
 
 	private Pair<GtidSet, GtidSet> getBeginGtidSetAndLost() {

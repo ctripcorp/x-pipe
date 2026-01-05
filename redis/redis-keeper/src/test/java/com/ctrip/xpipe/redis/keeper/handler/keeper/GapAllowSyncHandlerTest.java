@@ -352,10 +352,25 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         Mockito.when(store.getGtidSet()).thenReturn(new Pair<>(new GtidSet("A:1-10"), new GtidSet("")));
         Mockito.when(keeperServer.locateContinueGtidSetWithFallbackToEnd(any(GtidSet.class))).thenReturn(new XSyncContinue(new GtidSet("A:1-5"), 100));
 
-        GapAllowSyncHandler.SyncRequest syncRequest = GapAllowSyncHandler.SyncRequest.xsync("test-repl-id1", "A:1-5,B:1-5", 0, "B:1-5");
+        GapAllowSyncHandler.SyncRequest syncRequest = GapAllowSyncHandler.SyncRequest.xsync("test-repl-id1", "A:1-5", 0, "B:1-5");
         GapAllowSyncHandler.SyncAction action = handler.anaRequest(syncRequest, keeperServer, slave);
         Assert.assertFalse(action.full);
         Assert.assertEquals(new GtidSet("B:1-5"), action.deltaLost);
+    }
+
+    @Test
+    public void testKeeperLostGap0_FullSync() throws Exception {
+        ReplStage replStage = new ReplStage("test-repl-id1", 1, 1, "A", new GtidSet("B:1-10"), new GtidSet(""));
+        Mockito.when(keeperServer.getKeeperRepl()).thenReturn(keeperRepl);
+        Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
+        Mockito.when(keeperServer.getKeeperConfig()).thenReturn(keeperConfig);
+        Mockito.when(keeperRepl.currentStage()).thenReturn(replStage);
+        Mockito.when(store.getGtidSet()).thenReturn(new Pair<>(new GtidSet("A:1-10"), new GtidSet("B:1-10")));
+        Mockito.when(keeperServer.locateContinueGtidSetWithFallbackToEnd(any(GtidSet.class))).thenReturn(new XSyncContinue(new GtidSet("A:1-5"), 100));
+
+        GapAllowSyncHandler.SyncRequest syncRequest = GapAllowSyncHandler.SyncRequest.xsync("test-repl-id1", "A:1-5,B:6-10", 0, "B:1-5");
+        GapAllowSyncHandler.SyncAction action = handler.anaRequest(syncRequest, keeperServer, slave);
+        Assert.assertTrue(action.full);
     }
 
 }
