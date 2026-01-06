@@ -15,6 +15,7 @@ import org.junit.runners.Suite;
         MasterSwitchMultDcTest.class,
         KeeperXSyncCrossRegionTest.class,
         GtidCmdSearcherKeeperTest.class,
+        PsyncXsyncSwitchAlways.class,
 })
 public class AllXsyncTest {
 }
