@@ -55,7 +55,11 @@ public abstract class AbstractRedisClient<T extends RedisServer> extends Abstrac
 
     @Override
     public String toString() {
-        return ChannelUtil.getDesc(channel)+"[slaveListeningPort] "+slaveListeningPort;
+        if(slaveListeningPort != 0) {
+            return ChannelUtil.getDesc(channel) + "[slaveListeningPort] " + slaveListeningPort;
+        }else {
+            return ChannelUtil.getDesc(channel);
+        }
     }
 
     @Override

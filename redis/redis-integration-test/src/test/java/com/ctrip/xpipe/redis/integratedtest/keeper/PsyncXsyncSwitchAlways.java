@@ -5,12 +5,14 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Map;
 import java.util.Set;
 
-public class PsyncXsyncSwitchAlways extends AbstractKeeperIntegratedMultiDcXsync{
+public class PsyncXsyncSwitchAlways extends AbstractCustomKeeperIntegratedMultiDcXsync{
     private int switchCount = 1000000;
 
     @Test
@@ -38,6 +40,8 @@ public class PsyncXsyncSwitchAlways extends AbstractKeeperIntegratedMultiDcXsync
         sleep(100);
 
         sendMessageToMasterAndTestSlaveRedis(1);
+        long fullSyncCount = getRedisKeeperServer(getKeeperActive("jq")).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+        logger.info("keeper lost before full sync count {}",fullSyncCount);
 
         RedisMeta activeDcSlave = getRedisSlaves("jq").get(0);
         setRedisToGtidEnabled(activeDcSlave.getIp(),activeDcSlave.getPort());
@@ -50,7 +54,10 @@ public class PsyncXsyncSwitchAlways extends AbstractKeeperIntegratedMultiDcXsync
 
         checkMasterGtidLost();
         checkAllMasterSlaveGtidSet();
-        assertSpecifiedKeyRedisEquals(getRedisMaster(),getRedisSlaves(),keys);
+        assertSpecifiedKeyRedisNotEquals(getRedisMaster(),getRedisSlaves(),keys);
+        long fullSyncCount2 = getRedisKeeperServer(getKeeperActive("jq")).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+        logger.info("keeper lost after full sync count {}",fullSyncCount2);
+        Assert.assertEquals(fullSyncCount2,fullSyncCount+2);
     }
 
 
@@ -66,6 +73,8 @@ public class PsyncXsyncSwitchAlways extends AbstractKeeperIntegratedMultiDcXsync
         sleep(100);
 
         sendMessageToMasterAndTestSlaveRedis(1);
+        long fullSyncCount = getRedisKeeperServer(getKeeperActive("jq")).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+        logger.info("keeper lost before full sync count {}",fullSyncCount);
 
         RedisMeta activeDcSlave = getRedisSlaves("jq").get(0);
         setRedisToGtidEnabled(activeDcSlave.getIp(),activeDcSlave.getPort());
@@ -79,6 +88,10 @@ public class PsyncXsyncSwitchAlways extends AbstractKeeperIntegratedMultiDcXsync
         checkMasterGtidLost();
         checkAllMasterSlaveGtidSet();
         assertSpecifiedKeyRedisEquals(getRedisMaster(),getRedisSlaves(),keys);
+        long fullSyncCount2 = getRedisKeeperServer(getKeeperActive("jq")).getKeeperMonitor().getKeeperStats().getFullSyncCount();
+        logger.info("keeper lost after full sync count {}",fullSyncCount2);
+
+        Assert.assertEquals(fullSyncCount2,fullSyncCount);
     }
 
 
