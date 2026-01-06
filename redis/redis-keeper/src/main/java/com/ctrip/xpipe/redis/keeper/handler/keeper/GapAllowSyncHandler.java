@@ -266,7 +266,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             } else if (reqBacklogOffset > backlogEnd) {
                 return SyncAction.full("wait offset fail");
             } else if (backlogEnd - reqBacklogOffset >= maxTransfer) {
-                return SyncAction.full(String.format("[too much commands to transfer]%d - %d < %d", backlogEnd, reqBacklogOffset, maxTransfer));
+                return SyncAction.full(String.format("[too much commands to transfer]%d - %d >= %d", backlogEnd, reqBacklogOffset, maxTransfer));
             } else {
                 return SyncAction.Continue(psyncStage, keeperReplId, request.offset);
             }
@@ -312,7 +312,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 logger.info("[anaXSync][full] gap: {} maxGap: {}", gap, request.maxGap);
                 return SyncAction.full(String.format("[gap][%d > %d]", gapCnt, request.maxGap));
             } else if (backlogEnd - backlogCont >= maxTransfer) {
-                return SyncAction.full(String.format("[too much commands to transfer]%d - %d < %d", backlogEnd, backlogCont, maxTransfer));
+                return SyncAction.full(String.format("[too much commands to transfer]%d - %d >= %d", backlogEnd, backlogCont, maxTransfer));
             } else if (backlogCont < backlogBeginOffset) {
                 return SyncAction.full(String.format("[continue offset miss][backlog][continue: %d, sup:%d], ", backlogCont, backlogBeginOffset));
             } else {
@@ -325,7 +325,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
     protected void runAction(SyncAction action, RedisKeeperServer keeperServer, RedisSlave slave) throws IOException {
         if (action.isFull()) {
-            logger.info("[runAction][full][{}] {}", slave, action.fullCause);
+            logger.info("[runAction][full][{}] {}", slave,action.fullCause);
             slave.markPsyncProcessed();
             keeperServer.fullSyncToSlave(slave, action.freshRdb);
             keeperServer.getKeeperMonitor().getKeeperStats().increaseFullSync();

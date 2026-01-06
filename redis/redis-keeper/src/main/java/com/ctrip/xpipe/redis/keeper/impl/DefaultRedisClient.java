@@ -33,8 +33,6 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 	
 	private Set<CAPA>  capas = new HashSet<CAPA>(); 
 
-	private int slaveListeningPort;
-
 	private String idc = null;
 	
 	private AtomicBoolean isKeeper = new AtomicBoolean(false);
@@ -65,10 +63,10 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 
 	@Override
 	public void setSlaveListeningPort(int port) {
+		this.slaveListeningPort = port;
 		if(logger.isInfoEnabled()){
 			logger.info("[setSlaveListeningPort]" + this + "," + port);
 		}
-		this.slaveListeningPort = port;
 	}
 
 	@Override

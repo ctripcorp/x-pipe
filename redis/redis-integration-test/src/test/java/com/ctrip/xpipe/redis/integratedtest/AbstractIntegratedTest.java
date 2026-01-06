@@ -165,7 +165,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	protected RedisKeeperServer startKeeper(KeeperMeta keeperMeta, KeeperConfig keeperConfig,
 			LeaderElectorManager leaderElectorManager) throws Exception {
 
-		logger.info(remarkableMessage("[startKeeper]{}, {}"), keeperMeta);
+		logger.info(remarkableMessage("[startKeeper]{}, {}"), keeperMeta,keeperConfig);
 		File baseDir = new File(getTestFileDir() + "/replication_store_" + keeperMeta.getPort());
 
 		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperMeta, baseDir, keeperConfig, leaderElectorManager,
