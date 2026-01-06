@@ -126,7 +126,6 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
 
         try {
             logger.info("[beginReceiveRdbData][update rdb]{}", dumpedRdbStore);
-            redisMaster.getCurrentReplicationStore().checkReplId(replId);
             super.beginReceiveRdbData(replId, masterOffset);
         } catch (UnexpectedReplIdException e) {
             dumpFail(new RdbOnlyPsyncReplIdNotSameException("[beginReceiveRdbData]", e));
