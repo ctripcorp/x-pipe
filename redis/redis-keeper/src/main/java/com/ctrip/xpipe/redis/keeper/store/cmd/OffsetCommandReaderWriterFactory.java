@@ -33,7 +33,6 @@ public class OffsetCommandReaderWriterFactory implements CommandReaderWriterFact
             if (endOffsetExcluded >= 0 && endOffsetExcluded <= currentOffset)
                 throw new UnsupportedOperationException("endOffset must gt beginOffset: " + endOffsetExcluded + ":" + currentOffset);
         }
-        cmdStore.rotateFileIfNecessary();
         CommandFile commandFile = cmdStore.findFileForOffset(currentOffset);
         if (null == commandFile) {
             throw new IOException("File for offset " + replProgress.getProgress() + " in store " + cmdStore + " does not exist");

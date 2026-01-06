@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.health;
 
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
@@ -105,7 +106,7 @@ public class DiskHealthChecker extends AbstractLifecycleObservable implements To
                     state.set(HealthState.DOWN);
                 }
             } else {
-                // do nothing
+                EventMonitor.DEFAULT.logEvent("HEALTH", "DISK_DISABLED");
             }
         }
 

@@ -276,41 +276,38 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
     }
 
     protected SyncAction anaXSync(SyncRequest request, ReplStage xsyncStage, XSyncContinue xsyncCont, KeeperRepl keeperRepl, KeeperConfig config, boolean recordDeltaLost) {
-        GtidSet lost = xsyncStage.getGtidLost();
         GtidSet cont = xsyncCont.getContinueGtidSet();
-        GtidSet req = request.slaveGtidSet;
-        GtidSet reqLost = request.slaveGtidLost;
+        GtidSet lost = xsyncStage.getGtidLost().subtract(cont);
+        GtidSet masterGtidSet = cont.union(lost);
+        GtidSet slaveLost = request.slaveGtidLost;
+        GtidSet slaveExecuted = request.slaveGtidSet.subtract(slaveLost);
+        GtidSet slaveGtidSet = slaveLost.union(slaveExecuted);
         long backlogCont = xsyncCont.getBacklogOffset();
         long backlogEnd = keeperRepl.backlogEndOffset();
         long maxTransfer = config.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
         long backlogBeginOffset = Math.max(xsyncStage.getBegOffsetBacklog(), keeperRepl.backlogBeginOffset());
 
         logger.info("[anaXsync] KeeperLost: {}, keeperCont: {}, backlogCont: {}", lost, cont, backlogCont);
-        lost = lost.subtract(cont); // avoid gtid.lost contain gtid.exec in some concurrent cases
-
         if ("*".equals(request.replId) || xsyncStage.getReplId().equalsIgnoreCase(request.replId)) {
-            GtidSet masterGtidSet = cont.union(lost);
-            boolean gtidNotRelated = masterGtidSet.retainAll(req).isEmpty();
+            boolean gtidNotRelated = masterGtidSet.retainAll(slaveExecuted).isEmpty();
 
-            GtidSet gap = masterGtidSet.symmetricDiff(req);
-            if (!reqLost.isEmpty()) {
-                gap = gap.subtract(reqLost);
-                gap = gap.subtract(lost);
-            }
+            GtidSet gap = cont.symmetricDiff(slaveExecuted);
             int gapCnt = gap.itemCnt();
 
             GtidSet deltaLost = null;
-            if (!recordDeltaLost){
-                logger.info("[deltaLost] not compute deltaLost, preStage: {}, curStage: {}, requestProto: {}", keeperRepl.preStage(), keeperRepl.currentStage(), request.proto);
-            } else {
-                deltaLost = req.subtract(masterGtidSet);
+            if (recordDeltaLost){
+                deltaLost = slaveGtidSet.subtract(masterGtidSet);
                 if (!deltaLost.isEmpty()) {
-                    logger.info("[deltaLost] deltaLost:{} = locateGtidSet:{} + lostGtidSet:{} - requestGtidSet:{}", deltaLost, cont, lost, req);
+                    logger.info("[deltaLost] deltaLost:{} = slaveExecuted:{} + slaveLost:{} - keeperExecuted:{} - keeperLost:{}",
+                            deltaLost, slaveExecuted, slaveLost, cont, lost);
                 }
+            } else {
+                logger.info("[deltaLost] not compute deltaLost, preStage: {}, curStage: {}, requestProto: {}", keeperRepl.preStage(), keeperRepl.currentStage(), request.proto);
+
             }
 
-            if (!req.isEmpty() && gtidNotRelated) {
-                return SyncAction.full(String.format("[gtid not related] req:%s, my:%s", req, masterGtidSet));
+            if (!slaveExecuted.isEmpty() && gtidNotRelated) {
+                return SyncAction.full(String.format("[gtid not related] slaveExecuted:%s, my:%s", slaveExecuted, masterGtidSet));
             } else if (request.maxGap >= 0 && request.maxGap < gapCnt) {
                 logger.info("[anaXSync][full] gap: {} maxGap: {}", gap, request.maxGap);
                 return SyncAction.full(String.format("[gap][%d > %d]", gapCnt, request.maxGap));

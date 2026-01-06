@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.cmd;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
 import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
@@ -90,9 +91,16 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
             // TODO notify when next file ready
             CommandFile nextCommandFile = commandStore.findNextFile(curCmdFile.getFile());
             if (nextCommandFile != null) {
+                if (referenceFileChannel.hasAnythingToRead()) {
+                    logger.error("[readNextFileIfNecessary][miss current tail]{}", referenceFileChannel);
+                    EventMonitor.DEFAULT.logEvent("REPL_WRONG","MISS_TAIL");
+                    return;
+                }
                 curCmdFile = nextCommandFile;
                 referenceFileChannel.close();
                 referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(curCmdFile.getFile()));
+            } else {
+                logger.debug("[readNextFileIfNecessary][next file not ready] {}", curCmdFile);
             }
         }
     }

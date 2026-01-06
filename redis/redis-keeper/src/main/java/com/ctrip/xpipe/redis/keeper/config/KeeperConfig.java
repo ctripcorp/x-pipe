@@ -88,4 +88,6 @@ public interface KeeperConfig extends CoreConfig{
 	int getXsyncMaxGapCrossRegion();
 
     int getApplierNettyRecvBufferSize();
+
+	boolean getRecordWrongStream();
 }
