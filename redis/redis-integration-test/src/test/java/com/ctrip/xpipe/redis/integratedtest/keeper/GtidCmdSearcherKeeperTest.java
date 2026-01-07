@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
-import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
@@ -10,7 +9,6 @@ import org.junit.Test;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Transaction;
 
-import java.util.HashMap;
 import java.util.List;
 
 public class GtidCmdSearcherKeeperTest extends AbstractKeeperIntegratedSingleDc{
@@ -29,10 +27,6 @@ public class GtidCmdSearcherKeeperTest extends AbstractKeeperIntegratedSingleDc{
             transaction.set("K4", "V4");
             transaction.mset("K5", "V5", "K6", "V6");
             transaction.exec();
-            jedis.hmset("h1", new HashMap<>() {{
-                put("f1", "v1");
-                put("f2", "v2");
-            }});
         }
 
         String raw_gtid = infoRedis(redisMaster.getIp(), redisMaster.getPort(), InfoCommand.INFO_TYPE.GTID, "gtid_executed");
@@ -42,19 +36,18 @@ public class GtidCmdSearcherKeeperTest extends AbstractKeeperIntegratedSingleDc{
         int begGno = Integer.parseInt(raw_gno[0]);
         int endGno = Integer.parseInt(raw_gno[1]);
         Assert.assertEquals(1, begGno);
-        Assert.assertEquals(4, endGno);
+        Assert.assertEquals(3, endGno);
 
         waitForKeeperSync(activeKeeper);
 
         List<CmdKeyItem> items = getRedisKeeperServer(activeKeeper).createCmdKeySearcher(UUID, begGno, endGno).execute().get();
-        Assert.assertEquals(8, items.size());
+        Assert.assertEquals(6, items.size());
         for (CmdKeyItem item : items) {
             Assert.assertEquals(item.uuid, UUID);
             Assert.assertTrue(item.seq >= begGno && item.seq <= endGno);
             Assert.assertEquals(0, item.dbId);
             Assert.assertNotNull(item.key);
         }
-        logger.info("[searcher] {}", Codec.DEFAULT.encode(items));
     }
 
     private void waitForKeeperSync(KeeperMeta keeper) throws Exception {

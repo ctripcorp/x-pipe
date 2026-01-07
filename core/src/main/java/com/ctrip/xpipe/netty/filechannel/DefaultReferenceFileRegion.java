@@ -39,6 +39,8 @@ public class DefaultReferenceFileRegion extends DefaultFileRegion implements Ref
 		try {
 			if(deallocated.compareAndSet(false, true)) {
 				referenceFileChannel.release();
+			} else {
+				logger.error("[deallocate][already deallocated] {}", referenceFileChannel);
 			}
 		} catch (Exception e) {
 			logger.error("[deallocate]" + referenceFileChannel, e);

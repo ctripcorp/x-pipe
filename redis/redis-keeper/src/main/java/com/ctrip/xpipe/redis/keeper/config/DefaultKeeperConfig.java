@@ -62,6 +62,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
     private static String KEY_APPLIER_NETTY_RECV_BUFFER_SIZE = "applier.netty.recv.buffer.size";
 
+	private static String KEY_RECORD_WRONG_STREAM = "keeper.record.wrong.stream";
+
 	public DefaultKeeperConfig(){
 
 		CompositeConfig compositeConfig = new CompositeConfig();
@@ -239,4 +241,9 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
     public int getApplierNettyRecvBufferSize() {
         return getIntProperty(KEY_APPLIER_NETTY_RECV_BUFFER_SIZE, 512);
     }
+
+	@Override
+	public boolean getRecordWrongStream() {
+		return getBooleanProperty(KEY_RECORD_WRONG_STREAM, false);
+	}
 }

@@ -92,7 +92,6 @@
         <guice.version>5.1.0</guice.version>
         <ckafka.version>0.2.5</ckafka.version>
         <kafka.version>3.3.0</kafka.version>
-        <grpc.version>1.40.1-ctrip.1</grpc.version>
     </properties>
 
     <modules>
@@ -109,11 +108,6 @@
                 <version>${framework-parent.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-api</artifactId>
-                <version>${grpc.version}</version>
             </dependency>
             <!-- jackson -->
             <dependency>

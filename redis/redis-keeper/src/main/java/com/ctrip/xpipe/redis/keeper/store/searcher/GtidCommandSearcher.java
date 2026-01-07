@@ -196,39 +196,22 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
             return;
         }
 
+        // TODO: support RedisMultiSubKeyOp，DBID @lsl
         if (redisOp instanceof RedisMultiKeyOp) {
             RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) redisOp;
             List<RedisKey> keys = redisMultiKeyOp.getKeys();
             for (RedisKey redisKey : keys) {
                 if (null == redisKey) continue;
-                CmdKeyItem item = new CmdKeyItem(uuid, gno, parseDbId(redisOp), redisOp.getOpType().name(), redisKey.get());
+                CmdKeyItem item = new CmdKeyItem(uuid, gno, 0, redisOp.getOpType().name(), redisKey.get());
                 cmdKeyItems.add(item);
             }
         } else if (redisOp instanceof RedisSingleKeyOp) {
             RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
             RedisKey redisKey = redisSingleKeyOp.getKey();
             if (null == redisKey) return;
-            CmdKeyItem item = new CmdKeyItem(uuid, gno, parseDbId(redisOp), redisOp.getOpType().name(), redisKey.get());
+            CmdKeyItem item = new CmdKeyItem(uuid, gno, 0, redisOp.getOpType().name(), redisKey.get());
             cmdKeyItems.add(item);
-        } else if (redisOp instanceof RedisMultiSubKeyOp) {
-            RedisMultiSubKeyOp redisMultiSubKeyOp = (RedisMultiSubKeyOp) redisOp;
-            RedisKey key = redisMultiSubKeyOp.getKey();
-            if (null == key) return;
-
-            List<RedisKey> subKeys = redisMultiSubKeyOp.getAllSubKeys();
-            for (RedisKey subKey : subKeys) {
-                if (null == subKey) continue;
-                CmdKeyItem item = new CmdKeyItem(uuid, gno, parseDbId(redisOp), redisOp.getOpType().name(), key.get(), subKey.get());
-                cmdKeyItems.add(item);
-            }
-        } else {
-            logger.info("[appendCmdKeyItem][unknown] {}", redisOp.getOpType().name());
         }
-    }
-
-    private int parseDbId(RedisOp redisOp) {
-        String dbId = redisOp.getDbId();
-        return StringUtil.isEmpty(dbId) ? 0 : Integer.parseInt(dbId);
     }
 
     @Override

@@ -103,7 +103,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     
     public abstract Logger getLogger();
 
-    public AbstractCommandStore(CKStore ckStore, File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+    public AbstractCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                                 int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
                                 long commandReaderFlyingThreshold,
                                 CommandReaderWriterFactory cmdReaderWriterFactory,
@@ -123,7 +123,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.indexStoreDelay = keeperMonitor.createCommandStoreDelay(this);
         this.redisOpParser = redisOpParser;
         this.gtidCmdFilter = gtidCmdFilter;
-        this.ckStore = ckStore;
 
         cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
@@ -133,6 +132,18 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
         this.buildIndex = buildIndex;
         indexStore = createIndexStore();
+    }
+
+    public AbstractCommandStore(CKStore ckStore, File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+                                int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
+                                long commandReaderFlyingThreshold,
+                                CommandReaderWriterFactory cmdReaderWriterFactory,
+                                KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
+                                GtidCmdFilter  gtidCmdFilter, boolean buildIndex
+    ) throws IOException {
+        this(file,maxFileSize,maxTimeSecondKeeperCmdFileAfterModified,minTimeMilliToGcAfterModified,fileNumToKeep,commandReaderFlyingThreshold,cmdReaderWriterFactory,keeperMonitor,redisOpParser,gtidCmdFilter,buildIndex);
+        this.ckStore = ckStore;
+
     }
 
     private IndexStore createIndexStore() throws IOException {

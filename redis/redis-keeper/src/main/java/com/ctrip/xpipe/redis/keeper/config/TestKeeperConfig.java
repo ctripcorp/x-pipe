@@ -317,4 +317,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
     public int getApplierNettyRecvBufferSize() {
         return 512;
     }
+
+	@Override
+	public boolean getRecordWrongStream() {
+		return false;
+	}
 }
