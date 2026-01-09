@@ -10,7 +10,7 @@ import java.util.List;
  * <p>
  * 2025/11/21 16:32
  */
-public class RedisOpItem {
+public class RedisOpItem implements IRedisOpItem<RedisOpItem>{
     private RedisOpType redisOpType;
     private String gtid;
     private String dbId;
@@ -55,5 +55,17 @@ public class RedisOpItem {
 
     public void setRedisKeyList(List<RedisKey> redisKeyList) {
         this.redisKeyList = redisKeyList;
+    }
+
+    @Override
+    public RedisOpItem getRedisOpItem() {
+        return this;
+    }
+
+    @Override
+    public void clear() {
+        if(redisKeyList != null) {
+            redisKeyList.clear();
+        }
     }
 }

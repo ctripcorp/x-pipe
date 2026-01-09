@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 
 public class CtripKafkaService implements KafkaService {
@@ -33,8 +34,6 @@ public class CtripKafkaService implements KafkaService {
 
     private static final String CUSTOM_CLIENT_ID = "bbzfxxpipeckgtid";
 
-    private  Producer<String, Object> producer;
-
     private Producer<String,Object>[] producerPool;
 
     private final int PRODUCER_POOL_SIZE = 16;
@@ -45,6 +44,8 @@ public class CtripKafkaService implements KafkaService {
     private final Schema schema;
 
     private static final String XPIPE_CK_KAFKA = "xpipe.ck.kafka";
+
+    private volatile boolean started = false;
 
     private static final String schemaJson = "{\n" +
             "  \"type\": \"record\",\n" +
@@ -63,15 +64,38 @@ public class CtripKafkaService implements KafkaService {
             "  ]\n" +
             "}";
 
+
+
     public CtripKafkaService(){
         schema = new Schema.Parser().parse(schemaJson);
+        startProducer();
+    }
 
-        long bufferMemory = Runtime.getRuntime().maxMemory()/16/PRODUCER_POOL_SIZE;
+    @Override
+    public void startProducer(){
+        if(started) return;
+        long bufferMemory = Runtime.getRuntime().maxMemory() / 16 / PRODUCER_POOL_SIZE;
         producerPool = new Producer[PRODUCER_POOL_SIZE];
-        for(int i = 0; i < PRODUCER_POOL_SIZE;i++){
+        for (int i = 0; i < PRODUCER_POOL_SIZE; i++) {
             producerPool[i] = createKafkaProducer(bufferMemory);
         }
+        started = true;
+    }
 
+    @Override
+    public void forceStopProducer(){
+        if(!started) return;
+        try {
+            for (int i = 0; i < PRODUCER_POOL_SIZE; i++) {
+                Producer<String, Object> producer = producerPool[i];
+                if (producer != null) {
+                    producer.close(Duration.ZERO);
+                }
+            }
+            producerPool = null;
+        }finally {
+            started = false;
+        }
     }
 
     private Producer<String,Object> createKafkaProducer(long bufferMemory) {
@@ -161,7 +185,7 @@ public class CtripKafkaService implements KafkaService {
         try{
             producerPool[index].send(new ProducerRecord<>(TOPIC,genericRecord(gtidKeyItem)));
         }catch (Exception e){
-            EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA,e.getClass().getName(),convertProducerMetrics(producer.metrics(),e));
+            EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA,e.getClass().getName(),convertProducerMetrics(producerPool[index].metrics(),e));
         }
     }
 

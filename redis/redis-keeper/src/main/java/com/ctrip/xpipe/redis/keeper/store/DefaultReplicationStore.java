@@ -78,7 +78,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected CKStore ckStore;
 
-	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
+	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
 								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp) throws IOException {
 		this.baseDir = baseDir;
@@ -89,6 +89,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		this.cmdReaderWriterFactory = cmdReaderWriterFactory;
 		this.syncRateManager = syncRateManager;
 		this.redisOpParser = redisOp;
+		this.ckStore = ckStore;
 
 		this.metaStore = new DefaultMetaStore(baseDir, keeperRunid);
 
@@ -119,16 +120,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	protected DefaultReplicationStore(File baseDir, KeeperConfig config,String keeperRunid,
 									  KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp
 	) throws IOException {
-		this(baseDir, config,keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp);
+		this(null,baseDir, config,keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp);
 	}
 
-	protected DefaultReplicationStore(CKStore ckStore,File baseDir, KeeperConfig config,String keeperRunid,
-								   CommandReaderWriterFactory cmdReaderWriterFactory,
-								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp
-	) throws IOException {
-		this(baseDir, config,keeperRunid, cmdReaderWriterFactory, keeperMonitor, syncRateManager, redisOp);
-		this.ckStore = ckStore;
-	}
 
 	protected Pair<RdbStore,RdbStore> recoverRdbStores(File baseDir, ReplicationStoreMeta meta) throws IOException{
 		RdbStore rdbStore = null, rordbStore = null;

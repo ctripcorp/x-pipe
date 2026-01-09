@@ -149,9 +149,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         int written = appendCmdBuf(commandBuf);
         ByteArrayOutputStreamPayload command = (ByteArrayOutputStreamPayload) payload[0];
         if(isPingOrSelectCmd(command.getBytes())) return written;
-        ArrayList<Object[]> payloads = new ArrayList<>(1);
-        payloads.add(payload);
-        sendPayloadsToCk(payloads);
+        sendPayloadToCk(payload);
         return written;
     }
 
@@ -164,7 +162,6 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
             }
         }
         sendPayloadsToCk(payloads);
-        
         return written;
     }
 
@@ -193,6 +190,18 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     private void sendPayloadsToCk(List<Object[]> payloads){
         if (ckStore != null && !ckStore.isKeeper()) {
             ckStore.sendPayloads(payloads);
+        }
+    }
+
+    private void sendPayloadToCk(Object[] payload){
+        if(logger.isDebugEnabled()){
+            logger.debug("[sendPayloadToCk],ckStore {},isKeeper {}",ckStore,ckStore != null ? ckStore.isKeeper() : false);
+        }
+        if (ckStore != null && !ckStore.isKeeper()) {
+            if(logger.isDebugEnabled()){
+                logger.debug("[sendPayloadToCk],payload {}",List.of(payload));
+            }
+            ckStore.sendPayload(payload);
         }
     }
 

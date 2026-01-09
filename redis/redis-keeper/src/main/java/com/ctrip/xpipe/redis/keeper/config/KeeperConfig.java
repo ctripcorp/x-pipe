@@ -12,9 +12,11 @@ import java.util.Map;
  */
 public interface KeeperConfig extends CoreConfig{
 
-	public static final long DEFAULT_TRAFFIC_REPORT_INTERVAL_MILLIS = 5000L;
+	long DEFAULT_TRAFFIC_REPORT_INTERVAL_MILLIS = 5000L;
 
-	public static final String KEY_LEAKY_BUCKET_INIT_SIZE = "leaky.bucket.init.size";
+	String KEY_LEAKY_BUCKET_INIT_SIZE = "leaky.bucket.init.size";
+
+	String KEY_STOP_WRITE_CK = "keeper.stop.write.ck";
 
 	int getMetaServerConnectTimeout();
 
@@ -90,4 +92,6 @@ public interface KeeperConfig extends CoreConfig{
     int getApplierNettyRecvBufferSize();
 
 	boolean getRecordWrongStream();
+
+	boolean stopWriteCk();
 }

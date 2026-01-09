@@ -27,7 +27,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager) throws IOException {
-        super(baseDir, config, keeperRunid,
+        super(null,baseDir, config, keeperRunid,
                 new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
                 keeperMonitor, syncRateManager, redisOpParser);
     }

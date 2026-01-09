@@ -1128,12 +1128,22 @@
                     <version>${maven-jar-plugin_version}</version>
                     <executions>
                         <execution>
-                            <configuration>
-                                <skipIfEmpty>true</skipIfEmpty>
-                            </configuration>
+                            <id>default-jar</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>test-jar</id>
+                            <phase>package</phase>
                             <goals>
                                 <goal>test-jar</goal>
                             </goals>
+                            <configuration>
+                                <classifier>tests</classifier>  <!-- 添加classifier -->
+                                <skipIfEmpty>true</skipIfEmpty>
+                            </configuration>
                         </execution>
                     </executions>
                 </plugin>

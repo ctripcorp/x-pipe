@@ -1,6 +1,10 @@
 package com.ctrip.xpipe.redis.keeper.store.ck;
 
+import com.ctrip.xpipe.api.kafka.KafkaService;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.kafka.DefaultKafkaService;
+import com.ctrip.xpipe.metric.DummyMetricProxy;
+import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.operation.*;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
@@ -11,6 +15,7 @@ import com.ctrip.xpipe.redis.core.store.ReplStage;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.GtidReplicationStore;
 import com.lmax.disruptor.RingBuffer;
@@ -47,6 +52,8 @@ public class CKStoreTest  extends AbstractRedisKeeperTest {
 
     private RedisOpParser redisOpParser;
 
+    private KeeperConfig keeperConfig;
+
     private File baseDir;
 
     private ReplicationStore store;
@@ -54,16 +61,20 @@ public class CKStoreTest  extends AbstractRedisKeeperTest {
     private String uuid = "000000000000000000000000000000000000000A";
     private String replId = "000000000000000000000000000000000000000A";
 
+    private CKStore originStore;
+
     @Before
     public void beforeDefaultReplicationStoreTest() throws IOException, IllegalAccessException, NoSuchFieldException {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         redisOpParser = new GeneralRedisOpParser(redisOpParserManager);
         baseDir = new File(getTestFileDir());
-        CKStore ckStore = new CKStore(ReplId.from(1l),redisOpParser,"");
+        keeperConfig = new DefaultKeeperConfig();
+        originStore = new CKStore(ReplId.from(1l),redisOpParser,"",keeperConfig);
+        originStore.start();
 
         MessageEventFactory factory = new MessageEventFactory();
-        int ringBufferSize = 1024 * 1024; // 1M个槽位
+        int ringBufferSize = 1024; // 1M个槽位
         Disruptor<MessageEvent> disruptor = new Disruptor<>(
                 factory,                    // 事件工厂
                 ringBufferSize,             // RingBuffer大小
@@ -73,21 +84,51 @@ public class CKStoreTest  extends AbstractRedisKeeperTest {
         );
 
         disruptor.handleEventsWith((event, sequence, endOfBatch) -> {
-            for(RedisOpItem redisOpItem:event.getRedisOpItems()){
-                this.ckStore.storeGtidWithKeyOrSubKeyItem(redisOpItem);
+            IRedisOpItem iRedisOpItem = event.getRedisOpItem();
+            Object item = iRedisOpItem.getRedisOpItem();
+            if(item instanceof RedisOpItem){
+                ckStore.storeGtidWithKeyOrSubKeyItem((RedisOpItem) item);
+            }else {
+                List<RedisOpItem> redisOpItems = (List<RedisOpItem>) item;
+                for (RedisOpItem redisOpItem : redisOpItems) {
+                    ckStore.storeGtidWithKeyOrSubKeyItem(redisOpItem);
+                }
             }
         });
+
+        KafkaService kafkaService = new DefaultKafkaService();
+        Field  kafkaServiceField = CKStore.class.getDeclaredField("kafkaService");
+        kafkaServiceField.setAccessible(true);
+        kafkaServiceField.set(originStore,kafkaService);
+
+        MetricProxy metricProxy = new DummyMetricProxy();
+        Field  metricProxyField = CKStore.class.getDeclaredField("metricProxy");
+        metricProxyField.setAccessible(true);
+        metricProxyField.set(originStore,metricProxy);
+
         RingBuffer ringBuffer = disruptor.start();
         Field disruptorField = CKStore.class.getDeclaredField("disruptor");
         disruptorField.setAccessible(true);
-        disruptorField.set(ckStore,disruptor);
+        disruptorField.set(originStore,disruptor);
 
         Field ringBufferField = CKStore.class.getDeclaredField("ringBuffer");
         ringBufferField.setAccessible(true);
-        ringBufferField.set(ckStore,ringBuffer);
+        ringBufferField.set(originStore,ringBuffer);
 
-        this.ckStore = Mockito.spy(ckStore);
-        store = new GtidReplicationStore(this.ckStore,baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class));
+        this.ckStore = Mockito.spy(originStore);
+        store = new GtidReplicationStore(this.ckStore,baseDir, keeperConfig, randomKeeperRunid(), createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class));
+    }
+
+    @Test
+    public void testStopWriteCkSwitch(){
+        Assert.assertEquals(false,originStore.checkStopWriteCk());
+        ((DefaultKeeperConfig)keeperConfig).onChange(KeeperConfig.KEY_STOP_WRITE_CK,"false","true");
+        sleep(1000);
+        Assert.assertEquals(true,originStore.checkStopWriteCk());
+
+        ((DefaultKeeperConfig)keeperConfig).onChange(KeeperConfig.KEY_STOP_WRITE_CK,"true","false");
+        sleep(1000);
+        Assert.assertEquals(false,originStore.checkStopWriteCk());
     }
 
     @Test

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.store.ck;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
 import com.ctrip.xpipe.api.kafka.KafkaService;
 import com.ctrip.xpipe.metric.MetricData;
@@ -9,6 +8,7 @@ import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.*;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.Keeperable;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.lmax.disruptor.LiteBlockingWaitStrategy;
 import com.lmax.disruptor.RingBuffer;
@@ -38,7 +38,6 @@ public class CKStore implements Keeperable {
 
     private MetricProxy metricProxy;
 
-    private FoundationService foundationService;
     private volatile boolean isKeeper;
 
     private RedisOpParser redisOpParser;
@@ -47,18 +46,57 @@ public class CKStore implements Keeperable {
 
     private volatile boolean isSendCkFail;
 
-    private ScheduledExecutorService hickwallReporterService = Executors.newSingleThreadScheduledExecutor();
+    private static final ScheduledExecutorService hickwallReporterService = Executors.newSingleThreadScheduledExecutor();
 
-    public CKStore(ReplId replId, RedisOpParser redisOpParser,String address){
+    private KeeperConfig keeperConfig;
+
+    private volatile boolean started;
+
+    private volatile  boolean isReady;
+
+    public CKStore(ReplId replId, RedisOpParser redisOpParser,String address,KeeperConfig keeperConfig){
         this.replId = replId != null ? replId.id() : -1;
         this.redisOpParser = redisOpParser;
         this.address = address;
+        this.keeperConfig = keeperConfig;
     }
 
     public void start(){
 
         metricProxy = MetricProxy.DEFAULT;
         kafkaService = KafkaService.DEFAULT;
+
+        startDisruptor();
+
+        isReady = true;
+
+        keeperConfig.addListener((key, val) -> {
+            if(KeeperConfig.KEY_STOP_WRITE_CK.equals(key)){
+                if("true".equals(val)) {
+                    forceStopDisruptor();
+                    kafkaService.forceStopProducer();
+                    isReady = false;
+                }else {
+                    startDisruptor();
+                    kafkaService.startProducer();
+                    isReady = true;
+                }
+            }
+        });
+
+        hickwallReporterService.scheduleWithFixedDelay(
+                () -> {
+                    if(isSendCkFail) {
+                        reportHickwall(CK_BLOCK);
+                        isSendCkFail = false;
+                    }
+                    },
+                1,1, TimeUnit.MINUTES
+        );
+    }
+
+    private void startDisruptor(){
+        if(started) return;
         MessageEventFactory factory = new MessageEventFactory();
         int ringBufferSize = 1024; // must be a power of 2
 
@@ -75,23 +113,34 @@ public class CKStore implements Keeperable {
         );
 
         disruptor.handleEventsWith((event, sequence, endOfBatch) -> {
-              for(RedisOpItem redisOpItem:event.getRedisOpItems()){
-                  storeGtidWithKeyOrSubKeyItem(redisOpItem);
-              }
-              event.getRedisOpItems().clear();
-              event.setRedisOpItems(null);
+            IRedisOpItem iRedisOpItem = event.getRedisOpItem();
+            Object item = iRedisOpItem.getRedisOpItem();
+            if(item instanceof RedisOpItem){
+                storeGtidWithKeyOrSubKeyItem((RedisOpItem) item);
+            }else {
+                List<RedisOpItem> redisOpItems = (List<RedisOpItem>) item;
+                for (RedisOpItem redisOpItem : redisOpItems) {
+                    storeGtidWithKeyOrSubKeyItem(redisOpItem);
+                }
+            }
+            iRedisOpItem.clear();
+            event.setRedisOpItem(null);
         });
         ringBuffer = disruptor.start();
+        started = true;
+    }
 
-        hickwallReporterService.scheduleWithFixedDelay(
-                () -> {
-                    if(isSendCkFail) {
-                        reportHickwall(CK_BLOCK);
-                        isSendCkFail = false;
-                    }
-                    },
-                1,1, TimeUnit.MINUTES
-        );
+    private void forceStopDisruptor(){
+        if(!started) return;
+        try {
+            if(disruptor != null) {
+                disruptor.halt();
+            }
+        }finally {
+            ringBuffer = null;
+            disruptor = null;
+            started = false;
+        }
     }
 
     public boolean isKeeper(){
@@ -106,16 +155,20 @@ public class CKStore implements Keeperable {
         this.isKeeper = false;
     }
 
+    public boolean checkStopWriteCk(){
+        if(!isReady || keeperConfig.stopWriteCk()) return true;
+        return false;
+    }
 
     public void sendPayloads(List<Object[]> payloads) {
-        if(ringBuffer == null) return;
+        if(checkStopWriteCk()) return;
         if(ringBuffer.hasAvailableCapacity(1)){
             long sequence = -1;
             try {
                 sequence = ringBuffer.next();
                 MessageEvent event = ringBuffer.get(sequence);
                 List<RedisOpItem> redisOpItems = parsePayloads(payloads);
-                event.setRedisOpItems(redisOpItems);
+                event.setRedisOpItem(new RedisOpMultiItem(redisOpItems));
             } finally {
                 ringBuffer.publish(sequence);
                 releasePayloads(payloads);
@@ -127,28 +180,61 @@ public class CKStore implements Keeperable {
 
     }
 
+
+    public void sendPayload(Object[] payload) {
+        if(checkStopWriteCk()) return;
+        if(ringBuffer.hasAvailableCapacity(1)){
+            long sequence = -1;
+            try {
+                sequence = ringBuffer.next();
+                MessageEvent event = ringBuffer.get(sequence);
+                RedisOpItem redisOpItem = parsePayload(payload);
+                event.setRedisOpItem(redisOpItem);
+            } finally {
+                ringBuffer.publish(sequence);
+                releasePayload(payload);
+            }
+        }else {
+            releasePayload(payload);
+            isSendCkFail = true;
+        }
+
+    }
+
+
     private void releasePayloads(List<Object[]> payloads){
         for(Object[] payload:payloads){
-            for(Object obj:payload){
-                if(obj instanceof ByteArrayOutputStreamPayload){
-                    ByteArrayOutputStreamPayload byteArrayOutputStreamPayload = (ByteArrayOutputStreamPayload) obj;
-                    byteArrayOutputStreamPayload.clear();
-                }
-                obj = null;
-            }
-            payload = null;
+            releasePayload(payload);
         }
         payloads = null;
+    }
+
+    private void releasePayload(Object[] payload){
+        for(Object obj:payload){
+            if(obj instanceof ByteArrayOutputStreamPayload){
+                ByteArrayOutputStreamPayload byteArrayOutputStreamPayload = (ByteArrayOutputStreamPayload) obj;
+                byteArrayOutputStreamPayload.clear();
+            }
+            obj = null;
+        }
+        payload = null;
     }
 
     private static final ThreadLocal<List<RedisOpItem>> TX_CONTEXT_ITEM = new ThreadLocal<>();
 
     private List<RedisOpItem> parsePayloads(List<Object[]> payloads){
         List<RedisOpItem> redisOpItems = new ArrayList<>(payloads.size());
+        for(Object[] payload:payloads) {
+            RedisOpItem redisOpItem = parsePayload(payload);
+            redisOpItems.add(redisOpItem);
+        }
+        return redisOpItems;
+    }
+
+    private RedisOpItem parsePayload(Object[] payload){
+        RedisOpItem redisOpItem = new RedisOpItem();
         try {
-            for (Object[] payload : payloads) {
                 RedisOp redisOp = redisOpParser.parse(payload);
-                RedisOpItem redisOpItem = new RedisOpItem();
                 redisOpItem.setRedisOpType(redisOp.getOpType());
                 redisOpItem.setGtid(redisOp.getOpGtid());
                 redisOpItem.setDbId(redisOp.getDbId());
@@ -166,13 +252,12 @@ public class CKStore implements Keeperable {
                     RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
                     redisOpItem.setRedisKey(redisSingleKeyOp.getKey());
                 }
-                redisOpItems.add(redisOpItem);
-            }
         }catch (Throwable th){
-            logger.warn("[CKStore]parsePayloads{},error{}",payloads,th.getMessage());
+            logger.warn("[CKStore]parsePayload{},error{}",payload,th.getMessage());
         }
-        return redisOpItems;
+        return redisOpItem;
     }
+
 
     public void storeGtidWithKeyOrSubKeyItem(RedisOpItem redisOpItem) {
 

@@ -5,13 +5,13 @@ import java.util.List;
 // 1. 定义事件类
 public class MessageEvent {
 
-    private List<RedisOpItem> redisOpItems;
+    private IRedisOpItem redisOpItem;
 
-    public List<RedisOpItem> getRedisOpItems() {
-        return redisOpItems;
+    public IRedisOpItem getRedisOpItem() {
+        return redisOpItem;
     }
 
-    public void setRedisOpItems(List<RedisOpItem> redisOpItems) {
-        this.redisOpItems = redisOpItems;
+    public void setRedisOpItem(IRedisOpItem redisOpItem) {
+        this.redisOpItem = redisOpItem;
     }
 }

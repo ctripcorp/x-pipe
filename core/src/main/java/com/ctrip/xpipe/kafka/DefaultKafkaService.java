@@ -19,6 +19,16 @@ public class DefaultKafkaService implements KafkaService {
     }
 
     @Override
+    public void startProducer() {
+
+    }
+
+    @Override
+    public void forceStopProducer() {
+
+    }
+
+    @Override
     public int getOrder() {
         return LOWEST_PRECEDENCE;
     }

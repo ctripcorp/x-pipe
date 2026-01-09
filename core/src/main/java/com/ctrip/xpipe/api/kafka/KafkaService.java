@@ -13,4 +13,8 @@ public interface KafkaService extends Ordered {
     KafkaService DEFAULT = ServicesUtil.getKafkaService();
 
     void sendKafka(GtidKeyItem gtidKeyItem);
+
+    void startProducer();
+
+    void forceStopProducer();
 }
