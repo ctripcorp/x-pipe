@@ -81,7 +81,7 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 	}
 
 
-	private void makeKeeperRight() throws Exception {
+	protected void makeKeeperRight() throws Exception {
 
 		logger.info(remarkableMessage("makeKeeperRight"));
 		
