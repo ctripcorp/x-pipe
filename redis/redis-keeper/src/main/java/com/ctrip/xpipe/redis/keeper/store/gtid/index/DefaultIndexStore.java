@@ -356,43 +356,46 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
             // Search through all index files from the first one
             boolean changeFileSuccess = true;
-            while (changeFileSuccess && !indexReader.noIndex()) {
-                try {
-                    GtidSet currentIndexGtidSet = null;
-                    if (null != nextIndexReader) {
-                        currentIndexGtidSet = nextIndexReader.getStartGtidSet().subtract(indexReader.getStartGtidSet());
-                    }
-
-                    if (null == currentIndexGtidSet || !currentIndexGtidSet.retainAll(reqGtidSet).isEmpty()) {
-                        // Find all matching ranges in current index file
-                        List<Pair<Long, Long>> ranges = indexReader.findMatchingRanges(uuid, begGno, endGno);
-
-                        // Convert cmdStartOffset to backlogOffset by adding startOffset
-                        for(Pair<Long, Long> range : ranges) {
-                            long startBacklogOffset = range.getKey() + indexReader.getStartOffset();
-                            Long endBacklogOffset = range.getValue();
-
-                            if(endBacklogOffset != null) {
-                                // End offset is the next command's start, convert to backlogOffset
-                                endBacklogOffset = endBacklogOffset + indexReader.getStartOffset();
-                            } else {
-                                // End offset is null, meaning it's at file end, use file length
-                                String cmdFileName = indexReader.getFileName();
-                                endBacklogOffset = getFileEndBacklogOffset(cmdFileName);
-                                if(endBacklogOffset == null) {
-                                    logger.warn("[locateGtidRange] cannot determine end offset for file: {}", cmdFileName);
-                                    continue; // Skip this range if we can't determine end
-                                }
-                            }
-
-                            result.add(new Pair<>(startBacklogOffset, endBacklogOffset));
+            while (changeFileSuccess) {
+                // skip empty index file
+                // For example, the cmd file is full of "PUB"
+                if (!indexReader.noIndex()) {
+                    try {
+                        GtidSet currentIndexGtidSet = null;
+                        if (null != nextIndexReader) {
+                            currentIndexGtidSet = nextIndexReader.getStartGtidSet().subtract(indexReader.getStartGtidSet());
                         }
+
+                        if (null == currentIndexGtidSet || !currentIndexGtidSet.retainAll(reqGtidSet).isEmpty()) {
+                            // Find all matching ranges in current index file
+                            List<Pair<Long, Long>> ranges = indexReader.findMatchingRanges(uuid, begGno, endGno);
+
+                            // Convert cmdStartOffset to backlogOffset by adding startOffset
+                            for (Pair<Long, Long> range : ranges) {
+                                long startBacklogOffset = range.getKey() + indexReader.getStartOffset();
+                                Long endBacklogOffset = range.getValue();
+
+                                if (endBacklogOffset != null) {
+                                    // End offset is the next command's start, convert to backlogOffset
+                                    endBacklogOffset = endBacklogOffset + indexReader.getStartOffset();
+                                } else {
+                                    // End offset is null, meaning it's at file end, use file length
+                                    String cmdFileName = indexReader.getFileName();
+                                    endBacklogOffset = getFileEndBacklogOffset(cmdFileName);
+                                    if (endBacklogOffset == null) {
+                                        logger.warn("[locateGtidRange] cannot determine end offset for file: {}", cmdFileName);
+                                        continue; // Skip this range if we can't determine end
+                                    }
+                                }
+
+                                result.add(new Pair<>(startBacklogOffset, endBacklogOffset));
+                            }
+                        }
+                    } catch (IOException e) {
+                        logger.debug("[locateGtidRange] error searching in current index file, trying next, uuid: {}, begGno: {}, endGno: {}",
+                                uuid, begGno, endGno, e);
                     }
-                } catch (IOException e) {
-                    logger.debug("[locateGtidRange] error searching in current index file, trying next, uuid: {}, begGno: {}, endGno: {}",
-                            uuid, begGno, endGno, e);
                 }
-                
                 // Try to find in next index file
                 try {
                     changeFileSuccess = indexReader.changeToNext();

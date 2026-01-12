@@ -31,11 +31,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class DefaultIndexStoreTest {
@@ -147,6 +147,11 @@ public class DefaultIndexStoreTest {
             ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.array());
             defaultIndexStore.write(byteBuf);
         }
+    }
+
+    public void writeRawStr(String cmdStr) throws IOException {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(cmdStr.getBytes());
+        defaultIndexStore.write(byteBuf);
     }
 
     @Test
@@ -826,4 +831,27 @@ public class DefaultIndexStoreTest {
                     range.getValue() > range.getKey());
         }
     }
+
+    @Test
+    public void testLocateSkipEmptyIndexFile() throws IOException {
+        StringBuilder sb = new StringBuilder();
+        IntStream.range(0, 10).forEach(i -> {
+            sb.append("*3\r\n" +
+                    "$7\r\n" +
+                    "PUBLISH\r\n" +
+                    "$18\r\n" +
+                    "__sentinel__:hello\r\n" +
+                    "$147\r\n" +
+                    "10.120.125.145,5026,ce1896062762e2920bc81db3edbad6bd66c97cde,0,xpipe-test-gap-allow-xsync+xpipe-test-gap-allow-xsync_1+NTGXH,10.120.125.145,20004,0\r\n");
+        });
+        writeRawStr(sb.toString());
+
+        defaultIndexStore.doSwitchCmdFile("cmd_19513000");
+        write(filePath);
+
+        String uuid = "a4f566ef50a85e1119f17f9b746728b48609a2ab";
+        List<Pair<Long, Long>> result = defaultIndexStore.locateGtidRange(uuid, 3, 3);
+        Assert.assertFalse("Should find single GTID", result.isEmpty());
+    }
+
 }
