@@ -187,6 +187,11 @@ public class ClusterServiceWithoutDB implements ClusterService {
     }
 
     @Override
+    public ClusterDTO getOneWayClusterAll(String clusterName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public List<ClusterDTO> getClusters(String clusterType) {
         throw new UnsupportedOperationException();
     }

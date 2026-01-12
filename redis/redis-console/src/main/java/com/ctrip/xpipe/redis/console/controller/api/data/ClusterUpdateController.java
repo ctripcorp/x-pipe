@@ -8,12 +8,7 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
-import com.ctrip.xpipe.redis.console.dto.AzGroupDTO;
-import com.ctrip.xpipe.redis.console.dto.ClusterCreateDTO;
-import com.ctrip.xpipe.redis.console.dto.ClusterDTO;
-import com.ctrip.xpipe.redis.console.dto.ClusterUpdateDTO;
-import com.ctrip.xpipe.redis.console.dto.MultiGroupClusterCreateDTO;
-import com.ctrip.xpipe.redis.console.dto.SingleGroupClusterCreateDTO;
+import com.ctrip.xpipe.redis.console.dto.*;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
@@ -188,6 +183,14 @@ public class ClusterUpdateController extends AbstractController {
         List<ClusterDTO> clusterDTOList = clusterService.getClusterWithShards(clusterType);
         List<ClusterInfo> clusterInfos = clusterDTOList.stream().map(ClusterInfo::new).collect(Collectors.toList());
         return clusterInfos;
+    }
+
+    @GetMapping(value = "/cluster/all")
+    public ClusterInfo getOneWayCluster(@RequestParam String clusterName) {
+        logger.info("[cluster all]clusterName-{}", clusterName);
+
+        ClusterDTO cluster = clusterService.getOneWayClusterAll(clusterName);
+        return new ClusterInfo(cluster);
     }
 
 

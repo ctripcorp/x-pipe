@@ -33,6 +33,7 @@ public interface ClusterService {
 	ClusterDTO getCluster(String clusterName);
 	List<ClusterDTO> getClusters(String clusterType);
 	List<ClusterDTO> getClusterWithShards(String clusterType);
+	ClusterDTO getOneWayClusterAll(String clusterName);
 
 	ClusterTbl createCluster(ClusterModel clusterModel);
 	void createSingleGroupCluster(SingleGroupClusterCreateDTO clusterCreateDTO);
