@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper;
 
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
@@ -14,9 +15,12 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.impl.SetRdbDumperException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.keeper.store.searcher.CmdKeyItem;
+import com.ctrip.xpipe.redis.keeper.store.searcher.GtidCommandSearcher;
 import io.netty.channel.Channel;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -29,6 +33,8 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	int getListeningPort();
 	
 	KeeperRepl getKeeperRepl();
+
+	GtidCommandSearcher createCmdKeySearcher(String uuid, int begGno, int endGno);
 
 	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception;
 

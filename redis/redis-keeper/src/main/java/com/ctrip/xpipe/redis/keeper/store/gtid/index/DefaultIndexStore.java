@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamTransactionListener;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.redis.core.store.CommandWriterCallback;
 import com.ctrip.xpipe.redis.core.store.GtidCmdFilter;
@@ -22,10 +23,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
-public class DefaultIndexStore implements IndexStore {
+import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
 
-    private static final Logger log = LoggerFactory.getLogger(DefaultIndexStore.class);
+public class DefaultIndexStore implements IndexStore, StreamTransactionListener {
+
+    private static final Logger logger = LoggerFactory.getLogger(DefaultIndexStore.class);
 
     private IndexWriter indexWriter;
 
@@ -84,13 +89,13 @@ public class DefaultIndexStore implements IndexStore {
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, continueGtidSet, this);
         this.indexWriter.init();
         this.streamCommandReader.resetOffset();
-        log.info("[switchCmdFile] index_store switch to {}", currentCmdFileName);
+        logger.info("[switchCmdFile] index_store switch to {}", currentCmdFileName);
     }
 
     @Override
     public synchronized void rotateFileIfNecessary() throws IOException {
         if (streamCommandReader != null && streamCommandReader.isTransactionActive()) {
-            log.debug("[rotateFileIfNecessary] transaction active (size: {}), defer rotation", 
+            logger.debug("[rotateFileIfNecessary] transaction active (size: {}), defer rotation",
                       streamCommandReader.getTransactionSize());
             return;
         }
@@ -106,7 +111,8 @@ public class DefaultIndexStore implements IndexStore {
         return new Pair<>(commandWriterCallback.getCommandWriter().totalLength(), this.getIndexGtidSet());
     }
 
-    public boolean onCommand(String gtid, long offset) throws IOException {
+    @Override
+    public boolean preAppend(String gtid, long offset) throws IOException {
         String[] parts = gtid.split(":");
         if (parts.length != 2 || parts[0].length() != 40) {
             throw new IllegalArgumentException("Invalid gtid: " + gtid);
@@ -114,11 +120,45 @@ public class DefaultIndexStore implements IndexStore {
         String uuid = parts[0];
         long gno = Long.parseLong(parts[1]);
         if(gtidCmdFilter.gtidSetContains(uuid, gno)) {
-            log.info("[onCommand] gtid command {} in lost, ignored", gtid);
+            logger.info("[onCommand] gtid command {} in lost, ignored", gtid);
             return false;
         }
         indexWriter.append(uuid, gno, (int)offset);
         return true;
+    }
+
+    @Override
+    public int postAppend(ByteBuf commandBuf, Object[] payload) throws IOException {
+        return appendCmdBuf(commandBuf);
+    }
+
+    @Override
+    public int batchPostAppend(List<ByteBuf> commandBufs, List<Object[]> payloads) throws IOException {
+        int written = 0;
+        for (ByteBuf buf : commandBufs) {
+            if (buf != null) {
+                written += appendCmdBuf(buf);
+            }
+        }
+
+        return written;
+    }
+
+    @Override
+    public boolean checkOffset(long offset) {
+        long cmdFileLen = getCurrentCmdFileLen();
+        if (-1 != cmdFileLen && cmdFileLen != offset) {
+            logger.info("[checkOffset][mismatch] nextCmdBegin:{} cmdFileLen{}", offset, cmdFileLen);
+            return false;
+        }
+        return true;
+    }
+
+    public int appendCmdBuf(ByteBuf byteBuf) throws IOException {
+        if(writerCmdEnabled && commandWriterCallback != null) {
+            return commandWriterCallback.writeCommand(byteBuf);
+        }
+        return 0;
     }
 
     @Override
@@ -129,7 +169,7 @@ public class DefaultIndexStore implements IndexStore {
         try (IndexReader indexReader = createIndexReader()) {
             if(indexReader == null) {
                 // no index file
-                log.info("[locateContinueGtidSet] index reader is null");
+                logger.info("[locateContinueGtidSet] index reader is null");
                 return new Pair<>(-1l, new GtidSet(GtidSet.EMPTY_GTIDSET));
             }
             indexReader.init();
@@ -149,10 +189,10 @@ public class DefaultIndexStore implements IndexStore {
     public synchronized Pair<Long, GtidSet> locateGtidSetWithFallbackToEnd(GtidSet request) throws IOException {
         Pair<Long, GtidSet> continuePoint = locateContinueGtidSet(request);
         if(continuePoint.getKey() == -1) {
-            log.info("[locateGtidSetWithFallbackToEnd] not found next, return tail of cmd, request:{}", request);
+            logger.info("[locateGtidSetWithFallbackToEnd] not found next, return tail of cmd, request:{}", request);
             continuePoint = locateTailOfCmd();
         }
-        log.info("backlog gtid set: {}, request gtid set {}, continue gtid set {}", getIndexGtidSet(),
+        logger.info("backlog gtid set: {}, request gtid set {}, continue gtid set {}", getIndexGtidSet(),
                 request, continuePoint.getValue());
         return continuePoint;
     }
@@ -201,7 +241,7 @@ public class DefaultIndexStore implements IndexStore {
                 long transactionStartOffset = this.streamCommandReader.getTransactionStartOffset();
                 if (transactionStartOffset >= 0) {
                     // transactionStartOffset is relative to cmdFileOffset, convert to absolute offset
-                    log.warn("[buildIndexFromCmdFile] incomplete transaction detected (size: {}), " +
+                    logger.warn("[buildIndexFromCmdFile] incomplete transaction detected (size: {}), " +
                             "rollback from offset {} to offset: {}", 
                             this.streamCommandReader.getTransactionSize(), 
                             controllableFile.size(), transactionStartOffset);
@@ -211,7 +251,7 @@ public class DefaultIndexStore implements IndexStore {
                     this.streamCommandReader.resetParser();
                 } else {
                     // If startOffset is invalid, just reset parser to clear transaction state
-                    log.warn("[buildIndexFromCmdFile] incomplete transaction detected but invalid startOffset, " +
+                    logger.warn("[buildIndexFromCmdFile] incomplete transaction detected but invalid startOffset, " +
                             "clearing transaction state");
                     this.streamCommandReader.resetParser();
                 }
@@ -231,6 +271,135 @@ public class DefaultIndexStore implements IndexStore {
         }
     }
 
+    private synchronized GtidSet saveIndex() {
+        if (indexWriter != null) {
+            try {
+                this.indexWriter.saveIndexEntry();
+            } catch (IOException e) {
+                logger.error("[locateGtidRange] failed to save index entry", e);
+            }
+            return indexWriter.getGtidSet();
+        }
+        return null;
+    }
+
+    @Override
+    public List<Pair<Long, Long>> locateGtidRange(String uuid, int begGno, int endGno) throws IOException {
+        List<Pair<Long, Long>> result = new ArrayList<>();
+        GtidSet currentGtidSet = saveIndex();
+
+        GtidSet reqGtidSet = new GtidSet("");
+        reqGtidSet.compensate(uuid, begGno, endGno);
+        if (null == currentGtidSet || currentGtidSet.retainAll(reqGtidSet).isEmpty()) {
+            return result;
+        }
+
+        // Start from the first index file since GNO is monotonically increasing
+        IndexReader indexReader = IndexReader.getFirstIndexReader(baseDir);
+        IndexReader nextIndexReader = null;
+        if(indexReader == null) {
+            logger.info("[locateGtidRange] index reader is null, uuid: {}, begGno: {}, endGno: {}", uuid, begGno, endGno);
+            return result;
+        }
+
+        try {
+            indexReader.init();
+            File nextFile = indexReader.findNextFile();
+            if (null != nextFile) {
+                nextIndexReader = new IndexReader(baseDir, nextFile.getName().replace(INDEX, ""));
+                nextIndexReader.init();
+            }
+
+            // Search through all index files from the first one
+            boolean changeFileSuccess = true;
+            while (changeFileSuccess && !indexReader.noIndex()) {
+                try {
+                    GtidSet currentIndexGtidSet = null;
+                    if (null != nextIndexReader) {
+                        currentIndexGtidSet = nextIndexReader.getStartGtidSet().subtract(indexReader.getStartGtidSet());
+                    }
+
+                    if (null == currentIndexGtidSet || !currentIndexGtidSet.retainAll(reqGtidSet).isEmpty()) {
+                        // Find all matching ranges in current index file
+                        List<Pair<Long, Long>> ranges = indexReader.findMatchingRanges(uuid, begGno, endGno);
+
+                        // Convert cmdStartOffset to backlogOffset by adding startOffset
+                        for(Pair<Long, Long> range : ranges) {
+                            long startBacklogOffset = range.getKey() + indexReader.getStartOffset();
+                            Long endBacklogOffset = range.getValue();
+
+                            if(endBacklogOffset != null) {
+                                // End offset is the next command's start, convert to backlogOffset
+                                endBacklogOffset = endBacklogOffset + indexReader.getStartOffset();
+                            } else {
+                                // End offset is null, meaning it's at file end, use file length
+                                String cmdFileName = indexReader.getFileName();
+                                endBacklogOffset = getFileEndBacklogOffset(cmdFileName);
+                                if(endBacklogOffset == null) {
+                                    logger.warn("[locateGtidRange] cannot determine end offset for file: {}", cmdFileName);
+                                    continue; // Skip this range if we can't determine end
+                                }
+                            }
+
+                            result.add(new Pair<>(startBacklogOffset, endBacklogOffset));
+                        }
+                    }
+                } catch (IOException e) {
+                    logger.debug("[locateGtidRange] error searching in current index file, trying next, uuid: {}, begGno: {}, endGno: {}",
+                            uuid, begGno, endGno, e);
+                }
+                
+                // Try to find in next index file
+                try {
+                    changeFileSuccess = indexReader.changeToNext();
+                    if(changeFileSuccess) {
+                        if (!nextIndexReader.changeToNext()) {
+                            nextIndexReader.close();
+                            nextIndexReader = null;
+                        }
+                    }
+                } catch (IOException e) {
+                    logger.error("[locateGtidRange] failed to change to next index file", e);
+                    changeFileSuccess = false;
+                }
+            }
+            
+            if(result.isEmpty()) {
+                logger.info("[locateGtidRange] GTID not found in range, uuid: {}, begGno: {}, endGno: {}", uuid, begGno, endGno);
+            } else {
+                logger.debug("[locateGtidRange] found {} ranges, uuid: {}, begGno: {}, endGno: {}",
+                        result.size(), uuid, begGno, endGno);
+            }
+            
+            return result;
+        } catch (IOException e) {
+            logger.error("[locateGtidRange] failed to locate GTID range, uuid: {}, begGno: {}, endGno: {}", uuid, begGno, endGno, e);
+            return result;
+        } finally {
+            if(indexReader != null) {
+                indexReader.close();
+            }
+            if (null != nextIndexReader) {
+                nextIndexReader.close();
+            }
+        }
+    }
+
+    /**
+     * Get the file end backlogOffset for a given command file name.
+     * Returns null if file doesn't exist and totalLength is not available.
+     */
+    private Long getFileEndBacklogOffset(String cmdFileName) {
+        File cmdFile = new File(Paths.get(baseDir, cmdFileName).toString());
+        if(cmdFile.exists()) {
+            long fileLength = cmdFile.length();
+            long cmdFileStartOffset = AbstractIndex.extractOffset(cmdFileName);
+            return cmdFileStartOffset + fileLength;
+        }
+        
+        return null;
+    }
+
     @Override
     public synchronized void closeWriter() throws IOException {
         // close = close writer
@@ -238,7 +407,7 @@ public class DefaultIndexStore implements IndexStore {
             this.streamCommandReader.resetParser();
         }
         if(this.indexWriter != null) {
-            log.debug("[doClose] close index writer {}", indexWriter.getFileName());
+            logger.debug("[doClose] close index writer {}", indexWriter.getFileName());
             this.indexWriter.close();
         }
     }
@@ -259,11 +428,11 @@ public class DefaultIndexStore implements IndexStore {
     public void deleteAllIndexFile() {
         File directory = new File(baseDir);
 
-        log.info("[deleteAllIndexFile] {}", baseDir);
+        logger.info("[deleteAllIndexFile] {}", baseDir);
         if (!directory.exists() || !directory.isDirectory()) {
             return;
         }
-        File[] files = directory.listFiles((dir, name) -> name.startsWith(AbstractIndex.INDEX) || name.startsWith(AbstractIndex.BLOCK));
+        File[] files = directory.listFiles((dir, name) -> name.startsWith(INDEX) || name.startsWith(AbstractIndex.BLOCK));
         if (files == null) {
             return;
         }
@@ -279,13 +448,6 @@ public class DefaultIndexStore implements IndexStore {
         return -1L;
     }
 
-    public int onFinishParse(ByteBuf byteBuf) throws IOException {
-        if(writerCmdEnabled && commandWriterCallback != null) {
-            return commandWriterCallback.writeCommand(byteBuf);
-        }
-        return 0;
-    }
-
     private void disableWriterCmd() {
         this.writerCmdEnabled = false;
     }
@@ -298,7 +460,7 @@ public class DefaultIndexStore implements IndexStore {
         try {
             return tryGetIndexGtidSet();
         } catch (IOException ioException) {
-            log.error("[getIndexGtidSetByIndexReader] {}", ioException);
+            logger.error("[getIndexGtidSetByIndexReader] {}", ioException);
             throw new XpipeRuntimeException("index reader error", ioException);
         }
     }

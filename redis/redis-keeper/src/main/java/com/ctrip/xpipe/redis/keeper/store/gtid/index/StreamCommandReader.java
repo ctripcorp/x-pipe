@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandLister;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandParser;
+import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamTransactionListener;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
@@ -18,7 +19,7 @@ public class StreamCommandReader implements StreamCommandLister {
 
     private long currentOffset;
 
-    private DefaultIndexStore defaultIndexStore;
+    private StreamTransactionListener transactionListener;
 
     private StreamCommandParser streamCommandParser;
 
@@ -42,8 +43,8 @@ public class StreamCommandReader implements StreamCommandLister {
 
     private static final Logger logger = LoggerFactory.getLogger(StreamCommandReader.class);
 
-    public StreamCommandReader(DefaultIndexStore defaultIndexStore, long offset) {
-        this.defaultIndexStore = defaultIndexStore;
+    public StreamCommandReader(StreamTransactionListener transactionListener, long offset) {
+        this.transactionListener = transactionListener;
         this.currentOffset = offset;
         streamCommandParser = new StreamCommandParser(this);
     }
@@ -176,14 +177,14 @@ public class StreamCommandReader implements StreamCommandLister {
             transactionContext.addCommand(payload, commandBuf);
         } else {
             // Regular command, write directly
-            writeSingleCommand(commandBuf);
+            writeSingleCommand(commandBuf, payload);
         }
     }
 
     private void processSingleGtidCommand(String gtid, Object[] payload, ByteBuf commandBuf) throws IOException {
         long offset = this.currentOffset;
-        if (defaultIndexStore.onCommand(gtid, offset)) {
-            writeSingleCommand(commandBuf);
+        if (transactionListener.preAppend(gtid, offset)) {
+            writeSingleCommand(commandBuf, payload);
         }
     }
 
@@ -217,7 +218,7 @@ public class StreamCommandReader implements StreamCommandLister {
 
         try {
             // Commit transaction: write index and all commands (offset update is completed in commit method)
-            transactionContext.commit(defaultIndexStore, this);
+            transactionContext.commit(transactionListener, this);
         } catch (IOException e) {
             // Transaction commit failed, clear state
             transactionContext.clear();
@@ -225,16 +226,27 @@ public class StreamCommandReader implements StreamCommandLister {
         }
     }
 
-    private void writeSingleCommand(ByteBuf commandBuf) throws IOException {
+    private void writeSingleCommand(ByteBuf commandBuf, Object[] payload) throws IOException {
         int cmdLen = commandBuf.readableBytes();
-        defaultIndexStore.onFinishParse(commandBuf);
+        transactionListener.postAppend(commandBuf, payload);
         this.currentOffset += cmdLen;
+        mayCheckOffset();
+    }
 
+    private void writeMultiCommand(List<ByteBuf> commandBufs, List<Object[]> payloads) throws IOException {
+        int cmdLen = 0;
+        for (ByteBuf commandBuf : commandBufs) {
+            cmdLen += commandBuf.readableBytes();
+        }
+        transactionListener.batchPostAppend(commandBufs, payloads);
+        this.currentOffset += cmdLen;
+        mayCheckOffset();
+    }
+
+    private void mayCheckOffset() {
         if (writeCnt++ % 8192 == 0) {
             // check offset match
-            long cmdFileLen = defaultIndexStore.getCurrentCmdFileLen();
-            if (-1 != cmdFileLen && cmdFileLen != this.currentOffset) {
-                logger.info("[checkOffset][mismatch] nextCmdBegin:{} cmdFileLen{}", this.currentOffset, cmdFileLen);
+            if (!transactionListener.checkOffset(this.currentOffset)) {
                 EventMonitor.DEFAULT.logEvent(EVENT_TYPE, EVENT_OFFSET_MISMATCH);
             }
         }
@@ -269,7 +281,7 @@ public class StreamCommandReader implements StreamCommandLister {
             commandBufs.add(commandBuf);
         }
 
-        public void commit(DefaultIndexStore indexStore, StreamCommandReader reader) throws IOException {
+        public void commit(StreamTransactionListener transactionListener, StreamCommandReader reader) throws IOException {
             if (!active) {
                 return;
             }
@@ -282,22 +294,12 @@ public class StreamCommandReader implements StreamCommandLister {
 
                 // Write index using transaction's GTID and first command's offset
                 if (gtid != null && !StringUtil.isEmpty(gtid)) {
-                    boolean indexWritten = indexStore.onCommand(gtid, transactionStartOffset);
-                    if (indexWritten) {
-                        // Write all commands and update offset
-                        for (ByteBuf buf : commandBufs) {
-                            if (buf != null) {
-                                reader.writeSingleCommand(buf);
-                            }
-                        }
+                    if (transactionListener.preAppend(gtid, transactionStartOffset)) {
+                        reader.writeMultiCommand(commandBufs, payloads);
                     }
                 } else {
                     // No GTID, write commands directly
-                    for (ByteBuf buf : commandBufs) {
-                        if (buf != null) {
-                            reader.writeSingleCommand(buf);
-                        }
-                    }
+                    reader.writeMultiCommand(commandBufs, payloads);
                 }
             } finally {
                 clear();

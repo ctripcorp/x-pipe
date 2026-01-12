@@ -1,20 +1,26 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.utils.CloseState;
+import com.google.common.io.Files;
 import com.google.common.util.concurrent.RateLimiter;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.FileRegion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 
 /**
@@ -26,11 +32,13 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultCommandStore.class);
 
+	BooleanSupplier recordWrongStreamConfig;
+
 	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser,  GtidCmdFilter gtidCmdFilter) throws IOException {
 		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter);
 	}
 
-	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+	public DefaultCommandStore(File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
 										   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
 										   long commandReaderFlyingThreshold,
 										   CommandReaderWriterFactory cmdReaderWriterFactory,
@@ -38,6 +46,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 	) throws IOException {
 		super(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
 				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex);
+		this.recordWrongStreamConfig = recordWrongStreamConfig;
 	}
 
 	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
@@ -124,6 +133,10 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 						@Override
 						public void operationComplete(ChannelFuture future) throws Exception {
 
+							if (!future.isSuccess()) {
+								logger.error("[onCommand][err] {}", referenceFileRegion, future.cause());
+							}
+
 							finalCmdReader.flushed(referenceFileRegion);
 							getCommandStoreDelay().flushSucceed(listener, referenceFileRegion.getTotalPos());
 							if(logger.isDebugEnabled()){
@@ -132,6 +145,9 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 						}
 					});
 					lastWriteFuture = future;
+				} else {
+					cmdReader.flushed(referenceFileRegion);
+					getCommandStoreDelay().flushSucceed(listener, referenceFileRegion.getTotalPos());
 				}
 
 				if (referenceFileRegion.count() <= 0) {
@@ -144,6 +160,18 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 			}
 		} catch (Throwable th) {
 			logger.error("[readCommands][exit]" + listener, th);
+			if (recordWrongStreamConfig.getAsBoolean()) {
+				try {
+					File curFile = cmdReader.getCurCmdFile().getFile();
+					File destFile = new File("/tmp/" + curFile.getName());
+					if (!destFile.exists()) {
+						logger.info("[readCommands][save corrupt file] {}", destFile);
+						Files.copy(curFile, destFile);
+					}
+				} catch (Throwable saveTh) {
+					logger.info("[readCommands][save corrupt file] fail", saveTh);
+				}
+			}
 		} finally {
 			cmdReader.close();
 		}

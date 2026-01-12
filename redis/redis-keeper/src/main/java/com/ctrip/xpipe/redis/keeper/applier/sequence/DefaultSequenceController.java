@@ -72,7 +72,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     // 32MB
     public static final long DEFAULT_MEMORY_THRESHOLD = 32 * 1024 * 1024;
 
-    public static final long DEFAULT_CONCURRENCY_THRESHOLD = 10000;
+    public static final long DEFAULT_CONCURRENCY_THRESHOLD = 1000;
 
     private final CloseState closeState = new CloseState();
 

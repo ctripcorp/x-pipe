@@ -811,4 +811,34 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		replStageAssertPsync(prevReplStage);
 		Assert.assertEquals(prevReplStage.getReplId(), replIdB);
 	}
+
+	@Test
+	public void testCheckReplIdNotThrowUnexpectedReplIdException_switchToXsync() throws Exception {
+		int gnoBaseX = 1, gnoCountX = 100;
+		setupReplicationStorePX(replIdA, 100000000, 1000,
+				uuidB, replIdB, 200000000, 1, 100);
+
+		long replOffC = 300000000;
+		String gtidBaseRepr = uuidB + ":" + gnoBaseX + "-" + (gnoBaseX+2*gnoCountX-1);
+		String gtidLostRepr = uuidC + ":" + gnoBaseX + "-" + (gnoBaseX+gnoCountX-1);
+		String gtidContRepr = gtidBaseRepr + "," + gtidLostRepr;
+		String reply = "+" + GapAllowedSync.XPARTIAL_SYNC + " " +
+				AbstractGapAllowedSync.SyncReply.XSYNC_REPLY_OPT_REPLID + " " + replIdC + " " +
+				AbstractGapAllowedSync.SyncReply.XSYNC_REPLY_OPT_REPLOFF + " " + replOffC + " " +
+				AbstractGapAllowedSync.SyncReply.XSYNC_REPLY_OPT_MASTER_UUID + " " + uuidC + " " +
+				AbstractGapAllowedSync.SyncReply.XSYNC_REPLY_OPT_GTID_SET + " " + gtidContRepr + " " +
+				"\r\n";
+
+		gasync.getRequest();
+
+		byte[] rawCmds = generateGtidCommands(uuidC, gnoBaseX+gnoCountX, gnoCountX);
+		runData(new byte[][]{
+				reply.getBytes(),
+				rawCmds
+		});
+
+		replicationStore = replicationStoreManager.getCurrent();
+
+		replicationStore.checkReplId(replIdA);
+	}
 }

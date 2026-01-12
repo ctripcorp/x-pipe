@@ -29,7 +29,7 @@ public class StubbornCommand<V> extends AbstractCommand<V> implements Command<V>
     private ApplierStatistic statistic;
 
     public StubbornCommand(Command<V> inner, ScheduledExecutorService retryExecutor) {
-        this(inner, retryExecutor, 180 /* 6 min */);
+        this(inner, retryExecutor, 30);
     }
 
     public StubbornCommand(Command<V> inner, ScheduledExecutorService retryExecutor, int retryTimes) {

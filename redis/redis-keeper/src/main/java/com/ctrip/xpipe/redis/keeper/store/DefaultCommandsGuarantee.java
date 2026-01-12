@@ -31,6 +31,11 @@ public class DefaultCommandsGuarantee implements CommandsGuarantee {
     }
 
     @Override
+    public void cancel() {
+        // do nothing
+    }
+
+    @Override
     public long getBacklogOffset() {
         return backlogOffset;
     }

@@ -11,6 +11,7 @@ import io.netty.buffer.ByteBuf;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 public interface CommandStore extends Initializable, Closeable, Destroyable {
 
@@ -31,6 +32,8 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 	void addCommandsListener(ReplicationProgress<?> replicationProgress, CommandsListener commandsListener) throws IOException;
 
 	boolean retainCommands(CommandsGuarantee commandsGuarantee);
+
+	List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, int begGno, int endGno) throws IOException;
 
 	long getCommandsLastUpdatedAt();
 	
