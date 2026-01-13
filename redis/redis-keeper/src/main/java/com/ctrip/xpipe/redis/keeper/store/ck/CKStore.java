@@ -91,11 +91,9 @@ public class CKStore implements Keeperable {
 
         hickwallReporterService.scheduleWithFixedDelay(
                 () -> {
-                    if(isSendCkFail) {
-                        reportHickwall(CK_BLOCK);
-                        isSendCkFail = false;
-                    }
-                    },
+                    reportHickwall(CK_BLOCK, isSendCkFail);
+                    isSendCkFail = false;
+                },
                 1,1, TimeUnit.MINUTES
         );
     }
@@ -341,9 +339,10 @@ public class CKStore implements Keeperable {
     }
 
 
-    private void reportHickwall(String type) {
+    private void reportHickwall(String type, boolean block) {
         MetricData data = new MetricData(type);
-        data.setValue(1);
+        data.setValue(block ? 1 : 0);
+        data.addTag("replId", ""+replId);
         data.setTimestampMilli(System.currentTimeMillis());
         try {
             metricProxy.writeBinMultiDataPoint(data);
