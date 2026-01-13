@@ -164,7 +164,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private ReplDelayConfigCache replDelayConfigCache;
 
-	private CKStore ckStore;
+	private final CKStore ckStore;
 
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
@@ -193,6 +193,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.crossRegion = new AtomicBoolean(false);
 		this.syncRateManager = syncRateManager;
 		this.replDelayConfigCache = replDelayConfigCache;
+		ckStore = new CKStore(this.replId,this.redisOpParser,String.format("%s:%d",currentKeeperMeta.getIp(),currentKeeperMeta.getPort()),keeperConfig);
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
@@ -239,7 +240,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 
-		ckStore = new CKStore(this.replId,this.redisOpParser,String.format("%s:%d",currentKeeperMeta.getIp(),currentKeeperMeta.getPort()),keeperConfig);
 		replicationStoreManager = createReplicationStoreManager(keeperConfig, clusterId, shardId, replId,
 				currentKeeperMeta, baseDir, keeperMonitor);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
@@ -680,6 +680,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
    }
 
 	@Override
+	public CKStore getCkStore() {
+		return ckStore;
+	}
+
+	@Override
 	public int getListeningPort() {
 		return currentKeeperMeta.getPort();
 	}
@@ -787,8 +792,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		if(this.keeperRedisMaster != null){
 			try {
-				LifecycleHelper.stopIfPossible(this.keeperRedisMaster);
-				LifecycleHelper.disposeIfPossible(this.keeperRedisMaster);
+				synchronized (ckStore) {
+					LifecycleHelper.stopIfPossible(this.keeperRedisMaster);
+					LifecycleHelper.disposeIfPossible(this.keeperRedisMaster);
+				}
 				this.keeperRedisMaster = null;
 			} catch (Exception e) {
 				logger.error("[reconnectMaster][stop previois master]" + this.keeperRedisMaster, e);

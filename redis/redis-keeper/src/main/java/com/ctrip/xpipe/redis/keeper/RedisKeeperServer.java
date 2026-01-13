@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
 import com.ctrip.xpipe.redis.keeper.impl.SetRdbDumperException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.store.searcher.CmdKeyItem;
 import com.ctrip.xpipe.redis.keeper.store.searcher.GtidCommandSearcher;
 import io.netty.channel.Channel;
@@ -61,6 +62,8 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	Set<RedisSlave> slaves();
 		
 	ReplicationStore getReplicationStore();
+
+	CKStore getCkStore();
 
 	ReplId getReplId();
 

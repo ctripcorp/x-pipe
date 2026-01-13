@@ -191,8 +191,8 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         if (ckStore != null && !ckStore.isKeeper()) {
             try {
                 ckStore.sendPayloads(payloads);
-            }catch (Throwable t){
-
+            }catch (Throwable t) {
+                logger.warn("[sendPayloadsToCk][fail]", t);
             }
         }
     }
