@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CtripKafkaService implements KafkaService {
 
@@ -45,7 +46,7 @@ public class CtripKafkaService implements KafkaService {
 
     private static final String XPIPE_CK_KAFKA = "xpipe.ck.kafka";
 
-    private volatile boolean started = false;
+    private AtomicBoolean started = new AtomicBoolean(false);
 
     private static final String schemaJson = "{\n" +
             "  \"type\": \"record\",\n" +
@@ -73,19 +74,18 @@ public class CtripKafkaService implements KafkaService {
 
     @Override
     public void startProducer(){
-        if(started) return;
-        long bufferMemory = Runtime.getRuntime().maxMemory() / 16 / PRODUCER_POOL_SIZE;
-        producerPool = new Producer[PRODUCER_POOL_SIZE];
-        for (int i = 0; i < PRODUCER_POOL_SIZE; i++) {
-            producerPool[i] = createKafkaProducer(bufferMemory);
+        if(started.compareAndSet(false,true)){
+            long bufferMemory = Runtime.getRuntime().maxMemory() / 16 / PRODUCER_POOL_SIZE;
+            producerPool = new Producer[PRODUCER_POOL_SIZE];
+            for (int i = 0; i < PRODUCER_POOL_SIZE; i++) {
+                producerPool[i] = createKafkaProducer(bufferMemory);
+            }
         }
-        started = true;
     }
 
     @Override
     public void forceStopProducer(){
-        if(!started) return;
-        try {
+        if(started.compareAndSet(true,false)) {
             for (int i = 0; i < PRODUCER_POOL_SIZE; i++) {
                 Producer<String, Object> producer = producerPool[i];
                 if (producer != null) {
@@ -93,8 +93,6 @@ public class CtripKafkaService implements KafkaService {
                 }
             }
             producerPool = null;
-        }finally {
-            started = false;
         }
     }
 

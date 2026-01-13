@@ -189,4 +189,9 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	public void addListener(ConfigKeyListener listener) {
 		// do nothing
 	}
+
+	@Override
+	public void removeListener(ConfigKeyListener listener) {
+
+	}
 }

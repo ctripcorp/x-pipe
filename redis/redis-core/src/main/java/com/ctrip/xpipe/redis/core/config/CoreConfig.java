@@ -11,5 +11,6 @@ import com.ctrip.xpipe.config.ZkConfig;
 public interface CoreConfig extends ZkConfig{
 
     void addListener(ConfigKeyListener listener);
+    void removeListener(ConfigKeyListener listener);
 
 }

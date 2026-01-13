@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store.ck;
 
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
 import com.ctrip.xpipe.api.kafka.KafkaService;
+import com.ctrip.xpipe.config.ConfigKeyListener;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
@@ -52,7 +53,9 @@ public class CKStore implements Keeperable {
 
     private volatile boolean started;
 
-    private volatile  boolean isReady;
+    private volatile boolean isReady;
+
+    private ConfigKeyListener configKeyListener;
 
     public CKStore(ReplId replId, RedisOpParser redisOpParser,String address,KeeperConfig keeperConfig){
         this.replId = replId != null ? replId.id() : -1;
@@ -70,19 +73,21 @@ public class CKStore implements Keeperable {
 
         isReady = true;
 
-        keeperConfig.addListener((key, val) -> {
+        configKeyListener = (key, val) -> {
             if(KeeperConfig.KEY_STOP_WRITE_CK.equals(key)){
                 if("true".equals(val)) {
+                    isReady = false;
                     forceStopDisruptor();
                     kafkaService.forceStopProducer();
-                    isReady = false;
                 }else {
                     startDisruptor();
                     kafkaService.startProducer();
                     isReady = true;
                 }
             }
-        });
+        };
+
+        keeperConfig.addListener(configKeyListener);
 
         hickwallReporterService.scheduleWithFixedDelay(
                 () -> {
@@ -350,6 +355,11 @@ public class CKStore implements Keeperable {
     public void dispose() {
         if (disruptor != null){
             disruptor.shutdown();
+        }
+        if(keeperConfig != null) {
+            if(configKeyListener != null) {
+                keeperConfig.removeListener(configKeyListener);
+            }
         }
     }
 }

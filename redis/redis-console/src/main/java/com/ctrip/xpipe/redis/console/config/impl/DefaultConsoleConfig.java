@@ -648,6 +648,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public void removeListener(ConfigKeyListener listener) {
+        this.listenersSet.remove(listener);
+    }
+
+    @Override
     public String getZkConnectionString() {
         return dataCenterConfigBean.getZkConnectionString();
     }

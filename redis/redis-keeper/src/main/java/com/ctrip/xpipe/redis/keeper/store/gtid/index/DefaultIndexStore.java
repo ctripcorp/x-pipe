@@ -189,7 +189,11 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     private void sendPayloadsToCk(List<Object[]> payloads){
         if (ckStore != null && !ckStore.isKeeper()) {
-            ckStore.sendPayloads(payloads);
+            try {
+                ckStore.sendPayloads(payloads);
+            }catch (Throwable t){
+
+            }
         }
     }
 
@@ -201,7 +205,11 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
             if(logger.isDebugEnabled()){
                 logger.debug("[sendPayloadToCk],payload {}",List.of(payload));
             }
-            ckStore.sendPayload(payload);
+            try {
+                ckStore.sendPayload(payload);
+            }catch (Throwable t){
+
+            }
         }
     }
 
