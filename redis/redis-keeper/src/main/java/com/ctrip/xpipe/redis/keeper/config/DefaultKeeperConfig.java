@@ -246,4 +246,9 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public boolean getRecordWrongStream() {
 		return getBooleanProperty(KEY_RECORD_WRONG_STREAM, false);
 	}
+
+	@Override
+	public boolean stopWriteCk() {
+		return getBooleanProperty(KEY_STOP_WRITE_CK, false);
+	}
 }

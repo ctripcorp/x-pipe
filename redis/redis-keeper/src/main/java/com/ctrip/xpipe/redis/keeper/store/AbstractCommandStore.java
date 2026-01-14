@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
@@ -68,6 +69,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     protected CommandStoreDelay commandStoreDelay;
 
+    protected CommandStoreDelay indexStoreDelay;
+
     protected CommandReaderWriterFactory cmdReaderWriterFactory;
 
     private CommandWriter cmdWriter;
@@ -95,15 +98,17 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private GtidCmdFilter gtidCmdFilter;
 
     private boolean buildIndex;
+
+    private CKStore ckStore;
     
     public abstract Logger getLogger();
 
-    public AbstractCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-                               int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
-                               long commandReaderFlyingThreshold,
-                               CommandReaderWriterFactory cmdReaderWriterFactory,
-                               KeeperMonitor keeperMonitor,RedisOpParser redisOpParser,
-                               GtidCmdFilter  gtidCmdFilter, boolean buildIndex
+    public AbstractCommandStore(CKStore ckStore,File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+                                int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
+                                long commandReaderFlyingThreshold,
+                                CommandReaderWriterFactory cmdReaderWriterFactory,
+                                KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
+                                GtidCmdFilter  gtidCmdFilter, boolean buildIndex
     ) throws IOException {
 
         this.baseDir = file.getParentFile();
@@ -115,8 +120,10 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
         this.cmdReaderWriterFactory = cmdReaderWriterFactory;
         this.commandStoreDelay = keeperMonitor.createCommandStoreDelay(this);
+        this.indexStoreDelay = keeperMonitor.createCommandStoreDelay(this);
         this.redisOpParser = redisOpParser;
         this.gtidCmdFilter = gtidCmdFilter;
+        this.ckStore = ckStore;
 
         cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
@@ -129,7 +136,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     private IndexStore createIndexStore() throws IOException {
-        return new DefaultIndexStore(baseDir.getAbsolutePath(), redisOpParser,
+        return new DefaultIndexStore(ckStore,baseDir.getAbsolutePath(), redisOpParser,
                 this, gtidCmdFilter, findLatestFile().getFile().getName());
     }
 
@@ -341,13 +348,13 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         // index 和 cmd 一起 rotate，这个工作交给 index store一起封装
         indexStore.rotateFileIfNecessary();
 
-        commandStoreDelay.beginWrite();
+        indexStoreDelay.beginWrite();
 
         long beginOffset = cmdWriter.totalLength() - 1;
         indexStore.write(byteBuf);
         long offset = cmdWriter.totalLength() - 1;
 
-        commandStoreDelay.endWrite(offset);
+        indexStoreDelay.endWrite(offset);
         offsetNotifier.offsetIncreased(offset);
 
         int writer = (int)(offset - beginOffset);

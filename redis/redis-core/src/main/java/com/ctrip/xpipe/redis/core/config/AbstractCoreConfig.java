@@ -55,4 +55,9 @@ public class AbstractCoreConfig extends AbstractConfigBean implements CoreConfig
 	public void addListener(ConfigKeyListener listener) {
 		this.listeners.add(listener);
 	}
+
+	@Override
+	public void removeListener(ConfigKeyListener listener) {
+		this.listeners.remove(listener);
+	}
 }

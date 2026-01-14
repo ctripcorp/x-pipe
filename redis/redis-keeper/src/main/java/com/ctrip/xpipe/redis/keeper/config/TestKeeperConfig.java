@@ -322,4 +322,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public boolean getRecordWrongStream() {
 		return false;
 	}
+
+	@Override
+	public boolean stopWriteCk() {
+		return false;
+	}
 }

@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
@@ -56,12 +57,14 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 
 	private TimeBoundCache<CommandFuture<Boolean>> rordbConfigFutureCache;
 
+	private final CKStore ckStore;
+
 	public DefaultRedisMaster(RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, NioEventLoopGroup masterEventLoopGroup,
 							  NioEventLoopGroup rdbOnlyEventLoopGroup, NioEventLoopGroup masterConfigEventLoopGroup,
 							  ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled,
 							  KeeperResourceManager resourceManager) {
-
 		this.redisKeeperServer = redisKeeperServer;
+		this.ckStore = redisKeeperServer.getCkStore();
 		this.replicationStoreManager = replicationStoreManager;
 		this.masterEventLoopGroup = masterEventLoopGroup;
 		this.rdbOnlyEventLoopGroup = rdbOnlyEventLoopGroup;
@@ -72,7 +75,14 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		this.redisMasterReplication = new DefaultRedisMasterReplication(this, this.redisKeeperServer, masterEventLoopGroup,
 				this.scheduled, resourceManager);
 	}
-	
+
+	public DefaultRedisMaster(CKStore ckStore, RedisKeeperServer redisKeeperServer, DefaultEndPoint endpoint, NioEventLoopGroup masterEventLoopGroup,
+							  NioEventLoopGroup rdbOnlyEventLoopGroup, NioEventLoopGroup masterConfigEventLoopGroup,
+							  ReplicationStoreManager replicationStoreManager, ScheduledExecutorService scheduled,
+							  KeeperResourceManager resourceManager) {
+		this(redisKeeperServer, endpoint, masterEventLoopGroup, rdbOnlyEventLoopGroup, masterConfigEventLoopGroup, replicationStoreManager,  scheduled, resourceManager);
+	}
+
 	@Override
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
@@ -87,6 +97,8 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		masterConfigClientPool.initialize();
 
 		rordbConfigFutureCache = new TimeBoundCache<>(() -> 60000, this::refreshMasterConfigRordb);
+
+		this.ckStore.setMaster();
 	}
 
 	@Override
@@ -179,6 +191,11 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public void setKeeper() {
 		isKeeper.set(true);
+		synchronized (ckStore) {
+			if(getLifecycleState().isStarted()) {
+				ckStore.setKeeper();
+			}
+		}
 		//for monitor
 		redisKeeperServer.getKeeperMonitor().getMasterStats().setMasterRole(endpoint, SERVER_TYPE.KEEPER);
 		logger.info("[setKeeper]{}", this);

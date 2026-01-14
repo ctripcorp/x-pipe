@@ -96,4 +96,9 @@ public class ByteArrayOutputStreamPayload extends AbstractInOutPayload{
 	protected void doTruncate(int reduceLen) {
 		pos.addAndGet(-reduceLen);
 	}
+
+	public void clear(){
+		data = null;
+		pos.set(0);
+	}
 }

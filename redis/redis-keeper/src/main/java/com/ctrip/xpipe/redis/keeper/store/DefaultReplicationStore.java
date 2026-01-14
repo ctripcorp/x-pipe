@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.replication.KeeperReplicationStoreRuntimeException;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
@@ -75,23 +76,20 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected RedisOpParser redisOpParser;
 
-	public DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
-								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp) throws IOException {
-		this(baseDir, config, keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp);
-	}
+	protected CKStore ckStore;
 
-	protected DefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
+	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
-								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp
-	) throws IOException {
+								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
-        this.commandsRetainTimeoutMilli = config.getReplicationStoreCommandFileRetainTimeoutMilli();
+		this.commandsRetainTimeoutMilli = config.getReplicationStoreCommandFileRetainTimeoutMilli();
 		this.config = config;
 		this.keeperMonitor = keeperMonitor;
 		this.cmdReaderWriterFactory = cmdReaderWriterFactory;
 		this.syncRateManager = syncRateManager;
 		this.redisOpParser = redisOp;
+		this.ckStore = ckStore;
 
 		this.metaStore = new DefaultMetaStore(baseDir, keeperRunid);
 
@@ -118,6 +116,13 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		removeUnusedRdbFiles();
 	}
+
+	protected DefaultReplicationStore(File baseDir, KeeperConfig config,String keeperRunid,
+									  KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp
+	) throws IOException {
+		this(null,baseDir, config,keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp);
+	}
+
 
 	protected Pair<RdbStore,RdbStore> recoverRdbStores(File baseDir, ReplicationStoreMeta meta) throws IOException{
 		RdbStore rdbStore = null, rordbStore = null;
@@ -503,12 +508,13 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
 											  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
 											  KeeperMonitor keeperMonitor, GtidCmdFilter gtidCmdFilter) throws IOException {
-		DefaultCommandStore cmdStore = new DefaultCommandStore(new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
+		DefaultCommandStore cmdStore = new DefaultCommandStore(this.ckStore,new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
+				config::getRecordWrongStream,
 				config::getReplicationStoreCommandFileKeepTimeSeconds,
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
 				config::getReplicationStoreCommandFileNumToKeep,
 				config.getCommandReaderFlyingThreshold(),
-				cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, gtidCmdFilter
+				cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, gtidCmdFilter,true
 		);
 		cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 		try {
@@ -814,7 +820,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public int appendCommands(ByteBuf byteBuf) throws IOException {
 		makeSureOpen();
-
 		return cmdStore.appendCommands(byteBuf);
 	}
 
