@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.integratedtest.keeper;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.tuple.Pair;
 import org.apache.commons.exec.ExecuteException;
@@ -26,7 +28,7 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 	protected KeeperMeta activeDcKeeperActive;
 
 	protected Map<String, LeaderElectorManager> leaderElectorManagers = new HashMap<>();
-	
+
 	@Before
 	public void beforeAbstractKeeperIntegratedSingleDc() throws Exception{
 		
@@ -122,6 +124,12 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		job.execute().sync();
 	}
 
+	protected void setKeeperGtidMaxMap(KeeperMeta keeperMeta,int maxGap){
+		RedisKeeperServer redisKeeperServer = getRedisKeeperServer(keeperMeta);
+		TestKeeperConfig testKeeperConfig = (TestKeeperConfig) redisKeeperServer.getKeeperConfig();
+		testKeeperConfig.setXsyncMaxGap(maxGap);
+	}
+
 	protected void startRedises() throws ExecuteException, IOException{
 		
 		for(DcMeta dcMeta : getDcMetas()){
@@ -169,8 +177,33 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		logger.info("backGtidSet:{}", backGtidSet);
 		for(RedisMeta slave: getRedisSlaves()) {
 			String slaveGtidStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_set");
+			try {
+				waitConditionUntilTimeOut(() -> {
+					return new GtidSet(masterGtid).equals(new GtidSet(slaveGtidStr));
+				}, 30000);
+			} catch (Exception e) {
+				logger.info("[assertMultiDcGtid] {}", e);
+			}
 			logger.info("slave {}:{} gtid set: {}", slave.getIp(), slave.getPort(), slaveGtidStr);
-			Assert.assertEquals(new GtidSet(masterGtid), new GtidSet(slaveGtidStr));
+            Assert.assertEquals(new GtidSet(masterGtid), new GtidSet(slaveGtidStr));
+		}
+	}
+
+
+	protected void assertMultiDcGtidLostEmpty(RedisMeta master) throws ExecutionException, InterruptedException {
+		String masterGtidLost = getGtidSet(master.getIp(), master.getPort(), "gtid_lost");
+		logger.info("[masterGtidLost]{}",masterGtidLost);
+		Assert.assertEquals("",masterGtidLost);
+
+		String activeKeeperGtidLost = getGtidSet(getKeeperActive(getPrimaryDc()).getIp(), getKeeperActive(getPrimaryDc()).getPort(), "gtid_lost");
+		Assert.assertEquals("\"\"",activeKeeperGtidLost);
+
+		String backGtidSetLost = getGtidSet(getKeeperActive(getBackupDc()).getIp(), getKeeperActive(getBackupDc()).getPort(), "gtid_lost");
+		Assert.assertEquals("\"\"",backGtidSetLost);
+
+		for(RedisMeta slave: getRedisSlaves()) {
+			String slaveGtidLost = getGtidSet(slave.getIp(), slave.getPort(), "gtid_lost");
+			Assert.assertEquals("",slaveGtidLost);
 		}
 	}
 

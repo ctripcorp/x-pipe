@@ -95,6 +95,13 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 		logger.info("[setRedisToGtidEnabled] {}", gtid);
 	}
 
+	protected void setRedisToGtidMaxGap(String ip, Integer port, int maxGap) throws Exception {
+		SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
+		ConfigSetCommand.ConfigSetGtidMaxGap configSetGtidMaxGap = new ConfigSetCommand.ConfigSetGtidMaxGap(0, keyPool, scheduled);
+		String gtid = configSetGtidMaxGap.execute().get().toString();
+		logger.info("[setRedisToGtidMaxGap] {}", gtid);
+	}
+
 	protected boolean isRedisGtidEnabled(String ip, Integer port) throws Exception {
 		SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
 		ConfigGetCommand.ConfigGetGtidEnabled configGetGtidEnabled = new ConfigGetCommand.ConfigGetGtidEnabled(keyPool, scheduled);
@@ -103,7 +110,7 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 
 	protected String getGtidSet(String ip, int port, String key) throws ExecutionException, InterruptedException {
 		SimpleObjectPool<NettyClient> masterClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(ip, port));
-		InfoCommand infoCommand = new InfoCommand(masterClientPool, InfoCommand.INFO_TYPE.GTID, scheduled);
+		InfoCommand infoCommand = new InfoCommand(masterClientPool, InfoCommand.INFO_TYPE.GTID, scheduled,3000);
 		String value = infoCommand.execute().get();
 		logger.info("get gtid set from {}, {}, {}", ip, port, value);
 		String gtidSet = new InfoResultExtractor(value).extract(key);

@@ -96,6 +96,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 			while (listener.isOpen() && !Thread.currentThread().isInterrupted()) {
 
 				final ReferenceFileRegion referenceFileRegion = cmdReader.read(1000);
+//				logger.info("[addCommandsListener] {} read {}", listener, referenceFileRegion);
 				if (null == referenceFileRegion) continue;
 				if (ReferenceFileRegion.EOF == referenceFileRegion) {
 					logger.info("[addCommandsListener][read end] {}", progress);

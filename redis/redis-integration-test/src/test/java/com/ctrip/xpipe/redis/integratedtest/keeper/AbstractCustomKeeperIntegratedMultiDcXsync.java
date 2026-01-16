@@ -77,6 +77,18 @@ public class AbstractCustomKeeperIntegratedMultiDcXsync extends AbstractKeeperIn
         }, 30000, 1000);
     }
 
+    protected void checkMasterGtidLostNo() throws TimeoutException {
+        waitConditionUntilTimeOut(() -> {
+            try {
+                String masterGtidLostStr = getGtidSet(getRedisMaster().getIp(),getRedisMaster().getPort(),"gtid_lost");
+                GtidSet masterGtidLost = new GtidSet(masterGtidLostStr);
+                return masterGtidLost.itemCnt() == 1;
+            } catch (Exception e) {
+                return false;
+            }
+        }, 30000, 1000);
+    }
+
     protected void checkAllMasterSlaveGtidSet() throws TimeoutException {
         waitConditionUntilTimeOut(() -> {
             try {

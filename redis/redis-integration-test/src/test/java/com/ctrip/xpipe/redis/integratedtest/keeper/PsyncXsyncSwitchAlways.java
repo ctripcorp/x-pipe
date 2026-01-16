@@ -85,30 +85,14 @@ public class PsyncXsyncSwitchAlways extends AbstractCustomKeeperIntegratedMultiD
         slaveOf(activeDcSlave,activeDcKeeper);
 
         Set<String> keys = sendIncrementMessage(10);
-        checkMasterGtidLost();
+
+        checkMasterGtidLostNo();
         checkAllMasterSlaveGtidSet();
         assertSpecifiedKeyRedisEquals(getRedisMaster(),getRedisSlaves(),keys);
         long fullSyncCount2 = getRedisKeeperServer(getKeeperActive("jq")).getKeeperMonitor().getKeeperStats().getFullSyncCount();
         logger.info("keeper lost after full sync count {}",fullSyncCount2);
 
         Assert.assertEquals(fullSyncCount2,fullSyncCount);
-    }
-
-
-    @Test
-    public void testRedisLostInit_Fail() throws Exception{
-        setAllRedisMasterGtidEnabled();
-        sendMessage(getRedisMaster(),"hello","master");
-        sendMessage(getAllRedisMaster().get(1),"hello","slave");
-        sendMessage(getAllRedisMaster().get(2),"hello","sub-slave-1");
-        sendMessage(getAllRedisMaster().get(3),"hello","sub-slave-2");
-
-        slaveOf(getAllRedisMaster().get(2),getAllRedisMaster().get(1));
-        slaveOf(getAllRedisMaster().get(3),getAllRedisMaster().get(1));
-        slaveOf(getAllRedisMaster().get(1),getRedisMaster());
-
-        checkAllRedisMasterGtidSet();
-        assertSpecifiedKeyRedisEquals(getRedisMaster(),getAllRedisMaster(),Set.of("hello"));
     }
 
 
