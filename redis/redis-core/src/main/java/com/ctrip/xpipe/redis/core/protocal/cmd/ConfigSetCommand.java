@@ -123,6 +123,33 @@ public abstract class ConfigSetCommand<T> extends AbstractConfigCommand<T>{
 	}
 
 
+	public static class ConfigSetGtidMaxGap extends ConfigSetCommand<Boolean> {
+
+		private int maxGap = 0;
+
+		public ConfigSetGtidMaxGap(int maxGap, SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
+			this.maxGap = maxGap;
+		}
+
+		@Override
+		protected String getValue() {
+			return maxGap+"";
+		}
+
+		@Override
+		protected String getConfigName() {
+			return REDIS_CONFIG_TYPE.GTID_XSYNC_MAX_GAP.getConfigName();
+		}
+
+		@Override
+		protected Boolean format(Object payload) {
+			String response = payloadToString(payload);
+			return RedisProtocol.OK.equalsIgnoreCase(response);
+		}
+	}
+
+
 	public static class ConfigSetReplAll extends ConfigSetCommand<Boolean>{
 
 		private boolean replall = false;
