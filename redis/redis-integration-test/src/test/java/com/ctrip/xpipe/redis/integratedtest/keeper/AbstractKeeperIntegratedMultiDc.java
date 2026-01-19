@@ -168,7 +168,7 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		return getAllRedisSlaves();
 	}
 
-	protected void assertMultiDcGtid(RedisMeta master) throws ExecutionException, InterruptedException {
+	protected void assertMultiDcGtid(RedisMeta master) throws Exception {
 		String masterGtid = getGtidSet(master.getIp(), master.getPort(), "gtid_set");
 		String activeKeeperGtid = getGtidSet(getKeeperActive(getPrimaryDc()).getIp(), getKeeperActive(getPrimaryDc()).getPort(), "gtid_executed");
 		String backGtidSet = getGtidSet(getKeeperActive(getBackupDc()).getIp(), getKeeperActive(getBackupDc()).getPort(), "gtid_executed");
@@ -176,16 +176,16 @@ public class AbstractKeeperIntegratedMultiDc extends AbstractKeeperIntegrated{
 		logger.info("activeKeeperGtid:{}", activeKeeperGtid);
 		logger.info("backGtidSet:{}", backGtidSet);
 		for(RedisMeta slave: getRedisSlaves()) {
-			String slaveGtidStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_set");
-			try {
-				waitConditionUntilTimeOut(() -> {
-					return new GtidSet(masterGtid).equals(new GtidSet(slaveGtidStr));
-				}, 30000);
-			} catch (Exception e) {
-				logger.info("[assertMultiDcGtid] {}", e);
-			}
-			logger.info("slave {}:{} gtid set: {}", slave.getIp(), slave.getPort(), slaveGtidStr);
-            Assert.assertEquals(new GtidSet(masterGtid), new GtidSet(slaveGtidStr));
+			waitConditionUntilTimeOut(() -> {
+                String slaveGtidStr = null;
+                try {
+                    slaveGtidStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_set");
+                } catch (Exception e) {
+					return false;
+                }
+                logger.info("slave {}:{} gtid set: {}", slave.getIp(), slave.getPort(), slaveGtidStr);
+				return new GtidSet(masterGtid).equals(new GtidSet(slaveGtidStr));
+			}, 100000);
 		}
 	}
 

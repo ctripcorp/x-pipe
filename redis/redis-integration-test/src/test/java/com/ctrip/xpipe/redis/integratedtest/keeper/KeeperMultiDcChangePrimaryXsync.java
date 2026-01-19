@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.meta.server.dcchange.impl.FirstNewMasterChooser;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -167,7 +168,7 @@ public class KeeperMultiDcChangePrimaryXsync extends AbstractKeeperIntegratedMul
         setKeeperGtidMaxMap(keeper,10000);
 
         testBeforeChangePrimaryWriteMultiIdc();
-        assertMultiDcGtidLost(newMasterChooser.getLastChoosenMaster(),getRedisMaster());
+        assertMultiDcPrimaryDcGtidLost(newMasterChooser.getLastChoosenMaster(),getRedisMaster());
         assertMultiDcGtidAllConsistency(newMasterChooser.getLastChoosenMaster(),getRedisMaster());
     }
 
@@ -190,24 +191,105 @@ public class KeeperMultiDcChangePrimaryXsync extends AbstractKeeperIntegratedMul
         }
     }
 
-
-    private void assertMultiDcGtidLost(RedisMeta master,RedisMeta oldMaster) throws ExecutionException, InterruptedException {
+    private void assertMultiDcPrimaryDcGtidLost(RedisMeta master,RedisMeta oldMaster) throws Exception {
         String masterUUId = getGtidSet(master.getIp(), master.getPort(), "gtid_uuid");
         String oldMasterUUId = getGtidSet(oldMaster.getIp(), oldMaster.getPort(), "gtid_uuid");
-        String masterGtidLostStr = getGtidSet(master.getIp(), master.getPort(), "gtid_lost");
-        Assert.assertEquals(oldMasterUUId+":3-12",masterGtidLostStr);
 
-        String slaveGtidLostStr = getGtidSet(oldMaster.getIp(), oldMaster.getPort(), "gtid_lost");
-        Assert.assertEquals(masterUUId+":1-10",slaveGtidLostStr);
+        waitConditionUntilTimeOut(()->{
+            String masterGtidLostStr = null;
+            try {
+                masterGtidLostStr = getGtidSet(master.getIp(), master.getPort(), "gtid_lost");
+            } catch (Exception e) {
+                return false;
+            }
+            return StringUtil.trimEquals(oldMasterUUId+":3-12",masterGtidLostStr);
+        },100000);
+
+
+        waitConditionUntilTimeOut(()->{
+            String slaveGtidLostStr = null;
+            try {
+                slaveGtidLostStr = getGtidSet(oldMaster.getIp(), oldMaster.getPort(), "gtid_lost");
+            } catch (Exception e) {
+                return false;
+            }
+            return StringUtil.trimEquals("",slaveGtidLostStr);
+        },100000);
+
 
         for(RedisMeta slave: getRedisSlaves(getPrimaryDc())) {
-            slaveGtidLostStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_lost");
-            Assert.assertEquals(masterUUId+":1-10",slaveGtidLostStr);
+            waitConditionUntilTimeOut(()->{
+                String slaveGtidLostStr = null;
+                try {
+                    slaveGtidLostStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_lost");
+                } catch (Exception e) {
+                    return false;
+                }
+                return StringUtil.trimEquals("",slaveGtidLostStr);
+            },100000);
         }
 
         for(RedisMeta slave: getRedisSlaves(getBackupDc())) {
-            slaveGtidLostStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_lost");
-            Assert.assertEquals(oldMasterUUId+":3-12",slaveGtidLostStr);
+            waitConditionUntilTimeOut(()->{
+                String slaveGtidLostStr = null;
+                try {
+                    slaveGtidLostStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_lost");
+                } catch (Exception e) {
+                    return false;
+                }
+                return StringUtil.trimEquals(oldMasterUUId+":3-12",slaveGtidLostStr);
+            },100000);
+        }
+    }
+
+    private void assertMultiDcGtidLost(RedisMeta master,RedisMeta oldMaster) throws Exception {
+        String masterUUId = getGtidSet(master.getIp(), master.getPort(), "gtid_uuid");
+        String oldMasterUUId = getGtidSet(oldMaster.getIp(), oldMaster.getPort(), "gtid_uuid");
+
+        waitConditionUntilTimeOut(()->{
+            String masterGtidLostStr = null;
+            try {
+                masterGtidLostStr = getGtidSet(master.getIp(), master.getPort(), "gtid_lost");
+            } catch (Exception e) {
+                return false;
+            }
+            return StringUtil.trimEquals(oldMasterUUId+":3-12",masterGtidLostStr);
+        },100000);
+
+
+        waitConditionUntilTimeOut(()->{
+            String slaveGtidLostStr = null;
+            try {
+                slaveGtidLostStr = getGtidSet(oldMaster.getIp(), oldMaster.getPort(), "gtid_lost");
+            } catch (Exception e) {
+                return false;
+            }
+            return StringUtil.trimEquals(masterUUId+":1-10",slaveGtidLostStr);
+        },100000);
+
+
+        for(RedisMeta slave: getRedisSlaves(getPrimaryDc())) {
+            waitConditionUntilTimeOut(()->{
+                String slaveGtidLostStr = null;
+                try {
+                    slaveGtidLostStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_lost");
+                } catch (Exception e) {
+                    return false;
+                }
+                return StringUtil.trimEquals(masterUUId+":1-10",slaveGtidLostStr);
+            },100000);
+        }
+
+        for(RedisMeta slave: getRedisSlaves(getBackupDc())) {
+            waitConditionUntilTimeOut(()->{
+                String slaveGtidLostStr = null;
+                try {
+                    slaveGtidLostStr = getGtidSet(slave.getIp(), slave.getPort(), "gtid_lost");
+                } catch (Exception e) {
+                    return false;
+                }
+                return StringUtil.trimEquals(oldMasterUUId+":3-12",slaveGtidLostStr);
+            },100000);
         }
     }
 

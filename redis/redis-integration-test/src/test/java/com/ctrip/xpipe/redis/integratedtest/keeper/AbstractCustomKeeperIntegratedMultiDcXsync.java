@@ -36,10 +36,9 @@ public class AbstractCustomKeeperIntegratedMultiDcXsync extends AbstractKeeperIn
     }
 
     protected KeeperConfig getKeeperConfig(){
-        KeeperConfig keeperConfig = super.getKeeperConfig();
-        TestKeeperConfig testKeeperConfig = (TestKeeperConfig) keeperConfig;
-        testKeeperConfig.setXsyncMaxGap(maxGap);
-        return keeperConfig;
+        TestKeeperConfig config = new TestKeeperConfig(1 << 20, 100, 100 * (1 << 20), 2000);
+        config.setXsyncMaxGap(maxGap);
+        return config;
     }
 
     protected void setAllRedisGtidEnabled() throws Exception {
@@ -106,12 +105,13 @@ public class AbstractCustomKeeperIntegratedMultiDcXsync extends AbstractKeeperIn
         }, 30000, 1000);
     }
 
-    protected void checkAllRedisMasterGtidSet() throws TimeoutException {
+    protected void checkAllRedisMasterGtidSet(RedisMeta master) throws TimeoutException {
         waitConditionUntilTimeOut(() -> {
             try {
-                String masterGtid = getGtidSet(getRedisMaster().getIp(),getRedisMaster().getPort(),"gtid_set");
+                String masterGtid = getGtidSet(master.getIp(),master.getPort(),"gtid_set");
                 GtidSet masterGtidSet = new GtidSet(masterGtid);
                 for(RedisMeta slave:getAllRedisMaster()){
+                    if(slave.equals(getRedisMaster())) continue;
                     String slaveGtid = getGtidSet(slave.getIp(),slave.getPort(),"gtid_set");
                     GtidSet slaveGtidset = new GtidSet(slaveGtid);
                     if(!masterGtidSet.equals(slaveGtidset)) return false;
@@ -193,7 +193,7 @@ public class AbstractCustomKeeperIntegratedMultiDcXsync extends AbstractKeeperIn
             }
 
             if (keysWrong.size() != 0) {
-                logger.info("[keysWrong]{}", keysWrong);
+                logger.info("[assertSpecifiedKeyRedisEquals]keysWrong{}", keysWrong);
                 return keysWrong;
             }
         }
@@ -211,7 +211,6 @@ public class AbstractCustomKeeperIntegratedMultiDcXsync extends AbstractKeeperIn
         Set<String> keys = new HashSet<>(count);
         for (int i = 0; i < count; i++) {
             String key = i+":-:"+redisMeta.getIp();
-            sleep(10);
             jedis.set(key, randomString(messageLength));
             keys.add(key);
         }

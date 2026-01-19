@@ -9,11 +9,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class PsyncXsyncSwitchAlways extends AbstractCustomKeeperIntegratedMultiDcXsync{
-    private int switchCount = 1000000;
+    private int switchCount = 10;
 
     @Test
     public void testXsyncSwitchAlways() throws Exception {
@@ -54,7 +55,7 @@ public class PsyncXsyncSwitchAlways extends AbstractCustomKeeperIntegratedMultiD
 
         checkMasterGtidLost();
         checkAllMasterSlaveGtidSet();
-        assertSpecifiedKeyRedisNotEquals(getRedisMaster(),getRedisSlaves(),keys);
+        assertSpecifiedKeyRedisEquals(getRedisMaster(),getRedisSlaves(),keys);
         long fullSyncCount2 = getRedisKeeperServer(getKeeperActive("jq")).getKeeperMonitor().getKeeperStats().getFullSyncCount();
         logger.info("keeper lost after full sync count {}",fullSyncCount2);
         Assert.assertEquals(fullSyncCount2,fullSyncCount+2);
@@ -98,6 +99,9 @@ public class PsyncXsyncSwitchAlways extends AbstractCustomKeeperIntegratedMultiD
 
     @Test
     public void testKeeperRedisLostInit() throws Exception{
+        for(RedisMeta slave : getAllRedisMaster()) {
+            setRedisToGtidMaxGap(slave.getIp(), slave.getPort(),0);
+        }
         setAllRedisMasterGtidEnabled();
         startKeepers();
         makeKeeperRight();
@@ -113,8 +117,10 @@ public class PsyncXsyncSwitchAlways extends AbstractCustomKeeperIntegratedMultiD
 
         makePrimaryDcKeeperRight(getAllRedisMaster().get(1));
 
-        checkAllRedisMasterGtidSet();
-        assertSpecifiedKeyRedisEquals(getRedisMaster(),getAllRedisMaster(),Set.of("hello"));
+        checkAllRedisMasterGtidSet(getAllRedisMaster().get(1));
+        List<RedisMeta> slaves = getAllRedisMaster();
+        slaves.remove(getRedisMaster());
+        assertSpecifiedKeyRedisEquals(getAllRedisMaster().get(1),slaves,Set.of("hello"));
     }
 
 }

@@ -101,7 +101,9 @@ public class IndexReader extends AbstractIndex implements Closeable {
                     if(gtidSet == null) {
                         gtidSet = calculateGtidSet(i + 1);
                     }
-                    log.info("nexGno {} > indexEntry {}, locate offset {},coninute gtid set {}",nexGno,indexEntry,offset,gtidSet);
+                    if(log.isDebugEnabled()) {
+                        log.debug("nexGno {} > indexEntry {}, locate offset {},coninute gtid set {}", nexGno, indexEntry, offset, gtidSet);
+                    }
                     break;
                 } else if (nexGno >= indexEntry.getStartGno() && nexGno <= indexEntry.getEndGno()) {
                     // 读block 获取
@@ -110,14 +112,18 @@ public class IndexReader extends AbstractIndex implements Closeable {
                         long index = nexGno - indexEntry.getStartGno();
                         offset = blockReader.seek((int) index) + indexEntry.getCmdStartOffset() + getStartOffset();
                         gtidSet = calculateGtidSet(i, nexGno - 1);
-                        log.info("nexGno {} >= indexEntry {}, locate offset {},coninute gtid set {}",nexGno,indexEntry,offset,gtidSet);
+                        if(log.isDebugEnabled()) {
+                            log.debug("nexGno {} >= indexEntry {}, locate offset {},coninute gtid set {}", nexGno, indexEntry, offset, gtidSet);
+                        }
                         finish = true;
                         break;
                     }
                 } else if(nexGno < indexEntry.getStartGno()) {
                     offset = indexEntry.getCmdStartOffset() + getStartOffset();
                     gtidSet = calculateGtidSet(i);
-                    log.info("nexGno {} < indexEntry {}, locate offset {},coninute gtid set {}",nexGno,indexEntry,offset,gtidSet);
+                    if(log.isDebugEnabled()) {
+                        log.debug("nexGno {} < indexEntry {}, locate offset {},coninute gtid set {}", nexGno, indexEntry, offset, gtidSet);
+                    }
                 }
             }
             // find in pre index;
