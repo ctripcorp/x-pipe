@@ -29,6 +29,8 @@ public abstract class AbstractRedisClient<T extends RedisServer> extends Abstrac
 
     protected T redisServer;
 
+    protected int slaveListeningPort;
+
     enum COMMAND_STATE{
         READ_SIGN,
         READ_COMMANDS
@@ -53,7 +55,11 @@ public abstract class AbstractRedisClient<T extends RedisServer> extends Abstrac
 
     @Override
     public String toString() {
-        return ChannelUtil.getDesc(channel);
+        if(slaveListeningPort != 0) {
+            return ChannelUtil.getDesc(channel) + "[slaveListeningPort] " + slaveListeningPort;
+        }else {
+            return ChannelUtil.getDesc(channel);
+        }
     }
 
     @Override
