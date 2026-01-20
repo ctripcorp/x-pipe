@@ -382,7 +382,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		replicationStoreManager.start();
 		keeperStartTime = System.currentTimeMillis();
 		startServer();
-		ckStore.start();
+		try {
+			ckStore.start();
+		} catch (Throwable th) {
+			logger.error("[doStart][ck start fail] ignore", th);
+		}
 		LifecycleHelper.startIfPossible(keeperRedisMaster);
 		this.leaderElector.start();
 		fsyncSeqScheduledFuture = this.scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
