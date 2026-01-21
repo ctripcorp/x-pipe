@@ -236,10 +236,10 @@ public class DefaultTunnel extends AbstractLifecycleObservable implements Tunnel
             long maxBlockWait = config.getBlockWaitBaseMill() + DefaultProxyServer.WRITE_HIGH_WATER_MARK / config.getBlockWaitRate();
             long localFrontendBlockFrom = frontendBlockFrom.get();
             long localBackendBlockFrom = backendBlockFrom.get();
-            if (localFrontendBlockFrom > 0 && current - localFrontendBlockFrom > maxBlockWait) {
+            if (localFrontendBlockFrom > 0 && current - localFrontendBlockFrom > maxBlockWait && config.allowCloseChannel()) {
                 logger.warn("[check][frontendLongBlock][{}] close", current - localFrontendBlockFrom);
                 frontend.release();
-            } else if (localBackendBlockFrom > 0 && current - localBackendBlockFrom > maxBlockWait) {
+            } else if (localBackendBlockFrom > 0 && current - localBackendBlockFrom > maxBlockWait && config.allowCloseChannel()) {
                 logger.warn("[check][backendLongBlock][{}] close", current - localBackendBlockFrom);
                 backend.release();
             }
