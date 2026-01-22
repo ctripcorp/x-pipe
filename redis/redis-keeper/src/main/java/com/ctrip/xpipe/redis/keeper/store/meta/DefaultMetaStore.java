@@ -450,7 +450,7 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 	}
 
 	@Override
-	public boolean increaseExecuted(GtidSet gtidSet) throws IOException {
+	public int increaseExecuted(GtidSet gtidSet) throws IOException {
 		synchronized (metaRef) {
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
 
@@ -461,13 +461,13 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 
 			GtidSet oldFixed = curReplStage.getFixedGtidset();
 			GtidSet newFixed = oldFixed.union(gtidSet);
-			if (oldFixed.equals(newFixed)) {
-				return false;
+			int diffCnt = newFixed.subtract(oldFixed).itemCnt();
+			if (diffCnt == 0) {
+				return diffCnt;
 			}
-
 			curReplStage.setGtidLost(newFixed);
 			saveMeta(metaDup);
-			return true;
+			return diffCnt;
 		}
 	}
 

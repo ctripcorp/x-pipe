@@ -119,6 +119,45 @@ public class GtidxHandler extends AbstractCommandHandler {
         }
     }
 
+    private class GtidxAdd extends AbstractGtidxSection{
+
+        @Override
+        public ByteBuf gtidx(String args[],RedisKeeperServer redisKeeperServer) throws Exception {
+            String result;
+            result = validateArgs(args, 5);
+            if(result != null){
+                return new CommandBulkStringParser(result).format();
+            }
+            result = validateType(args[1]);
+            if(result != null){
+                return new CommandBulkStringParser(result).format();
+            }
+            GtidSet gtidSet = new GtidSet(Maps.newLinkedHashMap());
+            String uuid = args[2];
+            long startGno = parseGno(args[3]);
+            long endGno = parseGno(args[4]);
+
+            if (startGno > endGno) {
+                return new CommandBulkStringParser("ERR start_gno cannot be greater than end_gno").format();
+            }
+
+            gtidSet.compensate(uuid,startGno,endGno);
+            if(isExecuted(args[1])) {
+                ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+                MetaStore metaStore = replicationStore.getMetaStore();
+                int addCount = metaStore.increaseExecuted(gtidSet);
+                return new LongParser(addCount).format();
+            }
+            return new CommandBulkStringParser("ERR only lost supported").format();
+        }
+
+        @Override
+        public String name() {
+            return "remove";
+        }
+    }
+
+
     private long parseGno(String gnoStr) {
         try {
             return Long.parseLong(gnoStr);

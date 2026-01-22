@@ -223,7 +223,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public boolean increaseExecuted(GtidSet gtidSet) throws IOException {
+			public int increaseExecuted(GtidSet gtidSet) throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
