@@ -21,6 +21,7 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.unidal.tuple.Triple;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -148,8 +149,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	protected XSyncContinue buildXSyncContinue(Pair<Long, GtidSet> continuePoint) {
-		GtidSet begin = getBeginGtidSetAndLost().getKey();
-		GtidSet continueGtidSet = continuePoint.getValue().union(begin);
+		Triple<GtidSet, GtidSet, GtidSet> gtidSets = getBeginGtidSetAndFixedAndLost();
+		GtidSet begin = gtidSets.getFirst();
+		GtidSet fixed = gtidSets.getMiddle();
+		GtidSet continueGtidSet = continuePoint.getValue().union(begin).union(fixed);
 		logger.info("[buildXSyncContinue] continueGtidSet: {}, begin: {}, backlogOffset: {}", continueGtidSet, begin, continuePoint.getKey());
 		return new XSyncContinue(continueGtidSet, continuePoint.getKey());
 	}
@@ -169,8 +172,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public XSyncContinue locateTailOfCmd() {
 		Pair<Long, GtidSet> lastPoint = cmdStore.locateTailOfCmd();
-		GtidSet begin = getBeginGtidSetAndLost().getKey();
-		GtidSet continueGtidSet = lastPoint.getValue().union(begin);
+		Triple<GtidSet, GtidSet, GtidSet> gtidSets = getBeginGtidSetAndFixedAndLost();
+		GtidSet begin = gtidSets.getFirst();
+		GtidSet fixed = gtidSets.getMiddle();
+		GtidSet continueGtidSet = lastPoint.getValue().union(begin).union(fixed);
 		return new XSyncContinue(continueGtidSet, lastPoint.getKey());
 	}
 
@@ -242,31 +247,35 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public Pair<GtidSet, GtidSet> getGtidSet() {
-		Pair<GtidSet, GtidSet> gtidSets = getBeginGtidSetAndLost();
-		GtidSet beginGtidSet = gtidSets.getKey();
-		GtidSet lostGtidSet = gtidSets.getValue();
-		GtidSet executedGtidSet = beginGtidSet;
+		Triple<GtidSet, GtidSet, GtidSet> gtidSets = getBeginGtidSetAndFixedAndLost();
+		GtidSet beginGtidSet = gtidSets.getFirst();
+		GtidSet fixedGtidSet = gtidSets.getMiddle();
+		GtidSet lostGtidSet = gtidSets.getLast();
+		GtidSet executedGtidSet = beginGtidSet.union(beginGtidSet).union(fixedGtidSet);
 		if (null != cmdStore) {
 			executedGtidSet = beginGtidSet.union(cmdStore.getIndexGtidSet());
 		}
 		return Pair.of(executedGtidSet, lostGtidSet);
 	}
 
-	private Pair<GtidSet, GtidSet> getBeginGtidSetAndLost() {
-		GtidSet beginGtidSet, lostGtidSet;
+	private Triple<GtidSet, GtidSet, GtidSet> getBeginGtidSetAndFixedAndLost() {
+		GtidSet beginGtidSet, fixedGtidSet, lostGtidSet;
 		if (metaStore.getCurrentReplStage() != null &&
 				metaStore.getCurrentReplStage().getProto() == ReplStage.ReplProto.XSYNC) {
 			beginGtidSet = metaStore.getCurrentReplStage().getBeginGtidset();
 			lostGtidSet = metaStore.getCurrentReplStage().getGtidLost();
+			fixedGtidSet = metaStore.getCurrentReplStage().getFixedGtidset();
 		} else if (metaStore.getPreReplStage() != null &&
 				metaStore.getPreReplStage().getProto() == ReplStage.ReplProto.XSYNC) {
 			beginGtidSet = metaStore.getPreReplStage().getBeginGtidset();
 			lostGtidSet = metaStore.getPreReplStage().getGtidLost();
+			fixedGtidSet = metaStore.getPreReplStage().getFixedGtidset();
 		} else {
 			beginGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
 			lostGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
+			fixedGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
 		}
-		return new Pair<>(beginGtidSet, lostGtidSet);
+		return new Triple<>(beginGtidSet, fixedGtidSet, lostGtidSet);
 	}
 
 	protected EofType initRdbEofType(ReplicationStoreMeta meta) {
