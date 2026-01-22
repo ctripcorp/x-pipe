@@ -450,6 +450,28 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 	}
 
 	@Override
+	public boolean increaseExecuted(GtidSet gtidSet) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			ReplStage curReplStage = metaDup.getCurReplStage();
+			if (curReplStage.getProto() != ReplStage.ReplProto.XSYNC) {
+				throw new IllegalStateException("xcontinue in psync replstage");
+			}
+
+			GtidSet oldFixed = curReplStage.getFixedGtidset();
+			GtidSet newFixed = oldFixed.union(gtidSet);
+			if (oldFixed.equals(newFixed)) {
+				return false;
+			}
+
+			curReplStage.setGtidLost(newFixed);
+			saveMeta(metaDup);
+			return true;
+		}
+	}
+
+	@Override
 	public boolean gtidSetContains(String uuid, long gno) {
 		synchronized (metaRef) {
 			return metaRef.get().getCurReplStage().getGtidLost().contains(uuid, gno);

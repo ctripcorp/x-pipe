@@ -48,6 +48,7 @@ public class ReplStage {
 
     GtidSet beginGtidset;
     GtidSet gtidLost;
+    GtidSet fixedGtidset;
 
     public void setReplId2(String replId2) {
         this.replId2 = replId2;
@@ -103,6 +104,14 @@ public class ReplStage {
         this.gtidLost = gtidLost == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidLost.clone();
     }
 
+    public GtidSet getFixedGtidset() {
+        return fixedGtidset;
+    }
+
+    public void setFixedGtidset(GtidSet fixedGtidset) {
+        this.fixedGtidset = fixedGtidset == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : fixedGtidset.clone();
+    }
+
     public ReplStage(String replId, long beginReplOffset, long begOffsetBacklog) {
         this.proto = ReplProto.PSYNC;
         this.replId = replId;
@@ -121,6 +130,7 @@ public class ReplStage {
         this.masterUuid = masterUuid;
         this.beginGtidset = gtidBegin == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidBegin.clone();
         this.gtidLost = gtidLost == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : gtidLost.clone();
+        this.fixedGtidset = new GtidSet(GtidSet.EMPTY_GTIDSET);
         this.replId2 = null;
         this.secondReplIdOffset = ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
     }
@@ -135,6 +145,7 @@ public class ReplStage {
         this.masterUuid = original.masterUuid;
         this.beginGtidset = original.beginGtidset == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : original.beginGtidset.clone();
         this.gtidLost = original.gtidLost == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : original.gtidLost.clone();
+        this.fixedGtidset = original.fixedGtidset == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : original.fixedGtidset.clone();
     }
 
     @JsonCreator
@@ -147,7 +158,8 @@ public class ReplStage {
             @JsonProperty("secondReplIdOffset") long secondReplIdOffset,
             @JsonProperty("masterUuid") String masterUuid,
             @JsonProperty("gtidLost") String gtidLost,
-            @JsonProperty("beginGtidset") String beginGtidset) {
+            @JsonProperty("beginGtidset") String beginGtidset,
+            @JsonProperty("fixedGtidset") String fixedGtidset) {
 
         this.proto = ReplProto.fromString(proto);
         this.replId = replId;
@@ -156,6 +168,7 @@ public class ReplStage {
         this.masterUuid = masterUuid;
         this.beginGtidset = (beginGtidset == null || beginGtidset.isEmpty()) ? new GtidSet(GtidSet.EMPTY_GTIDSET) : new GtidSet(beginGtidset);
         this.gtidLost = (gtidLost == null || gtidLost.isEmpty()) ? new GtidSet(GtidSet.EMPTY_GTIDSET) : new GtidSet(gtidLost);
+        this.fixedGtidset = (fixedGtidset == null || fixedGtidset.isEmpty()) ? new GtidSet(GtidSet.EMPTY_GTIDSET) : new GtidSet(fixedGtidset);
         this.replId2 =  replId2;
         this.secondReplIdOffset = secondReplIdOffset;
     }
@@ -209,7 +222,7 @@ public class ReplStage {
     @Override
     public String toString() {
         if (proto.equals(ReplProto.XSYNC)) {
-            return String.format("XSYNC|%s;%d:%d@%s", beginGtidset, begOffsetRepl, begOffsetBacklog, masterUuid);
+            return String.format("XSYNC|%s+%s-%d:%d@%s", beginGtidset, fixedGtidset, begOffsetRepl, begOffsetBacklog, masterUuid);
         } else {
             return String.format("PSYNC|%s:%d:%d;%s:%d", replId, begOffsetRepl, begOffsetBacklog, replId2, secondReplIdOffset);
         }
@@ -234,11 +247,12 @@ public class ReplStage {
                 Objects.equals(replId2, replStage.replId2) &&
                 Objects.equals(masterUuid, replStage.masterUuid) &&
                 gtidSetEquals(beginGtidset, replStage.beginGtidset) &&
-                gtidSetEquals(gtidLost, replStage.gtidLost);
+                gtidSetEquals(gtidLost, replStage.gtidLost) &&
+                gtidSetEquals(fixedGtidset, replStage.fixedGtidset);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(proto, replId, begOffsetBacklog, begOffsetRepl, replId2, secondReplIdOffset, masterUuid, beginGtidset, gtidLost);
+        return Objects.hash(proto, replId, begOffsetBacklog, begOffsetRepl, replId2, secondReplIdOffset, masterUuid, beginGtidset, gtidLost, fixedGtidset);
     }
 }
