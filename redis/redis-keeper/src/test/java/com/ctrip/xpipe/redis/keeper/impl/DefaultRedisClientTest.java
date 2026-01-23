@@ -78,15 +78,4 @@ public class DefaultRedisClientTest extends AbstractRedisKeeperTest{
 		return args;
 	}
 
-	@Test
-	public void testGetBytesLimits() {
-		when(replDelayConfigCache.getCrossRegionBytesLimit()).thenReturn(100);
-		redisClient.setReplDelayConfigCache(replDelayConfigCache);
-		Assert.assertEquals(-1, redisClient.getLimitBytesPerSecond());
-		redisClient.setKeeper();
-		Assert.assertEquals(-1, redisClient.getLimitBytesPerSecond());
-		redisClient.setRegion("xxxx");
-		Assert.assertEquals(100, redisClient.getLimitBytesPerSecond());
-	}
-
 }

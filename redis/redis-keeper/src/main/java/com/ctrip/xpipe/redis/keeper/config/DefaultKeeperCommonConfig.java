@@ -16,6 +16,7 @@ public class DefaultKeeperCommonConfig extends AbstractCoreConfig implements Kee
 
     private static String KEY_KEEPER_REPL_DELAY_CONFIG = "keeper.repl.delay.config";
     private static String KEY_REDIS_REPL_DELAY_CONFIG = "redis.repl.delay.config";
+    private static String KEY_CROSSREGION_RATE_LIMIT = "keeper.crossregion.rate.limit.bytes";
 
     private final GenericTypeReference<List<KeeperReplDelayConfig>> keeperReplDelayConfigListType = new GenericTypeReference<List<KeeperReplDelayConfig>>() {};
     private final GenericTypeReference<Map<String, RedisReplDelayConfig>> redisReplDelayConfigMapType = new GenericTypeReference<Map<String, RedisReplDelayConfig>>() {};
@@ -41,6 +42,6 @@ public class DefaultKeeperCommonConfig extends AbstractCoreConfig implements Kee
 
     @Override
     public int getCrossRegionBytesLimit() {
-        return -1;
+        return getIntProperty(KEY_CROSSREGION_RATE_LIMIT, 50 * 1024 * 1024);
     }
 }

@@ -157,12 +157,24 @@ public class FixSyncRateManager extends AbstractLifecycle implements SyncRateMan
             globalFsyncRateLimiter.acquire(syncByte);
             fsyncIORecord.addAndGet(syncByte);
         }
+
+        @Override
+        public int getRate() {
+            if (!keeperConfig.fsyncRateLimit() || diskIOLimit.get() <= 0) return 0;
+            else return (int)globalFsyncRateLimiter.getRate();
+        }
     }
 
     public class PsyncRateLimiter implements SyncRateLimiter {
         @Override
         public void acquire(int syncByte) {
+            if (syncByte <= 0) return;
             psyncIORecords.addAndGet(currentRecord, syncByte);
+        }
+
+        @Override
+        public int getRate() {
+            return 0;
         }
     }
 

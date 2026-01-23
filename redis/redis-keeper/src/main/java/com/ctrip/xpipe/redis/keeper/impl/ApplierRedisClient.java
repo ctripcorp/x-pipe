@@ -122,4 +122,9 @@ public class ApplierRedisClient extends AbstractRedisClient<ApplierServer> imple
     public String getRegion() {
         return null;
     }
+
+    @Override
+    public boolean isCrossRegion() {
+        return false;
+    }
 }

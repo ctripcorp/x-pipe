@@ -115,19 +115,6 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 		else return replDelayConfig.getDelayMilli();
 	}
 
-	public int getLimitBytesPerSecond() {
-		if (null == replDelayConfigCache) return super.getLimitBytesPerSecond();
-		if (isKeeper() && isCrossRegion()) {
-			return replDelayConfigCache.getCrossRegionBytesLimit();
-		} else if (!isKeeper()) {
-			RedisReplDelayConfig replDelayConfig = replDelayConfigCache.getRedisReplDelayConfig();
-			if (null == replDelayConfig) return super.getLimitBytesPerSecond();
-			else return replDelayConfig.getBytesLimitPerSecond();
-		} else {
-			return super.getLimitBytesPerSecond();
-		}
-	}
-
 	@Override
 	public void capa(CAPA capa) {
 		logger.info("[capa]{}, {}", capa, this);
@@ -170,7 +157,7 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 		switch(clientRole){
 			case NORMAL:
 				logger.info("[becomeSlave]" + this);
-				redisSlave = new DefaultRedisSlave(this); 
+				redisSlave = new DefaultRedisSlave(this, replDelayConfigCache);
 				notifyObservers(redisSlave);
 				break;
 			case SLAVE:

@@ -45,6 +45,8 @@ public interface RedisClient<T extends RedisServer> extends Observable, Infoable
 
 	String getRegion();
 
+	boolean isCrossRegion();
+
 	void setClientIpAddress(String host);
 
 	String getClientIpAddress();

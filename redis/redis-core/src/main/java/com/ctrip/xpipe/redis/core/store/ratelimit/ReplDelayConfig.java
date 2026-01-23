@@ -6,7 +6,11 @@ public interface ReplDelayConfig {
         return 0;
     }
 
-    default int getLimitBytesPerSecond() {
+    default int getFsyncLimitPerSecond() {
+        return -1;
+    }
+
+    default int getPsyncLimitPerSecond() {
         return -1;
     }
 

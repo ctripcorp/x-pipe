@@ -79,8 +79,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 		makeSureOpen();
 		logger.info("[addCommandsListener][begin] from offset {}, {}", progress, listener);
 
-		CommandReader<ReferenceFileRegion> cmdReader = null;
-		RateLimiter rateLimiter = RateLimiter.create(Double.MAX_VALUE);
+		CommandReader<ReferenceFileRegion> cmdReader;
 		ChannelFuture lastWriteFuture = null;
 
 		try {
@@ -96,7 +95,6 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 			while (listener.isOpen() && !Thread.currentThread().isInterrupted()) {
 
 				final ReferenceFileRegion referenceFileRegion = cmdReader.read(1000);
-//				logger.info("[addCommandsListener] {} read {}", listener, referenceFileRegion);
 				if (null == referenceFileRegion) continue;
 				if (ReferenceFileRegion.EOF == referenceFileRegion) {
 					logger.info("[addCommandsListener][read end] {}", progress);
@@ -113,7 +111,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 
 				logger.debug("[addCommandsListener] {}", referenceFileRegion);
 				getCommandStoreDelay().endRead(listener, referenceFileRegion.getTotalPos());
-				sleepForDelay(rateLimiter, referenceFileRegion, listener);
+				sleepForDelay(listener);
 
 				if(getDelayTraceLogger().isDebugEnabled()){
 					getDelayTraceLogger().debug("[write][begin]{}, {}", listener, referenceFileRegion.getTotalPos());
@@ -180,19 +178,8 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 		logger.info("[addCommandsListener][end] from {}, {}", progress, listener);
 	}
 
-	private void sleepForDelay(RateLimiter rateLimiter, final ReferenceFileRegion referenceFileRegion, final CommandsListener listener) {
+	private void sleepForDelay(final CommandsListener listener) {
 		long delayMilli = listener.getDelayMilli();
-		int limitBytes = listener.getLimitBytesPerSecond();
-		logger.debug("[sleepForDelay]{},{}", delayMilli,limitBytes);
-
-		if (limitBytes > 0 && referenceFileRegion.count() > 0) {
-			long start = System.nanoTime();
-			if (((int)rateLimiter.getRate()) != limitBytes) rateLimiter.setRate(limitBytes);
-			int readBytes = (int)Math.min(referenceFileRegion.count(), limitBytes);
-			rateLimiter.acquire(readBytes);
-			delayMilli = delayMilli - TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-		}
-
 		if (delayMilli > 0) {
 			try {
 				Thread.sleep(delayMilli);
