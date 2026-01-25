@@ -119,6 +119,42 @@ public class GtidxHandlerTest extends AbstractRedisKeeperTest {
     }
 
     @Test
+    public void testAddGtidExecuted() throws Exception{
+        int gnoBaseX = 1, gnoCountX = 100;
+        setupReplicationStorePX(replIdA, 100000000, 1000,
+                uuidB, replIdB, 200000000, 1, 100);
+
+        long replOffC = 300000000;
+        String gtidBaseRepr = uuidB + ":" + gnoBaseX + "-" + (gnoBaseX+2*gnoCountX-1);
+        String gtidLostRepr = uuidC + ":" + gnoBaseX + "-" + (gnoBaseX+gnoCountX-1);
+        String gtidContRepr = gtidBaseRepr + "," + gtidLostRepr;
+        String reply = "+" + GapAllowedSync.XPARTIAL_SYNC + " " +
+                AbstractGapAllowedSync.SyncReply.XSYNC_REPLY_OPT_REPLID + " " + replIdC + " " +
+                AbstractGapAllowedSync.SyncReply.XSYNC_REPLY_OPT_REPLOFF + " " + replOffC + " " +
+                AbstractGapAllowedSync.SyncReply.XSYNC_REPLY_OPT_MASTER_UUID + " " + uuidC + " " +
+                AbstractGapAllowedSync.SyncReply.XSYNC_REPLY_OPT_GTID_SET + " " + gtidContRepr + " " +
+                "\r\n";
+
+        gasync.getRequest();
+
+        byte[] rawCmds = generateGtidCommands(uuidC, gnoBaseX+gnoCountX, gnoCountX);
+        runData(new byte[][]{
+                reply.getBytes(),
+                rawCmds
+        });
+        replicationStore = replicationStoreManager.getCurrent();
+        Assert.assertEquals(replicationStore.getGtidSet().getValue().toString(), gtidLostRepr);
+        new GtidxHandler().doHandle(new String[]{"remove","lost",uuidC,"1","100"}, redisClient);
+        Assert.assertEquals(replicationStore.getGtidSet().getValue().toString(), "\"\"");
+
+        new GtidxHandler().doHandle(new String[]{"add","executed",uuidC,"1","100"}, redisClient);
+
+        Assert.assertEquals(replicationStore.getGtidSet().getValue().toString(), gtidLostRepr);
+
+    }
+
+
+    @Test
     public void testGtidSet(){
         GtidSet gtidSet = new GtidSet(Maps.newLinkedHashMap());
         GtidSet gtidSet1 = new GtidSet(Maps.newLinkedHashMap());

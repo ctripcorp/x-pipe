@@ -24,6 +24,7 @@ public class GtidxHandler extends AbstractCommandHandler {
 
     public GtidxHandler(){
       register(new GtidxRemove());
+      register(new GtidxAdd());
     }
 
     private void register(GtidxSection section) {
@@ -153,7 +154,7 @@ public class GtidxHandler extends AbstractCommandHandler {
 
         @Override
         public String name() {
-            return "remove";
+            return "add";
         }
     }
 

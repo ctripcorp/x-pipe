@@ -465,7 +465,7 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 			if (diffCnt == 0) {
 				return diffCnt;
 			}
-			curReplStage.setGtidLost(newFixed);
+			curReplStage.setFixedGtidset(newFixed);
 			saveMeta(metaDup);
 			return diffCnt;
 		}
