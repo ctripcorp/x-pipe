@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.store.CancelableCommandsGuarantee;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReader;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.FileRegion;
@@ -196,22 +197,45 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
             return;
         }
 
-        // TODO: support RedisMultiSubKeyOp，DBID @lsl
+        int dbId = 0;
+        try {
+            dbId = Integer.parseInt(redisOp.getDbId());
+        } catch (NumberFormatException e) {
+            logger.info("[appendCmdKeyItem][invalid dbId][{}:{}] {}", uuid, gno, redisOp.getDbId());
+        }
         if (redisOp instanceof RedisMultiKeyOp) {
             RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) redisOp;
             List<RedisKey> keys = redisMultiKeyOp.getKeys();
             for (RedisKey redisKey : keys) {
                 if (null == redisKey) continue;
-                CmdKeyItem item = new CmdKeyItem(uuid, gno, 0, redisOp.getOpType().name(), redisKey.get());
+                CmdKeyItem item = new CmdKeyItem(uuid, gno, dbId, redisOp.getOpType().name(), redisKey.get());
                 cmdKeyItems.add(item);
             }
         } else if (redisOp instanceof RedisSingleKeyOp) {
             RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
             RedisKey redisKey = redisSingleKeyOp.getKey();
             if (null == redisKey) return;
-            CmdKeyItem item = new CmdKeyItem(uuid, gno, 0, redisOp.getOpType().name(), redisKey.get());
+            CmdKeyItem item = new CmdKeyItem(uuid, gno, dbId, redisOp.getOpType().name(), redisKey.get());
             cmdKeyItems.add(item);
+        } else if (redisOp instanceof RedisMultiSubKeyOp) {
+            RedisMultiSubKeyOp redisSubKeyOp = (RedisMultiSubKeyOp) redisOp;
+            RedisKey redisKey = redisSubKeyOp.getKey();
+            if (null == redisKey) return;
+            for (RedisKey subKey: redisSubKeyOp.getAllSubKeys()) {
+                CmdKeyItem item = new CmdKeyItem(uuid, gno, dbId, redisOp.getOpType().name(), redisKey.get(), subKey.get());
+                cmdKeyItems.add(item);
+            }
         }
+    }
+
+    @VisibleForTesting
+    protected void setCmdKeyItems(List<CmdKeyItem> cmdKeyItems) {
+        this.cmdKeyItems = cmdKeyItems;
+    }
+
+    @VisibleForTesting
+    protected List<CmdKeyItem> getCmdKeyItems() {
+        return cmdKeyItems;
     }
 
     @Override
