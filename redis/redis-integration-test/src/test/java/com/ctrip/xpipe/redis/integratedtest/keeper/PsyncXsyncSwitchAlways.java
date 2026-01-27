@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
 
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import org.junit.Assert;
@@ -59,6 +61,48 @@ public class PsyncXsyncSwitchAlways extends AbstractCustomKeeperIntegratedMultiD
         long fullSyncCount2 = getRedisKeeperServer(getKeeperActive("jq")).getKeeperMonitor().getKeeperStats().getFullSyncCount();
         logger.info("keeper lost after full sync count {}",fullSyncCount2);
         Assert.assertEquals(fullSyncCount2,fullSyncCount+2);
+    }
+
+
+    @Test
+    public void testKeeperLostAfterRemoveNotExists() throws Exception{
+        startKeepers();
+        makeKeeperRight();
+        checkAllMasterLinkStatus();
+
+        setRedisToGtidEnabled(getRedisMaster().getIp(),getRedisMaster().getPort());
+        sleep(100);
+
+        sendMessageToMasterAndTestSlaveRedis(1);
+
+        RedisMeta activeDcSlave = getRedisSlaves("jq").get(0);
+        setRedisToGtidEnabled(activeDcSlave.getIp(),activeDcSlave.getPort());
+        slaveOfNoOne(activeDcSlave);
+        sendMessage(activeDcSlave,1,"hahh");
+
+        KeeperMeta activeDcKeeper = getKeeperActive("jq");
+        slaveOf(activeDcSlave,activeDcKeeper);
+        checkMasterAndActiveKeeperGtidLostNotEmpty();
+        
+        GtidSet masterLostSet = gtidxRemoveLost(getRedisMaster().getIp(),getRedisMaster().getPort());
+        gtidxAddExecuted(getRedisMaster().getIp(),getRedisMaster().getPort(),masterLostSet);
+
+        GtidSet activeKeeperLostSet = gtidxRemoveLost(activeDcKeeper.getIp(),activeDcKeeper.getPort());
+        gtidxAddExecuted(activeDcKeeper.getIp(),activeDcKeeper.getPort(),activeKeeperLostSet);
+
+        setKeeperState(activeDcKeeper, KeeperState.ACTIVE,"127.0.0.1",0);
+        sleep(2000);
+        setKeeperState(activeDcKeeper, KeeperState.ACTIVE,getRedisMaster().getIp(),getRedisMaster().getPort());
+
+        checkMasterAndActiveDcKeeperGtidLostEmpty();
+        KeeperMeta backupDcKeeper = getKeeperActive("oy");
+        GtidSet backupKeeperLostSet = gtidxRemoveLost(backupDcKeeper.getIp(),backupDcKeeper.getPort());
+        gtidxAddExecuted(backupDcKeeper.getIp(),backupDcKeeper.getPort(),backupKeeperLostSet);
+
+        setKeeperState(backupDcKeeper, KeeperState.ACTIVE,"127.0.0.1",0);
+        sleep(2000);
+        setKeeperState(backupDcKeeper, KeeperState.ACTIVE,activeDcKeeper.getIp(),activeDcKeeper.getPort());
+        checkMasterAndKeeperGtidLostEmpty();
     }
 
 

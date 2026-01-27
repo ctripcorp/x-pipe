@@ -76,6 +76,44 @@ public class AbstractCustomKeeperIntegratedMultiDcXsync extends AbstractKeeperIn
         }, 30000, 1000);
     }
 
+    protected void checkMasterAndActiveKeeperGtidLostNotEmpty() throws TimeoutException {
+        waitConditionUntilTimeOut(() -> {
+            try {
+                String masterGtidLost = getGtidSet(getRedisMaster().getIp(),getRedisMaster().getPort(),"gtid_lost");
+                String activeKeeperGtidLost = getGtidSet(getKeeperActive("jq").getIp(),getKeeperActive("jq").getPort(),"gtid_lost");
+                String activeBackupKeeperGtidLost = getGtidSet(getKeeperActive("oy").getIp(),getKeeperActive("oy").getPort(),"gtid_lost");
+                return !StringUtil.isEmpty(masterGtidLost) && !"\"\"".equals(activeKeeperGtidLost) && !"\"\"".equals(activeBackupKeeperGtidLost);
+            } catch (Exception e) {
+                return false;
+            }
+        }, 30000, 1000);
+    }
+
+    protected void checkMasterAndActiveDcKeeperGtidLostEmpty() throws TimeoutException {
+        waitConditionUntilTimeOut(() -> {
+            try {
+                String masterGtidLost = getGtidSet(getRedisMaster().getIp(),getRedisMaster().getPort(),"gtid_lost");
+                String activeKeeperGtidLost = getGtidSet(getKeeperActive("jq").getIp(),getKeeperActive("jq").getPort(),"gtid_lost");
+                return StringUtil.isEmpty(masterGtidLost) && "\"\"".equals(activeKeeperGtidLost);
+            } catch (Exception e) {
+                return false;
+            }
+        }, 30000, 1000);
+    }
+
+    protected void checkMasterAndKeeperGtidLostEmpty() throws TimeoutException {
+        waitConditionUntilTimeOut(() -> {
+            try {
+                String masterGtidLost = getGtidSet(getRedisMaster().getIp(),getRedisMaster().getPort(),"gtid_lost");
+                String activeKeeperGtidLost = getGtidSet(getKeeperActive("jq").getIp(),getKeeperActive("jq").getPort(),"gtid_lost");
+                String activeBackupKeeperGtidLost = getGtidSet(getKeeperActive("oy").getIp(),getKeeperActive("oy").getPort(),"gtid_lost");
+                return StringUtil.isEmpty(masterGtidLost) && "\"\"".equals(activeKeeperGtidLost) && "\"\"".equals(activeBackupKeeperGtidLost);
+            } catch (Exception e) {
+                return false;
+            }
+        }, 30000, 1000);
+    }
+
     protected void checkMasterGtidLostNo() throws TimeoutException {
         waitConditionUntilTimeOut(() -> {
             try {

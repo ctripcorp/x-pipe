@@ -505,7 +505,7 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 				updated = true;
 			}
 
-			GtidSet gtidSet = gtidIndexed.union(curReplStage.getBeginGtidset());
+			GtidSet gtidSet = gtidIndexed.union(curReplStage.getBeginGtidset()).union(curReplStage.getFixedGtidset());
 			GtidSet deltaLost = gtidCont.subtract(gtidSet);
 
 			if (!deltaLost.isEmpty()) {
