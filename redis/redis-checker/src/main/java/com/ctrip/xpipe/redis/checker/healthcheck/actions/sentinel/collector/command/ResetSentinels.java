@@ -386,9 +386,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
             return false;
 
         Set<HostPort> slaves = Sets.newHashSet(masterSlaves);
-        slaves.retainAll(toManyKeepers);
-
-        return slaves.size() <= EXPECTED_KEEPER_COUNT;
+        return !slaves.containsAll(toManyKeepers);
     }
 
     private boolean shouldResetUnknownInstances(Set<HostPort> unknownSlaves) {
@@ -396,9 +394,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
             return false;
 
         Set<HostPort> slaves = Sets.newHashSet(masterSlaves);
-        slaves.retainAll(unknownSlaves);
-
-        return slaves.isEmpty();
+        return !slaves.containsAll(unknownSlaves);
     }
 
     private boolean masterHasAllSlaves() {
