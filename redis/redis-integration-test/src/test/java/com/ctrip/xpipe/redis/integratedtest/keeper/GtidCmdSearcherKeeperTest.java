@@ -45,7 +45,7 @@ public class GtidCmdSearcherKeeperTest extends AbstractKeeperIntegratedSingleDc{
         for (CmdKeyItem item : items) {
             Assert.assertEquals(item.uuid, UUID);
             Assert.assertTrue(item.seq >= begGno && item.seq <= endGno);
-            Assert.assertEquals(0, item.dbId);
+            Assert.assertEquals(0, item.dbid);
             Assert.assertNotNull(item.key);
         }
     }

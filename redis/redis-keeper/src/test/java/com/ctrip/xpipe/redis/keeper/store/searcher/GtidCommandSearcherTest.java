@@ -377,20 +377,20 @@ public class GtidCommandSearcherTest extends AbstractTest {
         Assert.assertEquals("MSET", items.get(0).cmd);
         Assert.assertArrayEquals("k1".getBytes(), items.get(0).key);
         Assert.assertEquals(558, items.get(0).seq);
-        Assert.assertEquals(0, items.get(0).dbId);
+        Assert.assertEquals(0, items.get(0).dbid);
         Assert.assertEquals("MSET", items.get(1).cmd);
         Assert.assertArrayEquals("k2".getBytes(), items.get(1).key);
         Assert.assertEquals(558, items.get(1).seq);
-        Assert.assertEquals(0, items.get(1).dbId);
+        Assert.assertEquals(0, items.get(1).dbid);
         Assert.assertEquals("SET", items.get(2).cmd);
         Assert.assertArrayEquals("k1".getBytes(), items.get(2).key);
         Assert.assertEquals(557, items.get(2).seq);
-        Assert.assertEquals(1, items.get(2).dbId);
+        Assert.assertEquals(1, items.get(2).dbid);
         Assert.assertEquals("HSET", items.get(3).cmd);
         Assert.assertArrayEquals("h1".getBytes(), items.get(3).key);
         Assert.assertArrayEquals("f1".getBytes(), items.get(3).subkey);
         Assert.assertEquals(559, items.get(3).seq);
-        Assert.assertEquals(0, items.get(3).dbId);
+        Assert.assertEquals(0, items.get(3).dbid);
     }
 
 }

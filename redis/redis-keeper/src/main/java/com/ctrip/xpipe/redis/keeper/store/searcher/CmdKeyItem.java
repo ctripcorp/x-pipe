@@ -9,7 +9,7 @@ public class CmdKeyItem {
 
     public int seq;
 
-    public int dbId;
+    public int dbid;
 
     public String cmd;
 
@@ -22,7 +22,7 @@ public class CmdKeyItem {
     public CmdKeyItem(String uuid, int seq, int dbId, String cmd, byte[] key, byte[] subkey) {
         this.uuid = uuid;
         this.seq = seq;
-        this.dbId = dbId;
+        this.dbid = dbId;
         this.cmd = cmd;
         this.key = key;
         this.subkey = subkey;
