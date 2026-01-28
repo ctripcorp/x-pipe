@@ -3,6 +3,10 @@ package com.ctrip.xpipe.redis.keeper.store.searcher;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReader;
@@ -19,6 +23,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -299,5 +304,94 @@ public class GtidCommandSearcherTest extends AbstractTest {
         // Verify reader.doRead was called (which happens during flush)
         verify(readerSpy, atLeastOnce()).doRead(any(ByteBuf.class));
     }
+
+    @Test
+    public void testOnGtidCmd() throws IOException {
+        RedisOpParserManager manager = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(manager);
+        RedisOpParser redisOpParser = new GeneralRedisOpParser(manager);
+        GtidCommandSearcher searcher = new GtidCommandSearcher("781dd4ac1bc3149937dd5efe3d45e37b8649cfbf", 555, 560, redisKeeperServer, redisOpParser);
+        searcher.setCmdKeyItems(new ArrayList<>());
+
+        FileRegion fileRegion = mock(FileRegion.class);
+        byte[] testData = ("*8\r\n" +
+                "$4\r\n" +
+                "GTID\r\n" +
+                "$44\r\n" +
+                "781dd4ac1bc3149937dd5efe3d45e37b8649cfbf:558\r\n" +
+                "$1\r\n" +
+                "0\r\n" +
+                "$4\r\n" +
+                "mset\r\n" +
+                "$2\r\n" +
+                "k1\r\n" +
+                "$2\r\n" +
+                "v1\r\n" +
+                "$2\r\n" +
+                "k2\r\n" +
+                "$2\r\n" +
+                "v2\r\n" +
+                "*6\r\n" +
+                "$4\r\n" +
+                "GTID\r\n" +
+                "$44\r\n" +
+                "781dd4ac1bc3149937dd5efe3d45e37b8649cfbf:557\r\n" +
+                "$1\r\n" +
+                "1\r\n" +
+                "$3\r\n" +
+                "set\r\n" +
+                "$2\r\n" +
+                "k1\r\n" +
+                "$2\r\n" +
+                "v1\r\n" +
+                "*7\r\n" +
+                "$4\r\n" +
+                "GTID\r\n" +
+                "$44\r\n" +
+                "781dd4ac1bc3149937dd5efe3d45e37b8649cfbf:559\r\n" +
+                "$1\r\n" +
+                "0\r\n" +
+                "$4\r\n" +
+                "hset\r\n" +
+                "$2\r\n" +
+                "h1\r\n" +
+                "$2\r\n" +
+                "f1\r\n" +
+                "$2\r\n" +
+                "v1\r\n").getBytes();
+
+        // Mock transferTo to write data
+        doAnswer(invocation -> {
+            WritableByteChannel channel = invocation.getArgument(0);
+            ByteBuffer buffer = ByteBuffer.wrap(testData);
+            int written = 0;
+            while (buffer.hasRemaining()) {
+                written += channel.write(buffer);
+            }
+            return (long) written;
+        }).when(fileRegion).transferTo(any(WritableByteChannel.class), eq(0L));
+
+        searcher.onCommand(commandFile, 0L, fileRegion);
+        List<CmdKeyItem> items = searcher.getCmdKeyItems();
+        logger.info("[test] {}", items);
+        Assert.assertEquals("MSET", items.get(0).cmd);
+        Assert.assertArrayEquals("k1".getBytes(), items.get(0).key);
+        Assert.assertEquals(558, items.get(0).seq);
+        Assert.assertEquals(0, items.get(0).dbid);
+        Assert.assertEquals("MSET", items.get(1).cmd);
+        Assert.assertArrayEquals("k2".getBytes(), items.get(1).key);
+        Assert.assertEquals(558, items.get(1).seq);
+        Assert.assertEquals(0, items.get(1).dbid);
+        Assert.assertEquals("SET", items.get(2).cmd);
+        Assert.assertArrayEquals("k1".getBytes(), items.get(2).key);
+        Assert.assertEquals(557, items.get(2).seq);
+        Assert.assertEquals(1, items.get(2).dbid);
+        Assert.assertEquals("HSET", items.get(3).cmd);
+        Assert.assertArrayEquals("h1".getBytes(), items.get(3).key);
+        Assert.assertArrayEquals("f1".getBytes(), items.get(3).subkey);
+        Assert.assertEquals(559, items.get(3).seq);
+        Assert.assertEquals(0, items.get(3).dbid);
+    }
+
 }
 
