@@ -28,7 +28,7 @@ public class ProgressiveSyncRateLimiter implements SyncRateLimiter {
 
     private Object identify;
 
-    private Logger logger = LoggerFactory.getLogger(ProgressiveSyncRateLimiter.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProgressiveSyncRateLimiter.class);
 
     public ProgressiveSyncRateLimiter(Object identify, ProgressiveSyncRateLimiterConfig config) {
         this(identify, config, SystemSecondsProvider.DEFAULT);

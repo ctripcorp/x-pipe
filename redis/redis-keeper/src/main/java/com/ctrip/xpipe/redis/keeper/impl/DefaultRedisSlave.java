@@ -303,7 +303,9 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	@Override
 	public int getPsyncLimitPerSecond() {
-		if (null != replDelayConfigCache && isCrossRegion()) {
+		if (null != psyncRateLimiter) {
+			return psyncRateLimiter.getRate();
+		} else if (null != replDelayConfigCache && isCrossRegion()) {
 			return replDelayConfigCache.getCrossRegionBytesLimit();
 		} else if (null != replDelayConfigCache && null != replDelayConfigCache.getRedisReplDelayConfig()
 				&& !isKeeper()) {
@@ -545,11 +547,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	
 	@Override
 	public void beforeCommand() {
-		if (isKeeper() && isCrossRegion()) {
-			psyncRateLimiter = new FixedSyncRateLimiter(this::getPsyncLimitPerSecond);
-		} else if (!isKeeper()) {
-			psyncRateLimiter = new ProgressiveSyncRateLimiter(this, new RedisSlaveProgressiveSyncRateLimiterConfig());
-		}
+		psyncRateLimiter = new ProgressiveSyncRateLimiter(this, new RedisSlaveProgressiveSyncRateLimiterConfig());
 	}
 
 	class RedisSlaveProgressiveSyncRateLimiterConfig implements ProgressiveSyncRateLimiter.ProgressiveSyncRateLimiterConfig {
@@ -565,7 +563,11 @@ public class DefaultRedisSlave implements RedisSlave {
 		@Override
 		public int getMaxBytesLimit() {
 			if (null != replDelayConfigCache) {
-				return replDelayConfigCache.getRedisMaxBytesLimit();
+				if (isCrossRegion()) {
+					return Math.min(replDelayConfigCache.getCrossRegionBytesLimit(), replDelayConfigCache.getRedisMaxBytesLimit());
+				} else {
+					return replDelayConfigCache.getRedisMaxBytesLimit();
+				}
 			} else {
 				return 50*1024*1024;
 			}
