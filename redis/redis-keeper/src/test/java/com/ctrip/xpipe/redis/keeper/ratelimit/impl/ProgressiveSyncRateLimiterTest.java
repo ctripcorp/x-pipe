@@ -76,7 +76,8 @@ public class ProgressiveSyncRateLimiterTest extends AbstractTest {
 
     @Test
     public void testRateIncrease() {
-        Assert.assertEquals(maxBytes.get()/2, syncRateLimiter.getRate());
+        syncRateLimiter.setRate(minBytes.get());
+        Assert.assertEquals(minBytes.get(), syncRateLimiter.getRate());
         syncRateLimiter.acquire(syncRateLimiter.getRate()/2);
         syncRateLimiter.acquire(syncRateLimiter.getRate()/2);
         systemSeconds.incrementAndGet();
@@ -85,7 +86,7 @@ public class ProgressiveSyncRateLimiterTest extends AbstractTest {
         systemSeconds.incrementAndGet();
         syncRateLimiter.acquire(syncRateLimiter.getRate()/2);
         syncRateLimiter.acquire(syncRateLimiter.getRate()/2);
-        Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
+        Assert.assertEquals(minBytes.get() * 2, syncRateLimiter.getRate());
         IntStream.range(0, 100).forEach(i -> {
             systemSeconds.incrementAndGet();
             syncRateLimiter.acquire(syncRateLimiter.getRate()/2);
@@ -141,12 +142,12 @@ public class ProgressiveSyncRateLimiterTest extends AbstractTest {
 
     @Test
     public void testNoDataForAWhile() {
-        syncRateLimiter.setRate(maxBytes.get());
-        Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
+        syncRateLimiter.setRate(maxBytes.get()/2);
+        Assert.assertEquals(maxBytes.get()/2, syncRateLimiter.getRate());
         syncRateLimiter.acquire(syncRateLimiter.getRate());
         systemSeconds.addAndGet(100);
         syncRateLimiter.acquire(syncRateLimiter.getRate());
-        Assert.assertEquals(maxBytes.get()/2, syncRateLimiter.getRate());
+        Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
         int newRate = (int)(maxBytes.get() * 0.1);
         IntStream.range(0, 10).forEach(i -> {
             systemSeconds.incrementAndGet();

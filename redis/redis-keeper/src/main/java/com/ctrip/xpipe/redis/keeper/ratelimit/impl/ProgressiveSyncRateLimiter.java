@@ -44,7 +44,7 @@ public class ProgressiveSyncRateLimiter implements SyncRateLimiter {
     }
 
     private int baseBytesLimits() {
-        return Math.max(config.getMaxBytesLimit()/2, Math.max(1, config.getMinBytesLimit()));
+        return Math.max(config.getMaxBytesLimit(), 1);
     }
 
     @Override

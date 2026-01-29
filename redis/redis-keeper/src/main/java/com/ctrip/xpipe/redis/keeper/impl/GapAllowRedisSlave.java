@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,8 +20,8 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
 
     private final static Logger logger = LoggerFactory.getLogger(GapAllowRedisSlave.class);
 
-    public GapAllowRedisSlave(RedisClient<RedisKeeperServer> redisClient) {
-        super(redisClient);
+    public GapAllowRedisSlave(RedisClient<RedisKeeperServer> redisClient, ReplDelayConfigCache replDelayConfigCache) {
+        super(redisClient, replDelayConfigCache);
     }
 
     @Override

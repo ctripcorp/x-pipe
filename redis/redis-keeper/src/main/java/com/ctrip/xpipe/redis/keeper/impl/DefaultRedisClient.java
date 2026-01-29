@@ -175,7 +175,7 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 		switch(clientRole){
 			case NORMAL:
 				logger.info("[becomeXSlave]" + this);
-				redisSlave = new XsyncRedisSlave(this);
+				redisSlave = new XsyncRedisSlave(this, replDelayConfigCache);
 				notifyObservers(redisSlave);
 				break;
 			case SLAVE:
@@ -194,7 +194,7 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 			return null;
 		} else {
 			this.clientRole = CLIENT_ROLE.SLAVE;
-			GapAllowRedisSlave redisSlave = new GapAllowRedisSlave(this);
+			GapAllowRedisSlave redisSlave = new GapAllowRedisSlave(this, replDelayConfigCache);
 			notifyObservers(redisSlave);
 			return redisSlave;
 		}
