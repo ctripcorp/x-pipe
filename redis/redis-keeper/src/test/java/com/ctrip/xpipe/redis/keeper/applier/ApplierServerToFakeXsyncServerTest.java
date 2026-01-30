@@ -2,25 +2,15 @@ package com.ctrip.xpipe.redis.keeper.applier;
 
 import com.ctrip.xpipe.api.cluster.LeaderElector;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
-import com.ctrip.xpipe.api.command.CommandFutureListener;
-import com.ctrip.xpipe.client.redis.AsyncRedisClient;
-import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
 import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
-import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
-import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
-import com.github.fppt.jedismock.RedisServer;
-import io.lettuce.core.RedisClient;
-import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.async.RedisAsyncCommands;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,9 +21,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 import redis.clients.jedis.Jedis;
 
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.mockito.ArgumentMatchers.any;
