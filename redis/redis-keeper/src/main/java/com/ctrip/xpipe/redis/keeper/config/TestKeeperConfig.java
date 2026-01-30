@@ -327,4 +327,19 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public boolean stopWriteCk() {
 		return false;
 	}
+
+	@Override
+	public int getRedisMaxBytesLimit() {
+		return 50 * 1024 * 1024;
+	}
+
+	@Override
+	public int getRedisMinBytesLimit() {
+		return 1024 * 1024;
+	}
+
+	@Override
+	public int getRedisRateCheckInterval() {
+		return 2;
+	}
 }

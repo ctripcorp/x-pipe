@@ -20,7 +20,9 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class ReplDelayConfigCache extends AbstractLifecycle implements TopElement {
 
-    private KeeperCommonConfig keeperConfig;
+    private KeeperCommonConfig keeperCommonConfig;
+
+    private KeeperConfig keeperConfig;
 
     private ScheduledExecutorService scheduled;
 
@@ -30,12 +32,9 @@ public class ReplDelayConfigCache extends AbstractLifecycle implements TopElemen
 
     private RedisReplDelayConfig redisReplDelayConfig;
 
-    public ReplDelayConfigCache() {
-        this(null);
-    }
-
     @Autowired
-    public ReplDelayConfigCache(KeeperCommonConfig keeperConfig) {
+    public ReplDelayConfigCache(KeeperCommonConfig keeperCommonConfig, KeeperConfig keeperConfig) {
+        this.keeperCommonConfig = keeperCommonConfig;
         this.keeperConfig = keeperConfig;
         this.redisReplDelayConfig = null;
         this.keeperReplDelayConfigMap = new HashMap<>();
@@ -43,8 +42,8 @@ public class ReplDelayConfigCache extends AbstractLifecycle implements TopElemen
 
     private void refresh() {
         logger.debug("[refresh]");
-        List<KeeperReplDelayConfig> keeperReplDelayConfigs = keeperConfig.getKeeperReplDelayConfigs();
-        Map<String, RedisReplDelayConfig> redisReplDelayConfigs = keeperConfig.getRedisReplDelayConfigs();
+        List<KeeperReplDelayConfig> keeperReplDelayConfigs = keeperCommonConfig.getKeeperReplDelayConfigs();
+        Map<String, RedisReplDelayConfig> redisReplDelayConfigs = keeperCommonConfig.getRedisReplDelayConfigs();
         String currentDc = FoundationService.DEFAULT.getDataCenter();
 
         if (redisReplDelayConfigs.containsKey(currentDc)) {
@@ -71,6 +70,22 @@ public class ReplDelayConfigCache extends AbstractLifecycle implements TopElemen
     @Nullable
     public RedisReplDelayConfig getRedisReplDelayConfig() {
         return this.redisReplDelayConfig;
+    }
+
+    public int getCrossRegionBytesLimit() {
+        return keeperCommonConfig.getCrossRegionBytesLimit();
+    }
+
+    public int getRedisMaxBytesLimit() {
+        return keeperConfig.getRedisMaxBytesLimit();
+    }
+
+    public int getRedisMinBytesLimit() {
+        return keeperConfig.getRedisMinBytesLimit();
+    }
+
+    public int getRedisRateCheckInterval() {
+        return keeperConfig.getRedisRateCheckInterval();
     }
 
     @Override

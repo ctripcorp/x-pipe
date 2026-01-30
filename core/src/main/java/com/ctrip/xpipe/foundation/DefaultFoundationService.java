@@ -81,6 +81,11 @@ public class DefaultFoundationService implements FoundationService {
 	}
 
 	@Override
+	public String getRegion() {
+		return "sha";
+	}
+
+	@Override
 	public int getOrder() {
 		return LOWEST_PRECEDENCE;
 	}

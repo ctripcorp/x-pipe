@@ -40,7 +40,6 @@ public class OffsetCommandReaderTest extends AbstractTest {
     @Before
     public void setupOffsetCommandReaderTest() throws Exception {
         Mockito.when(fileChannel.hasAnythingToRead()).thenReturn(true);
-        Mockito.when(config.getLimitBytesPerSecond()).thenReturn(128);
 
         Mockito.doAnswer(invocationOnMock -> {
             long maxBytes = invocationOnMock.getArgument(0);

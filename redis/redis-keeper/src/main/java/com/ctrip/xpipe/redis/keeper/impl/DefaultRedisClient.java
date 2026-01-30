@@ -34,6 +34,8 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 	private Set<CAPA>  capas = new HashSet<CAPA>(); 
 
 	private String idc = null;
+
+	private String region = null;
 	
 	private AtomicBoolean isKeeper = new AtomicBoolean(false);
 
@@ -46,6 +48,8 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 	private ReplDelayConfigCache replDelayConfigCache;
 
 	private final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
+
+	private final String CURRENT_REGION = FoundationService.DEFAULT.getRegion();
 
 	public DefaultRedisClient(Channel channel, RedisKeeperServer redisKeeperServer) {
 		super(channel, redisKeeperServer);
@@ -82,6 +86,23 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 		return this.idc;
 	}
 
+	@Override
+	public void setRegion(String region) {
+		if (logger.isInfoEnabled()){
+			logger.info("[setRegion][{}] {}", this, region);
+		}
+		this.region = region;
+	}
+
+	@Override
+	public String getRegion() {
+		return this.region;
+	}
+
+	public boolean isCrossRegion() {
+		return !StringUtil.isEmpty(this.region) && !CURRENT_REGION.equalsIgnoreCase(this.region);
+	}
+
 	public void setReplDelayConfigCache(ReplDelayConfigCache replDelayConfigCache) {
 		this.replDelayConfigCache = replDelayConfigCache;
 	}
@@ -92,13 +113,6 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 		KeeperReplDelayConfig replDelayConfig = replDelayConfigCache.getKeeperReplDelayConfig(idc);
 		if (null == replDelayConfig) return super.getDelayMilli();
 		else return replDelayConfig.getDelayMilli();
-	}
-
-	public int getLimitBytesPerSecond() {
-		if (null == replDelayConfigCache || isKeeper()) return super.getLimitBytesPerSecond();
-		RedisReplDelayConfig replDelayConfig = replDelayConfigCache.getRedisReplDelayConfig();
-		if (null == replDelayConfig) return super.getLimitBytesPerSecond();
-		else return replDelayConfig.getBytesLimitPerSecond();
 	}
 
 	@Override
@@ -143,7 +157,7 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 		switch(clientRole){
 			case NORMAL:
 				logger.info("[becomeSlave]" + this);
-				redisSlave = new DefaultRedisSlave(this); 
+				redisSlave = new DefaultRedisSlave(this, replDelayConfigCache);
 				notifyObservers(redisSlave);
 				break;
 			case SLAVE:
@@ -161,7 +175,7 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 		switch(clientRole){
 			case NORMAL:
 				logger.info("[becomeXSlave]" + this);
-				redisSlave = new XsyncRedisSlave(this);
+				redisSlave = new XsyncRedisSlave(this, replDelayConfigCache);
 				notifyObservers(redisSlave);
 				break;
 			case SLAVE:
@@ -180,7 +194,7 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 			return null;
 		} else {
 			this.clientRole = CLIENT_ROLE.SLAVE;
-			GapAllowRedisSlave redisSlave = new GapAllowRedisSlave(this);
+			GapAllowRedisSlave redisSlave = new GapAllowRedisSlave(this, replDelayConfigCache);
 			notifyObservers(redisSlave);
 			return redisSlave;
 		}

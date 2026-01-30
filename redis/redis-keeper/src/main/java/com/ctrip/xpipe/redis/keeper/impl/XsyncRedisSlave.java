@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultXsync;
 import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.ReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
+import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.channel.Channel;
@@ -18,8 +19,8 @@ public class XsyncRedisSlave extends DefaultRedisSlave {
 
     private static final Logger logger = LoggerFactory.getLogger(XsyncRedisSlave.class);
 
-    public XsyncRedisSlave(RedisClient redisClient) {
-        super(redisClient);
+    public XsyncRedisSlave(RedisClient redisClient, ReplDelayConfigCache replDelayConfigCache) {
+        super(redisClient, replDelayConfigCache);
     }
 
     protected String buildMarkBeforeFsync(ReplicationProgress<?> rdbProgress) {

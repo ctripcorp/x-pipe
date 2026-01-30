@@ -64,6 +64,10 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	private static String KEY_RECORD_WRONG_STREAM = "keeper.record.wrong.stream";
 
+	private static String KEY_REDIS_RATE_LIMITE_MIN = "redis.rate.limit.min";
+	private static String KEY_REDIS_RATE_LIMITE_MAX = "redis.rate.limit.max";
+	private static String KEY_REDIS_RATE_LIMITE_CHECK_INTERVAL = "redis.rate.limit.check.interval";
+
 	public DefaultKeeperConfig(){
 
 		CompositeConfig compositeConfig = new CompositeConfig();
@@ -250,5 +254,20 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public boolean stopWriteCk() {
 		return getBooleanProperty(KEY_STOP_WRITE_CK, false);
+	}
+
+	@Override
+	public int getRedisMaxBytesLimit() {
+		return getIntProperty(KEY_REDIS_RATE_LIMITE_MAX, 50 * 1024 * 1024);
+	}
+
+	@Override
+	public int getRedisMinBytesLimit() {
+		return getIntProperty(KEY_REDIS_RATE_LIMITE_MIN, 1024 * 1024);
+	}
+
+	@Override
+	public int getRedisRateCheckInterval() {
+		return getIntProperty(KEY_REDIS_RATE_LIMITE_CHECK_INTERVAL, 30);
 	}
 }

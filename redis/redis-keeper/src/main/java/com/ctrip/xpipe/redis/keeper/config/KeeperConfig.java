@@ -94,4 +94,11 @@ public interface KeeperConfig extends CoreConfig{
 	boolean getRecordWrongStream();
 
 	boolean stopWriteCk();
+
+	int getRedisMaxBytesLimit();
+
+	int getRedisMinBytesLimit();
+
+	int getRedisRateCheckInterval();
+
 }

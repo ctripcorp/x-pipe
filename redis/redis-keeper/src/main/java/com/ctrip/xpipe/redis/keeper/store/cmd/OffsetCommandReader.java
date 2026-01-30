@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper.store.cmd;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.CommandReader;
@@ -64,7 +63,7 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
         }
 
         if (!referenceFileChannel.hasAnythingToRead()) return null;
-        long limitBytes = replDelayConfig.getLimitBytesPerSecond();
+        long limitBytes = replDelayConfig.getPsyncLimitPerSecond();
         if (endPositionExcluded > 0) {
             if (endPositionExcluded == curPosition) return ReferenceFileRegion.EOF;
             long bytesToEnd = endPositionExcluded - curPosition;

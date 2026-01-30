@@ -52,6 +52,8 @@ public class ReplconfHandler extends AbstractCommandHandler {
 			redisClient.setKeeper();
 		}else if(Replconf.ReplConfType.IDC.name().equalsIgnoreCase(option)) {
 			redisClient.setIdc(args[1].toUpperCase());
+		} else if (Replconf.ReplConfType.REGION.name().equalsIgnoreCase(option)) {
+			redisClient.setRegion(args[1].toUpperCase());
 		} else{
 			logger.error("[doHandler][unkonwn command]" + StringUtil.join(" ", args));
 			redisClient.sendMessage(new RedisErrorParser("unknown replconf command " + StringUtil.join(" ", args)).format());

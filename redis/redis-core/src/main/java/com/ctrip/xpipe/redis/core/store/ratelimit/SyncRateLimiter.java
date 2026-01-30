@@ -8,4 +8,18 @@ public interface SyncRateLimiter {
 
     void acquire(int syncByte);
 
+    int getRate();
+
+    SyncRateLimiter UNLIMITED = new SyncRateLimiter() {
+        @Override
+        public void acquire(int syncByte) {
+
+        }
+
+        @Override
+        public int getRate() {
+            return 0;
+        }
+    };
+
 }

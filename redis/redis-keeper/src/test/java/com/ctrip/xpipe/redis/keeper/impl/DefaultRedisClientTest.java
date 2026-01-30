@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.RedisReplDelayConfig;
+import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.DefaultChannelPromise;
@@ -31,8 +33,11 @@ public class DefaultRedisClientTest extends AbstractRedisKeeperTest{
 	private Channel channel;
 	
 	@Mock
-	private RedisKeeperServer redisKeeperServer; 
-	
+	private RedisKeeperServer redisKeeperServer;
+
+	@Mock
+	private ReplDelayConfigCache replDelayConfigCache;
+
 	@Before
 	public void beforeDefaultRedisClientTest(){
 		
@@ -72,4 +77,5 @@ public class DefaultRedisClientTest extends AbstractRedisKeeperTest{
 		}
 		return args;
 	}
+
 }

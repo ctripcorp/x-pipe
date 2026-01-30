@@ -188,7 +188,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 		Long replId = keeperMeta.parent().getDbId();
 		return new DefaultRedisKeeperServer(replId, keeperMeta, keeperConfig, baseDir,
-				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager, redisOpParser, new ReplDelayConfigCache());
+				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager, redisOpParser, new ReplDelayConfigCache(new TestKeeperCommonConfig(), new TestKeeperConfig()));
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,

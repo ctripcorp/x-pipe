@@ -11,11 +11,15 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
+import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import com.ctrip.xpipe.redis.keeper.ratelimit.impl.FixedSyncRateLimiter;
+import com.ctrip.xpipe.redis.keeper.ratelimit.impl.ProgressiveSyncRateLimiter;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.*;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -95,10 +99,20 @@ public class DefaultRedisSlave implements RedisSlave {
 	private CloseState closeState = new CloseState();
 	private SettableFuture<Boolean> psyncProcessed = SettableFuture.create();
 
-	public DefaultRedisSlave(RedisClient<RedisKeeperServer> redisClient){
+	private SyncRateLimiter fsyncRateLimiter;
+	private SyncRateLimiter psyncRateLimiter;
+
+	private ReplDelayConfigCache replDelayConfigCache;
+
+	public DefaultRedisSlave(RedisClient<RedisKeeperServer> redisClient, ReplDelayConfigCache replDelayConfigCache){
 		this.redisClient = redisClient;
+		this.replDelayConfigCache = replDelayConfigCache;
 		this.redisClient.addChannelCloseReleaseResources(this);
 		initExecutor(((DefaultRedisClient)redisClient).channel);
+	}
+
+	public DefaultRedisSlave(RedisClient<RedisKeeperServer> redisClient){
+		this(redisClient, null);
 	}
 
 	private void initExecutor(Channel channel) {
@@ -206,7 +220,9 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	@Override
 	public ChannelFuture writeFile(DefaultReferenceFileRegion referenceFileRegion) {
-		
+		if (null != fsyncRateLimiter && referenceFileRegion.count() > 0) {
+			fsyncRateLimiter.acquire((int)Math.min(Integer.MAX_VALUE, referenceFileRegion.count()));
+		}
 		return doWriteFile(referenceFileRegion);
 	}
 
@@ -269,9 +285,36 @@ public class DefaultRedisSlave implements RedisSlave {
 		cancelWaitRdb();
 
 		channel().writeAndFlush(eofType.getStart());
+
+		this.fsyncRateLimiter = new FixedSyncRateLimiter(this::getFsyncLimitPerSecond);
 	}
 
-	
+	@Override
+	public int getFsyncLimitPerSecond() {
+		if (null != replDelayConfigCache && isCrossRegion()) {
+			return replDelayConfigCache.getCrossRegionBytesLimit();
+		} else if (null != replDelayConfigCache && null != replDelayConfigCache.getRedisReplDelayConfig()
+				&& !isKeeper()) {
+			return replDelayConfigCache.getRedisReplDelayConfig().getBytesLimitPerSecond();
+		} else {
+			return RedisSlave.super.getFsyncLimitPerSecond();
+		}
+	}
+
+	@Override
+	public int getPsyncLimitPerSecond() {
+		if (null != psyncRateLimiter) {
+			return psyncRateLimiter.getRate();
+		} else if (null != replDelayConfigCache && isCrossRegion()) {
+			return replDelayConfigCache.getCrossRegionBytesLimit();
+		} else if (null != replDelayConfigCache && null != replDelayConfigCache.getRedisReplDelayConfig()
+				&& !isKeeper()) {
+			return replDelayConfigCache.getRedisReplDelayConfig().getBytesLimitPerSecond();
+		} else {
+			return RedisSlave.super.getPsyncLimitPerSecond();
+		}
+	}
+
 	@Override
 	public void rdbWriteComplete() {
 		
@@ -360,6 +403,11 @@ public class DefaultRedisSlave implements RedisSlave {
 
 		if (cmd instanceof RedisOp) {
 		    command = ((RedisOp) cmd).buildRESP();
+		} else if (null != psyncRateLimiter && cmd instanceof FileRegion) {
+			FileRegion fileRegion = (FileRegion) cmd;
+			if (fileRegion.count() > 0) {
+				psyncRateLimiter.acquire((int)Math.min(Integer.MAX_VALUE, fileRegion.count()));
+			}
 		}
 
 		ChannelFuture future = channel().writeAndFlush(command);
@@ -499,6 +547,40 @@ public class DefaultRedisSlave implements RedisSlave {
 	
 	@Override
 	public void beforeCommand() {
+		psyncRateLimiter = new ProgressiveSyncRateLimiter(this, new RedisSlaveProgressiveSyncRateLimiterConfig());
+	}
+
+	class RedisSlaveProgressiveSyncRateLimiterConfig implements ProgressiveSyncRateLimiter.ProgressiveSyncRateLimiterConfig {
+		@Override
+		public int getMinBytesLimit() {
+			if (null != replDelayConfigCache) {
+				return replDelayConfigCache.getRedisMinBytesLimit();
+			} else {
+				return 1024*1024;
+			}
+		}
+
+		@Override
+		public int getMaxBytesLimit() {
+			if (null != replDelayConfigCache) {
+				if (isCrossRegion()) {
+					return Math.min(replDelayConfigCache.getCrossRegionBytesLimit(), replDelayConfigCache.getRedisMaxBytesLimit());
+				} else {
+					return replDelayConfigCache.getRedisMaxBytesLimit();
+				}
+			} else {
+				return 50*1024*1024;
+			}
+		}
+
+		@Override
+		public int getCheckInterval() {
+			if (null != replDelayConfigCache) {
+				return replDelayConfigCache.getRedisRateCheckInterval();
+			} else {
+				return 30;
+			}
+		}
 	}
 	
 	
@@ -548,14 +630,25 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
+	public void setRegion(String region) {
+		redisClient.setRegion(region);
+	}
+
+	@Override
+	public String getRegion() {
+		return redisClient.getRegion();
+	}
+
+	@Override
+	public boolean isCrossRegion() {
+		return redisClient.isCrossRegion();
+	}
+
+	@Override
 	public long getDelayMilli() {
 		return redisClient.getDelayMilli();
 	}
 
-	@Override
-	public int getLimitBytesPerSecond() {
-		return redisClient.getLimitBytesPerSecond();
-	}
 
 	@Override
 	public void setClientIpAddress(String host) {

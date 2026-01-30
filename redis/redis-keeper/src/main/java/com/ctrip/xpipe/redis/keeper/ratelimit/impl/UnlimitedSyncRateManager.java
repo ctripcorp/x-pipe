@@ -34,6 +34,11 @@ public class UnlimitedSyncRateManager implements SyncRateManager {
         public void acquire(int syncByte) {
 
         }
+
+        @Override
+        public int getRate() {
+            return 0;
+        }
     }
 
 }

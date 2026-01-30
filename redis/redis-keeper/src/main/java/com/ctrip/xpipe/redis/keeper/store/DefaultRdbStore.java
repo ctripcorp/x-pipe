@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import com.ctrip.xpipe.utils.SizeControllableFile;
-import com.google.common.util.concurrent.RateLimiter;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -284,16 +283,9 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	protected void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
 
 		long lastLogTime = System.currentTimeMillis();
-		RateLimiter rateLimiter = RateLimiter.create(Double.MAX_VALUE);
 		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && referenceFileChannel.hasAnythingToRead()))) {
-			int limitBytes = rdbFileListener.getLimitBytesPerSecond();
+			int limitBytes = rdbFileListener.getFsyncLimitPerSecond();
 			DefaultReferenceFileRegion referenceFileRegion = referenceFileChannel.read(limitBytes);
-
-			if (limitBytes > 0 && referenceFileRegion.count() > 0) {
-				if (((int)rateLimiter.getRate()) != limitBytes) rateLimiter.setRate(limitBytes);
-				int readBytes = (int)Math.min(referenceFileRegion.count(), limitBytes);
-				rateLimiter.acquire(readBytes);
-			}
 			try {
 				rdbFileListener.onFileData(referenceFileRegion);
 			} catch (Throwable t) {
