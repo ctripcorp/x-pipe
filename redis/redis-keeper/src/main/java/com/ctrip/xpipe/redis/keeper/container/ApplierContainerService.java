@@ -228,7 +228,7 @@ public class ApplierContainerService {
                 applierTransMeta.getStateThreadNum(), applierTransMeta.getWorkerThreadNum(),
                 applierTransMeta.getQpsThreshold(), applierTransMeta.getBytesPerSecondThreshold(),
                 applierTransMeta.getMemoryThreshold(), applierTransMeta.getConcurrencyThreshold(),
-                applierTransMeta.getSubenv());
+                applierTransMeta.getSubenv(),applierTransMeta.getBatchSize());
         register(applierServer);
 
         return applierServer;

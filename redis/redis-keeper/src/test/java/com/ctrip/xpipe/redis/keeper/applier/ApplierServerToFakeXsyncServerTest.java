@@ -2,21 +2,38 @@ package com.ctrip.xpipe.redis.keeper.applier;
 
 import com.ctrip.xpipe.api.cluster.LeaderElector;
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
+import com.ctrip.xpipe.client.redis.AsyncRedisClient;
+import com.ctrip.xpipe.client.redis.AsyncRedisClientFactory;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
 import com.ctrip.xpipe.redis.core.redis.parser.AbstractRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.server.FakeXsyncServer;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
+import com.ctrip.xpipe.redis.core.store.CommandsListener;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.utils.ClusterShardAwareThreadFactory;
+import com.github.fppt.jedismock.RedisServer;
+import io.lettuce.core.RedisClient;
+import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.api.async.RedisAsyncCommands;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
+import redis.clients.jedis.Jedis;
 
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -44,6 +61,11 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
     @Before
     public void setUp() throws Exception {
+        executeScript("kill_server.sh", String.valueOf(6379));
+        executeScript("start_redis.sh");
+        Jedis jedis = new Jedis("127.0.0.1",6379);
+        jedis.flushAll();
+
         server = startFakeXsyncServer(randomPort(), null);
         applierMeta = new ApplierMeta();
         applierMeta.setPort(randomPort());
@@ -67,7 +89,6 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
     @Test
     public void test() throws TimeoutException {
-
         waitConditionUntilTimeOut(() -> 1 == server.slaveCount());
 
         server.propagate("gtid a1:21 set k1 v1");
@@ -86,6 +107,30 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
         server.propagate("gtid a1:27 set k1 v7");
 
+        sleep(2000);
+        Jedis jedis = new Jedis("127.0.0.1",6379);
+        Set<String> keys = jedis.keys("*");
+        Assert.assertEquals(8,keys.size());
+        long len;
+        len = jedis.llen("biglist");
+        Assert.assertEquals(3,len);
+        len = jedis.hlen("bighash");
+        Assert.assertEquals(3,len);
+        len = jedis.scard("bigset");
+        Assert.assertEquals(3,len);
+        len = jedis.scard("bignormalset1");
+        Assert.assertEquals(3,len);
+        len = jedis.llen("bignormallist");
+        Assert.assertEquals(3,len);
+        len = jedis.hlen("bignormalhash");
+        Assert.assertEquals(3,len);
+        len = jedis.zcard("bigzset");
+        Assert.assertEquals(3,len);
+        len = jedis.zcard("bignormalset");
+        Assert.assertEquals(3,len);
 
     }
+
+
+
 }

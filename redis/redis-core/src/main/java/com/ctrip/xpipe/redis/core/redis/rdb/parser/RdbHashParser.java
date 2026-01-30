@@ -83,15 +83,14 @@ public class RdbHashParser extends AbstractRdbParser<Integer> implements RdbPars
                     value = rdbStringParser.read(byteBuf);
                     if (null != value) {
                         rdbStringParser.reset();
-                        propagateCmdIfNeed(field, value);
-
-                        field = value = null;
                         readCnt++;
                         if (readCnt >= len.getLenValue()) {
                             state = STATE.READ_END;
                         } else {
                             state = STATE.READ_FIELD;
                         }
+                        propagateCmdIfNeed(field, value);
+                        field = value = null;
                     }
                     break;
 
@@ -116,9 +115,9 @@ public class RdbHashParser extends AbstractRdbParser<Integer> implements RdbPars
 
         notifyRedisOp(new RedisOpSingleKey(
                 RedisOpType.HSET,
-                new byte[][] {RedisOpType.HSET.name().getBytes(), context.getKey().get(), hashField, hashValue},
+                new byte[][] {RedisOpType.HSET.name().getBytes(), context.getKey().get(), hashField,hashValue},
                 context.getKey(),
-                hashField));
+                hashField,isFinish()));
     }
 
     @Override

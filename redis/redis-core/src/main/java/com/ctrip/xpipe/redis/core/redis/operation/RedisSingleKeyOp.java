@@ -10,4 +10,6 @@ public interface RedisSingleKeyOp extends RedisOp {
 
     byte[] getValue();
 
+    boolean isLastOp();
+
 }

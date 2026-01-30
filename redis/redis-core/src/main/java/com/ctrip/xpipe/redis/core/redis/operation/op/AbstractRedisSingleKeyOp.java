@@ -13,6 +13,8 @@ public abstract class AbstractRedisSingleKeyOp extends AbstractRedisOp implement
 
     private byte[] value;
 
+    protected boolean isLastOp;
+
     public AbstractRedisSingleKeyOp(byte[][] rawArgs, RedisKey redisKey, byte[] redisValue) {
         super(rawArgs);
         this.key = redisKey;
@@ -45,6 +47,11 @@ public abstract class AbstractRedisSingleKeyOp extends AbstractRedisOp implement
     @Override
     public byte[] getValue() {
         return value;
+    }
+
+    @Override
+    public boolean isLastOp(){
+        return isLastOp;
     }
 
 }
