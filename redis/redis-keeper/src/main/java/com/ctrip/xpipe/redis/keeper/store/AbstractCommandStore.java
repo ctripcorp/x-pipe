@@ -482,12 +482,16 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         long startOffset = extractStartOffset(curFile);
         long fileLength = curFile.length();
-        if (0 == fileLength) return null;
+        if (0 == fileLength) {
+            getLogger().debug("[findNextFile][{}] curFile len 0", curFile);
+            return null;
+        }
 
         File nextFile = fileForStartOffset(startOffset + fileLength);
         if (nextFile.isFile()) {
             return new CommandFile(nextFile, extractStartOffset(nextFile));
         } else {
+            getLogger().debug("[findNextFile][{}] {} not found", curFile, nextFile);
             return null;
         }
     }
