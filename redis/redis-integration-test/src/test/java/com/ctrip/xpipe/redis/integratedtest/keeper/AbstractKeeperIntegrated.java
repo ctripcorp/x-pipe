@@ -88,6 +88,39 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 		setRedisToGtidEnabled(ip, port, false);
 	}
 
+	protected void gtidxAddExecuted(String ip, Integer port,GtidSet executeSet) throws Exception {
+		for(GtidSet.UUIDSet uuidSet:executeSet.getUUIDSets()) {
+			for(GtidSet.Interval interval:uuidSet.getIntervals()) {
+				gtidxAddExecuted(ip, port, uuidSet.getUUID(), interval.getStart(),interval.getEnd());
+			}
+		}
+	}
+
+	protected GtidSet gtidxRemoveLost(String ip, Integer port) throws Exception {
+		String gtidLost = getGtidSet(ip,port,"gtid_lost");
+		GtidSet lostSet = new GtidSet(gtidLost);
+		for(GtidSet.UUIDSet uuidSet:lostSet.getUUIDSets()) {
+			for(GtidSet.Interval interval:uuidSet.getIntervals()) {
+				gtidxRemoveLost(ip, port, uuidSet.getUUID(), interval.getStart(),interval.getEnd());
+			}
+		}
+		return lostSet;
+	}
+
+	protected void gtidxAddExecuted(String ip, Integer port,String uuid, long startGno,long endGno) throws Exception {
+		SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
+		GtidxAddAndRemoveCommand.GtidxAddExecutedCommand addExecutedCommand = new GtidxAddAndRemoveCommand.GtidxAddExecutedCommand(keyPool,uuid,startGno,endGno, scheduled);
+		Long gno = addExecutedCommand.execute().get();
+		logger.info("[gtidxAddExecuted] {}", gno);
+	}
+
+	protected void gtidxRemoveLost(String ip, Integer port,String uuid, long startGno,long endGno) throws Exception {
+		SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
+		GtidxAddAndRemoveCommand.GtidxRemoveLostCommand removeLostCommand = new GtidxAddAndRemoveCommand.GtidxRemoveLostCommand(keyPool,uuid,startGno,endGno, scheduled);
+		Long gno = removeLostCommand.execute().get();
+		logger.info("[gtidxRemoveLost] {}", gno);
+	}
+
 	protected void setRedisToGtidEnabled(String ip, Integer port, boolean enabled) throws Exception {
 		SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
 		ConfigSetCommand.ConfigSetGtidEnabled configSetGtidEnabled = new ConfigSetCommand.ConfigSetGtidEnabled(enabled, keyPool, scheduled);

@@ -99,7 +99,7 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
                 referenceFileChannel.close();
                 referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(curCmdFile.getFile()));
             } else {
-                logger.debug("[readNextFileIfNecessary][next file not ready] {}", curCmdFile);
+                logger.debug("[readNextFileIfNecessary][next file not ready] {}", curCmdFile.getFile());
             }
         }
     }

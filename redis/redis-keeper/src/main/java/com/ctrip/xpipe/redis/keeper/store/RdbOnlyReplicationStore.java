@@ -223,6 +223,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public int increaseExecuted(GtidSet gtidSet) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoPsync(String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, String rdbReplId, long backlogBeginOffset, long backlogEndOffset) throws IOException {
 				throw new UnsupportedOperationException();
 			}

@@ -450,6 +450,28 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 	}
 
 	@Override
+	public int increaseExecuted(GtidSet gtidSet) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+
+			ReplStage curReplStage = metaDup.getCurReplStage();
+			if (curReplStage.getProto() != ReplStage.ReplProto.XSYNC) {
+				throw new IllegalStateException("xcontinue in psync replstage");
+			}
+
+			GtidSet oldFixed = curReplStage.getFixedGtidset();
+			GtidSet newFixed = oldFixed.union(gtidSet);
+			int diffCnt = newFixed.subtract(oldFixed).itemCnt();
+			if (diffCnt == 0) {
+				return diffCnt;
+			}
+			curReplStage.setFixedGtidset(newFixed);
+			saveMeta(metaDup);
+			return diffCnt;
+		}
+	}
+
+	@Override
 	public boolean gtidSetContains(String uuid, long gno) {
 		synchronized (metaRef) {
 			return metaRef.get().getCurReplStage().getGtidLost().contains(uuid, gno);
@@ -483,7 +505,7 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 				updated = true;
 			}
 
-			GtidSet gtidSet = gtidIndexed.union(curReplStage.getBeginGtidset());
+			GtidSet gtidSet = gtidIndexed.union(curReplStage.getBeginGtidset()).union(curReplStage.getFixedGtidset());
 			GtidSet deltaLost = gtidCont.subtract(gtidSet);
 
 			if (!deltaLost.isEmpty()) {
