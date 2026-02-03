@@ -62,9 +62,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
     public BytesPerSecondThreshold bytesPerSecondThreshold;
 
-    public ConcurrencyThreshold batchConcurrencyThreshold;
-
-
     Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
     Map<RedisKey, List<byte[]>> batchRedisOpCommands = new HashMap<>();
 
@@ -99,7 +96,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         this.bytesPerSecondThresholdValue = bytesPerSecondThreshold == null ? DEFAULT_BYTES_PER_SECOND_THRESHOLD : bytesPerSecondThreshold;
         this.memoryThreshold = new MemoryThreshold(memoryThreshold == null ? DEFAULT_MEMORY_THRESHOLD : memoryThreshold);
         this.concurrencyThreshold = new ConcurrencyThreshold(concurrencyThreshold == null ? DEFAULT_CONCURRENCY_THRESHOLD : concurrencyThreshold);
-        this.batchConcurrencyThreshold = new ConcurrencyThreshold(concurrencyThreshold == null ? DEFAULT_CONCURRENCY_THRESHOLD * batchSize : concurrencyThreshold * batchSize);
         this.batchSize = batchSize != 0 ? batchSize : DEFAULT_BATCH_SIZE;
     }
 
@@ -130,26 +126,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
            logger.debug("[submit] already closed");
            return;
         }
-
         long bytes = command.redisOp().estimatedSize();
         memoryThreshold.tryPass(bytes);
-
-        RedisOp redisOp = command.redisOp();
-        RedisOpType redisOpType = redisOp.getOpType();
-        if(commandOffsetToAccumulate == 0) {
-            switch (redisOpType) {
-                case RedisOpType.RPUSH:
-                case RedisOpType.SADD:
-                case RedisOpType.HSET:
-                case RedisOpType.ZADD:
-                    batchConcurrencyThreshold.tryPass();
-                    break;
-                default:
-                    concurrencyThreshold.tryPass();
-            }
-        }else {
-            concurrencyThreshold.tryPass();
-        }
 
         if (bytesPerSecondThreshold != null) {
             bytesPerSecondThreshold.tryPass(bytes);
@@ -159,37 +137,45 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             qpsThreshold.tryPass();
         }
 
+        RedisOp redisOp = command.redisOp();
+        RedisOpType redisOpType = redisOp.getOpType();
+        RedisOpCommand<?> redisOpCommand = command;
+        if(commandOffsetToAccumulate == 0) {
+            switch (redisOpType) {
+                case RedisOpType.RPUSH:
+                case RedisOpType.SADD:
+                    redisOpCommand = submitListAndSetBatchCommand((DefaultDataCommand)command);
+                    if(redisOpCommand == null) return;
+                    break;
+                case RedisOpType.HSET:
+                case RedisOpType.ZADD:
+                    redisOpCommand = submitHashAndZsetBatchCommand((DefaultDataCommand) command);
+                    if(redisOpCommand == null) return;
+                    break;
+                default:
+            }
+        }
+        concurrencyThreshold.tryPass();
+        submitAsync(redisOpCommand,commandOffsetToAccumulate,gtidSet);
+    }
+
+    private void submitAsync(RedisOpCommand<?> opCommand,long commandOffsetToAccumulate, GtidSet gtidSet){
         stateThread.execute(() -> {
             if (logger.isDebugEnabled()) {
-                logger.debug("[submit] commandName={} args={}", command.getName(), Arrays.stream(command.redisOp().buildRawOpArgs()).map(String::new).toArray(String[]::new));
+                logger.debug("[submit] commandName={} args={}", opCommand.getName(), Arrays.stream(opCommand.redisOp().buildRawOpArgs()).map(String::new).toArray(String[]::new));
             }
-            switch (command.type()) {
+            switch (opCommand.type()) {
                 case SINGLE_KEY:
-                    if(commandOffsetToAccumulate == 0) {
-                        switch (redisOpType) {
-                            case RedisOpType.RPUSH:
-                            case RedisOpType.SADD:
-                                submitListAndSetBatchCommand((DefaultDataCommand) command, commandOffsetToAccumulate, gtidSet);
-                                break;
-                            case RedisOpType.HSET:
-                            case RedisOpType.ZADD:
-                                submitHashAndZsetBatchCommand((DefaultDataCommand) command, commandOffsetToAccumulate, gtidSet);
-                                break;
-                            default:
-                                submitSingleKeyCommand((RedisOpDataCommand<?>) command, commandOffsetToAccumulate, gtidSet);
-                        }
-                    }else {
-                        submitSingleKeyCommand((RedisOpDataCommand<?>) command, commandOffsetToAccumulate, gtidSet);
-                    }
+                    submitSingleKeyCommand((RedisOpDataCommand<?>) opCommand, commandOffsetToAccumulate, gtidSet);
                     break;
                 case MULTI_KEY:
-                    submitMultiKeyCommand((RedisOpDataCommand<?>) command, commandOffsetToAccumulate, gtidSet);
+                    submitMultiKeyCommand((RedisOpDataCommand<?>) opCommand, commandOffsetToAccumulate, gtidSet);
                     break;
                 case NONE_KEY:
-                    submitNoneKeyCommand(command, commandOffsetToAccumulate, gtidSet);
+                    submitNoneKeyCommand(opCommand, commandOffsetToAccumulate, gtidSet);
                     break;
                 case OTHER:
-                    submitObstacle(command, commandOffsetToAccumulate, gtidSet);
+                    submitObstacle(opCommand, commandOffsetToAccumulate, gtidSet);
                     break;
             }
         });
@@ -264,10 +250,12 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         current.execute();
     }
 
-    private void submitListAndSetBatchCommand(DefaultDataCommand command, long commandOffset, GtidSet gtidSet) {
+    private RedisOpCommand<?> submitListAndSetBatchCommand(DefaultDataCommand command) {
+        RedisOpCommand<?> batchOpCommand = null;
         RedisKey key = command.key();
         RedisOpSingleKey redisOp = (RedisOpSingleKey) command.redisOp();
         final byte[][] args = redisOp.buildRawOpArgs();
+
         List<byte[]> lastBatchArgs = batchRedisOpCommands.computeIfAbsent(key,(redisKey) -> {
             List<byte[]> batchArgs = new ArrayList<>(2+batchSize);
             batchArgs.add(args[0]);
@@ -275,19 +263,22 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             return batchArgs;
         });
         lastBatchArgs.add(args[2]);
-        if(redisOp.isLastOp()|| lastBatchArgs.size() >= batchSize+2){
+        if(redisOp.isLastOp() || lastBatchArgs.size() >= batchSize+2){
             RedisOp batchRedisOp = new RedisOpSingleKey(redisOp.getOpType(),lastBatchArgs.toArray(new byte[0][]),key,null);
-            submitSingleKeyCommand(new DefaultDataCommand(client,batchRedisOp,command.getDbNumber()),commandOffset,gtidSet);
             lastBatchArgs.clear();
             lastBatchArgs.add(args[0]);
             lastBatchArgs.add(args[1]);
+            batchOpCommand = new DefaultDataCommand(client,batchRedisOp,command.getDbNumber());
         }
         if(redisOp.isLastOp()){
             batchRedisOpCommands.remove(key);
         }
+        return batchOpCommand;
     }
 
-    private void submitHashAndZsetBatchCommand(DefaultDataCommand command, long commandOffset, GtidSet gtidSet) {
+
+    private RedisOpCommand<?> submitHashAndZsetBatchCommand(DefaultDataCommand command) {
+        RedisOpCommand<?> batchOpCommand = null;
         RedisKey key = command.key();
         RedisOpSingleKey redisOp = (RedisOpSingleKey) command.redisOp();
         final byte[][] args = redisOp.buildRawOpArgs();
@@ -299,17 +290,19 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         });
         lastBatchArgs.add(args[2]);
         lastBatchArgs.add(args[3]);
-        if(redisOp.isLastOp() ||lastBatchArgs.size() >= 2+batchSize*2){
+        if(redisOp.isLastOp() || lastBatchArgs.size() >= 2+batchSize*2){
             RedisOp batchRedisOp = new RedisOpSingleKey(redisOp.getOpType(),lastBatchArgs.toArray(new byte[0][]),key,null);
-            submitSingleKeyCommand(new DefaultDataCommand(client,batchRedisOp,command.getDbNumber()),commandOffset,gtidSet);
             lastBatchArgs.clear();
             lastBatchArgs.add(args[0]);
             lastBatchArgs.add(args[1]);
+            batchOpCommand = new DefaultDataCommand(client,batchRedisOp,command.getDbNumber());
         }
         if(redisOp.isLastOp()){
             batchRedisOpCommands.remove(key);
         }
+        return batchOpCommand;
     }
+
 
 
 
