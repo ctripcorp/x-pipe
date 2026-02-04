@@ -87,11 +87,20 @@ public class RdbHashZipListParser extends AbstractRdbParser<Map<byte[], byte[]>>
 
         Map<byte[], byte[]> map = ziplist.convertToMap();
         RedisKey key = context.getKey();
+        int i = 0;
         for (Map.Entry<byte[], byte[]> entry: map.entrySet()) {
-            notifyRedisOp(new RedisOpSingleKey(
-                    RedisOpType.HSET,
-                    new byte[][] {RedisOpType.HSET.name().getBytes(), key.get(), entry.getKey(), entry.getValue()},
-                    key, entry.getKey()));
+            if(i == map.size()-1){
+                notifyRedisOp(new RedisOpSingleKey(
+                        RedisOpType.HSET,
+                        new byte[][] {RedisOpType.HSET.name().getBytes(), key.get(), entry.getKey(), entry.getValue()},
+                        key, entry.getKey(),true));
+            }else {
+                notifyRedisOp(new RedisOpSingleKey(
+                        RedisOpType.HSET,
+                        new byte[][] {RedisOpType.HSET.name().getBytes(), key.get(), entry.getKey(), entry.getValue()},
+                        key, entry.getKey()));
+            }
+            i++;
         }
     }
 

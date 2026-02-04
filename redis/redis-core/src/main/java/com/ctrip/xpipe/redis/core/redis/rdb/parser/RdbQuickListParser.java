@@ -79,7 +79,6 @@ public class RdbQuickListParser extends AbstractRdbParser<Integer> implements Rd
 
                 case DECODE_ZL:
                     Ziplist ziplist = new Ziplist(temp);
-                    propagateCmdIfNeed(ziplist);
                     temp = null;
                     readCnt++;
 
@@ -88,6 +87,8 @@ public class RdbQuickListParser extends AbstractRdbParser<Integer> implements Rd
                     } else {
                         state = STATE.READ_ZL_AS_STR;
                     }
+
+                    propagateCmdIfNeed(ziplist);
                     break;
 
                 case READ_END:
@@ -110,11 +111,21 @@ public class RdbQuickListParser extends AbstractRdbParser<Integer> implements Rd
 
         List<byte[]> arr = ziplist.convertToList();
         RedisKey key = context.getKey();
+        int i = 0;
         for (byte[] val: arr) {
-            notifyRedisOp(new RedisOpSingleKey(
-                    RedisOpType.RPUSH,
-                    new byte[][] {RedisOpType.RPUSH.name().getBytes(), key.get(), val},
-                    key, val));
+            if(i == arr.size() -1 && isFinish()){
+                notifyRedisOp(new RedisOpSingleKey(
+                        RedisOpType.RPUSH,
+                        new byte[][] {RedisOpType.RPUSH.name().getBytes(), key.get(), val},
+                        key, val, true));
+            }else {
+                notifyRedisOp(new RedisOpSingleKey(
+                        RedisOpType.RPUSH,
+                        new byte[][] {RedisOpType.RPUSH.name().getBytes(), key.get(), val},
+                        key, val));
+            }
+
+            i++;
         }
     }
 

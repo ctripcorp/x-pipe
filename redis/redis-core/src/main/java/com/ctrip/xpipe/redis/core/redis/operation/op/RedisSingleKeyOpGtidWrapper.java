@@ -24,4 +24,9 @@ public class RedisSingleKeyOpGtidWrapper extends AbstractRedisOpGtidWrapper impl
     public byte[] getValue() {
         return innerRedisSingleKeyOp.getValue();
     }
+
+    @Override
+    public boolean isLastOp(){
+        return false;
+    }
 }

@@ -9,7 +9,6 @@ import com.ctrip.xpipe.cluster.ElectContext;
 import com.ctrip.xpipe.concurrent.LongTimeAlertTask;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.NettySimpleMessageHandler;
-import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.ApplierInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
@@ -166,17 +165,18 @@ public class DefaultApplierServer extends AbstractInstanceNode implements Applie
 
     private static final int DEFAULT_LONG_TIME_ALERT_TASK_MILLI = 1000;
 
+
     public DefaultApplierServer(String clusterName, ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
                                 LeaderElectorManager leaderElectorManager, RedisOpParser parser, KeeperConfig keeperConfig) throws Exception {
         this(clusterName, clusterId, shardId, applierMeta, leaderElectorManager, parser, keeperConfig, 1, 1,
-                null, null, null, null, null);
+                null, null, null, null, null,2);
     }
 
     public DefaultApplierServer(String clusterName, ClusterId clusterId, ShardId shardId, ApplierMeta applierMeta,
                                 LeaderElectorManager leaderElectorManager, RedisOpParser parser, KeeperConfig keeperConfig,
                                 int stateThreadNum, int workerThreadNum,
-                                Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold, String subenv) throws Exception {
-        this.sequenceController = new DefaultSequenceController(qpsThreshold, bytesPerSecondThreshold, memoryThreshold, concurrencyThreshold);
+                                Long qpsThreshold, Long bytesPerSecondThreshold, Long memoryThreshold, Long concurrencyThreshold, String subenv,int batchSize) throws Exception {
+        this.sequenceController = new DefaultSequenceController(qpsThreshold, bytesPerSecondThreshold, memoryThreshold, concurrencyThreshold,batchSize);
         this.dispatcher = new DefaultCommandDispatcher();
         this.replication = new DefaultGapAllowReplication(this);
         this.offsetRecorder = new AtomicLong(-1);

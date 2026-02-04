@@ -83,17 +83,16 @@ public class RdbZSet2Parser extends AbstractRdbParser<Integer> implements RdbPar
                     score = readUntilBytesEnough(byteBuf, score, 8);
                     if (score.readableBytes() == 8) {
                         rdbStringParser.reset();
-                        propagateCmdIfNeed(member, score.readDoubleLE());
-
-                        member = null;
-                        score.release();
-                        score = null;
                         readCnt++;
                         if (readCnt >= len.getLenValue()) {
                             state = STATE.READ_END;
                         } else {
                             state = STATE.READ_MEMBER;
                         }
+                        propagateCmdIfNeed(member, score.readDoubleLE());
+                        member = null;
+                        score.release();
+                        score = null;
                     }
                     break;
 
@@ -115,11 +114,10 @@ public class RdbZSet2Parser extends AbstractRdbParser<Integer> implements RdbPar
         if (null == member || null == context.getKey()) {
             return;
         }
-
         notifyRedisOp(new RedisOpSingleKey(
                 RedisOpType.ZADD,
-                new byte[][] {RedisOpType.ZADD.name().getBytes(), context.getKey().get(), String.valueOf(score).getBytes(), member},
-                context.getKey(), member));
+                new byte[][] {RedisOpType.ZADD.name().getBytes(), context.getKey().get(), String.valueOf(score).getBytes(),member},
+                context.getKey(), member,isFinish()));
     }
 
     @Override

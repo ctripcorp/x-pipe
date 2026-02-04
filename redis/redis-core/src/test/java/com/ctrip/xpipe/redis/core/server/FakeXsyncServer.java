@@ -10,6 +10,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -74,7 +78,17 @@ public class FakeXsyncServer extends AbstractLifecycle implements FakeXsyncHandl
     }
 
     @Override
-    public byte[] genRdbData() {
+    public byte[] genRdbData(){
+        String filePath = "src/test/resources/applier/dump.rdb";
+        try {
+            return Files.readAllBytes(Paths.get(filePath));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public byte[] genRdbData1() {
         try (ByteArrayOutputStream rdb = new ByteArrayOutputStream()) {
             rdb.write("REDIS".getBytes(StandardCharsets.UTF_8));
             rdb.write("0009".getBytes(StandardCharsets.UTF_8));

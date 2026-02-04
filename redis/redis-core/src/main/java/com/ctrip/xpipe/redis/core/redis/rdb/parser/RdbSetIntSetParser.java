@@ -90,11 +90,20 @@ public class RdbSetIntSetParser extends AbstractRdbParser<List<byte[]>> implemen
 
         List<byte[]> vals = intset.convertToStrList();
         RedisKey key = context.getKey();
+        int i = 0;
         for (byte[] val: vals) {
-            notifyRedisOp(new RedisOpSingleKey(
-                    RedisOpType.SADD,
-                    new byte[][] {RedisOpType.SADD.name().getBytes(), key.get(), val},
-                    key, val));
+            if(i == vals.size() - 1){
+                notifyRedisOp(new RedisOpSingleKey(
+                        RedisOpType.SADD,
+                        new byte[][] {RedisOpType.SADD.name().getBytes(), key.get(), val},
+                        key, val, true));
+            }else {
+                notifyRedisOp(new RedisOpSingleKey(
+                        RedisOpType.SADD,
+                        new byte[][] {RedisOpType.SADD.name().getBytes(), key.get(), val},
+                        key, val));
+            }
+            i++;
         }
     }
 

@@ -110,7 +110,7 @@ public class DefaultApplierServerTest extends AbstractRedisOpParserTest {
                 "ApplierTestParam", ClusterId.from(1L), ShardId.from(1L),
                 applierMeta, leaderElectorManager, parser, new TestKeeperConfig(),
                 1,8,
-                50000L, 50000L,50000L,50000L,null);
+                50000L, 50000L,50000L,50000L,null,100);
         server.initialize();
 
         assertTrue(server.sequenceController.getLifecycleState().isInitialized());

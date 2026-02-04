@@ -31,6 +31,8 @@ public class ApplierTransMeta {
 
     private String subenv;
 
+    private int batchSize;
+
     //for json conversion
     public ApplierTransMeta() {}
 
@@ -141,6 +143,15 @@ public class ApplierTransMeta {
 
     public ApplierTransMeta setSubenv(String subenv) {
         this.subenv = subenv;
+        return this;
+    }
+
+    public int getBatchSize() {
+        return batchSize;
+    }
+
+    public ApplierTransMeta setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
         return this;
     }
 

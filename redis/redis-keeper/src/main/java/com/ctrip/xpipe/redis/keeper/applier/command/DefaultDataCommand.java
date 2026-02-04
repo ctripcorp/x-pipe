@@ -81,4 +81,9 @@ public class DefaultDataCommand extends AbstractCommand<Boolean> implements Redi
     protected Logger getLogger() {
         return staticLogger;
     }
+
+    public int getDbNumber(){
+        return dbNumber;
+    }
+
 }

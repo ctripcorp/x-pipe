@@ -23,8 +23,20 @@ public class RedisOpSingleKey extends AbstractRedisSingleKeyOp implements RedisS
         this.redisOpType = redisOpType;
     }
 
+    public RedisOpSingleKey(RedisOpType redisOpType, byte[][] rawArgs, RedisKey redisKey, byte[] redisValue,boolean isLastOp) {
+        super(rawArgs, redisKey, redisValue);
+        this.redisOpType = redisOpType;
+        this.isLastOp = isLastOp;
+    }
+
+
     @Override
     public RedisOpType getOpType() {
         return redisOpType;
+    }
+
+    @Override
+    public boolean isLastOp(){
+        return isLastOp;
     }
 }
