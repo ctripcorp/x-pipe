@@ -20,4 +20,29 @@ public class TestKeeperCommonConfig implements KeeperCommonConfig {
     public int getCrossRegionBytesLimit() {
         return -1;
     }
+
+    @Override
+    public int getCrossRegionMinBytesLimit() {
+        return -1;
+    }
+
+    @Override
+    public int getCrossRegionRateCheckInterval() {
+        return 1;
+    }
+
+    @Override
+    public int getCrossRegionRateIncreaseCheckRounds() {
+        return 1;
+    }
+
+    @Override
+    public int getCrossRegionRateDecreaseCheckRounds() {
+        return 1;
+    }
+
+    @Override
+    public boolean isCrossRegionRateLimitEnabled() {
+        return false;
+    }
 }

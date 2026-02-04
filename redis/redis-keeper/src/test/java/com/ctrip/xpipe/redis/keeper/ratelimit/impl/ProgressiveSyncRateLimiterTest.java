@@ -8,9 +8,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.IntStream;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ProgressiveSyncRateLimiterTest extends AbstractTest {
@@ -22,6 +23,12 @@ public class ProgressiveSyncRateLimiterTest extends AbstractTest {
     private AtomicInteger maxBytes = new AtomicInteger(1000);
 
     private AtomicInteger checkInterval = new AtomicInteger(2);
+
+    private AtomicInteger increaseCheckRounds = new AtomicInteger(2);
+
+    private AtomicInteger decreaseCheckRounds = new AtomicInteger(3);
+
+    private AtomicBoolean rateLimitEnabled = new AtomicBoolean(true);
 
     private AtomicDouble limit = new AtomicDouble(0);
 
@@ -47,6 +54,21 @@ public class ProgressiveSyncRateLimiterTest extends AbstractTest {
             @Override
             public int getCheckInterval() {
                 return checkInterval.get();
+            }
+
+            @Override
+            public int getIncreaseCheckRounds() {
+                return increaseCheckRounds.get();
+            }
+
+            @Override
+            public int getDecreaseCheckRounds() {
+                return decreaseCheckRounds.get();
+            }
+
+            @Override
+            public boolean isRateLimitEnabled() {
+                return rateLimitEnabled.get();
             }
         };
 
@@ -75,100 +97,137 @@ public class ProgressiveSyncRateLimiterTest extends AbstractTest {
     }
 
     @Test
-    public void testRateIncrease() {
+    public void testRateIncreaseWithConsecutiveRounds() {
         syncRateLimiter.setRate(minBytes.get());
         Assert.assertEquals(minBytes.get(), syncRateLimiter.getRate());
-        syncRateLimiter.acquire(syncRateLimiter.getRate()/2);
-        syncRateLimiter.acquire(syncRateLimiter.getRate()/2);
-        systemSeconds.incrementAndGet();
-        syncRateLimiter.acquire(syncRateLimiter.getRate()/2);
-        syncRateLimiter.acquire(syncRateLimiter.getRate()/2);
-        systemSeconds.incrementAndGet();
-        syncRateLimiter.acquire(syncRateLimiter.getRate()/2);
-        syncRateLimiter.acquire(syncRateLimiter.getRate()/2);
+
+        runSeconds(3, minBytes.get());
+        Assert.assertEquals(minBytes.get(), syncRateLimiter.getRate());
+
+        runSeconds(2, minBytes.get());
         Assert.assertEquals(minBytes.get() * 2, syncRateLimiter.getRate());
-        IntStream.range(0, 100).forEach(i -> {
-            systemSeconds.incrementAndGet();
-            syncRateLimiter.acquire(syncRateLimiter.getRate()/2);
-            syncRateLimiter.acquire(syncRateLimiter.getRate()/2);
-        });
-        Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
     }
 
     @Test
-    public void testRateDecrease() {
+    public void testRateDecreaseWithConsecutiveRounds() {
         syncRateLimiter.setRate(maxBytes.get());
         Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
-        syncRateLimiter.acquire(syncRateLimiter.getRate()/10);
-        systemSeconds.incrementAndGet();
-        syncRateLimiter.acquire(syncRateLimiter.getRate()/10);
-        systemSeconds.incrementAndGet();
-        syncRateLimiter.acquire(syncRateLimiter.getRate()/10);
-        Assert.assertEquals(maxBytes.get()/5, syncRateLimiter.getRate());
-        IntStream.range(0, 100).forEach(i -> {
-            systemSeconds.incrementAndGet();
-            syncRateLimiter.acquire(syncRateLimiter.getRate()/10);
-        });
+
+        runSeconds(3, minBytes.get());
+        Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
+
+        runSeconds(2, minBytes.get());
+        Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
+
+        runSeconds(2, minBytes.get());
+        Assert.assertEquals(minBytes.get() * 2, syncRateLimiter.getRate());
+    }
+
+    @Test
+    public void testRateNoDecreaseWithFluctuation() {
+        decreaseCheckRounds.set(3);
+        syncRateLimiter.setRate(maxBytes.get());
+        Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
+
+        runSeconds(2, minBytes.get());
+        runSeconds(2, maxBytes.get());
+        runSeconds(2, minBytes.get());
+        runSeconds(2, maxBytes.get());
+
+        Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
+    }
+
+    @Test
+    public void testRateClampToMax() {
+        increaseCheckRounds.set(1);
+        checkInterval.set(2);
+        maxBytes.set(300);
+
+        syncRateLimiter.setRate(minBytes.get());
         Assert.assertEquals(minBytes.get(), syncRateLimiter.getRate());
-    }
 
-    @Test
-    public void testRateFlat() {
-        int rate = (int)(maxBytes.get() * 0.4);
-        IntStream.range(0, 1000).forEach(i -> {
-            systemSeconds.incrementAndGet();
-            syncRateLimiter.acquire(rate);
-        });
-        Assert.assertEquals(2 * rate, syncRateLimiter.getRate());
-    }
-
-    @Test
-    public void testTimeRollback() {
-        int rate = (int)(maxBytes.get() * 0.5);
-        IntStream.range(0, 1000).forEach(i -> {
-            systemSeconds.incrementAndGet();
-            syncRateLimiter.acquire(rate);
-        });
-        Assert.assertEquals(2 * rate, syncRateLimiter.getRate());
-        systemSeconds.set(0);
-        int newRate = (int)(maxBytes.get() * 0.1);
-        IntStream.range(0, 1000).forEach(i -> {
-            systemSeconds.incrementAndGet();
-            syncRateLimiter.acquire(newRate);
-            logger.info("[testTimeRollback]{}", syncRateLimiter.getRate());
-        });
-        Assert.assertEquals(2 * newRate, syncRateLimiter.getRate());
-    }
-
-    @Test
-    public void testNoDataForAWhile() {
-        syncRateLimiter.setRate(maxBytes.get()/2);
-        Assert.assertEquals(maxBytes.get()/2, syncRateLimiter.getRate());
-        syncRateLimiter.acquire(syncRateLimiter.getRate());
-        systemSeconds.addAndGet(100);
-        syncRateLimiter.acquire(syncRateLimiter.getRate());
-        Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
-        int newRate = (int)(maxBytes.get() * 0.1);
-        IntStream.range(0, 10).forEach(i -> {
-            systemSeconds.incrementAndGet();
-            syncRateLimiter.acquire(newRate);
-        });
-        Assert.assertEquals(2 * newRate, syncRateLimiter.getRate());
-    }
-
-    @Test
-    public void testConfigChange() {
-        IntStream.range(0, 10).forEach(i -> {
-            systemSeconds.incrementAndGet();
-            syncRateLimiter.acquire(maxBytes.get());
-        });
-        Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
-        maxBytes.set(500);
-        IntStream.range(0, 10).forEach(i -> {
-            systemSeconds.incrementAndGet();
-            syncRateLimiter.acquire(maxBytes.get());
-        });
+        runSeconds(3, maxBytes.get());
         Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
     }
 
+    @Test
+    public void testRateLimitDisabledThenEnabledResets() throws Exception {
+        syncRateLimiter.setRate(minBytes.get());
+        Assert.assertEquals(minBytes.get(), syncRateLimiter.getRate());
+
+        rateLimitEnabled.set(false);
+        runSeconds(5, maxBytes.get());
+        Assert.assertEquals(minBytes.get(), syncRateLimiter.getRate());
+        Assert.assertEquals(0, getRecordsSum());
+
+        rateLimitEnabled.set(true);
+        syncRateLimiter.acquire(minBytes.get());
+        Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
+        Assert.assertEquals(0, getRecordsSum());
+    }
+
+    @Test
+    public void testConfigChangeUpdatesCheckInterval() throws Exception {
+        Assert.assertEquals(2, getRecordsLength());
+
+        runSeconds(3, minBytes.get());
+        Assert.assertEquals(2, getRecordsLength());
+
+        checkInterval.set(4);
+        runSeconds(2, minBytes.get());
+        Assert.assertEquals(4, getRecordsLength());
+    }
+
+    @Test
+    public void testConfigChangeUpdatesIncreaseRounds() {
+        increaseCheckRounds.set(3);
+        syncRateLimiter.setRate(minBytes.get());
+        Assert.assertEquals(minBytes.get(), syncRateLimiter.getRate());
+
+        runSeconds(5, minBytes.get());
+        Assert.assertEquals(minBytes.get(), syncRateLimiter.getRate());
+
+        increaseCheckRounds.set(1);
+        runSeconds(2, minBytes.get());
+        Assert.assertEquals(minBytes.get() * 2, syncRateLimiter.getRate());
+    }
+
+    @Test
+    public void testConfigChangeUpdatesDecreaseRounds() {
+        decreaseCheckRounds.set(4);
+        syncRateLimiter.setRate(maxBytes.get());
+        Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
+
+        runSeconds(5, minBytes.get());
+        Assert.assertEquals(maxBytes.get(), syncRateLimiter.getRate());
+
+        decreaseCheckRounds.set(2);
+        runSeconds(2, minBytes.get());
+        Assert.assertEquals(minBytes.get() * 2, syncRateLimiter.getRate());
+    }
+
+    private void runSeconds(int seconds, int bytesPerSecond) {
+        for (int i = 0; i < seconds; i++) {
+            syncRateLimiter.acquire(bytesPerSecond);
+            systemSeconds.incrementAndGet();
+        }
+    }
+
+    private int getRecordsLength() throws Exception {
+        Field recordsField = ProgressiveSyncRateLimiter.class.getDeclaredField("records");
+        recordsField.setAccessible(true);
+        int[] records = (int[]) recordsField.get(syncRateLimiter);
+        return records.length;
+    }
+
+    private int getRecordsSum() throws Exception {
+        Field recordsField = ProgressiveSyncRateLimiter.class.getDeclaredField("records");
+        recordsField.setAccessible(true);
+        int[] records = (int[]) recordsField.get(syncRateLimiter);
+        int sum = 0;
+        for (int record : records) {
+            sum += record;
+        }
+        return sum;
+    }
 }

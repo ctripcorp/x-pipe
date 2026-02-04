@@ -67,6 +67,9 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	private static String KEY_REDIS_RATE_LIMITE_MIN = "redis.rate.limit.min";
 	private static String KEY_REDIS_RATE_LIMITE_MAX = "redis.rate.limit.max";
 	private static String KEY_REDIS_RATE_LIMITE_CHECK_INTERVAL = "redis.rate.limit.check.interval";
+	private static String KEY_REDIS_RATE_LIMITE_INCREASE_ROUNDS = "redis.rate.limit.increase.rounds";
+	private static String KEY_REDIS_RATE_LIMITE_DECREASE_ROUNDS = "redis.rate.limit.decrease.rounds";
+	private static String KEY_REDIS_RATE_LIMITE_ENABLED = "redis.rate.limit.enabled";
 
 	public DefaultKeeperConfig(){
 
@@ -269,5 +272,20 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getRedisRateCheckInterval() {
 		return getIntProperty(KEY_REDIS_RATE_LIMITE_CHECK_INTERVAL, 30);
+	}
+
+	@Override
+	public int getRedisRateIncreaseCheckRounds() {
+		return getIntProperty(KEY_REDIS_RATE_LIMITE_INCREASE_ROUNDS, 1);
+	}
+
+	@Override
+	public int getRedisRateDecreaseCheckRounds() {
+		return getIntProperty(KEY_REDIS_RATE_LIMITE_DECREASE_ROUNDS, 10);
+	}
+
+	@Override
+	public boolean isRedisRateLimitEnabled() {
+		return getBooleanProperty(KEY_REDIS_RATE_LIMITE_ENABLED, true);
 	}
 }

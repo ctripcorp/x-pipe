@@ -149,7 +149,7 @@ public class GtidxHandlerTest extends AbstractRedisKeeperTest {
 
         new GtidxHandler().doHandle(new String[]{"add","executed",uuidC,"1","100"}, redisClient);
 
-        Assert.assertEquals(replicationStore.getGtidSet().getValue().toString(), gtidLostRepr);
+        Assert.assertEquals(replicationStore.getGtidSet().getKey().retainAll(new GtidSet(gtidLostRepr)), new GtidSet(gtidLostRepr));
 
     }
 

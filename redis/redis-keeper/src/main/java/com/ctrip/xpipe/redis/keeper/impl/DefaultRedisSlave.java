@@ -547,7 +547,69 @@ public class DefaultRedisSlave implements RedisSlave {
 	
 	@Override
 	public void beforeCommand() {
-		psyncRateLimiter = new ProgressiveSyncRateLimiter(this, new RedisSlaveProgressiveSyncRateLimiterConfig());
+		if (isCrossRegion()) {
+			psyncRateLimiter = new ProgressiveSyncRateLimiter(this, new CrossRegionProgressiveSyncRateLimiterConfig());
+		} else if (!isKeeper()) {
+			psyncRateLimiter = new ProgressiveSyncRateLimiter(this, new RedisSlaveProgressiveSyncRateLimiterConfig());
+		} else {
+			psyncRateLimiter = null;
+		}
+	}
+
+	class CrossRegionProgressiveSyncRateLimiterConfig implements ProgressiveSyncRateLimiter.ProgressiveSyncRateLimiterConfig {
+		@Override
+		public int getMinBytesLimit() {
+			if (null != replDelayConfigCache) {
+				return replDelayConfigCache.getCrossRegionMinBytesLimit();
+			} else {
+				return 1024*1024;
+			}
+		}
+
+		@Override
+		public int getMaxBytesLimit() {
+			if (null != replDelayConfigCache) {
+				return replDelayConfigCache.getCrossRegionBytesLimit();
+			} else {
+				return 50*1024*1024;
+			}
+		}
+
+		@Override
+		public int getCheckInterval() {
+			if (null != replDelayConfigCache) {
+				return replDelayConfigCache.getCrossRegionRateCheckInterval();
+			} else {
+				return 30;
+			}
+		}
+
+		@Override
+		public int getIncreaseCheckRounds() {
+			if (null != replDelayConfigCache) {
+				return replDelayConfigCache.getCrossRegionRateIncreaseCheckRounds();
+			} else {
+				return 1;
+			}
+		}
+
+		@Override
+		public int getDecreaseCheckRounds() {
+			if (null != replDelayConfigCache) {
+				return replDelayConfigCache.getCrossRegionRateDecreaseCheckRounds();
+			} else {
+				return 3;
+			}
+		}
+
+		@Override
+		public boolean isRateLimitEnabled() {
+			if (null != replDelayConfigCache) {
+				return replDelayConfigCache.isCrossRegionRateLimitEnabled();
+			} else {
+				return true;
+			}
+		}
 	}
 
 	class RedisSlaveProgressiveSyncRateLimiterConfig implements ProgressiveSyncRateLimiter.ProgressiveSyncRateLimiterConfig {
@@ -563,11 +625,7 @@ public class DefaultRedisSlave implements RedisSlave {
 		@Override
 		public int getMaxBytesLimit() {
 			if (null != replDelayConfigCache) {
-				if (isCrossRegion()) {
-					return Math.min(replDelayConfigCache.getCrossRegionBytesLimit(), replDelayConfigCache.getRedisMaxBytesLimit());
-				} else {
-					return replDelayConfigCache.getRedisMaxBytesLimit();
-				}
+				return replDelayConfigCache.getRedisMaxBytesLimit();
 			} else {
 				return 50*1024*1024;
 			}
@@ -579,6 +637,33 @@ public class DefaultRedisSlave implements RedisSlave {
 				return replDelayConfigCache.getRedisRateCheckInterval();
 			} else {
 				return 30;
+			}
+		}
+
+		@Override
+		public int getIncreaseCheckRounds() {
+			if (null != replDelayConfigCache) {
+				return replDelayConfigCache.getRedisRateIncreaseCheckRounds();
+			} else {
+				return 1;
+			}
+		}
+
+		@Override
+		public int getDecreaseCheckRounds() {
+			if (null != replDelayConfigCache) {
+				return replDelayConfigCache.getRedisRateDecreaseCheckRounds();
+			} else {
+				return 3;
+			}
+		}
+
+		@Override
+		public boolean isRateLimitEnabled() {
+			if (null != replDelayConfigCache) {
+				return replDelayConfigCache.isRedisRateLimitEnabled();
+			} else {
+				return true;
 			}
 		}
 	}
