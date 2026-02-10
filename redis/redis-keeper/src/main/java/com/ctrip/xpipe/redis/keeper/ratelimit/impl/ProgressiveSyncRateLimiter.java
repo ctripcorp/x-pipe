@@ -60,12 +60,16 @@ public class ProgressiveSyncRateLimiter implements SyncRateLimiter {
         if (syncByte <= 0) return;
         boolean rateLimitEnabled = config.isRateLimitEnabled();
         if (!rateLimitEnabled) {
-            lastRateLimitEnabled = false;
+            if (lastRateLimitEnabled) {
+                logger.info("[acquire][{}] close limiter", identify);
+                lastRateLimitEnabled = false;
+            }
             return;
         }
 
         long currentSeconds = systemSecondsProvider.getSystemSeconds();
         if (!lastRateLimitEnabled) {
+            logger.info("[acquire][{}] open limiter", identify);
             reset(currentSeconds);
             lastRateLimitEnabled = true;
         }
