@@ -78,6 +78,10 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
     public void test() throws TimeoutException {
         waitConditionUntilTimeOut(() -> 1 == server.slaveCount());
 
+
+        server.propagate("hset h1 f1 v1 f2 v2");
+        server.propagate("zadd z1 1 v1 2 v2");
+
         server.propagate("gtid a1:21 set k1 v1");
         server.propagate("gtid a1:22 mset k1 v1 k2 v2");
         server.propagate("gtid a1:23 del k1 k2");
@@ -94,10 +98,12 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
         server.propagate("gtid a1:27 set k1 v7");
 
+
+
         sleep(2000);
         Jedis jedis = new Jedis("127.0.0.1",6379);
         Set<String> keys = jedis.keys("*");
-        Assert.assertEquals(8,keys.size());
+        Assert.assertEquals(10,keys.size());
         long len;
         len = jedis.llen("biglist");
         Assert.assertEquals(3,len);
@@ -115,7 +121,10 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         Assert.assertEquals(3,len);
         len = jedis.zcard("bignormalset");
         Assert.assertEquals(3,len);
-
+        len = jedis.hlen("h1");
+        Assert.assertEquals(2,len);
+        len = jedis.zcard("z1");
+        Assert.assertEquals(2,len);
     }
 
 

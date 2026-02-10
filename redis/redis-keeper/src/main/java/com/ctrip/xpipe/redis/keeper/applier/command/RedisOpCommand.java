@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.keeper.applier.command;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
+import com.ctrip.xpipe.redis.core.redis.operation.*;
 
 import java.util.List;
 
@@ -42,7 +39,7 @@ public interface RedisOpCommand<V> extends Command<V> {
 
     default RedisOpCommandType type() {
         RedisOp op = redisOp();
-        if (op instanceof RedisSingleKeyOp) {
+        if (op instanceof RedisSingleKeyOp || op instanceof RedisMultiSubKeyOp) {
             return RedisOpCommandType.SINGLE_KEY;
         }
         if (op instanceof RedisMultiKeyOp) {
@@ -58,6 +55,9 @@ public interface RedisOpCommand<V> extends Command<V> {
         }
         if (op instanceof RedisMultiKeyOp) {
             return keys().get(0);
+        }
+        if(op instanceof RedisMultiSubKeyOp){
+            return ((RedisMultiSubKeyOp)op).getKey();
         }
         throw new UnsupportedOperationException("key() not on RedisSingleKeyOp");
     }
