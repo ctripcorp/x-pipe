@@ -68,7 +68,6 @@ public class RdbSetParser extends AbstractRdbParser<Integer> implements RdbParse
                     byte[] value = rdbStringParser.read(byteBuf);
                     if (null != value) {
                         rdbStringParser.reset();
-                        propagateCmdIfNeed(value);
 
                         readCnt++;
                         if (readCnt >= len.getLenValue()) {
@@ -76,6 +75,7 @@ public class RdbSetParser extends AbstractRdbParser<Integer> implements RdbParse
                         } else {
                             state = STATE.READ_VALUE;
                         }
+                        propagateCmdIfNeed(value);
                     }
                     break;
 
@@ -101,7 +101,7 @@ public class RdbSetParser extends AbstractRdbParser<Integer> implements RdbParse
         notifyRedisOp(new RedisOpSingleKey(
                 RedisOpType.SADD,
                 new byte[][] {RedisOpType.SADD.name().getBytes(), context.getKey().get(), value},
-                context.getKey(), value));
+                context.getKey(), value,isFinish()));
     }
 
     @Override
