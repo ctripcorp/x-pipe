@@ -6,7 +6,10 @@ import com.google.common.util.concurrent.RateLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
+import java.util.Iterator;
 
 public class ProgressiveSyncRateLimiter implements SyncRateLimiter {
 
@@ -30,6 +33,10 @@ public class ProgressiveSyncRateLimiter implements SyncRateLimiter {
 
     private static final Logger logger = LoggerFactory.getLogger(ProgressiveSyncRateLimiter.class);
 
+    private final Deque<CheckDecision> checkDecisions = new ArrayDeque<>();
+
+    private boolean lastRateLimitEnabled;
+
     public ProgressiveSyncRateLimiter(Object identify, ProgressiveSyncRateLimiterConfig config) {
         this(identify, config, SystemSecondsProvider.DEFAULT);
     }
@@ -39,7 +46,8 @@ public class ProgressiveSyncRateLimiter implements SyncRateLimiter {
         this.identify = identify;
         this.config = config;
         this.rateLimiter = RateLimiter.create(baseBytesLimits());
-        this.records = new int[config.getCheckInterval()];
+        this.records = new int[Math.max(1, config.getCheckInterval())];
+        this.lastRateLimitEnabled = config.isRateLimitEnabled();
         reset(systemSecondsProvider.getSystemSeconds());
     }
 
@@ -50,9 +58,24 @@ public class ProgressiveSyncRateLimiter implements SyncRateLimiter {
     @Override
     public void acquire(int syncByte) {
         if (syncByte <= 0) return;
-        doAcquire(syncByte);
+        boolean rateLimitEnabled = config.isRateLimitEnabled();
+        if (!rateLimitEnabled) {
+            if (lastRateLimitEnabled) {
+                logger.info("[acquire][{}] close limiter", identify);
+                lastRateLimitEnabled = false;
+            }
+            return;
+        }
 
         long currentSeconds = systemSecondsProvider.getSystemSeconds();
+        if (!lastRateLimitEnabled) {
+            logger.info("[acquire][{}] open limiter", identify);
+            reset(currentSeconds);
+            lastRateLimitEnabled = true;
+        }
+
+        doAcquire(syncByte);
+
         long recordInterval = currentSeconds - lastRecordSeconds;
         if (currentSeconds < lastRecordSeconds || recordInterval >= records.length) {
             reset(currentSeconds);
@@ -73,6 +96,7 @@ public class ProgressiveSyncRateLimiter implements SyncRateLimiter {
         record = 0;
         recordPos = 0;
         Arrays.fill(records, 0);
+        checkDecisions.clear();
         lastRecordSeconds = currentSeconds;
         lastCheckSeconds = currentSeconds;
         setRate(baseBytesLimits());
@@ -103,19 +127,71 @@ public class ProgressiveSyncRateLimiter implements SyncRateLimiter {
         long average = total / records.length;
         long currentLimit = getRate();
 
-        if (average > 0.75 * currentLimit) {
-            setRate(Math.max(1, Math.min(config.getMaxBytesLimit(), 2 * average)));
-        } else if (average < 0.25 * currentLimit) {
-            setRate(Math.max(1, Math.max(config.getMinBytesLimit(), 2 * average)));
-        } else if (currentLimit > config.getMaxBytesLimit()) {
+        Direction direction = decideDirection(average, currentLimit);
+        recordDecision(direction, average);
+        if (direction == Direction.INCREASE) {
+            int rounds = Math.max(1, config.getIncreaseCheckRounds());
+            if (checkDecisions.size() >= rounds) {
+                long maxAverage = maxAverage(rounds);
+                setRate(Math.max(1, Math.min(config.getMaxBytesLimit(), 2 * maxAverage)));
+            }
+        } else if (direction == Direction.DECREASE) {
+            int rounds = Math.max(1, config.getDecreaseCheckRounds());
+            if (checkDecisions.size() >= rounds) {
+                long maxAverage = maxAverage(rounds);
+                setRate(Math.max(1, Math.max(config.getMinBytesLimit(), 2 * maxAverage)));
+            }
+        }
+        if (getRate() > config.getMaxBytesLimit()) {
             setRate(Math.max(1, config.getMaxBytesLimit()));
-        } else if (currentLimit < config.getMinBytesLimit()) {
+        } else if (getRate() < config.getMinBytesLimit()) {
             setRate(Math.max(1, config.getMinBytesLimit()));
         }
-        this.lastCheckSeconds = currentSeconds;
         if (currentLimit != getRate()) {
             logger.info("[updateLimit][{}] {}", identify, getRate());
         }
+
+        ensureRecordsSize();
+        this.lastCheckSeconds = currentSeconds;
+    }
+
+    private void ensureRecordsSize() {
+        int checkInterval = Math.max(1, config.getCheckInterval());
+        if (checkInterval == records.length) return;
+
+        logger.info("[updateRecordsSize][{}] {} -> {}", identify, records.length, checkInterval);
+        records = new int[checkInterval];
+        recordPos = 0;
+    }
+
+    private Direction decideDirection(long average, long currentLimit) {
+        if (average > 0.75 * currentLimit) return Direction.INCREASE;
+        if (average < 0.25 * currentLimit) return Direction.DECREASE;
+        return Direction.FLAT;
+    }
+
+    private void recordDecision(Direction direction, long average) {
+        if (direction == Direction.FLAT) {
+            checkDecisions.clear();
+            return;
+        }
+        if (!checkDecisions.isEmpty()) {
+            CheckDecision last = checkDecisions.peekLast();
+            if (last.direction != direction) {
+                checkDecisions.clear();
+            }
+        }
+        checkDecisions.addLast(new CheckDecision(direction, average));
+    }
+
+    private long maxAverage(int rounds) {
+        long max = 0;
+        int count = 0;
+        for (Iterator<CheckDecision> it = checkDecisions.descendingIterator(); it.hasNext() && count < rounds; ) {
+            max = Math.max(max, it.next().average);
+            count++;
+        }
+        return max;
     }
 
     @Override
@@ -141,6 +217,28 @@ public class ProgressiveSyncRateLimiter implements SyncRateLimiter {
 
         int getCheckInterval();
 
+        int getIncreaseCheckRounds();
+
+        int getDecreaseCheckRounds();
+
+        boolean isRateLimitEnabled();
+
+    }
+
+    private enum Direction {
+        INCREASE,
+        DECREASE,
+        FLAT
+    }
+
+    private static class CheckDecision {
+        private final Direction direction;
+        private final long average;
+
+        private CheckDecision(Direction direction, long average) {
+            this.direction = direction;
+            this.average = average;
+        }
     }
 
     public interface SystemSecondsProvider {

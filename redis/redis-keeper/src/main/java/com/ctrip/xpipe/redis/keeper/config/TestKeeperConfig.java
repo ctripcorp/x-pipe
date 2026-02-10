@@ -342,4 +342,19 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getRedisRateCheckInterval() {
 		return 2;
 	}
+
+	@Override
+	public int getRedisRateIncreaseCheckRounds() {
+		return 1;
+	}
+
+	@Override
+	public int getRedisRateDecreaseCheckRounds() {
+		return 2;
+	}
+
+	@Override
+	public boolean isRedisRateLimitEnabled() {
+		return true;
+	}
 }

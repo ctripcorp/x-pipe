@@ -11,4 +11,14 @@ public interface KeeperCommonConfig {
 
     int getCrossRegionBytesLimit();
 
+    int getCrossRegionMinBytesLimit();
+
+    int getCrossRegionRateCheckInterval();
+
+    int getCrossRegionRateIncreaseCheckRounds();
+
+    int getCrossRegionRateDecreaseCheckRounds();
+
+    boolean isCrossRegionRateLimitEnabled();
+
 }

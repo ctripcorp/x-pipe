@@ -72,10 +72,6 @@ public class ReplDelayConfigCache extends AbstractLifecycle implements TopElemen
         return this.redisReplDelayConfig;
     }
 
-    public int getCrossRegionBytesLimit() {
-        return keeperCommonConfig.getCrossRegionBytesLimit();
-    }
-
     public int getRedisMaxBytesLimit() {
         return keeperConfig.getRedisMaxBytesLimit();
     }
@@ -86,6 +82,42 @@ public class ReplDelayConfigCache extends AbstractLifecycle implements TopElemen
 
     public int getRedisRateCheckInterval() {
         return keeperConfig.getRedisRateCheckInterval();
+    }
+
+    public int getRedisRateIncreaseCheckRounds() {
+        return keeperConfig.getRedisRateIncreaseCheckRounds();
+    }
+
+    public int getRedisRateDecreaseCheckRounds() {
+        return keeperConfig.getRedisRateDecreaseCheckRounds();
+    }
+
+    public boolean isRedisRateLimitEnabled() {
+        return keeperConfig.isRedisRateLimitEnabled();
+    }
+
+    public int getCrossRegionBytesLimit() {
+        return keeperCommonConfig.getCrossRegionBytesLimit();
+    }
+
+    public int getCrossRegionMinBytesLimit() {
+        return keeperCommonConfig.getCrossRegionMinBytesLimit();
+    }
+
+    public int getCrossRegionRateCheckInterval() {
+        return keeperCommonConfig.getCrossRegionRateCheckInterval();
+    }
+
+    public int getCrossRegionRateIncreaseCheckRounds() {
+        return keeperCommonConfig.getCrossRegionRateIncreaseCheckRounds();
+    }
+
+    public int getCrossRegionRateDecreaseCheckRounds() {
+        return keeperCommonConfig.getCrossRegionRateDecreaseCheckRounds();
+    }
+
+    public boolean isCrossRegionRateLimitEnabled() {
+        return keeperCommonConfig.isCrossRegionRateLimitEnabled();
     }
 
     @Override

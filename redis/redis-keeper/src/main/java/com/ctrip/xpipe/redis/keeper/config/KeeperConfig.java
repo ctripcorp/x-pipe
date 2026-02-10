@@ -101,4 +101,10 @@ public interface KeeperConfig extends CoreConfig{
 
 	int getRedisRateCheckInterval();
 
+	int getRedisRateIncreaseCheckRounds();
+
+	int getRedisRateDecreaseCheckRounds();
+
+	boolean isRedisRateLimitEnabled();
+
 }
