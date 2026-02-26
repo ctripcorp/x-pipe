@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.gtid;
 
+import com.ctrip.xpipe.AbstractTest;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -13,7 +14,7 @@ import java.util.Set;
 import static com.ctrip.xpipe.gtid.GtidSet.Interval;
 import static com.ctrip.xpipe.gtid.GtidSet.UUIDSet;
 
-public class GtidSetTest {
+public class GtidSetTest extends AbstractTest {
 
     private static final String UUID = "24bc7850-2c16-11e6-a073-0242ac110002";
 
@@ -793,6 +794,14 @@ public class GtidSetTest {
     public void testItemCnt() {
         GtidSet gtidSet = new GtidSet("A:1-10:15-20:35-35,B:1-50,C:0");
         Assert.assertEquals(67, gtidSet.itemCnt());
+    }
+
+    @Test
+    public void testItemOverFlow() {
+        GtidSet gtidSet1 = new GtidSet("A:1-" + Long.MAX_VALUE);
+        GtidSet gtidSet2 = new GtidSet("");
+        GtidSet gap = gtidSet1.symmetricDiff(gtidSet2);
+        Assert.assertEquals(Long.MAX_VALUE, gap.itemCnt());
     }
 
 }

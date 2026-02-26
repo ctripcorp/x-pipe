@@ -292,7 +292,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             boolean gtidNotRelated = masterGtidSet.retainAll(slaveExecuted).isEmpty();
 
             GtidSet gap = cont.symmetricDiff(slaveExecuted);
-            int gapCnt = gap.itemCnt();
+            long gapCnt = gap.itemCnt();
 
             GtidSet deltaLost = null;
             if (recordDeltaLost){
@@ -303,10 +303,9 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 }
             } else {
                 logger.info("[deltaLost] not compute deltaLost, preStage: {}, curStage: {}, requestProto: {}", keeperRepl.preStage(), keeperRepl.currentStage(), request.proto);
-
             }
 
-            if (!slaveExecuted.isEmpty() && gtidNotRelated) {
+            if (gtidNotRelated) {
                 return SyncAction.full(String.format("[gtid not related] slaveExecuted:%s, my:%s", slaveExecuted, masterGtidSet));
             } else if (request.maxGap >= 0 && request.maxGap < gapCnt) {
                 logger.info("[anaXSync][full] gap: {} maxGap: {}", gap, request.maxGap);

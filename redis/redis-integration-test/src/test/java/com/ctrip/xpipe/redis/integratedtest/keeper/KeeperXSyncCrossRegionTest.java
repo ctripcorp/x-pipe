@@ -69,10 +69,20 @@ public class KeeperXSyncCrossRegionTest extends AbstractKeeperIntegratedMultiDcX
                 logger.info("[testCrossRegionGap]", e);
                 return false;
             }
-        });
+        }, 10000, 1000);
 
         batchSet(redisMaster, "km_", "vm_", 10, 20);
         sleep(1000);
+        waitConditionUntilTimeOut(() -> {
+            try {
+                GtidSet gtidsetExecuted = new GtidSet(infoRedis(backupDcSlave.getIp(), backupDcSlave.getPort(), InfoCommand.INFO_TYPE.GTID, "gtid_executed"));
+                logger.info("[testCrossRegionGap][slaveExecuted][{}:{}] {}", backupDcSlave.getIp(), backupDcSlave.getPort(), gtidsetExecuted);
+                return gtidsetExecuted.itemCnt() == 30;
+            } catch (Exception e) {
+                logger.info("[testCrossRegionGap]", e);
+                return false;
+            }
+        }, 10000, 1000);
         masterGtidSet = new GtidSet(infoRedis(redisMaster.getIp(), redisMaster.getPort(), InfoCommand.INFO_TYPE.GTID, "gtid_executed"));
         masterLost = new GtidSet(infoRedis(redisMaster.getIp(), redisMaster.getPort(), InfoCommand.INFO_TYPE.GTID, "gtid_lost"));
         slaveGtidSet = new GtidSet(infoRedis(backupDcSlave.getIp(), backupDcSlave.getPort(), InfoCommand.INFO_TYPE.GTID, "gtid_executed"));

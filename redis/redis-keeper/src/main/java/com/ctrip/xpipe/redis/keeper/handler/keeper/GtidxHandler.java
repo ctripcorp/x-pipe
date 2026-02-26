@@ -108,7 +108,7 @@ public class GtidxHandler extends AbstractCommandHandler {
             if(isLost(args[1])) {
                 ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
                 MetaStore metaStore = replicationStore.getMetaStore();
-                int removeCnt = metaStore.removeLost(gtidSet);
+                long removeCnt = metaStore.removeLost(gtidSet);
                 return new LongParser(removeCnt).format();
             }
             return new CommandBulkStringParser("ERR only lost supported").format();
@@ -146,7 +146,7 @@ public class GtidxHandler extends AbstractCommandHandler {
             if(isExecuted(args[1])) {
                 ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
                 MetaStore metaStore = replicationStore.getMetaStore();
-                int addCount = metaStore.increaseExecuted(gtidSet);
+                long addCount = metaStore.increaseExecuted(gtidSet);
                 return new LongParser(addCount).format();
             }
             return new CommandBulkStringParser("ERR only lost supported").format();

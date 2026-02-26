@@ -48,6 +48,7 @@ public class PsyncXsyncSwitchAlways extends AbstractCustomKeeperIntegratedMultiD
 
         RedisMeta activeDcSlave = getRedisSlaves("jq").get(0);
         setRedisToGtidEnabled(activeDcSlave.getIp(),activeDcSlave.getPort());
+        setRedisToGtidMaxGap(activeDcSlave.getIp(), activeDcSlave.getPort(), 10000);
         slaveOfNoOne(activeDcSlave);
         sendMessage(activeDcSlave,1,"hahh");
 
@@ -60,7 +61,7 @@ public class PsyncXsyncSwitchAlways extends AbstractCustomKeeperIntegratedMultiD
         assertSpecifiedKeyRedisEquals(getRedisMaster(),getRedisSlaves(),keys);
         long fullSyncCount2 = getRedisKeeperServer(getKeeperActive("jq")).getKeeperMonitor().getKeeperStats().getFullSyncCount();
         logger.info("keeper lost after full sync count {}",fullSyncCount2);
-        Assert.assertEquals(fullSyncCount2,fullSyncCount+2);
+        Assert.assertEquals(fullSyncCount2,fullSyncCount);
     }
 
 
