@@ -82,8 +82,8 @@ public class FakeXsyncServer extends AbstractLifecycle implements FakeXsyncHandl
         String filePath = "src/test/resources/applier/dump.rdb";
         try {
             return Files.readAllBytes(Paths.get(filePath));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            return genRdbData1();
         }
     }
 

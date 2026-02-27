@@ -367,6 +367,10 @@ public abstract class AbstractRedisTest extends AbstractTest {
 
     }
 
+    protected List<ApplierMeta> getDcAppliers(String dc, String clusterId, String shardId) {
+        return getXpipeMeta().getDcs().get(dc).getClusters().get(clusterId).getShards().get(shardId).getAppliers();
+    }
+
     protected List<DcMeta> getDcMetas() {
 
         List<DcMeta> result = new LinkedList<>();
