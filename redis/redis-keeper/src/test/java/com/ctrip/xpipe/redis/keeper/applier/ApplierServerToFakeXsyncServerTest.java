@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 
+import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -63,7 +64,8 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         applier = new DefaultApplierServer(
                 "ApplierTest",
                 ClusterId.from(1L), ShardId.from(1L),
-                applierMeta, leaderElectorManager, parser, new TestKeeperConfig());
+                applierMeta, leaderElectorManager, parser, new TestKeeperConfig(),1,1,
+                50000l, 167772160l, 10l, 10000l, null,2);
         applier.initialize();
         applier.start();
 
@@ -75,9 +77,12 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
     }
 
     @Test
-    public void test() throws TimeoutException {
+    public void test() throws Exception {
         waitConditionUntilTimeOut(() -> 1 == server.slaveCount());
 
+        server.propagate("multi");
+        server.propagate("incr in");
+        server.propagate("exec");
 
         server.propagate("hset h1 f1 v1 f2 v2");
         server.propagate("zadd z1 1 v1 2 v2");
@@ -103,7 +108,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         sleep(2000);
         Jedis jedis = new Jedis("127.0.0.1",6379);
         Set<String> keys = jedis.keys("*");
-        Assert.assertEquals(10,keys.size());
+        Assert.assertEquals(11,keys.size());
         long len;
         len = jedis.llen("biglist");
         Assert.assertEquals(3,len);
@@ -125,6 +130,10 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         Assert.assertEquals(2,len);
         len = jedis.zcard("z1");
         Assert.assertEquals(2,len);
+        String count = jedis.get("in");
+        Assert.assertEquals("1",count);
+
+        applier.stop();
     }
 
 

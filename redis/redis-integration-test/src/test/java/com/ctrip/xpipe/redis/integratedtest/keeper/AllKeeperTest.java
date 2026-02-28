@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
+import com.ctrip.xpipe.redis.integratedtest.applier.ApplierServerToKeeperToFakeXsyncServerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -30,7 +31,8 @@ import org.junit.runners.Suite.SuiteClasses;
 		PartialSyncForKeeperTest.class,
 		KeeperSwitchTest.class,
 		KeeperConcurrentChangeUpstreamTest.class,
-		KeeperFastStateChangeTest.class
+		KeeperFastStateChangeTest.class,
+		ApplierServerToKeeperToFakeXsyncServerTest.class
 })
 public class AllKeeperTest {
 	

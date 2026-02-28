@@ -126,12 +126,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
            logger.debug("[submit] already closed");
            return;
         }
-        long bytes = command.redisOp().estimatedSize();
-        memoryThreshold.tryPass(bytes);
-
-        if (bytesPerSecondThreshold != null) {
-            bytesPerSecondThreshold.tryPass(bytes);
-        }
+        RedisOpCommand<?> redisOpCommand = command;
 
         if (qpsThreshold != null) {
             qpsThreshold.tryPass();
@@ -139,7 +134,6 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         RedisOp redisOp = command.redisOp();
         RedisOpType redisOpType = redisOp.getOpType();
-        RedisOpCommand<?> redisOpCommand = command;
         if(commandOffsetToAccumulate == 0) {
             switch (redisOpType) {
                 case RedisOpType.RPUSH:
@@ -155,6 +149,16 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
                 default:
             }
         }
+
+
+        long bytes = redisOpCommand.redisOp().estimatedSize();
+
+        memoryThreshold.tryPass(bytes);
+
+        if (bytesPerSecondThreshold != null) {
+            bytesPerSecondThreshold.tryPass(bytes);
+        }
+
         concurrencyThreshold.tryPass();
         submitAsync(redisOpCommand,commandOffsetToAccumulate,gtidSet);
     }
