@@ -373,4 +373,25 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         Assert.assertTrue(action.full);
     }
 
+    @Test
+    public void testEmptySlaveXsync_FullSync() throws Exception {
+        ReplStage replStage = new ReplStage("test-repl-id1", 1, 1, "A", new GtidSet(""), new GtidSet(""));
+        Mockito.when(keeperServer.getKeeperRepl()).thenReturn(keeperRepl);
+        Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
+        Mockito.when(keeperServer.getKeeperConfig()).thenReturn(keeperConfig);
+        Mockito.when(keeperRepl.currentStage()).thenReturn(replStage);
+        Mockito.when(store.getGtidSet()).thenReturn(new Pair<>(new GtidSet("cbd32d3e09d7d81574cc934b5c477312d9b03ca1:1-2191784636"), new GtidSet("")));
+        Mockito.when(keeperServer.locateContinueGtidSetWithFallbackToEnd(any(GtidSet.class))).thenReturn(new XSyncContinue(new GtidSet("cbd32d3e09d7d81574cc934b5c477312d9b03ca1:1-2191784636"), 400509272434L));
+
+        GapAllowSyncHandler.SyncRequest syncRequest = GapAllowSyncHandler.SyncRequest.xsync("*", "", 10000, "");
+        GapAllowSyncHandler.SyncAction action = handler.anaRequest(syncRequest, keeperServer, slave);
+        Assert.assertTrue(action.full);
+        Assert.assertTrue(action.fullCause.startsWith("[gtid not related]"));
+
+        syncRequest = GapAllowSyncHandler.SyncRequest.xsync("*", "cbd32d3e09d7d81574cc934b5c477312d9b03ca1:1", 10000, "");
+        action = handler.anaRequest(syncRequest, keeperServer, slave);
+        Assert.assertTrue(action.full);
+        Assert.assertTrue(action.fullCause.startsWith("[gap]"));
+    }
+
 }

@@ -106,9 +106,9 @@ public interface MetaStore {
 
 	boolean increaseLost(GtidSet lost) throws IOException;
 
-	int removeLost(GtidSet gtidSet) throws IOException;
+	long removeLost(GtidSet gtidSet) throws IOException;
 
-	int increaseExecuted(GtidSet gtidSet) throws IOException;
+	long increaseExecuted(GtidSet gtidSet) throws IOException;
 
 	boolean xsyncContinue(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidCont, GtidSet gtidIndexed) throws IOException;
 

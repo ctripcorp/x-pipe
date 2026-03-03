@@ -69,8 +69,8 @@ public class GtidSet {
         }
     }
 
-    public int itemCnt() {
-        int cnt = 0;
+    public long itemCnt() {
+        long cnt = 0;
         for (UUIDSet uuidSet: map.values()) {
             if (uuidSet.isZero()) continue;
             cnt += uuidSet.itemCnt();
@@ -545,8 +545,8 @@ public class GtidSet {
             }
         }
 
-        public int itemCnt() {
-            int cnt = 0;
+        public long itemCnt() {
+            long cnt = 0;
             for (Interval interval: intervals) {
                 cnt += interval.end + 1 - interval.start;
             }

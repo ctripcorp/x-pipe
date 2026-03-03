@@ -130,9 +130,9 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 
 	protected void setRedisToGtidMaxGap(String ip, Integer port, int maxGap) throws Exception {
 		SimpleObjectPool<NettyClient> keyPool = getXpipeNettyClientKeyedObjectPool().getKeyPool(new DefaultEndPoint(ip, port));
-		ConfigSetCommand.ConfigSetGtidMaxGap configSetGtidMaxGap = new ConfigSetCommand.ConfigSetGtidMaxGap(0, keyPool, scheduled);
-		String gtid = configSetGtidMaxGap.execute().get().toString();
-		logger.info("[setRedisToGtidMaxGap] {}", gtid);
+		ConfigSetCommand.ConfigSetGtidMaxGap configSetGtidMaxGap = new ConfigSetCommand.ConfigSetGtidMaxGap(maxGap, keyPool, scheduled);
+		String resp = configSetGtidMaxGap.execute().get().toString();
+		logger.info("[setRedisToGtidMaxGap] {}", resp);
 	}
 
 	protected boolean isRedisGtidEnabled(String ip, Integer port) throws Exception {

@@ -218,12 +218,12 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
-			public int removeLost(GtidSet gtidSet) throws IOException {
+			public long removeLost(GtidSet gtidSet) throws IOException {
 				return 0;
 			}
 
 			@Override
-			public int increaseExecuted(GtidSet gtidSet) throws IOException {
+			public long increaseExecuted(GtidSet gtidSet) throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
