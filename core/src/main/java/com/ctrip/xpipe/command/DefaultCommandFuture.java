@@ -339,6 +339,7 @@ public class DefaultCommandFuture<V> implements CommandFuture<V>{
 		for(CommandFutureListener<V> listener : listeners){
 			notifyListener(listener);
 		}
+        listeners.clear();
 	}
 
 	@Override
