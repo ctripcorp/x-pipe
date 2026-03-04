@@ -15,7 +15,7 @@ import java.util.List;
 public class TestClusterMonitorModifiedNotifier implements ClusterMonitorModifiedNotifier {
 
     @Override
-    public void notifyClusterUpdate(final String clusterName, long orgId) {
+    public void notifyClusterUpdate(final String clusterName, long orgId, String lastModifyTime) {
 
     }
 

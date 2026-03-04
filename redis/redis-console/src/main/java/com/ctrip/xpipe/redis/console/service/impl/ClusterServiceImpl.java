@@ -810,6 +810,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		ClusterTbl clusterTbl = new ClusterTbl();
 		clusterTbl.setId(id);
 		clusterTbl.setActivedcId(activeDcId);
+		clusterTbl.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
 
 		queryHandler.handleUpdate(new DalQuery<Integer>() {
 			@Override

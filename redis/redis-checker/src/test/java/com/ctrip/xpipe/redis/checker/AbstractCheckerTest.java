@@ -115,7 +115,7 @@ public class AbstractCheckerTest extends AbstractRedisTest {
         DefaultClusterHealthCheckInstance instance = new DefaultClusterHealthCheckInstance();
 
         ClusterInstanceInfo info = new DefaultClusterInstanceInfo("cluster", activeDc,
-                clusterType, 1);
+                clusterType, 1, "20201030");
         HealthCheckConfig config = new DefaultHealthCheckConfig(buildCheckerConfig(), buildDcRelationsService());
 
         instance.setInstanceInfo(info).setHealthCheckConfig(config);

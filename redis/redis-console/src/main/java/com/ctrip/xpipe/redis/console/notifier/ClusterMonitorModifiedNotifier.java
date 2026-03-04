@@ -6,7 +6,7 @@ package com.ctrip.xpipe.redis.console.notifier;
  */
 public interface ClusterMonitorModifiedNotifier {
 
-    void notifyClusterUpdate(final String clusterName, long orgId);
+    void notifyClusterUpdate(final String clusterName, long orgId, String lastModifyTime);
 
     void notifyClusterDelete(final String clusterName, long orgId);
 

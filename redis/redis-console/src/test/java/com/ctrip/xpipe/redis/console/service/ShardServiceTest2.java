@@ -102,11 +102,12 @@ public class ShardServiceTest2  extends AbstractConsoleTest {
     @Test
     public void deleteShards() throws DalException {
         when(clusterTbl.getClusterType()).thenReturn(ClusterType.ONE_WAY.name());
+        when(clusterTbl.getClusterLastModifiedTime()).thenReturn("20201030");
         when(shardTblDao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_NAME_AND_MONITOR_NAME))
                 .thenReturn(shardTbls);
         shardService.deleteShards(clusterTbl, shardNames);
         verify(shardDao).deleteShardsBatch(shardTbls);
-        verify(monitorNotifier).notifyClusterUpdate(anyString(), anyLong());
+        verify(monitorNotifier).notifyClusterUpdate(anyString(), anyLong(), anyString());
     }
 
     @Test

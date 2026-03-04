@@ -10,17 +10,17 @@ import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconChe
 public class TestBeaconManager implements BeaconManager {
 
     @Override
-    public void registerCluster(String clusterId, ClusterType clusterType, int orgId) {
+    public void registerCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime) {
 
     }
 
     @Override
-    public void updateCluster(String clusterId, ClusterType clusterType, int orgId) {
+    public void updateCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime) {
         
     }
 
     @Override
-    public BeaconCheckStatus checkClusterHash(String clusterId, ClusterType clusterType, int orgId) {
+    public BeaconCheckStatus checkClusterHash(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime) {
         return BeaconCheckStatus.UNKNOWN;
     }
 }

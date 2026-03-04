@@ -5,6 +5,7 @@ public enum BeaconCheckStatus {
     SYSTEM_NOT_FOUND("System not found"),
     CLUSTER_NOT_FOUND("Cluster not found"),
     INCONSISTENCY("Inconsistency"),
+    INCONSISTENCY_IGNORE("Inconsistency but ignore"),
     CONSISTENCY("Consistency"),
     UNKNOWN("Unknown"),
     ERROR("Error");

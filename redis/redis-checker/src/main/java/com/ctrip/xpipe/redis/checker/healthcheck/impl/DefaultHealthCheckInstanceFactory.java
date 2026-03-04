@@ -180,7 +180,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
             dcs.add(clusterMeta.getActiveDc().toLowerCase());
         }
         DefaultClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
-                clusterType, clusterMeta.getOrgId());
+                clusterType, clusterMeta.getOrgId(), clusterMeta.getLastModifiedTime());
         info.setDcs(new ArrayList<>(dcs));
         return info;
     }

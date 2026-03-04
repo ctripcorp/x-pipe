@@ -40,7 +40,7 @@ public class DefaultBeaconMetaControllerTest extends AbstractCheckerTest {
     public void setupBeaconActiveDcControllerTest() {
         controller = new DefaultBeaconMetaController(consoleCommonConfig, metaCache);
         instance = Mockito.mock(ClusterHealthCheckInstance.class);
-        info = new DefaultClusterInstanceInfo("cluster1", "jq", ClusterType.ONE_WAY, 1);
+        info = new DefaultClusterInstanceInfo("cluster1", "jq", ClusterType.ONE_WAY, 1, "20201030");
 
         Mockito.when(instance.getCheckInfo()).thenReturn(info);
         Mockito.when(consoleCommonConfig.getBeaconSupportZones()).thenReturn(Collections.singleton("SHA"));
@@ -66,7 +66,7 @@ public class DefaultBeaconMetaControllerTest extends AbstractCheckerTest {
 
     @Test
     public void testBiDirectionCluster() {
-        info = new DefaultClusterInstanceInfo("cluster1", "", ClusterType.BI_DIRECTION, 1);
+        info = new DefaultClusterInstanceInfo("cluster1", "", ClusterType.BI_DIRECTION, 1, "20201030");
         Assert.assertTrue(controller.shouldCheck(instance));
     }
 

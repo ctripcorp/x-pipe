@@ -284,7 +284,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
 
     private ClusterHealthCheckInstance mockClusterHealthCheckInstance(String clusterId, String activeDc, ClusterType clusterType, int orgId) {
         DefaultClusterHealthCheckInstance instance = new DefaultClusterHealthCheckInstance();
-        DefaultClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterId, activeDc, clusterType, orgId);
+        DefaultClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterId, activeDc, clusterType, orgId, "20201030");
         instance.setInstanceInfo(info);
         return instance;
     }
