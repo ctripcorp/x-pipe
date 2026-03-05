@@ -45,6 +45,7 @@ import com.ctrip.xpipe.redis.console.keeper.impl.*;
 import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
 import com.ctrip.xpipe.redis.console.migration.MultiClusterMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
+import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManagerTest;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorClusterManagerTest;
 import com.ctrip.xpipe.redis.console.migration.manager.DefaultMigrationEventManagerTest;
 import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationClusterTest;
@@ -219,6 +220,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultMonitorClusterManagerTest.class,
         BeaconClusterMonitorCheckTest.class,
         DefaultClusterMonitorModifiedNotifierTest.class,
+        DefaultBeaconManagerTest.class,
 
         DefaultPersistenceCacheTest.class,
         CheckerPersistenceCacheTest.class,

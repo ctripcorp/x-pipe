@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.migration.auto.data.MonitorClusterMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.service.AbstractServiceTest;
+import com.ctrip.xpipe.service.beacon.data.BeaconResp;
 import com.ctrip.xpipe.service.beacon.exception.BeaconServiceException;
 import com.google.common.collect.Sets;
 import okhttp3.mockwebserver.MockResponse;
@@ -16,12 +17,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.web.client.HttpClientErrorException;
 
+import javax.sql.rowset.spi.SyncResolver;
 import java.net.InetAddress;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author lishanglin
@@ -35,6 +35,7 @@ public class BeaconServiceTest extends AbstractServiceTest {
     private MockWebServer webServer;
 
     private final String system = "xpipe";
+    private final String cluster = "cluster1";
     private final int weight = 20;
 
     @Before
@@ -75,20 +76,22 @@ public class BeaconServiceTest extends AbstractServiceTest {
     @Test
     public void testRegisterCluster() throws Exception {
         Set<MonitorGroupMeta> groups = mockGroups();
+        Map<String, String> extraData = mockExtra();
         enqueueServerSuccess();
-        beaconService.registerCluster(system, "cluster1", groups);
+        beaconService.registerCluster(system, "cluster1", groups, extraData);
 
         RecordedRequest request = webServer.takeRequest();
         Assert.assertEquals("/api/v1/monitor/xpipe/cluster/cluster1", request.getPath());
         Assert.assertEquals("POST", request.getMethod());
         MonitorClusterMeta clusterMeta = Codec.DEFAULT.decode(request.getBody().readByteArray(), MonitorClusterMeta.class);
         Assert.assertEquals(groups, clusterMeta.getNodeGroups());
+        Assert.assertEquals(extraData, clusterMeta.getExtra());
     }
 
     @Test(expected = BeaconServiceException.class)
     public void testRegisterClusterRespErr() {
         enqueueServerErr();
-        beaconService.registerCluster(system, "cluster1", Collections.emptySet());
+        beaconService.registerCluster(system, "cluster1", Collections.emptySet(), mockExtra());
     }
 
     @Test
@@ -103,26 +106,24 @@ public class BeaconServiceTest extends AbstractServiceTest {
 
     @Test
     public void testUpdateBeaconHost() throws Exception {
-        MockWebServer mockWebServer = new MockWebServer();
-        mockWebServer.start(InetAddress.getByName("localhost"), randomPort());
-        beaconService.updateHost("http://localhost:" + mockWebServer.getPort());
-        mockWebServer.enqueue(new MockResponse().setBody("{\n" +
-                        "    \"code\": 0,\n" +
-                        "    \"msg\": \"success\"" +
-                        "}")
-                .setHeader("Content-Type", "application/json"));
-        beaconService.unregisterCluster(system, "cluster1");
+        try (MockWebServer mockWebServer = new MockWebServer()) {
+            mockWebServer.start(InetAddress.getByName("localhost"), randomPort());
+            beaconService.updateHost("http://localhost:" + mockWebServer.getPort());
+            mockWebServer.enqueue(new MockResponse().setBody("{\n" +
+                            "    \"code\": 0,\n" +
+                            "    \"msg\": \"success\"" +
+                            "}")
+                    .setHeader("Content-Type", "application/json"));
+            beaconService.unregisterCluster(system, "cluster1");
 
-        RecordedRequest request = mockWebServer.takeRequest();
-        Assert.assertEquals("localhost", request.getRequestUrl().host());
+            RecordedRequest request = mockWebServer.takeRequest();
+            Assert.assertEquals("localhost", request.getRequestUrl().host());
+        }
     }
 
     @Test
     public void testGetAllClusterWithDc() throws Exception {
-        MockWebServer mockWebServer = new MockWebServer();
-        mockWebServer.start(InetAddress.getByName("127.0.0.1"), randomPort());
-        beaconService.updateHost("http://127.0.0.1:" + mockWebServer.getPort());
-        mockWebServer.enqueue(new MockResponse().setBody("{\n" +
+        webServer.enqueue(new MockResponse().setBody("{\n" +
                         "    \"code\": 0,\n" +
                         "    \"msg\": \"success\",\n" +
                         "    \"data\": {\n" +
@@ -145,21 +146,32 @@ public class BeaconServiceTest extends AbstractServiceTest {
         Set<String> remote = data.get("xpipe_dr_pt_cluster_2271");
         Set<String> local = new HashSet<>();
         local.add("PTOY");
-        RecordedRequest request = mockWebServer.takeRequest();
+        RecordedRequest request = webServer.takeRequest();
         Assert.assertEquals(remote, local);
     }
 
     @Test
     public void testGetBeaconClusterHash() throws Exception {
-        MockWebServer mockWebServer = new MockWebServer();
-        mockWebServer.start(InetAddress.getByName("127.0.0.1"), randomPort());
-        beaconService.updateHost("http://127.0.0.1:" + mockWebServer.getPort());
-        mockWebServer.enqueue(new MockResponse().setBody("{\"code\":0,\"msg\":\"success\",\"data\":44773398}")
+        webServer.enqueue(new MockResponse().setBody("{\"code\":0,\"msg\":\"success\",\"data\":44773398}")
                 .setHeader("Content-Type", "application/json"));
         int hash = beaconService.getBeaconClusterHash(system, "xpipe_dr_pt_cluster_2247");
-
-        RecordedRequest request = mockWebServer.takeRequest();
+        RecordedRequest request = webServer.takeRequest();
         Assert.assertEquals(44773398, hash);
+    }
+
+    @Test
+    public void testGetClusterExtra() throws Exception {
+        Map<String, String> extra = mockExtra();
+        webServer.enqueue(new MockResponse().setBody(Codec.DEFAULT.encode(new BeaconResp<>(extra))));
+        Map<String, String> resp = beaconService.getBeaconClusterExtra(system, cluster);
+        Assert.assertEquals(extra, resp);
+    }
+
+    @Test(expected = HttpClientErrorException.NotFound.class)
+    public void testGetClusterExtra404() throws Exception {
+        webServer.enqueue(new MockResponse()
+                .setResponseCode(404).setBody("<html><body><h1>Whitelabel Error Page</h1></body></html>"));
+        beaconService.getBeaconClusterExtra(system, cluster);
     }
 
     @Test(expected = BeaconServiceException.class)
@@ -190,6 +202,10 @@ public class BeaconServiceTest extends AbstractServiceTest {
         groups.add(new MonitorGroupMeta("shard1", "rb", Collections.singleton(new HostPort("10.0.0.2", 6379)), false));
 
         return groups;
+    }
+
+    Map<String, String> mockExtra() {
+        return Collections.singletonMap("extra", System.currentTimeMillis() + "");
     }
 
 }

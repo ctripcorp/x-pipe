@@ -160,8 +160,8 @@ public class CheckerContextConfig {
     }
 
     @Bean
-    public BeaconManager beaconManager(MonitorManager monitorManager, BeaconMetaService beaconMetaService) {
-        return new DefaultBeaconManager(monitorManager, beaconMetaService);
+    public BeaconManager beaconManager(MonitorManager monitorManager, BeaconMetaService beaconMetaService, CheckerConfig checkerConfig) {
+        return new DefaultBeaconManager(monitorManager, beaconMetaService, checkerConfig);
     }
 
     @Bean

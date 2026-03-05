@@ -54,12 +54,12 @@ public class DefaultMonitorService implements MonitorService {
     }
 
     @Override
-    public void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups) {
+    public void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups, Map<String, String > extra) {
         // do nothing
     }
 
     @Override
-    public void updateCluster(String system, String clusterName, Set<MonitorGroupMeta> groups) {
+    public void updateCluster(String system, String clusterName, Set<MonitorGroupMeta> groups, Map<String, String > extra) {
 
     }
 
@@ -71,6 +71,11 @@ public class DefaultMonitorService implements MonitorService {
     @Override
     public int getBeaconClusterHash(String system, String clusterName) {
         return 0;
+    }
+
+    @Override
+    public Map<String, String> getBeaconClusterExtra(String system, String clusterName) {
+        return Collections.emptyMap();
     }
 
     @Override

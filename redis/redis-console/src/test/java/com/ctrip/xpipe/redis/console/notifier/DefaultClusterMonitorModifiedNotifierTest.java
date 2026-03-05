@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.notifier;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
@@ -57,11 +58,12 @@ public class DefaultClusterMonitorModifiedNotifierTest extends AbstractConsoleTe
 
     @Test
     public void testNotifyClusterChange() throws Exception {
-        notifier.notifyClusterUpdate("cluster1", 1);
+        notifier.notifyClusterUpdate("cluster1", 1, "20201030");
         waitConditionUntilTimeOut(() -> Mockito.mockingDetails(monitorService).getInvocations().size() >= 1);
 
         Mockito.verify(beaconMetaService).buildCurrentBeaconGroups("cluster1");
-        Mockito.verify(monitorService).registerCluster(BeaconSystem.getDefault().getSystemName(), "cluster1", Collections.singleton(new MonitorGroupMeta()));
+        Mockito.verify(monitorService).registerCluster(BeaconSystem.getDefault().getSystemName(), "cluster1", Collections.singleton(new MonitorGroupMeta()),
+                Collections.singletonMap(BeaconManager.EXTRA_LAST_MODIFY_TIME, "20201030"));
     }
 
     @Test
@@ -76,7 +78,7 @@ public class DefaultClusterMonitorModifiedNotifierTest extends AbstractConsoleTe
     public void testClusterActiveDcMNotSupport() {
         Mockito.when(metaCache.isDcInRegion(Mockito.anyString(), Mockito.anyString())).thenReturn(false);
 
-        notifier.notifyClusterUpdate("cluster1", 1);
+        notifier.notifyClusterUpdate("cluster1", 1, "20201030");
         notifier.notifyClusterDelete("cluster1", 1);
         Assert.assertEquals(0, Mockito.mockingDetails(monitorService).getInvocations().size());
     }

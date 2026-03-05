@@ -9,10 +9,12 @@ import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconChe
  */
 public interface BeaconManager {
 
-    void registerCluster(String clusterId, ClusterType clusterType, int orgId);
+    String EXTRA_LAST_MODIFY_TIME = "lastModifyTime";
 
-    void updateCluster(String clusterId, ClusterType clusterType, int orgId);
+    void registerCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime);
 
-    BeaconCheckStatus checkClusterHash(String clusterId, ClusterType clusterType, int orgId);
+    void updateCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime);
+
+    BeaconCheckStatus checkClusterHash(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime);
 
 }

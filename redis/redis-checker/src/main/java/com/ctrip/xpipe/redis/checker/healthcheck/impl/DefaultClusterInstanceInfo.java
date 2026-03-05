@@ -13,11 +13,13 @@ import java.util.List;
 public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements ClusterInstanceInfo {
 
     private int orgId;
+    private String lastModifyTime;
     private List<String> dcs;
 
-    public DefaultClusterInstanceInfo(String clusterId, String activeDc, ClusterType clusterType, int orgId) {
+    public DefaultClusterInstanceInfo(String clusterId, String activeDc, ClusterType clusterType, int orgId, String lastModifyTime) {
         super(clusterId, activeDc, clusterType);
         this.orgId = orgId;
+        this.lastModifyTime = lastModifyTime;
     }
 
     @Override
@@ -28,6 +30,10 @@ public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements Clu
 
     public int getOrgId() {
         return orgId;
+    }
+
+    public String getLastModifyTime() {
+        return lastModifyTime;
     }
 
     @Override
