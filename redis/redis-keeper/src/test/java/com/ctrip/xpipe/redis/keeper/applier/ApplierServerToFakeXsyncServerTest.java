@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 
-import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,10 +20,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import redis.clients.jedis.Jedis;
 
-import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeoutException;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -81,25 +77,12 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
     public void test() throws Exception {
         waitConditionUntilTimeOut(() -> 1 == server.slaveCount());
 
-        server.propagate("multi");
-        server.propagate("hset h1 f1 v11 f2 v22");
-        server.propagate("expire h1 300");
-        server.propagate("exec");
-
-        server.propagate("multi");
-        server.propagate("zadd z1 1 v11 2 v22");
-        server.propagate("exec");
-
         server.propagate("hset h1 f1 v1 f2 v2");
         server.propagate("zadd z1 1 v1 2 v2");
-
 
         server.propagate("multi");
         server.propagate("incr in");
         server.propagate("exec");
-
-        sleep(200000000);
-
 
         server.propagate("gtid a1:21 set k1 v1");
         server.propagate("gtid a1:22 mset k1 v1 k2 v2");
@@ -117,6 +100,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
         server.propagate("gtid a1:27 set k1 v7");
 
+        sleep(2000);
 
 
         Jedis jedis = new Jedis("127.0.0.1",6379);
@@ -154,6 +138,9 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
     public void testMulti() throws Exception {
         waitConditionUntilTimeOut(() -> 1 == server.slaveCount());
 
+        server.propagate("hset h1 f1 v1 f2 v2");
+        server.propagate("zadd z1 1 v1 2 v2");
+
         server.propagate("multi");
         server.propagate("hset h1 f1 v11 f2 v22");
         server.propagate("expire h1 300");
@@ -162,10 +149,6 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         server.propagate("multi");
         server.propagate("zadd z1 3 v1 4 v2");
         server.propagate("exec");
-
-        server.propagate("hset h1 f1 v1 f2 v2");
-        server.propagate("zadd z1 1 v1 2 v2");
-
 
         server.propagate("multi");
         server.propagate("incr in");
@@ -197,16 +180,19 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         len = jedis.hlen("h1");
         Assert.assertEquals(2,len);
         String f1 = jedis.hget("h1","f1");
-        Assert.assertEquals("v1",f1);
+        Assert.assertEquals("v11",f1);
         String f2 = jedis.hget("h1","f2");
-        Assert.assertEquals("v2",f2);
+        Assert.assertEquals("v22",f2);
+
+        long ttl = jedis.ttl("h1");
+        Assert.assertNotEquals(-1,ttl);
 
         len = jedis.zcard("z1");
         Assert.assertEquals(2,len);
         double score1 = jedis.zscore("z1","v1");
-        Assert.assertEquals(1.0,score1,1e-6);
+        Assert.assertEquals(3.0,score1,1e-6);
         double score2 = jedis.zscore("z1","v2");
-        Assert.assertEquals(2.0,score2,1e-6);
+        Assert.assertEquals(4.0,score2,1e-6);
 
         String count = jedis.get("in");
         Assert.assertEquals("1",count);

@@ -73,7 +73,7 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     public AtomicReference<String> replId;
 
     // in order to aggregate the entire transaction into one command
-    private AtomicReference<TransactionCommand> transactionCommand;
+    private AtomicReference<TransactionAsyncCommand> transactionCommand;
 
     private int dbNumber = 0;
 
@@ -177,13 +177,14 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     private void addTransactionStart(RedisOpCommand<?> multiCommand, long commandOffsetToAccumulate, String gtid) {
-        transactionCommand.set(new TransactionCommand());
+        transactionCommand.set(new TransactionAsyncCommand(client));
         transactionCommand.get().addTransactionStart(multiCommand, commandOffsetToAccumulate, gtid);
     }
 
     private void addTransactionEndAndSubmit(RedisOpCommand<?> execCommand, long commandOffsetToAccumulate, String gtid) {
         transactionCommand.get().addTransactionEnd(execCommand, commandOffsetToAccumulate, gtid);
-        TransactionCommand command = transactionCommand.getAndSet(null);
+        TransactionAsyncCommand command = transactionCommand.getAndSet(null);
+        if(!command.validTransaction()) throw new RedisRuntimeException("diff keys or no hash tag not supported");
         sequenceController.submit(command, command.commandOffset(), command.getGtidSet());
     }
 
