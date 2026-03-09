@@ -21,6 +21,8 @@ public interface AsyncRedisClient {
     CommandFuture<Object> write(Object resource,int dbNumber, Object... rawArgs);
     CommandFuture<Object> writeMulti(Object resource,int dbNumber, Object... rawArgs);
 
+    byte[] hashTag(byte[] key);
+
     CommandFuture<Object> multi();
 
     CommandFuture<Object> exec(Object... rawArgs);
