@@ -90,10 +90,8 @@ public class TransactionAsyncCommand extends TransactionCommand{
         if(redisKeys.size() == 1) return true;
         for(RedisKey redisKey:redisKeys) {
             byte[] tag = client.hashTag(redisKey.get());
-            if(tag == null){
-                return false;
-            }
+            return tag != null;
         }
-        return true;
+        return false;
     }
 }

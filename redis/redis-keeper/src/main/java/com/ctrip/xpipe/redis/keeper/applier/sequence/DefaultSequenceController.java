@@ -61,8 +61,7 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     public BytesPerSecondThreshold bytesPerSecondThreshold;
 
     Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
-    Map<Integer, SequenceCommand<?>> obstacleRunningCommands = new ConcurrentHashMap<>();
-    Map<Integer, Set<RedisKey>> multiRunningCommands = new ConcurrentHashMap<>();
+    Map<RedisKey, SequenceCommand<?>> multiRunningCommands = new ConcurrentHashMap<>();
     Map<RedisKey, List<byte[]>> batchRedisOpCommands = new HashMap<>();
 
     SequenceCommand<?> obstacle;
@@ -86,6 +85,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     private final CloseState closeState = new CloseState();
 
     private static final int DEFAULT_BATCH_SIZE = 100;
+
+    private static final byte TAG_START = 123;
+
 
     public DefaultSequenceController() {
         this(DEFAULT_QPS_THRESHOLD, DEFAULT_BYTES_PER_SECOND_THRESHOLD, DEFAULT_MEMORY_THRESHOLD, DEFAULT_CONCURRENCY_THRESHOLD,DEFAULT_BATCH_SIZE);
@@ -231,15 +233,13 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             dependencies.add(lastSameKey);
         }
 
-        if(!multiRunningCommands.isEmpty()){
-            for(Map.Entry<Integer,Set<RedisKey>> multiRunningCommand:multiRunningCommands.entrySet()){
-                Set<RedisKey> obstacleKeys = multiRunningCommand.getValue();
-                if(obstacleKeys.contains(key)) {
-                    SequenceCommand<?> obstacle = obstacleRunningCommands.get(multiRunningCommand.getKey());
-                    if(obstacle != null) {
-                        dependencies.add(obstacle);
-                    }
-                }
+        if(!multiRunningCommands.isEmpty()) {
+            if (key.get()[0] == TAG_START) {
+                key = new RedisKey(client.hashTag(key.get()));
+            }
+            lastSameKey = multiRunningCommands.get(key);
+            if (lastSameKey != null) {
+                dependencies.add(lastSameKey);
             }
         }
 
@@ -323,17 +323,14 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         List<RedisKey> keys = command.keys();
         List<SequenceCommand<?>> dependencies = keys.stream().map(runningCommands::get).filter(Objects::nonNull).collect(Collectors.toList());
 
-        if(!multiRunningCommands.isEmpty()){
-            for(Map.Entry<Integer,Set<RedisKey>> multiRunningCommand:multiRunningCommands.entrySet()){
-                Set<RedisKey> obstacleKeys = multiRunningCommand.getValue();
-                for(RedisKey redisKey:keys){
-                    if(obstacleKeys.contains(redisKey)){
-                        SequenceCommand<?> obstacle = obstacleRunningCommands.get(multiRunningCommand.getKey());
-                        if(obstacle != null) {
-                            dependencies.add(obstacle);
-                        }
-                        break;
-                    }
+        if(!multiRunningCommands.isEmpty()) {
+            for (RedisKey key : keys) {
+                if (key.get()[0] == TAG_START) {
+                    key = new RedisKey(client.hashTag(key.get()));
+                }
+                SequenceCommand<?> lastSameKey = multiRunningCommands.get(key);
+                if (lastSameKey != null) {
+                    dependencies.add(lastSameKey);
                 }
             }
         }
@@ -361,44 +358,46 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         List<RedisOp> transactionOps = redisOpTransactionAdapter.getTransactionOps();
         List<SequenceCommand<?>> dependencies = new ArrayList<>();
         Set<RedisKey> transactionOpKeys = new HashSet<>();
+        RedisKey commandKey = null;
         for(RedisOp transactionOp:transactionOps){
             if(transactionOp instanceof RedisSingleKeyOp) {
                 RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) transactionOp;
                 RedisKey redisKey = redisSingleKeyOp.getKey();
-                transactionOpKeys.add(redisKey);
-                if (runningCommands.containsKey(redisKey)) {
-                    dependencies.add(runningCommands.get(redisKey));
+                if(commandKey == null) {
+                    commandKey = redisKey;
                 }
+                transactionOpKeys.add(redisKey);
             }else if(transactionOp instanceof RedisMultiKeyOp){
                 RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) transactionOp;
                 for(RedisKey redisKey:redisMultiKeyOp.getKeys()){
                     transactionOpKeys.add(redisKey);
-                    if (runningCommands.containsKey(redisKey)) {
-                        dependencies.add(runningCommands.get(redisKey));
+                    if(commandKey == null) {
+                        commandKey = redisKey;
                     }
                 }
             }else if(transactionOp instanceof RedisMultiSubKeyOp){
                 RedisMultiSubKeyOp redisMultiSubKeyOp = (RedisMultiSubKeyOp) transactionOp;
                 RedisKey redisKey = redisMultiSubKeyOp.getKey();
-                transactionOpKeys.add(redisKey);
-                if (runningCommands.containsKey(redisKey)) {
-                    dependencies.add(runningCommands.get(redisKey));
+                if(commandKey == null) {
+                    commandKey = redisKey;
                 }
+                transactionOpKeys.add(redisKey);
+            }
+        }
+        SequenceCommand<?> lastSameKey = runningCommands.get(commandKey);
+        if (lastSameKey != null) {
+            dependencies.add(lastSameKey);
+        }
+
+        if (transactionOpKeys.size() != 1) {
+            if (commandKey != null && commandKey.get()[0] == TAG_START) {
+                commandKey = new RedisKey(client.hashTag(commandKey.get()));
             }
         }
 
-        if(!multiRunningCommands.isEmpty()){
-            for(Map.Entry<Integer,Set<RedisKey>> multiRunningCommand:multiRunningCommands.entrySet()){
-                Set<RedisKey> obstacleKeys = multiRunningCommand.getValue();
-                for(RedisKey redisKey:transactionOpKeys){
-                    if(obstacleKeys.contains(redisKey)){
-                        SequenceCommand<?> obstacle = obstacleRunningCommands.get(multiRunningCommand.getKey());
-                        if(obstacle != null) {
-                            dependencies.add(obstacle);
-                        }
-                    }
-                }
-            }
+        lastSameKey = multiRunningCommands.get(commandKey);
+        if (lastSameKey != null) {
+            dependencies.add(lastSameKey);
         }
 
         /* make command */
@@ -408,11 +407,10 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         /* make self a dependency */
 
 //        runningCommands = new HashMap<>();
-//        obstacle = current;
-        multiRunningCommands.put(current.hashCode(),transactionOpKeys);
-        obstacleRunningCommands.put(current.hashCode(),current);
+        obstacle = current;
+        multiRunningCommands.put(commandKey,current);
 
-        forgetObstacleWhenDone(current);
+        forgetObstacleWhenDone(current,commandKey);
 
         /* do some stuff when finish */
 
@@ -424,10 +422,11 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         current.execute();
     }
 
-    private void forgetObstacleWhenDone(SequenceCommand<?> sequenceCommand) {
+    private void forgetObstacleWhenDone(SequenceCommand<?> sequenceCommand,RedisKey commandKey) {
         sequenceCommand.future().addListener((f) -> {
-            multiRunningCommands.remove(sequenceCommand.hashCode());
-            obstacleRunningCommands.remove(sequenceCommand.hashCode());
+            if(sequenceCommand == multiRunningCommands.get(commandKey)) {
+                multiRunningCommands.remove(commandKey);
+            }
         });
     }
 

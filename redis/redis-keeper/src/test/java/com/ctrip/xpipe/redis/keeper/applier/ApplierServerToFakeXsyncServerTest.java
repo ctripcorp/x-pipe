@@ -152,6 +152,11 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         server.propagate("exec");
 
         server.propagate("multi");
+        server.propagate("del {tag}htag1");
+        server.propagate("hset {tag}htag2 f1 v11 f2 v22");
+        server.propagate("exec");
+
+        server.propagate("multi");
         server.propagate("incr in");
         server.propagate("exec");
 
@@ -159,7 +164,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
         Jedis jedis = new Jedis("127.0.0.1",6379);
         Set<String> keys = jedis.keys("*");
-        Assert.assertEquals(11,keys.size());
+        Assert.assertEquals(12,keys.size());
         long len;
         len = jedis.llen("biglist");
         Assert.assertEquals(3,len);
@@ -184,6 +189,13 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         Assert.assertEquals("v11",f1);
         String f2 = jedis.hget("h1","f2");
         Assert.assertEquals("v22",f2);
+
+        len = jedis.hlen("{tag}htag2");
+        Assert.assertEquals(2,len);
+        String f11 = jedis.hget("{tag}htag2","f1");
+        Assert.assertEquals("v11",f11);
+        String f22 = jedis.hget("{tag}htag2","f2");
+        Assert.assertEquals("v22",f22);
 
         long ttl = jedis.ttl("h1");
         Assert.assertNotEquals(-1,ttl);
