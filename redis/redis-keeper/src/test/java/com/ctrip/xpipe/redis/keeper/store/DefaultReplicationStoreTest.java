@@ -12,8 +12,11 @@ import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserMan
 import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.SERVER_TYPE;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -30,11 +33,11 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BooleanSupplier;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
 
 public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 
@@ -226,6 +229,118 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		store.gc();
 		Assert.assertNull(store.getRdbStore());
 		Assert.assertNull(store.getMetaStore().dupReplicationStoreMeta().getRdbFile());
+	}
+
+	@Test
+	public void testCmdNotifyCoalescingEnabledOnlyForRedisUpstream() throws Exception {
+		KeeperMonitor keeperMonitor = Mockito.mock(KeeperMonitor.class);
+		MasterStats masterStats = Mockito.mock(MasterStats.class);
+		Mockito.when(keeperMonitor.getMasterStats()).thenReturn(masterStats);
+		Mockito.when(masterStats.currentMasterType()).thenReturn(SERVER_TYPE.REDIS);
+
+		TestKeeperConfig config = new TestKeeperConfig() {
+			@Override
+			public boolean isCommandOffsetNotifyCoalescingEnabled() {
+				return true;
+			}
+		};
+		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), keeperMonitor,
+				Mockito.mock(SyncRateManager.class), redisOpParser);
+
+		Assert.assertTrue((Boolean) ReflectionTestUtils.invokeMethod(store, "isCmdNotifyCoalescingEnabled"));
+		Mockito.when(masterStats.currentMasterType()).thenReturn(SERVER_TYPE.KEEPER);
+		Assert.assertFalse((Boolean) ReflectionTestUtils.invokeMethod(store, "isCmdNotifyCoalescingEnabled"));
+	}
+
+	@Test
+	public void testCmdNotifyCoalescingDisabledByConfig() throws Exception {
+		KeeperMonitor keeperMonitor = Mockito.mock(KeeperMonitor.class);
+		MasterStats masterStats = Mockito.mock(MasterStats.class);
+		Mockito.when(keeperMonitor.getMasterStats()).thenReturn(masterStats);
+		Mockito.when(masterStats.currentMasterType()).thenReturn(SERVER_TYPE.REDIS);
+
+		TestKeeperConfig config = new TestKeeperConfig() {
+			@Override
+			public boolean isCommandOffsetNotifyCoalescingEnabled() {
+				return false;
+			}
+		};
+		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), keeperMonitor,
+				Mockito.mock(SyncRateManager.class), redisOpParser);
+
+		Assert.assertFalse((Boolean) ReflectionTestUtils.invokeMethod(store, "isCmdNotifyCoalescingEnabled"));
+	}
+
+	@Test
+	public void testCreateCommandStoreUsesDynamicCoalescingSupplier() throws Exception {
+		KeeperMonitor keeperMonitor = Mockito.mock(KeeperMonitor.class);
+		MasterStats masterStats = Mockito.mock(MasterStats.class);
+		Mockito.when(keeperMonitor.getMasterStats()).thenReturn(masterStats);
+		Mockito.when(masterStats.currentMasterType()).thenReturn(SERVER_TYPE.REDIS);
+
+		TestKeeperConfig config = new TestKeeperConfig() {
+			@Override
+			public boolean isCommandOffsetNotifyCoalescingEnabled() {
+				return true;
+			}
+		};
+		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), keeperMonitor,
+				Mockito.mock(SyncRateManager.class), redisOpParser);
+		store.getMetaStore().becomeActive();
+		beginRdb(store, 1);
+
+		BooleanSupplier coalescingEnabled = (BooleanSupplier) ReflectionTestUtils.getField(
+				store.cmdStore, "commandOffsetNotifyCoalescingEnabled");
+		Assert.assertNotNull(coalescingEnabled);
+		Assert.assertTrue(coalescingEnabled.getAsBoolean());
+
+		Mockito.when(masterStats.currentMasterType()).thenReturn(SERVER_TYPE.KEEPER);
+		Assert.assertFalse(coalescingEnabled.getAsBoolean());
+	}
+
+	@Test
+	public void testCmdNotifyCoalescingDisabledForUnknownUpstream() throws Exception {
+		KeeperMonitor keeperMonitor = Mockito.mock(KeeperMonitor.class);
+		MasterStats masterStats = Mockito.mock(MasterStats.class);
+		Mockito.when(keeperMonitor.getMasterStats()).thenReturn(masterStats);
+		Mockito.when(masterStats.currentMasterType()).thenReturn(SERVER_TYPE.UNKNOWN);
+
+		TestKeeperConfig config = new TestKeeperConfig() {
+			@Override
+			public boolean isCommandOffsetNotifyCoalescingEnabled() {
+				return true;
+			}
+		};
+		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), keeperMonitor,
+				Mockito.mock(SyncRateManager.class), redisOpParser);
+
+		Assert.assertFalse((Boolean) ReflectionTestUtils.invokeMethod(store, "isCmdNotifyCoalescingEnabled"));
+	}
+
+	@Test
+	public void testCreateCommandStoreSupplierReflectsConfigToggle() throws Exception {
+		KeeperMonitor keeperMonitor = Mockito.mock(KeeperMonitor.class);
+		MasterStats masterStats = Mockito.mock(MasterStats.class);
+		Mockito.when(keeperMonitor.getMasterStats()).thenReturn(masterStats);
+		Mockito.when(masterStats.currentMasterType()).thenReturn(SERVER_TYPE.REDIS);
+
+		AtomicReference<Boolean> enabled = new AtomicReference<>(true);
+		TestKeeperConfig config = new TestKeeperConfig() {
+			@Override
+			public boolean isCommandOffsetNotifyCoalescingEnabled() {
+				return enabled.get();
+			}
+		};
+		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), keeperMonitor,
+				Mockito.mock(SyncRateManager.class), redisOpParser);
+		store.getMetaStore().becomeActive();
+		beginRdb(store, 1);
+
+		BooleanSupplier coalescingEnabled = (BooleanSupplier) ReflectionTestUtils.getField(
+				store.cmdStore, "commandOffsetNotifyCoalescingEnabled");
+		Assert.assertTrue(coalescingEnabled.getAsBoolean());
+		enabled.set(false);
+		Assert.assertFalse(coalescingEnabled.getAsBoolean());
 	}
 
 }

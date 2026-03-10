@@ -18,6 +18,8 @@ public interface MasterStats {
 
     SERVER_TYPE lastMasterType();
 
+    SERVER_TYPE currentMasterType();
+
     long getCommandBPS();
 
     long getCommandTotalLength();

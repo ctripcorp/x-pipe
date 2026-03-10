@@ -2,9 +2,6 @@ package com.ctrip.xpipe.redis.keeper.config;
 
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
 
-import java.util.List;
-import java.util.Map;
-
 /**
  * @author marsqing
  *
@@ -48,6 +45,12 @@ public interface KeeperConfig extends CoreConfig{
 	int getReplicationStoreMinTimeMilliToGcAfterCreate();
 
 	long getCommandReaderFlyingThreshold();
+
+	int getCommandOffsetNotifyBytesThreshold();
+
+	int getCommandOffsetNotifyTimeMilliThreshold();
+
+	boolean isCommandOffsetNotifyCoalescingEnabled();
 
 	int getCommandIndexBytesInterval();
 

@@ -123,6 +123,32 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	}
 
 	@Test
+	public void testNotifyImmediatelyWhenCoalescingDisabled() throws Exception {
+		commandStore.close();
+		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, () -> 3600, 0, () -> 20,
+				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> 1024 * 1024, () -> 1000, () -> false,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter);
+		commandStore.initialize();
+		ReflectionTestUtils.setField(commandStore, "buildIndex", false);
+
+		commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[] { 'a' }));
+		Assert.assertTrue(commandStore.awaitCommandsOffset(0, 10));
+	}
+
+	@Test
+	public void testNotNotifyImmediatelyWhenCoalescingEnabledAndBelowThreshold() throws Exception {
+		commandStore.close();
+		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, () -> 3600, 0, () -> 20,
+				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> 1024 * 1024, () -> 1000, () -> true,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter);
+		commandStore.initialize();
+		ReflectionTestUtils.setField(commandStore, "buildIndex", false);
+
+		commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[] { 'a' }));
+		Assert.assertFalse(commandStore.awaitCommandsOffset(0, 10));
+	}
+
+	@Test
 	public void testInterruptClose() throws InterruptedException{
 		
 		Thread thread = new Thread(new AbstractExceptionLogTask() {

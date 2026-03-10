@@ -197,9 +197,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
-																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor) {
+																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor,
+																	ScheduledExecutorService scheduled) {
 		return new DefaultReplicationStoreManager.ClusterAndShardCompatible(this.ckStore,keeperConfig, replId, currentKeeperMeta.getId(),
-				baseDir, keeperMonitor, redisOpParser, syncRateManager).setDeprecatedClusterAndShard(clusterId, shardId);
+				baseDir, keeperMonitor, redisOpParser, syncRateManager, scheduled).setDeprecatedClusterAndShard(clusterId, shardId);
 	}
 
 	private LeaderElector createLeaderElector(){
@@ -240,16 +241,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected void doInitialize() throws Exception {
 		super.doInitialize();
 
-		replicationStoreManager = createReplicationStoreManager(keeperConfig, clusterId, shardId, replId,
-				currentKeeperMeta, baseDir, keeperMonitor);
-		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
-		replicationStoreManager.initialize();
-		
 		threadPoolName = String.format("%d-keeper:%s", currentKeeperMeta.getPort(),replId);
 		logger.info("[doInitialize][keeper config]{}", keeperConfig);
 
 		clientExecutors = Executors.newSingleThreadExecutor(KeeperReplIdAwareThreadFactory.create(replId, "RedisClient-" + threadPoolName));
 		scheduled = Executors.newScheduledThreadPool(DEFAULT_SCHEDULED_CORE_POOL_SIZE , KeeperReplIdAwareThreadFactory.create(replId, "sch-" + threadPoolName));
+
+		replicationStoreManager = createReplicationStoreManager(keeperConfig, clusterId, shardId, replId,
+				currentKeeperMeta, baseDir, keeperMonitor, scheduled);
+		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
+		replicationStoreManager.initialize();
 		bossGroup = new NioEventLoopGroup(DEFAULT_BOSS_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "boss-" + threadPoolName));
 		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, KeeperReplIdAwareThreadFactory.create(replId, "work-" + threadPoolName));
 		masterEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "master-" + threadPoolName));
