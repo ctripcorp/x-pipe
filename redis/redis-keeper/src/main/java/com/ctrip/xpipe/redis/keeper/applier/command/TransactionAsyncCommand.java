@@ -49,7 +49,7 @@ public class TransactionAsyncCommand extends TransactionCommand{
             if(redisOpCommand instanceof MultiDataCommand){
                 MultiDataCommand multiDataCommand = (MultiDataCommand) redisOpCommand;
                 if(resource == null){
-                    resource = client.select(multiDataCommand.keys().get(0));
+                    resource = client.select(multiDataCommand.keys().get(0).get());
                 }
                 Object[] selectArgs = new byte[][]{"select".getBytes(),(multiDataCommand.getDbNumber()+"").getBytes()};
                 Object[] rawArgs = multiDataCommand.redisOp().buildRawOpArgs();

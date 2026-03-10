@@ -142,6 +142,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         server.propagate("zadd z1 1 v1 2 v2");
 
         server.propagate("multi");
+        server.propagate("del h1");
         server.propagate("hset h1 f1 v11 f2 v22");
         server.propagate("expire h1 300");
         server.propagate("exec");
@@ -154,7 +155,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         server.propagate("incr in");
         server.propagate("exec");
 
-        sleep(2000);
+        sleep(3000);
 
         Jedis jedis = new Jedis("127.0.0.1",6379);
         Set<String> keys = jedis.keys("*");
