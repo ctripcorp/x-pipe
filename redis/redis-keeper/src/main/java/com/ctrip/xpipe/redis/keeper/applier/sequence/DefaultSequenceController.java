@@ -15,9 +15,6 @@ import com.ctrip.xpipe.redis.keeper.applier.threshold.ConcurrencyThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.MemoryThreshold;
 import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThreshold;
 import com.ctrip.xpipe.utils.CloseState;
-import com.google.common.collect.Sets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -392,11 +389,12 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         if(!multiRunningCommands.isEmpty()){
             for(Map.Entry<Integer,Set<RedisKey>> multiRunningCommand:multiRunningCommands.entrySet()){
                 Set<RedisKey> obstacleKeys = multiRunningCommand.getValue();
-                Set<RedisKey> intersection = Sets.intersection(transactionOpKeys,obstacleKeys);
-                if(!intersection.isEmpty()) {
-                    SequenceCommand<?> obstacle = obstacleRunningCommands.get(multiRunningCommand.getKey());
-                    if(obstacle != null) {
-                        dependencies.add(obstacle);
+                for(RedisKey redisKey:transactionOpKeys){
+                    if(obstacleKeys.contains(redisKey)){
+                        SequenceCommand<?> obstacle = obstacleRunningCommands.get(multiRunningCommand.getKey());
+                        if(obstacle != null) {
+                            dependencies.add(obstacle);
+                        }
                     }
                 }
             }
@@ -409,9 +407,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         /* make self a dependency */
 
 //        runningCommands = new HashMap<>();
-        obstacle = current;
-        multiRunningCommands.put(obstacle.hashCode(),transactionOpKeys);
-        obstacleRunningCommands.put(obstacle.hashCode(),obstacle);
+//        obstacle = current;
+        multiRunningCommands.put(current.hashCode(),transactionOpKeys);
+        obstacleRunningCommands.put(current.hashCode(),current);
 
         forgetObstacleWhenDone(current);
 
