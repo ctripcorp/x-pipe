@@ -222,7 +222,7 @@ public class ReplStage {
     @Override
     public String toString() {
         if (proto.equals(ReplProto.XSYNC)) {
-            return String.format("XSYNC|%s+%s-%d:%d@%s", beginGtidset, fixedGtidset, begOffsetRepl, begOffsetBacklog, masterUuid);
+            return String.format("XSYNC|{%s+%s-%s}repl:%d,backlog:%d@%s", beginGtidset, fixedGtidset, gtidLost, begOffsetRepl, begOffsetBacklog, masterUuid);
         } else {
             return String.format("PSYNC|%s:%d:%d;%s:%d", replId, begOffsetRepl, begOffsetBacklog, replId2, secondReplIdOffset);
         }

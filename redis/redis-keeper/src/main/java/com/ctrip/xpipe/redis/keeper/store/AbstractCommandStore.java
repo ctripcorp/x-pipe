@@ -679,6 +679,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     protected boolean canDeleteCmdFile(long lowestReadingOffset, long fileStartOffset, long fileSize, long lastModified) {
+        getLogger().debug("[canDeleteCmdFile] start from {}", fileStartOffset);
 
         boolean lowestReading = (fileStartOffset + fileSize < lowestReadingOffset);
 
@@ -702,10 +703,10 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         }
 
         long totalLength = totalLength();
-        long totalKeep = (long)fileSize * fileNumToKeep.getAsInt();
+        long totalKeep = fileSize * fileNumToKeep.getAsInt();
         boolean fileKeep = totalLength - (fileStartOffset + fileSize) > totalKeep;
 
-        getLogger().debug("[canDeleteCmdFile][fileKeep]{}, {} - {} > {}({}*{})", fileKeep, totalLength, (fileStartOffset + fileSize), totalKeep, fileSize, fileNumToKeep);
+        getLogger().debug("[canDeleteCmdFile][fileKeep]{}, {} - {} > {}({}*{})", fileKeep, totalLength, (fileStartOffset + fileSize), totalKeep, fileSize, totalKeep);
         if(!fileKeep){
             return false;
         }

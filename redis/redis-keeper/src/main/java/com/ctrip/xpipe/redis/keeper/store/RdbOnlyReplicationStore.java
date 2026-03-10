@@ -325,11 +325,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public void checkReplId(String expectReplId) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public void confirmRdb(RdbStore rdbStore) throws IOException {
 		throw new UnsupportedOperationException();
 	}

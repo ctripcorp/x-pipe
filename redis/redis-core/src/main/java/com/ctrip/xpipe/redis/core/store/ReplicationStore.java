@@ -41,9 +41,6 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType) throws IOException;
 
-	// use in dumped, broken if replId dismatch with default repl
-	void checkReplId(String expectReplId);
-
 	void confirmRdb(RdbStore rdbStore) throws IOException;
 
 	void continueFromOffset(String replId, long continueOffset) throws IOException;

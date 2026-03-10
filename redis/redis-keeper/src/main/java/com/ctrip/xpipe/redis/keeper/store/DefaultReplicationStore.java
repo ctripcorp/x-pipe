@@ -323,10 +323,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		return createRdbStore(new File(baseDir, rdbFile), replId, rdbOffset, eofType);
 	}
 
-	@Override
-	public void checkReplId(String expectReplId) {
-	}
-
 	public void confirmRdb(RdbStore rdbStore) throws IOException {
 		makeSureOpen();
 

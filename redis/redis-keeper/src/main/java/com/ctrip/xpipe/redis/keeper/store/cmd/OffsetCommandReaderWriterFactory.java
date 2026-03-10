@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -15,6 +16,8 @@ import java.io.IOException;
  * date 2022/4/17
  */
 public class OffsetCommandReaderWriterFactory implements CommandReaderWriterFactory {
+
+    private static final Logger logger = LoggerFactory.getLogger(OffsetCommandReaderWriterFactory.class);
 
     @Override
     public CommandWriter createCmdWriter(CommandStore cmdStore,
@@ -34,6 +37,11 @@ public class OffsetCommandReaderWriterFactory implements CommandReaderWriterFact
                 throw new UnsupportedOperationException("endOffset must gt beginOffset: " + endOffsetExcluded + ":" + currentOffset);
         }
         CommandFile commandFile = cmdStore.findFileForOffset(currentOffset);
+        if (null == commandFile && currentOffset > 0) {
+            // may locate at tail of cmd file
+            logger.info("[createCmdReader][cmd miss] try currentOffset - 1 = {}", currentOffset);
+            commandFile = cmdStore.findFileForOffset(currentOffset - 1);
+        }
         if (null == commandFile) {
             throw new IOException("File for offset " + replProgress.getProgress() + " in store " + cmdStore + " does not exist");
         }
