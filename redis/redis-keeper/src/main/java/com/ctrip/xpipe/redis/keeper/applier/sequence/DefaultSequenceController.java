@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.keeper.applier.threshold.QPSThreshold;
 import com.ctrip.xpipe.utils.CloseState;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
@@ -60,8 +61,8 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
     public BytesPerSecondThreshold bytesPerSecondThreshold;
 
     Map<RedisKey, SequenceCommand<?>> runningCommands = new HashMap<>();
-    Map<Integer, SequenceCommand<?>> obstacleRunningCommands = new HashMap<>();
-    Map<Integer, Set<RedisKey>> multiRunningCommands = new HashMap<>();
+    Map<Integer, SequenceCommand<?>> obstacleRunningCommands = new ConcurrentHashMap<>();
+    Map<Integer, Set<RedisKey>> multiRunningCommands = new ConcurrentHashMap<>();
     Map<RedisKey, List<byte[]>> batchRedisOpCommands = new HashMap<>();
 
     SequenceCommand<?> obstacle;
@@ -386,19 +387,19 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             }
         }
 
-//        if(!multiRunningCommands.isEmpty()){
-//            for(Map.Entry<Integer,Set<RedisKey>> multiRunningCommand:multiRunningCommands.entrySet()){
-//                Set<RedisKey> obstacleKeys = multiRunningCommand.getValue();
-//                for(RedisKey redisKey:transactionOpKeys){
-//                    if(obstacleKeys.contains(redisKey)){
-//                        SequenceCommand<?> obstacle = obstacleRunningCommands.get(multiRunningCommand.getKey());
-//                        if(obstacle != null) {
-//                            dependencies.add(obstacle);
-//                        }
-//                    }
-//                }
-//            }
-//        }
+        if(!multiRunningCommands.isEmpty()){
+            for(Map.Entry<Integer,Set<RedisKey>> multiRunningCommand:multiRunningCommands.entrySet()){
+                Set<RedisKey> obstacleKeys = multiRunningCommand.getValue();
+                for(RedisKey redisKey:transactionOpKeys){
+                    if(obstacleKeys.contains(redisKey)){
+                        SequenceCommand<?> obstacle = obstacleRunningCommands.get(multiRunningCommand.getKey());
+                        if(obstacle != null) {
+                            dependencies.add(obstacle);
+                        }
+                    }
+                }
+            }
+        }
 
         /* make command */
 
