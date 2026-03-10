@@ -386,19 +386,19 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
             }
         }
 
-        if(!multiRunningCommands.isEmpty()){
-            for(Map.Entry<Integer,Set<RedisKey>> multiRunningCommand:multiRunningCommands.entrySet()){
-                Set<RedisKey> obstacleKeys = multiRunningCommand.getValue();
-                for(RedisKey redisKey:transactionOpKeys){
-                    if(obstacleKeys.contains(redisKey)){
-                        SequenceCommand<?> obstacle = obstacleRunningCommands.get(multiRunningCommand.getKey());
-                        if(obstacle != null) {
-                            dependencies.add(obstacle);
-                        }
-                    }
-                }
-            }
-        }
+//        if(!multiRunningCommands.isEmpty()){
+//            for(Map.Entry<Integer,Set<RedisKey>> multiRunningCommand:multiRunningCommands.entrySet()){
+//                Set<RedisKey> obstacleKeys = multiRunningCommand.getValue();
+//                for(RedisKey redisKey:transactionOpKeys){
+//                    if(obstacleKeys.contains(redisKey)){
+//                        SequenceCommand<?> obstacle = obstacleRunningCommands.get(multiRunningCommand.getKey());
+//                        if(obstacle != null) {
+//                            dependencies.add(obstacle);
+//                        }
+//                    }
+//                }
+//            }
+//        }
 
         /* make command */
 
