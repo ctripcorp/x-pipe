@@ -43,7 +43,7 @@ public class TransactionAsyncCommand extends TransactionCommand{
 
     @Override
     protected void doExecute() throws Throwable{
-        List<Object[]> multiRawArgs = new ArrayList<>();
+        List<Object[]> multiRawArgs = new ArrayList<>(transactionCommands.size());
 
         for(RedisOpCommand redisOpCommand:transactionCommands){
             if(redisOpCommand instanceof MultiDataCommand){
@@ -51,17 +51,20 @@ public class TransactionAsyncCommand extends TransactionCommand{
                 if(resource == null){
                     resource = client.select(multiDataCommand.keys().get(0).get());
                 }
-                Object[] selectArgs = new byte[][]{"select".getBytes(),(multiDataCommand.getDbNumber()+"").getBytes()};
-                Object[] rawArgs = multiDataCommand.redisOp().buildRawOpArgs();
-                multiRawArgs.add(selectArgs);
-                multiRawArgs.add(rawArgs);
+                if(multiDataCommand.getDbNumber() != 0) {
+                    Object[] selectArgs = new byte[][]{"select".getBytes(), (multiDataCommand.getDbNumber() + "").getBytes()};
+                    multiRawArgs.add(selectArgs);
+                }
+                multiRawArgs.add(multiDataCommand.redisOp().buildRawOpArgs());
             }else if(redisOpCommand instanceof DefaultDataCommand){
                 DefaultDataCommand defaultDataCommand = (DefaultDataCommand) redisOpCommand;
                 if(resource == null) {
                     resource = client.select(defaultDataCommand.key().get());
                 }
-                Object[] selectArgs = new byte[][]{"select".getBytes(),(defaultDataCommand.getDbNumber()+"").getBytes()};
-                multiRawArgs.add(selectArgs);
+                if(defaultDataCommand.getDbNumber() != 0) {
+                    Object[] selectArgs = new byte[][]{"select".getBytes(), (defaultDataCommand.getDbNumber() + "").getBytes()};
+                    multiRawArgs.add(selectArgs);
+                }
                 multiRawArgs.add(defaultDataCommand.redisOp().buildRawOpArgs());
             }
         }
