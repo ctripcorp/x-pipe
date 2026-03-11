@@ -13,21 +13,21 @@ import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.OffsetNotifier;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
@@ -64,6 +64,16 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private final ConcurrentMap<CommandReader<?>, Boolean> readers = new ConcurrentHashMap<>();
 
     protected OffsetNotifier offsetNotifier;
+
+    private final IntSupplier commandOffsetNotifyBytesThreshold;
+
+    private final IntSupplier commandOffsetNotifyTimeMilliThreshold;
+
+    private final BooleanSupplier commandOffsetNotifyCoalescingEnabled;
+
+    private final ScheduledExecutorService commandOffsetNotifyScheduler;
+
+    private CoalescingOffsetNotifier coalescingOffsetNotifier;
 
     protected final long commandReaderFlyingThreshold;
 
@@ -106,6 +116,10 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     public AbstractCommandStore(CKStore ckStore,File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                                 int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
                                 long commandReaderFlyingThreshold,
+                                IntSupplier commandOffsetNotifyBytesThreshold,
+                                IntSupplier commandOffsetNotifyTimeMilliThreshold,
+                                BooleanSupplier commandOffsetNotifyCoalescingEnabled,
+                                ScheduledExecutorService commandOffsetNotifyScheduler,
                                 CommandReaderWriterFactory cmdReaderWriterFactory,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
                                 GtidCmdFilter  gtidCmdFilter, boolean buildIndex
@@ -117,6 +131,10 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.maxTimeSecondKeeperCmdFileAfterModified = maxTimeSecondKeeperCmdFileAfterModified;
         this.fileNumToKeep = fileNumToKeep;
         this.commandReaderFlyingThreshold = commandReaderFlyingThreshold;
+        this.commandOffsetNotifyBytesThreshold = commandOffsetNotifyBytesThreshold;
+        this.commandOffsetNotifyTimeMilliThreshold = commandOffsetNotifyTimeMilliThreshold;
+        this.commandOffsetNotifyCoalescingEnabled = commandOffsetNotifyCoalescingEnabled;
+        this.commandOffsetNotifyScheduler = commandOffsetNotifyScheduler;
         this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
         this.cmdReaderWriterFactory = cmdReaderWriterFactory;
         this.commandStoreDelay = keeperMonitor.createCommandStoreDelay(this);
@@ -166,6 +184,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (initialized.compareAndSet(false, true)) {
             cmdWriter.initialize();
             offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
+            coalescingOffsetNotifier = new CoalescingOffsetNotifier(offsetNotifier, commandOffsetNotifyBytesThreshold,
+                    commandOffsetNotifyTimeMilliThreshold, commandOffsetNotifyScheduler);
             if(buildIndex) {
                 indexStore.openWriter(cmdWriter);
             }
@@ -338,7 +358,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         long offset = cmdWriter.totalLength() - 1;
         commandStoreDelay.endWrite(offset);
 
-        offsetNotifier.offsetIncreased(offset);
+        if (commandOffsetNotifyCoalescingEnabled.getAsBoolean()) {
+            coalescingOffsetNotifier.onWritten(wrote, offset);
+        } else {
+            coalescingOffsetNotifier.notifyNow(offset);
+        }
 
         return wrote;
     }
@@ -355,7 +379,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         long offset = cmdWriter.totalLength() - 1;
 
         indexStoreDelay.endWrite(offset);
-        offsetNotifier.offsetIncreased(offset);
+        if (commandOffsetNotifyCoalescingEnabled.getAsBoolean()) {
+            coalescingOffsetNotifier.onWritten((int) (offset - beginOffset), offset);
+        } else {
+            coalescingOffsetNotifier.notifyNow(offset);
+        }
 
         int writer = (int)(offset - beginOffset);
         return writer;
@@ -541,6 +569,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         if(cmpAndSetClosed()){
             getLogger().info("[close]{}", this);
+            if (coalescingOffsetNotifier != null) {
+                coalescingOffsetNotifier.close();
+            }
             cmdWriter.close();
             if(indexStore != null) {
                 indexStore.closeWriter();
@@ -679,6 +710,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     protected boolean canDeleteCmdFile(long lowestReadingOffset, long fileStartOffset, long fileSize, long lastModified) {
+        getLogger().debug("[canDeleteCmdFile] start from {}", fileStartOffset);
 
         boolean lowestReading = (fileStartOffset + fileSize < lowestReadingOffset);
 
@@ -702,10 +734,10 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         }
 
         long totalLength = totalLength();
-        long totalKeep = (long)fileSize * fileNumToKeep.getAsInt();
+        long totalKeep = fileSize * fileNumToKeep.getAsInt();
         boolean fileKeep = totalLength - (fileStartOffset + fileSize) > totalKeep;
 
-        getLogger().debug("[canDeleteCmdFile][fileKeep]{}, {} - {} > {}({}*{})", fileKeep, totalLength, (fileStartOffset + fileSize), totalKeep, fileSize, fileNumToKeep);
+        getLogger().debug("[canDeleteCmdFile][fileKeep]{}, {} - {} > {}({}*{})", fileKeep, totalLength, (fileStartOffset + fileSize), totalKeep, fileSize, totalKeep);
         if(!fileKeep){
             return false;
         }
@@ -767,6 +799,108 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     public void resetStateForContinue() {
         if(indexStore != null) {
             indexStore.resetParserState();
+        }
+    }
+
+    static class CoalescingOffsetNotifier {
+
+        private final OffsetNotifier offsetNotifier;
+        private final IntSupplier bytesThreshold;
+        private final IntSupplier timeMilliThreshold;
+        private static final Logger notifyLogger = LoggerFactory.getLogger(CoalescingOffsetNotifier.class);
+        private final ScheduledExecutorService scheduler;
+        private final boolean ownScheduler;
+
+        private long pendingBytes;
+        private long latestOffset = Long.MIN_VALUE;
+        private boolean closed;
+        private ScheduledFuture<?> scheduledFuture;
+
+        CoalescingOffsetNotifier(OffsetNotifier offsetNotifier, IntSupplier bytesThreshold, IntSupplier timeMilliThreshold,
+                                 ScheduledExecutorService scheduler) {
+            this.offsetNotifier = offsetNotifier;
+            this.bytesThreshold = bytesThreshold;
+            this.timeMilliThreshold = timeMilliThreshold;
+            if (scheduler != null) {
+                this.scheduler = scheduler;
+                this.ownScheduler = false;
+            } else {
+                this.scheduler = Executors.newSingleThreadScheduledExecutor(XpipeThreadFactory.create("Offset-Notifier-Coalescer"));
+                this.ownScheduler = true;
+            }
+        }
+
+        synchronized void onWritten(int wroteBytes, long offset) {
+            if (closed || wroteBytes <= 0) {
+                return;
+            }
+
+            latestOffset = Math.max(latestOffset, offset);
+            pendingBytes += wroteBytes;
+
+            if (shouldFlushNow()) {
+                notifyLogger.debug("[flush] {}", latestOffset);
+                flushNow();
+                if (null != scheduledFuture) {
+                    scheduledFuture.cancel(false);
+                    scheduledFuture = null;
+                }
+                return;
+            }
+
+            if (null == scheduledFuture) {
+                long delayMilli = Math.max(1, timeMilliThreshold.getAsInt());
+                scheduledFuture = scheduler.schedule(this::flushFromTimer, delayMilli, TimeUnit.MILLISECONDS);
+            }
+        }
+
+        synchronized void close() {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            flushNow();
+            if (ownScheduler) {
+                scheduler.shutdownNow();
+            }
+        }
+
+        synchronized void notifyNow(long offset) {
+            pendingBytes = 0;
+            latestOffset = offset;
+            offsetNotifier.offsetIncreased(offset);
+        }
+
+        private synchronized void flushFromTimer() {
+            if (closed) {
+                return;
+            }
+            notifyLogger.debug("[flushFromTimer] {}", latestOffset);
+            flushNow();
+            scheduledFuture = null;
+        }
+
+        private boolean shouldFlushNow() {
+            if (pendingBytes <= 0) {
+                return false;
+            }
+            int bytesLimit = Math.max(1, bytesThreshold.getAsInt());
+            return pendingBytes >= bytesLimit;
+        }
+
+        private void flushNow() {
+            if (pendingBytes <= 0 || latestOffset == Long.MIN_VALUE) {
+                return;
+            }
+
+            long offset = latestOffset;
+            pendingBytes = 0;
+
+            try {
+                offsetNotifier.offsetIncreased(offset);
+            } catch (Throwable th) {
+                notifyLogger.warn("[flushNow][offset notify fail] offset:{}", offset, th);
+            }
         }
     }
 

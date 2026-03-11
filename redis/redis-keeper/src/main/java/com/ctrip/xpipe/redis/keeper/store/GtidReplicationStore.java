@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author lishanglin
@@ -27,16 +28,28 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager) throws IOException {
+        this(baseDir, config, keeperRunid, keeperMonitor, redisOpParser, syncRateManager, null);
+    }
+
+    public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
+                                KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager,
+                                ScheduledExecutorService commandNotifyScheduler) throws IOException {
         super(null,baseDir, config, keeperRunid,
                 new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
-                keeperMonitor, syncRateManager, redisOpParser);
+                keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler);
     }
 
     public GtidReplicationStore(CKStore ckStore,File baseDir, KeeperConfig config,String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager) throws IOException {
+        this(ckStore, baseDir, config, keeperRunid, keeperMonitor, redisOpParser, syncRateManager, null);
+    }
+
+    public GtidReplicationStore(CKStore ckStore,File baseDir, KeeperConfig config,String keeperRunid,
+                                KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager,
+                                ScheduledExecutorService commandNotifyScheduler) throws IOException {
         super(ckStore,baseDir, config,keeperRunid,
                 new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
-                keeperMonitor, syncRateManager, redisOpParser);
+                keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler);
     }
 
     @Override
@@ -91,7 +104,12 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                 config::getReplicationStoreCommandFileKeepTimeSeconds,
                 config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
                 config::getReplicationStoreCommandFileNumToKeep,
-                config.getCommandReaderFlyingThreshold(), cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, filter, buildIndex);
+                config.getCommandReaderFlyingThreshold(),
+                config::getCommandOffsetNotifyBytesThreshold,
+                config::getCommandOffsetNotifyTimeMilliThreshold,
+                this::isCmdNotifyCoalescingEnabled,
+                commandNotifyScheduler,
+                cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, filter, buildIndex);
         cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 
         try {

@@ -105,4 +105,21 @@ public class DefaultKeeperConfigTest extends AbstractRedisKeeperTest{
 		KeeperConfig keeperConfig = new DefaultKeeperConfig();
 		keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb();
 	}
+
+	@Test
+	public void testCommandOffsetNotifyCoalescingConfig() {
+		String key = DefaultKeeperConfig.KEY_COMMAND_OFFSET_NOTIFY_COALESCING_ENABLED;
+		String oldValue = System.getProperty(key);
+		try {
+			System.setProperty(key, "false");
+			KeeperConfig keeperConfig = new DefaultKeeperConfig();
+			Assert.assertFalse(keeperConfig.isCommandOffsetNotifyCoalescingEnabled());
+		} finally {
+			if (oldValue == null) {
+				System.clearProperty(key);
+			} else {
+				System.setProperty(key, oldValue);
+			}
+		}
+	}
 }

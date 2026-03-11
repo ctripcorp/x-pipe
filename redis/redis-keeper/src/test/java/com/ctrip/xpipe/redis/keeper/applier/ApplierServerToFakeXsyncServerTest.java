@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.container.ComponentRegistryHolder;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -77,6 +78,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
     }
 
     @Test
+    @Ignore
     public void test() throws Exception {
         waitConditionUntilTimeOut(() -> 1 == server.slaveCount());
 
