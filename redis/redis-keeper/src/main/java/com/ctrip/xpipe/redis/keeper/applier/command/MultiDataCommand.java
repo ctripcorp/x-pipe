@@ -68,4 +68,8 @@ public class MultiDataCommand extends AbstractCommand<Boolean> implements RedisO
     public RedisOp redisOp() {
         return redisMultiKeyOp;
     }
+
+    public int getDbNumber(){
+        return this.dbNumber;
+    }
 }

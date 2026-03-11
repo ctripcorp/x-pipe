@@ -5,10 +5,8 @@ import com.ctrip.xpipe.client.redis.AsyncRedisClient;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.google.common.util.concurrent.FutureCallback;
-import credis.java.client.AsyncCacheProvider;
 import credis.java.client.async.applier.AsyncApplierCacheProvider;
 import credis.java.client.async.command.CRedisAsyncRequest;
-import credis.java.client.async.impl.AsyncCacheProviderImpl;
 import credis.java.client.async.qclient.CRedisSessionLocator;
 import credis.java.client.async.qclient.network.CRedisSessionChannel;
 import credis.java.client.config.ConfigFrozenAware;
@@ -16,20 +14,20 @@ import credis.java.client.lifecycle.LifecycleUtil;
 import credis.java.client.sync.RedisClient;
 import credis.java.client.sync.applier.ApplierCacheProvider;
 import credis.java.client.transaction.RedisTransactionClient;
+import credis.java.client.util.DefaultHashTagParser;
 import credis.java.client.util.HashStrategyFactory;
 import qunar.tc.qclient.redis.codec.Codec;
 import qunar.tc.qclient.redis.codec.SedisCodec;
+import qunar.tc.qclient.redis.command.CommandType;
+import qunar.tc.qclient.redis.command.EncodedCommand;
+import qunar.tc.qclient.redis.command.MultiResult;
+import qunar.tc.qclient.redis.command.RedisResult;
 import qunar.tc.qclient.redis.command.value.ValueResult;
-import qunar.tc.qclient.redis.exception.checked.RedisException;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * @author Slight
@@ -54,10 +52,13 @@ public class CRedisAsyncClient implements AsyncRedisClient {
 
     final HashStrategyFactory hashStrategyFactory;
 
+    final DefaultHashTagParser defaultHashTagParser;
+
     boolean isInMulti = false;
 
     // simple fix locator parallel
     private final Object locatorLock = new Object();
+
 
     public CRedisAsyncClient(String clusterName, String subenv, AsyncApplierCacheProvider asyncProvider, ApplierCacheProvider txnProvider, ExecutorService credisNotifyExecutor, ConfigFrozenAware configFrozenAware, HashStrategyFactory hashStrategyFactory) {
         this.clusterName = clusterName;
@@ -68,6 +69,7 @@ public class CRedisAsyncClient implements AsyncRedisClient {
         this.hashStrategyFactory = hashStrategyFactory;
         this.codec = new SedisCodec();
         this.credisNotifyThread = credisNotifyExecutor;
+        this.defaultHashTagParser = new DefaultHashTagParser();
     }
 
     @Override
@@ -172,6 +174,45 @@ public class CRedisAsyncClient implements AsyncRedisClient {
             }
         }, 5, TimeUnit.SECONDS, credisNotifyThread);
         return commandFuture;
+    }
+
+    @Override
+    public CommandFuture<Object> writeMulti(Object resource, int dbNumber, Object... rawArgs) {
+        CRedisSessionChannel channel = (CRedisSessionChannel) resource;
+        Queue<RedisResult<?>> multiQueue = new ArrayDeque<>();
+        MultiResult multiResult = new MultiResult(multiQueue,codec);
+        for (Object rawArg : rawArgs) {
+            GenericCommand genericCommand = new GenericCommand(codec);
+            Object[] args = (Object[]) rawArg;
+            for(Object arg:args) {
+                genericCommand.write(arg);
+            }
+            RedisResult<?> redisResult = new ValueResult<>();
+            redisResult.setCommand(genericCommand);
+            multiQueue.add(redisResult);
+        }
+
+        EncodedCommand command = new EncodedCommand(CommandType.EXEC, codec);
+
+        CRedisAsyncRequest<List<Object>> request = CRedisAsyncRequest.from(multiResult, dbNumber);
+        DefaultCommandFuture<Object> commandFuture = new DefaultCommandFuture<>();
+        channel.dispatch(request, command).addListener(new FutureCallback<>() {
+            @Override
+            public void onSuccess(@Nullable List<Object> result) {
+                commandFuture.setSuccess(result);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                commandFuture.setFailure(t);
+            }
+        }, 5, TimeUnit.SECONDS, credisNotifyThread);
+        return commandFuture;
+    }
+
+    @Override
+    public byte[] hashTag(byte[] key) {
+        return defaultHashTagParser.parseTag(key);
     }
 
     @Override

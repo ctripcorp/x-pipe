@@ -96,4 +96,8 @@ public class RedisOpTransactionAdapter implements RedisOp {
     public long estimatedSize() {
         return estimatedSize;
     }
+
+    public List<RedisOp> getTransactionOps() {
+        return transactionOps;
+    }
 }
