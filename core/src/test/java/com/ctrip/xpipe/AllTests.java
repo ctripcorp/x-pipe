@@ -96,6 +96,7 @@ import org.junit.runners.Suite.SuiteClasses;
         MdcUtilTest.class,
         GtidSetTest.class,
         EncryptUtilsTest.class,
+        ByteUtilTest.class
 })
 public class AllTests {
 

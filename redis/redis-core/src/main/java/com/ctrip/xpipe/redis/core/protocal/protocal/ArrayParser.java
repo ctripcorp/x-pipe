@@ -5,6 +5,7 @@ import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.payload.InOutPayloadFactory;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
+import com.ctrip.xpipe.utils.ByteUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
@@ -49,18 +50,18 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 		switch(arrayState){
 		
 			case READ_SIZE:
-				
-				String arrayNumString = readTilCRLFAsString(byteBuf);
-				if(arrayNumString == null){
+				byte[] sizeBytes = readTilCRLF(byteBuf);
+
+				if(sizeBytes == null){
 					return null;
 				}
-				
-				if(arrayNumString.charAt(0) == ASTERISK_BYTE){
-					arrayNumString = arrayNumString.substring(1);
+
+				if (sizeBytes[0] == ASTERISK_BYTE) {
+					arraySize = ByteUtil.parseInt(sizeBytes, 1, sizeBytes.length - 2, false);
+				} else {
+					arraySize = ByteUtil.parseInt(sizeBytes, 0, sizeBytes.length - 2, false);
 				}
-				arrayNumString = arrayNumString.trim();
-				
-				arraySize = Integer.valueOf(arrayNumString);
+
 				resultArray = new Object[arraySize];
 				arrayState = ARRAY_STATE.READ_CONTENT;
 				currentIndex = 0;

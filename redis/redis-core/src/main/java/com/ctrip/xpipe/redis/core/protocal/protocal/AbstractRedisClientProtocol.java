@@ -4,11 +4,12 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ByteProcessor;
 import org.slf4j.Logger;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 
 
 /**
@@ -24,7 +25,10 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 
 	protected final boolean logWrite;
 
-	private ByteArrayOutputStream baous = new ByteArrayOutputStream();
+	private static final int DEFAULT_LINE_BUFFER_SIZE = 1 << 6;
+
+	private byte[] lineBuffer = new byte[DEFAULT_LINE_BUFFER_SIZE];
+	private int lineBufferLen = 0;
 	private CRLF_STATE 			  crlfState = CRLF_STATE.CONTENT;
 	
 
@@ -73,46 +77,84 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 		switch(crlfState){
 			case CONTENT:
 			case CR:
-				ByteArrayOutputStream result = _readTilCRLF(byteBuf);
-				
-				if(result == null){
+				if(!_readTilCRLF(byteBuf)){
 					break;
 				}
 			case CRLF:
-				return baous.toByteArray();
-				
+				return consumeLineBuffer();
 		}
 		return null;
 	}
 
-	
-	private ByteArrayOutputStream _readTilCRLF(ByteBuf byteBuf) {
-		
-		int readable = byteBuf.readableBytes();
-		for(int i=0; i < readable ;i++){
-			
-			byte data = byteBuf.readByte();
-			baous.write(data);
-			switch(data){
-				case '\r':
-					crlfState = CRLF_STATE.CR;
-					break;
-				case '\n':
-					if(crlfState == CRLF_STATE.CR){
-						crlfState = CRLF_STATE.CRLF;
-						break;
-					}
-				default:
-					crlfState = CRLF_STATE.CONTENT;
-					break;
+	private byte[] consumeLineBuffer() {
+		byte[] line = Arrays.copyOf(lineBuffer, lineBufferLen);
+		lineBufferLen = 0;
+		crlfState = CRLF_STATE.CONTENT;
+		return line;
+	}
+
+	private boolean _readTilCRLF(ByteBuf byteBuf) {
+
+		while (byteBuf.isReadable()) {
+			int readerIndex = byteBuf.readerIndex();
+			int readable = byteBuf.readableBytes();
+			int lfIndex = byteBuf.forEachByte(readerIndex, readable, ByteProcessor.FIND_LF);
+
+			if (lfIndex < 0) {
+				appendFromByteBuf(byteBuf, readable);
+				updateStateAfterRead(readable);
+				return false;
 			}
-			
-			if(crlfState == CRLF_STATE.CRLF){
-				return baous;
+
+			int readLen = lfIndex - readerIndex + 1;
+			appendFromByteBuf(byteBuf, readLen);
+			updateStateAfterRead(readLen);
+			if (crlfState == CRLF_STATE.CRLF) {
+				return true;
 			}
 		}
-		return null;
-		
+		return false;
+	}
+
+	private void appendFromByteBuf(ByteBuf byteBuf, int len) {
+		if (len <= 0) {
+			return;
+		}
+		ensureLineBufferCapacity(lineBufferLen + len);
+		byteBuf.readBytes(lineBuffer, lineBufferLen, len);
+		lineBufferLen += len;
+	}
+
+	private void ensureLineBufferCapacity(int needLength) {
+		if (needLength <= lineBuffer.length) {
+			return;
+		}
+		int newSize = lineBuffer.length;
+		while (newSize < needLength) {
+			newSize <<= 1;
+		}
+		lineBuffer = Arrays.copyOf(lineBuffer, newSize);
+	}
+
+	private void updateStateAfterRead(int readLen) {
+		if (readLen <= 0) {
+			return;
+		}
+		int lastIndex = lineBufferLen - 1;
+		byte last = lineBuffer[lastIndex];
+		if (last == '\r') {
+			crlfState = CRLF_STATE.CR;
+			return;
+		}
+		if (last == '\n') {
+			if (lastIndex > 0 && lineBuffer[lastIndex - 1] == '\r') {
+				crlfState = CRLF_STATE.CRLF;
+				return;
+			}
+			crlfState = CRLF_STATE.CONTENT;
+			return;
+		}
+		crlfState = CRLF_STATE.CONTENT;
 	}
 
 	protected  String readTilCRLFAsString(ByteBuf byteBuf, Charset charset){
@@ -183,7 +225,7 @@ public abstract class AbstractRedisClientProtocol<T> extends AbstractRedisProtoc
 
 	@Override
 	public void reset() {
-		baous = new ByteArrayOutputStream();
+		lineBufferLen = 0;
 		crlfState = CRLF_STATE.CONTENT;
 	}
 }

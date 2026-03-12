@@ -82,6 +82,29 @@ public class ByteArrayOutputStreamPayload extends AbstractInOutPayload{
 		System.arraycopy(data, 0, dst, 0, currentPos);
 		return dst;
 	}
+
+	/**
+	 * Case-insensitive ASCII compare, where expected bytes must be upper-case.
+	 */
+	public boolean equalsIgnoreCaseAsciiExpectedUppercase(byte[] expectedUpperCaseAscii) {
+		if (expectedUpperCaseAscii == null || data == null) {
+			return false;
+		}
+		int currentPos = pos.get();
+		if (currentPos != expectedUpperCaseAscii.length) {
+			return false;
+		}
+		for (int i = 0; i < currentPos; i++) {
+			byte value = data[i];
+			if (value >= 'a' && value <= 'z') {
+				value = (byte) (value - ('a' - 'A'));
+			}
+			if (value != expectedUpperCaseAscii[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
 	
 	@Override
 	public String toString() {

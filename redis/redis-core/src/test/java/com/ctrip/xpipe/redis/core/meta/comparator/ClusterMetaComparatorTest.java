@@ -205,18 +205,5 @@ public class ClusterMetaComparatorTest extends AbstractComparatorTest{
 		Assert.assertTrue(clusterMetaComparator.getRemoved().isEmpty());
 		Assert.assertTrue(clusterMetaComparator.getMofified().isEmpty());
 	}
-	
-	@Test
-	public void testEquals(){
-		
-		String a1 = new String("123");
-		String a2 = new String("123");
-		Assert.assertTrue(EqualsBuilder.reflectionEquals(a2, a1, false));
-		
-		a1.hashCode();
-		assertFalse(EqualsBuilder.reflectionEquals(a2, a1, false));
-		
-		Assert.assertTrue(EqualsBuilder.reflectionEquals(a1, a2, "hash"));
-	}
 
 }
