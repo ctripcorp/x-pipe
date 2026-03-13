@@ -61,4 +61,9 @@ public interface ProxyConfig extends TLSConfig {
      */
     long getCrossRegionTrafficControlLimit();
 
+    /**
+     * DRC does not allow the proxy to actively close the channel during backpressure.
+     * @return true if allowing the proxy to actively close the connection, false otherwise.
+     */
+    boolean allowCloseChannel();
 }
