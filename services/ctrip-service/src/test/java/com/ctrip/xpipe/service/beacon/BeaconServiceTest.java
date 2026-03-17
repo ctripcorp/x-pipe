@@ -162,7 +162,9 @@ public class BeaconServiceTest extends AbstractServiceTest {
     @Test
     public void testGetClusterExtra() throws Exception {
         Map<String, String> extra = mockExtra();
-        webServer.enqueue(new MockResponse().setBody(Codec.DEFAULT.encode(new BeaconResp<>(extra))));
+        webServer.enqueue(new MockResponse()
+                .setBody(Codec.DEFAULT.encode(new BeaconResp<>(extra)))
+                .setHeader("Content-Type", "application/json"));
         Map<String, String> resp = beaconService.getBeaconClusterExtra(system, cluster);
         Assert.assertEquals(extra, resp);
     }
