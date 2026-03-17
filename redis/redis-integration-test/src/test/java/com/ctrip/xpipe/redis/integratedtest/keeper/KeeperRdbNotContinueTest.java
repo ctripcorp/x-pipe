@@ -25,6 +25,7 @@ public class KeeperRdbNotContinueTest extends AbstractKeeperIntegratedMultiDc {
     protected KeeperConfig getKeeperConfig() {
         TestKeeperConfig keeperConfig = new TestKeeperConfig();
         keeperConfig.setReplicationStoreCommandFileSize(256);
+        keeperConfig.setMinTimeMilliToGcAfterCreate(0);
         keeperConfig.setReplicationStoreMaxCommandsToTransferBeforeCreateRdb(Integer.MAX_VALUE);
         keeperConfig.setReplicationStoreGcIntervalSeconds(1000000);
         return keeperConfig;
@@ -43,16 +44,35 @@ public class KeeperRdbNotContinueTest extends AbstractKeeperIntegratedMultiDc {
         new SlaveOfCommand(slaveClientPool, scheduled).execute().get();
         new SlaveOfCommand(slaveClientPool, backupDcKeeper.getIp(), backupDcKeeper.getPort(), scheduled).execute().get();
 
-        waitConditionUntilTimeOut(() -> {
-            try {
-                String info = new InfoCommand(slaveClientPool, InfoCommand.INFO_TYPE.REPLICATION, scheduled).execute().get();
-                InfoResultExtractor extractor = new InfoResultExtractor(info);
-                return extractor.extract("master_link_status").equalsIgnoreCase("up");
-            } catch (Exception e) {
-                return false;
-            }
-        }, 10000, 1000);
+        waitSlaveOnline(backupDcSlave.getIp(), backupDcSlave.getPort());
+        sendMessageToMasterAndTestSlaveRedis(128);
+    }
 
+    @Test
+    public void testXSyncRdbNotContinue() throws Exception {
+        setRedisToGtidEnabled(getRedisMaster().getIp(), getRedisMaster().getPort());
+        KeeperMeta backupDcKeeper = getKeeperActive("oy");
+        RedisKeeperServer backupDcKeeperServer = getRedisKeeperServerActive("oy");
+        RedisMeta backupDcSlave = getRedisSlaves("oy").get(0);
+
+        sendMessageToMasterAndTestSlaveRedis(128);
+        backupDcKeeperServer.getReplicationStore().gc();
+        String slaveReplMode = infoRedis(backupDcSlave.getIp(), backupDcSlave.getPort(), InfoCommand.INFO_TYPE.GTID, "gtid_repl_mode");
+        Assert.assertTrue("xsync".equalsIgnoreCase(slaveReplMode));
+
+        SimpleObjectPool<NettyClient> slaveClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(backupDcSlave.getIp(), backupDcSlave.getPort()));
+        new SlaveOfCommand(slaveClientPool, scheduled).execute().get();
+        new SlaveOfCommand(slaveClientPool, backupDcKeeper.getIp(), backupDcKeeper.getPort(), scheduled).execute().get();
+
+        // first time freshFull for repl change, do it again
+        waitSlaveOnline(backupDcSlave.getIp(), backupDcSlave.getPort());
+        sendMessageToMasterAndTestSlaveRedis(128);
+
+        // do freshFull for not continue
+        backupDcKeeperServer.getReplicationStore().gc();
+        new SlaveOfCommand(slaveClientPool, scheduled).execute().get();
+        new SlaveOfCommand(slaveClientPool, backupDcKeeper.getIp(), backupDcKeeper.getPort(), scheduled).execute().get();
+        waitSlaveOnline(backupDcSlave.getIp(), backupDcSlave.getPort());
         sendMessageToMasterAndTestSlaveRedis(128);
     }
 

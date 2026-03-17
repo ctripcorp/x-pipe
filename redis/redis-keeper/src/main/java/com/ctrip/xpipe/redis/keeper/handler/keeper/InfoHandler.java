@@ -215,6 +215,7 @@ public class InfoHandler extends AbstractCommandHandler {
 
 			MasterStats masterStats = keeperServer.getKeeperMonitor().getMasterStats();
 			sb.append("master:" + RedisProtocol.CRLF);
+			sb.append("master_type:" + masterStats.currentMasterType() + RedisProtocol.CRLF);
 			sb.append("commands_instantaneous_ops_per_sec:" + masterStats.getCommandBPS() + RedisProtocol.CRLF);
 			sb.append("commands_total_length:" + masterStats.getCommandTotalLength() + RedisProtocol.CRLF);
 			sb.append("last_master_type:" + masterStats.lastMasterType() + RedisProtocol.CRLF);

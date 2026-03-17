@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
@@ -36,7 +37,8 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 	BooleanSupplier recordWrongStreamConfig;
 
 	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser,  GtidCmdFilter gtidCmdFilter) throws IOException {
-		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter);
+		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD,
+				() -> 4 * 1024, () -> 1, () -> true, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter);
 	}
 
 	public DefaultCommandStore(CKStore ckStore, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
@@ -45,8 +47,39 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 							   CommandReaderWriterFactory cmdReaderWriterFactory,
 							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex
 	) throws IOException {
+		this(ckStore, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified,
+				fileNumToKeep, commandReaderFlyingThreshold, () -> 4 * 1024, () -> 1, () -> true,
+				null,
+				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex);
+	}
+
+	public DefaultCommandStore(CKStore ckStore, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
+							   long commandReaderFlyingThreshold,
+							   IntSupplier commandOffsetNotifyBytesThreshold, IntSupplier commandOffsetNotifyTimeMilliThreshold,
+							   BooleanSupplier commandOffsetNotifyCoalescingEnabled,
+							   CommandReaderWriterFactory cmdReaderWriterFactory,
+							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex
+	) throws IOException {
+		this(ckStore, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified,
+				fileNumToKeep, commandReaderFlyingThreshold, commandOffsetNotifyBytesThreshold, commandOffsetNotifyTimeMilliThreshold,
+				commandOffsetNotifyCoalescingEnabled,
+				null, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex);
+	}
+
+	public DefaultCommandStore(CKStore ckStore, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
+							   long commandReaderFlyingThreshold,
+							   IntSupplier commandOffsetNotifyBytesThreshold, IntSupplier commandOffsetNotifyTimeMilliThreshold,
+							   BooleanSupplier commandOffsetNotifyCoalescingEnabled,
+							   ScheduledExecutorService commandOffsetNotifyScheduler,
+							   CommandReaderWriterFactory cmdReaderWriterFactory,
+							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex
+	) throws IOException {
 		super(ckStore,file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex);
+				commandReaderFlyingThreshold, commandOffsetNotifyBytesThreshold, commandOffsetNotifyTimeMilliThreshold,
+				commandOffsetNotifyCoalescingEnabled, commandOffsetNotifyScheduler,
+				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex);
 		this.recordWrongStreamConfig = recordWrongStreamConfig;
 	}
 
@@ -55,8 +88,36 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 							   long commandReaderFlyingThreshold,
 							   CommandReaderWriterFactory cmdReaderWriterFactory,
 							   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter) throws IOException {
+		this(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+				commandReaderFlyingThreshold, () -> 4 * 1024, () -> 1, () -> true, null,
+				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter);
+	}
+
+	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
+							   long commandReaderFlyingThreshold,
+							   IntSupplier commandOffsetNotifyBytesThreshold, IntSupplier commandOffsetNotifyTimeMilliThreshold,
+							   BooleanSupplier commandOffsetNotifyCoalescingEnabled,
+							   CommandReaderWriterFactory cmdReaderWriterFactory,
+							   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter) throws IOException {
+		this(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+				commandReaderFlyingThreshold, commandOffsetNotifyBytesThreshold, commandOffsetNotifyTimeMilliThreshold,
+				commandOffsetNotifyCoalescingEnabled, null,
+				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter);
+	}
+
+	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
+							   long commandReaderFlyingThreshold,
+							   IntSupplier commandOffsetNotifyBytesThreshold, IntSupplier commandOffsetNotifyTimeMilliThreshold,
+							   BooleanSupplier commandOffsetNotifyCoalescingEnabled,
+							   ScheduledExecutorService commandOffsetNotifyScheduler,
+							   CommandReaderWriterFactory cmdReaderWriterFactory,
+							   KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter) throws IOException {
 		super(null,file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-				commandReaderFlyingThreshold, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, true);
+				commandReaderFlyingThreshold, commandOffsetNotifyBytesThreshold, commandOffsetNotifyTimeMilliThreshold,
+				commandOffsetNotifyCoalescingEnabled, commandOffsetNotifyScheduler,
+				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, true);
 	}
 
 	private CommandReader<ReferenceFileRegion> beginRead(ReplicationProgress<Long> replicationProgress, ReplDelayConfig replDelayConfig) throws IOException {

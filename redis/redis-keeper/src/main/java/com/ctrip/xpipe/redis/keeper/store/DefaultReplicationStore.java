@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.SERVER_TYPE;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.replication.KeeperReplicationStoreRuntimeException;
@@ -31,6 +32,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -79,9 +81,18 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected CKStore ckStore;
 
+	protected ScheduledExecutorService commandNotifyScheduler;
+
 	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
 								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp) throws IOException {
+		this(ckStore, baseDir, config, keeperRunid, cmdReaderWriterFactory, keeperMonitor, syncRateManager, redisOp, null);
+	}
+
+	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
+								   CommandReaderWriterFactory cmdReaderWriterFactory,
+								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
+								   ScheduledExecutorService commandNotifyScheduler) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
 		this.commandsRetainTimeoutMilli = config.getReplicationStoreCommandFileRetainTimeoutMilli();
@@ -91,6 +102,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		this.syncRateManager = syncRateManager;
 		this.redisOpParser = redisOp;
 		this.ckStore = ckStore;
+		this.commandNotifyScheduler = commandNotifyScheduler;
 
 		this.metaStore = new DefaultMetaStore(baseDir, keeperRunid);
 
@@ -121,7 +133,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	protected DefaultReplicationStore(File baseDir, KeeperConfig config,String keeperRunid,
 									  KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp
 	) throws IOException {
-		this(null,baseDir, config,keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp);
+		this(null,baseDir, config,keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp, null);
 	}
 
 
@@ -323,10 +335,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		return createRdbStore(new File(baseDir, rdbFile), replId, rdbOffset, eofType);
 	}
 
-	@Override
-	public void checkReplId(String expectReplId) {
-	}
-
 	public void confirmRdb(RdbStore rdbStore) throws IOException {
 		makeSureOpen();
 
@@ -523,6 +531,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
 				config::getReplicationStoreCommandFileNumToKeep,
 				config.getCommandReaderFlyingThreshold(),
+				config::getCommandOffsetNotifyBytesThreshold,
+				config::getCommandOffsetNotifyTimeMilliThreshold,
+				this::isCmdNotifyCoalescingEnabled,
+				commandNotifyScheduler,
 				cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, gtidCmdFilter,true
 		);
 		cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
@@ -535,6 +547,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 
 		return cmdStore;
+	}
+
+	protected boolean isCmdNotifyCoalescingEnabled() {
+		return keeperMonitor.getMasterStats().currentMasterType().equals(SERVER_TYPE.REDIS)
+				&& config.isCommandOffsetNotifyCoalescingEnabled();
 	}
 
 	//TODO remove rdbOffset

@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 import io.netty.buffer.ByteBuf;
@@ -145,8 +146,13 @@ public class GtidxHandler extends AbstractCommandHandler {
             gtidSet.compensate(uuid,startGno,endGno);
             if(isExecuted(args[1])) {
                 ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+                Pair<GtidSet, GtidSet> currentGtidSet = replicationStore.getGtidSet();
+                GtidSet serverGtidSet = currentGtidSet.getKey().union(currentGtidSet.getValue());
+                GtidSet increased = gtidSet.subtract(serverGtidSet);
+                if (increased.isEmpty()) return new LongParser(0).format();
+
                 MetaStore metaStore = replicationStore.getMetaStore();
-                long addCount = metaStore.increaseExecuted(gtidSet);
+                long addCount = metaStore.increaseExecuted(increased);
                 return new LongParser(addCount).format();
             }
             return new CommandBulkStringParser("ERR only lost supported").format();

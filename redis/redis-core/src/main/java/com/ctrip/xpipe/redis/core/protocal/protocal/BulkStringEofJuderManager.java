@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringEoFJudger.BulkStringEofMarkJudger;
 import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringEoFJudger.BulkStringLengthEofJudger;
+import com.ctrip.xpipe.utils.ByteUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +31,16 @@ public class BulkStringEofJuderManager {
 			System.arraycopy(data, start + RedisClientProtocol.EOF.length, mark, 0, BulkStringEofMarkJudger.MARK_LENGTH);
 			return new BulkStringEofMarkJudger(mark);
 		}
-		
-		logger.debug("[create]len:{}, {}, {}", data.length, new String(data), start);
-		String lengthStr = new String(data, start, data.length - start).trim();
-		
-		long length = Long.parseLong(lengthStr);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("[create]len:{}, {}, {}", data.length, new String(data), start);
+		}
+		int end = data.length;
+		// LfReader payload may end with '\r' only (no '\n'); trim CR/LF robustly.
+		while (end > start && (data[end - 1] == '\r' || data[end - 1] == '\n')) {
+			end--;
+		}
+		long length = ByteUtil.parseLong(data, start, end, false);
 		return new BulkStringLengthEofJudger(length);
 	}
 

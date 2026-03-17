@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class StreamCommandReader implements StreamCommandLister {
@@ -30,10 +29,6 @@ public class StreamCommandReader implements StreamCommandLister {
     private static final byte[] MULTI_BYTES = new byte[]{'M','U','L','T','I'};
     private static final byte[] GTID_BYTES = new byte[]{'G','T','I','D'};
     private static final byte[] EXEC_BYTES = new byte[]{'E','X','E','C'};
-
-    private static final byte[] MULTI_LOWWER_BYTES = new byte[]{'m','u','l','t','i'};
-    private static final byte[] GTID_LOWWER_BYTES = new byte[]{'g','t','i','d'};
-    private static final byte[] EXEC_LOWWER_BYTES = new byte[]{'e','x','e','c'};
 
     private static final String EVENT_TYPE = "STREAM";
     private static final String EVENT_MULTI_DUP = "MULTI_DUP";
@@ -61,12 +56,7 @@ public class StreamCommandReader implements StreamCommandLister {
         if(payload == null || payload.length <= 2) {
             return null;
         }
-        if(StringUtil.trimEquals("GTID", payload[0].toString())) {
-            return payload[1].toString();
-        } else {
-            return null;
-        }
-
+        return payload[1].toString();
     }
 
     public void resetParser() {
@@ -115,13 +105,12 @@ public class StreamCommandReader implements StreamCommandLister {
     public void onCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
         if(payload == null) return;
 
-        ByteArrayOutputStreamPayload byteArrayOutputStreamPayload0 = (ByteArrayOutputStreamPayload) payload[0];
-        byte[] bs0 = byteArrayOutputStreamPayload0.getBytes();
+        ByteArrayOutputStreamPayload commandPayload = (ByteArrayOutputStreamPayload) payload[0];
 
         // Process by priority: MULTI > GTID > regular commands
-        if (isMultiCommand(bs0)) {
+        if (isMultiCommand(commandPayload)) {
             handleMultiCommand(payload, commandBuf);
-        } else if (isGtidCommand(bs0)) {
+        } else if (isGtidCommand(commandPayload)) {
             String gtid = readGtid(payload);
             handleGtidCommand(gtid, payload, commandBuf);
         } else {
@@ -154,8 +143,7 @@ public class StreamCommandReader implements StreamCommandLister {
 
         // Check if it is an EXEC command
         ByteArrayOutputStreamPayload execPayload = (ByteArrayOutputStreamPayload) payload[GTID_PAYLOADS_COMMAND_OFFSET];
-        byte[] execBytes = execPayload.getBytes();
-        boolean isExec = isExecCommand(execBytes);
+        boolean isExec = isExecCommand(execPayload);
 
         if (isExec && transactionContext.isActive()) {
             // Transaction commit: GTID + EXEC
@@ -188,19 +176,16 @@ public class StreamCommandReader implements StreamCommandLister {
         }
     }
 
-    private boolean isMultiCommand(byte[] command) {
-        return Arrays.equals(MULTI_BYTES, command) ||
-                Arrays.equals(MULTI_LOWWER_BYTES, command);
+    private boolean isMultiCommand(ByteArrayOutputStreamPayload commandPayload) {
+        return commandPayload != null && commandPayload.equalsIgnoreCaseAsciiExpectedUppercase(MULTI_BYTES);
     }
 
-    private boolean isGtidCommand(byte[] command) {
-        return Arrays.equals(GTID_BYTES, command) ||
-                Arrays.equals(GTID_LOWWER_BYTES, command);
+    private boolean isGtidCommand(ByteArrayOutputStreamPayload commandPayload) {
+        return commandPayload != null && commandPayload.equalsIgnoreCaseAsciiExpectedUppercase(GTID_BYTES);
     }
 
-    private boolean isExecCommand(byte[] command) {
-        return Arrays.equals(EXEC_BYTES, command) ||
-                Arrays.equals(EXEC_LOWWER_BYTES, command);
+    private boolean isExecCommand(ByteArrayOutputStreamPayload commandPayload) {
+        return commandPayload != null && commandPayload.equalsIgnoreCaseAsciiExpectedUppercase(EXEC_BYTES);
     }
 
     private void commitTransaction(String gtid, Object[] payload, ByteBuf execCommandBuf) throws IOException {

@@ -63,17 +63,18 @@ public class GapAllowedRdbonlyRedisMasterReplication extends RdbonlyRedisMasterR
 				case REPLSTAGE_NOT_MATCH:
 				case REPLOFF_OUT_RANGE:
 				case LACK_BACKLOG:
+				case GTID_SET_NOT_MATCH:
 					if (state.equals(REPL_STATE.NORMAL_SYNC)) {
 						state = REPL_STATE.FAIL_FOR_NOT_CONTINUE;
 						try {
-							logger.info("[retryOnceForRdbNotContinue][resetRdbStore]{},{}", result, dumpedRdbStore);
+							logger.info("[doRdbTypeConfirm][retryOnceForRdbNotContinue][resetRdbStore]{},{}", result, dumpedRdbStore);
 							currentPsync.get().future().setFailure(new KeeperTolerantClosePsyncException(
 									new GapAllowedSyncRdbNotContinuousRuntimeException(result.toString())));
 							disconnectWithMaster();
 							resetReplicationStore();
 							getRdbDumper().waitRetry();
 						} catch (Exception e) {
-							logger.info("[doOnFullSync][retryForNotContinue] fail", e);
+							logger.info("[doRdbTypeConfirm][retryForNotContinue] fail", e);
 							dumpFail(new GapAllowedSyncRdbNotContinuousRuntimeException(result.toString()));
 						}
 					} else {
@@ -96,7 +97,6 @@ public class GapAllowedRdbonlyRedisMasterReplication extends RdbonlyRedisMasterR
 					break;
 				case REPLID_NOT_MATCH:
 				case MASTER_UUID_NOT_MATCH:
-				case GTID_SET_NOT_MATCH:
 				default:
 					dumpFail(new IllegalStateException("checkReplIdAndUpdateRdbGapAllowed fail:" + result));
 					break;

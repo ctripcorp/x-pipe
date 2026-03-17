@@ -75,6 +75,11 @@ public class DefaultMasterStats implements MasterStats {
     }
 
     @Override
+    public SERVER_TYPE currentMasterType() {
+        return currentMasterType == null ? SERVER_TYPE.UNKNOWN : currentMasterType;
+    }
+
+    @Override
     public long getCommandBPS() {
 
         long durationMilli = getDurationMilli();
