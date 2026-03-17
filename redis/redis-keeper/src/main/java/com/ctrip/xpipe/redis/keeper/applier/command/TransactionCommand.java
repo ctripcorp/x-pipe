@@ -16,7 +16,7 @@ public class TransactionCommand extends AbstractCommand<Boolean> implements Redi
 
     private RedisOpCommand<?> multiCommand;
 
-    private List<RedisOpCommand<?>> transactionCommands;
+    protected List<RedisOpCommand<?>> transactionCommands;
 
     private RedisOpCommand<?> execCommand;
 

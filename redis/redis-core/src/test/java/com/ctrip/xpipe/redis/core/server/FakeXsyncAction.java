@@ -97,7 +97,7 @@ public class FakeXsyncAction extends AbstractIoAction implements SocketAware {
 
         byte[] data = fakeXsyncServer.genRdbData();
         ous.write(("$" +  data.length + "\r\n").getBytes());
-        ous.write(fakeXsyncServer.genRdbData());
+        ous.write(data);
         ous.flush();
 
         writeCommands(ous);
