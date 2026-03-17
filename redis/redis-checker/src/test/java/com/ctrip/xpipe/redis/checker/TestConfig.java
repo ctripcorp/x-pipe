@@ -325,4 +325,8 @@ public class TestConfig implements CheckerConfig, AlertConfig {
         return true;
     }
 
+    @Override
+    public boolean checkBeaconLastModifyTime() {
+        return true;
+    }
 }

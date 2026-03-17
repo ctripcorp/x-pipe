@@ -116,4 +116,6 @@ public interface CheckerConfig {
 
     boolean getShouldDoAfterNettyClientConnected();
 
+    boolean checkBeaconLastModifyTime();
+
 }

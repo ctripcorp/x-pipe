@@ -423,7 +423,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         }
 
         if (metaCache.isDcClusterMigratable(clusterName, dcName)) {
-            monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
+            monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId(), cluster.getClusterLastModifiedTime());
         }
     }
 

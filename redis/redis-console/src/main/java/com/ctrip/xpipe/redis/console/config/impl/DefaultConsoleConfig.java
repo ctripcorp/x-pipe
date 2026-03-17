@@ -633,6 +633,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public boolean checkBeaconLastModifyTime() {
+        return commonConfigBean.getCheckBeaconLastModify();
+    }
+
+    @Override
     public long getCheckIsolateInterval() {
         return consoleConfigBean.getIsolateCheckIntervalMilli();
     }

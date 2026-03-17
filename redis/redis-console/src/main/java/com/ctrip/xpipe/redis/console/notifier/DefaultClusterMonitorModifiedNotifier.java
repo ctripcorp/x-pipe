@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
+import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
@@ -19,6 +20,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -81,7 +83,7 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
     }
 
     @Override
-    public void notifyClusterUpdate(final String clusterName, long orgId) {
+    public void notifyClusterUpdate(final String clusterName, long orgId, String lastModifyTime) {
         try {
             if (!shouldClusterNotify(clusterName)) return;
 
@@ -100,7 +102,8 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
                 @Override
                 protected void doExecute() {
                     monitorService.registerCluster(BeaconSystem.getDefault().getSystemName(), clusterName,
-                            beaconMetaService.buildCurrentBeaconGroups(clusterName));
+                            beaconMetaService.buildCurrentBeaconGroups(clusterName),
+                            Collections.singletonMap(BeaconManager.EXTRA_LAST_MODIFY_TIME, lastModifyTime));
                     future().setSuccess();
                 }
 

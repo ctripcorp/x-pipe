@@ -14,12 +14,14 @@ public class MonitorClusterMeta {
 
     private Map<String, String> extra;
 
-    public MonitorClusterMeta() {
-        this.extra = Collections.emptyMap();
-    }
+    public MonitorClusterMeta() {}
 
     public MonitorClusterMeta(Set<MonitorGroupMeta> nodeGroups) {
-        this();
+        this(nodeGroups, new HashMap<>());
+    }
+
+    public MonitorClusterMeta(Set<MonitorGroupMeta> nodeGroups, Map<String, String> extra) {
+        this.extra = extra;
         this.nodeGroups = nodeGroups;
     }
 

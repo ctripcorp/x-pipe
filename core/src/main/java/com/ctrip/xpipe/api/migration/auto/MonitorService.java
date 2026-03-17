@@ -26,13 +26,15 @@ public interface MonitorService {
 
     Set<String> fetchAllClusters(String system);
 
-    void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups);
+    void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups, Map<String, String> extraData);
 
-    void updateCluster(String system, String clusterName, Set<MonitorGroupMeta> groups);
+    void updateCluster(String system, String clusterName, Set<MonitorGroupMeta> groups, Map<String, String> extraData);
 
     void unregisterCluster(String system, String clusterName);
 
     int getBeaconClusterHash(String system, String clusterName);
+
+    Map<String, String> getBeaconClusterExtra(String system, String clusterName);
 
     Map<String,Set<String>> getAllClusterWithDc(String system);
 

@@ -13,8 +13,10 @@ import com.ctrip.xpipe.redis.console.proxy.impl.DefaultTunnelInfo;
 import com.ctrip.xpipe.redis.console.proxy.impl.DefaultProxyChain;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
+import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
 import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -327,15 +329,18 @@ public class ClusterServiceImplTest extends AbstractServiceImplTest{
     public void testUpdateActiveDcId(){
 
         ClusterTbl clusterTbl = clusterService.find(clusterName);
+        String modifyTime = DataModifiedTimeGenerator.generateModifiedTime();
 
-        long oldActiveDcId = clusterTbl.getActivedcId();
         long newActiveDcId = clusterTbl.getActivedcId() + 1;
         clusterService.updateActivedcId(clusterTbl.getId(), newActiveDcId);
 
         ClusterTbl newCluster = clusterService.find(clusterName);
 
         Assert.assertEquals(newActiveDcId, newCluster.getActivedcId());
-        newCluster.setActivedcId(oldActiveDcId);
+        Assert.assertTrue(newCluster.getClusterLastModifiedTime().compareTo(modifyTime) >= 0);
+
+        clusterTbl.setClusterLastModifiedTime(newCluster.getClusterLastModifiedTime());
+        clusterTbl.setActivedcId(newActiveDcId);
         Assert.assertEquals(clusterTbl.toString(), newCluster.toString());
     }
 

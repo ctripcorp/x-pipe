@@ -182,6 +182,7 @@
 				<member name="cluster-org-id"/>
 				<member name="cluster-admin-emails"/>
 				<member name="cluster-designated-route-ids"/>
+				<member name="cluster-last-modified-time" />
 			</readset>
 			<readset name="FULL_WITH_MIGRATION_EVENT">
                 <readset-ref name="FULL"/>
@@ -414,7 +415,7 @@
 				<statement>
 					<![CDATA[
 					UPDATE <TABLE/>
-					SET <FIELD name='activedc-id'/> = ${activedc-id}
+					SET <FIELD name='activedc-id'/> = ${activedc-id}, <FIELD name='cluster-last-modified-time'/> = ${cluster-last-modified-time}
 					WHERE <FIELD name='id'/> = ${id}
 					AND <FIELD name='deleted'/> = 0
 					]]>

@@ -40,7 +40,8 @@ public class BeaconConsistencyCheckAction extends AbstractLeaderAwareHealthCheck
         ClusterInstanceInfo info = instance.getCheckInfo();
         String clusterId = info.getClusterId();
         int orgId = info.getOrgId();
-        checkConsistency(clusterId, info.getClusterType(), orgId);
+        String lastModifyTime = info.getLastModifyTime();
+        checkConsistency(clusterId, info.getClusterType(), orgId, lastModifyTime);
     }
 
     @Override
@@ -53,36 +54,41 @@ public class BeaconConsistencyCheckAction extends AbstractLeaderAwareHealthCheck
         return getActionInstance().getHealthCheckConfig().clusterCheckIntervalMilli();
     }
 
-    private void checkConsistency(String clusterId, ClusterType clusterType, int orgId) {
+    private void checkConsistency(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime) {
         BeaconCheckStatus status;
         try {
-            status = beaconManager.checkClusterHash(clusterId, clusterType, orgId);
+            status = beaconManager.checkClusterHash(clusterId, clusterType, orgId, lastModifyTime);
         } catch (Throwable t) {
             // cluster not found in beacon
             status = BeaconCheckStatus.ERROR;
-            logger.error("[checkConsistency]{}:{}:{}", clusterType, orgId, t.getMessage());
+            logger.error("[checkConsistency][{}:{}:{}][fail] {}", clusterType, orgId, lastModifyTime, t.getMessage());
         }
-        handleCheckResult(status, clusterId, clusterType, orgId);
+        handleCheckResult(status, clusterId, clusterType, orgId, lastModifyTime);
     }
 
-    private void handleCheckResult(BeaconCheckStatus status, String clusterId, ClusterType clusterType, int orgId) {
+    private void handleCheckResult(BeaconCheckStatus status, String clusterId, ClusterType clusterType, int orgId, String lastModifyTime) {
         try {
-            if(status == BeaconCheckStatus.CONSISTENCY) {
-                long currentTime = System.currentTimeMillis();
-                if(currentTime < lastSendTime) {
-                    lastSendTime = currentTime;
-                }
-                if(currentTime - lastSendTime <= getBaseCheckInterval()) {
-                    // avoid send many point to hickwall
-                    return;
-                }
+            boolean sendMetric;
+            long currentTime = System.currentTimeMillis();
+            if(currentTime < lastSendTime) {
                 lastSendTime = currentTime;
-            } else {
-                beaconManager.registerCluster(clusterId, clusterType, orgId);
             }
-            sendMetricData(clusterId, status);
+            if(status == BeaconCheckStatus.CONSISTENCY) {
+                sendMetric = currentTime - lastSendTime > getBaseCheckInterval();
+            } else if (status == BeaconCheckStatus.INCONSISTENCY_IGNORE) {
+                logger.info("[handleCheckResult][{}] inconsistency but ignore", clusterId);
+                sendMetric = true;
+            } else {
+                beaconManager.registerCluster(clusterId, clusterType, orgId, lastModifyTime);
+                sendMetric = true;
+            }
+
+            if (sendMetric) {
+                lastSendTime = currentTime;
+                sendMetricData(clusterId, status);
+            }
         } catch (Throwable t) {
-            logger.error("[checkPost]{}:{}:{}", clusterType, orgId, t.getMessage());
+            logger.error("[handleCheckResult]{}:{}:{}", clusterType, orgId, t.getMessage());
         }
     }
 

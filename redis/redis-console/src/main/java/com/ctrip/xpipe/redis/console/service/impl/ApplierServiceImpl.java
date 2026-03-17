@@ -359,7 +359,7 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
         }
 
         if (metaCache.isDcClusterMigratable(clusterName, dcName)) {
-            monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId());
+            monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId(), cluster.getClusterLastModifiedTime());
         }
     }
 

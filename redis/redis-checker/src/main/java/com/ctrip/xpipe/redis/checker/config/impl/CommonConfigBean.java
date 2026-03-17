@@ -57,6 +57,8 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public static final String KEY_KEEPERCONTAINER_DISK_INFO_COLLECT_INTERVAL_MILLS = "keeper.disk.info.collect.interval";
 
+    public static final String KEY_CHECK_BEACON_LAST_MODIFY = "beacon.check.modify.time";
+
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
     public CommonConfigBean() {
@@ -151,6 +153,10 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public int getNoAlarmMinutesForClusterUpdate() {
         return getIntProperty(KEY_NO_ALARM_MUNITE_FOR_CLUSTER_UPDATE, 15);
+    }
+
+    public boolean getCheckBeaconLastModify() {
+        return getBooleanProperty(KEY_CHECK_BEACON_LAST_MODIFY, true);
     }
 
 }

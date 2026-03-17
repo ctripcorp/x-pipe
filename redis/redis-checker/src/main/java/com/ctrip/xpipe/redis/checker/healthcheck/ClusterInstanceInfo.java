@@ -12,6 +12,8 @@ public interface ClusterInstanceInfo extends CheckInfo {
 
     int getOrgId();
 
+    String getLastModifyTime();
+
     ClusterInstanceInfo setDcs(List<String> dcs);
 
     List<String> getDcs();
