@@ -92,6 +92,11 @@ public class LocalProxyConfig implements ProxyConfig {
     }
 
     @Override
+    public boolean allowCloseChannel() {
+        return true;
+    }
+
+    @Override
     public CompressAlgorithm getCompressAlgorithm() {
         return new CompressAlgorithm() {
             @Override
