@@ -15,6 +15,7 @@ public enum RedisOpWithSubKeysEnum {
     HINCRBYFLOAT(RedisOpType.HINCRBYFLOAT, 1, 2,false),
     HMSET(RedisOpType.HMSET, 1, 2,false),
     HSET(RedisOpType.HSET, 1, 2,false),
+    HSETEX(RedisOpType.HSET, 1, 2,false),
     HSETNX(RedisOpType.HSETNX, 1, 2,false),
 
     ZADD(RedisOpType.ZADD, 1, 2,true),

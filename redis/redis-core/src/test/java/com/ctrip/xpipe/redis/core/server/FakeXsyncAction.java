@@ -96,11 +96,34 @@ public class FakeXsyncAction extends AbstractIoAction implements SocketAware {
         fakeXsyncServer.addCommandListener(this);
 
         byte[] data = fakeXsyncServer.genRdbData();
+        printByteArrayLiteral(data,"listpackStream3");
         ous.write(("$" +  data.length + "\r\n").getBytes());
         ous.write(data);
         ous.flush();
 
         writeCommands(ous);
+    }
+
+    public static void printByteArrayLiteral(byte[] data, String varName) {
+        System.out.printf("public static final byte[] %s = new byte[]{", varName);
+
+        for (int i = 0; i < data.length; i++) {
+            printByte(data[i]);
+            if (i < data.length - 1) {
+                System.out.print(", ");
+            }
+
+        }
+        System.out.println("};");
+    }
+
+    private static void printByte(byte b) {
+        int unsigned = b & 0xFF;
+        if (unsigned >= 0x80) {
+            System.out.printf("(byte) 0x%02X", unsigned);
+        } else {
+            System.out.printf("0x%02X", unsigned);
+        }
     }
 
     private void writeCommands(OutputStream ous) throws IOException, InterruptedException {

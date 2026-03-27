@@ -4,6 +4,7 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.redis.exception.ListpackParseFailException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.unidal.tuple.Triple;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -56,6 +57,19 @@ public class Listpack {
         }
 
         return map;
+    }
+
+    public List<Triple<byte[], byte[],Long>> convertToTriples() {
+        if (0 != size % 3) {
+            throw new XpipeRuntimeException("listpack size " + size + " can't convert to triple");
+        }
+
+        List<Triple<byte[], byte[],Long>> triples = new ArrayList<>(size);
+        for (int i = 0; i < size; i += 3) {
+            triples.add(Triple.from(elements.get(i).getBytes(), elements.get(i + 1).getBytes(),elements.get(i+2).getInt()));
+        }
+
+        return triples;
     }
 
     private void decode(ByteBuf input) {

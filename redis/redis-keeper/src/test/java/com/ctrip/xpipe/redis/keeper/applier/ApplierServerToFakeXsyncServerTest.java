@@ -44,11 +44,13 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
     @Mock
     private LeaderElector leaderElector;
 
+    private Jedis jedis;
+
     @Before
     public void setUp() throws Exception {
         executeScript("kill_server.sh", String.valueOf(6379));
         executeScript("start_redis.sh");
-        Jedis jedis = new Jedis("127.0.0.1",6379);
+        jedis = new Jedis("127.0.0.1",6379);
         jedis.flushAll();
 
         server = startFakeXsyncServer(randomPort(), null);
@@ -103,7 +105,6 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         sleep(2000);
 
 
-        Jedis jedis = new Jedis("127.0.0.1",6379);
         Set<String> keys = jedis.keys("*");
         Assert.assertEquals(11,keys.size());
         long len;
@@ -162,7 +163,6 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
         sleep(3000);
 
-        Jedis jedis = new Jedis("127.0.0.1",6379);
         Set<String> keys = jedis.keys("*");
         Assert.assertEquals(12,keys.size());
         long len;
@@ -212,4 +212,36 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
         applier.stop();
     }
+
+
+
+    @Test
+    public void testRedis8() throws Exception {
+        waitConditionUntilTimeOut(() -> 1 == server.slaveCount());
+
+        sleep(3000);
+
+        Set<String> keys = jedis.keys("*");
+        Assert.assertEquals(8,keys.size());
+        long len;
+        len = jedis.llen("biglist");
+        Assert.assertEquals(3,len);
+        len = jedis.hlen("bighash");
+        Assert.assertEquals(3,len);
+        len = jedis.scard("bigset");
+        Assert.assertEquals(3,len);
+        len = jedis.scard("bignormalset1");
+        Assert.assertEquals(3,len);
+        len = jedis.llen("bignormallist");
+        Assert.assertEquals(3,len);
+        len = jedis.hlen("bignormalhash");
+        Assert.assertEquals(3,len);
+        len = jedis.zcard("bigzset");
+        Assert.assertEquals(3,len);
+        len = jedis.zcard("bignormalset");
+        Assert.assertEquals(3,len);
+
+        applier.stop();
+    }
+
 }

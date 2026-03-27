@@ -21,6 +21,10 @@ import java.util.Set;
  */
 public abstract class AbstractRdbParser<T> implements RdbParser<T> {
 
+    public static final byte[] HASH_PXAT = new byte[]{'P','X','A','T'};
+    public static final byte[] HASH_FIELDS = new byte[]{'F','I','E','L','D','S'};
+    public static final byte[] HASH_1 = new byte[]{'1'};
+
     private Set<RdbParseListener> listeners = new HashSet<>();
 
     private LEN_READ_STATE lenReadState = LEN_READ_STATE.READ_INIT;
@@ -36,6 +40,9 @@ public abstract class AbstractRdbParser<T> implements RdbParser<T> {
     private boolean skipParse = false;
 
     private boolean needFinishNotify = false;
+
+    protected RdbParseContext context;
+
 
     protected abstract Logger getLogger();
 
