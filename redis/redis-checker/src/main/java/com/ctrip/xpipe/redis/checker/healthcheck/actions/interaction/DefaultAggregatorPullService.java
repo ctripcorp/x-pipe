@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -90,8 +91,9 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
                     logger.info("[getNeedAdjustInstances][otherCheckerMark][{}-{}] skip", instance, expectMark);
                     continue;
                 }
+                Pair<String, String> clusterAndShard = metaCache.findClusterShard(instance);
                 instanceNeedAdjust.add(new HostPortDcStatus(instance.getHost(), instance.getPort(),
-                        metaCache.getDc(instance), expectMark));
+                        metaCache.getDc(instance), clusterAndShard == null ? null : clusterAndShard.getValue(), expectMark));
             }
         }
         return instanceNeedAdjust;

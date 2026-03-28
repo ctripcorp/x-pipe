@@ -54,6 +54,8 @@ public class DefaultOuterClientAggregatorTest extends AbstractTest {
 
     private final String cluster1 = "cluster1";
 
+    private final String shard1 = "shard1";
+
     private final String activeDc = "jq";
 
     private final String backupDc = "oy";
@@ -66,9 +68,9 @@ public class DefaultOuterClientAggregatorTest extends AbstractTest {
 
     @Before
     public void beforeDefaultOuterClientAggregatorTest() {
-        info1 = new ClusterShardHostPort(cluster1, null, activeDc, hostPort1);
-        info2 = new ClusterShardHostPort(cluster1, null, activeDc, hostPort2);
-        info3 = new ClusterShardHostPort(cluster1, null, activeDc, hostPort3);
+        info1 = new ClusterShardHostPort(cluster1, shard1, activeDc, hostPort1);
+        info2 = new ClusterShardHostPort(cluster1, shard1, activeDc, hostPort2);
+        info3 = new ClusterShardHostPort(cluster1, shard1, activeDc, hostPort3);
         when(checkerConfig.getMarkInstanceBaseDelayMilli()).thenReturn(baseDelay * 1000);
         when(checkerConfig.getMarkdownInstanceMaxDelayMilli()).thenReturn(maxDelay * 1000);
         outerClientAggregator.setScheduled(MoreExecutors.getExitingScheduledExecutorService(
@@ -113,7 +115,7 @@ public class DefaultOuterClientAggregatorTest extends AbstractTest {
                     .count();
             if (callCount == 1) {
                 Set<HostPort> instances = (Set<HostPort>) invocation.getArguments()[1];
-                return instances.stream().map(instance -> new OuterClientService.HostPortDcStatus(instance.getHost(), instance.getPort(), backupDc, false)).collect(Collectors.toSet());
+                return instances.stream().map(instance -> new OuterClientService.HostPortDcStatus(instance.getHost(), instance.getPort(), backupDc, shard1, false)).collect(Collectors.toSet());
             } else {
                 return new HashSet<>();
             }
@@ -166,9 +168,9 @@ public class DefaultOuterClientAggregatorTest extends AbstractTest {
                 Set<OuterClientService.HostPortDcStatus> hostPortDcStatuses = new HashSet<>();
                 instances.forEach(hostPort -> {
                     if (hostPort.getPort() == 6379) {
-                        hostPortDcStatuses.add(new OuterClientService.HostPortDcStatus(hostPort.getHost(), hostPort.getPort(), backupDc, false));
+                        hostPortDcStatuses.add(new OuterClientService.HostPortDcStatus(hostPort.getHost(), hostPort.getPort(), backupDc, shard1, false));
                     } else {
-                        hostPortDcStatuses.add(new OuterClientService.HostPortDcStatus(hostPort.getHost(), hostPort.getPort(), backupDc, true));
+                        hostPortDcStatuses.add(new OuterClientService.HostPortDcStatus(hostPort.getHost(), hostPort.getPort(), backupDc, shard1, true));
                     }
                 });
                 return hostPortDcStatuses;
@@ -216,7 +218,7 @@ public class DefaultOuterClientAggregatorTest extends AbstractTest {
 
         doAnswer(invocation -> {
             Set<HostPort> instances = (Set<HostPort>) invocation.getArguments()[1];
-            return instances.stream().map(instance -> new OuterClientService.HostPortDcStatus(instance.getHost(), instance.getPort(), backupDc, true)).collect(Collectors.toSet());
+            return instances.stream().map(instance -> new OuterClientService.HostPortDcStatus(instance.getHost(), instance.getPort(), backupDc, shard1, true)).collect(Collectors.toSet());
         }).when(aggregatorPullService).getNeedAdjustInstances(anyString(), anySet());
 
         Thread.sleep(200);
@@ -265,7 +267,7 @@ public class DefaultOuterClientAggregatorTest extends AbstractTest {
 
         doAnswer(invocation -> {
             Set<HostPort> instances = (Set<HostPort>) invocation.getArguments()[1];
-            return instances.stream().map(instance -> new OuterClientService.HostPortDcStatus(instance.getHost(), instance.getPort(), backupDc, true)).collect(Collectors.toSet());
+            return instances.stream().map(instance -> new OuterClientService.HostPortDcStatus(instance.getHost(), instance.getPort(), backupDc, shard1, true)).collect(Collectors.toSet());
         }).when(aggregatorPullService).getNeedAdjustInstances(anyString(), anySet());
 
         Thread.sleep(200);
