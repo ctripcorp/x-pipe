@@ -7,12 +7,15 @@ import com.ctrip.xpipe.redis.core.redis.rdb.RdbParseContext;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbParser;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author TB
  * @date 2026/3/16 14:59
  */
 public class RdbKeyMetaParser extends AbstractRdbParser<Void> implements RdbParser<Void> {
+    private static final Logger logger = LoggerFactory.getLogger(RdbKeyMetaParser.class);
+
     public RdbKeyMetaParser(RdbParseContext context) {
     }
 
@@ -117,12 +120,12 @@ public class RdbKeyMetaParser extends AbstractRdbParser<Void> implements RdbPars
 
     @Override
     protected Logger getLogger() {
-        return null;
+        return logger;
     }
 
     @Override
     public boolean isFinish() {
-        return false;
+        return state == State.READ_FINISH;
     }
 
     private long readMillisecondTime(ByteBuf byteBuf){

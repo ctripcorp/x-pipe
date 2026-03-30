@@ -77,9 +77,6 @@ public class ParallelCommandChain extends AbstractCommandChain{
 	private void addComplete(CommandFuture<?> commandFuture) {
 		
 		synchronized (completed) {
-			if(completed.size() >= commands.size()) {
-				return;
-			}
 			completed.add(commandFuture);
 		}
 
