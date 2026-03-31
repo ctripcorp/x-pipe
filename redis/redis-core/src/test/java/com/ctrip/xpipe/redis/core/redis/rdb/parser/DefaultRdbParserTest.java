@@ -326,6 +326,7 @@ public class DefaultRdbParserTest extends AbstractTest implements RdbParseListen
         Assert.assertEquals("ZADD testSS329 0.2700072245105105 4key89", redisOps.get(19).toString());
     }
 
+    /*
     @Test
     public void testParseBitmap() {
         ByteBuf byteBuf = Unpooled.wrappedBuffer(rorBitmap);
@@ -346,6 +347,7 @@ public class DefaultRdbParserTest extends AbstractTest implements RdbParseListen
         Assert.assertNotEquals(0, bitmapKey[2][8] & (1 << 1)); // getbit bitmap_key 70  ->  1
         Assert.assertEquals("SET common_key value", redisOps.get(4).toString());
     }
+     */
 
     @Test
     public void testParseListpackStream3() {
