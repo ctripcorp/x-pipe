@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,9 +21,11 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import redis.clients.jedis.Jedis;
 
+import java.io.IOException;
 import java.util.Set;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import redis.embedded.RedisServer;
 
 /**
  * @author Slight
@@ -46,10 +49,14 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
     private Jedis jedis;
 
+    private RedisServer redisServer;
+
     @Before
     public void setUp() throws Exception {
-        executeScript("kill_server.sh", String.valueOf(6379));
-        executeScript("start_redis.sh");
+//        executeScript("kill_server.sh", String.valueOf(6379));
+//        executeScript("start_redis.sh");
+        redisServer = new RedisServer(6379);
+        redisServer.start();
         jedis = new Jedis("127.0.0.1",6379);
         jedis.flushAll();
 
@@ -73,6 +80,11 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         config.setDropAllowRation(-1);
         config.setUseXsync(true);
         applier.setStateActive(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("a1:1-10:15-20,b1:1-8"), config);
+    }
+
+    @After
+    public void stopRedis() throws IOException {
+        redisServer.stop();
     }
 
     @Test
