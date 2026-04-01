@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -21,9 +22,11 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import redis.clients.jedis.Jedis;
 
+import java.io.IOException;
 import java.util.Set;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import redis.embedded.RedisServer;
 
 /**
  * @author Slight
@@ -45,11 +48,17 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
     @Mock
     private LeaderElector leaderElector;
 
+    private Jedis jedis;
+
+    private RedisServer redisServer;
+
     @Before
     public void setUp() throws Exception {
-        executeScript("kill_server.sh", String.valueOf(6379));
-        executeScript("start_redis.sh");
-        Jedis jedis = new Jedis("127.0.0.1",6379);
+//        executeScript("kill_server.sh", String.valueOf(6379));
+//        executeScript("start_redis.sh");
+        redisServer = new RedisServer(6379);
+        redisServer.start();
+        jedis = new Jedis("127.0.0.1",6379);
         jedis.flushAll();
 
         server = startFakeXsyncServer(randomPort(), null);
@@ -72,6 +81,11 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         config.setDropAllowRation(-1);
         config.setUseXsync(true);
         applier.setStateActive(new DefaultEndPoint("127.0.0.1", server.getPort()), new GtidSet("a1:1-10:15-20,b1:1-8"), config);
+    }
+
+    @After
+    public void stopRedis() throws IOException {
+        redisServer.stop();
     }
 
     @Test
@@ -105,7 +119,6 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         sleep(2000);
 
 
-        Jedis jedis = new Jedis("127.0.0.1",6379);
         Set<String> keys = jedis.keys("*");
         Assert.assertEquals(11,keys.size());
         long len;
@@ -164,7 +177,6 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
         sleep(3000);
 
-        Jedis jedis = new Jedis("127.0.0.1",6379);
         Set<String> keys = jedis.keys("*");
         Assert.assertEquals(12,keys.size());
         long len;
@@ -214,4 +226,36 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
         applier.stop();
     }
+
+
+
+    @Test
+    public void testRedis8() throws Exception {
+        waitConditionUntilTimeOut(() -> 1 == server.slaveCount());
+
+        sleep(3000);
+
+        Set<String> keys = jedis.keys("*");
+        Assert.assertEquals(8,keys.size());
+        long len;
+        len = jedis.llen("biglist");
+        Assert.assertEquals(3,len);
+        len = jedis.hlen("bighash");
+        Assert.assertEquals(3,len);
+        len = jedis.scard("bigset");
+        Assert.assertEquals(3,len);
+        len = jedis.scard("bignormalset1");
+        Assert.assertEquals(3,len);
+        len = jedis.llen("bignormallist");
+        Assert.assertEquals(3,len);
+        len = jedis.hlen("bignormalhash");
+        Assert.assertEquals(3,len);
+        len = jedis.zcard("bigzset");
+        Assert.assertEquals(3,len);
+        len = jedis.zcard("bignormalset");
+        Assert.assertEquals(3,len);
+
+        applier.stop();
+    }
+
 }

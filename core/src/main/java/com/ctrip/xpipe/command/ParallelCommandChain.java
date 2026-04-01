@@ -76,11 +76,10 @@ public class ParallelCommandChain extends AbstractCommandChain{
 
 	private void addComplete(CommandFuture<?> commandFuture) {
 		
-		
 		synchronized (completed) {
 			completed.add(commandFuture);
 		}
-		
+
 		if(future().isCancelled()){
 			return;
 		}

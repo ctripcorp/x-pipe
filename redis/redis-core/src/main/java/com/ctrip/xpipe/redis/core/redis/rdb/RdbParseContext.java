@@ -4,7 +4,6 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -91,7 +90,7 @@ public interface RdbParseContext {
         HASH_ZIPLIST(RdbConstant.REDIS_RDB_TYPE_HASH_ZIPLIST, false, RdbHashZipListParser::new),
         LIST_QUICKLIST(RdbConstant.REDIS_RDB_TYPE_LIST_QUICKLIST, false, RdbQuickListParser::new),
         STREAM_LISTPACKS(RdbConstant.REDIS_RDB_TYPE_STREAM_LISTPACKS, false, RdbStreamListpacksParser::new),
-        BITMAP(RdbConstant.REDIS_RDB_TYPE_BITMAP, false, RdbBitmapParser::new),
+//        BITMAP(RdbConstant.REDIS_RDB_TYPE_BITMAP, false, RdbBitmapParser::new),
         CRDT(RdbConstant.REDIS_RDB_TYPE_CRDT, false, DefaultRdbCrdtParser::new),
         //        MODULE_AUX(RdbConstant.REDIS_RDB_OP_CODE_MODULE_AUX),
         IDLE(RdbConstant.REDIS_RDB_OP_CODE_IDLE, true, RdbIdleParser::new),
@@ -113,7 +112,25 @@ public interface RdbParseContext {
         RORDB_ZSET(RdbConstant.REDIS_RORDB_OP_CODE_ZSET, true, null),
         RORDB_LIST(RdbConstant.REDIS_RORDB_OP_CODE_LIST, true, null),
         RORDB_BITMAP(RdbConstant.REDIS_RORDB_OP_CODE_BITMAP, true, null),
-        RORDB_LIMIT(RdbConstant.REDIS_RORDB_OP_CODE_LIMIT, true, null);
+        RORDB_LIMIT(RdbConstant.REDIS_RORDB_OP_CODE_LIMIT, true, null),
+
+
+        // Redis 8.x 新增
+        KEY_META(RdbConstant.RDB_OPCODE_KEY_META, true, RdbKeyMetaParser::new),
+        FUNCTION2(RdbConstant.RDB_OPCODE_FUNCTION2, true, RdbFunction2Parser::new),
+        MODULE_AUX(RdbConstant.REDIS_RDB_OP_CODE_MODULE_AUX, true, RdbModuleAuxParser::new),
+        MODULE_2(RdbConstant.REDIS_RDB_TYPE_MODULE_2, true, RdbModuleParser::new),
+
+        HASH_LISTPACK(RdbConstant.REDIS_RDB_TYPE_HASH_LISTPACK, false, RdbHashListpackParser::new),
+        ZSET_LISTPACK(RdbConstant.REDIS_RDB_TYPE_ZSET_LISTPACK, false, RdbZSetListpackParser::new),
+
+        LIST_QUICKLIST_2(RdbConstant.REDIS_RDB_TYPE_LIST_QUICKLIST_2, false, RdbQuickList2Parser::new),
+        HASH_METADATA(RdbConstant.REDIS_RDB_TYPE_HASH_METADATA,false,RdbHashMetadataParser::new),
+        HASH_LISTPACK_EX(RdbConstant.REDIS_RDB_TYPE_HASH_LISTPACK_EX, false, RdbHashListpackExParser::new),
+        STREAM_LISTPACKS_2(RdbConstant.REDIS_RDB_TYPE_STREAM_LISTPACKS_2, false, RdbStreamListpacks2Parser::new),
+        SET_LISTPACK(RdbConstant.REDIS_RDB_TYPE_SET_LISTPACK, false, RdbSetListpackParser::new),
+        STREAM_LISTPACKS_3(RdbConstant.REDIS_RDB_TYPE_STREAM_LISTPACKS_3, false, RdbStreamListpacks3Parser::new),
+        STREAM_LISTPACKS_4(RdbConstant.REDIS_RDB_TYPE_STREAM_LISTPACKS_4, false, RdbStreamListpacks4Parser::new);
 
         private short code;
 

@@ -75,6 +75,12 @@
 			<artifactId>curator-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+        <dependency>
+            <groupId>com.github.codemonstur</groupId>
+            <artifactId>embedded-redis</artifactId>
+            <version>1.4.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <profiles>
         <profile>

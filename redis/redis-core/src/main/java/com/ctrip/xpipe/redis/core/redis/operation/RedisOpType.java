@@ -42,6 +42,7 @@ public enum RedisOpType {
     HINCRBYFLOAT(false, 4),
     HMSET(false, -4),
     HSET(false, -4),
+    HSETEX(false, -4),
     HSETNX(false, 4),
 
     // Set single

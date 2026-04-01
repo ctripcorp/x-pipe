@@ -326,6 +326,7 @@ public class DefaultRdbParserTest extends AbstractTest implements RdbParseListen
         Assert.assertEquals("ZADD testSS329 0.2700072245105105 4key89", redisOps.get(19).toString());
     }
 
+    /*
     @Test
     public void testParseBitmap() {
         ByteBuf byteBuf = Unpooled.wrappedBuffer(rorBitmap);
@@ -345,6 +346,113 @@ public class DefaultRdbParserTest extends AbstractTest implements RdbParseListen
         Assert.assertNotEquals(0, bitmapKey[2][87] & (1 << 3)); // getbit bitmap_key 700  ->  1
         Assert.assertNotEquals(0, bitmapKey[2][8] & (1 << 1)); // getbit bitmap_key 70  ->  1
         Assert.assertEquals("SET common_key value", redisOps.get(4).toString());
+    }
+     */
+
+    @Test
+    public void testParseListpackStream3() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(listpackStream3);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+
+        Assert.assertEquals("SELECT 0", redisOps.get(0).toString());
+        Assert.assertEquals("XDEL mystream 1774254484946-0", redisOps.get(1).toString());
+        Assert.assertEquals("XADD mystream 1774254501291-0 field1 value1 field2 value2 field3 value3", redisOps.get(2).toString());
+        Assert.assertEquals("XSETID mystream 1774254501291-0 ENTRIESADDED 2 MAXDELETEDID 1774254484946-0", redisOps.get(3).toString());
+        Assert.assertEquals("XGROUP CREATE mystream mygroup 1774254501291-0 MKSTREAM", redisOps.get(4).toString());
+        Assert.assertEquals("XGROUP SETID mystream mygroup 1774254501291-0 ENTRIESREAD 2", redisOps.get(5).toString());
+        Assert.assertEquals("XGROUP CREATECONSUMER mystream mygroup myconsumer", redisOps.get(6).toString());
+        Assert.assertEquals("XCLAIM mystream mygroup myconsumer 0 1774254501291-0 TIME 1774254783521 RETRYCOUNT 1 FORCE JUSTID", redisOps.get(7).toString());
+    }
+
+
+    @Test
+    public void testParseHashExListpack() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(listpackHashEx);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+
+        Assert.assertEquals("SELECT 0", redisOps.get(0).toString());
+        Assert.assertEquals("HSETEX myexkey PXAT 1774625662114 FIELDS 1 f3 v3", redisOps.get(1).toString());
+        Assert.assertEquals("HSETEX myexkey PXAT 1774625662114 FIELDS 1 f2 v2", redisOps.get(2).toString());
+        Assert.assertEquals("HSETEX myexkey PXAT 1774625662114 FIELDS 1 f1 v1", redisOps.get(3).toString());
+    }
+
+
+    @Test
+    public void testParseHashMetaListpack() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(listpackHashMeta);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+
+        Assert.assertEquals("SELECT 0", redisOps.get(0).toString());
+        Assert.assertEquals("HSETEX myexkey PXAT 1774627305690 FIELDS 1 f3 v3", redisOps.get(1).toString());
+        Assert.assertEquals("HSETEX myexkey PXAT 1774627305690 FIELDS 1 f2 v2", redisOps.get(2).toString());
+        Assert.assertEquals("HSETEX myexkey PXAT 1774627305690 FIELDS 1 f1 v1", redisOps.get(3).toString());
+    }
+
+    @Test
+    public void testParseQuickList2Listpack() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(listpackQuickList2);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+
+        Assert.assertEquals("SELECT 0", redisOps.get(0).toString());
+        Assert.assertEquals("RPUSH mylist a", redisOps.get(1).toString());
+        Assert.assertEquals("RPUSH mylist b", redisOps.get(2).toString());
+        Assert.assertEquals("RPUSH mylist c", redisOps.get(3).toString());
+        Assert.assertEquals("RPUSH mylist x", redisOps.get(4).toString());
+        Assert.assertEquals("RPUSH mylist y", redisOps.get(5).toString());
+        Assert.assertEquals("RPUSH mylist z", redisOps.get(6).toString());
+    }
+
+    @Test
+    public void testParseSetListpack() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(listpackSet);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+
+        Assert.assertEquals("SELECT 0", redisOps.get(0).toString());
+        Assert.assertEquals("SADD myset a", redisOps.get(1).toString());
+        Assert.assertEquals("SADD myset b", redisOps.get(2).toString());
+        Assert.assertEquals("SADD myset c", redisOps.get(3).toString());
+    }
+
+
+    @Test
+    public void testParseZSetListpack() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(listpackZSet);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+
+        Assert.assertEquals("SELECT 0", redisOps.get(0).toString());
+        Assert.assertEquals("ZADD myzset 1 a", redisOps.get(1).toString());
+        Assert.assertEquals("ZADD myzset 2 b", redisOps.get(2).toString());
+        Assert.assertEquals("ZADD myzset 3 c", redisOps.get(3).toString());
+    }
+
+    @Test
+    public void testParseHashListpack() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(listpackHash);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+
+        Assert.assertEquals("SELECT 0", redisOps.get(0).toString());
+        Assert.assertEquals("HSET myhashkey f1 v1", redisOps.get(1).toString());
+        Assert.assertEquals("HSET myhashkey f2 v2", redisOps.get(2).toString());
+        Assert.assertEquals("HSET myhashkey f3 v3", redisOps.get(3).toString());
+        Assert.assertEquals("HSET myhashkey f4 v4", redisOps.get(4).toString());
+        Assert.assertEquals("HSET myhashkey1 f1 v1", redisOps.get(5).toString());
+        Assert.assertEquals("HSET myhashkey1 f2 v2", redisOps.get(6).toString());
+        Assert.assertEquals("HSET myhashkey1 f3 v3", redisOps.get(7).toString());
+
     }
 
     @Override
