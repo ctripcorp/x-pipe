@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.tuple.Pair;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -69,6 +70,9 @@ public class DefaultAggregatorPullServiceTest extends AbstractCheckerTest {
     private static final String OY = "oy";
     private static final String AWS = "aws";
 
+    private static final String CLUSTER = "cluster";
+    private static final String SHARD = "shard";
+
     @Before
     public void setupDefaultAggregatorPullServiceTest() throws Exception {
         aggregatorPullService.setExecutors(MoreExecutors.directExecutor());
@@ -84,6 +88,7 @@ public class DefaultAggregatorPullServiceTest extends AbstractCheckerTest {
         when(metaCache.getDc(hostPort1)).thenReturn(JQ);
         when(metaCache.getDc(hostPort2)).thenReturn(JQ);
         when(metaCache.getDc(hostPort3)).thenReturn(AWS);
+        when(metaCache.findClusterShard(any())).thenReturn(Pair.from(CLUSTER, SHARD));
 
         when(metaCache.isCrossRegion(JQ, AWS)).thenReturn(true);
         when(metaCache.isCrossRegion(JQ, OY)).thenReturn(false);
@@ -188,10 +193,10 @@ public class DefaultAggregatorPullServiceTest extends AbstractCheckerTest {
     @Test
     public void doMarkInstances() throws Exception {
         Set<OuterClientService.HostPortDcStatus> hostPortDcStatuses = Sets.newHashSet(
-                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6379, OY, true),
-                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6380, OY, false),
-                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6381, AWS, true),
-                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6382, AWS, false)
+                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6379, OY, SHARD, true),
+                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6380, OY, SHARD, false),
+                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6381, AWS, SHARD, true),
+                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6382, AWS, SHARD, false)
         );
         aggregatorPullService.doMarkInstances("cluster1", JQ, hostPortDcStatuses);
 
@@ -226,10 +231,10 @@ public class DefaultAggregatorPullServiceTest extends AbstractCheckerTest {
     @Test
     public void doMarkInstancesIfNoModifyFor() throws Exception {
         Set<OuterClientService.HostPortDcStatus> hostPortDcStatuses = Sets.newHashSet(
-                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6379, OY, true),
-                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6380, OY, false),
-                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6381, AWS, true),
-                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6382, AWS, false)
+                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6379, OY, SHARD, true),
+                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6380, OY, SHARD, false),
+                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6381, AWS, SHARD, true),
+                new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6382, AWS, SHARD, false)
         );
         aggregatorPullService.doMarkInstancesIfNoModifyFor("cluster1", JQ, hostPortDcStatuses,1);
 
@@ -285,9 +290,9 @@ public class DefaultAggregatorPullServiceTest extends AbstractCheckerTest {
         allStatus.put(new HostPort(LOCAL_IP, 6384), new HealthStatusDesc(new HostPort(LOCAL_IP, 6384), HEALTH_STATE.HEALTHY));
 
         when(defaultDelayPingActionCollector.getAllHealthStatus()).thenReturn(allStatus);
-        Assert.assertNull(aggregatorPullService.dcInstancesAllUp("test", JQ, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6381, OY, true))));
-        Assert.assertNotNull(aggregatorPullService.dcInstancesAllUp("test", JQ, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6383, AWS, true))));
-        Assert.assertEquals(AWS, aggregatorPullService.dcInstancesAllUp("test", JQ, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6381, OY, true), new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6383, AWS, true))));
+        Assert.assertNull(aggregatorPullService.dcInstancesAllUp("test", JQ, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6381, OY, SHARD, true))));
+        Assert.assertNotNull(aggregatorPullService.dcInstancesAllUp("test", JQ, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6383, AWS, SHARD, true))));
+        Assert.assertEquals(AWS, aggregatorPullService.dcInstancesAllUp("test", JQ, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6381, OY, SHARD, true), new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6383, AWS, SHARD, true))));
         verify(defaultPsubPingActionCollector, never()).getAllHealthStatus();
         verify(defaultDelayPingActionCollector, times(4)).getAllHealthStatus();
 
@@ -296,7 +301,7 @@ public class DefaultAggregatorPullServiceTest extends AbstractCheckerTest {
         allStatusCrossRegion.put(new HostPort(LOCAL_IP, 6383), new HealthStatusDesc(new HostPort(LOCAL_IP, 6383), HEALTH_STATE.DOWN));
         allStatusCrossRegion.put(new HostPort(LOCAL_IP, 6384), new HealthStatusDesc(new HostPort(LOCAL_IP, 6384), HEALTH_STATE.DOWN));
         when(defaultPsubPingActionCollector.getAllHealthStatus()).thenReturn(allStatusCrossRegion);
-        Assert.assertNull(aggregatorPullService.dcInstancesAllUp("test", AWS, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6383, AWS, true))));
+        Assert.assertNull(aggregatorPullService.dcInstancesAllUp("test", AWS, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6383, AWS, SHARD, true))));
         verify(defaultPsubPingActionCollector, times(1)).getAllHealthStatus();
         verify(defaultDelayPingActionCollector, times(4)).getAllHealthStatus();
     }

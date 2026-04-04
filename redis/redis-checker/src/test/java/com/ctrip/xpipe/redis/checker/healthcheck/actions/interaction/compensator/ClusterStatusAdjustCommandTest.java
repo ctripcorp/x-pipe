@@ -3,17 +3,14 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensato
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.AggregatorPullService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.ClusterActiveDcKey;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -21,13 +18,9 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.HashSet;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ClusterStatusAdjustCommandTest {
@@ -97,7 +90,7 @@ public class ClusterStatusAdjustCommandTest {
 
         doAnswer(inv -> {
             Thread.sleep(timeoutMilli + 1);
-            return Sets.newHashSet(new OuterClientService.HostPortDcStatus(instance.getHostPort().getHost(), instance.getHostPort().getPort(), "oy", false));
+            return Sets.newHashSet(new OuterClientService.HostPortDcStatus(instance.getHostPort().getHost(), instance.getHostPort().getPort(), "oy", "shard1", false));
         }).when(aggregatorPullService).getNeedAdjustInstances(any(), anySet());
 
         try {
@@ -117,7 +110,7 @@ public class ClusterStatusAdjustCommandTest {
                 System.currentTimeMillis() + timeoutMilli, siteStability, config, metaCache, aggregatorPullService);
         when(siteStability.isSiteStable()).thenReturn(true);
         when(metaCache.inBackupDc(instance.getHostPort())).thenReturn(true);
-        when(aggregatorPullService.getNeedAdjustInstances(any(), anySet())).thenReturn(Sets.newHashSet(new OuterClientService.HostPortDcStatus(instance.getHostPort().getHost(), instance.getHostPort().getPort(), "oy", false)));
+        when(aggregatorPullService.getNeedAdjustInstances(any(), anySet())).thenReturn(Sets.newHashSet(new OuterClientService.HostPortDcStatus(instance.getHostPort().getHost(), instance.getHostPort().getPort(), "oy", "shard1", false)));
 
         cmd.execute().get();
 
