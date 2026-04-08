@@ -927,9 +927,9 @@ public interface OuterClientService extends Ordered{
 	}
 
 	enum InstanceStatus {
-		MANUAL_MARKDOWN(-2),
 		INACTIVE(0),
-		ACTIVE(1);
+		ACTIVE(1),
+		SUSPECT(2);
 
 		private Integer intVal;
 
