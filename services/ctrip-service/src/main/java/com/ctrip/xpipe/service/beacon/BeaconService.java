@@ -3,6 +3,7 @@ package com.ctrip.xpipe.service.beacon;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorClusterMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
 import com.ctrip.xpipe.service.beacon.data.BeaconResp;
 import com.ctrip.xpipe.service.beacon.exception.BeaconServiceException;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
@@ -97,18 +98,29 @@ public class BeaconService implements MonitorService {
 
     @Override
     public void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups, Map<String, String> extraData) {
-        registerCluster(system, clusterName, groups, extraData, HttpMethod.POST);
+        registerCluster(system, clusterName, groups, null, extraData, HttpMethod.POST);
     }
 
     @Override
     public void updateCluster(String system, String clusterName, Set<MonitorGroupMeta> groups, Map<String, String> extraData) {
-        registerCluster(system, clusterName, groups, extraData, HttpMethod.PUT);
+        registerCluster(system, clusterName, groups, null, extraData, HttpMethod.PUT);
     }
 
-    private void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups, Map<String, String> extraData, HttpMethod method) {
+    @Override
+    public void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups, Set<MonitorShardMeta> shards, Map<String, String> extraData) {
+        registerCluster(system, clusterName, groups, shards, extraData, HttpMethod.POST);
+    }
+
+    @Override
+    public void updateCluster(String system, String clusterName, Set<MonitorGroupMeta> groups, Set<MonitorShardMeta> shards, Map<String, String> extraData) {
+        registerCluster(system, clusterName, groups, shards, extraData, HttpMethod.PUT);
+    }
+
+    private void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups,
+                                 Set<MonitorShardMeta> shards, Map<String, String> extraData, HttpMethod method) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Object> entity = new HttpEntity<>(new MonitorClusterMeta(groups, extraData), headers);
+        HttpEntity<Object> entity = new HttpEntity<>(new MonitorClusterMeta(groups, shards, extraData), headers);
         ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, method, entity, BeaconResp.class, system, clusterName);
 
         BeaconResp beaconResp = respResponseEntity.getBody();

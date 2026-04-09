@@ -2,11 +2,17 @@ package com.ctrip.xpipe.redis.console.beacon;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.checker.BeaconRouteType;
 import com.ctrip.xpipe.redis.console.config.model.BeaconClusterRoute;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
 import org.junit.Assert;
@@ -66,7 +72,9 @@ public class DefaultMonitorManagerTest extends AbstractTest {
     public void setupDefaultBeaconServiceManagerTest() {
         Mockito.when(config.getServerMode()).thenReturn("console");
         Mockito.when(config.getBeaconOrgRoutes()).thenReturn(Lists.newArrayList(orgRoute1, orgRoute2, orgRoute3));
+        Mockito.when(config.getBeaconSentinelOrgRoutes()).thenReturn(Lists.newArrayList(orgRoute1, orgRoute2, orgRoute3));
         Mockito.when(config.getClusterHealthCheckInterval()).thenReturn(1000);
+        Mockito.when(commonConfig.getBeaconSupportZones()).thenReturn(Collections.emptySet());
         beaconServiceManager = new DefaultMonitorManager(metaCache, config, commonConfig);
     }
 
@@ -103,6 +111,25 @@ public class DefaultMonitorManagerTest extends AbstractTest {
         Assert.assertEquals(defaultBeaconHost2, beaconServices.get(DEFAULT_ORG_ID).get(1).getHost());
         Assert.assertEquals(beacons.get(1L), beaconServices.get(1L).get(0).getHost());
         Assert.assertEquals(beacons.get(2L), beaconServices.get(2L).get(0).getHost());
+    }
+
+    @Test
+    public void testSentinelRouteSupportsSingleAndLocalDc() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(new ClusterMeta("one-way").setOrgId(1).setType(ClusterType.ONE_WAY.name()).setActiveDc("jq"));
+        dcMeta.addCluster(new ClusterMeta("single-dc").setOrgId(1).setType(ClusterType.SINGLE_DC.name()).setActiveDc("jq").setDcs("jq"));
+        dcMeta.addCluster(new ClusterMeta("local-dc").setOrgId(1).setType(ClusterType.LOCAL_DC.name()).setActiveDc("jq").setDcs("jq"));
+        dcMeta.addCluster(new ClusterMeta("bi-dc").setOrgId(1).setType(ClusterType.BI_DIRECTION.name()));
+        xpipeMeta.addDc(dcMeta);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        Map<BeaconSystem, Map<Long, Set<String>>> map = beaconServiceManager.clustersByBeaconSystemOrg(BeaconRouteType.SENTINEL);
+        Set<String> oneWayClusters = map.get(BeaconSystem.XPIPE_ONE_WAY).get(1L);
+        Assert.assertTrue(oneWayClusters.contains("one-way"));
+        Assert.assertTrue(oneWayClusters.contains("single-dc"));
+        Assert.assertTrue(oneWayClusters.contains("local-dc"));
+        Assert.assertFalse(oneWayClusters.contains("bi-dc"));
     }
 
 }

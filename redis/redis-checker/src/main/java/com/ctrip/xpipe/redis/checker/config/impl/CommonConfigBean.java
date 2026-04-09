@@ -58,6 +58,8 @@ public class CommonConfigBean extends AbstractConfigBean {
     public static final String KEY_KEEPERCONTAINER_DISK_INFO_COLLECT_INTERVAL_MILLS = "keeper.disk.info.collect.interval";
 
     public static final String KEY_CHECK_BEACON_LAST_MODIFY = "beacon.check.modify.time";
+    public static final String KEY_BEACON_SENTINEL_GRAY_CLUSTERS = "beacon.sentinel.gray.clusters";
+    public static final String KEY_BEACON_SENTINEL_GRAY_BU = "beacon.sentinel.gray.bu";
 
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
@@ -157,6 +159,27 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public boolean getCheckBeaconLastModify() {
         return getBooleanProperty(KEY_CHECK_BEACON_LAST_MODIFY, true);
+    }
+
+    public Set<String> getBeaconSentinelGrayClusters() {
+        String clusters = getProperty(KEY_BEACON_SENTINEL_GRAY_CLUSTERS, "");
+        return getSplitStringSet(clusters).stream().map(String::toLowerCase).collect(Collectors.toSet());
+    }
+
+    public Set<Long> getBeaconSentinelGrayBus() {
+        String bus = getProperty(KEY_BEACON_SENTINEL_GRAY_BU, "");
+        Set<Long> result = new HashSet<>();
+        getSplitStringSet(bus).forEach(part -> {
+            if (part.isEmpty()) {
+                return;
+            }
+            try {
+                result.add(Long.parseLong(part));
+            } catch (NumberFormatException e) {
+                logger.warn("[getBeaconSentinelGrayBus] invalid bu value {}", part);
+            }
+        });
+        return result;
     }
 
 }

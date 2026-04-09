@@ -256,7 +256,8 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     boolean supportSentinelHealthCheck(HealthCheckInstance checkInstance) {
         CheckInfo checkInfo = checkInstance.getCheckInfo();
-        return checkInstance.getHealthCheckConfig().supportSentinelHealthCheck(checkInfo.getClusterType(), checkInfo.getClusterId());
+        return checkInstance.getHealthCheckConfig().supportSentinelHealthCheck(checkInfo.getClusterType(), checkInfo.getClusterId())
+                && !checkInstance.getHealthCheckConfig().supportSentinelBeacon(checkInfo.getClusterOrgId(), checkInfo.getClusterId());
     }
 
     @Override

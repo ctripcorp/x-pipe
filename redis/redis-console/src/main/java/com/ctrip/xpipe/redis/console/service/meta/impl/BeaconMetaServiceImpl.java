@@ -1,16 +1,16 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -65,6 +65,32 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
 
         if (dcClusterMetas.isEmpty()) throw new DataNotFoundException("no related dcs found for " + cluster);
         return buildBeaconGroups(dcClusterMetas);
+    }
+
+    @Override
+    public Set<MonitorShardMeta> buildBeaconShards(String cluster, String dc) {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null || xpipeMeta.getDcs() == null) {
+            return Collections.emptySet();
+        }
+        ClusterMeta clusterMeta = Optional.ofNullable(xpipeMeta.getDcs().get(dc))
+                .map(dcMeta -> dcMeta.getClusters().get(cluster))
+                .orElse(null);
+        if (clusterMeta == null) {
+            return Collections.emptySet();
+        }
+
+        Set<MonitorShardMeta> shards = new HashSet<>();
+        for (Map.Entry<String, ShardMeta> entry : clusterMeta.getShards().entrySet()) {
+            String shardName = entry.getKey();
+            ShardMeta shardMeta = entry.getValue();
+            List<MonitorGroupMeta> groups = shardMeta.getRedises().stream().map(redisMeta -> {
+                HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
+                return new MonitorGroupMeta(hostPort.toString(), dc, Collections.singleton(hostPort), redisMeta.isMaster());
+            }).collect(Collectors.toList());
+            shards.add(new MonitorShardMeta(shardName, groups));
+        }
+        return shards;
     }
 
     @Override

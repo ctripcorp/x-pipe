@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorManagerTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApiTest;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventConcurrentCreateTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.SentinelBeaconClusterMonitorCheckTest;
 import com.ctrip.xpipe.redis.console.notifier.DefaultClusterMonitorModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
@@ -31,6 +32,7 @@ import org.junit.runners.Suite;
 
         DefaultMonitorManagerTest.class,
         BeaconClusterMonitorCheckTest.class,
+        SentinelBeaconClusterMonitorCheckTest.class,
         DefaultClusterMonitorModifiedNotifierTest.class,
 })
 public class MigrationAllTests {

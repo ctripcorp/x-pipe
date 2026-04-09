@@ -86,6 +86,14 @@ public interface CheckerConfig {
 
     boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName);
 
+    default boolean supportSentinelBeacon(long orgId, String clusterName) {
+        return false;
+    }
+
+    default boolean supportSentinelBeacon(String clusterName) {
+        return supportSentinelBeacon(-1, clusterName);
+    }
+
     void register(List<String> keys, ConfigChangeListener configListener);
 
     String sentinelCheckDowngradeStrategy();

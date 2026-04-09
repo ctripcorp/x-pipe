@@ -5,6 +5,7 @@ import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.metric.MetricProxyException;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
+import com.ctrip.xpipe.redis.checker.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
@@ -54,10 +55,14 @@ public class BeaconConsistencyCheckAction extends AbstractLeaderAwareHealthCheck
         return getActionInstance().getHealthCheckConfig().clusterCheckIntervalMilli();
     }
 
+    protected BeaconRouteType getBeaconRouteType() {
+        return BeaconRouteType.DR;
+    }
+
     private void checkConsistency(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime) {
         BeaconCheckStatus status;
         try {
-            status = beaconManager.checkClusterHash(clusterId, clusterType, orgId, lastModifyTime);
+            status = beaconManager.checkClusterHash(clusterId, clusterType, orgId, lastModifyTime, getBeaconRouteType());
         } catch (Throwable t) {
             // cluster not found in beacon
             status = BeaconCheckStatus.ERROR;
@@ -79,7 +84,7 @@ public class BeaconConsistencyCheckAction extends AbstractLeaderAwareHealthCheck
                 logger.info("[handleCheckResult][{}] inconsistency but ignore", clusterId);
                 sendMetric = true;
             } else {
-                beaconManager.registerCluster(clusterId, clusterType, orgId, lastModifyTime);
+                beaconManager.registerCluster(clusterId, clusterType, orgId, lastModifyTime, getBeaconRouteType());
                 sendMetric = true;
             }
 

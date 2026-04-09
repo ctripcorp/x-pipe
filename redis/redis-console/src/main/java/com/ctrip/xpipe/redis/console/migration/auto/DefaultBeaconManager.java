@@ -2,13 +2,15 @@ package com.ctrip.xpipe.redis.console.migration.auto;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorClusterMeta;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
+import com.ctrip.xpipe.redis.checker.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconCheckStatus;
-import com.ctrip.xpipe.redis.console.exception.BadRequestException;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author lishanglin
@@ -34,6 +37,7 @@ public class DefaultBeaconManager implements BeaconManager {
     private CheckerConfig checkerConfig;
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultBeaconManager.class);
+    private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
 
     @Autowired
     public DefaultBeaconManager(MonitorManager monitorManager, BeaconMetaService beaconMetaService, CheckerConfig checkerConfig) {
@@ -43,28 +47,31 @@ public class DefaultBeaconManager implements BeaconManager {
     }
 
     @Override
-    public void registerCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime) {
-        registerCluster(clusterId, clusterType, orgId, lastModifyTime, false);
+    public void registerCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime, BeaconRouteType routeType) {
+        registerCluster(clusterId, clusterType, orgId, lastModifyTime, routeType, false);
     }
 
-    private void registerCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime, boolean update) {
-        MonitorService service = getMonitorService(clusterId, orgId);
+    private void registerCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime,
+                                 BeaconRouteType routeType, boolean update) {
+        MonitorService service = getMonitorService(clusterId, orgId, routeType);
         if (null == service) {
             return;
         }
 
         try {
             logger.debug("[registerCluster][{}] register to {}", clusterId, service.getHost());
-            BeaconSystem system = BeaconSystem.findByClusterType(clusterType);
+            BeaconSystem system = resolveBeaconSystem(clusterType, routeType);
             if (null == system) {
                 logger.info("[registerCluster][{}] no beacon system found", clusterId);
                 return;
             }
             if(update) {
-                service.updateCluster(system.getSystemName(), clusterId, beaconMetaService.buildBeaconGroups(clusterId),
+                MonitorClusterMeta monitorClusterMeta = buildMonitorClusterMeta(clusterId, routeType);
+                service.updateCluster(system.getSystemName(), clusterId, monitorClusterMeta.getNodeGroups(), monitorClusterMeta.getShards(),
                         Collections.singletonMap(EXTRA_LAST_MODIFY_TIME, lastModifyTime));
             } else {
-                service.registerCluster(system.getSystemName(), clusterId, beaconMetaService.buildBeaconGroups(clusterId),
+                MonitorClusterMeta monitorClusterMeta = buildMonitorClusterMeta(clusterId, routeType);
+                service.registerCluster(system.getSystemName(), clusterId, monitorClusterMeta.getNodeGroups(), monitorClusterMeta.getShards(),
                         Collections.singletonMap(EXTRA_LAST_MODIFY_TIME, lastModifyTime));
             }
         } catch (Throwable th) {
@@ -73,17 +80,17 @@ public class DefaultBeaconManager implements BeaconManager {
     }
 
     @Override
-    public void updateCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime) {
-        registerCluster(clusterId, clusterType, orgId, lastModifyTime, false);
+    public void updateCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime, BeaconRouteType routeType) {
+        registerCluster(clusterId, clusterType, orgId, lastModifyTime, routeType, false);
     }
 
     @Override
-    public BeaconCheckStatus checkClusterHash(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime) {
-        MonitorService service = getMonitorService(clusterId, orgId);
+    public BeaconCheckStatus checkClusterHash(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime, BeaconRouteType routeType) {
+        MonitorService service = getMonitorService(clusterId, orgId, routeType);
         if (null == service) {
             return BeaconCheckStatus.SERVICE_NOT_FOUND;
         }
-        BeaconSystem system = BeaconSystem.findByClusterType(clusterType);
+        BeaconSystem system = resolveBeaconSystem(clusterType, routeType);
         if (null == system) {
             logger.info("[checkClusterHash][{}] no beacon system found", clusterId);
             return BeaconCheckStatus.SYSTEM_NOT_FOUND;
@@ -97,7 +104,7 @@ public class DefaultBeaconManager implements BeaconManager {
             }
             throw e;
         }
-        MonitorClusterMeta monitorClusterMeta = new MonitorClusterMeta(beaconMetaService.buildBeaconGroups(clusterId));
+        MonitorClusterMeta monitorClusterMeta = buildMonitorClusterMeta(clusterId, routeType);
         int localHash = monitorClusterMeta.generateHashCodeForBeaconCheck();
         if (localHash == hash) {
             return BeaconCheckStatus.CONSISTENCY;
@@ -121,12 +128,29 @@ public class DefaultBeaconManager implements BeaconManager {
         return status;
     }
 
-    private MonitorService getMonitorService(String clusterId, int orgId) {
-        MonitorService service = monitorManager.get(orgId, clusterId);
+    private MonitorService getMonitorService(String clusterId, int orgId, BeaconRouteType routeType) {
+        MonitorService service = monitorManager.get(orgId, clusterId, routeType);
         if (null == service) {
             logger.debug("[BeaconManager][{}] no beacon service for org {}, skip", clusterId, orgId);
         }
         return service;
+    }
+
+    private MonitorClusterMeta buildMonitorClusterMeta(String clusterId, BeaconRouteType routeType) {
+        if (routeType == BeaconRouteType.SENTINEL) {
+            Set<MonitorShardMeta> shards = beaconMetaService.buildBeaconShards(clusterId, currentDc);
+            return new MonitorClusterMeta(null, shards, Collections.emptyMap());
+        }
+        Set<MonitorGroupMeta> groups = beaconMetaService.buildBeaconGroups(clusterId);
+        return new MonitorClusterMeta(groups, Collections.emptyMap());
+    }
+
+    private BeaconSystem resolveBeaconSystem(ClusterType clusterType, BeaconRouteType routeType) {
+        BeaconSystem beaconSystem = BeaconSystem.findByClusterType(clusterType);
+        if (beaconSystem != null) {
+            return beaconSystem;
+        }
+        return BeaconSystem.XPIPE_ONE_WAY;
     }
 
 }
