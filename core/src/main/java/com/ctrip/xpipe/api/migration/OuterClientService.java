@@ -796,16 +796,18 @@ public interface OuterClientService extends Ordered{
 		private String host;
 		private int port;
 		private String dc;
+		private String shardName;
 		private boolean canRead;
 		private boolean suspect;
 
 		public HostPortDcStatus() {
 		}
 
-		public HostPortDcStatus(String host, int port, String dc, boolean canRead) {
+		public HostPortDcStatus(String host, int port, String dc, String shardName, boolean canRead) {
 			this.host = host;
 			this.port = port;
 			this.dc = dc;
+			this.shardName = shardName;
 			this.canRead = canRead;
 		}
 
@@ -835,6 +837,14 @@ public interface OuterClientService extends Ordered{
 
 		public void setDc(String dc) {
 			this.dc = dc;
+		}
+
+		public String getShardName() {
+			return shardName;
+		}
+
+		public void setShardName(String shardName) {
+			this.shardName = shardName;
 		}
 
 		public void setCanRead(boolean canRead) {
@@ -917,9 +927,9 @@ public interface OuterClientService extends Ordered{
 	}
 
 	enum InstanceStatus {
-		MANUAL_MARKDOWN(-2),
 		INACTIVE(0),
-		ACTIVE(1);
+		ACTIVE(1),
+		SUSPECT(2);
 
 		private Integer intVal;
 
