@@ -3,9 +3,12 @@ package com.ctrip.xpipe.redis.console.service.migration.impl;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.retry.RetryTemplate;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.BeaconManager;
+import com.ctrip.xpipe.redis.checker.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
@@ -21,6 +24,8 @@ import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.job.retry.RetryCondition;
 import com.ctrip.xpipe.redis.console.job.retry.RetryNTimesOnCondition;
+import com.ctrip.xpipe.redis.console.migration.MigrationResources;
+import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
@@ -33,6 +38,7 @@ import com.ctrip.xpipe.redis.console.repository.MigrationBiClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -49,6 +55,8 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.rmi.ServerException;
 import java.util.*;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -57,6 +65,8 @@ import static com.ctrip.xpipe.api.migration.OuterClientService.DEFAULT;
 
 @Service
 public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventTblDao> implements MigrationService {
+
+    private static final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
 
     @Autowired
     @Lazy
@@ -96,6 +106,12 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     @Autowired
     private DcRelationsService dcRelationsService;
 
+    @Autowired(required = false)
+    private ConsoleServiceManager consoleServiceManager;
+
+    @Autowired(required = false)
+    private BeaconManager beaconManager;
+
     @Resource
     private ClusterRepository clusterRepository;
 
@@ -103,6 +119,9 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     private MigrationBiClusterRepository migrationBiClusterRepository;
 
     private MigrationShardTblDao migrationShardTblDao;
+
+    @Resource(name = MigrationResources.MIGRATION_POST_BEACON_EXECUTOR)
+    private Executor postMigrateBeaconExecutor;
 
     @PostConstruct
     private void postConstruct() throws ServerException {
@@ -715,6 +734,144 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         }
         logger.info("[syncBiMigration][end] {}", rst);
         return rst;
+    }
+
+    @Override
+    public RetMessage preMigrateSentinelBeacon(MigrationCluster migrationCluster) {
+        return migrateSentinelBeaconByDc(migrationCluster.clusterName(), migrationCluster.fromDc(), true);
+    }
+
+    @Override
+    public RetMessage postMigrateSentinelBeacon(MigrationCluster migrationCluster) {
+        return migrateSentinelBeaconByDc(migrationCluster.clusterName(), migrationCluster.destDc(), false);
+    }
+
+    @Override
+    public RetMessage preMigrateSentinelBeacon(String clusterName) {
+        return migrateSentinelBeaconInCurrentDc(clusterName, true);
+    }
+
+    @Override
+    public RetMessage postMigrateSentinelBeacon(String clusterName) {
+        return migrateSentinelBeaconInCurrentDc(clusterName, false);
+    }
+
+    @Override
+    public void postMigrateSentinelBeaconAsync(MigrationCluster migrationCluster) {
+        if (postMigrateBeaconExecutor == null) {
+            logger.warn("[postMigrateSentinelBeaconAsync][{}] executor not init", migrationCluster.clusterName());
+            return;
+        }
+        try {
+            postMigrateBeaconExecutor.execute(() -> {
+                try {
+                    postMigrateSentinelBeacon(migrationCluster);
+                } catch (Throwable th) {
+                    logger.warn("[postMigrateSentinelBeaconAsync][{}] fail", migrationCluster.clusterName(), th);
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            // queue full should be dropped
+            logger.warn("[postMigrateSentinelBeaconAsync][{}] dropped", migrationCluster.clusterName());
+        } catch (Throwable th) {
+            logger.warn("[postMigrateSentinelBeaconAsync][{}] submit fail", migrationCluster.clusterName(), th);
+        }
+    }
+
+    @Override
+    public boolean shouldMigrateSentinelBeacon(MigrationCluster migrationCluster) {
+        if (migrationCluster == null || StringUtil.isEmpty(migrationCluster.clusterName())) {
+            return false;
+        }
+        String clusterName = migrationCluster.clusterName();
+        ClusterMeta clusterMeta = getCurrentDcClusterMeta(clusterName);
+        if (clusterMeta == null) {
+            return false;
+        }
+        int orgId = resolveSentinelOrgId(clusterMeta);
+        ClusterType clusterType = resolveSentinelClusterType(clusterMeta);
+        return isSentinelMigrationEnabled(clusterName, orgId, clusterType);
+    }
+
+    private RetMessage migrateSentinelBeaconByDc(String clusterName, String dc, boolean preMigrate) {
+        if (StringUtil.isEmpty(dc) || dc.equalsIgnoreCase(CURRENT_DC)) {
+            return migrateSentinelBeaconInCurrentDc(clusterName, preMigrate);
+        }
+        if (consoleServiceManager == null) {
+            return RetMessage.createFailMessage(String.format("ConsoleServiceManager unavailable for dc %s", dc));
+        }
+        try {
+            return preMigrate
+                    ? consoleServiceManager.preMigrateSentinelBeacon(dc, clusterName)
+                    : consoleServiceManager.postMigrateSentinelBeacon(dc, clusterName);
+        } catch (Throwable th) {
+            logger.warn("[migrateSentinelBeaconByDc][{}][{}] failed", clusterName, dc, th);
+            return RetMessage.createFailMessage(th.getMessage());
+        }
+    }
+
+    private RetMessage migrateSentinelBeaconInCurrentDc(String clusterName, boolean preMigrate) {
+        ClusterMeta clusterMeta = getCurrentDcClusterMeta(clusterName);
+        if (clusterMeta == null) {
+            return RetMessage.createFailMessage(String.format("cluster %s not found in dc %s meta", clusterName, CURRENT_DC));
+        }
+        int orgId = resolveSentinelOrgId(clusterMeta);
+        ClusterType clusterType = resolveSentinelClusterType(clusterMeta);
+        if (!isSentinelMigrationEnabled(clusterName, orgId, clusterType)) {
+            return RetMessage.createSuccessMessage("sentinel beacon migration skipped");
+        }
+        if (beaconManager == null) {
+            return RetMessage.createFailMessage("BeaconManager unavailable");
+        }
+
+        try {
+            if (preMigrate) {
+                beaconManager.unregisterCluster(clusterName, clusterType, orgId, BeaconRouteType.SENTINEL);
+                return RetMessage.createSuccessMessage("sentinel beacon unregistered");
+            }
+
+            beaconManager.registerCluster(clusterName, clusterType, orgId, String.valueOf(System.currentTimeMillis()),
+                    BeaconRouteType.SENTINEL);
+            return RetMessage.createSuccessMessage("sentinel beacon registered");
+        } catch (Throwable th) {
+            logger.warn("[migrateSentinelBeaconInCurrentDc][{}][{}] fail", clusterName, preMigrate, th);
+            return RetMessage.createFailMessage(th.getMessage());
+        }
+    }
+
+    private ClusterType resolveSentinelClusterType(ClusterMeta clusterMeta) {
+        if (clusterMeta == null) {
+            return null;
+        }
+        if (!StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
+            return ClusterType.lookup(clusterMeta.getAzGroupType());
+        }
+        return ClusterType.lookup(clusterMeta.getType());
+    }
+
+    private int resolveSentinelOrgId(ClusterMeta clusterMeta) {
+        if (clusterMeta != null && clusterMeta.getOrgId() != null) {
+            return clusterMeta.getOrgId();
+        }
+        return -1;
+    }
+
+    private ClusterMeta getCurrentDcClusterMeta(String clusterName) {
+        if (metaCache == null || metaCache.getXpipeMeta() == null || metaCache.getXpipeMeta().getDcs() == null
+                || !metaCache.getXpipeMeta().getDcs().containsKey(CURRENT_DC)
+                || metaCache.getXpipeMeta().getDcs().get(CURRENT_DC).getClusters() == null) {
+            return null;
+        }
+        return metaCache.getXpipeMeta().getDcs().get(CURRENT_DC).getClusters().get(clusterName);
+    }
+
+    private boolean isSentinelMigrationEnabled(String clusterName, int orgId, ClusterType clusterType) {
+        if (!config.supportSentinelBeacon(orgId, clusterName)) {
+            return false;
+        }
+        return clusterType == ClusterType.ONE_WAY
+                || clusterType == ClusterType.SINGLE_DC
+                || clusterType == ClusterType.LOCAL_DC;
     }
 
     private String clusterRelatedDcToString(List<DcTbl> clusterRelatedDc) {

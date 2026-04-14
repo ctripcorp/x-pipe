@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
@@ -10,10 +11,12 @@ import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHeal
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
+import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestOperations;
 
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +31,13 @@ import static com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath.*;
  *         Jun 07, 2017
  */
 public class DefaultConsoleService extends AbstractService implements ConsoleService{
+
+    private static final int SENTINEL_BEACON_MIGRATE_CONNECT_TIMEOUT_MILLI = 1200;
+    private static final int SENTINEL_BEACON_MIGRATE_READ_TIMEOUT_MILLI = 2000;
+    private static final int SENTINEL_BEACON_MIGRATE_MAX_CONN = 100;
+    private static final int SENTINEL_BEACON_MIGRATE_RETRY_TIMES = 0;
+    private static final String SENTINEL_BEACON_PRE_MIGRATE_PATH = "/api/beacon/migration/sentinel/pre/{clusterName}";
+    private static final String SENTINEL_BEACON_POST_MIGRATE_PATH = "/api/beacon/migration/sentinel/post/{clusterName}";
 
     private String address;
 
@@ -73,6 +83,12 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String dcsInSameRegionUrl;
 
+    private final String sentinelBeaconPreMigrateUrl;
+
+    private final String sentinelBeaconPostMigrateUrl;
+
+    private final RestOperations sentinelMigrationRestTemplate;
+
     private static final ParameterizedTypeReference<Map<HostPort, Long>> hostDelayTypeDef =
             new ParameterizedTypeReference<Map<HostPort, Long>>(){};
 
@@ -105,6 +121,15 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         innerDcIsolatedUrl = String.format("%s%s", this.address, PATH_GET_INNER_DC_ISOLATED);
         dcIsolatedUrl = String.format("%s%s", this.address, PATH_GET_DC_ISOLATED);
         dcsInSameRegionUrl = String.format("%s%s", this.address, PATH_GET_REGION_DCS);
+        sentinelBeaconPreMigrateUrl = String.format("%s%s", this.address, SENTINEL_BEACON_PRE_MIGRATE_PATH);
+        sentinelBeaconPostMigrateUrl = String.format("%s%s", this.address, SENTINEL_BEACON_POST_MIGRATE_PATH);
+        sentinelMigrationRestTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(
+                SENTINEL_BEACON_MIGRATE_MAX_CONN,
+                SENTINEL_BEACON_MIGRATE_MAX_CONN * 4,
+                SENTINEL_BEACON_MIGRATE_CONNECT_TIMEOUT_MILLI,
+                SENTINEL_BEACON_MIGRATE_READ_TIMEOUT_MILLI,
+                SENTINEL_BEACON_MIGRATE_RETRY_TIMES
+        );
     }
 
     @Override
@@ -221,6 +246,16 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     @Override
     public List<String> dcsInCurrentRegion() {
         return restTemplate.getForObject(dcsInSameRegionUrl, List.class);
+    }
+
+    @Override
+    public RetMessage preMigrateSentinelBeacon(String clusterName) {
+        return sentinelMigrationRestTemplate.postForObject(sentinelBeaconPreMigrateUrl, null, RetMessage.class, clusterName);
+    }
+
+    @Override
+    public RetMessage postMigrateSentinelBeacon(String clusterName) {
+        return sentinelMigrationRestTemplate.postForObject(sentinelBeaconPostMigrateUrl, null, RetMessage.class, clusterName);
     }
 
     @Override

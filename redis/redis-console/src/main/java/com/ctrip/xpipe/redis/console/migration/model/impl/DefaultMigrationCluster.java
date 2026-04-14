@@ -228,6 +228,15 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     }
 
     @Override
+    public void updateStepResultForAllShards(ShardMigrationStep step, boolean success, String message) {
+        for (MigrationShard migrationShard : getMigrationShards()) {
+            migrationShard.getShardMigrationResult().updateStepResult(step, success, message);
+            migrationService.updateMigrationShardLogById(migrationShard.getMigrationShard().getId(),
+                    migrationShard.getShardMigrationResult().encode());
+        }
+    }
+
+    @Override
     public OuterClientService getOuterClientService() {
 
         return outerClientService;

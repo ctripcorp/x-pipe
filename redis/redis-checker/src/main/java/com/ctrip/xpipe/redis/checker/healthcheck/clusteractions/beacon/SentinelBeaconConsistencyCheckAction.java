@@ -33,10 +33,6 @@ public class SentinelBeaconConsistencyCheckAction extends BeaconConsistencyCheck
 
     @Override
     protected boolean shouldCheck(HealthCheckInstance checkInstance) {
-        CheckInfo checkInfo = checkInstance.getCheckInfo();
-        if (!checkInstance.getHealthCheckConfig().supportSentinelBeacon(checkInfo.getClusterOrgId(), checkInfo.getClusterId())) {
-            return false;
-        }
         return shouldCheckInstance(checkInstance);
     }
 }

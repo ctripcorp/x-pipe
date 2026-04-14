@@ -34,6 +34,8 @@ public interface MigrationCluster extends Observer, Observable, MigrationCluster
 
     void markCheckFail(String failMessage);
 
+    void updateStepResultForAllShards(ShardMigrationStep step, boolean success, String message);
+
     OuterClientService getOuterClientService();
 
 }

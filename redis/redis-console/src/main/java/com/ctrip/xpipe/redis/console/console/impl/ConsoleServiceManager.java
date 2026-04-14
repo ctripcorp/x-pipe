@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.console.console.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.CheckerService;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
@@ -220,6 +221,14 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
     public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getLocalRedisInfosByDc(String dcId) {
         ConsoleService service = getServiceByDc(dcId);
         return service.getAllLocalRedisInfos();
+    }
+
+    public RetMessage preMigrateSentinelBeacon(String dcId, String clusterName) {
+        return getServiceByDc(dcId).preMigrateSentinelBeacon(clusterName);
+    }
+
+    public RetMessage postMigrateSentinelBeacon(String dcId, String clusterName) {
+        return getServiceByDc(dcId).postMigrateSentinelBeacon(clusterName);
     }
 
     public <T> boolean quorumSatisfy(List<T> results, Function<T, Boolean> predicate){

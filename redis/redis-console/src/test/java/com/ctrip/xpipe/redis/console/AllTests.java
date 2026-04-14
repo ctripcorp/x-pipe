@@ -58,6 +58,7 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiatedStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessStateTest;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPreMigratingStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateMachineTest;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTest;
@@ -83,6 +84,7 @@ import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.BeaconMigrationServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
+import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplSentinelBeaconTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
 import com.ctrip.xpipe.redis.console.spring.XPipeHandlerMethodCommandTest;
 import org.junit.runner.RunWith;
@@ -128,6 +130,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultMigrationShardTest.class,
         MigrationStatTest.class,
         MigrationInitiatedStateTest.class,
+        MigrationPreMigratingStateTest.class,
         MigrationPublishStatTest.class,
         SingleShardMigrationTest.class,
         MigrationShardRollbackTest.class,
@@ -185,6 +188,7 @@ import org.junit.runners.Suite.SuiteClasses;
         MetaCacheCheckTest.class,
         DefaultMigrationEventManagerTest.class,
         MigrationServiceImplPaginationTest.class,
+        MigrationServiceImplSentinelBeaconTest.class,
         SentinelConfigCheckTest.class,
         DelayServiceTest.class,
         ShardMetaServiceImplTest.class,

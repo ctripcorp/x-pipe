@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.notifier.DefaultClusterMonitorModifiedNotif
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.BeaconMigrationServiceImplTest;
+import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplSentinelBeaconTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -29,6 +30,7 @@ import org.junit.runners.Suite;
         MigrationChooseTargetDcCmdTest.class,
         MigrationBuildEventCmdTest.class,
         MigrationDoExecuteCmdTest.class,
+        MigrationServiceImplSentinelBeaconTest.class,
 
         DefaultMonitorManagerTest.class,
         BeaconClusterMonitorCheckTest.class,

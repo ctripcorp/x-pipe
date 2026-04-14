@@ -76,7 +76,7 @@ public class MigrationCheckingStateTest extends AbstractMigrationStateTest {
         sleep(50);
         migrationCluster.getMigrationShards().forEach(migrationShard -> verify(migrationShard).doCheck());
 
-        verify(migrationCluster).updateStat(isA(MigrationMigratingState.class));
+        verify(migrationCluster).updateStat(isA(MigrationPreMigratingState.class));
         verify(migrationCluster).process();
     }
 
@@ -93,7 +93,7 @@ public class MigrationCheckingStateTest extends AbstractMigrationStateTest {
 
         sleep(50);
         migrationCluster.getMigrationShards().forEach(migrationShard -> verify(migrationShard).doCheck());
-        verify(migrationCluster, times(0)).updateStat(isA(MigrationMigratingState.class));
+        verify(migrationCluster, times(0)).updateStat(isA(MigrationPreMigratingState.class));
         verify(migrationCluster, times(0)).process();
 
         checkingState.getStateActionState().tryRollback();

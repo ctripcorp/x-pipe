@@ -25,7 +25,7 @@ public class SentinelBeaconConsistencyCheckActionFactory extends AbstractCluster
     private BeaconManager beaconManager;
 
     @Autowired
-    private List<BeaconMetaController> controllers;
+    private List<SentinelBeaconMetaController> controllers;
 
     @Override
     public SiteLeaderAwareHealthCheckAction create(ClusterHealthCheckInstance instance) {

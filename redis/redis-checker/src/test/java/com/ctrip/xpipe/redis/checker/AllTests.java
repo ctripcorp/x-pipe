@@ -76,6 +76,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.One
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.DefaultSentinelMonitorsCheckTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconConsistencyCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.DefaultBeaconMetaControllerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.SentinelBeaconMigrationControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfigTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.factory.DefaultHealthCheckEndpointFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.factory.DefaultHealthCheckInstanceFactoryTest;
@@ -153,6 +154,7 @@ import org.junit.runners.Suite;
 
         BeaconConsistencyCheckActionTest.class,
         DefaultBeaconMetaControllerTest.class,
+        SentinelBeaconMigrationControllerTest.class,
 
         SentinelHelloTest.class,
         HealthStatusTest.class,

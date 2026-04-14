@@ -29,4 +29,12 @@ public interface BeaconManager {
 
     BeaconCheckStatus checkClusterHash(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime, BeaconRouteType routeType);
 
+    default void unregisterCluster(String clusterId, ClusterType clusterType, int orgId) {
+        unregisterCluster(clusterId, clusterType, orgId, BeaconRouteType.DR);
+    }
+
+    default void unregisterCluster(String clusterId, ClusterType clusterType, int orgId, BeaconRouteType routeType) {
+        // no-op for compatibility in test implementations
+    }
+
 }

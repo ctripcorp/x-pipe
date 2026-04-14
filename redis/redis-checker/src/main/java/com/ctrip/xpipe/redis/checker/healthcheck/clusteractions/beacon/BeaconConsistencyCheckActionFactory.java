@@ -24,7 +24,7 @@ public class BeaconConsistencyCheckActionFactory extends AbstractClusterLeaderAw
     private BeaconManager beaconManager;
 
     @Autowired
-    private List<BeaconMetaController> controllers;
+    private List<DrBeaconMetaController> controllers;
     @Autowired
     private MetaCache metaCache;
 

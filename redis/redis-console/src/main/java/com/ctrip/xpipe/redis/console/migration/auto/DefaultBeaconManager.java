@@ -128,6 +128,24 @@ public class DefaultBeaconManager implements BeaconManager {
         return status;
     }
 
+    @Override
+    public void unregisterCluster(String clusterId, ClusterType clusterType, int orgId, BeaconRouteType routeType) {
+        MonitorService service = getMonitorService(clusterId, orgId, routeType);
+        if (service == null) {
+            return;
+        }
+        BeaconSystem system = resolveBeaconSystem(clusterType, routeType);
+        if (system == null) {
+            logger.info("[unregisterCluster][{}] no beacon system found", clusterId);
+            return;
+        }
+        try {
+            service.unregisterCluster(system.getSystemName(), clusterId);
+        } catch (Throwable th) {
+            logger.info("[unregisterCluster][{}] unregister fail", clusterId, th);
+        }
+    }
+
     private MonitorService getMonitorService(String clusterId, int orgId, BeaconRouteType routeType) {
         MonitorService service = monitorManager.get(orgId, clusterId, routeType);
         if (null == service) {
