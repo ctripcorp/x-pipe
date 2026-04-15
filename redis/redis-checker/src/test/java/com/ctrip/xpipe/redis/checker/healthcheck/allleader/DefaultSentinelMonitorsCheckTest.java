@@ -271,4 +271,43 @@ public class DefaultSentinelMonitorsCheckTest {
         verify(sentinelManager).removeSentinelMonitor(any(), any());
     }
 
+    @Test
+    public void shouldRemoveWhenClusterIsManagedBySentinelBeacon() throws Exception {
+        String cluster = "beacon-gray-cluster";
+        String shard = "test-shard";
+        String idc = "jq";
+        String monitorName = SentinelUtil.getSentinelMonitorName(cluster, shard, idc);
+        String result = "sentinel_masters:1\n" +
+                "sentinel_tilt:0\n" +
+                "sentinel_running_scripts:0\n" +
+                "sentinel_scripts_queue_length:0\n" +
+                "master0:name=" + monitorName + ",status=ok,address=10.5.109.151:6447,slaves=2,sentinels=5";
+
+        when(sentinelManager.infoSentinel(any())).thenReturn(new AbstractCommand<String>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(result);
+            }
+
+            @Override
+            protected void doReset() {
+
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(config.supportSentinelHealthCheck(any(), any())).thenReturn(true);
+        when(config.supportSentinelBeacon(anyLong(), anyString())).thenReturn(true);
+        when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(new Triple<>(cluster, shard, 1L));
+
+        checker.checkSentinel(new SentinelMeta().setClusterType("one_way").setAddress("127.0.0.1:5000").setId(1L),
+                new HostPort("127.0.0.1", 5000));
+
+        verify(sentinelManager).removeSentinelMonitor(any(), any());
+        verify(alertManager).alert(eq(cluster), eq(shard), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
+    }
+
 }

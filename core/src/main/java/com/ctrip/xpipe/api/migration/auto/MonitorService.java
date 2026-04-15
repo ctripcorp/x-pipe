@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.api.migration.auto;
 
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
 
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +30,16 @@ public interface MonitorService {
     void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups, Map<String, String> extraData);
 
     void updateCluster(String system, String clusterName, Set<MonitorGroupMeta> groups, Map<String, String> extraData);
+
+    default void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups,
+                                 Set<MonitorShardMeta> shards, Map<String, String> extraData) {
+        registerCluster(system, clusterName, groups, extraData);
+    }
+
+    default void updateCluster(String system, String clusterName, Set<MonitorGroupMeta> groups,
+                               Set<MonitorShardMeta> shards, Map<String, String> extraData) {
+        updateCluster(system, clusterName, groups, extraData);
+    }
 
     void unregisterCluster(String system, String clusterName);
 

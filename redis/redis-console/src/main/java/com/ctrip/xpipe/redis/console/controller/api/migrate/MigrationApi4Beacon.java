@@ -6,11 +6,14 @@ import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigration
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationResponse;
 import com.ctrip.xpipe.redis.console.migration.exception.MigrationUnderProcessingException;
 import com.ctrip.xpipe.redis.console.service.migration.BeaconMigrationService;
+import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,11 +29,18 @@ import java.util.concurrent.RejectedExecutionException;
 @RequestMapping("/api/beacon/migration")
 public class MigrationApi4Beacon {
 
+    public static final String PATH_POST_SENTINEL_BEACON_PRE_MIGRATE = "/sentinel/pre/{clusterName}";
+
+    public static final String PATH_POST_SENTINEL_BEACON_POST_MIGRATE = "/sentinel/post/{clusterName}";
+
     @Autowired
     private BeaconMigrationService beaconMigrationService;
 
     @Autowired
     private ConsoleConfig config;
+
+    @Autowired(required = false)
+    private MigrationService migrationService;
 
     Logger logger = LoggerFactory.getLogger(MigrationApi4Beacon.class);
 
@@ -115,6 +125,22 @@ public class MigrationApi4Beacon {
         }
 
         return response;
+    }
+
+    @PostMapping(PATH_POST_SENTINEL_BEACON_PRE_MIGRATE)
+    public RetMessage preMigrateSentinelBeacon(@PathVariable String clusterName) {
+        if (migrationService == null) {
+            return RetMessage.createFailMessage("migration service unavailable");
+        }
+        return migrationService.preMigrateSentinelBeacon(clusterName);
+    }
+
+    @PostMapping(PATH_POST_SENTINEL_BEACON_POST_MIGRATE)
+    public RetMessage postMigrateSentinelBeacon(@PathVariable String clusterName) {
+        if (migrationService == null) {
+            return RetMessage.createFailMessage("migration service unavailable");
+        }
+        return migrationService.postMigrateSentinelBeacon(clusterName);
     }
 
 }

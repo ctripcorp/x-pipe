@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManagerTest;
 import com.ctrip.xpipe.redis.console.controller.api.ChangeConfigTest;
+import com.ctrip.xpipe.redis.console.controller.api.BeaconRouteControllerTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
@@ -25,6 +26,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone.KeeperAvailableZoneCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.SentinelBeaconClusterMonitorCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig.CheckClusterTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthStateTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManagerTest;
@@ -56,6 +58,7 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiatedStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessStateTest;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPreMigratingStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateMachineTest;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTest;
@@ -81,6 +84,7 @@ import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.BeaconMigrationServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
+import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplSentinelBeaconTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
 import com.ctrip.xpipe.redis.console.spring.XPipeHandlerMethodCommandTest;
 import org.junit.runner.RunWith;
@@ -126,6 +130,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultMigrationShardTest.class,
         MigrationStatTest.class,
         MigrationInitiatedStateTest.class,
+        MigrationPreMigratingStateTest.class,
         MigrationPublishStatTest.class,
         SingleShardMigrationTest.class,
         MigrationShardRollbackTest.class,
@@ -183,6 +188,7 @@ import org.junit.runners.Suite.SuiteClasses;
         MetaCacheCheckTest.class,
         DefaultMigrationEventManagerTest.class,
         MigrationServiceImplPaginationTest.class,
+        MigrationServiceImplSentinelBeaconTest.class,
         SentinelConfigCheckTest.class,
         DelayServiceTest.class,
         ShardMetaServiceImplTest.class,
@@ -219,8 +225,10 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultMonitorManagerTest.class,
         DefaultMonitorClusterManagerTest.class,
         BeaconClusterMonitorCheckTest.class,
+        SentinelBeaconClusterMonitorCheckTest.class,
         DefaultClusterMonitorModifiedNotifierTest.class,
         DefaultBeaconManagerTest.class,
+        BeaconRouteControllerTest.class,
 
         DefaultPersistenceCacheTest.class,
         CheckerPersistenceCacheTest.class,

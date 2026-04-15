@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
+import com.ctrip.xpipe.redis.checker.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterInstanceInfo;
@@ -41,31 +42,32 @@ public class BeaconConsistencyCheckActionTest extends AbstractCheckerTest {
 
     @Test
     public void beaconNoCluster_doRegister() {
-        Mockito.when(beaconManager.checkClusterHash(cluster, ClusterType.ONE_WAY, orgId, lastModifyTime)).thenReturn(BeaconCheckStatus.CLUSTER_NOT_FOUND);
+        Mockito.when(beaconManager.checkClusterHash(cluster, ClusterType.ONE_WAY, orgId, lastModifyTime, BeaconRouteType.DR))
+                .thenReturn(BeaconCheckStatus.CLUSTER_NOT_FOUND);
         action.doTask();
-        Mockito.verify(beaconManager).registerCluster(info.getClusterId(), ClusterType.ONE_WAY, orgId, lastModifyTime);
+        Mockito.verify(beaconManager).registerCluster(info.getClusterId(), ClusterType.ONE_WAY, orgId, lastModifyTime, BeaconRouteType.DR);
     }
 
     @Test
     public void clusterChanged_doUpdateMeta() {
-        Mockito.when(beaconManager.checkClusterHash(cluster, ClusterType.ONE_WAY, orgId, lastModifyTime))
+        Mockito.when(beaconManager.checkClusterHash(cluster, ClusterType.ONE_WAY, orgId, lastModifyTime, BeaconRouteType.DR))
                 .thenReturn(BeaconCheckStatus.INCONSISTENCY);
 
         action.doTask();
 
-        Mockito.verify(beaconManager).checkClusterHash(cluster, ClusterType.ONE_WAY, orgId, lastModifyTime);
-        Mockito.verify(beaconManager).registerCluster(info.getClusterId(), ClusterType.ONE_WAY, orgId, lastModifyTime);
+        Mockito.verify(beaconManager).checkClusterHash(cluster, ClusterType.ONE_WAY, orgId, lastModifyTime, BeaconRouteType.DR);
+        Mockito.verify(beaconManager).registerCluster(info.getClusterId(), ClusterType.ONE_WAY, orgId, lastModifyTime, BeaconRouteType.DR);
     }
 
     @Test
     public void clusterChanged_butBeaconLastModifyTimeNewer_ignoreUpdate() {
-        Mockito.when(beaconManager.checkClusterHash(cluster, ClusterType.ONE_WAY, orgId, lastModifyTime))
+        Mockito.when(beaconManager.checkClusterHash(cluster, ClusterType.ONE_WAY, orgId, lastModifyTime, BeaconRouteType.DR))
                 .thenReturn(BeaconCheckStatus.INCONSISTENCY_IGNORE);
 
         action.doTask();
 
-        Mockito.verify(beaconManager).checkClusterHash(cluster, ClusterType.ONE_WAY, orgId, lastModifyTime);
-        Mockito.verify(beaconManager, Mockito.never()).registerCluster(info.getClusterId(), ClusterType.ONE_WAY, orgId, lastModifyTime);
+        Mockito.verify(beaconManager).checkClusterHash(cluster, ClusterType.ONE_WAY, orgId, lastModifyTime, BeaconRouteType.DR);
+        Mockito.verify(beaconManager, Mockito.never()).registerCluster(info.getClusterId(), ClusterType.ONE_WAY, orgId, lastModifyTime, BeaconRouteType.DR);
     }
 
 }

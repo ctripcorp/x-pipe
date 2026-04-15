@@ -96,4 +96,16 @@ public interface MigrationService {
 
     boolean syncBiMigration(BiMigrationReq biMigrationReq, String operator) throws Exception;
 
+    RetMessage preMigrateSentinelBeacon(MigrationCluster migrationCluster);
+
+    RetMessage postMigrateSentinelBeacon(MigrationCluster migrationCluster);
+
+    RetMessage preMigrateSentinelBeacon(String clusterName);
+
+    RetMessage postMigrateSentinelBeacon(String clusterName);
+
+    void postMigrateSentinelBeaconAsync(MigrationCluster migrationCluster);
+
+    boolean shouldMigrateSentinelBeacon(MigrationCluster migrationCluster);
+
 }

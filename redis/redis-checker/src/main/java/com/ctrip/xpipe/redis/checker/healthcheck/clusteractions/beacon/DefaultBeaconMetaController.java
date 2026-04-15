@@ -20,7 +20,7 @@ import java.util.Set;
  * date 2021/1/17
  */
 @Component
-public class DefaultBeaconMetaController implements BeaconMetaController {
+public class DefaultBeaconMetaController implements DrBeaconMetaController {
 
     private static Logger logger = LoggerFactory.getLogger(DefaultBeaconMetaController.class);
 

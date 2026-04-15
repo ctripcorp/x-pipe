@@ -32,6 +32,7 @@ public class DataCenterConfigBean extends AbstractConfigBean {
     public static final String KEY_CONSOLE_DOMAINS = "console.domains";
 
     public static final String KEY_BEACON_ORG_ROUTE = "beacon.org.routes";
+    public static final String KEY_BEACON_SENTINEL_ORG_ROUTE = "beacon.sentinel.org.routes";
 
     public static final String KEY_CONSOLE_NO_DB_DOMAIN = "console.no.db.domain";
 
@@ -91,6 +92,10 @@ public class DataCenterConfigBean extends AbstractConfigBean {
 
     public String getBeaconOrgRoutes() {
         return getProperty(KEY_BEACON_ORG_ROUTE, "[]");
+    }
+
+    public String getBeaconSentinelOrgRoutes() {
+        return getProperty(KEY_BEACON_SENTINEL_ORG_ROUTE, "[]");
     }
 
     public String getHttpAcceptEncoding() {

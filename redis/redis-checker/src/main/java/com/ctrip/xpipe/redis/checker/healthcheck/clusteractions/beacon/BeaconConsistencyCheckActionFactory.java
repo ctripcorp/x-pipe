@@ -24,7 +24,7 @@ public class BeaconConsistencyCheckActionFactory extends AbstractClusterLeaderAw
     private BeaconManager beaconManager;
 
     @Autowired
-    private List<BeaconMetaController> controllers;
+    private List<DrBeaconMetaController> controllers;
     @Autowired
     private MetaCache metaCache;
 
@@ -50,6 +50,7 @@ public class BeaconConsistencyCheckActionFactory extends AbstractClusterLeaderAw
     @Override
     public boolean supportInstnace(ClusterHealthCheckInstance instance) {
         ClusterInstanceInfo info = instance.getCheckInfo();
-        return !(info.getClusterType() == ClusterType.ONE_WAY && metaCache.isBackupDcAndCrossRegion(currentDc, info.getActiveDc(), info.getDcs()));
+        return !(info.getClusterType() == ClusterType.ONE_WAY
+                && metaCache.isBackupDcAndCrossRegion(currentDc, info.getActiveDc(), info.getDcs()));
     }
 }

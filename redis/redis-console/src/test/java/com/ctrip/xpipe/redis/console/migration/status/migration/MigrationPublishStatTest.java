@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.migration.status.migration;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
-import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
@@ -16,10 +15,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.web.client.ResourceAccessException;
 
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.mockito.Mockito.*;
 
@@ -45,6 +41,8 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 		when(migrationCluster.getScheduled()).thenReturn(scheduled);
 		when(migrationCluster.getMigrationExecutor()).thenReturn(executors);
 		when(migrationCluster.getRedisService()).thenReturn(redisService);
+		when(migrationCluster.getMigrationService()).thenReturn(migrationService);
+		when(migrationService.shouldMigrateSentinelBeacon(migrationCluster)).thenReturn(true);
 		
 	}
 
@@ -103,5 +101,69 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 		
 		stat.getStateActionState().tryAction();
 		verify(migrationCluster).updateStat(isA(MigrationPublishFailState.class));
+	}
+
+	@Test
+	public void publishSuccessShouldPostMigrateSentinelBeaconAsync() {
+		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
+		stat.setPublishService(new AbstractOuterClientService() {
+			@Override
+			public DcMeta getOutClientDcMeta(String dc) throws Exception {
+				return null;
+			}
+
+			@Override
+			public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
+														 InetSocketAddress newMaster) {
+				MigrationPublishResult result = new MigrationPublishResult();
+				result.setSuccess(true);
+				return result;
+			}
+
+			@Override
+			public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName,
+														 List<InetSocketAddress> newMasters) {
+				MigrationPublishResult result = new MigrationPublishResult();
+				result.setSuccess(true);
+				return result;
+			}
+		});
+
+		stat.getStateActionState().tryAction();
+		sleep(50);
+		verify(migrationService).postMigrateSentinelBeaconAsync(migrationCluster);
+	}
+
+	@Test
+	public void publishSuccessShouldSkipPostMigrateSentinelBeaconAsyncWhenNotInGray() {
+		when(migrationService.shouldMigrateSentinelBeacon(migrationCluster)).thenReturn(false);
+
+		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
+		stat.setPublishService(new AbstractOuterClientService() {
+			@Override
+			public DcMeta getOutClientDcMeta(String dc) throws Exception {
+				return null;
+			}
+
+			@Override
+			public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
+														 InetSocketAddress newMaster) {
+				MigrationPublishResult result = new MigrationPublishResult();
+				result.setSuccess(true);
+				return result;
+			}
+
+			@Override
+			public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName,
+														 List<InetSocketAddress> newMasters) {
+				MigrationPublishResult result = new MigrationPublishResult();
+				result.setSuccess(true);
+				return result;
+			}
+		});
+
+		stat.getStateActionState().tryAction();
+		sleep(50);
+		verify(migrationService, never()).postMigrateSentinelBeaconAsync(migrationCluster);
 	}
 }
