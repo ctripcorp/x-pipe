@@ -41,4 +41,9 @@ public class TestBeaconManager implements BeaconManager {
                                               BeaconRouteType routeType) {
         return checkClusterHash(clusterId, clusterType, orgId, lastModifyTime);
     }
+
+    @Override
+    public int computeClusterMetaHash(String clusterId, ClusterType clusterType, BeaconRouteType routeType) {
+        return 0;
+    }
 }

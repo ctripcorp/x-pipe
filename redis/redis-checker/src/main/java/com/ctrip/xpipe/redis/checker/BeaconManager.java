@@ -29,6 +29,12 @@ public interface BeaconManager {
 
     BeaconCheckStatus checkClusterHash(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime, BeaconRouteType routeType);
 
+    /**
+     * Local cluster meta hash used in {@link #checkClusterHash}; same as
+     * {@code buildMonitorClusterMeta(clusterId, routeType).generateHashCodeForBeaconCheck()} in console implementation.
+     */
+    int computeClusterMetaHash(String clusterId, ClusterType clusterType, BeaconRouteType routeType);
+
     default void unregisterCluster(String clusterId, ClusterType clusterType, int orgId) {
         unregisterCluster(clusterId, clusterType, orgId, BeaconRouteType.DR);
     }

@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.checker.BeaconRouteType;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
@@ -23,6 +25,9 @@ public class BeaconRouteController extends AbstractConsoleController {
 
     @Autowired
     private MonitorManager monitorManager;
+
+    @Autowired
+    private BeaconManager beaconManager;
 
     @GetMapping("/sentinel/clusters")
     public Map<String, Set<String>> getSentinelBeaconClusters(@RequestParam(name = "system", required = false) String system,
@@ -59,6 +64,25 @@ public class BeaconRouteController extends AbstractConsoleController {
         route.put("beaconHost", service.getHost());
         route.put("routeType", selectedRouteType.name());
         return route;
+    }
+
+    /**
+     * Hash of local monitor cluster meta, same computation as {@link com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager#checkClusterHash}
+     * local side ({@code MonitorClusterMeta#generateHashCodeForBeaconCheck}).
+     */
+    @GetMapping("/sentinel/cluster/hash")
+    public Map<String, Object> getClusterMetaHash(@RequestParam("clusterName") String clusterName,
+                                                  @RequestParam("clusterType") String clusterType,
+                                                  @RequestParam(name = "routeType", required = false) String routeType) {
+        BeaconRouteType selectedRouteType = parseRouteType(routeType);
+        ClusterType type = ClusterType.lookup(clusterType);
+        int metaHash = beaconManager.computeClusterMetaHash(clusterName, type, selectedRouteType);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("clusterName", clusterName);
+        result.put("clusterType", type.name());
+        result.put("routeType", selectedRouteType.name());
+        result.put("metaHash", metaHash);
+        return result;
     }
 
     private BeaconRouteType parseRouteType(String routeType) {

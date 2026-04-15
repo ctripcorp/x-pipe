@@ -129,6 +129,11 @@ public class DefaultBeaconManager implements BeaconManager {
     }
 
     @Override
+    public int computeClusterMetaHash(String clusterId, ClusterType clusterType, BeaconRouteType routeType) {
+        return buildMonitorClusterMeta(clusterId, routeType).generateHashCodeForBeaconCheck();
+    }
+
+    @Override
     public void unregisterCluster(String clusterId, ClusterType clusterType, int orgId, BeaconRouteType routeType) {
         MonitorService service = getMonitorService(clusterId, orgId, routeType);
         if (service == null) {
