@@ -92,7 +92,7 @@ public class DefaultBeaconManager implements BeaconManager {
         }
         BeaconSystem system = resolveBeaconSystem(clusterType, routeType);
         if (null == system) {
-            logger.info("[checkClusterHash][{}] no beacon system found", clusterId);
+            logger.info("[checkClusterHash][{}][{}] no beacon system found", clusterId, routeType);
             return BeaconCheckStatus.SYSTEM_NOT_FOUND;
         }
         int hash = 0;
@@ -110,6 +110,7 @@ public class DefaultBeaconManager implements BeaconManager {
             return BeaconCheckStatus.CONSISTENCY;
         }
 
+        logger.info("[checkClusterHash][{}][{}] hash inconsisent lo:{} be:{}", clusterId, routeType, localHash, hash);
         BeaconCheckStatus status = BeaconCheckStatus.INCONSISTENCY;
         if (checkerConfig.checkBeaconLastModifyTime()) {
             try {
@@ -122,7 +123,7 @@ public class DefaultBeaconManager implements BeaconManager {
                     }
                 }
             } catch (Throwable th) {
-                logger.debug("[checkClusterHash][{}][checkModifyTimeFail] {}", clusterId, th.getMessage());
+                logger.debug("[checkClusterHash][{}][{}][checkModifyTimeFail] {}", clusterId, routeType, th.getMessage());
             }
         }
         return status;

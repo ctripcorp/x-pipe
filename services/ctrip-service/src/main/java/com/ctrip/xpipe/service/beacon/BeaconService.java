@@ -118,6 +118,7 @@ public class BeaconService implements MonitorService {
 
     private void registerCluster(String system, String clusterName, Set<MonitorGroupMeta> groups,
                                  Set<MonitorShardMeta> shards, Map<String, String> extraData, HttpMethod method) {
+        logger.info("[registerCluster][{}][{}]", system, clusterName);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<Object> entity = new HttpEntity<>(new MonitorClusterMeta(groups, shards, extraData), headers);
@@ -137,6 +138,7 @@ public class BeaconService implements MonitorService {
         if (system == null || clusterName == null) {
             return;
         }
+        logger.info("[unregisterCluster][{}][{}]", system, clusterName);
         ResponseEntity<BeaconResp> respResponseEntity = restTemplate.exchange(clusterPath, HttpMethod.DELETE,
             null, BeaconResp.class, system, clusterName);
         BeaconResp beaconResp = respResponseEntity.getBody();

@@ -93,7 +93,7 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
             analyzerContext.recycleKeeperContainer(bestKeeperContainer, (Boolean) cause[1]);
         }
         if (filterChain.isDataOverLoad(model)) {
-            logger.warn("[analyzeKeeperContainerUsedInfo] no available space for overload keeperContainer to migrate {}", model);
+            logger.debug("[analyzeKeeperContainerUsedInfo] no available space for overload keeperContainer to migrate {}", model);
             CatEventMonitor.DEFAULT.logEvent(KEEPER_RESOURCE_LACK, "Dc:" + currentDc + " Org:" + model.getOrg() + " Az:" + model.getAz());
             analyzerContext.addResourceLackPlan(model, null, KeeperContainerOverloadCause.RESOURCE_LACK.name());
         }
@@ -118,7 +118,7 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
             }
         }
         if (filterChain.isKeeperContainerPairOverload(modelA, modelB, analyzerContext.getIPPairData(modelA.getKeeperIp(), modelB.getKeeperIp()))) {
-            logger.warn("[analyzeKeeperContainerUsedInfo] no available space for overload keeperContainer pair to migrate {} {}", modelA, modelB);
+            logger.debug("[analyzeKeeperContainerUsedInfo] no available space for overload keeperContainer pair to migrate {} {}", modelA, modelB);
             CatEventMonitor.DEFAULT.logEvent(KEEPER_PAIR_RESOURCE_LACK, "Dc:" + currentDc + " OrgA:" + modelA.getOrg() + " AzA:" + modelA.getAz() + " OrgB:" + modelB.getOrg() + " AzB:" + modelB.getAz());
             analyzerContext.addResourceLackPlan(modelA, modelB.getKeeperIp(),KeeperContainerOverloadCause.PAIR_RESOURCE_LACK.name());
         }

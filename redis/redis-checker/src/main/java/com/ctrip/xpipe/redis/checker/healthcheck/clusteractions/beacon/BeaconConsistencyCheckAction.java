@@ -33,7 +33,7 @@ public class BeaconConsistencyCheckAction extends AbstractLeaderAwareHealthCheck
         try {
             tryDoTask();
         } catch (Exception e) {
-            logger.error("[CheckBeaconConsistency]", e);
+            logger.error("[CheckBeaconConsistency][{}]", getBeaconRouteType(), e);
         }
     }
 
@@ -66,7 +66,7 @@ public class BeaconConsistencyCheckAction extends AbstractLeaderAwareHealthCheck
         } catch (Throwable t) {
             // cluster not found in beacon
             status = BeaconCheckStatus.ERROR;
-            logger.error("[checkConsistency][{}:{}:{}][fail] {}", clusterType, orgId, lastModifyTime, t.getMessage());
+            logger.error("[checkConsistency][{}][{}:{}:{}][fail] {}", getBeaconRouteType(), clusterType, orgId, lastModifyTime, t.getMessage());
         }
         handleCheckResult(status, clusterId, clusterType, orgId, lastModifyTime);
     }
@@ -81,7 +81,7 @@ public class BeaconConsistencyCheckAction extends AbstractLeaderAwareHealthCheck
             if(status == BeaconCheckStatus.CONSISTENCY) {
                 sendMetric = currentTime - lastSendTime > getBaseCheckInterval();
             } else if (status == BeaconCheckStatus.INCONSISTENCY_IGNORE) {
-                logger.info("[handleCheckResult][{}] inconsistency but ignore", clusterId);
+                logger.info("[handleCheckResult][{}][{}] inconsistency but ignore", getBeaconRouteType(), clusterId);
                 sendMetric = true;
             } else {
                 beaconManager.registerCluster(clusterId, clusterType, orgId, lastModifyTime, getBeaconRouteType());
@@ -93,7 +93,7 @@ public class BeaconConsistencyCheckAction extends AbstractLeaderAwareHealthCheck
                 sendMetricData(clusterId, status);
             }
         } catch (Throwable t) {
-            logger.error("[handleCheckResult]{}:{}:{}", clusterType, orgId, t.getMessage());
+            logger.error("[handleCheckResult][{}]{}:{}:{}", getBeaconRouteType(), clusterType, orgId, t.getMessage());
         }
     }
 
