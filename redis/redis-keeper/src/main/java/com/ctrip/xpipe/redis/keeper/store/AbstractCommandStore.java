@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStore;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindow;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
@@ -110,6 +111,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private boolean buildIndex;
 
     private CKStore ckStore;
+
+    private TimerSlidingWindow timerSlidingWindow;
     
     public abstract Logger getLogger();
 
@@ -189,6 +192,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             if(buildIndex) {
                 indexStore.openWriter(cmdWriter);
             }
+            this.timerSlidingWindow = new TimerSlidingWindow(ckStore.getKeeperConfig(), cmdWriter,commandStoreDelay,offsetNotifier,ckStore.getMasterEventLoop());
         }
     }
 
@@ -351,6 +355,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         SyncRateLimiter rateLimiter = rateLimiterRef.get();
 
         if (null != rateLimiter) rateLimiter.acquire(byteBuf.readableBytes());
+
+        if(buildIndex){
+            return timerSlidingWindow.write(byteBuf);
+        }
+
         commandStoreDelay.beginWrite();
 
         int wrote = cmdWriter.write(byteBuf);
@@ -572,6 +581,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             if (coalescingOffsetNotifier != null) {
                 coalescingOffsetNotifier.close();
             }
+
+            timerSlidingWindow.close();
+
             cmdWriter.close();
             if(indexStore != null) {
                 indexStore.closeWriter();

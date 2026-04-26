@@ -56,6 +56,17 @@ public class VarInt {
         return ByteBuffer.wrap(bytes);
     }
 
+    public static void encodeToByteBuffer(int v,ByteBuffer byteBuffer) {
+        do {
+            // Encode next 7 bits + terminator bit
+            int bits = v & 0x7F;
+            v >>>= 7;
+            byte b = (byte) (bits + ((v != 0) ? 0x80 : 0));
+            byteBuffer.put(b);
+        } while (v != 0);
+    }
+
+
 
     public static int putVarInt(int v, byte[] sink, int offset) {
         do {

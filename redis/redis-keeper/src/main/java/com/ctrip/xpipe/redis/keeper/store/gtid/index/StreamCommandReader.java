@@ -263,7 +263,7 @@ public class StreamCommandReader implements StreamCommandLister {
                 commandBuf.retain();
             }
             payloads.add(payload);
-            commandBufs.add(commandBuf);
+            commandBufs.add(commandBuf.retain());
         }
 
         public void commit(StreamTransactionListener transactionListener, StreamCommandReader reader) throws IOException {

@@ -15,6 +15,7 @@ import com.lmax.disruptor.LiteBlockingWaitStrategy;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.lmax.disruptor.dsl.ProducerType;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,8 @@ public class CKStore implements Keeperable {
     private MetricProxy metricProxy;
 
     private volatile boolean isKeeper;
+
+    private NioEventLoopGroup masterEventLoop;
 
     private RedisOpParser redisOpParser;
 
@@ -156,6 +159,14 @@ public class CKStore implements Keeperable {
 
     public void setMaster(){
         this.isKeeper = false;
+    }
+
+    public void setMasterEventLoop(NioEventLoopGroup masterEventLoop){
+        this.masterEventLoop = masterEventLoop;
+    }
+
+    public NioEventLoopGroup getMasterEventLoop(){
+        return this.masterEventLoop;
     }
 
     public boolean checkStopWriteCk(){
@@ -361,4 +372,9 @@ public class CKStore implements Keeperable {
             }
         }
     }
+
+    public KeeperConfig getKeeperConfig(){
+        return this.keeperConfig;
+    }
+
 }

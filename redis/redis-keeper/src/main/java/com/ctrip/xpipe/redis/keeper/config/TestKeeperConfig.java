@@ -340,7 +340,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 
 	@Override
 	public boolean stopWriteCk() {
-		return false;
+		return true;
 	}
 
 	@Override
@@ -371,5 +371,15 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public boolean isRedisRateLimitEnabled() {
 		return true;
+	}
+
+	@Override
+	public int getCmdBatchWriteSize() {
+		return 4096;
+	}
+
+	@Override
+	public long getCmdBatchFlushIntervalMillis() {
+		return 3;
 	}
 }

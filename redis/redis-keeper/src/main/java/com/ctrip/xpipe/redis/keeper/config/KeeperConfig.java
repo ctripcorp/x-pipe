@@ -14,6 +14,8 @@ public interface KeeperConfig extends CoreConfig{
 	String KEY_LEAKY_BUCKET_INIT_SIZE = "leaky.bucket.init.size";
 
 	String KEY_STOP_WRITE_CK = "keeper.stop.write.ck";
+	String KEY_CMD_BATCH_WRITE_SIZE = "keeper.cmd.batch.write.size";
+	String KEY_CMD_BATCH_FLUSH_INTERVAL_MILLIS = "keeper.cmd.batch.flush.interva.millis";
 
 	int getMetaServerConnectTimeout();
 
@@ -109,5 +111,9 @@ public interface KeeperConfig extends CoreConfig{
 	int getRedisRateDecreaseCheckRounds();
 
 	boolean isRedisRateLimitEnabled();
+
+	int getCmdBatchWriteSize();
+
+	long getCmdBatchFlushIntervalMillis();
 
 }

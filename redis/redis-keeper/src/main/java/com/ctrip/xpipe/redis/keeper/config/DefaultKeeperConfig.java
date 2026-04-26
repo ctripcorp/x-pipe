@@ -306,4 +306,14 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public boolean isRedisRateLimitEnabled() {
 		return getBooleanProperty(KEY_REDIS_RATE_LIMITE_ENABLED, true);
 	}
+
+	@Override
+	public int getCmdBatchWriteSize() {
+		return getIntProperty(KEY_CMD_BATCH_WRITE_SIZE,4096);
+	}
+
+	@Override
+	public long getCmdBatchFlushIntervalMillis() {
+		return getLongProperty(KEY_CMD_BATCH_FLUSH_INTERVAL_MILLIS,3l);
+	}
 }

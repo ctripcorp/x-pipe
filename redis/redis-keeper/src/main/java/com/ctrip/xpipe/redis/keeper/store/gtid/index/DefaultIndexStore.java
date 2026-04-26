@@ -159,6 +159,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         for (ByteBuf buf : commandBufs) {
             if (buf != null) {
                 written += appendCmdBuf(buf);
+                buf.release();
             }
         }
         sendPayloadsToCk(payloads);
