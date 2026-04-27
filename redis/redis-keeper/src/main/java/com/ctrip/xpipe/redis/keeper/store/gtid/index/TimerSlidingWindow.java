@@ -61,7 +61,7 @@ public class TimerSlidingWindow implements AutoCloseable {
         if (window.readableBytes() > 0 && (flushFuture == null || flushFuture.isDone())) {
             flushFuture = eventLoopGroup.schedule(
                     this::scheduledFlush,
-                    this.keeperConfig.getCmdBatchFlushIntervalMillis(), // 3ms
+                    this.keeperConfig.getCmdBatchFlushIntervalMillis(), // 2ms
                     TimeUnit.MILLISECONDS
             );
         }

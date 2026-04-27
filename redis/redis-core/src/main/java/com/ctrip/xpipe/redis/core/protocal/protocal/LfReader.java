@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
+import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 /**
  * @author wenchao.meng
@@ -21,17 +23,26 @@ public class LfReader extends AbstractRedisClientProtocol<byte[]> {
 	@Override
 	public RedisClientProtocol<byte[]> read(ByteBuf byteBuf) {
 
-		int readable = byteBuf.readableBytes();
+		int newLineOffset = byteBuf.bytesBefore((byte) '\n');
 
-		for (int i = 0; i < readable; i++) {
-
-			byte data = byteBuf.readByte();
-			if (data == '\n') {
-				return this;
+		if (newLineOffset >= 0) {
+			try {
+				byteBuf.readBytes(baous, newLineOffset+1);
+			} catch (IOException e) {
+				throw new RedisRuntimeException("[LfReader] read complete",e);
 			}
-			baous.write(data);
+			return this;
+		} else {
+			int readable = byteBuf.readableBytes();
+			if (readable > 0) {
+				try {
+					byteBuf.readBytes(baous, readable);
+				} catch (IOException e) {
+					throw new RedisRuntimeException("[LfReader] read half",e);
+				}
+			}
+			return null;
 		}
-		return null;
 	}
 
 	@Override

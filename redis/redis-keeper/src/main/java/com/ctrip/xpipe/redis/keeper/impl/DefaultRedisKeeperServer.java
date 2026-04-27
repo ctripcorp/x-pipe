@@ -258,6 +258,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		masterConfigEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_CONFIG_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "masterConfig-" + threadPoolName));
 
 		this.ckStore.setMasterEventLoop(masterEventLoopGroup);
+		try {
+			ckStore.start();
+		} catch (Throwable th) {
+			logger.error("[doStart][ck start fail] ignore", th);
+		}
 
 		this.resetReplAfterLongTimeDown();
 		this.leaderElector = createLeaderElector();
@@ -384,11 +389,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		replicationStoreManager.start();
 		keeperStartTime = System.currentTimeMillis();
 		startServer();
-		try {
-			ckStore.start();
-		} catch (Throwable th) {
-			logger.error("[doStart][ck start fail] ignore", th);
-		}
 		LifecycleHelper.startIfPossible(keeperRedisMaster);
 		this.leaderElector.start();
 		fsyncSeqScheduledFuture = this.scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
