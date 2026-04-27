@@ -4,6 +4,7 @@ import com.ctrip.framework.ckafka.client.client.CKafkaClientBuilder;
 import com.ctrip.framework.foundation.Env;
 import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
+import com.ctrip.xpipe.api.kafka.GtidKeyItemWrapper;
 import com.ctrip.xpipe.api.kafka.KafkaService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.google.common.base.Throwables;
@@ -140,15 +141,15 @@ public class CtripKafkaService implements KafkaService {
                 }
 
                 //preheat
-                producer.send(new ProducerRecord<>(TOPIC, genericRecord(new GtidKeyItem("test","uuid","0",
-                                "testk".getBytes(),"testv".getBytes(),"0",0,"localhost"))));
+                producer.send(new ProducerRecord<>(TOPIC, GtidKeyItem.buildGtidKeyItem("test","uuid","0",
+                                "testk".getBytes(),"testv".getBytes(),"0",0,"localhost")));
             }
             return producer;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
-    private GenericRecord genericRecord(GtidKeyItem gtidKeyItem){
+    private GenericRecord genericRecord(GtidKeyItemWrapper gtidKeyItem){
         GenericRecord record = new GenericData.Record(schema);
         record.put("cmd",gtidKeyItem.getCmd());
         record.put("uuid",gtidKeyItem.getUuid());
@@ -181,7 +182,7 @@ public class CtripKafkaService implements KafkaService {
         long threadId =  Thread.currentThread().threadId();
         int index = Long.hashCode(threadId) & PRODUCER_POOL_MASK;
         try{
-            producerPool[index].send(new ProducerRecord<>(TOPIC,genericRecord(gtidKeyItem)));
+            producerPool[index].send(new ProducerRecord<>(TOPIC,gtidKeyItem));
         }catch (Exception e){
             EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA,e.getClass().getName(),convertProducerMetrics(producerPool[index].metrics(),e));
         }

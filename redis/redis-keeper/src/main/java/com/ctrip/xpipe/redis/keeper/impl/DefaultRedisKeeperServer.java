@@ -257,6 +257,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		rdbOnlyEventLoopGroup = new NioEventLoopGroup(DEFAULT_RDB_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "rdbOnly-" + threadPoolName));
 		masterConfigEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_CONFIG_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "masterConfig-" + threadPoolName));
 
+		this.ckStore.setMasterEventLoop(masterEventLoopGroup);
 
 		this.resetReplAfterLongTimeDown();
 		this.leaderElector = createLeaderElector();

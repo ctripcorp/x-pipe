@@ -325,23 +325,26 @@ public class CKStore implements Keeperable {
 
     public void writeCKItem(String gtid,String dbId, RedisOpItem redisOp){
         if(StringUtil.isEmpty(gtid)) return;
-        String[] gtidSeq = gtid.split(":");
+
+        String uuid = gtid.substring(0,40);
+        String seq = gtid.substring(41,gtid.length());
 
         RedisKey redisKey = redisOp.getRedisKey();
         List<RedisKey> redisKeyList = redisOp.getRedisKeyList();
         if(redisKey != null && redisKeyList == null) {
-            kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],redisKey.get(),null,dbId,replId,address));
+            kafkaService.sendKafka(GtidKeyItem.buildGtidKeyItem(redisOp.getRedisOpType().name(),uuid,seq,redisKey.get(),null,dbId,replId,address));
         }else if(redisKey != null && redisKeyList != null){
             //包含子key的命令
             for(RedisKey subKey:redisKeyList) {
-                kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],redisKey.get(),subKey.get(),dbId,replId,address));
+                kafkaService.sendKafka(GtidKeyItem.buildGtidKeyItem(redisOp.getRedisOpType().name(),uuid,seq,redisKey.get(),subKey.get(),dbId,replId,address));
             }
         }else if(redisKey == null && redisKeyList != null){
             for(RedisKey item:redisKeyList){
-                kafkaService.sendKafka(new GtidKeyItem(redisOp.getRedisOpType().name(),gtidSeq[0],gtidSeq[1],item.get(),null,dbId,replId,address));
+                kafkaService.sendKafka(GtidKeyItem.buildGtidKeyItem(redisOp.getRedisOpType().name(),uuid,seq,item.get(),null,dbId,replId,address));
             }
         }
     }
+
 
     public  void writeCKItem(String gtid,String dbId,List<RedisOpItem> redisOpList){
         for(RedisOpItem redisOp:redisOpList) {

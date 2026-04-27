@@ -340,7 +340,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 
 	@Override
 	public boolean stopWriteCk() {
-		return true;
+		return false;
 	}
 
 	@Override

@@ -99,7 +99,6 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		rordbConfigFutureCache = new TimeBoundCache<>(() -> 60000, this::refreshMasterConfigRordb);
 
 		this.ckStore.setMaster();
-		this.ckStore.setMasterEventLoop(masterEventLoopGroup);
 	}
 
 	@Override
