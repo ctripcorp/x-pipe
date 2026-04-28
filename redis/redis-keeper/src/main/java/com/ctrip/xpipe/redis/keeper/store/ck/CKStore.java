@@ -364,6 +364,7 @@ import com.ctrip.xpipe.config.ConfigKeyListener;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.*;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.Keeperable;
@@ -391,8 +392,8 @@ public class CKStore implements Keeperable {
     private Thread consumerThread;
     private volatile boolean running;
     private final AtomicBoolean consumerWaiting = new AtomicBoolean(false);
-    private static final int BATCH_CONSUME_SIZE = 1024;
-    private static final int BATCH_NOTIFY_SIZE = 1024;
+    private static final int BATCH_CONSUME_SIZE = 512;
+    private static final int BATCH_NOTIFY_SIZE = 512;
     private final long replId;
 
     private static final String CK_BLOCK = "ck.block";
@@ -454,6 +455,7 @@ public class CKStore implements Keeperable {
                 () -> {
                     reportHickwall(CK_BLOCK, isSendCkFail);
                     isSendCkFail = false;
+                    tryNotifyConsumer();
                 }, 1, 1, TimeUnit.MINUTES
         );
     }
@@ -686,6 +688,24 @@ public class CKStore implements Keeperable {
             redisOpItems.add(parsePayload(payload));
         }
         return redisOpItems;
+    }
+
+    private RedisOpItem parseByteBufPayload(Object[] payload) {
+        RedisOpItem redisOpItem = new RedisOpItem();
+        try {
+            DirectByteBufInStringOutPayload gtid = (DirectByteBufInStringOutPayload) payload[1];
+            DirectByteBufInStringOutPayload dbId = (DirectByteBufInStringOutPayload) payload[2];
+            DirectByteBufInStringOutPayload cmd = (DirectByteBufInStringOutPayload) payload[3];
+            DirectByteBufInStringOutPayload key = (DirectByteBufInStringOutPayload) payload[4];
+            redisOpItem.setRedisOpType(RedisOpType.valueOf(cmd.toString().toUpperCase()));
+            redisOpItem.setGtid(gtid.toString());
+            redisOpItem.setDbId(dbId.toString());
+            redisOpItem.setRedisKey(new RedisKey(key.getBytes()));
+
+        } catch (Throwable th) {
+            logger.warn("[CKStore] parsePayload {}, error {}", payload, th.getMessage());
+        }
+        return redisOpItem;
     }
 
     private RedisOpItem parsePayload(Object[] payload) {

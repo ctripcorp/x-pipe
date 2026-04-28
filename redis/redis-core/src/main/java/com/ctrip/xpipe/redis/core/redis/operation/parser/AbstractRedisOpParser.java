@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.redis.operation.parser;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 
@@ -22,6 +23,7 @@ public abstract class AbstractRedisOpParser implements RedisOpParser {
             Object arg = args[i];
             if (arg instanceof byte[]) bytesArray[i] = (byte[])arg;
             else if (arg instanceof ByteArrayOutputStreamPayload) bytesArray[i] = ((ByteArrayOutputStreamPayload) arg).getBytes();
+            else if (arg instanceof DirectByteBufInStringOutPayload) bytesArray[i] = ((DirectByteBufInStringOutPayload) arg).getBytes();
             else if (arg instanceof String) bytesArray[i] = ((String) arg).getBytes();
             else throw new IllegalArgumentException("arg type" + arg.getClass().getSimpleName() + " couldn't be transformed to byte[]");
         }

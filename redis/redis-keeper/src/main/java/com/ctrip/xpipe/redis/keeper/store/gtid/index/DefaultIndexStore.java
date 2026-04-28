@@ -5,7 +5,7 @@ import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamTransactionListener;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
@@ -130,12 +130,12 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     @Override
     public boolean preAppend(String gtid, long offset) throws IOException {
-        String[] parts = gtid.split(":");
-        if (parts.length != 2 || parts[0].length() != 40) {
-            throw new IllegalArgumentException("Invalid gtid: " + gtid);
-        }
-        String uuid = parts[0];
-        long gno = Long.parseLong(parts[1]);
+//        String[] parts = gtid.split(":");
+//        if (parts.length != 2 || parts[0].length() != 40) {
+//            throw new IllegalArgumentException("Invalid gtid: " + gtid);
+//        }
+        String uuid = gtid.substring(0,40);
+        long gno = Long.parseLong(gtid.substring(41));
         if(gtidCmdFilter.gtidSetContains(uuid, gno)) {
             logger.info("[onCommand] gtid command {} in lost, ignored", gtid);
             return false;
@@ -147,10 +147,14 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     @Override
     public int postAppend(ByteBuf commandBuf, Object[] payload) throws IOException {
         int written = appendCmdBuf(commandBuf);
-        ByteArrayOutputStreamPayload command = (ByteArrayOutputStreamPayload) payload[0];
-        if(isPingOrSelectCmd(command.getBytes())) return written;
+        DirectByteBufInStringOutPayload command = (DirectByteBufInStringOutPayload) payload[0];
+        if(isPingOrSelectCmd(command)) return written;
         sendPayloadToCk(payload);
         return written;
+    }
+
+    private boolean isPingOrSelectCmd(DirectByteBufInStringOutPayload command){
+        return command.equalsIgnoreCaseAsciiExpectedUppercase(PING_BYTES) || command.equalsIgnoreCaseAsciiExpectedUppercase(SELECT_BYTES);
     }
 
     @Override

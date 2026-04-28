@@ -6,6 +6,7 @@ import com.ctrip.xpipe.utils.DefaultControllableFile;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author wenchao.meng
@@ -20,6 +21,9 @@ public class CommandFileContext {
 
 	private File currentFile;
 
+	private final AtomicLong fileLength = new AtomicLong();
+
+
 	public CommandFileContext(CommandFile commandFile) throws IOException {
 		this(commandFile.getStartOffset(), commandFile.getFile());
 	}
@@ -28,6 +32,7 @@ public class CommandFileContext {
 		this.currentFile = currentFile;
 		this.currentStartOffset = currentStartOffset;
 		this.controllableFile = new DefaultControllableFile(currentFile, currentFile.length());
+		this.fileLength.set(controllableFile.size());
 	}
 	
 
@@ -39,10 +44,13 @@ public class CommandFileContext {
 	public void createIfNotExist() throws IOException{
 		controllableFile.getFileChannel();
 	}
-	
+
+	public void advanceFileLength(long delta) {
+		fileLength.addAndGet(delta);
+	}
 	
 	public long fileLength(){
-		return controllableFile.size();
+		return fileLength.get();
 	}
 
 	public long totalLength() {

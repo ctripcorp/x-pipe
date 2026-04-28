@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandLister;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandParser;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamTransactionListener;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 
 public class StreamCommandReader implements StreamCommandLister {
 
@@ -56,7 +58,8 @@ public class StreamCommandReader implements StreamCommandLister {
         if(payload == null || payload.length <= 2) {
             return null;
         }
-        return payload[1].toString();
+        DirectByteBufInStringOutPayload gtidPayload = (DirectByteBufInStringOutPayload) payload[1];
+        return gtidPayload.toString();
     }
 
     public void resetParser() {
@@ -105,7 +108,7 @@ public class StreamCommandReader implements StreamCommandLister {
     public void onCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
         if(payload == null) return;
 
-        ByteArrayOutputStreamPayload commandPayload = (ByteArrayOutputStreamPayload) payload[0];
+        DirectByteBufInStringOutPayload commandPayload = (DirectByteBufInStringOutPayload) payload[0];
 
         // Process by priority: MULTI > GTID > regular commands
         if (isMultiCommand(commandPayload)) {
@@ -116,6 +119,11 @@ public class StreamCommandReader implements StreamCommandLister {
         } else {
             handleRegularCommand(payload, commandBuf);
         }
+    }
+    private static final byte[] PING_BYTES = new byte[]{'P','I','N','G'};
+    private static final byte[] SELECT_BYTES = new byte[]{'S','E','L','E','C','T'};
+    private boolean isPingOrSelectCmd(DirectByteBufInStringOutPayload command){
+        return command.equalsIgnoreCaseAsciiExpectedUppercase(PING_BYTES) || command.equalsIgnoreCaseAsciiExpectedUppercase(SELECT_BYTES);
     }
 
     private void handleMultiCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
@@ -142,7 +150,7 @@ public class StreamCommandReader implements StreamCommandLister {
         }
 
         // Check if it is an EXEC command
-        ByteArrayOutputStreamPayload execPayload = (ByteArrayOutputStreamPayload) payload[GTID_PAYLOADS_COMMAND_OFFSET];
+        DirectByteBufInStringOutPayload execPayload = (DirectByteBufInStringOutPayload) payload[GTID_PAYLOADS_COMMAND_OFFSET];
         boolean isExec = isExecCommand(execPayload);
 
         if (isExec && transactionContext.isActive()) {
@@ -176,15 +184,15 @@ public class StreamCommandReader implements StreamCommandLister {
         }
     }
 
-    private boolean isMultiCommand(ByteArrayOutputStreamPayload commandPayload) {
+    private boolean isMultiCommand(DirectByteBufInStringOutPayload commandPayload) {
         return commandPayload != null && commandPayload.equalsIgnoreCaseAsciiExpectedUppercase(MULTI_BYTES);
     }
 
-    private boolean isGtidCommand(ByteArrayOutputStreamPayload commandPayload) {
+    private boolean isGtidCommand(DirectByteBufInStringOutPayload commandPayload) {
         return commandPayload != null && commandPayload.equalsIgnoreCaseAsciiExpectedUppercase(GTID_BYTES);
     }
 
-    private boolean isExecCommand(ByteArrayOutputStreamPayload commandPayload) {
+    private boolean isExecCommand(DirectByteBufInStringOutPayload commandPayload) {
         return commandPayload != null && commandPayload.equalsIgnoreCaseAsciiExpectedUppercase(EXEC_BYTES);
     }
 

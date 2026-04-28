@@ -118,13 +118,14 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
 		if(markBytes == null){
 			return null;
 		}
+		byte[] markPayload = markBytes.getPayload();
 		
-		if(markBytes.getPayload().length == 0){
+		if(markPayload.length == 0){
 			lfReader = null;
 			return null;
 		}
 		
-		return BulkStringEofJuderManager.create(markBytes.getPayload());
+		return BulkStringEofJuderManager.create(markPayload);
 	}
 
 	
