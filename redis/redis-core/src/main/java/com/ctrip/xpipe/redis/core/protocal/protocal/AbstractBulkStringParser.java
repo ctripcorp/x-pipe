@@ -67,7 +67,7 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
 			case READING_CONTENT:
 
 				int readerIndex = byteBuf.readerIndex();
-				JudgeResult result = eofJudger.end(byteBuf.slice());
+				JudgeResult result = eofJudger.end(byteBuf);
 				int length = readContent(byteBuf.slice(readerIndex, result.getReadLen()));
 				if (length != result.getReadLen()) {
 					throw new IllegalStateException(String.format("expected readLen:%d, but real:%d", result.getReadLen(), length));

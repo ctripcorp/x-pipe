@@ -1,13 +1,11 @@
 package com.ctrip.xpipe.redis.core.protocal.protocal;
 
-import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import io.netty.buffer.ByteBuf;
+import io.netty.util.ByteProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * @author wenchao.meng
@@ -18,28 +16,38 @@ public class LfReader extends AbstractRedisClientProtocol<byte[]> {
 
 	private static final Logger logger = LoggerFactory.getLogger(LfReader.class);
 
-	private ByteArrayOutputStream baous = new ByteArrayOutputStream(1 << 6);
+	private static final int INITIAL_BUFFER_SIZE = 64;
+
+	private byte[] buffer;
+	private int count;
+	private byte[] payload;
 
 	@Override
 	public RedisClientProtocol<byte[]> read(ByteBuf byteBuf) {
 
-		int newLineOffset = byteBuf.bytesBefore((byte) '\n');
+		int lfIndex = byteBuf.forEachByte(ByteProcessor.FIND_LF);
 
-		if (newLineOffset >= 0) {
-			try {
-				byteBuf.readBytes(baous, newLineOffset+1);
-			} catch (IOException e) {
-				throw new RedisRuntimeException("[LfReader] read complete",e);
+		if (lfIndex >= 0) {
+			int length = lfIndex - byteBuf.readerIndex() + 1;
+			if (count == 0) {
+				payload = new byte[length];
+				byteBuf.readBytes(payload);
+			} else {
+				System.arraycopy(buffer, 0, payload, 0, count);
+				byteBuf.readBytes(payload, count, length);
+				count = 0; // 清空缓存
 			}
 			return this;
 		} else {
 			int readable = byteBuf.readableBytes();
 			if (readable > 0) {
-				try {
-					byteBuf.readBytes(baous, readable);
-				} catch (IOException e) {
-					throw new RedisRuntimeException("[LfReader] read half",e);
+				if (buffer == null) {
+					buffer = new byte[Math.max(readable, INITIAL_BUFFER_SIZE)];
+				} else {
+					ensureCapacity(count + readable);
 				}
+				byteBuf.readBytes(buffer, count, readable);
+				count += readable;
 			}
 			return null;
 		}
@@ -57,11 +65,23 @@ public class LfReader extends AbstractRedisClientProtocol<byte[]> {
 
 	@Override
 	public byte[] getPayload() {
-		return baous.toByteArray();
+		return payload;
 	}
 
 	@Override
 	protected Logger getLogger() {
 		return logger;
+	}
+
+	public void reset() {
+		count = 0;
+		payload = null;
+	}
+
+	private void ensureCapacity(int required) {
+		if (buffer.length < required) {
+			int newSize = Math.max(buffer.length << 1, required);
+			buffer = Arrays.copyOf(buffer, newSize);
+		}
 	}
 }

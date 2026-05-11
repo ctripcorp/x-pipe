@@ -4,8 +4,11 @@ import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringEoFJudger.BulkStringEofMarkJudger;
 import com.ctrip.xpipe.redis.core.protocal.protocal.AbstractBulkStringEoFJudger.BulkStringLengthEofJudger;
 import com.ctrip.xpipe.utils.ByteUtil;
+import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.charset.Charset;
 
 /**
  * @author wenchao.meng
@@ -16,8 +19,7 @@ public class BulkStringEofJuderManager {
 	
 	private static Logger logger = LoggerFactory.getLogger(BulkStringEofJuderManager.class);
 	
-	public static BulkStringEofJudger create(byte []data){
-		
+	public static BulkStringEofJudger create(byte[] data){
 		int start = 0;
 		if(data[0] == RedisClientProtocol.DOLLAR_BYTE){
 			start = 1;
@@ -37,7 +39,7 @@ public class BulkStringEofJuderManager {
 //		}
 		int end = data.length;
 		// LfReader payload may end with '\r' only (no '\n'); trim CR/LF robustly.
-		while (end > start && (data[end - 1] == '\r' || data[end - 1] == '\n')) {
+		while (end > start && (data[end - 1]== '\r' || data[end - 1] == '\n')) {
 			end--;
 		}
 		long length = ByteUtil.parseLong(data, start, end, false);
