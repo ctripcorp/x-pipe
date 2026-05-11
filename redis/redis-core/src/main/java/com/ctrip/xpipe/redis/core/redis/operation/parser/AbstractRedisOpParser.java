@@ -6,6 +6,8 @@ import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * @author lishanglin
  * date 2022/5/31
@@ -32,7 +34,7 @@ public abstract class AbstractRedisOpParser implements RedisOpParser {
     }
 
     protected String bytes2Str(byte[] arg) {
-        return new String(arg, Codec.defaultCharset);
+        return new String(arg, StandardCharsets.ISO_8859_1);
     }
 
 }

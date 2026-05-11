@@ -28,15 +28,15 @@ public class RedisOpGtidParser extends AbstractRedisOpParser implements RedisOpP
         String gtid = bytes2Str(args[1]);
         byte[][] gtidArgs = Arrays.copyOfRange(args, 0, 3);
         String dbid = bytes2Str(args[2]);
-        String subCmd = bytes2Str(args[3]);
-        RedisOpType subOpType = RedisOpType.lookup(subCmd);
+//        String subCmd = bytes2Str(args[3]);
+        RedisOpType subOpType = RedisOpType.lookup(args[3]);
         byte[][] subArgs = Arrays.copyOfRange(args, 3, args.length);
         if (!subOpType.checkArgcNotStrictly(subArgs)) {
-            throw new IllegalArgumentException("wrong number of args for " + subCmd);
+            throw new IllegalArgumentException("wrong number of args for " + new String(args[3]));
         }
 
         RedisOpParser subParser = parserManager.findParser(subOpType);
-        if (null == subParser) throw new UnsupportedOperationException("no parser for " + subCmd);
+        if (null == subParser) throw new UnsupportedOperationException("no parser for " + new String(args[3]));
         RedisOp redisOp = subParser.parse(subArgs);
 
         if (redisOp instanceof RedisSingleKeyOp) return new RedisSingleKeyOpGtidWrapper(gtidArgs, gtid,dbid, (RedisSingleKeyOp)redisOp);

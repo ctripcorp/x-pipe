@@ -21,16 +21,21 @@ public class DefaultRedisOpParserManager implements RedisOpParserManager {
 
     private Logger logger = LoggerFactory.getLogger(DefaultRedisOpParserManager.class);
 
+    private final RedisOpParser[] parsers = new RedisOpParser[RedisOpType.values().length];
+
+
     @Override
     public synchronized void registerParser(RedisOpType opType, RedisOpParser parser) {
         if (!parserMap.containsKey(opType) || parserMap.get(opType).getOrder() > parser.getOrder()) {
             logger.info("[registerParser] {}", parser);
             parserMap.put(opType, parser);
+            parsers[opType.ordinal()] = parser;
+
         }
     }
 
     @Override
     public RedisOpParser findParser(RedisOpType opType) {
-        return parserMap.get(opType);
+        return parsers[opType.ordinal()];
     }
 }
