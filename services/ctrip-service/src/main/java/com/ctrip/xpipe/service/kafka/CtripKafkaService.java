@@ -16,6 +16,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.Metric;
 import org.apache.kafka.common.MetricName;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,6 +112,8 @@ public class CtripKafkaService implements KafkaService {
         properties.put(ProducerConfig.PARTITIONER_AVAILABILITY_TIMEOUT_MS_CONFIG, "100");
         properties.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, "50");
         properties.put(ProducerConfig.CLIENT_ID_CONFIG, ACL_USER + "-" + CUSTOM_CLIENT_ID);
+        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getCanonicalName());
+        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, CustomHermesSerializer.class.getCanonicalName());
 
         // 默认key为String序列化
         // 默认为value为HermesJson序列化
@@ -119,7 +122,7 @@ public class CtripKafkaService implements KafkaService {
                 if (Foundation.server().getEnv() == Env.PRO) {
                     producer = CKafkaClientBuilder // producer单例需要用户自己维护
                             .newProducerBuilder()
-                            .hermesAvroSerializer()
+//                            .hermesAvroSerializer()
                             .customProperties(properties) // 从此传入自定义配置，无则不需要关心
                             .topic(TOPIC) // 要发送的topic
                             .aclUser(ACL_PRO_USER) // acl token如有则替换填入此处，无则忽略
@@ -127,7 +130,7 @@ public class CtripKafkaService implements KafkaService {
                 } else {
                     producer = CKafkaClientBuilder // producer单例需要用户自己维护
                             .newProducerBuilder()
-                            .hermesAvroSerializer()
+//                            .hermesAvroSerializer()
                             .customProperties(properties) // 从此传入自定义配置，无则不需要关心
                             .topic(TOPIC) // 要发送的topic
                             .aclUser(ACL_USER) // acl token如有则替换填入此处，无则忽略

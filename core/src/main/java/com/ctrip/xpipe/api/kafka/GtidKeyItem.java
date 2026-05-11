@@ -1,13 +1,10 @@
 package com.ctrip.xpipe.api.kafka;
 
+import org.apache.avro.io.BinaryData;
 import org.apache.avro.specific.SpecificData;
-import org.apache.avro.util.Utf8;
 import org.apache.avro.message.BinaryMessageEncoder;
 import org.apache.avro.message.BinaryMessageDecoder;
 import org.apache.avro.message.SchemaStore;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author TB
@@ -82,8 +79,8 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
     private CharSequence cmd;
     private CharSequence address;
     private CharSequence seq;
-    private java.util.List<Integer> key;
-    private java.util.List<Integer> subkey;
+    private int[] key;
+    private int[] subkey;
     private CharSequence dbid;
     private Long timestamp;
     private int shardid;
@@ -107,7 +104,7 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
      * @param timestamp The new value for timestamp
      * @param shardid The new value for shardid
      */
-    public GtidKeyItem(CharSequence uuid, CharSequence cmd, CharSequence address, CharSequence seq, java.util.List<Integer> key, java.util.List<Integer> subkey, CharSequence dbid, Long timestamp, Integer shardid) {
+    public GtidKeyItem(CharSequence uuid, CharSequence cmd, CharSequence address, CharSequence seq, int[] key, int[] subkey, CharSequence dbid, Long timestamp, Integer shardid) {
         this.uuid = uuid;
         this.cmd = cmd;
         this.address = address;
@@ -151,8 +148,8 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
             case 1: cmd = (CharSequence)value$; break;
             case 2: address = (CharSequence)value$; break;
             case 3: seq = (CharSequence)value$; break;
-            case 4: key = (java.util.List<Integer>)value$; break;
-            case 5: subkey = (java.util.List<Integer>)value$; break;
+            case 4: key = (int[]) value$; break;
+            case 5: subkey = (int[]) value$; break;
             case 6: dbid = (CharSequence)value$; break;
             case 7: timestamp = (Long)value$; break;
             case 8: shardid = (Integer)value$; break;
@@ -232,7 +229,7 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
      * Gets the value of the 'key' field.
      * @return The value of the 'key' field.
      */
-    public java.util.List<Integer> getKey() {
+    public int[] getKey() {
         return key;
     }
 
@@ -241,7 +238,7 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
      * Sets the value of the 'key' field.
      * @param value the value to set.
      */
-    public void setKey(java.util.List<Integer> value) {
+    public void setKey(int[] value) {
         this.key = value;
     }
 
@@ -249,7 +246,7 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
      * Gets the value of the 'subkey' field.
      * @return The value of the 'subkey' field.
      */
-    public java.util.List<Integer> getSubkey() {
+    public int[] getSubkey() {
         return subkey;
     }
 
@@ -258,7 +255,7 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
      * Sets the value of the 'subkey' field.
      * @param value the value to set.
      */
-    public void setSubkey(java.util.List<Integer> value) {
+    public void setSubkey(int[] value) {
         this.subkey = value;
     }
 
@@ -358,8 +355,8 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
         private CharSequence cmd;
         private CharSequence address;
         private CharSequence seq;
-        private java.util.List<Integer> key;
-        private java.util.List<Integer> subkey;
+        private int[] key;
+        private int[] subkey;
         private CharSequence dbid;
         private Long timestamp;
         private int shardid;
@@ -621,7 +618,7 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
          * Gets the value of the 'key' field.
          * @return The value.
          */
-        public java.util.List<Integer> getKey() {
+        public int[] getKey() {
             return key;
         }
 
@@ -631,7 +628,7 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
          * @param value The value of 'key'.
          * @return This builder.
          */
-        public Builder setKey(java.util.List<Integer> value) {
+        public Builder setKey(int[] value) {
             validate(fields()[4], value);
             this.key = value;
             fieldSetFlags()[4] = true;
@@ -661,7 +658,7 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
          * Gets the value of the 'subkey' field.
          * @return The value.
          */
-        public java.util.List<Integer> getSubkey() {
+        public int[] getSubkey() {
             return subkey;
         }
 
@@ -671,7 +668,7 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
          * @param value The value of 'subkey'.
          * @return This builder.
          */
-        public Builder setSubkey(java.util.List<Integer> value) {
+        public Builder setSubkey(int[] value) {
             validate(fields()[5], value);
             this.subkey = value;
             fieldSetFlags()[5] = true;
@@ -825,8 +822,8 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
                 record.cmd = fieldSetFlags()[1] ? this.cmd : (CharSequence) defaultValue(fields()[1]);
                 record.address = fieldSetFlags()[2] ? this.address : (CharSequence) defaultValue(fields()[2]);
                 record.seq = fieldSetFlags()[3] ? this.seq : (CharSequence) defaultValue(fields()[3]);
-                record.key = fieldSetFlags()[4] ? this.key : (java.util.List<Integer>) defaultValue(fields()[4]);
-                record.subkey = fieldSetFlags()[5] ? this.subkey : (java.util.List<Integer>) defaultValue(fields()[5]);
+                record.key = fieldSetFlags()[4] ? this.key : (int[]) defaultValue(fields()[4]);
+                record.subkey = fieldSetFlags()[5] ? this.subkey : (int[]) defaultValue(fields()[5]);
                 record.dbid = fieldSetFlags()[6] ? this.dbid : (CharSequence) defaultValue(fields()[6]);
                 record.timestamp = fieldSetFlags()[7] ? this.timestamp : (Long) defaultValue(fields()[7]);
                 record.shardid = fieldSetFlags()[8] ? this.shardid : (Integer) defaultValue(fields()[8]);
@@ -870,43 +867,45 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
 
         out.writeString(this.seq);
 
-        long size0 = this.key.size();
-        out.writeArrayStart();
-        out.setItemCount(size0);
-        long actualSize0 = 0;
-        for (Integer e0: this.key) {
-            actualSize0++;
-            out.startItem();
-            if (e0 == null) {
-                out.writeIndex(0);
-                out.writeNull();
-            } else {
-                out.writeIndex(1);
-                out.writeInt(e0);
-            }
-        }
-        out.writeArrayEnd();
-        if (actualSize0 != size0)
-            throw new java.util.ConcurrentModificationException("Array-size written was " + size0 + ", but element count was " + actualSize0 + ".");
-
-        long size1 = this.subkey.size();
-        out.writeArrayStart();
-        out.setItemCount(size1);
-        long actualSize1 = 0;
-        for (Integer e1: this.subkey) {
-            actualSize1++;
-            out.startItem();
-            if (e1 == null) {
-                out.writeIndex(0);
-                out.writeNull();
-            } else {
-                out.writeIndex(1);
-                out.writeInt(e1);
-            }
-        }
-        out.writeArrayEnd();
-        if (actualSize1 != size1)
-            throw new java.util.ConcurrentModificationException("Array-size written was " + size1 + ", but element count was " + actualSize1 + ".");
+        writeIntArrayClosed(out, this.key);
+        writeIntArrayClosed(out, this.subkey);
+//        long size0 = this.key.length;
+//        out.writeArrayStart();
+//        out.setItemCount(size0);
+//        long actualSize0 = 0;
+//        for (Integer e0: this.key) {
+//            actualSize0++;
+//            out.startItem();
+//            if (e0 == null) {
+//                out.writeIndex(0);
+//                out.writeNull();
+//            } else {
+//                out.writeIndex(1);
+//                out.writeInt(e0);
+//            }
+//        }
+//        out.writeArrayEnd();
+//        if (actualSize0 != size0)
+//            throw new java.util.ConcurrentModificationException("Array-size written was " + size0 + ", but element count was " + actualSize0 + ".");
+//
+//        long size1 = this.subkey.length;
+//        out.writeArrayStart();
+//        out.setItemCount(size1);
+//        long actualSize1 = 0;
+//        for (Integer e1: this.subkey) {
+//            actualSize1++;
+//            out.startItem();
+//            if (e1 == null) {
+//                out.writeIndex(0);
+//                out.writeNull();
+//            } else {
+//                out.writeIndex(1);
+//                out.writeInt(e1);
+//            }
+//        }
+//        out.writeArrayEnd();
+//        if (actualSize1 != size1)
+//            throw new java.util.ConcurrentModificationException("Array-size written was " + size1 + ", but element count was " + actualSize1 + ".");
 
         out.writeString(this.dbid);
 
@@ -922,171 +921,199 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
 
     }
 
-    @Override public void customDecode(org.apache.avro.io.ResolvingDecoder in)
-            throws java.io.IOException
-    {
-        org.apache.avro.Schema.Field[] fieldOrder = in.readFieldOrderIfDiff();
-        if (fieldOrder == null) {
-            this.uuid = in.readString(this.uuid instanceof Utf8 ? (Utf8)this.uuid : null);
-
-            this.cmd = in.readString(this.cmd instanceof Utf8 ? (Utf8)this.cmd : null);
-
-            this.address = in.readString(this.address instanceof Utf8 ? (Utf8)this.address : null);
-
-            this.seq = in.readString(this.seq instanceof Utf8 ? (Utf8)this.seq : null);
-
-            long size0 = in.readArrayStart();
-            java.util.List<Integer> a0 = this.key;
-            if (a0 == null) {
-                a0 = new SpecificData.Array<Integer>((int)size0, SCHEMA$.getField("key").schema());
-                this.key = a0;
-            } else a0.clear();
-            SpecificData.Array<Integer> ga0 = (a0 instanceof SpecificData.Array ? (SpecificData.Array<Integer>)a0 : null);
-            for ( ; 0 < size0; size0 = in.arrayNext()) {
-                for ( ; size0 != 0; size0--) {
-                    Integer e0 = (ga0 != null ? ga0.peek() : null);
-                    if (in.readIndex() != 1) {
-                        in.readNull();
-                        e0 = null;
-                    } else {
-                        e0 = in.readInt();
-                    }
-                    a0.add(e0);
-                }
-            }
-
-            long size1 = in.readArrayStart();
-            java.util.List<Integer> a1 = this.subkey;
-            if (a1 == null) {
-                a1 = new SpecificData.Array<Integer>((int)size1, SCHEMA$.getField("subkey").schema());
-                this.subkey = a1;
-            } else a1.clear();
-            SpecificData.Array<Integer> ga1 = (a1 instanceof SpecificData.Array ? (SpecificData.Array<Integer>)a1 : null);
-            for ( ; 0 < size1; size1 = in.arrayNext()) {
-                for ( ; size1 != 0; size1--) {
-                    Integer e1 = (ga1 != null ? ga1.peek() : null);
-                    if (in.readIndex() != 1) {
-                        in.readNull();
-                        e1 = null;
-                    } else {
-                        e1 = in.readInt();
-                    }
-                    a1.add(e1);
-                }
-            }
-
-            this.dbid = in.readString(this.dbid instanceof Utf8 ? (Utf8)this.dbid : null);
-
-            if (in.readIndex() != 1) {
-                in.readNull();
-                this.timestamp = null;
-            } else {
-                this.timestamp = in.readLong();
-            }
-
-            this.shardid = in.readInt();
-
-        } else {
-            for (int i = 0; i < 9; i++) {
-                switch (fieldOrder[i].pos()) {
-                    case 0:
-                        this.uuid = in.readString(this.uuid instanceof Utf8 ? (Utf8)this.uuid : null);
-                        break;
-
-                    case 1:
-                        this.cmd = in.readString(this.cmd instanceof Utf8 ? (Utf8)this.cmd : null);
-                        break;
-
-                    case 2:
-                        this.address = in.readString(this.address instanceof Utf8 ? (Utf8)this.address : null);
-                        break;
-
-                    case 3:
-                        this.seq = in.readString(this.seq instanceof Utf8 ? (Utf8)this.seq : null);
-                        break;
-
-                    case 4:
-                        long size0 = in.readArrayStart();
-                        java.util.List<Integer> a0 = this.key;
-                        if (a0 == null) {
-                            a0 = new SpecificData.Array<Integer>((int)size0, SCHEMA$.getField("key").schema());
-                            this.key = a0;
-                        } else a0.clear();
-                        SpecificData.Array<Integer> ga0 = (a0 instanceof SpecificData.Array ? (SpecificData.Array<Integer>)a0 : null);
-                        for ( ; 0 < size0; size0 = in.arrayNext()) {
-                            for ( ; size0 != 0; size0--) {
-                                Integer e0 = (ga0 != null ? ga0.peek() : null);
-                                if (in.readIndex() != 1) {
-                                    in.readNull();
-                                    e0 = null;
-                                } else {
-                                    e0 = in.readInt();
-                                }
-                                a0.add(e0);
-                            }
-                        }
-                        break;
-
-                    case 5:
-                        long size1 = in.readArrayStart();
-                        java.util.List<Integer> a1 = this.subkey;
-                        if (a1 == null) {
-                            a1 = new SpecificData.Array<Integer>((int)size1, SCHEMA$.getField("subkey").schema());
-                            this.subkey = a1;
-                        } else a1.clear();
-                        SpecificData.Array<Integer> ga1 = (a1 instanceof SpecificData.Array ? (SpecificData.Array<Integer>)a1 : null);
-                        for ( ; 0 < size1; size1 = in.arrayNext()) {
-                            for ( ; size1 != 0; size1--) {
-                                Integer e1 = (ga1 != null ? ga1.peek() : null);
-                                if (in.readIndex() != 1) {
-                                    in.readNull();
-                                    e1 = null;
-                                } else {
-                                    e1 = in.readInt();
-                                }
-                                a1.add(e1);
-                            }
-                        }
-                        break;
-
-                    case 6:
-                        this.dbid = in.readString(this.dbid instanceof Utf8 ? (Utf8)this.dbid : null);
-                        break;
-
-                    case 7:
-                        if (in.readIndex() != 1) {
-                            in.readNull();
-                            this.timestamp = null;
-                        } else {
-                            this.timestamp = in.readLong();
-                        }
-                        break;
-
-                    case 8:
-                        this.shardid = in.readInt();
-                        break;
-
-                    default:
-                        throw new java.io.IOException("Corrupt ResolvingDecoder.");
-                }
-            }
+    private void writeIntArrayClosed(org.apache.avro.io.Encoder out, int[] array) throws java.io.IOException {
+        if (array == null || array.length == 0) {
+            out.writeArrayStart();
+            out.writeArrayEnd();
+            return;
         }
+
+        int length = array.length;
+        // 预估最大所需字节数：变长 int 最多 5 字节，加上 start/end 和一些余量
+        byte[] buffer = new byte[length * 6 + 10];
+        int pos = 0;
+
+        // 1) 写入数组块的元素个数（即 Avro 的 block count）
+        pos += BinaryData.encodeInt(length, buffer, pos);
+
+        // 2) 逐个元素写入 index=1 和值
+        for (int i = 0; i < length; i++) {
+            pos += BinaryData.encodeInt(1, buffer, pos);       // writeIndex(1)
+            pos += BinaryData.encodeInt(array[i], buffer, pos); // writeInt(val)
+        }
+
+        // 3) 写入数组结束标志（0 块大小）
+        pos += BinaryData.encodeInt(0, buffer, pos);
+
+        // 4) 一次性将所有字节写入外部 Encoder
+        out.writeFixed(buffer, 0, pos);
     }
 
-    public static List<Integer> getKeyList(byte[] key){
-        List<Integer> keyList = new ArrayList<>(key.length);
+//    @Override public void customDecode(org.apache.avro.io.ResolvingDecoder in)
+//            throws java.io.IOException
+//    {
+//        org.apache.avro.Schema.Field[] fieldOrder = in.readFieldOrderIfDiff();
+//        if (fieldOrder == null) {
+//            this.uuid = in.readString(this.uuid instanceof Utf8 ? (Utf8)this.uuid : null);
+//
+//            this.cmd = in.readString(this.cmd instanceof Utf8 ? (Utf8)this.cmd : null);
+//
+//            this.address = in.readString(this.address instanceof Utf8 ? (Utf8)this.address : null);
+//
+//            this.seq = in.readString(this.seq instanceof Utf8 ? (Utf8)this.seq : null);
+//
+//            long size0 = in.readArrayStart();
+//            java.util.List<Integer> a0 = this.key;
+//            if (a0 == null) {
+//                a0 = new SpecificData.Array<Integer>((int)size0, SCHEMA$.getField("key").schema());
+//                this.key = a0;
+//            } else a0.clear();
+//            SpecificData.Array<Integer> ga0 = (a0 instanceof SpecificData.Array ? (SpecificData.Array<Integer>)a0 : null);
+//            for ( ; 0 < size0; size0 = in.arrayNext()) {
+//                for ( ; size0 != 0; size0--) {
+//                    Integer e0 = (ga0 != null ? ga0.peek() : null);
+//                    if (in.readIndex() != 1) {
+//                        in.readNull();
+//                        e0 = null;
+//                    } else {
+//                        e0 = in.readInt();
+//                    }
+//                    a0.add(e0);
+//                }
+//            }
+//
+//            long size1 = in.readArrayStart();
+//            java.util.List<Integer> a1 = this.subkey;
+//            if (a1 == null) {
+//                a1 = new SpecificData.Array<Integer>((int)size1, SCHEMA$.getField("subkey").schema());
+//                this.subkey = a1;
+//            } else a1.clear();
+//            SpecificData.Array<Integer> ga1 = (a1 instanceof SpecificData.Array ? (SpecificData.Array<Integer>)a1 : null);
+//            for ( ; 0 < size1; size1 = in.arrayNext()) {
+//                for ( ; size1 != 0; size1--) {
+//                    Integer e1 = (ga1 != null ? ga1.peek() : null);
+//                    if (in.readIndex() != 1) {
+//                        in.readNull();
+//                        e1 = null;
+//                    } else {
+//                        e1 = in.readInt();
+//                    }
+//                    a1.add(e1);
+//                }
+//            }
+//
+//            this.dbid = in.readString(this.dbid instanceof Utf8 ? (Utf8)this.dbid : null);
+//
+//            if (in.readIndex() != 1) {
+//                in.readNull();
+//                this.timestamp = null;
+//            } else {
+//                this.timestamp = in.readLong();
+//            }
+//
+//            this.shardid = in.readInt();
+//
+//        } else {
+//            for (int i = 0; i < 9; i++) {
+//                switch (fieldOrder[i].pos()) {
+//                    case 0:
+//                        this.uuid = in.readString(this.uuid instanceof Utf8 ? (Utf8)this.uuid : null);
+//                        break;
+//
+//                    case 1:
+//                        this.cmd = in.readString(this.cmd instanceof Utf8 ? (Utf8)this.cmd : null);
+//                        break;
+//
+//                    case 2:
+//                        this.address = in.readString(this.address instanceof Utf8 ? (Utf8)this.address : null);
+//                        break;
+//
+//                    case 3:
+//                        this.seq = in.readString(this.seq instanceof Utf8 ? (Utf8)this.seq : null);
+//                        break;
+//
+//                    case 4:
+//                        long size0 = in.readArrayStart();
+//                        java.util.List<Integer> a0 = this.key;
+//                        if (a0 == null) {
+//                            a0 = new SpecificData.Array<Integer>((int)size0, SCHEMA$.getField("key").schema());
+//                            this.key = a0;
+//                        } else a0.clear();
+//                        SpecificData.Array<Integer> ga0 = (a0 instanceof SpecificData.Array ? (SpecificData.Array<Integer>)a0 : null);
+//                        for ( ; 0 < size0; size0 = in.arrayNext()) {
+//                            for ( ; size0 != 0; size0--) {
+//                                Integer e0 = (ga0 != null ? ga0.peek() : null);
+//                                if (in.readIndex() != 1) {
+//                                    in.readNull();
+//                                    e0 = null;
+//                                } else {
+//                                    e0 = in.readInt();
+//                                }
+//                                a0.add(e0);
+//                            }
+//                        }
+//                        break;
+//
+//                    case 5:
+//                        long size1 = in.readArrayStart();
+//                        java.util.List<Integer> a1 = this.subkey;
+//                        if (a1 == null) {
+//                            a1 = new SpecificData.Array<Integer>((int)size1, SCHEMA$.getField("subkey").schema());
+//                            this.subkey = a1;
+//                        } else a1.clear();
+//                        SpecificData.Array<Integer> ga1 = (a1 instanceof SpecificData.Array ? (SpecificData.Array<Integer>)a1 : null);
+//                        for ( ; 0 < size1; size1 = in.arrayNext()) {
+//                            for ( ; size1 != 0; size1--) {
+//                                Integer e1 = (ga1 != null ? ga1.peek() : null);
+//                                if (in.readIndex() != 1) {
+//                                    in.readNull();
+//                                    e1 = null;
+//                                } else {
+//                                    e1 = in.readInt();
+//                                }
+//                                a1.add(e1);
+//                            }
+//                        }
+//                        break;
+//
+//                    case 6:
+//                        this.dbid = in.readString(this.dbid instanceof Utf8 ? (Utf8)this.dbid : null);
+//                        break;
+//
+//                    case 7:
+//                        if (in.readIndex() != 1) {
+//                            in.readNull();
+//                            this.timestamp = null;
+//                        } else {
+//                            this.timestamp = in.readLong();
+//                        }
+//                        break;
+//
+//                    case 8:
+//                        this.shardid = in.readInt();
+//                        break;
+//
+//                    default:
+//                        throw new java.io.IOException("Corrupt ResolvingDecoder.");
+//                }
+//            }
+//        }
+//    }
+
+    public static int[] getKey(byte[] key){
+        int[] intKey = new int[key.length];
         for(int i = 0;i<key.length;i++){
-            keyList.add((int) key[i]);
+            intKey[i] = key[i];
         }
-        return keyList;
+        return intKey;
     }
 
     public static GtidKeyItem buildGtidKeyItem(String cmd, String uuid, String seq, byte[] key, byte[] subkey, String dbId, long shardId, String address){
-        List<Integer> subKeyList = new ArrayList<>();
+        int[] subIntKey = new int[]{};
         if(subkey != null){
-            subKeyList = getKeyList(subkey);
+            subIntKey = getKey(subkey);
         }
-        return new GtidKeyItem(uuid,cmd,address,seq,getKeyList(key),subKeyList,dbId,System.currentTimeMillis()/1000,(int)shardId);
+        return new GtidKeyItem(uuid,cmd,address,seq,getKey(key),subIntKey,dbId,System.currentTimeMillis()/1000,(int)shardId);
 //        GtidKeyItem.Builder builder = GtidKeyItem
 //                .newBuilder()
 //                .setUuid(uuid)
