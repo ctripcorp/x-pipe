@@ -380,6 +380,6 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 
 	@Override
 	public long getCmdBatchFlushIntervalMillis() {
-		return 3;
+		return 4;
 	}
 }
