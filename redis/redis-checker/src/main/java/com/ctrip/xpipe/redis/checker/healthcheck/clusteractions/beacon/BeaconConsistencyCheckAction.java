@@ -66,7 +66,8 @@ public class BeaconConsistencyCheckAction extends AbstractLeaderAwareHealthCheck
         } catch (Throwable t) {
             // cluster not found in beacon
             status = BeaconCheckStatus.ERROR;
-            logger.error("[checkConsistency][{}][{}:{}:{}][fail] {}", getBeaconRouteType(), clusterType, orgId, lastModifyTime, t.getMessage());
+            logger.error("[checkConsistency][{}][{}][{}:{}:{}][fail] {}", getBeaconRouteType(), clusterId,
+                    clusterType, orgId, lastModifyTime, t.getMessage());
         }
         handleCheckResult(status, clusterId, clusterType, orgId, lastModifyTime);
     }
@@ -79,11 +80,16 @@ public class BeaconConsistencyCheckAction extends AbstractLeaderAwareHealthCheck
                 lastSendTime = currentTime;
             }
             if(status == BeaconCheckStatus.CONSISTENCY) {
+                logger.debug("[handleCheckResult][{}][{}][ignore] {}", getBeaconRouteType(), clusterId, status);
                 sendMetric = currentTime - lastSendTime > getBaseCheckInterval();
             } else if (status == BeaconCheckStatus.INCONSISTENCY_IGNORE) {
-                logger.info("[handleCheckResult][{}][{}] inconsistency but ignore", getBeaconRouteType(), clusterId);
+                logger.info("[handleCheckResult][{}][{}][ignore] inconsistency but ignore", getBeaconRouteType(), clusterId);
+                sendMetric = true;
+            } else if (status == BeaconCheckStatus.ERROR) {
+                logger.info("[handleCheckResult][{}][{}][ignore] error", getBeaconRouteType(), clusterId);
                 sendMetric = true;
             } else {
+                logger.info("[handleCheckResult][{}][{}][register] {}", getBeaconRouteType(), clusterId, status);
                 beaconManager.registerCluster(clusterId, clusterType, orgId, lastModifyTime, getBeaconRouteType());
                 sendMetric = true;
             }
