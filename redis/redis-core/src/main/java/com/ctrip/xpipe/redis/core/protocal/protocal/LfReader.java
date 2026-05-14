@@ -5,6 +5,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.ByteProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
 /**
@@ -18,35 +20,42 @@ public class LfReader extends AbstractRedisClientProtocol<byte[]> {
 
 	private static final int INITIAL_BUFFER_SIZE = 64;
 
-	private byte[] buffer;
 	private int count;
 	private byte[] payload;
 
 	@Override
 	public RedisClientProtocol<byte[]> read(ByteBuf byteBuf) {
-
 		int lfIndex = byteBuf.forEachByte(ByteProcessor.FIND_LF);
 
 		if (lfIndex >= 0) {
 			int length = lfIndex - byteBuf.readerIndex() + 1;
 			if (count == 0) {
+				if(lfIndex == 0){
+					byteBuf.readByte();
+					payload = new byte[]{};
+					return this;
+				}
 				payload = new byte[length];
 				byteBuf.readBytes(payload);
 			} else {
-				System.arraycopy(buffer, 0, payload, 0, count);
+				int total = count + length;
+				ensureCapacity(total);
 				byteBuf.readBytes(payload, count, length);
-				count = 0; // 清空缓存
+				count = total;
+				payload = Arrays.copyOf(payload, count);
+				count = 0;
 			}
 			return this;
 		} else {
 			int readable = byteBuf.readableBytes();
 			if (readable > 0) {
-				if (buffer == null) {
-					buffer = new byte[Math.max(readable, INITIAL_BUFFER_SIZE)];
+				if (payload == null) {
+					payload = new byte[Math.max(readable, INITIAL_BUFFER_SIZE)];
+					count = 0;
 				} else {
 					ensureCapacity(count + readable);
 				}
-				byteBuf.readBytes(buffer, count, readable);
+				byteBuf.readBytes(payload, count, readable);
 				count += readable;
 			}
 			return null;
@@ -79,9 +88,9 @@ public class LfReader extends AbstractRedisClientProtocol<byte[]> {
 	}
 
 	private void ensureCapacity(int required) {
-		if (buffer.length < required) {
-			int newSize = Math.max(buffer.length << 1, required);
-			buffer = Arrays.copyOf(buffer, newSize);
+		if (payload.length < required) {
+			int newSize = Math.max(payload.length << 1, required);
+			payload = Arrays.copyOf(payload, newSize);
 		}
 	}
 }

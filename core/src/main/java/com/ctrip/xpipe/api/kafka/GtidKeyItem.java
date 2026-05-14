@@ -1109,25 +1109,11 @@ public class GtidKeyItem extends org.apache.avro.specific.SpecificRecordBase imp
     }
 
     public static GtidKeyItem buildGtidKeyItem(String cmd, String uuid, String seq, byte[] key, byte[] subkey, String dbId, long shardId, String address){
-        int[] subIntKey = new int[]{};
+        int[] subIntKey = null;
         if(subkey != null){
             subIntKey = getKey(subkey);
         }
         return new GtidKeyItem(uuid,cmd,address,seq,getKey(key),subIntKey,dbId,System.currentTimeMillis()/1000,(int)shardId);
-//        GtidKeyItem.Builder builder = GtidKeyItem
-//                .newBuilder()
-//                .setUuid(uuid)
-//                .setSeq(seq)
-//                .setDbid(dbId)
-//                .setCmd(cmd)
-//                .setKey(keyList)
-//                .setAddress(address)
-//                .setShardid((int)shardId)
-//                .setTimestamp(System.currentTimeMillis()/1000);
-//        if(subKeyList != null){
-//            builder.setSubkey(subKeyList);
-//        }
-//        return builder.build();
     }
 }
 

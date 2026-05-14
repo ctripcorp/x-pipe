@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.ck;
 
-import java.util.List;
+import com.ctrip.xpipe.redis.core.redis.operation.IRedisOpItem;
 
 // 1. 定义事件类
 public class MessageEvent {

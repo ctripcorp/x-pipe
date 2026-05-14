@@ -130,6 +130,11 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>com.ctrip.framework.xpipe</groupId>
+			<artifactId>ctrip-service</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-exec</artifactId>
 			<scope>test</scope>

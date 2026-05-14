@@ -161,6 +161,22 @@
                     </dependency>
                 </dependencies>
             </plugin>
+<!--			<plugin>-->
+<!--				<groupId>org.apache.avro</groupId>-->
+<!--				<artifactId>avro-maven-plugin</artifactId>-->
+<!--				<version>1.11.1</version>-->
+<!--				<executions>-->
+<!--					<execution>-->
+<!--						<id>generate-avro</id>-->
+<!--						<phase>generate-sources</phase>-->
+<!--						<goals><goal>schema</goal></goals>-->
+<!--						<configuration>-->
+<!--							<sourceDirectory>src/main/resources/avro/</sourceDirectory>-->
+<!--							<outputDirectory>${project.basedir}/generated-sources/avro/</outputDirectory>-->
+<!--						</configuration>-->
+<!--					</execution>-->
+<!--				</executions>-->
+<!--			</plugin>-->
         </plugins>
     </build>
 </project>

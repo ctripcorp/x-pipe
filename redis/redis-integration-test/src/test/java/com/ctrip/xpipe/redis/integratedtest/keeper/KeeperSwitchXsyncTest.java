@@ -63,7 +63,6 @@ public class KeeperSwitchXsyncTest extends AbstractKeeperIntegratedSingleDc {
             sendMessageToMaster(master, 512); // may fsync if messages size over repl-backlog-size
             latch.countDown();
         });
-
         executors.execute(() -> {
             activeKeeperMeta.setActive(false);
             backupKeeperMeta.setActive(true);
@@ -80,9 +79,8 @@ public class KeeperSwitchXsyncTest extends AbstractKeeperIntegratedSingleDc {
             }
         });
 
-        Thread.sleep(5000);
+        Thread.sleep(10000);
         latch.await(10, TimeUnit.SECONDS);
-
 
         assertGtid(master);
         assertReplOffset(master);

@@ -4,13 +4,9 @@ import com.ctrip.framework.ckafka.client.client.CKafkaClientBuilder;
 import com.ctrip.framework.foundation.Env;
 import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
-import com.ctrip.xpipe.api.kafka.GtidKeyItemWrapper;
 import com.ctrip.xpipe.api.kafka.KafkaService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.google.common.base.Throwables;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -43,34 +39,11 @@ public class CtripKafkaService implements KafkaService {
 
     private final int PRODUCER_POOL_MASK = PRODUCER_POOL_SIZE - 1;
 
-
-    private final Schema schema;
-
     private static final String XPIPE_CK_KAFKA = "xpipe.ck.kafka";
 
     private AtomicBoolean started = new AtomicBoolean(false);
 
-    private static final String schemaJson = "{\n" +
-            "  \"type\": \"record\",\n" +
-            "  \"name\": \"GtidKeyItem\",\n" +
-            "  \"namespace\": \"com.ctrip.xpipe.api.kafka\",\n" +
-            "  \"fields\": [\n" +
-            "    {\"name\": \"uuid\", \"type\": \"string\"},\n" +
-            "    {\"name\": \"cmd\", \"type\": \"string\"},\n" +
-            "    {\"name\": \"address\", \"type\": \"string\"},\n" +
-            "    {\"name\": \"seq\", \"type\": \"string\"},\n" +
-            "    {\"name\": \"key\", \"type\": {\"type\": \"array\", \"items\": [\"null\",\"int\"]}, \"default\": []},\n" +
-            "    {\"name\": \"subkey\", \"type\": {\"type\": \"array\", \"items\": [\"null\",\"int\"]}, \"default\": []},\n" +
-            "    {\"name\": \"dbid\", \"type\": \"string\"},\n" +
-            "    {\"name\": \"timestamp\", \"type\": [\"null\",\"long\"], \"default\": null},\n" +
-            "    {\"name\": \"shardid\", \"type\": \"int\"}\n" +
-            "  ]\n" +
-            "}";
-
-
-
     public CtripKafkaService(){
-        schema = new Schema.Parser().parse(schemaJson);
         startProducer();
     }
 
@@ -151,33 +124,6 @@ public class CtripKafkaService implements KafkaService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-    private GenericRecord genericRecord(GtidKeyItemWrapper gtidKeyItem){
-        GenericRecord record = new GenericData.Record(schema);
-        record.put("cmd",gtidKeyItem.getCmd());
-        record.put("uuid",gtidKeyItem.getUuid());
-        record.put("address",gtidKeyItem.getAddress());
-        record.put("seq",gtidKeyItem.getSeq());
-        record.put("key", generateAvroArray("key",gtidKeyItem.getKey()));
-        record.put("subkey",generateAvroArray("subkey",gtidKeyItem.getSubkey()));
-        record.put("dbid",gtidKeyItem.getDbid());
-        record.put("timestamp",System.currentTimeMillis()/1000);
-        record.put("shardid",gtidKeyItem.getShardid());
-        return record;
-    }
-
-    private GenericData.Array<Integer> generateAvroArray(String arrSchemaName,byte[] key){
-        if(key == null) return new GenericData.Array<>(0,schema.getField(arrSchemaName).schema());
-        Integer[] arr = new Integer[key.length];
-        for(int k = 0;k<key.length;k++){
-            arr[k] = (int) key[k];
-        }
-
-        GenericData.Array<Integer> keyArray = new GenericData.Array<>(
-                schema.getField(arrSchemaName).schema(),
-                Arrays.asList(arr)
-        );
-        return keyArray;
     }
 
     @Override

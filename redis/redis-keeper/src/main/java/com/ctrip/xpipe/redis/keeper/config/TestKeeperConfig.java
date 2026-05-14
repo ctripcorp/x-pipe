@@ -382,4 +382,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public long getCmdBatchFlushIntervalMillis() {
 		return 4;
 	}
+
+	@Override
+	public int getCmdBatchLowRateBps() {
+		return 524288;
+	}
 }

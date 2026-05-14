@@ -1,8 +1,10 @@
-package com.ctrip.xpipe.redis.keeper.store.ck;
+package com.ctrip.xpipe.redis.core.redis.operation.op;
+
+import com.ctrip.xpipe.redis.core.redis.operation.IRedisOpItem;
 
 import java.util.List;
 
-public class RedisOpMultiItem implements IRedisOpItem<List<RedisOpItem>>{
+public class RedisOpMultiItem implements IRedisOpItem<List<RedisOpItem>> {
     private List<RedisOpItem> redisOpItems;
 
     public RedisOpMultiItem(List<RedisOpItem> redisOpItems){

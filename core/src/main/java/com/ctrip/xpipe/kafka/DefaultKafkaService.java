@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.kafka;
 
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
-import com.ctrip.xpipe.api.kafka.GtidKeyItemWrapper;
 import com.ctrip.xpipe.api.kafka.KafkaService;
 
 /**

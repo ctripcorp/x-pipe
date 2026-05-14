@@ -192,7 +192,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             if(buildIndex) {
                 indexStore.openWriter(cmdWriter);
             }
-            this.timerSlidingWindow = new TimerSlidingWindow(ckStore.getKeeperConfig(), cmdWriter,commandStoreDelay,offsetNotifier,ckStore.getMasterEventLoop());
+            if(ckStore != null) {
+                this.timerSlidingWindow = new TimerSlidingWindow(ckStore.getKeeperConfig(), cmdWriter, commandStoreDelay, offsetNotifier, ckStore.getMasterEventLoop());
+            }
         }
     }
 
@@ -356,7 +358,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         if (null != rateLimiter) rateLimiter.acquire(byteBuf.readableBytes());
 
-        if(buildIndex){
+        if(buildIndex && timerSlidingWindow != null && !ckStore.isKeeper()){
             return timerSlidingWindow.write(byteBuf);
         }
 
@@ -582,7 +584,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                 coalescingOffsetNotifier.close();
             }
 
-            timerSlidingWindow.close();
+            if(timerSlidingWindow != null) {
+                timerSlidingWindow.close();
+            }
 
             cmdWriter.close();
             if(indexStore != null) {

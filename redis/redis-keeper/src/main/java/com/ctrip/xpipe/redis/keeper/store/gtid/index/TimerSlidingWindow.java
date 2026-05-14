@@ -66,7 +66,7 @@ public class TimerSlidingWindow implements AutoCloseable {
 
         // 2. 低流量 → 直接落盘（低延迟）
         int windowSize = window.readableBytes();
-        if (avgRate <= LOW_RATE_BPS) {
+        if (avgRate <= keeperConfig.getCmdBatchLowRateBps()) {
             if (windowSize > 0) {
                 flushBuffer();
             }

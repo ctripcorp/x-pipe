@@ -7,6 +7,7 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpItem;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamTransactionListener;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.redis.core.store.CommandWriterCallback;
@@ -158,12 +159,11 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     @Override
-    public int batchPostAppend(List<ByteBuf> commandBufs, List<Object[]> payloads) throws IOException {
+    public int batchPostAppend(List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException {
         int written = 0;
         for (ByteBuf buf : commandBufs) {
             if (buf != null) {
                 written += appendCmdBuf(buf);
-                buf.release();
             }
         }
         sendPayloadsToCk(payloads);
@@ -180,6 +180,11 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         return true;
     }
 
+    @Override
+    public RedisOpParser getOpParser() {
+        return this.opParser;
+    }
+
     private boolean isPingOrSelectCmd(byte[] command){
         return Arrays.equals(PING_BYTES, command) || Arrays.equals(SELECT_BYTES,command)
                 || Arrays.equals(PING_LOWWER_BYTES, command) || Arrays.equals(SELECT_BYTES,command);
@@ -192,7 +197,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         return 0;
     }
 
-    private void sendPayloadsToCk(List<Object[]> payloads){
+    private void sendPayloadsToCk(List<RedisOpItem> payloads){
         if (ckStore != null && !ckStore.isKeeper()) {
             try {
                 ckStore.sendPayloads(payloads);

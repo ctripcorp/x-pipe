@@ -34,7 +34,7 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 	private RedisClientProtocol<?> currentParser  = null;
 	private ARRAY_STATE arrayState = ARRAY_STATE.READ_SIZE;
 
-	private static InOutPayloadFactory inOutPayloadFactory = new InOutPayloadFactory.DirectByteBufInOutPayloadFactory();
+	private InOutPayloadFactory inOutPayloadFactory = InOutPayloadFactory.INSTANCE;
 
 	public ArrayParser() {
 
@@ -165,6 +165,7 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 		arrayState = ARRAY_STATE.READ_SIZE;
 		if(inOutPayloadFactory != null && resultArray != null){
 			for(Object object: resultArray){
+				if(object == null) continue;
 				DirectByteBufInStringOutPayload directByteBufInStringOutPayload = (DirectByteBufInStringOutPayload) object;
 				directByteBufInStringOutPayload.reset();
 			}

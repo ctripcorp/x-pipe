@@ -16,6 +16,8 @@ public interface KeeperConfig extends CoreConfig{
 	String KEY_STOP_WRITE_CK = "keeper.stop.write.ck";
 	String KEY_CMD_BATCH_WRITE_SIZE = "keeper.cmd.batch.write.size";
 	String KEY_CMD_BATCH_FLUSH_INTERVAL_MILLIS = "keeper.cmd.batch.flush.interva.millis";
+	String KEY_CMD_BATCH_LOW_RATE_BPS = "keeper.cmd.batch.low.rate.bps";
+
 
 	int getMetaServerConnectTimeout();
 
@@ -115,5 +117,7 @@ public interface KeeperConfig extends CoreConfig{
 	int getCmdBatchWriteSize();
 
 	long getCmdBatchFlushIntervalMillis();
+
+	int  getCmdBatchLowRateBps();
 
 }

@@ -6,6 +6,7 @@ import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 
@@ -39,7 +40,8 @@ public class DirectByteBufInStringOutPayload extends AbstractInOutPayload {
 
     @Override
     protected long doOut(WritableByteChannel writableByteChannel) throws IOException {
-        throw new UnsupportedOperationException("Not support");
+//        throw new UnsupportedOperationException("Not support");
+        return writableByteChannel.write(ByteBuffer.wrap(getBytes()));
     }
 
     @Override
