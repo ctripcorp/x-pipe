@@ -34,9 +34,6 @@ public class BulkStringEofJuderManager {
 			return new BulkStringEofMarkJudger(mark);
 		}
 
-//		if (logger.isDebugEnabled()) {
-//			logger.debug("[create]len:{}, {}, {}", data.length, new String(data), start);
-//		}
 		int end = data.length;
 		// LfReader payload may end with '\r' only (no '\n'); trim CR/LF robustly.
 		while (end > start && (data[end - 1]== '\r' || data[end - 1] == '\n')) {

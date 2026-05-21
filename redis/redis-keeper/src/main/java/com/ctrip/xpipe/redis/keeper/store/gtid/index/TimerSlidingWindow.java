@@ -24,13 +24,6 @@ public class TimerSlidingWindow implements AutoCloseable {
 
     private static final Logger logger = LoggerFactory.getLogger(TimerSlidingWindow.class);
 
-    // ---------- 策略参数 ----------
-    private static final double LOW_RATE_BPS = 524288.0;          // 低速率阈值：512 KB/s，低于此速率直接写盘
-    private static final double TAU_MILLIS = 1000.0;              // EWMA 时间常数（1 秒），决定平滑程度
-
-    // ---------- 速率估计器（EWMA） ----------
-    private final RateEstimator rateEstimator = new RateEstimator(TAU_MILLIS);
-
     // ---------- 聚合窗口 ----------
     private CompositeByteBuf window;
     private final NioEventLoopGroup eventLoopGroup;
@@ -59,22 +52,7 @@ public class TimerSlidingWindow implements AutoCloseable {
     public int write(ByteBuf data) throws IOException {
         int dataSize = data.readableBytes();
         long now = System.currentTimeMillis();
-
-        // 1. 更新速率估计（EWMA，抗尖峰）
-        rateEstimator.update(dataSize);
-        double avgRate = rateEstimator.getRate();  // 单位：bytes/s
-
-        // 2. 低流量 → 直接落盘（低延迟）
         int windowSize = window.readableBytes();
-        if (avgRate <= keeperConfig.getCmdBatchLowRateBps()) {
-            if (windowSize > 0) {
-                flushBuffer();
-            }
-            flushSingleBuffer(data);
-            return dataSize;
-        }
-
-        // 3. 高流量 → 聚合写入（高吞吐）
         boolean wasEmpty = windowSize == 0;
         data.retain();
         window.addComponent(true, data);
@@ -83,12 +61,11 @@ public class TimerSlidingWindow implements AutoCloseable {
             scheduleDelayFlush();   // 启动最大驻留时间定时器
         }
 
-        currentWindowThreshold = avgRate >= 1_048_576 ? keeperConfig.getCmdBatchWriteSize() : 2048;
+        currentWindowThreshold =  keeperConfig.getCmdBatchWriteSize();
 
-        // 触发刷盘条件：1. 达到字节阈值  2. 超过最大驻留时间
+        // 触发刷盘条件： 达到字节阈值
         windowSize += dataSize;
-        if (windowSize >= currentWindowThreshold ||
-                (firstByteTime > 0 && now - firstByteTime >= keeperConfig.getCmdBatchFlushIntervalMillis())) {
+        if (windowSize >= currentWindowThreshold) {
             flushBuffer();
         }
 
@@ -108,15 +85,6 @@ public class TimerSlidingWindow implements AutoCloseable {
     }
 
     // ==================== 内部实现 ====================
-
-    /** 直接落盘单条数据，不经过聚合窗口 */
-    private void flushSingleBuffer(ByteBuf data) throws IOException {
-        commandStoreDelay.beginWrite();
-        commandWriter.write(data);
-        long offset = commandWriter.totalLength() - 1;
-        commandStoreDelay.endWrite(offset);
-        offsetNotifier.offsetIncreased(offset);
-    }
 
     /** 将聚合窗口中的数据批量写入磁盘 */
     private void flushBuffer() throws IOException {
@@ -139,14 +107,17 @@ public class TimerSlidingWindow implements AutoCloseable {
         cancelDelayFlush();         // 刷盘后无需再触发延迟任务
     }
 
-    /** 提交一个延迟任务，在 MAX_STAY_MS 后强制刷盘 */
     private void scheduleDelayFlush() {
-        if (delayFlushFuture == null || delayFlushFuture.isDone()) {
-            delayFlushFuture = eventLoopGroup.schedule(
-                    this::delayFlush,
-                    keeperConfig.getCmdBatchFlushIntervalMillis(),
-                    TimeUnit.MILLISECONDS
-            );
+        cancelDelayFlush();
+
+        long flushInterval = keeperConfig.getCmdBatchFlushIntervalMillis();
+        long deadline = firstByteTime + flushInterval;
+        long delay = deadline - System.currentTimeMillis();
+
+        if (delay <= 0) {
+            delayFlush();
+        } else {
+            delayFlushFuture = eventLoopGroup.schedule(this::delayFlush, delay, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -167,80 +138,6 @@ public class TimerSlidingWindow implements AutoCloseable {
             logger.error("[delayFlush] failed to flush buffer", e);
         } finally {
             delayFlushFuture = null;
-        }
-    }
-
-    // ==================== 速率估计器（Linux 风格 EWMA） ====================
-
-    /**
-     * 时间自适应 EWMA 速率估计器（修正首次采样偏差）。
-     */
-    private static class RateEstimator {
-        private final double tauMillis;
-        private double estimatedRate;               // 当前估计 (bytes/s)
-        private long lastUpdateTime = -1;
-        private long pendingBytes = 0;              // 累积未处理的字节（用于合并同一毫秒的写入）
-
-        RateEstimator(double tauMillis) {
-            this.tauMillis = tauMillis;
-        }
-
-        /**
-         * 输入本次写入字节数，更新估计速率。
-         * 首次调用只记录时间，不产生速率值；
-         * 后续调用使用真实时间间隔计算瞬时速率，并平滑更新。
-         */
-        void update(long bytes) {
-            long now = System.currentTimeMillis();
-
-            if (lastUpdateTime < 0) {
-                // 第一次：只记住时间和字节，不更新速率
-                lastUpdateTime = now;
-                pendingBytes = bytes;
-                return;
-            }
-
-            // 累积同一毫秒内的多次写入
-            long intervalMs = now - lastUpdateTime;
-            if (intervalMs == 0) {
-                pendingBytes += bytes;
-                return;
-            }
-
-            // -------------------- 真实采样 --------------------
-            // 将累积的字节和本次字节合并计算瞬时速率
-            long totalBytes = pendingBytes + bytes;
-            double instantRate = (totalBytes * 1000.0) / intervalMs;
-
-            // 动态 alpha
-            double alpha = 1.0 - Math.exp(-intervalMs / tauMillis);
-            // 若是第二次采样（即尚没有有效 estimatedRate），则直接用瞬时速率
-            if (estimatedRate == 0.0) {
-                estimatedRate = instantRate;
-            } else {
-                estimatedRate = estimatedRate + alpha * (instantRate - estimatedRate);
-            }
-
-            // 重置状态
-            pendingBytes = 0;
-            lastUpdateTime = now;
-        }
-
-        /**
-         * 获取当前估计速率 (bytes/s)。
-         * 考虑空闲衰减：若长时间未调用 update()，速率自动向 0 衰减。
-         */
-        double getRate() {
-            long now = System.currentTimeMillis();
-            if (lastUpdateTime < 0) return 0;
-
-            long idleMs = now - lastUpdateTime;
-            if (idleMs > tauMillis) {
-                double alpha = 1.0 - Math.exp(-idleMs / tauMillis);
-                estimatedRate = estimatedRate * (1.0 - alpha);
-                lastUpdateTime = now;      // 避免重复衰减
-            }
-            return estimatedRate;
         }
     }
 }

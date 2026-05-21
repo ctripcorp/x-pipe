@@ -358,7 +358,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         if (null != rateLimiter) rateLimiter.acquire(byteBuf.readableBytes());
 
-        if(buildIndex && timerSlidingWindow != null && !ckStore.isKeeper()){
+        if(buildIndex && timerSlidingWindow != null && commandOffsetNotifyCoalescingEnabled.getAsBoolean()){
             return timerSlidingWindow.write(byteBuf);
         }
 
@@ -390,11 +390,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         long offset = cmdWriter.totalLength() - 1;
 
         indexStoreDelay.endWrite(offset);
-        if (commandOffsetNotifyCoalescingEnabled.getAsBoolean()) {
-            coalescingOffsetNotifier.onWritten((int) (offset - beginOffset), offset);
-        } else {
-            coalescingOffsetNotifier.notifyNow(offset);
-        }
 
         int writer = (int)(offset - beginOffset);
         return writer;

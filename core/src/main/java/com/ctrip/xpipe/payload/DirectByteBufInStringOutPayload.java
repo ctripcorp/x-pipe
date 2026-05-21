@@ -41,7 +41,14 @@ public class DirectByteBufInStringOutPayload extends AbstractInOutPayload {
     @Override
     protected long doOut(WritableByteChannel writableByteChannel) throws IOException {
 //        throw new UnsupportedOperationException("Not support");
-        return writableByteChannel.write(ByteBuffer.wrap(getBytes()));
+        ByteBuffer[] buffers = cumulation.nioBuffers();
+        int writeOffset = 0;
+        if(buffers != null){
+            for(ByteBuffer buffer:buffers){
+                writeOffset += writableByteChannel.write(buffer);
+            }
+        }
+        return writeOffset;
     }
 
     @Override
