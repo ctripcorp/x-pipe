@@ -96,8 +96,8 @@
 
     <modules>
         <module>core</module>
-        <module>services</module>
         <module>redis</module>
+        <module>services</module>
     </modules>
 
     <dependencyManagement>

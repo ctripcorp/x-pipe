@@ -14,7 +14,6 @@
             <id>local</id>
             <modules>
                 <module>local-service</module>
-                <module>ctrip-service</module>
             </modules>
         </profile>
         <profile>
