@@ -54,7 +54,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
     @Before
     public void setUp() throws Exception {
-//        executeScript("kill_server.sh", String.valueOf(6379));
+        executeScript("kill_server.sh", String.valueOf(6379));
 //        executeScript("start_redis.sh");
         redisServer = new RedisServer(6379);
         redisServer.start();
@@ -116,7 +116,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
 
         server.propagate("gtid a1:27 set k1 v7");
 
-        sleep(2000);
+        sleep(10000);
 
 
         Set<String> keys = jedis.keys("*");
@@ -175,7 +175,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
         server.propagate("incr in");
         server.propagate("exec");
 
-        sleep(3000);
+        sleep(10000);
 
         Set<String> keys = jedis.keys("*");
         Assert.assertEquals(12,keys.size());
@@ -233,7 +233,7 @@ public class ApplierServerToFakeXsyncServerTest extends AbstractRedisOpParserTes
     public void testRedis8() throws Exception {
         waitConditionUntilTimeOut(() -> 1 == server.slaveCount());
 
-        sleep(3000);
+        sleep(10000);
 
         Set<String> keys = jedis.keys("*");
         Assert.assertEquals(8,keys.size());

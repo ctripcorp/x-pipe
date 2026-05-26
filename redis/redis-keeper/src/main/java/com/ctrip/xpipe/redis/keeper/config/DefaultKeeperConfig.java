@@ -314,6 +314,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	@Override
 	public long getCmdBatchFlushIntervalMillis() {
-		return getLongProperty(KEY_CMD_BATCH_FLUSH_INTERVAL_MILLIS,1l);
+		return getLongProperty(KEY_CMD_BATCH_FLUSH_INTERVAL_MILLIS,2l);
+	}
+
+	@Override
+	public int getCmdBatchLowRateBps() {
+		return getIntProperty(KEY_CMD_BATCH_LOW_RATE_BPS,524288);
 	}
 }

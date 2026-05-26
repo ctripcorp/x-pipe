@@ -117,4 +117,6 @@ public interface KeeperConfig extends CoreConfig{
 	int getCmdBatchWriteSize();
 
 	long getCmdBatchFlushIntervalMillis();
+
+	int getCmdBatchLowRateBps();
 }

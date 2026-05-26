@@ -1,9 +1,10 @@
 package com.ctrip.xpipe.payload;
 
-import com.ctrip.xpipe.api.codec.Codec;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -11,6 +12,8 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
 
 public class DirectByteBufInStringOutPayload extends AbstractInOutPayload {
+
+    private static final Logger logger = LoggerFactory.getLogger(DirectByteBufInStringOutPayload.class);
 
     private static final int INIT_SIZE = 1 << 8; //256
 
@@ -40,13 +43,16 @@ public class DirectByteBufInStringOutPayload extends AbstractInOutPayload {
 
     @Override
     protected long doOut(WritableByteChannel writableByteChannel) throws IOException {
-//        throw new UnsupportedOperationException("Not support");
+        int readable = cumulation.readableBytes();
         ByteBuffer[] buffers = cumulation.nioBuffers();
         int writeOffset = 0;
         if(buffers != null){
             for(ByteBuffer buffer:buffers){
                 writeOffset += writableByteChannel.write(buffer);
             }
+        }
+        if(writeOffset < readable){
+            logger.warn("[doOut][wrote < readable]{} < {}", writeOffset, readable);
         }
         return writeOffset;
     }

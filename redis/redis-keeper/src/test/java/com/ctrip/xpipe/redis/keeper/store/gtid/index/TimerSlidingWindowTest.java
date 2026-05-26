@@ -1,10 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
-
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
@@ -13,18 +8,23 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.ScheduledFuture;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TimerSlidingWindowTest {
@@ -41,34 +41,31 @@ public class TimerSlidingWindowTest {
     private NioEventLoopGroup eventLoopGroup;
 
     private TimerSlidingWindow window;
+    // 通过数组控制 mock 的 getRate() 返回值
+    private final double[] currentRate = {1_000_000.0}; // 默认高速
     private final AtomicLong totalLength = new AtomicLong(0);
-    // 记录每次 write(ByteBuf) 的实际字节数
     private final List<Integer> writeSizes = new ArrayList<>();
-    // 记录提交到 eventLoopGroup 的定时任务及对应的 ScheduledFuture
     private final List<Runnable> scheduledTasks = new ArrayList<>();
     private final List<ScheduledFuture<?>> scheduledFutures = new ArrayList<>();
 
     @Before
     public void setUp() throws Exception {
-        // 默认阈值 1024，最大驻留时间 200ms
         when(keeperConfig.getCmdBatchWriteSize()).thenReturn(1024);
         when(keeperConfig.getCmdBatchFlushIntervalMillis()).thenReturn(200L);
 
         writeSizes.clear();
-        // 模拟 commandWriter.write()：累加总长度并记录写入量
         doAnswer(inv -> {
             ByteBuf buf = inv.getArgument(0);
             int size = buf.readableBytes();
             writeSizes.add(size);
             totalLength.addAndGet(size);
-            return null;
+            return size;
         }).when(commandWriter).write(any(ByteBuf.class));
 
         when(commandWriter.totalLength()).thenAnswer(inv -> totalLength.get());
 
         scheduledTasks.clear();
         scheduledFutures.clear();
-        // 模拟 eventLoopGroup.schedule：捕获任务，返回可控的 ScheduledFuture
         when(eventLoopGroup.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
                 .thenAnswer(inv -> {
                     Runnable task = inv.getArgument(0);
@@ -81,6 +78,19 @@ public class TimerSlidingWindowTest {
 
         window = new TimerSlidingWindow(keeperConfig, commandWriter,
                 commandStoreDelay, offsetNotifier, eventLoopGroup);
+
+        // 注入可控速率的 RateEstimator mock（绕过 final 字段限制）
+        Field rateField = TimerSlidingWindow.class.getDeclaredField("rateEstimator");
+        rateField.setAccessible(true);
+        Class<?> rateEstimatorClass = rateField.getType();
+        Object mockEstimator = mock(rateEstimatorClass, invocation -> {
+            if ("getRate".equals(invocation.getMethod().getName())) {
+                return currentRate[0];
+            }
+            // update 等方法返回默认值
+            return RETURNS_DEFAULTS.answer(invocation);
+        });
+        rateField.set(window, mockEstimator);
     }
 
     @After
@@ -90,88 +100,125 @@ public class TimerSlidingWindowTest {
         }
     }
 
-    // ==================== 核心场景测试 ====================
+    // 便捷设置速率
+    private void setRate(double rate) {
+        currentRate[0] = rate;
+    }
 
-
-    /**
-     * 写入小于阈值，数据留在窗口并启动延迟刷新定时器
-     */
     @Test
-    public void testWriteBelowThresholdStartsTimer() throws IOException {
+    public void testFirstWriteLowRateDirectFlush() throws IOException {
+        setRate(100.0);
         ByteBuf data = Unpooled.wrappedBuffer(new byte[100]);
 
         window.write(data);
 
-        // 不应立即刷盘
+        verify(commandStoreDelay).beginWrite();
+        verify(commandWriter).write(data);
+        long offset = totalLength.get() - 1;
+        verify(commandStoreDelay).endWrite(offset);
+        verify(offsetNotifier).offsetIncreased(offset);
+        assertTrue("低速率不应调度定时任务", scheduledTasks.isEmpty());
+        data.release();
+    }
+
+    @Test
+    public void testHighRateBufferAccumulation() throws IOException {
+        setRate(1_000_000.0);
+        ByteBuf data = Unpooled.wrappedBuffer(new byte[100]);
+
+        window.write(data);
+
         verify(commandWriter, never()).write(any(ByteBuf.class));
         verify(commandStoreDelay, never()).beginWrite();
-        // 必须启动了一个定时任务
-        assertEquals(1, scheduledTasks.size());
+        assertEquals("高速率应启动一个定时任务", 1, scheduledTasks.size());
+        data.release();
     }
 
-    /**
-     * 多次写入累积达到阈值时，将所有数据一起刷盘，并取消之前的定时器
-     */
     @Test
-    public void testMultipleWritesFlushOnThreshold() throws IOException {
-        // 动态修改阈值为 200
+    public void testHighRateFlushOnSizeThreshold() throws IOException {
         when(keeperConfig.getCmdBatchWriteSize()).thenReturn(200);
+        setRate(1_000_000.0);
 
-        // 第一次写入 120，不触发刷盘
-        ByteBuf data1 = Unpooled.wrappedBuffer(new byte[120]);
-        window.write(data1);
-        assertEquals(1, scheduledTasks.size());
+        ByteBuf firstData = Unpooled.wrappedBuffer(new byte[150]);
+        window.write(firstData);
+        // 清除首次写入产生的交互和任务记录，聚焦后续行为
         clearInvocations(commandWriter, commandStoreDelay, offsetNotifier);
         writeSizes.clear();
 
-        // 第二次写入 100，总大小 220 >= 200，触发刷盘
-        ByteBuf data2 = Unpooled.wrappedBuffer(new byte[100]);
-        window.write(data2);
+        ByteBuf secondData = Unpooled.wrappedBuffer(new byte[100]); // 总大小 250 ≥ 200
+        window.write(secondData);
 
-        // 应刷盘一次，包含所有累积数据 (120+100=220)
         verify(commandStoreDelay).beginWrite();
         verify(commandWriter).write(any(ByteBuf.class));
         long offset = totalLength.get() - 1;
         verify(commandStoreDelay).endWrite(offset);
         verify(offsetNotifier).offsetIncreased(offset);
-        assertEquals(Collections.singletonList(220), writeSizes);
-        // 之前的定时器应被取消
-        verify(scheduledFutures.get(0)).cancel(false);
-        // 刷盘后窗口为空，不应再有新定时器（除非又有新写入）
-        assertEquals(1, scheduledFutures.size()); // 之前只 schedule 了一次
+        assertEquals("刷盘大小应为窗口总大小", Integer.valueOf(250), writeSizes.get(0));
+        // 首次写入调度的任务在刷盘时被取消
+        verify(scheduledFutures.get(0), times(1)).cancel(false);
+
+        firstData.release();
+        secondData.release();
     }
 
-    /**
-     * 数据留在窗口中，定时器到期后自动刷盘
-     */
     @Test
-    public void testTimerFiresAndFlush() throws IOException {
-        // 写入不触发刷盘的数据
-        ByteBuf data = Unpooled.wrappedBuffer(new byte[80]);
-        window.write(data);
-        assertEquals(1, scheduledTasks.size());
+    public void testHighRateFlushOnMaxStayTime() throws IOException {
+        when(keeperConfig.getCmdBatchFlushIntervalMillis()).thenReturn(100L);
+        setRate(1_000_000.0);
 
-        // 模拟定时器触发
+        ByteBuf data = Unpooled.wrappedBuffer(new byte[100]);
+        window.write(data);
+        assertEquals("应生成一个定时任务", 1, scheduledTasks.size());
+        verify(commandWriter, never()).write(any(ByteBuf.class));
+
+        clearInvocations(commandWriter, commandStoreDelay, offsetNotifier);
+        writeSizes.clear();
+        // 手动触发定时任务，模拟超时
         scheduledTasks.get(0).run();
 
-        // 验证刷盘行为
         verify(commandStoreDelay).beginWrite();
         verify(commandWriter).write(any(ByteBuf.class));
         long offset = totalLength.get() - 1;
         verify(commandStoreDelay).endWrite(offset);
         verify(offsetNotifier).offsetIncreased(offset);
-        assertEquals(Collections.singletonList(80), writeSizes);
+        assertEquals("定时刷盘应写出窗口数据", Integer.valueOf(100), writeSizes.get(0));
+        verify(scheduledFutures.get(0), times(1)).cancel(false);
+
+        data.release();
     }
 
-    /**
-     * flushAll 将窗口内剩余数据刷盘
-     */
     @Test
-    public void testFlushAllFlushesRemainingData() throws IOException {
-        // 写入一批数据，留在窗口
-        ByteBuf data = Unpooled.wrappedBuffer(new byte[300]);
+    public void testRateDecayToLowThenFlushBufferAndSingle() throws IOException {
+        setRate(1_000_000.0);
+        ByteBuf firstData = Unpooled.wrappedBuffer(new byte[200]);
+        window.write(firstData);
+
+        // 速率降为零，模拟低速
+        setRate(0.0);
+        clearInvocations(commandWriter, commandStoreDelay, offsetNotifier);
+        writeSizes.clear();
+
+        ByteBuf secondData = Unpooled.wrappedBuffer(new byte[50]);
+        window.write(secondData);
+
+        // 预期：先刷窗口（200），再直接写新数据（50）
+        verify(commandWriter, times(2)).write(any(ByteBuf.class));
+        verify(commandStoreDelay, times(2)).beginWrite();
+        assertEquals(2, writeSizes.size());
+        assertEquals(Integer.valueOf(200), writeSizes.get(0));
+        assertEquals(Integer.valueOf(50), writeSizes.get(1));
+        verify(offsetNotifier, times(2)).offsetIncreased(anyLong());
+
+        firstData.release();
+        secondData.release();
+    }
+
+    @Test
+    public void testFlushAll() throws IOException {
+        setRate(1_000_000.0);
+        ByteBuf data = Unpooled.wrappedBuffer(new byte[150]);
         window.write(data);
-        // 清除之前可能的 write 调用（本例中不应有）
+
         clearInvocations(commandWriter, commandStoreDelay, offsetNotifier);
         writeSizes.clear();
 
@@ -179,28 +226,34 @@ public class TimerSlidingWindowTest {
 
         verify(commandStoreDelay).beginWrite();
         verify(commandWriter).write(any(ByteBuf.class));
-        assertEquals(Collections.singletonList(300), writeSizes);
+        assertEquals(Integer.valueOf(150), writeSizes.get(0));
         long offset = totalLength.get() - 1;
         verify(commandStoreDelay).endWrite(offset);
         verify(offsetNotifier).offsetIncreased(offset);
+        verify(scheduledFutures.get(0), times(1)).cancel(false);
+
+        data.release();
     }
 
-    /**
-     * 空窗口调用 flushAll 不应有任何操作
-     */
     @Test
-    public void testFlushAllEmptyWindowNoOp() throws IOException {
+    public void testFlushAllEmptyWindow() throws IOException {
+        clearInvocations(commandWriter);
         window.flushAll();
         verify(commandWriter, never()).write(any(ByteBuf.class));
     }
 
-    /**
-     * close 会刷出所有剩余数据
-     */
     @Test
-    public void testCloseFlushesRemainingData() throws IOException {
-        ByteBuf data = Unpooled.wrappedBuffer(new byte[500]);
+    public void testClose() throws IOException {
+        setRate(1_000_000.0);
+        ByteBuf data = Unpooled.wrappedBuffer(new byte[300]);
         window.write(data);
+
+        // 让 eventLoopGroup.execute 同步执行任务
+        doAnswer(inv -> {
+            ((Runnable) inv.getArgument(0)).run();
+            return null;
+        }).when(eventLoopGroup).execute(any(Runnable.class));
+
         clearInvocations(commandWriter, commandStoreDelay, offsetNotifier);
         writeSizes.clear();
 
@@ -208,35 +261,12 @@ public class TimerSlidingWindowTest {
 
         verify(commandStoreDelay).beginWrite();
         verify(commandWriter).write(any(ByteBuf.class));
-        assertEquals(Collections.singletonList(500), writeSizes);
+        assertEquals(Integer.valueOf(300), writeSizes.get(0));
         long offset = totalLength.get() - 1;
         verify(commandStoreDelay).endWrite(offset);
         verify(offsetNotifier).offsetIncreased(offset);
-    }
+        verify(scheduledFutures.get(0), times(1)).cancel(false);
 
-
-    /**
-     * 动态修改阈值，后续写入使用新阈值判断
-     */
-    @Test
-    public void testDynamicThresholdChange() throws IOException {
-        // 初始阈值 1024，写入 500 不刷盘
-        ByteBuf data1 = Unpooled.wrappedBuffer(new byte[500]);
-        window.write(data1);
-        assertEquals(1, scheduledTasks.size());
-        verify(commandWriter, never()).write(any(ByteBuf.class));
-
-        // 动态调低阈值到 600，再写入 200，总大小 700 >= 600，触发刷盘
-        when(keeperConfig.getCmdBatchWriteSize()).thenReturn(600);
-        ByteBuf data2 = Unpooled.wrappedBuffer(new byte[200]);
-        clearInvocations(commandWriter, commandStoreDelay, offsetNotifier);
-        writeSizes.clear();
-        window.write(data2);
-
-        verify(commandStoreDelay).beginWrite();
-        verify(commandWriter).write(any(ByteBuf.class));
-        assertEquals(Collections.singletonList(700), writeSizes);
-        // 旧的定时器应被取消
-        verify(scheduledFutures.get(0)).cancel(false);
+        data.release();
     }
 }

@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store.ck;
 
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
 import com.ctrip.xpipe.api.kafka.KafkaService;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.config.ConfigKeyListener;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
@@ -191,11 +192,15 @@ public class CKStore implements Keeperable {
                             storeGtidWithKeyOrSubKeyItem(op);
                         }
                     }catch (Exception e){
-                        logger.error("handleBatch",e);
+                        if(logger.isDebugEnabled()) {
+                            logger.error("handleBatch", e);
+                        }
                     }
                 }
             } catch (Exception e) {
-                logger.warn("[CKStore] handleEvent error", e);
+                if(logger.isDebugEnabled()) {
+                    logger.warn("[CKStore] handleEvent error", e);
+                }
             } finally {
                 clearEvent(event);
             }
@@ -290,7 +295,9 @@ public class CKStore implements Keeperable {
                 redisOpItem.setRedisKey(redisSingleKeyOp.getKey());
             }
         } catch (Throwable th) {
-            logger.warn("[CKStore] parsePayload {}, error {}", payload, th.getMessage());
+            if(logger.isDebugEnabled()) {
+                logger.warn("[CKStore] parsePayload {}, error {}", payload, th.getMessage());
+            }
         }
         return redisOpItem;
     }
