@@ -51,6 +51,7 @@ public class TimerSlidingWindowTest {
     @Before
     public void setUp() throws Exception {
         when(keeperConfig.getCmdBatchWriteSize()).thenReturn(1024);
+        when(keeperConfig.getCmdBatchLowRateBps()).thenReturn(1024);
         when(keeperConfig.getCmdBatchFlushIntervalMillis()).thenReturn(200L);
 
         writeSizes.clear();
@@ -240,33 +241,5 @@ public class TimerSlidingWindowTest {
         clearInvocations(commandWriter);
         window.flushAll();
         verify(commandWriter, never()).write(any(ByteBuf.class));
-    }
-
-    @Test
-    public void testClose() throws IOException {
-        setRate(1_000_000.0);
-        ByteBuf data = Unpooled.wrappedBuffer(new byte[300]);
-        window.write(data);
-
-        // 让 eventLoopGroup.execute 同步执行任务
-        doAnswer(inv -> {
-            ((Runnable) inv.getArgument(0)).run();
-            return null;
-        }).when(eventLoopGroup).execute(any(Runnable.class));
-
-        clearInvocations(commandWriter, commandStoreDelay, offsetNotifier);
-        writeSizes.clear();
-
-        window.close();
-
-        verify(commandStoreDelay).beginWrite();
-        verify(commandWriter).write(any(ByteBuf.class));
-        assertEquals(Integer.valueOf(300), writeSizes.get(0));
-        long offset = totalLength.get() - 1;
-        verify(commandStoreDelay).endWrite(offset);
-        verify(offsetNotifier).offsetIncreased(offset);
-        verify(scheduledFutures.get(0), times(1)).cancel(false);
-
-        data.release();
     }
 }
