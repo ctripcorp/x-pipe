@@ -50,10 +50,6 @@ public interface KeeperConfig extends CoreConfig{
 
 	long getCommandReaderFlyingThreshold();
 
-	int getCommandOffsetNotifyBytesThreshold();
-
-	int getCommandOffsetNotifyTimeMilliThreshold();
-
 	boolean isCommandOffsetNotifyCoalescingEnabled();
 
 	int getCommandIndexBytesInterval();

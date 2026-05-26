@@ -28,8 +28,6 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public static final String KEY_REPLICATION_STORE_MAX_LWM_DISTANCE_TO_TRANSFER_BEFORE_CREATE_RDB = "replicationstore.max.lwm.distance.to.transfer";
 	public static final String KEY_REPLICATION_STORE_COMMANDFILE_RETAIN_TIMEOUT_MILLI = "replicationstore.commandfile.retain.timeout.milli";
 	public static final String KEY_COMMAND_READER_FLYING_THRESHOLD = "command.reader.flying.threshold";
-	public static final String KEY_COMMAND_OFFSET_NOTIFY_BYTES_THRESHOLD = "command.offset.notify.bytes.threshold";
-	public static final String KEY_COMMAND_OFFSET_NOTIFY_TIME_MILLI_THRESHOLD = "command.offset.notify.time.milli.threshold";
 	public static final String KEY_COMMAND_OFFSET_NOTIFY_COALESCING_ENABLED = "command.offset.notify.coalescing.enabled";
 	private static final String KEY_COMMAND_INDEX_BYTES_INTERVAL = "command.index.bytes.interval";
 	public static final String KEY_RDB_DUMP_MIN_INTERVAL = "rdbdump.min.interval";
@@ -157,16 +155,6 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public long getCommandReaderFlyingThreshold() {
 		return getLongProperty(KEY_COMMAND_READER_FLYING_THRESHOLD, (long) (1 << 15));
-	}
-
-	@Override
-	public int getCommandOffsetNotifyBytesThreshold() {
-		return getIntProperty(KEY_COMMAND_OFFSET_NOTIFY_BYTES_THRESHOLD, 4 * 1024);
-	}
-
-	@Override
-	public int getCommandOffsetNotifyTimeMilliThreshold() {
-		return getIntProperty(KEY_COMMAND_OFFSET_NOTIFY_TIME_MILLI_THRESHOLD, 1);
 	}
 
 	@Override

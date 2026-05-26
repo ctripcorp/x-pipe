@@ -152,16 +152,6 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	}
 
 	@Override
-	public int getCommandOffsetNotifyBytesThreshold() {
-		return 4 * 1024;
-	}
-
-	@Override
-	public int getCommandOffsetNotifyTimeMilliThreshold() {
-		return 1;
-	}
-
-	@Override
 	public boolean isCommandOffsetNotifyCoalescingEnabled() {
 		return true;
 	}

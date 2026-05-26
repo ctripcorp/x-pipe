@@ -531,10 +531,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
 				config::getReplicationStoreCommandFileNumToKeep,
 				config.getCommandReaderFlyingThreshold(),
-				config::getCommandOffsetNotifyBytesThreshold,
-				config::getCommandOffsetNotifyTimeMilliThreshold,
 				this::isCmdNotifyCoalescingEnabled,
-				commandNotifyScheduler,
 				cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, gtidCmdFilter,true
 		);
 		cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
