@@ -130,8 +130,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         this.baseDir = file.getParentFile();
         this.fileNamePrefix = file.getName();
-//        this.maxFileSize = maxFileSize;
-        this.maxFileSize = 1073741824;
+        this.maxFileSize = maxFileSize;
         this.maxTimeSecondKeeperCmdFileAfterModified = maxTimeSecondKeeperCmdFileAfterModified;
         this.fileNumToKeep = fileNumToKeep;
         this.commandReaderFlyingThreshold = commandReaderFlyingThreshold;
