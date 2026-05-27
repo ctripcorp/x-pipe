@@ -159,6 +159,9 @@ public class DefaultMonitorManager implements MonitorManager {
                     if (!clusterType.supportMultiActiveDC() && !dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc())) {
                         continue;
                     }
+                    if (!config.supportSentinelBeacon(clusterMeta.getOrgId(), clusterMeta.getId())) {
+                        continue;
+                    }
                 }
 
                 Map<Long, Set<String>> clustersByOrg = clusterByBeaconSystemOrg.get(beaconSystem);

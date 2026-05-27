@@ -75,6 +75,7 @@ public class DefaultMonitorManagerTest extends AbstractTest {
         Mockito.when(config.getBeaconSentinelOrgRoutes()).thenReturn(Lists.newArrayList(orgRoute1, orgRoute2, orgRoute3));
         Mockito.when(config.getClusterHealthCheckInterval()).thenReturn(1000);
         Mockito.when(commonConfig.getBeaconSupportZones()).thenReturn(Collections.emptySet());
+        Mockito.when(config.supportSentinelBeacon(Mockito.anyLong(), Mockito.anyString())).thenReturn(true);
         beaconServiceManager = new DefaultMonitorManager(metaCache, config, commonConfig);
     }
 
@@ -130,6 +131,22 @@ public class DefaultMonitorManagerTest extends AbstractTest {
         Assert.assertTrue(oneWayClusters.contains("single-dc"));
         Assert.assertTrue(oneWayClusters.contains("local-dc"));
         Assert.assertFalse(oneWayClusters.contains("bi-dc"));
+    }
+
+    @Test
+    public void testSentinelRouteFiltersClustersNotInGray() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(new ClusterMeta("gray-cluster").setOrgId(1).setType(ClusterType.ONE_WAY.name()).setActiveDc("jq"));
+        dcMeta.addCluster(new ClusterMeta("non-gray-cluster").setOrgId(1).setType(ClusterType.ONE_WAY.name()).setActiveDc("jq"));
+        xpipeMeta.addDc(dcMeta);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+        Mockito.when(config.supportSentinelBeacon(1L, "non-gray-cluster")).thenReturn(false);
+
+        Map<BeaconSystem, Map<Long, Set<String>>> map = beaconServiceManager.clustersByBeaconSystemOrg(BeaconRouteType.SENTINEL);
+        Set<String> oneWayClusters = map.get(BeaconSystem.XPIPE_ONE_WAY).get(1L);
+        Assert.assertTrue(oneWayClusters.contains("gray-cluster"));
+        Assert.assertFalse(oneWayClusters.contains("non-gray-cluster"));
     }
 
 }
