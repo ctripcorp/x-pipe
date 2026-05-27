@@ -1,5 +1,6 @@
-package com.ctrip.xpipe.redis.keeper.store.ck;
+package com.ctrip.xpipe.redis.core.redis.operation.op;
 
+import com.ctrip.xpipe.redis.core.redis.operation.IRedisOpItem;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 
@@ -10,7 +11,7 @@ import java.util.List;
  * <p>
  * 2025/11/21 16:32
  */
-public class RedisOpItem implements IRedisOpItem<RedisOpItem>{
+public class RedisOpItem implements IRedisOpItem<RedisOpItem> {
     private RedisOpType redisOpType;
     private String gtid;
     private String dbId;

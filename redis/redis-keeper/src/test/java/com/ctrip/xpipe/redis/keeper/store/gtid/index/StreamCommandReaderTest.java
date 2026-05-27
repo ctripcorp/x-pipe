@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
-import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.api.payload.InOutPayload;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
-import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -476,7 +476,7 @@ public class StreamCommandReaderTest {
     private Object[] createCommandPayload(String... args) {
         Object[] payload = new Object[args.length];
         for (int i = 0; i < args.length; i++) {
-            ByteArrayOutputStreamPayload byteArrayPayload = new ByteArrayOutputStreamPayload();
+            InOutPayload byteArrayPayload = new DirectByteBufInStringOutPayload();
             try {
                 byteArrayPayload.startInput();
                 byteArrayPayload.in(Unpooled.wrappedBuffer(args[i].getBytes()));

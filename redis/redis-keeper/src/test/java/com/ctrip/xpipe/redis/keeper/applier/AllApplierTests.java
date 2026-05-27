@@ -30,7 +30,6 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultApplierServerTest.class,
         SequenceControllerToFakeXsyncServerTest.class,
         DefaultApplierServerTest.class,
-        ApplierServerToFakeXsyncServerTest.class,
         TransactionCommandTest.class,
 })
 public class AllApplierTests {

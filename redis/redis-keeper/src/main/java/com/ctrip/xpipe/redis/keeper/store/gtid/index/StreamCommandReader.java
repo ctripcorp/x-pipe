@@ -1,10 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
+import com.ctrip.xpipe.redis.core.redis.operation.*;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandLister;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandParser;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamTransactionListener;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpItem;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
@@ -13,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 
 public class StreamCommandReader implements StreamCommandLister {
 
@@ -24,7 +27,7 @@ public class StreamCommandReader implements StreamCommandLister {
 
     private final int GTID_PAYLOADS_COMMAND_OFFSET = 3;
 
-    private final TransactionContext transactionContext = new TransactionContext();
+    private final TransactionContext transactionContext;
 
     private static final byte[] MULTI_BYTES = new byte[]{'M','U','L','T','I'};
     private static final byte[] GTID_BYTES = new byte[]{'G','T','I','D'};
@@ -42,6 +45,7 @@ public class StreamCommandReader implements StreamCommandLister {
         this.transactionListener = transactionListener;
         this.currentOffset = offset;
         streamCommandParser = new StreamCommandParser(this);
+        transactionContext = new TransactionContext(transactionListener.getOpParser());
     }
 
     public void doRead(ByteBuf byteBuf) throws IOException {
@@ -56,7 +60,8 @@ public class StreamCommandReader implements StreamCommandLister {
         if(payload == null || payload.length <= 2) {
             return null;
         }
-        return payload[1].toString();
+        DirectByteBufInStringOutPayload gtidPayload = (DirectByteBufInStringOutPayload) payload[1];
+        return gtidPayload.toString();
     }
 
     public void resetParser() {
@@ -105,7 +110,7 @@ public class StreamCommandReader implements StreamCommandLister {
     public void onCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
         if(payload == null) return;
 
-        ByteArrayOutputStreamPayload commandPayload = (ByteArrayOutputStreamPayload) payload[0];
+        DirectByteBufInStringOutPayload commandPayload = (DirectByteBufInStringOutPayload) payload[0];
 
         // Process by priority: MULTI > GTID > regular commands
         if (isMultiCommand(commandPayload)) {
@@ -116,6 +121,11 @@ public class StreamCommandReader implements StreamCommandLister {
         } else {
             handleRegularCommand(payload, commandBuf);
         }
+    }
+    private static final byte[] PING_BYTES = new byte[]{'P','I','N','G'};
+    private static final byte[] SELECT_BYTES = new byte[]{'S','E','L','E','C','T'};
+    private boolean isPingOrSelectCmd(DirectByteBufInStringOutPayload command){
+        return command.equalsIgnoreCaseAsciiExpectedUppercase(PING_BYTES) || command.equalsIgnoreCaseAsciiExpectedUppercase(SELECT_BYTES);
     }
 
     private void handleMultiCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
@@ -142,7 +152,7 @@ public class StreamCommandReader implements StreamCommandLister {
         }
 
         // Check if it is an EXEC command
-        ByteArrayOutputStreamPayload execPayload = (ByteArrayOutputStreamPayload) payload[GTID_PAYLOADS_COMMAND_OFFSET];
+        DirectByteBufInStringOutPayload execPayload = (DirectByteBufInStringOutPayload) payload[GTID_PAYLOADS_COMMAND_OFFSET];
         boolean isExec = isExecCommand(execPayload);
 
         if (isExec && transactionContext.isActive()) {
@@ -176,15 +186,15 @@ public class StreamCommandReader implements StreamCommandLister {
         }
     }
 
-    private boolean isMultiCommand(ByteArrayOutputStreamPayload commandPayload) {
+    private boolean isMultiCommand(DirectByteBufInStringOutPayload commandPayload) {
         return commandPayload != null && commandPayload.equalsIgnoreCaseAsciiExpectedUppercase(MULTI_BYTES);
     }
 
-    private boolean isGtidCommand(ByteArrayOutputStreamPayload commandPayload) {
+    private boolean isGtidCommand(DirectByteBufInStringOutPayload commandPayload) {
         return commandPayload != null && commandPayload.equalsIgnoreCaseAsciiExpectedUppercase(GTID_BYTES);
     }
 
-    private boolean isExecCommand(ByteArrayOutputStreamPayload commandPayload) {
+    private boolean isExecCommand(DirectByteBufInStringOutPayload commandPayload) {
         return commandPayload != null && commandPayload.equalsIgnoreCaseAsciiExpectedUppercase(EXEC_BYTES);
     }
 
@@ -218,12 +228,12 @@ public class StreamCommandReader implements StreamCommandLister {
         mayCheckOffset();
     }
 
-    private void writeMultiCommand(List<ByteBuf> commandBufs, List<Object[]> payloads) throws IOException {
+    private void writeMultiCommand(List<ByteBuf> commandBufs, List<RedisOpItem> redisOpItems) throws IOException {
         int cmdLen = 0;
         for (ByteBuf commandBuf : commandBufs) {
             cmdLen += commandBuf.readableBytes();
         }
-        transactionListener.batchPostAppend(commandBufs, payloads);
+        transactionListener.batchPostAppend(commandBufs, redisOpItems);
         this.currentOffset += cmdLen;
         mayCheckOffset();
     }
@@ -238,11 +248,16 @@ public class StreamCommandReader implements StreamCommandLister {
     }
 
     private static class TransactionContext {
-        private final List<Object[]> payloads = new ArrayList<>();
+        private final List<RedisOpItem> payloads = new ArrayList<>();
         private final List<ByteBuf> commandBufs = new ArrayList<>();
         private boolean active = false;
         private long startOffset = -1;
         private String gtid = null;
+        private RedisOpParser redisOpParser;
+
+        public TransactionContext(RedisOpParser redisOpParser){
+            this.redisOpParser = redisOpParser;
+        }
 
         public void start(long offset) {
             clear();
@@ -262,7 +277,8 @@ public class StreamCommandReader implements StreamCommandLister {
             if (commandBuf != null) {
                 commandBuf.retain();
             }
-            payloads.add(payload);
+            RedisOpItem redisOpItem = parsePayload(payload);
+            payloads.add(redisOpItem);
             commandBufs.add(commandBuf);
         }
 
@@ -298,7 +314,6 @@ public class StreamCommandReader implements StreamCommandLister {
                     buf.release();
                 }
             }
-            payloads.clear();
             commandBufs.clear();
             active = false;
             startOffset = -1;
@@ -319,6 +334,33 @@ public class StreamCommandReader implements StreamCommandLister {
 
         public String getGtid() {
             return gtid;
+        }
+
+        private RedisOpItem parsePayload(Object[] payload) {
+            RedisOpItem redisOpItem = new RedisOpItem();
+            try {
+                RedisOp redisOp = redisOpParser.parse(payload);
+                redisOpItem.setRedisOpType(redisOp.getOpType());
+                redisOpItem.setGtid(redisOp.getOpGtid());
+                redisOpItem.setDbId(redisOp.getDbId());
+                if (redisOp instanceof RedisMultiKeyOp) {
+                    RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) redisOp;
+                    List<RedisKey> keys = redisMultiKeyOp.getKeys();
+                    redisOpItem.setRedisKeyList(keys);
+                } else if (redisOp instanceof RedisMultiSubKeyOp) {
+                    RedisMultiSubKeyOp redisMultiSubKeyOp = (RedisMultiSubKeyOp) redisOp;
+                    RedisKey key = redisMultiSubKeyOp.getKey();
+                    List<RedisKey> subKeys = redisMultiSubKeyOp.getAllSubKeys();
+                    redisOpItem.setRedisKey(key);
+                    redisOpItem.setRedisKeyList(subKeys);
+                } else if (redisOp instanceof RedisSingleKeyOp) {
+                    RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
+                    redisOpItem.setRedisKey(redisSingleKeyOp.getKey());
+                }
+            } catch (Throwable th) {
+                logger.warn("[TransactionContext] parsePayload {}, error {}", payload, th.getMessage());
+            }
+            return redisOpItem;
         }
     }
 

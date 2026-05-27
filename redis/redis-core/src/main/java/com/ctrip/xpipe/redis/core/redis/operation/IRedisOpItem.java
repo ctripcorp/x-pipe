@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.keeper.store.ck;
+package com.ctrip.xpipe.redis.core.redis.operation;
 
 public interface IRedisOpItem<T> {
     T getRedisOpItem();

@@ -5,8 +5,9 @@ import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpItem;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamTransactionListener;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.redis.core.store.CommandWriterCallback;
@@ -130,12 +131,12 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     @Override
     public boolean preAppend(String gtid, long offset) throws IOException {
-        String[] parts = gtid.split(":");
-        if (parts.length != 2 || parts[0].length() != 40) {
-            throw new IllegalArgumentException("Invalid gtid: " + gtid);
-        }
-        String uuid = parts[0];
-        long gno = Long.parseLong(parts[1]);
+//        String[] parts = gtid.split(":");
+//        if (parts.length != 2 || parts[0].length() != 40) {
+//            throw new IllegalArgumentException("Invalid gtid: " + gtid);
+//        }
+        String uuid = gtid.substring(0,40);
+        long gno = Long.parseLong(gtid.substring(41));
         if(gtidCmdFilter.gtidSetContains(uuid, gno)) {
             logger.info("[onCommand] gtid command {} in lost, ignored", gtid);
             return false;
@@ -147,14 +148,18 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     @Override
     public int postAppend(ByteBuf commandBuf, Object[] payload) throws IOException {
         int written = appendCmdBuf(commandBuf);
-        ByteArrayOutputStreamPayload command = (ByteArrayOutputStreamPayload) payload[0];
-        if(isPingOrSelectCmd(command.getBytes())) return written;
+        DirectByteBufInStringOutPayload command = (DirectByteBufInStringOutPayload) payload[0];
+        if(isPingOrSelectCmd(command)) return written;
         sendPayloadToCk(payload);
         return written;
     }
 
+    private boolean isPingOrSelectCmd(DirectByteBufInStringOutPayload command){
+        return command.equalsIgnoreCaseAsciiExpectedUppercase(PING_BYTES) || command.equalsIgnoreCaseAsciiExpectedUppercase(SELECT_BYTES);
+    }
+
     @Override
-    public int batchPostAppend(List<ByteBuf> commandBufs, List<Object[]> payloads) throws IOException {
+    public int batchPostAppend(List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException {
         int written = 0;
         for (ByteBuf buf : commandBufs) {
             if (buf != null) {
@@ -175,6 +180,11 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         return true;
     }
 
+    @Override
+    public RedisOpParser getOpParser() {
+        return this.opParser;
+    }
+
     private boolean isPingOrSelectCmd(byte[] command){
         return Arrays.equals(PING_BYTES, command) || Arrays.equals(SELECT_BYTES,command)
                 || Arrays.equals(PING_LOWWER_BYTES, command) || Arrays.equals(SELECT_BYTES,command);
@@ -187,7 +197,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         return 0;
     }
 
-    private void sendPayloadsToCk(List<Object[]> payloads){
+    private void sendPayloadsToCk(List<RedisOpItem> payloads){
         if (ckStore != null && !ckStore.isKeeper()) {
             try {
                 ckStore.sendPayloads(payloads);

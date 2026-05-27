@@ -1,14 +1,19 @@
 package com.ctrip.xpipe.payload;
 
-import com.ctrip.xpipe.api.codec.Codec;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
+import java.nio.charset.Charset;
 
 public class DirectByteBufInStringOutPayload extends AbstractInOutPayload {
+
+    private static final Logger logger = LoggerFactory.getLogger(DirectByteBufInStringOutPayload.class);
 
     private static final int INIT_SIZE = 1 << 8; //256
 
@@ -38,22 +43,33 @@ public class DirectByteBufInStringOutPayload extends AbstractInOutPayload {
 
     @Override
     protected long doOut(WritableByteChannel writableByteChannel) throws IOException {
-        throw new UnsupportedOperationException("Not support");
+        int readable = cumulation.readableBytes();
+        ByteBuffer[] buffers = cumulation.nioBuffers();
+        int writeOffset = 0;
+        if(buffers != null){
+            for(ByteBuffer buffer:buffers){
+                writeOffset += writableByteChannel.write(buffer);
+            }
+        }
+        if(writeOffset < readable){
+            logger.warn("[doOut][wrote < readable]{} < {}", writeOffset, readable);
+        }
+        return writeOffset;
     }
 
     @Override
     protected void doEndInput() throws IOException {
-        result = cumulation.toString(Codec.defaultCharset);
-        if(cumulation instanceof CompositeByteBuf) {
-            ((CompositeByteBuf) cumulation).removeComponents(0, ((CompositeByteBuf) cumulation).numComponents());
-        }
-        cumulation.release();
-        super.doEndInput();
+//        result = cumulation.toString(Codec.defaultCharset);
+//        if(cumulation instanceof CompositeByteBuf) {
+//            ((CompositeByteBuf) cumulation).removeComponents(0, ((CompositeByteBuf) cumulation).numComponents());
+//        }
+//        cumulation.release();
+//        super.doEndInput();
     }
 
     @Override
     public String toString() {
-        return result;
+        return cumulation.toString(Charset.defaultCharset());
     }
 
     /**
@@ -124,5 +140,42 @@ public class DirectByteBufInStringOutPayload extends AbstractInOutPayload {
 
     private interface Cumulator {
         ByteBuf cumulate(ByteBuf cumulation, ByteBuf in);
+    }
+
+    public boolean equalsIgnoreCaseAsciiExpectedUppercase(byte[] expectedUpperCaseAscii) {
+        if (expectedUpperCaseAscii == null || cumulation == null) {
+            return false;
+        }
+        int currentPos = cumulation.readableBytes();
+        if (currentPos != expectedUpperCaseAscii.length) {
+            return false;
+        }
+        for (int i = 0; i < currentPos; i++) {
+            byte value = cumulation.getByte(i);
+            if (value >= 'a' && value <= 'z') {
+                value = (byte) (value - ('a' - 'A'));
+            }
+            if (value != expectedUpperCaseAscii[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void reset(){
+        try{
+            if(cumulation != null) {
+                cumulation.release();
+                cumulation = null;
+            }
+        }catch (Throwable t){
+
+        }
+    }
+
+    public byte[] getBytes(){
+        byte[] bytes = new byte[cumulation.readableBytes()];
+        cumulation.readBytes(bytes);
+        return bytes;
     }
 }

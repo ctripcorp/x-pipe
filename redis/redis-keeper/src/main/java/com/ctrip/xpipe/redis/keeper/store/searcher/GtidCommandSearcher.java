@@ -4,6 +4,7 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.payload.BoundedWritableByteChannel;
 import com.ctrip.xpipe.redis.core.redis.operation.*;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpItem;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamTransactionListener;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -177,11 +178,10 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
     }
 
     @Override
-    public int batchPostAppend(List<ByteBuf> commandBufs, List<Object[]> payloads) throws IOException {
+    public int batchPostAppend(List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException {
         try {
-            for (Object[] payload : payloads) {
-                RedisOp redisOp = redisOpParser.parse(payload);
-                appendCmdKeyItem(currentUUID, currentGno, redisOp);
+            for (RedisOpItem redisOpItem : payloads) {
+                appendCmdKeyItem(currentUUID, currentGno, redisOpItem);
             }
         } catch (Throwable th) {
             logger.info("[batchPostAppend][parse fail][{}:{}] skip", currentUUID, currentGno, th);
@@ -228,6 +228,38 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
         }
     }
 
+    private void appendCmdKeyItem(String uuid, int gno, RedisOpItem redisOpItem) {
+        if (StringUtil.isEmpty(uuid) || gno <= 0) {
+            logger.debug("[appendCmdKeyItem][miss gtid] {}:{}", uuid, gno);
+            return;
+        }
+
+        int dbId = 0;
+        try {
+            dbId = Integer.parseInt(redisOpItem.getDbId());
+        } catch (NumberFormatException e) {
+            logger.info("[appendCmdKeyItem][invalid dbId][{}:{}] {}", uuid, gno, redisOpItem.getDbId());
+        }
+
+        RedisKey redisKey = redisOpItem.getRedisKey();
+        List<RedisKey> redisKeyList = redisOpItem.getRedisKeyList();
+        if (redisKey == null && redisKeyList != null) {
+            for (RedisKey key : redisKeyList) {
+                if (null == key) continue;
+                CmdKeyItem item = new CmdKeyItem(uuid, gno, dbId, redisOpItem.getRedisOpType().name(), key.get());
+                cmdKeyItems.add(item);
+            }
+        } else if (redisKey != null && redisKeyList == null) {
+            CmdKeyItem item = new CmdKeyItem(uuid, gno, dbId, redisOpItem.getRedisOpType().name(), redisKey.get());
+            cmdKeyItems.add(item);
+        } else if (redisKey != null) {
+            for (RedisKey subKey: redisKeyList) {
+                CmdKeyItem item = new CmdKeyItem(uuid, gno, dbId, redisOpItem.getRedisOpType().name(), redisKey.get(), subKey.get());
+                cmdKeyItems.add(item);
+            }
+        }
+    }
+
     @VisibleForTesting
     protected void setCmdKeyItems(List<CmdKeyItem> cmdKeyItems) {
         this.cmdKeyItems = cmdKeyItems;
@@ -241,6 +273,11 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
     @Override
     public boolean checkOffset(long offset) {
         return true;
+    }
+
+    @Override
+    public RedisOpParser getOpParser() {
+        return this.redisOpParser;
     }
 
     @Override

@@ -105,10 +105,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                 config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
                 config::getReplicationStoreCommandFileNumToKeep,
                 config.getCommandReaderFlyingThreshold(),
-                config::getCommandOffsetNotifyBytesThreshold,
-                config::getCommandOffsetNotifyTimeMilliThreshold,
                 this::isCmdNotifyCoalescingEnabled,
-                commandNotifyScheduler,
                 cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, filter, buildIndex);
         cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 

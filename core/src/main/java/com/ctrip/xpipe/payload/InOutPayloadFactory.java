@@ -3,6 +3,7 @@ package com.ctrip.xpipe.payload;
 import com.ctrip.xpipe.api.payload.InOutPayload;
 
 public interface InOutPayloadFactory {
+    InOutPayloadFactory INSTANCE = new DirectByteBufInOutPayloadFactory();
     InOutPayload create();
 
     class DirectByteBufInOutPayloadFactory implements InOutPayloadFactory {

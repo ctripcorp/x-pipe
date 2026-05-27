@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class IndexWriter extends AbstractIndex implements Closeable {
 
@@ -18,6 +19,7 @@ public class IndexWriter extends AbstractIndex implements Closeable {
     private IndexEntry indexEntry;
     private GtidSetWrapper gtidSetWrapper;
     private DefaultIndexStore defaultIndexStore;
+    private ByteBuffer byteBuffer;
 
 
     public IndexWriter(String baseDir, String fileName, GtidSet gtidSet, DefaultIndexStore defaultIndexStore) {
@@ -30,6 +32,8 @@ public class IndexWriter extends AbstractIndex implements Closeable {
     public void init() throws IOException {
 
         super.initIndexFile();
+
+        byteBuffer = ByteBuffer.allocateDirect(32768);
 
         if(indexFile.getFileChannel().size() == 0) {
             initForCreateNew();
@@ -111,7 +115,7 @@ public class IndexWriter extends AbstractIndex implements Closeable {
 
 
     private void createNewBlock(String uuid, long gno, int commandOffset) throws IOException {
-        this.blockWriter = new BlockWriter(uuid, gno, commandOffset, generateBlockName());
+        this.blockWriter = new BlockWriter(uuid, gno, commandOffset, generateBlockName(),byteBuffer);
         this.indexEntry = new IndexEntry(uuid, gno, commandOffset, this.blockWriter.getPosition());
         saveIndexEntry();
     }

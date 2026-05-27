@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 
 
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import com.ctrip.xpipe.payload.InOutPayloadFactory;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
@@ -33,7 +34,7 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 	private RedisClientProtocol<?> currentParser  = null;
 	private ARRAY_STATE arrayState = ARRAY_STATE.READ_SIZE;
 
-	private InOutPayloadFactory inOutPayloadFactory;
+	private InOutPayloadFactory inOutPayloadFactory = InOutPayloadFactory.INSTANCE;
 
 	public ArrayParser() {
 
@@ -162,6 +163,13 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 	public void reset() {
 		super.reset();
 		arrayState = ARRAY_STATE.READ_SIZE;
+		if(inOutPayloadFactory != null && resultArray != null){
+			for(Object object: resultArray){
+				if(object == null) continue;
+				DirectByteBufInStringOutPayload directByteBufInStringOutPayload = (DirectByteBufInStringOutPayload) object;
+				directByteBufInStringOutPayload.reset();
+			}
+		}
 		resultArray = null;
 		arraySize = 0;
 		currentIndex = 0;

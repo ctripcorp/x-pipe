@@ -4,6 +4,11 @@ import com.ctrip.xpipe.redis.core.redis.operation.transfer.*;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
 /**
  * @author lishanglin
  * date 2022/2/17
@@ -149,6 +154,19 @@ public enum RedisOpType {
 
     private RedisOpCrdtTransfer transfer;
 
+    private static final Map<String, RedisOpType> NAME_CACHE = new HashMap<>();
+    static {
+        for (RedisOpType op : values()) {
+            // 存储小写 key，同时将 '.' 替换为 '_' 的版本也存入（与原有 replace 兼容）
+            String lower = op.name().toLowerCase(Locale.ROOT);
+            NAME_CACHE.put(lower, op);
+            // 若名称包含 '_'，则同时存储 '.' 版本，避免 replace 操作
+            if (lower.indexOf('_') >= 0) {
+                NAME_CACHE.put(lower.replace('_', '.'), op);
+            }
+        }
+    }
+
     RedisOpType(boolean multiKey, int arity) {
         this(multiKey, arity, false);
     }
@@ -200,5 +218,14 @@ public enum RedisOpType {
         } catch (IllegalArgumentException illegalArgumentException) {
             return UNKNOWN;
         }
+    }
+
+    public static RedisOpType lookup(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return UNKNOWN;
+        }
+
+        String s = new String(bytes, StandardCharsets.ISO_8859_1);
+        return NAME_CACHE.getOrDefault(s.toLowerCase(Locale.ROOT), UNKNOWN);
     }
 }

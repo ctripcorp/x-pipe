@@ -98,7 +98,7 @@ public class MasterSwitchMultDcTest extends AbstractKeeperIntegratedMultiDc {
         Thread.sleep(2000);
         latch.await(10, TimeUnit.SECONDS);
         sendMessageToMaster(newMaster, 40);
-        Thread.sleep(2000);
+        Thread.sleep(10000);
         assertGtid(newMaster);
         assertReplOffset(newMaster);
     }

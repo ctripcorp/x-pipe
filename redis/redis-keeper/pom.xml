@@ -76,10 +76,9 @@
 			<scope>test</scope>
 		</dependency>
         <dependency>
-            <groupId>com.github.codemonstur</groupId>
-            <artifactId>embedded-redis</artifactId>
-            <version>1.4.2</version>
-            <scope>test</scope>
+            <groupId>org.jctools</groupId>
+            <artifactId>jctools-core</artifactId>
+            <version>4.0.1</version>
         </dependency>
     </dependencies>
     <profiles>

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import io.netty.buffer.ByteBuf;
 import org.junit.Assert;
 import org.junit.Test;
@@ -40,8 +41,8 @@ public class ArrayParserTest extends AbstractRedisProtocolTest{
 		Assert.assertEquals(3, result.length);
 		
 		Assert.assertEquals(str1, result[0]);
-		
-		ByteArrayOutputStreamPayload bap = (ByteArrayOutputStreamPayload) result[1];
+
+		DirectByteBufInStringOutPayload bap = (DirectByteBufInStringOutPayload) result[1];
 		ByteArrayWritableByteChannel channel = new ByteArrayWritableByteChannel();
 		bap.out(channel);
 		Assert.assertEquals(str2, new String(channel.getResult()));

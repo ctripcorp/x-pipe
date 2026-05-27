@@ -2,9 +2,6 @@ package com.ctrip.xpipe.kafka;
 
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
 import com.ctrip.xpipe.api.kafka.KafkaService;
-import com.ctrip.xpipe.foundation.DefaultFoundationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author TB

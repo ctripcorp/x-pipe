@@ -100,7 +100,7 @@ public class DefaultRedisClient extends AbstractRedisClient<RedisKeeperServer> i
 	}
 
 	public boolean isCrossRegion() {
-		return !StringUtil.isEmpty(this.region) && !CURRENT_REGION.equalsIgnoreCase(this.region);
+		return !StringUtil.isEmpty(this.region) && !this.region.equalsIgnoreCase(CURRENT_REGION);
 	}
 
 	public void setReplDelayConfigCache(ReplDelayConfigCache replDelayConfigCache) {

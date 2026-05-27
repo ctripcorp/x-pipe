@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -28,6 +29,8 @@ public class OffsetCommandWriter implements CommandWriter {
     private int maxFileSize;
 
     private Logger delayTraceLogger;
+
+    private final AtomicLong fileSize = new AtomicLong();
 
     private static final Logger logger = LoggerFactory.getLogger(OffsetCommandWriter.class);
 
@@ -79,6 +82,8 @@ public class OffsetCommandWriter implements CommandWriter {
 
         CommandFileContext cmdFileCtx = cmdFileCtxRef.get();
         int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, cmdFileCtx.getChannel(), delayTraceLogger);
+
+        cmdFileCtx.advanceFileLength(wrote);
 
         if(delayTraceLogger.isDebugEnabled()){
             logger.debug("[appendCommands]{}, {}, {}", cmdFileCtx, byteBuf.readableBytes(), cmdFileCtx.fileLength());

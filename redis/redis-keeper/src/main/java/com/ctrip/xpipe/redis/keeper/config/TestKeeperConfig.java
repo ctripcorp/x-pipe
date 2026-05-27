@@ -152,16 +152,6 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	}
 
 	@Override
-	public int getCommandOffsetNotifyBytesThreshold() {
-		return 4 * 1024;
-	}
-
-	@Override
-	public int getCommandOffsetNotifyTimeMilliThreshold() {
-		return 1;
-	}
-
-	@Override
 	public boolean isCommandOffsetNotifyCoalescingEnabled() {
 		return true;
 	}
@@ -371,5 +361,20 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public boolean isRedisRateLimitEnabled() {
 		return true;
+	}
+
+	@Override
+	public int getCmdBatchWriteSize() {
+		return 4096;
+	}
+
+	@Override
+	public long getCmdBatchFlushIntervalMillis() {
+		return 4;
+	}
+
+	@Override
+	public int getCmdBatchLowRateBps() {
+		return 524288;
 	}
 }

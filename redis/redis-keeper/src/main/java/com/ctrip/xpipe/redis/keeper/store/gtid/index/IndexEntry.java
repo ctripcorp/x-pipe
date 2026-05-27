@@ -129,6 +129,7 @@ public class IndexEntry {
     }
 
     public void syncDataFromBlockWriter(BlockWriter blockWriter) throws IOException {
+        blockWriter.flushBlock();
         this.blockEndOffset = blockWriter.getPosition();
         this.size = blockWriter.getSize();
     }

@@ -17,6 +17,13 @@ public class BlockWriter implements AutoCloseable {
 
     public static final int BLOCK_NAX_SIZE = 8 * 1024;
 
+    private ByteBuffer blockCache;
+
+    public BlockWriter(String currentUuid, long gno, int cmdOffset, String file,ByteBuffer blockCache) throws IOException {
+        this(currentUuid,gno,cmdOffset,file);
+        this.blockCache = blockCache;
+    }
+
     public BlockWriter(String currentUuid, long gno, int cmdOffset, String file) throws IOException {
         this.cmdOffset = cmdOffset;
         this.currentUuid = currentUuid;
@@ -69,17 +76,23 @@ public class BlockWriter implements AutoCloseable {
 
     public void append(String uuid, long gno, int offset) throws IOException {
          int val = offset - cmdOffset;
-         ByteBuffer byteBuffer =  VarInt.encodeToByteBuffer(val);
-
-         int bytesWritten = this.controllableFile.getFileChannel().write(byteBuffer);
-         if (bytesWritten != byteBuffer.limit()) {
-            throw new IOException("Failed to write the complete data to the file.");
-         }
+         VarInt.encodeToByteBuffer(val,blockCache);
 
          cmdOffset = offset;
          this.currentGno = gno;
          this.currentUuid = uuid;
          this.size++;
+    }
+
+    public void flushBlock() throws IOException{
+        if(blockCache != null && blockCache.hasRemaining()) {
+            blockCache.flip();
+            int bytesWritten = this.controllableFile.getFileChannel().write(blockCache);
+            if (bytesWritten != blockCache.limit()) {
+                throw new IOException("Failed to write the complete data to the file.");
+            }
+            blockCache.clear();
+        }
     }
 
     public long getPosition() throws IOException {
@@ -100,6 +113,7 @@ public class BlockWriter implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
+        flushBlock();
         this.controllableFile.close();
     }
 

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.redis.operation.stream;
 
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
@@ -21,7 +22,7 @@ public class StreamCommandParserTest {
         StreamCommandLister streamCommandLister = new StreamCommandLister() {
             @Override
             public void onCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
-                command.add(new Object[]{payload, commandBuf});
+                command.add(new Object[]{payloadToStringArray(payload), commandBuf});
             }
         };
         StreamCommandParser streamCommandParser = new StreamCommandParser(streamCommandLister);
@@ -40,10 +41,10 @@ public class StreamCommandParserTest {
         }
         Assert.assertEquals(1, command.size());
         Object[] first = (Object[]) command.get(0);
-        Assert.assertEquals(3, ((Object[]) first[0]).length);
-        Assert.assertEquals("set", ((Object[]) first[0])[0].toString());
-        Assert.assertEquals("key1", ((Object[]) first[0])[1].toString());
-        Assert.assertEquals("value1", ((Object[]) first[0])[2].toString());
+        Assert.assertEquals(3, ((String[]) first[0]).length);
+        Assert.assertEquals("set", ((String[]) first[0])[0]);
+        Assert.assertEquals("key1", ((String[]) first[0])[1]);
+        Assert.assertEquals("value1", ((String[]) first[0])[2]);
         ByteBuf cmdBuf = (ByteBuf) first[1];
         Assert.assertEquals(readableBytes, cmdBuf.readableBytes());
     }
@@ -124,7 +125,7 @@ public class StreamCommandParserTest {
         StreamCommandLister streamCommandLister = new StreamCommandLister() {
             @Override
             public void onCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
-                command.add(new Object[]{payload, commandBuf});
+                command.add(new Object[]{payloadToStringArray(payload), commandBuf});
             }
         };
         StreamCommandParser streamCommandParser = new StreamCommandParser(streamCommandLister);
@@ -152,10 +153,10 @@ public class StreamCommandParserTest {
         }
         Assert.assertEquals(1, command.size());
         Object[] first = (Object[]) command.get(0);
-        Assert.assertEquals(3, ((Object[]) first[0]).length);
-        Assert.assertEquals("set", ((Object[]) first[0])[0].toString());
-        Assert.assertEquals("key1", ((Object[]) first[0])[1].toString());
-        Assert.assertEquals("value1", ((Object[]) first[0])[2].toString());
+        Assert.assertEquals(3, ((String[]) first[0]).length);
+        Assert.assertEquals("set", ((String[]) first[0])[0]);
+        Assert.assertEquals("key1", ((String[]) first[0])[1]);
+        Assert.assertEquals("value1", ((String[]) first[0])[2]);
     }
 
     @Test
@@ -165,7 +166,7 @@ public class StreamCommandParserTest {
         StreamCommandLister streamCommandLister = new StreamCommandLister() {
             @Override
             public void onCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
-                command.add(new Object[]{payload, commandBuf});
+                command.add(new Object[]{payloadToStringArray(payload), commandBuf});
             }
         };
         StreamCommandParser streamCommandParser = new StreamCommandParser(streamCommandLister);
@@ -232,5 +233,15 @@ public class StreamCommandParserTest {
             sb.append('a');
         }
         return sb.toString();
+    }
+
+    private String[] payloadToStringArray(Object[] payload){
+        String[] res = new String[payload.length];
+        for(int i = 0;i<payload.length;i++){
+            if(payload[i] instanceof DirectByteBufInStringOutPayload){
+                res[i] = payload[i].toString();
+            }
+        }
+        return res;
     }
 }

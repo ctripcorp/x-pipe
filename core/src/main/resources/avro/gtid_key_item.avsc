@@ -1,0 +1,53 @@
+{
+  "type": "record",
+  "name": "GtidKeyItem",
+  "namespace": "com.ctrip.xpipe.api.kafka",
+  "customCoders": true,
+  "fields": [
+    {
+      "name": "uuid",
+      "type": "string"
+    },
+    {
+      "name": "cmd",
+      "type": "string"
+    },
+    {
+      "name": "address",
+      "type": "string"
+    },
+    {
+      "name": "seq",
+      "type": "string"
+    },
+    {
+      "name": "key",
+      "type": {
+        "type": "array",
+        "items": ["null", "int"]
+      },
+      "default": []
+    },
+    {
+      "name": "subkey",
+      "type": {
+        "type": "array",
+        "items": ["null", "int"]
+      },
+      "default": []
+    },
+    {
+      "name": "dbid",
+      "type": "string"
+    },
+    {
+      "name": "timestamp",
+      "type": ["null", "long"],
+      "default": null
+    },
+    {
+      "name": "shardid",
+      "type": "int"
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
+import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
@@ -130,6 +131,9 @@ public abstract class AbstractRedisClient<T extends RedisServer> extends Abstrac
                 byte [] bytes = payload.getBytes();
                 payload.clear();
                 strArray[index] = new String(bytes, Codec.defaultCharset);
+            } else if(param instanceof DirectByteBufInStringOutPayload){
+                DirectByteBufInStringOutPayload payload = (DirectByteBufInStringOutPayload)param;
+                strArray[index] = payload.toString();
             }else{
                 throw new RedisRuntimeException("request unkonwn, can not be transformed to string!");
             }

@@ -119,7 +119,7 @@ public class DirectByteBufInStringOutPayloadTest extends AbstractTest {
         sleep(5000);
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testDoOut() throws IOException {
         String content = randomString();
         DirectByteBufInStringOutPayload payload = new DirectByteBufInStringOutPayload();

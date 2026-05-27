@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStore;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindow;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
@@ -65,15 +66,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     protected OffsetNotifier offsetNotifier;
 
-    private final IntSupplier commandOffsetNotifyBytesThreshold;
-
-    private final IntSupplier commandOffsetNotifyTimeMilliThreshold;
-
     private final BooleanSupplier commandOffsetNotifyCoalescingEnabled;
-
-    private final ScheduledExecutorService commandOffsetNotifyScheduler;
-
-    private CoalescingOffsetNotifier coalescingOffsetNotifier;
 
     protected final long commandReaderFlyingThreshold;
 
@@ -110,16 +103,15 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private boolean buildIndex;
 
     private CKStore ckStore;
+
+    private TimerSlidingWindow timerSlidingWindow;
     
     public abstract Logger getLogger();
 
     public AbstractCommandStore(CKStore ckStore,File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                                 int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
                                 long commandReaderFlyingThreshold,
-                                IntSupplier commandOffsetNotifyBytesThreshold,
-                                IntSupplier commandOffsetNotifyTimeMilliThreshold,
                                 BooleanSupplier commandOffsetNotifyCoalescingEnabled,
-                                ScheduledExecutorService commandOffsetNotifyScheduler,
                                 CommandReaderWriterFactory cmdReaderWriterFactory,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
                                 GtidCmdFilter  gtidCmdFilter, boolean buildIndex
@@ -131,10 +123,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.maxTimeSecondKeeperCmdFileAfterModified = maxTimeSecondKeeperCmdFileAfterModified;
         this.fileNumToKeep = fileNumToKeep;
         this.commandReaderFlyingThreshold = commandReaderFlyingThreshold;
-        this.commandOffsetNotifyBytesThreshold = commandOffsetNotifyBytesThreshold;
-        this.commandOffsetNotifyTimeMilliThreshold = commandOffsetNotifyTimeMilliThreshold;
         this.commandOffsetNotifyCoalescingEnabled = commandOffsetNotifyCoalescingEnabled;
-        this.commandOffsetNotifyScheduler = commandOffsetNotifyScheduler;
         this.minTimeMilliToGcAfterModified = minTimeMilliToGcAfterModified;
         this.cmdReaderWriterFactory = cmdReaderWriterFactory;
         this.commandStoreDelay = keeperMonitor.createCommandStoreDelay(this);
@@ -184,10 +173,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (initialized.compareAndSet(false, true)) {
             cmdWriter.initialize();
             offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
-            coalescingOffsetNotifier = new CoalescingOffsetNotifier(offsetNotifier, commandOffsetNotifyBytesThreshold,
-                    commandOffsetNotifyTimeMilliThreshold, commandOffsetNotifyScheduler);
             if(buildIndex) {
                 indexStore.openWriter(cmdWriter);
+            }
+            if(ckStore != null) {
+                this.timerSlidingWindow = new TimerSlidingWindow(ckStore.getKeeperConfig(), cmdWriter, commandStoreDelay, offsetNotifier, ckStore.getMasterEventLoop());
             }
         }
     }
@@ -351,18 +341,26 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         SyncRateLimiter rateLimiter = rateLimiterRef.get();
 
         if (null != rateLimiter) rateLimiter.acquire(byteBuf.readableBytes());
+
+        if(timerSlidingWindow != null && commandOffsetNotifyCoalescingEnabled.getAsBoolean()){
+            return timerSlidingWindow.write(byteBuf,buildIndex);
+        }
+
+        if(timerSlidingWindow != null) {
+            timerSlidingWindow.flushAll();
+        }
+
         commandStoreDelay.beginWrite();
 
         int wrote = cmdWriter.write(byteBuf);
 
         long offset = cmdWriter.totalLength() - 1;
+
         commandStoreDelay.endWrite(offset);
 
-        if (commandOffsetNotifyCoalescingEnabled.getAsBoolean()) {
-            coalescingOffsetNotifier.onWritten(wrote, offset);
-        } else {
-            coalescingOffsetNotifier.notifyNow(offset);
-        }
+        offsetNotifier.offsetIncreased(offset);
+
+
 
         return wrote;
     }
@@ -379,11 +377,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         long offset = cmdWriter.totalLength() - 1;
 
         indexStoreDelay.endWrite(offset);
-        if (commandOffsetNotifyCoalescingEnabled.getAsBoolean()) {
-            coalescingOffsetNotifier.onWritten((int) (offset - beginOffset), offset);
-        } else {
-            coalescingOffsetNotifier.notifyNow(offset);
-        }
 
         int writer = (int)(offset - beginOffset);
         return writer;
@@ -569,9 +562,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         if(cmpAndSetClosed()){
             getLogger().info("[close]{}", this);
-            if (coalescingOffsetNotifier != null) {
-                coalescingOffsetNotifier.close();
+
+            if(timerSlidingWindow != null) {
+                timerSlidingWindow.close();
             }
+
             cmdWriter.close();
             if(indexStore != null) {
                 indexStore.closeWriter();
