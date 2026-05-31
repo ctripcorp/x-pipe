@@ -41,6 +41,7 @@ import java.util.List;
 public class RestTemplateFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(RestTemplateFactory.class);
+    private static final int CONNECTION_REQUEST_TIMEOUT_MILLI = 1000;
 
     public static RestTemplate createRestTemplate() {
 
@@ -82,7 +83,10 @@ public class RestTemplateFactory {
                 .setMaxConnPerRoute(maxConnPerRoute)
                 .setMaxConnTotal(maxConnTotal)
                 .setDefaultSocketConfig(SocketConfig.custom().setSoTimeout(soTimeout).build())
-                .setDefaultRequestConfig(RequestConfig.custom().setConnectTimeout(connectTimeout).build())
+                .setDefaultRequestConfig(RequestConfig.custom()
+                        .setConnectTimeout(connectTimeout)
+                        .setConnectionRequestTimeout(CONNECTION_REQUEST_TIMEOUT_MILLI)
+                        .build())
                 .addInterceptorLast(new LZ4DecompressionInterceptor())
                 .build();
         ClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient) {
