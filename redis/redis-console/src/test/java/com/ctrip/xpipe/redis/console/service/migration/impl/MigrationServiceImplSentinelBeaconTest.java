@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.migration.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.checker.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
@@ -99,10 +100,13 @@ public class MigrationServiceImplSentinelBeaconTest {
         when(clusterMeta.getType()).thenReturn(ClusterType.SINGLE_DC.toString());
         when(config.supportSentinelBeacon(10L, CLUSTER)).thenReturn(true);
 
-        RetMessage retMessage = migrationService.postMigrateSentinelBeacon(CLUSTER);
+        Map<String, HostPort> shardMasters = new HashMap<>();
+        shardMasters.put("shard1", new HostPort("127.0.0.1", 6379));
+
+        RetMessage retMessage = migrationService.postMigrateSentinelBeacon(CLUSTER, shardMasters);
 
         assertEquals(RetMessage.SUCCESS_STATE, retMessage.getState());
-        verify(beaconManager).registerCluster(eq(CLUSTER), eq(ClusterType.SINGLE_DC), eq(10), anyString(), eq(BeaconRouteType.SENTINEL));
+        verify(beaconManager).registerCluster(eq(CLUSTER), eq(ClusterType.SINGLE_DC), eq(10), anyString(), eq(BeaconRouteType.SENTINEL), eq(shardMasters));
     }
 
     @Test

@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.console.service.meta;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterNotFoundException;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -20,7 +22,7 @@ public interface BeaconMetaService {
 
     Set<MonitorGroupMeta> buildCurrentBeaconGroups(String cluster);
 
-    Set<MonitorShardMeta> buildBeaconShards(String cluster, String dc);
+    Set<MonitorShardMeta> buildBeaconShards(String cluster, String dc, Map<String, HostPort> shardMasters);
 
     boolean compareMetaWithXPipe(String clusterName, Set<MonitorGroupMeta> beaconGroups) throws ClusterNotFoundException;
 

@@ -120,7 +120,7 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
                         MonitorService sentinelService = monitorManager.get(orgId, clusterName, BeaconRouteType.SENTINEL);
                         if (sentinelService != null) {
                             sentinelService.registerCluster(BeaconSystem.getDefault().getSystemName(), clusterName, null,
-                                    beaconMetaService.buildBeaconShards(clusterName, currentDc),
+                                    beaconMetaService.buildBeaconShards(clusterName, currentDc, Collections.emptyMap()),
                                     Collections.singletonMap(BeaconManager.EXTRA_LAST_MODIFY_TIME, lastModifyTime));
                         }
                     }

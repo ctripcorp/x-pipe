@@ -227,8 +227,8 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return getServiceByDc(dcId).preMigrateSentinelBeacon(clusterName);
     }
 
-    public RetMessage postMigrateSentinelBeacon(String dcId, String clusterName) {
-        return getServiceByDc(dcId).postMigrateSentinelBeacon(clusterName);
+    public RetMessage postMigrateSentinelBeacon(String dcId, String clusterName, Map<String, HostPort> shardMasters) {
+        return getServiceByDc(dcId).postMigrateSentinelBeacon(clusterName, shardMasters);
     }
 
     public <T> boolean quorumSatisfy(List<T> results, Function<T, Boolean> predicate){

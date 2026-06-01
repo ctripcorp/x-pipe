@@ -12,6 +12,8 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class BeaconMetaServiceImpl implements BeaconMetaService {
+
+    private static final Logger logger = LoggerFactory.getLogger(BeaconMetaServiceImpl.class);
 
     private MetaCache metaCache;
 
@@ -68,7 +72,7 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
     }
 
     @Override
-    public Set<MonitorShardMeta> buildBeaconShards(String cluster, String dc) {
+    public Set<MonitorShardMeta> buildBeaconShards(String cluster, String dc, Map<String, HostPort> shardMasters) {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
         if (xpipeMeta == null || xpipeMeta.getDcs() == null) {
             return Collections.emptySet();
@@ -90,7 +94,38 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
             }).collect(Collectors.toList());
             shards.add(new MonitorShardMeta(shardName, groups));
         }
+        applyShardMasters(cluster, shards, shardMasters);
         return shards;
+    }
+
+    private void applyShardMasters(String cluster, Set<MonitorShardMeta> shards, Map<String, HostPort> shardMasters) {
+        if (shardMasters == null || shardMasters.isEmpty()) {
+            return;
+        }
+
+        Map<String, MonitorShardMeta> shardMap = shards.stream()
+                .collect(Collectors.toMap(MonitorShardMeta::getName, shard -> shard));
+        shardMasters.forEach((shardName, master) -> {
+            if (master == null) {
+                return;
+            }
+            MonitorShardMeta shard = shardMap.get(shardName);
+            if (shard == null || shard.getGroups() == null) {
+                logger.warn("[applyShardMasters][{}][{}] shard not found", cluster, shardName);
+                return;
+            }
+
+            boolean foundMaster = shard.getGroups().stream()
+                    .anyMatch(group -> group.getNodes() != null && group.getNodes().contains(master));
+            if (!foundMaster) {
+                logger.warn("[applyShardMasters][{}][{}] master {} not found in meta", cluster, shardName, master);
+                return;
+            }
+
+            for (MonitorGroupMeta group : shard.getGroups()) {
+                group.setMasterGroup(group.getNodes() != null && group.getNodes().contains(master));
+            }
+        });
     }
 
     @Override

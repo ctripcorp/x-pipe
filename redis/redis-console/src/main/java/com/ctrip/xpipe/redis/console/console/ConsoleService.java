@@ -55,7 +55,7 @@ public interface ConsoleService extends CheckerService {
 
     RetMessage preMigrateSentinelBeacon(String clusterName);
 
-    RetMessage postMigrateSentinelBeacon(String clusterName);
+    RetMessage postMigrateSentinelBeacon(String clusterName, Map<String, HostPort> shardMasters);
 
     class ShardCheckerHealthCheckModels extends ArrayList<ShardCheckerHealthCheckModel> {}
 

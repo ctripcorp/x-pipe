@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STAT
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.SentinelBeaconPostMigrateRequest;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
@@ -254,8 +255,10 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     }
 
     @Override
-    public RetMessage postMigrateSentinelBeacon(String clusterName) {
-        return sentinelMigrationRestTemplate.postForObject(sentinelBeaconPostMigrateUrl, null, RetMessage.class, clusterName);
+    public RetMessage postMigrateSentinelBeacon(String clusterName, Map<String, HostPort> shardMasters) {
+        SentinelBeaconPostMigrateRequest request = new SentinelBeaconPostMigrateRequest();
+        request.setShardMasters(shardMasters);
+        return sentinelMigrationRestTemplate.postForObject(sentinelBeaconPostMigrateUrl, request, RetMessage.class, clusterName);
     }
 
     @Override

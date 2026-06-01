@@ -742,8 +742,8 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
-    public RetMessage postMigrateSentinelBeacon(MigrationCluster migrationCluster) {
-        return migrateSentinelBeaconByDc(migrationCluster.clusterName(), migrationCluster.destDc(), false);
+    public RetMessage postMigrateSentinelBeacon(MigrationCluster migrationCluster, Map<String, HostPort> shardMasters) {
+        return migrateSentinelBeaconByDc(migrationCluster.clusterName(), migrationCluster.destDc(), false, shardMasters);
     }
 
     @Override
@@ -752,20 +752,21 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
-    public RetMessage postMigrateSentinelBeacon(String clusterName) {
-        return migrateSentinelBeaconInCurrentDc(clusterName, false);
+    public RetMessage postMigrateSentinelBeacon(String clusterName, Map<String, HostPort> shardMasters) {
+        return migrateSentinelBeaconInCurrentDc(clusterName, false, shardMasters);
     }
 
     @Override
-    public void postMigrateSentinelBeaconAsync(MigrationCluster migrationCluster) {
+    public void postMigrateSentinelBeaconAsync(MigrationCluster migrationCluster, Map<String, HostPort> shardMasters) {
         if (postMigrateBeaconExecutor == null) {
             logger.warn("[postMigrateSentinelBeaconAsync][{}] executor not init", migrationCluster.clusterName());
             return;
         }
+        Map<String, HostPort> shardMastersSnapshot = copyShardMasters(shardMasters);
         try {
             postMigrateBeaconExecutor.execute(() -> {
                 try {
-                    postMigrateSentinelBeacon(migrationCluster);
+                    postMigrateSentinelBeacon(migrationCluster, shardMastersSnapshot);
                 } catch (Throwable th) {
                     logger.warn("[postMigrateSentinelBeaconAsync][{}] fail", migrationCluster.clusterName(), th);
                 }
@@ -794,8 +795,13 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     private RetMessage migrateSentinelBeaconByDc(String clusterName, String dc, boolean preMigrate) {
+        return migrateSentinelBeaconByDc(clusterName, dc, preMigrate, Collections.emptyMap());
+    }
+
+    private RetMessage migrateSentinelBeaconByDc(String clusterName, String dc, boolean preMigrate,
+                                                 Map<String, HostPort> shardMasters) {
         if (StringUtil.isEmpty(dc) || dc.equalsIgnoreCase(CURRENT_DC)) {
-            return migrateSentinelBeaconInCurrentDc(clusterName, preMigrate);
+            return migrateSentinelBeaconInCurrentDc(clusterName, preMigrate, shardMasters);
         }
         if (consoleServiceManager == null) {
             return RetMessage.createFailMessage(String.format("ConsoleServiceManager unavailable for dc %s", dc));
@@ -803,7 +809,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         try {
             return preMigrate
                     ? consoleServiceManager.preMigrateSentinelBeacon(dc, clusterName)
-                    : consoleServiceManager.postMigrateSentinelBeacon(dc, clusterName);
+                    : consoleServiceManager.postMigrateSentinelBeacon(dc, clusterName, shardMasters);
         } catch (Throwable th) {
             logger.warn("[migrateSentinelBeaconByDc][{}][{}] failed", clusterName, dc, th);
             return RetMessage.createFailMessage(th.getMessage());
@@ -811,6 +817,11 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     private RetMessage migrateSentinelBeaconInCurrentDc(String clusterName, boolean preMigrate) {
+        return migrateSentinelBeaconInCurrentDc(clusterName, preMigrate, Collections.emptyMap());
+    }
+
+    private RetMessage migrateSentinelBeaconInCurrentDc(String clusterName, boolean preMigrate,
+                                                        Map<String, HostPort> shardMasters) {
         ClusterMeta clusterMeta = getCurrentDcClusterMeta(clusterName);
         if (clusterMeta == null) {
             return RetMessage.createFailMessage(String.format("cluster %s not found in dc %s meta", clusterName, CURRENT_DC));
@@ -831,7 +842,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             }
 
             beaconManager.registerCluster(clusterName, clusterType, orgId, String.valueOf(System.currentTimeMillis()),
-                    BeaconRouteType.SENTINEL);
+                    BeaconRouteType.SENTINEL, shardMasters);
             return RetMessage.createSuccessMessage("sentinel beacon registered");
         } catch (Throwable th) {
             logger.warn("[migrateSentinelBeaconInCurrentDc][{}][{}] fail", clusterName, preMigrate, th);
@@ -872,6 +883,13 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         return clusterType == ClusterType.ONE_WAY
                 || clusterType == ClusterType.SINGLE_DC
                 || clusterType == ClusterType.LOCAL_DC;
+    }
+
+    private Map<String, HostPort> copyShardMasters(Map<String, HostPort> shardMasters) {
+        if (shardMasters == null || shardMasters.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return Collections.unmodifiableMap(new HashMap<>(shardMasters));
     }
 
     private String clusterRelatedDcToString(List<DcTbl> clusterRelatedDc) {

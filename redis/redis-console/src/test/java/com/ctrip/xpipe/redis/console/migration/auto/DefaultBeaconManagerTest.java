@@ -121,7 +121,7 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
         )));
         int shardHash = new MonitorClusterMeta(null, shards, null).generateHashCodeForBeaconCheck();
         Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, BeaconRouteType.SENTINEL)).thenReturn(monitorService);
-        Mockito.when(beaconMetaService.buildBeaconShards(CLUSTER_ID, "jq")).thenReturn(shards);
+        Mockito.when(beaconMetaService.buildBeaconShards(CLUSTER_ID, "jq", Collections.emptyMap())).thenReturn(shards);
         Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(shardHash);
 
         BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME, BeaconRouteType.SENTINEL);
@@ -137,12 +137,28 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
         )));
         int shardHash = new MonitorClusterMeta(null, shards, null).generateHashCodeForBeaconCheck();
         Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, BeaconRouteType.SENTINEL)).thenReturn(monitorService);
-        Mockito.when(beaconMetaService.buildBeaconShards(CLUSTER_ID, "jq")).thenReturn(shards);
+        Mockito.when(beaconMetaService.buildBeaconShards(CLUSTER_ID, "jq", Collections.emptyMap())).thenReturn(shards);
         Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(shardHash);
 
         BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, ClusterType.SINGLE_DC, ORG_ID, LAST_MODIFY_TIME, BeaconRouteType.SENTINEL);
 
         Assert.assertEquals(BeaconCheckStatus.CONSISTENCY, status);
+    }
+
+    @Test
+    public void sentinelRegisterShouldBuildShardsWithPublishMasters() {
+        Set<MonitorShardMeta> shards = Collections.singleton(new MonitorShardMeta("shard1", Arrays.asList(
+                new MonitorGroupMeta("127.0.0.1:6380", "jq",
+                        Collections.singleton(new HostPort("127.0.0.1", 6380)), true)
+        )));
+        Map<String, HostPort> shardMasters = Collections.singletonMap("shard1", new HostPort("127.0.0.1", 6380));
+        Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, BeaconRouteType.SENTINEL)).thenReturn(monitorService);
+        Mockito.when(beaconMetaService.buildBeaconShards(CLUSTER_ID, "jq", shardMasters)).thenReturn(shards);
+
+        beaconManager.registerCluster(CLUSTER_ID, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME, BeaconRouteType.SENTINEL, shardMasters);
+
+        Mockito.verify(monitorService).registerCluster(Mockito.eq("xpipe"), Mockito.eq(CLUSTER_ID), Mockito.isNull(),
+                Mockito.eq(shards), Mockito.anyMap());
     }
 
     private void mockDrMeta() {

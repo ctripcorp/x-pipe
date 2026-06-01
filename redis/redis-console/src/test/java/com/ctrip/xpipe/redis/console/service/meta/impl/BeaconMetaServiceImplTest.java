@@ -74,8 +74,30 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
 
     @Test
     public void testBuildBeaconShards() {
-        Set<MonitorShardMeta> shards = beaconMetaService.buildBeaconShards("cluster1", "jq");
+        Set<MonitorShardMeta> shards = beaconMetaService.buildBeaconShards("cluster1", "jq", Collections.emptyMap());
         Assert.assertEquals(expectedBeaconShards(), shards);
+    }
+
+    @Test
+    public void testBuildBeaconShardsWithPublishMasters() {
+        Set<MonitorShardMeta> shards = beaconMetaService.buildBeaconShards("cluster1", "jq",
+                Collections.singletonMap("shard1", HostPort.fromString("127.0.0.1:6380")));
+
+        MonitorShardMeta shard1 = shards.stream()
+                .filter(shard -> "shard1".equals(shard.getName()))
+                .findFirst()
+                .get();
+
+        Assert.assertTrue(shard1.getGroups().stream()
+                .filter(group -> group.getNodes().contains(HostPort.fromString("127.0.0.1:6380")))
+                .findFirst()
+                .get()
+                .isMasterGroup());
+        Assert.assertFalse(shard1.getGroups().stream()
+                .filter(group -> group.getNodes().contains(HostPort.fromString("127.0.0.1:6379")))
+                .findFirst()
+                .get()
+                .isMasterGroup());
     }
 
     @Override

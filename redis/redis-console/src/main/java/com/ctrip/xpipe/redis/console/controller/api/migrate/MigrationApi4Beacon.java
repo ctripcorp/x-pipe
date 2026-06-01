@@ -4,6 +4,7 @@ import com.ctrip.xpipe.command.CommandChainException;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationResponse;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.SentinelBeaconPostMigrateRequest;
 import com.ctrip.xpipe.redis.console.migration.exception.MigrationUnderProcessingException;
 import com.ctrip.xpipe.redis.console.service.migration.BeaconMigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
@@ -136,11 +137,12 @@ public class MigrationApi4Beacon {
     }
 
     @PostMapping(PATH_POST_SENTINEL_BEACON_POST_MIGRATE)
-    public RetMessage postMigrateSentinelBeacon(@PathVariable String clusterName) {
+    public RetMessage postMigrateSentinelBeacon(@PathVariable String clusterName,
+                                                @RequestBody SentinelBeaconPostMigrateRequest request) {
         if (migrationService == null) {
             return RetMessage.createFailMessage("migration service unavailable");
         }
-        return migrationService.postMigrateSentinelBeacon(clusterName);
+        return migrationService.postMigrateSentinelBeacon(clusterName, request.getShardMasters());
     }
 
 }

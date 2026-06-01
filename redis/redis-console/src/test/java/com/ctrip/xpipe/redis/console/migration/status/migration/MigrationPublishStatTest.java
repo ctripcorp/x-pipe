@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.migration.AbstractOuterClientService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
@@ -10,13 +12,17 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.web.client.ResourceAccessException;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
 /**
@@ -42,6 +48,7 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 		when(migrationCluster.getMigrationExecutor()).thenReturn(executors);
 		when(migrationCluster.getRedisService()).thenReturn(redisService);
 		when(migrationCluster.getMigrationService()).thenReturn(migrationService);
+		when(migrationCluster.getMigrationShards()).thenReturn(Collections.emptyList());
 		when(migrationService.shouldMigrateSentinelBeacon(migrationCluster)).thenReturn(true);
 		
 	}
@@ -131,7 +138,47 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 
 		stat.getStateActionState().tryAction();
 		sleep(50);
-		verify(migrationService).postMigrateSentinelBeaconAsync(migrationCluster);
+		verify(migrationService).postMigrateSentinelBeaconAsync(eq(migrationCluster), eq(Collections.emptyMap()));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void publishSuccessShouldPassShardMastersToPostMigrateSentinelBeaconAsync() {
+		MigrationShard migrationShard = mock(MigrationShard.class);
+		HostPort newMaster = new HostPort("127.0.0.1", 6379);
+		when(migrationShard.shardName()).thenReturn("shard1");
+		when(migrationShard.getNewMasterAddress()).thenReturn(newMaster);
+		when(migrationCluster.getMigrationShards()).thenReturn(Collections.singletonList(migrationShard));
+
+		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
+		stat.setPublishService(new AbstractOuterClientService() {
+			@Override
+			public DcMeta getOutClientDcMeta(String dc) throws Exception {
+				return null;
+			}
+
+			@Override
+			public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
+														 InetSocketAddress newMaster) {
+				MigrationPublishResult result = new MigrationPublishResult();
+				result.setSuccess(true);
+				return result;
+			}
+
+			@Override
+			public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName,
+														 List<InetSocketAddress> newMasters) {
+				MigrationPublishResult result = new MigrationPublishResult();
+				result.setSuccess(true);
+				return result;
+			}
+		});
+
+		stat.getStateActionState().tryAction();
+		sleep(50);
+		ArgumentCaptor<Map<String, HostPort>> captor = ArgumentCaptor.forClass(Map.class);
+		verify(migrationService).postMigrateSentinelBeaconAsync(eq(migrationCluster), captor.capture());
+		assertEquals(newMaster, captor.getValue().get("shard1"));
 	}
 
 	@Test
@@ -164,6 +211,6 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 
 		stat.getStateActionState().tryAction();
 		sleep(50);
-		verify(migrationService, never()).postMigrateSentinelBeaconAsync(migrationCluster);
+		verify(migrationService, never()).postMigrateSentinelBeaconAsync(eq(migrationCluster), anyMap());
 	}
 }

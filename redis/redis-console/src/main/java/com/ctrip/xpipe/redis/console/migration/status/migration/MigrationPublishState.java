@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.migration.status.migration;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationShard;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.migration.status.PublishState;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
@@ -8,8 +10,10 @@ import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author shyin
@@ -34,7 +38,7 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 	public void doAction() {
 		// Beacon online should be triggered before publish and not block DR flow.
 		if (getHolder().getMigrationService().shouldMigrateSentinelBeacon(getHolder())) {
-			getHolder().getMigrationService().postMigrateSentinelBeaconAsync(getHolder());
+			getHolder().getMigrationService().postMigrateSentinelBeaconAsync(getHolder(), buildShardMasters());
 		} else {
 			logger.info("[doAction][{}] no beacon", getHolder().clusterName());
 		}
@@ -49,8 +53,8 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 		try {
 			logger.info("[tryAction][updateRedisMaster]{}", this);
 			updateRedisMaster();
-		} catch (ResourceNotFoundException e) {
-			logger.error("[tryAction]", e);
+		} catch (Throwable th) {
+			logger.error("[tryAction][{}]", getHolder().clusterName(), th);
 		}
 
 		if(publish()) {
@@ -58,6 +62,19 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 		} else {
 			updateAndStop(nextAfterFail());
 		}
+	}
+
+	private Map<String, HostPort> buildShardMasters() {
+		Map<String, HostPort> shardMasters = new HashMap<>();
+		for(MigrationShard migrationShard : getHolder().getMigrationShards()){
+			HostPort newMasterAddress = migrationShard.getNewMasterAddress();
+			if(newMasterAddress == null){
+				logger.warn("[buildShardMasters][null master]{}", migrationShard.shardName());
+				continue;
+			}
+			shardMasters.put(migrationShard.shardName(), newMasterAddress);
+		}
+		return shardMasters;
 	}
 
 	private void updateActiveDcIdToDestDcId() {

@@ -1,7 +1,11 @@
 package com.ctrip.xpipe.redis.checker;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconCheckStatus;
+
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * @author lishanglin
@@ -15,7 +19,12 @@ public interface BeaconManager {
         registerCluster(clusterId, clusterType, orgId, lastModifyTime, BeaconRouteType.DR);
     }
 
-    void registerCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime, BeaconRouteType routeType);
+    default void registerCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime, BeaconRouteType routeType) {
+        registerCluster(clusterId, clusterType, orgId, lastModifyTime, routeType, Collections.emptyMap());
+    }
+
+    void registerCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime,
+                         BeaconRouteType routeType, Map<String, HostPort> shardMasters);
 
     default void updateCluster(String clusterId, ClusterType clusterType, int orgId, String lastModifyTime) {
         updateCluster(clusterId, clusterType, orgId, lastModifyTime, BeaconRouteType.DR);

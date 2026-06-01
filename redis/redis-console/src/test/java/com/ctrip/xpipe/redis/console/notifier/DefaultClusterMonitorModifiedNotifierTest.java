@@ -92,13 +92,13 @@ public class DefaultClusterMonitorModifiedNotifierTest extends AbstractConsoleTe
                 new MonitorGroupMeta("127.0.0.1:6379", "jq", Collections.emptySet(), true)
         )));
         Mockito.when(consoleConfig.supportSentinelBeacon(Mockito.anyLong(), Mockito.anyString())).thenReturn(true);
-        Mockito.when(beaconMetaService.buildBeaconShards(Mockito.anyString(), Mockito.anyString())).thenReturn(shards);
+        Mockito.when(beaconMetaService.buildBeaconShards(Mockito.anyString(), Mockito.anyString(), Mockito.anyMap())).thenReturn(shards);
 
         notifier.notifyClusterUpdate("cluster1", 1, "20201030");
         waitConditionUntilTimeOut(() -> Mockito.mockingDetails(monitorService).getInvocations().size() >= 1);
 
         Mockito.verify(beaconMetaService).buildCurrentBeaconGroups("cluster1");
-        Mockito.verify(beaconMetaService).buildBeaconShards(Mockito.eq("cluster1"), Mockito.anyString());
+        Mockito.verify(beaconMetaService).buildBeaconShards(Mockito.eq("cluster1"), Mockito.anyString(), Mockito.eq(Collections.emptyMap()));
         Mockito.verify(monitorService).registerCluster(BeaconSystem.getDefault().getSystemName(), "cluster1", Collections.singleton(new MonitorGroupMeta()),
                 Collections.singletonMap(BeaconManager.EXTRA_LAST_MODIFY_TIME, "20201030"));
         Mockito.verify(monitorService).registerCluster(BeaconSystem.getDefault().getSystemName(), "cluster1",
@@ -121,12 +121,12 @@ public class DefaultClusterMonitorModifiedNotifierTest extends AbstractConsoleTe
         )));
         Mockito.when(metaCache.isDcInRegion(Mockito.anyString(), Mockito.anyString())).thenReturn(false);
         Mockito.when(consoleConfig.supportSentinelBeacon(Mockito.anyLong(), Mockito.anyString())).thenReturn(true);
-        Mockito.when(beaconMetaService.buildBeaconShards(Mockito.anyString(), Mockito.anyString())).thenReturn(shards);
+        Mockito.when(beaconMetaService.buildBeaconShards(Mockito.anyString(), Mockito.anyString(), Mockito.anyMap())).thenReturn(shards);
 
         notifier.notifyClusterUpdate("cluster1", 1, "20201030");
         waitConditionUntilTimeOut(() -> Mockito.mockingDetails(monitorService).getInvocations().size() >= 1);
 
-        Mockito.verify(beaconMetaService).buildBeaconShards(Mockito.eq("cluster1"), Mockito.anyString());
+        Mockito.verify(beaconMetaService).buildBeaconShards(Mockito.eq("cluster1"), Mockito.anyString(), Mockito.eq(Collections.emptyMap()));
         Mockito.verify(monitorService).registerCluster(BeaconSystem.getDefault().getSystemName(), "cluster1",
                 null, shards, Collections.singletonMap(BeaconManager.EXTRA_LAST_MODIFY_TIME, "20201030"));
     }
