@@ -39,7 +39,12 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 			logger.info("[doAction][{}] no beacon", getHolder().clusterName());
 		}
 
-		updateActiveDcIdToDestDcId();
+		try {
+			updateActiveDcIdToDestDcId();
+		} catch (Throwable th) {
+			logger.error("[doAction][{}][updateActiveDcIdToDestDcId][fail]", getHolder().clusterName(), th);
+			updateAndStop(nextAfterFail());
+		}
 
 		try {
 			logger.info("[tryAction][updateRedisMaster]{}", this);
