@@ -6,12 +6,17 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.migration.MigrationResources;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaserverAddress;
 import com.ctrip.xpipe.redis.core.metaserver.ReactorMetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.metaserver.ReactorMetaServerConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultReactorMetaServerConsoleServiceManager;
 import com.ctrip.xpipe.utils.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -27,16 +32,22 @@ import java.util.function.Supplier;
 @Service
 public class ReactorMigrationCommandBuilderImpl implements MigrationCommandBuilder {
 
+    private static final Logger logger = LoggerFactory.getLogger(ReactorMigrationCommandBuilderImpl.class);
+
     private ReactorMetaServerConsoleServiceManager metaServerConsoleServiceManager;
 
     private ConsoleConfig config;
 
+    private MetaCache metaCache;
+
     @Autowired
     public ReactorMigrationCommandBuilderImpl(@Qualifier(MigrationResources.MIGRATION_HTTP_LOOP_RESOURCE) LoopResources loopResources,
                                               @Qualifier(MigrationResources.MIGRATION_HTTP_CONNECTION_PROVIDER) ConnectionProvider connectionProvider,
-                                              ConsoleConfig config) {
+                                              ConsoleConfig config,
+                                              MetaCache metaCache) {
         this.metaServerConsoleServiceManager = new DefaultReactorMetaServerConsoleServiceManager(loopResources, connectionProvider);
         this.config = config;
+        this.metaCache = metaCache;
     }
 
     @Override
@@ -59,7 +70,7 @@ public class ReactorMigrationCommandBuilderImpl implements MigrationCommandBuild
                                                                                              MetaServerConsoleService.PreviousPrimaryDcMessage previousPrimaryDcMessage) {
         return new ReactorMigrationCmdWrap<>("ReactorNewPrimaryDcCommand", () ->
                 getMetaServerConsoleService(newPrimaryDc).doChangePrimaryDc(cluster, shard, newPrimaryDc,
-                        new MetaServerConsoleService.PrimaryDcChangeRequest(previousPrimaryDcMessage))
+                        new MetaServerConsoleService.PrimaryDcChangeRequest(previousPrimaryDcMessage, addSentinelRequestValue(newPrimaryDc, cluster)))
         );
     }
 
@@ -69,7 +80,7 @@ public class ReactorMigrationCommandBuilderImpl implements MigrationCommandBuild
                                                                                              Supplier<MetaServerConsoleService.PreviousPrimaryDcMessage> previousPrimaryDcMessageSupplier) {
         return new ReactorMigrationCmdWrap<>("ReactorNewPrimaryDcCommand", () ->
                 getMetaServerConsoleService(newPrimaryDc).doChangePrimaryDc(cluster, shard, newPrimaryDc,
-                        new MetaServerConsoleService.PrimaryDcChangeRequest(previousPrimaryDcMessageSupplier.get()))
+                        new MetaServerConsoleService.PrimaryDcChangeRequest(previousPrimaryDcMessageSupplier.get(), addSentinelRequestValue(newPrimaryDc, cluster)))
         );
     }
 
@@ -91,6 +102,32 @@ public class ReactorMigrationCommandBuilderImpl implements MigrationCommandBuild
         String metaAddress = config.getMetaservers().get(dc);
         if (StringUtil.isEmpty(metaAddress)) metaAddress = XPipeConsoleConstant.DEFAULT_ADDRESS;
         return metaServerConsoleServiceManager.getOrCreate(new MetaserverAddress(dc, metaAddress));
+    }
+
+    private Boolean addSentinelRequestValue(String dcName, String clusterName) {
+        try {
+            ClusterMeta clusterMeta = getClusterMeta(dcName, clusterName);
+            if (clusterMeta != null && clusterMeta.getOrgId() != null) {
+                return config.supportSentinelBeacon(clusterMeta.getOrgId(), clusterName) ? Boolean.FALSE : Boolean.TRUE;
+            }
+        } catch (Exception e) {
+            logger.warn("[addSentinelRequestValue][find cluster org fail]{}, {}", dcName, clusterName, e);
+        }
+
+        return config.supportSentinelBeacon(clusterName) ? Boolean.FALSE : Boolean.TRUE;
+    }
+
+    private ClusterMeta getClusterMeta(String dcName, String clusterName) {
+        if (metaCache == null || metaCache.getXpipeMeta() == null) {
+            return null;
+        }
+
+        DcMeta dcMeta = metaCache.getXpipeMeta().findDc(dcName);
+        if (dcMeta == null) {
+            return null;
+        }
+
+        return dcMeta.findCluster(clusterName);
     }
 
     private static class ReactorMigrationCmdWrap<T> extends AbstractCommand<T> {

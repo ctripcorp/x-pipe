@@ -84,6 +84,12 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction {
 
 	@Override
 	public PrimaryDcChangeMessage changePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo) {
+		return changePrimaryDc(clusterDbId, shardDbId, newPrimaryDc, masterInfo, true);
+	}
+
+	@Override
+	public PrimaryDcChangeMessage changePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo,
+												  boolean addSentinel) {
 
 		ExecutionLog executionLog = new ExecutionLog(String.format("meta server:%s", currentClusterServer.getClusterInfo()));
 
@@ -99,7 +105,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction {
 			changePrimaryDcAction = new BecomePrimaryAction(clusterDbId, shardDbId, dcMetaCache, currentMetaManager, sentinelManager,
 					offsetWaiter, executionLog, keyedObjectPool, createNewMasterChooser(clusterDbId, shardDbId), scheduled, MoreExecutors.directExecutor());
 			ChangePrimaryDcJob changePrimaryDcJob = createChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId,
-					newPrimaryDc, masterInfo);
+					newPrimaryDc, masterInfo, addSentinel);
 			int timeout = DEFAULT_SO_TIMEOUT / 2;
 			try {
 				clusterShardExecutors.clearAndExecute(new Pair<>(clusterDbId, shardDbId), changePrimaryDcJob);
@@ -109,7 +115,7 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction {
 				logger.error("[changePrimaryDc][execute may timeout][fall to run directly]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, newPrimaryDc, e);
 				// In case task queue is blocked, we do downgrade(or a double-insurance)
 				try {
-					return createChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId, newPrimaryDc, masterInfo)
+					return createChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId, newPrimaryDc, masterInfo, addSentinel)
 							.execute().get();
 				} catch (Exception innerException) {
 					logger.error("[changePrimaryDc][try direct-run failed]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, newPrimaryDc, e);
@@ -143,8 +149,15 @@ public class DefaultChangePrimaryDcAction implements ChangePrimaryDcAction {
 	@VisibleForTesting
 	protected ChangePrimaryDcJob createChangePrimaryDcJob(ChangePrimaryDcAction changePrimaryDcAction, Long clusterDbId,
 														  Long shardDbId, String newPrimaryDc, MasterInfo masterInfo) {
+		return createChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId, newPrimaryDc, masterInfo, true);
+	}
+
+	@VisibleForTesting
+	protected ChangePrimaryDcJob createChangePrimaryDcJob(ChangePrimaryDcAction changePrimaryDcAction, Long clusterDbId,
+														  Long shardDbId, String newPrimaryDc, MasterInfo masterInfo,
+														  boolean addSentinel) {
 		return new ChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId,
-				newPrimaryDc, masterInfo);
+				newPrimaryDc, masterInfo, addSentinel);
 	}
 
 	private NewMasterChooser wrapCachedNewMasterChooser(Long clusterDbId, Long shardDbId, NewMasterChooser chooser) {

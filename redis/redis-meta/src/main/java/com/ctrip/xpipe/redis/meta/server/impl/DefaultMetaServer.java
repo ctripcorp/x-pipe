@@ -340,9 +340,11 @@ public class DefaultMetaServer extends DefaultCurrentClusterServer implements Me
 		dcMetaCache.primaryDcChanged(clusterShard.getKey(), clusterShard.getValue(), newPrimaryDc);
 
 		MasterInfo masterInfo = null;
+		boolean addSentinel = true;
 		if(request != null){
 			masterInfo = request.getMasterInfo();
+			addSentinel = request.shouldAddSentinel();
 		}
-		return changePrimaryDcAction.changePrimaryDc(clusterShard.getKey(), clusterShard.getValue(), newPrimaryDc, masterInfo);
+		return changePrimaryDcAction.changePrimaryDc(clusterShard.getKey(), clusterShard.getValue(), newPrimaryDc, masterInfo, addSentinel);
 	}
 }

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.exception.ErrorMessage;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * used for console
@@ -134,6 +135,9 @@ public interface MetaServerConsoleService extends MetaServerService{
 
 		private MasterInfo masterInfo;
 
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		private Boolean addSentinel;
+
 		public PrimaryDcChangeRequest(){
 		}
 
@@ -147,6 +151,11 @@ public interface MetaServerConsoleService extends MetaServerService{
 			this.masterInfo = masterInfo;
 		}
 
+		public PrimaryDcChangeRequest(PreviousPrimaryDcMessage previousPrimaryDcMessage, Boolean addSentinel){
+			this(previousPrimaryDcMessage);
+			this.addSentinel = addSentinel;
+		}
+
 		public MasterInfo getMasterInfo() {
 			return masterInfo;
 		}
@@ -155,9 +164,21 @@ public interface MetaServerConsoleService extends MetaServerService{
 			this.masterInfo = masterInfo;
 		}
 
+		public Boolean getAddSentinel() {
+			return addSentinel;
+		}
+
+		public void setAddSentinel(Boolean addSentinel) {
+			this.addSentinel = addSentinel;
+		}
+
+		public boolean shouldAddSentinel() {
+			return addSentinel == null || addSentinel;
+		}
+
 		@Override
 		public String toString() {
-			return String.format("masterInfo: %s", masterInfo);
+			return String.format("masterInfo: %s, addSentinel: %s", masterInfo, addSentinel);
 		}
 	}
 

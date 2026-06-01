@@ -48,6 +48,11 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 	}
 
 	protected PrimaryDcChangeMessage doChangePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo) {
+		return doChangePrimaryDc(clusterDbId, shardDbId, newPrimaryDc, masterInfo, true);
+	}
+
+	protected PrimaryDcChangeMessage doChangePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo,
+													   boolean addSentinel) {
 		
 		doChangeMetaCache(clusterDbId, shardDbId, newPrimaryDc);
 		
@@ -64,7 +69,7 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 		
 		makeKeepersOk(clusterDbId, shardDbId, newMaster);
 		
-		changeSentinel(clusterDbId, shardDbId, newMaster);
+		changeSentinel(clusterDbId, shardDbId, newMaster, addSentinel);
 		
 		return new PrimaryDcChangeMessage(executionLog.getLog(), newMaster.getKey(), newMaster.getValue());
 	}
@@ -73,6 +78,15 @@ public class BecomePrimaryAction extends AbstractChangePrimaryDcAction{
 
 	@Override
 	protected void changeSentinel(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster) {
+		changeSentinel(clusterDbId, shardDbId, newMaster, true);
+	}
+
+	protected void changeSentinel(Long clusterDbId, Long shardDbId, Pair<String, Integer> newMaster, boolean addSentinel) {
+		if (!addSentinel) {
+			executionLog.info("[addSentinel][skip]");
+			logger.info("[addSentinel][skip] cluster_{}, shard_{}", clusterDbId, shardDbId);
+			return;
+		}
 		
 		try{
 			sentinelManager.addSentinel(clusterDbId, shardDbId, HostPort.fromPair(newMaster), executionLog);

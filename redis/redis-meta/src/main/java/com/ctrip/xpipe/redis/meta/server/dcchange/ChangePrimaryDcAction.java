@@ -12,4 +12,9 @@ public interface ChangePrimaryDcAction {
 	
 	PrimaryDcChangeMessage changePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo);
 
+	default PrimaryDcChangeMessage changePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc,
+												   MasterInfo masterInfo, boolean addSentinel) {
+		return changePrimaryDc(clusterDbId, shardDbId, newPrimaryDc, masterInfo);
+	}
+
 }

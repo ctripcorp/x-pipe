@@ -21,15 +21,23 @@ public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService
 
     private MasterInfo masterInfo;
 
+    private boolean addSentinel;
+
     protected AtomicBoolean started = new AtomicBoolean(false);
 
     public ChangePrimaryDcJob(ChangePrimaryDcAction action, Long cluster, Long shard,
                               String newPrimaryDc, MasterInfo masterInfo) {
+        this(action, cluster, shard, newPrimaryDc, masterInfo, true);
+    }
+
+    public ChangePrimaryDcJob(ChangePrimaryDcAction action, Long cluster, Long shard,
+                              String newPrimaryDc, MasterInfo masterInfo, boolean addSentinel) {
         this.action = action;
         this.cluster = cluster;
         this.shard = shard;
         this.newPrimaryDc = newPrimaryDc;
         this.masterInfo = masterInfo;
+        this.addSentinel = addSentinel;
     }
 
     @Override
@@ -37,7 +45,7 @@ public class ChangePrimaryDcJob extends AbstractCommand<MetaServerConsoleService
         started.set(true);
         try {
             MetaServerConsoleService.PrimaryDcChangeMessage result = action
-                    .changePrimaryDc(cluster, shard, newPrimaryDc, masterInfo);
+                    .changePrimaryDc(cluster, shard, newPrimaryDc, masterInfo, addSentinel);
             future().setSuccess(result);
         } catch (Exception e) {
             future().setFailure(e);
