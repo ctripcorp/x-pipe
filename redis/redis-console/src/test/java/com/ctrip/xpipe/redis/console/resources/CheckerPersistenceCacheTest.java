@@ -36,6 +36,9 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.net.InetAddress;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -88,6 +91,51 @@ public class CheckerPersistenceCacheTest extends AbstractCheckerTest {
         CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
         webServer.enqueue(new MockResponse().setResponseCode(500));
         Assert.assertEquals(Collections.emptySet(), checkerPersistenceCache.clusterAlertWhiteList());
+    }
+
+    @Test
+    public void testClusterAlertWhitelistFallbackOnRestFail() throws Exception {
+        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
+        webServer.enqueue(new MockResponse()
+                .setBody(Codec.DEFAULT.encode(Collections.singleton("Cluster1")))
+                .setHeader("Content-Type", "application/json"));
+        webServer.enqueue(new MockResponse().setResponseCode(500));
+
+        Assert.assertEquals(Collections.singleton("cluster1"), checkerPersistenceCache.clusterAlertWhiteList());
+        sleep((int) cacheTimeoutMill);
+        Assert.assertEquals(Collections.singleton("cluster1"), checkerPersistenceCache.clusterAlertWhiteList());
+        Assert.assertEquals(2, webServer.getRequestCount());
+    }
+
+    @Test
+    public void testSentinelAutoProcessFallbackOnRestFail() {
+        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
+        webServer.enqueue(new MockResponse()
+                .setBody("false")
+                .setHeader("Content-Type", "application/json"));
+        webServer.enqueue(new MockResponse().setResponseCode(500));
+
+        Assert.assertFalse(checkerPersistenceCache.isSentinelAutoProcess());
+        sleep((int) cacheTimeoutMill);
+        Assert.assertFalse(checkerPersistenceCache.isSentinelAutoProcess());
+        Assert.assertEquals(2, webServer.getRequestCount());
+    }
+
+    @Test
+    public void testLoadAllClusterCreateTimeFallbackOnRestFail() throws Exception {
+        CheckerPersistenceCache checkerPersistenceCache = new CheckerPersistenceCache(config, new DefaultCheckerConsoleService());
+        Date createTime = new Date();
+        Map<String, Date> clusterCreateTimes = new HashMap<>();
+        clusterCreateTimes.put("cluster1", createTime);
+        webServer.enqueue(new MockResponse()
+                .setBody(Codec.DEFAULT.encode(clusterCreateTimes))
+                .setHeader("Content-Type", "application/json"));
+        webServer.enqueue(new MockResponse().setResponseCode(500));
+
+        Assert.assertEquals(createTime, checkerPersistenceCache.loadAllClusterCreateTime().get("cluster1"));
+        sleep((int) cacheTimeoutMill);
+        Assert.assertEquals(createTime, checkerPersistenceCache.loadAllClusterCreateTime().get("cluster1"));
+        Assert.assertEquals(2, webServer.getRequestCount());
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.ShardMigrationStep;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
+import com.ctrip.xpipe.utils.LogUtils;
 
 public class MigrationPreMigratingState extends AbstractMigrationState {
 
@@ -23,14 +24,14 @@ public class MigrationPreMigratingState extends AbstractMigrationState {
         MigrationCluster migrationCluster = getHolder();
         if (!migrationCluster.getMigrationService().shouldMigrateSentinelBeacon(migrationCluster)) {
             migrationCluster.updateStepResultForAllShards(ShardMigrationStep.PRE_MIGRATING, true,
-                    "no beacon");
+                    LogUtils.info("skip"));
             updateAndProcess(nextAfterSuccess());
             return;
         }
         RetMessage result = migrationCluster.getMigrationService().preMigrateSentinelBeacon(migrationCluster);
         boolean success = result != null && result.getState() == RetMessage.SUCCESS_STATE;
-        String message = result == null ? "sentinel beacon pre migrate return null" : result.getMessage();
-        migrationCluster.updateStepResultForAllShards(ShardMigrationStep.PRE_MIGRATING, success, message);
+        String message = result == null ? "no resp" : result.getMessage();
+        migrationCluster.updateStepResultForAllShards(ShardMigrationStep.PRE_MIGRATING, success, LogUtils.info(message));
         // pre-migrate beacon operation failure should not block migration flow
         updateAndProcess(nextAfterSuccess());
     }
