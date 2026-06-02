@@ -52,9 +52,11 @@ public class CtripKafkaService implements KafkaService {
         if(started.compareAndSet(false,true)){
             long bufferMemory = Runtime.getRuntime().maxMemory() / 16 / PRODUCER_POOL_SIZE;
             producerPool = new Producer[PRODUCER_POOL_SIZE];
+            long start = System.currentTimeMillis();
             for (int i = 0; i < PRODUCER_POOL_SIZE; i++) {
                 producerPool[i] = createKafkaProducer(bufferMemory);
             }
+            logger.info("[startProducer] elapse {}ms",System.currentTimeMillis()-start);
         }
     }
 

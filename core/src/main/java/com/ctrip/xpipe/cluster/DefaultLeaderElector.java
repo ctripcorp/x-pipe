@@ -31,7 +31,7 @@ public class DefaultLeaderElector extends AbstractLifecycle implements LeaderEle
 	
 	@Override
 	public void elect() throws Exception {
-		
+		long start = System.currentTimeMillis();
 		zkClient.createContainers(ctx.getLeaderElectionZKPath());
 		
 		latch = new LeaderLatch(zkClient, ctx.getLeaderElectionZKPath(), ctx.getLeaderElectionID());
@@ -47,7 +47,7 @@ public class DefaultLeaderElector extends AbstractLifecycle implements LeaderEle
 		});
 
 		latch.start();
-		logger.info("[elect]{}", ctx);
+		logger.info("[elect] {},elapse {}", ctx,System.currentTimeMillis()-start);
 	}
 
 	@Override

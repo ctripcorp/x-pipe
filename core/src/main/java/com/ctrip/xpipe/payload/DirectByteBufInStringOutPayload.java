@@ -15,7 +15,7 @@ public class DirectByteBufInStringOutPayload extends AbstractInOutPayload {
 
     private static final Logger logger = LoggerFactory.getLogger(DirectByteBufInStringOutPayload.class);
 
-    private static final int INIT_SIZE = 1 << 8; //256
+    private static final int MAX_NUM_COMPONENTS = 1 << 10; //256
 
     private ByteBuf cumulation;
 
@@ -26,13 +26,13 @@ public class DirectByteBufInStringOutPayload extends AbstractInOutPayload {
     @Override
     protected void doStartInput() {
         super.doStartInput();
-        cumulation = Unpooled.compositeBuffer(INIT_SIZE);
+        cumulation = Unpooled.compositeBuffer(MAX_NUM_COMPONENTS);
     }
 
     @Override
     protected int doIn(ByteBuf byteBuf) throws IOException {
-        cumulation = cumulator.cumulate(cumulation, byteBuf);
         byteBuf.retain();
+        cumulation = cumulator.cumulate(cumulation, byteBuf);
         return byteBuf.readableBytes();
     }
 
@@ -97,7 +97,7 @@ public class DirectByteBufInStringOutPayload extends AbstractInOutPayload {
                 if (cumulation instanceof CompositeByteBuf) {
                     composite = (CompositeByteBuf) cumulation;
                 } else {
-                    composite = Unpooled.compositeBuffer(INIT_SIZE);
+                    composite = Unpooled.compositeBuffer(MAX_NUM_COMPONENTS);
                     composite.addComponent(true, cumulation);
                 }
                 composite.addComponent(true, in);
