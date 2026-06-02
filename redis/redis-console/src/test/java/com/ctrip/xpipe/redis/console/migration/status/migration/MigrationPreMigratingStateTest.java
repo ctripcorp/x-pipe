@@ -56,7 +56,7 @@ public class MigrationPreMigratingStateTest extends AbstractMigrationStateTest {
         preMigratingState.getStateActionState().tryAction();
 
         verify(migrationCluster).updateStepResultForAllShards(eq(ShardMigrationStep.PRE_MIGRATING),
-                eq(true), contains("no beacon"));
+                eq(true), contains("skip"));
         verify(migrationCluster.getMigrationService(), never()).preMigrateSentinelBeacon(eq(migrationCluster));
         verify(migrationCluster).updateStat(isA(MigrationMigratingState.class));
         verify(migrationCluster).process();

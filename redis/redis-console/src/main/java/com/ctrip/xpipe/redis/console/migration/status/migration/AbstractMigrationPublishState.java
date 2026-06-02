@@ -54,7 +54,11 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 			ret = false;
 		}
 		
-		updateMigrationPublishResult(res);
+		try {
+			updateMigrationPublishResult(res);
+		} catch (Throwable th) {
+			logger.error("[MigrationPublishStat][{}][updatePublishInfo][fail]", cluster, th);
+		}
 		
 		return ret;
  	}
