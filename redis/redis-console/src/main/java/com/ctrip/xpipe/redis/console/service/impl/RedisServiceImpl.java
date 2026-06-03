@@ -194,6 +194,16 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     }
 
     @Override
+    public synchronized void insertRedises(String dcId, String clusterId, String shardId,
+                                           List<Pair<String, Integer>> redisAddresses, Long azId)
+            throws DalException, ResourceNotFoundException {
+
+        doInsertInstances(XPipeConsoleConstant.ROLE_REDIS, dcId, clusterId, shardId, redisAddresses, azId);
+
+        notifyClusterUpdate(dcId, clusterId);
+    }
+
+    @Override
     public synchronized int insertKeepers(String dcId, String clusterId, String shardId,
                                           List<KeeperBasicInfo> keepers) throws DalException, ResourceNotFoundException {
 
@@ -251,6 +261,21 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         logger.info("[doInsertInstances]{}", toAdd);
 
         insertInstancesToDb(dcClusterShardTbl.getDcClusterShardId(), role, toAdd.toArray(new Pair[0]));
+    }
+
+    private void doInsertInstances(String role, String dcId, String clusterId, String shardId, List<Pair<String, Integer>> redisAddresses, Long azId) throws ResourceNotFoundException, DalException {
+
+        DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dcId, clusterId, shardId);
+        if (dcClusterShardTbl == null) {
+            throw new ResourceNotFoundException(dcId, clusterId, shardId);
+        }
+        List<RedisTbl> redisTbls = doFindAllByDcClusterShardId(dcClusterShardTbl.getDcClusterShardId(), XPipeConsoleConstant.ROLE_REDIS);
+
+        List<Pair<String, Integer>> toAdd = sub(redisAddresses, redisTbls);
+
+        logger.info("[doInsertInstances]{}", toAdd);
+
+        insertInstancesToDb(dcClusterShardTbl.getDcClusterShardId(), role, azId, toAdd.toArray(new Pair[0]));
     }
 
     @Override
@@ -595,6 +620,18 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 
         for (Pair<String, Integer> addr : addrs) {
             insert(createRedisTbl(addr, role).setDcClusterShardId(dcClusterShardId));
+        }
+
+    }
+
+    public void insertInstancesToDb(long dcClusterShardId, String role, Long azId, Pair<String, Integer>... addrs) throws DalException {
+
+        for (Pair<String, Integer> addr : addrs) {
+            RedisTbl redisTbl = createRedisTbl(addr, role).setDcClusterShardId(dcClusterShardId);
+            if (azId != null && azId > 0) {
+                redisTbl.setAzId(azId);
+            }
+            insert(redisTbl);
         }
 
     }

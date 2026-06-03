@@ -69,16 +69,20 @@ public class DcMetaSynchronizerTest {
     @Mock
     private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
 
+    @Mock
+    private AzService azService;
+
     private String singleDcCacheCluster = "SingleDcCacheCluster";
     private String localDcCacheCluster = "LocalDcCacheCluster";
 
     private String dcId = FoundationService.DEFAULT.getDataCenter();
 
     @Before
-    public void beforeDcMetaSynchronizerTest() {
+    public void
+            () {
         dcMetaSynchronizer = new DcMetaSynchronizer(consoleConfig, metaCache, redisService, shardService,
                 clusterService, dcService, organizationService, sentinelBalanceService,
-                clusterTypeUpdateEventFactory, outerClientService, dcId);
+                clusterTypeUpdateEventFactory, outerClientService, azService, dcId);
     }
 
     @Test

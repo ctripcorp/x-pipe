@@ -90,7 +90,9 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
             ShardMeta shardMeta = entry.getValue();
             List<MonitorGroupMeta> groups = shardMeta.getRedises().stream().map(redisMeta -> {
                 HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
-                return new MonitorGroupMeta(hostPort.toString(), dc, Collections.singleton(hostPort), redisMeta.isMaster());
+                MonitorGroupMeta group = new MonitorGroupMeta(hostPort.toString(), dc, Collections.singleton(hostPort), redisMeta.isMaster());
+                group.setAz(redisMeta.getAz());
+                return group;
             }).collect(Collectors.toList());
             shards.add(new MonitorShardMeta(shardName, groups));
         }

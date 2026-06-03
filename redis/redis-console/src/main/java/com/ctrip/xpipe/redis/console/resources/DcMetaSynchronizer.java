@@ -40,7 +40,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
                               ClusterService clusterService, DcService dcService,
                               OrganizationService organizationService, SentinelBalanceService sentinelBalanceService,
                               ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory, OuterClientService outerClientService,
-                              String dcId
+                              AzService azService, String dcId
 
     ) {
         this.consoleConfig = consoleConfig;
@@ -53,6 +53,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         this.sentinelBalanceService = sentinelBalanceService;
         this.clusterTypeUpdateEventFactory = clusterTypeUpdateEventFactory;
         this.outerClientService = outerClientService;
+        this.azService = azService;
         this.currentDcId = dcId;
         this.scheduledExecutorService = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("XPipe-Meta-Sync-" + dcId));
     }
@@ -72,6 +73,8 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     private ConsoleConfig consoleConfig;
 
     private SentinelBalanceService sentinelBalanceService;
+
+    private AzService azService;
 
     private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
 
@@ -114,7 +117,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
                     new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(),
                             dcService, clusterService, shardService, redisService,
                             organizationService, sentinelBalanceService, consoleConfig,
-                            clusterTypeUpdateEventFactory, currentDcId).sync();
+                            clusterTypeUpdateEventFactory, azService, currentDcId).sync();
                 } catch (Throwable e) {
                     logger.error("[DcMetaSynchronizer][sync]", e);
                 }
@@ -268,6 +271,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
             redisMeta.setMaster("");
         else
             redisMeta.setMaster(XPipeConsoleConstant.DEFAULT_ADDRESS);
+        redisMeta.setAz(outer.getAz());
         return redisMeta;
     }
 
@@ -276,6 +280,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         redisMeta.setIp(origin.getIp());
         redisMeta.setPort(origin.getPort());
         redisMeta.setMaster(origin.getMaster());
+        redisMeta.setAz(origin.getAz());
         return redisMeta;
     }
 

@@ -29,6 +29,8 @@ public class MonitorGroupMeta {
 
     private String idc;
 
+    private String az;
+
     private Set<HostPort> nodes;
 
     private Boolean down;
@@ -41,6 +43,10 @@ public class MonitorGroupMeta {
 
     public String getIdc() {
         return idc;
+    }
+
+    public String getAz() {
+        return az;
     }
 
     public Boolean getDown() {
@@ -58,6 +64,10 @@ public class MonitorGroupMeta {
 
     public void setIdc(String idc) {
         this.idc = idc;
+    }
+
+    public void setAz(String az) {
+        this.az = az;
     }
 
     public void setDown(Boolean down) {
@@ -83,12 +93,13 @@ public class MonitorGroupMeta {
         MonitorGroupMeta that = (MonitorGroupMeta) o;
         return Objects.equals(name, that.name) &&
                 Objects.equals(idc, that.idc) &&
+                Objects.equals(az, that.az) &&
                 Objects.equals(nodes, that.nodes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, idc, nodes);
+        return Objects.hash(name, idc, az, nodes);
     }
 
     @Override
@@ -96,6 +107,7 @@ public class MonitorGroupMeta {
         return "BeaconGroupModel{" +
                 "name='" + name + '\'' +
                 ", idc='" + idc + '\'' +
+                ", az='" + az + '\'' +
                 ", nodes=" + nodes +
                 ", down=" + down +
                 ", masterGroup=" + masterGroup +
