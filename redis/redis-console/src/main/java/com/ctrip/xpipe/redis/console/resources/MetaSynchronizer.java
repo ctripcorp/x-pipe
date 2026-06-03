@@ -75,6 +75,9 @@ public class MetaSynchronizer {
 
     private SentinelBalanceService sentinelBalanceService;
 
+    @Autowired
+    private AzService azService;
+
     private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
 
     @PostConstruct
@@ -97,7 +100,7 @@ public class MetaSynchronizer {
                 // 还未加入，需要添加
                 dcMetaSynchronizers.put(dc, new DcMetaSynchronizer(consoleConfig, metaCache, redisService, shardService,
                         clusterService, dcService, organizationService, sentinelBalanceService,
-                        clusterTypeUpdateEventFactory, outerClientService, dc));
+                        clusterTypeUpdateEventFactory, outerClientService, azService, dc));
                 dcMetaSynchronizers.get(dc).start();
             }
         }

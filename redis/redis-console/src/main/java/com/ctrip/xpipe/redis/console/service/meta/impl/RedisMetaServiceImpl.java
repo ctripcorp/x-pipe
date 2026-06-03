@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.service.AzService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.console.service.meta.AbstractMetaService;
@@ -16,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -29,9 +32,14 @@ import java.util.List;
 @DisableDbMode(false)
 public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMetaService {
 	public static long REDIS_MASTER_NULL = 0L;
+
+	private static final Logger logger = LoggerFactory.getLogger(RedisMetaServiceImpl.class);
 	
 	@Autowired
 	private RedisService redisService;
+
+	@Autowired
+	private AzService azService;
 
 	@Override
 	public RedisMeta getRedisMeta(ShardMeta shardMeta, RedisTbl redisInfo) {
@@ -45,6 +53,13 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 				redisMeta.setMaster("");
 			} else {
 				redisMeta.setMaster(XPipeConsoleConstant.DEFAULT_ADDRESS);
+			}
+			if (redisInfo.getAzId() != null && redisInfo.getAzId() > 0) {
+				try {
+					redisMeta.setAz(azService.getAvailableZoneTblById(redisInfo.getAzId()).getAzName());
+				} catch (Exception e) {
+					logger.warn("[getRedisMeta] failed to get az name for azId {}", redisInfo.getAzId(), e);
+				}
 			}
 		}
 		

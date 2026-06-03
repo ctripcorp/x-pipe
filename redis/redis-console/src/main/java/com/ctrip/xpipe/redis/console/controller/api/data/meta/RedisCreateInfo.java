@@ -19,6 +19,7 @@ public class RedisCreateInfo extends AbstractCreateInfo {
     private String clusterId;
     private String shardName;
     private String redises;
+    private Long azId;
 
     @Override
     public void check() throws CheckFailException {
@@ -72,5 +73,14 @@ public class RedisCreateInfo extends AbstractCreateInfo {
 
     public void setClusterId(String clusterId) {
         this.clusterId = clusterId;
+    }
+
+    public Long getAzId() {
+        return azId;
+    }
+
+    public RedisCreateInfo setAzId(Long azId) {
+        this.azId = azId;
+        return this;
     }
 }

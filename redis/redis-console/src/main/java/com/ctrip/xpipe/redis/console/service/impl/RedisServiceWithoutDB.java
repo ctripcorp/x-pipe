@@ -81,6 +81,11 @@ public class RedisServiceWithoutDB implements RedisService {
     }
 
     @Override
+    public void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs, Long azId) throws DalException, ResourceNotFoundException {
+        consolePortalService.insertRedises(dcId, clusterId, shardId, addrs, azId);
+    }
+
+    @Override
     public void deleteRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws ResourceNotFoundException {
         throw new UnsupportedOperationException();
     }

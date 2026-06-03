@@ -342,7 +342,7 @@ public class MetaUpdate extends AbstractConsoleController {
         // Fill in redis, keeper
         for(RedisCreateInfo redisCreateInfo : redisCreateInfos) {
             String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
-            redisService.insertRedises(dcId, clusterName, shardName, redisCreateInfo.getRedisAddresses());
+            redisService.insertRedises(dcId, clusterName, shardName, redisCreateInfo.getRedisAddresses(), redisCreateInfo.getAzId());
         }
         addKeepers(clusterTbl, shardTbl, redisCreateInfos);
     }

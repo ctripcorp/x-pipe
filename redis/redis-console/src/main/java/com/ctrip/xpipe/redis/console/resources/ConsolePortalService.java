@@ -215,10 +215,15 @@ public class ConsolePortalService extends AbstractService {
     }
 
     public void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) {
+        insertRedises(dcId, clusterId, shardId, addrs, null);
+    }
+
+    public void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs, Long azId) {
         RedisCreateInfo redisCreateInfo = new RedisCreateInfo();
         redisCreateInfo.setDcId(dcId);
         redisCreateInfo.setClusterId(clusterId);
         redisCreateInfo.setShardName(shardId);
+        redisCreateInfo.setAzId(azId);
         List<String> redisAddrs = new ArrayList<>();
         for (Pair<String, Integer> addr : addrs) {
             redisAddrs.add(addr.getKey() + ":" + addr.getValue());

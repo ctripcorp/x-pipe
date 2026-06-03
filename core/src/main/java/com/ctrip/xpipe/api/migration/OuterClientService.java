@@ -655,6 +655,16 @@ public interface OuterClientService extends Ordered{
 			this.idc = idc;
 		}
 
+		private String az;
+
+		public String getAz() {
+			return az;
+		}
+
+		public void setAz(String az) {
+			this.az = az;
+		}
+
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
