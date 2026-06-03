@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.Objects;
 
 
 public class SentinelMonitorsCheck extends AbstractAllCheckerLeaderTask {
@@ -124,11 +125,15 @@ public class SentinelMonitorsCheck extends AbstractAllCheckerLeaderTask {
         for(String monitorName: sentinelMonitors.getMonitors()) {
             SentinelUtil.SentinelInfo sentinelInfo = SentinelUtil.SentinelInfo.fromMonitorName(monitorName);
             ClusterType clusterType = ClusterType.lookup(sentinelMeta.getClusterType());
-            if (!config.supportSentinelHealthCheck(clusterType, sentinelInfo.getClusterName()))
+            boolean supportSentinelHealthCheck = config.supportSentinelHealthCheck(clusterType, sentinelInfo.getClusterName());
+            int clusterOrgId = getClusterOrgId(sentinelInfo.getClusterName());
+            boolean supportSentinelBeacon = config.supportSentinelBeacon(clusterOrgId, sentinelInfo.getClusterName());
+            if (!supportSentinelHealthCheck && !supportSentinelBeacon) {
                 continue;
+            }
 
             Triple<String, String, Long> clusterShardAndSentinelGroupId = metaCache.findClusterShardBySentinelMonitor(monitorName);
-            if (clusterShardAndSentinelGroupId == null || !clusterShardAndSentinelGroupId.getLast().equals(sentinelMeta.getId())) {
+            if (supportSentinelBeacon || clusterShardAndSentinelGroupId == null || !clusterShardAndSentinelGroupId.getLast().equals(sentinelMeta.getId())) {
                 sentinelManager.removeSentinelMonitor(sentinel, monitorName)
                         .execute().getOrHandle(SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS, throwable -> {
                     logger.error("[removeSentinelMonitor] remove sentinel {} from {} : {}", sentinel, monitorName, throwable.getMessage());
@@ -136,7 +141,9 @@ public class SentinelMonitorsCheck extends AbstractAllCheckerLeaderTask {
                 });
 
                 CatEventMonitor.DEFAULT.logEvent("Sentinel.Monitors.Check.Remove", monitorName);
-                String message = String.format("Sentinel monitor: %s not exist in Xpipe or Sentinel Group %d is mismatched", monitorName, sentinelMeta.getId());
+                String message = supportSentinelBeacon
+                        ? String.format("Sentinel monitor: %s should be removed due to beacon sentinel gray", monitorName)
+                        : String.format("Sentinel monitor: %s not exist in Xpipe or Sentinel Group %d is mismatched", monitorName, sentinelMeta.getId());
                 if (sentinelInfo.isAvailable()) {
                     alertManager.alert(sentinelInfo.getClusterName(), sentinelInfo.getShardName(), null,
                             ALERT_TYPE.SENTINEL_MONITOR_INCONSIS, message);
@@ -145,6 +152,18 @@ public class SentinelMonitorsCheck extends AbstractAllCheckerLeaderTask {
                 }
             }
         }
+    }
+
+    private int getClusterOrgId(String clusterName) {
+        if (metaCache == null || metaCache.getXpipeMeta() == null) {
+            return -1;
+        }
+        return metaCache.getXpipeMeta().getDcs().values().stream()
+                .map(dcMeta -> dcMeta.getClusters().get(clusterName))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .map(clusterMeta -> clusterMeta.getOrgId())
+                .orElse(-1);
     }
 
     @Override

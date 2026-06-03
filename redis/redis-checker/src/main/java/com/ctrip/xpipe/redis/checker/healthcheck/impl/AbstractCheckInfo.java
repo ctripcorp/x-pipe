@@ -14,6 +14,8 @@ public abstract class AbstractCheckInfo implements CheckInfo {
 
     protected String clusterId;
 
+    protected int clusterOrgId;
+
     protected String activeDc;
 
     protected ClusterType clusterType;
@@ -42,6 +44,16 @@ public abstract class AbstractCheckInfo implements CheckInfo {
     @Override
     public String getClusterId() {
         return clusterId;
+    }
+
+    @Override
+    public int getClusterOrgId() {
+        return clusterOrgId;
+    }
+
+    @Override
+    public void setClusterOrgId(int clusterOrgId) {
+        this.clusterOrgId = clusterOrgId;
     }
 
     @Override

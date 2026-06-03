@@ -368,8 +368,26 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     @Override
     public boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName) {
         return clusterType.supportHealthCheck()
-                ||  checkConfigBean.shouldSentinelCheckOuterClientClusters()
+                || checkConfigBean.shouldSentinelCheckOuterClientClusters()
                 || sentinelCheckOuterClientClusters().contains(clusterName.toLowerCase());
+    }
+
+    @Override
+    public boolean supportSentinelBeacon(String clusterName) {
+        Set<Long> grayBus = commonConfigBean.getBeaconSentinelGrayBus();
+        if (grayBus.contains(0L)) {
+            return true;
+        }
+        return commonConfigBean.getBeaconSentinelGrayClusters().contains(clusterName.toLowerCase());
+    }
+
+    @Override
+    public boolean supportSentinelBeacon(long orgId, String clusterName) {
+        Set<Long> grayBus = commonConfigBean.getBeaconSentinelGrayBus();
+        if (grayBus.contains(0L) || grayBus.contains(orgId)) {
+            return true;
+        }
+        return supportSentinelBeacon(clusterName);
     }
 
     @Override
@@ -503,6 +521,12 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     @Override
     public List<BeaconOrgRoute> getBeaconOrgRoutes() {
         String property = dataCenterConfigBean.getBeaconOrgRoutes();
+        return JsonCodec.INSTANCE.decode(property, new GenericTypeReference<List<BeaconOrgRoute>>() {});
+    }
+
+    @Override
+    public List<BeaconOrgRoute> getBeaconSentinelOrgRoutes() {
+        String property = dataCenterConfigBean.getBeaconSentinelOrgRoutes();
         return JsonCodec.INSTANCE.decode(property, new GenericTypeReference<List<BeaconOrgRoute>>() {});
     }
 

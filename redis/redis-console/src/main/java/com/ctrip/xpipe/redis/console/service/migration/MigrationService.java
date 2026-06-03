@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.migration;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
@@ -14,6 +15,7 @@ import com.ctrip.xpipe.redis.console.service.migration.impl.TryMigrateResult;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface MigrationService {
@@ -95,5 +97,17 @@ public interface MigrationService {
     List<BiMigrationRecord> loadAllBiMigration();
 
     boolean syncBiMigration(BiMigrationReq biMigrationReq, String operator) throws Exception;
+
+    RetMessage preMigrateSentinelBeacon(MigrationCluster migrationCluster);
+
+    RetMessage postMigrateSentinelBeacon(MigrationCluster migrationCluster, Map<String, HostPort> shardMasters);
+
+    RetMessage preMigrateSentinelBeacon(String clusterName);
+
+    RetMessage postMigrateSentinelBeacon(String clusterName, Map<String, HostPort> shardMasters);
+
+    void postMigrateSentinelBeaconAsync(MigrationCluster migrationCluster, Map<String, HostPort> shardMasters);
+
+    boolean shouldMigrateSentinelBeacon(MigrationCluster migrationCluster);
 
 }

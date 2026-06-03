@@ -73,8 +73,9 @@ public class DefaultChangePrimaryDcActionTest extends AbstractTest {
         action = new DefaultChangePrimaryDcAction() {
             @Override
             protected ChangePrimaryDcJob createChangePrimaryDcJob(ChangePrimaryDcAction changePrimaryDcAction, Long clusterDbId,
-                                                                  Long shardDbId, String newPrimaryDc, MasterInfo masterInfo) {
-                return new ChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId, newPrimaryDc, masterInfo) {
+                                                                  Long shardDbId, String newPrimaryDc, MasterInfo masterInfo,
+                                                                  boolean addSentinel) {
+                return new ChangePrimaryDcJob(changePrimaryDcAction, clusterDbId, shardDbId, newPrimaryDc, masterInfo, addSentinel) {
                     @Override
                     protected void doExecute() throws Exception {
                         future().setSuccess(expectedResult);

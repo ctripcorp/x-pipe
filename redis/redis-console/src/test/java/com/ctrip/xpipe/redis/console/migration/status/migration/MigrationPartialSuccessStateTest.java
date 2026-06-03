@@ -65,19 +65,25 @@ public class MigrationPartialSuccessStateTest extends AbstractMigrationStateTest
             doAnswer(invocation -> {
                 ShardMigrationStep step = invocation.getArgument(0, ShardMigrationStep.class);
                 when(result.stepTerminated(step)).thenReturn(false);
-                when(result.stepTerminated(step)).thenReturn(false);
                 return null;
             }).when(result).stepRetry(any(ShardMigrationStep.class));
 
             doAnswer(invocation -> {
                 ShardMigrationResult newResult = mock(ShardMigrationResult.class);
                 when(migrationShard.getShardMigrationResult()).thenReturn(newResult);
-                when(newResult.stepTerminated(any())).thenReturn(true);
-                when(newResult.stepSuccess(any())).thenReturn(true);
+                when(newResult.stepTerminated(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)).thenReturn(true);
+                when(newResult.stepSuccess(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)).thenReturn(true);
                 partialSuccessState.refresh();
                 retryCnt.incrementAndGet();
                 return null;
             }).when(migrationShard).doMigrate();
+
+            doAnswer(invocation -> {
+                ShardMigrationResult migrateResult = migrationShard.getShardMigrationResult();
+                when(migrateResult.stepTerminated(ShardMigrationStep.MIGRATE)).thenReturn(true);
+                partialSuccessState.refresh();
+                return null;
+            }).when(migrationShard).doMigrateOtherDc();
         }
 
         partialSuccessState.getStateActionState().tryAction();

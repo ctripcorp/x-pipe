@@ -7,6 +7,7 @@ package com.ctrip.xpipe.redis.console.migration.model;
  */
 public enum ShardMigrationStep {
     CHECK,
+    PRE_MIGRATING,
     MIGRATE_PREVIOUS_PRIMARY_DC,
     MIGRATE_NEW_PRIMARY_DC,
     MIGRATE_OTHER_DC,

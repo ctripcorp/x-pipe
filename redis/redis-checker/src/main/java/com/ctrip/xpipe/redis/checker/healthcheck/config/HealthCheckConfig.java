@@ -28,6 +28,8 @@ public interface HealthCheckConfig {
 
     boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName);
 
+    boolean supportSentinelBeacon(long clusterOrgId, String clusterName);
+
     int getNonCoreCheckIntervalMilli();
 
     DelayConfig getDelayConfig(String clusterName, String fromDc, String toDc);

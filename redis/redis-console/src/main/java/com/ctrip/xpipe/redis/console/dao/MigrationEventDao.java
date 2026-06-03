@@ -225,7 +225,8 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 						migrationCluster.getClusterShards().get(shard.getShardId()),
 						migrationCluster.getClusterDcs(),
 						migrationService, reactorMigrationCommandBuilder);
-				migrationShard.setExecutors(ioCallbackExecutors);
+				migrationShard.setExecutors(executors);
+				migrationShard.setIoCallbackExecutor(ioCallbackExecutors);
 				migrationCluster.addNewMigrationShard(migrationShard);
 			}
 			

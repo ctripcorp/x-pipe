@@ -21,10 +21,12 @@ import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcC
 import com.ctrip.xpipe.utils.LogUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.concurrent.Executor;
 
 /**
  * @author shyin
@@ -46,6 +48,8 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	private Map<Long, DcTbl> dcs;
 
 	private MigrationCommandBuilder commandBuilder;
+
+	private Executor ioCallbackExecutor = MoreExecutors.directExecutor();
 
 	private String cluster;
 	private String shard;
@@ -145,7 +149,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					shardMigrationResult.updateStepResult(ShardMigrationStep.CHECK, false, LogUtils.error(commandFuture.cause().getMessage()));
 				}
 				
-				notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.CHECK));
+				notifyObserversFromIoCallback(new ShardObserverEvent(shardName(), ShardMigrationStep.CHECK));
 			}
 		});
 	}
@@ -159,7 +163,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 
 		logger.info("[doMigrate][start]{},{}", cluster, shard);
 		sequenceCommandChain.execute().addListener(migrateFuture -> {
-			notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
+			notifyObserversFromIoCallback(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
 			logger.info("[doMigrate][end]{},{}", cluster, shard);
 		});
 	}
@@ -223,7 +227,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC, true, LogUtils.error("Ignore:" + commandFuture.cause().getMessage()));
 				}
 
-				notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
+				notifyObserversFromIoCallback(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_PREVIOUS_PRIMARY_DC));
 			}
 		});
 		return cmd;
@@ -254,7 +258,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 							LogUtils.error(String.format("%s:%s", cause.getClass().getSimpleName(), cause.getMessage())));
 				}
 
-				notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
+				notifyObserversFromIoCallback(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC));
 			}
 		});
 		return cmd;
@@ -302,7 +306,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 					shardMigrationResult.updateStepResult(ShardMigrationStep.MIGRATE_OTHER_DC, false, commandFuture.cause().getMessage());
 				}
 
-				notifyObservers(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_OTHER_DC));
+				notifyObserversFromIoCallback(new ShardObserverEvent(shardName(), ShardMigrationStep.MIGRATE_OTHER_DC));
 			}
 		});
 		return migrateResult;
@@ -319,7 +323,7 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 				} else {
 					logger.error("[doPrevPrimaryDcMigrate][fail]{},{},{}", cluster, shard, dc, commandFuture.cause());
 				}
-				notifyObservers(new ShardObserverEvent(shardName(), "doRollBackPrevPrimaryDc"));
+				notifyObserversFromIoCallback(new ShardObserverEvent(shardName(), "doRollBackPrevPrimaryDc"));
 			}
 		});
 		return migrateResult;
@@ -348,6 +352,14 @@ public class DefaultMigrationShard extends AbstractObservable implements Migrati
 	@VisibleForTesting
 	public void setCommandBuilder(MigrationCommandBuilder builder) {
 		this.commandBuilder = builder;
+	}
+
+	public void setIoCallbackExecutor(Executor ioCallbackExecutor) {
+		this.ioCallbackExecutor = ioCallbackExecutor;
+	}
+
+	private void notifyObserversFromIoCallback(ShardObserverEvent event) {
+		ioCallbackExecutor.execute(() -> notifyObservers(event));
 	}
 
 	public static class ShardObserverEvent{

@@ -129,6 +129,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	List<BeaconOrgRoute> getBeaconOrgRoutes();
 
+	List<BeaconOrgRoute> getBeaconSentinelOrgRoutes();
+
 	int getClusterDividedParts();
 
 	int getCheckerAckTimeoutMilli();

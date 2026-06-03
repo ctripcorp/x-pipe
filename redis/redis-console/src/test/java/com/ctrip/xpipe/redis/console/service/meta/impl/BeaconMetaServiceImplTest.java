@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.meta.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -14,6 +15,7 @@ import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Arrays;
 import java.util.Set;
 
 /**
@@ -70,6 +72,34 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
         Assert.assertEquals(expectedBeaconGroups(), groups);
     }
 
+    @Test
+    public void testBuildBeaconShards() {
+        Set<MonitorShardMeta> shards = beaconMetaService.buildBeaconShards("cluster1", "jq", Collections.emptyMap());
+        Assert.assertEquals(expectedBeaconShards(), shards);
+    }
+
+    @Test
+    public void testBuildBeaconShardsWithPublishMasters() {
+        Set<MonitorShardMeta> shards = beaconMetaService.buildBeaconShards("cluster1", "jq",
+                Collections.singletonMap("shard1", HostPort.fromString("127.0.0.1:6380")));
+
+        MonitorShardMeta shard1 = shards.stream()
+                .filter(shard -> "shard1".equals(shard.getName()))
+                .findFirst()
+                .get();
+
+        Assert.assertTrue(shard1.getGroups().stream()
+                .filter(group -> group.getNodes().contains(HostPort.fromString("127.0.0.1:6380")))
+                .findFirst()
+                .get()
+                .isMasterGroup());
+        Assert.assertFalse(shard1.getGroups().stream()
+                .filter(group -> group.getNodes().contains(HostPort.fromString("127.0.0.1:6379")))
+                .findFirst()
+                .get()
+                .isMasterGroup());
+    }
+
     @Override
     protected String getXpipeMetaConfigFile() {
         return "multi-zone-meta.xml";
@@ -81,6 +111,23 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
                 new MonitorGroupMeta("shard2+jq", "jq", Sets.newHashSet(HostPort.fromString("127.0.0.1:6381"), HostPort.fromString("127.0.0.1:6382")), true),
                 new MonitorGroupMeta("shard1+oy", "oy", Sets.newHashSet(HostPort.fromString("127.0.0.1:6383"), HostPort.fromString("127.0.0.1:6384")), false),
                 new MonitorGroupMeta("shard2+oy", "oy", Sets.newHashSet(HostPort.fromString("127.0.0.1:6385"), HostPort.fromString("127.0.0.1:6386")), false)
+        );
+    }
+
+    private Set<MonitorShardMeta> expectedBeaconShards() {
+        return Sets.newHashSet(
+                new MonitorShardMeta("shard1", Arrays.asList(
+                        new MonitorGroupMeta("127.0.0.1:6379", "jq",
+                                Sets.newHashSet(HostPort.fromString("127.0.0.1:6379")), true),
+                        new MonitorGroupMeta("127.0.0.1:6380", "jq",
+                                Sets.newHashSet(HostPort.fromString("127.0.0.1:6380")), false)
+                )),
+                new MonitorShardMeta("shard2", Arrays.asList(
+                        new MonitorGroupMeta("127.0.0.1:6381", "jq",
+                                Sets.newHashSet(HostPort.fromString("127.0.0.1:6381")), true),
+                        new MonitorGroupMeta("127.0.0.1:6382", "jq",
+                                Sets.newHashSet(HostPort.fromString("127.0.0.1:6382")), false)
+                ))
         );
     }
 

@@ -13,6 +13,10 @@ public interface CheckInfo {
 
     String getClusterId();
 
+    int getClusterOrgId();
+
+    void setClusterOrgId(int clusterOrgId);
+
     ClusterType getClusterType();
 
     String getActiveDc();

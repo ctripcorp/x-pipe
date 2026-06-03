@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.migration.status.migration;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.model.*;
+import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -24,13 +25,17 @@ public class AbstractMigrationStateTest extends AbstractConsoleTest {
     @Mock
     protected MigrationCluster migrationCluster;
 
+    @Mock
+    protected MigrationService migrationService;
+
 
     @Before
     public void beforeAbstractMigrationStateTest() {
 
         when(migrationCluster.getScheduled()).thenReturn(scheduled);
         when(migrationCluster.getMigrationExecutor()).thenReturn(executors);
-        when(migrationCluster.getOuterClientService()).thenReturn(OuterClientService.DEFAULT);
+        lenient().when(migrationCluster.getOuterClientService()).thenReturn(OuterClientService.DEFAULT);
+        lenient().when(migrationCluster.getMigrationService()).thenReturn(migrationService);
 
         List<MigrationShard> migrationShards = new LinkedList<>();
         int shardSize = getShardSize();
@@ -41,7 +46,7 @@ public class AbstractMigrationStateTest extends AbstractConsoleTest {
             migrationShards.add(migrationShard);
         }
 
-        when(migrationCluster.getMigrationShards()).thenReturn(migrationShards);
+        lenient().when(migrationCluster.getMigrationShards()).thenReturn(migrationShards);
     }
 
     public int getShardSize() {

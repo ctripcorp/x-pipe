@@ -2,11 +2,13 @@ package com.ctrip.xpipe.api.migration;
 
 import com.ctrip.xpipe.api.migration.auto.data.MonitorClusterMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.Set;
 
 public class MonitorClusterMetaTest {
@@ -97,5 +99,23 @@ public class MonitorClusterMetaTest {
                 new MonitorGroupMeta("shard1+oy", "oy", Sets.newHashSet(HostPort.fromString("127.0.0.1:6383"), HostPort.fromString("127.0.0.1:6384")), false),
                 new MonitorGroupMeta("shard2+oy", "oy", Sets.newHashSet(HostPort.fromString("127.0.0.1:6385"), HostPort.fromString("127.0.0.1:6386")), false)
         );
+    }
+
+    @Test
+    public void testMonitorClusterMetaWithShardsHash() {
+        MonitorGroupMeta master = new MonitorGroupMeta("127.0.0.1:6379", "jq",
+                Sets.newHashSet(HostPort.fromString("127.0.0.1:6379")), true);
+        MonitorGroupMeta slave = new MonitorGroupMeta("127.0.0.1:6380", "jq",
+                Sets.newHashSet(HostPort.fromString("127.0.0.1:6380")), false);
+        Set<MonitorGroupMeta> groups = Sets.newHashSet(
+                new MonitorGroupMeta(master.getName(), master.getIdc(), master.getNodes(), false),
+                new MonitorGroupMeta(slave.getName(), slave.getIdc(), slave.getNodes(), false)
+        );
+
+        MonitorShardMeta shardMeta = new MonitorShardMeta("shard1", java.util.Arrays.asList(master, slave));
+        MonitorClusterMeta fromShards = new MonitorClusterMeta(null, Collections.singleton(shardMeta), null);
+        MonitorClusterMeta fromGroups = new MonitorClusterMeta(groups);
+
+        Assert.assertEquals(fromGroups.generateHashCodeForBeaconCheck(), fromShards.generateHashCodeForBeaconCheck());
     }
 }

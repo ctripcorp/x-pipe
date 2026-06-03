@@ -44,17 +44,21 @@ public abstract class AbstractMigrationPublishState extends AbstractMigrationSta
 		MigrationPublishResult res = null;
 		try {
 			res = getMigrationPublishService().doMigrationPublish(cluster, newPrimaryDc, newMasters);
-			logger.info("[MigrationPublishStat][result]{}",res);
+			logger.info("[MigrationPublishStat][{}][result]{}",cluster,res);
 			ret = res.isSuccess();
 		} catch (Exception e) {
 			res = new MigrationPublishResult("", cluster, newPrimaryDc, newMasters);
 			res.setSuccess(false);
 			res.setMessage(e.getMessage());
-			logger.error("[MigrationPublish][fail]",e);
+			logger.error("[MigrationPublish][{}][fail]", cluster, e);
 			ret = false;
 		}
 		
-		updateMigrationPublishResult(res);
+		try {
+			updateMigrationPublishResult(res);
+		} catch (Throwable th) {
+			logger.error("[MigrationPublishStat][{}][updatePublishInfo][fail]", cluster, th);
+		}
 		
 		return ret;
  	}

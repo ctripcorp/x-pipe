@@ -1,17 +1,19 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class BeaconMetaServiceImpl implements BeaconMetaService {
+
+    private static final Logger logger = LoggerFactory.getLogger(BeaconMetaServiceImpl.class);
 
     private MetaCache metaCache;
 
@@ -65,6 +69,63 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
 
         if (dcClusterMetas.isEmpty()) throw new DataNotFoundException("no related dcs found for " + cluster);
         return buildBeaconGroups(dcClusterMetas);
+    }
+
+    @Override
+    public Set<MonitorShardMeta> buildBeaconShards(String cluster, String dc, Map<String, HostPort> shardMasters) {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null || xpipeMeta.getDcs() == null) {
+            return Collections.emptySet();
+        }
+        ClusterMeta clusterMeta = Optional.ofNullable(xpipeMeta.getDcs().get(dc))
+                .map(dcMeta -> dcMeta.getClusters().get(cluster))
+                .orElse(null);
+        if (clusterMeta == null) {
+            return Collections.emptySet();
+        }
+
+        Set<MonitorShardMeta> shards = new HashSet<>();
+        for (Map.Entry<String, ShardMeta> entry : clusterMeta.getShards().entrySet()) {
+            String shardName = entry.getKey();
+            ShardMeta shardMeta = entry.getValue();
+            List<MonitorGroupMeta> groups = shardMeta.getRedises().stream().map(redisMeta -> {
+                HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
+                return new MonitorGroupMeta(hostPort.toString(), dc, Collections.singleton(hostPort), redisMeta.isMaster());
+            }).collect(Collectors.toList());
+            shards.add(new MonitorShardMeta(shardName, groups));
+        }
+        applyShardMasters(cluster, shards, shardMasters);
+        return shards;
+    }
+
+    private void applyShardMasters(String cluster, Set<MonitorShardMeta> shards, Map<String, HostPort> shardMasters) {
+        if (shardMasters == null || shardMasters.isEmpty()) {
+            return;
+        }
+
+        Map<String, MonitorShardMeta> shardMap = shards.stream()
+                .collect(Collectors.toMap(MonitorShardMeta::getName, shard -> shard));
+        shardMasters.forEach((shardName, master) -> {
+            if (master == null) {
+                return;
+            }
+            MonitorShardMeta shard = shardMap.get(shardName);
+            if (shard == null || shard.getGroups() == null) {
+                logger.warn("[applyShardMasters][{}][{}] shard not found", cluster, shardName);
+                return;
+            }
+
+            boolean foundMaster = shard.getGroups().stream()
+                    .anyMatch(group -> group.getNodes() != null && group.getNodes().contains(master));
+            if (!foundMaster) {
+                logger.warn("[applyShardMasters][{}][{}] master {} not found in meta", cluster, shardName, master);
+                return;
+            }
+
+            for (MonitorGroupMeta group : shard.getGroups()) {
+                group.setMasterGroup(group.getNodes() != null && group.getNodes().contains(master));
+            }
+        });
     }
 
     @Override

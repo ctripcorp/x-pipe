@@ -73,6 +73,7 @@
 				<tr>
 					<th>Shard</th>
 					<th>迁移检测</th>
+					<th>预处理</th>
 					<th>原主机房预迁移</th>
 					<th>目标主机房迁移</th>
 					<th>其他机房迁移</th>
@@ -91,6 +92,18 @@
 								ng-if="migrationShard.status.steps.CHECK.false">Failed</span> <span
 								class="label label-sm label-default"
 								ng-if="!migrationShard.status.steps.CHECK">Waiting</span>
+						</div>
+					</td>
+					<td>
+						<div
+							ng-model="migrationShard.status.steps.PRE_MIGRATING"
+							ng-click="showLog(migrationShard.status.steps.PRE_MIGRATING)">
+							<span class="label label-sm label-success"
+								ng-if="migrationShard.status.steps.PRE_MIGRATING.true">Success</span>
+							<span class="label label-sm label-danger"
+								ng-if="migrationShard.status.steps.PRE_MIGRATING.false">Failed</span>
+							<span class="label label-sm label-default"
+								ng-if="!migrationShard.status.steps.PRE_MIGRATING">Waiting</span>
 						</div>
 					</td>
 					<td>

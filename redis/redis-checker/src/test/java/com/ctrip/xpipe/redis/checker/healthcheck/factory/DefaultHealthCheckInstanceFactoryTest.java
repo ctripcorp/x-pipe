@@ -102,7 +102,8 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
 
     protected DcMeta newDcMeta(String dcId) {
         DcMeta dcMeta = new DcMeta().setId(dcId);
-        ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta).setType(ClusterType.ONE_WAY.toString());
+        ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta)
+                .setType(ClusterType.ONE_WAY.toString()).setOrgId(0);
         dcMeta.addCluster(clusterMeta);
         ShardMeta shardMeta = new ShardMeta().setParent(clusterMeta).setId("shard");
         clusterMeta.addShard(shardMeta);
@@ -113,7 +114,8 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
 
     protected RedisMeta normalRedisMeta() {
         DcMeta dcMeta = new DcMeta().setId("dc");
-        ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta).setType(ClusterType.ONE_WAY.toString()).setActiveRedisCheckRules("0,1");
+        ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta)
+                .setType(ClusterType.ONE_WAY.toString()).setOrgId(0).setActiveRedisCheckRules("0,1");
         ShardMeta shardMeta = new ShardMeta().setParent(clusterMeta).setId("shard");
         RedisMeta redisMeta = new RedisMeta().setParent(shardMeta).setIp("localhost").setPort(randomPort());
         return redisMeta;

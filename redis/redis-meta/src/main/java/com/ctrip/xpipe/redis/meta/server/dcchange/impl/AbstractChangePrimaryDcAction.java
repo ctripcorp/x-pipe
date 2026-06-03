@@ -71,14 +71,25 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 
 	@Override
 	public PrimaryDcChangeMessage changePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo) {
+		return changePrimaryDc(clusterDbId, shardDbId, newPrimaryDc, masterInfo, true);
+	}
+
+	@Override
+	public PrimaryDcChangeMessage changePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo,
+												  boolean addSentinel) {
 		
 		try{
-			return doChangePrimaryDc(clusterDbId, shardDbId, newPrimaryDc, masterInfo);
+			return doChangePrimaryDc(clusterDbId, shardDbId, newPrimaryDc, masterInfo, addSentinel);
 		}catch(Exception e){
 			executionLog.error(e.getMessage());
 			logger.error("[changePrimaryDc]cluster_" + clusterDbId + ",shard_" + shardDbId + "," + newPrimaryDc, e);
 			return new PrimaryDcChangeMessage(PRIMARY_DC_CHANGE_RESULT.FAIL, executionLog.getLog());
 		}
+	}
+
+	protected PrimaryDcChangeMessage doChangePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo,
+													   boolean addSentinel) {
+		return doChangePrimaryDc(clusterDbId, shardDbId, newPrimaryDc, masterInfo);
 	}
 
 	protected abstract PrimaryDcChangeMessage doChangePrimaryDc(Long clusterDbId, Long shardDbId, String newPrimaryDc, MasterInfo masterInfo);

@@ -137,6 +137,8 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         DefaultRedisInstanceInfo info =  new DefaultRedisInstanceInfo(clusterMeta.parent().getId(), clusterMeta.getId(),
             redisMeta.parent().getId(), new HostPort(redisMeta.getIp(), redisMeta.getPort()),
             redisMeta.parent().getActiveDc(), clusterType, redisCheckRules);
+        Integer orgId = clusterMeta.getOrgId();
+        info.setClusterOrgId(orgId == null ? -1 : orgId);
         info.isMaster(redisMeta.isMaster());
         info.setAzGroupType(clusterMeta.getAzGroupType());
         info.setAsymmetricCluster(metaCache.isAsymmetricCluster(info.getClusterId()));

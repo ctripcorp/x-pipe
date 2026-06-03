@@ -19,6 +19,7 @@ public enum MigrationStatus {
 
 	Checking(MigrationCheckingState.class, ClusterStatus.Lock, false, false, 10, MigrationStatus.TYPE_PROCESSING),
 	CheckingFail(MigrationCheckingFailState.class, ClusterStatus.Lock, true, false, 10, MigrationStatus.TYPE_PROCESSING),
+	PreMigrating(MigrationPreMigratingState.class, ClusterStatus.Lock, false, false, 20, MigrationStatus.TYPE_PROCESSING),
 	Migrating(MigrationMigratingState.class, ClusterStatus.Migrating, false, false, 30, MigrationStatus.TYPE_PROCESSING),
 	PartialSuccess(MigrationPartialSuccessState.class, ClusterStatus.Migrating, false, false, 40, MigrationStatus.TYPE_PROCESSING),
 	PartialRetryFail(MigrationPartialRetryFailState.class, ClusterStatus.Migrating, true, false, 40, MigrationStatus.TYPE_PROCESSING),

@@ -66,6 +66,11 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public boolean supportSentinelBeacon(long clusterOrgId, String clusterName) {
+        return config.supportSentinelBeacon(clusterOrgId, clusterName);
+    }
+
+    @Override
     public int getNonCoreCheckIntervalMilli() {
         return config.getNonCoreCheckIntervalMilli();
     }

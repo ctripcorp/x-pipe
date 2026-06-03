@@ -14,12 +14,14 @@ import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiatedStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessStateTest;
+import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPreMigratingStateTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateMachineTest;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTest;
 import com.ctrip.xpipe.redis.console.service.meta.impl.AdvancedDcMetaServiceTestForRoute;
 import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
+import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplSentinelBeaconTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -34,6 +36,7 @@ import org.junit.runners.Suite;
         DefaultMigrationShardTest.class,
         MigrationStatTest.class,
         MigrationInitiatedStateTest.class,
+        MigrationPreMigratingStateTest.class,
         MigrationPublishStatTest.class,
         SingleShardMigrationTest.class,
         MultiShardMigrationTest.class,
@@ -47,7 +50,8 @@ import org.junit.runners.Suite;
         ClusterMetaServiceImplTest.class,
 
         MigrationSystemAvailableCheckTest.class,
-        DefaultCheckMigrationCommandBuilderTest.class
+        DefaultCheckMigrationCommandBuilderTest.class,
+        MigrationServiceImplSentinelBeaconTest.class
 })
 public class AllMigrationTest {
 }

@@ -27,6 +27,8 @@ public class MigrationResources {
 
     public static final String MIGRATION_IO_CALLBACK_EXECUTOR = "MIGRATION_IO_CALLBACK_EXECUTOR";
 
+    public static final String MIGRATION_POST_BEACON_EXECUTOR = "MIGRATION_POST_BEACON_EXECUTOR";
+
     public static final String MIGRATION_HTTP_LOOP_RESOURCE = "MIGRATION_HTTP_LOOP_RESOURCE";
 
     public static final String MIGRATION_HTTP_CONNECTION_PROVIDER = "MIGRATION_HTTP_CONNECTION_PROVIDER";
@@ -36,6 +38,8 @@ public class MigrationResources {
     public static final int maxPrepareThreads = 128;
 
     public static final int maxIOCallbackThreads = 100;
+
+    public static final int maxPostBeaconThreads = 100;
 
     public static final String BI_DIRECTION_MIGRATION_EXECUTOR = "BI_DIRECTION_MIGRATION_EXECUTOR";
 
@@ -83,6 +87,27 @@ public class MigrationResources {
                     public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
                         super.rejectedExecution(r, e);
                         logger.info("[migration-io-callback][rejectedExecution] {}", r);
+                    }
+                });
+        poolExecutor.allowCoreThreadTimeOut(true);
+        return MoreExecutors.getExitingExecutorService(
+                poolExecutor,
+                AbstractSpringConfigContext.THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
+    }
+
+    @Bean(name = MIGRATION_POST_BEACON_EXECUTOR)
+    public ExecutorService getMigrationPostBeaconExecutor() {
+        ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(
+                maxPostBeaconThreads,
+                maxPostBeaconThreads,
+                120L, TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(2048),
+                XpipeThreadFactory.create(MIGRATION_POST_BEACON_EXECUTOR),
+                new ThreadPoolExecutor.DiscardPolicy() {
+                    @Override
+                    public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+                        super.rejectedExecution(r, e);
+                        logger.warn("[migration-post-beacon][rejectedExecution] {}", r);
                     }
                 });
         poolExecutor.allowCoreThreadTimeOut(true);

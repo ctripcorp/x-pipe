@@ -19,7 +19,7 @@ public class MigrationCheckingState extends AbstractMigrationState {
 
 	public MigrationCheckingState(MigrationCluster holder) {
 		super(holder, MigrationStatus.Checking);
-		this.setNextAfterSuccess(new MigrationMigratingState(holder))
+		this.setNextAfterSuccess(new MigrationPreMigratingState(holder))
 			.setNextAfterFail(new MigrationCheckingFailState(holder));
 	}
 

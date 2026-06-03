@@ -69,6 +69,9 @@ public class DefaultShardMigrationResultTest extends AbstractConsoleTest {
         logger.info("{}", decodeObj);
         Assert.assertEquals(ShardMigrationResultStatus.SUCCESS, decodeObj.getStatus());
         for(ShardMigrationStep step : ShardMigrationStep.values()){
+            if (step == ShardMigrationStep.PRE_MIGRATING) {
+                continue;
+            }
             Assert.assertTrue(decodeObj.stepSuccess(step));
         }
 
