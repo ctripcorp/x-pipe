@@ -20,13 +20,25 @@ import java.io.IOException;
 public class XPipeSSOFilter extends CtripSSOFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(XPipeSSOFilter.class);
+    private static final String STOP_SSO_URI = "/stopsso";
+    private static final String START_SSO_URI = "/startsso";
+    private static final String TOKEN_HEADER = "token";
+    private final SsoControlConfig ssoControlConfig;
+
+    public XPipeSSOFilter() {
+        this(new SsoControlConfig());
+    }
+
+    XPipeSSOFilter(SsoControlConfig ssoControlConfig) {
+        this.ssoControlConfig = ssoControlConfig;
+    }
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         final HttpServletRequest request = (HttpServletRequest) servletRequest;
         final HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-        if (!checkStopSsoContinue(request, servletResponse)) {
+        if (!checkStopSsoContinue(request, response)) {
             return;
         }
         if (!this.needFilter(request)) {
@@ -42,29 +54,40 @@ public class XPipeSSOFilter extends CtripSSOFilter {
         return !SsoConfig.excludes(path);
     }
 
-    private boolean checkStopSsoContinue(HttpServletRequest request, ServletResponse servletResponse) {
+    private boolean checkStopSsoContinue(HttpServletRequest request, HttpServletResponse response) {
 
         String uri = request.getRequestURI();
-        boolean action = false;
-        if (uri.equalsIgnoreCase("/stopsso")) {
-            SsoConfig.stopsso = true;
-            action = true;
+        if (!isSsoControlAction(uri)) {
+            return true;
         }
 
-        if (uri.equalsIgnoreCase("/startsso")) {
-            SsoConfig.stopsso = false;
-            action = true;
-        }
-
-        if (action) {
+        if (!isValidToken(request)) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             try {
-                servletResponse.getWriter().write("sso stop status:" + SsoConfig.stopsso);
+                response.getWriter().write("invalid token");
             } catch (IOException e) {
-                logger.error("[checkStopSsoContinue]", e);
+                logger.error("[checkStopSsoContinue][write invalid token failed]", e);
             }
             return false;
         }
-        return true;
+
+        SsoConfig.stopsso = STOP_SSO_URI.equalsIgnoreCase(uri);
+        try {
+            response.getWriter().write("sso stop status:" + SsoConfig.stopsso);
+        } catch (IOException e) {
+            logger.error("[checkStopSsoContinue]", e);
+        }
+        return false;
+    }
+
+    private boolean isSsoControlAction(String uri) {
+        return STOP_SSO_URI.equalsIgnoreCase(uri) || START_SSO_URI.equalsIgnoreCase(uri);
+    }
+
+    private boolean isValidToken(HttpServletRequest request) {
+        String expectedToken = ssoControlConfig.getSsoControlToken();
+        String actualToken = request.getHeader(TOKEN_HEADER);
+        return expectedToken != null && !expectedToken.isEmpty() && expectedToken.equals(actualToken);
     }
 
 }
