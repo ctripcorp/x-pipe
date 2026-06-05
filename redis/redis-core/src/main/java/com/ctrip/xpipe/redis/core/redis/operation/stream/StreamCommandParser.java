@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.redis.operation.stream;
 
+import com.ctrip.xpipe.payload.DirectByteBufInOutPayload;
+import com.ctrip.xpipe.payload.InOutPayloadFactory;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import io.netty.buffer.ByteBuf;
@@ -25,7 +27,13 @@ public class StreamCommandParser {
 
 
     public StreamCommandParser(StreamCommandLister commandLister) {
-        this.protocolParser = new ArrayParser();
+        this.protocolParser = new ArrayParser()
+                .setInOutPayloadFactory(new InOutPayloadFactory() {
+                    @Override
+                    public com.ctrip.xpipe.api.payload.InOutPayload create() {
+                        return new DirectByteBufInOutPayload();
+                    }
+                });
         allocator = ByteBufAllocator.DEFAULT;
         this.commandLister = commandLister;
     }

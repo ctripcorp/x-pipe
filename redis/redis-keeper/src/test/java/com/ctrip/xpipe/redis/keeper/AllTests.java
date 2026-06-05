@@ -26,6 +26,7 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.impl.FixSyncRateManagerTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.ProgressiveSyncRateLimiterTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTest;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTransactionBatchTest;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetStreamCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReaderTest;
@@ -102,6 +103,7 @@ import org.junit.runners.Suite.SuiteClasses;
         StreamCommandReaderTest.class,
 
         CKStoreTest.class,
+        CKStoreTransactionBatchTest.class,
         TimerSlidingWindowTest.class,
 
         DiskHealthCheckerTest.class,

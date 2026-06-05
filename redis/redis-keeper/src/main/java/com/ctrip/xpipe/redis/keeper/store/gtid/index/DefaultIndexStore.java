@@ -5,8 +5,8 @@ import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpItem;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamTransactionListener;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
@@ -35,12 +34,6 @@ import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
 public class DefaultIndexStore implements IndexStore, StreamTransactionListener {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultIndexStore.class);
-
-    private static final byte[] PING_BYTES = new byte[]{'P','I','N','G'};
-    private static final byte[] SELECT_BYTES = new byte[]{'S','E','L','E','C','T'};
-
-    private static final byte[] PING_LOWWER_BYTES = new byte[]{'p','i','n','g'};
-    private static final byte[] SELECT_LOWWER_BYTES = new byte[]{'s','e','l','e','c','t'};
 
     private IndexWriter indexWriter;
 
@@ -146,16 +139,20 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     @Override
-    public int postAppend(ByteBuf commandBuf, Object[] payload) throws IOException {
+    public int postAppend(ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException {
         int written = appendCmdBuf(commandBuf);
-        DirectByteBufInStringOutPayload command = (DirectByteBufInStringOutPayload) payload[0];
-        if(isPingOrSelectCmd(command)) return written;
-        sendPayloadToCk(payload);
+        if (redisOpItem != null && !isPingOrSelectCmd(redisOpItem)) {
+            sendPayloadsToCk(List.of(redisOpItem));
+        }
         return written;
     }
 
-    private boolean isPingOrSelectCmd(DirectByteBufInStringOutPayload command){
-        return command.equalsIgnoreCaseAsciiExpectedUppercase(PING_BYTES) || command.equalsIgnoreCaseAsciiExpectedUppercase(SELECT_BYTES);
+    private boolean isPingOrSelectCmd(RedisOpItem redisOpItem) {
+        if (redisOpItem.getRedisOpType() == null) {
+            return false;
+        }
+        RedisOpType type = redisOpItem.getRedisOpType();
+        return type == RedisOpType.PING || type == RedisOpType.SELECT;
     }
 
     @Override
@@ -185,11 +182,6 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         return this.opParser;
     }
 
-    private boolean isPingOrSelectCmd(byte[] command){
-        return Arrays.equals(PING_BYTES, command) || Arrays.equals(SELECT_BYTES,command)
-                || Arrays.equals(PING_LOWWER_BYTES, command) || Arrays.equals(SELECT_BYTES,command);
-    }
-
     public int appendCmdBuf(ByteBuf byteBuf) throws IOException {
         if(writerCmdEnabled && commandWriterCallback != null) {
             return commandWriterCallback.writeCommand(byteBuf);
@@ -203,22 +195,6 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
                 ckStore.sendPayloads(payloads);
             }catch (Throwable t) {
                 logger.warn("[sendPayloadsToCk][fail]", t);
-            }
-        }
-    }
-
-    private void sendPayloadToCk(Object[] payload){
-        if(logger.isDebugEnabled()){
-            logger.debug("[sendPayloadToCk],ckStore {},isKeeper {}",ckStore,ckStore != null ? ckStore.isKeeper() : false);
-        }
-        if (ckStore != null && !ckStore.isKeeper()) {
-            if(logger.isDebugEnabled()){
-                logger.debug("[sendPayloadToCk],payload {}",List.of(payload));
-            }
-            try {
-                ckStore.sendPayload(payload);
-            }catch (Throwable t){
-
             }
         }
     }

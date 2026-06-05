@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 
 
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
-import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
+import com.ctrip.xpipe.payload.DirectByteBufInOutPayload;
 import com.ctrip.xpipe.payload.InOutPayloadFactory;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
@@ -34,7 +34,7 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 	private RedisClientProtocol<?> currentParser  = null;
 	private ARRAY_STATE arrayState = ARRAY_STATE.READ_SIZE;
 
-	private InOutPayloadFactory inOutPayloadFactory = InOutPayloadFactory.INSTANCE;
+	private InOutPayloadFactory inOutPayloadFactory = null;
 
 	public ArrayParser() {
 
@@ -162,18 +162,30 @@ public class ArrayParser extends AbstractRedisClientProtocol<Object[]>{
 	@Override
 	public void reset() {
 		super.reset();
+		if (currentParser != null) {
+			currentParser.reset();
+			currentParser = null;
+		}
 		arrayState = ARRAY_STATE.READ_SIZE;
-		if(inOutPayloadFactory != null && resultArray != null){
-			for(Object object: resultArray){
-				if(object == null) continue;
-				DirectByteBufInStringOutPayload directByteBufInStringOutPayload = (DirectByteBufInStringOutPayload) object;
-				directByteBufInStringOutPayload.reset();
+		if (resultArray != null) {
+			for (Object object : resultArray) {
+				resetPayload(object);
 			}
 		}
 		resultArray = null;
 		arraySize = 0;
 		currentIndex = 0;
-		currentParser  = null;
+	}
+
+	private void resetPayload(Object object) {
+		if (object == null) {
+			return;
+		}
+		if (object instanceof DirectByteBufInOutPayload) {
+			((DirectByteBufInOutPayload) object).reset();
+		} else if (object instanceof ByteArrayOutputStreamPayload) {
+			((ByteArrayOutputStreamPayload) object).clear();
+		}
 	}
 
 	public ArrayParser setInOutPayloadFactory(InOutPayloadFactory inOutPayloadFactory) {

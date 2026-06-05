@@ -11,7 +11,7 @@ public interface StreamTransactionListener {
 
     boolean preAppend(String gtid, long offset) throws IOException;
 
-    int postAppend(ByteBuf commandBuf, Object[] payload) throws IOException;
+    int postAppend(ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException;
 
     int batchPostAppend(List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException;
 

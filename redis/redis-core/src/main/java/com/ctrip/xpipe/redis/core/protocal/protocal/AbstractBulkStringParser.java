@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.protocal.protocal;
 import com.ctrip.xpipe.api.payload.InOutPayload;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
+import com.ctrip.xpipe.payload.DirectByteBufInOutPayload;
 import com.ctrip.xpipe.payload.StringInOutPayload;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
@@ -165,6 +166,11 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
 
 	@Override
 	public void reset() {
+		if (payload instanceof DirectByteBufInOutPayload) {
+			((DirectByteBufInOutPayload) payload).reset();
+		} else if (payload instanceof ByteArrayOutputStreamPayload) {
+			((ByteArrayOutputStreamPayload) payload).clear();
+		}
 		eofJudger = null;
 		bulkStringState = BULK_STRING_STATE.READING_EOF_MARK;
 		lfReader = null;
