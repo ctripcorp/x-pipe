@@ -27,6 +27,7 @@ import com.ctrip.xpipe.redis.core.proxy.protocols.DefaultProxyConnectProtocolTes
 import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGeneratorTest;
 import com.ctrip.xpipe.redis.core.redis.op.RedisOpDelTest;
 import com.ctrip.xpipe.redis.core.redis.op.RedisOpMsetTest;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpItemParserTest;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandParserTest;
 import com.ctrip.xpipe.redis.core.redis.parser.GeneralRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.redis.parser.RedisReplStreamParseTest;
@@ -49,7 +50,7 @@ import org.junit.runners.Suite.SuiteClasses;
         ReadWriteSafeTest.class,
         DefaultRunIdGeneratorTest.class,
         ArrayParserTest.class,
-        BulkStringParserTest.class,
+        ArrayParserResetTest.class,
         Crc32HashRouteChooseStrategyTest.class,
         ArrayParserTest.class,
         RedisErrorParserTest.class,
@@ -105,6 +106,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         DefaultProxyEndpointHealthCheckerTest.class,
         StreamCommandParserTest.class,
+        RedisOpItemParserTest.class,
 
         AllRdbTests.class
 })

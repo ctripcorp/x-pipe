@@ -1,7 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
 import com.ctrip.xpipe.api.payload.InOutPayload;
-import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
+import com.ctrip.xpipe.payload.DirectByteBufInOutPayload;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
+import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpItem;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
+import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -34,6 +40,11 @@ public class StreamCommandReaderTest {
 
     @Before
     public void setUp() throws Exception {
+        RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
+        RedisOpParser redisOpParser = new GeneralRedisOpParser(redisOpParserManager);
+        when(defaultIndexStore.getOpParser()).thenReturn(redisOpParser);
+
         streamCommandReader = new StreamCommandReader(defaultIndexStore, 0);
         capturedByteBufs = new ArrayList<>();
         capturedGtids = new ArrayList<>();
@@ -56,7 +67,7 @@ public class StreamCommandReaderTest {
                 capturedByteBufs.add(captured);
             }
             return null;
-        }).when(defaultIndexStore).postAppend(any(ByteBuf.class), any());
+        }).when(defaultIndexStore).postAppend(any(ByteBuf.class), any(RedisOpItem.class));
     }
 
     @After
@@ -83,7 +94,7 @@ public class StreamCommandReaderTest {
         streamCommandReader.onCommand(payload, commandBuf);
         
         // Verify onFinishParse was called
-        verify(defaultIndexStore, times(1)).postAppend(any(ByteBuf.class), any());
+        verify(defaultIndexStore, times(1)).postAppend(any(ByteBuf.class), any(RedisOpItem.class));
         verify(defaultIndexStore, never()).preAppend(anyString(), anyLong());
         
         // Verify ByteBuf was properly handled (should not be released by reader, caller's responsibility)
@@ -106,7 +117,7 @@ public class StreamCommandReaderTest {
         
         // Verify onCommand was called with GTID
         verify(defaultIndexStore, times(1)).preAppend(eq(gtid), anyLong());
-        verify(defaultIndexStore, times(1)).postAppend(any(ByteBuf.class), any());
+        verify(defaultIndexStore, times(1)).postAppend(any(ByteBuf.class), any(RedisOpItem.class));
         
         // Verify GTID was captured
         Assert.assertEquals(1, capturedGtids.size());
@@ -137,7 +148,7 @@ public class StreamCommandReaderTest {
         // Verify command was added to transaction
         Assert.assertTrue("Transaction should still be active", streamCommandReader.isTransactionActive());
         Assert.assertEquals(2, streamCommandReader.getTransactionSize());
-        verify(defaultIndexStore, never()).postAppend(any(ByteBuf.class), any());
+        verify(defaultIndexStore, never()).postAppend(any(ByteBuf.class), any(RedisOpItem.class));
         
         // Step 3: GTID + EXEC command
         ByteBuf execBuf = createRedisArrayCommand("GTID", gtid, "0", "EXEC");
@@ -241,7 +252,7 @@ public class StreamCommandReaderTest {
         // Should be processed as regular GTID command
         Assert.assertFalse("Transaction should not be active", streamCommandReader.isTransactionActive());
         verify(defaultIndexStore, times(1)).preAppend(eq(gtid), anyLong());
-        verify(defaultIndexStore, times(1)).postAppend(any(ByteBuf.class), any());
+        verify(defaultIndexStore, times(1)).postAppend(any(ByteBuf.class), any(RedisOpItem.class));
     }
 
     @Test
@@ -255,7 +266,7 @@ public class StreamCommandReaderTest {
         }
         
         // Verify all commands were processed
-        verify(defaultIndexStore, times(5)).postAppend(any(ByteBuf.class), any());
+        verify(defaultIndexStore, times(5)).postAppend(any(ByteBuf.class), any(RedisOpItem.class));
         verify(defaultIndexStore, never()).preAppend(anyString(), anyLong());
     }
 
@@ -294,7 +305,7 @@ public class StreamCommandReaderTest {
         Assert.assertEquals("currentOffset should be initialOffset + command length", 
                 initialOffset + expectedCmdLen, streamCommandReader.getCurrentOffset());
         
-        verify(defaultIndexStore, times(1)).postAppend(any(ByteBuf.class), any());
+        verify(defaultIndexStore, times(1)).postAppend(any(ByteBuf.class), any(RedisOpItem.class));
     }
 
     @Test
@@ -318,7 +329,7 @@ public class StreamCommandReaderTest {
                     expectedOffset, streamCommandReader.getCurrentOffset());
         }
         
-        verify(defaultIndexStore, times(5)).postAppend(any(ByteBuf.class), any());
+        verify(defaultIndexStore, times(5)).postAppend(any(ByteBuf.class), any(RedisOpItem.class));
     }
 
     @Test
@@ -340,7 +351,7 @@ public class StreamCommandReaderTest {
                 }
             }
             return null;
-        }).when(defaultIndexStore).postAppend(any(ByteBuf.class), any());
+        }).when(defaultIndexStore).postAppend(any(ByteBuf.class), any(RedisOpItem.class));
         
         ByteBuf commandBuf = createRedisArrayCommand("SET", "key", "value");
         int expectedCmdLen = commandBuf.readableBytes(); // Capture length before processing
@@ -352,7 +363,7 @@ public class StreamCommandReaderTest {
         Assert.assertEquals("currentOffset should use original command length even if ByteBuf is modified",
                 initialOffset + expectedCmdLen, streamCommandReader.getCurrentOffset());
         
-        verify(defaultIndexStore, times(1)).postAppend(any(ByteBuf.class), any());
+        verify(defaultIndexStore, times(1)).postAppend(any(ByteBuf.class), any(RedisOpItem.class));
     }
 
     @Test
@@ -419,7 +430,7 @@ public class StreamCommandReaderTest {
                 initialOffset + expectedCmdLen, streamCommandReader.getCurrentOffset());
         
         verify(defaultIndexStore, times(1)).preAppend(eq(gtid), eq(initialOffset));
-        verify(defaultIndexStore, times(1)).postAppend(any(ByteBuf.class), any());
+        verify(defaultIndexStore, times(1)).postAppend(any(ByteBuf.class), any(RedisOpItem.class));
     }
 
     @Test
@@ -476,11 +487,10 @@ public class StreamCommandReaderTest {
     private Object[] createCommandPayload(String... args) {
         Object[] payload = new Object[args.length];
         for (int i = 0; i < args.length; i++) {
-            InOutPayload byteArrayPayload = new DirectByteBufInStringOutPayload();
+            InOutPayload byteArrayPayload = new DirectByteBufInOutPayload();
             try {
                 byteArrayPayload.startInput();
                 byteArrayPayload.in(Unpooled.wrappedBuffer(args[i].getBytes()));
-                byteArrayPayload.endInput();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

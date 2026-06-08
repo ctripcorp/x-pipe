@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.core.redis.operation.stream;
 
-import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
+import com.ctrip.xpipe.payload.DirectByteBufInOutPayload;
 import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
@@ -238,7 +238,7 @@ public class StreamCommandParserTest {
     private String[] payloadToStringArray(Object[] payload){
         String[] res = new String[payload.length];
         for(int i = 0;i<payload.length;i++){
-            if(payload[i] instanceof DirectByteBufInStringOutPayload){
+            if(payload[i] instanceof DirectByteBufInOutPayload){
                 res[i] = payload[i].toString();
             }
         }

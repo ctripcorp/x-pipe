@@ -165,10 +165,9 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
     }
 
     @Override
-    public int postAppend(ByteBuf commandBuf, Object[] payload) throws IOException {
+    public int postAppend(ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException {
         try {
-            RedisOp redisOp = redisOpParser.parse(payload);
-            appendCmdKeyItem(currentUUID, currentGno, redisOp);
+            appendCmdKeyItem(currentUUID, currentGno, redisOpItem);
         } catch (Throwable th) {
             logger.info("[postAppend][parse fail][{}:{}] skip", currentUUID, currentGno, th);
         } finally {
@@ -189,43 +188,6 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
             afterAppend();
         }
         return 0;
-    }
-
-    private void appendCmdKeyItem(String uuid, int gno, RedisOp redisOp) {
-        if (StringUtil.isEmpty(uuid) || gno <= 0) {
-            logger.debug("[appendCmdKeyItem][miss gtid] {}:{}", uuid, gno);
-            return;
-        }
-
-        int dbId = 0;
-        try {
-            dbId = Integer.parseInt(redisOp.getDbId());
-        } catch (NumberFormatException e) {
-            logger.info("[appendCmdKeyItem][invalid dbId][{}:{}] {}", uuid, gno, redisOp.getDbId());
-        }
-        if (redisOp instanceof RedisMultiKeyOp) {
-            RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) redisOp;
-            List<RedisKey> keys = redisMultiKeyOp.getKeys();
-            for (RedisKey redisKey : keys) {
-                if (null == redisKey) continue;
-                CmdKeyItem item = new CmdKeyItem(uuid, gno, dbId, redisOp.getOpType().name(), redisKey.get());
-                cmdKeyItems.add(item);
-            }
-        } else if (redisOp instanceof RedisSingleKeyOp) {
-            RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
-            RedisKey redisKey = redisSingleKeyOp.getKey();
-            if (null == redisKey) return;
-            CmdKeyItem item = new CmdKeyItem(uuid, gno, dbId, redisOp.getOpType().name(), redisKey.get());
-            cmdKeyItems.add(item);
-        } else if (redisOp instanceof RedisMultiSubKeyOp) {
-            RedisMultiSubKeyOp redisSubKeyOp = (RedisMultiSubKeyOp) redisOp;
-            RedisKey redisKey = redisSubKeyOp.getKey();
-            if (null == redisKey) return;
-            for (RedisKey subKey: redisSubKeyOp.getAllSubKeys()) {
-                CmdKeyItem item = new CmdKeyItem(uuid, gno, dbId, redisOp.getOpType().name(), redisKey.get(), subKey.get());
-                cmdKeyItems.add(item);
-            }
-        }
     }
 
     private void appendCmdKeyItem(String uuid, int gno, RedisOpItem redisOpItem) {

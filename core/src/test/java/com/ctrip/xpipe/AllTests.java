@@ -17,6 +17,7 @@ import com.ctrip.xpipe.netty.commands.RequestResponseCommandTest;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannelTest;
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayloadTest;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannelTest;
+import com.ctrip.xpipe.payload.DirectByteBufInOutPayloadTest;
 import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayloadTest;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPoolTest;
 import com.ctrip.xpipe.pool.XpipeNettyClientPoolTest;
@@ -87,6 +88,7 @@ import org.junit.runners.Suite.SuiteClasses;
         MutexableOneThreadTaskExecutorTest.class,
         KeyedOneThreadMutexableTaskExecutorTest.class,
         DirectByteBufInStringOutPayloadTest.class,
+        DirectByteBufInOutPayloadTest.class,
         NettyTimeoutTtlListenerTest.class,
         DefaultZkConfigTest.class,
         DefaultNettyClientTest.class,

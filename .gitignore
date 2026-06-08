@@ -47,3 +47,21 @@ hs_err_pid*
 # npm
 node_modules
 *.js
+# Local AI coding context (Cursor, Claude, Gemini, Windsurf, etc.)
+.cursor/
+.cursorrules
+.gemini/
+.kiro/
+.qoder/
+.windsurfrules
+.mcp.json
+.opencode.json
+.vscode/mcp.json
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+QODER.md
+.github/code-review-graph.instruction.md
+
+# Added by code-review-graph
+.code-review-graph/

@@ -185,15 +185,13 @@ public class CKStore implements Keeperable {
                 Object obj = item.getRedisOpItem();
                 if (obj instanceof RedisOpItem) {
                     storeGtidWithKeyOrSubKeyItem((RedisOpItem) obj);
-                } else {
-                    try {
-                        List<RedisOpItem> list = (List<RedisOpItem>) obj;
-                        for (RedisOpItem op : list) {
+                } else if (obj instanceof List) {
+                    List<RedisOpItem> list = (List<RedisOpItem>) obj;
+                    for (RedisOpItem op : list) {
+                        try {
                             storeGtidWithKeyOrSubKeyItem(op);
-                        }
-                    }catch (Exception e){
-                        if(logger.isDebugEnabled()) {
-                            logger.error("handleBatch", e);
+                        } catch (Exception e) {
+                            logger.warn("[CKStore] process op error, opType={}", op.getRedisOpType(), e);
                         }
                     }
                 }
@@ -210,22 +208,22 @@ public class CKStore implements Keeperable {
     private void clearEvent(MessageEvent event) {
         IRedisOpItem item = event.getRedisOpItem();
         if (item != null) {
-            item.clear();
+            try {
+                item.clear();
+            } catch (Exception e) {
+                logger.warn("[CKStore] clear event error", e);
+            }
         }
         event.setRedisOpItem(null);
     }
 
 
-    public void sendPayload(Object[] payload) {
+    public void sendPayloads(List<RedisOpItem> redisOpItems) {
         if (checkStopWriteCk()) return;
-
         MessageEvent event = new MessageEvent();
-        RedisOpItem redisOpItem = parsePayload(payload);
-        event.setRedisOpItem(redisOpItem);
+        event.setRedisOpItem(new RedisOpMultiItem(redisOpItems));
 
         if (!queue.offer(event)) {
-            // 队列满，丢弃
-            event.setRedisOpItem(null);
             isSendCkFail = true;
         } else {
             onEventOffered();
@@ -234,72 +232,19 @@ public class CKStore implements Keeperable {
 
     private void onEventOffered() {
         if (++offerCount >= BATCH_NOTIFY_SIZE) {
-            offerCount = 0;                      // 重置计数器
+            offerCount = 0;
             tryNotifyConsumer();
         }
     }
 
-    /** 只有当消费者正处于等待状态时才唤醒它 */
     private void tryNotifyConsumer() {
         if (consumerWaiting.get()) {
             LockSupport.unpark(consumerThread);
         }
     }
 
-    public void sendPayloads(List<RedisOpItem> redisOpItems) {
-        if (checkStopWriteCk()) return;
-        MessageEvent event = new MessageEvent();
-        event.setRedisOpItem(new RedisOpMultiItem(redisOpItems));
-
-        if (!queue.offer(event)) {
-            // 队列满，丢弃
-            isSendCkFail = true;
-        } else {
-            if (consumerWaiting.get()) {
-                LockSupport.unpark(consumerThread);
-            }
-        }
-    }
-
     public boolean checkStopWriteCk() {
         return !isReady || keeperConfig.stopWriteCk();
-    }
-
-    private List<com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpItem> parsePayloads(List<Object[]> payloads) {
-        List<com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpItem> redisOpItems = new ArrayList<>(payloads.size());
-        for (Object[] payload : payloads) {
-            redisOpItems.add(parsePayload(payload));
-        }
-        return redisOpItems;
-    }
-
-    private RedisOpItem parsePayload(Object[] payload) {
-        RedisOpItem redisOpItem = new RedisOpItem();
-        try {
-            RedisOp redisOp = redisOpParser.parse(payload);
-            redisOpItem.setRedisOpType(redisOp.getOpType());
-            redisOpItem.setGtid(redisOp.getOpGtid());
-            redisOpItem.setDbId(redisOp.getDbId());
-            if (redisOp instanceof RedisMultiKeyOp) {
-                RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) redisOp;
-                List<RedisKey> keys = redisMultiKeyOp.getKeys();
-                redisOpItem.setRedisKeyList(keys);
-            } else if (redisOp instanceof RedisMultiSubKeyOp) {
-                RedisMultiSubKeyOp redisMultiSubKeyOp = (RedisMultiSubKeyOp) redisOp;
-                RedisKey key = redisMultiSubKeyOp.getKey();
-                List<RedisKey> subKeys = redisMultiSubKeyOp.getAllSubKeys();
-                redisOpItem.setRedisKey(key);
-                redisOpItem.setRedisKeyList(subKeys);
-            } else if (redisOp instanceof RedisSingleKeyOp) {
-                RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
-                redisOpItem.setRedisKey(redisSingleKeyOp.getKey());
-            }
-        } catch (Throwable th) {
-            if(logger.isDebugEnabled()) {
-                logger.warn("[CKStore] parsePayload {}, error {}", payload, th.getMessage());
-            }
-        }
-        return redisOpItem;
     }
 
     // ------ 事务处理 ------

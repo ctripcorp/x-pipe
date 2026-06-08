@@ -106,8 +106,11 @@ public class RedisProtocolParser {
      * Resets the parser to its initial state, allowing it to be reused for a new response.
      */
     public void reset() {
+        if (redisClientProtocol != null) {
+            redisClientProtocol.reset();
+            redisClientProtocol = null;
+        }
         currentState = PARSE_STATE.READING_SIGN;
-        redisClientProtocol = null;
         currentCommandOffset = 0L;
     }
 

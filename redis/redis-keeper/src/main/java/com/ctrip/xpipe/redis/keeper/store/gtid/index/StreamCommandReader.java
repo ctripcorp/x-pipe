@@ -1,12 +1,12 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.payload.DirectByteBufInStringOutPayload;
-import com.ctrip.xpipe.redis.core.redis.operation.*;
+import com.ctrip.xpipe.payload.DirectByteBufInOutPayload;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandLister;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandParser;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamTransactionListener;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpItem;
+import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpItemParser;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
@@ -45,7 +45,7 @@ public class StreamCommandReader implements StreamCommandLister {
         this.transactionListener = transactionListener;
         this.currentOffset = offset;
         streamCommandParser = new StreamCommandParser(this);
-        transactionContext = new TransactionContext(transactionListener.getOpParser());
+        transactionContext = new TransactionContext();
     }
 
     public void doRead(ByteBuf byteBuf) throws IOException {
@@ -60,13 +60,12 @@ public class StreamCommandReader implements StreamCommandLister {
         if(payload == null || payload.length <= 2) {
             return null;
         }
-        DirectByteBufInStringOutPayload gtidPayload = (DirectByteBufInStringOutPayload) payload[1];
+        DirectByteBufInOutPayload gtidPayload = (DirectByteBufInOutPayload) payload[1];
         return gtidPayload.toString();
     }
 
     public void resetParser() {
         streamCommandParser.reset();
-        // Clear transaction state
         if (transactionContext.isActive()) {
             transactionContext.clear();
         }
@@ -76,32 +75,18 @@ public class StreamCommandReader implements StreamCommandLister {
         return streamCommandParser.getRemainLength();
     }
 
-    /**
-     * Check if there is an active transaction
-     */
     public boolean isTransactionActive() {
         return transactionContext.isActive();
     }
 
-    /**
-     * Get the number of commands in the transaction
-     */
     public int getTransactionSize() {
         return transactionContext.size();
     }
 
-    /**
-     * Get the start offset of the active transaction
-     * @return the start offset, or -1 if no transaction is active
-     */
     public long getTransactionStartOffset() {
         return transactionContext.getStartOffset();
     }
 
-    /**
-     * Get the current offset
-     * @return the current offset
-     */
     public long getCurrentOffset() {
         return currentOffset;
     }
@@ -110,9 +95,8 @@ public class StreamCommandReader implements StreamCommandLister {
     public void onCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
         if(payload == null) return;
 
-        DirectByteBufInStringOutPayload commandPayload = (DirectByteBufInStringOutPayload) payload[0];
+        DirectByteBufInOutPayload commandPayload = (DirectByteBufInOutPayload) payload[0];
 
-        // Process by priority: MULTI > GTID > regular commands
         if (isMultiCommand(commandPayload)) {
             handleMultiCommand(payload, commandBuf);
         } else if (isGtidCommand(commandPayload)) {
@@ -122,59 +106,46 @@ public class StreamCommandReader implements StreamCommandLister {
             handleRegularCommand(payload, commandBuf);
         }
     }
-    private static final byte[] PING_BYTES = new byte[]{'P','I','N','G'};
-    private static final byte[] SELECT_BYTES = new byte[]{'S','E','L','E','C','T'};
-    private boolean isPingOrSelectCmd(DirectByteBufInStringOutPayload command){
-        return command.equalsIgnoreCaseAsciiExpectedUppercase(PING_BYTES) || command.equalsIgnoreCaseAsciiExpectedUppercase(SELECT_BYTES);
+
+    RedisOpItem parsePayload(Object[] payload) {
+        return RedisOpItemParser.parse(transactionListener.getOpParser(), payload);
     }
 
     private void handleMultiCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
-        // If transaction already exists, clear it first (may be an abnormal situation)
         if (transactionContext.isActive()) {
-            // Log warning but don't throw exception, continue processing
             logger.warn("[handleMultiCommand] nested MULTI detected, clearing previous transaction");
             EventMonitor.DEFAULT.logEvent(EVENT_TYPE, EVENT_MULTI_DUP);
             transactionContext.clear();
         }
 
-        // Start new transaction, record current offset (offset when transaction starts)
         transactionContext.start(this.currentOffset);
-        // Add MULTI command to transaction (don't update offset, update uniformly when transaction commits)
         transactionContext.addCommand(payload, commandBuf);
-        // Note: MULTI command's offset is not updated immediately, process uniformly when transaction commits
     }
 
     private void handleGtidCommand(String gtid, Object[] payload, ByteBuf commandBuf) throws IOException {
         if (StringUtil.isEmpty(gtid)) {
-            // Not GTID format, process as regular command
             handleRegularCommand(payload, commandBuf);
             return;
         }
 
-        // Check if it is an EXEC command
-        DirectByteBufInStringOutPayload execPayload = (DirectByteBufInStringOutPayload) payload[GTID_PAYLOADS_COMMAND_OFFSET];
+        DirectByteBufInOutPayload execPayload = (DirectByteBufInOutPayload) payload[GTID_PAYLOADS_COMMAND_OFFSET];
         boolean isExec = isExecCommand(execPayload);
 
         if (isExec && transactionContext.isActive()) {
-            // Transaction commit: GTID + EXEC
             commitTransaction(gtid, payload, commandBuf);
         } else if (isExec && !transactionContext.isActive()) {
-            // EXEC but no MULTI, may be an error state, process as regular command
             logger.warn("[handleGtidCommand] EXEC without MULTI, treating as regular command");
             EventMonitor.DEFAULT.logEvent(EVENT_TYPE, EVENT_MULTI_MISS);
             processSingleGtidCommand(gtid, payload, commandBuf);
         } else {
-            // Regular GTID command (not in transaction)
             processSingleGtidCommand(gtid, payload, commandBuf);
         }
     }
 
     private void handleRegularCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
         if (transactionContext.isActive()) {
-            // Command in transaction (don't update offset, update uniformly when transaction commits)
             transactionContext.addCommand(payload, commandBuf);
         } else {
-            // Regular command, write directly
             writeSingleCommand(commandBuf, payload);
         }
     }
@@ -186,36 +157,30 @@ public class StreamCommandReader implements StreamCommandLister {
         }
     }
 
-    private boolean isMultiCommand(DirectByteBufInStringOutPayload commandPayload) {
+    private boolean isMultiCommand(DirectByteBufInOutPayload commandPayload) {
         return commandPayload != null && commandPayload.equalsIgnoreCaseAsciiExpectedUppercase(MULTI_BYTES);
     }
 
-    private boolean isGtidCommand(DirectByteBufInStringOutPayload commandPayload) {
+    private boolean isGtidCommand(DirectByteBufInOutPayload commandPayload) {
         return commandPayload != null && commandPayload.equalsIgnoreCaseAsciiExpectedUppercase(GTID_BYTES);
     }
 
-    private boolean isExecCommand(DirectByteBufInStringOutPayload commandPayload) {
+    private boolean isExecCommand(DirectByteBufInOutPayload commandPayload) {
         return commandPayload != null && commandPayload.equalsIgnoreCaseAsciiExpectedUppercase(EXEC_BYTES);
     }
 
     private void commitTransaction(String gtid, Object[] payload, ByteBuf execCommandBuf) throws IOException {
         if (!transactionContext.isActive()) {
-            // No active transaction, process as regular command
             processSingleGtidCommand(gtid, payload, execCommandBuf);
             return;
         }
 
-        // Set transaction's GTID (using offset when transaction starts)
         transactionContext.setGtid(gtid);
-
-        // Add EXEC command to transaction
         transactionContext.addCommand(payload, execCommandBuf);
 
         try {
-            // Commit transaction: write index and all commands (offset update is completed in commit method)
             transactionContext.commit(transactionListener, this);
         } catch (IOException e) {
-            // Transaction commit failed, clear state
             transactionContext.clear();
             throw e;
         }
@@ -223,7 +188,8 @@ public class StreamCommandReader implements StreamCommandLister {
 
     private void writeSingleCommand(ByteBuf commandBuf, Object[] payload) throws IOException {
         int cmdLen = commandBuf.readableBytes();
-        transactionListener.postAppend(commandBuf, payload);
+        RedisOpItem redisOpItem = parsePayload(payload);
+        transactionListener.postAppend(commandBuf, redisOpItem);
         this.currentOffset += cmdLen;
         mayCheckOffset();
     }
@@ -240,24 +206,18 @@ public class StreamCommandReader implements StreamCommandLister {
 
     private void mayCheckOffset() {
         if (writeCnt++ % 8192 == 0) {
-            // check offset match
             if (!transactionListener.checkOffset(this.currentOffset)) {
                 EventMonitor.DEFAULT.logEvent(EVENT_TYPE, EVENT_OFFSET_MISMATCH);
             }
         }
     }
 
-    private static class TransactionContext {
-        private final List<RedisOpItem> payloads = new ArrayList<>();
+    private class TransactionContext {
+        private List<RedisOpItem> payloads = new ArrayList<>();
         private final List<ByteBuf> commandBufs = new ArrayList<>();
         private boolean active = false;
         private long startOffset = -1;
         private String gtid = null;
-        private RedisOpParser redisOpParser;
-
-        public TransactionContext(RedisOpParser redisOpParser){
-            this.redisOpParser = redisOpParser;
-        }
 
         public void start(long offset) {
             clear();
@@ -273,12 +233,10 @@ public class StreamCommandReader implements StreamCommandLister {
             if (!active) {
                 throw new IllegalStateException("Transaction not active");
             }
-            // Retain ByteBuf reference to ensure it's not released
             if (commandBuf != null) {
                 commandBuf.retain();
             }
-            RedisOpItem redisOpItem = parsePayload(payload);
-            payloads.add(redisOpItem);
+            payloads.add(StreamCommandReader.this.parsePayload(payload));
             commandBufs.add(commandBuf);
         }
 
@@ -288,18 +246,13 @@ public class StreamCommandReader implements StreamCommandLister {
             }
 
             try {
-                // Calculate offset of first command (MULTI) in transaction
-                // startOffset is the last offset before transaction starts, so MULTI's offset is startOffset
-                // But for more accuracy, we should use currentOffset (if updated) or startOffset
                 long transactionStartOffset = startOffset > -1 ? startOffset : reader.currentOffset;
 
-                // Write index using transaction's GTID and first command's offset
                 if (gtid != null && !StringUtil.isEmpty(gtid)) {
                     if (transactionListener.preAppend(gtid, transactionStartOffset)) {
                         reader.writeMultiCommand(commandBufs, payloads);
                     }
                 } else {
-                    // No GTID, write commands directly
                     reader.writeMultiCommand(commandBufs, payloads);
                 }
             } finally {
@@ -308,13 +261,13 @@ public class StreamCommandReader implements StreamCommandLister {
         }
 
         public void clear() {
-            // Release all ByteBuf
             for (ByteBuf buf : commandBufs) {
                 if (buf != null && buf.refCnt() > 0) {
                     buf.release();
                 }
             }
             commandBufs.clear();
+            payloads = new ArrayList<>();
             active = false;
             startOffset = -1;
             gtid = null;
@@ -331,45 +284,5 @@ public class StreamCommandReader implements StreamCommandLister {
         public long getStartOffset() {
             return startOffset;
         }
-
-        public String getGtid() {
-            return gtid;
-        }
-
-        private RedisOpItem parsePayload(Object[] payload) {
-            RedisOpItem redisOpItem = new RedisOpItem();
-            try {
-                RedisOp redisOp = redisOpParser.parse(payload);
-                redisOpItem.setRedisOpType(redisOp.getOpType());
-                redisOpItem.setGtid(redisOp.getOpGtid());
-                redisOpItem.setDbId(redisOp.getDbId());
-                if (redisOp instanceof RedisMultiKeyOp) {
-                    RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) redisOp;
-                    List<RedisKey> keys = redisMultiKeyOp.getKeys();
-                    redisOpItem.setRedisKeyList(keys);
-                } else if (redisOp instanceof RedisMultiSubKeyOp) {
-                    RedisMultiSubKeyOp redisMultiSubKeyOp = (RedisMultiSubKeyOp) redisOp;
-                    RedisKey key = redisMultiSubKeyOp.getKey();
-                    List<RedisKey> subKeys = redisMultiSubKeyOp.getAllSubKeys();
-                    redisOpItem.setRedisKey(key);
-                    redisOpItem.setRedisKeyList(subKeys);
-                } else if (redisOp instanceof RedisSingleKeyOp) {
-                    RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) redisOp;
-                    redisOpItem.setRedisKey(redisSingleKeyOp.getKey());
-                }
-            } catch (Throwable th) {
-                logger.warn("[TransactionContext] parsePayload {}, error {}", payload, th.getMessage());
-            }
-            return redisOpItem;
-        }
     }
-
 }
-
-
-
-
-
-
-
-

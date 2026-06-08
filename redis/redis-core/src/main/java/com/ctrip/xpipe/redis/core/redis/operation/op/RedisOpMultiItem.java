@@ -18,9 +18,12 @@ public class RedisOpMultiItem implements IRedisOpItem<List<RedisOpItem>> {
 
     @Override
     public void clear() {
-        for(RedisOpItem redisOpItem:redisOpItems){
+        if (redisOpItems == null) {
+            return;
+        }
+        for (RedisOpItem redisOpItem : redisOpItems) {
             redisOpItem.clear();
         }
-        redisOpItems.clear();
+        redisOpItems = null;
     }
 }
