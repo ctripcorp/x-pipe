@@ -7,6 +7,7 @@ import com.ctrip.xpipe.tuple.Pair;
 import org.unidal.dal.jdbc.DalException;
 
 import java.util.List;
+import java.util.Map;
 
 public interface RedisService {
 	
@@ -30,6 +31,7 @@ public interface RedisService {
 	List<RedisTbl> findKeepersByDcClusterShard(String dcId, String clusterId, String shardId) throws ResourceNotFoundException;
 
 	void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws DalException, ResourceNotFoundException;
+	void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs, Long azId) throws DalException, ResourceNotFoundException;
 	void deleteRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws ResourceNotFoundException;
 
 	int insertKeepers(String dcId, String clusterId, String shardId, List<KeeperBasicInfo> keepers) throws DalException, ResourceNotFoundException;
@@ -43,6 +45,8 @@ public interface RedisService {
     void updateSourceKeepers(String srcDcName, String clusterName, String shardName, long dstDcId, ShardModel sourceShard);
 
     void updateRedises(String dcName, String clusterName, String shardName, ShardModel shardModel);
+
+	void updateRedisesAz(String dcId, String clusterId, String shardId, Map<String, Long> addressAzMap) throws ResourceNotFoundException;
 
 	List<RedisTbl> findAllKeeperContainerCountInfo();
 

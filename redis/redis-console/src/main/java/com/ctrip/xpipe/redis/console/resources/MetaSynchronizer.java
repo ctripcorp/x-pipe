@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.migration.OuterClientService;
+import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServer;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -75,6 +76,9 @@ public class MetaSynchronizer {
 
     private SentinelBalanceService sentinelBalanceService;
 
+    @Autowired
+    private AzCache azCache;
+
     private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
 
     @PostConstruct
@@ -97,7 +101,7 @@ public class MetaSynchronizer {
                 // 还未加入，需要添加
                 dcMetaSynchronizers.put(dc, new DcMetaSynchronizer(consoleConfig, metaCache, redisService, shardService,
                         clusterService, dcService, organizationService, sentinelBalanceService,
-                        clusterTypeUpdateEventFactory, outerClientService, dc));
+                        clusterTypeUpdateEventFactory, outerClientService, azCache, dc));
                 dcMetaSynchronizers.get(dc).start();
             }
         }

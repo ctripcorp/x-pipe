@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventFactory;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
+import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -40,7 +41,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
                               ClusterService clusterService, DcService dcService,
                               OrganizationService organizationService, SentinelBalanceService sentinelBalanceService,
                               ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory, OuterClientService outerClientService,
-                              String dcId
+                              AzCache azCache, String dcId
 
     ) {
         this.consoleConfig = consoleConfig;
@@ -53,6 +54,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         this.sentinelBalanceService = sentinelBalanceService;
         this.clusterTypeUpdateEventFactory = clusterTypeUpdateEventFactory;
         this.outerClientService = outerClientService;
+        this.azCache = azCache;
         this.currentDcId = dcId;
         this.scheduledExecutorService = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("XPipe-Meta-Sync-" + dcId));
     }
@@ -72,6 +74,8 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
     private ConsoleConfig consoleConfig;
 
     private SentinelBalanceService sentinelBalanceService;
+
+    private AzCache azCache;
 
     private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
 
@@ -114,7 +118,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
                     new ClusterMetaSynchronizer(dcMetaComparator.getAdded(), dcMetaComparator.getRemoved(), dcMetaComparator.getMofified(),
                             dcService, clusterService, shardService, redisService,
                             organizationService, sentinelBalanceService, consoleConfig,
-                            clusterTypeUpdateEventFactory, currentDcId).sync();
+                            clusterTypeUpdateEventFactory, azCache, currentDcId).sync();
                 } catch (Throwable e) {
                     logger.error("[DcMetaSynchronizer][sync]", e);
                 }
@@ -268,6 +272,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
             redisMeta.setMaster("");
         else
             redisMeta.setMaster(XPipeConsoleConstant.DEFAULT_ADDRESS);
+        redisMeta.setAz(outer.getAz());
         return redisMeta;
     }
 
@@ -276,6 +281,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         redisMeta.setIp(origin.getIp());
         redisMeta.setPort(origin.getPort());
         redisMeta.setMaster(origin.getMaster());
+        redisMeta.setAz(origin.getAz());
         return redisMeta;
     }
 

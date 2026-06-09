@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
+import com.ctrip.xpipe.redis.console.cache.AzCache;
+import com.ctrip.xpipe.redis.console.model.AzTbl;
 import com.ctrip.xpipe.redis.console.entity.DcClusterEntity;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
@@ -21,6 +23,8 @@ import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.ClusterShardCounter;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,6 +100,9 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     private DcClusterShardService dcClusterShardService;
+
+    @Autowired
+    private AzCache azCache;
 
     @Autowired
     private DcCache dcCache;
@@ -342,7 +349,15 @@ public class MetaUpdate extends AbstractConsoleController {
         // Fill in redis, keeper
         for(RedisCreateInfo redisCreateInfo : redisCreateInfos) {
             String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
-            redisService.insertRedises(dcId, clusterName, shardName, redisCreateInfo.getRedisAddresses());
+            if (redisCreateInfo.getRedisesWithAz() != null && !redisCreateInfo.getRedisesWithAz().isEmpty()) {
+                for (RedisWithAzInfo a : redisCreateInfo.getRedisesWithAz()) {
+                    Pair<String, Integer> addr = IpUtils.parseSingleAsPair(a.getAddr());
+                    Long azId = resolveAzId(a.getAzName());
+                    redisService.insertRedises(dcId, clusterName, shardName, Collections.singletonList(addr), azId);
+                }
+            } else {
+                redisService.insertRedises(dcId, clusterName, shardName, redisCreateInfo.getRedisAddresses(), null);
+            }
         }
         addKeepers(clusterTbl, shardTbl, redisCreateInfos);
     }
@@ -637,6 +652,48 @@ public class MetaUpdate extends AbstractConsoleController {
             logger.error("[deleteReplDirections][fail]{}, {}", clusterName, replDirectionCreateInfos, e);
             return RetMessage.createFailMessage(e.getMessage());
         }
+    }
+
+    @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/redis/az",
+            method = RequestMethod.PUT)
+    public RetMessage updateRedisesAz(@PathVariable String clusterName, @PathVariable String shardName,
+                                     @RequestBody List<RedisAzUpdateInfo> azUpdateInfos) {
+        logger.info("[updateRedisesAz] cluster={}, shard={}, {}", clusterName, shardName, azUpdateInfos);
+
+        if (azUpdateInfos == null || azUpdateInfos.isEmpty()) {
+            return RetMessage.createFailMessage("request body is empty");
+        }
+
+        // Group by dcId
+        Map<String, Map<String, Long>> dcAddressAzMap = new HashMap<>();
+        for (RedisAzUpdateInfo info : azUpdateInfos) {
+            String dcId = outerDcToInnerDc(info.getDcId());
+            Long azId = resolveAzId(info.getAzName());
+            dcAddressAzMap.computeIfAbsent(dcId, k -> new HashMap<>())
+                    .put(info.getIp() + ":" + info.getPort(), azId);
+        }
+
+        int count = 0;
+        try {
+            for (Map.Entry<String, Map<String, Long>> entry : dcAddressAzMap.entrySet()) {
+                redisService.updateRedisesAz(entry.getKey(), clusterName, shardName, entry.getValue());
+                count += entry.getValue().size();
+            }
+            return RetMessage.createSuccessMessage("updated " + count + " redises");
+        } catch (Exception e) {
+            logger.error("[updateRedisesAz] fail", e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    private Long resolveAzId(String azName) {
+        if (azName == null) return null;
+        AzTbl azTbl = azCache.find(azName);
+        if (azTbl == null) {
+            logger.warn("[resolveAzId] azName not found: {}", azName);
+            return null;
+        }
+        return azTbl.getId();
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-completion", method = RequestMethod.POST)

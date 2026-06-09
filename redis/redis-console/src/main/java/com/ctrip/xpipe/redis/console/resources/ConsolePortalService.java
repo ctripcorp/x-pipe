@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisWithAzInfo;
+import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -44,6 +46,9 @@ public class ConsolePortalService extends AbstractService {
 
     @Autowired
     private FoundationService foundationService;
+
+    @Autowired
+    private AzCache azCache;
 
     public List<AzGroupModel> getAllAzGroups() {
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain()
@@ -215,15 +220,38 @@ public class ConsolePortalService extends AbstractService {
     }
 
     public void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) {
+        insertRedises(dcId, clusterId, shardId, addrs, null);
+    }
+
+    public void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs, Long azId) {
         RedisCreateInfo redisCreateInfo = new RedisCreateInfo();
         redisCreateInfo.setDcId(dcId);
         redisCreateInfo.setClusterId(clusterId);
         redisCreateInfo.setShardName(shardId);
-        List<String> redisAddrs = new ArrayList<>();
-        for (Pair<String, Integer> addr : addrs) {
-            redisAddrs.add(addr.getKey() + ":" + addr.getValue());
+        if (azId != null) {
+            String azName = null;
+            try {
+                AzTbl azTbl = azCache.find(azId);
+                if (azTbl != null) {
+                    azName = azTbl.getAzName();
+                } else {
+                    logger.warn("[insertRedises] azId not found in cache: {}", azId);
+                }
+            } catch (Exception e) {
+                logger.warn("[insertRedises] failed to get azName for azId {}", azId, e);
+            }
+            List<RedisWithAzInfo> redisesWithAz = new ArrayList<>();
+            for (Pair<String, Integer> addr : addrs) {
+                redisesWithAz.add(new RedisWithAzInfo().setAddr(addr.getKey() + ":" + addr.getValue()).setAzName(azName));
+            }
+            redisCreateInfo.setRedisesWithAz(redisesWithAz);
+        } else {
+            List<String> redisAddrs = new ArrayList<>();
+            for (Pair<String, Integer> addr : addrs) {
+                redisAddrs.add(addr.getKey() + ":" + addr.getValue());
+            }
+            redisCreateInfo.setRedises(redisAddrs.stream().collect(Collectors.joining(",")));
         }
-        redisCreateInfo.setRedises(redisAddrs.stream().collect(Collectors.joining(",")));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

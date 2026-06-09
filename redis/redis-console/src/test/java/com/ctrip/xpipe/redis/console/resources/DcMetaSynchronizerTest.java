@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventFactory;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -69,6 +70,9 @@ public class DcMetaSynchronizerTest {
     @Mock
     private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
 
+    @Mock
+    private AzCache azCache;
+
     private String singleDcCacheCluster = "SingleDcCacheCluster";
     private String localDcCacheCluster = "LocalDcCacheCluster";
 
@@ -78,7 +82,7 @@ public class DcMetaSynchronizerTest {
     public void beforeDcMetaSynchronizerTest() {
         dcMetaSynchronizer = new DcMetaSynchronizer(consoleConfig, metaCache, redisService, shardService,
                 clusterService, dcService, organizationService, sentinelBalanceService,
-                clusterTypeUpdateEventFactory, outerClientService, dcId);
+                clusterTypeUpdateEventFactory, outerClientService, azCache, dcId);
     }
 
     @Test

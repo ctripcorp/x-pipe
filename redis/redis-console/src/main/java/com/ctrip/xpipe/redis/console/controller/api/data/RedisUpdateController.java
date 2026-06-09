@@ -1,19 +1,23 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
+import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
+import com.ctrip.xpipe.redis.console.model.AzTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.IpUtils;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,15 +39,17 @@ public class RedisUpdateController extends AbstractConsoleController{
     @Autowired
     private MetaCache metaCache;
 
+    @Autowired
+    private AzCache azCache;
+
     @RequestMapping(value = "/redises/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
     public List<String> getRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
 
         logger.info("[getRedises]{},{},{}", dcId, clusterId, shardId);
 
         List<String> result = new LinkedList<>();
-        List<RedisTbl> redisTbls = null;
         try {
-            redisTbls = redisService.findRedisesByDcClusterShard(outerDcToInnerDc(dcId), clusterId, shardId);
+            List<RedisTbl> redisTbls = redisService.findRedisesByDcClusterShard(outerDcToInnerDc(dcId), clusterId, shardId);
             redisTbls.forEach(new Consumer<RedisTbl>() {
                 @Override
                 public void accept(RedisTbl redisTbl) {
@@ -58,14 +64,27 @@ public class RedisUpdateController extends AbstractConsoleController{
 
 
     @RequestMapping(value = "/redises/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage addRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId, @RequestBody List<String> redises) {
+    public RetMessage addRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId, @RequestBody List<JsonNode> redises) {
 
         logger.info("[addRedises]{},{},{}, {}", dcId, clusterId, shardId, redises);
 
-        List<Pair<String, Integer>> redisAddresses = null;
         try {
-            redisAddresses = getRedisAddresses(redises);
-            redisService.insertRedises(outerDcToInnerDc(dcId), clusterId, shardId, redisAddresses);
+            String innerDcId = outerDcToInnerDc(dcId);
+            for (JsonNode node : redises) {
+                if (node.isTextual()) {
+                    // 旧格式: "ip:port"
+                    Pair<String, Integer> addr = IpUtils.parseSingleAsPair(node.asText());
+                    redisService.insertRedises(innerDcId, clusterId, shardId, Collections.singletonList(addr));
+                } else {
+                    // 新格式: {"addr": "ip:port", "azName": "..."}
+                    String addrStr = node.path("addr").asText();
+                    String azName = node.path("azName").isMissingNode() || node.path("azName").isNull()
+                            ? null : node.path("azName").asText();
+                    Pair<String, Integer> addr = IpUtils.parseSingleAsPair(addrStr);
+                    Long azId = resolveAzId(azName);
+                    redisService.insertRedises(innerDcId, clusterId, shardId, Collections.singletonList(addr), azId);
+                }
+            }
             return RetMessage.createSuccessMessage();
         } catch (Exception e){
             logger.error("[addRedises]", e);
@@ -104,6 +123,16 @@ public class RedisUpdateController extends AbstractConsoleController{
             logger.error("[getClusterShardByRedis][{}:{}]", ipAddress, port, e);
         }
         return new DcClusterShard("", "", "");
+    }
+
+    private Long resolveAzId(String azName) {
+        if (azName == null) return null;
+        AzTbl azTbl = azCache.find(azName);
+        if (azTbl == null) {
+            logger.warn("[resolveAzId] azName not found: {}", azName);
+            return null;
+        }
+        return azTbl.getId();
     }
 
     private List<Pair<String,Integer>> getRedisAddresses(List<String> redises) {

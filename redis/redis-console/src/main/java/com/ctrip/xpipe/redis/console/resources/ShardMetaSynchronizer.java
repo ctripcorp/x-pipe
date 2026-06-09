@@ -5,6 +5,7 @@ import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
+import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -26,6 +27,7 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
     private Set<ShardMeta> removed;
     private Set<MetaComparator> modified;
     private RedisService redisService;
+    private AzCache azCache;
     private ShardService shardService;
     private SentinelBalanceService sentinelBalanceService;
     private ConsoleConfig consoleConfig;
@@ -34,12 +36,13 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
     public ShardMetaSynchronizer(Set<ShardMeta> added, Set<ShardMeta> removed, Set<MetaComparator> modified,
                                  RedisService redisService, ShardService shardService,
                                  SentinelBalanceService sentinelBalanceService, ConsoleConfig consoleConfig,
-                                 String dcId
+                                 AzCache azCache, String dcId
     ) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;
         this.redisService = redisService;
+        this.azCache = azCache;
         this.shardService = shardService;
         this.sentinelBalanceService = sentinelBalanceService;
         this.consoleConfig = consoleConfig;
@@ -84,7 +87,7 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
                         }
 
                         CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[addShard]%s", shardMeta.getId()));
-                        new RedisMetaSynchronizer(Sets.newHashSet(shardMeta.getRedises()), null, null, redisService, dcId).sync();
+                        new RedisMetaSynchronizer(Sets.newHashSet(shardMeta.getRedises()), null, null, redisService, azCache, dcId).sync();
                     } catch (Exception e) {
                         logger.error("[ShardMetaSynchronizer][findOrCreateShardIfNotExist]{}", shardMeta, e);
                     }
@@ -102,7 +105,7 @@ public class ShardMetaSynchronizer implements MetaSynchronizer {
                     try {
                         logger.info("[ShardMetaSynchronizer][update]{} -> {}", shardMetaComparator.getCurrent(), shardMetaComparator.getFuture());
                         new RedisMetaSynchronizer(shardMetaComparator.getAdded(), shardMetaComparator.getRemoved(),
-                                shardMetaComparator.getMofified(), redisService, dcId).sync();
+                                shardMetaComparator.getMofified(), redisService, azCache, dcId).sync();
                     } catch (Exception e) {
                         logger.error("[ShardMetaSynchronizer][update]{} -> {}", ((ShardMetaComparator) metaComparator).getCurrent(), ((ShardMetaComparator) metaComparator).getFuture(), e);
                     }

@@ -72,8 +72,11 @@ public class MonitorClusterMeta {
         HashCodeBuilder builder = new HashCodeBuilder();
         for(MonitorGroupMeta group : nodeList) {
             builder.append(group.getName())
-                    .append(group.getIdc())
-                    .append(group.isMasterGroup())
+                    .append(group.getIdc());
+            if (group.getAz() != null) {
+                builder.append(group.getAz());
+            }
+            builder.append(group.isMasterGroup())
                     .append(group.getNodes());
         }
         return builder.toHashCode();
@@ -90,7 +93,9 @@ public class MonitorClusterMeta {
                     continue;
                 }
                 // For sentinel mode hash check, master flag should be ignored.
-                groups.add(new MonitorGroupMeta(groupMeta.getName(), groupMeta.getIdc(), groupMeta.getNodes(), false));
+                MonitorGroupMeta group = new MonitorGroupMeta(groupMeta.getName(), groupMeta.getIdc(), groupMeta.getNodes(), false);
+                group.setAz(groupMeta.getAz());
+                groups.add(group);
             }
         }
         return groups;

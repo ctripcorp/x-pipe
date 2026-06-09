@@ -1093,6 +1093,7 @@
 		<!-- RedisService.updateRedis() will fail, due to h2 db not recognize sequential insert with id of 0 -->
 		<member name="id" field="id" value-type="Long" length="20" nullable="true" key="true" auto-increment="true" />
 		<member name="count" value-type="long" select-expr="COUNT(rt.id) count" all="false"/>
+		<member name="az-id" field="az_id" value-type="Long" />
 		<var name="key-id" value-type="Long" key-member="id" />
 
 		<var name="dc-name" value-type="String"/>
@@ -1341,7 +1342,7 @@
 					UPDATE <TABLE/>
         			SET <FIELD name='run-id'/> = ${run-id}, <FIELD name='redis-ip'/> = ${redis-ip}, <FIELD name='redis-port'/> = ${redis-port},
         				<FIELD name='keeper-active'/> = ${keeper-active}, <FIELD name='redis-master'/> = ${redis-master}, <FIELD name='keepercontainer-id'/> = ${keepercontainer-id},
-        				<FIELD name='master'/> = ${master}
+        				<FIELD name='master'/> = ${master}, <FIELD name='az-id'/> = ${az-id}
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
         			]]>
