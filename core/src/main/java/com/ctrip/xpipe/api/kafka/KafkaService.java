@@ -17,4 +17,6 @@ public interface KafkaService extends Ordered {
     void startProducer();
 
     void forceStopProducer();
+
+    boolean initSuccess();
 }

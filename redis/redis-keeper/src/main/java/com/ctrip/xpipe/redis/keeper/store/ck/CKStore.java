@@ -40,6 +40,7 @@ public class CKStore implements Keeperable {
     private final long replId;
 
     private static final String CK_BLOCK = "ck.block";
+    private static final String CK_INIT = "ck.init";
 
     private KafkaService kafkaService;
     private MetricProxy metricProxy;
@@ -97,6 +98,7 @@ public class CKStore implements Keeperable {
         hickwallReporterService.scheduleWithFixedDelay(
                 () -> {
                     reportHickwall(CK_BLOCK, isSendCkFail);
+                    reportHickwall(CK_INIT, !kafkaService.initSuccess());
                     isSendCkFail = false;
                 }, 1, 1, TimeUnit.MINUTES
         );
