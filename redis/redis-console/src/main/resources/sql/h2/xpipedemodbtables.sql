@@ -180,6 +180,7 @@ create table REDIS_TBL
    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0,
     deleted_at int not null default 0,
+    az_id bigint(20) unsigned NOT NULL DEFAULT 0,
     UNIQUE KEY `ip_port_deleted_at` (`redis_ip`,`redis_port`, `deleted_at`)
 );
 
@@ -326,7 +327,7 @@ CREATE TABLE `az_tbl` (
   `az_name` varchar(128) not null default '',
   `description` varchar(1024) not null default '',
   `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
-  `deleted` tinyint(1) not null default 0,
+  `deleted` tinyint(1) not null default 0
 ) ;
 
 -- redis_check_rule_tbl

@@ -51,6 +51,11 @@ function ShardService($resource, $q) {
         update_redis: {
             method: 'PUT',
             url: '/console/clusters/:clusterName/dcs/:dcName/shards/:shardName/redises/:redisName'
+        },
+        get_nodes_with_az: {
+            method: 'GET',
+            url: '/api/nodes-with-az/:dcId/:clusterId/:shardId',
+            isArray: true
         }
     });
 
@@ -213,6 +218,20 @@ function ShardService($resource, $q) {
         return d.promise;
     }
 
+    function get_nodes_with_az(dcId, clusterId, shardId) {
+        var d = $q.defer();
+        resource.get_nodes_with_az({
+            dcId: dcId,
+            clusterId: clusterId,
+            shardId: shardId
+        }, function (result) {
+            d.resolve(result);
+        }, function (result) {
+            d.reject(result);
+        });
+        return d.promise;
+    }
+
     return {
         findClusterDcShards: findClusterDcShards,
         findClusterDcShard: findClusterDcShard,
@@ -224,6 +243,7 @@ function ShardService($resource, $q) {
         deleteShard: delete_shard,
         bindRedis: bind_redis,
         unbindRedis: unbind_redis,
-        updateRedis: update_redis
+        updateRedis: update_redis,
+        getNodesWithAz: get_nodes_with_az
     }
 }

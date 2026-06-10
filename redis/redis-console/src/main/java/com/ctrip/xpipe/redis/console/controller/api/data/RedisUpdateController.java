@@ -5,6 +5,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisWithAzInfo;
 import com.ctrip.xpipe.redis.console.model.AzTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -44,7 +45,6 @@ public class RedisUpdateController extends AbstractConsoleController{
 
     @RequestMapping(value = "/redises/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
     public List<String> getRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
-
         logger.info("[getRedises]{},{},{}", dcId, clusterId, shardId);
 
         List<String> result = new LinkedList<>();
@@ -58,6 +58,31 @@ public class RedisUpdateController extends AbstractConsoleController{
             });
         } catch (ResourceNotFoundException e) {
             logger.error("[getRedises]", e);
+        }
+        return result;
+    }
+
+    @RequestMapping(value = "/nodes-with-az/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
+    public List<RedisWithAzInfo> getNodesWithAz(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
+        logger.info("[getNodesWithAz]{},{},{}", dcId, clusterId, shardId);
+
+        List<RedisWithAzInfo> result = new LinkedList<>();
+        try {
+            List<RedisTbl> all = redisService.findAllByDcClusterShard(outerDcToInnerDc(dcId), clusterId, shardId);
+            for (RedisTbl redisTbl : all) {
+                String azName = null;
+                if (redisTbl.getAzId() != null && redisTbl.getAzId() > 0) {
+                    AzTbl azTbl = azCache.find(redisTbl.getAzId());
+                    if (azTbl != null) {
+                        azName = azTbl.getAzName();
+                    }
+                }
+                result.add(new RedisWithAzInfo()
+                        .setAddr(redisTbl.getRedisIp() + ":" + redisTbl.getRedisPort())
+                        .setAzName(azName));
+            }
+        } catch (ResourceNotFoundException e) {
+            logger.error("[getNodesWithAz]", e);
         }
         return result;
     }
