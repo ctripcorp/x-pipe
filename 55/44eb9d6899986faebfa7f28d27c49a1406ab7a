@@ -1,0 +1,16 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/spring/Production.java
+  h_00df85a0850dc5 77
+services/ctrip-service/src/main/java/com/ctrip/xpipe/service/kafka/CtripKafkaService.java
+  h_00df85a0850dc5 61-62,155,159,161,163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "5544eb9d6899986faebfa7f28d27c49a1406ab7a",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  }
+}
