@@ -1,0 +1,49 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/RedisUpdateController.java
+  s_4aebb987041122::t_717c45a949c35d 8
+  s_4aebb987041122::t_4f9ec143d5b14e 68-70,73-84,86-89
+  s_4aebb987041122::t_f39fe984917a8d 65-67,71,85
+  s_4aebb987041122::t_2383392ea1b955 72
+redis/redis-console/src/main/resources/static/scripts/services/ShardService.ts
+  s_4aebb987041122::t_25d35134698459 57
+  s_4aebb987041122::t_5624fe8b3c8d19 54,56,58
+  s_4aebb987041122::t_2c1709294f90d3 55
+  s_4aebb987041122::t_3448f599e16835 223
+  s_4aebb987041122::t_71cf82ade841c6 247
+  s_4aebb987041122::t_0198391df25dc7 222,224-234
+  s_4aebb987041122::t_f3bb4479e26589 221
+  s_4aebb987041122::t_77d6eee4d510a4 246
+redis/redis-console/src/main/resources/static/scripts/controllers/ClusterDcShardCtl.ts
+  s_4aebb987041122::t_bf5fe2ceb06764 130-133
+  s_4aebb987041122::t_a88056e1972d95 121,123-128,134-135
+  s_4aebb987041122::t_5eb2dd14659ab1 122
+  s_4aebb987041122::t_53056bcda98c72 6,9
+redis/redis-console/src/test/resources/apptest.sql
+  s_4aebb987041122::t_0c8c6c1e23294c 180-181
+  s_4aebb987041122::t_66057d598a0918 259-261
+  s_4aebb987041122::t_337299f4554729 257-258
+redis/redis-console/src/main/resources/sql/h2/xpipedemodbtables.sql
+  s_4aebb987041122::t_6d9efe07241e0f 330
+  s_4aebb987041122::t_ac8a7e2336aa34 183
+redis/redis-console/src/main/resources/static/views/index/cluster_dc_shards.html
+  s_4aebb987041122::t_fa472e5e0483ba 115-117
+  s_4aebb987041122::t_3c557389837c1f 110-111,114
+  s_4aebb987041122::t_13b129ffd85b58 72-73,76-77
+  s_4aebb987041122::t_7c50de708675ae 71,74-75,78-80
+  s_4aebb987041122::t_9394887fd078ec 109,112-113,118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "f809be7c689a6f5ea0dab8c173972b574299376f",
+  "prompts": {},
+  "sessions": {
+    "s_4aebb987041122": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a659f92f-9d0b-49ac-90f6-0659c9c84d0e",
+        "model": "arn:aws:bedrock:us-west-2:671660153913:application-inference-profile/kh3mlhvjeex4"
+      },
+      "human_author": null
+    }
+  }
+}
