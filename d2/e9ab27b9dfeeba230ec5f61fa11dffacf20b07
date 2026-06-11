@@ -1,0 +1,64 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/cache/impl/AzCacheImpl.java
+  s_4aebb987041122::t_d71b5afa7e5738 23-24
+  s_4aebb987041122::t_9548077b84f7de 55-65
+  s_4aebb987041122::t_0c371354a2938b 9-10
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/RedisService.java
+  s_4aebb987041122::t_a346c4802d65ab 35
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/MetaUpdate.java
+  s_4aebb987041122::t_9071006b76deb4 354
+  s_4aebb987041122::t_54e31af5f81a10 670
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/meta/RedisCreateInfo.java
+  s_4aebb987041122::t_e3e30dcf6ca9f3 8,10,12
+  s_4aebb987041122::t_f9ff02420b0628 89-102
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/RedisApiController.java
+  s_4aebb987041122::t_8869568acf9822 42-43
+redis/redis-console/src/main/resources/static/scripts/services/ShardService.ts
+  s_4aebb987041122::t_36d58a4757950c 57
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/RedisMetaSynchronizer.java
+  s_4aebb987041122::t_717a2e83c12fdb 125
+  s_4aebb987041122::t_5ffe4e95e248bf 85
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/meta/RedisWithAzInfo.java
+  s_4aebb987041122::t_919d18c67d974c 3-4,14-20
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/RedisUpdateController.java
+  s_4aebb987041122::t_8233c1897df230 65
+  s_4aebb987041122::t_368d6a9f66dd3d 20
+  s_4aebb987041122::t_c950b523382e30 22
+  s_4aebb987041122::t_da48959354c00a 92,99-100
+  s_4aebb987041122::t_2e24c62d66cb1f 98,102
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/cache/AzCache.java
+  s_4aebb987041122::t_3ffad900376bff 14-15
+core/src/main/java/com/ctrip/xpipe/api/migration/auto/data/MonitorClusterMeta.java
+  s_a64a3620be82d2::t_057600519da05e 70
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/RedisServiceImpl.java
+  s_4aebb987041122::t_487b1f59141e3c 295
+  s_4aebb987041122::t_e1d61660a41325 438
+  s_4aebb987041122::t_7017cedbc1c035 445
+  s_4aebb987041122::t_925ad45aff2a47 207-235
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/RedisServiceWithoutDB.java
+  s_4aebb987041122::t_af93f35defc536 91-94
+  s_4aebb987041122::t_4226376f4def84 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "d2e9ab27b9dfeeba230ec5f61fa11dffacf20b07",
+  "prompts": {},
+  "sessions": {
+    "s_4aebb987041122": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a659f92f-9d0b-49ac-90f6-0659c9c84d0e",
+        "model": "arn:aws:bedrock:us-west-2:671660153913:application-inference-profile/kh3mlhvjeex4"
+      },
+      "human_author": "yihaohuang <yihaohuang@trip.com>"
+    },
+    "s_a64a3620be82d2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1712b0c5-96be-40e5-9fe9-cd01c6c4e55c",
+        "model": "arn:aws:bedrock:us-west-2:671660153913:application-inference-profile/kh3mlhvjeex4"
+      },
+      "human_author": "yihaohuang <yihaohuang@trip.com>"
+    }
+  }
+}
