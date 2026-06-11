@@ -348,15 +348,7 @@ public class MetaUpdate extends AbstractConsoleController {
         // Fill in redis, keeper
         for(RedisCreateInfo redisCreateInfo : redisCreateInfos) {
             String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
-            if (redisCreateInfo.getRedisesWithAz() != null && !redisCreateInfo.getRedisesWithAz().isEmpty()) {
-                for (RedisWithAzInfo a : redisCreateInfo.getRedisesWithAz()) {
-                    Pair<String, Integer> addr = IpUtils.parseSingleAsPair(a.getAddr());
-                    Long azId = azCache.findId(a.getAzName());
-                    redisService.insertRedises(dcId, clusterName, shardName, Collections.singletonList(addr), azId);
-                }
-            } else {
-                redisService.insertRedises(dcId, clusterName, shardName, redisCreateInfo.getRedisAddresses(), null);
-            }
+            redisService.insertRedises(dcId, clusterName, shardName, redisCreateInfo.getAddrToAzId(azCache));
         }
         addKeepers(clusterTbl, shardTbl, redisCreateInfos);
     }
