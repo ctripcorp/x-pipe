@@ -165,6 +165,8 @@ import org.junit.runners.Suite.SuiteClasses;
 
         AdvancedDcMetaServiceTestForRoute.class,
         AdvancedDcMetaServiceTest.class,
+        AdvancedDcMetaServiceHeteroTest.class,
+        HeteroDcMetaProcessorTest.class,
         ClusterMetaServiceImplTest.class,
 
         DcIgnoredConfigListenerTest.class,
