@@ -653,23 +653,6 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public boolean isAsymmetricCluster(String clusterName) {
-        XpipeMeta xpipeMeta = meta.getKey();
-        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
-            ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
-            if (clusterMeta != null) {
-                ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
-                ClusterType azGroupType = StringUtil.isEmpty(clusterMeta.getAzGroupType())
-                    ? null : ClusterType.lookup(clusterMeta.getAzGroupType());
-                if (clusterType == ClusterType.ONE_WAY && azGroupType == ClusterType.SINGLE_DC) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    @Override
     public Map<Long, String> dcShardIds(String clusterId, String dcId) {
         DcMeta dcMeta = meta.getKey().findDc(dcId);
         if (dcMeta == null) return new HashMap<>();
@@ -795,10 +778,10 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs) {
-        if (activeDc == null || dcs == null || dcs.isEmpty()) return false;
-        dcs = dcs.stream().map(String::toLowerCase).collect(Collectors.toList());
-        return isCrossRegion(activeDc, currentDc) && dcs.contains(currentDc.toLowerCase());
+    public boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> backupDcs) {
+        if (activeDc == null || backupDcs == null || backupDcs.isEmpty()) return false;
+        backupDcs = backupDcs.stream().map(String::toLowerCase).collect(Collectors.toList());
+        return isCrossRegion(activeDc, currentDc) && backupDcs.contains(currentDc.toLowerCase());
     }
 
     @Override

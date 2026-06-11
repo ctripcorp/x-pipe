@@ -5,7 +5,6 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.ProxyManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.HeteroInstanceLongDelay;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceDown;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceLongDelay;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceUp;
@@ -137,12 +136,6 @@ public class DefaultRouteHealthEventProcessorTest extends AbstractTest {
         verify(processor, never()).tryRecover(any(), any());
     }
 
-    @Test
-    public void testOnEventWithHetero() {
-        processor.onEvent(new HeteroInstanceLongDelay(instance,1));
-        verify(processor, never()).doOnEvent(any());
-        verify(processor, never()).tryRecover(any(), any());
-    }
 
     @Test
     public void testOnEventWithUp() throws HealthEventProcessorException {

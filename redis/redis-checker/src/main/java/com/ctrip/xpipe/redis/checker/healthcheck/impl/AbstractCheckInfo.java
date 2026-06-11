@@ -22,10 +22,6 @@ public abstract class AbstractCheckInfo implements CheckInfo {
 
     protected List<RedisCheckRule> redisCheckRules;
 
-    protected String azGroupType;
-
-    protected boolean asymmetricCluster;
-
     public AbstractCheckInfo() {
 
     }
@@ -84,26 +80,6 @@ public abstract class AbstractCheckInfo implements CheckInfo {
 
     public void setRedisCheckRules(List<RedisCheckRule>  redisCheckRules) {
         this.redisCheckRules = redisCheckRules;
-    }
-
-    @Override
-    public String getAzGroupType() {
-        return azGroupType;
-    }
-
-    @Override
-    public void setAzGroupType(String azGroupType) {
-        this.azGroupType = azGroupType;
-    }
-
-    @Override
-    public void setAsymmetricCluster(boolean asymmetricCluster) {
-        this.asymmetricCluster = asymmetricCluster;
-    }
-
-    @Override
-    public boolean isAsymmetricCluster() {
-        return asymmetricCluster;
     }
 
 }

@@ -165,7 +165,6 @@ public class ConsoleCheckerController extends AbstractConsoleController {
         if (null != checkResult.getWarningClusterShards()) clusterHealthMonitorManager.updateHealthCheckWarningShards(checkResult.getWarningClusterShards());
         if (null != checkResult.getRedisAlives()) pingService.updateRedisAlives(checkResult.decodeRedisAlives());
         if (null != checkResult.getRedisStates()) healthStateService.updateHealthState(checkResult.decodeRedisStates());
-        if (null != checkResult.getHeteroShardsDelay()) delayService.updateHeteroShardsDelays(checkResult.getHeteroShardsDelay());
     }
 
     @PostMapping(ConsoleCheckerPath.PATH_POST_KEEPER_CONTAINER_INFO_RESULT)

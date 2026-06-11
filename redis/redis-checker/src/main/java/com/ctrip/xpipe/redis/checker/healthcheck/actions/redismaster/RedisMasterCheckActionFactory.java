@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractRedisLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -38,14 +37,9 @@ public class RedisMasterCheckActionFactory extends AbstractRedisLeaderAwareHealt
 
         RedisInstanceInfo info = instance.getCheckInfo();
         ClusterType clusterType = info.getClusterType();
-        String azGroupType = info.getAzGroupType();
-        ClusterType azGroupClusterType = StringUtil.isEmpty(azGroupType) ? null : ClusterType.lookup(azGroupType);
+
         List<RedisMasterController> redisMasterControllers;
-        if (clusterType == ClusterType.ONE_WAY && azGroupClusterType == ClusterType.SINGLE_DC) {
-            redisMasterControllers = controllersByClusterType.get(azGroupClusterType);
-        } else {
-            redisMasterControllers = controllersByClusterType.get(clusterType);
-        }
+        redisMasterControllers = controllersByClusterType.get(clusterType);
         action.addControllers(redisMasterControllers);
         action.addListeners(listenersByClusterType.get(clusterType));
 

@@ -51,6 +51,6 @@ public class BeaconConsistencyCheckActionFactory extends AbstractClusterLeaderAw
     public boolean supportInstnace(ClusterHealthCheckInstance instance) {
         ClusterInstanceInfo info = instance.getCheckInfo();
         return !(info.getClusterType() == ClusterType.ONE_WAY
-                && metaCache.isBackupDcAndCrossRegion(currentDc, info.getActiveDc(), info.getDcs()));
+                && metaCache.isBackupDcAndCrossRegion(currentDc, info.getActiveDc(), info.getBackupDcs()));
     }
 }

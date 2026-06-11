@@ -16,8 +16,6 @@ public class HealthCheckResult {
 
     private List<RedisDelay> redisDelays;
 
-    private Map<Long, Long> heteroShardsDelay;
-
     private List<CrossMasterDelay> crossMasterDelays;
 
     private Map<String, Set<String>> warningClusterShards;
@@ -99,14 +97,6 @@ public class HealthCheckResult {
         return redisStates;
     }
 
-    public Map<Long, Long> getHeteroShardsDelay() {
-        return heteroShardsDelay;
-    }
-
-    public void setHeteroShardsDelay(Map<Long, Long> heteroShardsDelay) {
-        this.heteroShardsDelay = heteroShardsDelay;
-    }
-
     @Override
     public String toString() {
         return "HealthCheckResult{" +
@@ -115,7 +105,6 @@ public class HealthCheckResult {
                 ", crossMasterDelays=" + crossMasterDelays +
                 ", warningClusterShards=" + warningClusterShards +
                 ", redisStates=" + redisStates +
-                ", heteroShardsDelay=" + heteroShardsDelay +
                 '}';
     }
 

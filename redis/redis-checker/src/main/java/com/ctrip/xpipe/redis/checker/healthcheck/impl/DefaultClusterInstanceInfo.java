@@ -14,7 +14,7 @@ public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements Clu
 
     private int orgId;
     private String lastModifyTime;
-    private List<String> dcs;
+    private List<String> backupDcs;
 
     public DefaultClusterInstanceInfo(String clusterId, String activeDc, ClusterType clusterType, int orgId, String lastModifyTime) {
         super(clusterId, activeDc, clusterType);
@@ -39,20 +39,19 @@ public class DefaultClusterInstanceInfo extends AbstractCheckInfo implements Clu
     }
 
     @Override
-    public ClusterInstanceInfo setDcs(List<String> dcs) {
-        this.dcs = dcs;
+    public ClusterInstanceInfo setBackupDcs(List<String> backupDcs) {
+        this.backupDcs = backupDcs;
         return this;
     }
 
     @Override
-    public List<String> getDcs() {
-        return dcs;
+    public List<String> getBackupDcs() {
+        return backupDcs;
     }
 
     @Override
     public String toString() {
-        return StringUtil.join(", ", clusterId, activeDc, clusterType, orgId, "azGroupType:" + azGroupType,
-            "isAsymmetricCluster:" + asymmetricCluster, "dcs:" + dcs);
+        return StringUtil.join(", ", clusterId, activeDc, clusterType, orgId, "backupDcs: " + backupDcs);
     }
 
 }
