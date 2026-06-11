@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -169,6 +170,7 @@ public class AdvancedDcMetaService implements DcMetaService {
         updateSemaphore();
         Semaphore semaphore = semaphorePair.getKey();
 
+        Set<String> searchTypes = HeteroDcMetaProcessor.prepareSearchTypes(allowTypes);
         if (!semaphore.tryAcquire(DC_META_BUILD_MAX_HANG, TimeUnit.MILLISECONDS)) {
             logger.error("[getDcMeta][overflow][{}:{}] {}", dcName, allowTypes, semaphore.getQueueLength());
             EventMonitor.DEFAULT.logAlertEvent("getDcMeta Overflow");
@@ -196,7 +198,8 @@ public class AdvancedDcMetaService implements DcMetaService {
             chain.add(retry3TimesUntilSuccess(new GetAllRouteCommand(dcMeta)));
             chain.add(retry3TimesUntilSuccess(new GetAllAavailableZoneCommand(dcMeta)));
 
-            DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, Collections.singletonList(dcTbl), allowTypes, executors, redisMetaService,
+            Set<String> builderClusterTypes = CollectionUtils.isEmpty(searchTypes) ? allowTypes : searchTypes;
+            DcMetaBuilder builder = new DcMetaBuilder(dcMetaMap, Collections.singletonList(dcTbl), builderClusterTypes, executors, redisMetaService,
                     dcClusterService, clusterMetaService, dcClusterShardService, dcService, azGroupClusterRepository,
                     azGroupCache, factory, consoleConfig);
             chain.add(retry3TimesUntilSuccess(builder));
@@ -208,7 +211,7 @@ public class AdvancedDcMetaService implements DcMetaService {
                 throw th;
             }
 
-            return dcMeta;
+            return HeteroDcMetaProcessor.postProcessHeteroClusters(dcMeta, allowTypes);
         } finally {
             semaphore.release();
         }
