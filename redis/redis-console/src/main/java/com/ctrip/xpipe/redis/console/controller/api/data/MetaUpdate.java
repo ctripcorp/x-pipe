@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
-import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.redis.console.entity.DcClusterEntity;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
@@ -99,9 +98,6 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     private DcClusterShardService dcClusterShardService;
-
-    @Autowired
-    private AzCache azCache;
 
     @Autowired
     private DcCache dcCache;
@@ -348,7 +344,7 @@ public class MetaUpdate extends AbstractConsoleController {
         // Fill in redis, keeper
         for(RedisCreateInfo redisCreateInfo : redisCreateInfos) {
             String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
-            redisService.insertRedises(dcId, clusterName, shardName, redisCreateInfo.getAddrToAzId(azCache));
+            redisService.insertRedises(dcId, clusterName, shardName, redisCreateInfo.getAddrToAzName());
         }
         addKeepers(clusterTbl, shardTbl, redisCreateInfos);
     }
@@ -656,17 +652,16 @@ public class MetaUpdate extends AbstractConsoleController {
         }
 
         // Group by dcId
-        Map<String, Map<String, Long>> dcAddressAzMap = new HashMap<>();
+        Map<String, Map<String, String>> dcAddressAzNameMap = new HashMap<>();
         for (RedisAzUpdateInfo info : azUpdateInfos) {
             String dcId = outerDcToInnerDc(info.getDcId());
-            Long azId = azCache.findId(info.getAzName());
-            dcAddressAzMap.computeIfAbsent(dcId, k -> new HashMap<>())
-                    .put(info.getIp() + ":" + info.getPort(), azId);
+            dcAddressAzNameMap.computeIfAbsent(dcId, k -> new HashMap<>())
+                    .put(info.getIp() + ":" + info.getPort(), info.getAzName());
         }
 
         int count = 0;
         try {
-            for (Map.Entry<String, Map<String, Long>> entry : dcAddressAzMap.entrySet()) {
+            for (Map.Entry<String, Map<String, String>> entry : dcAddressAzNameMap.entrySet()) {
                 redisService.updateRedisesAz(entry.getKey(), clusterName, shardName, entry.getValue());
                 count += entry.getValue().size();
             }

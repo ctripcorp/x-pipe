@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
-import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
@@ -17,9 +16,6 @@ public class RedisApiController extends AbstractConsoleController {
 
     @Autowired
     private RedisService redisService;
-
-    @Autowired
-    private AzCache azCache;
 
     @RequestMapping(value = "/redis/{dcClusterShardId}", method = RequestMethod.GET)
     List<RedisTbl> findAllByDcClusterShard(@PathVariable long dcClusterShardId) {
@@ -40,7 +36,7 @@ public class RedisApiController extends AbstractConsoleController {
     RetMessage insert(@RequestBody RedisCreateInfo redisCreateInfo) {
         try {
             redisService.insertRedises(redisCreateInfo.getDcId(), redisCreateInfo.getClusterId(),
-                    redisCreateInfo.getShardName(), redisCreateInfo.getAddrToAzId(azCache));
+                    redisCreateInfo.getShardName(), redisCreateInfo.getAddrToAzName());
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());

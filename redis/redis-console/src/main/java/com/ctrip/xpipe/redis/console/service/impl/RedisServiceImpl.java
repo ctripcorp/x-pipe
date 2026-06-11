@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
@@ -55,6 +56,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     protected ConsoleConfig consoleConfig;
     @Autowired
     protected MetaCache metaCache;
+
+    @Autowired
+    private AzCache azCache;
 
     private Comparator<RedisTbl> redisComparator = new Comparator<RedisTbl>() {
         @Override
@@ -192,11 +196,23 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         for (Pair<String, Integer> addr : redisAddresses) {
             addrToAzId.put(addr, null);
         }
-        insertRedises(dcId, clusterId, shardId, addrToAzId);
+        insertRedisesById(dcId, clusterId, shardId, addrToAzId);
     }
 
     @Override
     public synchronized void insertRedises(String dcId, String clusterId, String shardId,
+                                           Map<Pair<String, Integer>, String> addrToAzName)
+            throws DalException, ResourceNotFoundException {
+        Map<Pair<String, Integer>, Long> addrToAzId = new HashMap<>();
+        for (Map.Entry<Pair<String, Integer>, String> entry : addrToAzName.entrySet()) {
+            String azName = entry.getValue();
+            Long azId = (azName != null) ? azCache.findId(azName) : null;
+            addrToAzId.put(entry.getKey(), azId);
+        }
+        insertRedisesById(dcId, clusterId, shardId, addrToAzId);
+    }
+
+    private synchronized void insertRedisesById(String dcId, String clusterId, String shardId,
                                            Map<Pair<String, Integer>, Long> addrToAzId)
             throws DalException, ResourceNotFoundException {
 
@@ -375,7 +391,19 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     }
 
     @Override
-    public void updateRedisesAz(String dcId, String clusterId, String shardId, Map<String, Long> addressAzMap)
+    public void updateRedisesAz(String dcId, String clusterId, String shardId, Map<String, String> addressAzNameMap)
+            throws ResourceNotFoundException {
+        if (addressAzNameMap == null || addressAzNameMap.isEmpty()) return;
+        Map<String, Long> addressAzMap = new HashMap<>();
+        for (Map.Entry<String, String> entry : addressAzNameMap.entrySet()) {
+            String azName = entry.getValue();
+            Long azId = (azName != null) ? azCache.findId(azName) : null;
+            addressAzMap.put(entry.getKey(), azId);
+        }
+        updateRedisesAzById(dcId, clusterId, shardId, addressAzMap);
+    }
+
+    private void updateRedisesAzById(String dcId, String clusterId, String shardId, Map<String, Long> addressAzMap)
             throws ResourceNotFoundException {
         if (addressAzMap == null || addressAzMap.isEmpty()) {
             return;

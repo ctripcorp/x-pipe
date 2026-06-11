@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
-import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
@@ -39,9 +38,6 @@ public class RedisUpdateController extends AbstractConsoleController{
     @Autowired
     private MetaCache metaCache;
 
-    @Autowired
-    private AzCache azCache;
-
     @RequestMapping(value = "/redises/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
     public List<String> getRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
         logger.info("[getRedises]{},{},{}", dcId, clusterId, shardId);
@@ -68,11 +64,11 @@ public class RedisUpdateController extends AbstractConsoleController{
 
         try {
             String innerDcId = outerDcToInnerDc(dcId);
-            Map<Pair<String, Integer>, Long> addrToAzId = new HashMap<>();
+            Map<Pair<String, Integer>, String> addrToAzName = new HashMap<>();
             for (RedisWithAzInfo node : redises) {
-                addrToAzId.put(IpUtils.parseSingleAsPair(node.getAddr()), azCache.findId(node.getAzName()));
+                addrToAzName.put(IpUtils.parseSingleAsPair(node.getAddr()), node.getAzName());
             }
-            redisService.insertRedises(innerDcId, clusterId, shardId, addrToAzId);
+            redisService.insertRedises(innerDcId, clusterId, shardId, addrToAzName);
             return RetMessage.createSuccessMessage();
         } catch (Exception e){
             logger.error("[addRedises]", e);

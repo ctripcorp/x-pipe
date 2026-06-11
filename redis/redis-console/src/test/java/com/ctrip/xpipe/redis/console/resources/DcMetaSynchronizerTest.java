@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventFactory;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
-import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -70,9 +69,6 @@ public class DcMetaSynchronizerTest {
     @Mock
     private ClusterTypeUpdateEventFactory clusterTypeUpdateEventFactory;
 
-    @Mock
-    private AzCache azCache;
-
     private String singleDcCacheCluster = "SingleDcCacheCluster";
     private String localDcCacheCluster = "LocalDcCacheCluster";
 
@@ -82,7 +78,7 @@ public class DcMetaSynchronizerTest {
     public void beforeDcMetaSynchronizerTest() {
         dcMetaSynchronizer = new DcMetaSynchronizer(consoleConfig, metaCache, redisService, shardService,
                 clusterService, dcService, organizationService, sentinelBalanceService,
-                clusterTypeUpdateEventFactory, outerClientService, azCache, dcId);
+                clusterTypeUpdateEventFactory, outerClientService, dcId);
     }
 
     @Test
@@ -110,7 +106,7 @@ public class DcMetaSynchronizerTest {
         verify(shardService, never()).deleteShard(any(), any());
 
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
-        verify(redisService, never()).insertRedises(any(), any(), any(), any(), any());
+        verify(redisService, never()).insertRedises(any(), any(), any(), anyMap());
         verify(redisService, never()).updateBatchMaster(any());
     }
 
@@ -147,7 +143,7 @@ public class DcMetaSynchronizerTest {
         verify(shardService, never()).deleteShard(any(), any());
 
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
-        verify(redisService, never()).insertRedises(any(), any(), any(), any(), any());
+        verify(redisService, never()).insertRedises(any(), any(), any(), anyMap());
         verify(redisService, never()).updateBatchMaster(any());
     }
 
@@ -185,7 +181,7 @@ public class DcMetaSynchronizerTest {
         verify(shardService, never()).deleteShard(any(), any());
 
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
-        verify(redisService, never()).insertRedises(any(), any(), any(), any(), any());
+        verify(redisService, never()).insertRedises(any(), any(), any(), anyMap());
         verify(redisService, never()).updateBatchMaster(any());
     }
 
@@ -222,7 +218,7 @@ public class DcMetaSynchronizerTest {
 
         verify(shardService, times(1)).findOrCreateShardIfNotExist(any(), any(), eq(null), any());
 
-        verify(redisService, times(2)).insertRedises(any(), any(), any(), any(), any());
+        verify(redisService, times(2)).insertRedises(any(), any(), any(), anyMap());
     }
 
     @Test
@@ -254,7 +250,7 @@ public class DcMetaSynchronizerTest {
 
         verify(shardService, never()).findOrCreateShardIfNotExist(any(), any(), anyList(), any());
 
-        verify(redisService, never()).insertRedises(any(), any(), any(), any(), any());
+        verify(redisService, never()).insertRedises(any(), any(), any(), anyMap());
     }
 
     @Test
@@ -286,7 +282,7 @@ public class DcMetaSynchronizerTest {
 
         verify(shardService, times(1)).findOrCreateShardIfNotExist(any(), any(), eq(null), any());
 
-        verify(redisService, times(2)).insertRedises(any(), any(), any(), any(), any());
+        verify(redisService, times(2)).insertRedises(any(), any(), any(), anyMap());
     }
 
     @Test
@@ -319,7 +315,7 @@ public class DcMetaSynchronizerTest {
         verify(shardService, never()).deleteShard(any(), any());
 
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
-        verify(redisService, never()).insertRedises(any(), any(), any(), any(), any());
+        verify(redisService, never()).insertRedises(any(), any(), any(), anyMap());
         verify(redisService, never()).updateBatchMaster(any());
         verify(clusterTypeUpdateEventFactory,times(1)).createClusterEvent(anyString(),any(ClusterTbl.class));
     }
@@ -358,7 +354,7 @@ public class DcMetaSynchronizerTest {
         verify(shardService, never()).deleteShard(any(), any());
 
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
-        verify(redisService, times(1)).insertRedises(any(), any(), any(), any(), any());
+        verify(redisService, times(1)).insertRedises(any(), any(), any(), anyMap());
         verify(redisService, never()).updateBatchMaster(any());
 
 
@@ -396,7 +392,7 @@ public class DcMetaSynchronizerTest {
         verify(shardService, never()).findOrCreateShardIfNotExist(any(), any(), anyList(), any());
         verify(shardService, times(1)).deleteShard(any(), any());
 
-        verify(redisService, never()).insertRedises(any(), any(), any(), any(), any());
+        verify(redisService, never()).insertRedises(any(), any(), any(), anyMap());
         verify(redisService, never()).updateBatchMaster(any());
     }
 
@@ -430,7 +426,7 @@ public class DcMetaSynchronizerTest {
         verify(shardService, never()).deleteShard(any(), any());
 
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
-        verify(redisService, times(1)).insertRedises(any(), any(), any(), any(), any());
+        verify(redisService, times(1)).insertRedises(any(), any(), any(), anyMap());
         verify(redisService, never()).updateBatchMaster(any());
     }
 
@@ -463,7 +459,7 @@ public class DcMetaSynchronizerTest {
         verify(shardService, never()).deleteShard(any(), any());
 
         verify(redisService, times(1)).deleteRedises(any(), any(), any(), any());
-        verify(redisService, never()).insertRedises(any(), any(), any(), any(), any());
+        verify(redisService, never()).insertRedises(any(), any(), any(), anyMap());
         verify(redisService, never()).updateBatchMaster(any());
     }
 
@@ -506,7 +502,7 @@ public class DcMetaSynchronizerTest {
         verify(shardService, never()).deleteShard(any(), any());
 
         verify(redisService, never()).deleteRedises(any(), any(), any(), any());
-        verify(redisService, never()).insertRedises(any(), any(), any(), any(), any());
+        verify(redisService, never()).insertRedises(any(), any(), any(), anyMap());
         verify(redisService, never()).updateBatchMaster(any());
     }
 

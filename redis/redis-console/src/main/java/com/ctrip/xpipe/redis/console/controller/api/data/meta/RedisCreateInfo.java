@@ -5,7 +5,6 @@ import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.ctrip.xpipe.redis.console.cache.AzCache;
 
 import java.util.HashMap;
 import java.util.List;
@@ -87,17 +86,17 @@ public class RedisCreateInfo extends AbstractCreateInfo {
         return this;
     }
 
-    public Map<Pair<String, Integer>, Long> getAddrToAzId(AzCache azCache) {
-        Map<Pair<String, Integer>, Long> addrToAzId = new HashMap<>();
+    public Map<Pair<String, Integer>, String> getAddrToAzName() {
+        Map<Pair<String, Integer>, String> addrToAzName = new HashMap<>();
         if (redisesWithAz != null && !redisesWithAz.isEmpty()) {
             for (RedisWithAzInfo a : redisesWithAz) {
-                addrToAzId.put(IpUtils.parseSingleAsPair(a.getAddr()), azCache.findId(a.getAzName()));
+                addrToAzName.put(IpUtils.parseSingleAsPair(a.getAddr()), a.getAzName());
             }
         } else {
             for (Pair<String, Integer> addr : getRedisAddresses()) {
-                addrToAzId.put(addr, null);
+                addrToAzName.put(addr, null);
             }
         }
-        return addrToAzId;
+        return addrToAzName;
     }
 }

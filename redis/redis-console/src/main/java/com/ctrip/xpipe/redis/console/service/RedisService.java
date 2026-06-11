@@ -31,7 +31,7 @@ public interface RedisService {
 	List<RedisTbl> findKeepersByDcClusterShard(String dcId, String clusterId, String shardId) throws ResourceNotFoundException;
 
 	void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws DalException, ResourceNotFoundException;
-	void insertRedises(String dcId, String clusterId, String shardId, Map<Pair<String, Integer>, Long> addrToAzId) throws DalException, ResourceNotFoundException;
+	void insertRedises(String dcId, String clusterId, String shardId, Map<Pair<String, Integer>, String> addrToAzName) throws DalException, ResourceNotFoundException;
 	void deleteRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws ResourceNotFoundException;
 
 	int insertKeepers(String dcId, String clusterId, String shardId, List<KeeperBasicInfo> keepers) throws DalException, ResourceNotFoundException;
@@ -46,7 +46,7 @@ public interface RedisService {
 
     void updateRedises(String dcName, String clusterName, String shardName, ShardModel shardModel);
 
-	void updateRedisesAz(String dcId, String clusterId, String shardId, Map<String, Long> addressAzMap) throws ResourceNotFoundException;
+	void updateRedisesAz(String dcId, String clusterId, String shardId, Map<String, String> addressAzNameMap) throws ResourceNotFoundException;
 
 	List<RedisTbl> findAllKeeperContainerCountInfo();
 
