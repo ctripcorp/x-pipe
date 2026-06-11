@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.redis.console.cache.AzCache;
-import com.ctrip.xpipe.redis.console.model.AzTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -18,7 +17,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -51,8 +49,7 @@ public class RedisMetaSynchronizerTest {
 
     @Before
     public void setUp() {
-        AzTbl azTbl = new AzTbl().setId(AZ_ID).setAzName(AZ_NAME);
-        when(azCache.find(AZ_NAME)).thenReturn(azTbl);
+        when(azCache.findId(AZ_NAME)).thenReturn(AZ_ID);
     }
 
     @Test
@@ -67,13 +64,13 @@ public class RedisMetaSynchronizerTest {
         synchronizer.add();
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<Pair<String, Integer>>> addrsCaptor = ArgumentCaptor.forClass(List.class);
-        ArgumentCaptor<Long> azIdCaptor = ArgumentCaptor.forClass(Long.class);
-        verify(redisService).insertRedises(eq(DC_ID), eq(CLUSTER_ID), eq(SHARD_ID), addrsCaptor.capture(), azIdCaptor.capture());
+        ArgumentCaptor<Map<Pair<String, Integer>, Long>> mapCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(redisService).insertRedises(eq(DC_ID), eq(CLUSTER_ID), eq(SHARD_ID), mapCaptor.capture());
 
-        assertEquals(1, addrsCaptor.getValue().size());
-        assertEquals("1.2.3.4", addrsCaptor.getValue().get(0).getKey());
-        assertEquals(AZ_ID, azIdCaptor.getValue().longValue());
+        Map<Pair<String, Integer>, Long> addrToAzId = mapCaptor.getValue();
+        assertEquals(1, addrToAzId.size());
+        Pair<String, Integer> addr = new Pair<>("1.2.3.4", 6379);
+        assertEquals(AZ_ID, addrToAzId.get(addr).longValue());
     }
 
     @Test
@@ -87,10 +84,15 @@ public class RedisMetaSynchronizerTest {
                 redisService, azCache, DC_ID);
         synchronizer.add();
 
-        ArgumentCaptor<Long> azIdCaptor = ArgumentCaptor.forClass(Long.class);
-        verify(redisService).insertRedises(eq(DC_ID), eq(CLUSTER_ID), eq(SHARD_ID), anyList(), azIdCaptor.capture());
-        assertNull(azIdCaptor.getValue());
-        verify(azCache, never()).find(anyString());
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<Pair<String, Integer>, Long>> mapCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(redisService).insertRedises(eq(DC_ID), eq(CLUSTER_ID), eq(SHARD_ID), mapCaptor.capture());
+
+        Map<Pair<String, Integer>, Long> addrToAzId = mapCaptor.getValue();
+        assertEquals(1, addrToAzId.size());
+        Pair<String, Integer> addr = new Pair<>("1.2.3.4", 6379);
+        assertNull(addrToAzId.get(addr));
+        verify(azCache, never()).findId(anyString());
     }
 
     @Test
