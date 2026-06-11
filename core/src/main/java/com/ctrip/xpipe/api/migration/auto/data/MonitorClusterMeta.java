@@ -67,6 +67,7 @@ public class MonitorClusterMeta {
         List<MonitorGroupMeta> nodeList = new ArrayList<>(groupsForHash);
         nodeList.sort(Comparator.comparing(MonitorGroupMeta::getName, Comparator.nullsFirst(Comparator.naturalOrder()))
                 .thenComparing(MonitorGroupMeta::getIdc, Comparator.nullsFirst(Comparator.naturalOrder()))
+                .thenComparing(MonitorGroupMeta::getAz, Comparator.nullsFirst(Comparator.naturalOrder()))
                 .thenComparing(MonitorGroupMeta::isMasterGroup)
                 .thenComparing(monitorGroupMeta -> monitorGroupMeta.getNodes().toString()));
         HashCodeBuilder builder = new HashCodeBuilder();

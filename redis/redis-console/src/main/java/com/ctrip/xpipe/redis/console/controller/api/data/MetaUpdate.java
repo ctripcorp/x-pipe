@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.cache.AzCache;
-import com.ctrip.xpipe.redis.console.model.AzTbl;
 import com.ctrip.xpipe.redis.console.entity.DcClusterEntity;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
@@ -352,7 +351,7 @@ public class MetaUpdate extends AbstractConsoleController {
             if (redisCreateInfo.getRedisesWithAz() != null && !redisCreateInfo.getRedisesWithAz().isEmpty()) {
                 for (RedisWithAzInfo a : redisCreateInfo.getRedisesWithAz()) {
                     Pair<String, Integer> addr = IpUtils.parseSingleAsPair(a.getAddr());
-                    Long azId = resolveAzId(a.getAzName());
+                    Long azId = azCache.findId(a.getAzName());
                     redisService.insertRedises(dcId, clusterName, shardName, Collections.singletonList(addr), azId);
                 }
             } else {
@@ -668,7 +667,7 @@ public class MetaUpdate extends AbstractConsoleController {
         Map<String, Map<String, Long>> dcAddressAzMap = new HashMap<>();
         for (RedisAzUpdateInfo info : azUpdateInfos) {
             String dcId = outerDcToInnerDc(info.getDcId());
-            Long azId = resolveAzId(info.getAzName());
+            Long azId = azCache.findId(info.getAzName());
             dcAddressAzMap.computeIfAbsent(dcId, k -> new HashMap<>())
                     .put(info.getIp() + ":" + info.getPort(), azId);
         }
@@ -684,16 +683,6 @@ public class MetaUpdate extends AbstractConsoleController {
             logger.error("[updateRedisesAz] fail", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
-    }
-
-    private Long resolveAzId(String azName) {
-        if (azName == null) return null;
-        AzTbl azTbl = azCache.find(azName);
-        if (azTbl == null) {
-            logger.warn("[resolveAzId] azName not found: {}", azName);
-            return null;
-        }
-        return azTbl.getId();
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/repl-completion", method = RequestMethod.POST)

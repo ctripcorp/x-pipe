@@ -72,29 +72,23 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
         try {
             if (added == null || added.isEmpty())
                 return;
+            String clusterId = null;
+            String shardId = null;
+            Map<Pair<String, Integer>, Long> addrToAzId = new HashMap<>();
             for (InstanceNode instanceNode : added) {
-                try {
-                    RedisMeta redisMeta = (RedisMeta) instanceNode;
-                    String clusterId = ((ClusterMeta) redisMeta.parent().parent()).getId();
-                    String shardId = redisMeta.parent().getId();
-                    List<Pair<String, Integer>> single = new ArrayList<>();
-                    single.add(new Pair<>(instanceNode.getIp(), instanceNode.getPort()));
-
-                    Long azId = null;
-                    if (azCache != null && redisMeta.getAz() != null) {
-                        try {
-                            azId = azCache.find(redisMeta.getAz()).getId();
-                        } catch (Exception e) {
-                            logger.warn("[RedisMetaSynchronizer][add] failed to get azId for az {}", redisMeta.getAz(), e);
-                        }
-                    }
-
-                    logger.info("[RedisMetaSynchronizer][insertRedises]{}", instanceNode);
-                    redisService.insertRedises(dcId, clusterId, shardId, single, azId);
-                } catch (Exception e) {
-                    logger.error("[RedisMetaSynchronizer][insertRedises]{}", instanceNode, e);
+                RedisMeta redisMeta = (RedisMeta) instanceNode;
+                if (clusterId == null) {
+                    clusterId = ((ClusterMeta) redisMeta.parent().parent()).getId();
+                    shardId = redisMeta.parent().getId();
                 }
+                Long azId = null;
+                if (azCache != null && redisMeta.getAz() != null) {
+                    azId = azCache.findId(redisMeta.getAz());
+                }
+                addrToAzId.put(new Pair<>(instanceNode.getIp(), instanceNode.getPort()), azId);
             }
+            logger.info("[RedisMetaSynchronizer][insertRedises]{}", added);
+            redisService.insertRedises(dcId, clusterId, shardId, addrToAzId);
             CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[addRedises]%s", added));
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][insertRedises]", e);
@@ -126,11 +120,7 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
 
                 Long azId = null;
                 if (azCache != null && futureAz != null) {
-                    try {
-                        azId = azCache.find(futureAz).getId();
-                    } catch (Exception e) {
-                        logger.warn("[RedisMetaSynchronizer][update] failed to get azId for az {}", futureAz, e);
-                    }
+                    azId = azCache.findId(futureAz);
                 }
 
                 String addr = future.getIp() + ":" + future.getPort();

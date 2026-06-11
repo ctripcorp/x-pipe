@@ -4,16 +4,11 @@ import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisWithAzInfo;
-import com.ctrip.xpipe.redis.console.model.AzTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.RedisService;
-import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.IpUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -44,32 +39,12 @@ public class RedisApiController extends AbstractConsoleController {
     @RequestMapping(value = "/redis/insert", method = RequestMethod.POST)
     RetMessage insert(@RequestBody RedisCreateInfo redisCreateInfo) {
         try {
-            if (redisCreateInfo.getRedisesWithAz() != null && !redisCreateInfo.getRedisesWithAz().isEmpty()) {
-                for (RedisWithAzInfo a : redisCreateInfo.getRedisesWithAz()) {
-                    Pair<String, Integer> addr = IpUtils.parseSingleAsPair(a.getAddr());
-                    Long azId = resolveAzId(a.getAzName());
-                    redisService.insertRedises(redisCreateInfo.getDcId(), redisCreateInfo.getClusterId(),
-                            redisCreateInfo.getShardName(), Collections.singletonList(addr), azId);
-                }
-            } else {
-                redisService.insertRedises(redisCreateInfo.getDcId(),
-                        redisCreateInfo.getClusterId(), redisCreateInfo.getShardName(),
-                        redisCreateInfo.getRedisAddresses());
-            }
+            redisService.insertRedises(redisCreateInfo.getDcId(), redisCreateInfo.getClusterId(),
+                    redisCreateInfo.getShardName(), redisCreateInfo.getAddrToAzId(azCache));
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
-    }
-
-    private Long resolveAzId(String azName) {
-        if (azName == null) return null;
-        AzTbl azTbl = azCache.find(azName);
-        if (azTbl == null) {
-            logger.warn("[resolveAzId] azName not found: {}", azName);
-            return null;
-        }
-        return azTbl.getId();
     }
 
 }

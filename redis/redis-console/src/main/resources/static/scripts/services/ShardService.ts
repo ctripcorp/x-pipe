@@ -54,7 +54,7 @@ function ShardService($resource, $q) {
         },
         get_nodes_with_az: {
             method: 'GET',
-            url: '/api/nodes-with-az/:dcId/:clusterId/:shardId',
+            url: '/console/clusters/:clusterName/dcs/:dcName/shards/:shardName/redises/az',
             isArray: true
         }
     });
@@ -218,12 +218,12 @@ function ShardService($resource, $q) {
         return d.promise;
     }
 
-    function get_nodes_with_az(dcId, clusterId, shardId) {
+    function get_nodes_with_az(clusterName, dcName, shardName) {
         var d = $q.defer();
         resource.get_nodes_with_az({
-            dcId: dcId,
-            clusterId: clusterId,
-            shardId: shardId
+            clusterName: clusterName,
+            dcName: dcName,
+            shardName: shardName
         }, function (result) {
             d.resolve(result);
         }, function (result) {

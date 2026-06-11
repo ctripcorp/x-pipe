@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Map;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -84,6 +85,11 @@ public class RedisServiceWithoutDB implements RedisService {
     @Override
     public void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs, Long azId) throws DalException, ResourceNotFoundException {
         consolePortalService.insertRedises(dcId, clusterId, shardId, addrs, azId);
+    }
+
+    @Override
+    public void insertRedises(String dcId, String clusterId, String shardId, Map<Pair<String, Integer>, Long> addrToAzId) throws DalException, ResourceNotFoundException {
+        throw new UnsupportedOperationException();
     }
 
     @Override

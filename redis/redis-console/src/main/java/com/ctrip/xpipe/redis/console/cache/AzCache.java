@@ -11,4 +11,6 @@ public interface AzCache {
 
     AzTbl find(long azId);
 
+    Long findId(String azName);
+
 }

@@ -204,6 +204,36 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     }
 
     @Override
+    public synchronized void insertRedises(String dcId, String clusterId, String shardId,
+                                           Map<Pair<String, Integer>, Long> addrToAzId)
+            throws DalException, ResourceNotFoundException {
+
+        DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dcId, clusterId, shardId);
+        if (dcClusterShardTbl == null) {
+            throw new ResourceNotFoundException(dcId, clusterId, shardId);
+        }
+        List<RedisTbl> existing = doFindAllByDcClusterShardId(dcClusterShardTbl.getDcClusterShardId(), XPipeConsoleConstant.ROLE_REDIS);
+        List<Pair<String, Integer>> toAdd = sub(new ArrayList<>(addrToAzId.keySet()), existing);
+
+        logger.info("[insertRedises][dc:{}, cluster:{}, shard:{}] toAdd: {}", dcId, clusterId, shardId, toAdd);
+
+        List<RedisTbl> toInsert = new ArrayList<>();
+        for (Pair<String, Integer> addr : toAdd) {
+            RedisTbl redisTbl = createRedisTbl(addr, XPipeConsoleConstant.ROLE_REDIS)
+                    .setDcClusterShardId(dcClusterShardTbl.getDcClusterShardId());
+            Long azId = addrToAzId.get(addr);
+            if (azId != null && azId > 0) {
+                redisTbl.setAzId(azId);
+            }
+            toInsert.add(redisTbl);
+        }
+        if (!toInsert.isEmpty()) {
+            insert(toInsert);
+        }
+        notifyClusterUpdate(dcId, clusterId);
+    }
+
+    @Override
     public synchronized int insertKeepers(String dcId, String clusterId, String shardId,
                                           List<KeeperBasicInfo> keepers) throws DalException, ResourceNotFoundException {
 
@@ -262,7 +292,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 
         List<Pair<String, Integer>> toAdd = sub(redisAddresses, redisTbls);
 
-        logger.info("[doInsertInstances]{}", toAdd);
+        logger.info("[doInsertInstances][dc:{}, cluster:{}, shard:{}] toAdd: {}", dcId, clusterId, shardId, toAdd);
 
         insertInstancesToDb(dcClusterShardTbl.getDcClusterShardId(), role, azId, toAdd.toArray(new Pair[0]));
     }
@@ -405,14 +435,14 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                 redis.setAzId(entry.getValue());
                 toUpdate.add(redis);
             } else {
-                logger.warn("[updateRedisesAz] redis not found: {}/{}/{} {}", dcId, clusterId, shardId, entry.getKey());
+                logger.warn("[updateRedisesAz][dc:{}, cluster:{}, shard:{}] redis not found: {}", dcId, clusterId, shardId, entry.getKey());
             }
         }
 
         if (!toUpdate.isEmpty()) {
             redisDao.updateBatch(toUpdate);
             notifyClusterUpdate(dcId, clusterId);
-            logger.info("[updateRedisesAz] updated {} redises in {}/{}/{}", toUpdate.size(), dcId, clusterId, shardId);
+            logger.info("[updateRedisesAz][dc:{}, cluster:{}, shard:{}] updated {} redises", dcId, clusterId, shardId, toUpdate.size());
         }
     }
 

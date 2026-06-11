@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.AzTbl;
 import com.ctrip.xpipe.redis.console.service.AzService;
 import com.ctrip.xpipe.utils.MapUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,8 @@ import java.util.Map;
  */
 @Service
 public class AzCacheImpl implements AzCache {
+
+    private static final Logger logger = LoggerFactory.getLogger(AzCacheImpl.class);
 
     private AzService azService;
 
@@ -46,6 +50,17 @@ public class AzCacheImpl implements AzCache {
         return MapUtils.getOrCreate(azIdToTbl, azId,
                 () -> new TimeBoundCache<>(config::getCacheRefreshInterval, () -> azService.getAvailableZoneTblById(azId)))
                 .getData(false);
+    }
+
+    @Override
+    public Long findId(String azName) {
+        if (azName == null) return null;
+        AzTbl azTbl = find(azName);
+        if (azTbl == null) {
+            logger.warn("[findId] azName not found: {}", azName);
+            return null;
+        }
+        return azTbl.getId();
     }
 
 }

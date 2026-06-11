@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 /**
  * @author yihaohuang
  * <p>
@@ -8,6 +10,14 @@ package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 public class RedisWithAzInfo extends AbstractCreateInfo {
     private String addr;
     private String azName;
+
+    public RedisWithAzInfo() {
+    }
+
+    @JsonCreator
+    public RedisWithAzInfo(String addr) {
+        this.addr = addr;
+    }
 
     @Override
     public void check() throws CheckFailException {
