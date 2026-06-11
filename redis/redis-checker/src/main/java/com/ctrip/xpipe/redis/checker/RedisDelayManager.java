@@ -12,6 +12,4 @@ public interface RedisDelayManager {
 
     Map<HostPort, Long> getAllDelays();
 
-    Map<Long,Long> getAllHeteroShardsDelays();
-
 }

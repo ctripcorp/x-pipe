@@ -228,10 +228,6 @@ public class TestMetaCache implements MetaCache {
         return null;
     }
 
-    @Override
-    public boolean isAsymmetricCluster(String clusterName) {
-        return false;
-    }
 
     @Override
     public Set<String> getAllShardNamesByClusterName(String clusterName) {

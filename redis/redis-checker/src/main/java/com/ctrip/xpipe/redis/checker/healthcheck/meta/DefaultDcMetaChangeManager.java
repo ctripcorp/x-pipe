@@ -177,19 +177,17 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     protected boolean isInterestedInCluster(ClusterMeta cluster) {
         ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
-        boolean result = false;
-        if (dcClusterIsMasterType(clusterType, cluster))
-            result = clusterDcIsCurrentDc(cluster);
-        if (hasSingleActiveDc(clusterType))
-            result = result || cluster.getActiveDc().equalsIgnoreCase(currentDcId);
-        if (hasMultipleActiveDcs(clusterType)) {
+        if (clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) {
+            return cluster.getActiveDc().equalsIgnoreCase(currentDcId) || isOneWayClusterActiveDcCrossRegionAndCurrentDc(cluster);
+        }
+
+        if (clusterType.supportMultiActiveDC()) {
             if (StringUtil.isEmpty(cluster.getDcs())) return false;
             String[] dcs = cluster.getDcs().toLowerCase().split("\\s*,\\s*");
-            result = result || Arrays.asList(dcs).contains(currentDcId.toLowerCase());
+            return Arrays.asList(dcs).contains(currentDcId.toLowerCase());
         }
-        result = result || isOneWayClusterActiveDcCrossRegionAndCurrentDc(cluster);
 
-        return result;
+        return true;
     }
 
     public boolean isOneWayClusterActiveDcCrossRegionAndCurrentDc(ClusterMeta cluster) {
@@ -199,23 +197,6 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     private boolean clusterDcIsCurrentDc(ClusterMeta clusterMeta) {
         return clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);
-    }
-
-    private boolean dcClusterIsMasterType(ClusterType clusterType, ClusterMeta clusterMeta) {
-        if (!StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
-            ClusterType azGroupType = ClusterType.lookup(clusterMeta.getAzGroupType());
-            return clusterType == ClusterType.ONE_WAY && azGroupType == ClusterType.SINGLE_DC;
-        }
-
-        return false;
-    }
-
-    private boolean hasSingleActiveDc(ClusterType clusterType) {
-        return clusterType.supportSingleActiveDC() || clusterType.isCrossDc();
-    }
-
-    private boolean hasMultipleActiveDcs(ClusterType clusterType) {
-        return clusterType.supportMultiActiveDC() && !clusterType.isCrossDc();
     }
 
     private boolean isClusterActiveDcCrossRegion(ClusterMeta clusterMeta) {

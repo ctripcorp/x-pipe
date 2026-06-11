@@ -150,48 +150,6 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
     }
 
     @Test
-    public void generateAsymmetricHealthCheckInstancesTest() throws Exception {
-        XpipeMeta xpipeMeta = new XpipeMeta();
-        DcMeta jqDcMeta = new DcMeta("jq");
-        ClusterMeta jqClusterMeta = new ClusterMeta().setId("asymmetric_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setAzGroupName("SHA").setAzGroupType("ONE_WAY");
-        jqDcMeta.addCluster(jqClusterMeta);
-        DcMeta oyDcMeta = new DcMeta("oy");
-        ClusterMeta oyClusterMeta = new ClusterMeta().setId("asymmetric_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setAzGroupName("SHA").setAzGroupType("ONE_WAY");
-        oyDcMeta.addCluster(oyClusterMeta);
-        DcMeta awsDcMeta = new DcMeta("aws");
-        ClusterMeta awsClusterMeta = new ClusterMeta().setId("asymmetric_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setAzGroupName("AWS").setAzGroupType("SINGLE_DC");
-        SourceMeta sourceMeta = new SourceMeta().setParent(awsClusterMeta).setRegion("SHA").setSrcDc("jq").setUpstreamDc("jq");
-        awsClusterMeta.addSource(sourceMeta);
-        awsDcMeta.addCluster(awsClusterMeta);
-        xpipeMeta.addDc(jqDcMeta).addDc(oyDcMeta).addDc(awsDcMeta);
-        when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
-
-        // current dc is active dc
-        checker.generateHealthCheckInstances();
-        verify(instanceManager, times(3)).getOrCreate(new ClusterMeta().setId("asymmetric_cluster"));
-
-        //current dc is not active dc but in dr master type
-        jqClusterMeta.setActiveDc("oy");
-        oyClusterMeta.setActiveDc("oy");
-        awsClusterMeta.setActiveDc("oy");
-        sourceMeta.setSrcDc("oy").setUpstreamDc("oy");
-        checker.generateHealthCheckInstances();
-        verify(instanceManager, times(3)).getOrCreate(new ClusterMeta().setId("asymmetric_cluster"));
-
-        //current dc is in master type
-        jqClusterMeta.setBackupDcs("").setAzGroupName("JQ").setAzGroupType("SINGLE_DC");
-        jqClusterMeta.getSources().clear();
-        sourceMeta.setRegion("OY");
-        oyClusterMeta.setActiveDc("oy").setBackupDcs("aws").setAzGroupName("OY");
-        oyClusterMeta.addSource(sourceMeta);
-        awsClusterMeta.setActiveDc("oy").setBackupDcs("aws").setAzGroupName("OY").setAzGroupType("ONE_WAY");
-        oyClusterMeta.addSource(sourceMeta);
-        checker.generateHealthCheckInstances();
-        verify(instanceManager, times(4)).getOrCreate(new ClusterMeta().setId("asymmetric_cluster"));
-
-    }
-
-    @Test
     public void generateCrossRegionHealthCheckInstancesTest() throws Exception {
         XpipeMeta xpipeMeta = new XpipeMeta();
         DcMeta jqDcMeta = new DcMeta("jq").setZone("SHA");

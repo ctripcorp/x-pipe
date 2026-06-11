@@ -120,28 +120,23 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 continue;
             }
 
-            for(ClusterMeta cluster : dcMeta.getClusters().values()) {
+            for (ClusterMeta cluster : dcMeta.getClusters().values()) {
                 try {
                     ClusterType clusterType = ClusterType.lookup(cluster.getType());
 
-                    if (dcClusterIsMasterType(clusterType, cluster) && clusterDcIsCurrentDc(cluster)){
+                    if (clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) {
+                        if (isClusterActiveIdcCurrentIdc(cluster)) {
+                            generateHealthCheckInstances(cluster);
+                        } else if (isClusterActiveDcCrossRegion(cluster) && clusterDcIsCurrentDc(cluster)) {
+                            generateHealthCheckInstances4CrossRegion(cluster);
+                        }
+                    } else if (clusterType.supportMultiActiveDC() && isClusterInCurrentIdc(cluster)) {
                         generateHealthCheckInstances(cluster);
-                    }
-                    if (hasSingleActiveDc(clusterType) && isClusterActiveIdcCurrentIdc(cluster)) {
-                        generateHealthCheckInstances(cluster);
-                    }
-                    if (hasMultipleActiveDcs(clusterType) && isClusterInCurrentIdc(cluster)) {
-                        generateHealthCheckInstances(cluster);
-                    }
-
-                    if (clusterType == ClusterType.ONE_WAY && isClusterActiveDcCrossRegion(cluster) && clusterDcIsCurrentDc(cluster)) {
-                        generateHealthCheckInstances4CrossRegion(cluster);
                     }
 
                 } catch (Exception e) {
                     logger.error("generate cluster health check instances, clusterMeta:{}", cluster, e);
                 }
-
             }
         }
     }
@@ -183,22 +178,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         return clusterMeta.parent().getId().equalsIgnoreCase(currentDcId);
     }
 
-    private boolean dcClusterIsMasterType(ClusterType clusterType, ClusterMeta clusterMeta) {
-        if (!StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
-            ClusterType azGroupType = ClusterType.lookup(clusterMeta.getAzGroupType());
-            return clusterType == ClusterType.ONE_WAY && azGroupType == ClusterType.SINGLE_DC;
-        }
-
-        return false;
-    }
-
-    private boolean hasSingleActiveDc(ClusterType clusterType) {
-        return clusterType.supportSingleActiveDC() || clusterType.isCrossDc();
-    }
-
-    private boolean hasMultipleActiveDcs(ClusterType clusterType) {
-        return clusterType.supportMultiActiveDC() && !clusterType.isCrossDc();
-    }
 
     private boolean isClusterActiveDcCrossRegion(ClusterMeta clusterMeta) {
         return metaCache.isCrossRegion(currentDcId, clusterMeta.getActiveDc());

@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.AbstractDelayActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.HeteroDelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionListener;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -110,10 +109,8 @@ public abstract class AbstractDelayPingActionCollector implements DelayPingActio
             if (null == healthStatus) {
                 return;
             }
-            if (context instanceof HeteroDelayActionContext)
-                healthStatus.delay(TimeUnit.NANOSECONDS.toMillis(delayNano), ((HeteroDelayActionContext) context).getShardDbId());
-            else
-                healthStatus.delay(TimeUnit.NANOSECONDS.toMillis(delayNano));
+
+            healthStatus.delay(TimeUnit.NANOSECONDS.toMillis(delayNano));
         }
 
         @Override

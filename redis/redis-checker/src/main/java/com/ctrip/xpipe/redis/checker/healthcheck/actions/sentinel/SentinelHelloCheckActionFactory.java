@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthChe
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,12 +75,8 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
 
         ClusterInstanceInfo info = instance.getCheckInfo();
         ClusterType clusterType = info.getClusterType();
-        String azGroupType = info.getAzGroupType();
-        ClusterType azGroupClusterType = StringUtil.isEmpty(azGroupType) ? null : ClusterType.lookup(azGroupType);
-        if (clusterType == ClusterType.ONE_WAY && azGroupClusterType == ClusterType.SINGLE_DC) {
-            action.addListeners(collectorsByClusterType.get(azGroupClusterType));
-            action.addControllers(controllersByClusterType.get(azGroupClusterType));
-        } else if (clusterType == ClusterType.ONE_WAY && metaCache.isBackupDcAndCrossRegion(currentDc, info.getActiveDc(), info.getDcs())) {
+
+        if (clusterType == ClusterType.ONE_WAY && metaCache.isBackupDcAndCrossRegion(currentDc, info.getActiveDc(), info.getBackupDcs())) {
             action.addListeners(collectors4CrossRegion);
             action.addControllers(controllers4CrossRegion);
         }else {

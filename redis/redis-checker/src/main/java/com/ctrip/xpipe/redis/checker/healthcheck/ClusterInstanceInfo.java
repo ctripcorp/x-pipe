@@ -14,8 +14,7 @@ public interface ClusterInstanceInfo extends CheckInfo {
 
     String getLastModifyTime();
 
-    ClusterInstanceInfo setDcs(List<String> dcs);
-
-    List<String> getDcs();
+    ClusterInstanceInfo setBackupDcs(List<String> backupDcs);
+    List<String> getBackupDcs();
 
 }

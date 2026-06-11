@@ -42,11 +42,7 @@ public class MetricDelayListener extends AbstractDelayActionListener implements 
         data.addTag("delayType", context.getDelayType());
         data.addTag("crossDc", String.valueOf(!foundationService.getDataCenter().equalsIgnoreCase(info.getDcId())));
         data.addTag("crossRegion", String.valueOf(info.isCrossRegion()));
-        if (context instanceof HeteroDelayActionContext) {
-            data.addTag("srcShardId", String.valueOf(((HeteroDelayActionContext) context).getShardDbId()));
-        } else {
-            data.addTag("srcShardId", "-");
-        }
+        data.addTag("srcShardId", "-");
         return data;
     }
 
