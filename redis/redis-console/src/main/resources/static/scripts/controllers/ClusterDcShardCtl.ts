@@ -119,7 +119,7 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
                         else return 0;
                     });
                     $scope.shards.forEach(function(shard) {
-                        ShardService.getNodesWithAz(dcName, $scope.clusterName, shard.shardTbl.shardName)
+                        ShardService.getNodesWithAz($scope.clusterName, dcName, shard.shardTbl.shardName)
                             .then(function(redisesWithAz) {
                                 var azMap = {};
                                 redisesWithAz.forEach(function(r) { azMap[r.addr] = r.azName; });
