@@ -397,8 +397,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         Map<String, Long> addressAzMap = new HashMap<>();
         for (Map.Entry<String, String> entry : addressAzNameMap.entrySet()) {
             String azName = entry.getValue();
-            Long azId = (azName != null) ? azCache.findId(azName) : null;
-            addressAzMap.put(entry.getKey(), azId);
+            Long azId = (azName != null) ? azCache.findId(azName) : 0L;
+            addressAzMap.put(entry.getKey(), azId != null ? azId : 0L);
         }
         updateRedisesAzById(dcId, clusterId, shardId, addressAzMap);
     }
@@ -682,9 +682,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         for (Map.Entry<Pair<String, Integer>, Long> entry : addrToAzId.entrySet()) {
             RedisTbl redisTbl = createRedisTbl(entry.getKey(), role).setDcClusterShardId(dcClusterShardId);
             Long azId = entry.getValue();
-            if (azId != null && azId > 0) {
-                redisTbl.setAzId(azId);
-            }
+            redisTbl.setAzId(azId != null && azId > 0 ? azId : 0L);
             toInsert.add(redisTbl);
         }
         if (!toInsert.isEmpty()) insert(toInsert);
