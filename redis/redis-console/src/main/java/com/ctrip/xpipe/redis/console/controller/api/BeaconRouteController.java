@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.checker.BeaconRouteType;
@@ -53,7 +54,7 @@ public class BeaconRouteController extends AbstractConsoleController {
                                                        @RequestParam("orgId") long orgId,
                                                        @RequestParam(name = "routeType", required = false) String routeType) {
         BeaconRouteType selectedRouteType = parseRouteType(routeType);
-        MonitorService service = monitorManager.get(orgId, clusterName, selectedRouteType);
+        MonitorService service = monitorManager.get(orgId, clusterName, null, selectedRouteType);
         if (service == null) {
             return Collections.emptyMap();
         }
@@ -73,13 +74,16 @@ public class BeaconRouteController extends AbstractConsoleController {
     @GetMapping("/sentinel/cluster/hash")
     public Map<String, Object> getClusterMetaHash(@RequestParam("clusterName") String clusterName,
                                                   @RequestParam("clusterType") String clusterType,
+                                                  @RequestParam(name = "dc", required = false) String dc,
                                                   @RequestParam(name = "routeType", required = false) String routeType) {
         BeaconRouteType selectedRouteType = parseRouteType(routeType);
         ClusterType type = ClusterType.lookup(clusterType);
-        int metaHash = beaconManager.computeClusterMetaHash(clusterName, type, selectedRouteType);
+        String anchorDc = (dc == null || dc.isEmpty()) ? FoundationService.DEFAULT.getDataCenter() : dc;
+        int metaHash = beaconManager.computeClusterMetaHash(clusterName, anchorDc, type, selectedRouteType);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("clusterName", clusterName);
         result.put("clusterType", type.name());
+        result.put("dc", anchorDc);
         result.put("routeType", selectedRouteType.name());
         result.put("metaHash", metaHash);
         return result;

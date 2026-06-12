@@ -89,7 +89,7 @@ public class MigrationPreCheckCmdTest extends AbstractConsoleTest {
         when(availability.isAvaiable()).thenReturn(true);
         when(clusterService.find(clusterName)).thenReturn(clusterTbl);
         when(dcCache.find(anyLong())).thenReturn(dcTbl);
-        when(beaconMetaService.compareMetaWithXPipe(eq(clusterName), anySet())).thenReturn(true);
+        when(beaconMetaService.compareDrBeaconMetaWithXPipe(eq(clusterName), anySet())).thenReturn(true);
         when(configService.allowAutoMigration()).thenReturn(true);
     }
 
@@ -151,7 +151,7 @@ public class MigrationPreCheckCmdTest extends AbstractConsoleTest {
 
     @Test(expected = WrongClusterMetaException.class)
     public void testMigrationWrongMeta() throws Throwable {
-        when(beaconMetaService.compareMetaWithXPipe(eq(clusterName), anySet())).thenReturn(false);
+        when(beaconMetaService.compareDrBeaconMetaWithXPipe(eq(clusterName), anySet())).thenReturn(false);
         CommandFuture future = preCheckCmd.execute();
         waitConditionUntilTimeOut(() -> future.isDone());
         Assert.assertFalse(future.isSuccess());

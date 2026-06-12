@@ -41,9 +41,9 @@ public class SentinelBeaconClusterMonitorCheckTest extends AbstractConsoleTest {
         services.put(1L, Collections.singletonList(monitorService));
         Mockito.when(monitorManager.getAllServices(BeaconRouteType.SENTINEL)).thenReturn(services);
 
-        Map<Long, Set<String>> expectedByOrg = new HashMap<>();
-        expectedByOrg.put(1L, Collections.singleton("cluster-a"));
-        Map<BeaconSystem, Map<Long, Set<String>>> bySystem = new HashMap<>();
+        Map<Long, Map<MonitorService, Set<String>>> expectedByOrg = new HashMap<>();
+        expectedByOrg.put(1L, Collections.singletonMap(monitorService, Collections.singleton("cluster-a")));
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> bySystem = new HashMap<>();
         bySystem.put(BeaconSystem.XPIPE_ONE_WAY, expectedByOrg);
         Mockito.when(monitorManager.clustersByBeaconSystemOrg(BeaconRouteType.SENTINEL)).thenReturn(bySystem);
 

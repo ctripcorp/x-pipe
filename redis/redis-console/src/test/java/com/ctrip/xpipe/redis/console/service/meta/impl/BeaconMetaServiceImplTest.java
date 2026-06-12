@@ -49,38 +49,33 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
         }).when(metaCache).isCrossRegion(Mockito.anyString(), Mockito.anyString());
 
         Mockito.when(config.getBeaconSupportZones()).thenReturn(Collections.singleton("SHA"));
+        Mockito.when(metaCache.isDcInRegion(Mockito.anyString(), Mockito.eq("SHA"))).thenReturn(true);
+        Mockito.when(metaCache.getActiveDc("cluster1")).thenReturn("jq");
 
         beaconMetaService = new BeaconMetaServiceImpl(metaCache, config);
     }
 
     @Test
-    public void testBuildBeaconGroups() {
-        Set<MonitorGroupMeta> groups = beaconMetaService.buildBeaconGroups("cluster1");
-        logger.info("[testBuildBeaconGroups] {}", groups);
+    public void testBuildDrBeaconGroups() {
+        Set<MonitorGroupMeta> groups = beaconMetaService.buildDrBeaconGroups("cluster1", "jq");
+        logger.info("[testBuildDrBeaconGroups] {}", groups);
         Assert.assertEquals(expectedBeaconGroups(), groups);
     }
 
     @Test
-    public void testCompareMetaWithXPipe() {
-        Assert.assertTrue(beaconMetaService.compareMetaWithXPipe("cluster1", expectedBeaconGroups()));
+    public void testCompareDrBeaconMetaWithXPipe() {
+        Assert.assertTrue(beaconMetaService.compareDrBeaconMetaWithXPipe("cluster1", expectedBeaconGroups()));
     }
 
     @Test
-    public void testBuildCurrentBeaconGroups() {
-        Set<MonitorGroupMeta> groups = beaconMetaService.buildCurrentBeaconGroups("cluster1");
-        logger.info("[testBuildCurrentBeaconGroups] {}", groups);
-        Assert.assertEquals(expectedBeaconGroups(), groups);
-    }
-
-    @Test
-    public void testBuildBeaconShards() {
-        Set<MonitorShardMeta> shards = beaconMetaService.buildBeaconShards("cluster1", "jq", Collections.emptyMap());
+    public void testBuildSentinelBeaconShards() {
+        Set<MonitorShardMeta> shards = beaconMetaService.buildSentinelBeaconShards("cluster1", "jq", Collections.emptyMap());
         Assert.assertEquals(expectedBeaconShards(), shards);
     }
 
     @Test
-    public void testBuildBeaconShardsWithPublishMasters() {
-        Set<MonitorShardMeta> shards = beaconMetaService.buildBeaconShards("cluster1", "jq",
+    public void testBuildSentinelBeaconShardsWithPublishMasters() {
+        Set<MonitorShardMeta> shards = beaconMetaService.buildSentinelBeaconShards("cluster1", "jq",
                 Collections.singletonMap("shard1", HostPort.fromString("127.0.0.1:6380")));
 
         MonitorShardMeta shard1 = shards.stream()

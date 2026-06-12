@@ -25,7 +25,6 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSys
 import com.ctrip.xpipe.redis.console.job.retry.RetryCondition;
 import com.ctrip.xpipe.redis.console.job.retry.RetryNTimesOnCondition;
 import com.ctrip.xpipe.redis.console.migration.MigrationResources;
-import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
@@ -105,9 +104,6 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Autowired
     private DcRelationsService dcRelationsService;
-
-    @Autowired(required = false)
-    private ConsoleServiceManager consoleServiceManager;
 
     @Autowired(required = false)
     private BeaconManager beaconManager;
@@ -795,36 +791,29 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     private RetMessage migrateSentinelBeaconByDc(String clusterName, String dc, boolean preMigrate) {
-        return migrateSentinelBeaconByDc(clusterName, dc, preMigrate, Collections.emptyMap());
+        return migrateSentinelBeacon(clusterName, dc, preMigrate, Collections.emptyMap());
     }
 
     private RetMessage migrateSentinelBeaconByDc(String clusterName, String dc, boolean preMigrate,
                                                  Map<String, HostPort> shardMasters) {
-        if (StringUtil.isEmpty(dc) || dc.equalsIgnoreCase(CURRENT_DC)) {
-            return migrateSentinelBeaconInCurrentDc(clusterName, preMigrate, shardMasters);
-        }
-        if (consoleServiceManager == null) {
-            return RetMessage.createFailMessage(String.format("ConsoleServiceManager unavailable for dc %s", dc));
-        }
-        try {
-            return preMigrate
-                    ? consoleServiceManager.preMigrateSentinelBeacon(dc, clusterName)
-                    : consoleServiceManager.postMigrateSentinelBeacon(dc, clusterName, shardMasters);
-        } catch (Throwable th) {
-            logger.warn("[migrateSentinelBeaconByDc][{}][{}] failed", clusterName, dc, th);
-            return RetMessage.createFailMessage(th.getMessage());
-        }
+        return migrateSentinelBeacon(clusterName, dc, preMigrate, shardMasters);
     }
 
     private RetMessage migrateSentinelBeaconInCurrentDc(String clusterName, boolean preMigrate) {
-        return migrateSentinelBeaconInCurrentDc(clusterName, preMigrate, Collections.emptyMap());
+        return migrateSentinelBeacon(clusterName, CURRENT_DC, preMigrate, Collections.emptyMap());
     }
 
     private RetMessage migrateSentinelBeaconInCurrentDc(String clusterName, boolean preMigrate,
                                                         Map<String, HostPort> shardMasters) {
-        ClusterMeta clusterMeta = getCurrentDcClusterMeta(clusterName);
+        return migrateSentinelBeacon(clusterName, CURRENT_DC, preMigrate, shardMasters);
+    }
+
+    private RetMessage migrateSentinelBeacon(String clusterName, String dc, boolean preMigrate,
+                                             Map<String, HostPort> shardMasters) {
+        String targetDc = StringUtil.isEmpty(dc) ? CURRENT_DC : dc;
+        ClusterMeta clusterMeta = getClusterMetaInDc(clusterName, targetDc);
         if (clusterMeta == null) {
-            return RetMessage.createFailMessage(String.format("cluster %s not found in dc %s meta", clusterName, CURRENT_DC));
+            return RetMessage.createFailMessage(String.format("cluster %s not found in dc %s meta", clusterName, targetDc));
         }
         int orgId = resolveSentinelOrgId(clusterMeta);
         ClusterType clusterType = resolveSentinelClusterType(clusterMeta);
@@ -837,15 +826,15 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
         try {
             if (preMigrate) {
-                beaconManager.unregisterCluster(clusterName, clusterType, orgId, BeaconRouteType.SENTINEL);
+                beaconManager.unregisterCluster(clusterName, targetDc, clusterType, orgId, BeaconRouteType.SENTINEL);
                 return RetMessage.createSuccessMessage("sentinel beacon unregistered");
             }
 
-            beaconManager.registerCluster(clusterName, clusterType, orgId, String.valueOf(System.currentTimeMillis()),
-                    BeaconRouteType.SENTINEL, shardMasters);
+            beaconManager.registerCluster(clusterName, targetDc, clusterType, orgId,
+                    String.valueOf(System.currentTimeMillis()), BeaconRouteType.SENTINEL, shardMasters);
             return RetMessage.createSuccessMessage("sentinel beacon registered");
         } catch (Throwable th) {
-            logger.warn("[migrateSentinelBeaconInCurrentDc][{}][{}] fail", clusterName, preMigrate, th);
+            logger.warn("[migrateSentinelBeacon][{}][{}][{}] fail", clusterName, targetDc, preMigrate, th);
             return RetMessage.createFailMessage(th.getMessage());
         }
     }
@@ -868,12 +857,16 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     private ClusterMeta getCurrentDcClusterMeta(String clusterName) {
+        return getClusterMetaInDc(clusterName, CURRENT_DC);
+    }
+
+    private ClusterMeta getClusterMetaInDc(String clusterName, String dc) {
         if (metaCache == null || metaCache.getXpipeMeta() == null || metaCache.getXpipeMeta().getDcs() == null
-                || !metaCache.getXpipeMeta().getDcs().containsKey(CURRENT_DC)
-                || metaCache.getXpipeMeta().getDcs().get(CURRENT_DC).getClusters() == null) {
+                || !metaCache.getXpipeMeta().getDcs().containsKey(dc)
+                || metaCache.getXpipeMeta().getDcs().get(dc).getClusters() == null) {
             return null;
         }
-        return metaCache.getXpipeMeta().getDcs().get(CURRENT_DC).getClusters().get(clusterName);
+        return metaCache.getXpipeMeta().getDcs().get(dc).getClusters().get(clusterName);
     }
 
     private boolean isSentinelMigrationEnabled(String clusterName, int orgId, ClusterType clusterType) {

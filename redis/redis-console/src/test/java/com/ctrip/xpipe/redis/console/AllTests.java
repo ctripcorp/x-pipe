@@ -64,6 +64,7 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.Sta
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTest;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.DefaultClusterMonitorModifiedNotifierTest;
+import com.ctrip.xpipe.redis.console.notifier.DrBeaconClusterMonitorNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventListenerTest;
 import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
@@ -214,6 +215,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         MigrationEventConcurrentCreateTest.class,
         BeaconMetaServiceImplTest.class,
+        BeaconMetaServiceImplHeteroTest.class,
         BeaconMigrationServiceImplTest.class,
         MigrationApiTest.class,
         MigrationApiIntegrationTest.class,
@@ -232,6 +234,7 @@ import org.junit.runners.Suite.SuiteClasses;
         BeaconClusterMonitorCheckTest.class,
         SentinelBeaconClusterMonitorCheckTest.class,
         DefaultClusterMonitorModifiedNotifierTest.class,
+        DrBeaconClusterMonitorNotifierTest.class,
         DefaultBeaconManagerTest.class,
         BeaconRouteControllerTest.class,
 
