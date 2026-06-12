@@ -1,0 +1,20 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriter.java
+  h_00df85a0850dc5 24-25,104-105,109,137-154
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/BlockWriter.java
+  h_00df85a0850dc5 120-122
+core/src/main/java/com/ctrip/xpipe/utils/AbstractControllableFile.java
+  h_00df85a0850dc5 55-56,58-62,131-137
+core/src/main/java/com/ctrip/xpipe/api/utils/ControllableFile.java
+  h_00df85a0850dc5 21-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "28eb62559a7caa3e373f01b8005f1084a5aafaf3",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  }
+}
