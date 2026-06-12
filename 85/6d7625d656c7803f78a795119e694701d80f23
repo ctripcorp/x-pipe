@@ -1,0 +1,19 @@
+redis/redis-console/src/main/resources/static/scripts/controllers/ClusterDcShardCtl.ts
+  s_f1fdc92e22439c::t_ef5e6459b0012d 122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "856d7625d656c7803f78a795119e694701d80f23",
+  "prompts": {},
+  "sessions": {
+    "s_f1fdc92e22439c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3f978f72-410d-4384-971c-0b9829162626",
+        "model": "arn:aws:bedrock:us-west-2:671660153913:application-inference-profile/kh3mlhvjeex4"
+      },
+      "human_author": "yihaohuang <yihaohuang@trip.com>"
+    }
+  }
+}
