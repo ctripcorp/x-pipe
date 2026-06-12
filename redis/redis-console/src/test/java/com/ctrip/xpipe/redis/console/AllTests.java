@@ -87,6 +87,8 @@ import com.ctrip.xpipe.redis.console.service.migration.impl.BeaconMigrationServi
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplSentinelBeaconTest;
+import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplHeteroMigrationTest;
+import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderHeteroMigrationTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
 import com.ctrip.xpipe.redis.console.spring.XPipeHandlerMethodCommandTest;
 import org.junit.runner.RunWith;
@@ -202,6 +204,8 @@ import org.junit.runners.Suite.SuiteClasses;
         VariablesCheckerTest.class,
         DBVariablesCheckTest.class,
         DcMetaBuilderTest.class,
+        DcMetaBuilderHeteroMigrationTest.class,
+        ClusterMetaServiceImplHeteroMigrationTest.class,
         DcClusterServiceImplTest.class,
         CrossMasterDelayServiceTest.class,
         DefaultMetaCacheTest.class,
