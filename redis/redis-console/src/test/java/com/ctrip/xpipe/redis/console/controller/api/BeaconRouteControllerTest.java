@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.mockito.ArgumentMatchers.eq;
+
 @RunWith(MockitoJUnitRunner.class)
 public class BeaconRouteControllerTest extends AbstractConsoleTest {
 
@@ -33,7 +35,8 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
 
     @Test
     public void shouldReturnSentinelRouteForClusterAndOrg() {
-        Mockito.when(monitorManager.get(1L, "cluster-a", BeaconRouteType.SENTINEL)).thenReturn(monitorService);
+        Mockito.when(monitorManager.get(eq(1L), eq("cluster-a"), Mockito.isNull(), eq(BeaconRouteType.SENTINEL)))
+                .thenReturn(monitorService);
         Mockito.when(monitorService.getName()).thenReturn("beacon-a");
         Mockito.when(monitorService.getHost()).thenReturn("http://beacon-a");
 

@@ -81,9 +81,9 @@ public class DefaultMonitorManagerTest extends AbstractTest {
 
     @Test
     public void testGetHostByOrg() {
-        MonitorService monitorService1 = beaconServiceManager.get(1L, "cluster2");
+        MonitorService monitorService1 = beaconServiceManager.get(1L, "cluster2", null, BeaconRouteType.DR);
         Assert.assertEquals(beacons.get(1L), monitorService1.getHost());
-        MonitorService monitorService2 = beaconServiceManager.get(2L, "cluster3");
+        MonitorService monitorService2 = beaconServiceManager.get(2L, "cluster3", null, BeaconRouteType.DR);
         Assert.assertEquals(beacons.get(2L), monitorService2.getHost());
     }
 
@@ -93,10 +93,10 @@ public class DefaultMonitorManagerTest extends AbstractTest {
         expectedHosts.add(defaultBeaconHost1);
         expectedHosts.add(defaultBeaconHost2);
 
-        MonitorService monitorService1 = beaconServiceManager.get(3L, "cluster");
-        MonitorService monitorService2 = beaconServiceManager.get(4L, "cluster-xxx");
-        MonitorService monitorService3 = beaconServiceManager.get(5L, "use this to try");
-        MonitorService monitorService4 = beaconServiceManager.get(6L, "god is abc");
+        MonitorService monitorService1 = beaconServiceManager.get(3L, "cluster", null, BeaconRouteType.DR);
+        MonitorService monitorService2 = beaconServiceManager.get(4L, "cluster-xxx", null, BeaconRouteType.DR);
+        MonitorService monitorService3 = beaconServiceManager.get(5L, "use this to try", null, BeaconRouteType.DR);
+        MonitorService monitorService4 = beaconServiceManager.get(6L, "god is abc", null, BeaconRouteType.DR);
         Set<String> actualHosts = Stream.of(monitorService1, monitorService2, monitorService3, monitorService4)
             .map(MonitorService::getHost)
             .collect(Collectors.toSet());
@@ -125,8 +125,10 @@ public class DefaultMonitorManagerTest extends AbstractTest {
         xpipeMeta.addDc(dcMeta);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
 
-        Map<BeaconSystem, Map<Long, Set<String>>> map = beaconServiceManager.clustersByBeaconSystemOrg(BeaconRouteType.SENTINEL);
-        Set<String> oneWayClusters = map.get(BeaconSystem.XPIPE_ONE_WAY).get(1L);
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> map =
+                beaconServiceManager.clustersByBeaconSystemOrg(BeaconRouteType.SENTINEL);
+        Set<String> oneWayClusters = map.get(BeaconSystem.XPIPE_ONE_WAY).get(1L).values().stream()
+                .flatMap(Set::stream).collect(Collectors.toSet());
         Assert.assertTrue(oneWayClusters.contains("one-way"));
         Assert.assertTrue(oneWayClusters.contains("single-dc"));
         Assert.assertTrue(oneWayClusters.contains("local-dc"));
@@ -143,8 +145,10 @@ public class DefaultMonitorManagerTest extends AbstractTest {
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
         Mockito.when(config.supportSentinelBeacon(1L, "non-gray-cluster")).thenReturn(false);
 
-        Map<BeaconSystem, Map<Long, Set<String>>> map = beaconServiceManager.clustersByBeaconSystemOrg(BeaconRouteType.SENTINEL);
-        Set<String> oneWayClusters = map.get(BeaconSystem.XPIPE_ONE_WAY).get(1L);
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> map =
+                beaconServiceManager.clustersByBeaconSystemOrg(BeaconRouteType.SENTINEL);
+        Set<String> oneWayClusters = map.get(BeaconSystem.XPIPE_ONE_WAY).get(1L).values().stream()
+                .flatMap(Set::stream).collect(Collectors.toSet());
         Assert.assertTrue(oneWayClusters.contains("gray-cluster"));
         Assert.assertFalse(oneWayClusters.contains("non-gray-cluster"));
     }

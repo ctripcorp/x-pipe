@@ -35,9 +35,10 @@ public class BeaconConsistencyCheck extends AbstractCrossDcIntervalAction {
             logger.debug("[doCheck] no beacon service, skip");
         }
 
-        Map<BeaconSystem, Map<Long, Set<String>>> clustersByBeaconSystemOrg = monitorManager.clustersByBeaconSystemOrg();
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clustersByBeaconSystemOrgByService =
+                monitorManager.clustersByBeaconSystemOrg();
 
-        new BeaconConsistencyCheckJob(clustersByBeaconSystemOrg, services, metaCache, config)
+        new BeaconConsistencyCheckJob(flattenClustersByOrg(clustersByBeaconSystemOrgByService), services, metaCache, config)
                 .execute()
                 .addListener(commandFuture -> {
                     if (!commandFuture.isSuccess()) {
@@ -49,5 +50,20 @@ public class BeaconConsistencyCheck extends AbstractCrossDcIntervalAction {
     @Override
     protected List<ALERT_TYPE> alertTypes() {
         return Collections.emptyList();
+    }
+
+    private Map<BeaconSystem, Map<Long, Set<String>>> flattenClustersByOrg(
+            Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clustersByBeaconSystemOrgByService) {
+        Map<BeaconSystem, Map<Long, Set<String>>> flattened = new java.util.HashMap<>();
+        clustersByBeaconSystemOrgByService.forEach((beaconSystem, clustersByOrg) -> {
+            Map<Long, Set<String>> orgClusters = new java.util.HashMap<>();
+            clustersByOrg.forEach((orgId, clustersByService) -> {
+                Set<String> clusters = new java.util.HashSet<>();
+                clustersByService.values().forEach(clusters::addAll);
+                orgClusters.put(orgId, clusters);
+            });
+            flattened.put(beaconSystem, orgClusters);
+        });
+        return flattened;
     }
 }

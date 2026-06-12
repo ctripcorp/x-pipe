@@ -18,12 +18,13 @@ public interface BeaconMetaService {
 
     String BEACON_GROUP_SEPARATOR = "+";
 
-    Set<MonitorGroupMeta> buildBeaconGroups(String cluster);
+    Set<MonitorGroupMeta> buildDrBeaconGroups(String cluster, String dc);
 
-    Set<MonitorGroupMeta> buildCurrentBeaconGroups(String cluster);
+    Set<MonitorShardMeta> buildSentinelBeaconShards(String cluster, String dc, Map<String, HostPort> shardMasters);
 
-    Set<MonitorShardMeta> buildBeaconShards(String cluster, String dc, Map<String, HostPort> shardMasters);
+    boolean compareDrBeaconMetaWithXPipe(String clusterName, Set<MonitorGroupMeta> beaconGroups) throws ClusterNotFoundException;
 
-    boolean compareMetaWithXPipe(String clusterName, Set<MonitorGroupMeta> beaconGroups) throws ClusterNotFoundException;
+    boolean compareDrBeaconMetaWithXPipe(String clusterName, String dc, Set<MonitorGroupMeta> beaconGroups)
+            throws ClusterNotFoundException;
 
 }
