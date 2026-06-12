@@ -187,7 +187,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                     clusterMeta.setAzGroupType(azGroupType.toString());
 
                     if (heteroWithAzGroup) {
-                        applyHeteroAzGroupClusterMeta(clusterMeta, azGroupCluster, azGroup);
+                        applyHeteroAzGroupClusterMeta(clusterMeta, dcId, cluster, azGroupCluster, azGroup);
                     }
                 }
 
@@ -197,16 +197,18 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
     }
 
     @VisibleForTesting
-    protected void applyHeteroAzGroupClusterMeta(ClusterMeta clusterMeta, AzGroupClusterEntity azGroupCluster,
-                                               AzGroupModel azGroup) {
-        String activeAz = dcNameMap.get(azGroupCluster.getActiveAzId());
+    protected void applyHeteroAzGroupClusterMeta(ClusterMeta clusterMeta, long dcId, ClusterTbl cluster,
+                                               AzGroupClusterEntity azGroupCluster, AzGroupModel azGroup) {
+        DcTbl dcProto = new DcTbl().setId(dcId);
+        long activeDcId = clusterMetaService.getAzGroupClusterMetaCurrentPrimaryDc(dcProto, cluster, azGroupCluster);
+        String activeAz = dcNameMap.get(activeDcId);
         if (activeAz == null) {
             getLogger().warn("[applyHeteroAzGroupClusterMeta][{}] active az not found for azGroupCluster {}",
                     clusterMeta.getId(), azGroupCluster.getId());
             return;
         }
         clusterMeta.setActiveDc(activeAz);
-        List<String> azs = azGroup.getAzsAsList();
+        List<String> azs = new ArrayList<>(azGroup.getAzsAsList());
         azs.remove(activeAz);
         clusterMeta.setBackupDcs(String.join(DC_NAME_DELIMITER, azs));
     }
