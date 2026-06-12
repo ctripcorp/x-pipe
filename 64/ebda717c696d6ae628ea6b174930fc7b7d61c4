@@ -1,0 +1,27 @@
+redis/redis-console/src/main/resources/static/scripts/controllers/ClusterDcShardUpdateCtl.ts
+  s_f1fdc92e22439c::t_6548f31180325f 180-193
+redis/redis-console/src/main/resources/static/views/index/cluster_dc_shard_update.html
+  s_f1fdc92e22439c::t_cb46b02f405e57 63-71
+  s_f1fdc92e22439c::t_a4f132dabcf0d0 83-91
+redis/redis-console/src/main/resources/META-INF/dal/jdbc/meta-dal.xml
+  s_f1fdc92e22439c::t_fe00214a43cc78 1131
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/RedisServiceImpl.java
+  s_f1fdc92e22439c::t_a0d7caea45d6f1 685
+  s_f1fdc92e22439c::t_e2c22d2ee07bf0 400-401
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "64ebda717c696d6ae628ea6b174930fc7b7d61c4",
+  "prompts": {},
+  "sessions": {
+    "s_f1fdc92e22439c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3f978f72-410d-4384-971c-0b9829162626",
+        "model": "arn:aws:bedrock:us-west-2:671660153913:application-inference-profile/kh3mlhvjeex4"
+      },
+      "human_author": "yihaohuang <yihaohuang@trip.com>"
+    }
+  }
+}
