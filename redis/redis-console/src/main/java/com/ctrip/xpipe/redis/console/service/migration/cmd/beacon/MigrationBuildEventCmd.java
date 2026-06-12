@@ -53,6 +53,9 @@ public class MigrationBuildEventCmd extends AbstractMigrationCmd<Long> {
         request.setTag(MIGRATION_OPERATOR);
         MigrationRequest.ClusterInfo migrationCluster = new MigrationRequest.ClusterInfo(cluster.getId(), cluster.getClusterName(),
                 sourceDc.getId(), sourceDc.getDcName(), targetDc.getId(), targetDc.getDcName());
+        if (getMigrationRequest().getAzGroupCluster() != null) {
+            migrationCluster.setAzGroupClusterId(getMigrationRequest().getAzGroupCluster().getId());
+        }
         request.addClusterInfo(migrationCluster);
 
         return request;

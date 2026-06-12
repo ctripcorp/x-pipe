@@ -60,6 +60,8 @@ public class MigrationRequest {
         private long toDcId;
         private String toDcName;
 
+        private Long azGroupClusterId;
+
         public ClusterInfo(){
 
         }
@@ -137,6 +139,14 @@ public class MigrationRequest {
 
         public void setToDcName(String toDcName) {
             this.toDcName = toDcName;
+        }
+
+        public Long getAzGroupClusterId() {
+            return azGroupClusterId;
+        }
+
+        public void setAzGroupClusterId(Long azGroupClusterId) {
+            this.azGroupClusterId = azGroupClusterId;
         }
 
         @Override

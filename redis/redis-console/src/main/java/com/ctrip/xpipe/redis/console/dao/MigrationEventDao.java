@@ -283,6 +283,8 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		if (null != migrationClusters) {
 			for (final MigrationClusterTbl migrationCluster : migrationClusters) {
 				long clusterId = migrationCluster.getClusterId();
+				ClusterTbl clusterTbl = clusterService.find(clusterId);
+				Long heteroAzGroupClusterId = resolveHeteroAzGroupClusterId(clusterTbl, migrationCluster.getSourceDcId());
 				List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(clusterId);
 				Map<Long, AzGroupClusterEntity> azGroupClusterIdMap = azGroupClusters.stream()
 					.collect(Collectors.toMap(AzGroupClusterEntity::getId, Function.identity()));
@@ -299,6 +301,9 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 					for (DcClusterShardTbl dcClusterShard : dcClusterShards) {
 						long azGroupClusterId = dcClusterShard.getDcClusterInfo() == null ? 0L
 							: dcClusterShard.getDcClusterInfo().getAzGroupClusterId();
+						if (heteroAzGroupClusterId != null && azGroupClusterId != heteroAzGroupClusterId) {
+							continue;
+						}
 						if (azGroupClusterId != 0L) {
 							AzGroupClusterEntity azGroupCluster = azGroupClusterIdMap.get(azGroupClusterId);
 							if (azGroupCluster != null && ClusterType.isSameClusterType(
@@ -324,6 +329,19 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				return migrationShardTblDao.insertBatch(Lists.toArray(MigrationShardTbl.class, toCreateMigrationShards));
 			}
 		});
+	}
+
+	private Long resolveHeteroAzGroupClusterId(ClusterTbl clusterTbl, long sourceDcId) {
+		if (clusterTbl == null || !ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.HETERO)) {
+			return null;
+		}
+		DcTbl sourceDc = dcService.find(sourceDcId);
+		if (sourceDc == null) {
+			return null;
+		}
+		AzGroupClusterEntity azGroupCluster = azGroupClusterRepository.selectByClusterIdAndAz(clusterTbl.getId(),
+				sourceDc.getDcName());
+		return azGroupCluster == null ? null : azGroupCluster.getId();
 	}
 
 	@VisibleForTesting

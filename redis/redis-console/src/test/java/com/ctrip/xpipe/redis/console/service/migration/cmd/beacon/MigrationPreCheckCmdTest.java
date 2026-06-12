@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
@@ -58,6 +59,9 @@ public class MigrationPreCheckCmdTest extends AbstractConsoleTest {
     @Mock
     private ConsoleConfig config;
 
+    @Mock
+    private HeteroMigrationSupport heteroMigrationSupport;
+
     private BeaconMigrationRequest migrationRequest;
 
     private String clusterName = "cluster1";
@@ -75,9 +79,11 @@ public class MigrationPreCheckCmdTest extends AbstractConsoleTest {
         migrationRequest = new BeaconMigrationRequest();
         clusterTbl = new ClusterTbl();
         dcTbl = new DcTbl();
-        preCheckCmd = new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService, config);
+        preCheckCmd = new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService, config, heteroMigrationSupport);
 
         dcTbl.setDcName(dcName);
+        dcTbl.setId(1L);
+        clusterTbl.setActivedcId(1L);
         migrationRequest.setFailoverGroups(Sets.newHashSet("shard1+dc1"));
         migrationRequest.setClusterName(clusterName);
         migrationRequest.setGroups(new HashSet<MonitorGroupMeta>() {{
@@ -91,6 +97,7 @@ public class MigrationPreCheckCmdTest extends AbstractConsoleTest {
         when(dcCache.find(anyLong())).thenReturn(dcTbl);
         when(beaconMetaService.compareDrBeaconMetaWithXPipe(eq(clusterName), anySet())).thenReturn(true);
         when(configService.allowAutoMigration()).thenReturn(true);
+        when(heteroMigrationSupport.isHeteroCluster(clusterTbl)).thenReturn(false);
     }
 
     @Test
