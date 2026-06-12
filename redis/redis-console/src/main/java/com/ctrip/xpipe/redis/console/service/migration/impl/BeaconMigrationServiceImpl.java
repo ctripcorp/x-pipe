@@ -31,6 +31,7 @@ import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.migration.BeaconMigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
 import com.ctrip.xpipe.redis.console.service.migration.exception.UnexpectMigrationDataException;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
@@ -75,6 +76,8 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
 
     private DcRelationsService dcRelationsService;
 
+    private HeteroMigrationSupport heteroMigrationSupport;
+
     @Resource
     private MigrationBiClusterRepository migrationBiClusterRepository;
 
@@ -96,7 +99,8 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
                                       ConfigService configService, ConsoleConfig config, DcCache dcCache,
                                       ClusterService clusterService, DcClusterService dcClusterService,
                                       MigrationEventDao migrationEventDao, MigrationClusterDao migrationClusterDao,
-                                      BeaconMetaService beaconMetaService, AlertManager alertManager, DcRelationsService dcRelationsService) {
+                                      BeaconMetaService beaconMetaService, AlertManager alertManager,
+                                      DcRelationsService dcRelationsService, HeteroMigrationSupport heteroMigrationSupport) {
         this.checker = checker;
         this.migrationEventManager = migrationEventManager;
         this.configService = configService;
@@ -109,6 +113,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         this.beaconMetaService = beaconMetaService;
         this.alertManager = alertManager;
         this.dcRelationsService = dcRelationsService;
+        this.heteroMigrationSupport = heteroMigrationSupport;
         this.scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("BeaconMigrationTimeout"));
     }
 
@@ -116,9 +121,9 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
     public CommandFuture<?> migrate(BeaconMigrationRequest migrationRequest) {
         logger.debug("[migrate][{}] begin", migrationRequest.getClusterName());
         SequenceCommandChain migrateSequenceCmd = new SequenceCommandChain();
-        migrateSequenceCmd.add(new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService, config));
+        migrateSequenceCmd.add(new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService, config, heteroMigrationSupport));
         migrateSequenceCmd.add(new MigrationFetchProcessingEventCmd(migrationRequest, clusterService, migrationClusterDao, dcCache));
-        migrateSequenceCmd.add(new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, dcRelationsService));
+        migrateSequenceCmd.add(new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, dcRelationsService, heteroMigrationSupport));
         migrateSequenceCmd.add(new MigrationBuildEventCmd(migrationRequest, migrationEventDao, migrationEventManager));
         migrateSequenceCmd.add(new MigrationDoExecuteCmd(migrationRequest, migrationEventManager, migrationExecutors));
         CommandFuture<?> future = migrateSequenceCmd.execute(prepareExecutors);

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -11,6 +12,7 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +34,13 @@ public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
 
     private ConsoleConfig config;
 
+    private HeteroMigrationSupport heteroMigrationSupport;
+
     private static final Logger logger = LoggerFactory.getLogger(MigrationPreCheckCmd.class);
 
     public MigrationPreCheckCmd(BeaconMigrationRequest migrationRequest, MigrationSystemAvailableChecker checker, ConfigService configService,
-                                ClusterService clusterService, DcCache dcCache, BeaconMetaService beaconMetaService, ConsoleConfig config) {
+                                ClusterService clusterService, DcCache dcCache, BeaconMetaService beaconMetaService,
+                                ConsoleConfig config, HeteroMigrationSupport heteroMigrationSupport) {
         super(migrationRequest);
         this.checker = checker;
         this.configService = configService;
@@ -43,6 +48,7 @@ public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
         this.dcCache = dcCache;
         this.beaconMetaService = beaconMetaService;
         this.config = config;
+        this.heteroMigrationSupport = heteroMigrationSupport;
     }
 
     @Override
@@ -69,7 +75,12 @@ public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
         }
 
         boolean forcedMigration = migrationRequest.getIsForced();
-        DcTbl activeDc = dcCache.find(clusterTbl.getActivedcId());
+        DcTbl activeDc = resolveActiveDc(clusterTbl, migrationRequest);
+        if (activeDc == null) {
+            future().setFailure(new WrongClusterMetaException(clusterName));
+            return;
+        }
+
         if (forcedMigration) {
             logger.info("[checkMetaAndAvailableDcs][{}] skip for forced migration", clusterName);
         } else if (!beaconMetaService.compareDrBeaconMetaWithXPipe(clusterName, migrationRequest.getGroups())) {
@@ -83,6 +94,20 @@ public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
         migrationRequest.setClusterTbl(clusterTbl);
         migrationRequest.setSourceDcTbl(activeDc);
         future().setSuccess(true);
+    }
+
+    private DcTbl resolveActiveDc(ClusterTbl clusterTbl, BeaconMigrationRequest migrationRequest) {
+        if (heteroMigrationSupport.isHeteroCluster(clusterTbl)) {
+            AzGroupClusterEntity azGroupCluster =
+                    heteroMigrationSupport.resolveAzGroupClusterForBeaconRequest(clusterTbl, migrationRequest);
+            if (azGroupCluster == null) {
+                logger.warn("[resolveActiveDc][{}] azGroupCluster not found for migration request", clusterTbl.getClusterName());
+                return null;
+            }
+            migrationRequest.setAzGroupCluster(azGroupCluster);
+            return dcCache.find(azGroupCluster.getActiveAzId());
+        }
+        return dcCache.find(clusterTbl.getActivedcId());
     }
 
 }

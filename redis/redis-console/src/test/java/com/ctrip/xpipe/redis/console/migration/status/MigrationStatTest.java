@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.status;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
@@ -96,6 +97,7 @@ public class MigrationStatTest extends AbstractConsoleTest {
         mockedMigrationCluster = (new MigrationClusterTbl()).setId(1).setEventId(1).setClusterId(1).setDestinationDcId(2)
                 .setStatus(MigrationStatus.Initiated.toString());
         ClusterTbl clusterTbl = new ClusterTbl().setId(1).setClusterName("test-cluster")
+                .setClusterType(ClusterType.ONE_WAY.name())
                 .setActivedcId(1).setStatus(ClusterStatus.Lock.toString());
         when(mockedClusterService.find(1)).thenReturn(clusterTbl);
         List<ShardTbl> shards = new LinkedList<>();
