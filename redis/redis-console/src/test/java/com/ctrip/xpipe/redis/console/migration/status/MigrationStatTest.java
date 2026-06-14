@@ -65,7 +65,7 @@ public class MigrationStatTest extends AbstractConsoleTest {
 
         prepareData();
         migrationCluster = new DefaultMigrationCluster(executors, scheduled, migrationEvent, mockedMigrationCluster,
-            azGroupClusterRepository, azGroupCache, mockedDcService, mockedClusterService,
+            azGroupClusterRepository, azGroupCache, null, mockedDcService, mockedClusterService,
                 mockedShardService, mockedRedisService, mockedMigrationService);
         migrationCluster.addNewMigrationShard(mockedMigrationShard);
     }

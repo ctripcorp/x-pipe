@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 
@@ -51,6 +52,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     private MigrationService migrationService;
     private AzGroupClusterRepository azGroupClusterRepository;
     private AzGroupCache azGroupCache;
+    private HeteroMigrationSupport heteroMigrationSupport;
 
     private Long azGroupClusterId;
 
@@ -61,14 +63,16 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
     public DefaultMigrationCluster(Executor executors, ScheduledExecutorService scheduled, MigrationEvent event,
         MigrationClusterTbl migrationCluster, AzGroupClusterRepository azGroupClusterRepository,
-        AzGroupCache azGroupCache, DcService dcService, ClusterService clusterService, ShardService shardService,
-        RedisService redisService, MigrationService migrationService) {
+        AzGroupCache azGroupCache, HeteroMigrationSupport heteroMigrationSupport, DcService dcService,
+        ClusterService clusterService, ShardService shardService, RedisService redisService,
+        MigrationService migrationService) {
         this.event = event;
         this.migrationCluster = migrationCluster;
         this.clusterService = clusterService;
         this.shardService = shardService;
         this.azGroupClusterRepository = azGroupClusterRepository;
         this.azGroupCache = azGroupCache;
+        this.heteroMigrationSupport = heteroMigrationSupport;
         this.dcService = dcService;
         this.redisService = redisService;
         this.migrationService = migrationService;
@@ -346,16 +350,15 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
     }
 
     private Long resolveAzGroupClusterId() {
-        if (!isHeteroCluster(currentCluster)) {
+        if (!isHeteroCluster(currentCluster) || heteroMigrationSupport == null) {
             return null;
         }
         DcTbl sourceDc = getDcService().find(migrationCluster.getSourceDcId());
         if (sourceDc == null) {
             return null;
         }
-        AzGroupClusterEntity azGroupCluster = azGroupClusterRepository.selectByClusterIdAndAz(
+        return heteroMigrationSupport.resolveMigrationAzGroupClusterId(
                 currentCluster.getId(), sourceDc.getDcName());
-        return azGroupCluster == null ? null : azGroupCluster.getId();
     }
 
     private Map<Long, ShardTbl> generateShardMap(List<ShardTbl> shards) {

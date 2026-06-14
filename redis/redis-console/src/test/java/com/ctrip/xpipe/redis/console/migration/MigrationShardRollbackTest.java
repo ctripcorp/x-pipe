@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationShardTbl;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import org.junit.Assert;
 import org.junit.Before;
@@ -46,6 +47,8 @@ public class MigrationShardRollbackTest extends AbstractMigrationTest {
     private AzGroupClusterRepository azGroupClusterRepository;
     @Autowired
     private AzGroupCache azGroupCache;
+    @Autowired
+    private HeteroMigrationSupport heteroMigrationSupport;
 
     private String dcA = dcNames[0];
     private String dcB = dcNames[1];
@@ -60,7 +63,7 @@ public class MigrationShardRollbackTest extends AbstractMigrationTest {
         MockitoAnnotations.initMocks(this);
 
         MigrationClusterTbl migrationClusterTbl = migrationService.findMigrationCluster(1L, 1L);
-        migrationCluster = new DefaultMigrationCluster(executors, scheduled, migrationEvent, migrationClusterTbl, azGroupClusterRepository, azGroupCache, dcService, clusterService, shardService, redisService, migrationService);
+        migrationCluster = new DefaultMigrationCluster(executors, scheduled, migrationEvent, migrationClusterTbl, azGroupClusterRepository, azGroupCache, heteroMigrationSupport, dcService, clusterService, shardService, redisService, migrationService);
 
         Map<Long, DcTbl> dcs = new HashMap<>();
         for (DcTbl dc : dcService.findClusterRelatedDc("cluster1")) {

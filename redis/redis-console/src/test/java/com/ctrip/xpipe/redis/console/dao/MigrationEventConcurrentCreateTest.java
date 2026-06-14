@@ -81,6 +81,7 @@ public class MigrationEventConcurrentCreateTest extends AbstractConsoleIntegrati
 
         MigrationRequest.ClusterInfo clusterInfo = new MigrationRequest.ClusterInfo();
         clusterInfo.setClusterId(1);
+        clusterInfo.setFromDcId(1);
         clusterInfo.setToDcId(2);
         migrationRequest.addClusterInfo(clusterInfo);
         return migrationRequest;
