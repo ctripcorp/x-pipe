@@ -110,7 +110,6 @@ public class DcMetaBuilderHeteroMigrationTest extends AbstractConsoleIntegration
     @Override
     protected String prepareDatas() throws IOException {
         return prepareDatasFromFile("src/test/resources/apptest.sql")
-                + prepareDatasFromFile("src/test/resources/hetero-dual-oneway-test.sql")
                 + "update CLUSTER_TBL set status='Migrating', migration_event_id=200 where id=14;\n"
                 + "insert into MIGRATION_EVENT_TBL (id, event_tag) values (200, 'hetero-dual-oneway-jq-oy');\n"
                 + "insert into MIGRATION_CLUSTER_TBL (id, migration_event_id, cluster_id, source_dc_id, destination_dc_id, status) "

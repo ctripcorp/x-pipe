@@ -86,7 +86,7 @@ public class DefaultMigrationClusterTest2 {
 
 
         migrationCluster = new DefaultMigrationCluster(executors, scheduled, migrationEvent, migrationClusterTbl,
-                null, null, dcService, clusterService, shardService, redisService, migrationService);
+                null, null, null, dcService, clusterService, shardService, redisService, migrationService);
     }
 
     @Test(expected = ServerException.class)

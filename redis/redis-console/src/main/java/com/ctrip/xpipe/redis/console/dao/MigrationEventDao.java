@@ -24,6 +24,7 @@ import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
@@ -59,6 +60,8 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	private AzGroupClusterRepository azGroupClusterRepository;
 	@Autowired
 	private AzGroupCache azGroupCache;
+	@Autowired
+	private HeteroMigrationSupport heteroMigrationSupport;
 
 	@Resource( name = MigrationResources.MIGRATION_EXECUTOR )
 	private Executor executors;
@@ -217,8 +220,8 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				
 				if(null == event.getMigrationCluster(cluster.getClusterId())) {
 					event.addMigrationCluster(new DefaultMigrationCluster(executors, scheduled, event,
-						detail.getRedundantClusters(), azGroupClusterRepository, azGroupCache, dcService,
-						clusterService, shardService, redisService, migrationService));
+						detail.getRedundantClusters(), azGroupClusterRepository, azGroupCache, heteroMigrationSupport,
+						dcService, clusterService, shardService, redisService, migrationService));
 				}
 				MigrationCluster migrationCluster = event.getMigrationCluster(cluster.getClusterId());
 				DefaultMigrationShard migrationShard = new DefaultMigrationShard(migrationCluster, shard,

@@ -2,14 +2,18 @@ package com.ctrip.xpipe.redis.console.service.meta.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
+import com.ctrip.xpipe.redis.console.cache.impl.AzGroupCacheImpl;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -18,6 +22,23 @@ public class AdvancedDcMetaServiceHeteroTest extends AbstractConsoleIntegrationT
 
     @Autowired
     private DcMetaService dcMetaService;
+
+    @Autowired
+    private AzGroupCache azGroupCache;
+
+    @Before
+    public void refreshAzGroupCacheAfterDbReload() throws Exception {
+        if (!(azGroupCache instanceof AzGroupCacheImpl)) {
+            return;
+        }
+        Field models = AzGroupCacheImpl.class.getDeclaredField("azGroupModels");
+        models.setAccessible(true);
+        models.set(azGroupCache, null);
+        Field idMap = AzGroupCacheImpl.class.getDeclaredField("idAzGroupMap");
+        idMap.setAccessible(true);
+        idMap.set(azGroupCache, null);
+        azGroupCache.getAllAzGroup();
+    }
 
     @Test
     public void getDcMetaShouldExpandHeteroForOneWayFilter() throws Exception {
@@ -54,12 +75,11 @@ public class AdvancedDcMetaServiceHeteroTest extends AbstractConsoleIntegrationT
         Assert.assertNotNull(fraCluster);
         Assert.assertEquals(ClusterType.ONE_WAY.toString(), fraCluster.getType());
         Assert.assertEquals("fra", fraCluster.getActiveDc());
-        Assert.assertEquals("", fraCluster.getBackupDcs());
+        Assert.assertEquals("fra-ali", fraCluster.getBackupDcs());
     }
 
     @Override
     protected String prepareDatas() throws IOException {
-        return prepareDatasFromFile("src/test/resources/apptest.sql")
-                + prepareDatasFromFile("src/test/resources/hetero-dual-oneway-test.sql");
+        return prepareDatasFromFile("src/test/resources/apptest.sql");
     }
 }

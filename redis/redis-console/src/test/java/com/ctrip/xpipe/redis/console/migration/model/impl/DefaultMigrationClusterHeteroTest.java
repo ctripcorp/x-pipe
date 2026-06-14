@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -44,6 +45,9 @@ public class DefaultMigrationClusterHeteroTest extends AbstractConsoleIntegratio
     @Autowired
     private RedisService redisService;
 
+    @Autowired
+    private HeteroMigrationSupport heteroMigrationSupport;
+
     @Test
     public void heteroUpdateActiveDcShouldOnlyTouchTargetAzGroup() {
         ClusterTbl clusterTbl = clusterService.find("hetero-dual-oneway");
@@ -69,7 +73,7 @@ public class DefaultMigrationClusterHeteroTest extends AbstractConsoleIntegratio
                 .setStatus("Initiated");
         DefaultMigrationCluster migrationCluster = new DefaultMigrationCluster(executors, scheduled,
                 Mockito.mock(MigrationEvent.class), migrationClusterTbl, azGroupClusterRepository, azGroupCache,
-                dcService, clusterService, shardService, redisService, migrationService);
+                heteroMigrationSupport, dcService, clusterService, shardService, redisService, migrationService);
 
         Map<Long, com.ctrip.xpipe.redis.console.model.DcTbl> clusterDcs = migrationCluster.getClusterDcs();
         Assert.assertEquals(2, clusterDcs.size());
@@ -91,7 +95,6 @@ public class DefaultMigrationClusterHeteroTest extends AbstractConsoleIntegratio
 
     @Override
     protected String prepareDatas() throws IOException {
-        return prepareDatasFromFile("src/test/resources/apptest.sql")
-                + prepareDatasFromFile("src/test/resources/hetero-dual-oneway-test.sql");
+        return prepareDatasFromFile("src/test/resources/apptest.sql");
     }
 }

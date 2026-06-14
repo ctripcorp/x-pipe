@@ -36,6 +36,7 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.repository.*;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.ctrip.xpipe.redis.console.service.model.SourceModelService;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
@@ -163,6 +164,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private AzGroupClusterRepository azGroupClusterRepository;
+
+	@Autowired
+	private HeteroMigrationSupport heteroMigrationSupport;
 
 	private static final String DESIGNATED_ROUTE_ID_SPLITTER = "\\s*,\\s*";
 
@@ -698,6 +702,30 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		logger.info("[findClustersWithOrgInfoByActiveDcId] dc: {},  clusters size = {}", dcName, result.size());
 		result = fillClusterOrgName(result);
 		return setOrgNullIfNoOrgIdExsits(result);
+	}
+
+	@Override
+	public void enrichMigrationClustersForActiveDc(List<ClusterTbl> clusters, String sourceDcName) {
+		if (CollectionUtils.isEmpty(clusters) || StringUtil.isEmpty(sourceDcName)) {
+			return;
+		}
+		List<Long> heteroClusterIds = clusters.stream()
+				.filter(heteroMigrationSupport::isHeteroCluster)
+				.map(ClusterTbl::getId)
+				.collect(Collectors.toList());
+		if (heteroClusterIds.isEmpty()) {
+			return;
+		}
+		Map<Long, AzGroupClusterEntity> azGroupClusterMap =
+				heteroMigrationSupport.resolveMigrationAzGroupClusters(heteroClusterIds, sourceDcName);
+		for (ClusterTbl cluster : clusters) {
+			AzGroupClusterEntity azGroupCluster = azGroupClusterMap.get(cluster.getId());
+			if (azGroupCluster == null) {
+				continue;
+			}
+			cluster.setMigrationActiveDcId(azGroupCluster.getActiveAzId());
+			cluster.setMigrationAzGroupClusterId(azGroupCluster.getId());
+		}
 	}
 
 	@Override
@@ -1550,6 +1578,32 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			return Collections.emptyList();
 
 		return findClustersWithOrgInfoByActiveDcId(dcService.find(dcName).getId());
+	}
+
+	@Override
+	public List<ClusterTbl> findMigrationActiveClustersByDcName(String dcName) {
+		if (StringUtil.isEmpty(dcName)) {
+			return Collections.emptyList();
+		}
+		List<ClusterTbl> result = new ArrayList<>(findClustersByActiveDcAndType(dcName, ClusterType.ONE_WAY.name()));
+		List<ClusterTbl> heteroClusters = findClustersWithOrgInfoByClusterType(HETERO.name());
+		result.addAll(findClustersByActiveDcAndTypeInHetero(dcName, ClusterType.ONE_WAY.name(), dcName, heteroClusters));
+		result = deduplicateClustersById(result);
+		result = fillClusterOrgName(result);
+		result = setOrgNullIfNoOrgIdExsits(result);
+		enrichMigrationClustersForActiveDc(result, dcName);
+		result.removeIf(cluster -> heteroMigrationSupport.isHeteroCluster(cluster)
+				&& cluster.getMigrationAzGroupClusterId() <= 0);
+		logger.info("[findMigrationActiveClustersByDcName] dc: {}, clusters size = {}", dcName, result.size());
+		return result;
+	}
+
+	private List<ClusterTbl> deduplicateClustersById(List<ClusterTbl> clusters) {
+		Map<Long, ClusterTbl> clusterMap = new LinkedHashMap<>();
+		for (ClusterTbl cluster : clusters) {
+			clusterMap.putIfAbsent(cluster.getId(), cluster);
+		}
+		return new ArrayList<>(clusterMap.values());
 	}
 
 	@Override

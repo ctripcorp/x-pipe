@@ -17,7 +17,7 @@ function ClusterService($resource, $q) {
         },
         find_clusters_by_names: {
             method: 'POST',
-            url: '/console/clusters/by/names',
+            url: '/console/clusters/by/names?activeDcName=:activeDcName',
             isArray: true
         },
         find_all_clusters: {
@@ -252,10 +252,11 @@ function ClusterService($resource, $q) {
         return d.promise;
     }
 
-    function findClustersByNames() {
+    function findClustersByNames(clusterNames, activeDcName) {
         var d = $q.defer();
         resource.find_clusters_by_names(
-            Array.from(arguments),
+            {activeDcName: activeDcName || ''},
+            clusterNames,
             function (result) {
                 d.resolve(result);
             }, function (result) {

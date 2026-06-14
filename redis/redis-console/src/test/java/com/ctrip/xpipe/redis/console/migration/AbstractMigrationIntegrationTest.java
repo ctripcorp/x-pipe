@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImpl;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
@@ -66,6 +67,8 @@ public class AbstractMigrationIntegrationTest extends AbstractTest {
 
     @Mock
     protected AzGroupCache azGroupCache;
+    @Mock
+    protected HeteroMigrationSupport heteroMigrationSupport;
 
     @Mock
     protected MigrationClusterDao migrationClusterDao;
@@ -206,8 +209,8 @@ public class AbstractMigrationIntegrationTest extends AbstractTest {
 
             if(null == event.getMigrationCluster(cluster.getClusterId())) {
                 event.addMigrationCluster(new DefaultMigrationCluster(migrationExecutor, scheduled, event,
-                    detail.getRedundantClusters(), azGroupClusterRepository, azGroupCache, dcService, clusterService,
-                    mockShardService, redisService, migrationService));
+                    detail.getRedundantClusters(), azGroupClusterRepository, azGroupCache, heteroMigrationSupport,
+                    dcService, clusterService, mockShardService, redisService, migrationService));
             }
             MigrationCluster migrationCluster = event.getMigrationCluster(cluster.getClusterId());
             ((DefaultMigrationCluster) migrationCluster).setOuterClientService(outerClientService);
