@@ -71,6 +71,8 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
             return !xpipeMeta.getDcs().get(activeDc).getZone().equals(xpipeMeta.getDcs().get(backupDc).getZone());
         }).when(metaCache).isCrossRegion(Mockito.anyString(), Mockito.anyString());
 
+        Mockito.when(metaCache.getActiveDc(Mockito.anyString())).thenReturn("jq");
+        Mockito.when(metaCache.isDcInRegion(Mockito.anyString(), Mockito.anyString())).thenReturn(true);
         beaconMetaService.setMetaCache(metaCache);
 
         dcRelationsService = Mockito.mock(DcRelationsService.class);
@@ -185,7 +187,8 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
 
     private BeaconMigrationRequest buildBeaconMigrationRequest(String clusterName, Set<String> failDcs) {
         BeaconMigrationRequest request = new BeaconMigrationRequest();
-        Set<MonitorGroupMeta> groups = beaconMetaService.buildBeaconGroups(clusterName);
+        String activeDc = metaCache.getActiveDc(clusterName);
+        Set<MonitorGroupMeta> groups = beaconMetaService.buildDrBeaconGroups(clusterName, activeDc);
         Set<String> failoverGroups = new HashSet<>();
 
         request.setClusterName(clusterName);

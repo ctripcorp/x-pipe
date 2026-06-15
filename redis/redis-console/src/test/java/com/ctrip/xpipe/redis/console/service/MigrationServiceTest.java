@@ -42,6 +42,7 @@ public class MigrationServiceTest extends AbstractConsoleIntegrationTest {
 
 		MigrationRequest.ClusterInfo clusterInfo = new MigrationRequest.ClusterInfo();
 		clusterInfo.setClusterId(clusterId);
+		clusterInfo.setFromDcId(1);
 		clusterInfo.setToDcId(destDcId);
 		migrationRequest.addClusterInfo(clusterInfo);
 		return migrationRequest;

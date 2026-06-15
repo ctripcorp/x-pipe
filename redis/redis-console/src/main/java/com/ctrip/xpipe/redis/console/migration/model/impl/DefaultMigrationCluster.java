@@ -20,6 +20,8 @@ import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.util.*;
@@ -45,11 +47,14 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
     private ClusterService clusterService;
     private ShardService shardService;
-    private AzGroupClusterRepository azGroupClusterRepository;
-    private AzGroupCache azGroupCache;
     private DcService dcService;
     private RedisService redisService;
     private MigrationService migrationService;
+    private AzGroupClusterRepository azGroupClusterRepository;
+    private AzGroupCache azGroupCache;
+    private HeteroMigrationSupport heteroMigrationSupport;
+
+    private Long azGroupClusterId;
 
     private Executor executors;
     private ScheduledExecutorService scheduled;
@@ -58,14 +63,16 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
     public DefaultMigrationCluster(Executor executors, ScheduledExecutorService scheduled, MigrationEvent event,
         MigrationClusterTbl migrationCluster, AzGroupClusterRepository azGroupClusterRepository,
-        AzGroupCache azGroupCache, DcService dcService, ClusterService clusterService, ShardService shardService,
-        RedisService redisService, MigrationService migrationService) {
+        AzGroupCache azGroupCache, HeteroMigrationSupport heteroMigrationSupport, DcService dcService,
+        ClusterService clusterService, ShardService shardService, RedisService redisService,
+        MigrationService migrationService) {
         this.event = event;
         this.migrationCluster = migrationCluster;
         this.clusterService = clusterService;
         this.shardService = shardService;
         this.azGroupClusterRepository = azGroupClusterRepository;
         this.azGroupCache = azGroupCache;
+        this.heteroMigrationSupport = heteroMigrationSupport;
         this.dcService = dcService;
         this.redisService = redisService;
         this.migrationService = migrationService;
@@ -174,17 +181,16 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
         long destDcId = destDcId();
         ClusterTbl cluster = getCurrentCluster();
-        cluster.setActivedcId(destDcId);
-        clusterService.updateActivedcId(clusterId(), destDcId);
 
-        List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(cluster.getId());
-        for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
-            if (ClusterType.isSameClusterType(azGroupCluster.getAzGroupClusterType(), ClusterType.SINGLE_DC)) {
-                continue;
-            }
-            azGroupClusterRepository.updateActiveAzId(azGroupCluster.getId(), destDcId);
+        if (isHeteroCluster(cluster) && azGroupClusterId != null) {
+            logger.info("[updateActiveDcIdToDestDcId][{}] HETERO update azGroupCluster {} active_az to {}",
+                    clusterName(), azGroupClusterId, destDcId);
+            azGroupClusterRepository.updateActiveAzId(azGroupClusterId, destDcId);
+            return;
         }
 
+        cluster.setActivedcId(destDcId);
+        clusterService.updateActivedcId(clusterId(), destDcId);
     }
 
     @Override
@@ -338,8 +344,21 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
 
     private void loadMetaInfo() {
         this.currentCluster = getClusterService().find(migrationCluster.getClusterId());
+        this.azGroupClusterId = resolveAzGroupClusterId();
         this.shards = generateShardMap(getShardService().findAllByClusterName(currentCluster.getClusterName()));
         this.dcs = generateDcMap(getDcService().findClusterRelatedDc(currentCluster.getClusterName()));
+    }
+
+    private Long resolveAzGroupClusterId() {
+        if (!isHeteroCluster(currentCluster) || heteroMigrationSupport == null) {
+            return null;
+        }
+        DcTbl sourceDc = getDcService().find(migrationCluster.getSourceDcId());
+        if (sourceDc == null) {
+            return null;
+        }
+        return heteroMigrationSupport.resolveMigrationAzGroupClusterId(
+                currentCluster.getId(), sourceDc.getDcName());
     }
 
     private Map<Long, ShardTbl> generateShardMap(List<ShardTbl> shards) {
@@ -357,6 +376,7 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         List<AzGroupClusterEntity> azGroupClusters =
             getAzGroupClusterRepository().selectByClusterId(currentCluster.getId());
         Map<String, ClusterType> clusterDcTypeMap = new HashMap<>();
+        AzGroupModel heteroAzGroup = resolveHeteroAzGroup(azGroupClusters);
         for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
             AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
             ClusterType azGroupType = ClusterType.lookup(azGroupCluster.getAzGroupClusterType());
@@ -368,6 +388,9 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         Map<Long, DcTbl> result = new HashMap<>();
 
         for (DcTbl dc : dcs) {
+            if (heteroAzGroup != null && !heteroAzGroup.containsAz(dc.getDcName())) {
+                continue;
+            }
             ClusterType dcClusterType = clusterDcTypeMap.get(dc.getDcName());
             if (dcClusterType != null && !dcClusterType.supportMigration()) {
                 continue;
@@ -376,6 +399,24 @@ public class DefaultMigrationCluster extends AbstractObservable implements Migra
         }
 
         return result;
+    }
+
+    private boolean isHeteroCluster(ClusterTbl cluster) {
+        return cluster != null
+                && !StringUtil.isEmpty(cluster.getClusterType())
+                && ClusterType.isSameClusterType(cluster.getClusterType(), ClusterType.HETERO);
+    }
+
+    private AzGroupModel resolveHeteroAzGroup(List<AzGroupClusterEntity> azGroupClusters) {
+        if (azGroupClusterId == null) {
+            return null;
+        }
+        for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+            if (azGroupClusterId.equals(azGroupCluster.getId())) {
+                return azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+            }
+        }
+        return null;
     }
 
     @Override

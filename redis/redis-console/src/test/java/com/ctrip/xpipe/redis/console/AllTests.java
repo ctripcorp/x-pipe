@@ -64,6 +64,7 @@ import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.Sta
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTest;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.DefaultClusterMonitorModifiedNotifierTest;
+import com.ctrip.xpipe.redis.console.notifier.DrBeaconClusterMonitorNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventListenerTest;
 import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
@@ -85,6 +86,8 @@ import com.ctrip.xpipe.redis.console.service.migration.impl.BeaconMigrationServi
 import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplSentinelBeaconTest;
+import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplHeteroMigrationTest;
+import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderHeteroMigrationTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
 import com.ctrip.xpipe.redis.console.spring.XPipeHandlerMethodCommandTest;
 import org.junit.runner.RunWith;
@@ -103,6 +106,7 @@ import org.junit.runners.Suite.SuiteClasses;
         BasicServiceTest.class,
         ClusterServiceImplTest.class,
         ClusterServiceImplTest2.class,
+        ClusterServiceImplHeteroMigrationEnrichTest.class,
         RedisServiceImplTest.class,
         KeeperContainerCheckerServiceImplTest.class,
         ShardServiceImplTest.class,
@@ -199,6 +203,8 @@ import org.junit.runners.Suite.SuiteClasses;
         VariablesCheckerTest.class,
         DBVariablesCheckTest.class,
         DcMetaBuilderTest.class,
+        DcMetaBuilderHeteroMigrationTest.class,
+        ClusterMetaServiceImplHeteroMigrationTest.class,
         DcClusterServiceImplTest.class,
         CrossMasterDelayServiceTest.class,
         DefaultMetaCacheTest.class,
@@ -211,6 +217,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         MigrationEventConcurrentCreateTest.class,
         BeaconMetaServiceImplTest.class,
+        BeaconMetaServiceImplHeteroTest.class,
         BeaconMigrationServiceImplTest.class,
         MigrationApiTest.class,
         MigrationApiIntegrationTest.class,
@@ -229,6 +236,7 @@ import org.junit.runners.Suite.SuiteClasses;
         BeaconClusterMonitorCheckTest.class,
         SentinelBeaconClusterMonitorCheckTest.class,
         DefaultClusterMonitorModifiedNotifierTest.class,
+        DrBeaconClusterMonitorNotifierTest.class,
         DefaultBeaconManagerTest.class,
         BeaconRouteControllerTest.class,
 

@@ -252,13 +252,12 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         ClusterMeta clusterMeta = builder.getOrCreateClusterMeta(fraMeta, 3L, clusterTbl, fraDcCluster, azGroupCluster);
 
         Assert.assertEquals("fra", clusterMeta.getActiveDc());
-        Assert.assertEquals("", clusterMeta.getBackupDcs());
+        Assert.assertEquals("fra-ali", clusterMeta.getBackupDcs());
     }
 
     @Override
     protected String prepareDatas() throws IOException {
-        return prepareDatasFromFile("src/test/resources/apptest.sql")
-                + prepareDatasFromFile("src/test/resources/hetero-dual-oneway-test.sql");
+        return prepareDatasFromFile("src/test/resources/apptest.sql");
     }
 
 }

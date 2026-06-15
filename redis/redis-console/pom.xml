@@ -228,6 +228,19 @@
       </profile>
    </profiles>
    <build>
+      <resources>
+         <resource>
+            <directory>src/main/resources</directory>
+            <excludes>
+               <exclude>static/node_modules/**</exclude>
+               <exclude>static/package.json</exclude>
+               <exclude>static/package-lock.json</exclude>
+               <exclude>static/tsconfig.json</exclude>
+               <exclude>static/webpack.config*.js</exclude>
+               <exclude>static/.gitignore</exclude>
+            </excludes>
+         </resource>
+      </resources>
       <plugins>
          <plugin>
             <groupId>org.unidal.maven.plugins</groupId>

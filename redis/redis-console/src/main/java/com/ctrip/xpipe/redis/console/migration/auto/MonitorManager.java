@@ -14,21 +14,13 @@ import java.util.Set;
  */
 public interface MonitorManager {
 
-    MonitorService get(long orgId, String clusterName);
-
-    default MonitorService get(long orgId, String clusterName, BeaconRouteType routeType) {
-        return get(orgId, clusterName);
-    }
+    MonitorService get(long orgId, String clusterName, String zone, BeaconRouteType routeType);
 
     Map<Long, List<MonitorService>> getAllServices();
 
-    default Map<Long, List<MonitorService>> getAllServices(BeaconRouteType routeType) {
-        return getAllServices();
-    }
+    Map<Long, List<MonitorService>> getAllServices(BeaconRouteType routeType);
 
-    Map<BeaconSystem, Map<Long, Set<String>>> clustersByBeaconSystemOrg();
+    Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clustersByBeaconSystemOrg();
 
-    default Map<BeaconSystem, Map<Long, Set<String>>> clustersByBeaconSystemOrg(BeaconRouteType routeType) {
-        return clustersByBeaconSystemOrg();
-    }
+    Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clustersByBeaconSystemOrg(BeaconRouteType routeType);
 }

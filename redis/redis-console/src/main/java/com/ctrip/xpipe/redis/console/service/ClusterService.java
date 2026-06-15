@@ -70,6 +70,7 @@ public interface ClusterService {
 	List<ClusterTbl> findAllClusterByDcNameBind(String dcName);
 	List<ClusterTbl> findAllClusterByDcNameBindAndType(String dcName, String clusterType, boolean isCountTypeInHetero);
 	List<ClusterTbl> findActiveClustersByDcName(String dcName);
+	List<ClusterTbl> findMigrationActiveClustersByDcName(String dcName);
 	List<ClusterTbl> findActiveClustersByDcNameAndType(String dcName, String clusterType, boolean isCountTypeInHetero);
 	List<ClusterTbl> findAllClustersByDcName(String dcName);
 
@@ -84,5 +85,7 @@ public interface ClusterService {
 	UnexpectedRouteUsageInfoModel findUnexpectedRouteUsageInfoModel();
 
     void completeReplicationByClusterAndReplDirection(ClusterTbl cluster, ReplDirectionInfoModel replDirection);
+
+    void enrichMigrationClustersForActiveDc(List<ClusterTbl> clusters, String sourceDcName);
 
 }

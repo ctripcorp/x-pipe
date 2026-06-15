@@ -43,10 +43,30 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
         intervalRetriveInfo();
 	}
 
+	function getMigrationActiveDcId(cluster) {
+		if ($scope.sourceDcInfo && $scope.sourceDcInfo.id) {
+			return $scope.sourceDcInfo.id;
+		}
+		var clusterType = ClusterType.lookup(cluster.clusterType);
+		if (clusterType && clusterType.useAzGroupType && cluster.migrationActiveDcId) {
+			return cluster.migrationActiveDcId;
+		}
+		return cluster.activedcId;
+	}
+
+	function isHeteroCluster(cluster) {
+		var clusterType = ClusterType.lookup(cluster.clusterType);
+		return clusterType && clusterType.useAzGroupType;
+	}
+
 	function focusDcByCluster(cluster) {
+		var activeDcId = getMigrationActiveDcId(cluster);
 		$scope.sourceDcInfo = $scope.dcs.filter(function (dcInfo) {
-			return dcInfo.id === cluster.activedcId;
+			return dcInfo.id === activeDcId;
 		})[0];
+		if ($scope.sourceDcInfo) {
+			$scope.sourceDc = $scope.sourceDcInfo.dcName;
+		}
 	}
 
 	function showCluster(cluster) {
@@ -57,9 +77,25 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
 		if (!clusters || clusters.length == 0) return;
 		focusDcByCluster(clusters[0]);
 		const clusterNames = clusters.map(c => c.clusterName);
-		ClusterService.findClustersByNames.apply(ClusterService, clusterNames).then(result=>{
-			$scope.clusters = result.filter(c => ClusterType.lookup(c.clusterType).supportMigration && !!c.activedcId && !!$scope.sourceDcInfo && c.activedcId == $scope.sourceDcInfo.id);
+		ClusterService.findClustersByNames(clusterNames, $scope.sourceDc).then(result=>{
+			$scope.clusters = filterMigrationClusters(result);
 			$scope.tableParams.reload();
+		});
+	}
+
+	function filterMigrationClusters(clusters) {
+		return clusters.filter(function (c) {
+			if (!ClusterType.lookup(c.clusterType).supportMigration) {
+				return false;
+			}
+			if (isHeteroCluster(c) && !c.migrationAzGroupClusterId) {
+				return false;
+			}
+			var activeDcId = getMigrationActiveDcId(c);
+			if (!activeDcId || !$scope.sourceDcInfo || activeDcId != $scope.sourceDcInfo.id) {
+				return false;
+			}
+			return true;
 		});
 	}
 
@@ -157,7 +193,7 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
                     return clusterNameFilter.includes(localCluster.clusterName);
                 });
 			}
-            $scope.clusters = result.filter(c => ClusterType.lookup(c.clusterType).supportMigration);
+            $scope.clusters = filterMigrationClusters(result);
 			$scope.tableParams.reload();
 		});
 
@@ -173,9 +209,17 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
 
 	function availableTargetDcs(cluster) {
 		var dcs = [];
+		var sourceAzGroupClusterId = isHeteroCluster(cluster) ? Number(cluster.migrationAzGroupClusterId) : null;
+		var sourceDcName = $scope.sourceDcInfo.dcName;
 
 		cluster.dcClusterInfo.forEach(function(dcCluster) {
-			if(dcCluster.dcInfo.dcName !== $scope.sourceDcInfo.dcName) {
+			if (!dcCluster.dcInfo) {
+				return;
+			}
+			if (sourceAzGroupClusterId && Number(dcCluster.azGroupClusterId) !== sourceAzGroupClusterId) {
+				return;
+			}
+			if(dcCluster.dcInfo.dcName !== sourceDcName) {
 				dcs.push(dcCluster.dcInfo);
 			}
 		});
@@ -207,7 +251,7 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
 		selectedClusters.forEach(function(cluster) {
 			migrationClusters.push({
 				clusterId : cluster.id,
-				sourceDcId : cluster.activedcId,
+				sourceDcId : getMigrationActiveDcId(cluster),
 				destinationDcId : getDcId(cluster.targetDc),
 				cluster,
 			});
