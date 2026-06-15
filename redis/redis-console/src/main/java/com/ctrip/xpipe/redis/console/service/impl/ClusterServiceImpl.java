@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.InstanceInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RegionInfo;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.DcClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
@@ -45,6 +46,7 @@ import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -772,6 +774,32 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
             clusterTbl.setClusterAdminEmails(adminEmails);
         }
 
+
+		if (clusterUpdateDTO.getRegions() != null && !clusterUpdateDTO.getRegions().isEmpty()) {
+			List<AzGroupClusterEntity> azGroupClustersToUpdate = new ArrayList<>();
+			List<AzGroupClusterEntity> currentAzGroupClusters = azGroupClusterRepository.selectByClusterId(clusterTbl.getId());
+
+			for (RegionInfo region : clusterUpdateDTO.getRegions()) {
+				if (Strings.isNullOrEmpty(region.getRegion()))
+					throw new BadRequestException("region is empty");
+
+				AzGroupClusterEntity current = getByRegion(region.getRegion(), currentAzGroupClusters);
+				if (current == null) {
+					throw new BadRequestException(String.format("region %s is not found in az group clusters", region.getRegion()));
+				}
+
+				AzGroupClusterEntity future = new AzGroupClusterEntity().setId(current.getId());
+				if (region.getClusterType() != null) future.setAzGroupClusterType(region.getClusterType().toUpperCase());
+				if (region.getActiveAz() != null) future.setActiveAzId(checkDc(region.getActiveAz()).getId());
+
+				azGroupClustersToUpdate.add(future);
+			}
+
+			if (!azGroupClustersToUpdate.isEmpty()) {
+				azGroupClusterRepository.batchUpdate(azGroupClustersToUpdate);
+			}
+		}
+
         if (needUpdate) {
             clusterDao.updateCluster(clusterTbl);
             return RetMessage.SUCCESS;
@@ -779,6 +807,13 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
             return String.format("No field changes for cluster: %s", clusterName);
         }
     }
+
+	private AzGroupClusterEntity getByRegion(String region, List<AzGroupClusterEntity> azGroupClusterEntities) {
+		return azGroupClusterEntities.stream().filter(azGroupClusterEntity -> {
+			AzGroupModel azGroupModel = azGroupCache.getAzGroupById(azGroupClusterEntity.getClusterId());
+			return azGroupModel.getRegion().equalsIgnoreCase(region);
+		}).findFirst().orElse(null);
+	}
 
 	@Override
 	@DalTransaction
