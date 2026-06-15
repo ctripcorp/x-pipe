@@ -27,9 +27,9 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
 
     private String uuid;
 
-    private int begGno;
+    private long begGno;
 
-    private int endGno;
+    private long endGno;
 
     private RedisKeeperServer redisKeeperServer;
 
@@ -43,14 +43,14 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
 
     private String currentUUID;
 
-    private int currentGno;
+    private long currentGno;
     
     /**
      * Default buffer size for BoundedWritableByteChannel (128KB)
      */
     private static final int DEFAULT_BUFFER_SIZE = 128 * 1024;
 
-    public GtidCommandSearcher(String uuid, int begGno, int endGno, RedisKeeperServer redisKeeperServer, RedisOpParser redisOpParser) {
+    public GtidCommandSearcher(String uuid, long begGno, long endGno, RedisKeeperServer redisKeeperServer, RedisOpParser redisOpParser) {
         this.uuid = uuid;
         this.begGno = begGno;
         this.endGno = endGno;
@@ -151,7 +151,7 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
 
         String[] raw = gtid.split(":");
         currentUUID = raw[0];
-        currentGno = Integer.parseInt(raw[1]);
+        currentGno = Long.parseLong(raw[1]);
         if (!currentUUID.equalsIgnoreCase(uuid) || currentGno < begGno || currentGno > endGno) {
             return false;
         }
@@ -161,7 +161,7 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
 
     private void afterAppend() {
         currentUUID = null;
-        currentGno = -1;
+        currentGno = -1L;
     }
 
     @Override
@@ -190,7 +190,7 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
         return 0;
     }
 
-    private void appendCmdKeyItem(String uuid, int gno, RedisOpItem redisOpItem) {
+    private void appendCmdKeyItem(String uuid, long gno, RedisOpItem redisOpItem) {
         if (StringUtil.isEmpty(uuid) || gno <= 0) {
             logger.debug("[appendCmdKeyItem][miss gtid] {}:{}", uuid, gno);
             return;

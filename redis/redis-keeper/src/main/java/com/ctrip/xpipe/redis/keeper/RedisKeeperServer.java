@@ -35,7 +35,7 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	
 	KeeperRepl getKeeperRepl();
 
-	GtidCommandSearcher createCmdKeySearcher(String uuid, int begGno, int endGno);
+	GtidCommandSearcher createCmdKeySearcher(String uuid, long begGno, long endGno);
 
 	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception;
 

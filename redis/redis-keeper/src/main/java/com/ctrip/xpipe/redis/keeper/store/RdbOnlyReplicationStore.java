@@ -340,7 +340,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, int begGno, int endGno) {
+	public List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, long begGno, long endGno) {
 		throw new UnsupportedOperationException();
 	}
 

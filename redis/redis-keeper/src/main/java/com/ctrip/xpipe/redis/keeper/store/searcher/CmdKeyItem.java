@@ -7,7 +7,7 @@ public class CmdKeyItem {
 
     public String uuid;
 
-    public int seq;
+    public long seq;
 
     public int dbid;
 
@@ -19,7 +19,7 @@ public class CmdKeyItem {
     @JsonSerialize(using = RawByteArraySerializer.class)
     public byte[] subkey;
 
-    public CmdKeyItem(String uuid, int seq, int dbId, String cmd, byte[] key, byte[] subkey) {
+    public CmdKeyItem(String uuid, long seq, int dbId, String cmd, byte[] key, byte[] subkey) {
         this.uuid = uuid;
         this.seq = seq;
         this.dbid = dbId;
@@ -28,7 +28,7 @@ public class CmdKeyItem {
         this.subkey = subkey;
     }
 
-    public CmdKeyItem(String uuid, int seq, int dbId, String cmd, byte[] key) {
+    public CmdKeyItem(String uuid, long seq, int dbId, String cmd, byte[] key) {
         this(uuid, seq, dbId, cmd, key, null);
     }
 

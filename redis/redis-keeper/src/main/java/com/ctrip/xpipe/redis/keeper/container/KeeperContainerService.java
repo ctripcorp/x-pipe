@@ -167,7 +167,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
                                 keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId())), null);
     }
 
-    public CommandFuture<List<CmdKeyItem>> searchKeeperCmdKeys(ReplId replId, String uuid, int begGno, int endGno) {
+    public CommandFuture<List<CmdKeyItem>> searchKeeperCmdKeys(ReplId replId, String uuid, long begGno, long endGno) {
         RedisKeeperServer redisKeeperServer = redisKeeperServers.get(replId.toString());
         if (null == redisKeeperServer) {
             throw new RedisKeeperRuntimeException("unfound keeper " + replId);

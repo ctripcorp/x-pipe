@@ -33,8 +33,8 @@ public class GtidCmdSearcherKeeperTest extends AbstractKeeperIntegratedSingleDc{
         String[] raw = raw_gtid.split(":");
         String[] raw_gno = raw[1].split("-");
         String UUID = raw[0];
-        int begGno = Integer.parseInt(raw_gno[0]);
-        int endGno = Integer.parseInt(raw_gno[1]);
+        long begGno = Long.parseLong(raw_gno[0]);
+        long endGno = Long.parseLong(raw_gno[1]);
         Assert.assertEquals(1, begGno);
         Assert.assertEquals(3, endGno);
 
