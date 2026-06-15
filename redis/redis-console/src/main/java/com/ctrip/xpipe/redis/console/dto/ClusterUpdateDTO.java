@@ -1,6 +1,9 @@
 package com.ctrip.xpipe.redis.console.dto;
 
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RegionInfo;
+
+import java.util.List;
 
 public class ClusterUpdateDTO {
 
@@ -9,6 +12,7 @@ public class ClusterUpdateDTO {
     private String description;
     private Long orgId;
     private String adminEmails;
+    private List<RegionInfo> regions;
 
     public ClusterUpdateDTO() {
     }
@@ -19,6 +23,7 @@ public class ClusterUpdateDTO {
         this.description = info.getDesc();
         this.orgId = orgId;
         this.adminEmails = info.getClusterAdminEmails();
+        this.regions = info.getRegions();
     }
 
     public String getClusterName() {
@@ -59,5 +64,13 @@ public class ClusterUpdateDTO {
 
     public void setAdminEmails(String adminEmails) {
         this.adminEmails = adminEmails;
+    }
+
+    public List<RegionInfo> getRegions() {
+        return regions;
+    }
+
+    public void setRegions(List<RegionInfo> regions) {
+        this.regions = regions;
     }
 }

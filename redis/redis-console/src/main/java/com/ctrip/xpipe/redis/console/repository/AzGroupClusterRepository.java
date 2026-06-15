@@ -128,6 +128,10 @@ public class AzGroupClusterRepository {
         azGroupClusterMapper.insert(azGroupCluster);
     }
 
+    public void batchUpdate(List<AzGroupClusterEntity> azGroupClusters) {
+        azGroupClusterMapper.updateById(azGroupClusters);
+    }
+
     public void updateClusterId(Long id, Long clusterId) {
         if (id == null || clusterId == null) {
             return;
