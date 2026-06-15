@@ -838,7 +838,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	private AzGroupClusterEntity getByRegion(String region, List<AzGroupClusterEntity> azGroupClusterEntities) {
 		return azGroupClusterEntities.stream().filter(azGroupClusterEntity -> {
-			AzGroupModel azGroupModel = azGroupCache.getAzGroupById(azGroupClusterEntity.getClusterId());
+			AzGroupModel azGroupModel = azGroupCache.getAzGroupById(azGroupClusterEntity.getAzGroupId());
 			return azGroupModel.getRegion().equalsIgnoreCase(region);
 		}).findFirst().orElse(null);
 	}
