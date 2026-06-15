@@ -17,6 +17,7 @@ import org.junit.runners.Suite;
         GtidCmdSearcherKeeperTest.class,
         PsyncXsyncSwitchAlways.class,
         KeeperRdbNotContinueTest.class,
+        KeeperXfullResyncLostTest.class,
 })
 public class AllXsyncTest {
 }

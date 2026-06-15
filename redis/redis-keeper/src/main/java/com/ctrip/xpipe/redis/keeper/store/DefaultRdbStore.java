@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.api.utils.FileSize;
+import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
 import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
@@ -272,7 +273,14 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	protected void doReadRdbFileInfo(RdbFileListener rdbFileListener) {
 		if (rdbFileListener.supportProgress(BacklogOffsetReplicationProgress.class) && contiguousBacklogOffset >= 0) {
-			rdbFileListener.setRdbFileInfo(eofType, new BacklogOffsetReplicationProgress(contiguousBacklogOffset));
+			BacklogOffsetReplicationProgress progress = new BacklogOffsetReplicationProgress(contiguousBacklogOffset);
+			if (supportGtidSet()) {
+				String gtidExecutedRepr = getGtidSet();
+				if (gtidExecutedRepr != null && !GtidSet.EMPTY_GTIDSET.equals(gtidExecutedRepr)) {
+					progress.setRdbGtidExecuted(new GtidSet(gtidExecutedRepr));
+				}
+			}
+			rdbFileListener.setRdbFileInfo(eofType, progress);
 		} else if (rdbFileListener.supportProgress(OffsetReplicationProgress.class)) {
 			rdbFileListener.setRdbFileInfo(eofType, new OffsetReplicationProgress(rdbOffset));
 		} else {
