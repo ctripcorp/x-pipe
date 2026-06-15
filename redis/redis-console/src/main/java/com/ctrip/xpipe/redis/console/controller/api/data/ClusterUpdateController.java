@@ -56,7 +56,7 @@ public class ClusterUpdateController extends AbstractController {
         try {
             createInfo.check();
 
-            OrganizationTbl organizationTbl = this.getOrganizationTbl(createInfo);
+            OrganizationTbl organizationTbl = this.getOrganizationTbl(createInfo.getOrganizationId());
             ClusterCreateDTO clusterCreateDTO = new ClusterCreateDTO(createInfo, organizationTbl.getOrgName());
 
             if (CollectionUtils.isEmpty(createInfo.getRegions())) {
@@ -108,10 +108,10 @@ public class ClusterUpdateController extends AbstractController {
     }
 
     @PutMapping(value = "/cluster")
-    public RetMessage updateCluster(@RequestBody ClusterCreateInfo clusterInfo) {
+    public RetMessage updateCluster(@RequestBody ClusterUpdateInfo clusterInfo) {
         try {
             Long orgId = clusterInfo.getOrganizationId() == null
-                ? null : this.getOrganizationTbl(clusterInfo).getId();
+                ? null : this.getOrganizationTbl(clusterInfo.getOrganizationId()).getId();
             ClusterUpdateDTO updateDTO = new ClusterUpdateDTO(clusterInfo, orgId);
             String ret = clusterService.updateCluster(updateDTO);
             return RetMessage.createSuccessMessage(ret);
@@ -134,9 +134,9 @@ public class ClusterUpdateController extends AbstractController {
 
 
     @PutMapping(value = "/clusters")
-    public RetMessage updateClusters(@RequestBody List<ClusterCreateInfo> clusterInfos) {
-        for(ClusterCreateInfo clusterCreateInfo : clusterInfos) {
-            RetMessage retMessage = updateCluster(clusterCreateInfo);
+    public RetMessage updateClusters(@RequestBody List<ClusterUpdateInfo> clusterInfos) {
+        for(ClusterUpdateInfo clusterUpdateInfo : clusterInfos) {
+            RetMessage retMessage = updateCluster(clusterUpdateInfo);
             if(ObjectUtils.equals(retMessage.getState(), RetMessage.FAIL_STATE))
                 return retMessage;
         }
@@ -354,8 +354,7 @@ public class ClusterUpdateController extends AbstractController {
     }
 
 
-    private OrganizationTbl getOrganizationTbl(ClusterCreateInfo clusterCreateInfo) {
-        Long organizationId = clusterCreateInfo.getOrganizationId();
+    private OrganizationTbl getOrganizationTbl(Long organizationId) {
         if(organizationId == null) {
             throw new IllegalStateException("organizationId is required");
         }
