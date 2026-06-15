@@ -68,11 +68,13 @@ public class CtripKafkaService implements KafkaService {
                 }
             },"kafka-producer-init").start();
 
+            Runtime.getRuntime().addShutdownHook(new Thread(this::forceStopProducer));
         }
     }
 
     @Override
     public void forceStopProducer(){
+        logger.info("[forceStopProducer]");
         if(started.compareAndSet(true,false)) {
             for (int i = 0; i < PRODUCER_POOL_SIZE; i++) {
                 Producer<String, Object> producer = producerPool[i];

@@ -216,16 +216,16 @@ public class ProgressiveSyncRateLimiterTest extends AbstractTest {
     private int getRecordsLength() throws Exception {
         Field recordsField = ProgressiveSyncRateLimiter.class.getDeclaredField("records");
         recordsField.setAccessible(true);
-        int[] records = (int[]) recordsField.get(syncRateLimiter);
+        long[] records = (long[]) recordsField.get(syncRateLimiter);
         return records.length;
     }
 
-    private int getRecordsSum() throws Exception {
+    private long getRecordsSum() throws Exception {
         Field recordsField = ProgressiveSyncRateLimiter.class.getDeclaredField("records");
         recordsField.setAccessible(true);
-        int[] records = (int[]) recordsField.get(syncRateLimiter);
-        int sum = 0;
-        for (int record : records) {
+        long[] records = (long[]) recordsField.get(syncRateLimiter);
+        long sum = 0;
+        for (long record : records) {
             sum += record;
         }
         return sum;
