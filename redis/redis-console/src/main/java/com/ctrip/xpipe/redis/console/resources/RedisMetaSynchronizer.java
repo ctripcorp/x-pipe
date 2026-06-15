@@ -102,6 +102,8 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
 
                 String futureAz = future.getAz();
                 String currentAz = current.getAz();
+                if (futureAz != null && futureAz.isEmpty()) futureAz = null;
+                if (currentAz != null && currentAz.isEmpty()) currentAz = null;
                 if (Objects.equals(futureAz, currentAz)) {
                     continue;
                 }
