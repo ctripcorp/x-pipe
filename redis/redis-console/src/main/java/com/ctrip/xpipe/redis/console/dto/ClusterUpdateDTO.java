@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.dto;
 
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterUpdateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RegionInfo;
 
 import java.util.List;
@@ -17,7 +17,7 @@ public class ClusterUpdateDTO {
     public ClusterUpdateDTO() {
     }
 
-    public ClusterUpdateDTO(ClusterCreateInfo info, Long orgId) {
+    public ClusterUpdateDTO(ClusterUpdateInfo info, Long orgId) {
         this.clusterName = info.getClusterName();
         this.clusterType = info.getClusterType();
         this.description = info.getDesc();

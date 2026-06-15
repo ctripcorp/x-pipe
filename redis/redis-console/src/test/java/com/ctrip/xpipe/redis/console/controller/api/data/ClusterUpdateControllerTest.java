@@ -4,11 +4,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterExchangeNameInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterRegionExchangeInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.RegionInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -194,7 +190,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
 
         long orgId = 5L;
         String desc = "update desc", adminEmails = "test@ctrip.com";
-        ClusterCreateInfo clusterInfo = new ClusterCreateInfo();
+        ClusterUpdateInfo clusterInfo = new ClusterUpdateInfo();
         clusterInfo.setClusterName(clusterName);
         clusterInfo.setClusterType(ClusterType.HETERO.toString());
         clusterInfo.setDesc(desc);
@@ -227,11 +223,11 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
     public void testUpdateClusterWithNoClusterFound() {
         String CLUSTER_NAME = "cluster-not-exist";
         String EXPECTED_MESSAGE = String.format("Not find cluster: %s", CLUSTER_NAME);
-        ClusterCreateInfo clusterCreateInfo = new ClusterCreateInfo();
-        clusterCreateInfo.setClusterName(CLUSTER_NAME);
-        clusterCreateInfo.setOrganizationId(0L);
+        ClusterUpdateInfo clusterUpdateInfo = new ClusterUpdateInfo();
+        clusterUpdateInfo.setClusterName(CLUSTER_NAME);
+        clusterUpdateInfo.setOrganizationId(0L);
 
-        RetMessage retMessage = clusterController.updateClusters(Collections.singletonList(clusterCreateInfo));
+        RetMessage retMessage = clusterController.updateClusters(Collections.singletonList(clusterUpdateInfo));
         logger.info("{}", retMessage.getMessage());
         Assert.assertEquals(RetMessage.FAIL_STATE, retMessage.getState());
         Assert.assertEquals(EXPECTED_MESSAGE, retMessage.getMessage());
@@ -253,7 +249,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
                 .setTag("");
         clusterDao.createCluster(clusterTbl);
 
-        ClusterCreateInfo clusterInfo = new ClusterCreateInfo();
+        ClusterUpdateInfo clusterInfo = new ClusterUpdateInfo();
         clusterInfo.setClusterName(CLUSTER_NAME);
         clusterInfo.setClusterAdminEmails("test@ctrip.com");
         clusterInfo.setOrganizationId(ORG_ID);
@@ -284,7 +280,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
                 .setTag("");
         clusterDao.createCluster(clusterTbl);
 
-        ClusterCreateInfo clusterInfo = new ClusterCreateInfo();
+        ClusterUpdateInfo clusterInfo = new ClusterUpdateInfo();
         clusterInfo.setClusterName(CLUSTER_NAME);
         clusterInfo.setClusterAdminEmails("test@ctrip.com");
         clusterInfo.setOrganizationId(ORG_ID);
