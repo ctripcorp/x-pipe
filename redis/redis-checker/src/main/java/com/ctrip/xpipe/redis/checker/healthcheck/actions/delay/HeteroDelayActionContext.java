@@ -17,10 +17,6 @@ public class HeteroDelayActionContext extends DelayActionContext {
         return shardDbId;
     }
 
-    public String getDelayType() {
-        return "hetero";
-    }
-
     public boolean isExpired() {
         return isExpired;
     }

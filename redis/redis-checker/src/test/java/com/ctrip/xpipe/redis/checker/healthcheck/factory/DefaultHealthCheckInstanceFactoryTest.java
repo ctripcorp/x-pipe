@@ -68,6 +68,18 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
     }
 
     @Test
+    public void testCreateRedisInstanceInfoWithCreateTime() {
+        long createTimeMillis = System.currentTimeMillis();
+        RedisMeta redisMeta = normalRedisMeta().setCreateTime(createTimeMillis);
+        when(metaCache.getDc(new HostPort(redisMeta.getIp(), redisMeta.getPort()))).thenReturn("oy");
+
+        RedisHealthCheckInstance instance = factory.create(redisMeta);
+
+        Assert.assertEquals(new java.util.Date(createTimeMillis), instance.getCheckInfo().getCreateTime());
+        factory.remove(instance);
+    }
+
+    @Test
     public void testCreateProxyEnabledInstance() {
         XpipeMeta meta = new XpipeMeta();
         DcMeta local = newDcMeta(FoundationService.DEFAULT.getDataCenter());

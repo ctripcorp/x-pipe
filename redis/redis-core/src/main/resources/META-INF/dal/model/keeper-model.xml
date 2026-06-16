@@ -94,6 +94,7 @@
 		<attribute name="offset" value-type="Long" />
 		<attribute name="gid" value-type="Long" />
 		<attribute name="az" value-type="String" />
+		<attribute name="createTime" value-type="Long" />
 		<snippet>
 			public boolean isMaster(){
 			return m_master == null || m_master.trim().length() == 0;
