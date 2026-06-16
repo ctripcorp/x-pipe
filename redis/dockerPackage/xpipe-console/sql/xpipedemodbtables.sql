@@ -168,6 +168,7 @@ CREATE TABLE `REDIS_TBL` (
   `redis_master` bigint(20) unsigned DEFAULT NULL COMMENT 'redis master id',
   `keepercontainer_id` bigint(20) unsigned DEFAULT NULL COMMENT 'keepercontainer id',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'instance create time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   `deleted_at` int(11) NOT NULL DEFAULT '0' COMMENT 'deleted time',
   PRIMARY KEY (`id`),

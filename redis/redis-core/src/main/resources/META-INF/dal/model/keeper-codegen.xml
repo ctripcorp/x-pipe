@@ -122,6 +122,7 @@
     <attribute name="gid" value-type="int" />
     <attribute name="sid" value-type="String" />
     <attribute name="gtid" value-type="String" />
+    <attribute name="createTime" value-type="long" />
   </entity>
   <entity name="route">
     <attribute name="id" value-type="long" />

@@ -140,6 +140,9 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         Integer orgId = clusterMeta.getOrgId();
         info.setClusterOrgId(orgId == null ? -1 : orgId);
         info.isMaster(redisMeta.isMaster());
+        if (redisMeta.getCreateTime() != null) {
+            info.setCreateTime(new Date(redisMeta.getCreateTime()));
+        }
         info.setAzGroupType(clusterMeta.getAzGroupType());
         info.setAsymmetricCluster(metaCache.isAsymmetricCluster(info.getClusterId()));
         if (clusterType.supportSingleActiveDC()) {
