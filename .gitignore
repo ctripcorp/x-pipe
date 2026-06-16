@@ -49,7 +49,7 @@ node_modules
 *.js
 # Local AI coding context (Cursor, Claude, Gemini, Windsurf, etc.)
 .cursor/
-.cursorrules
+!.cursorrules
 .gemini/
 .kiro/
 .qoder/

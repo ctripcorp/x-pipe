@@ -1,0 +1,3 @@
+[submodule "xpipe-copilot"]
+	path = xpipe-copilot
+	url = http://git.dev.sh.ctripcorp.com/sl_li/xpipe-copilot.git
