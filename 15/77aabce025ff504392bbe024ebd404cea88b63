@@ -1,0 +1,36 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/StreamCommandReader.java
+  s_bea4977c0325a6::t_c2f1611e8d4b3c 149,156
+  s_bea4977c0325a6::t_52d9e7d5e6ecff 189-190,195-199,203-204,211-215
+  s_bea4977c0325a6::t_c4019ad7faaebc 265,268
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriter.java
+  s_bea4977c0325a6::t_174deab87d32d1 75,80,83,85
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/redis/operation/stream/StreamTransactionListener.java
+  s_bea4977c0325a6::t_6bc1d46f693e27 22-27
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/NonGtidIndexWriter.java
+  s_bea4977c0325a6::t_d9c8943587ab9d 1-147
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  s_bea4977c0325a6::t_8cd53971d74b5e 861-1424
+  s_bea4977c0325a6::t_029902f01c44d4 180-181
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  s_bea4977c0325a6::t_a0e74bd590220a 267-277,282-285,287-289,291,294-303,305,312-313,316,325,332,338-357,359-388
+  s_bea4977c0325a6::t_ce78cd26950a57 534-540,554
+  s_bea4977c0325a6::t_f28cd525bec13a 104-108
+  s_bea4977c0325a6::t_174eced0a66c9a 81-82
+  s_bea4977c0325a6::t_b9afb0e562d505 40-41,304,358,389-391
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "1577aabce025ff504392bbe024ebd404cea88b63",
+  "prompts": {},
+  "sessions": {
+    "s_bea4977c0325a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58655c44-b5a1-486a-ad26-03492fcc83f0",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
