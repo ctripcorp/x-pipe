@@ -115,6 +115,36 @@ public class DefaultMonitorManagerTest extends AbstractTest {
     }
 
     @Test
+    public void testDrRouteOnlyIncludesMigratableClusters() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(new ClusterMeta("one-way").setOrgId(1).setType(ClusterType.ONE_WAY.name()).setActiveDc("jq"));
+        dcMeta.addCluster(new ClusterMeta("single-dc").setOrgId(1).setType(ClusterType.SINGLE_DC.name()).setActiveDc("jq").setDcs("jq"));
+        dcMeta.addCluster(new ClusterMeta("local-dc").setOrgId(1).setType(ClusterType.LOCAL_DC.name()).setActiveDc("jq").setDcs("jq"));
+        dcMeta.addCluster(new ClusterMeta("hetero-oneway").setOrgId(1).setType(ClusterType.HETERO.name())
+                .setAzGroupType(ClusterType.ONE_WAY.name()).setActiveDc("jq"));
+        dcMeta.addCluster(new ClusterMeta("hetero-single").setOrgId(1).setType(ClusterType.HETERO.name())
+                .setAzGroupType(ClusterType.SINGLE_DC.name()).setActiveDc("jq"));
+        dcMeta.addCluster(new ClusterMeta("bi-dc").setOrgId(1).setType(ClusterType.BI_DIRECTION.name()).setActiveDc("jq"));
+        xpipeMeta.addDc(dcMeta);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> map =
+                beaconServiceManager.clustersByBeaconSystemOrg(BeaconRouteType.DR);
+        Set<String> oneWayClusters = map.get(BeaconSystem.XPIPE_ONE_WAY).get(1L).values().stream()
+                .flatMap(Set::stream).collect(Collectors.toSet());
+        Set<String> biClusters = map.get(BeaconSystem.XPIPE_BI_DIRECTION).get(1L).values().stream()
+                .flatMap(Set::stream).collect(Collectors.toSet());
+
+        Assert.assertTrue(oneWayClusters.contains("one-way"));
+        Assert.assertTrue(oneWayClusters.contains("hetero-oneway"));
+        Assert.assertFalse(oneWayClusters.contains("single-dc"));
+        Assert.assertFalse(oneWayClusters.contains("local-dc"));
+        Assert.assertFalse(oneWayClusters.contains("hetero-single"));
+        Assert.assertFalse(biClusters.contains("bi-dc"));
+    }
+
+    @Test
     public void testSentinelRouteSupportsSingleAndLocalDc() {
         XpipeMeta xpipeMeta = new XpipeMeta();
         DcMeta dcMeta = new DcMeta("jq");

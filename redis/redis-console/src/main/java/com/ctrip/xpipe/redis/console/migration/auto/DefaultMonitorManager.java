@@ -131,6 +131,11 @@ public class DefaultMonitorManager implements MonitorManager {
             }
 
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                if (routeType == BeaconRouteType.DR
+                        && !ClusterType.supportClusterMigration(clusterMeta.getType(), clusterMeta.getAzGroupType())) {
+                    continue;
+                }
+
                 ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
                 if (!StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
                     clusterType = ClusterType.lookup(clusterMeta.getAzGroupType());

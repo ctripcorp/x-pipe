@@ -728,11 +728,7 @@ public abstract class AbstractMetaCache implements MetaCache {
         if (dcMeta == null) return false;
         ClusterMeta clusterMeta = dcMeta.findCluster(clusterName);
         if (clusterMeta == null) return false;
-        ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
-        if (clusterType != HETERO) {
-            return clusterType.supportMigration();
-        }
-        return ClusterType.lookup(clusterMeta.getAzGroupType()).supportMigration();
+        return ClusterType.supportClusterMigration(clusterMeta.getType(), clusterMeta.getAzGroupType());
     }
 
     @Override
