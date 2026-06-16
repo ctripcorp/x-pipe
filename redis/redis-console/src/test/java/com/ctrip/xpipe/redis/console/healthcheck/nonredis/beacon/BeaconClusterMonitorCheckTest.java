@@ -92,14 +92,12 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
     public void testDoCheck() {
         Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Sets.newHashSet("cluster2","hetero-cluster2"));
         Mockito.when(monitorService1.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Sets.newHashSet("cluster1","hetero-cluster1"));
-        Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName())).thenReturn(Sets.newHashSet("bi-cluster2"));
-        Mockito.when(monitorService1.fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName())).thenReturn(Sets.newHashSet("bi-cluster1"));
         check.doAction();
 
         Mockito.verify(monitorService0, Mockito.timeout(1000)).fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName());
         Mockito.verify(monitorService1, Mockito.timeout(1000)).fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName());
-        Mockito.verify(monitorService0, Mockito.timeout(1000)).fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName());
-        Mockito.verify(monitorService1, Mockito.timeout(1000)).fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName());
+        Mockito.verify(monitorService0, Mockito.never()).fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName());
+        Mockito.verify(monitorService1, Mockito.never()).fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName());
         Mockito.verify(monitorService0, Mockito.never()).unregisterCluster(anyString(), anyString());
         Mockito.verify(monitorService1, Mockito.never()).unregisterCluster(anyString(), anyString());
     }
@@ -109,18 +107,15 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
 
         Mockito.when(config.monitorUnregisterProtectCount()).thenReturn(1);
         Set<String> oneWayNeedExcludeClusters = Sets.newHashSet("clusterx", "clustery");
-        Set<String> biNeedExcludeClusters = Sets.newHashSet("bi-clusterx", "bi-clustery");
         Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Sets.newHashSet("clusterx", "clustery"));
-        Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName())).thenReturn(Sets.newHashSet("bi-clusterx", "bi-clustery"));
 
         check.doAction();
         Mockito.verify(monitorService0, Mockito.timeout(1000)).fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName());
         Mockito.verify(monitorService1, Mockito.timeout(1000)).fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName());
-        Mockito.verify(monitorService0, Mockito.timeout(1000)).fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName());
-        Mockito.verify(monitorService1, Mockito.timeout(1000)).fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName());
+        Mockito.verify(monitorService0, Mockito.never()).fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName());
+        Mockito.verify(monitorService1, Mockito.never()).fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName());
         Mockito.verify(monitorService0, Mockito.never()).unregisterCluster(anyString(), anyString());
         Mockito.verify(alertManager).alert("", "", null, ALERT_TYPE.TOO_MANY_CLUSTERS_EXCLUDE_FROM_BEACON, oneWayNeedExcludeClusters.toString());
-        Mockito.verify(alertManager).alert("", "", null, ALERT_TYPE.TOO_MANY_CLUSTERS_EXCLUDE_FROM_BEACON, biNeedExcludeClusters.toString());
     }
 
     @Test
