@@ -142,6 +142,7 @@
 		<relation name="dc-cluster-info" entity-name="dc-cluster-tbl" entity-alias="dct" multiple="true"/>
 		<relation name="shard-info" entity-name="shard-tbl" entity-alias="st2" multiple="true"/>
 		<relation name="organization-info" entity-name="organization-tbl" entity-alias="ot"/>
+		<relation name="logical-bu-info" entity-name="logical-bu-tbl" entity-alias="lbt"/>
 		<relation name="migration-event" entity-name="migration-event-tbl" entity-alias="met"/>
 		<relation name="migration-clusters" entity-name="migration-cluster-tbl" entity-alias="mct"/>
 
@@ -1708,6 +1709,7 @@
 		<relation name="dc-info" entity-name="dc-tbl" entity-alias="dt"/>
 		<relation name="keeper-info" entity-name="redis-tbl" entity-alias="kit"/>
 		<relation name="org-info" entity-name="organization-tbl" entity-alias="ot" />
+		<relation name="logical-bu-info" entity-name="logical-bu-tbl" entity-alias="lbt" />
 
 		<readsets>
 			<readset name="KEEPER_COUNT">
@@ -3450,6 +3452,130 @@
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
         			]]>
+				</statement>
+			</query>
+		</query-defs>
+	</entity>
+
+	<entity name="logical-bu-tbl" table="LOGICAL_BU_TBL" alias="lbt">
+		<var name="key-id" value-type="long" key-member="id" />
+		<var name="target-cms-org-id" value-type="long"/>
+
+		<relation name="org-mapping" entity-name="logical-bu-org-tbl" entity-alias="lbot" multiple="true"/>
+		<relation name="keepercontainer-info" entity-name="keepercontainer-tbl" entity-alias="kt" multiple="true"/>
+
+		<readsets>
+			<readset name="NAME">
+				<member name="id"/>
+				<member name="name"/>
+			</readset>
+		</readsets>
+
+		<query-defs>
+			<query name="find-all" type="SELECT" multiple="true">
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/> ASC
+					]]>
+				</statement>
+			</query>
+			<query name="find-by-id" type="SELECT" multiple="false">
+				<param name="key-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='id'/> = ${key-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-active-by-cms-org-id" type="SELECT" multiple="true">
+				<param name="target-cms-org-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name="org-mapping"/>
+					WHERE lbot.logical_bu_id = <FIELD name='id'/>
+					AND lbot.cms_org_id = ${target-cms-org-id}
+					AND lbot.deleted = 0
+					AND <FIELD name='active'/> = 1
+					AND <FIELD name='deleted'/> = 0
+					ORDER BY <FIELD name='id'/> ASC
+					]]>
+				</statement>
+			</query>
+			<query name="insert" type="INSERT">
+				<statement>
+					<![CDATA[
+					INSERT INTO <TABLE/>(<FIELDS/>)
+					VALUES(<VALUES/>)
+					]]>
+				</statement>
+			</query>
+			<query name="update-by-id" type="UPDATE">
+				<param name="key-id"/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELDS/>
+					WHERE <FIELD name='id'/> = ${key-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="delete-by-id" type="UPDATE">
+				<param name="key-id"/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='deleted'/> = 1
+					WHERE <FIELD name='id'/> = ${key-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+		</query-defs>
+	</entity>
+
+	<entity name="logical-bu-org-tbl" table="LOGICAL_BU_ORG_TBL" alias="lbot">
+		<var name="key-id" value-type="long" key-member="id" />
+		<var name="target-logical-bu-id" value-type="long"/>
+
+		<relation name="logical-bu-info" entity-name="logical-bu-tbl" entity-alias="lbt"/>
+
+		<query-defs>
+			<query name="find-by-logical-bu-id" type="SELECT" multiple="true">
+				<param name="target-logical-bu-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='logical-bu-id'/> = ${target-logical-bu-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="delete-by-logical-bu-id" type="UPDATE">
+				<param name="target-logical-bu-id"/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>
+					SET <FIELD name='deleted'/> = 1, <FIELD name='deleted-at'/> = UNIX_TIMESTAMP()
+					WHERE <FIELD name='logical-bu-id'/> = ${target-logical-bu-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="insert" type="INSERT">
+				<statement>
+					<![CDATA[
+					INSERT INTO <TABLE/>(<FIELDS/>)
+					VALUES(<VALUES/>)
+					]]>
 				</statement>
 			</query>
 		</query-defs>

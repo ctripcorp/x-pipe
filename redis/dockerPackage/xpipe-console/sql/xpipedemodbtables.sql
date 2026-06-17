@@ -80,6 +80,7 @@ CREATE TABLE `CLUSTER_TBL` (
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   `is_xpipe_interested` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'is xpipe interested',
   `cluster_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of cluster',
+  `logical_bu_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'logical bu id, 0 means unbound',
   `cluster_admin_emails` varchar(1024) DEFAULT ' ' COMMENT 'persons email who in charge of this cluster',
   `cluster_designated_route_ids` varchar(1024) NOT NULL DEFAULT '' COMMENT 'designated routeIds',
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'cluster create time',
@@ -167,6 +168,7 @@ CREATE TABLE `REDIS_TBL` (
   `master` tinyint(1) DEFAULT '0' COMMENT 'redis master tag',
   `redis_master` bigint(20) unsigned DEFAULT NULL COMMENT 'redis master id',
   `keepercontainer_id` bigint(20) unsigned DEFAULT NULL COMMENT 'keepercontainer id',
+  `keeper_priority` int(11) NOT NULL DEFAULT '1' COMMENT 'keeper priority for election',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'instance create time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
@@ -193,6 +195,7 @@ CREATE TABLE `KEEPERCONTAINER_TBL` (
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   `keepercontainer_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'organization id of keeper container',
+  `logical_bu_id` bigint(20) unsigned DEFAULT NULL COMMENT 'logical bu id',
   PRIMARY KEY (`keepercontainer_id`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`),
   KEY `keepercontainer_dc` (`keepercontainer_dc`)
@@ -274,6 +277,33 @@ CREATE TABLE `config_tbl` (
 
 INSERT INTO config_tbl (`key`, `value`, `desc`) VALUES ('sentinel.auto.process', 'true', '自动增删哨兵');
 INSERT INTO config_tbl (`key`, `value`, `desc`) VALUES ('alert.system.on', 'true', '邮件报警系统开关');
+
+-- Logical BU Table
+drop table if exists LOGICAL_BU_ORG_TBL;
+drop table if exists LOGICAL_BU_TBL;
+CREATE TABLE `LOGICAL_BU_TBL` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `name` varchar(128) NOT NULL DEFAULT '' COMMENT 'logical bu display name',
+  `tfs_fs_id` varchar(128) NOT NULL DEFAULT '' COMMENT 'tfs fs id for ForceCloseDir',
+  `active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'accept new cluster binding',
+  `description` varchar(1024) NOT NULL DEFAULT '' COMMENT 'description',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  PRIMARY KEY (`id`),
+  KEY `DataChange_LastTime` (`DataChange_LastTime`)
+) DEFAULT CHARSET=utf8 COMMENT='logical bu info';
+
+CREATE TABLE `LOGICAL_BU_ORG_TBL` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+  `logical_bu_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference logical bu id',
+  `cms_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference cms org id',
+  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
+  `deleted_at` int(11) NOT NULL DEFAULT '0' COMMENT 'deleted time',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_logical_bu_org` (`logical_bu_id`,`cms_org_id`,`deleted_at`),
+  KEY `cms_org_id` (`cms_org_id`)
+) DEFAULT CHARSET=utf8 COMMENT='logical bu and cms org mapping';
 
 -- Organization Table
 drop table if exists organization_tbl;
