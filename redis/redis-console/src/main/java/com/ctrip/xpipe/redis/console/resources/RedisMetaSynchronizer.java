@@ -7,12 +7,16 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.InstanceNode;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaSynchronizer;
+import com.ctrip.xpipe.redis.core.meta.comparator.InstanceNodeComparator;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class RedisMetaSynchronizer implements MetaSynchronizer {
@@ -38,6 +42,7 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
     public void sync() {
         remove();
         add();
+        update();
     }
 
     void remove() {
@@ -64,21 +69,59 @@ public class RedisMetaSynchronizer implements MetaSynchronizer {
         try {
             if (added == null || added.isEmpty())
                 return;
-            String clusterId = "";
-            String shardId = "";
-            List<Pair<String, Integer>> toAdded = new ArrayList<>();
-            List<RedisMeta> toUpdateMaster = new ArrayList<>();
+            String clusterId = null;
+            String shardId = null;
+            Map<Pair<String, Integer>, String> addrToAzName = new HashMap<>();
             for (InstanceNode instanceNode : added) {
-                toAdded.add(new Pair<>(instanceNode.getIp(), instanceNode.getPort()));
-                toUpdateMaster.add((RedisMeta) instanceNode);
-                clusterId = ((ClusterMeta) ((RedisMeta) instanceNode).parent().parent()).getId();
-                shardId = ((RedisMeta) instanceNode).parent().getId();
+                RedisMeta redisMeta = (RedisMeta) instanceNode;
+                if (clusterId == null) {
+                    clusterId = ((ClusterMeta) redisMeta.parent().parent()).getId();
+                    shardId = redisMeta.parent().getId();
+                }
+                addrToAzName.put(new Pair<>(instanceNode.getIp(), instanceNode.getPort()), redisMeta.getAz());
             }
             logger.info("[RedisMetaSynchronizer][insertRedises]{}", added);
-            redisService.insertRedises(dcId, clusterId, shardId, toAdded);
-            CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[addRedises]%s", toAdded));
+            redisService.insertRedises(dcId, clusterId, shardId, addrToAzName);
+            CatEventMonitor.DEFAULT.logEvent(META_SYNC, String.format("[addRedises]%s", added));
         } catch (Exception e) {
             logger.error("[RedisMetaSynchronizer][insertRedises]", e);
+        }
+    }
+
+    void update() {
+        try {
+            if (modified == null || modified.isEmpty())
+                return;
+            Map<String, String> addressAzNameMap = new HashMap<>();
+            String clusterId = null;
+            String shardId = null;
+            for (MetaComparator metaComparator : modified) {
+                InstanceNodeComparator comparator = (InstanceNodeComparator) metaComparator;
+                RedisMeta future = (RedisMeta) comparator.getFuture();
+                RedisMeta current = (RedisMeta) comparator.getCurrent();
+
+                String futureAz = future.getAz();
+                String currentAz = current.getAz();
+                if (futureAz != null && futureAz.isEmpty()) futureAz = null;
+                if (currentAz != null && currentAz.isEmpty()) currentAz = null;
+                if (Objects.equals(futureAz, currentAz)) {
+                    continue;
+                }
+
+                if (clusterId == null) {
+                    clusterId = ((ClusterMeta) future.parent().parent()).getId();
+                    shardId = future.parent().getId();
+                }
+
+                String addr = future.getIp() + ":" + future.getPort();
+                addressAzNameMap.put(addr, futureAz);
+                logger.info("[RedisMetaSynchronizer][update]{} az: {} -> {}", future.desc(), currentAz, futureAz);
+            }
+            if (!addressAzNameMap.isEmpty()) {
+                redisService.updateRedisesAz(dcId, clusterId, shardId, addressAzNameMap);
+            }
+        } catch (Exception e) {
+            logger.error("[RedisMetaSynchronizer][update]", e);
         }
     }
 

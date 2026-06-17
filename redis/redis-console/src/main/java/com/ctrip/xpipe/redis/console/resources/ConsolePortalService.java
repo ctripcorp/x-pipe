@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisWithAzInfo;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -215,15 +216,24 @@ public class ConsolePortalService extends AbstractService {
     }
 
     public void insertRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) {
+        Map<Pair<String, Integer>, String> addrToAzName = new HashMap<>();
+        for (Pair<String, Integer> addr : addrs) {
+            addrToAzName.put(addr, null);
+        }
+        insertRedises(dcId, clusterId, shardId, addrToAzName);
+    }
+
+    public void insertRedises(String dcId, String clusterId, String shardId, Map<Pair<String, Integer>, String> addrToAzName) {
         RedisCreateInfo redisCreateInfo = new RedisCreateInfo();
         redisCreateInfo.setDcId(dcId);
         redisCreateInfo.setClusterId(clusterId);
         redisCreateInfo.setShardName(shardId);
-        List<String> redisAddrs = new ArrayList<>();
-        for (Pair<String, Integer> addr : addrs) {
-            redisAddrs.add(addr.getKey() + ":" + addr.getValue());
+        List<RedisWithAzInfo> redisesWithAz = new ArrayList<>();
+        for (Map.Entry<Pair<String, Integer>, String> entry : addrToAzName.entrySet()) {
+            Pair<String, Integer> addr = entry.getKey();
+            redisesWithAz.add(new RedisWithAzInfo().setAddr(addr.getKey() + ":" + addr.getValue()).setAzName(entry.getValue()));
         }
-        redisCreateInfo.setRedises(redisAddrs.stream().collect(Collectors.joining(",")));
+        redisCreateInfo.setRedisesWithAz(redisesWithAz);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

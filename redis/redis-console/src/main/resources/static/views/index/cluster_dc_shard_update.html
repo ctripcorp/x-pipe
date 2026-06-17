@@ -60,8 +60,15 @@
                         <tbody>
                         <tr ng-repeat="redis in dcShards[currentDcName].redises">
                             <td title="{{redis.runId}}">
-                                <span class="label label-info" ng-if="redis.master === true">
-                                    Master</span>  Redis
+                                <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                                    <span style="width:46px; text-align:right; flex-shrink:0;">
+                                        <span class="label label-info" ng-if="redis.master === true">Master</span>
+                                    </span>
+                                    <span style="width:40px; text-align:center; flex-shrink:0;">Redis</span>
+                                    <span style="width:54px; text-align:left; flex-shrink:0;">
+                                        <span class="label label-default" ng-if="redis.azName">{{redis.azName}}</span>
+                                    </span>
+                                </div>
                             </td>
                             <td ng-bind="redis.redisIp">
                             </td>
@@ -73,8 +80,15 @@
                         </tr>
                         <tr ng-repeat="keeper in dcShards[currentDcName].keepers">
                             <td title="{{keeper.runId}}">
-                                <span class="label label-info" ng-if="keeper.keeperActive">
-                                    active</span>  Keeper
+                                <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                                    <span style="width:46px; text-align:right; flex-shrink:0;">
+                                        <span class="label label-info" ng-if="keeper.keeperActive">active</span>
+                                    </span>
+                                    <span style="width:40px; text-align:center; flex-shrink:0;">Keeper</span>
+                                    <span style="width:54px; text-align:left; flex-shrink:0;">
+                                        <span class="label label-default" ng-if="keeper.azName">{{keeper.azName}}</span>
+                                    </span>
+                                </div>
                             </td>
                             <td ng-bind="keeper.redisIp">
                             </td>
