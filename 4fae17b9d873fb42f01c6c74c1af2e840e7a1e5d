@@ -1,0 +1,14 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/ck/CKStore.java
+  h_00df85a0850dc5 58,60,84-86,347
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "4fae17b9d873fb42f01c6c74c1af2e840e7a1e5d",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/ratelimit/impl/ProgressiveSyncRateLimiter.java
+  h_00df85a0850dc5 22,24,49,163
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/ratelimit/impl/ProgressiveSyncRateLimiterTest.java
+  h_00df85a0850dc5 219,223,226-228
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "5411e8a64e52720fd01eba896f07f5044fe5bb4b",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  }
+}
