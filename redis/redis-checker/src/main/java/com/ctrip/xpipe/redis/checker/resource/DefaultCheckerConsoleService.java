@@ -22,6 +22,8 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -56,7 +58,11 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
                 .queryParam("format", "xml")
                 .buildAndExpand(clusterPartIndex);
 
-        String raw = restTemplate.getForObject(comp.toString(), String.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Accept-Encoding", "lz4");
+        HttpEntity<?> entity = new HttpEntity<>(headers);
+        ResponseEntity<String> response = restTemplate.exchange(comp.toString(), HttpMethod.GET, entity, String.class);
+        String raw = response.getBody();
         if (StringUtil.isEmpty(raw)) return null;
         return DefaultSaxParser.parse(raw);
     }
@@ -67,7 +73,11 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_ALL_META)
                 .queryParam("format", "xml").build();
 
-        String raw = restTemplate.getForObject(comp.toString(), String.class);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Accept-Encoding", "lz4");
+        HttpEntity<?> entity = new HttpEntity<>(headers);
+        ResponseEntity<String> response = restTemplate.exchange(comp.toString(), HttpMethod.GET, entity, String.class);
+        String raw = response.getBody();
         if (StringUtil.isEmpty(raw)) return null;
         return DefaultSaxParser.parse(raw);
     }
