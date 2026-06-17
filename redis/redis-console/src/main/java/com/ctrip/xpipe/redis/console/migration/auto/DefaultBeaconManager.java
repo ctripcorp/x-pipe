@@ -151,7 +151,7 @@ public class DefaultBeaconManager implements BeaconManager {
     private int computeLocalClusterMetaHash(String clusterId, BeaconRouteType routeType, String lastModifyTime) {
         MonitorClusterMeta monitorClusterMeta = buildMonitorClusterMeta(clusterId, routeType,
                 Collections.emptyMap(), buildHashExtra(lastModifyTime));
-        return monitorClusterMeta.generateHashCodeForBeaconCheck();
+        return monitorClusterMeta.generateHashCodeForBeaconCheck(checkerConfig.shouldComputeExtraInHash());
     }
 
     private String resolveClusterLastModifyTime(String clusterId) {

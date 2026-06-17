@@ -40,7 +40,8 @@ public interface BeaconManager {
 
     /**
      * Local cluster meta hash used in {@link #checkClusterHash}; same as
-     * {@code buildMonitorClusterMeta(clusterId, routeType).generateHashCodeForBeaconCheck()} in console implementation.
+     * {@code buildMonitorClusterMeta(...).generateHashCodeForBeaconCheck(includeExtra)} in console implementation,
+     * where {@code includeExtra} follows {@code beacon.should.compute.extra.in.hash}.
      */
     int computeClusterMetaHash(String clusterId, ClusterType clusterType, BeaconRouteType routeType);
 

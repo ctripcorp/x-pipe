@@ -56,7 +56,7 @@ public class MonitorClusterMeta {
         this.shards = shards;
     }
 
-    public int generateHashCodeForBeaconCheck () {
+    public int generateHashCodeForBeaconCheck(boolean includeExtra) {
         Set<MonitorGroupMeta> groupsForHash = nodeGroups;
         if ((groupsForHash == null || groupsForHash.isEmpty()) && shards != null) {
             groupsForHash = convertShardsToNodeGroups(shards);
@@ -80,7 +80,9 @@ public class MonitorClusterMeta {
             builder.append(group.isMasterGroup())
                     .append(group.getNodes());
         }
-        appendSortedExtraData(builder, extra);
+        if (includeExtra) {
+            appendSortedExtraData(builder, extra);
+        }
         return builder.toHashCode();
     }
 

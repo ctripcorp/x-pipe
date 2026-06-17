@@ -56,7 +56,6 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
     private DefaultBeaconManager beaconManager;
 
     private Set<MonitorGroupMeta> groups;
-    private int localHash;
 
     @Before
     public void setUp() {
@@ -64,16 +63,69 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
 
         groups = Collections.singleton(new MonitorGroupMeta("shard1", "jq",
                 Collections.singleton(new HostPort("127.0.0.1", 6379)), true));
-        localHash = new MonitorClusterMeta(groups, hashExtra(LAST_MODIFY_TIME)).generateHashCodeForBeaconCheck();
+    }
+
+    @Test
+    public void shouldComputeExtraInHash_true_shouldIncludeExtraInLocalHash() {
+        mockDrMeta();
+        mockClusterLastModifyTime(LAST_MODIFY_TIME);
+        mockShouldComputeExtraInHash(true);
+
+        int expectedHash = expectedLocalHash(true, LAST_MODIFY_TIME);
+        int hashFromCompute = beaconManager.computeClusterMetaHash(CLUSTER_ID, CLUSTER_TYPE, BeaconRouteType.DR);
+        int hashWithoutExtra = expectedLocalHash(false, LAST_MODIFY_TIME);
+
+        Assert.assertEquals(expectedHash, hashFromCompute);
+        Assert.assertNotEquals(hashWithoutExtra, hashFromCompute);
+
+        Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(hashFromCompute);
+        Assert.assertEquals(BeaconCheckStatus.CONSISTENCY,
+                beaconManager.checkClusterHash(CLUSTER_ID, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME));
+    }
+
+    @Test
+    public void shouldComputeExtraInHash_false_shouldExcludeExtraFromLocalHash() {
+        mockDrMeta();
+        mockClusterLastModifyTime(LAST_MODIFY_TIME);
+        mockShouldComputeExtraInHash(false);
+
+        int expectedHash = expectedLocalHash(false, LAST_MODIFY_TIME);
+        int hashFromCompute = beaconManager.computeClusterMetaHash(CLUSTER_ID, CLUSTER_TYPE, BeaconRouteType.DR);
+        int hashWithExtra = expectedLocalHash(true, LAST_MODIFY_TIME);
+
+        Assert.assertEquals(expectedHash, hashFromCompute);
+        Assert.assertNotEquals(hashWithExtra, hashFromCompute);
+
+        Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(hashFromCompute);
+        Assert.assertEquals(BeaconCheckStatus.CONSISTENCY,
+                beaconManager.checkClusterHash(CLUSTER_ID, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME));
+    }
+
+    @Test
+    public void shouldComputeExtraInHash_false_staleLastModifyTimeShouldNotAffectLocalHash() {
+        mockDrMeta();
+        mockShouldComputeExtraInHash(false);
+        mockClusterLastModifyTime("20200101103030002");
+
+        int hashFromCompute = beaconManager.computeClusterMetaHash(CLUSTER_ID, CLUSTER_TYPE, BeaconRouteType.DR);
+        int hashFromStaleCheckParam = expectedLocalHash(false, "20200101103030001");
+
+        Assert.assertEquals(hashFromStaleCheckParam, hashFromCompute);
+
+        Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(hashFromCompute);
+        Assert.assertEquals(BeaconCheckStatus.CONSISTENCY,
+                beaconManager.checkClusterHash(CLUSTER_ID, CLUSTER_TYPE, ORG_ID, "20200101103030001"));
     }
 
     @Test
     public void computeClusterMetaHash_shouldMatchCheckClusterHashLocalSide_forDrRoute() {
+        mockShouldComputeExtraInHash(true);
         assertLocalHashConsistentBetweenCheckAndCompute(BeaconRouteType.DR, CLUSTER_TYPE);
     }
 
     @Test
     public void computeClusterMetaHash_shouldMatchCheckClusterHashLocalSide_forSentinelRoute() {
+        mockShouldComputeExtraInHash(true);
         Set<MonitorShardMeta> shards = Collections.singleton(new MonitorShardMeta("shard1", Arrays.asList(
                 new MonitorGroupMeta("127.0.0.1:6379", "jq",
                         Collections.singleton(new HostPort("127.0.0.1", 6379)), true)
@@ -88,10 +140,10 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
     public void computeClusterMetaHash_shouldUseMetaCacheLastModifyTimeSameAsCheckClusterHashParam() {
         mockDrMeta();
         mockClusterLastModifyTime(LAST_MODIFY_TIME);
+        mockShouldComputeExtraInHash(true);
 
         int hashFromCompute = beaconManager.computeClusterMetaHash(CLUSTER_ID, CLUSTER_TYPE, BeaconRouteType.DR);
-        int hashFromCheckParam = new MonitorClusterMeta(groups, hashExtra(LAST_MODIFY_TIME))
-                .generateHashCodeForBeaconCheck();
+        int hashFromCheckParam = expectedLocalHash(true, LAST_MODIFY_TIME);
 
         Assert.assertEquals(hashFromCheckParam, hashFromCompute);
     }
@@ -99,13 +151,13 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
     @Test
     public void computeClusterMetaHash_shouldDifferFromCheckClusterHash_whenStaleInstanceLastModifyTime() {
         mockDrMeta();
+        mockShouldComputeExtraInHash(true);
         String staleLastModifyTime = "20200101103030001";
         String freshLastModifyTime = "20200101103030002";
         mockClusterLastModifyTime(freshLastModifyTime);
 
         int hashFromCompute = beaconManager.computeClusterMetaHash(CLUSTER_ID, CLUSTER_TYPE, BeaconRouteType.DR);
-        int hashFromCheckStaleParam = new MonitorClusterMeta(groups, hashExtra(staleLastModifyTime))
-                .generateHashCodeForBeaconCheck();
+        int hashFromCheckStaleParam = expectedLocalHash(true, staleLastModifyTime);
 
         Assert.assertNotEquals("stale ClusterInstanceInfo lastModifyTime should produce different local hash",
                 hashFromCheckStaleParam, hashFromCompute);
@@ -118,6 +170,8 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
     @Test
     public void clusterConsistentWithLastModifyTimeExtra_shouldReturnConsistency() {
         mockDrMeta();
+        mockShouldComputeExtraInHash(true);
+        int localHash = expectedLocalHash(true, LAST_MODIFY_TIME);
         Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(localHash);
 
         BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME);
@@ -129,6 +183,8 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
     @Test
     public void clusterChanged_shouldReturnInconsistency() {
         mockDrMeta();
+        mockShouldComputeExtraInHash(true);
+        int localHash = expectedLocalHash(true, LAST_MODIFY_TIME);
         Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(localHash + 1);
         Mockito.when(checkerConfig.checkBeaconLastModifyTime()).thenReturn(true);
         Map<String, String> clusterExtra = new HashMap<>();
@@ -143,6 +199,8 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
     @Test
     public void clusterChanged_butBeaconLastModifyTimeNewer_shouldReturnInconsistencyIgnore() {
         mockDrMeta();
+        mockShouldComputeExtraInHash(true);
+        int localHash = expectedLocalHash(true, LAST_MODIFY_TIME);
         Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(localHash + 1);
         Mockito.when(checkerConfig.checkBeaconLastModifyTime()).thenReturn(true);
         Map<String, String> clusterExtra = new HashMap<>();
@@ -157,6 +215,8 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
     @Test
     public void checkBeaconLastModifyTimeDisabled_shouldSkipExtraCheckAndReturnInconsistency() {
         mockDrMeta();
+        mockShouldComputeExtraInHash(true);
+        int localHash = expectedLocalHash(true, LAST_MODIFY_TIME);
         Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(localHash + 1);
         Mockito.when(checkerConfig.checkBeaconLastModifyTime()).thenReturn(false);
 
@@ -169,6 +229,8 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
     @Test
     public void getBeaconClusterExtraThrow404_shouldSkipLastModifyTimeCheckAndReturnInconsistency() {
         mockDrMeta();
+        mockShouldComputeExtraInHash(true);
+        int localHash = expectedLocalHash(true, LAST_MODIFY_TIME);
         Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(localHash + 1);
         Mockito.when(checkerConfig.checkBeaconLastModifyTime()).thenReturn(true);
         Mockito.when(monitorService.getBeaconClusterExtra("xpipe", CLUSTER_ID))
@@ -181,11 +243,12 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
 
     @Test
     public void sentinelRouteShouldUseShardsForHashCheck() {
+        mockShouldComputeExtraInHash(true);
         Set<MonitorShardMeta> shards = Collections.singleton(new MonitorShardMeta("shard1", Arrays.asList(
                 new MonitorGroupMeta("127.0.0.1:6379", "jq",
                         Collections.singleton(new HostPort("127.0.0.1", 6379)), true)
         )));
-        int shardHash = new MonitorClusterMeta(null, shards, hashExtra(LAST_MODIFY_TIME)).generateHashCodeForBeaconCheck();
+        int shardHash = new MonitorClusterMeta(null, shards, hashExtra(LAST_MODIFY_TIME)).generateHashCodeForBeaconCheck(true);
         Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, BeaconRouteType.SENTINEL)).thenReturn(monitorService);
         Mockito.when(beaconMetaService.buildBeaconShards(CLUSTER_ID, "jq", Collections.emptyMap())).thenReturn(shards);
         Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(shardHash);
@@ -198,11 +261,12 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
 
     @Test
     public void sentinelRouteSingleDcShouldUseOneWaySystem() {
+        mockShouldComputeExtraInHash(true);
         Set<MonitorShardMeta> shards = Collections.singleton(new MonitorShardMeta("shard1", Arrays.asList(
                 new MonitorGroupMeta("127.0.0.1:6379", "jq",
                         Collections.singleton(new HostPort("127.0.0.1", 6379)), true)
         )));
-        int shardHash = new MonitorClusterMeta(null, shards, hashExtra(LAST_MODIFY_TIME)).generateHashCodeForBeaconCheck();
+        int shardHash = new MonitorClusterMeta(null, shards, hashExtra(LAST_MODIFY_TIME)).generateHashCodeForBeaconCheck(true);
         Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, BeaconRouteType.SENTINEL)).thenReturn(monitorService);
         Mockito.when(beaconMetaService.buildBeaconShards(CLUSTER_ID, "jq", Collections.emptyMap())).thenReturn(shards);
         Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(shardHash);
@@ -244,6 +308,14 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
 
     private Map<String, String> hashExtra(String lastModifyTime) {
         return Collections.singletonMap("lastModifyTime", lastModifyTime);
+    }
+
+    private void mockShouldComputeExtraInHash(boolean enabled) {
+        Mockito.when(checkerConfig.shouldComputeExtraInHash()).thenReturn(enabled);
+    }
+
+    private int expectedLocalHash(boolean includeExtra, String lastModifyTime) {
+        return new MonitorClusterMeta(groups, hashExtra(lastModifyTime)).generateHashCodeForBeaconCheck(includeExtra);
     }
 
     /**
