@@ -32,8 +32,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
-import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.BLOCK;
-import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
+import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.*;
 
 /**
  * @author lishanglin
@@ -307,6 +306,13 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if(blockFile.exists()) {
             if(!blockFile.delete()) {
                 getLogger().warn("[delCmdFile][{}] del block file fail", indexFile);
+            }
+        }
+
+        File nonGtidFile = new File(baseDir, NONGTID + cmdFile.getName());
+        if(nonGtidFile.exists()) {
+            if(!nonGtidFile.delete()) {
+                getLogger().warn("[delCmdFile][{}] del nongtid file fail", nonGtidFile);
             }
         }
 

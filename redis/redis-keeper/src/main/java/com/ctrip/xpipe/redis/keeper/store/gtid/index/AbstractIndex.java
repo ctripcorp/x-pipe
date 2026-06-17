@@ -16,6 +16,7 @@ public abstract class AbstractIndex {
 
     public static final String BLOCK = "block_";
     public static final String INDEX = "index_";
+    public static final String NONGTID = "nongtid_";
 
     private String fileName;
     private String baseDir;
