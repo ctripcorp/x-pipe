@@ -16,6 +16,7 @@ import org.unidal.dal.jdbc.DalException;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Conditional(ConsoleDisableDbCondition.class)
@@ -81,6 +82,11 @@ public class RedisServiceWithoutDB implements RedisService {
     }
 
     @Override
+    public void insertRedises(String dcId, String clusterId, String shardId, Map<Pair<String, Integer>, String> addrToAzName) throws DalException, ResourceNotFoundException {
+        consolePortalService.insertRedises(dcId, clusterId, shardId, addrToAzName);
+    }
+
+    @Override
     public void deleteRedises(String dcId, String clusterId, String shardId, List<Pair<String, Integer>> addrs) throws ResourceNotFoundException {
         throw new UnsupportedOperationException();
     }
@@ -117,6 +123,11 @@ public class RedisServiceWithoutDB implements RedisService {
 
     @Override
     public void updateRedises(String dcName, String clusterName, String shardName, ShardModel shardModel) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void updateRedisesAz(String dcId, String clusterId, String shardId, Map<String, String> addressAzNameMap) {
         throw new UnsupportedOperationException();
     }
 

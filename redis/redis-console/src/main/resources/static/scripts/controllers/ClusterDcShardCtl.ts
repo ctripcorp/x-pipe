@@ -3,10 +3,10 @@ angular
     .controller('ClusterCtl', ClusterCtl);
 
 ClusterCtl.$inject = ['$rootScope', '$scope', '$stateParams', '$window','$interval', '$location','toastr', 'AppUtil',
-'ClusterService', 'DcClusterService', 'HealthCheckService', 'ProxyService', 'ClusterType'];
+'ClusterService', 'DcClusterService', 'HealthCheckService', 'ProxyService', 'ClusterType', 'ShardService'];
 
 function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $location, toastr, AppUtil, ClusterService,
-    DcClusterService, HealthCheckService, ProxyService, ClusterType) {
+    DcClusterService, HealthCheckService, ProxyService, ClusterType, ShardService) {
 
     $scope.dcs, $scope.shards;
     $scope.clusterName = $stateParams.clusterName;
@@ -117,6 +117,21 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
                         if (v1.shardTbl.shardName > v2.shardTbl.shardName) return 1;
                         else if (v1.shardTbl.shardName < v2.shardTbl.shardName) return -1;
                         else return 0;
+                    });
+                    $scope.shards.forEach(function(shard) {
+                        ShardService.getNodesWithAz($scope.clusterName, dcName, shard.shardTbl.shardName)
+                            .then(function(redisesWithAz) {
+                                var azMap = {};
+                                redisesWithAz.forEach(function(r) { azMap[r.addr] = r.azName; });
+                                shard.redises.forEach(function(redis) {
+                                    var addr = redis.redisIp + ':' + redis.redisPort;
+                                    redis.azName = azMap[addr] || null;
+                                });
+                                shard.keepers.forEach(function(keeper) {
+                                    var addr = keeper.redisIp + ':' + keeper.redisPort;
+                                    keeper.azName = azMap[addr] || null;
+                                });
+                            });
                     });
                 }
                if (result.sources != null) {

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisWithAzInfo;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.console.service.RedisService;
@@ -14,7 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -37,13 +40,11 @@ public class RedisUpdateController extends AbstractConsoleController{
 
     @RequestMapping(value = "/redises/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
     public List<String> getRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId) {
-
         logger.info("[getRedises]{},{},{}", dcId, clusterId, shardId);
 
         List<String> result = new LinkedList<>();
-        List<RedisTbl> redisTbls = null;
         try {
-            redisTbls = redisService.findRedisesByDcClusterShard(outerDcToInnerDc(dcId), clusterId, shardId);
+            List<RedisTbl> redisTbls = redisService.findRedisesByDcClusterShard(outerDcToInnerDc(dcId), clusterId, shardId);
             redisTbls.forEach(new Consumer<RedisTbl>() {
                 @Override
                 public void accept(RedisTbl redisTbl) {
@@ -56,16 +57,18 @@ public class RedisUpdateController extends AbstractConsoleController{
         return result;
     }
 
-
     @RequestMapping(value = "/redises/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public RetMessage addRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId, @RequestBody List<String> redises) {
+    public RetMessage addRedises(@PathVariable String dcId, @PathVariable String clusterId, @PathVariable String shardId, @RequestBody List<RedisWithAzInfo> redises) {
 
         logger.info("[addRedises]{},{},{}, {}", dcId, clusterId, shardId, redises);
 
-        List<Pair<String, Integer>> redisAddresses = null;
         try {
-            redisAddresses = getRedisAddresses(redises);
-            redisService.insertRedises(outerDcToInnerDc(dcId), clusterId, shardId, redisAddresses);
+            String innerDcId = outerDcToInnerDc(dcId);
+            Map<Pair<String, Integer>, String> addrToAzName = new HashMap<>();
+            for (RedisWithAzInfo node : redises) {
+                addrToAzName.put(IpUtils.parseSingleAsPair(node.getAddr()), node.getAzName());
+            }
+            redisService.insertRedises(innerDcId, clusterId, shardId, addrToAzName);
             return RetMessage.createSuccessMessage();
         } catch (Exception e){
             logger.error("[addRedises]", e);

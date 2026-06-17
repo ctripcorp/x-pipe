@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
@@ -55,6 +56,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     protected ConsoleConfig consoleConfig;
     @Autowired
     protected MetaCache metaCache;
+
+    @Autowired
+    private AzCache azCache;
 
     private Comparator<RedisTbl> redisComparator = new Comparator<RedisTbl>() {
         @Override
@@ -188,8 +192,31 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                                            List<Pair<String, Integer>> redisAddresses)
             throws DalException, ResourceNotFoundException {
 
-        doInsertInstances(XPipeConsoleConstant.ROLE_REDIS, dcId, clusterId, shardId, redisAddresses);
+        Map<Pair<String, Integer>, Long> addrToAzId = new HashMap<>();
+        for (Pair<String, Integer> addr : redisAddresses) {
+            addrToAzId.put(addr, null);
+        }
+        insertRedisesById(dcId, clusterId, shardId, addrToAzId);
+    }
 
+    @Override
+    public synchronized void insertRedises(String dcId, String clusterId, String shardId,
+                                           Map<Pair<String, Integer>, String> addrToAzName)
+            throws DalException, ResourceNotFoundException {
+        Map<Pair<String, Integer>, Long> addrToAzId = new HashMap<>();
+        for (Map.Entry<Pair<String, Integer>, String> entry : addrToAzName.entrySet()) {
+            String azName = entry.getValue();
+            Long azId = (azName != null) ? azCache.findId(azName) : null;
+            addrToAzId.put(entry.getKey(), azId);
+        }
+        insertRedisesById(dcId, clusterId, shardId, addrToAzId);
+    }
+
+    private synchronized void insertRedisesById(String dcId, String clusterId, String shardId,
+                                           Map<Pair<String, Integer>, Long> addrToAzId)
+            throws DalException, ResourceNotFoundException {
+
+        doInsertInstances(XPipeConsoleConstant.ROLE_REDIS, dcId, clusterId, shardId, addrToAzId);
         notifyClusterUpdate(dcId, clusterId);
     }
 
@@ -219,6 +246,22 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         return MathUtil.sum(insert);
     }
 
+    private void doInsertInstances(String role, String dcId, String clusterId, String shardId,
+                                   Map<Pair<String, Integer>, Long> addrToAzId) throws ResourceNotFoundException, DalException {
+        DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dcId, clusterId, shardId);
+        if (dcClusterShardTbl == null) {
+            throw new ResourceNotFoundException(dcId, clusterId, shardId);
+        }
+        List<RedisTbl> existing = doFindAllByDcClusterShardId(dcClusterShardTbl.getDcClusterShardId(), XPipeConsoleConstant.ROLE_REDIS);
+        List<Pair<String, Integer>> toAdd = sub(new ArrayList<>(addrToAzId.keySet()), existing);
+        logger.info("[doInsertInstances][dc:{}, cluster:{}, shard:{}] toAdd: {}", dcId, clusterId, shardId, toAdd);
+        Map<Pair<String, Integer>, Long> toAddMap = new HashMap<>();
+        for (Pair<String, Integer> addr : toAdd) {
+            toAddMap.put(addr, addrToAzId.get(addr));
+        }
+        insertInstancesToDb(dcClusterShardTbl.getDcClusterShardId(), role, toAddMap);
+    }
+
     @Override
     public List<RedisTbl> deleteKeepers(String dcId, String clusterId, String shardId) throws DalException, ResourceNotFoundException {
         Map<Long, Long> keeperContainerIdDcMap = keeperContainerService.keeperContainerIdDcMap();
@@ -235,22 +278,6 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             }
         });
         return keepersByDcClusterShard;
-    }
-
-
-    private void doInsertInstances(String role, String dcId, String clusterId, String shardId, List<Pair<String, Integer>> redisAddresses) throws ResourceNotFoundException, DalException {
-
-        DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find(dcId, clusterId, shardId);
-        if (dcClusterShardTbl == null) {
-            throw new ResourceNotFoundException(dcId, clusterId, shardId);
-        }
-        List<RedisTbl> redisTbls = doFindAllByDcClusterShardId(dcClusterShardTbl.getDcClusterShardId(), XPipeConsoleConstant.ROLE_REDIS);
-
-        List<Pair<String, Integer>> toAdd = sub(redisAddresses, redisTbls);
-
-        logger.info("[doInsertInstances]{}", toAdd);
-
-        insertInstancesToDb(dcClusterShardTbl.getDcClusterShardId(), role, toAdd.toArray(new Pair[0]));
     }
 
     @Override
@@ -361,6 +388,60 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 
         // Notify metaserver
         notifyClusterUpdate(dcName, clusterName);
+    }
+
+    @Override
+    public void updateRedisesAz(String dcId, String clusterId, String shardId, Map<String, String> addressAzNameMap)
+            throws ResourceNotFoundException {
+        if (addressAzNameMap == null || addressAzNameMap.isEmpty()) return;
+        Map<String, Long> addressAzMap = new HashMap<>();
+        for (Map.Entry<String, String> entry : addressAzNameMap.entrySet()) {
+            String azName = entry.getValue();
+            Long azId = null;
+            if (azName != null && !azName.isEmpty()) {
+                azId = azCache.findId(azName);
+            }
+            addressAzMap.put(entry.getKey(), azId != null ? azId : 0L);
+        }
+        updateRedisesAzById(dcId, clusterId, shardId, addressAzMap);
+    }
+
+    private void updateRedisesAzById(String dcId, String clusterId, String shardId, Map<String, Long> addressAzMap)
+            throws ResourceNotFoundException {
+        if (addressAzMap == null || addressAzMap.isEmpty()) {
+            return;
+        }
+
+        DcClusterShardTbl dcClusterShard = dcClusterShardService.find(dcId, clusterId, shardId);
+        if (dcClusterShard == null) {
+            throw new ResourceNotFoundException("dc-cluster-shard not found: " + dcId + "/" + clusterId + "/" + shardId);
+        }
+
+        List<RedisTbl> redises = findAllByDcClusterShard(dcClusterShard.getDcClusterShardId());
+
+        Map<String, RedisTbl> addrToRedis = new HashMap<>();
+        for (RedisTbl redis : redises) {
+            if (XPipeConsoleConstant.ROLE_REDIS.equalsIgnoreCase(redis.getRedisRole())) {
+                addrToRedis.put(redis.getRedisIp() + ":" + redis.getRedisPort(), redis);
+            }
+        }
+
+        List<RedisTbl> toUpdate = new ArrayList<>();
+        for (Map.Entry<String, Long> entry : addressAzMap.entrySet()) {
+            RedisTbl redis = addrToRedis.get(entry.getKey());
+            if (redis != null) {
+                redis.setAzId(entry.getValue());
+                toUpdate.add(redis);
+            } else {
+                logger.warn("[updateRedisesAz][dc:{}, cluster:{}, shard:{}] redis not found: {}", dcId, clusterId, shardId, entry.getKey());
+            }
+        }
+
+        if (!toUpdate.isEmpty()) {
+            redisDao.updateBatch(toUpdate);
+            notifyClusterUpdate(dcId, clusterId);
+            logger.info("[updateRedisesAz][dc:{}, cluster:{}, shard:{}] updated {} redises", dcId, clusterId, shardId, toUpdate.size());
+        }
     }
 
     private List<RedisTbl> findAllShardRedisesAndKeepers(long dcClusterShardId, long dcId) {
@@ -592,10 +673,21 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     }
 
     public void insertInstancesToDb(long dcClusterShardId, String role, Pair<String, Integer>... addrs) throws DalException {
-
+        Map<Pair<String, Integer>, Long> addrToAzId = new HashMap<>();
         for (Pair<String, Integer> addr : addrs) {
-            insert(createRedisTbl(addr, role).setDcClusterShardId(dcClusterShardId));
+            addrToAzId.put(addr, null);
         }
+        insertInstancesToDb(dcClusterShardId, role, addrToAzId);
+    }
 
+    public void insertInstancesToDb(long dcClusterShardId, String role, Map<Pair<String, Integer>, Long> addrToAzId) throws DalException {
+        List<RedisTbl> toInsert = new ArrayList<>();
+        for (Map.Entry<Pair<String, Integer>, Long> entry : addrToAzId.entrySet()) {
+            RedisTbl redisTbl = createRedisTbl(entry.getKey(), role).setDcClusterShardId(dcClusterShardId);
+            Long azId = entry.getValue();
+            redisTbl.setAzId(azId != null && azId > 0 ? azId : 0L);
+            toInsert.add(redisTbl);
+        }
+        if (!toInsert.isEmpty()) insert(toInsert);
     }
 }

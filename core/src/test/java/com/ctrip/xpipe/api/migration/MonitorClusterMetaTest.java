@@ -118,4 +118,66 @@ public class MonitorClusterMetaTest {
 
         Assert.assertEquals(fromGroups.generateHashCodeForBeaconCheck(), fromShards.generateHashCodeForBeaconCheck());
     }
+
+    @Test
+    public void testGenerateHashCode_withAzVsWithoutAz_notEqual() {
+        MonitorGroupMeta withAz = new MonitorGroupMeta("shard1+jq", "jq",
+                Sets.newHashSet(HostPort.fromString("127.0.0.1:6379")), true);
+        withAz.setAz("az1");
+
+        MonitorGroupMeta withoutAz = new MonitorGroupMeta("shard1+jq", "jq",
+                Sets.newHashSet(HostPort.fromString("127.0.0.1:6379")), true);
+
+        MonitorClusterMeta clusterWithAz    = new MonitorClusterMeta(Sets.newHashSet(withAz));
+        MonitorClusterMeta clusterWithoutAz = new MonitorClusterMeta(Sets.newHashSet(withoutAz));
+
+        Assert.assertNotEquals(clusterWithAz.generateHashCodeForBeaconCheck(), clusterWithoutAz.generateHashCodeForBeaconCheck());
+    }
+
+    @Test
+    public void testGenerateHashCode_bothWithSameAz_equal() {
+        MonitorGroupMeta groupA = new MonitorGroupMeta("shard1+jq", "jq",
+                Sets.newHashSet(HostPort.fromString("127.0.0.1:6379")), true);
+        groupA.setAz("az1");
+
+        MonitorGroupMeta groupB = new MonitorGroupMeta("shard1+jq", "jq",
+                Sets.newHashSet(HostPort.fromString("127.0.0.1:6379")), true);
+        groupB.setAz("az1");
+
+        MonitorClusterMeta clusterA = new MonitorClusterMeta(Sets.newHashSet(groupA));
+        MonitorClusterMeta clusterB = new MonitorClusterMeta(Sets.newHashSet(groupB));
+
+        Assert.assertEquals(clusterA.generateHashCodeForBeaconCheck(), clusterB.generateHashCodeForBeaconCheck());
+    }
+
+    @Test
+    public void testGenerateHashCode_bothWithNullAz_equal() {
+        MonitorGroupMeta groupA = new MonitorGroupMeta("shard1+jq", "jq",
+                Sets.newHashSet(HostPort.fromString("127.0.0.1:6379")), true);
+
+        MonitorGroupMeta groupB = new MonitorGroupMeta("shard1+jq", "jq",
+                Sets.newHashSet(HostPort.fromString("127.0.0.1:6379")), true);
+
+        MonitorClusterMeta clusterA = new MonitorClusterMeta(Sets.newHashSet(groupA));
+        MonitorClusterMeta clusterB = new MonitorClusterMeta(Sets.newHashSet(groupB));
+
+        Assert.assertEquals(clusterA.generateHashCodeForBeaconCheck(), clusterB.generateHashCodeForBeaconCheck());
+    }
+
+    @Test
+    public void testGenerateHashCode_sameGroupsDifferentInsertOrder_equal() {
+        MonitorGroupMeta gm1 = new MonitorGroupMeta("shard1+jq", "jq",
+                Sets.newHashSet(HostPort.fromString("127.0.0.1:6379")), true);
+        gm1.setAz("az1");
+
+        MonitorGroupMeta gm2 = new MonitorGroupMeta("shard2+oy", "oy",
+                Sets.newHashSet(HostPort.fromString("127.0.0.1:6380")), false);
+        gm2.setAz("az2");
+
+        MonitorClusterMeta cluster12 = new MonitorClusterMeta(Sets.newHashSet(gm1, gm2));
+        MonitorClusterMeta cluster21 = new MonitorClusterMeta(Sets.newHashSet(gm2, gm1));
+
+        Assert.assertEquals(cluster12.generateHashCodeForBeaconCheck(), cluster21.generateHashCodeForBeaconCheck());
+    }
+
 }

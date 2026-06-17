@@ -6,7 +6,9 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -19,6 +21,7 @@ public class RedisCreateInfo extends AbstractCreateInfo {
     private String clusterId;
     private String shardName;
     private String redises;
+    private List<RedisWithAzInfo> redisesWithAz;
 
     @Override
     public void check() throws CheckFailException {
@@ -72,5 +75,28 @@ public class RedisCreateInfo extends AbstractCreateInfo {
 
     public void setClusterId(String clusterId) {
         this.clusterId = clusterId;
+    }
+
+    public List<RedisWithAzInfo> getRedisesWithAz() {
+        return redisesWithAz;
+    }
+
+    public RedisCreateInfo setRedisesWithAz(List<RedisWithAzInfo> redisesWithAz) {
+        this.redisesWithAz = redisesWithAz;
+        return this;
+    }
+
+    public Map<Pair<String, Integer>, String> getAddrToAzName() {
+        Map<Pair<String, Integer>, String> addrToAzName = new HashMap<>();
+        if (redisesWithAz != null && !redisesWithAz.isEmpty()) {
+            for (RedisWithAzInfo a : redisesWithAz) {
+                addrToAzName.put(IpUtils.parseSingleAsPair(a.getAddr()), a.getAzName());
+            }
+        } else {
+            for (Pair<String, Integer> addr : getRedisAddresses()) {
+                addrToAzName.put(addr, null);
+            }
+        }
+        return addrToAzName;
     }
 }
