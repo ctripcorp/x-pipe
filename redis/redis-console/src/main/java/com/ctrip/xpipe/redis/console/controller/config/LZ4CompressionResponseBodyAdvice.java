@@ -14,42 +14,44 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 import javax.servlet.http.HttpServletRequest;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 @RestControllerAdvice
-public class LZ4CompressionResponseBodyAdvice implements ResponseBodyAdvice<byte[]> {
+public class LZ4CompressionResponseBodyAdvice implements ResponseBodyAdvice<Object> {
 
     private static LZ4Factory factory = LZ4Factory.fastestInstance();
 
     @Override
     public boolean supports(MethodParameter methodParameter, Class<? extends HttpMessageConverter<?>> aClass) {
 
-        if(!methodParameter.getParameterType().equals(byte[].class)) {
+        Class<?> returnType = methodParameter.getParameterType();
+        if (returnType != byte[].class && returnType != String.class) {
             return false;
         }
-        // 获取请求头
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
         String encode = request.getHeader(HttpHeaders.ACCEPT_ENCODING);
-        // 检查请求头中是否包含 Content-Encoding: lz4
-        return encode!= null && encode.contains("lz4");
+        return encode != null && encode.contains("lz4");
     }
 
     @Override
-    public byte[] beforeBodyWrite(byte[] body, MethodParameter methodParameter, MediaType mediaType, Class<? extends HttpMessageConverter<?>> aClass, ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse) {
+    public byte[] beforeBodyWrite(Object body, MethodParameter methodParameter, MediaType mediaType, Class<? extends HttpMessageConverter<?>> aClass, ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse) {
+
+        byte[] bytes;
+        if (body instanceof String) {
+            bytes = ((String) body).getBytes(StandardCharsets.UTF_8);
+        } else {
+            bytes = (byte[]) body;
+        }
 
         LZ4Compressor compressor = factory.fastCompressor();
-
-        // 压缩字节数组
-        int maxCompressedLength = compressor.maxCompressedLength(body.length);
+        int maxCompressedLength = compressor.maxCompressedLength(bytes.length);
         byte[] compressedBytes = new byte[maxCompressedLength];
-        int compressedLength = compressor.compress(body, 0, body.length, compressedBytes, 0, maxCompressedLength);
+        int compressedLength = compressor.compress(bytes, 0, bytes.length, compressedBytes, 0, maxCompressedLength);
 
-        // 设置 Content-Encoding 头部为 lz4
         serverHttpResponse.getHeaders().set("Content-Encoding", "lz4");
         serverHttpResponse.getHeaders().setContentLength(compressedLength);
 
-        // 返回压缩后的字节数组（需要截取实际压缩长度）
         return Arrays.copyOf(compressedBytes, compressedLength);
-
     }
 }
