@@ -14,6 +14,10 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconCheckStatus;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,14 +41,18 @@ public class DefaultBeaconManager implements BeaconManager {
 
     private CheckerConfig checkerConfig;
 
+    private MetaCache metaCache;
+
     private static final Logger logger = LoggerFactory.getLogger(DefaultBeaconManager.class);
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
 
     @Autowired
-    public DefaultBeaconManager(MonitorManager monitorManager, BeaconMetaService beaconMetaService, CheckerConfig checkerConfig) {
+    public DefaultBeaconManager(MonitorManager monitorManager, BeaconMetaService beaconMetaService,
+                                CheckerConfig checkerConfig, MetaCache metaCache) {
         this.monitorManager = monitorManager;
         this.beaconMetaService = beaconMetaService;
         this.checkerConfig = checkerConfig;
+        this.metaCache = metaCache;
     }
 
     @Override
@@ -111,8 +119,7 @@ public class DefaultBeaconManager implements BeaconManager {
             }
             throw e;
         }
-        MonitorClusterMeta monitorClusterMeta = buildMonitorClusterMeta(clusterId, routeType, Collections.emptyMap());
-        int localHash = monitorClusterMeta.generateHashCodeForBeaconCheck();
+        int localHash = computeLocalClusterMetaHash(clusterId, routeType, lastModifyTime);
         if (localHash == hash) {
             return BeaconCheckStatus.CONSISTENCY;
         }
@@ -138,7 +145,30 @@ public class DefaultBeaconManager implements BeaconManager {
 
     @Override
     public int computeClusterMetaHash(String clusterId, ClusterType clusterType, BeaconRouteType routeType) {
-        return buildMonitorClusterMeta(clusterId, routeType, Collections.emptyMap()).generateHashCodeForBeaconCheck();
+        return computeLocalClusterMetaHash(clusterId, routeType, resolveClusterLastModifyTime(clusterId));
+    }
+
+    private int computeLocalClusterMetaHash(String clusterId, BeaconRouteType routeType, String lastModifyTime) {
+        MonitorClusterMeta monitorClusterMeta = buildMonitorClusterMeta(clusterId, routeType,
+                Collections.emptyMap(), buildHashExtra(lastModifyTime));
+        return monitorClusterMeta.generateHashCodeForBeaconCheck();
+    }
+
+    private String resolveClusterLastModifyTime(String clusterId) {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null || xpipeMeta.getDcs() == null) {
+            return null;
+        }
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            if (dcMeta.getClusters() == null) {
+                continue;
+            }
+            ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterId);
+            if (clusterMeta != null) {
+                return clusterMeta.getLastModifiedTime();
+            }
+        }
+        return null;
     }
 
     @Override
@@ -169,12 +199,29 @@ public class DefaultBeaconManager implements BeaconManager {
 
     private MonitorClusterMeta buildMonitorClusterMeta(String clusterId, BeaconRouteType routeType,
                                                        Map<String, HostPort> shardMasters) {
+        return buildMonitorClusterMeta(clusterId, routeType, shardMasters, Collections.emptyMap());
+    }
+
+    /**
+     * Extra fields used in beacon hash check. Currently only {@link #EXTRA_LAST_MODIFY_TIME} is expected;
+     * beacon hash uses the same key. If new extra keys are added, update both beacon and x-pipe hash logic.
+     */
+    private Map<String, String> buildHashExtra(String lastModifyTime) {
+        if (StringUtil.isEmpty(lastModifyTime)) {
+            return Collections.emptyMap();
+        }
+        return Collections.singletonMap(EXTRA_LAST_MODIFY_TIME, lastModifyTime);
+    }
+
+    private MonitorClusterMeta buildMonitorClusterMeta(String clusterId, BeaconRouteType routeType,
+                                                       Map<String, HostPort> shardMasters, Map<String, String> extra) {
+        Map<String, String> extraForMeta = extra == null ? Collections.emptyMap() : extra;
         if (routeType == BeaconRouteType.SENTINEL) {
             Set<MonitorShardMeta> shards = beaconMetaService.buildBeaconShards(clusterId, currentDc, shardMasters);
-            return new MonitorClusterMeta(null, shards, Collections.emptyMap());
+            return new MonitorClusterMeta(null, shards, extraForMeta);
         }
         Set<MonitorGroupMeta> groups = beaconMetaService.buildBeaconGroups(clusterId);
-        return new MonitorClusterMeta(groups, Collections.emptyMap());
+        return new MonitorClusterMeta(groups, extraForMeta);
     }
 
     private BeaconSystem resolveBeaconSystem(ClusterType clusterType, BeaconRouteType routeType) {

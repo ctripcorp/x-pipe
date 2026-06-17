@@ -76,7 +76,19 @@ public class MonitorClusterMeta {
                     .append(group.isMasterGroup())
                     .append(group.getNodes());
         }
+        appendSortedExtraData(builder, extra);
         return builder.toHashCode();
+    }
+
+    private static void appendSortedExtraData(HashCodeBuilder builder, Map<String, String> extra) {
+        if (extra == null || extra.isEmpty()) {
+            return;
+        }
+        List<String> keys = new ArrayList<>(extra.keySet());
+        keys.sort(Comparator.nullsFirst(Comparator.naturalOrder()));
+        for (String key : keys) {
+            builder.append(key).append(extra.get(key));
+        }
     }
 
     private Set<MonitorGroupMeta> convertShardsToNodeGroups(Set<MonitorShardMeta> shardMetas) {

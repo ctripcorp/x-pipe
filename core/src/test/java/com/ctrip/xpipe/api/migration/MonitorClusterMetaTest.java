@@ -9,6 +9,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class MonitorClusterMetaTest {
@@ -117,5 +119,35 @@ public class MonitorClusterMetaTest {
         MonitorClusterMeta fromGroups = new MonitorClusterMeta(groups);
 
         Assert.assertEquals(fromGroups.generateHashCodeForBeaconCheck(), fromShards.generateHashCodeForBeaconCheck());
+    }
+
+    @Test
+    public void testMonitorClusterMetaWithExtraHash() {
+        Set<MonitorGroupMeta> groups = getMonitorGroupMeta1();
+
+        Map<String, String> extra1 = new HashMap<>();
+        extra1.put("lastModifyTime", "20200101103030001");
+        extra1.put("region", "xy");
+        MonitorClusterMeta withExtra1 = new MonitorClusterMeta(groups, extra1);
+
+        Map<String, String> extra2 = new HashMap<>();
+        extra2.put("region", "xy");
+        extra2.put("lastModifyTime", "20200101103030001");
+        MonitorClusterMeta withExtra2 = new MonitorClusterMeta(groups, extra2);
+
+        Map<String, String> extra3 = new HashMap<>();
+        extra3.put("lastModifyTime", "20200101103030002");
+        extra3.put("region", "xy");
+        MonitorClusterMeta withExtra3 = new MonitorClusterMeta(groups, extra3);
+
+        MonitorClusterMeta withoutExtra = new MonitorClusterMeta(groups);
+        MonitorClusterMeta withNullExtra = new MonitorClusterMeta(groups, null);
+        MonitorClusterMeta withEmptyExtra = new MonitorClusterMeta(groups, Collections.emptyMap());
+
+        Assert.assertEquals(withExtra1.generateHashCodeForBeaconCheck(), withExtra2.generateHashCodeForBeaconCheck());
+        Assert.assertNotEquals(withExtra1.generateHashCodeForBeaconCheck(), withExtra3.generateHashCodeForBeaconCheck());
+        Assert.assertNotEquals(withoutExtra.generateHashCodeForBeaconCheck(), withExtra1.generateHashCodeForBeaconCheck());
+        Assert.assertEquals(withNullExtra.generateHashCodeForBeaconCheck(), withEmptyExtra.generateHashCodeForBeaconCheck());
+        Assert.assertEquals(withoutExtra.generateHashCodeForBeaconCheck(), withEmptyExtra.generateHashCodeForBeaconCheck());
     }
 }
