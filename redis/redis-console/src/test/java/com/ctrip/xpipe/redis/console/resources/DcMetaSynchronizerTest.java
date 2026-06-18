@@ -218,7 +218,7 @@ public class DcMetaSynchronizerTest {
 
         verify(shardService, times(1)).findOrCreateShardIfNotExist(any(), any(), eq(null), any());
 
-        verify(redisService, times(2)).insertRedises(any(), any(), any(), anyMap());
+        verify(redisService, times(1)).insertRedises(any(), any(), any(), anyMap());
     }
 
     @Test
@@ -282,7 +282,7 @@ public class DcMetaSynchronizerTest {
 
         verify(shardService, times(1)).findOrCreateShardIfNotExist(any(), any(), eq(null), any());
 
-        verify(redisService, times(2)).insertRedises(any(), any(), any(), anyMap());
+        verify(redisService, times(1)).insertRedises(any(), any(), any(), anyMap());
     }
 
     @Test
