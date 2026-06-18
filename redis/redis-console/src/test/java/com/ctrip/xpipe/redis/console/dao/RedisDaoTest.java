@@ -84,6 +84,7 @@ public class RedisDaoTest extends AbstractConsoleIntegrationTest {
                 .setRedisPort(randomPort())
                 .setRunId(RunidGenerator.DEFAULT.generateRunid())
                 .setRedisRole(role)
-                .setMaster((randomInt() & 1) == 0);
+                .setMaster((randomInt() & 1) == 0)
+                .setAzId(0L);
     }
 }
