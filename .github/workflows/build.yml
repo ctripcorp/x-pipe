@@ -41,22 +41,6 @@ jobs:
           key: ${{ runner.os }}-m2-2022-11-30-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2-2022
 
-      - name: Allow Maven HTTP repositories
-        run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings.xml <<'XML'
-          <settings>
-            <mirrors>
-              <mirror>
-                <id>allow-http</id>
-                <mirrorOf>external:http:*</mirrorOf>
-                <url>http://_placeholder_</url>
-                <blocked>false</blocked>
-              </mirror>
-            </mirrors>
-          </settings>
-          XML
-
       - name: Build with Maven
         #run: mvn clean install -Plocal -Dmaven.test.failure.ignore=true
         run: mvn clean install -Plocal
