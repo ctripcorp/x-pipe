@@ -546,6 +546,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             proto.setId(redis.getId()).setRedisIp(redis.getRedisIp()).setRedisPort(redis.getRedisPort())
                     .setKeeperActive(redis.isKeeperActive()).setKeepercontainerId(redis.getKeepercontainerId());
 
+            Long azId = redis.getAzId();
+            proto.setAzId(azId != null && azId > 0 ? azId : 0L);
             proto.setMaster(redis.isMaster());
             if (!StringUtil.isEmpty(redis.getRedisRole())) {
                 proto.setRedisRole(redis.getRedisRole());
