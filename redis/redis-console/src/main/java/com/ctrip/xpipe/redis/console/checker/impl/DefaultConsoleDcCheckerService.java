@@ -2,35 +2,32 @@ package com.ctrip.xpipe.redis.console.checker.impl;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.model.CheckerRole;
+import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.checker.ConsoleCheckerGroupService;
 import com.ctrip.xpipe.redis.console.checker.ConsoleDcCheckerService;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.InstanceCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
+import com.ctrip.xpipe.redis.console.model.AzGroupModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_COMMAND_EXECUTOR;
 
 @Component
 public class DefaultConsoleDcCheckerService implements ConsoleDcCheckerService {
@@ -50,6 +47,12 @@ public class DefaultConsoleDcCheckerService implements ConsoleDcCheckerService {
     @Autowired
     private ConsoleCheckerGroupService consoleCheckerGroupService;
 
+    @Autowired
+    private AzGroupClusterRepository azGroupClusterRepository;
+
+    @Autowired
+    private AzGroupCache azGroupCache;
+
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
 
     @Override
@@ -59,7 +62,7 @@ public class DefaultConsoleDcCheckerService implements ConsoleDcCheckerService {
         if (clusterTbl == null) {
             return null;
         }
-        String activeDc = dcService.getDcName(clusterTbl.getActivedcId());
+        String activeDc = resolveActiveDc(clusterTbl, dcId);
         if (metaCache.isCrossRegion(dcId, activeDc)) {
             result.addAll(consoleManager.getShardAllCheckerGroupHealthCheck(dcId, dcId, clusterId, shardId));
         }
@@ -71,6 +74,25 @@ public class DefaultConsoleDcCheckerService implements ConsoleDcCheckerService {
         return result;
     }
 
+    private String resolveActiveDc(ClusterTbl clusterTbl, String dcId) {
+        if (ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.HETERO)) {
+            List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(clusterTbl.getId());
+            for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+                if (!ClusterType.isSameClusterType(azGroupCluster.getAzGroupClusterType(), ClusterType.ONE_WAY)) {
+                    continue;
+                }
+                AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+                if (azGroup != null && azGroup.containsAz(dcId)) {
+                    String activeAz = dcService.getDcName(azGroupCluster.getActiveAzId());
+                    if (activeAz != null) {
+                        return activeAz;
+                    }
+                }
+            }
+        }
+        return dcService.getDcName(clusterTbl.getActivedcId());
+    }
+
     @Override
     public List<ShardCheckerHealthCheckModel> getLocalDcShardAllCheckerGroupHealthCheck(String dcId, String clusterId, String shardId) {
         ClusterTbl clusterTbl = clusterService.find(clusterId);
@@ -80,8 +102,9 @@ public class DefaultConsoleDcCheckerService implements ConsoleDcCheckerService {
         List<RedisMeta> redisOfDcClusterShard = metaCache.getRedisOfDcClusterShard(dcId, clusterId, shardId);
         Map<HostPort, CommandFuture<Map<HostPort, String>>> redisCheckerActionMap = new HashMap<>();
         Map<HostPort, CommandFuture<Map<HostPort, HEALTH_STATE>>> redisCheckerHealthStateMap = new HashMap<>();
+        String activeDc = resolveActiveDc(clusterTbl, dcId);
         redisOfDcClusterShard.forEach(redisMeta -> {
-            boolean isCrossRegion = metaCache.isCrossRegion(currentDc, dcService.getDcName(clusterTbl.getActivedcId()));
+            boolean isCrossRegion = metaCache.isCrossRegion(currentDc, activeDc);
             CommandFuture<Map<HostPort, String>> allHealthCheckInstance = consoleCheckerGroupService.getAllHealthCheckInstance(clusterTbl.getId(), redisMeta.getIp(), redisMeta.getPort(), isCrossRegion);
             CommandFuture<Map<HostPort, HEALTH_STATE>> allHealthStates = consoleCheckerGroupService.getAllHealthStates(clusterTbl.getId(), redisMeta.getIp(), redisMeta.getPort(), isCrossRegion);
             redisCheckerActionMap.put(new HostPort(redisMeta.getIp(), redisMeta.getPort()), allHealthCheckInstance);
