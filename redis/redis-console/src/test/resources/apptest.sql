@@ -177,6 +177,8 @@ insert into REDIS_TBL (run_id,dc_cluster_shard_id,redis_ip,redis_port,redis_role
 insert into AZ_TBL (id, dc_id, az_name, active, description) values (1, 3, 'A', 1, 'zone for dc:fra zone A');
 insert into AZ_TBL (id, dc_id, az_name, active, description) values (2, 3, 'B', 1, 'zone for dc:fra zone B');
 insert into AZ_TBL (id, dc_id, az_name, active, description) values (3, 3, 'C', 0, 'zone for dc:fra zone C');
+insert into AZ_TBL (id, dc_id, az_name, active, description) values (4, 1, 'jq-az1', 1, 'zone for dc:jq zone 1');
+insert into AZ_TBL (id, dc_id, az_name, active, description) values (5, 1, 'jq-az2', 1, 'zone for dc:jq zone 2');
 
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, keepercontainer_org_id, az_id) values (17,3,'127.0.1.14',7083,1,2,1);
 insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active, keepercontainer_org_id, az_id) values (18,3,'127.0.1.15',7084,1,0,1);
@@ -303,3 +305,7 @@ insert into migration_bi_cluster_tbl (id,cluster_id,operation_time,operator,stat
 insert into migration_bi_cluster_tbl (id,cluster_id,operation_time,operator,status,publish_info) values(2, 4, '2021-04-25 14:20:06', 'Beacon', 'SUCCESS', 'asdijsaiodjioasjdioasjdioajsiodjas');
 insert into migration_bi_cluster_tbl (id,cluster_id,operation_time,operator,status,publish_info) values(3, 4, '2021-04-25 14:20:06', 'Beacon', 'SUCCESS', 'asdijsaiodjioasjdioasjdioajsiodjas');
 insert into migration_bi_cluster_tbl (id,cluster_id,operation_time,operator,status,publish_info) values(4, 4, '2021-04-25 14:20:06', 'Beacon', 'SUCCESS', 'asdijsaiodjioasjdioasjdioajsiodjas');
+
+-- az test data: cluster1 shard1 in jq DC (dc_cluster_shard_id=1): redis nodes get az_id=4(jq-az1), keeper nodes get az_id=5(jq-az2)
+update REDIS_TBL set az_id=4 where id in (3,4);
+update REDIS_TBL set az_id=5 where id in (1,2);

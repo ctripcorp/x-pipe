@@ -268,6 +268,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
             redisMeta.setMaster("");
         else
             redisMeta.setMaster(XPipeConsoleConstant.DEFAULT_ADDRESS);
+        redisMeta.setAz(outer.getAz());
         return redisMeta;
     }
 
@@ -276,6 +277,7 @@ public class DcMetaSynchronizer implements MetaSynchronizer {
         redisMeta.setIp(origin.getIp());
         redisMeta.setPort(origin.getPort());
         redisMeta.setMaster(origin.getMaster());
+        redisMeta.setAz(origin.getAz());
         return redisMeta;
     }
 

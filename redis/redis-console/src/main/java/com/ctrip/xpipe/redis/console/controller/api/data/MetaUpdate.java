@@ -21,6 +21,8 @@ import com.ctrip.xpipe.redis.console.util.MetaServerConsoleServiceManagerWrapper
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.ClusterShardCounter;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -342,7 +344,7 @@ public class MetaUpdate extends AbstractConsoleController {
         // Fill in redis, keeper
         for(RedisCreateInfo redisCreateInfo : redisCreateInfos) {
             String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
-            redisService.insertRedises(dcId, clusterName, shardName, redisCreateInfo.getRedisAddresses());
+            redisService.insertRedises(dcId, clusterName, shardName, redisCreateInfo.getAddrToAzName());
         }
         addKeepers(clusterTbl, shardTbl, redisCreateInfos);
     }
@@ -635,6 +637,37 @@ public class MetaUpdate extends AbstractConsoleController {
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             logger.error("[deleteReplDirections][fail]{}, {}", clusterName, replDirectionCreateInfos, e);
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/" + SHARD_NAME_PATH_VARIABLE + "/redis/az",
+            method = RequestMethod.PUT)
+    public RetMessage updateRedisesAz(@PathVariable String clusterName, @PathVariable String shardName,
+                                     @RequestBody List<RedisAzUpdateInfo> azUpdateInfos) {
+        logger.info("[updateRedisesAz] cluster={}, shard={}, {}", clusterName, shardName, azUpdateInfos);
+
+        if (azUpdateInfos == null || azUpdateInfos.isEmpty()) {
+            return RetMessage.createFailMessage("request body is empty");
+        }
+
+        // Group by dcId
+        Map<String, Map<String, String>> dcAddressAzNameMap = new HashMap<>();
+        for (RedisAzUpdateInfo info : azUpdateInfos) {
+            String dcId = outerDcToInnerDc(info.getDcId());
+            dcAddressAzNameMap.computeIfAbsent(dcId, k -> new HashMap<>())
+                    .put(info.getIp() + ":" + info.getPort(), info.getAzName());
+        }
+
+        int count = 0;
+        try {
+            for (Map.Entry<String, Map<String, String>> entry : dcAddressAzNameMap.entrySet()) {
+                redisService.updateRedisesAz(entry.getKey(), clusterName, shardName, entry.getValue());
+                count += entry.getValue().size();
+            }
+            return RetMessage.createSuccessMessage("updated " + count + " redises");
+        } catch (Exception e) {
+            logger.error("[updateRedisesAz] fail", e);
             return RetMessage.createFailMessage(e.getMessage());
         }
     }

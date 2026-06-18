@@ -104,16 +104,16 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     private NetworkStabilityInspector networkStabilityInspector;
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_META)
-    public String getDividedMeta(@PathVariable int index, @RequestParam(value="format", required = false) String format) {
+    public byte[] getDividedMeta(@PathVariable int index, @RequestParam(value="format", required = false) String format) {
         if (index < 0) throw new IllegalArgumentException("illegal index " + index);
-        if (format != null && format.equals("xml")) return metaCache.getXmlFormatDividedXpipeMeta(index);
-        return coder.encode(metaCache.getDividedXpipeMeta(index));
+        if (format != null && format.equals("xml")) return metaCache.getXmlFormatDividedXpipeMeta(index).getBytes();
+        return coder.encodeAsBytes(metaCache.getDividedXpipeMeta(index));
     }
-    
+
     @GetMapping(ConsoleCheckerPath.PATH_GET_ALL_META)
-    public String getDividedMeta(@RequestParam(value="format", required = false) String format) {
+    public byte[] getDividedMeta(@RequestParam(value="format", required = false) String format) {
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
+        return (format != null && format.equals("xml"))? xpipeMeta.toString().getBytes() : coder.encodeAsBytes(xpipeMeta);
     }
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_ALL_META_LONG_PULL)

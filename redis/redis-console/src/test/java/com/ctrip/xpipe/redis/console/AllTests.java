@@ -72,6 +72,7 @@ import com.ctrip.xpipe.redis.console.proxy.impl.*;
 import com.ctrip.xpipe.redis.console.reporter.DefaultMigrationProcessReporterTest;
 import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCacheTest;
 import com.ctrip.xpipe.redis.console.resources.DcMetaSynchronizerTest;
+import com.ctrip.xpipe.redis.console.resources.RedisMetaSynchronizerTest;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCacheTest;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCacheTest;
 import com.ctrip.xpipe.redis.console.sentinel.impl.DefaultSentinelBalanceServiceTest;
@@ -198,6 +199,7 @@ import org.junit.runners.Suite.SuiteClasses;
         SentinelConfigCheckTest.class,
         DelayServiceTest.class,
         ShardMetaServiceImplTest.class,
+        RedisMetaServiceImplTest.class,
         CrossDcLeaderElectionActionTest.class,
         ShardDaoTest.class,
         VariablesCheckerTest.class,
@@ -209,6 +211,7 @@ import org.junit.runners.Suite.SuiteClasses;
         CrossMasterDelayServiceTest.class,
         DefaultMetaCacheTest.class,
         DcMetaSynchronizerTest.class,
+        RedisMetaSynchronizerTest.class,
         ConsoleServiceManagerTest.class,
         ChangeConfigTest.class,
         NettyKeyedPoolClientFactoryTest.class,

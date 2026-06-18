@@ -177,6 +177,20 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
             .then(function (result) {
                 $scope.dcShards[dcName] = result;
 
+                ShardService.getNodesWithAz(clusterName, dcName, shardName)
+                    .then(function (redisesWithAz) {
+                        var azMap = {};
+                        redisesWithAz.forEach(function(r) { azMap[r.addr] = r.azName; });
+                        result.redises.forEach(function(redis) {
+                            var addr = redis.redisIp + ':' + redis.redisPort;
+                            redis.azName = azMap[addr] || null;
+                        });
+                        result.keepers.forEach(function(keeper) {
+                            var addr = keeper.redisIp + ':' + keeper.redisPort;
+                            keeper.azName = azMap[addr] || null;
+                        });
+                    });
+
                 refreshShardStatus();
 
             }, function (result) {
