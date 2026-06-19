@@ -221,6 +221,12 @@ public class ClusterController extends AbstractConsoleController {
         }
     }
 
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/logical-bu", method = RequestMethod.PUT)
+    public void updateLogicalBu(@PathVariable String clusterName, @RequestParam long logicalBuId) {
+        logger.info("[Update Logical BU]{}, logicalBuId={}", clusterName, logicalBuId);
+        clusterService.updateLogicalBu(clusterName, logicalBuId);
+    }
+
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.DELETE)
     public void deleteCluster(@PathVariable String clusterName) {
         logger.info("[Delete Cluster]{}", clusterName);

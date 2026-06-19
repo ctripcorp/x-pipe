@@ -388,16 +388,14 @@ public class MetaUpdate extends AbstractConsoleController {
         }
 
         if(keepers != null && !keepers.isEmpty()) {
-            if (keepers.size() > 2) {
-                throw new IllegalStateException("Keeper numbers should not be greater than 2");
-            } else if (keepers.size() == 1) {
+            if (keepers.size() == 1) {
                 try {
                     redisService.deleteKeepers(dcId, clusterId, shardTbl.getShardName());
                 } catch (ResourceNotFoundException ignore) {
                     // should not catch this, as we already findRedisHealthCheckInstance keepers
                 }
             } else {
-                // if size == 2, do nothing
+                // size >= 2, do nothing
                 return 0;
             }
         }

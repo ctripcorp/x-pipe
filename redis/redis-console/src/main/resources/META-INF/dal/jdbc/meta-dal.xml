@@ -181,6 +181,7 @@
 				<member name="migration-event-id"/>
 				<member name="activedc-id"/>
 				<member name="cluster-org-id"/>
+				<member name="logical-bu-id"/>
 				<member name="cluster-admin-emails"/>
 				<member name="cluster-designated-route-ids"/>
 				<member name="cluster-last-modified-time" />
@@ -1695,6 +1696,7 @@
 	<entity name="keepercontainer-tbl" table="KEEPERCONTAINER_TBL" alias="kt">
 		<var name="dc-name" value-type="String"/>
 		<var name="org-id" value-type="long"/>
+		<var name="target-logical-bu-id" value-type="long"/>
 
 		<member name="count" value-type="long" select-expr="COUNT(*) count" all="false"/>
 
@@ -1793,6 +1795,18 @@
 					WHERE <FIELD name='keepercontainer-dc'/> = dt.id
 					AND dt.dc_name = ${dc-name}
 					AND dt.deleted = 0
+					AND <FIELD name='keepercontainer-active'/> = 1
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-active-by-logical-bu-id" type="SELECT" multiple="true">
+				<param name="target-logical-bu-id"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='logical-bu-id'/> = ${target-logical-bu-id}
 					AND <FIELD name='keepercontainer-active'/> = 1
 					AND <FIELD name='deleted'/> = 0
 					]]>

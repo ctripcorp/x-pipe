@@ -95,6 +95,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private OrganizationService organizationService;
+
+	@Autowired
+	private LogicalBuService logicalBuService;
+
 	@Autowired
 	private DcClusterShardService dcClusterShardService;
 
@@ -488,6 +492,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         }
         proto.setClusterAdminEmails(cluster.getClusterAdminEmails());
         proto.setClusterOrgId(getOrgIdFromClusterOrgName(cluster));
+		proto.setLogicalBuId(logicalBuService.resolveLogicalBuIdForCluster(proto.getClusterName(), proto.getClusterOrgId()));
 		proto.setTag(CLUSTER_DEFAULT_TAG);
 
         final ClusterTbl queryProto = proto;
@@ -654,6 +659,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		clusterTbl.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
 		clusterTbl.setClusterDesignatedRouteIds("");
 		clusterTbl.setTag(CLUSTER_DEFAULT_TAG);
+		clusterTbl.setLogicalBuId(logicalBuService.resolveLogicalBuIdForCluster(clusterName, orgId));
 
 		return clusterDao.createCluster(clusterTbl);
 	}
@@ -801,6 +807,18 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		proto.setOrganizationInfo(null);
 		proto.setTag(cluster.getClusterTbl().getTag() == null ? "" : cluster.getClusterTbl().getTag());
 
+		clusterDao.updateCluster(proto);
+	}
+
+	@Override
+	@DalTransaction
+	public void updateLogicalBu(String clusterName, long logicalBuId) {
+		ClusterTbl proto = find(clusterName);
+		if (null == proto) {
+			throw new BadRequestException("Cannot find cluster");
+		}
+		proto.setLogicalBuId(logicalBuId);
+		proto.setClusterLastModifiedTime(DataModifiedTimeGenerator.generateModifiedTime());
 		clusterDao.updateCluster(proto);
 	}
 
