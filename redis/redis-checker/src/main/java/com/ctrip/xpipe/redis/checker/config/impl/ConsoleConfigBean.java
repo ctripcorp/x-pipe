@@ -74,6 +74,14 @@ public class ConsoleConfigBean extends AbstractConfigBean {
     public static final String KEY_CONSOLE_CHECK_ISOLATE_INTERVAL_MILLI = "console.check.isolate.interval.milli";
     public static final String KEY_CONSOLE_REGION_DCS_REFRESH_INTERVAL_MILLI = "console.region.dcs.refresh.interval.milli";
 
+    public static final String KEY_CONSOLE_KEEPER_POOL_DEGRADE_TO_ORG = "console.keeper.pool.degrade.to.org";
+
+    public static final String KEY_CONSOLE_KEEPER_AUTO_SELECT_DISK_TYPE = "console.keeper.auto.select.disk.type";
+
+    public static final String KEY_CONSOLE_KEEPER_DEFAULT_PRIORITY_BM = "console.keeper.default.priority.bm";
+
+    public static final String KEY_CONSOLE_KEEPER_DEFAULT_PRIORITY_TFS = "console.keeper.default.priority.tfs";
+
     private FoundationService foundationService;
 
     @Autowired
@@ -211,5 +219,21 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     public long getRegionDcsRefreshIntervalMilli() {
         return getLongProperty(KEY_CONSOLE_REGION_DCS_REFRESH_INTERVAL_MILLI, 60 * 1000L);
+    }
+
+    public boolean isKeeperPoolDegradeToOrg() {
+        return getBooleanProperty(KEY_CONSOLE_KEEPER_POOL_DEGRADE_TO_ORG, false);
+    }
+
+    public String getKeeperAutoSelectDiskType() {
+        return getProperty(KEY_CONSOLE_KEEPER_AUTO_SELECT_DISK_TYPE, "BM");
+    }
+
+    public int getKeeperDefaultPriorityBm() {
+        return getIntProperty(KEY_CONSOLE_KEEPER_DEFAULT_PRIORITY_BM, 1);
+    }
+
+    public int getKeeperDefaultPriorityTfs() {
+        return getIntProperty(KEY_CONSOLE_KEEPER_DEFAULT_PRIORITY_TFS, 0);
     }
 }

@@ -439,14 +439,13 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		}
 
 		if (keepers != null && !keepers.isEmpty()) {
-			if (keepers.size() > 2) {
-				throw new IllegalStateException("Keeper numbers should not be greater than 2");
-			} else if (keepers.size() == 1) {
+			if (keepers.size() == 1) {
 				try {
 					redisService.deleteKeepers(dcId, clusterName, shardName);
 				} catch (ResourceNotFoundException ignore) {
 				}
 			} else {
+				// size >= 2, do nothing
 				return 0;
 			}
 		}
