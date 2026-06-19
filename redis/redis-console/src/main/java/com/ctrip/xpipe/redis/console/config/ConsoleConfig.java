@@ -178,4 +178,12 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	long getCheckIsolateInterval();
 
 	long getRegionDcsRefreshIntervalMilli();
+
+	boolean isKeeperPoolDegradeToOrg();
+
+	String getKeeperAutoSelectDiskType();
+
+	int getKeeperDefaultPriorityBm();
+
+	int getKeeperDefaultPriorityTfs();
 }

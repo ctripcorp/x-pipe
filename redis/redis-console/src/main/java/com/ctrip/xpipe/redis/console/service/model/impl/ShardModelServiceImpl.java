@@ -265,24 +265,23 @@ public class ShardModelServiceImpl implements ShardModelService{
     @Override
     public boolean switchActiveKeeper(String activeIp, String backupIp, ShardModel shardModel) {
         List<RedisTbl> keepers = shardModel.getKeepers();
-        if (keepers.size() != 2) {
+        if (keepers == null || keepers.isEmpty()) {
             logger.warn("[switchMaster][keeperSizeMissMatch][{}:{}->{}] {}",
-                     shardModel.getShardTbl().getShardName(), activeIp, backupIp, keepers.size());
+                    shardModel.getShardTbl().getShardName(), activeIp, backupIp, 0);
             return false;
         }
         Endpoint activeKeeper = null, backUpKeeper = null;
         for (RedisTbl keeper : keepers) {
             if (keeper.getRedisIp().equals(activeIp)) {
                 activeKeeper = new DefaultEndPoint(keeper.getRedisIp(), keeper.getRedisPort());
-            } else {
+            } else if (keeper.getRedisIp().equals(backupIp)) {
                 backUpKeeper = new DefaultEndPoint(keeper.getRedisIp(), keeper.getRedisPort());
             }
         }
 
-        if (activeKeeper == null || backUpKeeper == null || !backupIp.equals(backUpKeeper.getHost())) {
-            logger.warn("[switchMaster][keeperActiveMissMatch][{}:{}->{}]keepers1:{}:{},keepers2:{}:{}"
-                    , shardModel.getShardTbl().getShardName(), activeIp, backupIp,
-                    keepers.get(0).getRedisIp(), keepers.get(0).getRedisPort(), keepers.get(1).getRedisIp(), keepers.get(1).getRedisPort());
+        if (activeKeeper == null || backUpKeeper == null) {
+            logger.warn("[switchMaster][keeperActiveMissMatch][{}:{}->{}] keepers={}",
+                    shardModel.getShardTbl().getShardName(), activeIp, backupIp, keepers.size());
             return false;
         }
         Command<?> switchMasterCommand = retryCommandFactory.createRetryCommand(new KeeperResetCommand<>(activeKeeper.getHost(), shardModel.getShardTbl().getId(), keeperContainerCheckerService));

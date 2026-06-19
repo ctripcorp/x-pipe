@@ -116,7 +116,37 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         Assert.assertEquals("jq", clusterMeta.getActiveDc());
         Assert.assertEquals("oy,fra", clusterMeta.getBackupDcs());
         Assert.assertEquals("1,2", clusterMeta.getClusterDesignatedRouteIds());
+        Assert.assertEquals(42L, clusterMeta.getLogicalBuId().longValue());
         Assert.assertNull(clusterMeta.getDcs());
+    }
+
+    @Test
+    public void findAllByDcIdAndInClusterTypesShouldLoadLogicalBuId() {
+        List<DcClusterShardTbl> shards = dcClusterShardService.findAllByDcIdAndInClusterTypes(dcId,
+                Collections.singleton(ClusterType.ONE_WAY.toString()));
+        ClusterTbl cluster1 = shards.stream()
+                .map(DcClusterShardTbl::getClusterInfo)
+                .filter(c -> "cluster1".equals(c.getClusterName()))
+                .findFirst()
+                .orElse(null);
+        Assert.assertNotNull(cluster1);
+        Assert.assertEquals(42L, cluster1.getLogicalBuId());
+    }
+
+    @Test
+    public void buildDcMetaShouldLoadLogicalBuId() throws Exception {
+        DcMeta builtDcMeta = new DcMeta();
+        dcMetaMap.clear();
+        dcMetaMap.put(dcNameMap.get(dcId).toUpperCase(), builtDcMeta);
+
+        List<DcTbl> dcTblList = dcService.findAllDcs();
+        new DcMetaBuilder(dcMetaMap, dcTblList, Collections.singleton(ClusterType.ONE_WAY.toString()), executors,
+                redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                azGroupClusterRepository, azGroupCache, new DefaultRetryCommandFactory(), consoleConfig).execute().get();
+
+        ClusterMeta clusterMeta = builtDcMeta.getClusters().get("cluster1");
+        Assert.assertNotNull(clusterMeta);
+        Assert.assertEquals(42L, clusterMeta.getLogicalBuId().longValue());
     }
 
     @Test
