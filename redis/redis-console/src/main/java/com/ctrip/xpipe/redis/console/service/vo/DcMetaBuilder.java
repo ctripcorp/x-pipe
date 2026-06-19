@@ -151,6 +151,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                 clusterMeta.setDbId(cluster.getId());
                 clusterMeta.setParent(dcMeta);
                 clusterMeta.setOrgId(Math.toIntExact(cluster.getClusterOrgId()));
+                clusterMeta.setLogicalBuId(cluster.getLogicalBuId());
                 clusterMeta.setAdminEmails(cluster.getClusterAdminEmails());
                 clusterMeta.setType(cluster.getClusterType());
                 clusterMeta.setActiveRedisCheckRules(dcClusterInfo == null ? null : dcClusterInfo.getActiveRedisCheckRules());

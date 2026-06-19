@@ -677,6 +677,26 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public boolean isKeeperPoolDegradeToOrg() {
+        return consoleConfigBean.isKeeperPoolDegradeToOrg();
+    }
+
+    @Override
+    public String getKeeperAutoSelectDiskType() {
+        return consoleConfigBean.getKeeperAutoSelectDiskType();
+    }
+
+    @Override
+    public int getKeeperDefaultPriorityBm() {
+        return consoleConfigBean.getKeeperDefaultPriorityBm();
+    }
+
+    @Override
+    public int getKeeperDefaultPriorityTfs() {
+        return consoleConfigBean.getKeeperDefaultPriorityTfs();
+    }
+
+    @Override
     public void addListener(ConfigKeyListener listener) {
         this.listenersSet.add(listener);
     }

@@ -13,7 +13,7 @@ insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,set
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (18,11,9,4,1);
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (19,12,9,4,1);
 
-insert into CLUSTER_TBL (id, cluster_name, activedc_id, cluster_description, cluster_org_id, cluster_type, cluster_designated_route_ids, cluster_last_modified_time) values(1, 'cluster1', 1, 'cluster1 desc', 1, 'ONE_WAY', '1,2', 20170426180546610);
+insert into CLUSTER_TBL (id, cluster_name, activedc_id, cluster_description, cluster_org_id, cluster_type, cluster_designated_route_ids, cluster_last_modified_time, logical_bu_id) values(1, 'cluster1', 1, 'cluster1 desc', 1, 'ONE_WAY', '1,2', 20170426180546610,42);
 
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (1,1,1,1,0);
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (2,2,1,1,0);

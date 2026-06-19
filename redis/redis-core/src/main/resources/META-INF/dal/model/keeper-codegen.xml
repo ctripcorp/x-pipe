@@ -40,6 +40,8 @@
     <attribute name="az_id" value-type="long" />
     <attribute name="disk_type" value-type="String" />
     <attribute name="tag" value-type="String" />
+    <attribute name="logical_bu_id" value-type="long" />
+    <attribute name="tfs_fs_id" value-type="String" />
   </entity>
   <entity name="applierContainer">
     <attribute name="id" value-type="int" />
@@ -67,6 +69,7 @@
     <attribute name="dc-group-type" value-type="String" />
     <attribute name="dc-group-name" value-type="String" />
     <attribute name="org-id" value-type="int" />
+    <attribute name="logical_bu_id" value-type="long" />
     <attribute name="phase" value-type="int" />
     <attribute name="lastModifiedTime" value-type="String" />
     <attribute name="type" value-type="String" />
@@ -109,6 +112,7 @@
     <attribute name="master" value-type="String" />
     <attribute name="active" value-type="boolean" />
     <attribute name="keeperContainerId" value-type="int" />
+    <attribute name="priority" value-type="int" />
     <attribute name="offset" value-type="int" />
     <attribute name="survive" value-type="boolean" />
   </entity>

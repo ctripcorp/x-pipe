@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.KeeperContainerCreateInfo;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
@@ -11,6 +12,7 @@ import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -61,6 +63,9 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   @Autowired
   @Lazy
   private ShardService shardService;
+
+  @Autowired
+  private ConsoleConfig consoleConfig;
 
   private RestOperations restTemplate;
 
@@ -139,8 +144,9 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
      */
     long clusterOrgId;
     String clusterTag;
+    ClusterTbl clusterTbl = null;
     if (clusterName != null) {
-      ClusterTbl clusterTbl = clusterService.find(clusterName);
+      clusterTbl = clusterService.find(clusterName);
       clusterOrgId = clusterTbl == null ? XPipeConsoleConstant.DEFAULT_ORG_ID : clusterTbl.getClusterOrgId();
       clusterTag = clusterTbl == null ? "" : clusterTbl.getTag();
     } else {
@@ -163,11 +169,12 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       }
     });
 
-    List<KeepercontainerTbl> allDcOrgTagKeeperContainers = findBestKeeperContainersByOrgAndTag(allDcKeeperContainers, dcOrgTagKeeperContainersInUsed, dcName, clusterOrgId, clusterTag);
+    List<KeepercontainerTbl> poolKeeperContainers = resolveKeeperContainerPool(clusterTbl, allDcKeeperContainers);
+    List<KeepercontainerTbl> allDcOrgTagKeeperContainers = findBestKeeperContainersByOrgAndTag(poolKeeperContainers, dcOrgTagKeeperContainersInUsed, dcName, clusterOrgId, clusterTag);
     if (allDcOrgTagKeeperContainers.isEmpty()) {
       logger.info("[findBestKeeperContainersByDcCluster][DegradedMode] dc={} has no KeeperContainers matching cluster={} (requiredTag={}). Falling back to find without tag matching.",
               dcName, clusterName, clusterTag);
-      allDcOrgTagKeeperContainers = findBestKeeperContainersByOrg(allDcKeeperContainers, dcOrgTagKeeperContainersInUsed, dcName, clusterOrgId);
+      allDcOrgTagKeeperContainers = findBestKeeperContainersByOrg(poolKeeperContainers, dcOrgTagKeeperContainersInUsed, dcName, clusterOrgId);
     }
     if (!skipAzFilter) {
       allDcOrgTagKeeperContainers = filterKeeperFromSameAvailableZone(allDcOrgTagKeeperContainers, dcName);
@@ -176,29 +183,60 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     return allDcOrgTagKeeperContainers;
   }
 
-  private List<KeepercontainerTbl> findBestKeeperContainersByOrg(List<KeepercontainerTbl> allDcKeeperContainers, List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed, String dcName, long clusterOrgId) {
-    return filterKeeperContainers(allDcKeeperContainers, dcOrgTagKeeperContainersInUsed, dcName, clusterOrgId, "", false);
+  private List<KeepercontainerTbl> findBestKeeperContainersByOrg(List<KeepercontainerTbl> poolKeeperContainers, List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed, String dcName, long clusterOrgId) {
+    return filterKeeperContainers(poolKeeperContainers, dcOrgTagKeeperContainersInUsed, dcName, clusterOrgId, "", false);
   }
 
-  private List<KeepercontainerTbl> findBestKeeperContainersByOrgAndTag(List<KeepercontainerTbl> allDcKeeperContainers, List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed, String dcName, long clusterOrgId, String clusterTag) {
-    return filterKeeperContainers(allDcKeeperContainers, dcOrgTagKeeperContainersInUsed, dcName, clusterOrgId, clusterTag, true);
+  private List<KeepercontainerTbl> findBestKeeperContainersByOrgAndTag(List<KeepercontainerTbl> poolKeeperContainers, List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed, String dcName, long clusterOrgId, String clusterTag) {
+    return filterKeeperContainers(poolKeeperContainers, dcOrgTagKeeperContainersInUsed, dcName, clusterOrgId, clusterTag, true);
   }
 
-  private List<KeepercontainerTbl> filterKeeperContainers(List<KeepercontainerTbl> allDcKeeperContainers, List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed, String dcName, long clusterOrgId, String clusterTag, boolean useTag) {
-    if (dcName == null) return Collections.emptyList();
-        // find all keepers, both in used and unused
-    List<KeepercontainerTbl> allDcOrgTagKeeperContainers = allDcKeeperContainers.stream()
-            .filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == clusterOrgId && (!useTag || Objects.equals(keepercontainer.getTag(), clusterTag))).collect(Collectors.toList());
-
-      if (allDcOrgTagKeeperContainers.isEmpty() && clusterOrgId != XPipeConsoleConstant.DEFAULT_ORG_ID) {
-      logger.info("cluster with org id {} is going to find keepercontainers in normal pool", clusterOrgId);
-          allDcOrgTagKeeperContainers = allDcKeeperContainers.stream()
-                  .filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == XPipeConsoleConstant.DEFAULT_ORG_ID && (!useTag || Objects.equals(keepercontainer.getTag(), clusterTag))).collect(Collectors.toList());
+  @VisibleForTesting
+  List<KeepercontainerTbl> resolveKeeperContainerPool(ClusterTbl clusterTbl, List<KeepercontainerTbl> allDcKeeperContainers) {
+    if (consoleConfig.isKeeperPoolDegradeToOrg()) {
+      return filterByOrgId(allDcKeeperContainers, getClusterOrgId(clusterTbl));
     }
+    if (clusterTbl != null && clusterTbl.getLogicalBuId() > 0) {
+      long logicalBuId = clusterTbl.getLogicalBuId();
+      List<KeepercontainerTbl> buPool = allDcKeeperContainers.stream()
+              .filter(keepercontainer -> keepercontainer.getLogicalBuId() == logicalBuId)
+              .collect(Collectors.toList());
+      if (!buPool.isEmpty()) {
+        return buPool;
+      }
+      logger.info("[resolveKeeperContainerPool] logical bu {} has no KC in dc, fallback to org pool", logicalBuId);
+    }
+    return filterByOrgId(allDcKeeperContainers, getClusterOrgId(clusterTbl));
+  }
+
+  private long getClusterOrgId(ClusterTbl clusterTbl) {
+    return clusterTbl == null ? XPipeConsoleConstant.DEFAULT_ORG_ID : clusterTbl.getClusterOrgId();
+  }
+
+  private List<KeepercontainerTbl> filterByOrgId(List<KeepercontainerTbl> allDcKeeperContainers, long clusterOrgId) {
+    List<KeepercontainerTbl> allDcOrgKeeperContainers = allDcKeeperContainers.stream()
+            .filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == clusterOrgId)
+            .collect(Collectors.toList());
+    if (allDcOrgKeeperContainers.isEmpty() && clusterOrgId != XPipeConsoleConstant.DEFAULT_ORG_ID) {
+      logger.info("cluster with org id {} is going to find keepercontainers in normal pool", clusterOrgId);
+      allDcOrgKeeperContainers = allDcKeeperContainers.stream()
+              .filter(keepercontainer -> keepercontainer.getKeepercontainerOrgId() == XPipeConsoleConstant.DEFAULT_ORG_ID)
+              .collect(Collectors.toList());
+    }
+    return allDcOrgKeeperContainers;
+  }
+
+  private List<KeepercontainerTbl> filterKeeperContainers(List<KeepercontainerTbl> poolKeeperContainers, List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed, String dcName, long clusterOrgId, String clusterTag, boolean useTag) {
+    if (dcName == null || poolKeeperContainers.isEmpty()) return Collections.emptyList();
+
+    List<KeepercontainerTbl> allDcOrgTagKeeperContainers = poolKeeperContainers.stream()
+            .filter(keepercontainer -> !useTag || Objects.equals(keepercontainer.getTag(), clusterTag))
+            .collect(Collectors.toList());
+
     if (allDcOrgTagKeeperContainers.isEmpty()) {
       return Collections.emptyList();
     }
-    setCountAndSortForAllKeeperContainers(allDcOrgTagKeeperContainers,  dcOrgTagKeeperContainersInUsed);
+    setCountAndSortForAllKeeperContainers(allDcOrgTagKeeperContainers, dcOrgTagKeeperContainersInUsed);
     return allDcOrgTagKeeperContainers;
   }
 
@@ -307,6 +345,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
             .setTag(createInfo.getTag() == null ? "" : createInfo.getTag())
             .setKeepercontainerActive(createInfo.isActive())
             .setKeepercontainerDiskType(createInfo.getDiskType() == null ? KeeperContainerDiskType.DEFAULT.getDesc() : createInfo.getDiskType().toUpperCase());
+    validateAndSetLogicalBu(proto, createInfo.getDiskType(), createInfo.getLogicalBuId());
 
     queryHandler.handleInsert(new DalQuery<Integer>() {
       @Override
@@ -332,7 +371,8 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
                 .setKeepercontainerIp(input.getKeepercontainerIp())
                 .setKeepercontainerPort(input.getKeepercontainerPort())
                 .setTag(input.getTag())
-                .setDiskType(input.getKeepercontainerDiskType());
+                .setDiskType(input.getKeepercontainerDiskType())
+                .setLogicalBuId(input.getLogicalBuId());
         if (org != null) {
           info.setKeepercontainerOrgId(org.getOrgId()).setOrgName(org.getOrgName());
         } else {
@@ -377,6 +417,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     keepercontainerTbl.setKeepercontainerActive(createInfo.isActive());
     keepercontainerTbl.setTag(createInfo.getTag() == null ? "" : createInfo.getTag());
     keepercontainerTbl.setKeepercontainerDiskType(createInfo.getDiskType());
+    validateAndSetLogicalBu(keepercontainerTbl, createInfo.getDiskType(), createInfo.getLogicalBuId());
     queryHandler.handleUpdate(new DalQuery<Integer>() {
       @Override
       public Integer doQuery() throws DalException {
@@ -446,6 +487,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
             .setKeepercontainerDiskType(keeperContainerInfoModel.getDiskType())
             .setKeepercontainerActive(keeperContainerInfoModel.isActive())
             .setTag(keeperContainerInfoModel.getTag() == null ? "" : keeperContainerInfoModel.getTag());
+    validateAndSetLogicalBu(proto, keeperContainerInfoModel.getDiskType(), keeperContainerInfoModel.getLogicalBuId());
 
     queryHandler.handleInsert(new DalQuery<Integer>() {
       @Override
@@ -486,6 +528,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     proto.setKeepercontainerActive(keeperContainerInfoModel.isActive());
     proto.setTag(keeperContainerInfoModel.getTag() == null ? "" : keeperContainerInfoModel.getTag());
     proto.setKeepercontainerDiskType(keeperContainerInfoModel.getDiskType());
+    validateAndSetLogicalBu(proto, keeperContainerInfoModel.getDiskType(), keeperContainerInfoModel.getLogicalBuId());
 
     queryHandler.handleQuery(new DalQuery<Integer>() {
       @Override
@@ -583,6 +626,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       model.setOrgName(baseInfo.getOrgInfo().getOrgName());
       model.setTag(baseInfo.getTag());
       model.setDiskType(baseInfo.getKeepercontainerDiskType());
+      model.setLogicalBuId(baseInfo.getLogicalBuId());
 
       if (baseInfo.getAzId() != 0) {
         AzTbl aztbl = azService.getAvailableZoneTblById(baseInfo.getAzId());
@@ -621,6 +665,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     keeperContainerInfoModel.setAddr(new HostPort(keepercontainerTbl.getKeepercontainerIp(), keepercontainerTbl.getKeepercontainerPort()));
     keeperContainerInfoModel.setDiskType(keepercontainerTbl.getKeepercontainerDiskType());
     keeperContainerInfoModel.setTag(keepercontainerTbl.getTag());
+    keeperContainerInfoModel.setLogicalBuId(keepercontainerTbl.getLogicalBuId());
 
     OrganizationTbl organizationTbl = organizationService.getOrganization(keepercontainerTbl.getKeepercontainerOrgId());
     if (organizationTbl != null) {
@@ -730,6 +775,14 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       logger.error("[healthCheck]Http connect occur exception. ", e);
     }
     return false;
+  }
+
+  private void validateAndSetLogicalBu(KeepercontainerTbl proto, String diskType, Long logicalBuId) {
+    long buId = logicalBuId == null ? 0L : logicalBuId;
+    if (KeeperDiskTypeUtils.isTfs(diskType) && buId <= 0) {
+      throw new BadRequestException("TFS KeeperContainer must bind logical BU");
+    }
+    proto.setLogicalBuId(buId);
   }
 
   private class OrgInfoTranslator {
