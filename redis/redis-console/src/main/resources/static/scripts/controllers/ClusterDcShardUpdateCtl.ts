@@ -49,6 +49,9 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
 
 
     $scope.submitUpdates = submitUpdates;
+    $scope.keeperContainerDisplayLabel = keeperContainerDisplayLabel;
+    $scope.keeperMediumLabel = keeperMediumLabel;
+    $scope.onKeeperContainerChanged = onKeeperContainerChanged;
 
     $scope.hasRedisMaster = false;
     $scope.useKeeper = false;
@@ -72,6 +75,10 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
                if (result.length <= 0) return;
                $scope.azTbls = {};
                $scope.keeperContainers = result;
+               $scope.keeperContainerMap = {};
+               result.forEach(function (kc) {
+                   $scope.keeperContainerMap[kc.keepercontainerId] = kc;
+               });
                KeeperContainerService.getAllAvailableZoneInfoModelsByDc(result[0].keepercontainerDc).then(function (aztbls){
                    $scope.azTbls = aztbls;
                    $scope.keeperContainers.forEach(function (keeperContainer) {
@@ -94,6 +101,48 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
             return true;
         })
         return azName;
+    }
+
+    function isTfsDiskType(diskType) {
+        return diskType && diskType.toLowerCase().indexOf('tfs') === 0;
+    }
+
+    function mediumTag(diskType) {
+        return isTfsDiskType(diskType) ? 'TFS' : 'BM';
+    }
+
+    function keeperContainerDisplayLabel(keeperContainer) {
+        var diskType = keeperContainer.keepercontainerDiskType || '';
+        var load = keeperContainer.count != null ? keeperContainer.count : 0;
+        return keeperContainer.keepercontainerIp + ':' + keeperContainer.keepercontainerPort
+            + ' [' + mediumTag(diskType) + '/' + diskType + '] '
+            + (keeperContainer.azName || '') + ' (' + load + ')';
+    }
+
+    function defaultPriorityForContainer(keepercontainerId) {
+        var kc = $scope.keeperContainerMap && $scope.keeperContainerMap[parseInt(keepercontainerId)];
+        if (!kc) {
+            return 1;
+        }
+        return isTfsDiskType(kc.keepercontainerDiskType) ? 0 : 1;
+    }
+
+    function onKeeperContainerChanged(keeper) {
+        if (keeper && keeper.keepercontainerId) {
+            keeper.keeperPriority = defaultPriorityForContainer(keeper.keepercontainerId);
+        }
+    }
+
+    function keeperMediumLabel(keeper) {
+        var diskType = keeper && keeper.keepercontainerDiskType;
+        if (!diskType && keeper && keeper.keepercontainerId) {
+            var kc = $scope.keeperContainerMap && $scope.keeperContainerMap[keeper.keepercontainerId];
+            diskType = kc ? kc.keepercontainerDiskType : '';
+        }
+        if (!diskType) {
+            return '';
+        }
+        return mediumTag(diskType) + '/' + diskType;
     }
 
     function findActiveApplierContainersByCluster(dcName, clusterName) {
@@ -241,15 +290,16 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
             if(keeper){
                 $scope.toCreateFirstKeeper = {
                    keepercontainerId : keeper.keepercontainerId.toString(),
-                   redisPort : keeper.redisPort
+                   redisPort : keeper.redisPort,
+                   keeperPriority : defaultPriorityForContainer(keeper.keepercontainerId)
                 };
             }
 
             while(keeper = keepers.shift()){
                $scope.toCreateOtherKeepers.push({
                    keepercontainerId : keeper.keepercontainerId.toString(),
-                   redisPort : keeper.redisPort
-
+                   redisPort : keeper.redisPort,
+                   keeperPriority : defaultPriorityForContainer(keeper.keepercontainerId)
                 });
             }
          });
@@ -304,7 +354,7 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
     }
 
     function validKeeper(keeper) {
-        return keeper && keeper.redisPort;
+        return keeper && keeper.redisPort && keeper.keeperPriority != null;
     }
 
     function preDeleteRedis(redis) {
@@ -451,6 +501,8 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
     }
 
     function submitUpdates() {
+        normalizeKeeperPriorities($scope.dcShards[$scope.currentDcName]);
+        normalizeKeeperPriorities($scope.dcSourceShards[$scope.currentDcName]);
 
         if ($scope.isSource) {
             var sourceShard = $scope.dcSourceShards[$scope.currentDcName];
@@ -478,6 +530,17 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
                     toastr.error(AppUtil.errorMsg(result), "operation fail");
                 });
         }
+    }
+
+    function normalizeKeeperPriorities(shard) {
+        if (!shard || !shard.keepers) {
+            return;
+        }
+        shard.keepers.forEach(function(keeper) {
+            if (keeper.keeperPriority != null && keeper.keeperPriority !== '') {
+                keeper.keeperPriority = parseInt(keeper.keeperPriority, 10);
+            }
+        });
     }
 
     function refreshShardStatus() {

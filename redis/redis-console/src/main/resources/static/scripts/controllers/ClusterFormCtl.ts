@@ -3,10 +3,10 @@ angular
     .controller('ClusterFromCtl', ClusterFromCtl);
 
 ClusterFromCtl.$inject = ['$rootScope', '$scope', '$stateParams', '$window', 'toastr', 'AppUtil', 'ClusterService',
-      'DcService', 'DcClusterService', 'ReplDirectionService', 'SentinelService', 'ClusterType'];
+      'DcService', 'DcClusterService', 'ReplDirectionService', 'SentinelService', 'ClusterType', 'LogicalBuService'];
 
 function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUtil,
-    ClusterService, DcService, DcClusterService, ReplDirectionService, SentinelService, ClusterType) {
+    ClusterService, DcService, DcClusterService, ReplDirectionService, SentinelService, ClusterType, LogicalBuService) {
 
     $rootScope.currentNav = '1-3';
 
@@ -45,6 +45,12 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
     $scope.drMasterDcs = [];
     $scope.activeDcName = '';
     $scope.isHeteroCluster = false;
+    $scope.logicalBus = [];
+    $scope.logicalBusWithUnbound = [{id: 0, name: '未绑定'}];
+    $scope.logicalBuNameMap = {0: '未绑定'};
+    $scope.selectedLogicalBuId = 0;
+    $scope.originalLogicalBuId = 0;
+    $scope.logicalBuDisplayName = '未绑定';
 
     $scope.doCluster = doCluster;
     $scope.getDcName = getDcName;
@@ -128,12 +134,26 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
            });
         });
 
+       LogicalBuService.findAll()
+           .then(function (result) {
+               $scope.logicalBus = result || [];
+               $scope.logicalBusWithUnbound = [{id: 0, name: '未绑定'}].concat($scope.logicalBus);
+               $scope.logicalBuNameMap = {0: '未绑定'};
+               $scope.logicalBus.forEach(function (bu) {
+                   $scope.logicalBuNameMap[bu.id] = bu.name;
+               });
+               refreshLogicalBuDisplay();
+           });
+
     }
 
     function loadCluster(clusterName) {
         ClusterService.load_cluster(clusterName)
             .then(function (result) {
                 $scope.cluster = result;
+                $scope.selectedLogicalBuId = result.logicalBuId || 0;
+                $scope.originalLogicalBuId = $scope.selectedLogicalBuId;
+                refreshLogicalBuDisplay();
                 var clusterType = ClusterType.lookup(result.clusterType)
                 $scope.clusterTypeName = clusterType.name
                 $scope.selectedType = clusterType.value
@@ -210,6 +230,13 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
             });
     }
 
+    function refreshLogicalBuDisplay() {
+        var buId = $scope.cluster && $scope.cluster.logicalBuId != null
+            ? $scope.cluster.logicalBuId
+            : ($scope.selectedLogicalBuId || 0);
+        $scope.logicalBuDisplayName = $scope.logicalBuNameMap[buId] || '未绑定';
+    }
+
     function doCluster() {
         if ($scope.operateType == OPERATE_TYPE.CREATE) {
             if ($scope.isHeteroCluster) {
@@ -263,7 +290,13 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
                 });
             }
 
-            ClusterService.updateCluster($scope.cluster.clusterName, $scope.cluster, $scope.dcClusterModels, $scope.replDirections)
+            var updatePromise = ClusterService.updateCluster($scope.cluster.clusterName, $scope.cluster, $scope.dcClusterModels, $scope.replDirections);
+            if ($scope.selectedLogicalBuId !== $scope.originalLogicalBuId) {
+                updatePromise = updatePromise.then(function () {
+                    return ClusterService.updateLogicalBu($scope.cluster.clusterName, $scope.selectedLogicalBuId);
+                });
+            }
+            updatePromise
                 .then(function (result) {
                     toastr.success("更新成功");
                     $window.location.href =

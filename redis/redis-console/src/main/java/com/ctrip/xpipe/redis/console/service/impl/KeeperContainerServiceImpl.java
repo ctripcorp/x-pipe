@@ -454,10 +454,10 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
                                                   + keeperContainerInfoModel.getAddr().getHost() + " already exists");
     }
 
-    if (!checkIpAndPort(keeperContainerInfoModel.getAddr().getHost(), keeperContainerInfoModel.getAddr().getPort())) {
-      throw new IllegalArgumentException(String.format("Keeper container with ip:%s, port:%d is unhealthy",
-              keeperContainerInfoModel.getAddr().getHost(), keeperContainerInfoModel.getAddr().getPort()));
-    }
+//    if (!checkIpAndPort(keeperContainerInfoModel.getAddr().getHost(), keeperContainerInfoModel.getAddr().getPort())) {
+//      throw new IllegalArgumentException(String.format("Keeper container with ip:%s, port:%d is unhealthy",
+//              keeperContainerInfoModel.getAddr().getHost(), keeperContainerInfoModel.getAddr().getPort()));
+//    }
 
     DcTbl dcTbl = dcService.find(keeperContainerInfoModel.getDcName());
     if(dcTbl == null) {
@@ -779,9 +779,6 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
   private void validateAndSetLogicalBu(KeepercontainerTbl proto, String diskType, Long logicalBuId) {
     long buId = logicalBuId == null ? 0L : logicalBuId;
-    if (KeeperDiskTypeUtils.isTfs(diskType) && buId <= 0) {
-      throw new BadRequestException("TFS KeeperContainer must bind logical BU");
-    }
     proto.setLogicalBuId(buId);
   }
 

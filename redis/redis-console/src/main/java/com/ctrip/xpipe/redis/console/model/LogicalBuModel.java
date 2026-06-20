@@ -15,6 +15,7 @@ public class LogicalBuModel implements Serializable {
     private String description;
     private List<Long> cmsOrgIds = new ArrayList<>();
     private int keeperContainerCount;
+    private List<LogicalBuKeeperContainerModel> keeperContainers = new ArrayList<>();
 
     public long getId() {
         return id;
@@ -76,6 +77,15 @@ public class LogicalBuModel implements Serializable {
 
     public LogicalBuModel setKeeperContainerCount(int keeperContainerCount) {
         this.keeperContainerCount = keeperContainerCount;
+        return this;
+    }
+
+    public List<LogicalBuKeeperContainerModel> getKeeperContainers() {
+        return keeperContainers;
+    }
+
+    public LogicalBuModel setKeeperContainers(List<LogicalBuKeeperContainerModel> keeperContainers) {
+        this.keeperContainers = keeperContainers;
         return this;
     }
 }

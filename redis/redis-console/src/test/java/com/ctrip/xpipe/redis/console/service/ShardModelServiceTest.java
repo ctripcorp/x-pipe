@@ -116,4 +116,15 @@ public class ShardModelServiceTest {
         Assert.assertFalse(shardModelService.switchActiveKeeper("ip1", "ip4", shardModel));
     }
 
+    @Test
+    public void testDoMigrateKeepersWithThreeKeepers() throws Exception {
+        List<RedisTbl> keepers = new ArrayList<>();
+        keepers.add(new RedisTbl().setRedisIp("ip1").setRedisPort(6380));
+        keepers.add(new RedisTbl().setRedisIp("ip2").setRedisPort(6381));
+        keepers.add(new RedisTbl().setRedisIp("ip3").setRedisPort(6382));
+        Boolean result = org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                shardModelService, "doMigrateKeepers", dcName, clusterName, shardModel, keepers);
+        Assert.assertTrue(result);
+    }
+
 }

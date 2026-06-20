@@ -1095,6 +1095,7 @@
 		<!-- RedisService.updateRedis() will fail, due to h2 db not recognize sequential insert with id of 0 -->
 		<member name="id" field="id" value-type="Long" length="20" nullable="true" key="true" auto-increment="true" />
 		<member name="count" value-type="long" select-expr="COUNT(rt.id) count" all="false"/>
+		<member name="keepercontainer-disk-type" value-type="String" all="false"/>
 		<var name="key-id" value-type="Long" key-member="id" />
 
 		<var name="dc-name" value-type="String"/>
@@ -1343,7 +1344,7 @@
 					UPDATE <TABLE/>
         			SET <FIELD name='run-id'/> = ${run-id}, <FIELD name='redis-ip'/> = ${redis-ip}, <FIELD name='redis-port'/> = ${redis-port},
         				<FIELD name='keeper-active'/> = ${keeper-active}, <FIELD name='redis-master'/> = ${redis-master}, <FIELD name='keepercontainer-id'/> = ${keepercontainer-id},
-        				<FIELD name='master'/> = ${master}
+        				<FIELD name='keeper-priority'/> = ${keeper-priority}, <FIELD name='master'/> = ${master}
        				WHERE <FIELD name='id'/> = ${id}
         			AND <FIELD name='deleted'/> = 0
         			]]>
@@ -1741,6 +1742,9 @@
 			<readset name="TAG">
 				<member name="tag" />
 			</readset>
+			<readset name="LOGICAL_BU_ID">
+				<member name="logical-bu-id"/>
+			</readset>
 
 			<readset name="BASE_INFO">
 				<readset-ref name="CONTAINER_ADDRESS" />
@@ -1748,6 +1752,7 @@
 				<readset-ref name="AZ_INFO"/>
 				<readset-ref name="DISK_TYPE"/>
 				<readset-ref name="TAG"/>
+				<readset-ref name="LOGICAL_BU_ID"/>
 				<readset-ref name="NAME" relation-name="org-info" />
 				<readset-ref name="NAME" relation-name="dc-info" />
 			</readset>
@@ -1805,10 +1810,13 @@
 				<statement>
 					<![CDATA[
 					SELECT <FIELDS/>
-					FROM <TABLE/>
+					FROM <TABLE/> LEFT JOIN <TABLE name='org-info' /> on <FIELD name='keepercontainer-org-id' /> = ot.id,
+						<TABLE name='dc-info' />
 					WHERE <FIELD name='logical-bu-id'/> = ${target-logical-bu-id}
 					AND <FIELD name='keepercontainer-active'/> = 1
 					AND <FIELD name='deleted'/> = 0
+					AND <FIELD name='keepercontainer-dc' /> = dt.id
+					AND dt.deleted = 0
 					]]>
 				</statement>
 			</query>

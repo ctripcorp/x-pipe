@@ -30,6 +30,7 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     $scope.clusterType = ClusterType.default().value;
     $scope.unfoldAllUnhealthyDelay = unfoldAllUnhealthyDelay;
     $scope.setClusterType = setClusterType;
+    $scope.keeperMediumLabel = keeperMediumLabel;
 
     if ($scope.clusterName) {
         loadCluster();
@@ -39,6 +40,21 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
         $scope.currentDcName = dc.dcName;
         existsRoute($scope.currentDcName, $scope.clusterName);
         loadDcCluster($scope.clusterName, $scope.currentDcName);
+    }
+
+    function isTfsDiskType(diskType) {
+        return diskType && diskType.toLowerCase().indexOf('tfs') === 0;
+    }
+
+    function mediumTag(diskType) {
+        return isTfsDiskType(diskType) ? 'TFS' : 'BM';
+    }
+
+    function keeperMediumLabel(keeper) {
+        if (!keeper || !keeper.keepercontainerDiskType) {
+            return '';
+        }
+        return mediumTag(keeper.keepercontainerDiskType) + '/' + keeper.keepercontainerDiskType;
     }
 
     function loadCluster() {

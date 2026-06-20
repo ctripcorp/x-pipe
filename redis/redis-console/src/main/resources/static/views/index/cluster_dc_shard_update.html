@@ -53,6 +53,12 @@
                                 端口
                             </th>
                             <th>
+                                介质
+                            </th>
+                            <th>
+                                priority
+                            </th>
+                            <th>
                                 操作
                             </th>
                         </tr>
@@ -67,6 +73,8 @@
                             </td>
                             <td ng-bind="redis.redisPort">
                             </td>
+                            <td>—</td>
+                            <td>—</td>
                             <td>
                                 <a ng-click="preDeleteRedis(redis)">删除</a>
                             </td>
@@ -79,6 +87,11 @@
                             <td ng-bind="keeper.redisIp">
                             </td>
                             <td ng-bind="keeper.redisPort">
+                            </td>
+                            <td ng-bind="keeperMediumLabel(keeper)">
+                            </td>
+                            <td>
+                                <input type="number" class="form-control input-sm" ng-model="keeper.keeperPriority" style="width:80px;">
                             </td>
                             <td>
                                 <a ng-click="preDeleteRedis(keeper)">删除</a>
@@ -119,6 +132,12 @@
                                 端口
                             </th>
                             <th>
+                                介质
+                            </th>
+                            <th>
+                                priority
+                            </th>
+                            <th>
                                 操作
                             </th>
                         </tr>
@@ -133,6 +152,8 @@
                             </td>
                             <td ng-bind="applier.port">
                             </td>
+                            <td>—</td>
+                            <td>—</td>
                             <td>
                                 <a ng-click="preDeleteApplier(applier)">删除</a>
                             </td>
@@ -145,6 +166,11 @@
                             <td ng-bind="keeper.redisIp">
                             </td>
                             <td ng-bind="keeper.redisPort">
+                            </td>
+                            <td ng-bind="keeperMediumLabel(keeper)">
+                            </td>
+                            <td>
+                                <input type="number" class="form-control input-sm" ng-model="keeper.keeperPriority" style="width:80px;">
                             </td>
                             <td>
                                 <a ng-click="preDeleteRedis(keeper)">删除</a>
@@ -241,10 +267,11 @@
                             KeeperContainer
                         </label>
                         <div class="col-sm-6">
-                            <select class="form-control" ng-model="toCreateFirstKeeper.keepercontainerId">
+                            <select class="form-control" ng-model="toCreateFirstKeeper.keepercontainerId"
+                                    ng-change="onKeeperContainerChanged(toCreateFirstKeeper)">
                                 <option ng-repeat="keeperContainer in keeperContainers"
                                         value="{{keeperContainer.keepercontainerId}}"
-                                ng-bind="keeperContainer.keepercontainerIp + ':' + keeperContainer.keepercontainerPort + ' ' + keeperContainer.azName"></option>
+                                ng-bind="keeperContainerDisplayLabel(keeperContainer)"></option>
                             </select>
                         </div>
                     </div>
@@ -254,6 +281,14 @@
                         </label>
                         <div class="col-sm-6">
                             <input type="text" class="form-control" ng-model="toCreateFirstKeeper.redisPort" ng-required="true">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">
+                            priority
+                        </label>
+                        <div class="col-sm-6">
+                            <input type="number" class="form-control" ng-model="toCreateFirstKeeper.keeperPriority" ng-required="true">
                         </div>
                     </div>
                     <hr/>
@@ -266,10 +301,11 @@
                         </label>
                         <div class="col-sm-6">
                             <span style="color: red" ng-show="freeKeeperContainers.length <= 0">no more keeper containers</span>
-                            <select class="form-control" ng-model="toCreateOtherKeeper.keepercontainerId">
+                            <select class="form-control" ng-model="toCreateOtherKeeper.keepercontainerId"
+                                    ng-change="onKeeperContainerChanged(toCreateOtherKeeper)">
                                 <option ng-repeat="keeperContainer in keeperContainers"
                                         value="{{keeperContainer.keepercontainerId}}"
-                                        ng-bind="keeperContainer.keepercontainerIp + ':' + keeperContainer.keepercontainerPort + ' ' + keeperContainer.azName"></option>
+                                        ng-bind="keeperContainerDisplayLabel(keeperContainer)"></option>
                             </select>
                         </div>
                     </div>
@@ -280,6 +316,14 @@
                         <div class="col-sm-6">
                             <input type="text" class="form-control" ng-model="toCreateOtherKeeper.redisPort"
                                    ng-required="true">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 control-label">
+                            priority
+                        </label>
+                        <div class="col-sm-6">
+                            <input type="number" class="form-control" ng-model="toCreateOtherKeeper.keeperPriority" ng-required="true">
                         </div>
                         <div class="col-md-2" ng-show="$index >= 0">
                             <button class="btn btn-danger btn-xs" type="button"
