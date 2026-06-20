@@ -130,6 +130,7 @@ public class ShardModelServiceImpl implements ShardModelService{
             }
 
             Map<Long, Long> containerIdDcMap = keeperContainerService.keeperContainerIdDcMap();
+            Map<Long, String> keeperContainerDiskTypeCache = new HashMap<>();
             for (int i = 0; i < shards.size(); i++) {
                 ShardTbl shardInfo = shards.get(i);
                 Future<DcClusterShardTbl> dcClusterShardFuture = dcClusterShardFutures.get(i);
@@ -149,7 +150,7 @@ public class ShardModelServiceImpl implements ShardModelService{
 
                 ShardModel shardModel = this.getShardModel(dcInfo, clusterInfo, shardInfo,
                     dcClusterInfo, dcClusterShardFuture.get(), isSourceShard,
-                    replDirectionInfoModel, containerIdDcMap);
+                    replDirectionInfoModel, containerIdDcMap, keeperContainerDiskTypeCache);
                 if (null != shardModel) {
                     shardModels.add(shardModel);
                 }
@@ -193,7 +194,8 @@ public class ShardModelServiceImpl implements ShardModelService{
 
 	private ShardModel getShardModel(DcTbl dcInfo, ClusterTbl clusterInfo, ShardTbl shardInfo,
         DcClusterTbl dcClusterInfo, DcClusterShardTbl dcClusterShardInfo, boolean isSourceShard,
-        ReplDirectionInfoModel replDirectionInfoModel, Map<Long, Long> containerIdDcMap) {
+        ReplDirectionInfoModel replDirectionInfoModel, Map<Long, Long> containerIdDcMap,
+        Map<Long, String> keeperContainerDiskTypeCache) {
 		if(null == dcInfo || null == clusterInfo || null == shardInfo
             || null == dcClusterInfo || null == dcClusterShardInfo) {
 			return null;
@@ -212,17 +214,19 @@ public class ShardModelServiceImpl implements ShardModelService{
 		if (isSourceShard && replDirectionInfoModel != null) {
 			this.addAppliersAndKeepersToSourceShard(shardModel, shardInfo.getId(),
                 replDirectionInfoModel.getId(), dcInfo.getId(),
-                dcClusterShardInfo.getDcClusterShardId(), containerIdDcMap);
+                dcClusterShardInfo.getDcClusterShardId(), containerIdDcMap, keeperContainerDiskTypeCache);
 		} else {
 			this.addRedisesAndKeepersToNormalShard(shardModel,
-                dcClusterShardInfo.getDcClusterShardId(), dcInfo.getId(), containerIdDcMap);
+                dcClusterShardInfo.getDcClusterShardId(), dcInfo.getId(), containerIdDcMap,
+                keeperContainerDiskTypeCache);
 		}
 
 		return shardModel;
 	}
 
 	private void addAppliersAndKeepersToSourceShard(ShardModel shardModel, long shardId,
-        long replDirectionId, long dcId, long dcClusterShardId, Map<Long, Long> containerIdDcMap) {
+        long replDirectionId, long dcId, long dcClusterShardId, Map<Long, Long> containerIdDcMap,
+        Map<Long, String> keeperContainerDiskTypeCache) {
 		List<ApplierTbl> appliers = applierService.findApplierTblByShardAndReplDirection(shardId, replDirectionId);
         appliers.forEach(shardModel::addApplier);
 
@@ -232,6 +236,7 @@ public class ShardModelServiceImpl implements ShardModelService{
                 Long containerDcId = containerIdDcMap.get(keeper.getKeepercontainerId());
                 if (keeper.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER)
                     && ObjectUtils.equals(dcId, containerDcId)) {
+                    enrichKeeperContainerDiskType(keeper, keeperContainerDiskTypeCache);
 					shardModel.addKeeper(keeper);
 				}
 			}
@@ -239,7 +244,7 @@ public class ShardModelServiceImpl implements ShardModelService{
 	}
 
 	private void addRedisesAndKeepersToNormalShard(ShardModel shardModel, long dcClusterShardId,
-        long dcId, Map<Long, Long> containerIdDcMap) {
+        long dcId, Map<Long, Long> containerIdDcMap, Map<Long, String> keeperContainerDiskTypeCache) {
 		List<RedisTbl> shardRedises = redisService.findAllByDcClusterShard(dcClusterShardId);
 		if(null != shardRedises) {
 			for(RedisTbl redis : shardRedises) {
@@ -247,12 +252,30 @@ public class ShardModelServiceImpl implements ShardModelService{
 					shardModel.addRedis(redis);
 				} else {
                     if (ObjectUtils.equals(dcId, containerIdDcMap.get(redis.getKeepercontainerId()))) {
+                        enrichKeeperContainerDiskType(redis, keeperContainerDiskTypeCache);
                         shardModel.addKeeper(redis);
 					}
 				}
 			}
 		}
 	}
+
+	private void enrichKeeperContainerDiskType(RedisTbl keeper, Map<Long, String> diskTypeCache) {
+        if (keeper == null || !XPipeConsoleConstant.ROLE_KEEPER.equals(keeper.getRedisRole())) {
+            return;
+        }
+        long keeperContainerId = keeper.getKeepercontainerId();
+        if (keeperContainerId <= 0) {
+            return;
+        }
+        String diskType = diskTypeCache.get(keeperContainerId);
+        if (diskType == null) {
+            KeepercontainerTbl keeperContainer = keeperContainerService.find(keeperContainerId);
+            diskType = keeperContainer != null ? keeperContainer.getKeepercontainerDiskType() : "";
+            diskTypeCache.put(keeperContainerId, diskType);
+        }
+        keeper.setKeepercontainerDiskType(diskType);
+    }
 
 	@Override
 	public boolean migrateBackupKeeper(String dcName, String clusterName, ShardModel shardModel,
@@ -375,7 +398,7 @@ public class ShardModelServiceImpl implements ShardModelService{
         if (newKeepers == null) {
             logger.error("[doMigrateKeepers][keeperIsNull][{}:{}:{}]", dcName, clusterName, shardModel.getShardTbl().getShardName());
             return false;
-        }else if (newKeepers.size() == 2) {
+        } else if (newKeepers.size() >= 2) {
             try {
                 shardModel.setKeepers(newKeepers);
                 logger.info("[doMigrateKeepers][construct][{},{},{}]{}", clusterName, dcName, shardModel.getShardTbl().getShardName(), shardModelToString(shardModel));

@@ -213,7 +213,7 @@ angular
         return d.promise;
     }
 
-    function addKeepercontainer(addr, dcName, orgName, azName, active, diskType, tag) {
+    function addKeepercontainer(addr, dcName, orgName, azName, active, diskType, tag, logicalBuId) {
         var d = $q.defer();
         resource.add_keepercontainer({}, {
                     addr : addr,
@@ -223,6 +223,7 @@ angular
                     active :active,
                     diskType : diskType,
                     tag : tag,
+                    logicalBuId : logicalBuId,
                 },
                 function(result) {
                 d.resolve(result);
@@ -232,7 +233,7 @@ angular
         return d.promise;
     }
 
-    function updateKeepercontainer(addr, dcName, orgName, azName, active, diskType, tag) {
+    function updateKeepercontainer(addr, dcName, orgName, azName, active, diskType, tag, logicalBuId) {
         var d = $q.defer();
         resource.update_keepercontainer({}, {
                     addr : addr,
@@ -241,7 +242,8 @@ angular
                     azName : azName,
                     active :active,
                     diskType : diskType,
-                    tag : tag
+                    tag : tag,
+                    logicalBuId : logicalBuId
                 },
                 function(result) {
                 d.resolve(result);

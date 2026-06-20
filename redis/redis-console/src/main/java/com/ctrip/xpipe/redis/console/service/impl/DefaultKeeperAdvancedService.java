@@ -96,10 +96,6 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
       }
     }
 
-    if (newKeepers.size() == 2) {
-      return null;
-    }
-
     if (newKeepers.isEmpty()) {
       logger.warn("[migrateKeepers] unexpected keepers {} from cluster:{}, dc:{}, shard:{}",
               newKeepers, clusterName, dcName, shardModel.getShardTbl().getShardName());
