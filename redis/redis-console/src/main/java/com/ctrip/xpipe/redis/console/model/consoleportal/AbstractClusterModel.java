@@ -17,6 +17,8 @@ public class AbstractClusterModel {
 
     protected String clusterOrgName;
 
+    private long logicalBuId;
+
     public AbstractClusterModel(String clusterName, String clusterAdminEmails,
                                 String clusterDescription, String clusterOrgName) {
         this.clusterName = clusterName;
@@ -66,6 +68,15 @@ public class AbstractClusterModel {
 
     public AbstractClusterModel setClusterOrgName(String clusterOrgName) {
         this.clusterOrgName = clusterOrgName;
+        return this;
+    }
+
+    public long getLogicalBuId() {
+        return logicalBuId;
+    }
+
+    public AbstractClusterModel setLogicalBuId(long logicalBuId) {
+        this.logicalBuId = logicalBuId;
         return this;
     }
 
