@@ -1717,7 +1717,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			cluster.setActivedcId(clusterTbl.getActivedcId())
 					.setClusterAdminEmails(clusterTbl.getClusterAdminEmails())
 					.setClusterDescription(clusterTbl.getClusterDescription())
-					.setClusterType(clusterTbl.getClusterType());
+					.setClusterType(clusterTbl.getClusterType())
+					.setLogicalBuId(clusterTbl.getLogicalBuId());
 			result.add(cluster);
 		}
 		enrichHeteroClustersForList(clusterTbls);

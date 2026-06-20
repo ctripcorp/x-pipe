@@ -527,7 +527,31 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         List<RedisTbl> left = (List<RedisTbl>) setOperator.intersection(RedisTbl.class, origin, target,
                 redisComparator);
 
+        mergeKeeperPriority(left, target);
+
         updateRedises(toCreate, toDelete, left);
+    }
+
+    private void mergeKeeperPriority(List<RedisTbl> left, List<RedisTbl> target) {
+        if (left == null || left.isEmpty() || target == null) {
+            return;
+        }
+        Map<Long, RedisTbl> targetById = new HashMap<>();
+        for (RedisTbl redis : target) {
+            Long id = redis.getId();
+            if (id != null && id > 0) {
+                targetById.put(id, redis);
+            }
+        }
+        for (RedisTbl redis : left) {
+            if (!XPipeConsoleConstant.ROLE_KEEPER.equals(redis.getRedisRole())) {
+                continue;
+            }
+            RedisTbl updated = targetById.get(redis.getId());
+            if (updated != null) {
+                redis.setKeeperPriority(updated.getKeeperPriority());
+            }
+        }
     }
 
     private void updateRedises(final List<RedisTbl> toCreate, final List<RedisTbl> toDelete, final List<RedisTbl> left) {
@@ -561,6 +585,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                 proto.setRedisRole(redis.getRedisRole());
             } else {
                 proto.setRedisRole(defaultRole);
+            }
+            if (XPipeConsoleConstant.ROLE_KEEPER.equals(proto.getRedisRole())) {
+                proto.setKeeperPriority(redis.getKeeperPriority());
             }
             if (null != dcClusterShard) {
                 proto.setDcClusterShardId(dcClusterShard.getDcClusterShardId());

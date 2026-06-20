@@ -113,6 +113,8 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisServiceImplValidateKeepersTest.class,
         KeeperContainerServiceImplPoolTest.class,
         KeeperContainerServiceImplLogicalBuTest.class,
+        LogicalBuServiceImplResolveTest.class,
+        DefaultKeeperAdvancedServiceGetNewKeepersTest.class,
         KeeperContainerCheckerServiceImplTest.class,
         ShardServiceImplTest.class,
         ShardServiceImplTest2.class,

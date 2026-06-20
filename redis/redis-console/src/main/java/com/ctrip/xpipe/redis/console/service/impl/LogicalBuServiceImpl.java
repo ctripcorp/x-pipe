@@ -65,7 +65,9 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
         if (logicalBuTbl == null) {
             throw new BadRequestException("Logical BU not found: " + id);
         }
-        return toModel(logicalBuTbl);
+        LogicalBuModel model = toModel(logicalBuTbl);
+        model.setKeeperContainers(loadKeeperContainers(id));
+        return model;
     }
 
     @Override
@@ -196,12 +198,12 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
     private void softDeleteOrgMappings(long logicalBuId) {
         LogicalBuOrgTbl proto = logicalBuOrgTblDao.createLocal();
         proto.setTargetLogicalBuId(logicalBuId);
-        queryHandler.handleUpdate(new DalQuery<Integer>() {
+        queryHandler.handleDelete(new DalQuery<Integer>() {
             @Override
             public Integer doQuery() throws DalException {
                 return logicalBuOrgTblDao.deleteByLogicalBuId(proto, LogicalBuOrgTblEntity.UPDATESET_FULL);
             }
-        });
+        }, true);
     }
 
     private LogicalBuModel toModel(LogicalBuTbl tbl) {
@@ -232,12 +234,34 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
     }
 
     private int loadKeeperContainerCount(long logicalBuId) {
-        List<KeepercontainerTbl> keeperContainers = queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
+        List<KeepercontainerTbl> keeperContainers = loadKeeperContainerTbls(logicalBuId);
+        return keeperContainers == null ? 0 : keeperContainers.size();
+    }
+
+    private List<LogicalBuKeeperContainerModel> loadKeeperContainers(long logicalBuId) {
+        List<KeepercontainerTbl> keeperContainers = loadKeeperContainerTbls(logicalBuId);
+        if (keeperContainers == null || keeperContainers.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return keeperContainers.stream().map(this::toKeeperContainerModel).collect(Collectors.toList());
+    }
+
+    private List<KeepercontainerTbl> loadKeeperContainerTbls(long logicalBuId) {
+        return queryHandler.handleQuery(new DalQuery<List<KeepercontainerTbl>>() {
             @Override
             public List<KeepercontainerTbl> doQuery() throws DalException {
-                return keepercontainerTblDao.findActiveByLogicalBuId(logicalBuId, KeepercontainerTblEntity.READSET_CONTAINER_ADDRESS);
+                return keepercontainerTblDao.findActiveByLogicalBuId(logicalBuId, KeepercontainerTblEntity.READSET_FULL);
             }
         });
-        return keeperContainers == null ? 0 : keeperContainers.size();
+    }
+
+    private LogicalBuKeeperContainerModel toKeeperContainerModel(KeepercontainerTbl tbl) {
+        return new LogicalBuKeeperContainerModel()
+                .setId(tbl.getKeepercontainerId())
+                .setIp(tbl.getKeepercontainerIp())
+                .setPort(tbl.getKeepercontainerPort())
+                .setActive(tbl.isKeepercontainerActive())
+                .setDiskType(tbl.getKeepercontainerDiskType())
+                .setTag(tbl.getTag());
     }
 }

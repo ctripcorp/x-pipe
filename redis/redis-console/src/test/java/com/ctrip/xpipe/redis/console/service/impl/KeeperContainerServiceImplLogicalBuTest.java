@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import org.junit.Assert;
 import org.junit.Test;
@@ -15,11 +14,12 @@ public class KeeperContainerServiceImplLogicalBuTest {
     @InjectMocks
     private KeeperContainerServiceImpl keeperContainerService;
 
-    @Test(expected = BadRequestException.class)
-    public void testValidateAndSetLogicalBuTfsRequiresBinding() {
+    @Test
+    public void testValidateAndSetLogicalBuTfsUnbindSetsZero() {
         KeepercontainerTbl proto = new KeepercontainerTbl();
         ReflectionTestUtils.invokeMethod(keeperContainerService, "validateAndSetLogicalBu",
                 proto, "tfs", null);
+        Assert.assertEquals(0L, proto.getLogicalBuId());
     }
 
     @Test

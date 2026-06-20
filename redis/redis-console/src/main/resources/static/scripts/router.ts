@@ -207,6 +207,11 @@ function router($stateProvider, $urlRouterProvider) {
             templateUrl: 'views/index/search_shard.html',
             controller : 'SearchShardCtl',
         })
+        .state('logical_bu_list', {
+            url: '/logical_bu_list',
+            templateUrl: 'views/index/logical_bu_list.html',
+            controller: 'LogicalBuListCtl',
+        })
         .state('keepercontainer_list', {
             url: '/keepercontainers',
             templateUrl: 'views/index/keepercontainer_list.html',

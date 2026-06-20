@@ -1,0 +1,99 @@
+<div class="col-md-12">
+    <div class="panel panel-primary">
+        <header class="panel-heading">
+            <div class="row">
+                <div class="col-md-6">
+                    <span>逻辑 BU</span>
+                </div>
+                <div class="col-md-6 text-right">
+                    <button type="button" class="btn btn-info btn-xs" ng-click="preCreate()">新增逻辑 BU</button>
+                </div>
+            </div>
+        </header>
+
+        <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover">
+            <tr ng-repeat="bu in $data">
+                <td data-title="'ID'" filter="{ id: 'text'}">{{bu.id}}</td>
+                <td data-title="'名称'" filter="{ name: 'text'}">{{bu.name}}</td>
+                <td data-title="'active'" filter="{ active: 'text'}">{{bu.active}}</td>
+                <td data-title="'tfs_fs_id'" filter="{ tfsFsId: 'text'}">{{bu.tfsFsId}}</td>
+                <td data-title="'关联 org'">{{formatOrgIds(bu.cmsOrgIds)}}</td>
+                <td data-title="'容器数'" sortable="'keeperContainerCount'">{{bu.keeperContainerCount}}</td>
+                <td data-title="'描述'" filter="{ description: 'text'}">{{bu.description}}</td>
+                <td data-title="'操作'">
+                    <button class="btn btn-warning btn-xs" type="button" ng-click="preEdit(bu)">编辑</button>&nbsp;
+                    <button class="btn btn-danger btn-xs" type="button" ng-click="preDelete(bu)">删除</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<form class="modal fade form-horizontal" id="logicalBuModal" tabindex="-1" role="dialog" ng-submit="save()">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header panel-primary">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <div class="modal-title">
+                    <span ng-if="isCreate">创建逻辑 BU</span>
+                    <span ng-if="!isCreate">编辑逻辑 BU</span>
+                </div>
+            </div>
+            <div class="modal-body form-horizontal">
+                <div class="form-group">
+                    <label class="col-sm-4 control-label">名称</label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" ng-model="editingBu.name" ng-required="true">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label">tfs_fs_id</label>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control" ng-model="editingBu.tfsFsId" ng-required="true">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label">active</label>
+                    <div class="col-sm-6">
+                        <select class="form-control" ng-model="editingBu.active"
+                                ng-options="v as v for v in [true, false]" ng-required="true"></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label">描述</label>
+                    <div class="col-sm-6">
+                        <textarea class="form-control" rows="2" ng-model="editingBu.description"></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 control-label">关联 CMS org</label>
+                    <div class="col-sm-6">
+                        <label ng-repeat="org in organizations" style="display: block;">
+                            <input type="checkbox" ng-checked="isOrgSelected(org.id)" ng-click="toggleOrg(org.id)">
+                            <span class="lbl" ng-bind="org.orgName"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group" ng-if="!isCreate">
+                    <label class="col-sm-4 control-label">KeeperContainer</label>
+                    <div class="col-sm-8">
+                        <p class="form-control-static">
+                            共 {{editingBu.keeperContainerCount || 0}} 个（请在
+                            <a href="/#/keepercontainers">KeeperContainer 列表</a> 查看）
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<xpipeconfirmdialog xpipe-dialog-id="'deleteLogicalBuConfirm'" xpipe-title="'删除逻辑 BU'"
+                    xpipe-detail="'确定删除该逻辑 BU 吗？'"
+                    xpipe-show-cancel-btn="true" xpipe-confirm="doDelete"></xpipeconfirmdialog>
