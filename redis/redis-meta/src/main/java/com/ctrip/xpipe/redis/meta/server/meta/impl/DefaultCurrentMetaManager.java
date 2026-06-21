@@ -507,9 +507,12 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 
 
 	@Override
-	public void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers, KeeperMeta activeKeeper) {
-		if (!currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers, activeKeeper)) return ;
+	public boolean setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers, KeeperMeta activeKeeper) {
+		if (!currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers, activeKeeper)) {
+			return false;
+		}
 		notifyKeeperActiveElected(clusterDbId, shardDbId, activeKeeper);
+		return true;
 	}
 
 	@Override

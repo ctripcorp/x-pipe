@@ -14,6 +14,7 @@ import com.ctrip.xpipe.pool.XpipeObjectPoolFromKeyed;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetStateCommand;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.tuple.Pair;
@@ -21,6 +22,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -42,6 +44,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void> implements Reque
 	private ScheduledExecutorService scheduled;
 	private Executor executors;
 	private Command<?> activeSuccessCommand;
+	private Map<KeeperMeta, KeeperState> keeperRoles;
 
 	public KeeperStateChangeJob(List<KeeperMeta> keepers,
 								Pair<String, Integer> activeKeeperMaster,
@@ -56,6 +59,15 @@ public class KeeperStateChangeJob extends AbstractCommand<Void> implements Reque
 								RouteMeta routeForActiveKeeper,
 								SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool
 			, int delayBaseMilli, int retryTimes, ScheduledExecutorService scheduled, Executor executors){
+		this(keepers, activeKeeperMaster, routeForActiveKeeper, clientPool, delayBaseMilli, retryTimes, scheduled, executors, null);
+	}
+
+	public KeeperStateChangeJob(List<KeeperMeta> keepers,
+								Pair<String, Integer> activeKeeperMaster,
+								RouteMeta routeForActiveKeeper,
+								SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool
+			, int delayBaseMilli, int retryTimes, ScheduledExecutorService scheduled, Executor executors,
+								Map<KeeperMeta, KeeperState> keeperRoles){
 		this.keepers = new LinkedList<>(keepers);
 		this.activeKeeperMaster = activeKeeperMaster;
 		this.routeForActiveKeeper = routeForActiveKeeper;
@@ -64,6 +76,7 @@ public class KeeperStateChangeJob extends AbstractCommand<Void> implements Reque
 		this.retryTimes = retryTimes;
 		this.scheduled = scheduled;
 		this.executors = executors;
+		this.keeperRoles = keeperRoles;
 	}
 
 	@Override
@@ -79,7 +92,11 @@ public class KeeperStateChangeJob extends AbstractCommand<Void> implements Reque
 		}
 		KeeperMeta activeKeeper = null;
 		for(KeeperMeta keeperMeta : keepers){
-			if(keeperMeta.isActive()){
+			if(keeperRoles == null && keeperMeta.isActive()){
+				activeKeeper = keeperMeta;
+				break;
+			}
+			if (keeperRoles != null && KeeperState.ACTIVE == resolveKeeperState(keeperMeta)) {
 				activeKeeper = keeperMeta;
 				break;
 			}
@@ -100,10 +117,14 @@ public class KeeperStateChangeJob extends AbstractCommand<Void> implements Reque
 		ParallelCommandChain backupChain = new ParallelCommandChain(executors);
 		
 		for(KeeperMeta keeperMeta : keepers){
-			if(!keeperMeta.isActive()){
-				Command<?> backupCommand = createKeeperSetStateCommand(keeperMeta, new Pair<String, Integer>(activeKeeper.getIp(), activeKeeper.getPort()));
-				backupChain.add(backupCommand);
+			if(keeperRoles == null && keeperMeta.isActive()){
+				continue;
 			}
+			if (keeperRoles != null && KeeperState.ACTIVE == resolveKeeperState(keeperMeta)) {
+				continue;
+			}
+			Command<?> backupCommand = createKeeperSetStateCommand(keeperMeta, new Pair<String, Integer>(activeKeeper.getIp(), activeKeeper.getPort()));
+			backupChain.add(backupCommand);
 		}
 
 		chain.add(backupChain);
@@ -129,12 +150,26 @@ public class KeeperStateChangeJob extends AbstractCommand<Void> implements Reque
 		
 		SimpleObjectPool<NettyClient> pool = new XpipeObjectPoolFromKeyed<Endpoint, NettyClient>(clientPool, new DefaultEndPoint(keeper.getIp(), keeper.getPort()));
 
+		KeeperState keeperState = resolveKeeperState(keeper);
 		KeeperSetStateCommand command =  new KeeperSetStateCommand(pool,
-				keeper.isActive() ? KeeperState.ACTIVE : KeeperState.BACKUP,
+				keeperState,
 				masterAddress,
-				keeper.isActive() ? routeForActiveKeeper : null,
+				KeeperState.ACTIVE == keeperState ? routeForActiveKeeper : null,
 				scheduled);
 		return CommandRetryWrapper.buildCountRetry(retryTimes, new RetryDelay(delayBaseMilli), command, scheduled);
+	}
+
+	private KeeperState resolveKeeperState(KeeperMeta keeper) {
+		if (keeperRoles == null) {
+			return keeper.isActive() ? KeeperState.ACTIVE : KeeperState.BACKUP;
+		}
+		for (Map.Entry<KeeperMeta, KeeperState> entry : keeperRoles.entrySet()) {
+			if (MetaUtils.same(entry.getKey(), keeper)) {
+				return entry.getValue();
+			}
+		}
+		getLogger().warn("[resolveKeeperState][keeper not in roles map, fallback]{}", keeper);
+		return keeper.isActive() ? KeeperState.ACTIVE : KeeperState.BACKUP;
 	}
 
 	@Override
