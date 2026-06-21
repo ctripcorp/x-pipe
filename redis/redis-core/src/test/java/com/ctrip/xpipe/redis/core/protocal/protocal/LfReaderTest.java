@@ -26,7 +26,7 @@ public class LfReaderTest extends AbstractRedisTest {
 
 		LfReader reader = (LfReader) new LfReader().read(Unpooled.wrappedBuffer(data1.getBytes()));
 		Assert.assertNotNull(reader);
-		Assert.assertEquals(data, new String(reader.getPayload()));
+		Assert.assertEquals(data1, new String(reader.getPayload()));
 	}
 
 }

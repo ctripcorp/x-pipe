@@ -11,10 +11,12 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
+import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperElectorManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.ZkUtils;
@@ -51,6 +53,12 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 
 	@Autowired
 	private KeeperActiveElectAlgorithmManager keeperActiveElectAlgorithmManager;
+
+	@Autowired
+	private KeeperElectReElectService keeperElectReElectService;
+
+	@Autowired
+	private DcMetaCache dcMetaCache;
 
 	private void observeLeader(final ClusterMeta cluster) {
 		logger.info("[observeLeader]{}", cluster.getDbId());
@@ -197,8 +205,13 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		}
 
 		KeeperActiveElectAlgorithm klea = keeperActiveElectAlgorithmManager.get(clusterDbId, shardDbId);
-		KeeperMeta activeKeeper = klea.select(clusterDbId, shardDbId, survivalKeepers);
-		currentMetaManager.setSurviveKeepers(clusterDbId, shardDbId, survivalKeepers, activeKeeper);
+		List<KeeperMeta> enrichedKeepers = KeeperMetaEnricher.enrich(dcMetaCache, clusterDbId, shardDbId, survivalKeepers);
+		KeeperMeta activeKeeper = klea.select(clusterDbId, shardDbId, enrichedKeepers);
+		if (activeKeeper == null) {
+			logger.warn("[updateShardLeader][no active keeper]cluster_{},shard_{},{}", clusterDbId, shardDbId, enrichedKeepers);
+			return;
+		}
+		currentMetaManager.setSurviveKeepers(clusterDbId, shardDbId, enrichedKeepers, activeKeeper);
 	}
 
 	@Override
@@ -209,6 +222,20 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 				observerShardLeader(clusterDbId, shardMeta.getDbId());
 			} catch (Exception e) {
 				logger.error("[handleClusterModified]cluster_" + clusterDbId + ",shard_" + shardMeta.getDbId(), e);
+			}
+		}
+		for (Object shardComparator : comparator.getMofified()) {
+			if (!(shardComparator instanceof ShardMetaComparator)) {
+				continue;
+			}
+			ShardMetaComparator shardMetaComparator = (ShardMetaComparator) shardComparator;
+			if (keeperElectReElectService.keeperPriorityChanged(shardMetaComparator)) {
+				try {
+					keeperElectReElectService.reElect(clusterDbId, shardMetaComparator.getCurrent().getDbId());
+				} catch (Exception e) {
+					logger.error("[handleClusterModified][reElect]cluster_{},shard_{}",
+							clusterDbId, shardMetaComparator.getCurrent().getDbId(), e);
+				}
 			}
 		}
 	}
@@ -235,5 +262,9 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 	public void setKeeperActiveElectAlgorithmManager(
 			KeeperActiveElectAlgorithmManager keeperActiveElectAlgorithmManager) {
 		this.keeperActiveElectAlgorithmManager = keeperActiveElectAlgorithmManager;
+	}
+
+	public void setDcMetaCache(DcMetaCache dcMetaCache) {
+		this.dcMetaCache = dcMetaCache;
 	}
 }

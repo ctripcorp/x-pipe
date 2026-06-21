@@ -25,7 +25,7 @@ public class BulkStringEofJuderManager {
 			start = 1;
 		}
 		
-		if(arraynequals(data, 1, RedisClientProtocol.EOF, RedisClientProtocol.EOF.length)){
+		if(arraynequals(data, start, RedisClientProtocol.EOF, RedisClientProtocol.EOF.length)){
 			if(start + RedisClientProtocol.EOF.length + BulkStringEofMarkJudger.MARK_LENGTH > data.length){
 				throw new IllegalStateException("bulksting eof mark error:" + new String(data));
 			}
