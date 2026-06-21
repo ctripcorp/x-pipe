@@ -11,6 +11,7 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperRoleAssigner;
 import com.ctrip.xpipe.redis.meta.server.job.ApplierStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
@@ -30,6 +31,8 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -102,7 +105,20 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 			dstDcId = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
 		}
 		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dstDcId, clusterDbId);
-		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, scheduled, executors);
+		KeeperMeta activeKeeper = findActiveKeeper(keepers);
+		Map<KeeperMeta, KeeperState> keeperRoles = activeKeeper == null
+				? null
+				: KeeperRoleAssigner.assignRoles(activeKeeper, keepers, dcMetaCache);
+		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, 1000, 5, scheduled, executors, keeperRoles);
+	}
+
+	private KeeperMeta findActiveKeeper(List<KeeperMeta> keepers) {
+		for (KeeperMeta keeperMeta : keepers) {
+			if (keeperMeta.isActive()) {
+				return keeperMeta;
+			}
+		}
+		return null;
 	}
 
 	@Override

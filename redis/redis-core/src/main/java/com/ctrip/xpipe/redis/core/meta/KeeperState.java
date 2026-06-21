@@ -66,6 +66,18 @@ public enum KeeperState {
 		public boolean isBackup() {
 			return false;
 		}
+	},
+
+	PREPARE {
+		@Override
+		public boolean isActive() {
+			return false;
+		}
+
+		@Override
+		public boolean isBackup() {
+			return false;
+		}
 	};
 
 
