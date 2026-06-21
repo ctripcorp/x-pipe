@@ -121,12 +121,24 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
 		}
 		byte[] markPayload = markBytes.getPayload();
 		
-		if(markPayload.length == 0){
+		if(isSkippableEofLine(markPayload)){
 			lfReader = null;
 			return null;
 		}
 		
 		return BulkStringEofJuderManager.create(markPayload);
+	}
+
+	private static boolean isSkippableEofLine(byte[] markPayload) {
+		if (markPayload.length == 0) {
+			return true;
+		}
+		for (byte b : markPayload) {
+			if (b != '\r' && b != '\n') {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	

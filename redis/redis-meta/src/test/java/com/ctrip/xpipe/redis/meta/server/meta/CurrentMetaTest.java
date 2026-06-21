@@ -104,6 +104,22 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 	}
 
 	@Test
+	public void testSetSurviveKeepersPriorityChange() {
+		List<KeeperMeta> surviveKeepers = new ArrayList<>();
+		KeeperMeta keeperMeta1 = new KeeperMeta().setSurvive(true).setIp("127.0.0.1").setPort(6000).setPriority(1);
+		KeeperMeta activeKeeper = new KeeperMeta().setSurvive(true).setIp("127.0.0.1").setPort(6001).setActive(true).setPriority(1);
+		surviveKeepers.add(keeperMeta1);
+		surviveKeepers.add(activeKeeper);
+		Assert.assertTrue(currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers, activeKeeper));
+
+		List<KeeperMeta> updatedKeepers = new ArrayList<>();
+		updatedKeepers.add(keeperMeta1.setPriority(5));
+		updatedKeepers.add(activeKeeper);
+		Assert.assertTrue(currentMeta.setSurviveKeepers(clusterDbId, shardDbId, updatedKeepers, activeKeeper));
+		Assert.assertEquals(Integer.valueOf(5), currentMeta.getSurviveKeepers(clusterDbId, shardDbId).get(0).getPriority());
+	}
+
+	@Test
 	public void testAddResourceConcurrently() throws Exception {
 		int concurrentSize = 1000;
 		AtomicInteger releaseCount = new AtomicInteger(0);

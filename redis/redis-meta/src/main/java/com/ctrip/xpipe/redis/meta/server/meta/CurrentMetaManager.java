@@ -59,7 +59,7 @@ public interface CurrentMetaManager extends Observable {
 
 	void addResource(Long clusterDbId, Long shardDbId, Releasable releasable);
 
-	void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper);
+	boolean setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviceKeepers, KeeperMeta activeKeeper);
 
 	void setSurviveAppliersAndNotify(Long clusterDbId, Long shardDbId, List<ApplierMeta> surviveAppliers, ApplierMeta activeApplier, String sids);
 

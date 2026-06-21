@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithm;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperActiveElectAlgorithmManager;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
+import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,6 +42,9 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 	@Mock
 	private KeeperActiveElectAlgorithmManager KeeperActiveElectAlgorithmManager;
 	
+	@Mock
+	private DcMetaCache dcMetaCache;
+
 	@Mock 
 	private KeeperActiveElectAlgorithm keeperActiveElectAlgorithm;
 
@@ -59,6 +63,8 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 		
 		keeperElectorManager.setCurrentMetaManager(currentMetaManager);
 		keeperElectorManager.setKeeperActiveElectAlgorithmManager(KeeperActiveElectAlgorithmManager);
+		keeperElectorManager.setDcMetaCache(dcMetaCache);
+		when(dcMetaCache.getShardKeepers(anyLong(), anyLong())).thenReturn(Collections.emptyList());
 
 		clusterMeta = differentCluster(getDc());
 		shardMeta = (ShardMeta) clusterMeta.getShards().values().toArray()[0];

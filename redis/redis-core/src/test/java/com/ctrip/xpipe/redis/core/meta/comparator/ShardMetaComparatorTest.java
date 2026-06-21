@@ -144,6 +144,32 @@ public class ShardMetaComparatorTest extends AbstractComparatorTest{
 	}
 
 	@Test
+	public void testKeeperPriorityModified() {
+		KeeperMeta keeper = differentKeeper(current);
+		keeper.setPriority(1);
+		current.addKeeper(keeper);
+
+		KeeperMeta futureKeeper = MetaCloneFacade.INSTANCE.clone(keeper);
+		futureKeeper.setPriority(5);
+		future.addKeeper(futureKeeper);
+
+		ShardMetaComparator comparator = new ShardMetaComparator(current, future);
+		comparator.compare();
+
+		Assert.assertEquals(0, comparator.getAdded().size());
+		Assert.assertEquals(0, comparator.getRemoved().size());
+		Assert.assertEquals(1, comparator.getMofified().size());
+		Assert.assertTrue(comparator.getMofified().iterator().next() instanceof InstanceNodeComparator);
+
+		InstanceNodeComparator instanceNodeComparator =
+				(InstanceNodeComparator) comparator.getMofified().iterator().next();
+		KeeperMeta oldKeeper = (KeeperMeta) instanceNodeComparator.getCurrent();
+		KeeperMeta newKeeper = (KeeperMeta) instanceNodeComparator.getFuture();
+		Assert.assertEquals(Integer.valueOf(1), oldKeeper.getPriority());
+		Assert.assertEquals(Integer.valueOf(5), newKeeper.getPriority());
+	}
+
+	@Test
 	public void testConfigChanged() {
 		current.setSentinelId(1L);
 		future.setSentinelId(2L);

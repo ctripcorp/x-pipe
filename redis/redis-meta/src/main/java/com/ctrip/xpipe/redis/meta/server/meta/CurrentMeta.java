@@ -8,6 +8,7 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
+import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
@@ -103,7 +104,21 @@ public class CurrentMeta implements Releasable {
 			if (!surviveKeeperSet.contains(keeperMeta)) return true;
 		}
 
-		return !ObjectUtils.equals(currentShardMeta.getActiveKeeper(), activeKeeper);
+		if (!ObjectUtils.equals(currentShardMeta.getActiveKeeper(), activeKeeper)) {
+			return true;
+		}
+
+		for (KeeperMeta newKeeper : surviveKeepers) {
+			for (KeeperMeta oldKeeper : currentShardMeta.getSurviveKeepers()) {
+				if (MetaUtils.same(oldKeeper, newKeeper)) {
+					if (!ObjectUtils.equals(oldKeeper.getPriority(), newKeeper.getPriority())) {
+						return true;
+					}
+					break;
+				}
+			}
+		}
+		return false;
 	}
 
 	public void setSurviveAppliers(Long clusterDbId, Long shardDbId, List<ApplierMeta> surviveAppliers,

@@ -33,7 +33,10 @@ import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainer
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperElectorManagerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperRoleAssignerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperElectReElectServiceTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.MultiPathKeeperElectorManagerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.StrategyAwareKeeperActiveElectAlgorithmTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.UserDefinedPriorityKeeperActiveElectAlgorithmTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.*;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManagerTest;
@@ -77,6 +80,9 @@ import org.junit.runners.Suite.SuiteClasses;
 	CurrentMetaTest.class, 
 	UserDefinedPriorityKeeperActiveElectAlgorithmTest.class,
 	DefaultKeeperActiveElectAlgorithmManagerTest.class,
+	StrategyAwareKeeperActiveElectAlgorithmTest.class,
+	KeeperRoleAssignerTest.class,
+	KeeperElectReElectServiceTest.class,
 	DefaultKeeperElectorManagerTest.class,
 	DefaultApplierElectorManagerTest.class,
 	MultiPathKeeperElectorManagerTest.class,
