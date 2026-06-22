@@ -7,6 +7,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -74,16 +75,11 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
 
     @Override
     public Set<MonitorShardMeta> buildSentinelBeaconShards(String cluster, String dc, Map<String, HostPort> shardMasters) {
-        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        if (xpipeMeta == null || xpipeMeta.getDcs() == null) {
-            return Collections.emptySet();
-        }
-        ClusterMeta clusterMeta = Optional.ofNullable(xpipeMeta.getDcs().get(dc))
-                .map(dcMeta -> dcMeta.getClusters().get(cluster))
-                .orElse(null);
+        ClusterMeta clusterMeta = getClusterMeta(cluster, dc);
         if (clusterMeta == null) {
             return Collections.emptySet();
         }
+        String canonicalDc = resolveCanonicalDcId(dc);
 
         Set<MonitorShardMeta> shards = new HashSet<>();
         for (Map.Entry<String, ShardMeta> entry : clusterMeta.getShards().entrySet()) {
@@ -91,7 +87,8 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
             ShardMeta shardMeta = entry.getValue();
             List<MonitorGroupMeta> groups = shardMeta.getRedises().stream().map(redisMeta -> {
                 HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
-                MonitorGroupMeta group = new MonitorGroupMeta(hostPort.toString(), dc, Collections.singleton(hostPort), redisMeta.isMaster());
+                MonitorGroupMeta group = new MonitorGroupMeta(hostPort.toString(), canonicalDc,
+                        Collections.singleton(hostPort), redisMeta.isMaster());
                 group.setAz(redisMeta.getAz());
                 return group;
             }).collect(Collectors.toList());
@@ -150,13 +147,42 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
     }
 
     private ClusterMeta getClusterMeta(String cluster, String dc) {
-        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        if (xpipeMeta == null || xpipeMeta.getDcs() == null) {
+        DcMeta dcMeta = findDcMeta(dc);
+        if (dcMeta == null) {
             return null;
         }
-        return Optional.ofNullable(xpipeMeta.getDcs().get(dc))
-                .map(dcMeta -> dcMeta.getClusters().get(cluster))
+        return dcMeta.getClusters().get(cluster);
+    }
+
+    private DcMeta findDcMeta(String dc) {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null || xpipeMeta.getDcs() == null || StringUtil.isEmpty(dc)) {
+            return null;
+        }
+        DcMeta dcMeta = xpipeMeta.getDcs().get(dc);
+        if (dcMeta != null) {
+            return dcMeta;
+        }
+        return xpipeMeta.getDcs().entrySet().stream()
+                .filter(entry -> entry.getKey().equalsIgnoreCase(dc))
+                .map(Map.Entry::getValue)
+                .findFirst()
                 .orElse(null);
+    }
+
+    private String resolveCanonicalDcId(String dc) {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null || xpipeMeta.getDcs() == null || StringUtil.isEmpty(dc)) {
+            return dc;
+        }
+        if (xpipeMeta.getDcs().containsKey(dc)) {
+            return dc;
+        }
+        return xpipeMeta.getDcs().entrySet().stream()
+                .filter(entry -> entry.getKey().equalsIgnoreCase(dc))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(dc);
     }
 
     private Set<String> resolveSameRegionDcs(ClusterMeta dcClusterMeta) {

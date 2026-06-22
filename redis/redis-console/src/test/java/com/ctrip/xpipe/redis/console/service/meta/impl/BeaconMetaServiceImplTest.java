@@ -6,6 +6,8 @@ import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -67,6 +69,63 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
         Assert.assertTrue(beaconMetaService.compareDrBeaconMetaWithXPipe("cluster1", expectedBeaconGroups()));
     }
 
+    private XpipeMeta upperCaseMetaFrom(XpipeMeta source) {
+        XpipeMeta upperCaseMeta = new XpipeMeta();
+        source.getDcs().forEach((dc, dcMeta) -> {
+            DcMeta upperDcMeta = new DcMeta(dc.toUpperCase()).setZone(dcMeta.getZone());
+            dcMeta.getClusters().values().forEach(clusterMeta ->
+                    upperDcMeta.addCluster(copyClusterMeta(clusterMeta)));
+            upperCaseMeta.addDc(upperDcMeta);
+        });
+        return upperCaseMeta;
+    }
+
+    private ClusterMeta copyClusterMeta(ClusterMeta source) {
+        ClusterMeta clusterMeta = new ClusterMeta(source.getId());
+        clusterMeta.setType(source.getType());
+        clusterMeta.setAzGroupType(source.getAzGroupType());
+        clusterMeta.setActiveDc(source.getActiveDc() == null ? null : source.getActiveDc().toUpperCase());
+        clusterMeta.setBackupDcs(source.getBackupDcs() == null ? null : source.getBackupDcs().toUpperCase());
+        source.getShards().values().forEach(clusterMeta::addShard);
+        return clusterMeta;
+    }
+
+    @Test
+    public void testBuildDrBeaconGroupsWithUpperCaseDcKeys() {
+        XpipeMeta upperCaseMeta = upperCaseMetaFrom(getXpipeMeta());
+
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(upperCaseMeta);
+        Mockito.doAnswer(invocation -> {
+            String activeDc = invocation.getArgument(0, String.class);
+            String backupDc = invocation.getArgument(1, String.class);
+            return !upperCaseMeta.getDcs().get(activeDc.toUpperCase()).getZone()
+                    .equals(upperCaseMeta.getDcs().get(backupDc.toUpperCase()).getZone());
+        }).when(metaCache).isCrossRegion(Mockito.anyString(), Mockito.anyString());
+
+        Set<MonitorGroupMeta> groups = beaconMetaService.buildDrBeaconGroups("cluster1", "jq");
+        Assert.assertFalse(groups.isEmpty());
+        Assert.assertEquals(4, groups.size());
+        Assert.assertTrue(groups.stream().allMatch(group ->
+                "JQ".equals(group.getIdc()) || "OY".equals(group.getIdc())));
+        Assert.assertTrue(groups.stream().allMatch(group ->
+                group.getName().endsWith("+JQ") || group.getName().endsWith("+OY")));
+
+        Set<MonitorGroupMeta> expected = upperCaseExpectedBeaconGroups();
+        Assert.assertEquals(expected, groups);
+        Assert.assertTrue(beaconMetaService.compareDrBeaconMetaWithXPipe("cluster1", "jq", expected));
+        Assert.assertTrue(beaconMetaService.compareDrBeaconMetaWithXPipe("cluster1", "JQ", expected));
+    }
+
+    @Test
+    public void testBuildSentinelBeaconShardsWithUpperCaseDcKey() {
+        XpipeMeta upperCaseMeta = upperCaseMetaFrom(getXpipeMeta());
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(upperCaseMeta);
+
+        Set<MonitorShardMeta> shards = beaconMetaService.buildSentinelBeaconShards("cluster1", "jq", Collections.emptyMap());
+        Assert.assertFalse(shards.isEmpty());
+        shards.forEach(shard -> shard.getGroups().forEach(group -> Assert.assertEquals("JQ", group.getIdc())));
+    }
+
     @Test
     public void testBuildSentinelBeaconShards() {
         Set<MonitorShardMeta> shards = beaconMetaService.buildSentinelBeaconShards("cluster1", "jq", Collections.emptyMap());
@@ -106,6 +165,15 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
                 new MonitorGroupMeta("shard2+jq", "jq", Sets.newHashSet(HostPort.fromString("127.0.0.1:6381"), HostPort.fromString("127.0.0.1:6382")), true),
                 new MonitorGroupMeta("shard1+oy", "oy", Sets.newHashSet(HostPort.fromString("127.0.0.1:6383"), HostPort.fromString("127.0.0.1:6384")), false),
                 new MonitorGroupMeta("shard2+oy", "oy", Sets.newHashSet(HostPort.fromString("127.0.0.1:6385"), HostPort.fromString("127.0.0.1:6386")), false)
+        );
+    }
+
+    private Set<MonitorGroupMeta> upperCaseExpectedBeaconGroups() {
+        return Sets.newHashSet(
+                new MonitorGroupMeta("shard1+JQ", "JQ", Sets.newHashSet(HostPort.fromString("127.0.0.1:6379"), HostPort.fromString("127.0.0.1:6380")), true),
+                new MonitorGroupMeta("shard2+JQ", "JQ", Sets.newHashSet(HostPort.fromString("127.0.0.1:6381"), HostPort.fromString("127.0.0.1:6382")), true),
+                new MonitorGroupMeta("shard1+OY", "OY", Sets.newHashSet(HostPort.fromString("127.0.0.1:6383"), HostPort.fromString("127.0.0.1:6384")), false),
+                new MonitorGroupMeta("shard2+OY", "OY", Sets.newHashSet(HostPort.fromString("127.0.0.1:6385"), HostPort.fromString("127.0.0.1:6386")), false)
         );
     }
 

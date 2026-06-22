@@ -83,7 +83,8 @@ public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
 
         if (forcedMigration) {
             logger.info("[checkMetaAndAvailableDcs][{}] skip for forced migration", clusterName);
-        } else if (!beaconMetaService.compareDrBeaconMetaWithXPipe(clusterName, migrationRequest.getGroups())) {
+        } else if (!beaconMetaService.compareDrBeaconMetaWithXPipe(clusterName, activeDc.getDcName(),
+                migrationRequest.getGroups())) {
             future().setFailure(new WrongClusterMetaException(clusterName));
             return;
         } else if (!migrationRequest.getFailDcs().contains(activeDc.getDcName())) {
