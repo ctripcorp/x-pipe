@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.checker.alert.manager.AlertPolicyManagerTest;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderTest;
 import com.ctrip.xpipe.redis.checker.alert.message.subscriber.AlertEntityDelaySubscriberTest;
 import com.ctrip.xpipe.redis.checker.alert.message.subscriber.AlertRecoverySubscriberTest;
+import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBeanTest;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfigTest;
 import com.ctrip.xpipe.redis.checker.controller.CheckerHealthControllerTest;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessageTest;
@@ -17,6 +18,13 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedis
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedisConfigCheckRuleActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.CRDTDelayActionControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CRDTDelayPingActionCollectorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultAggregatorPullServiceTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollectorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MetricDelayListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.gtidgap.GtidGapCheckActionControllerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.gtidgap.GtidGapCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CRDTDelayPingActionCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultAggregatorPullServiceTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollectorTest;
@@ -94,6 +102,7 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses(value = {
+        CommonConfigBeanTest.class,
         DefaultCheckerDbConfigTest.class,
 
         DefaultSentinelHelloCollectorTest.class,
@@ -128,6 +137,7 @@ import org.junit.runners.Suite;
         DefaultAlertEntityHolderTest.class,
         DefaultDcMetaChangeManagerTest.class,
         DelayActionTest.class,
+        MetricDelayListenerTest.class,
         CRDTDelayActionControllerTest.class,
         CurrentDcSentinelHelloCollectorTest.class,
         InfoReplicationActionTest.class,

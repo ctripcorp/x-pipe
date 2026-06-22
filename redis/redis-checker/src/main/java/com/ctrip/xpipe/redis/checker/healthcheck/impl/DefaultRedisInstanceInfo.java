@@ -13,6 +13,7 @@ import com.google.common.collect.Maps;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Date;
 
 /**
  * @author chen.zhu
@@ -34,6 +35,8 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
     private Long shardDbId;
 
     private Map<Long, String> activeDcShardIds = new HashMap<>();
+
+    private Date createTime;
 
     public DefaultRedisInstanceInfo() {
         super();
@@ -106,6 +109,11 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
     }
 
     @Override
+    public Date getCreateTime() {
+        return createTime;
+    }
+
+    @Override
     public String toString() {
         return StringUtil.join(", ", dcId, clusterId, shardId, hostPort, isMaster ? "Master" : "Slave",
             "activeDc:" + activeDc, clusterType, crossRegion ? "proxied" : "normal");
@@ -143,6 +151,10 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
 
     public void setActiveDcShardIds(Map<Long, String> shardIds) {
         this.activeDcShardIds = shardIds;
+    }
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
     }
 
     @VisibleForTesting

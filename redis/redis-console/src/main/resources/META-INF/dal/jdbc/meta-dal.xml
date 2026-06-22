@@ -1131,6 +1131,7 @@
 				<member name="redis-master"/>
 				<member name="keepercontainer-id"/>
 				<member name="az-id"/>
+				<member name="create-time"/>
 			</readset>
 			<readset name="CONTAINER_ID">
 				<member name="keepercontainer-id" />

@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.SourceMeta;
 import com.google.common.collect.Lists;
@@ -59,6 +60,9 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     private ClusterService clusterService;
+
+    @Autowired
+    private RedisService redisService;
 
     @Autowired
     private ConsoleConfig consoleConfig;
@@ -152,6 +156,36 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
         logger.info("{}", shardMeta);
     }
 
+
+    @Test
+    public void testBuiltRedisMetaContainsCreateTime() throws Exception {
+        Date expectedCreateTime = new Date(1_700_000_000_000L);
+        RedisTbl redisTbl = redisService.find(3L);
+        Assert.assertNotNull(redisTbl);
+        redisTbl.setCreateTime(expectedCreateTime);
+        redisService.updateByPK(redisTbl);
+
+        DcMeta builtDcMeta = new DcMeta();
+        dcMetaMap.clear();
+        dcMetaMap.put("JQ", builtDcMeta);
+
+        new DcMetaBuilder(dcMetaMap, dcService.findAllDcs(), Collections.singleton(ClusterType.ONE_WAY.toString()),
+                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                azGroupClusterRepository, azGroupCache, new DefaultRetryCommandFactory(), consoleConfig)
+                .execute().get();
+
+        ClusterMeta clusterMeta = builtDcMeta.findCluster("cluster1");
+        Assert.assertNotNull(clusterMeta);
+        ShardMeta shardMeta = clusterMeta.findShard("shard1");
+        Assert.assertNotNull(shardMeta);
+
+        RedisMeta redisMeta = shardMeta.getRedises().stream()
+                .filter(redis -> redis.getPort() == 6379)
+                .findFirst()
+                .orElse(null);
+        Assert.assertNotNull(redisMeta);
+        Assert.assertEquals(expectedCreateTime.getTime(), redisMeta.getCreateTime().longValue());
+    }
 
     @Test
     public void testClusterBondToOnlyOneIDC() throws Exception {

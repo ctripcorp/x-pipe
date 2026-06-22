@@ -301,7 +301,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                 .setRedisIp(addr.getKey().trim())
                 .setRedisPort(addr.getValue())
                 .setRedisRole(role.trim())
-                .setRunId("unknown");
+                .setRunId("unknown")
+                .setAzId(0L);
     }
 
     @Override

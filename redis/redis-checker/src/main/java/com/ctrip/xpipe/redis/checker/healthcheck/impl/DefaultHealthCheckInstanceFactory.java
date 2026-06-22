@@ -141,7 +141,9 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         Integer orgId = clusterMeta.getOrgId();
         info.setClusterOrgId(orgId == null ? -1 : orgId);
         info.isMaster(redisMeta.isMaster());
-
+        if (redisMeta.getCreateTime() != null) {
+            info.setCreateTime(new Date(redisMeta.getCreateTime()));
+        }
         if (clusterType.supportSingleActiveDC()) {
             info.setCrossRegion(metaCache.isCrossRegion(info.getActiveDc(), info.getDcId()));
             info.setShardDbId(redisMeta.parent().getDbId());
