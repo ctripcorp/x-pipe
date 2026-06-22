@@ -180,7 +180,26 @@ public class DefaultMonitorManager implements MonitorManager {
             }
         }
 
+        fillMonitorServicePlaceholders(clusterByBeaconSystemOrg, orgIds, routeType);
         return clusterByBeaconSystemOrg;
+    }
+
+    /**
+     * Ensure each org exposes every configured {@link MonitorService}, even when no cluster matches.
+     * Cleanup jobs rely on MonitorService -> empty Set entries to unregister stale beacon clusters.
+     */
+    private void fillMonitorServicePlaceholders(
+            Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clusterByBeaconSystemOrg,
+            Set<Long> orgIds, BeaconRouteType routeType) {
+        Map<Long, List<MonitorService>> servicesByOrg = getAllServices(routeType);
+        clusterByBeaconSystemOrg.values().forEach(clustersByOrg -> orgIds.forEach(orgId -> {
+            List<MonitorService> services = servicesByOrg.get(orgId);
+            if (CollectionUtils.isEmpty(services)) {
+                return;
+            }
+            Map<MonitorService, Set<String>> byService = clustersByOrg.get(orgId);
+            services.forEach(service -> byService.computeIfAbsent(service, ignored -> new HashSet<>()));
+        }));
     }
 
     private BeaconSystem resolveBeaconSystemByRouteType(ClusterType clusterType, BeaconRouteType routeType) {

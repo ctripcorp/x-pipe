@@ -49,9 +49,6 @@ public class SentinelBeaconClusterMonitorCheck extends AbstractSiteLeaderInterva
 
         clustersByBeaconSystemOrg.forEach((beaconSystem, clustersByOrg) -> clustersByOrg.forEach((orgId, clustersByService) -> {
             clustersByService.forEach((monitorService, clusters) -> {
-                if (clusters.isEmpty()) {
-                    return;
-                }
                 new UnknownClusterExcludeJob(beaconSystem, clusters, Collections.singletonList(monitorService), Integer.MAX_VALUE)
                         .execute()
                         .addListener(commandFuture -> {

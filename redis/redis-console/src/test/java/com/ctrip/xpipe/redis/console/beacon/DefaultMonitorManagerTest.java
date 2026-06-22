@@ -183,4 +183,20 @@ public class DefaultMonitorManagerTest extends AbstractTest {
         Assert.assertFalse(oneWayClusters.contains("non-gray-cluster"));
     }
 
+    @Test
+    public void testSentinelRouteShouldExposeMonitorServicesWhenNoClusterMatches() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(new ClusterMeta("remote-active").setOrgId(1).setType(ClusterType.ONE_WAY.name()).setActiveDc("fra"));
+        xpipeMeta.addDc(dcMeta);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> map =
+                beaconServiceManager.clustersByBeaconSystemOrg(BeaconRouteType.SENTINEL);
+        Map<MonitorService, Set<String>> byService = map.get(BeaconSystem.XPIPE_ONE_WAY).get(1L);
+
+        Assert.assertFalse(byService.isEmpty());
+        Assert.assertTrue(byService.values().stream().allMatch(Set::isEmpty));
+    }
+
 }

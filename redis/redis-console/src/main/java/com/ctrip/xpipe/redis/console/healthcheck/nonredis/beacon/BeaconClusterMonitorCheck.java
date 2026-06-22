@@ -53,9 +53,6 @@ public class BeaconClusterMonitorCheck extends AbstractCrossDcIntervalAction {
         clustersByBeaconSystemOrg.forEach((beaconSystem, clustersByOrg) -> {
             clustersByOrg.forEach((orgId, clustersByService) -> {
                 clustersByService.forEach((monitorService, clusters) -> {
-                    if (clusters.isEmpty()) {
-                        return;
-                    }
                     new UnknownClusterExcludeJob(beaconSystem, clusters, Collections.singletonList(monitorService),
                             config.monitorUnregisterProtectCount())
                             .execute()
