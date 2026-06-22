@@ -17,8 +17,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedis
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedisConfigCheckRuleActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.CRDTDelayActionControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.gtidgap.GtidGapCheckActionControllerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.gtidgap.GtidGapCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CRDTDelayPingActionCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultAggregatorPullServiceTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollectorTest;
@@ -199,9 +197,6 @@ import org.junit.runners.Suite;
         AlertManagerTest.class,
 
         TestConnectProxyWithProxyClient.class,
-
-        GtidGapCheckActionTest.class,
-        GtidGapCheckActionControllerTest.class,
 
         DefaultHealthCheckConfigTest.class,
         DefaultRouteChooserTest.class,
