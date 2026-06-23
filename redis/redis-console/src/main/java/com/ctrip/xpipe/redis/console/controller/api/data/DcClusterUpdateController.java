@@ -4,7 +4,7 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.impl.DcClusterServiceImpl;
+import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +16,7 @@ import java.util.List;
 public class DcClusterUpdateController extends AbstractConsoleController{
 
     @Autowired
-    DcClusterServiceImpl dcClusterService;
+    DcClusterService dcClusterService;
 
     @RequestMapping(value = "/dcCluster", method = RequestMethod.PUT)
     public RetMessage updateRedisCheckRuleOfDcCluster(@RequestBody DcClusterCreateInfo dcClusterCreateInfo) {

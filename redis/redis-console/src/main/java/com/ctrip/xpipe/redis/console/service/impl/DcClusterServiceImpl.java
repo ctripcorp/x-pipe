@@ -13,7 +13,10 @@ import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.ctrip.xpipe.redis.console.service.model.SourceModelService;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
+import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
@@ -23,6 +26,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Conditional(ConsoleDisableDbCondition.class)
+@DisableDbMode(false)
 public class DcClusterServiceImpl extends AbstractConsoleService<DcClusterTblDao> implements DcClusterService {
 	
 	@Autowired

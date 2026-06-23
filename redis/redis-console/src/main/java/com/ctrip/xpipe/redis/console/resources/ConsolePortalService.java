@@ -10,6 +10,8 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisWithAzInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCheckRuleCreateInfo;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -152,6 +154,23 @@ public class ConsolePortalService extends AbstractService {
 
         ResponseEntity<List<OrganizationTbl>> resp = exchange(comp.toUri(), HttpMethod.GET, null,
                 new ParameterizedTypeReference<List<OrganizationTbl>>(){}, "getAllOrganizations");
+        return resp.getBody();
+    }
+
+    public List<RedisCheckRuleCreateInfo> getAllRedisCheckRuleInfos() {
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
+                AbstractConsoleController.API_PREFIX + "/redisCheck/all").build();
+        ResponseEntity<List<RedisCheckRuleCreateInfo>> resp = exchange(comp.toUri(), HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<RedisCheckRuleCreateInfo>>(){}, "getAllRedisCheckRuleInfos");
+        return resp.getBody();
+    }
+
+    public List<DcClusterCreateInfo> getDcClusterInfoOfCluster(String clusterName) {
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
+                AbstractConsoleController.API_PREFIX + "/dcCluster/{clusterName}")
+                .buildAndExpand(clusterName);
+        ResponseEntity<List<DcClusterCreateInfo>> resp = exchange(comp.toUri(), HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<DcClusterCreateInfo>>(){}, "getDcClusterInfoOfCluster");
         return resp.getBody();
     }
 

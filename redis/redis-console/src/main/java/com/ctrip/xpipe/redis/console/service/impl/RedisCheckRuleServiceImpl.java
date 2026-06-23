@@ -7,7 +7,10 @@ import com.ctrip.xpipe.redis.console.dao.RedisCheckRuleDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.RedisCheckRuleTbl;
 import com.ctrip.xpipe.redis.console.model.RedisCheckRuleTblDao;
+import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
+import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
+import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -16,6 +19,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
@@ -23,13 +27,15 @@ import java.util.Arrays;
 import java.util.List;
 
 @Service
+@Conditional(ConsoleDisableDbCondition.class)
+@DisableDbMode(false)
 public class RedisCheckRuleServiceImpl extends AbstractConsoleService<RedisCheckRuleTblDao> implements RedisCheckRuleService {
 
     @Autowired
     private RedisCheckRuleDao redisCheckRuleDao;
 
     @Autowired
-    private DcClusterServiceImpl dcClusterService;
+    private DcClusterService dcClusterService;
 
     @Autowired
     @Lazy

@@ -251,6 +251,8 @@ import org.junit.runners.Suite.SuiteClasses;
         KeeperAvailableZoneCheckTest.class,
         RedisConfigCheckMonitorTest.class,
         RedisCheckRuleServiceImplTest.class,
+        RedisCheckRuleServiceWithoutDBTest.class,
+        DcClusterServiceWithoutDBTest.class,
         EmailSentCounterTest.class,
 
        ClusterTypeUpdateEventListenerTest.class,
