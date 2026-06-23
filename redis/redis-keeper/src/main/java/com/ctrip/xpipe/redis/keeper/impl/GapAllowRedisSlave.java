@@ -47,14 +47,15 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
     protected String buildMarkBeforeFsync(ReplicationProgress<?> rdbProgress) {
         if (rdbProgress instanceof BacklogOffsetReplicationProgress) {
             long rdbContBacklogOffset = ((BacklogOffsetReplicationProgress) rdbProgress).getProgress();
+            GtidSet rdbGtidExecuted = ((BacklogOffsetReplicationProgress) rdbProgress).getRdbGtidExecuted();
             KeeperRepl keeperRepl = getRedisServer().getKeeperRepl();
             ReplStage curStage = keeperRepl.currentStage();
             ReplStage preStage = keeperRepl.preStage();
 
             if (rdbContBacklogOffset >= curStage.getBegOffsetBacklog()) {
-                return buildRespWithReplStage(rdbContBacklogOffset, curStage);
+                return buildRespWithReplStage(rdbContBacklogOffset, curStage, rdbGtidExecuted);
             } else if (null != preStage && rdbContBacklogOffset >= preStage.getBegOffsetBacklog()) {
-                return buildRespWithReplStage(rdbContBacklogOffset, preStage);
+                return buildRespWithReplStage(rdbContBacklogOffset, preStage, rdbGtidExecuted);
             } else {
                 getLogger().info("[buildMarkBeforeFsync][cur:{}][pre:{}]", curStage, preStage);
                 getLogger().warn("[buildMarkBeforeFsync][Rdb start from replStage before last] rdb:{}", rdbContBacklogOffset);
@@ -65,13 +66,17 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
         }
     }
 
-    private String buildRespWithReplStage(long rdbContBacklogOffset, ReplStage replStage) {
+    private String buildRespWithReplStage(long rdbContBacklogOffset, ReplStage replStage, GtidSet rdbGtidExecuted) {
         if (replStage.getProto() == ReplStage.ReplProto.PSYNC) {
             return StringUtil.join(" ", FULL_SYNC, replStage.getReplId(),
                     replStage.backlogOffset2ReplOffset(rdbContBacklogOffset) - 1);
         } else {
-            GtidSet lost = replStage.getGtidLost();
-            return StringUtil.join(" ", XFULL_SYNC, "GTID.LOST", lost.isEmpty() ? "\"\"" : lost,
+            GtidSet keeperLost = replStage.getGtidLost();
+            GtidSet lostToSlave = rdbGtidExecuted == null || rdbGtidExecuted.isEmpty()
+                    ? keeperLost : keeperLost.subtract(rdbGtidExecuted);
+            getLogger().info("[buildRespWithReplStage][keeperLost:{}][rdbGtidExecuted:{}][lostToSlave:{}]",
+                    keeperLost, rdbGtidExecuted, lostToSlave);
+            return StringUtil.join(" ", XFULL_SYNC, "GTID.LOST", lostToSlave.isEmpty() ? "\"\"" : lostToSlave,
                     "MASTER.UUID", replStage.getMasterUuid(), "REPLID", replStage.getReplId(),
                     "REPLOFF", replStage.backlogOffset2ReplOffset(rdbContBacklogOffset) - 1);
         }

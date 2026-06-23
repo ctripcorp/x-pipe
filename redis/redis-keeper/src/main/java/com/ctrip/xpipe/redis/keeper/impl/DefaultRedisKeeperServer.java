@@ -288,7 +288,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
-	public GtidCommandSearcher createCmdKeySearcher(String uuid, int begGno, int endGno) {
+	public GtidCommandSearcher createCmdKeySearcher(String uuid, long begGno, long endGno) {
 		return new GtidCommandSearcher(uuid, begGno, endGno, this, redisOpParser);
 	}
 

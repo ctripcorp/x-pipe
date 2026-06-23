@@ -61,7 +61,7 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	boolean retainCommands(CommandsGuarantee commandsGuarantee);
 
-	List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, int begGno, int endGno) throws IOException;
+	List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, long begGno, long endGno) throws IOException;
 
 	void addCommandsListener(ReplicationProgress<?> progress, CommandsListener commandsListener) throws IOException;
 	// meta related

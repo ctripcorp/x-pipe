@@ -18,7 +18,7 @@ public class DirectByteBufInOutPayload extends AbstractInOutPayload {
 
     private static final Logger logger = LoggerFactory.getLogger(DirectByteBufInOutPayload.class);
 
-    private static final int INIT_SIZE = 1 << 8;
+    private static final int INIT_SIZE = 1 << 10;
 
     private ByteBuf cumulation;
 

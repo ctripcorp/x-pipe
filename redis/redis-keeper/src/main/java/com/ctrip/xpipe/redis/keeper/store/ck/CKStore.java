@@ -2,10 +2,10 @@ package com.ctrip.xpipe.redis.keeper.store.ck;
 
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
 import com.ctrip.xpipe.api.kafka.KafkaService;
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.config.ConfigKeyListener;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.core.redis.operation.*;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpItem;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMultiItem;
@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
@@ -40,6 +41,7 @@ public class CKStore implements Keeperable {
     private final long replId;
 
     private static final String CK_BLOCK = "ck.block";
+    private static final String CK_INIT = "ck.init";
 
     private KafkaService kafkaService;
     private MetricProxy metricProxy;
@@ -53,9 +55,14 @@ public class CKStore implements Keeperable {
 
     private volatile int offerCount = 0;
 
+    private AtomicBoolean ckStarted = new AtomicBoolean(false);
 
     private static final ScheduledExecutorService hickwallReporterService =
             Executors.newSingleThreadScheduledExecutor();
+
+    private ScheduledFuture<?> hickwallFuture;
+
+    private ScheduledFuture<?> consumerFuture;
 
     private KeeperConfig keeperConfig;
     private volatile boolean started;
@@ -72,40 +79,43 @@ public class CKStore implements Keeperable {
     // ========== 启动与停止 ==========
 
     public void start() {
-        metricProxy = MetricProxy.DEFAULT;
-        kafkaService = KafkaService.DEFAULT;
+        if(ckStarted.compareAndSet(false,true)) {
+            metricProxy = MetricProxy.DEFAULT;
+            kafkaService = KafkaService.DEFAULT;
 
-        startConsumerThread();
+            startConsumerThread();
 
-        isReady = true;
+            isReady = true;
 
-        configKeyListener = (key, val) -> {
-            if (KeeperConfig.KEY_STOP_WRITE_CK.equals(key)) {
-                if ("true".equals(val)) {
-                    isReady = false;
-                    stopConsumerThread();
-                    kafkaService.forceStopProducer();
-                } else {
-                    startConsumerThread();
-                    kafkaService.startProducer();
-                    isReady = true;
+            configKeyListener = (key, val) -> {
+                if (KeeperConfig.KEY_STOP_WRITE_CK.equals(key)) {
+                    if ("true".equals(val)) {
+                        isReady = false;
+                        stopConsumerThread();
+                        kafkaService.forceStopProducer();
+                    } else {
+                        startConsumerThread();
+                        kafkaService.startProducer();
+                        isReady = true;
+                    }
                 }
-            }
-        };
-        keeperConfig.addListener(configKeyListener);
+            };
+            keeperConfig.addListener(configKeyListener);
 
-        hickwallReporterService.scheduleWithFixedDelay(
-                () -> {
-                    reportHickwall(CK_BLOCK, isSendCkFail);
-                    isSendCkFail = false;
-                }, 1, 1, TimeUnit.MINUTES
-        );
+            hickwallFuture = hickwallReporterService.scheduleWithFixedDelay(
+                    () -> {
+                        reportHickwall(CK_BLOCK, isSendCkFail);
+                        reportHickwall(CK_INIT, !kafkaService.initSuccess());
+                        isSendCkFail = false;
+                    }, 1, 1, TimeUnit.MINUTES
+            );
 
-        hickwallReporterService.scheduleWithFixedDelay(
-                () -> {
-                    tryNotifyConsumer();
-                }, 1, 5, TimeUnit.SECONDS
-        );
+            consumerFuture = hickwallReporterService.scheduleWithFixedDelay(
+                    () -> {
+                        tryNotifyConsumer();
+                    }, 1, 5, TimeUnit.SECONDS
+            );
+        }
     }
 
     private synchronized void startConsumerThread() {
@@ -330,11 +340,14 @@ public class CKStore implements Keeperable {
     }
 
     private void reportHickwall(String type, boolean block) {
+        if(block){
+            CatEventMonitor.DEFAULT.logAlertEvent(type);
+        }
+
         MetricData data = new MetricData(type);
         data.setValue(block ? 1 : 0);
-        data.addTag("replId", "" + replId);
-        data.setTimestampMilli(System.currentTimeMillis());
         try {
+            data.setTimestampMilli(System.currentTimeMillis());
             metricProxy.writeBinMultiDataPoint(data);
         } catch (Exception e) {
             logger.warn("[xpipe][ck.reportHickwall]", e);
@@ -342,10 +355,19 @@ public class CKStore implements Keeperable {
     }
 
     public void dispose() {
+
         stopConsumerThread();
-        if (kafkaService != null) kafkaService.forceStopProducer();
+
         if (keeperConfig != null && configKeyListener != null) {
             keeperConfig.removeListener(configKeyListener);
+        }
+
+        if(hickwallFuture != null) {
+            hickwallFuture.cancel(false);
+        }
+
+        if(consumerFuture != null) {
+            consumerFuture.cancel(false);
         }
     }
 

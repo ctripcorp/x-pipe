@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.spring;
 
 
+import com.ctrip.xpipe.api.kafka.KafkaService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.config.*;
@@ -10,6 +11,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucket;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.LeakyBucket;
+import com.ctrip.xpipe.utils.ServicesUtil;
 import com.ctrip.xpipe.zk.ZkClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -67,5 +69,10 @@ public class Production extends AbstractProfile{
                                                MetaServerKeeperService metaServerKeeperService,
                                                KeeperContainerService keeperContainerService) {
 		return new CompositeLeakyBucket(keeperConfig, metaServerKeeperService, keeperContainerService);
+	}
+
+	@Bean
+	public KafkaService getKafkaService(){
+        return ServicesUtil.getKafkaService();
 	}
 }

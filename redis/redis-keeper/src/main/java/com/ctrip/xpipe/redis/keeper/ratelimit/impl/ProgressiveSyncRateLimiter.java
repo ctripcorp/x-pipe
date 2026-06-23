@@ -19,9 +19,9 @@ public class ProgressiveSyncRateLimiter implements SyncRateLimiter {
 
     private SystemSecondsProvider systemSecondsProvider;
 
-    private int record;
+    private long record;
 
-    private int[] records;
+    private long[] records;
 
     private int recordPos;
 
@@ -46,7 +46,7 @@ public class ProgressiveSyncRateLimiter implements SyncRateLimiter {
         this.identify = identify;
         this.config = config;
         this.rateLimiter = RateLimiter.create(baseBytesLimits());
-        this.records = new int[Math.max(1, config.getCheckInterval())];
+        this.records = new long[Math.max(1, config.getCheckInterval())];
         this.lastRateLimitEnabled = config.isRateLimitEnabled();
         reset(systemSecondsProvider.getSystemSeconds());
     }
@@ -160,7 +160,7 @@ public class ProgressiveSyncRateLimiter implements SyncRateLimiter {
         if (checkInterval == records.length) return;
 
         logger.info("[updateRecordsSize][{}] {} -> {}", identify, records.length, checkInterval);
-        records = new int[checkInterval];
+        records = new long[checkInterval];
         recordPos = 0;
     }
 

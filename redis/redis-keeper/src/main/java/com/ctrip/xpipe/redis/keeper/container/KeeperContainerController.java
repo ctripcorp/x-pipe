@@ -142,7 +142,7 @@ public class KeeperContainerController extends AbstractController {
 
     @GetMapping(value = "/repl/{repl_id}/command/keys")
     public DeferredResult<RestResp<List<CmdKeyItem>>> searchCmdKeys(@PathVariable String repl_id, @RequestParam String uuid,
-                                                                    @RequestParam int begGno, @RequestParam int endGno) throws Exception {
+                                                                    @RequestParam long begGno, @RequestParam long endGno) throws Exception {
         DeferredResult<RestResp<List<CmdKeyItem>>> response = new DeferredResult<>(600 * 1000L);
         if (null == repl_id || StringUtil.isEmpty(uuid) || begGno <= 0 || endGno <= 0 || begGno > endGno) {
             response.setResult(RestResp.fail(400, "Invalidate params"));

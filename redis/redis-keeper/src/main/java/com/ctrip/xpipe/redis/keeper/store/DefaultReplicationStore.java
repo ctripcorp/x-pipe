@@ -811,7 +811,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
-	public List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, int begGno, int endGno) throws IOException {
+	public List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, long begGno, long endGno) throws IOException {
 		return cmdStore.locateCmdSegment(uuid, begGno, endGno);
 	}
 

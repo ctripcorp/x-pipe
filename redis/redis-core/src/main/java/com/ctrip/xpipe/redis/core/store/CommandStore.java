@@ -33,7 +33,7 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	boolean retainCommands(CommandsGuarantee commandsGuarantee);
 
-	List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, int begGno, int endGno) throws IOException;
+	List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, long begGno, long endGno) throws IOException;
 
 	long getCommandsLastUpdatedAt();
 	

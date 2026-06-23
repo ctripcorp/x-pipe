@@ -26,6 +26,11 @@ public class DefaultKafkaService implements KafkaService {
     }
 
     @Override
+    public boolean initSuccess() {
+        return true;
+    }
+
+    @Override
     public int getOrder() {
         return LOWEST_PRECEDENCE;
     }
