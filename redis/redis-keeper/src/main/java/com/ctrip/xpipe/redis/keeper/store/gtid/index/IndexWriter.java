@@ -72,15 +72,17 @@ public class IndexWriter extends AbstractIndex implements Closeable {
                 // find a IndexEntry which BlockEndOffset and cmd offset is exit.
                 index = readPreIIndexEntry(index);
             }
+            long rebuildStart;
             if(index != null) {
                 this.indexFile.setLength((int)index.getPosition());
                 closeBlockWriter();
                 this.indexEntry = null;
-                defaultIndexStore.buildIndexFromCmdFile(super.getFileName(), index.getCmdStartOffset());
+                rebuildStart = index.getCmdStartOffset();
             } else {
                 this.indexEntry = null;
-                defaultIndexStore.buildIndexFromCmdFile(super.getFileName(), 0);
+                rebuildStart = 0L;
             }
+            defaultIndexStore.buildIndexFromCmdFileWithZones(super.getFileName(), rebuildStart);
         } finally {
             if(cmdFile != null) {
                 cmdFile.close();

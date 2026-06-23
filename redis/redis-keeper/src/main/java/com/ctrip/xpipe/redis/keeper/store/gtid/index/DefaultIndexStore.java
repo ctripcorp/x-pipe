@@ -37,6 +37,8 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     private IndexWriter indexWriter;
 
+    private NonGtidIndexWriter nonGtidIndexWriter;
+
     private StreamCommandReader streamCommandReader;
 
     private String baseDir;
@@ -76,6 +78,8 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     public void openWriter(CommandWriter cmdWriter) throws IOException {
         this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
         this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size());
+        this.nonGtidIndexWriter = new NonGtidIndexWriter(baseDir, currentCmdFileName);
+        this.nonGtidIndexWriter.init();
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
         this.indexWriter.init();
     }
@@ -97,6 +101,11 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         GtidSet continueGtidSet = this.indexWriter.getGtidSet();
         this.currentCmdFileName = cmdFileName;
         this.indexWriter.close();
+        if (this.nonGtidIndexWriter != null) {
+            this.nonGtidIndexWriter.close();
+        }
+        this.nonGtidIndexWriter = new NonGtidIndexWriter(baseDir, currentCmdFileName);
+        this.nonGtidIndexWriter.init();
         this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, continueGtidSet, this);
         this.indexWriter.init();
         this.streamCommandReader.resetOffset();
@@ -255,57 +264,128 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     public void buildIndexFromCmdFile(String cmdFileName, long cmdFileOffset) throws IOException {
-        this.streamCommandReader = new StreamCommandReader(this, cmdFileOffset);
+        long fileSize = new File(Paths.get(baseDir, cmdFileName).toString()).length();
+        buildIndexFromCmdFile(cmdFileName, cmdFileOffset, fileSize, true);
+    }
+
+    /**
+     * 重建 cmd 文件中 [startOffset, endOffset) 区间的 GTID 索引。
+     * isLastSegment 为 true 时才允许在尾部对 cmd 文件做 truncate（用于不完整 tx / 残包）。
+     */
+    public void buildIndexFromCmdFile(String cmdFileName, long startOffset, long endOffset, boolean isLastSegment) throws IOException {
+        if (startOffset >= endOffset) return;
+        this.streamCommandReader = new StreamCommandReader(this, startOffset);
         this.disableWriterCmd();
         ControllableFile controllableFile = null;
         try {
             controllableFile = new DefaultControllableFile(new File(Paths.get(baseDir, cmdFileName).toString()));
-            controllableFile.getFileChannel().position(cmdFileOffset);
-            while(controllableFile.getFileChannel().position() < controllableFile.getFileChannel().size()) {
-                int size = (int)Math.min(1024*8, controllableFile.getFileChannel().size() - controllableFile.getFileChannel().position());
+            controllableFile.getFileChannel().position(startOffset);
+            long pos = startOffset;
+            while (pos < endOffset) {
+                int size = (int) Math.min(1024 * 8, endOffset - pos);
                 ByteBuffer buffer = ByteBuffer.allocate(size);
-                controllableFile.getFileChannel().read(buffer);
+                int n = controllableFile.getFileChannel().read(buffer);
+                if (n <= 0) break;
+                pos += n;
                 buffer.flip();
-                ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.array());
+                ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.array(), 0, n);
                 this.write(byteBuf);
             }
-            
+
+            if (!isLastSegment) {
+                // 中间段：边界在 zone.start（命令边界）上，理论上 parser 应当干净。
+                if (streamCommandReader.isTransactionActive() || streamCommandReader.getRemainLength() > 0) {
+                    logger.warn("[buildIndexFromCmdFile] unclean parser at segment end [{}, {}), txActive={}, remain={}",
+                            startOffset, endOffset, streamCommandReader.isTransactionActive(),
+                            streamCommandReader.getRemainLength());
+                }
+                this.streamCommandReader.resetParser();
+                return;
+            }
+
             // Check for incomplete protocol parsing
             int remainBytes = this.streamCommandReader.getRemainLength();
             if (this.streamCommandReader.isTransactionActive()) {
-                // Check for incomplete transaction (MULTI without EXEC)
-                // If there's an active transaction, it means the transaction was not committed
-                // We need to rollback by truncating the file to the transaction start offset
                 long transactionStartOffset = this.streamCommandReader.getTransactionStartOffset();
                 if (transactionStartOffset >= 0) {
-                    // transactionStartOffset is relative to cmdFileOffset, convert to absolute offset
                     logger.warn("[buildIndexFromCmdFile] incomplete transaction detected (size: {}), " +
-                            "rollback from offset {} to offset: {}", 
-                            this.streamCommandReader.getTransactionSize(), 
+                            "rollback from offset {} to offset: {}",
+                            this.streamCommandReader.getTransactionSize(),
                             controllableFile.size(), transactionStartOffset);
                     EventMonitor.DEFAULT.logAlertEvent("INCOMPLETE_TRANSACTION");
-                    // Truncate file to transaction start offset to rollback incomplete transaction
-                    controllableFile.setLength((int)transactionStartOffset);
+                    controllableFile.setLength((int) transactionStartOffset);
                     this.streamCommandReader.resetParser();
                 } else {
-                    // If startOffset is invalid, just reset parser to clear transaction state
                     logger.warn("[buildIndexFromCmdFile] incomplete transaction detected but invalid startOffset, " +
                             "clearing transaction state");
                     this.streamCommandReader.resetParser();
                 }
             } else if (remainBytes > 0) {
-                // Check for incomplete protocol parsing
                 EventMonitor.DEFAULT.logAlertEvent("TRUNCATE_CMD_FILE");
-                controllableFile.setLength((int)controllableFile.size() - remainBytes);
+                controllableFile.setLength((int) controllableFile.size() - remainBytes);
                 this.streamCommandReader.resetParser();
             }
 
         } finally {
             // 从cmd 读 写完之后再加入写
             this.enableWriterCmd();
-            if(controllableFile != null) {
+            if (controllableFile != null) {
                 controllableFile.close();
             }
+        }
+    }
+
+    /**
+     * 按 zone 分段重建：跳过非 GTID 区间，只对 GTID 区间走 legacy。
+     * 末尾未刷盘的尾部（≤ FLUSH_THRESHOLD 条非 GTID 命令）自然落在最后一段，跟着 legacy 一起处理。
+     */
+    public void buildIndexFromCmdFileWithZones(String cmdFileName, long startOffset) throws IOException {
+        File cmdFile = new File(Paths.get(baseDir, cmdFileName).toString());
+        long cmdFileSize = cmdFile.exists() ? cmdFile.length() : 0;
+        if (startOffset >= cmdFileSize) return;
+
+        List<long[]> zones = (nonGtidIndexWriter != null)
+                ? nonGtidIndexWriter.loadAllZones()
+                : java.util.Collections.emptyList();
+
+        List<long[]> usable = new ArrayList<>(zones.size());
+        for (long[] z : zones) {
+            if (z[1] <= startOffset) continue;
+            if (z[1] > cmdFileSize) {
+                logger.warn("[buildIndexFromCmdFileWithZones] drop zone [{}, {}) beyond cmdSize {}",
+                        z[0], z[1], cmdFileSize);
+                continue;
+            }
+            long s = Math.max(z[0], startOffset);
+            if (s >= z[1]) continue;
+            usable.add(new long[]{s, z[1]});
+        }
+
+        long current = startOffset;
+        for (long[] z : usable) {
+            if (z[0] > current) {
+                buildIndexFromCmdFile(cmdFileName, current, z[0], false);
+            }
+            current = z[1];
+        }
+        if (current < cmdFileSize) {
+            buildIndexFromCmdFile(cmdFileName, current, cmdFileSize, true);
+        }
+        logger.info("[buildIndexFromCmdFileWithZones] {}: zones used={}, startOffset={}, cmdSize={}",
+                cmdFileName, usable.size(), startOffset, cmdFileSize);
+    }
+
+    @Override
+    public void onNonGtidWritten(long offset, int length) throws IOException {
+        if (nonGtidIndexWriter != null) {
+            nonGtidIndexWriter.appendNonGtid(offset, length);
+        }
+    }
+
+    @Override
+    public void onGtidWritten(long offset, int length) throws IOException {
+        if (nonGtidIndexWriter != null) {
+            nonGtidIndexWriter.onGtid();
         }
     }
 
@@ -451,6 +531,13 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
             logger.debug("[doClose] close index writer {}", indexWriter.getFileName());
             this.indexWriter.close();
         }
+        if (this.nonGtidIndexWriter != null) {
+            try {
+                this.nonGtidIndexWriter.close();
+            } finally {
+                this.nonGtidIndexWriter = null;
+            }
+        }
     }
 
     @Override
@@ -464,6 +551,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     public void closeWithDeleteIndexFiles() throws IOException {
         this.closeWriter();
         deleteAllIndexFile();
+        NonGtidIndexWriter.deleteZoneFiles(baseDir);
     }
 
     public void deleteAllIndexFile() {

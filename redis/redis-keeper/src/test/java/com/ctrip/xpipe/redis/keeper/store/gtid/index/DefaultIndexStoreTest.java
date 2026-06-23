@@ -83,8 +83,15 @@ public class DefaultIndexStoreTest {
 
     @Before
     public void setUp() throws IOException {
+        // restore mutable instance state — some tests reassign baseDir
+        baseDir = Paths.get(tempDir, "IndexStoreTest").toString();
         File dir = new File(baseDir);
-        if (!dir.exists()) {
+        if (dir.exists()) {
+            File[] children = dir.listFiles();
+            if (children != null) {
+                for (File f : children) f.delete();
+            }
+        } else {
             dir.mkdirs();
         }
 
@@ -177,7 +184,8 @@ public class DefaultIndexStoreTest {
         int initSize = directory.listFiles().length;
         defaultIndexStore.closeWithDeleteIndexFiles();
         int lastSize = directory.listFiles().length;
-        Assert.assertEquals(initSize, lastSize + 2);
+        // index_, block_, and nongtid_ files are removed
+        Assert.assertEquals(initSize, lastSize + 3);
     }
 
     @Test
@@ -857,4 +865,1094 @@ public class DefaultIndexStoreTest {
         Assert.assertFalse("Should find single GTID", result.isEmpty());
     }
 
+    // ============================================================
+    // NonGtidIndexWriter — direct unit tests
+    // ============================================================
+
+    private static final int REC = NonGtidIndexWriter.RECORD_LEN;
+
+    private File zoneFileFor(String dir, String cmdName) {
+        return new File(Paths.get(dir, NonGtidIndexWriter.ZONE_PREFIX + cmdName).toString());
+    }
+
+    private long zoneFileSize(String dir, String cmdName) {
+        return zoneFileFor(dir, cmdName).length();
+    }
+
+    private List<long[]> readZoneRecords(String dir, String cmdName) throws IOException {
+        File f = zoneFileFor(dir, cmdName);
+        java.util.List<long[]> out = new java.util.ArrayList<>();
+        if (!f.exists()) return out;
+        try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(f, "r")) {
+            long size = raf.length();
+            long aligned = (size / REC) * REC;
+            for (long pos = 0; pos < aligned; pos += REC) {
+                raf.seek(pos);
+                long s = raf.readLong();
+                long e = raf.readLong();
+                out.add(new long[]{s, e});
+            }
+        }
+        return out;
+    }
+
+    @Test
+    public void testZoneWriter_FlushOnGtid() throws IOException {
+        String cmdName = "zone_unit_a";
+        NonGtidIndexWriter w = new NonGtidIndexWriter(baseDir, cmdName);
+        w.init();
+        w.appendNonGtid(0, 10);
+        w.appendNonGtid(10, 20);
+        Assert.assertEquals("not flushed yet", 0L, zoneFileSize(baseDir, cmdName));
+        w.onGtid();
+        Assert.assertEquals("one record after GTID", REC, zoneFileSize(baseDir, cmdName));
+        List<long[]> recs = readZoneRecords(baseDir, cmdName);
+        Assert.assertEquals(1, recs.size());
+        Assert.assertEquals(0L, recs.get(0)[0]);
+        Assert.assertEquals(30L, recs.get(0)[1]);
+        Assert.assertFalse(w.hasActiveZone());
+        w.close();
+    }
+
+    @Test
+    public void testZoneWriter_FlushOnThreshold() throws IOException {
+        String cmdName = "zone_unit_b";
+        NonGtidIndexWriter w = new NonGtidIndexWriter(baseDir, cmdName);
+        w.init();
+        long off = 0;
+        for (int i = 0; i < NonGtidIndexWriter.FLUSH_THRESHOLD; i++) {
+            w.appendNonGtid(off, 1);
+            off += 1;
+        }
+        Assert.assertEquals("flushed exactly once on threshold", REC, zoneFileSize(baseDir, cmdName));
+        Assert.assertFalse(w.hasActiveZone());
+        // continue, next flush should be on close
+        w.appendNonGtid(off, 7);
+        w.close();
+        Assert.assertEquals("close flushed second record", 2 * REC, zoneFileSize(baseDir, cmdName));
+        List<long[]> recs = readZoneRecords(baseDir, cmdName);
+        Assert.assertEquals(2, recs.size());
+        Assert.assertEquals(0L, recs.get(0)[0]);
+        Assert.assertEquals((long) NonGtidIndexWriter.FLUSH_THRESHOLD, recs.get(0)[1]);
+        Assert.assertEquals((long) NonGtidIndexWriter.FLUSH_THRESHOLD, recs.get(1)[0]);
+        Assert.assertEquals(NonGtidIndexWriter.FLUSH_THRESHOLD + 7L, recs.get(1)[1]);
+    }
+
+    @Test
+    public void testZoneWriter_FlushOnClose() throws IOException {
+        String cmdName = "zone_unit_c";
+        NonGtidIndexWriter w = new NonGtidIndexWriter(baseDir, cmdName);
+        w.init();
+        w.appendNonGtid(100, 50);
+        w.close();
+        Assert.assertEquals(REC, zoneFileSize(baseDir, cmdName));
+        List<long[]> recs = readZoneRecords(baseDir, cmdName);
+        Assert.assertEquals(1, recs.size());
+        Assert.assertEquals(100L, recs.get(0)[0]);
+        Assert.assertEquals(150L, recs.get(0)[1]);
+    }
+
+    @Test
+    public void testZoneWriter_EmptyCloseWritesNothing() throws IOException {
+        String cmdName = "zone_unit_d";
+        NonGtidIndexWriter w = new NonGtidIndexWriter(baseDir, cmdName);
+        w.init();
+        w.close();
+        Assert.assertEquals(0L, zoneFileSize(baseDir, cmdName));
+    }
+
+    @Test
+    public void testZoneWriter_GtidWithoutPriorNonGtid() throws IOException {
+        String cmdName = "zone_unit_e";
+        NonGtidIndexWriter w = new NonGtidIndexWriter(baseDir, cmdName);
+        w.init();
+        w.onGtid();
+        w.onGtid();
+        Assert.assertEquals("no zone, nothing flushed", 0L, zoneFileSize(baseDir, cmdName));
+        w.close();
+        Assert.assertEquals(0L, zoneFileSize(baseDir, cmdName));
+    }
+
+    @Test
+    public void testZoneWriter_TornRecordTruncatedOnInit() throws IOException {
+        String cmdName = "zone_unit_torn";
+        // write one valid record + 5 bytes of garbage
+        File f = zoneFileFor(baseDir, cmdName);
+        f.getParentFile().mkdirs();
+        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(f)) {
+            ByteBuffer buf = ByteBuffer.allocate(REC + 5);
+            buf.putLong(10L);
+            buf.putLong(99L);
+            buf.put(new byte[]{1, 2, 3, 4, 5});
+            buf.flip();
+            fos.getChannel().write(buf);
+        }
+        Assert.assertEquals(REC + 5, f.length());
+
+        NonGtidIndexWriter w = new NonGtidIndexWriter(baseDir, cmdName);
+        w.init();
+        Assert.assertEquals("torn tail truncated", REC, f.length());
+
+        // append after recovery should not leave a hole
+        w.appendNonGtid(200, 50);
+        w.close();
+        Assert.assertEquals(2 * REC, f.length());
+        List<long[]> recs = readZoneRecords(baseDir, cmdName);
+        Assert.assertEquals(2, recs.size());
+        Assert.assertEquals(10L, recs.get(0)[0]);
+        Assert.assertEquals(99L, recs.get(0)[1]);
+        Assert.assertEquals(200L, recs.get(1)[0]);
+        Assert.assertEquals(250L, recs.get(1)[1]);
+    }
+
+    @Test
+    public void testZoneWriter_LoadAllZonesPreservesOrder() throws IOException {
+        String cmdName = "zone_unit_load";
+        NonGtidIndexWriter w = new NonGtidIndexWriter(baseDir, cmdName);
+        w.init();
+        w.appendNonGtid(0, 10);
+        w.onGtid();
+        w.appendNonGtid(50, 5);
+        w.onGtid();
+        w.appendNonGtid(200, 100);
+        // last one not yet flushed
+        List<long[]> partial = w.loadAllZones();
+        Assert.assertEquals(2, partial.size());
+        Assert.assertArrayEquals(new long[]{0, 10}, partial.get(0));
+        Assert.assertArrayEquals(new long[]{50, 55}, partial.get(1));
+
+        // after load, position should be at end so subsequent flush does not corrupt
+        w.close();
+        List<long[]> all = readZoneRecords(baseDir, cmdName);
+        Assert.assertEquals(3, all.size());
+        Assert.assertArrayEquals(new long[]{200, 300}, all.get(2));
+    }
+
+    @Test
+    public void testZoneWriter_LoadAllZonesSkipsInvalidRecords() throws IOException {
+        String cmdName = "zone_unit_invalid";
+        File f = zoneFileFor(baseDir, cmdName);
+        f.getParentFile().mkdirs();
+        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(f)) {
+            ByteBuffer buf = ByteBuffer.allocate(REC * 3);
+            buf.putLong(0L);  buf.putLong(10L);   // valid
+            buf.putLong(100L); buf.putLong(50L);  // end < start, invalid
+            buf.putLong(200L); buf.putLong(300L); // valid
+            buf.flip();
+            fos.getChannel().write(buf);
+        }
+        NonGtidIndexWriter w = new NonGtidIndexWriter(baseDir, cmdName);
+        w.init();
+        List<long[]> recs = w.loadAllZones();
+        Assert.assertEquals("invalid record skipped", 2, recs.size());
+        Assert.assertArrayEquals(new long[]{0, 10}, recs.get(0));
+        Assert.assertArrayEquals(new long[]{200, 300}, recs.get(1));
+        w.close();
+    }
+
+    @Test
+    public void testZoneWriter_DeleteZoneFiles() throws IOException {
+        String cmdName1 = "zone_unit_del_1";
+        String cmdName2 = "zone_unit_del_2";
+        for (String n : new String[]{cmdName1, cmdName2}) {
+            NonGtidIndexWriter w = new NonGtidIndexWriter(baseDir, n);
+            w.init();
+            w.appendNonGtid(0, 10);
+            w.close();
+        }
+        Assert.assertTrue(zoneFileFor(baseDir, cmdName1).exists());
+        Assert.assertTrue(zoneFileFor(baseDir, cmdName2).exists());
+
+        NonGtidIndexWriter.deleteZoneFiles(baseDir);
+
+        Assert.assertFalse(zoneFileFor(baseDir, cmdName1).exists());
+        Assert.assertFalse(zoneFileFor(baseDir, cmdName2).exists());
+    }
+
+    // ============================================================
+    // DefaultIndexStore — zone file lifecycle integration
+    // ============================================================
+
+    @Test
+    public void testZoneFile_CreatedOnOpenWriter() {
+        // setUp() already opened the writer for cmd file "00000000"
+        File zone = zoneFileFor(baseDir, "00000000");
+        Assert.assertTrue("zone file should be created on openWriter", zone.exists());
+        Assert.assertEquals("freshly opened zone file is empty", 0L, zone.length());
+    }
+
+    @Test
+    public void testZoneFile_FlushedAfterWriteAndClose() throws IOException {
+        write(filePath);
+        // close flushes any active zone
+        defaultIndexStore.closeWriter();
+
+        File zone = zoneFileFor(baseDir, "00000000");
+        Assert.assertTrue(zone.exists());
+        Assert.assertEquals("zone file aligned to record size", 0L, zone.length() % REC);
+
+        if (zone.length() > 0) {
+            List<long[]> recs = readZoneRecords(baseDir, "00000000");
+            long cmdSize = new File(Paths.get(baseDir, "00000000").toString()).length();
+            for (long[] z : recs) {
+                Assert.assertTrue("zone start non-negative", z[0] >= 0);
+                Assert.assertTrue("zone end > start", z[1] > z[0]);
+                Assert.assertTrue("zone within cmd file", z[1] <= cmdSize);
+            }
+        }
+
+        // re-open for tearDown to clean up consistently
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
+    }
+
+    @Test
+    public void testZoneFile_DeletedByCloseWithDelete() throws IOException {
+        write(filePath);
+        File zone = zoneFileFor(baseDir, "00000000");
+        Assert.assertTrue(zone.exists());
+
+        defaultIndexStore.closeWithDeleteIndexFiles();
+        Assert.assertFalse("zone file removed", zone.exists());
+
+        // re-open empty writer for tearDown symmetry
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
+    }
+
+    @Test
+    public void testZoneFile_RotatedBySwitchCmdFile() throws IOException {
+        write(file1);
+        File zoneA = zoneFileFor(baseDir, "00000000");
+        Assert.assertTrue(zoneA.exists());
+
+        defaultIndexStore.doSwitchCmdFile("cmd_19513000");
+        File zoneB = zoneFileFor(baseDir, "cmd_19513000");
+        Assert.assertTrue("new zone file created on switch", zoneB.exists());
+
+        write(file2);
+        defaultIndexStore.closeWriter();
+
+        Assert.assertEquals(0L, zoneA.length() % REC);
+        Assert.assertEquals(0L, zoneB.length() % REC);
+
+        // re-open for tearDown
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
+    }
+
+    // ============================================================
+    // Recovery — zone-aware paths
+    // ============================================================
+
+    private void reopenIndexStore() throws IOException {
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        defaultIndexStore.closeWriter();
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
+    }
+
+    @Test
+    public void testRecover_WithZoneIndexProducesSameGtidSet() throws IOException {
+        write(file1);
+        GtidSet before = defaultIndexStore.getIndexGtidSet();
+        Assert.assertEquals("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750", before.toString());
+
+        // simulate partial-loss recovery: chop a few bytes off the index file so that
+        // recovery has to rebuild from a previous IndexEntry — zone records guide the rebuild.
+        DefaultControllableFile idx = new DefaultControllableFile(baseDir + "/index_00000000");
+        idx.setLength(Math.max(0, (int) idx.size() - 10));
+        idx.close();
+
+        reopenIndexStore();
+        Assert.assertEquals("zone-guided recovery preserves GTID set",
+                before.toString(), defaultIndexStore.getIndexGtidSet().toString());
+    }
+
+    @Test
+    public void testRecover_ZoneFileMissingFallsBackToFullLegacy() throws IOException {
+        write(file1);
+        GtidSet before = defaultIndexStore.getIndexGtidSet();
+
+        // corrupt index so recovery fires
+        DefaultControllableFile idx = new DefaultControllableFile(baseDir + "/index_00000000");
+        idx.setLength(Math.max(0, (int) idx.size() - 10));
+        idx.close();
+        // close writer to flush zone, then delete zone file
+        defaultIndexStore.closeWriter();
+        File zone = zoneFileFor(baseDir, "00000000");
+        if (zone.exists()) Assert.assertTrue(zone.delete());
+
+        // re-open: with no zone file, recovery must fall back to legacy full scan
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
+
+        Assert.assertEquals("legacy fallback yields same GTID set",
+                before.toString(), defaultIndexStore.getIndexGtidSet().toString());
+    }
+
+    @Test
+    public void testRecover_ZoneFileTornStillRecovers() throws IOException {
+        write(file1);
+        GtidSet before = defaultIndexStore.getIndexGtidSet();
+
+        DefaultControllableFile idx = new DefaultControllableFile(baseDir + "/index_00000000");
+        idx.setLength(Math.max(0, (int) idx.size() - 10));
+        idx.close();
+        defaultIndexStore.closeWriter();
+
+        // append 7 bytes of garbage to zone file -> torn tail
+        File zone = zoneFileFor(baseDir, "00000000");
+        if (zone.exists() && zone.length() > 0) {
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(zone, true)) {
+                fos.write(new byte[]{1, 2, 3, 4, 5, 6, 7});
+            }
+            long beforeOpen = zone.length();
+            Assert.assertNotEquals("introduced misalignment", 0, beforeOpen % REC);
+        }
+
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
+
+        Assert.assertEquals("torn tail does not break recovery",
+                before.toString(), defaultIndexStore.getIndexGtidSet().toString());
+        // and the zone file is now realigned
+        Assert.assertEquals(0L, zoneFileFor(baseDir, "00000000").length() % REC);
+    }
+
+    @Test
+    public void testRecover_ZoneEndBeyondCmdSizeIsDropped() throws IOException {
+        write(file1);
+        GtidSet before = defaultIndexStore.getIndexGtidSet();
+        defaultIndexStore.closeWriter();
+
+        // overwrite zone file with one bogus record extending past cmd file size
+        File zone = zoneFileFor(baseDir, "00000000");
+        long cmdSize = new File(Paths.get(baseDir, "00000000").toString()).length();
+        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(zone, false)) {
+            ByteBuffer buf = ByteBuffer.allocate(REC);
+            buf.putLong(0L);
+            buf.putLong(cmdSize + 1024L); // past EOF
+            buf.flip();
+            fos.getChannel().write(buf);
+        }
+
+        // also chip the index file so a rebuild is forced
+        DefaultControllableFile idx = new DefaultControllableFile(baseDir + "/index_00000000");
+        idx.setLength(Math.max(0, (int) idx.size() - 10));
+        idx.close();
+
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
+
+        Assert.assertEquals("bogus zone is dropped, legacy still recovers all GTIDs",
+                before.toString(), defaultIndexStore.getIndexGtidSet().toString());
+    }
+
+    @Test
+    public void testRecover_ZoneFullyBeforeRebuildStartIsIgnored() throws IOException {
+        write(file1);
+        GtidSet before = defaultIndexStore.getIndexGtidSet();
+        defaultIndexStore.closeWriter();
+
+        // overwrite zone with one record entirely in the [0, 10) range — guaranteed to be
+        // before any reasonable rebuildStart computed from the IndexEntry chain
+        File zone = zoneFileFor(baseDir, "00000000");
+        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(zone, false)) {
+            ByteBuffer buf = ByteBuffer.allocate(REC);
+            buf.putLong(0L);
+            buf.putLong(10L);
+            buf.flip();
+            fos.getChannel().write(buf);
+        }
+
+        // do NOT chip index — rebuildStart will be near end of cmd file
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore.openWriter(writer);
+
+        Assert.assertEquals("zone before rebuildStart is harmlessly ignored",
+                before.toString(), defaultIndexStore.getIndexGtidSet().toString());
+    }
+
+    @Test
+    public void testRecover_LastSegmentTruncatesIncompleteTransaction() throws IOException {
+        // Reuse a synthetic cmd file: a valid GTID, a valid GTID, then a torn MULTI block.
+        // Recovery should keep both GTIDs and chop the file at the start of the MULTI.
+        baseDir = Paths.get(tempDir, "IndexStoreTest-zoneIncompleteTx").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) {
+            for (File f : dir.listFiles()) f.delete();
+        } else {
+            dir.mkdirs();
+        }
+        String cmdName = "cmd_zone_tx_0";
+        File cmdFile = new File(baseDir, cmdName);
+        File indexFile = new File(baseDir, "index_" + cmdName);
+
+        String gtid1 = "a4f566ef50a85e1119f17f9b746728b48609a2ab:1";
+        String gtid2 = "a4f566ef50a85e1119f17f9b746728b48609a2ab:2";
+
+        writeGtidSetToFile(indexFile, new GtidSet(""));
+        writeCommandToFile(cmdFile, createGtidCommand(gtid1, "SET", "k1", "v1"));
+        writeCommandToFile(cmdFile, createGtidCommand(gtid2, "SET", "k2", "v2"));
+        long cutoff = cmdFile.length();
+        writeCommandToFile(cmdFile, createMultiCommand());
+        writeCommandToFile(cmdFile, createSetCommand("k3", "v3"));
+        // no EXEC — incomplete
+
+        when(commandFile.getFile()).thenReturn(cmdFile);
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        DefaultIndexStore store = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                gtidCmdFilter, cmdName);
+        store.openWriter(writer);
+
+        Assert.assertEquals("incomplete tx truncated to cutoff", cutoff, cmdFile.length());
+        GtidSet gs = store.getIndexGtidSet();
+        Assert.assertTrue(gs.contains("a4f566ef50a85e1119f17f9b746728b48609a2ab", 1));
+        Assert.assertTrue(gs.contains("a4f566ef50a85e1119f17f9b746728b48609a2ab", 2));
+        store.closeWriter();
+    }
+
+    @Test
+    public void testRecover_AlternatingGtidAndNonGtid() throws IOException {
+        // Build cmd file with: GTID, SELECT, GTID, SELECT, SELECT, GTID
+        // After write, recovery via zone index must yield identical GTID set.
+        baseDir = Paths.get(tempDir, "IndexStoreTest-zoneAlternating").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) {
+            for (File f : dir.listFiles()) f.delete();
+        } else {
+            dir.mkdirs();
+        }
+        String cmdName = "cmd_zone_alt_0";
+        File cmdFile = new File(baseDir, cmdName);
+
+        when(commandFile.getFile()).thenReturn(cmdFile);
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        DefaultIndexStore store = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                gtidCmdFilter, cmdName);
+        // hook commandWriterCallback to actually persist bytes to cmdFile
+        when(commandWriterCallback.writeCommand(any(ByteBuf.class))).thenAnswer(inv -> {
+            ByteBuf b = inv.getArgument(0);
+            int n = b.readableBytes();
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true)) {
+                byte[] tmp = new byte[n];
+                b.getBytes(b.readerIndex(), tmp);
+                fos.write(tmp);
+            }
+            return n;
+        });
+        store.openWriter(writer);
+
+        store.write(Unpooled.wrappedBuffer(toBytes(createGtidCommand(
+                "a4f566ef50a85e1119f17f9b746728b48609a2ab:1", "SET", "k1", "v1"))));
+        store.write(Unpooled.wrappedBuffer(toBytes(createSelectCommand("0"))));
+        store.write(Unpooled.wrappedBuffer(toBytes(createGtidCommand(
+                "a4f566ef50a85e1119f17f9b746728b48609a2ab:2", "SET", "k2", "v2"))));
+        store.write(Unpooled.wrappedBuffer(toBytes(createSelectCommand("0"))));
+        store.write(Unpooled.wrappedBuffer(toBytes(createSelectCommand("0"))));
+        store.write(Unpooled.wrappedBuffer(toBytes(createGtidCommand(
+                "a4f566ef50a85e1119f17f9b746728b48609a2ab:3", "SET", "k3", "v3"))));
+
+        GtidSet expected = store.getIndexGtidSet();
+        Assert.assertTrue(expected.contains("a4f566ef50a85e1119f17f9b746728b48609a2ab", 1));
+        Assert.assertTrue(expected.contains("a4f566ef50a85e1119f17f9b746728b48609a2ab", 2));
+        Assert.assertTrue(expected.contains("a4f566ef50a85e1119f17f9b746728b48609a2ab", 3));
+
+        // chop tail of index to force rebuild via zones
+        store.closeWriter();
+        DefaultControllableFile idx = new DefaultControllableFile(baseDir + "/index_" + cmdName);
+        idx.setLength(Math.max(0, (int) idx.size() - 10));
+        idx.close();
+
+        DefaultIndexStore store2 = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                gtidCmdFilter, cmdName);
+        store2.openWriter(writer);
+        Assert.assertEquals("alternating sequence recovers identically",
+                expected.toString(), store2.getIndexGtidSet().toString());
+        store2.closeWriter();
+    }
+
+    private byte[] toBytes(ByteBuf b) {
+        byte[] out = new byte[b.readableBytes()];
+        b.getBytes(b.readerIndex(), out);
+        return out;
+    }
+
+    private ByteBuf createSelectCommand(String db) {
+        ByteBuf buffer = Unpooled.buffer();
+        buffer.writeByte((byte) '*');
+        buffer.writeBytes("2".getBytes());
+        buffer.writeBytes("\r\n".getBytes());
+        writeBulkString(buffer, "SELECT");
+        writeBulkString(buffer, db);
+        return buffer;
+    }
+
+    private ByteBuf createPublishCommand(String channel, String msg) {
+        ByteBuf buffer = Unpooled.buffer();
+        buffer.writeByte((byte) '*');
+        buffer.writeBytes("3".getBytes());
+        buffer.writeBytes("\r\n".getBytes());
+        writeBulkString(buffer, "PUBLISH");
+        writeBulkString(buffer, channel);
+        writeBulkString(buffer, msg);
+        return buffer;
+    }
+
+    private ByteBuf createPingCommand() {
+        ByteBuf buffer = Unpooled.buffer();
+        buffer.writeByte((byte) '*');
+        buffer.writeBytes("1".getBytes());
+        buffer.writeBytes("\r\n".getBytes());
+        writeBulkString(buffer, "PING");
+        return buffer;
+    }
+
+    @Test
+    public void testZoneRecover_FewGtidThenManyNonGtid() throws IOException {
+        // GTID count < FLUSH_THRESHOLD, then a long non-GTID tail of PUBLISH/PING.
+        runGtidThenNonGtidScenario("few_gtid", 100, 20000);
+    }
+
+    @Test
+    public void testZoneRecover_ManyGtidThenManyNonGtid() throws IOException {
+        // GTID count > FLUSH_THRESHOLD, then a long non-GTID tail of PUBLISH/PING.
+        runGtidThenNonGtidScenario("many_gtid", 9000, 20000);
+    }
+
+    private void runGtidThenNonGtidScenario(String suffix, int gtidCount, int nonGtidCount) throws IOException {
+        baseDir = Paths.get(tempDir, "IndexStoreTest-zone_" + suffix).toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) {
+            for (File f : dir.listFiles()) f.delete();
+        } else {
+            dir.mkdirs();
+        }
+        String cmdName = "cmd_" + suffix + "_0";
+        File cmdFile = new File(baseDir, cmdName);
+
+        when(commandFile.getFile()).thenReturn(cmdFile);
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+
+        java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true);
+        try {
+            when(commandWriterCallback.writeCommand(any(ByteBuf.class))).thenAnswer(inv -> {
+                ByteBuf b = inv.getArgument(0);
+                int n = b.readableBytes();
+                byte[] tmp = new byte[n];
+                b.getBytes(b.readerIndex(), tmp);
+                fos.write(tmp);
+                return n;
+            });
+
+            RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+            RedisOpParserFactory.getInstance().registerParsers(mgr);
+            RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+            DefaultIndexStore store = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                    gtidCmdFilter, cmdName);
+            store.openWriter(writer);
+
+            String uuid = "a4f566ef50a85e1119f17f9b746728b48609a2ab";
+            for (int i = 1; i <= gtidCount; i++) {
+                store.write(Unpooled.wrappedBuffer(toBytes(
+                        createGtidCommand(uuid + ":" + i, "SET", "k" + i, "v" + i))));
+            }
+            for (int i = 0; i < nonGtidCount; i++) {
+                ByteBuf cmd = (i % 2 == 0)
+                        ? createPublishCommand("ch", "msg" + i)
+                        : createPingCommand();
+                store.write(Unpooled.wrappedBuffer(toBytes(cmd)));
+            }
+
+            GtidSet expected = store.getIndexGtidSet();
+            Assert.assertTrue("first gtid present",
+                    expected.contains(uuid, 1));
+            Assert.assertTrue("last gtid present",
+                    expected.contains(uuid, gtidCount));
+
+            store.closeWriter();
+            fos.flush();
+
+            // zone file: each batch of 8192 non-GTID commands flushes one record;
+            // the remainder is flushed by close().
+            File zone = new File(baseDir, NonGtidIndexWriter.ZONE_PREFIX + cmdName);
+            Assert.assertTrue("zone file should exist", zone.exists());
+            Assert.assertEquals("zone file aligned to 16 bytes", 0L, zone.length() % 16);
+            long records = zone.length() / 16;
+            long expectedRecords = (nonGtidCount + NonGtidIndexWriter.FLUSH_THRESHOLD - 1)
+                    / NonGtidIndexWriter.FLUSH_THRESHOLD;
+            Assert.assertEquals("zone record count matches threshold flushes",
+                    expectedRecords, records);
+
+            // sanity: every zone record lies within the cmd file
+            try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(zone, "r")) {
+                long cmdSize = cmdFile.length();
+                for (long i = 0; i < records; i++) {
+                    raf.seek(i * 16);
+                    long s = raf.readLong();
+                    long e = raf.readLong();
+                    Assert.assertTrue("zone start non-negative", s >= 0);
+                    Assert.assertTrue("zone end > start", e > s);
+                    Assert.assertTrue("zone within cmd file", e <= cmdSize);
+                }
+            }
+
+            // chop index tail to force rebuild via zones
+            DefaultControllableFile idx = new DefaultControllableFile(baseDir + "/index_" + cmdName);
+            idx.setLength(Math.max(0, (int) idx.size() - 10));
+            idx.close();
+
+            DefaultIndexStore store2 = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                    gtidCmdFilter, cmdName);
+            store2.openWriter(writer);
+            Assert.assertEquals("recovery preserves GTID set after long non-GTID tail",
+                    expected.toString(), store2.getIndexGtidSet().toString());
+            store2.closeWriter();
+        } finally {
+            fos.close();
+        }
+    }
+
+    // ============================================================
+    // Transaction (MULTI ... GTID+EXEC) scenarios with zone index
+    // ============================================================
+
+    private ByteBuf createExecGtidCommand(String gtid) {
+        // GTID <gtid> 0 EXEC  → 4 arg array
+        ByteBuf buffer = Unpooled.buffer();
+        buffer.writeByte((byte) '*');
+        buffer.writeBytes("4".getBytes());
+        buffer.writeBytes("\r\n".getBytes());
+        writeBulkString(buffer, "GTID");
+        writeBulkString(buffer, gtid);
+        writeBulkString(buffer, "0");
+        writeBulkString(buffer, "EXEC");
+        return buffer;
+    }
+
+    /**
+     * Builds a fresh DefaultIndexStore that writes through to the given cmd file.
+     * Caller is responsible for closeWriter() and closing the returned FileOutputStream.
+     */
+    private DefaultIndexStore openStoreWritingTo(File cmdFile, String cmdName,
+                                                 java.io.FileOutputStream fos) throws IOException {
+        when(commandFile.getFile()).thenReturn(cmdFile);
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+        when(commandWriterCallback.writeCommand(any(ByteBuf.class))).thenAnswer(inv -> {
+            ByteBuf b = inv.getArgument(0);
+            int n = b.readableBytes();
+            byte[] tmp = new byte[n];
+            b.getBytes(b.readerIndex(), tmp);
+            fos.write(tmp);
+            return n;
+        });
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        DefaultIndexStore store = new DefaultIndexStore(baseDir, opParser, commandWriterCallback,
+                gtidCmdFilter, cmdName);
+        store.openWriter(writer);
+        return store;
+    }
+
+    private File prepareScenarioDir(String suffix) {
+        baseDir = Paths.get(tempDir, "IndexStoreTest-tx_" + suffix).toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) {
+            for (File f : dir.listFiles()) f.delete();
+        } else {
+            dir.mkdirs();
+        }
+        return dir;
+    }
+
+    private void writeTransaction(DefaultIndexStore store, String gtid,
+                                  int innerCount) throws IOException {
+        store.write(Unpooled.wrappedBuffer(toBytes(createMultiCommand())));
+        for (int i = 0; i < innerCount; i++) {
+            store.write(Unpooled.wrappedBuffer(toBytes(createSetCommand("k" + i, "v" + i))));
+        }
+        store.write(Unpooled.wrappedBuffer(toBytes(createExecGtidCommand(gtid))));
+    }
+
+    @Test
+    public void testZoneRecover_TransactionsThenNonGtidTail() throws IOException {
+        // N complete transactions, then a long non-GTID tail of PUBLISH/PING.
+        // Each transaction is written as a single GTID-zone close point, so non-GTID
+        // zone records only accumulate in the tail. Recovery via zones must reproduce
+        // the exact GTID set including all transaction GTIDs.
+        prepareScenarioDir("tx_then_nontail");
+        String cmdName = "cmd_tx_tail_0";
+        File cmdFile = new File(baseDir, cmdName);
+
+        java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true);
+        try {
+            DefaultIndexStore store = openStoreWritingTo(cmdFile, cmdName, fos);
+            String uuid = "a4f566ef50a85e1119f17f9b746728b48609a2ab";
+
+            int txCount = 50;
+            int nonGtidCount = 20000;
+            for (int i = 1; i <= txCount; i++) {
+                writeTransaction(store, uuid + ":" + i, /*innerCount*/ 3);
+            }
+            for (int i = 0; i < nonGtidCount; i++) {
+                ByteBuf cmd = (i % 2 == 0)
+                        ? createPublishCommand("ch", "msg" + i)
+                        : createPingCommand();
+                store.write(Unpooled.wrappedBuffer(toBytes(cmd)));
+            }
+
+            GtidSet expected = store.getIndexGtidSet();
+            Assert.assertTrue("first tx gtid present", expected.contains(uuid, 1));
+            Assert.assertTrue("last tx gtid present", expected.contains(uuid, txCount));
+
+            store.closeWriter();
+            fos.flush();
+
+            File zone = new File(baseDir, NonGtidIndexWriter.ZONE_PREFIX + cmdName);
+            Assert.assertTrue(zone.exists());
+            Assert.assertEquals(0L, zone.length() % 16);
+            long records = zone.length() / 16;
+            long expectedRecords = (nonGtidCount + NonGtidIndexWriter.FLUSH_THRESHOLD - 1)
+                    / NonGtidIndexWriter.FLUSH_THRESHOLD;
+            Assert.assertEquals("non-GTID tail produced expected zone records",
+                    expectedRecords, records);
+
+            // chop index to force rebuild
+            DefaultControllableFile idx = new DefaultControllableFile(baseDir + "/index_" + cmdName);
+            idx.setLength(Math.max(0, (int) idx.size() - 10));
+            idx.close();
+
+            DefaultIndexStore store2 = openStoreWritingTo(cmdFile, cmdName, fos);
+            Assert.assertEquals("recovery preserves all transaction GTIDs",
+                    expected.toString(), store2.getIndexGtidSet().toString());
+            store2.closeWriter();
+        } finally {
+            fos.close();
+        }
+    }
+
+    @Test
+    public void testZoneRecover_InterleavedTransactionAndNonGtid() throws IOException {
+        // Pattern: NONGTID*K, TX, NONGTID*K, TX, ...  — every TX punches a zone boundary
+        // mid-stream, exercising "GTID forces flush" path repeatedly.
+        prepareScenarioDir("interleaved");
+        String cmdName = "cmd_tx_inter_0";
+        File cmdFile = new File(baseDir, cmdName);
+
+        java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true);
+        try {
+            DefaultIndexStore store = openStoreWritingTo(cmdFile, cmdName, fos);
+            String uuid = "a4f566ef50a85e1119f17f9b746728b48609a2ab";
+
+            int rounds = 20;
+            int kPerRound = 50;
+            for (int r = 1; r <= rounds; r++) {
+                for (int i = 0; i < kPerRound; i++) {
+                    store.write(Unpooled.wrappedBuffer(toBytes(createPingCommand())));
+                }
+                writeTransaction(store, uuid + ":" + r, /*innerCount*/ 2);
+            }
+            // trailing non-GTID block (held in memory until close)
+            for (int i = 0; i < 5; i++) {
+                store.write(Unpooled.wrappedBuffer(toBytes(createPublishCommand("c", "x"))));
+            }
+
+            GtidSet expected = store.getIndexGtidSet();
+            for (int r = 1; r <= rounds; r++) {
+                Assert.assertTrue("tx " + r + " present", expected.contains(uuid, r));
+            }
+
+            store.closeWriter();
+            fos.flush();
+
+            File zone = new File(baseDir, NonGtidIndexWriter.ZONE_PREFIX + cmdName);
+            Assert.assertTrue(zone.exists());
+            Assert.assertEquals(0L, zone.length() % 16);
+            // Each round flushes one zone (ended by TX), plus one more for the trailing 5
+            long records = zone.length() / 16;
+            Assert.assertEquals("one zone per round + 1 for trailing tail",
+                    rounds + 1, records);
+
+            // every zone must lie entirely between two TX boundaries (no zone overlaps a TX)
+            try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(zone, "r")) {
+                long cmdSize = cmdFile.length();
+                long prevEnd = -1;
+                for (long i = 0; i < records; i++) {
+                    raf.seek(i * 16);
+                    long s = raf.readLong();
+                    long e = raf.readLong();
+                    Assert.assertTrue("monotonic", s >= prevEnd);
+                    Assert.assertTrue(e > s);
+                    Assert.assertTrue(e <= cmdSize);
+                    prevEnd = e;
+                }
+            }
+
+            DefaultControllableFile idx = new DefaultControllableFile(baseDir + "/index_" + cmdName);
+            idx.setLength(Math.max(0, (int) idx.size() - 10));
+            idx.close();
+
+            DefaultIndexStore store2 = openStoreWritingTo(cmdFile, cmdName, fos);
+            Assert.assertEquals("interleaved scenario recovers identically",
+                    expected.toString(), store2.getIndexGtidSet().toString());
+            store2.closeWriter();
+        } finally {
+            fos.close();
+        }
+    }
+
+    @Test
+    public void testZoneRecover_IncompleteTransactionAtTailWithZones() throws IOException {
+        // Valid TXs + non-GTID tail + a torn MULTI (no EXEC).
+        // Recovery's last segment must truncate the cmd file at the start of the torn MULTI,
+        // while the zone-guided rebuild preserves every prior GTID.
+        prepareScenarioDir("incomplete_tail");
+        String cmdName = "cmd_tx_torn_0";
+        File cmdFile = new File(baseDir, cmdName);
+
+        java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true);
+        long cutoff;
+        GtidSet expected;
+        try {
+            DefaultIndexStore store = openStoreWritingTo(cmdFile, cmdName, fos);
+            String uuid = "a4f566ef50a85e1119f17f9b746728b48609a2ab";
+
+            for (int i = 1; i <= 5; i++) {
+                writeTransaction(store, uuid + ":" + i, /*innerCount*/ 2);
+            }
+            for (int i = 0; i < 30; i++) {
+                store.write(Unpooled.wrappedBuffer(toBytes(createPingCommand())));
+            }
+
+            expected = store.getIndexGtidSet();
+            for (int i = 1; i <= 5; i++) {
+                Assert.assertTrue("tx " + i + " present", expected.contains(uuid, i));
+            }
+
+            store.closeWriter();
+            fos.flush();
+            cutoff = cmdFile.length();
+
+            // Append a torn MULTI block (no EXEC) directly to cmd file.
+            try (java.io.FileOutputStream raw = new java.io.FileOutputStream(cmdFile, true)) {
+                writeRawBytes(raw, createMultiCommand());
+                writeRawBytes(raw, createSetCommand("kx", "vx"));
+            }
+            Assert.assertTrue(cmdFile.length() > cutoff);
+        } finally {
+            fos.close();
+        }
+
+        // chop index to force rebuild — zones still cover the legit non-GTID tail,
+        // and the legacy last-segment pass is responsible for trimming the torn MULTI.
+        DefaultControllableFile idx = new DefaultControllableFile(baseDir + "/index_" + cmdName);
+        idx.setLength(Math.max(0, (int) idx.size() - 10));
+        idx.close();
+
+        java.io.FileOutputStream fos2 = new java.io.FileOutputStream(cmdFile, true);
+        try {
+            DefaultIndexStore store2 = openStoreWritingTo(cmdFile, cmdName, fos2);
+            Assert.assertEquals("incomplete tail does not corrupt recovered GTID set",
+                    expected.toString(), store2.getIndexGtidSet().toString());
+            Assert.assertEquals("cmd file truncated at torn MULTI start",
+                    cutoff, cmdFile.length());
+            store2.closeWriter();
+        } finally {
+            fos2.close();
+        }
+    }
+
+    private void writeRawBytes(java.io.FileOutputStream fos, ByteBuf b) throws IOException {
+        byte[] tmp = new byte[b.readableBytes()];
+        b.getBytes(b.readerIndex(), tmp);
+        fos.write(tmp);
+    }
+
+    /**
+     * Performance comparison: write 100 GTID commands, then ~600MB of PUBLISH non-GTID
+     * commands. Recover twice — once with zone index (modified), once after deleting
+     * the zone file (legacy full-scan) — and report wall-clock recovery time of each.
+     */
+    @Test
+    public void testZoneRecover_PerfCompare_100GtidThen600MNonGtid() throws IOException {
+        long targetTailBytes = 600L * 1024 * 1024;
+
+        // ---------- Stage 1: write data once into a "source" dir ----------
+        String suffix = "perf_600m";
+        baseDir = Paths.get(tempDir, "IndexStoreTest-tx_" + suffix + "_src").toString();
+        File srcDir = new File(baseDir);
+        if (srcDir.exists()) {
+            for (File f : srcDir.listFiles()) f.delete();
+        } else {
+            srcDir.mkdirs();
+        }
+        String cmdName = "cmd_perf_0";
+        File cmdFile = new File(baseDir, cmdName);
+
+        long writeStart = System.currentTimeMillis();
+        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true)) {
+            DefaultIndexStore store = openStoreWritingTo(cmdFile, cmdName, fos);
+            String uuid = "a4f566ef50a85e1119f17f9b746728b48609a2ab";
+
+            for (int i = 1; i <= 100; i++) {
+                store.write(Unpooled.wrappedBuffer(toBytes(
+                        createGtidCommand(uuid + ":" + i, "SET", "k" + i, "v" + i))));
+            }
+
+            byte[] payload = new byte[1024];
+            java.util.Arrays.fill(payload, (byte) 'x');
+            String payloadStr = new String(payload);
+            int idx = 0;
+            while (cmdFile.length() < targetTailBytes) {
+                store.write(Unpooled.wrappedBuffer(toBytes(
+                        createPublishCommand("ch", payloadStr + "-" + idx))));
+                idx++;
+                if ((idx & 0xFFF) == 0) fos.flush();
+            }
+
+            store.closeWriter();
+            fos.flush();
+        }
+        long writeMs = System.currentTimeMillis() - writeStart;
+        long cmdSize = cmdFile.length();
+        File zoneFile = new File(baseDir, NonGtidIndexWriter.ZONE_PREFIX + cmdName);
+        File indexFile = new File(baseDir, "index_" + cmdName);
+        File blockFile = new File(baseDir, "block_" + cmdName);
+        long zoneSize = zoneFile.exists() ? zoneFile.length() : 0;
+        log.info("[perf] write {} MB done in {} ms, zone={} bytes ({} records)",
+                cmdSize / (1024 * 1024), writeMs, zoneSize, zoneSize / 16);
+
+        // helper to clone src dir into a fresh recovery dir
+        java.util.function.Function<String, File> cloneTo = (label) -> {
+            File dst = new File(Paths.get(tempDir,
+                    "IndexStoreTest-tx_" + suffix + "_" + label).toString());
+            if (dst.exists()) {
+                for (File f : dst.listFiles()) f.delete();
+            } else {
+                dst.mkdirs();
+            }
+            try {
+                Files.copy(cmdFile.toPath(), new File(dst, cmdName).toPath());
+                Files.copy(indexFile.toPath(), new File(dst, "index_" + cmdName).toPath());
+                if (blockFile.exists()) {
+                    Files.copy(blockFile.toPath(), new File(dst, "block_" + cmdName).toPath());
+                }
+                if (zoneFile.exists()) {
+                    Files.copy(zoneFile.toPath(),
+                            new File(dst, NonGtidIndexWriter.ZONE_PREFIX + cmdName).toPath());
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return dst;
+        };
+
+        // ---------- Stage 2: recover with zone index ----------
+        File zonedDir = cloneTo.apply("zoned");
+        // chop index tail to force a rebuild
+        DefaultControllableFile zonedIdx = new DefaultControllableFile(
+                new File(zonedDir, "index_" + cmdName).toString());
+        zonedIdx.setLength(Math.max(0, (int) zonedIdx.size() - 10));
+        zonedIdx.close();
+
+        baseDir = zonedDir.getAbsolutePath();
+        long zonedStart = System.currentTimeMillis();
+        try (java.io.FileOutputStream fosZoned = new java.io.FileOutputStream(
+                new File(zonedDir, cmdName), true)) {
+            DefaultIndexStore zoned = openStoreWritingTo(
+                    new File(zonedDir, cmdName), cmdName, fosZoned);
+            GtidSet recovered = zoned.getIndexGtidSet();
+            Assert.assertTrue("zoned recovery has all gtids",
+                    recovered.contains("a4f566ef50a85e1119f17f9b746728b48609a2ab", 1)
+                            && recovered.contains("a4f566ef50a85e1119f17f9b746728b48609a2ab", 100));
+            zoned.closeWriter();
+        }
+        long zonedMs = System.currentTimeMillis() - zonedStart;
+
+        // ---------- Stage 3: recover legacy (no zone file) ----------
+        File legacyDir = cloneTo.apply("legacy");
+        File legacyZone = new File(legacyDir, NonGtidIndexWriter.ZONE_PREFIX + cmdName);
+        if (legacyZone.exists()) Assert.assertTrue(legacyZone.delete());
+        DefaultControllableFile legacyIdx = new DefaultControllableFile(
+                new File(legacyDir, "index_" + cmdName).toString());
+        legacyIdx.setLength(Math.max(0, (int) legacyIdx.size() - 10));
+        legacyIdx.close();
+
+        baseDir = legacyDir.getAbsolutePath();
+        long legacyStart = System.currentTimeMillis();
+        try (java.io.FileOutputStream fosLegacy = new java.io.FileOutputStream(
+                new File(legacyDir, cmdName), true)) {
+            DefaultIndexStore legacy = openStoreWritingTo(
+                    new File(legacyDir, cmdName), cmdName, fosLegacy);
+            GtidSet recovered = legacy.getIndexGtidSet();
+            Assert.assertTrue("legacy recovery has all gtids",
+                    recovered.contains("a4f566ef50a85e1119f17f9b746728b48609a2ab", 1)
+                            && recovered.contains("a4f566ef50a85e1119f17f9b746728b48609a2ab", 100));
+            legacy.closeWriter();
+        }
+        long legacyMs = System.currentTimeMillis() - legacyStart;
+
+        // ---------- Report ----------
+        log.info("[perf] cmd={} MB, zoneRecords={}", cmdSize / (1024 * 1024), zoneSize / 16);
+        log.info("[perf] zoned   recovery: {} ms", zonedMs);
+        log.info("[perf] legacy  recovery: {} ms", legacyMs);
+        log.info("[perf] speedup: {}x",
+                legacyMs == 0 ? "n/a" : String.format("%.2f", (double) legacyMs / Math.max(zonedMs, 1)));
+
+        Assert.assertTrue("zoned recovery should not be slower than legacy on this workload",
+                zonedMs <= legacyMs);
+
+        // cleanup big temp dirs
+        for (File d : new File[]{srcDir, zonedDir, legacyDir}) {
+            if (d.exists()) {
+                for (File f : d.listFiles()) f.delete();
+                d.delete();
+            }
+        }
+    }
 }

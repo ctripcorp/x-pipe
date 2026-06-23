@@ -19,4 +19,10 @@ public interface StreamTransactionListener {
 
     RedisOpParser getOpParser();
 
+    /** 一段已写入的非 GTID 字节区间。 */
+    default void onNonGtidWritten(long offset, int length) throws IOException {}
+
+    /** 一段已写入的 GTID 字节区间（含整笔 MULTI 事务）。 */
+    default void onGtidWritten(long offset, int length) throws IOException {}
+
 }
