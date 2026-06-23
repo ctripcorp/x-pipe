@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.controller.api.BeaconRouteControllerTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfoTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisInstanceInfoTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApiIntegrationTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.MigrationApiTest;
@@ -153,6 +154,7 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisDaoTest.class,
         CheckClusterTest.class,
 
+        RedisCreateInfoTest.class,
         RedisInstanceInfoTest.class,
         KeeperUpdateControllerTest.class,
         AzServiceImplTest.class,
