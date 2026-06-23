@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.controller.api.metaserver;
 
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -9,12 +8,6 @@ import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.meta.*;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.utils.StringUtil;
-import com.google.common.collect.Sets;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -22,6 +15,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author zhangle
@@ -53,33 +50,11 @@ public class ConsoleController extends AbstractConsoleController {
 	@RequestMapping(value = "/dc/{dcId}", method = RequestMethod.GET, produces={MediaType.APPLICATION_JSON_UTF8_VALUE})
 	public byte[] getDcMeta(@PathVariable String dcId, @RequestParam(value="format", required = false) String format,
 							@RequestParam(value ="types", required = false) Set<String> types) throws Exception {
-		DcMeta dcMeta;
 		Set<String> upperCaseTypes = types == null ? Collections.emptySet()
 			: types.stream().map(String::toUpperCase).collect(Collectors.toSet());
-		boolean requireAllTypes = CollectionUtils.isEmpty(upperCaseTypes);
-		if (requireAllTypes) {
-			dcMeta = dcMetaService.getDcMeta(dcId);
-		} else {
-			Set<String> searchTypes = Sets.newHashSet(upperCaseTypes);
-			searchTypes.add(ClusterType.HETERO.toString());
-			dcMeta = dcMetaService.getDcMeta(dcId, searchTypes);
-		}
-		List<String> toRemoveClusters = new LinkedList<>();
-		dcMeta.getClusters().forEach((clusterName, clusterMeta) -> {
-			ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
-			if (clusterType != ClusterType.HETERO || StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
-				return;
-			}
-
-			ClusterType azGroupClusterType = ClusterType.lookup(clusterMeta.getAzGroupType());
-			if (requireAllTypes || upperCaseTypes.contains(azGroupClusterType.toString())) {
-				clusterMeta.setType(azGroupClusterType.toString());
-				clusterMeta.setAzGroupType(null);
-			} else {
-				toRemoveClusters.add(clusterName);
-			}
-		});
-		toRemoveClusters.forEach(clusterName -> dcMeta.getClusters().remove(clusterName));
+		DcMeta dcMeta = CollectionUtils.isEmpty(upperCaseTypes)
+				? dcMetaService.getDcMeta(dcId)
+				: dcMetaService.getDcMeta(dcId, upperCaseTypes);
 		String res = (format != null && format.equals("xml"))? dcMeta.toString() : coder.encode(dcMeta);
 		return res.getBytes();
 	}

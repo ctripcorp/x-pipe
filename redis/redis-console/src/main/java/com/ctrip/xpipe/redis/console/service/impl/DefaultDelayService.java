@@ -72,10 +72,6 @@ public class DefaultDelayService extends CheckerRedisDelayManager implements Del
         hostPort2Delay.putAll(redisDelays);
     }
 
-    @Override
-    public void updateHeteroShardsDelays(Map<Long, Long> heteroShardsDelays) {
-        heteroShardsDelay.putAll(heteroShardsDelays);
-    }
 
     @Override
     public long getShardDelay(String clusterId, String shardId, Long shardDbId) {

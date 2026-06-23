@@ -104,37 +104,30 @@ public class ClusterController extends AbstractConsoleController {
     }
 
     @RequestMapping(value = "/clusters/by/names", method = RequestMethod.POST)
-    public List<ClusterTbl> loadClusters(@RequestBody List<String> clusterNames) {
+    public List<ClusterTbl> loadClusters(@RequestBody List<String> clusterNames,
+            @RequestParam(required = false) String activeDcName) {
         List<ClusterTbl> clusters = clusterNames.stream()
                 .map(name -> clusterService.findClusterAndOrg(name))
                 .collect(Collectors.toList());
         List<Long> clusterIds = clusters.stream().map(ClusterTbl::getId).collect(Collectors.toList());
         List<DcClusterTbl> dcClusters = dcClusterService.findByClusterIds(clusterIds);
-        return valueOrEmptySet(ClusterTbl.class, joinClusterAndDcCluster(clusters, dcClusters));
+        List<ClusterTbl> result = joinClusterAndDcCluster(clusters, dcClusters);
+        clusterService.enrichMigrationClustersForActiveDc(result, activeDcName);
+        return valueOrEmptySet(ClusterTbl.class, result);
     }
 
     @RequestMapping(value = "/clusters/all", method = RequestMethod.GET)
     public List<ClusterTbl> findAllClusters(@RequestParam(required = false) String activeDcName) {
         if (StringUtil.isEmpty(activeDcName)) {
             return valueOrEmptySet(ClusterTbl.class, clusterService.findAllClustersWithOrgInfo());
-        } else {
-            DcTbl dc = dcService.findByDcName(activeDcName);
-            if (dc != null) {
-                List<ClusterTbl> clusters = clusterService.findClustersWithOrgInfoByActiveDcId(dc.getId());
-
-                if (!clusters.isEmpty()) {
-                    List<Long> clusterIds = new ArrayList<Long>(clusters.size());
-                    for (ClusterTbl c : clusters) {
-                        clusterIds.add(c.getId());
-                    }
-
-                    List<DcClusterTbl> dcClusters = dcClusterService.findByClusterIds(clusterIds);
-
-                    return joinClusterAndDcCluster(clusters, dcClusters);
-                }
-            }
+        }
+        List<ClusterTbl> clusters = clusterService.findMigrationActiveClustersByDcName(activeDcName);
+        if (clusters.isEmpty()) {
             return Collections.emptyList();
         }
+        List<Long> clusterIds = clusters.stream().map(ClusterTbl::getId).collect(Collectors.toList());
+        List<DcClusterTbl> dcClusters = dcClusterService.findByClusterIds(clusterIds);
+        return valueOrEmptySet(ClusterTbl.class, joinClusterAndDcCluster(clusters, dcClusters, true));
     }
 
     @GetMapping(value = "/clusters/type/{clusterType}")
@@ -172,6 +165,11 @@ public class ClusterController extends AbstractConsoleController {
     }
 
     private List<ClusterTbl> joinClusterAndDcCluster(List<ClusterTbl> clusters, List<DcClusterTbl> dcClusters) {
+        return joinClusterAndDcCluster(clusters, dcClusters, false);
+    }
+
+    private List<ClusterTbl> joinClusterAndDcCluster(List<ClusterTbl> clusters, List<DcClusterTbl> dcClusters,
+            boolean filterByMigrationAzGroup) {
         Map<Long, ClusterTbl> id2Cluster = new HashMap<>();
         for (ClusterTbl c : clusters) {
             id2Cluster.put(c.getId(), c);
@@ -179,9 +177,17 @@ public class ClusterController extends AbstractConsoleController {
 
         for (DcClusterTbl dcc : dcClusters) {
             ClusterTbl c = id2Cluster.get(dcc.getClusterId());
-            if (c != null) {
-                c.getDcClusterInfo().add(dcc);
+            if (c == null) {
+                continue;
             }
+            if (filterByMigrationAzGroup) {
+                Long migrationAzGroupClusterId = c.getMigrationAzGroupClusterId();
+                if (migrationAzGroupClusterId != null && migrationAzGroupClusterId > 0
+                        && !migrationAzGroupClusterId.equals(dcc.getAzGroupClusterId())) {
+                    continue;
+                }
+            }
+            c.getDcClusterInfo().add(dcc);
         }
 
         return clusters;
@@ -254,7 +260,13 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/clusters/activeDc/{dcName}", method = RequestMethod.GET)
     public List<ClusterTbl> findClustersByActiveDcName(@PathVariable String dcName) {
         logger.info("[findClustersByActiveDcName]dcName: {}", dcName);
-        return clusterService.findActiveClustersByDcName(dcName);
+        List<ClusterTbl> clusters = clusterService.findActiveClustersByDcName(dcName);
+        if (clusters.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Long> clusterIds = clusters.stream().map(ClusterTbl::getId).collect(Collectors.toList());
+        List<DcClusterTbl> dcClusters = dcClusterService.findByClusterIds(clusterIds);
+        return valueOrEmptySet(ClusterTbl.class, joinClusterAndDcCluster(clusters, dcClusters));
     }
 
     @RequestMapping(value = "/clusters/activeDc/{dcName}/{clusterType}", method = RequestMethod.GET)

@@ -104,8 +104,6 @@ public interface MetaCache {
 
     Map<Long, String> dcShardIds(String clusterId, String dcId);
 
-    boolean isAsymmetricCluster(String clusterName);
-
     Set<String> getAllShardNamesByClusterName(String clusterName);
 
     Map<String, Integer> getClusterCntMap(String clusterName);
@@ -118,7 +116,7 @@ public interface MetaCache {
 
     Map<String, Integer> getAllDcMigratableClustersCnt();
 
-    boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> dcs);
+    boolean isBackupDcAndCrossRegion(String currentDc, String activeDc, List<String> backupDcs);
 
     List<String> currentRegionDcs();
 }

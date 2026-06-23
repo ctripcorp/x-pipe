@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
@@ -53,6 +54,8 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     private Map<String, Set<RedisHealthCheckInstance>> redisInstancesToCheck = new HashMap<>();
 
     private volatile boolean collecting = false;
+
+    private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
     public SentinelHelloCheckAction(ScheduledExecutorService scheduled, ClusterHealthCheckInstance instance,
                                     ExecutorService executors, CheckerDbConfig checkerDbConfig, PersistenceCache persistenceCache, MetaCache metaCache, HealthCheckInstanceManager instanceManager) {
@@ -113,6 +116,9 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
         Map<String, Set<RedisHealthCheckInstance>> redisHealthCheckInstances = new HashMap<>();
         try {
             metaCache.getXpipeMeta().getDcs().forEach((dc, dcMeta) -> {
+                if (metaCache.isCrossRegion(dc, currentDcId))
+                    return;
+
                 ClusterMeta clusterMeta = dcMeta.getClusters().get(getActionInstance().getCheckInfo().getClusterId());
                 if (clusterMeta != null) {
                     logger.debug("[{}-{}][{}]found in MetaCache", LOG_TITLE, instance.getCheckInfo().getClusterId(), dc);

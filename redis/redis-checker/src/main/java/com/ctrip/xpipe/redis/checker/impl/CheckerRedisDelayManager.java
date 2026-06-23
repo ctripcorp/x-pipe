@@ -6,7 +6,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.AbstractDelayActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.HeteroDelayActionContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,17 +27,9 @@ public class CheckerRedisDelayManager extends AbstractDelayActionListener implem
     }
 
     @Override
-    public Map<Long, Long> getAllHeteroShardsDelays() {
-        return new HashMap<>(heteroShardsDelay);
-    }
-
-    @Override
     public void onAction(DelayActionContext delayActionContext) {
-        if (delayActionContext instanceof HeteroDelayActionContext)
-            heteroShardsDelay.put(((HeteroDelayActionContext) delayActionContext).getShardDbId(), delayActionContext.getResult());
-        else
-            hostPort2Delay.put(delayActionContext.instance().getCheckInfo().getHostPort(),
-                    delayActionContext.getResult());
+        hostPort2Delay.put(delayActionContext.instance().getCheckInfo().getHostPort(),
+                delayActionContext.getResult());
     }
 
     @Override

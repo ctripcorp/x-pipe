@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.meta;
 
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaQueryVO;
@@ -18,4 +19,7 @@ public interface ClusterMetaService {
 	ClusterMeta loadClusterMeta(DcMeta dcMeta, ClusterTbl clusterTbl, DcMetaQueryVO dcMetaQueryVO);
 
 	long getClusterMetaCurrentPrimaryDc(DcTbl dcInfo, ClusterTbl clusterInfo);
+
+	long getAzGroupClusterMetaCurrentPrimaryDc(DcTbl dcInfo, ClusterTbl clusterInfo,
+											   AzGroupClusterEntity azGroupCluster);
 }

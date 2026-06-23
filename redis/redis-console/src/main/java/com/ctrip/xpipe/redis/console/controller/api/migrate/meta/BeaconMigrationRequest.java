@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api.migrate.meta;
 
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
@@ -49,6 +50,9 @@ public class BeaconMigrationRequest {
 
     @JsonIgnore
     private long migrationEventId;
+
+    @JsonIgnore
+    private AzGroupClusterEntity azGroupCluster;
 
     public long getMigrationEventId() {
         return migrationEventId;
@@ -194,6 +198,14 @@ public class BeaconMigrationRequest {
 
     public void setCurrentMigrationCluster(MigrationClusterTbl currentMigrationCluster) {
         this.currentMigrationCluster = currentMigrationCluster;
+    }
+
+    public AzGroupClusterEntity getAzGroupCluster() {
+        return azGroupCluster;
+    }
+
+    public void setAzGroupCluster(AzGroupClusterEntity azGroupCluster) {
+        this.azGroupCluster = azGroupCluster;
     }
 
     @Override

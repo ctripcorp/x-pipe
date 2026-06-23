@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.migration.model.impl;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
@@ -75,7 +76,7 @@ public class DefaultMigrationClusterTest2 {
     public void beforeDefaultMigrationClusterTest2() {
 
         MockitoAnnotations.initMocks(this);
-        clusterTbl.setClusterName("cluster-1").setStatus("Normal");
+        clusterTbl.setClusterName("cluster-1").setClusterType(ClusterType.ONE_WAY.name()).setStatus("Normal");
 
         migrationClusterTbl.setCluster(clusterTbl).setClusterId(1L).setStatus("Initiated");
 
@@ -85,7 +86,7 @@ public class DefaultMigrationClusterTest2 {
 
 
         migrationCluster = new DefaultMigrationCluster(executors, scheduled, migrationEvent, migrationClusterTbl,
-                null, null, dcService, clusterService, shardService, redisService, migrationService);
+                null, null, null, dcService, clusterService, shardService, redisService, migrationService);
     }
 
     @Test(expected = ServerException.class)

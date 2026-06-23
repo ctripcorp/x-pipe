@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.vo;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.server.Server;
@@ -167,9 +168,12 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                     }
                 }
 
+                ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
+                boolean heteroWithAzGroup = clusterType == ClusterType.HETERO && azGroupCluster != null;
+
                 if (ClusterType.lookup(clusterMeta.getType()).supportMultiActiveDC()) {
                     clusterMeta.setDcs(getDcs(cluster));
-                } else {
+                } else if (!heteroWithAzGroup) {
                     DcTbl proto = new DcTbl().setId(dcId);
                     long activeDcId = clusterMetaService.getClusterMetaCurrentPrimaryDc(proto, cluster);
                     clusterMeta.setActiveDc(dcNameMap.get(activeDcId));
@@ -182,13 +186,8 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                     clusterMeta.setAzGroupName(azGroup.getName());
                     clusterMeta.setAzGroupType(azGroupType.toString());
 
-                    ClusterType clusterType = ClusterType.lookup(cluster.getClusterType());
-                    if (clusterType == ClusterType.HETERO && azGroupType == ClusterType.SINGLE_DC) {
-                        String activeAz = dcNameMap.get(azGroupCluster.getActiveAzId());
-                        clusterMeta.setActiveDc(activeAz);
-                        List<String> azs = azGroup.getAzsAsList();
-                        azs.remove(activeAz);
-                        clusterMeta.setBackupDcs(String.join(DC_NAME_DELIMITER, azs));
+                    if (heteroWithAzGroup) {
+                        applyHeteroAzGroupClusterMeta(clusterMeta, dcId, cluster, azGroupCluster, azGroup);
                     }
                 }
 
@@ -198,21 +197,31 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
     }
 
     @VisibleForTesting
+    protected void applyHeteroAzGroupClusterMeta(ClusterMeta clusterMeta, long dcId, ClusterTbl cluster,
+                                               AzGroupClusterEntity azGroupCluster, AzGroupModel azGroup) {
+        DcTbl dcProto = new DcTbl().setId(dcId);
+        long activeDcId = clusterMetaService.getAzGroupClusterMetaCurrentPrimaryDc(dcProto, cluster, azGroupCluster);
+        String activeAz = dcNameMap.get(activeDcId);
+        if (activeAz == null) {
+            getLogger().warn("[applyHeteroAzGroupClusterMeta][{}] active az not found for azGroupCluster {}",
+                    clusterMeta.getId(), azGroupCluster.getId());
+            return;
+        }
+        clusterMeta.setActiveDc(activeAz);
+        List<String> azs = new ArrayList<>(azGroup.getAzsAsList());
+        azs.remove(activeAz);
+        clusterMeta.setBackupDcs(String.join(DC_NAME_DELIMITER, azs));
+    }
+
+    @VisibleForTesting
     protected String getBackupDcs(ClusterTbl cluster, long activeDcId) {
         List<DcClusterTbl> relatedDcClusters = this.cluster2DcClusterMap.get(cluster.getId());
         if (CollectionUtils.isEmpty(relatedDcClusters)) {
             return "";
         }
-        List<AzGroupClusterEntity> azGroupClusters =
-            cluster2AzGroupClusterMap.getOrDefault(cluster.getId(), Collections.emptyList());
-        Set<Long> singleDcAzGroupClusterIds = azGroupClusters.stream()
-            .filter(agc -> ClusterType.isSameClusterType(agc.getAzGroupClusterType(), ClusterType.SINGLE_DC))
-            .map(AzGroupClusterEntity::getId)
-            .collect(Collectors.toSet());
 
         List<String> backupDcs = relatedDcClusters.stream()
-            .filter(dcClusterTbl -> dcClusterTbl.getDcId() != activeDcId
-                && !singleDcAzGroupClusterIds.contains(dcClusterTbl.getAzGroupClusterId()))
+            .filter(dcClusterTbl -> dcClusterTbl.getDcId() != activeDcId)
             .map(dcClusterTbl -> dcNameMap.get(dcClusterTbl.getDcId()))
             .collect(Collectors.toList());
         return String.join(DC_NAME_DELIMITER, backupDcs);

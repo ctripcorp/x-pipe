@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
 import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -117,11 +118,27 @@ public class BeaconConsistencyCheckTest extends AbstractConsoleTest {
 
         DefaultMonitorManager defaultMonitorManager = new DefaultMonitorManager(buildMetaCache(), consoleConfig, config);
 
-        consistencyCheckJob = new BeaconConsistencyCheckJob(defaultMonitorManager.clustersByBeaconSystemOrg(),
+        consistencyCheckJob = new BeaconConsistencyCheckJob(
+                flattenClustersByOrg(defaultMonitorManager.clustersByBeaconSystemOrg()),
                 buildServices(),
                 buildMetaCache(),
                 config);
 
+    }
+
+    private Map<BeaconSystem, Map<Long, Set<String>>> flattenClustersByOrg(
+            Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clustersByBeaconSystemOrgByService) {
+        Map<BeaconSystem, Map<Long, Set<String>>> flattened = new HashMap<>();
+        clustersByBeaconSystemOrgByService.forEach((beaconSystem, clustersByOrg) -> {
+            Map<Long, Set<String>> orgClusters = new HashMap<>();
+            clustersByOrg.forEach((orgId, clustersByService) -> {
+                Set<String> clusters = new HashSet<>();
+                clustersByService.values().forEach(clusters::addAll);
+                orgClusters.put(orgId, clusters);
+            });
+            flattened.put(beaconSystem, orgClusters);
+        });
+        return flattened;
     }
 
     @Test

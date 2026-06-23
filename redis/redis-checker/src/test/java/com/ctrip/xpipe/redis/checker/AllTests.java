@@ -19,9 +19,10 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedis
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.CRDTDelayActionControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MetricDelayListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.gtidgap.GtidGapCheckActionControllerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.gtidgap.GtidGapCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CRDTDelayPingActionCollectorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultAggregatorPullServiceTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollectorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.ClusterStatusAdjustCommandTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.InstanceHealthStatusCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.InstanceHealthStatusConsistenceInspectorTest;
@@ -29,7 +30,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.Def
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.TestAbstractHealthEventHandlerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.OuterClientServiceProcessorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.DefaultRouteHealthEventProcessorTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.HeteroRouteHealthEventProcessorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContextTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRuleTest;
@@ -162,7 +162,7 @@ import org.junit.runners.Suite;
 
         SentinelHelloTest.class,
         HealthStatusTest.class,
-        HeteroHealthStatusTest.class,
+
         OuterClientServiceProcessorTest.class,
         InstanceHealthStatusCollectorTest.class,
         InstanceHealthStatusConsistenceInspectorTest.class,
@@ -180,7 +180,6 @@ import org.junit.runners.Suite;
         SentinelHelloCheckActionFactoryTest.class,
         SentinelHelloCheckActionTest.class,
         DefaultRouteHealthEventProcessorTest.class,
-        HeteroRouteHealthEventProcessorTest.class,
         OneWaySentinelHelloCheckControllerTest.class,
         CurrentDcSentinelHelloCheckControllerTest.class,
         CrossDcSentinelHelloCheckControllerTest.class,
@@ -202,9 +201,6 @@ import org.junit.runners.Suite;
         AlertManagerTest.class,
 
         TestConnectProxyWithProxyClient.class,
-
-        GtidGapCheckActionTest.class,
-        GtidGapCheckActionControllerTest.class,
 
         DefaultHealthCheckConfigTest.class,
         DefaultRouteChooserTest.class,

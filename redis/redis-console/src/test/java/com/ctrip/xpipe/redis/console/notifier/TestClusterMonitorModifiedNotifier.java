@@ -4,8 +4,6 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 /**
  * @author lishanglin
  * date 2021/1/18
@@ -21,6 +19,16 @@ public class TestClusterMonitorModifiedNotifier implements ClusterMonitorModifie
 
     @Override
     public void notifyClusterDelete(final String clusterName, long orgId) {
+
+    }
+
+    @Override
+    public void notifyClusterUpdate(String clusterName, String dc, long orgId, String lastModifyTime) {
+
+    }
+
+    @Override
+    public void notifyClusterDelete(String clusterName, String dc, long orgId) {
 
     }
 

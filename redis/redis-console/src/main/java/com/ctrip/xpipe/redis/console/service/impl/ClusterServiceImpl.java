@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.InstanceInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RegionInfo;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.DcClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
@@ -36,6 +37,7 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.repository.*;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.ctrip.xpipe.redis.console.service.model.SourceModelService;
 import com.ctrip.xpipe.redis.console.util.DataModifiedTimeGenerator;
@@ -45,6 +47,7 @@ import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -163,6 +166,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private AzGroupClusterRepository azGroupClusterRepository;
+
+	@Autowired
+	private HeteroMigrationSupport heteroMigrationSupport;
 
 	private static final String DESIGNATED_ROUTE_ID_SPLITTER = "\\s*,\\s*";
 
@@ -701,6 +707,30 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public void enrichMigrationClustersForActiveDc(List<ClusterTbl> clusters, String sourceDcName) {
+		if (CollectionUtils.isEmpty(clusters) || StringUtil.isEmpty(sourceDcName)) {
+			return;
+		}
+		List<Long> heteroClusterIds = clusters.stream()
+				.filter(heteroMigrationSupport::isHeteroCluster)
+				.map(ClusterTbl::getId)
+				.collect(Collectors.toList());
+		if (heteroClusterIds.isEmpty()) {
+			return;
+		}
+		Map<Long, AzGroupClusterEntity> azGroupClusterMap =
+				heteroMigrationSupport.resolveMigrationAzGroupClusters(heteroClusterIds, sourceDcName);
+		for (ClusterTbl cluster : clusters) {
+			AzGroupClusterEntity azGroupCluster = azGroupClusterMap.get(cluster.getId());
+			if (azGroupCluster == null) {
+				continue;
+			}
+			cluster.setMigrationActiveDcId(azGroupCluster.getActiveAzId());
+			cluster.setMigrationAzGroupClusterId(azGroupCluster.getId());
+		}
+	}
+
+	@Override
 	public List<ClusterTbl> findAllClustersWithOrgInfo() {
 		List<ClusterTbl> result = clusterDao.findAllClusterWithOrgInfo();
 		result = fillClusterOrgName(result);
@@ -772,6 +802,32 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
             clusterTbl.setClusterAdminEmails(adminEmails);
         }
 
+
+		if (clusterUpdateDTO.getRegions() != null && !clusterUpdateDTO.getRegions().isEmpty()) {
+			List<AzGroupClusterEntity> azGroupClustersToUpdate = new ArrayList<>();
+			List<AzGroupClusterEntity> currentAzGroupClusters = azGroupClusterRepository.selectByClusterId(clusterTbl.getId());
+
+			for (RegionInfo region : clusterUpdateDTO.getRegions()) {
+				if (Strings.isNullOrEmpty(region.getRegion()))
+					throw new BadRequestException("region is empty");
+
+				AzGroupClusterEntity current = getByRegion(region.getRegion(), currentAzGroupClusters);
+				if (current == null) {
+					throw new BadRequestException(String.format("region %s is not found in az group clusters", region.getRegion()));
+				}
+
+				AzGroupClusterEntity future = new AzGroupClusterEntity().setId(current.getId());
+				if (region.getClusterType() != null) future.setAzGroupClusterType(region.getClusterType().toUpperCase());
+				if (region.getActiveAz() != null) future.setActiveAzId(checkDc(region.getActiveAz()).getId());
+
+				azGroupClustersToUpdate.add(future);
+			}
+
+			if (!azGroupClustersToUpdate.isEmpty()) {
+				azGroupClusterRepository.batchUpdate(azGroupClustersToUpdate);
+			}
+		}
+
         if (needUpdate) {
             clusterDao.updateCluster(clusterTbl);
             return RetMessage.SUCCESS;
@@ -779,6 +835,13 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
             return String.format("No field changes for cluster: %s", clusterName);
         }
     }
+
+	private AzGroupClusterEntity getByRegion(String region, List<AzGroupClusterEntity> azGroupClusterEntities) {
+		return azGroupClusterEntities.stream().filter(azGroupClusterEntity -> {
+			AzGroupModel azGroupModel = azGroupCache.getAzGroupById(azGroupClusterEntity.getAzGroupId());
+			return azGroupModel.getRegion().equalsIgnoreCase(region);
+		}).findFirst().orElse(null);
+	}
 
 	@Override
 	@DalTransaction
@@ -1550,6 +1613,32 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			return Collections.emptyList();
 
 		return findClustersWithOrgInfoByActiveDcId(dcService.find(dcName).getId());
+	}
+
+	@Override
+	public List<ClusterTbl> findMigrationActiveClustersByDcName(String dcName) {
+		if (StringUtil.isEmpty(dcName)) {
+			return Collections.emptyList();
+		}
+		List<ClusterTbl> result = new ArrayList<>(findClustersByActiveDcAndType(dcName, ClusterType.ONE_WAY.name()));
+		List<ClusterTbl> heteroClusters = findClustersWithOrgInfoByClusterType(HETERO.name());
+		result.addAll(findClustersByActiveDcAndTypeInHetero(dcName, ClusterType.ONE_WAY.name(), dcName, heteroClusters));
+		result = deduplicateClustersById(result);
+		result = fillClusterOrgName(result);
+		result = setOrgNullIfNoOrgIdExsits(result);
+		enrichMigrationClustersForActiveDc(result, dcName);
+		result.removeIf(cluster -> heteroMigrationSupport.isHeteroCluster(cluster)
+				&& cluster.getMigrationAzGroupClusterId() <= 0);
+		logger.info("[findMigrationActiveClustersByDcName] dc: {}, clusters size = {}", dcName, result.size());
+		return result;
+	}
+
+	private List<ClusterTbl> deduplicateClustersById(List<ClusterTbl> clusters) {
+		Map<Long, ClusterTbl> clusterMap = new LinkedHashMap<>();
+		for (ClusterTbl cluster : clusters) {
+			clusterMap.putIfAbsent(cluster.getId(), cluster);
+		}
+		return new ArrayList<>(clusterMap.values());
 	}
 
 	@Override

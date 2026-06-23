@@ -5,6 +5,7 @@ import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -241,6 +242,51 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
             if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION))
                 Assert.assertEquals("1,2", clusterMeta.getActiveRedisCheckRules());
         }
+    }
+
+    @Test
+    public void getOrCreateHeteroOneWayAzGroupClusterMeta() throws Exception {
+        ClusterTbl clusterTbl = clusterService.find("hetero-cluster");
+        Assert.assertNotNull(clusterTbl);
+
+        DcMeta jqMeta = new DcMeta().setId("jq");
+        dcMetaMap.clear();
+        dcMetaMap.put("JQ", jqMeta);
+
+        DcClusterTbl jqDcCluster = dcClusterService.find(1, clusterTbl.getId());
+        AzGroupClusterEntity azGroupCluster = azGroupClusterRepository.selectByClusterId(clusterTbl.getId()).stream()
+                .filter(entity -> ClusterType.isSameClusterType(entity.getAzGroupClusterType(), ClusterType.ONE_WAY))
+                .findFirst()
+                .orElse(null);
+        Assert.assertNotNull(azGroupCluster);
+
+        builder.setDcNameMap(dcNameMap);
+        ClusterMeta clusterMeta = builder.getOrCreateClusterMeta(jqMeta, 1L, clusterTbl, jqDcCluster, azGroupCluster);
+
+        Assert.assertEquals(ClusterType.HETERO.toString(), clusterMeta.getType());
+        Assert.assertEquals(ClusterType.ONE_WAY.toString(), clusterMeta.getAzGroupType());
+        Assert.assertEquals("jq", clusterMeta.getActiveDc());
+        Assert.assertEquals("oy", clusterMeta.getBackupDcs());
+    }
+
+    @Test
+    public void getOrCreateHeteroSingleDcAzGroupClusterMeta() throws Exception {
+        ClusterTbl clusterTbl = clusterService.find("hetero-cluster");
+        Assert.assertNotNull(clusterTbl);
+
+        DcMeta fraMeta = new DcMeta().setId("fra");
+        DcClusterTbl fraDcCluster = dcClusterService.find(3, clusterTbl.getId());
+        AzGroupClusterEntity azGroupCluster = azGroupClusterRepository.selectByClusterId(clusterTbl.getId()).stream()
+                .filter(entity -> ClusterType.isSameClusterType(entity.getAzGroupClusterType(), ClusterType.SINGLE_DC))
+                .findFirst()
+                .orElse(null);
+        Assert.assertNotNull(azGroupCluster);
+
+        builder.setDcNameMap(dcNameMap);
+        ClusterMeta clusterMeta = builder.getOrCreateClusterMeta(fraMeta, 3L, clusterTbl, fraDcCluster, azGroupCluster);
+
+        Assert.assertEquals("fra", clusterMeta.getActiveDc());
+        Assert.assertEquals("fra-ali", clusterMeta.getBackupDcs());
     }
 
     @Override

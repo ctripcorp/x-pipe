@@ -12,6 +12,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconChe
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,6 +36,7 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
     private static final int ORG_ID = 1;
     private static final ClusterType CLUSTER_TYPE = ClusterType.ONE_WAY;
     private static final String LAST_MODIFY_TIME = "20200101103030001";
+    private static final String DC = "jq";
 
     @Mock
     private MonitorManager monitorManager;
@@ -44,6 +48,9 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
     private CheckerConfig checkerConfig;
 
     @Mock
+    private MetaCache metaCache;
+
+    @Mock
     private MonitorService monitorService;
 
     private DefaultBeaconManager beaconManager;
@@ -53,9 +60,12 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
 
     @Before
     public void setUp() {
-        beaconManager = new DefaultBeaconManager(monitorManager, beaconMetaService, checkerConfig);
+        beaconManager = new DefaultBeaconManager(monitorManager, beaconMetaService, checkerConfig, metaCache);
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        xpipeMeta.addDc(new DcMeta(DC).setZone("SHA"));
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
 
-        groups = Collections.singleton(new MonitorGroupMeta("shard1", "jq",
+        groups = Collections.singleton(new MonitorGroupMeta("shard1", DC,
                 Collections.singleton(new HostPort("127.0.0.1", 6379)), true));
         localHash = new MonitorClusterMeta(groups).generateHashCodeForBeaconCheck();
     }
@@ -69,7 +79,8 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
         clusterExtra.put("lastModifyTime", "20200101103030000");
         Mockito.when(monitorService.getBeaconClusterExtra("xpipe", CLUSTER_ID)).thenReturn(clusterExtra);
 
-        BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME);
+        BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, DC, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME,
+                BeaconRouteType.DR);
 
         Assert.assertEquals(BeaconCheckStatus.INCONSISTENCY, status);
     }
@@ -83,7 +94,8 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
         clusterExtra.put("lastModifyTime", "20200101103030002");
         Mockito.when(monitorService.getBeaconClusterExtra("xpipe", CLUSTER_ID)).thenReturn(clusterExtra);
 
-        BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME);
+        BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, DC, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME,
+                BeaconRouteType.DR);
 
         Assert.assertEquals(BeaconCheckStatus.INCONSISTENCY_IGNORE, status);
     }
@@ -94,7 +106,8 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
         Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(localHash + 1);
         Mockito.when(checkerConfig.checkBeaconLastModifyTime()).thenReturn(false);
 
-        BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME);
+        BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, DC, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME,
+                BeaconRouteType.DR);
 
         Assert.assertEquals(BeaconCheckStatus.INCONSISTENCY, status);
         Mockito.verify(monitorService, Mockito.never()).getBeaconClusterExtra("xpipe", CLUSTER_ID);
@@ -108,7 +121,8 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
         Mockito.when(monitorService.getBeaconClusterExtra("xpipe", CLUSTER_ID))
                 .thenThrow(new BadRequestException("404 NotFound"));
 
-        BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME);
+        BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, DC, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME,
+                BeaconRouteType.DR);
 
         Assert.assertEquals(BeaconCheckStatus.INCONSISTENCY, status);
     }
@@ -116,15 +130,16 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
     @Test
     public void sentinelRouteShouldUseShardsForHashCheck() {
         Set<MonitorShardMeta> shards = Collections.singleton(new MonitorShardMeta("shard1", Arrays.asList(
-                new MonitorGroupMeta("127.0.0.1:6379", "jq",
+                new MonitorGroupMeta("127.0.0.1:6379", DC,
                         Collections.singleton(new HostPort("127.0.0.1", 6379)), true)
         )));
         int shardHash = new MonitorClusterMeta(null, shards, null).generateHashCodeForBeaconCheck();
-        Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, BeaconRouteType.SENTINEL)).thenReturn(monitorService);
-        Mockito.when(beaconMetaService.buildBeaconShards(CLUSTER_ID, "jq", Collections.emptyMap())).thenReturn(shards);
+        Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, "SHA", BeaconRouteType.SENTINEL)).thenReturn(monitorService);
+        Mockito.when(beaconMetaService.buildSentinelBeaconShards(CLUSTER_ID, DC, Collections.emptyMap())).thenReturn(shards);
         Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(shardHash);
 
-        BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME, BeaconRouteType.SENTINEL);
+        BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, DC, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME,
+                BeaconRouteType.SENTINEL);
 
         Assert.assertEquals(BeaconCheckStatus.CONSISTENCY, status);
     }
@@ -132,15 +147,16 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
     @Test
     public void sentinelRouteSingleDcShouldUseOneWaySystem() {
         Set<MonitorShardMeta> shards = Collections.singleton(new MonitorShardMeta("shard1", Arrays.asList(
-                new MonitorGroupMeta("127.0.0.1:6379", "jq",
+                new MonitorGroupMeta("127.0.0.1:6379", DC,
                         Collections.singleton(new HostPort("127.0.0.1", 6379)), true)
         )));
         int shardHash = new MonitorClusterMeta(null, shards, null).generateHashCodeForBeaconCheck();
-        Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, BeaconRouteType.SENTINEL)).thenReturn(monitorService);
-        Mockito.when(beaconMetaService.buildBeaconShards(CLUSTER_ID, "jq", Collections.emptyMap())).thenReturn(shards);
+        Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, "SHA", BeaconRouteType.SENTINEL)).thenReturn(monitorService);
+        Mockito.when(beaconMetaService.buildSentinelBeaconShards(CLUSTER_ID, DC, Collections.emptyMap())).thenReturn(shards);
         Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(shardHash);
 
-        BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, ClusterType.SINGLE_DC, ORG_ID, LAST_MODIFY_TIME, BeaconRouteType.SENTINEL);
+        BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, DC, ClusterType.SINGLE_DC, ORG_ID,
+                LAST_MODIFY_TIME, BeaconRouteType.SENTINEL);
 
         Assert.assertEquals(BeaconCheckStatus.CONSISTENCY, status);
     }
@@ -148,21 +164,22 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
     @Test
     public void sentinelRegisterShouldBuildShardsWithPublishMasters() {
         Set<MonitorShardMeta> shards = Collections.singleton(new MonitorShardMeta("shard1", Arrays.asList(
-                new MonitorGroupMeta("127.0.0.1:6380", "jq",
+                new MonitorGroupMeta("127.0.0.1:6380", DC,
                         Collections.singleton(new HostPort("127.0.0.1", 6380)), true)
         )));
         Map<String, HostPort> shardMasters = Collections.singletonMap("shard1", new HostPort("127.0.0.1", 6380));
-        Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, BeaconRouteType.SENTINEL)).thenReturn(monitorService);
-        Mockito.when(beaconMetaService.buildBeaconShards(CLUSTER_ID, "jq", shardMasters)).thenReturn(shards);
+        Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, "SHA", BeaconRouteType.SENTINEL)).thenReturn(monitorService);
+        Mockito.when(beaconMetaService.buildSentinelBeaconShards(CLUSTER_ID, DC, shardMasters)).thenReturn(shards);
 
-        beaconManager.registerCluster(CLUSTER_ID, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME, BeaconRouteType.SENTINEL, shardMasters);
+        beaconManager.registerCluster(CLUSTER_ID, DC, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME, BeaconRouteType.SENTINEL,
+                shardMasters);
 
         Mockito.verify(monitorService).registerCluster(Mockito.eq("xpipe"), Mockito.eq(CLUSTER_ID), Mockito.isNull(),
                 Mockito.eq(shards), Mockito.anyMap());
     }
 
     private void mockDrMeta() {
-        Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, BeaconRouteType.DR)).thenReturn(monitorService);
-        Mockito.when(beaconMetaService.buildBeaconGroups(CLUSTER_ID)).thenReturn(groups);
+        Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, "SHA", BeaconRouteType.DR)).thenReturn(monitorService);
+        Mockito.when(beaconMetaService.buildDrBeaconGroups(CLUSTER_ID, DC)).thenReturn(groups);
     }
 }

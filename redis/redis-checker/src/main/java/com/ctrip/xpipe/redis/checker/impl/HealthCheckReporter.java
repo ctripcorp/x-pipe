@@ -149,8 +149,6 @@ public class HealthCheckReporter implements GroupCheckerLeaderAware {
             result.encodeRedisAlives(pingService.getAllRedisAlives());
             result.setWarningClusterShards(clusterHealthManager.getAllClusterWarningShards());
             result.encodeRedisStates(getAllRedisStates());
-            result.setHeteroShardsDelay(redisDelayManager.getAllHeteroShardsDelays());
-
             checkerConsoleService.report(config.getConsoleAddress(), result);
         } catch (Throwable th) {
             logger.info("[reportCheckResult] fail", th);
