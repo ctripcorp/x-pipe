@@ -1,0 +1,25 @@
+redis/package/redis-keeper-package/src/main/scripts/network/remote_cron/recovery_clog.sh
+  s_511b2bf44aacda::t_320b846e8ca9e8 1-20
+redis/package/redis-keeper-package/src/main/scripts/network/remote_cron/isolate_clog.sh
+  s_511b2bf44aacda::t_9c0346e2c5f666 1-19
+redis/package/redis-keeper-package/src/main/scripts/network/stop_clog.sh
+  s_511b2bf44aacda::t_6db66986479e5a 1-90
+redis/package/redis-keeper-package/src/main/scripts/network/start_clog.sh
+  s_511b2bf44aacda::t_7d5e4c8472285d 1-101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.18-trip",
+  "base_commit_sha": "0e6dd2357400f58e5986644fc46ca32861c53d40",
+  "prompts": {},
+  "sessions": {
+    "s_511b2bf44aacda": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea08cbcf-7fd4-4003-8342-c767a7303203",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": "Yihao Huang （黄奕浩） <yihaohuang@trip.com>"
+    }
+  }
+}
