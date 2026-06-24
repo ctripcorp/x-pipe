@@ -662,6 +662,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public boolean shouldComputeExtraInHash() {
+        return commonConfigBean.shouldComputeExtraInHash();
+    }
+
+    @Override
     public long getCheckIsolateInterval() {
         return consoleConfigBean.getIsolateCheckIntervalMilli();
     }

@@ -69,7 +69,7 @@ public class BeaconRouteController extends AbstractConsoleController {
 
     /**
      * Hash of local monitor cluster meta, same computation as {@link com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager#checkClusterHash}
-     * local side ({@code MonitorClusterMeta#generateHashCodeForBeaconCheck}).
+     * local side ({@code MonitorClusterMeta#generateHashCodeForBeaconCheck(boolean)}).
      */
     @GetMapping("/sentinel/cluster/hash")
     public Map<String, Object> getClusterMetaHash(@RequestParam("clusterName") String clusterName,

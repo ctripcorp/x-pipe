@@ -9,6 +9,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class MonitorClusterMetaTest {
@@ -33,17 +35,17 @@ public class MonitorClusterMetaTest {
         Set<MonitorGroupMeta> group6 = getMonitorGroupMeta6();
         MonitorClusterMeta monitorClusterMeta6 = new MonitorClusterMeta(group6);
 
-        Assert.assertEquals(monitorClusterMeta1.generateHashCodeForBeaconCheck(), monitorClusterMeta2.generateHashCodeForBeaconCheck());
-        Assert.assertNotEquals(monitorClusterMeta1.generateHashCodeForBeaconCheck(), monitorClusterMeta3.generateHashCodeForBeaconCheck());
-        Assert.assertNotEquals(monitorClusterMeta1.generateHashCodeForBeaconCheck(), monitorClusterMeta4.generateHashCodeForBeaconCheck());
-        Assert.assertNotEquals(monitorClusterMeta4.generateHashCodeForBeaconCheck(), monitorClusterMeta5.generateHashCodeForBeaconCheck());
-        Assert.assertNotEquals(monitorClusterMeta5.generateHashCodeForBeaconCheck(), monitorClusterMeta6.generateHashCodeForBeaconCheck());
-        System.out.println(monitorClusterMeta1.generateHashCodeForBeaconCheck());
-        System.out.println(monitorClusterMeta2.generateHashCodeForBeaconCheck());
-        System.out.println(monitorClusterMeta3.generateHashCodeForBeaconCheck());
-        System.out.println(monitorClusterMeta4.generateHashCodeForBeaconCheck());
-        System.out.println(monitorClusterMeta5.generateHashCodeForBeaconCheck());
-        System.out.println(monitorClusterMeta6.generateHashCodeForBeaconCheck());
+        Assert.assertEquals(monitorClusterMeta1.generateHashCodeForBeaconCheck(false), monitorClusterMeta2.generateHashCodeForBeaconCheck(false));
+        Assert.assertNotEquals(monitorClusterMeta1.generateHashCodeForBeaconCheck(false), monitorClusterMeta3.generateHashCodeForBeaconCheck(false));
+        Assert.assertNotEquals(monitorClusterMeta1.generateHashCodeForBeaconCheck(false), monitorClusterMeta4.generateHashCodeForBeaconCheck(false));
+        Assert.assertNotEquals(monitorClusterMeta4.generateHashCodeForBeaconCheck(false), monitorClusterMeta5.generateHashCodeForBeaconCheck(false));
+        Assert.assertNotEquals(monitorClusterMeta5.generateHashCodeForBeaconCheck(false), monitorClusterMeta6.generateHashCodeForBeaconCheck(false));
+        System.out.println(monitorClusterMeta1.generateHashCodeForBeaconCheck(false));
+        System.out.println(monitorClusterMeta2.generateHashCodeForBeaconCheck(false));
+        System.out.println(monitorClusterMeta3.generateHashCodeForBeaconCheck(false));
+        System.out.println(monitorClusterMeta4.generateHashCodeForBeaconCheck(false));
+        System.out.println(monitorClusterMeta5.generateHashCodeForBeaconCheck(false));
+        System.out.println(monitorClusterMeta6.generateHashCodeForBeaconCheck(false));
     }
 
 
@@ -116,7 +118,7 @@ public class MonitorClusterMetaTest {
         MonitorClusterMeta fromShards = new MonitorClusterMeta(null, Collections.singleton(shardMeta), null);
         MonitorClusterMeta fromGroups = new MonitorClusterMeta(groups);
 
-        Assert.assertEquals(fromGroups.generateHashCodeForBeaconCheck(), fromShards.generateHashCodeForBeaconCheck());
+        Assert.assertEquals(fromGroups.generateHashCodeForBeaconCheck(false), fromShards.generateHashCodeForBeaconCheck(false));
     }
 
     @Test
@@ -131,7 +133,7 @@ public class MonitorClusterMetaTest {
         MonitorClusterMeta clusterWithAz    = new MonitorClusterMeta(Sets.newHashSet(withAz));
         MonitorClusterMeta clusterWithoutAz = new MonitorClusterMeta(Sets.newHashSet(withoutAz));
 
-        Assert.assertNotEquals(clusterWithAz.generateHashCodeForBeaconCheck(), clusterWithoutAz.generateHashCodeForBeaconCheck());
+        Assert.assertNotEquals(clusterWithAz.generateHashCodeForBeaconCheck(false), clusterWithoutAz.generateHashCodeForBeaconCheck(false));
     }
 
     @Test
@@ -147,7 +149,7 @@ public class MonitorClusterMetaTest {
         MonitorClusterMeta clusterA = new MonitorClusterMeta(Sets.newHashSet(groupA));
         MonitorClusterMeta clusterB = new MonitorClusterMeta(Sets.newHashSet(groupB));
 
-        Assert.assertEquals(clusterA.generateHashCodeForBeaconCheck(), clusterB.generateHashCodeForBeaconCheck());
+        Assert.assertEquals(clusterA.generateHashCodeForBeaconCheck(false), clusterB.generateHashCodeForBeaconCheck(false));
     }
 
     @Test
@@ -161,7 +163,7 @@ public class MonitorClusterMetaTest {
         MonitorClusterMeta clusterA = new MonitorClusterMeta(Sets.newHashSet(groupA));
         MonitorClusterMeta clusterB = new MonitorClusterMeta(Sets.newHashSet(groupB));
 
-        Assert.assertEquals(clusterA.generateHashCodeForBeaconCheck(), clusterB.generateHashCodeForBeaconCheck());
+        Assert.assertEquals(clusterA.generateHashCodeForBeaconCheck(false), clusterB.generateHashCodeForBeaconCheck(false));
     }
 
     @Test
@@ -177,7 +179,38 @@ public class MonitorClusterMetaTest {
         MonitorClusterMeta cluster12 = new MonitorClusterMeta(Sets.newHashSet(gm1, gm2));
         MonitorClusterMeta cluster21 = new MonitorClusterMeta(Sets.newHashSet(gm2, gm1));
 
-        Assert.assertEquals(cluster12.generateHashCodeForBeaconCheck(), cluster21.generateHashCodeForBeaconCheck());
+        Assert.assertEquals(cluster12.generateHashCodeForBeaconCheck(false), cluster21.generateHashCodeForBeaconCheck(false));
     }
 
+
+    @Test
+    public void testMonitorClusterMetaWithExtraHash() {
+        Set<MonitorGroupMeta> groups = getMonitorGroupMeta1();
+
+        Map<String, String> extra1 = new HashMap<>();
+        extra1.put("lastModifyTime", "20200101103030001");
+        extra1.put("region", "xy");
+        MonitorClusterMeta withExtra1 = new MonitorClusterMeta(groups, extra1);
+
+        Map<String, String> extra2 = new HashMap<>();
+        extra2.put("region", "xy");
+        extra2.put("lastModifyTime", "20200101103030001");
+        MonitorClusterMeta withExtra2 = new MonitorClusterMeta(groups, extra2);
+
+        Map<String, String> extra3 = new HashMap<>();
+        extra3.put("lastModifyTime", "20200101103030002");
+        extra3.put("region", "xy");
+        MonitorClusterMeta withExtra3 = new MonitorClusterMeta(groups, extra3);
+
+        MonitorClusterMeta withoutExtra = new MonitorClusterMeta(groups);
+        MonitorClusterMeta withNullExtra = new MonitorClusterMeta(groups, null);
+        MonitorClusterMeta withEmptyExtra = new MonitorClusterMeta(groups, Collections.emptyMap());
+
+        Assert.assertEquals(withExtra1.generateHashCodeForBeaconCheck(true), withExtra2.generateHashCodeForBeaconCheck(true));
+        Assert.assertNotEquals(withExtra1.generateHashCodeForBeaconCheck(true), withExtra3.generateHashCodeForBeaconCheck(true));
+        Assert.assertNotEquals(withoutExtra.generateHashCodeForBeaconCheck(false), withExtra1.generateHashCodeForBeaconCheck(true));
+        Assert.assertEquals(withNullExtra.generateHashCodeForBeaconCheck(false), withEmptyExtra.generateHashCodeForBeaconCheck(false));
+        Assert.assertEquals(withoutExtra.generateHashCodeForBeaconCheck(false), withExtra1.generateHashCodeForBeaconCheck(false));
+        Assert.assertEquals(withoutExtra.generateHashCodeForBeaconCheck(false), withEmptyExtra.generateHashCodeForBeaconCheck(false));
+    }
 }

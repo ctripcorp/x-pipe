@@ -126,4 +126,6 @@ public interface CheckerConfig {
 
     boolean checkBeaconLastModifyTime();
 
+    boolean shouldComputeExtraInHash();
+
 }
