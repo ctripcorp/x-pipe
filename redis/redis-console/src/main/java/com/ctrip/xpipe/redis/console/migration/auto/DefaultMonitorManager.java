@@ -75,12 +75,7 @@ public class DefaultMonitorManager implements MonitorManager {
     }
 
     @Override
-    public MonitorService get(long orgId, String clusterName) {
-        return get(orgId, clusterName, BeaconRouteType.DR);
-    }
-
-    @Override
-    public MonitorService get(long orgId, String clusterName, BeaconRouteType routeType) {
+    public MonitorService get(long orgId, String clusterName, String zone, BeaconRouteType routeType) {
         Map<Long, DefaultMonitorClusterManager> monitorMap = getRouteMonitorMap(routeType);
         DefaultMonitorClusterManager monitorClusterManager = monitorMap.get(orgId);
         if (monitorClusterManager == null) {
@@ -89,6 +84,7 @@ public class DefaultMonitorManager implements MonitorManager {
                 return null;
             }
         }
+        // Current version: global org route, zone reserved for future multi-Region Beacon routing.
         return monitorClusterManager.getService(clusterName);
     }
 
@@ -106,20 +102,20 @@ public class DefaultMonitorManager implements MonitorManager {
     }
 
     @Override
-    public Map<BeaconSystem, Map<Long, Set<String>>> clustersByBeaconSystemOrg() {
+    public Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clustersByBeaconSystemOrg() {
         return clustersByBeaconSystemOrg(BeaconRouteType.DR);
     }
 
     @Override
-    public Map<BeaconSystem, Map<Long, Set<String>>> clustersByBeaconSystemOrg(BeaconRouteType routeType) {
+    public Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clustersByBeaconSystemOrg(BeaconRouteType routeType) {
         Set<Long> orgIds = this.getAllServices(routeType).keySet();
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
         if (null == xpipeMeta) return null;
 
-        Map<BeaconSystem, Map<Long, Set<String>>> clusterByBeaconSystemOrg = new HashMap<>();
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clusterByBeaconSystemOrg = new HashMap<>();
         for (BeaconSystem beaconSystem : BeaconSystem.values()) {
-            Map<Long, Set<String>> clustersByOrg = new HashMap<>(orgIds.size());
-            orgIds.forEach(orgId -> clustersByOrg.put(orgId, new HashSet<>()));
+            Map<Long, Map<MonitorService, Set<String>>> clustersByOrg = new HashMap<>(orgIds.size());
+            orgIds.forEach(orgId -> clustersByOrg.put(orgId, new HashMap<>()));
             clusterByBeaconSystemOrg.put(beaconSystem, clustersByOrg);
         }
 
@@ -131,11 +127,15 @@ public class DefaultMonitorManager implements MonitorManager {
                     continue;
                 }
             } else if (!dcMeta.getId().equalsIgnoreCase(currentDc)) {
-                // Sentinel route is managed per-site, only track clusters in current dc.
                 continue;
             }
 
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                if (routeType == BeaconRouteType.DR
+                        && !ClusterType.supportClusterMigration(clusterMeta.getType(), clusterMeta.getAzGroupType())) {
+                    continue;
+                }
+
                 ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
                 if (!StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
                     clusterType = ClusterType.lookup(clusterMeta.getAzGroupType());
@@ -150,12 +150,9 @@ public class DefaultMonitorManager implements MonitorManager {
                 }
                 if (routeType == BeaconRouteType.DR) {
                     if (clusterType.supportSingleActiveDC() && !dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc())) {
-                        // only register cluster whose active dc is in supported zone
                         continue;
                     }
                 } else {
-                    // For sentinel mode, multi-active clusters register in each dc;
-                    // single-active clusters register only on current active dc.
                     if (!clusterType.supportMultiActiveDC() && !dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc())) {
                         continue;
                     }
@@ -164,16 +161,45 @@ public class DefaultMonitorManager implements MonitorManager {
                     }
                 }
 
-                Map<Long, Set<String>> clustersByOrg = clusterByBeaconSystemOrg.get(beaconSystem);
-                if (orgIds.contains((long) clusterMeta.getOrgId())) {
-                    clustersByOrg.get((long) clusterMeta.getOrgId()).add(clusterMeta.getId());
-                } else if (orgIds.contains(DEFAULT_ORG_ID)) {
-                    clustersByOrg.get(DEFAULT_ORG_ID).add(clusterMeta.getId());
+                long orgId = orgIds.contains((long) clusterMeta.getOrgId())
+                        ? clusterMeta.getOrgId()
+                        : (orgIds.contains(DEFAULT_ORG_ID) ? DEFAULT_ORG_ID : -1L);
+                if (orgId < 0) {
+                    continue;
                 }
+
+                MonitorService monitorService = get(orgId, clusterMeta.getId(), dcMeta.getZone(), routeType);
+                if (monitorService == null) {
+                    continue;
+                }
+
+                Map<Long, Map<MonitorService, Set<String>>> clustersByOrg = clusterByBeaconSystemOrg.get(beaconSystem);
+                clustersByOrg.computeIfAbsent(orgId, ignored -> new HashMap<>())
+                        .computeIfAbsent(monitorService, ignored -> new HashSet<>())
+                        .add(clusterMeta.getId());
             }
         }
 
+        fillMonitorServicePlaceholders(clusterByBeaconSystemOrg, orgIds, routeType);
         return clusterByBeaconSystemOrg;
+    }
+
+    /**
+     * Ensure each org exposes every configured {@link MonitorService}, even when no cluster matches.
+     * Cleanup jobs rely on MonitorService -> empty Set entries to unregister stale beacon clusters.
+     */
+    private void fillMonitorServicePlaceholders(
+            Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clusterByBeaconSystemOrg,
+            Set<Long> orgIds, BeaconRouteType routeType) {
+        Map<Long, List<MonitorService>> servicesByOrg = getAllServices(routeType);
+        clusterByBeaconSystemOrg.values().forEach(clustersByOrg -> orgIds.forEach(orgId -> {
+            List<MonitorService> services = servicesByOrg.get(orgId);
+            if (CollectionUtils.isEmpty(services)) {
+                return;
+            }
+            Map<MonitorService, Set<String>> byService = clustersByOrg.get(orgId);
+            services.forEach(service -> byService.computeIfAbsent(service, ignored -> new HashSet<>()));
+        }));
     }
 
     private BeaconSystem resolveBeaconSystemByRouteType(ClusterType clusterType, BeaconRouteType routeType) {

@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DelayPingAc
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
-import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -72,8 +71,6 @@ public class DelayActionFactory implements RedisHealthCheckActionFactory<DelayAc
         ClusterType clusterType = instance.getCheckInfo().getClusterType();
         if (clusterType.supportMultiActiveDC()) {
             delayAction = new CRDTDelayAction(scheduled, instance, executors, pingService, foundationService);
-        } else if (activeDcCheckerSubscribeMasterTypeInstance(instance)) {
-            delayAction = new HeteroDelayAction(scheduled, instance, executors, pingService, foundationService);
         } else {
             delayAction = new DelayAction(scheduled, instance, executors, pingService, foundationService);
         }
@@ -96,20 +93,6 @@ public class DelayActionFactory implements RedisHealthCheckActionFactory<DelayAc
         });
 
         return delayAction;
-    }
-
-
-    private boolean activeDcCheckerSubscribeMasterTypeInstance(RedisHealthCheckInstance instance) {
-        String currentDc = foundationService.getDataCenter();
-        String activeDc = instance.getCheckInfo().getActiveDc();
-        if (!currentDc.equalsIgnoreCase(activeDc)) {
-            return false;
-        }
-        String azGroupType = instance.getCheckInfo().getAzGroupType();
-        if (StringUtil.isEmpty(azGroupType)) {
-            return false;
-        }
-        return ClusterType.lookup(azGroupType) == ClusterType.SINGLE_DC;
     }
 
 }

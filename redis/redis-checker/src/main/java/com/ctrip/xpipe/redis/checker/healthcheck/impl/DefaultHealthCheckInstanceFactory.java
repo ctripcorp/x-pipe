@@ -25,6 +25,7 @@ import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -140,8 +141,9 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         Integer orgId = clusterMeta.getOrgId();
         info.setClusterOrgId(orgId == null ? -1 : orgId);
         info.isMaster(redisMeta.isMaster());
-        info.setAzGroupType(clusterMeta.getAzGroupType());
-        info.setAsymmetricCluster(metaCache.isAsymmetricCluster(info.getClusterId()));
+        if (redisMeta.getCreateTime() != null) {
+            info.setCreateTime(new Date(redisMeta.getCreateTime()));
+        }
         if (clusterType.supportSingleActiveDC()) {
             info.setCrossRegion(metaCache.isCrossRegion(info.getActiveDc(), info.getDcId()));
             info.setShardDbId(redisMeta.parent().getDbId());
@@ -159,8 +161,6 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
         ClusterInstanceInfo info = getClusterInstanceInfo(clusterMeta, clusterType);
-        info.setAzGroupType(clusterMeta.getAzGroupType());
-        info.setAsymmetricCluster(metaCache.isAsymmetricCluster(clusterMeta.getId()));
         HealthCheckConfig config = new DefaultHealthCheckConfig(checkerConfig, dcRelationsService);
 
         instance.setInstanceInfo(info).setHealthCheckConfig(config);
@@ -171,19 +171,13 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     private ClusterInstanceInfo getClusterInstanceInfo(ClusterMeta clusterMeta, ClusterType clusterType) {
-        Set<String> dcs = new HashSet<>();
-        if (clusterMeta.getDcs() != null && !clusterMeta.getDcs().isEmpty()) {
-            dcs.addAll(Arrays.asList(clusterMeta.getDcs().toLowerCase().split("\\s*,\\s*")));
-        }
+        Set<String> backupDcs = new HashSet<>();
         if (clusterMeta.getBackupDcs() != null && !clusterMeta.getBackupDcs().isEmpty()) {
-            dcs.addAll(Arrays.asList(clusterMeta.getBackupDcs().toLowerCase().split("\\s*,\\s*")));
-        }
-        if (clusterMeta.getActiveDc() != null) {
-            dcs.add(clusterMeta.getActiveDc().toLowerCase());
+            backupDcs.addAll(Arrays.asList(clusterMeta.getBackupDcs().toLowerCase().split("\\s*,\\s*")));
         }
         DefaultClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
                 clusterType, clusterMeta.getOrgId(), clusterMeta.getLastModifiedTime());
-        info.setDcs(new ArrayList<>(dcs));
+        info.setBackupDcs(Lists.newArrayList(backupDcs));
         return info;
     }
 
@@ -256,7 +250,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         List<ClusterHealthCheckActionFactory<?>> clusterHealthCheckActionFactories = clusterHealthCheckFactoriesByClusterType.get(instance.getCheckInfo().getClusterType());
         if (clusterHealthCheckActionFactories == null) return;
         ClusterInstanceInfo info = instance.getCheckInfo();
-        boolean isBackupDcAndCrossRegion = ClusterType.ONE_WAY == info.getClusterType() && metaCache.isBackupDcAndCrossRegion(currentDcId, info.getActiveDc(), info.getDcs());
+        boolean isBackupDcAndCrossRegion = ClusterType.ONE_WAY == info.getClusterType() && metaCache.isBackupDcAndCrossRegion(currentDcId, info.getActiveDc(), info.getBackupDcs());
         for (ClusterHealthCheckActionFactory<?> factory : clusterHealthCheckActionFactories) {
             if (factory instanceof SiteLeaderAwareHealthCheckActionFactory) {
                 if (!isBackupDcAndCrossRegion || factory instanceof CrossRegionSupport) {

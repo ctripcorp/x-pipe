@@ -301,7 +301,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
                 .setRedisIp(addr.getKey().trim())
                 .setRedisPort(addr.getValue())
                 .setRedisRole(role.trim())
-                .setRunId("unknown");
+                .setRunId("unknown")
+                .setAzId(0L);
     }
 
     @Override
@@ -503,9 +504,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             }
         }
 
-        if (metaCache.isDcClusterMigratable(clusterName, dcName)) {
-            monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId(), cluster.getClusterLastModifiedTime());
-        }
+        monitorNotifier.notifyClusterUpdate(clusterName, dcName, cluster.getClusterOrgId(), cluster.getClusterLastModifiedTime());
     }
 
     private void updateRedises(List<RedisTbl> origin, List<RedisTbl> target) {
@@ -546,6 +545,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             proto.setId(redis.getId()).setRedisIp(redis.getRedisIp()).setRedisPort(redis.getRedisPort())
                     .setKeeperActive(redis.isKeeperActive()).setKeepercontainerId(redis.getKeepercontainerId());
 
+            Long azId = redis.getAzId();
+            proto.setAzId(azId != null && azId > 0 ? azId : 0L);
             proto.setMaster(redis.isMaster());
             if (!StringUtil.isEmpty(redis.getRedisRole())) {
                 proto.setRedisRole(redis.getRedisRole());

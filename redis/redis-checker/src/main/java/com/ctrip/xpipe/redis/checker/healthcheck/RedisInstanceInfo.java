@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -33,5 +34,7 @@ public interface RedisInstanceInfo extends CheckInfo {
     Long getShardDbId();
 
     Map<Long, String> getActiveDcAllShardIds();
+
+    Date getCreateTime();
 
 }

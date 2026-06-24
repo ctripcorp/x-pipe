@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.checker.alert.manager.AlertPolicyManagerTest;
 import com.ctrip.xpipe.redis.checker.alert.message.holder.DefaultAlertEntityHolderTest;
 import com.ctrip.xpipe.redis.checker.alert.message.subscriber.AlertEntityDelaySubscriberTest;
 import com.ctrip.xpipe.redis.checker.alert.message.subscriber.AlertRecoverySubscriberTest;
+import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBeanTest;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfigTest;
 import com.ctrip.xpipe.redis.checker.controller.CheckerHealthControllerTest;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessageTest;
@@ -17,9 +18,11 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedis
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedisConfigCheckRuleActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.CRDTDelayActionControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.gtidgap.GtidGapCheckActionControllerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.gtidgap.GtidGapCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MetricDelayListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CRDTDelayPingActionCollectorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultAggregatorPullServiceTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollectorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.ClusterStatusAdjustCommandTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.InstanceHealthStatusCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.InstanceHealthStatusConsistenceInspectorTest;
@@ -27,7 +30,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.Def
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.TestAbstractHealthEventHandlerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.OuterClientServiceProcessorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.DefaultRouteHealthEventProcessorTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.HeteroRouteHealthEventProcessorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContextTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRuleTest;
@@ -94,6 +96,7 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses(value = {
+        CommonConfigBeanTest.class,
         DefaultCheckerDbConfigTest.class,
 
         DefaultSentinelHelloCollectorTest.class,
@@ -128,6 +131,7 @@ import org.junit.runners.Suite;
         DefaultAlertEntityHolderTest.class,
         DefaultDcMetaChangeManagerTest.class,
         DelayActionTest.class,
+        MetricDelayListenerTest.class,
         CRDTDelayActionControllerTest.class,
         CurrentDcSentinelHelloCollectorTest.class,
         InfoReplicationActionTest.class,
@@ -158,7 +162,7 @@ import org.junit.runners.Suite;
 
         SentinelHelloTest.class,
         HealthStatusTest.class,
-        HeteroHealthStatusTest.class,
+
         OuterClientServiceProcessorTest.class,
         InstanceHealthStatusCollectorTest.class,
         InstanceHealthStatusConsistenceInspectorTest.class,
@@ -176,7 +180,6 @@ import org.junit.runners.Suite;
         SentinelHelloCheckActionFactoryTest.class,
         SentinelHelloCheckActionTest.class,
         DefaultRouteHealthEventProcessorTest.class,
-        HeteroRouteHealthEventProcessorTest.class,
         OneWaySentinelHelloCheckControllerTest.class,
         CurrentDcSentinelHelloCheckControllerTest.class,
         CrossDcSentinelHelloCheckControllerTest.class,
@@ -198,9 +201,6 @@ import org.junit.runners.Suite;
         AlertManagerTest.class,
 
         TestConnectProxyWithProxyClient.class,
-
-        GtidGapCheckActionTest.class,
-        GtidGapCheckActionControllerTest.class,
 
         DefaultHealthCheckConfigTest.class,
         DefaultRouteChooserTest.class,

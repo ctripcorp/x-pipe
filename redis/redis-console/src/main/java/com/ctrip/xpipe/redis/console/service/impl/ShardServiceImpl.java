@@ -539,8 +539,9 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 		if (consoleConfig.shouldNotifyClusterTypes().contains(clusterType.toString()))
 			notifier.notifyClusterUpdate(clusterName, dcs);
-		if (metaCache.anyDcMigratable(clusterName)) {
-			monitorNotifier.notifyClusterUpdate(clusterName, cluster.getClusterOrgId(), cluster.getClusterLastModifiedTime());
+		for (String dc : dcs) {
+			monitorNotifier.notifyClusterUpdate(clusterName, dc, cluster.getClusterOrgId(),
+					cluster.getClusterLastModifiedTime());
 		}
 	}
 

@@ -10,4 +10,8 @@ public interface ClusterMonitorModifiedNotifier {
 
     void notifyClusterDelete(final String clusterName, long orgId);
 
+    void notifyClusterUpdate(final String clusterName, String dc, long orgId, String lastModifyTime);
+
+    void notifyClusterDelete(final String clusterName, String dc, long orgId);
+
 }

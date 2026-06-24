@@ -40,31 +40,30 @@ public class SentinelBeaconClusterMonitorCheck extends AbstractSiteLeaderInterva
             return;
         }
 
-        Map<BeaconSystem, Map<Long, Set<String>>> clustersByBeaconSystemOrg =
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clustersByBeaconSystemOrg =
                 monitorManager.clustersByBeaconSystemOrg(BeaconRouteType.SENTINEL);
         if (clustersByBeaconSystemOrg == null) {
             logger.debug("[doCheck][sentinel beacon] skip for no meta");
             return;
         }
 
-        clustersByBeaconSystemOrg.forEach((beaconSystem, clustersByOrg) -> clustersByOrg.forEach((orgId, clusters) -> {
-            List<MonitorService> monitorServices = services.get(orgId);
-            if (monitorServices == null || monitorServices.isEmpty()) {
-                return;
-            }
-            // For sentinel mode cleanup, disable protection to avoid stale registrations after large DR switches.
-            new UnknownClusterExcludeJob(beaconSystem, clusters, monitorServices, Integer.MAX_VALUE)
-                    .execute()
-                    .addListener(commandFuture -> {
-                        if (commandFuture.isSuccess()) {
-                            logger.info("[doCheck][sentinel beacon][{}] unregister clusters {}", orgId, commandFuture.get());
-                        } else if (commandFuture.cause() instanceof TooManyNeedExcludeClusterException) {
-                            alertManager.alert("", "", null, ALERT_TYPE.TOO_MANY_CLUSTERS_EXCLUDE_FROM_BEACON,
-                                    ((TooManyNeedExcludeClusterException) commandFuture.cause()).getNeedExcludeClusters().toString());
-                        } else {
-                            logger.info("[doCheck][sentinel beacon][{}] unregister clusters fail", orgId, commandFuture.cause());
-                        }
-                    });
+        clustersByBeaconSystemOrg.forEach((beaconSystem, clustersByOrg) -> clustersByOrg.forEach((orgId, clustersByService) -> {
+            clustersByService.forEach((monitorService, clusters) -> {
+                new UnknownClusterExcludeJob(beaconSystem, clusters, Collections.singletonList(monitorService), Integer.MAX_VALUE)
+                        .execute()
+                        .addListener(commandFuture -> {
+                            if (commandFuture.isSuccess()) {
+                                logger.info("[doCheck][sentinel beacon][{}][{}] unregister clusters {}", orgId,
+                                        monitorService.getName(), commandFuture.get());
+                            } else if (commandFuture.cause() instanceof TooManyNeedExcludeClusterException) {
+                                alertManager.alert("", "", null, ALERT_TYPE.TOO_MANY_CLUSTERS_EXCLUDE_FROM_BEACON,
+                                        ((TooManyNeedExcludeClusterException) commandFuture.cause()).getNeedExcludeClusters().toString());
+                            } else {
+                                logger.info("[doCheck][sentinel beacon][{}][{}] unregister clusters fail", orgId,
+                                        monitorService.getName(), commandFuture.cause());
+                            }
+                        });
+            });
         }));
     }
 }

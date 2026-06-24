@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.checker.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
@@ -27,6 +28,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -64,7 +66,7 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
     @Mock
     private ConsoleConfig consoleConfig;
 
-    private  Map<Long, List<MonitorService>> getOrgServicesMap() {
+    private Map<Long, List<MonitorService>> getOrgServicesMap() {
         Map<Long, List<MonitorService>> orgServicesMap = new HashMap<>();
         orgServicesMap.put(0L, Collections.singletonList(monitorService0));
         orgServicesMap.put(1L, Collections.singletonList(monitorService1));
@@ -73,12 +75,16 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
 
     @Before
     public void setupBeaconClusterMonitorCheckTest() throws NoSuchFieldException, IllegalAccessException {
+        Mockito.when(monitorService0.getWeight()).thenReturn(MonitorService.MAX_WEIGHT);
+        Mockito.when(monitorService1.getWeight()).thenReturn(MonitorService.MAX_WEIGHT);
         Mockito.when(monitorManager.getAllServices()).thenReturn(getOrgServicesMap());
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(mockXPipeMeta());
         Mockito.when(config.getBeaconSupportZones()).thenReturn(Collections.emptySet());
         Mockito.when(config.monitorUnregisterProtectCount()).thenReturn(10);
         Mockito.when(consoleConfig.getServerMode()).thenReturn("CHECKER");
-        Map<BeaconSystem, Map<Long, Set<String>>> mockmap = mockClustersByBeaconSystemOrg(getOrgServicesMap(), metaCache, config);
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> mockmap =
+                mockClustersByBeaconSystemOrg(getOrgServicesMap(), metaCache, config);
+        Mockito.when(monitorManager.clustersByBeaconSystemOrg(Mockito.any())).thenReturn(mockmap);
         Mockito.when(monitorManager.clustersByBeaconSystemOrg()).thenReturn(mockmap);
     }
 
@@ -86,8 +92,8 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
     public void testDoCheck() {
         Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Sets.newHashSet("cluster2","hetero-cluster2"));
         Mockito.when(monitorService1.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Sets.newHashSet("cluster1","hetero-cluster1"));
-        Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName())).thenReturn(Sets.newHashSet("bi-cluster2"));
-        Mockito.when(monitorService1.fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName())).thenReturn(Sets.newHashSet("bi-cluster1"));
+        Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName())).thenReturn(Collections.emptySet());
+        Mockito.when(monitorService1.fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName())).thenReturn(Collections.emptySet());
         check.doAction();
 
         Mockito.verify(monitorService0, Mockito.timeout(1000)).fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName());
@@ -103,9 +109,10 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
 
         Mockito.when(config.monitorUnregisterProtectCount()).thenReturn(1);
         Set<String> oneWayNeedExcludeClusters = Sets.newHashSet("clusterx", "clustery");
-        Set<String> biNeedExcludeClusters = Sets.newHashSet("bi-clusterx", "bi-clustery");
         Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Sets.newHashSet("clusterx", "clustery"));
-        Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName())).thenReturn(Sets.newHashSet("bi-clusterx", "bi-clustery"));
+        Mockito.when(monitorService1.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Collections.emptySet());
+        Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName())).thenReturn(Collections.emptySet());
+        Mockito.when(monitorService1.fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName())).thenReturn(Collections.emptySet());
 
         check.doAction();
         Mockito.verify(monitorService0, Mockito.timeout(1000)).fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName());
@@ -114,18 +121,18 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
         Mockito.verify(monitorService1, Mockito.timeout(1000)).fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName());
         Mockito.verify(monitorService0, Mockito.never()).unregisterCluster(anyString(), anyString());
         Mockito.verify(alertManager).alert("", "", null, ALERT_TYPE.TOO_MANY_CLUSTERS_EXCLUDE_FROM_BEACON, oneWayNeedExcludeClusters.toString());
-        Mockito.verify(alertManager).alert("", "", null, ALERT_TYPE.TOO_MANY_CLUSTERS_EXCLUDE_FROM_BEACON, biNeedExcludeClusters.toString());
     }
 
     @Test
-    public void testClusterActiveDcZoneNotSupport() throws NoSuchFieldException, IllegalAccessException {
+    public void testClusterActiveDcZoneNotSupport() {
         Mockito.when(config.getBeaconSupportZones()).thenReturn(Collections.singleton("FRA"));
         Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Sets.newHashSet("cluster2","hetero-cluster2"));
         Mockito.when(monitorService1.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Sets.newHashSet("cluster1","hetero-cluster1"));
         Mockito.when(monitorService0.fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName())).thenReturn(Sets.newHashSet("bi-cluster2"));
         Mockito.when(monitorService1.fetchAllClusters(BeaconSystem.XPIPE_BI_DIRECTION.getSystemName())).thenReturn(Sets.newHashSet("bi-cluster1"));
 
-        Map<BeaconSystem, Map<Long, Set<String>>> mockmap = mockClustersByBeaconSystemOrg(getOrgServicesMap(), metaCache, config);
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> mockmap = buildPlaceholderExpectedMap();
+        Mockito.when(monitorManager.clustersByBeaconSystemOrg(Mockito.any())).thenReturn(mockmap);
         Mockito.when(monitorManager.clustersByBeaconSystemOrg()).thenReturn(mockmap);
 
         check.doAction();
@@ -143,14 +150,15 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
     }
 
     @Test
-    public void testUnregisterActiveDcNotSupported() throws NoSuchFieldException, IllegalAccessException {
+    public void testUnregisterActiveDcNotSupported() {
         XpipeMeta xpipeMeta = new XpipeMeta();
         xpipeMeta.addDc(new DcMeta("jq").setZone("SHA").addCluster(new ClusterMeta("cluster1").setOrgId(1).setType(ClusterType.ONE_WAY.name()).setActiveDc("fra")))
                 .addDc(new DcMeta("fra").setZone("FRA").addCluster(new ClusterMeta("cluster1").setOrgId(1).setType(ClusterType.ONE_WAY.name()).setActiveDc("fra")));
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
         Mockito.when(config.getBeaconSupportZones()).thenReturn(Collections.singleton("SHA"));
 
-        Map<BeaconSystem, Map<Long, Set<String>>> mockmap = mockClustersByBeaconSystemOrg(getOrgServicesMap(), metaCache, config);
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> mockmap = buildPlaceholderExpectedMap();
+        Mockito.when(monitorManager.clustersByBeaconSystemOrg(Mockito.any())).thenReturn(mockmap);
         Mockito.when(monitorManager.clustersByBeaconSystemOrg()).thenReturn(mockmap);
 
         Mockito.when(monitorService1.fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName())).thenReturn(Sets.newHashSet("cluster1"));
@@ -158,6 +166,21 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
 
         Mockito.verify(monitorService1, Mockito.timeout(1000)).fetchAllClusters(BeaconSystem.XPIPE_ONE_WAY.getSystemName());
         Mockito.verify(monitorService1, Mockito.timeout(1000)).unregisterCluster(BeaconSystem.XPIPE_ONE_WAY.getSystemName(), "cluster1");
+    }
+
+    private Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> buildPlaceholderExpectedMap() {
+        Set<String> placeholder = Sets.newHashSet("__placeholder__");
+        Map<MonitorService, Set<String>> org0 = Collections.singletonMap(monitorService0, placeholder);
+        Map<MonitorService, Set<String>> org1 = Collections.singletonMap(monitorService1, new HashSet<>(placeholder));
+        Map<Long, Map<MonitorService, Set<String>>> orgMap = new HashMap<>();
+        orgMap.put(0L, org0);
+        orgMap.put(1L, org1);
+
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> map = new HashMap<>();
+        for (BeaconSystem beaconSystem : BeaconSystem.values()) {
+            map.put(beaconSystem, orgMap);
+        }
+        return map;
     }
 
     private XpipeMeta mockXPipeMeta() {
@@ -174,9 +197,11 @@ public class BeaconClusterMonitorCheckTest extends AbstractConsoleTest {
         return xpipeMeta;
     }
 
-    private Map<BeaconSystem, Map<Long, Set<String>>> mockClustersByBeaconSystemOrg(Map<Long, List<MonitorService>> orgServicesMap, MetaCache meta, ConsoleCommonConfig consoleCommonConfig) throws NoSuchFieldException, IllegalAccessException {
+    private Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> mockClustersByBeaconSystemOrg(
+            Map<Long, List<MonitorService>> orgServicesMap, MetaCache meta, ConsoleCommonConfig consoleCommonConfig)
+            throws NoSuchFieldException, IllegalAccessException {
         Map<Long, DefaultMonitorClusterManager> clusterManagers = new HashMap<>();
-        for(Map.Entry<Long, List<MonitorService>> entry : orgServicesMap.entrySet()) {
+        for (Map.Entry<Long, List<MonitorService>> entry : orgServicesMap.entrySet()) {
             clusterManagers.put(entry.getKey(), new DefaultMonitorClusterManager(meta, 1, entry.getValue(), 1));
         }
 

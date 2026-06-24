@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.service.migration.exception.MigrationConfli
 import com.ctrip.xpipe.redis.console.service.migration.exception.MigrationCrossZoneException;
 import com.ctrip.xpipe.redis.console.service.migration.exception.NoAvailableDcException;
 import com.ctrip.xpipe.redis.console.service.migration.exception.UnknownTargetDcException;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -47,6 +48,9 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
     @Mock
     private DcRelationsService dcRelationsService;
 
+    @Mock
+    private HeteroMigrationSupport heteroMigrationSupport;
+
     private MigrationClusterTbl migrationClusterTbl;
 
     private ClusterTbl clusterTbl;
@@ -64,9 +68,9 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
     @Before
     public void setup() {
         migrationRequest = new BeaconMigrationRequest();
-        chooseTargetDcCmd = new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, dcRelationsService);
+        chooseTargetDcCmd = new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, dcRelationsService, heteroMigrationSupport);
         migrationClusterTbl = new MigrationClusterTbl();
-        clusterTbl = new ClusterTbl().setClusterName("cluster1").setId(1);
+        clusterTbl = new ClusterTbl().setClusterName("cluster1").setId(1).setClusterType("ONE_WAY");
         dc0 = new DcTbl().setDcName("dc0").setId(1);
         dc1 = new DcTbl().setDcName("dc1").setId(2);
         dc2 = new DcTbl().setDcName("dc2").setId(3);
@@ -82,6 +86,7 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
         when(dcCache.find(dc1.getDcName())).thenReturn(dc1);
         when(dcCache.find(dc2.getId())).thenReturn(dc2);
         when(dcClusterService.find(2, 1)).thenReturn(new DcClusterTbl());
+        when(heteroMigrationSupport.isHeteroCluster(clusterTbl)).thenReturn(false);
     }
 
     @Test

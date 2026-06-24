@@ -296,6 +296,7 @@
     <member name="redis-master" field="redis_master" value-type="long" length="20" />
     <member name="keepercontainer-id" field="keepercontainer_id" value-type="long" length="20" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
+    <member name="create-time" field="create_time" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <member name="deleted-at" field="deleted_at" value-type="int" length="10" nullable="false" />
     <var name="key-id" value-type="long" key-member="id" />

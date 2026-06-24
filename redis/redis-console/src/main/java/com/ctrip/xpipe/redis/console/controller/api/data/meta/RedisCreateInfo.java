@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.controller.api.data.meta;
 
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.IpUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -58,6 +59,7 @@ public class RedisCreateInfo extends AbstractCreateInfo {
         return this;
     }
 
+    @JsonIgnore
     public List<Pair<String,Integer>> getRedisAddresses() {
         if(redises == null || StringUtil.isEmpty(redises))
             throw new IllegalArgumentException("No redises posted");
@@ -86,6 +88,7 @@ public class RedisCreateInfo extends AbstractCreateInfo {
         return this;
     }
 
+    @JsonIgnore
     public Map<Pair<String, Integer>, String> getAddrToAzName() {
         Map<Pair<String, Integer>, String> addrToAzName = new HashMap<>();
         if (redisesWithAz != null && !redisesWithAz.isEmpty()) {

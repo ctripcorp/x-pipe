@@ -26,8 +26,10 @@ import org.junit.runners.Suite;
         MigrationApiTest.class,
 
         MigrationPreCheckCmdTest.class,
+        MigrationPreCheckCmdHeteroTest.class,
         MigrationFetchProcessingEventCmdTest.class,
         MigrationChooseTargetDcCmdTest.class,
+        MigrationChooseTargetDcCmdHeteroTest.class,
         MigrationBuildEventCmdTest.class,
         MigrationDoExecuteCmdTest.class,
         MigrationServiceImplSentinelBeaconTest.class,

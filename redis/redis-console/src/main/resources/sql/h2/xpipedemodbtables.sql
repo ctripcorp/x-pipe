@@ -178,6 +178,7 @@ create table REDIS_TBL
 	redis_master bigint unsigned default null,
 	keepercontainer_id bigint unsigned default null,
    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
+	create_time datetime not null default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0,
     deleted_at int not null default 0,
     az_id bigint(20) unsigned NOT NULL DEFAULT 0,

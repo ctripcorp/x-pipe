@@ -215,23 +215,37 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
         return clusterMeta;
     }
 
-    /**
-     * Perform differently with migrating cluster
-     **/
     @Override
     public long getClusterMetaCurrentPrimaryDc(DcTbl dcInfo, ClusterTbl clusterInfo) {
+        return resolvePrimaryDcDuringMigration(dcInfo, clusterInfo, clusterInfo.getActivedcId(),
+                "getClusterMetaCurrentPrimaryDc");
+    }
+
+    @Override
+    public long getAzGroupClusterMetaCurrentPrimaryDc(DcTbl dcInfo, ClusterTbl clusterInfo,
+                                                      AzGroupClusterEntity azGroupCluster) {
+        long activeDcId = azGroupCluster.getActiveAzId();
+        if (!ClusterType.isSameClusterType(azGroupCluster.getAzGroupClusterType(), ClusterType.ONE_WAY)) {
+            return activeDcId;
+        }
+        return resolvePrimaryDcDuringMigration(dcInfo, clusterInfo, activeDcId,
+                "getAzGroupClusterMetaCurrentPrimaryDc");
+    }
+
+    private long resolvePrimaryDcDuringMigration(DcTbl dcInfo, ClusterTbl clusterInfo, long defaultActiveDcId,
+                                                 String logPrefix) {
         if (ClusterStatus.isSameClusterStatus(clusterInfo.getStatus(), ClusterStatus.Migrating)) {
             MigrationClusterTbl migrationCluster = migrationService.findMigrationCluster(clusterInfo.getMigrationEventId(), clusterInfo.getId());
             if (migrationCluster != null && dcInfo.getId() == migrationCluster.getDestinationDcId()) {
-                logger.info("[getClusterMetaCurrentPrimaryDc][{}][{}] migrating, return dst dc {}",
-                        dcInfo.getDcName(), clusterInfo.getClusterName(), migrationCluster.getDestinationDcId());
+                logger.info("[{}][{}][{}] migrating, return dst dc {}",
+                        logPrefix, dcInfo.getDcName(), clusterInfo.getClusterName(), migrationCluster.getDestinationDcId());
                 return migrationCluster.getDestinationDcId();
             } else if (null == migrationCluster) {
-                logger.info("[getClusterMetaCurrentPrimaryDc][{}][{}] migrating but no event {}, return origin active dc {}",
-                        dcInfo.getDcName(), clusterInfo.getClusterName(), clusterInfo.getMigrationEventId(), clusterInfo.getActivedcId());
+                logger.info("[{}][{}][{}] migrating but no event {}, return origin active dc {}",
+                        logPrefix, dcInfo.getDcName(), clusterInfo.getClusterName(), clusterInfo.getMigrationEventId(), defaultActiveDcId);
             }
         }
-        return clusterInfo.getActivedcId();
+        return defaultActiveDcId;
     }
 
     public void setMigrationService(MigrationService migrationService) {

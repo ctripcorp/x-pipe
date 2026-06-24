@@ -661,7 +661,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
-    public List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, int begGno, int endGno) throws IOException {
+    public List<BacklogOffsetReplicationProgress> locateCmdSegment(String uuid, long begGno, long endGno) throws IOException {
         if (null == indexStore) {
             return Collections.emptyList();
         }

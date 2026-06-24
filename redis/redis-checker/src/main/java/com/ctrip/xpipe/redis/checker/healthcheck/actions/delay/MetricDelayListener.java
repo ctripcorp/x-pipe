@@ -3,12 +3,15 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.delay;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
+import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.Date;
 
 
 /**
@@ -25,8 +28,17 @@ public class MetricDelayListener extends AbstractDelayActionListener implements 
 
     private static final double THOUSAND = 1000.0;
 
+    private static final long MILLIS_PER_MINUTE = 60_000L;
+
+    private static final String TAG_IS_NEW_YES = "1";
+
+    private static final String TAG_IS_NEW_NO = "0";
+
     @Autowired
     private FoundationService foundationService;
+
+    @Autowired
+    private CommonConfigBean commonConfigBean;
 
     private MetricProxy proxy = ServicesUtil.getMetricProxy();
 
@@ -39,15 +51,22 @@ public class MetricDelayListener extends AbstractDelayActionListener implements 
         data.setHostPort(info.getHostPort());
 
         data.setClusterType(info.getClusterType());
-        data.addTag("delayType", context.getDelayType());
+        Date createTime = info.getCreateTime();
+        int minutes = commonConfigBean.getDelayMetricNewInstanceMinutes();
+        long recvTime = context.getRecvTimeMilli();
+        boolean isNew = isNewInstance(createTime, recvTime, minutes);
+        data.addTag("isNew", isNew ? TAG_IS_NEW_YES : TAG_IS_NEW_NO);
         data.addTag("crossDc", String.valueOf(!foundationService.getDataCenter().equalsIgnoreCase(info.getDcId())));
         data.addTag("crossRegion", String.valueOf(info.isCrossRegion()));
-        if (context instanceof HeteroDelayActionContext) {
-            data.addTag("srcShardId", String.valueOf(((HeteroDelayActionContext) context).getShardDbId()));
-        } else {
-            data.addTag("srcShardId", "-");
-        }
+        data.addTag("srcShardId", "-");
         return data;
+    }
+
+    static boolean isNewInstance(Date createTime, long recvTimeMilli, int windowMinutes) {
+        if (createTime == null) {
+            return false;
+        }
+        return recvTimeMilli < createTime.getTime() + windowMinutes * MILLIS_PER_MINUTE;
     }
 
     @Override

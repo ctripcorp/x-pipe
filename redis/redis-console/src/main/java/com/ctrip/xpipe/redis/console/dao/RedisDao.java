@@ -13,6 +13,7 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -87,6 +88,9 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
             Map<Long, String> cache = new HashMap<Long, String>();
             for (RedisTbl redis : redises) {
                 checkRedisNotExist(redis);
+                if (redis.getCreateTime() == null) {
+                    redis.setCreateTime(new Date());
+                }
                 if (redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER)) {
                     if (null == cache.get(redis.getDcClusterShardId())) {
                         String newKeeperId = getToCreateKeeperId(redis);
@@ -127,6 +131,9 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
 
         if (redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER)) {
             redis.setRunId(getToCreateKeeperId(redis));
+        }
+        if (redis.getCreateTime() == null) {
+            redis.setCreateTime(new Date());
         }
         redisTblDao.insertBatch(redis);
         return redisTblDao.findWithBasicConfigurations(redis.getRunId(), redis.getDcClusterShardId(), redis.getRedisIp(), redis.getRedisPort(), RedisTblEntity.READSET_FULL);

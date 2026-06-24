@@ -4,13 +4,14 @@ import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,49 +41,45 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
     }
 
     @Override
-    public Set<MonitorGroupMeta> buildBeaconGroups(String cluster) {
-        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        if (null == xpipeMeta) return Collections.emptySet();
-
-        Map<String, ClusterMeta> dcClusterMetas = new HashMap<>();
-        xpipeMeta.getDcs().forEach((dc, dcMeta) -> {
-            ClusterMeta clusterMeta = dcMeta.getClusters().get(cluster);
-            if (null != clusterMeta) {
-                dcClusterMetas.put(dc, clusterMeta);
-            }
-        });
-
-        return buildBeaconGroups(dcClusterMetas);
-    }
-
-    @Override
-    public Set<MonitorGroupMeta> buildCurrentBeaconGroups(String cluster) {
-        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        if (null == xpipeMeta) throw new DataNotFoundException("meta not ready");
-
-        Map<String, ClusterMeta> dcClusterMetas = new HashMap<>();
-        xpipeMeta.getDcs().values().forEach(dcMeta -> {
-            if (dcMeta.getClusters().containsKey(cluster)) {
-                dcClusterMetas.put(dcMeta.getId(), dcMeta.getClusters().get(cluster));
-            }
-        });
-
-        if (dcClusterMetas.isEmpty()) throw new DataNotFoundException("no related dcs found for " + cluster);
-        return buildBeaconGroups(dcClusterMetas);
-    }
-
-    @Override
-    public Set<MonitorShardMeta> buildBeaconShards(String cluster, String dc, Map<String, HostPort> shardMasters) {
-        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        if (xpipeMeta == null || xpipeMeta.getDcs() == null) {
+    public Set<MonitorGroupMeta> buildDrBeaconGroups(String cluster, String dc) {
+        ClusterMeta dcClusterMeta = getClusterMeta(cluster, dc);
+        if (dcClusterMeta == null) {
             return Collections.emptySet();
         }
-        ClusterMeta clusterMeta = Optional.ofNullable(xpipeMeta.getDcs().get(dc))
-                .map(dcMeta -> dcMeta.getClusters().get(cluster))
-                .orElse(null);
+
+        if (resolveEffectiveClusterType(dcClusterMeta) != ClusterType.ONE_WAY) {
+            return Collections.emptySet();
+        }
+
+        String activeDc = dcClusterMeta.getActiveDc();
+        if (StringUtil.isEmpty(activeDc) || !isDcInSupportZones(activeDc)) {
+            return Collections.emptySet();
+        }
+
+        Set<MonitorGroupMeta> groups = new HashSet<>();
+        for (String scopeDc : resolveSameRegionDcs(dcClusterMeta)) {
+            ClusterMeta scopeClusterMeta = getClusterMeta(cluster, scopeDc);
+            if (scopeClusterMeta == null) {
+                continue;
+            }
+            scopeClusterMeta.getShards().forEach((shard, shardMeta) -> {
+                Set<HostPort> nodes = shardMeta.getRedises().stream()
+                        .map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort()))
+                        .collect(Collectors.toSet());
+                String groupName = String.join(BEACON_GROUP_SEPARATOR, shard, scopeDc);
+                groups.add(new MonitorGroupMeta(groupName, scopeDc, nodes, scopeDc.equalsIgnoreCase(activeDc)));
+            });
+        }
+        return groups;
+    }
+
+    @Override
+    public Set<MonitorShardMeta> buildSentinelBeaconShards(String cluster, String dc, Map<String, HostPort> shardMasters) {
+        ClusterMeta clusterMeta = getClusterMeta(cluster, dc);
         if (clusterMeta == null) {
             return Collections.emptySet();
         }
+        String canonicalDc = resolveCanonicalDcId(dc);
 
         Set<MonitorShardMeta> shards = new HashSet<>();
         for (Map.Entry<String, ShardMeta> entry : clusterMeta.getShards().entrySet()) {
@@ -90,7 +87,8 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
             ShardMeta shardMeta = entry.getValue();
             List<MonitorGroupMeta> groups = shardMeta.getRedises().stream().map(redisMeta -> {
                 HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
-                MonitorGroupMeta group = new MonitorGroupMeta(hostPort.toString(), dc, Collections.singleton(hostPort), redisMeta.isMaster());
+                MonitorGroupMeta group = new MonitorGroupMeta(hostPort.toString(), canonicalDc,
+                        Collections.singleton(hostPort), redisMeta.isMaster());
                 group.setAz(redisMeta.getAz());
                 return group;
             }).collect(Collectors.toList());
@@ -131,44 +129,90 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
     }
 
     @Override
-    public boolean compareMetaWithXPipe(String clusterName, Set<MonitorGroupMeta> beaconGroups) {
-        Set<MonitorGroupMeta> metaFromXPipe = buildBeaconGroups(clusterName);
-        if (metaFromXPipe.isEmpty()) return false;
+    public boolean compareDrBeaconMetaWithXPipe(String clusterName, Set<MonitorGroupMeta> beaconGroups) {
+        String activeDc = metaCache.getActiveDc(clusterName);
+        if (StringUtil.isEmpty(activeDc)) {
+            return false;
+        }
+        return compareDrBeaconMetaWithXPipe(clusterName, activeDc, beaconGroups);
+    }
 
+    @Override
+    public boolean compareDrBeaconMetaWithXPipe(String clusterName, String dc, Set<MonitorGroupMeta> beaconGroups) {
+        Set<MonitorGroupMeta> metaFromXPipe = buildDrBeaconGroups(clusterName, dc);
+        if (metaFromXPipe.isEmpty()) {
+            return false;
+        }
         return metaFromXPipe.equals(beaconGroups);
     }
 
-    private Set<MonitorGroupMeta> buildBeaconGroups(Map<String, ClusterMeta> dcClusterMetas) {
-        Set<MonitorGroupMeta> groups = new HashSet<>();
-        dcClusterMetas.forEach((dc, clusterMeta) -> {
-            if (isDcNeeded(dc, clusterMeta)) {
-                clusterMeta.getShards().forEach((shard, shardMeta) -> {
-                    Set<HostPort> nodes = shardMeta.getRedises().stream()
-                        .map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort()))
-                        .collect(Collectors.toSet());
-                    String groupName = String.join(BEACON_GROUP_SEPARATOR, shard, dc);
-                    groups.add(new MonitorGroupMeta(groupName, dc, nodes, dc.equalsIgnoreCase(clusterMeta.getActiveDc())));
-                });
-            }
-        });
-
-        return groups;
+    private ClusterMeta getClusterMeta(String cluster, String dc) {
+        DcMeta dcMeta = findDcMeta(dc);
+        if (dcMeta == null) {
+            return null;
+        }
+        return dcMeta.getClusters().get(cluster);
     }
 
-    private boolean isDcNeeded(String dc, ClusterMeta clusterMeta) {
-        if (ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)) {
-            String activeDc = clusterMeta.getActiveDc();
-            // no register cross region dcs to beacon
-            return !metaCache.isCrossRegion(activeDc, dc);
-        } else if (ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.HETERO)) {
-            return !ClusterType.isSameClusterType(clusterMeta.getAzGroupType(), ClusterType.SINGLE_DC);
-        } else {
-            XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-            Set<String> supportZones = config.getBeaconSupportZones();
-            if (null == xpipeMeta || supportZones.isEmpty()) return false;
-
-            return supportZones.stream().anyMatch(zone -> zone.equalsIgnoreCase(clusterMeta.parent().getZone()));
+    private DcMeta findDcMeta(String dc) {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null || xpipeMeta.getDcs() == null || StringUtil.isEmpty(dc)) {
+            return null;
         }
+        DcMeta dcMeta = xpipeMeta.getDcs().get(dc);
+        if (dcMeta != null) {
+            return dcMeta;
+        }
+        return xpipeMeta.getDcs().entrySet().stream()
+                .filter(entry -> entry.getKey().equalsIgnoreCase(dc))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String resolveCanonicalDcId(String dc) {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null || xpipeMeta.getDcs() == null || StringUtil.isEmpty(dc)) {
+            return dc;
+        }
+        if (xpipeMeta.getDcs().containsKey(dc)) {
+            return dc;
+        }
+        return xpipeMeta.getDcs().entrySet().stream()
+                .filter(entry -> entry.getKey().equalsIgnoreCase(dc))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(dc);
+    }
+
+    private Set<String> resolveSameRegionDcs(ClusterMeta dcClusterMeta) {
+        String activeDc = dcClusterMeta.getActiveDc();
+        Set<String> scopeDcs = new LinkedHashSet<>();
+        scopeDcs.add(activeDc);
+        if (!StringUtil.isEmpty(dcClusterMeta.getBackupDcs())) {
+            Arrays.stream(dcClusterMeta.getBackupDcs().split(","))
+                    .map(String::trim)
+                    .filter(dc -> !StringUtil.isEmpty(dc))
+                    .filter(dc -> !metaCache.isCrossRegion(activeDc, dc))
+                    .forEach(scopeDcs::add);
+        }
+        return scopeDcs;
+    }
+
+    private boolean isDcInSupportZones(String dc) {
+        Set<String> supportZones = config.getBeaconSupportZones();
+        if (supportZones.isEmpty()) {
+            return true;
+        }
+        return supportZones.stream().anyMatch(zone -> metaCache.isDcInRegion(dc, zone));
+    }
+
+    private ClusterType resolveEffectiveClusterType(ClusterMeta clusterMeta) {
+        ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
+        if (clusterType == ClusterType.HETERO && !StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
+            return ClusterType.lookup(clusterMeta.getAzGroupType());
+        }
+        return clusterType;
     }
 
     @VisibleForTesting

@@ -24,6 +24,7 @@ import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationRequest;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
@@ -59,6 +60,8 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 	private AzGroupClusterRepository azGroupClusterRepository;
 	@Autowired
 	private AzGroupCache azGroupCache;
+	@Autowired
+	private HeteroMigrationSupport heteroMigrationSupport;
 
 	@Resource( name = MigrationResources.MIGRATION_EXECUTOR )
 	private Executor executors;
@@ -217,8 +220,8 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				
 				if(null == event.getMigrationCluster(cluster.getClusterId())) {
 					event.addMigrationCluster(new DefaultMigrationCluster(executors, scheduled, event,
-						detail.getRedundantClusters(), azGroupClusterRepository, azGroupCache, dcService,
-						clusterService, shardService, redisService, migrationService));
+						detail.getRedundantClusters(), azGroupClusterRepository, azGroupCache, heteroMigrationSupport,
+						dcService, clusterService, shardService, redisService, migrationService));
 				}
 				MigrationCluster migrationCluster = event.getMigrationCluster(cluster.getClusterId());
 				DefaultMigrationShard migrationShard = new DefaultMigrationShard(migrationCluster, shard,
@@ -283,6 +286,8 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 		if (null != migrationClusters) {
 			for (final MigrationClusterTbl migrationCluster : migrationClusters) {
 				long clusterId = migrationCluster.getClusterId();
+				ClusterTbl clusterTbl = clusterService.find(clusterId);
+				Long heteroAzGroupClusterId = resolveHeteroAzGroupClusterId(clusterTbl, migrationCluster.getSourceDcId());
 				List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(clusterId);
 				Map<Long, AzGroupClusterEntity> azGroupClusterIdMap = azGroupClusters.stream()
 					.collect(Collectors.toMap(AzGroupClusterEntity::getId, Function.identity()));
@@ -299,6 +304,9 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 					for (DcClusterShardTbl dcClusterShard : dcClusterShards) {
 						long azGroupClusterId = dcClusterShard.getDcClusterInfo() == null ? 0L
 							: dcClusterShard.getDcClusterInfo().getAzGroupClusterId();
+						if (heteroAzGroupClusterId != null && azGroupClusterId != heteroAzGroupClusterId) {
+							continue;
+						}
 						if (azGroupClusterId != 0L) {
 							AzGroupClusterEntity azGroupCluster = azGroupClusterIdMap.get(azGroupClusterId);
 							if (azGroupCluster != null && ClusterType.isSameClusterType(
@@ -324,6 +332,19 @@ public class MigrationEventDao extends AbstractXpipeConsoleDAO {
 				return migrationShardTblDao.insertBatch(Lists.toArray(MigrationShardTbl.class, toCreateMigrationShards));
 			}
 		});
+	}
+
+	private Long resolveHeteroAzGroupClusterId(ClusterTbl clusterTbl, long sourceDcId) {
+		if (clusterTbl == null || !ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.HETERO)) {
+			return null;
+		}
+		DcTbl sourceDc = dcService.find(sourceDcId);
+		if (sourceDc == null) {
+			return null;
+		}
+		AzGroupClusterEntity azGroupCluster = azGroupClusterRepository.selectByClusterIdAndAz(clusterTbl.getId(),
+				sourceDc.getDcName());
+		return azGroupCluster == null ? null : azGroupCluster.getId();
 	}
 
 	@VisibleForTesting

@@ -322,7 +322,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     @Override
-    public List<Pair<Long, Long>> locateGtidRange(String uuid, int begGno, int endGno) throws IOException {
+    public List<Pair<Long, Long>> locateGtidRange(String uuid, long begGno, long endGno) throws IOException {
         List<Pair<Long, Long>> result = new ArrayList<>();
         GtidSet currentGtidSet = saveIndex();
 

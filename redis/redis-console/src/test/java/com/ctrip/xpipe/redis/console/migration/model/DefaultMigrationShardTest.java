@@ -54,6 +54,22 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
     }
 
     @Test
+    public void testPrevPrimaryDcUsesMigrationSourceDcNotClusterActiveDc() {
+        when(mockedMigrationCluster.clusterName()).thenReturn("hetero-cluster");
+        when(mockedMigrationCluster.getMigrationCluster()).thenReturn((new MigrationClusterTbl()).setClusterId(1)
+                .setSourceDcId(3L).setDestinationDcId(2L));
+
+        Map<Long, DcTbl> heteroDcs = new HashMap<>();
+        heteroDcs.put(2L, (new DcTbl()).setId(2).setDcName("dc-b"));
+        heteroDcs.put(3L, (new DcTbl()).setId(3).setDcName("dc-c"));
+
+        DefaultMigrationShard heteroShard = new DefaultMigrationShard(mockedMigrationCluster, mockedMigrationShard,
+                mockedCurrentShard, heteroDcs, mockedMigrationService, mockedCommandBuilder);
+
+        Assert.assertEquals("[DefaultMigrationShard]hetero-cluster:test-shard,dc-c->dc-b", heteroShard.toString());
+    }
+
+    @Test
     public void testCheckSuccess() {
         when(mockedCommandBuilder.buildDcCheckCommand("test-cluster", "test-shard", "dc-b", "dc-b"))
                 .thenReturn(new AbstractCommand<MetaServerConsoleService.PrimaryDcCheckMessage>() {
@@ -243,11 +259,9 @@ public class DefaultMigrationShardTest extends AbstractConsoleTest {
     private void prepareMockData() {
 
         String clusterName = "test-cluster";
-        when(mockedMigrationCluster.getCurrentCluster()).thenReturn((new ClusterTbl()).setId(1)
-                .setClusterName(clusterName).setActivedcId(1L));
         when(mockedMigrationCluster.clusterName()).thenReturn(clusterName);
         when(mockedMigrationCluster.getMigrationCluster()).thenReturn((new MigrationClusterTbl()).setClusterId(1)
-                .setDestinationDcId(2L));
+                .setSourceDcId(1L).setDestinationDcId(2L));
         final AtomicInteger cnt = new AtomicInteger(0);
         doAnswer(new Answer<Void>() {
 			@Override

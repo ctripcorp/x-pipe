@@ -4,7 +4,6 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RedisDelayManager;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -15,8 +14,6 @@ import java.util.Map;
 public interface DelayService extends RedisDelayManager {
 
     void updateRedisDelays(Map<HostPort, Long> redisDelays);
-
-    void updateHeteroShardsDelays(Map<Long, Long> heteroShardsDelays);
 
     long getShardDelay(String clusterId, String shardId, Long shardDbId);
 

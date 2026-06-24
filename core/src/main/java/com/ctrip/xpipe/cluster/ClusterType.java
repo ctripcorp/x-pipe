@@ -50,6 +50,24 @@ public enum ClusterType {
         return this.supportMigration;
     }
 
+    /**
+     * Whether the cluster should participate in DR migration / DR Beacon.
+     * For {@link #HETERO} clusters, the effective type comes from {@code azGroupType}.
+     */
+    public static boolean supportClusterMigration(String type, String azGroupType) {
+        if (StringUtil.isEmpty(type)) {
+            return false;
+        }
+        ClusterType clusterType = lookup(type);
+        if (clusterType != HETERO) {
+            return clusterType.supportMigration();
+        }
+        if (StringUtil.isEmpty(azGroupType)) {
+            return false;
+        }
+        return lookup(azGroupType).supportMigration();
+    }
+
     public boolean supportHealthCheck() {
         return this.supportHealthCheck;
     }

@@ -89,7 +89,8 @@ public class MigrationServiceImplSentinelBeaconTest {
         RetMessage retMessage = migrationService.preMigrateSentinelBeacon(CLUSTER);
 
         assertEquals(RetMessage.SUCCESS_STATE, retMessage.getState());
-        verify(beaconManager).unregisterCluster(eq(CLUSTER), eq(ClusterType.ONE_WAY), eq(10), eq(BeaconRouteType.SENTINEL));
+        verify(beaconManager).unregisterCluster(eq(CLUSTER), eq(CURRENT_DC), eq(ClusterType.ONE_WAY), eq(10),
+                eq(BeaconRouteType.SENTINEL));
     }
 
     @Test
@@ -106,7 +107,8 @@ public class MigrationServiceImplSentinelBeaconTest {
         RetMessage retMessage = migrationService.postMigrateSentinelBeacon(CLUSTER, shardMasters);
 
         assertEquals(RetMessage.SUCCESS_STATE, retMessage.getState());
-        verify(beaconManager).registerCluster(eq(CLUSTER), eq(ClusterType.SINGLE_DC), eq(10), anyString(), eq(BeaconRouteType.SENTINEL), eq(shardMasters));
+        verify(beaconManager).registerCluster(eq(CLUSTER), eq(CURRENT_DC), eq(ClusterType.SINGLE_DC), eq(10),
+                anyString(), eq(BeaconRouteType.SENTINEL), eq(shardMasters));
     }
 
     @Test

@@ -1,9 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
@@ -26,7 +24,10 @@ import org.mockito.MockitoAnnotations;
 import org.xml.sax.SAXException;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -364,31 +365,6 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
     }
 
     @Test
-    public void testHeteroClusterModified() throws Exception {
-        DefaultDcMetaChangeManager  manager = new DefaultDcMetaChangeManager("jq", instanceManager, factory, metaCache);
-        DcMeta dcMeta= getDcMeta("jq");
-        ClusterMeta cluster1 = dcMeta.findCluster("cluster2");
-        cluster1.setBackupDcs("ali");
-        cluster1.setAzGroupType(ClusterType.ONE_WAY.toString());
-        manager.compare(dcMeta);
-
-
-        DcMeta future = cloneDcMeta(dcMeta);
-        ClusterMeta futureCluster = future.findCluster("cluster2");
-        futureCluster.setBackupDcs("ali");
-        futureCluster.setAzGroupType(ClusterType.SINGLE_DC.toString());
-
-        manager.compare(future);
-
-        Mockito.verify(instanceManager, times(1)).getOrCreate(any(ClusterMeta.class));
-        Mockito.verify(instanceManager, times(2)).getOrCreate(any(RedisMeta.class));
-        Mockito.verify(instanceManager, times(2)).remove(any(HostPort.class));
-        Mockito.verify(instanceManager, times(1)).remove(anyString());
-
-    }
-
-
-    @Test
     public void testBackupDcClusterModified() throws Exception {
         DefaultDcMetaChangeManager  manager = new DefaultDcMetaChangeManager("jq", instanceManager, factory, metaCache);
         DcMeta dcMeta= getDcMeta("jq");
@@ -456,34 +432,6 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         Assert.assertFalse(manager.isInterestedInCluster(oyClusterMeta));
     }
 
-    @Test
-    public void generateHeteroHealthCheckInstancesTest() throws Exception {
-        ClusterMeta jqClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("jq")).setAzGroupType("ONE_WAY");
-        ClusterMeta oyClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("oy")).setAzGroupType("ONE_WAY");
-        ClusterMeta awsClusterMeta = new ClusterMeta().setId("hetero_cluster").setType("one_way").setActiveDc("jq").setBackupDcs("oy").setParent(new DcMeta("aws")).setAzGroupType("SINGLE_DC");
-
-
-        // current dc is active dc
-        Assert.assertTrue(manager.isInterestedInCluster(jqClusterMeta));
-        Assert.assertTrue(manager.isInterestedInCluster(oyClusterMeta));
-        Assert.assertTrue(manager.isInterestedInCluster(awsClusterMeta));
-
-        //current dc is not active dc but in dr master type
-        jqClusterMeta.setActiveDc("oy");
-        oyClusterMeta.setActiveDc("oy");
-        awsClusterMeta.setActiveDc("oy");
-        Assert.assertFalse(manager.isInterestedInCluster(jqClusterMeta));
-        Assert.assertFalse(manager.isInterestedInCluster(oyClusterMeta));
-        Assert.assertFalse(manager.isInterestedInCluster(awsClusterMeta));
-
-        //current dc is in master type
-        jqClusterMeta.setAzGroupType("SINGLE_DC");
-        oyClusterMeta.setAzGroupType("ONE_WAY");
-        awsClusterMeta.setAzGroupType("ONE_WAY");
-        Assert.assertTrue(manager.isInterestedInCluster(jqClusterMeta));
-        Assert.assertFalse(manager.isInterestedInCluster(oyClusterMeta));
-        Assert.assertFalse(manager.isInterestedInCluster(awsClusterMeta));
-    }
 
     @Test
     public void visitCrossRegionModified() {

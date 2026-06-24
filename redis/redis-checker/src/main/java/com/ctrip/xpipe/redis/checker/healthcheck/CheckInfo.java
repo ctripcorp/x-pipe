@@ -25,11 +25,4 @@ public interface CheckInfo {
 
     List<RedisCheckRule> getRedisCheckRules();
 
-    void setAzGroupType(String type);
-
-    String getAzGroupType();
-
-    void setAsymmetricCluster(boolean isHeteroCluster);
-
-    boolean isAsymmetricCluster();
 }

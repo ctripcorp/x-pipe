@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.console.build;
 
 import com.ctrip.xpipe.redis.console.ds.*;
 import org.unidal.dal.jdbc.datasource.DataSourceProvider;
+import org.unidal.dal.jdbc.entity.DataObjectAccessor;
+import org.unidal.dal.jdbc.entity.DataObjectNaming;
 import org.unidal.lookup.configuration.AbstractResourceConfigurator;
 import org.unidal.lookup.configuration.Component;
 
@@ -27,6 +29,8 @@ public class ComponentsConfigurator extends AbstractResourceConfigurator {
                 .config(E("datasourceFile").value("datasources.xml"),
                         E("baseDirRef").value(KEY_XPIPE_LOCATION)));
         all.add(A(XPipeDataSource.class));
+        all.add(C(DataObjectAccessor.class, XPipeDataObjectAccessor.class)
+                .req(DataObjectNaming.class));
         return all;
     }
 

@@ -207,6 +207,39 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
 
     }
 
+    @Test
+    public void testUpdateRedisesPreservesCreateTime() throws IOException, ResourceNotFoundException {
+        Date expectedCreateTime = new Date(1_700_000_000_000L);
+        List<RedisTbl> instances = redisService.findAllByDcClusterShard(dcName, clusterName, shardName);
+        for (RedisTbl redisTbl : instances) {
+            if (redisTbl.getRedisRole().equals(XPipeConsoleConstant.ROLE_REDIS)) {
+                redisTbl.setCreateTime(expectedCreateTime);
+                redisService.updateByPK(redisTbl);
+            }
+        }
+
+        boolean firstSlave = true;
+        for (RedisTbl redisTbl : instances) {
+            if (redisTbl.getRedisRole().equals(XPipeConsoleConstant.ROLE_REDIS)) {
+                if (redisTbl.isMaster()) {
+                    redisTbl.setMaster(false);
+                } else if (firstSlave) {
+                    redisTbl.setMaster(true);
+                    firstSlave = false;
+                }
+            }
+        }
+
+        redisService.updateRedises(dcName, clusterName, shardName, new ShardModel(instances));
+
+        instances = redisService.findAllByDcClusterShard(dcName, clusterName, shardName);
+        for (RedisTbl redisTbl : instances) {
+            if (redisTbl.getRedisRole().equals(XPipeConsoleConstant.ROLE_REDIS)) {
+                Assert.assertEquals(expectedCreateTime, redisTbl.getCreateTime());
+            }
+        }
+    }
+
     private void checkAllInstances(List<RedisTbl> allByDcClusterShard) {
 
         Assert.assertEquals(4, allByDcClusterShard.size());

@@ -6,6 +6,7 @@ import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.xpipe.api.kafka.GtidKeyItem;
 import com.ctrip.xpipe.api.kafka.KafkaService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.google.common.base.Throwables;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -42,6 +43,7 @@ public class CtripKafkaService implements KafkaService {
     private static final String XPIPE_CK_KAFKA = "xpipe.ck.kafka";
 
     private AtomicBoolean started = new AtomicBoolean(false);
+    private AtomicBoolean initSuccess = new AtomicBoolean(false);
 
     public CtripKafkaService(){
         startProducer();
@@ -50,16 +52,29 @@ public class CtripKafkaService implements KafkaService {
     @Override
     public void startProducer(){
         if(started.compareAndSet(false,true)){
-            long bufferMemory = Runtime.getRuntime().maxMemory() / 16 / PRODUCER_POOL_SIZE;
             producerPool = new Producer[PRODUCER_POOL_SIZE];
-            for (int i = 0; i < PRODUCER_POOL_SIZE; i++) {
-                producerPool[i] = createKafkaProducer(bufferMemory);
-            }
+            long bufferMemory = Runtime.getRuntime().maxMemory() / 16 / PRODUCER_POOL_SIZE;
+            new Thread(()->{
+                String result = TransactionMonitor.DEFAULT.logTransactionSwallowException("KafkaProducer","initialize",()->{
+                    long start = System.currentTimeMillis();
+                    for (int i = 0; i < PRODUCER_POOL_SIZE; i++) {
+                        producerPool[i] = createKafkaProducer(bufferMemory);
+                    }
+                    logger.info("[startProducer] elapse {}",System.currentTimeMillis()-start);
+                    return "OK";
+                });
+                if(result != null){
+                    initSuccess.set(true);
+                }
+            },"kafka-producer-init").start();
+
+            Runtime.getRuntime().addShutdownHook(new Thread(this::forceStopProducer));
         }
     }
 
     @Override
     public void forceStopProducer(){
+        logger.info("[forceStopProducer]");
         if(started.compareAndSet(true,false)) {
             for (int i = 0; i < PRODUCER_POOL_SIZE; i++) {
                 Producer<String, Object> producer = producerPool[i];
@@ -69,6 +84,11 @@ public class CtripKafkaService implements KafkaService {
             }
             producerPool = null;
         }
+    }
+
+    @Override
+    public boolean initSuccess() {
+        return initSuccess.get();
     }
 
     private Producer<String,Object> createKafkaProducer(long bufferMemory) {
@@ -111,14 +131,18 @@ public class CtripKafkaService implements KafkaService {
                 }
 
                 try {
+                    long start = System.currentTimeMillis();
                     producer.partitionsFor(TOPIC);
+                    logger.info("[partitionFor] elapse {}",System.currentTimeMillis()-start);
                 } catch (Throwable t) {
                     logger.warn("init partition wait meta ready", t);
                 }
 
                 //preheat
+                long start = System.currentTimeMillis();
                 producer.send(new ProducerRecord<>(TOPIC, GtidKeyItem.buildGtidKeyItem("test","uuid","0",
                                 "testk".getBytes(),"testv".getBytes(),"0",0,"localhost")));
+                logger.info("[sendKafka] elapse {}",System.currentTimeMillis()-start);
             }
             return producer;
         } catch (IOException e) {
@@ -130,10 +154,15 @@ public class CtripKafkaService implements KafkaService {
     public void sendKafka(GtidKeyItem gtidKeyItem){
         long threadId =  Thread.currentThread().threadId();
         int index = Long.hashCode(threadId) & PRODUCER_POOL_MASK;
+        Producer<String,Object> producer = producerPool[index];
         try{
-            producerPool[index].send(new ProducerRecord<>(TOPIC,gtidKeyItem));
+            if(producer == null){
+                EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA,"KafkaProducer-NotReady");
+                return;
+            }
+            producer.send(new ProducerRecord<>(TOPIC,gtidKeyItem));
         }catch (Exception e){
-            EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA,e.getClass().getName(),convertProducerMetrics(producerPool[index].metrics(),e));
+            EventMonitor.DEFAULT.logEvent(XPIPE_CK_KAFKA,e.getClass().getName(),convertProducerMetrics(producer.metrics(),e));
         }
     }
 

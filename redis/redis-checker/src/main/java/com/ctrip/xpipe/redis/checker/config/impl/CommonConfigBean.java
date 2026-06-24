@@ -53,6 +53,14 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public static final String KEY_NO_ALARM_MUNITE_FOR_CLUSTER_UPDATE = "no.alarm.minute.for.cluster.update";
 
+    public static final String KEY_DELAY_METRIC_NEW_INSTANCE_MINUTES = "delay.metric.new.instance.minutes";
+
+    private static final int DEFAULT_DELAY_METRIC_NEW_INSTANCE_MINUTES = 15;
+
+    private static final int MIN_DELAY_METRIC_NEW_INSTANCE_MINUTES = 1;
+
+    private static final int MAX_DELAY_METRIC_NEW_INSTANCE_MINUTES = 24 * 60;
+
     public static final String KEY_META_SYNC_EXTERNAL_DC = "meta.sync.external.dc";
 
     public static final String KEY_KEEPERCONTAINER_DISK_INFO_COLLECT_INTERVAL_MILLS = "keeper.disk.info.collect.interval";
@@ -156,6 +164,21 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public int getNoAlarmMinutesForClusterUpdate() {
         return getIntProperty(KEY_NO_ALARM_MUNITE_FOR_CLUSTER_UPDATE, 15);
+    }
+
+    public int getDelayMetricNewInstanceMinutes() {
+        int minutes = getIntProperty(KEY_DELAY_METRIC_NEW_INSTANCE_MINUTES, DEFAULT_DELAY_METRIC_NEW_INSTANCE_MINUTES);
+        if (minutes < MIN_DELAY_METRIC_NEW_INSTANCE_MINUTES) {
+            logger.warn("[getDelayMetricNewInstanceMinutes] invalid value {}, use {}", minutes,
+                    MIN_DELAY_METRIC_NEW_INSTANCE_MINUTES);
+            return MIN_DELAY_METRIC_NEW_INSTANCE_MINUTES;
+        }
+        if (minutes > MAX_DELAY_METRIC_NEW_INSTANCE_MINUTES) {
+            logger.warn("[getDelayMetricNewInstanceMinutes] invalid value {}, use {}", minutes,
+                    MAX_DELAY_METRIC_NEW_INSTANCE_MINUTES);
+            return MAX_DELAY_METRIC_NEW_INSTANCE_MINUTES;
+        }
+        return minutes;
     }
 
     public boolean getCheckBeaconLastModify() {

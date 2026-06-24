@@ -50,6 +50,9 @@ public class RedisMetaServiceImpl extends AbstractMetaService implements RedisMe
 			redisMeta.setId(redisInfo.getRunId());
 			redisMeta.setIp(redisInfo.getRedisIp());
 			redisMeta.setPort(redisInfo.getRedisPort());
+			if (redisInfo.getCreateTime() != null) {
+				redisMeta.setCreateTime(redisInfo.getCreateTime().getTime());
+			}
 			if(redisInfo.isMaster()) {
 				redisMeta.setMaster("");
 			} else {

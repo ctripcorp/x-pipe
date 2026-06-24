@@ -5,6 +5,7 @@ import com.ctrip.xpipe.command.DefaultRetryCommandFactory;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -13,6 +14,7 @@ import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.SourceMeta;
 import com.google.common.collect.Lists;
@@ -58,6 +60,9 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
     @Autowired
     private ClusterService clusterService;
+
+    @Autowired
+    private RedisService redisService;
 
     @Autowired
     private ConsoleConfig consoleConfig;
@@ -153,6 +158,36 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
 
 
     @Test
+    public void testBuiltRedisMetaContainsCreateTime() throws Exception {
+        Date expectedCreateTime = new Date(1_700_000_000_000L);
+        RedisTbl redisTbl = redisService.find(3L);
+        Assert.assertNotNull(redisTbl);
+        redisTbl.setCreateTime(expectedCreateTime);
+        redisService.updateByPK(redisTbl);
+
+        DcMeta builtDcMeta = new DcMeta();
+        dcMetaMap.clear();
+        dcMetaMap.put("JQ", builtDcMeta);
+
+        new DcMetaBuilder(dcMetaMap, dcService.findAllDcs(), Collections.singleton(ClusterType.ONE_WAY.toString()),
+                executors, redisMetaService, dcClusterService, clusterMetaService, dcClusterShardService, dcService,
+                azGroupClusterRepository, azGroupCache, new DefaultRetryCommandFactory(), consoleConfig)
+                .execute().get();
+
+        ClusterMeta clusterMeta = builtDcMeta.findCluster("cluster1");
+        Assert.assertNotNull(clusterMeta);
+        ShardMeta shardMeta = clusterMeta.findShard("shard1");
+        Assert.assertNotNull(shardMeta);
+
+        RedisMeta redisMeta = shardMeta.getRedises().stream()
+                .filter(redis -> redis.getPort() == 6379)
+                .findFirst()
+                .orElse(null);
+        Assert.assertNotNull(redisMeta);
+        Assert.assertEquals(expectedCreateTime.getTime(), redisMeta.getCreateTime().longValue());
+    }
+
+    @Test
     public void testClusterBondToOnlyOneIDC() throws Exception {
 
         ClusterModel clusterModel = new ClusterModel();
@@ -207,6 +242,51 @@ public class DcMetaBuilderTest extends AbstractConsoleIntegrationTest {
             if(ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.BI_DIRECTION))
                 Assert.assertEquals("1,2", clusterMeta.getActiveRedisCheckRules());
         }
+    }
+
+    @Test
+    public void getOrCreateHeteroOneWayAzGroupClusterMeta() throws Exception {
+        ClusterTbl clusterTbl = clusterService.find("hetero-cluster");
+        Assert.assertNotNull(clusterTbl);
+
+        DcMeta jqMeta = new DcMeta().setId("jq");
+        dcMetaMap.clear();
+        dcMetaMap.put("JQ", jqMeta);
+
+        DcClusterTbl jqDcCluster = dcClusterService.find(1, clusterTbl.getId());
+        AzGroupClusterEntity azGroupCluster = azGroupClusterRepository.selectByClusterId(clusterTbl.getId()).stream()
+                .filter(entity -> ClusterType.isSameClusterType(entity.getAzGroupClusterType(), ClusterType.ONE_WAY))
+                .findFirst()
+                .orElse(null);
+        Assert.assertNotNull(azGroupCluster);
+
+        builder.setDcNameMap(dcNameMap);
+        ClusterMeta clusterMeta = builder.getOrCreateClusterMeta(jqMeta, 1L, clusterTbl, jqDcCluster, azGroupCluster);
+
+        Assert.assertEquals(ClusterType.HETERO.toString(), clusterMeta.getType());
+        Assert.assertEquals(ClusterType.ONE_WAY.toString(), clusterMeta.getAzGroupType());
+        Assert.assertEquals("jq", clusterMeta.getActiveDc());
+        Assert.assertEquals("oy", clusterMeta.getBackupDcs());
+    }
+
+    @Test
+    public void getOrCreateHeteroSingleDcAzGroupClusterMeta() throws Exception {
+        ClusterTbl clusterTbl = clusterService.find("hetero-cluster");
+        Assert.assertNotNull(clusterTbl);
+
+        DcMeta fraMeta = new DcMeta().setId("fra");
+        DcClusterTbl fraDcCluster = dcClusterService.find(3, clusterTbl.getId());
+        AzGroupClusterEntity azGroupCluster = azGroupClusterRepository.selectByClusterId(clusterTbl.getId()).stream()
+                .filter(entity -> ClusterType.isSameClusterType(entity.getAzGroupClusterType(), ClusterType.SINGLE_DC))
+                .findFirst()
+                .orElse(null);
+        Assert.assertNotNull(azGroupCluster);
+
+        builder.setDcNameMap(dcNameMap);
+        ClusterMeta clusterMeta = builder.getOrCreateClusterMeta(fraMeta, 3L, clusterTbl, fraDcCluster, azGroupCluster);
+
+        Assert.assertEquals("fra", clusterMeta.getActiveDc());
+        Assert.assertEquals("fra-ali", clusterMeta.getBackupDcs());
     }
 
     @Override

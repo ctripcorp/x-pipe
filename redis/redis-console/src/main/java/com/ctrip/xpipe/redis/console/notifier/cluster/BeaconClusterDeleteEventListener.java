@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.notifier.cluster;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMonitorModifiedNotifier;
 import com.ctrip.xpipe.redis.console.notifier.EventType;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,9 +24,6 @@ public class BeaconClusterDeleteEventListener implements ClusterDeleteEventListe
         this.notifier = notifier;
     }
 
-    @Autowired
-    private MetaCache metaCache;
-
     @Override
     public void update(Object args, Observable observable) {
         EventType type = (EventType) args;
@@ -41,8 +37,7 @@ public class BeaconClusterDeleteEventListener implements ClusterDeleteEventListe
         ClusterDeleteEvent clusterDeleteEvent = (ClusterDeleteEvent) observable;
         String clusterName = clusterDeleteEvent.getClusterName();
         long clusterOrgId = clusterDeleteEvent.getOrgId();
-        if (metaCache.anyDcMigratable(clusterName))
-            notifier.notifyClusterDelete(clusterName, clusterOrgId);
+        notifier.notifyClusterDelete(clusterName, clusterOrgId);
     }
 
 }

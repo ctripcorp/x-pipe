@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.controller.api.data;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCheckRuleCreateInfo;
-import com.ctrip.xpipe.redis.console.service.impl.RedisCheckRuleServiceImpl;
+import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +15,7 @@ import java.util.List;
 @RequestMapping(AbstractConsoleController.API_PREFIX)
 public class RedisCheckController extends AbstractConsoleController {
     @Autowired
-    RedisCheckRuleServiceImpl redisCheckRuleService;
+    RedisCheckRuleService redisCheckRuleService;
 
     @RequestMapping(value = "/redisCheck", method = RequestMethod.POST)
     public RetMessage addRedisCheckRule(@RequestBody RedisCheckRuleCreateInfo createInfo) {

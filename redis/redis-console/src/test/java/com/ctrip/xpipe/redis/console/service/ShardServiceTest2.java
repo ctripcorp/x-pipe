@@ -25,6 +25,7 @@ import org.unidal.dal.jdbc.DalException;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -96,18 +97,21 @@ public class ShardServiceTest2  extends AbstractConsoleTest {
         when(shardTblDao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_NAME_AND_MONITOR_NAME))
                 .thenReturn(shardTbls);
         when(consoleConfig.shouldNotifyClusterTypes()).thenReturn(Sets.newHashSet(ClusterType.ONE_WAY.name(), ClusterType.BI_DIRECTION.name()));
-        when(metaCache.anyDcMigratable(anyString())).thenReturn(true);
     }
 
     @Test
     public void deleteShards() throws DalException {
         when(clusterTbl.getClusterType()).thenReturn(ClusterType.ONE_WAY.name());
         when(clusterTbl.getClusterLastModifiedTime()).thenReturn("20201030");
+        when(clusterTbl.getClusterOrgId()).thenReturn(1L);
+        DcTbl jqDc = new DcTbl();
+        jqDc.setDcName("jq");
+        when(dcService.findClusterRelatedDc(clusterName)).thenReturn(Lists.newArrayList(jqDc));
         when(shardTblDao.findByShardNames(clusterName, shardNames, ShardTblEntity.READSET_NAME_AND_MONITOR_NAME))
                 .thenReturn(shardTbls);
         shardService.deleteShards(clusterTbl, shardNames);
         verify(shardDao).deleteShardsBatch(shardTbls);
-        verify(monitorNotifier).notifyClusterUpdate(anyString(), anyLong(), anyString());
+        verify(monitorNotifier).notifyClusterUpdate(eq(clusterName), eq("jq"), eq(1L), eq("20201030"));
     }
 
     @Test
