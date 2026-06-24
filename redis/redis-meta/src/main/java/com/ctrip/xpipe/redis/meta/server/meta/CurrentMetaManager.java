@@ -45,6 +45,8 @@ public interface CurrentMetaManager extends Observable {
 
 	List<KeeperMeta> getSurviveKeepers(Long clusterDbId, Long shardDbId);
 
+	KeeperMeta getPreviousActiveKeeper(Long clusterDbId, Long shardDbId);
+
 	List<ApplierMeta> getSurviveAppliers(Long clusterDbId, Long shardDbId);
 
 	List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId);
@@ -68,8 +70,6 @@ public interface CurrentMetaManager extends Observable {
 	String getSids(Long clusterDbId, Long shardDbId);
 
 	String getSrcSids(Long clusterDbId, Long shardDbId);
-
-	boolean updateKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper);
 
 	boolean watchKeeperIfNotWatched(Long clusterDbId, Long shardDbId);
 

@@ -65,6 +65,15 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 
 	public static final String KEY_KEEPER_ELECT_STRATEGY = "keeper.elect.strategy";
 
+	public static final String KEY_TFS_GATEWAY_ENDPOINT = "metaserver.tfs.gateway.endpoint";
+
+	public static final String KEY_TFS_DIR_PATH_TEMPLATE = "metaserver.tfs.dir_path.template";
+
+	public static final String DEFAULT_TFS_GATEWAY_ENDPOINT = "mock://tfs-gateway";
+
+	public static final String DEFAULT_TFS_DIR_PATH_TEMPLATE =
+			"/opt/data/100004376/rsd/replication_store_{keeper_port}";
+
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 
 	private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
@@ -225,6 +234,16 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public KeeperElectStrategy getKeeperElectStrategy() {
 		return KeeperElectStrategy.from(getProperty(KEY_KEEPER_ELECT_STRATEGY, KeeperElectStrategy.AUTO.name()));
+	}
+
+	@Override
+	public String getTfsGatewayEndpoint() {
+		return getProperty(KEY_TFS_GATEWAY_ENDPOINT, DEFAULT_TFS_GATEWAY_ENDPOINT);
+	}
+
+	@Override
+	public String getTfsDirPathTemplate() {
+		return getProperty(KEY_TFS_DIR_PATH_TEMPLATE, DEFAULT_TFS_DIR_PATH_TEMPLATE);
 	}
 
 	public void setDefaultServerPort(int defaultServerPort) {
