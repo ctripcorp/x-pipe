@@ -177,6 +177,13 @@ public class CurrentMeta implements Releasable {
 		return currentShardMeta.getSurviveKeepers();
 	}
 
+	public KeeperMeta getPreviousActiveKeeper(Long clusterDbId, Long shardDbId) {
+		checkClusterSupportKeeper(clusterDbId);
+
+		CurrentShardKeeperMeta currentShardMeta = currentShardKeeperMetaOrThrowException(clusterDbId, shardDbId);
+		return currentShardMeta.getPreviousActiveKeeper();
+	}
+
 	public List<ApplierMeta> getSurviveAppliers(Long clusterDbId, Long shardDbId) {
 		checkClusterSupportApplier(clusterDbId);
 
@@ -196,13 +203,6 @@ public class CurrentMeta implements Releasable {
 
 		CurrentShardMeta currentShardMeta = getCurrentShardMetaOrThrowException(clusterDbId, shardDbId);
 		((CurrentOneWayShardMeta) currentShardMeta).setRedisMetas(redises);
-	}
-
-	public boolean setKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta keeperMeta) {
-		checkClusterSupportKeeper(clusterDbId);
-
-		CurrentShardKeeperMeta currentShardMeta = currentShardKeeperMetaOrThrowException(clusterDbId, shardDbId);
-		return currentShardMeta.setActiveKeeper(keeperMeta);
 	}
 
 	public KeeperMeta getKeeperActive(Long clusterDbId, Long shardDbId) {

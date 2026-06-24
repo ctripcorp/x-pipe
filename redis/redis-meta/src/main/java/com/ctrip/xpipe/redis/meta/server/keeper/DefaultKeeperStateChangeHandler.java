@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.meta.server.keeper;
 
+import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
@@ -10,11 +11,15 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
+import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperRoleAssigner;
 import com.ctrip.xpipe.redis.meta.server.job.ApplierStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
+import com.ctrip.xpipe.redis.meta.server.job.TfsKeeperStateChangeJob;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsKeeperUtils;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
@@ -32,7 +37,6 @@ import javax.annotation.Resource;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -64,6 +68,9 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 
 	@Autowired
 	private MultiDcService multiDcService;
+
+	@Autowired
+	private MetaServerConfig metaServerConfig;
 
 	@Override
 	protected void doInitialize() throws Exception {
@@ -109,7 +116,8 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		Map<KeeperMeta, KeeperState> keeperRoles = activeKeeper == null
 				? null
 				: KeeperRoleAssigner.assignRoles(activeKeeper, keepers, dcMetaCache);
-		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, 1000, 5, scheduled, executors, keeperRoles);
+		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, KeeperStateChangeJob.DEFAULT_DELAY_BASE_MILLI,
+				KeeperStateChangeJob.DEFAULT_RETRY_TIMES, scheduled, executors, keeperRoles);
 	}
 
 	private KeeperMeta findActiveKeeper(List<KeeperMeta> keepers) {
@@ -133,14 +141,16 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		}
 		Pair<String, Integer> activeKeeperMaster = currentMetaManager.getKeeperMaster(clusterDbId, shardDbId);
 
-		KeeperStateChangeJob keeperStateChangeJob = createKeeperStateChangeJob(clusterDbId, shardDbId, keepers, activeKeeperMaster);
+		Command<Void> keeperStateChangeJob = createKeeperActiveElectedJob(clusterDbId, shardDbId, keepers,
+				activeKeeperMaster);
 
 		if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
 			if (dcMetaCache.isCurrentDcBackUp(clusterDbId)) {
 				List<RedisMeta> slaves = dcMetaCache.getShardRedises(clusterDbId, shardDbId);
 				logger.info("[keeperActiveElected][current dc backup, set slave to new keeper]cluster_{},shard_{},{}", clusterDbId, shardDbId,
 						slaves);
-				keeperStateChangeJob.setActiveSuccessCommand(new ConditionalCommand<>(
+				setActiveSuccessCommand(keeperStateChangeJob,
+						new ConditionalCommand<>(
 						new DefaultSlaveOfJob(slaves, activeKeeper.getIp(), activeKeeper.getPort(), clientPool, scheduled, executors),
 						() -> dcMetaCache.isCurrentDcBackUp(clusterDbId), true));
 			}
@@ -151,7 +161,8 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 			    GtidSet gtidSet = currentMetaManager.getGtidSet(clusterDbId, srcSids);
 				logger.info("[keeperActiveElected][current source shard, set applier xsync to new keeper]cluster_{},shard_{},{}",
 						clusterDbId, shardDbId, appliers);
-			    keeperStateChangeJob.setActiveSuccessCommand(new ConditionalCommand<>(
+				setActiveSuccessCommand(keeperStateChangeJob,
+						new ConditionalCommand<>(
 			    		new ApplierStateChangeJob(appliers, new Pair<>(activeKeeper.getIp(), activeKeeper.getPort()),
 								srcSids, gtidSet, null, clientPool, scheduled, executors),
 					() -> true, true));
@@ -159,6 +170,41 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		}
 
 		keyedOneThreadTaskExecutor.execute(new Pair<>(clusterDbId, shardDbId), keeperStateChangeJob);
+	}
+
+	private Command<Void> createKeeperActiveElectedJob(Long clusterDbId, Long shardDbId, List<KeeperMeta> keepers,
+													   Pair<String, Integer> master) {
+		String dstDcId;
+		if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
+			dstDcId = currentMetaManager.getClusterMeta(clusterDbId).getActiveDc();
+		} else {
+			dstDcId = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
+		}
+		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dstDcId, clusterDbId);
+		KeeperMeta activeKeeper = findActiveKeeper(keepers);
+		Map<KeeperMeta, KeeperState> keeperRoles = activeKeeper == null
+				? null
+				: KeeperRoleAssigner.assignRoles(activeKeeper, keepers, dcMetaCache);
+
+		if (TfsKeeperUtils.shardHasTfsKeeper(keepers, dcMetaCache)) {
+			KeeperMeta previousActive = currentMetaManager.getPreviousActiveKeeper(clusterDbId, shardDbId);
+			return new TfsKeeperStateChangeJob(clusterDbId, shardDbId, keepers, previousActive, master, routeMeta,
+					clientPool, dcMetaCache, metaServerConfig, scheduled, executors, keeperRoles);
+		}
+		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, KeeperStateChangeJob.DEFAULT_DELAY_BASE_MILLI,
+				KeeperStateChangeJob.DEFAULT_RETRY_TIMES, scheduled, executors, keeperRoles);
+	}
+
+	@SuppressWarnings("rawtypes")
+	private void setActiveSuccessCommand(Command<Void> job, Command hookCommand) {
+		if (job instanceof KeeperStateChangeJob) {
+			((KeeperStateChangeJob) job).setActiveSuccessCommand(hookCommand);
+		} else if (job instanceof TfsKeeperStateChangeJob) {
+			((TfsKeeperStateChangeJob) job).setActiveSuccessCommand(hookCommand);
+		} else {
+			logger.warn("[setActiveSuccessCommand][unsupported job type, hook not attached]job={}, hook={}",
+					job.getClass().getName(), hookCommand);
+		}
 	}
 
 	@Override
@@ -192,5 +238,10 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 	@VisibleForTesting
 	public void setMultiDcService(MultiDcService multiDcService) {
 		this.multiDcService = multiDcService;
+	}
+
+	@VisibleForTesting
+	public void setMetaServerConfig(MetaServerConfig metaServerConfig) {
+		this.metaServerConfig = metaServerConfig;
 	}
 }
