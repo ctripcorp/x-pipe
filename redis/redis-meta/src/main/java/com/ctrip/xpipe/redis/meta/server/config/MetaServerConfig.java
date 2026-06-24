@@ -56,4 +56,8 @@ public interface MetaServerConfig extends CoreConfig {
 
 	KeeperElectStrategy getKeeperElectStrategy();
 
+	String getTfsGatewayEndpoint();
+
+	String getTfsDirPathTemplate();
+
 }

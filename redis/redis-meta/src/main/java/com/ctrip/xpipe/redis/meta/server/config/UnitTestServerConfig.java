@@ -196,6 +196,16 @@ public class UnitTestServerConfig implements MetaServerConfig{
 		return keeperElectStrategy;
 	}
 
+	@Override
+	public String getTfsGatewayEndpoint() {
+		return DefaultMetaServerConfig.DEFAULT_TFS_GATEWAY_ENDPOINT;
+	}
+
+	@Override
+	public String getTfsDirPathTemplate() {
+		return DefaultMetaServerConfig.DEFAULT_TFS_DIR_PATH_TEMPLATE;
+	}
+
 	public UnitTestServerConfig setKeeperElectStrategy(KeeperElectStrategy keeperElectStrategy) {
 		this.keeperElectStrategy = keeperElectStrategy;
 		return this;
