@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServersTest;
 import com.ctrip.xpipe.redis.meta.server.job.ApplierStateChangeJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJobTest;
+import com.ctrip.xpipe.redis.meta.server.job.TfsKeeperStateChangeJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJobTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.DefaultKeeperStateChangeHandlerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.DefaultApplierStateChangeHandlerTest;
@@ -50,6 +51,10 @@ import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCacheTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoEditorTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoTest;
 import com.ctrip.xpipe.redis.meta.server.service.console.ConsoleServiceImplTest;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsDirPathResolverTest;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsForceCloseDirCommandTest;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsGatewayFactoryTest;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsPrepareReleaseCommandTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -99,6 +104,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultKeeperStateControllerTest.class,
 	DefaultApplierStateControllerTest.class,
 	KeeperStateChangeJobTest.class,
+	TfsKeeperStateChangeJobTest.class,
 	ApplierStateChangeJobTest.class,
 	DefaultKeeperStateChangeHandlerTest.class,
 	DefaultApplierStateChangeHandlerTest.class,
@@ -129,7 +135,11 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultKeeperContainerServiceTest.class,
 	DefaultApplierContainerServiceTest.class,
 	ConsoleServiceImplTest.class,
-	DefaultRedisGtidCollectorTest.class
+	DefaultRedisGtidCollectorTest.class,
+	TfsDirPathResolverTest.class,
+	TfsForceCloseDirCommandTest.class,
+	TfsGatewayFactoryTest.class,
+	TfsPrepareReleaseCommandTest.class
 })
 public class AllTests {
 

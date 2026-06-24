@@ -16,6 +16,8 @@ public class CurrentShardKeeperMeta extends AbstractCurrentShardInstanceMeta {
 
     private AtomicBoolean watched = new AtomicBoolean(false);
     private List<KeeperMeta> surviveKeepers = new LinkedList<>();
+    // Written only from elector thread via setSurviveKeepers; read on same thread before async state-change job.
+    private KeeperMeta previousActiveKeeper;
     private Pair<String, Integer> keeperMaster;
 
     public CurrentShardKeeperMeta(@JsonProperty("clusterDbId") Long clusterDbId, @JsonProperty("shardDbId") Long shardDbId) {
@@ -24,16 +26,6 @@ public class CurrentShardKeeperMeta extends AbstractCurrentShardInstanceMeta {
 
     public boolean watchIfNotWatched() {
         return watched.compareAndSet(false, true);
-    }
-
-    @JsonIgnore
-    public boolean setActiveKeeper(KeeperMeta activeKeeper) {
-
-        if (!checkIn(surviveKeepers, activeKeeper)) {
-            throw new IllegalArgumentException(
-                    "active not in all survivors " + activeKeeper + ", all:" + this.surviveKeepers);
-        }
-        return doSetActive(activeKeeper);
     }
 
     @JsonIgnore
@@ -59,13 +51,15 @@ public class CurrentShardKeeperMeta extends AbstractCurrentShardInstanceMeta {
                 throw new IllegalArgumentException(
                         "active not in all survivors " + activeKeeper + ", all:" + this.surviveKeepers);
             }
+            previousActiveKeeper = getActiveKeeper();
             this.surviveKeepers = MetaCloneFacade.INSTANCE.cloneList(surviveKeepers);
             logger.info("[setSurviveKeepers]cluster_{},shard_{},{}, {}", clusterDbId, shardDbId, surviveKeepers, activeKeeper);
             doSetActive(activeKeeper);
         } else {
-            logger.info("[setSurviveKeepers][survive keeper none, clear]cluster{},shard_{},{}, {}", clusterDbId, shardDbId,
+            logger.info("[setSurviveKeepers][survive keeper none, clear]cluster_{},shard_{},{}, {}", clusterDbId, shardDbId,
                     surviveKeepers, activeKeeper);
             this.surviveKeepers.clear();
+            previousActiveKeeper = null;
         }
     }
 
@@ -87,6 +81,11 @@ public class CurrentShardKeeperMeta extends AbstractCurrentShardInstanceMeta {
             }
         }
         return changed;
+    }
+
+    @JsonIgnore
+    public KeeperMeta getPreviousActiveKeeper() {
+        return previousActiveKeeper == null ? null : MetaCloneFacade.INSTANCE.clone(previousActiveKeeper);
     }
 
     private boolean checkIn(List<KeeperMeta> surviveKeepers, KeeperMeta activeKeeper) {

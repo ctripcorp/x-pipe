@@ -34,7 +34,11 @@ import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.DEFAU
  * Jul 8, 2016
  */
 public class KeeperStateChangeJob extends AbstractCommand<Void> implements RequestResponseCommand<Void> {
-	
+
+	public static final int DEFAULT_DELAY_BASE_MILLI = 1000;
+
+	public static final int DEFAULT_RETRY_TIMES = 5;
+
 	private List<KeeperMeta> keepers;
 	private Pair<String, Integer> activeKeeperMaster;
 	private RouteMeta routeForActiveKeeper;
@@ -51,7 +55,8 @@ public class KeeperStateChangeJob extends AbstractCommand<Void> implements Reque
 								RouteMeta routeForActiveKeeper,
 								SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool
 			, ScheduledExecutorService scheduled, Executor executors){
-		this(keepers, activeKeeperMaster, routeForActiveKeeper, clientPool, 1000, 5, scheduled, executors);
+		this(keepers, activeKeeperMaster, routeForActiveKeeper, clientPool, DEFAULT_DELAY_BASE_MILLI, DEFAULT_RETRY_TIMES,
+				scheduled, executors);
 	}
 	
 	public KeeperStateChangeJob(List<KeeperMeta> keepers,
