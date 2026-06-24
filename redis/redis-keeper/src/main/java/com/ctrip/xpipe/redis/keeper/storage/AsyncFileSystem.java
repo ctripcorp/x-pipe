@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-// currently only support append only mode.
+// currently only support append only mode and atomic replace mode.
 // TODO to prevent unnessery memory copy, we should reconsider the interface design.
 public interface AsyncFileSystem {
     CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace);
     CompletableFuture<Boolean> isFile(AsyncFile file);
     CompletableFuture<Long> lastModified(AsyncFile file);
-    void position(AsyncFile file, long position);
+    CompletableFuture<Void> position(AsyncFile file, long position);
     CompletableFuture<Integer> read(AsyncFile file, long length, long offset, byte[] buffer);
     CompletableFuture<Integer> read(AsyncFile file, long length, byte[] buffer);
     CompletableFuture<Integer> write(AsyncFile file, byte[] data, long length);
@@ -34,7 +34,7 @@ public interface AsyncFileSystem {
     // Write mode always opens the latest segment file and index files, and auto-closes them upon rollover.
     // Read mode opens the segment file after the first read, and opens index files when getCurrentIndexFiles() is called. They auto-close when reading the next segment.
     CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write);
-    void position(AsyncSegmentFile file, long offset);
+    CompletableFuture<Void> position(AsyncSegmentFile file, long offset);
     CompletableFuture<Integer> read(AsyncSegmentFile file, long length, long offset, byte[] buffer);
     CompletableFuture<Integer> read(AsyncSegmentFile file, long length, byte[] buffer);
     CompletableFuture<Integer> write(AsyncSegmentFile file, byte[] data, long length);

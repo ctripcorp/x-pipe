@@ -37,6 +37,10 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace) {
+        if (atomicReplace && !write) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("atomicReplace requires write=true"));
+        }
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Set<StandardOpenOption> opts = atomicReplace
@@ -68,12 +72,14 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public void position(AsyncFile file, long position) {
-        try {
-            file.channel.position(position);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public CompletableFuture<Void> position(AsyncFile file, long position) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                file.channel.position(position);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }, ioExecutor);
     }
 
     @Override
@@ -262,8 +268,9 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
 
     // Synchronous: just updates the logical position field.
     @Override
-    public void position(AsyncSegmentFile file, long offset) {
+    public CompletableFuture<Void> position(AsyncSegmentFile file, long offset) {
         file.logicalPosition = offset;
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -486,14 +493,6 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
 
     // ---- helpers ----
 
-    private Set<StandardOpenOption> toOpenOptions(boolean write) {
-        if (write) {
-            return EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        } else {
-            return EnumSet.of(StandardOpenOption.READ);
-        }
-    }
-
     private String segmentPath(String dir, String prefix, long startOffset) {
         return dir + File.separator + prefix + startOffset;
     }
@@ -505,6 +504,12 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                 .map(f -> Long.parseLong(f.getName().substring(prefix.length())))
                 .sorted()
                 .collect(Collectors.toList());
+    }
+
+    private Set<StandardOpenOption> toOpenOptions(boolean write) {
+        return write
+                ? EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+                : EnumSet.of(StandardOpenOption.READ);
     }
 
     private FileChannel openChannel(String path, boolean write) throws IOException {
