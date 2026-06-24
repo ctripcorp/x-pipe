@@ -106,7 +106,12 @@ public class MigrationPreCheckCmd extends AbstractMigrationCmd<Boolean> {
                 return null;
             }
             migrationRequest.setAzGroupCluster(azGroupCluster);
-            return dcCache.find(azGroupCluster.getActiveAzId());
+            Long activeAzId = azGroupCluster.getActiveAzId();
+            if (activeAzId == null) {
+                logger.warn("[resolveActiveDc][{}] az group active_az_id is null", clusterTbl.getClusterName());
+                return null;
+            }
+            return dcCache.find(activeAzId);
         }
         return dcCache.find(clusterTbl.getActivedcId());
     }

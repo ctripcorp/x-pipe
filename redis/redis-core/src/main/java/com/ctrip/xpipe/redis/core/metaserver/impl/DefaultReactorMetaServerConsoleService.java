@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 import reactor.netty.resources.ConnectionProvider;
 import reactor.netty.resources.LoopResources;
 
@@ -57,6 +58,7 @@ public class DefaultReactorMetaServerConsoleService implements ReactorMetaServer
                 .retrieve()
                 .bodyToMono(MetaServerConsoleService.PrimaryDcCheckMessage.class)
                 .retry(maxRetryTimes)
+                .transform(mono -> guardEmptyResponse(mono, api, clusterId))
                 .subscribe(res -> {
                     tryMetric(api, dc, clusterId, res.isSuccess(), startTime, System.currentTimeMillis());
                     future.setSuccess(res);
@@ -80,6 +82,7 @@ public class DefaultReactorMetaServerConsoleService implements ReactorMetaServer
                 .retrieve()
                 .bodyToMono(MetaServerConsoleService.PreviousPrimaryDcMessage.class)
                 .retry(maxRetryTimes)
+                .transform(mono -> guardEmptyResponse(mono, api, clusterId))
                 .subscribe(res -> {
                     tryMetric(api, dc, clusterId, true, startTime, System.currentTimeMillis());
                     future.setSuccess(res);
@@ -105,6 +108,7 @@ public class DefaultReactorMetaServerConsoleService implements ReactorMetaServer
                 .retrieve()
                 .bodyToMono(MetaServerConsoleService.PrimaryDcChangeMessage.class)
                 .retry(maxRetryTimes)
+                .transform(mono -> guardEmptyResponse(mono, api, clusterId))
                 .subscribe(res -> {
                     tryMetric(api, dc, clusterId, res.isSuccess(), startTime, System.currentTimeMillis());
                     future.setSuccess(res);
@@ -114,6 +118,11 @@ public class DefaultReactorMetaServerConsoleService implements ReactorMetaServer
                 });
 
         return future;
+    }
+
+    private <T> Mono<T> guardEmptyResponse(Mono<T> mono, String api, String clusterId) {
+        return mono.switchIfEmpty(Mono.error(new IllegalStateException(
+                String.format("[%s] empty response from metaserver dc=%s cluster=%s", api, dc, clusterId))));
     }
 
     @VisibleForTesting

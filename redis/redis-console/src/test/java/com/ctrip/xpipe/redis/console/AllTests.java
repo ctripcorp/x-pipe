@@ -84,14 +84,12 @@ import com.ctrip.xpipe.redis.console.service.ShardServiceTest2;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.*;
 import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
-import com.ctrip.xpipe.redis.console.service.migration.impl.BeaconMigrationServiceImplTest;
-import com.ctrip.xpipe.redis.console.service.migration.impl.DefaultCheckMigrationCommandBuilderTest;
-import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplPaginationTest;
-import com.ctrip.xpipe.redis.console.service.migration.impl.MigrationServiceImplSentinelBeaconTest;
+import com.ctrip.xpipe.redis.console.service.migration.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplHeteroMigrationTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderHeteroMigrationTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
 import com.ctrip.xpipe.redis.console.spring.XPipeHandlerMethodCommandTest;
+import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultReactorMetaServerConsoleServiceEmptyBodyTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -198,6 +196,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultMigrationEventManagerTest.class,
         MigrationServiceImplPaginationTest.class,
         MigrationServiceImplSentinelBeaconTest.class,
+        MigrationServiceImplHeteroPreCheckTest.class,
         SentinelConfigCheckTest.class,
         DelayServiceTest.class,
         ShardMetaServiceImplTest.class,
@@ -219,6 +218,7 @@ import org.junit.runners.Suite.SuiteClasses;
         NettyKeyedPoolClientFactoryTest.class,
         UnhealthyClusterCheckerTest.class,
         ClusterCheckInterceptorTest.class,
+        DefaultReactorMetaServerConsoleServiceEmptyBodyTest.class,
 
         MigrationEventConcurrentCreateTest.class,
         BeaconMetaServiceImplTest.class,
