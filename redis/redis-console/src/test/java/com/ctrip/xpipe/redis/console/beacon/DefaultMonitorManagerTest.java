@@ -199,4 +199,48 @@ public class DefaultMonitorManagerTest extends AbstractTest {
         Assert.assertTrue(byService.values().stream().allMatch(Set::isEmpty));
     }
 
+    @Test
+    public void testGetClusterRoutesOneWayActiveDc() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(new ClusterMeta("one-way-cluster").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setDcs("jq,sha"));
+        xpipeMeta.addDc(dcMeta);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        List<Map<String, Object>> routes =
+                beaconServiceManager.getClusterRoutes("one-way-cluster", BeaconRouteType.SENTINEL);
+
+        Assert.assertEquals(1, routes.size());
+        Map<String, Object> route = routes.get(0);
+        Assert.assertEquals("one-way-cluster", route.get("clusterName"));
+        Assert.assertEquals("JQ", route.get("dcName"));
+        Assert.assertEquals("ONE_WAY", route.get("type"));
+        Assert.assertEquals(true, route.get("activeDc"));
+        Assert.assertNotNull(route.get("beaconName"));
+        Assert.assertNotNull(route.get("beaconHost"));
+    }
+
+    @Test
+    public void testGetClusterRoutesOneWayNonActiveDc() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(new ClusterMeta("one-way-cluster").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("fra").setDcs("jq,fra"));
+        xpipeMeta.addDc(dcMeta);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        List<Map<String, Object>> routes =
+                beaconServiceManager.getClusterRoutes("one-way-cluster", BeaconRouteType.SENTINEL);
+
+        Assert.assertEquals(1, routes.size());
+        Map<String, Object> route = routes.get(0);
+        Assert.assertEquals("one-way-cluster", route.get("clusterName"));
+        Assert.assertEquals("JQ", route.get("dcName"));
+        Assert.assertEquals("ONE_WAY", route.get("type"));
+        Assert.assertEquals(false, route.get("activeDc"));
+        Assert.assertNotNull(route.get("beaconName"));
+        Assert.assertNotNull(route.get("beaconHost"));
+    }
+
 }
