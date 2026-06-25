@@ -684,6 +684,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if (organizationTbl == null || organizationTbl.getId() == null) {
 			clusterTbl.setOrganizationInfo(null);
 		}
+		enrichHeteroClustersForList(Collections.singletonList(clusterTbl));
 		return clusterTbl;
 	}
 
@@ -702,8 +703,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		List<ClusterTbl> typeClustersInHetero = findClustersByActiveDcInHetero(dcName, dcName, heteroClusters);
 		result.addAll(typeClustersInHetero);
 		logger.info("[findClustersWithOrgInfoByActiveDcId] dc: {},  clusters size = {}", dcName, result.size());
-		result = fillClusterOrgName(result);
-		return setOrgNullIfNoOrgIdExsits(result);
+		return finalizeClusterListResult(result);
 	}
 
 	@Override
@@ -731,17 +731,73 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	}
 
 	@Override
+	public void enrichHeteroClustersForList(List<ClusterTbl> clusters) {
+		if (CollectionUtils.isEmpty(clusters)) {
+			return;
+		}
+		List<Long> heteroClusterIds = clusters.stream()
+				.filter(heteroMigrationSupport::isHeteroCluster)
+				.filter(cluster -> cluster.getHeteroActiveDcSummary() == null)
+				.map(ClusterTbl::getId)
+				.collect(Collectors.toList());
+		if (heteroClusterIds.isEmpty()) {
+			return;
+		}
+		Map<Long, String> dcIdNameMap = dcService.dcNameMap();
+		Map<Long, List<AzGroupClusterEntity>> oneWayAzGroupMap =
+				heteroMigrationSupport.listOneWayAzGroupClustersSorted(heteroClusterIds);
+		for (ClusterTbl cluster : clusters) {
+			if (!heteroMigrationSupport.isHeteroCluster(cluster) || cluster.getHeteroActiveDcSummary() != null) {
+				continue;
+			}
+			List<AzGroupClusterEntity> oneWayAzGroups = oneWayAzGroupMap.get(cluster.getId());
+			if (CollectionUtils.isEmpty(oneWayAzGroups)) {
+				continue;
+			}
+			List<String> summaryParts = new ArrayList<>();
+			List<Long> activeDcIds = new ArrayList<>();
+			String defaultFromDc = null;
+			for (AzGroupClusterEntity azGroupCluster : oneWayAzGroups) {
+				Long activeAzId = azGroupCluster.getActiveAzId();
+				if (activeAzId == null || activeAzId <= 0) {
+					continue;
+				}
+				String activeDcName = dcIdNameMap.get(activeAzId);
+				if (activeDcName == null) {
+					continue;
+				}
+				if (defaultFromDc == null) {
+					defaultFromDc = activeDcName;
+				}
+				summaryParts.add(azGroupCluster.getAzGroupClusterType() + ":" + activeDcName);
+				activeDcIds.add(activeAzId);
+			}
+			if (summaryParts.isEmpty()) {
+				continue;
+			}
+			cluster.setHeteroActiveDcSummary(String.join(" / ", summaryParts));
+			cluster.setHeteroActiveDcIds(activeDcIds);
+			cluster.setHeteroDefaultFromDc(defaultFromDc);
+		}
+	}
+
+	@Override
 	public List<ClusterTbl> findAllClustersWithOrgInfo() {
 		List<ClusterTbl> result = clusterDao.findAllClusterWithOrgInfo();
-		result = fillClusterOrgName(result);
-		return setOrgNullIfNoOrgIdExsits(result);
+		return finalizeClusterListResult(result);
 	}
 
 	@Override
 	public List<ClusterTbl> findClustersWithOrgInfoByClusterType(String clusterType) {
 		List<ClusterTbl> result = clusterDao.findClusterWithOrgInfoByClusterType(clusterType);
-		result = fillClusterOrgName(result);
-		return setOrgNullIfNoOrgIdExsits(result);
+		return finalizeClusterListResult(result);
+	}
+
+	private List<ClusterTbl> finalizeClusterListResult(List<ClusterTbl> clusterTblList) {
+		clusterTblList = fillClusterOrgName(clusterTblList);
+		clusterTblList = setOrgNullIfNoOrgIdExsits(clusterTblList);
+		enrichHeteroClustersForList(clusterTblList);
+		return clusterTblList;
 	}
 
 	private List<ClusterTbl> fillClusterOrgName(List<ClusterTbl> clusterTblList) {
@@ -1481,12 +1537,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			overview.setMigrationClusters(null);
 			errorClusters.add(overview);
 		}
-		return errorClusters;
+		return finalizeClusterListResult(errorClusters);
 	}
 
 	@Override
 	public List<ClusterTbl> findMigratingClusters() {
-		return clusterDao.findMigratingClustersOverview();
+		return finalizeClusterListResult(clusterDao.findMigratingClustersOverview());
 	}
 
 	@Override
@@ -1537,6 +1593,16 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 					.setClusterType(clusterTbl.getClusterType());
 			result.add(cluster);
 		}
+		enrichHeteroClustersForList(clusterTbls);
+		for (ClusterTbl clusterTbl : clusterTbls) {
+			ClusterListUnhealthyClusterModel cluster = clusters.get(clusterTbl.getClusterName());
+			if (cluster == null) {
+				continue;
+			}
+			cluster.setHeteroActiveDcSummary(clusterTbl.getHeteroActiveDcSummary())
+					.setHeteroDefaultFromDc(clusterTbl.getHeteroDefaultFromDc())
+					.setHeteroActiveDcIds(clusterTbl.getHeteroActiveDcIds());
+		}
 		return result;
 	}
 
@@ -1554,8 +1620,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 		});
 
-		result = fillClusterOrgName(result);
-		return setOrgNullIfNoOrgIdExsits(result);
+		return finalizeClusterListResult(result);
 	}
 
 	@Override
@@ -1568,7 +1633,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			dcClusters.addAll(typeClustersInHetero);
 		}
 		logger.info("[findAllClusterByDcNameBindAndType] dc: {}, clusterType: {}, isCountTypeInHetero: {},  clusters size = {}", dcName, clusterType, isCountTypeInHetero, dcClusters.size());
-		return dcClusters;
+		return finalizeClusterListResult(dcClusters);
 	}
 
 	private List<ClusterTbl> findClustersByDcNameBindAndTypeInHetero(String dcName, String clusterType, List<ClusterTbl> heteroClusters) {
@@ -1604,7 +1669,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	private List<ClusterTbl> findClustersByDcNameBindAndType(String dcName, String clusterType) {
 		if (StringUtil.isEmpty(dcName) || StringUtil.isEmpty(clusterType)) return Collections.emptyList();
 		List<ClusterTbl> result = clusterDao.findByDcIdAndType(dcService.find(dcName).getId(), clusterType);
-		return setOrgNullIfNoOrgIdExsits(fillClusterOrgName(result));
+		return finalizeClusterListResult(result);
 	}
 
 	@Override
@@ -1624,8 +1689,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		List<ClusterTbl> heteroClusters = findClustersWithOrgInfoByClusterType(HETERO.name());
 		result.addAll(findClustersByActiveDcAndTypeInHetero(dcName, ClusterType.ONE_WAY.name(), dcName, heteroClusters));
 		result = deduplicateClustersById(result);
-		result = fillClusterOrgName(result);
-		result = setOrgNullIfNoOrgIdExsits(result);
+		result = finalizeClusterListResult(result);
 		enrichMigrationClustersForActiveDc(result, dcName);
 		result.removeIf(cluster -> heteroMigrationSupport.isHeteroCluster(cluster)
 				&& cluster.getMigrationAzGroupClusterId() <= 0);
@@ -1658,7 +1722,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 		}
 		logger.info("[findActiveClustersByDcNameAndType] dc: {}, clusterType: {}, isCountTypeInHetero: {},  clusters size = {}", dcName, clusterType, isCountTypeInHetero, result.size());
-		return result;
+		return finalizeClusterListResult(result);
 	}
 
 	private List<ClusterTbl> findClustersByActiveDcInHetero(String dcName, String activeDc, List<ClusterTbl> heteroClusters) {
@@ -1667,7 +1731,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	private List<ClusterTbl> findClustersByActiveDcAndType(String dcName, String clusterType) {
 		if (dcName.isEmpty() || clusterType.isEmpty()) return Collections.emptyList();
-		return setOrgNullIfNoOrgIdExsits(fillClusterOrgName(clusterDao.findByActiveDcIdAndType(dcService.find(dcName).getId(), clusterType)));
+		return finalizeClusterListResult(
+				clusterDao.findByActiveDcIdAndType(dcService.find(dcName).getId(), clusterType));
 	}
 
 	@Override
@@ -1682,12 +1747,13 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	public List<ClusterTbl> findAllClusterByKeeperContainer(long keeperContainerId) {
 		List<Long> clusterIds = redisService.findClusterIdsByKeeperContainer(keeperContainerId);
 		if (clusterIds.isEmpty()) return Collections.emptyList();
-		return queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
+		List<ClusterTbl> result = queryHandler.handleQuery(new DalQuery<List<ClusterTbl>>() {
 			@Override
 			public List<ClusterTbl> doQuery() throws DalException {
 				return dao.findClustersWithOrgInfoById(clusterIds, ClusterTblEntity.READSET_FULL_WITH_ORG);
 			}
 		});
+		return finalizeClusterListResult(result);
 	}
 
 	@Override

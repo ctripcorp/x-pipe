@@ -391,4 +391,9 @@ public class ClusterServiceWithoutDB implements ClusterService {
     public void enrichMigrationClustersForActiveDc(List<ClusterTbl> clusters, String sourceDcName) {
     }
 
+    @Override
+    public void enrichHeteroClustersForList(List<ClusterTbl> clusters) {
+        // CHECKER/no-DB mode: cluster list enrichment is a no-op
+    }
+
 }

@@ -88,4 +88,6 @@ public interface ClusterService {
 
     void enrichMigrationClustersForActiveDc(List<ClusterTbl> clusters, String sourceDcName);
 
+    void enrichHeteroClustersForList(List<ClusterTbl> clusters);
+
 }
