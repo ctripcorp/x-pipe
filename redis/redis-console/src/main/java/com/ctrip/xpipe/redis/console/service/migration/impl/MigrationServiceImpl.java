@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
+import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
@@ -35,8 +36,10 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.repository.ClusterRepository;
 import com.ctrip.xpipe.redis.console.repository.MigrationBiClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -60,7 +63,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import static com.ctrip.xpipe.api.migration.OuterClientService.DEFAULT;
 
 @Service
 public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventTblDao> implements MigrationService {
@@ -88,6 +90,9 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     private DcService dcService;
 
     @Autowired
+    private DcCache dcCache;
+
+    @Autowired
     private MigrationClusterDao migrationClusterDao;
 
     @Autowired
@@ -98,6 +103,9 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
     @Autowired
     private MetaCache metaCache;
+
+    @Autowired
+    private HeteroMigrationSupport heteroMigrationSupport;
 
     @Autowired
     private ConsoleConfig config;
@@ -305,17 +313,75 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
                 throw new BadRequestException("Target DC Id Illegal for cluster: " + clusterInfo.getClusterId());
             }
 
+            ClusterTbl clusterTbl;
             ClusterType clusterType;
             if (StringUtil.isEmpty(clusterInfo.getClusterName())) {
-                ClusterTbl clusterTbl = clusterService.find(clusterInfo.getClusterId());
+                clusterTbl = clusterService.find(clusterInfo.getClusterId());
                 clusterType = ClusterType.lookup(clusterTbl.getClusterType());
             } else {
+                clusterTbl = clusterService.find(clusterInfo.getClusterName());
                 clusterType = metaCache.getClusterType(clusterInfo.getClusterName());
             }
 
             if (null == clusterType || !clusterType.supportMigration())
                 throw new BadRequestException(String.format("cluster %s type %s not support migration", clusterInfo.getClusterName(), clusterType));
 
+            if (heteroMigrationSupport.isHeteroCluster(clusterTbl)) {
+                preCheckHeteroCluster(clusterInfo, clusterTbl);
+            }
+        }
+    }
+
+    private void preCheckHeteroCluster(MigrationRequest.ClusterInfo clusterInfo, ClusterTbl clusterTbl) {
+        String clusterName = clusterTbl.getClusterName();
+        DcTbl sourceDc = dcCache.find(clusterInfo.getFromDcId());
+        if (sourceDc == null) {
+            logger.warn("[preCheckHeteroCluster][{}] illegal source DC id: {}", clusterName, clusterInfo.getFromDcId());
+            throw new BadRequestException(String.format("HETERO cluster %s illegal source DC id: %d",
+                    clusterName, clusterInfo.getFromDcId()));
+        }
+        AzGroupClusterEntity azGroupCluster = heteroMigrationSupport.resolveMigrationAzGroupClusters(
+                Collections.singletonList(clusterTbl.getId()), sourceDc.getDcName()).get(clusterTbl.getId());
+        if (azGroupCluster == null) {
+            logger.warn("[preCheckHeteroCluster][{}] cannot resolve ONE_WAY az group for sourceDc {}",
+                    clusterName, sourceDc.getDcName());
+            throw new BadRequestException(String.format("HETERO cluster %s cannot resolve ONE_WAY az group for sourceDc %s",
+                    clusterName, sourceDc.getDcName()));
+        }
+        Long activeAzId = azGroupCluster.getActiveAzId();
+        if (activeAzId == null) {
+            logger.warn("[preCheckHeteroCluster][{}] az group active_az_id is null", clusterName);
+            throw new BadRequestException(String.format("HETERO cluster %s az group active_az_id is not configured",
+                    clusterName));
+        }
+        if (clusterInfo.getFromDcId() != activeAzId) {
+            logger.warn("[preCheckHeteroCluster][{}] sourceDc must be az group active_dc_id, expected {} but got {}",
+                    clusterName, activeAzId, clusterInfo.getFromDcId());
+            throw new BadRequestException(String.format(
+                    "HETERO cluster %s sourceDc must be az group active_dc_id, expected %d but got %d",
+                    clusterName, activeAzId, clusterInfo.getFromDcId()));
+        }
+        if (clusterInfo.getAzGroupClusterId() != null
+                && !clusterInfo.getAzGroupClusterId().equals(azGroupCluster.getId())) {
+            logger.warn("[preCheckHeteroCluster][{}] azGroupClusterId mismatch, expected {} but got {}",
+                    clusterName, azGroupCluster.getId(), clusterInfo.getAzGroupClusterId());
+            throw new BadRequestException(String.format(
+                    "HETERO cluster %s azGroupClusterId mismatch, expected %d but got %d",
+                    clusterName, azGroupCluster.getId(), clusterInfo.getAzGroupClusterId()));
+        }
+        DcTbl targetDc = dcCache.find(clusterInfo.getToDcId());
+        if (targetDc == null) {
+            logger.warn("[preCheckHeteroCluster][{}] illegal target DC id: {}", clusterName, clusterInfo.getToDcId());
+            throw new BadRequestException(String.format("HETERO cluster %s illegal target DC id: %d",
+                    clusterName, clusterInfo.getToDcId()));
+        }
+        if (!heteroMigrationSupport.isSameAzGroup(
+                clusterTbl.getId(), sourceDc.getDcName(), targetDc.getDcName())) {
+            logger.warn("[preCheckHeteroCluster][{}] target DC {} must be in same az group as source DC {}",
+                    clusterName, targetDc.getDcName(), sourceDc.getDcName());
+            throw new BadRequestException(String.format(
+                    "HETERO cluster %s target DC %s must be in same az group as source DC %s",
+                    clusterName, targetDc.getDcName(), sourceDc.getDcName()));
         }
     }
 
@@ -951,5 +1017,23 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     @VisibleForTesting
     void setDcRelationsService(DcRelationsService dcRelationsService) {
         this.dcRelationsService = dcRelationsService;
+    }
+
+    @VisibleForTesting
+    MigrationServiceImpl setHeteroMigrationSupport(HeteroMigrationSupport heteroMigrationSupport) {
+        this.heteroMigrationSupport = heteroMigrationSupport;
+        return this;
+    }
+
+    @VisibleForTesting
+    MigrationServiceImpl setDcCache(DcCache dcCache) {
+        this.dcCache = dcCache;
+        return this;
+    }
+
+    @VisibleForTesting
+    MigrationServiceImpl setMigrationEventDao(MigrationEventDao migrationEventDao) {
+        this.migrationEventDao = migrationEventDao;
+        return this;
     }
 }

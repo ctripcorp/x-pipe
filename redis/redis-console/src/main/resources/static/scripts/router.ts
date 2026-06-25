@@ -142,11 +142,19 @@ function router($stateProvider, $urlRouterProvider) {
 
         })
         .state('migration_index', {
-        	url: '/active_dc_migration?:clusterName',
+        	url: '/active_dc_migration?:clusterName&:fromDc',
             params: {
                 clusters: {
                     value: [],
                     squash: false
+                },
+                clusterName: {
+                    value: null,
+                    squash: true
+                },
+                fromDc: {
+                    value: null,
+                    squash: true
                 }
             },
             templateUrl: 'views/index/migration_index.html',

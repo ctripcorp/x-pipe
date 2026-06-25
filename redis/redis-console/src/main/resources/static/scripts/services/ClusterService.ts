@@ -15,6 +15,11 @@ function ClusterService($resource, $q) {
             url: '/console/clusters/:clusterName/dcs',
             isArray: true
         },
+        find_cluster_dc_groups: {
+            method: 'GET',
+            url: '/console/clusters/:clusterName/dc-groups',
+            isArray: true
+        },
         find_clusters_by_names: {
             method: 'POST',
             url: '/console/clusters/by/names?activeDcName=:activeDcName',
@@ -206,6 +211,19 @@ function ClusterService($resource, $q) {
                                   function (result) {
                                       d.resolve(result);
                                   }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
+    function findClusterDcGroups(clusterName) {
+        var d = $q.defer();
+        resource.find_cluster_dc_groups({
+                                            clusterName: clusterName
+                                        },
+                                        function (result) {
+                                            d.resolve(result);
+                                        }, function (result) {
                 d.reject(result);
             });
         return d.promise;
@@ -556,6 +574,7 @@ function ClusterService($resource, $q) {
     return {
         load_cluster: loadCluster,
         findClusterDCs: findClusterDCs,
+        findClusterDcGroups: findClusterDcGroups,
         findClustersByNames: findClustersByNames,
         findAllClusters: findAllClusters,
         findAllClustersByType: findAllClustersByType,

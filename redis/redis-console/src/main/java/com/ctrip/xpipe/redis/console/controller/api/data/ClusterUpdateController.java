@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.spring.AbstractController;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -154,7 +155,11 @@ public class ClusterUpdateController extends AbstractController {
     }
 
     @GetMapping(value = "/clusters")
-    public List<ClusterCreateInfo> getClusters(@RequestParam(value ="types", required = false, defaultValue = "one_way,hetero") Set<String> clusterTypes) throws CheckFailException {
+    public List<ClusterCreateInfo> getClusters(@RequestParam(value ="types", required = false, defaultValue = "one_way,hetero") Set<String> clusterTypes,
+            @RequestParam(value = "preferRegion", required = false,
+                    defaultValue = HeteroMigrationSupport.DEFAULT_PREFER_REGION) String preferRegion)
+            throws CheckFailException {
+        logger.info("[getClusters]clusterTypes={}, preferRegion={}", clusterTypes, preferRegion);
 
         for (String clusterType: clusterTypes) {
             if (!ClusterType.isTypeValidate(clusterType)) {
@@ -164,7 +169,7 @@ public class ClusterUpdateController extends AbstractController {
 
         List<ClusterDTO> clusterDTOList = new ArrayList<>();
         for (String clusterType: clusterTypes) {
-            clusterDTOList.addAll(clusterService.getClusters(clusterType));
+            clusterDTOList.addAll(clusterService.getClusters(clusterType, preferRegion));
         }
         List<ClusterCreateInfo> clusterCreateInfoList = clusterDTOList.stream()
             .map(ClusterCreateInfo::new)

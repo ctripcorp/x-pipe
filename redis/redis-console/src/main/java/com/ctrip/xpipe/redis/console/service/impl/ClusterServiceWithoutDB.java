@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.dto.MultiGroupClusterCreateDTO;
 import com.ctrip.xpipe.redis.console.dto.SingleGroupClusterCreateDTO;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterDcGroupModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 import com.ctrip.xpipe.redis.console.resources.ConsolePortalService;
@@ -192,7 +193,12 @@ public class ClusterServiceWithoutDB implements ClusterService {
     }
 
     @Override
-    public List<ClusterDTO> getClusters(String clusterType) {
+    public List<ClusterDTO> getClusters(String clusterType, String preferRegion) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<ClusterDcGroupModel> findClusterDcGroups(String clusterName) {
         throw new UnsupportedOperationException();
     }
 
@@ -389,6 +395,11 @@ public class ClusterServiceWithoutDB implements ClusterService {
 
     @Override
     public void enrichMigrationClustersForActiveDc(List<ClusterTbl> clusters, String sourceDcName) {
+    }
+
+    @Override
+    public void enrichHeteroClustersForList(List<ClusterTbl> clusters) {
+        // CHECKER/no-DB mode: cluster list enrichment is a no-op
     }
 
 }

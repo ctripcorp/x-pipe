@@ -9,6 +9,8 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     DcClusterService, HealthCheckService, ProxyService, ClusterType, ShardService) {
 
     $scope.dcs, $scope.shards;
+    $scope.dcGroups = [];
+    $scope.isHeteroCluster = false;
     $scope.clusterName = $stateParams.clusterName;
     $scope.routeAvail = false;
 
@@ -42,6 +44,43 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     }
 
     function loadCluster() {
+        ClusterService.load_cluster($scope.clusterName)
+            .then(function (cluster) {
+                $scope._clusterType = ClusterType.lookup(cluster.clusterType);
+                $scope.isHeteroCluster = $scope._clusterType && $scope._clusterType.useAzGroupType;
+                if ($scope.isHeteroCluster) {
+                    loadHeteroCluster(cluster);
+                    return;
+                }
+                loadFlatCluster(cluster);
+            }, function (result) {
+                toastr.error(AppUtil.errorMsg(result));
+            });
+    }
+
+    function loadHeteroCluster(cluster) {
+        ClusterService.findClusterDcGroups($scope.clusterName)
+            .then(function (groups) {
+                if (!groups || groups.length === 0) {
+                    $scope.dcGroups = [];
+                    $scope.dcs = [];
+                    $scope.shards = [];
+                    return;
+                }
+                $scope.dcGroups = groups;
+                $scope.dcs = flattenDcsFromGroups(groups);
+                initCurrentDcName(cluster, groups);
+                if (!$scope._clusterType.useAzGroupType) {
+                    setClusterType(cluster.clusterType);
+                }
+                existsRoute($scope.currentDcName, $scope.clusterName);
+                loadDcCluster($scope.clusterName, $scope.currentDcName);
+            }, function (result) {
+                toastr.error(AppUtil.errorMsg(result));
+            });
+    }
+
+    function loadFlatCluster(cluster) {
         ClusterService.findClusterDCs($scope.clusterName)
             .then(function (result) {
                 if (!result || result.length === 0) {
@@ -50,45 +89,94 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
                     return;
                 }
                 $scope.dcs = result;
-
-                // TODO [marsqing] do not re-get dc data when switch dc
-                if($scope.dcs && $scope.dcs.length > 0) {
-                    $scope.dcs.forEach(function(dc){
-                    	if(dc.dcName === $stateParams.currentDcName) {
-		                    $scope.currentDcName = dc.dcName;
-                    	}
-                    });
-
-                    ClusterService.load_cluster($stateParams.clusterName).then(function(result) {
-                        var cluster = result;
-                        if (!$scope.currentDcName) {
-                            var filteredDc = $scope.dcs.filter(function(dc) {
-                                return dc.id === cluster.activedcId;
-                            })
-                            if(filteredDc.length > 0) {
-                                $scope.currentDcName = filteredDc[0].dcName;
-                                $scope.activeDcName = filteredDc[0].dcName;
-                            } else {
-                                $scope.currentDcName = $scope.dcs[0].dcName;
-                            }
-                        }
-
-                        $scope._clusterType = ClusterType.lookup(cluster.clusterType);
-                        if (!$scope._clusterType.useAzGroupType) {
-                            setClusterType(cluster.clusterType)
-                        }
-
-                        existsRoute($scope.currentDcName, $scope.clusterName);
-                        loadDcCluster($scope.clusterName, $scope.currentDcName);
-                    }, function(result) {
-                        $scope.currentDcName = $scope.dcs[0].dcName;
-                        switchDc($scope.dcs[0]);
-                    });
+                initCurrentDcName(cluster, null);
+                if (!$scope._clusterType.useAzGroupType) {
+                    setClusterType(cluster.clusterType);
                 }
-
+                existsRoute($scope.currentDcName, $scope.clusterName);
+                loadDcCluster($scope.clusterName, $scope.currentDcName);
             }, function (result) {
                 toastr.error(AppUtil.errorMsg(result));
             });
+    }
+
+    function initCurrentDcName(cluster, groups) {
+        if ($stateParams.currentDcName) {
+            var matched = findDcByName($stateParams.currentDcName, groups);
+            if (matched) {
+                $scope.currentDcName = matched.dcName;
+                $scope.activeDcName = matched.dcName;
+                return;
+            }
+        }
+        if (groups && groups.length > 0) {
+            var firstOneWayGroup = groups.find(function (group) {
+                return group.azGroupClusterType === 'ONE_WAY';
+            });
+            if (firstOneWayGroup) {
+                var activeDc = firstOneWayGroup.dcs.find(function (dc) {
+                    return dc.id === firstOneWayGroup.activeAzId;
+                });
+                if (activeDc) {
+                    $scope.currentDcName = activeDc.dcName;
+                    $scope.activeDcName = activeDc.dcName;
+                    return;
+                }
+            }
+            if (firstOneWayGroup && firstOneWayGroup.dcs.length > 0) {
+                $scope.currentDcName = firstOneWayGroup.dcs[0].dcName;
+                return;
+            }
+            if (groups[0].dcs.length > 0) {
+                $scope.currentDcName = groups[0].dcs[0].dcName;
+                return;
+            }
+        }
+        if ($scope.dcs && $scope.dcs.length > 0) {
+            var filteredDc = $scope.dcs.filter(function (dc) {
+                return dc.id === cluster.activedcId;
+            });
+            if (filteredDc.length > 0) {
+                $scope.currentDcName = filteredDc[0].dcName;
+                $scope.activeDcName = filteredDc[0].dcName;
+            } else {
+                $scope.currentDcName = $scope.dcs[0].dcName;
+            }
+        }
+    }
+
+    function findDcByName(dcName, groups) {
+        if (groups && groups.length > 0) {
+            for (var i = 0; i < groups.length; i++) {
+                var matched = groups[i].dcs.find(function (dc) {
+                    return dc.dcName === dcName;
+                });
+                if (matched) {
+                    return matched;
+                }
+            }
+            return null;
+        }
+        if (!$scope.dcs) {
+            return null;
+        }
+        return $scope.dcs.find(function (dc) {
+            return dc.dcName === dcName;
+        }) || null;
+    }
+
+    function flattenDcsFromGroups(groups) {
+        var seen = {};
+        var flattened = [];
+        groups.forEach(function (group) {
+            group.dcs.forEach(function (dc) {
+                if (!seen[dc.dcName]) {
+                    seen[dc.dcName] = true;
+                    flattened.push(dc);
+                }
+            });
+        });
+        return flattened;
     }
 
     function setClusterType(clusterType) {

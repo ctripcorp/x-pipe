@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.MigrationNoNeedException;
+import com.ctrip.xpipe.redis.console.service.migration.exception.WrongClusterMetaException;
 import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -85,7 +86,7 @@ public class MigrationPreCheckCmdHeteroTest extends AbstractConsoleTest {
         when(heteroMigrationSupport.resolveAzGroupClusterForBeaconRequest(clusterTbl, migrationRequest))
                 .thenReturn(shaOneWayAzGroup);
         when(dcCache.find(1L)).thenReturn(jqDc);
-        when(beaconMetaService.compareDrBeaconMetaWithXPipe(eq("hetero-dual-oneway"), anySet()))
+        when(beaconMetaService.compareDrBeaconMetaWithXPipe(eq("hetero-dual-oneway"), eq("jq"), anySet()))
                 .thenReturn(true);
     }
 
@@ -96,6 +97,19 @@ public class MigrationPreCheckCmdHeteroTest extends AbstractConsoleTest {
         Assert.assertTrue(future.isSuccess());
         Assert.assertEquals(shaOneWayAzGroup, migrationRequest.getAzGroupCluster());
         Assert.assertEquals(jqDc, migrationRequest.getSourceDcTbl());
+    }
+
+    @Test(expected = WrongClusterMetaException.class)
+    public void heteroPreCheckShouldFailWhenActiveAzIdIsNull() throws Throwable {
+        AzGroupClusterEntity azGroupWithoutActive = new AzGroupClusterEntity().setId(23L).setActiveAzId(null)
+                .setAzGroupClusterType(ClusterType.ONE_WAY.name());
+        when(heteroMigrationSupport.resolveAzGroupClusterForBeaconRequest(clusterTbl, migrationRequest))
+                .thenReturn(azGroupWithoutActive);
+
+        CommandFuture future = preCheckCmd.execute();
+        waitConditionUntilTimeOut(() -> future.isDone());
+        Assert.assertFalse(future.isSuccess());
+        throw future.cause();
     }
 
     @Test(expected = MigrationNoNeedException.class)

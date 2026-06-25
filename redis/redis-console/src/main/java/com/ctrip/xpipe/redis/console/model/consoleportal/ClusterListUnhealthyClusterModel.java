@@ -11,6 +11,12 @@ public class ClusterListUnhealthyClusterModel extends AbstractClusterModel {
 
     private Long activedcId;
 
+    private String heteroActiveDcSummary;
+
+    private String heteroDefaultFromDc;
+
+    private List<Long> heteroActiveDcIds;
+
     private List<String> messages;
 
     private int unhealthyShardsCnt;
@@ -30,6 +36,33 @@ public class ClusterListUnhealthyClusterModel extends AbstractClusterModel {
 
     public ClusterListUnhealthyClusterModel setActivedcId(Long activedcId) {
         this.activedcId = activedcId;
+        return this;
+    }
+
+    public String getHeteroActiveDcSummary() {
+        return heteroActiveDcSummary;
+    }
+
+    public ClusterListUnhealthyClusterModel setHeteroActiveDcSummary(String heteroActiveDcSummary) {
+        this.heteroActiveDcSummary = heteroActiveDcSummary;
+        return this;
+    }
+
+    public String getHeteroDefaultFromDc() {
+        return heteroDefaultFromDc;
+    }
+
+    public ClusterListUnhealthyClusterModel setHeteroDefaultFromDc(String heteroDefaultFromDc) {
+        this.heteroDefaultFromDc = heteroDefaultFromDc;
+        return this;
+    }
+
+    public List<Long> getHeteroActiveDcIds() {
+        return heteroActiveDcIds;
+    }
+
+    public ClusterListUnhealthyClusterModel setHeteroActiveDcIds(List<Long> heteroActiveDcIds) {
+        this.heteroActiveDcIds = heteroActiveDcIds;
         return this;
     }
 

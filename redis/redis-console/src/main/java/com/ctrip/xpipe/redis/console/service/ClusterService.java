@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.redis.console.dto.ClusterDTO;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.redis.console.dto.ClusterUpdateDTO;
 import com.ctrip.xpipe.redis.console.dto.MultiGroupClusterCreateDTO;
 import com.ctrip.xpipe.redis.console.dto.SingleGroupClusterCreateDTO;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterDcGroupModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 
@@ -31,7 +33,13 @@ public interface ClusterService {
 	void updateClusterTag(String clusterName, String clusterTag);
     Long getAllCount();
 	ClusterDTO getCluster(String clusterName);
-	List<ClusterDTO> getClusters(String clusterType);
+	default List<ClusterDTO> getClusters(String clusterType) {
+		return getClusters(clusterType, HeteroMigrationSupport.DEFAULT_PREFER_REGION);
+	}
+
+	List<ClusterDTO> getClusters(String clusterType, String preferRegion);
+
+	List<ClusterDcGroupModel> findClusterDcGroups(String clusterName);
 	List<ClusterDTO> getClusterWithShards(String clusterType);
 	ClusterDTO getOneWayClusterAll(String clusterName);
 
@@ -87,5 +95,7 @@ public interface ClusterService {
     void completeReplicationByClusterAndReplDirection(ClusterTbl cluster, ReplDirectionInfoModel replDirection);
 
     void enrichMigrationClustersForActiveDc(List<ClusterTbl> clusters, String sourceDcName);
+
+    void enrichHeteroClustersForList(List<ClusterTbl> clusters);
 
 }
