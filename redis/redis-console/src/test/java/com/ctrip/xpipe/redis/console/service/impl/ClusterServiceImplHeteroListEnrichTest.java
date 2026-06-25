@@ -55,6 +55,31 @@ public class ClusterServiceImplHeteroListEnrichTest extends AbstractConsoleInteg
     }
 
     @Test
+    public void testEnrichHeteroOneWayAndSingleDcClusterListFields() {
+        ClusterTbl cluster = clusterService.find("hetero-cluster");
+        Assert.assertNotNull(cluster);
+        Assert.assertEquals(ClusterType.HETERO.name(), cluster.getClusterType());
+
+        clusterService.enrichHeteroClustersForList(Collections.singletonList(cluster));
+        Assert.assertEquals("SINGLE_DC:fra / ONE_WAY:jq", cluster.getHeteroActiveDcSummary());
+        Assert.assertEquals("jq", cluster.getHeteroDefaultFromDc());
+        Assert.assertEquals(Arrays.asList(3L, 1L), cluster.getHeteroActiveDcIds());
+    }
+
+    @Test
+    public void testFindAllClustersWithOrgInfoEnrichesHeteroOneWayAndSingleDcCluster() {
+        List<ClusterTbl> clusters = clusterService.findAllClustersWithOrgInfo();
+        ClusterTbl hetero = clusters.stream()
+                .filter(c -> "hetero-cluster".equals(c.getClusterName()))
+                .findFirst()
+                .orElse(null);
+        Assert.assertNotNull(hetero);
+        Assert.assertEquals("SINGLE_DC:fra / ONE_WAY:jq", hetero.getHeteroActiveDcSummary());
+        Assert.assertEquals("jq", hetero.getHeteroDefaultFromDc());
+        Assert.assertEquals(Arrays.asList(3L, 1L), hetero.getHeteroActiveDcIds());
+    }
+
+    @Test
     public void testOneWayClusterListFieldsUnchanged() {
         ClusterTbl cluster = clusterService.find("cluster1");
         clusterService.enrichHeteroClustersForList(Collections.singletonList(cluster));

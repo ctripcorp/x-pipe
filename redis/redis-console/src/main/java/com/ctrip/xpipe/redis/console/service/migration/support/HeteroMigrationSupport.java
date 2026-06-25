@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 @Component
 public class HeteroMigrationSupport {
 
+    public static final String DEFAULT_PREFER_REGION = "SHA";
+
     @Resource
     private AzGroupClusterRepository azGroupClusterRepository;
 
@@ -48,8 +50,24 @@ public class HeteroMigrationSupport {
     }
 
     public Map<Long, List<AzGroupClusterEntity>> listOneWayAzGroupClustersSorted(Collection<Long> clusterIds) {
-        if (CollectionUtils.isEmpty(clusterIds)) {
+        return listAzGroupClustersSortedByType(clusterIds, ClusterType.ONE_WAY);
+    }
+
+    /**
+     * Az group clusters shown on cluster_list (ONE_WAY + SINGLE_DC), each with its own active_az.
+     */
+    public Map<Long, List<AzGroupClusterEntity>> listDisplayAzGroupClustersSorted(Collection<Long> clusterIds) {
+        return listAzGroupClustersSortedByType(clusterIds, ClusterType.ONE_WAY, ClusterType.SINGLE_DC);
+    }
+
+    private Map<Long, List<AzGroupClusterEntity>> listAzGroupClustersSortedByType(Collection<Long> clusterIds,
+                                                                                  ClusterType... types) {
+        if (CollectionUtils.isEmpty(clusterIds) || types == null || types.length == 0) {
             return Collections.emptyMap();
+        }
+        Set<ClusterType> allowedTypes = new HashSet<>();
+        for (ClusterType type : types) {
+            allowedTypes.add(type);
         }
         List<Long> ids = clusterIds.stream().filter(id -> id != null && id > 0).distinct().collect(Collectors.toList());
         if (ids.isEmpty()) {
@@ -61,14 +79,14 @@ public class HeteroMigrationSupport {
         }
         Map<Long, List<AzGroupClusterEntity>> result = new HashMap<>();
         for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
-            if (!ClusterType.isSameClusterType(azGroupCluster.getAzGroupClusterType(), ClusterType.ONE_WAY)) {
+            ClusterType azGroupType = ClusterType.lookup(azGroupCluster.getAzGroupClusterType());
+            if (!allowedTypes.contains(azGroupType)) {
                 continue;
             }
             result.computeIfAbsent(azGroupCluster.getClusterId(), ignored -> new ArrayList<>()).add(azGroupCluster);
         }
-        Comparator<AzGroupClusterEntity> order = oneWayAzGroupClusterOrder();
-        for (List<AzGroupClusterEntity> oneWayList : result.values()) {
-            oneWayList.sort(order);
+        for (List<AzGroupClusterEntity> azGroupList : result.values()) {
+            sortAzGroupClustersByRegion(azGroupList);
         }
         return result;
     }
@@ -79,27 +97,49 @@ public class HeteroMigrationSupport {
     }
 
     public AzGroupClusterEntity pickOneWayAzGroupClusterByRegion(long clusterId, String preferRegion) {
-        List<AzGroupClusterEntity> sorted = listOneWayAzGroupClustersSorted(clusterId);
-        if (sorted.isEmpty()) {
+        return pickOneWayAzGroupClusterByRegion(listOneWayAzGroupClustersSorted(clusterId), preferRegion);
+    }
+
+    public AzGroupClusterEntity pickOneWayAzGroupClusterByRegion(List<AzGroupClusterEntity> sortedOneWay,
+                                                                 String preferRegion) {
+        if (CollectionUtils.isEmpty(sortedOneWay)) {
             return null;
         }
         if (!StringUtils.isEmpty(preferRegion)) {
-            for (AzGroupClusterEntity azGroupCluster : sorted) {
+            for (AzGroupClusterEntity azGroupCluster : sortedOneWay) {
                 AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
                 if (azGroup != null && preferRegion.equalsIgnoreCase(azGroup.getRegion())) {
                     return azGroupCluster;
                 }
             }
         }
-        return sorted.get(0);
+        return sortedOneWay.get(0);
     }
 
-    private Comparator<AzGroupClusterEntity> oneWayAzGroupClusterOrder() {
+    public void sortAzGroupClustersByRegion(List<AzGroupClusterEntity> azGroupClusters) {
+        if (CollectionUtils.isEmpty(azGroupClusters)) {
+            return;
+        }
+        Map<Long, String> regionByAzGroupId = buildAzGroupIdToRegionMap(azGroupClusters);
+        azGroupClusters.sort(azGroupClusterOrder(regionByAzGroupId));
+    }
+
+    private Map<Long, String> buildAzGroupIdToRegionMap(Collection<AzGroupClusterEntity> azGroupClusters) {
+        Map<Long, String> regionByAzGroupId = new HashMap<>();
+        for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+            long azGroupId = azGroupCluster.getAzGroupId();
+            regionByAzGroupId.computeIfAbsent(azGroupId, id -> {
+                AzGroupModel azGroup = azGroupCache.getAzGroupById(id);
+                return azGroup != null ? azGroup.getRegion() : "";
+            });
+        }
+        return regionByAzGroupId;
+    }
+
+    private Comparator<AzGroupClusterEntity> azGroupClusterOrder(Map<Long, String> regionByAzGroupId) {
         return Comparator
-                .comparing((AzGroupClusterEntity azGroupCluster) -> {
-                    AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
-                    return azGroup != null ? azGroup.getRegion() : "";
-                })
+                .comparing((AzGroupClusterEntity azGroupCluster) ->
+                        regionByAzGroupId.getOrDefault(azGroupCluster.getAzGroupId(), ""))
                 .thenComparing(AzGroupClusterEntity::getId);
     }
 

@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
+import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.InstanceInfo;
@@ -25,6 +26,7 @@ import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterDcGroupModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ProxyChainModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
@@ -157,6 +159,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
     @Autowired
     private AzGroupCache azGroupCache;
+
+	@Autowired
+	private DcCache dcCache;
 
 	@Autowired
 	private DcClusterRepository dcClusterRepository;
@@ -319,15 +324,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
         List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(clusterTbl.getId());
         List<AzGroupDTO> azGroups = azGroupClusters.stream()
-            .map(azGroupCluster -> {
-                AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
-                return AzGroupDTO.builder()
-                    .region(azGroup.getRegion())
-                    .clusterType(azGroupCluster.getAzGroupClusterType())
-                    .activeAz(dcIdNameMap.get(azGroupCluster.getActiveAzId()))
-                    .azs(azGroup.getAzsAsList())
-                    .build();
-            })
+            .map(azGroupCluster -> buildAzGroupDTO(azGroupCluster, dcIdNameMap))
+            .filter(Objects::nonNull)
             .collect(Collectors.toList());
         cluster.setAzGroups(azGroups);
 
@@ -335,9 +333,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     }
 
 	@Override
-	public List<ClusterDTO> getClusters(String clusterType) {
+	public List<ClusterDTO> getClusters(String clusterType, String preferRegion) {
+        String normalizedClusterType = ClusterType.lookup(clusterType).name();
         Map<Long, String> dcIdNameMap = dcService.dcNameMap();
-        List<ClusterTbl> clusterTbls = findClustersWithOrgInfoByClusterType(clusterType);
+        List<ClusterTbl> clusterTbls = findClustersWithOrgInfoByClusterType(normalizedClusterType);
         List<Long> clusterIds = clusterTbls.stream().map(ClusterTbl::getId).collect(Collectors.toList());
 
         List<DcClusterEntity> dcClusters = dcClusterRepository.selectByClusterIds(clusterIds);
@@ -347,6 +346,12 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterIds(clusterIds);
         Map<Long, List<AzGroupClusterEntity>> clusterIdAzGroupClusterMap = azGroupClusters.stream()
             .collect(Collectors.groupingBy(AzGroupClusterEntity::getClusterId));
+        List<Long> heteroClusterIds = clusterTbls.stream()
+                .filter(heteroMigrationSupport::isHeteroCluster)
+                .map(ClusterTbl::getId)
+                .collect(Collectors.toList());
+        Map<Long, List<AzGroupClusterEntity>> oneWayAzGroupMap =
+                heteroMigrationSupport.listOneWayAzGroupClustersSorted(heteroClusterIds);
 
         List<ClusterDTO> clusters = new ArrayList<>();
         for (ClusterTbl clusterTbl : clusterTbls) {
@@ -356,25 +361,33 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
             } else {
                 cluster.setCmsOrgId(0L);
             }
-            cluster.setActiveAz(dcIdNameMap.get(clusterTbl.getActivedcId()));
-
-            List<String> azs = clusterIdDcsMap.getOrDefault(clusterTbl.getId(), Collections.emptyList());
-            cluster.setAzs(azs);
 
             List<AzGroupClusterEntity> clusterAzGroups = clusterIdAzGroupClusterMap.get(clusterTbl.getId());
+            if (heteroMigrationSupport.isHeteroCluster(clusterTbl)) {
+                List<AzGroupClusterEntity> oneWayList = oneWayAzGroupMap.getOrDefault(
+                        clusterTbl.getId(), Collections.emptyList());
+                AzGroupClusterEntity pickedOneWay = heteroMigrationSupport.pickOneWayAzGroupClusterByRegion(
+                        oneWayList, preferRegion);
+                if (pickedOneWay != null) {
+                    cluster.setActiveAz(dcIdNameMap.get(pickedOneWay.getActiveAzId()));
+                    cluster.setAzs(buildAzsWithActiveFirst(pickedOneWay, dcIdNameMap));
+                } else {
+                    cluster.setActiveAz(dcIdNameMap.get(clusterTbl.getActivedcId()));
+                    cluster.setAzs(clusterIdDcsMap.getOrDefault(clusterTbl.getId(), Collections.emptyList()));
+                }
+            } else {
+                cluster.setActiveAz(dcIdNameMap.get(clusterTbl.getActivedcId()));
+                cluster.setAzs(clusterIdDcsMap.getOrDefault(clusterTbl.getId(), Collections.emptyList()));
+            }
+
 			if (!CollectionUtils.isEmpty(clusterAzGroups)) {
 				List<AzGroupDTO> azGroups = clusterAzGroups.stream()
-					.map(agc -> {
-                        AzGroupModel azGroup = azGroupCache.getAzGroupById(agc.getAzGroupId());
-                        return AzGroupDTO.builder()
-                            .region(azGroup.getRegion())
-                            .clusterType(agc.getAzGroupClusterType())
-                            .activeAz(dcIdNameMap.get(agc.getActiveAzId()))
-                            .azs(azGroup.getAzsAsList())
-                            .build();
-                    })
+					.map(agc -> buildAzGroupDTO(agc, dcIdNameMap))
+					.filter(Objects::nonNull)
 					.collect(Collectors.toList());
-				cluster.setAzGroups(azGroups);
+				if (!azGroups.isEmpty()) {
+					cluster.setAzGroups(azGroups);
+				}
 			}
 
 			clusters.add(cluster);
@@ -382,6 +395,101 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
         return clusters;
 	}
+
+	private List<String> buildAzsWithActiveFirst(AzGroupClusterEntity azGroupCluster, Map<Long, String> dcIdNameMap) {
+        AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+        if (azGroup == null) {
+            return Collections.emptyList();
+        }
+        String activeAz = dcIdNameMap.get(azGroupCluster.getActiveAzId());
+        if (activeAz == null) {
+            return azGroup.getAzsAsList();
+        }
+        List<String> azs = new ArrayList<>();
+        azs.add(activeAz);
+        for (String az : azGroup.getAzsAsList()) {
+            if (!Objects.equals(az, activeAz)) {
+                azs.add(az);
+            }
+        }
+        return azs;
+    }
+
+    private AzGroupDTO buildAzGroupDTO(AzGroupClusterEntity azGroupCluster, Map<Long, String> dcIdNameMap) {
+        AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+        if (azGroup == null) {
+            return null;
+        }
+        return AzGroupDTO.builder()
+                .region(azGroup.getRegion())
+                .clusterType(azGroupCluster.getAzGroupClusterType())
+                .activeAz(dcIdNameMap.get(azGroupCluster.getActiveAzId()))
+                .azs(azGroup.getAzsAsList())
+                .build();
+    }
+
+	@Override
+	public List<ClusterDcGroupModel> findClusterDcGroups(String clusterName) {
+        ClusterTbl cluster = find(clusterName);
+        if (cluster == null || !heteroMigrationSupport.isHeteroCluster(cluster)) {
+            return Collections.emptyList();
+        }
+        Map<Long, String> dcIdNameMap = dcService.dcNameMap();
+        Map<String, Long> dcNameIdMap = dcIdNameMap.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey, (left, right) -> left));
+
+        List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(cluster.getId());
+        if (CollectionUtils.isEmpty(azGroupClusters)) {
+            return Collections.emptyList();
+        }
+
+        List<DcClusterEntity> dcClusters = dcClusterRepository.selectByClusterIds(
+                Collections.singletonList(cluster.getId()));
+        Map<Long, Set<Long>> azGroupClusterDcIds = dcClusters.stream()
+                .filter(dcCluster -> dcCluster.getAzGroupClusterId() != null && dcCluster.getAzGroupClusterId() > 0)
+                .collect(Collectors.groupingBy(DcClusterEntity::getAzGroupClusterId,
+                        Collectors.mapping(DcClusterEntity::getDcId, Collectors.toSet())));
+
+        heteroMigrationSupport.sortAzGroupClustersByRegion(azGroupClusters);
+
+        Map<Long, DcTbl> dcTblById = dcClusters.stream()
+                .map(DcClusterEntity::getDcId)
+                .distinct()
+                .map(dcCache::find)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(DcTbl::getId, Function.identity(), (left, right) -> left));
+
+        List<ClusterDcGroupModel> result = new ArrayList<>();
+        for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+            AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+            if (azGroup == null) {
+                logger.warn("[findClusterDcGroups]clusterName={}, azGroupClusterId={}, azGroupId={} azGroup not found",
+                        clusterName, azGroupCluster.getId(), azGroupCluster.getAzGroupId());
+                continue;
+            }
+            Set<Long> boundDcIds = azGroupClusterDcIds.getOrDefault(azGroupCluster.getId(), Collections.emptySet());
+            List<DcTbl> dcs = new ArrayList<>();
+            for (String azName : azGroup.getAzsAsList()) {
+                Long dcId = dcNameIdMap.get(azName);
+                if (dcId != null && boundDcIds.contains(dcId) && dcTblById.containsKey(dcId)) {
+                    dcs.add(dcTblById.get(dcId));
+                }
+            }
+            if (dcs.isEmpty()) {
+                logger.warn("[findClusterDcGroups]clusterName={}, azGroupClusterId={}, region={} no bound dcs",
+                        clusterName, azGroupCluster.getId(), azGroup.getRegion());
+                continue;
+            }
+            result.add(new ClusterDcGroupModel()
+                    .setAzGroupId(azGroup.getId())
+                    .setAzGroupClusterId(azGroupCluster.getId())
+                    .setRegion(azGroup.getRegion())
+                    .setAzGroupClusterType(azGroupCluster.getAzGroupClusterType())
+                    .setActiveAzId(azGroupCluster.getActiveAzId())
+                    .setDcs(dcs));
+        }
+        return result;
+    }
 
 	public List<ClusterDTO> getClusterWithShards(String clusterType) {
 		List<ClusterDTO> clusters = getClusters(clusterType);
@@ -744,20 +852,20 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			return;
 		}
 		Map<Long, String> dcIdNameMap = dcService.dcNameMap();
-		Map<Long, List<AzGroupClusterEntity>> oneWayAzGroupMap =
-				heteroMigrationSupport.listOneWayAzGroupClustersSorted(heteroClusterIds);
+		Map<Long, List<AzGroupClusterEntity>> displayAzGroupMap =
+				heteroMigrationSupport.listDisplayAzGroupClustersSorted(heteroClusterIds);
 		for (ClusterTbl cluster : clusters) {
 			if (!heteroMigrationSupport.isHeteroCluster(cluster) || cluster.getHeteroActiveDcSummary() != null) {
 				continue;
 			}
-			List<AzGroupClusterEntity> oneWayAzGroups = oneWayAzGroupMap.get(cluster.getId());
-			if (CollectionUtils.isEmpty(oneWayAzGroups)) {
+			List<AzGroupClusterEntity> displayAzGroups = displayAzGroupMap.get(cluster.getId());
+			if (CollectionUtils.isEmpty(displayAzGroups)) {
 				continue;
 			}
 			List<String> summaryParts = new ArrayList<>();
 			List<Long> activeDcIds = new ArrayList<>();
 			String defaultFromDc = null;
-			for (AzGroupClusterEntity azGroupCluster : oneWayAzGroups) {
+			for (AzGroupClusterEntity azGroupCluster : displayAzGroups) {
 				Long activeAzId = azGroupCluster.getActiveAzId();
 				if (activeAzId == null || activeAzId <= 0) {
 					continue;
@@ -766,7 +874,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				if (activeDcName == null) {
 					continue;
 				}
-				if (defaultFromDc == null) {
+				if (defaultFromDc == null
+						&& ClusterType.isSameClusterType(azGroupCluster.getAzGroupClusterType(), ClusterType.ONE_WAY)) {
 					defaultFromDc = activeDcName;
 				}
 				summaryParts.add(azGroupCluster.getAzGroupClusterType() + ":" + activeDcName);

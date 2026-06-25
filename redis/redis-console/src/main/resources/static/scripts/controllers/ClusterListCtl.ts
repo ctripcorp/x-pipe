@@ -390,6 +390,10 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
                             if (key === 'activedcId') {
                                 return matchesActiveDcFilter(row, filterValue);
                             }
+                            if (key === 'clusterType') {
+                                var clusterType = ClusterType.lookup(row[key]);
+                                return clusterType && clusterType.value === filterValue;
+                            }
                             var rowValue = row[key];
                             if (rowValue === undefined || rowValue === null) {
                                 return false;

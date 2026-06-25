@@ -9,7 +9,19 @@
     </h3>
     <div>
         <div style="height:35px">
-            <ul style="float:left" class="nav nav-tabs padding-18 tab-size-bigger" ng-if="dcs && dcs.length">
+            <div ng-if="isHeteroCluster && dcGroups && dcGroups.length" style="float:left">
+                <div ng-repeat="group in dcGroups" style="display:inline-block; margin-right:18px; vertical-align:top;">
+                    <span class="label label-info" style="margin-left:6px;position:relative;bottom:10px;">{{group.azGroupClusterType}} | {{group.region}}</span>
+                    <ul class="nav nav-tabs padding-18 tab-size-bigger" style="display:inline-block; margin-bottom:0;">
+                        <li ng-repeat="dc in group.dcs" ng-class="{'active': currentDcName == dc.dcName}">
+                            <a ng-click="switchDc(dc)" data-toggle="tab">
+                                {{dc.dcName}}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <ul style="float:left" class="nav nav-tabs padding-18 tab-size-bigger" ng-if="!isHeteroCluster && dcs && dcs.length">
                 <li ng-repeat="dc in dcs" ng-class="{'active': currentDcName == dc.dcName}">
                     <a ng-click="switchDc(dc)" data-toggle="tab">
                         {{dc.dcName}}
@@ -21,7 +33,7 @@
             </button>
         </div>
 
-        <div class="tab-content" ng-if="dcs && dcs.length" >
+        <div class="tab-content" ng-if="(isHeteroCluster && dcGroups && dcGroups.length) || (!isHeteroCluster && dcs && dcs.length)" >
             <div>
                 <div class="panel panel-primary" style="margin-top: 15px;" ng-repeat="shard in shards">
                     <header class="panel-heading">
@@ -217,7 +229,7 @@
             </div>
         </div>
 
-        <div ng-if="(!dcs || !dcs.length) && clusterName">
+        <div ng-if="((!isHeteroCluster && (!dcs || !dcs.length)) || (isHeteroCluster && (!dcGroups || !dcGroups.length))) && clusterName">
             无shards
         </div>
     </div>

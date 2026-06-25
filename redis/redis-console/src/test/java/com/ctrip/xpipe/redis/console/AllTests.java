@@ -108,6 +108,7 @@ import org.junit.runners.Suite.SuiteClasses;
         ClusterServiceImplTest2.class,
         ClusterServiceImplHeteroMigrationEnrichTest.class,
         ClusterServiceImplHeteroListEnrichTest.class,
+        ClusterServiceImplHeteroGetClustersPreferRegionTest.class,
         RedisServiceImplTest.class,
         KeeperContainerCheckerServiceImplTest.class,
         ShardServiceImplTest.class,

@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthMonitorManager;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthState;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterDcGroupModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.RouteInfoModel;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
@@ -95,6 +96,12 @@ public class ClusterController extends AbstractConsoleController {
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dcs", method = RequestMethod.GET)
     public List<DcTbl> findClusterDcs(@PathVariable String clusterName) {
         return valueOrEmptySet(DcTbl.class, dcService.findClusterRelatedDc(clusterName));
+    }
+
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/dc-groups", method = RequestMethod.GET)
+    public List<ClusterDcGroupModel> findClusterDcGroups(@PathVariable String clusterName) {
+        logger.info("[findClusterDcGroups] clusterName={}", clusterName);
+        return valueOrEmptySet(ClusterDcGroupModel.class, clusterService.findClusterDcGroups(clusterName));
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE, method = RequestMethod.GET)
