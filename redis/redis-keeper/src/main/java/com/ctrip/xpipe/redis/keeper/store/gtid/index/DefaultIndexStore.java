@@ -284,8 +284,8 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
                             this.streamCommandReader.getTransactionSize(), 
                             controllableFile.size(), transactionStartOffset);
                     EventMonitor.DEFAULT.logAlertEvent("INCOMPLETE_TRANSACTION");
-                    // Truncate file to transaction start offset to rollback incomplete transaction
                     controllableFile.setLength((int)transactionStartOffset);
+                    syncCommandWriterOffset(transactionStartOffset);
                     this.streamCommandReader.resetParser();
                 } else {
                     // If startOffset is invalid, just reset parser to clear transaction state
@@ -294,9 +294,10 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
                     this.streamCommandReader.resetParser();
                 }
             } else if (remainBytes > 0) {
-                // Check for incomplete protocol parsing
                 EventMonitor.DEFAULT.logAlertEvent("TRUNCATE_CMD_FILE");
-                controllableFile.setLength((int)controllableFile.size() - remainBytes);
+                long newLen = controllableFile.size() - remainBytes;
+                controllableFile.setLength((int) newLen);
+                syncCommandWriterOffset(newLen);
                 this.streamCommandReader.resetParser();
             }
 
@@ -495,6 +496,21 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     private void enableWriterCmd() {
         this.writerCmdEnabled = true;
+    }
+
+    /**
+     * After truncating the cmd file during recovery, sync the CommandWriter's
+     * cached fileLength so that totalLength() returns the correct value.
+     * Without this, psync would report a stale (larger) offset to the master,
+     * causing the master to send data starting inside a command's binary payload.
+     */
+    private void syncCommandWriterOffset(long newFileLength) {
+        if (commandWriterCallback == null) return;
+        try {
+            commandWriterCallback.getCommandWriter().truncateCmdFileTo(newFileLength);
+        } catch (Exception e) {
+            logger.warn("[syncCommandWriterOffset] failed to sync cmdWriter offset to {}", newFileLength, e);
+        }
     }
 
     private GtidSet getIndexGtidSetByIndexReader() {

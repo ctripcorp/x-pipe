@@ -48,6 +48,11 @@ public class CommandFileContext {
 	public void advanceFileLength(long delta) {
 		fileLength.addAndGet(delta);
 	}
+
+	public void truncateTo(long newFileLength) throws IOException {
+		controllableFile.setLength((int) newFileLength);
+		fileLength.set(newFileLength);
+	}
 	
 	public long fileLength(){
 		return fileLength.get();

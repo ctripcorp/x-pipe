@@ -24,4 +24,10 @@ public interface CommandWriter extends Closeable {
     long getFileLastModified();
 
     CommandFileContext getFileContext();
+
+    /**
+     * Truncate the underlying cmd file to the given file-relative length,
+     * and update the cached fileLength accordingly.
+     */
+    void truncateCmdFileTo(long newFileLength) throws IOException;
 }

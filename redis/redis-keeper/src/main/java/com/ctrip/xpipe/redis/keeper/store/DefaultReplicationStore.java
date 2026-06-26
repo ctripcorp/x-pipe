@@ -855,6 +855,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		return rdbUpdateCount.get();
 	}
 
+	public CommandStore getCommandStore() {
+		return cmdStore;
+	}
+
 	protected File getBaseDir() {
 		return baseDir;
 	}

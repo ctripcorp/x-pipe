@@ -118,6 +118,11 @@ public class OffsetCommandWriter implements CommandWriter {
     }
 
     @Override
+    public void truncateCmdFileTo(long newFileLength) throws IOException {
+        cmdFileCtxRef.get().truncateTo(newFileLength);
+    }
+
+    @Override
     public void close() throws IOException {
         CommandFileContext cmdFileCtx = cmdFileCtxRef.get();
         if (null != cmdFileCtx) {
