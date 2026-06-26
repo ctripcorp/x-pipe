@@ -161,11 +161,15 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                 if (recursive) {
                     Files.createDirectories(Paths.get(path));
                 } else {
-                    Files.createDirectory(Paths.get(path));
+                    try {
+                        Files.createDirectory(Paths.get(path));
+                    } catch (FileAlreadyExistsException e) {
+                        if (!Files.isDirectory(Paths.get(path))) {
+                            throw e;
+                        }
+                    }
                 }
                 return true;
-            } catch (FileAlreadyExistsException e) {
-                return false;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -177,7 +181,8 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Path dir = Paths.get(path);
-                if (!Files.exists(dir)) return false;
+                if (!Files.exists(dir)) return true;
+                if (!Files.isDirectory(dir)) throw new IOException("not a directory: " + path);
                 if (recursive) {
                     Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
                         @Override
@@ -187,6 +192,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                         }
                         @Override
                         public FileVisitResult postVisitDirectory(Path d, IOException exc) throws IOException {
+                            if (exc != null) throw exc;
                             Files.delete(d);
                             return FileVisitResult.CONTINUE;
                         }
@@ -315,18 +321,20 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
         }, ioExecutor);
     }
 
-    // Synchronous: caller must not interleave with in-flight writes.
     @Override
-    public void roll(AsyncSegmentFile file) {
-        try {
-            if (file.channel != null) file.channel.close();
-            file.currentSegmentStartOffset = file.logicalPosition;
-            file.channel = openChannel(
-                    segmentPath(file.dirPath, file.prefix, file.currentSegmentStartOffset),
-                    true);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                if (file.channel != null) file.channel.close();
+                file.currentSegmentStartOffset = file.logicalPosition;
+                file.channel = openChannel(
+                        segmentPath(file.dirPath, file.prefix, file.currentSegmentStartOffset),
+                        true);
+                return openIndexFileMap(file.dirPath, file.indexPrefixes, file.currentSegmentStartOffset);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }, ioExecutor);
     }
 
     @Override
@@ -352,12 +360,14 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public Map<String, AsyncFile> openIndexFiles(AsyncSegmentFile file, long startOffset) {
-        try {
-            return openIndexFileMap(file.dirPath, file.indexPrefixes, startOffset);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public CompletableFuture<Map<String, AsyncFile>> openIndexFiles(AsyncSegmentFile file, long startOffset) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return openIndexFileMap(file.dirPath, file.indexPrefixes, startOffset);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }, ioExecutor);
     }
 
     @Override
