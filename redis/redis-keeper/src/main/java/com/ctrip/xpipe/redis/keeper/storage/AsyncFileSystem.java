@@ -38,13 +38,13 @@ public interface AsyncFileSystem {
     CompletableFuture<Integer> read(AsyncSegmentFile file, long length, long offset, byte[] buffer);
     CompletableFuture<Integer> read(AsyncSegmentFile file, long length, byte[] buffer);
     CompletableFuture<Integer> write(AsyncSegmentFile file, byte[] data, long length);
-    void roll(AsyncSegmentFile file);
+    CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file);
     List<Long> list(AsyncSegmentFile file);
     // position to one segment and then call this method to get the current index files.
     CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes);
     CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file);
     // open index files by startOffset. no need to position to the startOffset. should close index files when done.
-    Map<String, AsyncFile> openIndexFiles(AsyncSegmentFile file, long startOffset);
+    CompletableFuture<Map<String, AsyncFile>> openIndexFiles(AsyncSegmentFile file, long startOffset);
     CompletableFuture<Long> size(AsyncSegmentFile file);
     CompletableFuture<Long> sizeOfSegment(AsyncSegmentFile file, long startOffset);
     CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets);
