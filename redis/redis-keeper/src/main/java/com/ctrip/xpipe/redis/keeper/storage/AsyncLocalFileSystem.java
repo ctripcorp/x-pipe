@@ -15,11 +15,9 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,13 +41,16 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
         }
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Set<StandardOpenOption> opts = atomicReplace
-                        ? EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE)
-                        : toOpenOptions(write);
-                FileChannel ch = FileChannel.open(Paths.get(path), opts);
+                FileChannel ch;
+                if (!write) {
+                    ch = FileChannel.open(Paths.get(path), StandardOpenOption.READ);
+                } else {
+                    ch = FileChannel.open(Paths.get(path), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+                    if (!atomicReplace) ch.position(ch.size());
+                }
                 return new AsyncFile(path, ch, atomicReplace);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -66,7 +67,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
             try {
                 return Files.getLastModifiedTime(Paths.get(file.path)).toMillis();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -77,7 +78,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
             try {
                 file.channel.position(position);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -89,7 +90,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                 ByteBuffer buf = ByteBuffer.wrap(buffer, 0, (int) Math.min(length, buffer.length));
                 return file.channel.read(buf, offset);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -101,7 +102,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                 ByteBuffer buf = ByteBuffer.wrap(buffer, 0, (int) Math.min(length, buffer.length));
                 return file.channel.read(buf);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -112,6 +113,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
             try {
                 int len = (int) Math.min(length, data.length);
                 ByteBuffer buf = ByteBuffer.wrap(data, 0, len);
+                // TODO: should we use a temporary file to avoid the race condition?
                 if (file.atomicReplace) {
                     file.channel.truncate(0);
                     while (buf.hasRemaining()) {
@@ -121,7 +123,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                 }
                 return file.channel.write(buf);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -132,7 +134,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
             try {
                 Files.deleteIfExists(Paths.get(path));
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -149,7 +151,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
             try {
                 return file.channel.size();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -171,7 +173,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                 }
                 return true;
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -202,7 +204,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                 }
                 return true;
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -214,7 +216,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                 file.channel.truncate(size);
                 return true;
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -225,7 +227,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
             try {
                 file.channel.close();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -236,7 +238,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
             try {
                 file.channel.force(true);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -254,40 +256,26 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<AsyncSegmentFile> open(String path, String prefix,
-            List<String> indexPrefixes, boolean write) {
+            List<IndexFileMapping> indexMappings, boolean write) {
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                AsyncSegmentFile seg = new AsyncSegmentFile(path, prefix, indexPrefixes, write);
-                if (write) {
-                    List<Long> offsets = listSegmentOffsets(path, prefix);
-                    long startOffset = offsets.isEmpty() ? 0L : offsets.get(offsets.size() - 1);
-                    seg.currentSegmentStartOffset = startOffset;
-                    seg.channel = openChannel(segmentPath(path, prefix, startOffset), true);
-                    seg.logicalPosition = startOffset + seg.channel.size();
-                }
-                return seg;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            String[] names = new File(path).list();
+            if (names == null) {
+                throw new StorageIOException(new IOException("failed to list directory: " + path));
             }
+            AsyncSegmentFile seg = new AsyncSegmentFile(path, prefix, indexMappings, write);
+            seg.initFromFiles(Arrays.asList(names));
+            return seg;
         }, ioExecutor);
     }
 
-    // Synchronous: just updates the logical position field.
     @Override
     public CompletableFuture<Void> position(AsyncSegmentFile file, long offset) {
-        file.logicalPosition = offset;
-        return CompletableFuture.completedFuture(null);
-    }
-
-    @Override
-    public CompletableFuture<Integer> read(AsyncSegmentFile file, long length, long offset, byte[] buffer) {
-        return CompletableFuture.supplyAsync(() -> {
+        return CompletableFuture.runAsync(() -> {
             try {
                 ensureReadSegment(file, offset);
-                ByteBuffer buf = ByteBuffer.wrap(buffer, 0, (int) Math.min(length, buffer.length));
-                return file.channel.read(buf, offset - file.currentSegmentStartOffset);
+                file.currentSegmentChannel.position(offset - file.currentSegmentStartOffset);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -296,13 +284,14 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
     public CompletableFuture<Integer> read(AsyncSegmentFile file, long length, byte[] buffer) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                ensureReadSegment(file, file.logicalPosition);
+                long logicalPos = file.currentSegmentChannel == null
+                        ? 0 : file.currentSegmentStartOffset + file.currentSegmentChannel.position();
+                ensureReadSegment(file, logicalPos);
+                file.currentSegmentChannel.position(logicalPos - file.currentSegmentStartOffset);
                 ByteBuffer buf = ByteBuffer.wrap(buffer, 0, (int) Math.min(length, buffer.length));
-                int n = file.channel.read(buf, file.logicalPosition - file.currentSegmentStartOffset);
-                if (n > 0) file.logicalPosition += n;
-                return n;
+                return file.currentSegmentChannel.read(buf);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -312,11 +301,10 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 ByteBuffer buf = ByteBuffer.wrap(data, 0, (int) Math.min(length, data.length));
-                int n = file.channel.write(buf);
-                file.logicalPosition += n;
+                int n = file.currentSegmentChannel.write(buf);
                 return n;
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -325,14 +313,16 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
     public CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (file.channel != null) file.channel.close();
-                file.currentSegmentStartOffset = file.logicalPosition;
-                file.channel = openChannel(
-                        segmentPath(file.dirPath, file.prefix, file.currentSegmentStartOffset),
-                        true);
-                return openIndexFileMap(file.dirPath, file.indexPrefixes, file.currentSegmentStartOffset);
+                long newStart = file.currentSegmentStartOffset + file.currentSegmentChannel.size();
+                if (file.currentSegmentChannel != null) file.currentSegmentChannel.close();
+                file.currentSegmentStartOffset = newStart;
+                file.currentSegmentChannel = FileChannel.open(
+                        Paths.get(segmentPath(file.dirPath, file.prefix, file.currentSegmentStartOffset)),
+                        StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+                file.currentSegmentChannel.position(file.currentSegmentChannel.size());
+                return openIndexFileMap(file.dirPath, file.indexMappings, file.currentSegmentStartOffset);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -344,28 +334,28 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file,
-            List<String> indexPrefixes) {
+            List<IndexFileMapping> indexMappings) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return openIndexFileMap(file.dirPath, indexPrefixes, file.currentSegmentStartOffset);
+                return openIndexFileMap(file.dirPath, indexMappings, file.currentSegmentStartOffset);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
 
     @Override
     public CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file) {
-        return getCurrentIndexFiles(file, file.indexPrefixes);
+        return getCurrentIndexFiles(file, file.indexMappings);
     }
 
     @Override
     public CompletableFuture<Map<String, AsyncFile>> openIndexFiles(AsyncSegmentFile file, long startOffset) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return openIndexFileMap(file.dirPath, file.indexPrefixes, startOffset);
+                return openIndexFileMap(file.dirPath, file.indexMappings, startOffset);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -376,7 +366,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
             try {
                 return logicalSize(file);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -387,7 +377,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
             try {
                 return Files.size(Paths.get(segmentPath(file.dirPath, file.prefix, startOffset)));
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -398,12 +388,12 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
             try {
                 for (long offset : startOffsets) {
                     Files.deleteIfExists(Paths.get(segmentPath(file.dirPath, file.prefix, offset)));
-                    for (String idxPrefix : file.indexPrefixes) {
-                        Files.deleteIfExists(Paths.get(segmentPath(file.dirPath, idxPrefix, offset)));
+                    for (IndexFileMapping mapping : file.indexMappings) {
+                        Files.deleteIfExists(Paths.get(file.dirPath, mapping.offsetToFileName.apply(offset)));
                     }
                 }
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -430,20 +420,21 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                 for (long o : offsets) {
                     if (o > targetStart) {
                         Files.deleteIfExists(Paths.get(segmentPath(file.dirPath, file.prefix, o)));
-                        for (String idxPrefix : file.indexPrefixes) {
-                            Files.deleteIfExists(Paths.get(segmentPath(file.dirPath, idxPrefix, o)));
+                        for (IndexFileMapping mapping : file.indexMappings) {
+                            Files.deleteIfExists(Paths.get(file.dirPath, mapping.offsetToFileName.apply(o)));
                         }
                     }
                 }
 
                 if (file.writeMode && file.currentSegmentStartOffset > targetStart) {
-                    if (file.channel != null) file.channel.close();
+                    if (file.currentSegmentChannel != null) file.currentSegmentChannel.close();
                     file.currentSegmentStartOffset = targetStart;
-                    file.channel = openChannel(targetPath, true);
+                    file.currentSegmentChannel = FileChannel.open(Paths.get(targetPath),
+                            StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+                    file.currentSegmentChannel.position(file.currentSegmentChannel.size());
                 }
-                file.logicalPosition = offset;
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -452,9 +443,9 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
     public CompletableFuture<Void> close(AsyncSegmentFile file) {
         return CompletableFuture.runAsync(() -> {
             try {
-                if (file.channel != null) file.channel.close();
+                if (file.currentSegmentChannel != null) file.currentSegmentChannel.close();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -463,9 +454,9 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
     public CompletableFuture<Void> fsync(AsyncSegmentFile file) {
         return CompletableFuture.runAsync(() -> {
             try {
-                if (file.channel != null) file.channel.force(true);
+                if (file.currentSegmentChannel != null) file.currentSegmentChannel.force(true);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -478,7 +469,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
             try {
                 return file.channel.transferTo(position, count, target);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -491,12 +482,12 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
             try {
                 ensureReadSegment(file, offset);
                 long physicalOffset = offset - file.currentSegmentStartOffset;
-                long segmentRemaining = file.channel.size() - physicalOffset;
+                long segmentRemaining = file.currentSegmentChannel.size() - physicalOffset;
                 long toTransfer = Math.min(count, segmentRemaining);
                 if (toTransfer <= 0) return 0L;
-                return file.channel.transferTo(physicalOffset, toTransfer, target);
+                return file.currentSegmentChannel.transferTo(physicalOffset, toTransfer, target);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
@@ -515,16 +506,6 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                 .sorted()
                 .collect(Collectors.toList());
     }
-
-    private Set<StandardOpenOption> toOpenOptions(boolean write) {
-        return write
-                ? EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND)
-                : EnumSet.of(StandardOpenOption.READ);
-    }
-
-    private FileChannel openChannel(String path, boolean write) throws IOException {
-        return FileChannel.open(Paths.get(path), toOpenOptions(write));
-    }
     private void ensureReadSegment(AsyncSegmentFile file, long logicalOffset) throws IOException {
         List<Long> offsets = listSegmentOffsets(file.dirPath, file.prefix);
         long segStart = -1;
@@ -536,9 +517,10 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
         }
         if (segStart < 0) throw new IOException("no segment for offset " + logicalOffset);
         if (segStart != file.currentSegmentStartOffset) {
-            if (file.channel != null) file.channel.close();
+            if (file.currentSegmentChannel != null) file.currentSegmentChannel.close();
             file.currentSegmentStartOffset = segStart;
-            file.channel = openChannel(segmentPath(file.dirPath, file.prefix, segStart), false);
+            file.currentSegmentChannel = FileChannel.open(
+                    Paths.get(segmentPath(file.dirPath, file.prefix, segStart)), StandardOpenOption.READ);
         }
     }
 
@@ -549,12 +531,15 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
         return lastOffset + Files.size(Paths.get(segmentPath(file.dirPath, file.prefix, lastOffset)));
     }
 
-    private Map<String, AsyncFile> openIndexFileMap(String dir, List<String> indexPrefixes,
+    private Map<String, AsyncFile> openIndexFileMap(String dir, List<IndexFileMapping> indexMappings,
             long startOffset) throws IOException {
         Map<String, AsyncFile> result = new LinkedHashMap<>();
-        for (String prefix : indexPrefixes) {
-            String idxPath = segmentPath(dir, prefix, startOffset);
-            result.put(prefix, new AsyncFile(idxPath, openChannel(idxPath, true)));
+        for (IndexFileMapping mapping : indexMappings) {
+            String fileName = mapping.offsetToFileName.apply(startOffset);
+            String idxPath = dir + File.separator + fileName;
+            FileChannel ch = FileChannel.open(Paths.get(idxPath), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+            ch.position(ch.size());
+            result.put(mapping.prefix, new AsyncFile(idxPath, ch));
         }
         return result;
     }
