@@ -33,15 +33,14 @@ public interface AsyncFileSystem {
     // It automatically deletes preceding non-contiguous segment files.
     // Write mode always opens the latest segment file and index files, and auto-closes them upon rollover.
     // Read mode opens the segment file after the first read, and opens index files when getCurrentIndexFiles() is called. They auto-close when reading the next segment.
-    CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write);
+    CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<IndexFileMapping> indexMappings, boolean write);
     CompletableFuture<Void> position(AsyncSegmentFile file, long offset);
-    CompletableFuture<Integer> read(AsyncSegmentFile file, long length, long offset, byte[] buffer);
     CompletableFuture<Integer> read(AsyncSegmentFile file, long length, byte[] buffer);
     CompletableFuture<Integer> write(AsyncSegmentFile file, byte[] data, long length);
     CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file);
     List<Long> list(AsyncSegmentFile file);
     // position to one segment and then call this method to get the current index files.
-    CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes);
+    CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<IndexFileMapping> indexMappings);
     CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file);
     // open index files by startOffset. no need to position to the startOffset. should close index files when done.
     CompletableFuture<Map<String, AsyncFile>> openIndexFiles(AsyncSegmentFile file, long startOffset);
