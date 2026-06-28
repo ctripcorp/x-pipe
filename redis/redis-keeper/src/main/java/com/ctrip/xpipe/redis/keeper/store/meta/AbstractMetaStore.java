@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.exception.BadMetaStoreException;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.helper.Files.IO;
@@ -33,9 +34,12 @@ public abstract class AbstractMetaStore implements MetaStore{
 	
 	protected String keeperRunid;
 
-	public AbstractMetaStore(File baseDir, String keeperRunid) {
+	protected final AsyncFileSystem asyncFileSystem;
+
+	public AbstractMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem) {
 		this.baseDir = baseDir;
 		this.keeperRunid = keeperRunid;
+		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
 		try {
 			loadMeta();
 			checkOrSaveKeeperRunid(keeperRunid);

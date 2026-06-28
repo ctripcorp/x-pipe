@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.util.NonFinalizeFileOutputStream;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.google.common.io.Files;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.Date;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -72,23 +74,15 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private CKStore ckStore;
 
+    private final AsyncFileSystem asyncFileSystem;
+
     private final ScheduledExecutorService commandNotifyScheduler;
-
-    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
-                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) {
-        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, null, null);
-    }
-
-    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
-                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
-                                          SyncRateManager syncRateManager, RedisOpParser redisOpParser) {
-        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, null);
-    }
 
     public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
                                           SyncRateManager syncRateManager, RedisOpParser redisOpParser,
-                                          ScheduledExecutorService commandNotifyScheduler) {
+                                          ScheduledExecutorService commandNotifyScheduler,
+                                          AsyncFileSystem asyncFileSystem) {
         super(MoreExecutors.directExecutor());
         this.replId = replId;
         this.keeperRunid = keeperRunid;
@@ -98,19 +92,15 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         this.redisOpParser = redisOpParser;
         this.syncRateManager = syncRateManager;
         this.commandNotifyScheduler = commandNotifyScheduler;
-    }
-
-    public DefaultReplicationStoreManager(CKStore ckStore, KeeperConfig keeperConfig, ReplId replId,
-                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
-                                          SyncRateManager syncRateManager, RedisOpParser redisOpParser) {
-        this(ckStore, keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, null);
+        this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
     }
 
     public DefaultReplicationStoreManager(CKStore ckStore, KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
                                           SyncRateManager syncRateManager, RedisOpParser redisOpParser,
-                                          ScheduledExecutorService commandNotifyScheduler) {
-        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler);
+                                          ScheduledExecutorService commandNotifyScheduler,
+                                          AsyncFileSystem asyncFileSystem) {
+        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem);
         this.ckStore = ckStore;
     }
 
@@ -200,7 +190,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid,
                                                       KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
         return new GtidReplicationStore(this.ckStore,storeBaseDir,keeperConfig,keeperRunid, keeperMonitor, redisOpParser,
-                syncRateManager, commandNotifyScheduler);
+                syncRateManager, commandNotifyScheduler, asyncFileSystem);
     }
 
     private void recrodLatestStore(String storeDir) throws IOException {
@@ -358,14 +348,9 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         public ClusterAndShardCompatible(CKStore ckStore,KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
                                          File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
-                                         SyncRateManager syncRateManager) {
-            this(ckStore, keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, redisOpParser, syncRateManager, null);
-        }
-
-        public ClusterAndShardCompatible(CKStore ckStore,KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
-                                         File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
-                                         SyncRateManager syncRateManager, ScheduledExecutorService commandNotifyScheduler) {
-            super(ckStore,keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler);
+                                         SyncRateManager syncRateManager, ScheduledExecutorService commandNotifyScheduler,
+                                         AsyncFileSystem asyncFileSystem) {
+            super(ckStore, keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem);
             this.keeperBaseDir = baseDir;
             this.replId = replId;
         }
