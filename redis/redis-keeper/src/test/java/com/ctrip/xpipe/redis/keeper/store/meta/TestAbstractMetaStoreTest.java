@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.meta;
 
+import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
@@ -13,9 +14,7 @@ import org.junit.Test;
 import java.io.File;
 import java.net.InetSocketAddress;
 
-import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V1_FILE;
 import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V2_FILE;
-import static com.ctrip.xpipe.redis.keeper.store.meta.AbstractMetaStore.deserializeFromStringV1;
 import static com.ctrip.xpipe.redis.keeper.store.meta.AbstractMetaStore.deserializeFromStringV2;
 
 /**
@@ -30,25 +29,18 @@ public class TestAbstractMetaStoreTest extends AbstractRedisKeeperTest {
     private AbstractMetaStore metaStore;
 
     private final String TMP_META_STORE_DIR = "/tmp/xpipe/test/";
-    private final String TMP_META_V1_JSON_FILE = TMP_META_STORE_DIR + META_V1_FILE;
     private final String TMP_META_V2_JSON_FILE = TMP_META_STORE_DIR + META_V2_FILE;
     private final String PERSIST_META_JSON_FILE = "src/test/resources/meta.json";
 
     @Before
     public void beforeTestAbstractMetaStoreTest() {
         metaStore = new DefaultMetaStore(new File("/tmp/xpipe/test"), KEEPER_RUN_ID, asyncFileSystem());
-        File filev1 = new File(TMP_META_V1_JSON_FILE, "rw");
-        filev1.delete();
-        File filev2 = new File(TMP_META_V1_JSON_FILE, "rw");
-        filev2.delete();
+        new File(TMP_META_V2_JSON_FILE).delete();
     }
 
     @After
     public void afterTestAbstractMetaStoreTest() {
-        File filev1 = new File(TMP_META_V1_JSON_FILE, "rw");
-        filev1.delete();
-        File filev2 = new File(TMP_META_V1_JSON_FILE, "rw");
-        filev2.delete();
+        new File(TMP_META_V2_JSON_FILE).delete();
     }
 
     @Test
@@ -81,7 +73,7 @@ public class TestAbstractMetaStoreTest extends AbstractRedisKeeperTest {
 
     @Test
     public void testMetaTransformBetweenV1AndV2() {
-        ReplicationStoreMetaV1 v1Meta = deserializeFromStringV1(readFileAsString(PERSIST_META_JSON_FILE));
+        ReplicationStoreMetaV1 v1Meta = Codec.DEFAULT.decode(readFileAsString(PERSIST_META_JSON_FILE), ReplicationStoreMetaV1.class);
         ReplicationStoreMeta v2Meta = new ReplicationStoreMeta().fromV1(v1Meta);
         ReplicationStoreMetaV1 v1Meta2 = v2Meta.toV1();
         Assert.assertEquals(v1Meta2, v1Meta);

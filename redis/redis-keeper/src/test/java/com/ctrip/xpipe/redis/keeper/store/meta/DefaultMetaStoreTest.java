@@ -13,7 +13,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V1_FILE;
 import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V2_FILE;
 import static com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
 import static com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta.EMPTY_REPL_ID;
@@ -41,9 +40,6 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
 
     @Before
     public void beforeDefaultMetaTest() throws IOException {
-        File metaFile = new File(baseDir, META_V1_FILE);
-        metaFile.delete();
-
         File metaFileV2 = new File(baseDir, META_V2_FILE);
         metaFileV2.delete();
 
@@ -245,36 +241,6 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
                 rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
         MetaStore newMetaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem());
         Assert.assertEquals(metaStore.getCurrentReplStage(), newMetaStore.getCurrentReplStage());
-    }
-
-    @Test
-    public void testRecoverFromV1() throws Exception {
-        metaStore.rdbConfirm(replidA, 10000, "", rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
-        metaStore.shiftReplicationId(replidB, 20000L);
-
-        File metaV2File = new File(baseDir, META_V2_FILE);
-        metaV2File.delete();
-
-        MetaStore recoveredMetaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem());
-
-        ReplicationStoreMeta metaDup = recoveredMetaStore.dupReplicationStoreMeta();
-
-        ReplStage replStage = metaDup.getCurReplStage();
-
-        Assert.assertNull(recoveredMetaStore.getReplId());
-        Assert.assertNull(recoveredMetaStore.getReplId2());
-        Assert.assertNull(recoveredMetaStore.beginOffset());
-        Assert.assertNull(recoveredMetaStore.getSecondReplIdOffset());
-        Assert.assertNull(metaDup.getRdbLastOffset());
-
-        Assert.assertEquals(recoveredMetaStore.getCurReplStageReplId(), replidB);
-        Assert.assertEquals(metaDup.getRdbContiguousBacklogOffset(), (Long)0L);
-
-        Assert.assertEquals(replStage.getProto(), ReplStage.ReplProto.PSYNC);
-        Assert.assertEquals(replStage.getReplId(), replidB);
-        Assert.assertEquals(replStage.getBegOffsetRepl(), 10000);
-        Assert.assertEquals(replStage.getReplId2(), replidA);
-        Assert.assertEquals(replStage.getSecondReplIdOffset(), 20001);
     }
 
     @Test

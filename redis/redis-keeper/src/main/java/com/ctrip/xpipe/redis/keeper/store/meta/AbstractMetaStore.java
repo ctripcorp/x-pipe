@@ -70,31 +70,6 @@ public abstract class AbstractMetaStore implements MetaStore{
 		IO.INSTANCE.writeTo(file, Codec.DEFAULT.encode(replicationStoreMeta));
 	}
 
-	protected void saveMetaToFileV1(File file, ReplicationStoreMetaV1 replicationStoreMetaV1) throws IOException {
-		logger.info("[saveMetaToFileV1]{}, {}", file, replicationStoreMetaV1);
-		IO.INSTANCE.writeTo(file, Codec.DEFAULT.encode(replicationStoreMetaV1));
-	}
-
-	protected void deleteMetaFileV1(File file) {
-		if (file.isFile()) {
-			if (!file.delete()) {
-				logger.warn("[deleteMetaFileV1][fail]{}", file);
-			} else {
-				logger.info("[deleteMetaFileV1][ok]{}", file);
-			}
-		}
-	}
-
-	protected static ReplicationStoreMeta loadMetaFromFileV1(File file) throws IOException{
-		
-		if(file.isFile()){
-			ReplicationStoreMetaV1 v1Meta = deserializeFromStringV1(IO.INSTANCE.readFrom(file, "utf-8"));
-			return new ReplicationStoreMeta().fromV1(v1Meta);
-		}
-		
-		throw new RedisKeeperRuntimeException("[loadMetaFromFile][not file]" + file.getAbsolutePath());
-	}
-
 	protected static ReplicationStoreMeta loadMetaFromFileV2(File file) throws IOException{
 
 		if(file.isFile()){
@@ -102,10 +77,6 @@ public abstract class AbstractMetaStore implements MetaStore{
 		}
 
 		throw new RedisKeeperRuntimeException("[loadMetaFromFileV2][not file]" + file.getAbsolutePath());
-	}
-
-	public static ReplicationStoreMetaV1 deserializeFromStringV1(String str){
-		return Codec.DEFAULT.decode(str, ReplicationStoreMetaV1.class);
 	}
 
 	public static ReplicationStoreMeta deserializeFromStringV2(String str){
@@ -138,13 +109,6 @@ public abstract class AbstractMetaStore implements MetaStore{
 		metaRef.set(newMeta);
 		// TODO sync with fs?
 		saveMetaToFileV2(new File(baseDir, META_V2_FILE), metaRef.get());
-
-		ReplicationStoreMetaV1 v1Meta = metaRef.get().toV1();
-		if (v1Meta != null) {
-			saveMetaToFileV1(new File(baseDir, META_V1_FILE), v1Meta);
-		} else {
-			deleteMetaFileV1(new File(baseDir, META_V1_FILE));
-		}
 	}
 
 
@@ -152,42 +116,16 @@ public abstract class AbstractMetaStore implements MetaStore{
 	public final void loadMeta() throws IOException {
 		
 		synchronized (metaRef) {
+			File metaV2File = new File(baseDir, META_V2_FILE);
 			ReplicationStoreMeta meta;
 			File source;
-
-			File metaV1File = new File(baseDir, META_V1_FILE);
-			File metaV2File = new File(baseDir, META_V2_FILE);
-
-			// 时间戳差异阈值。只有v1比v2新超过这个时间，才认为v1是有效的。
-			final long META_TIMESTAMP_THRESHOLD_MS = 60000L;
-
-			boolean v1Exists = metaV1File.isFile();
-			boolean v2Exists = metaV2File.isFile();
-			if (v1Exists && v2Exists) {
-
-				long v1LastModified = metaV1File.lastModified();
-				long v2LastModified = metaV2File.lastModified();
-
-				if (v1LastModified - v2LastModified > META_TIMESTAMP_THRESHOLD_MS) {
-					// v2一直没修改, 超过1分钟 认为v2无效
-					meta = loadMetaFromFileV1(metaV1File);
-					source = metaV1File;
-					logger.warn("[loadMeta] v1 is much newer than v2, loading v1. v1_time:{}, v2_time:{}", v1LastModified, v2LastModified);
-				} else {
-					meta = loadMetaFromFileV2(metaV2File);
-					source = metaV2File;
-				}
-			} else if(v2Exists){
+			if (metaV2File.isFile()) {
 				meta = loadMetaFromFileV2(metaV2File);
 				source = metaV2File;
-			} else if(v1Exists) {
-				meta = loadMetaFromFileV1(metaV1File);
-				source = metaV1File;
 			} else {
 				meta = new ReplicationStoreMeta();
 				source = null;
 			}
-
 			metaRef.set(meta);
 			logger.info("Meta loaded: {}, source:{}", meta, source);
 		}

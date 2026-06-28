@@ -66,7 +66,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultReplicationStoreTest.class,
         GapAllowedReplicationStoreTest.class,
         DefaultRdbStoreTest.class,
-//
+
         DefaultRdbStoreEofMarkTest.class,
         DefaultCommandStoreTest.class,
         DefaultRedisSlaveTest.class,
