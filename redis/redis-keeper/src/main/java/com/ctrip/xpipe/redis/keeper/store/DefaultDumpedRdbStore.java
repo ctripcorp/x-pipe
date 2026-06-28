@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.DumpedRdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplStage;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,8 +16,8 @@ import java.io.IOException;
  */
 public class DefaultDumpedRdbStore extends DefaultRdbStore implements DumpedRdbStore{
 	
-	public DefaultDumpedRdbStore(File file) throws IOException {
-		super(file, null, -1, null);
+	public DefaultDumpedRdbStore(File file, AsyncFileSystem asyncFileSystem) throws IOException {
+		super(file, null, -1, null, asyncFileSystem);
 	}
 
 	@Override

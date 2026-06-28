@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.meta;
 
-import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.*;
  * <p>
  * May 19, 2020
  */
-public class DefaultMetaStoreTest extends AbstractTest {
+public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
     private String replidA = "000000000000000000000000000000000000000A";
     private String replidB = "000000000000000000000000000000000000000B";
     private String replidC = "000000000000000000000000000000000000000C";
@@ -47,13 +47,13 @@ public class DefaultMetaStoreTest extends AbstractTest {
         File metaFileV2 = new File(baseDir, META_V2_FILE);
         metaFileV2.delete();
 
-        metaStore = new DefaultMetaStore(new File(baseDir), keeperRunId);
+        metaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem());
     }
 
     @Test (expected = UnexpectedReplIdException.class)
     public void fixPsync0MakeSureReplIdsAreSame() throws IOException {
 
-        DefaultMetaStore metaStore = spy(new DefaultMetaStore(new File(baseDir), keeperRunId));
+        DefaultMetaStore metaStore = spy(new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem()));
         metaStore.becomeActive();
 
         ReplicationStoreMeta meta = mock(ReplicationStoreMeta.class);
@@ -243,7 +243,7 @@ public class DefaultMetaStoreTest extends AbstractTest {
         metaStore.rdbConfirmXsync(replidA, 1, 10000, masterUuidA,
                 new GtidSet(GtidSet.EMPTY_GTIDSET), new GtidSet(GtidSet.EMPTY_GTIDSET),
                 rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
-        MetaStore newMetaStore = new DefaultMetaStore(new File(baseDir), keeperRunId);
+        MetaStore newMetaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem());
         Assert.assertEquals(metaStore.getCurrentReplStage(), newMetaStore.getCurrentReplStage());
     }
 
@@ -255,7 +255,7 @@ public class DefaultMetaStoreTest extends AbstractTest {
         File metaV2File = new File(baseDir, META_V2_FILE);
         metaV2File.delete();
 
-        MetaStore recoveredMetaStore = new DefaultMetaStore(new File(baseDir), keeperRunId);
+        MetaStore recoveredMetaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem());
 
         ReplicationStoreMeta metaDup = recoveredMetaStore.dupReplicationStoreMeta();
 

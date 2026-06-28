@@ -59,7 +59,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
 		redisOpParser = new GeneralRedisOpParser(redisOpParserManager);
 		baseDir = new File(getTestFileDir());
-		store = new GtidReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class));
+		store = new GtidReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem());
 	}
 
 	@Test
