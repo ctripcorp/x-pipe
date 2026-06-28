@@ -14,7 +14,6 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.FileUtils;
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -332,63 +331,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     public File getBaseDir() {
         return baseDir;
-    }
-
-    public static class ClusterAndShardCompatible extends DefaultReplicationStoreManager {
-
-        private final Logger logger = LoggerFactory.getLogger(ClusterAndShardCompatible.class);
-
-        private final File keeperBaseDir;
-
-        private ReplId replId;
-
-        private ClusterId deprecatedClusterId;
-
-        private ShardId deprecatedShardId;
-
-        public ClusterAndShardCompatible(CKStore ckStore,KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
-                                         File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
-                                         SyncRateManager syncRateManager, ScheduledExecutorService commandNotifyScheduler,
-                                         AsyncFileSystem asyncFileSystem) {
-            super(ckStore, keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem);
-            this.keeperBaseDir = baseDir;
-            this.replId = replId;
-        }
-
-        @Override
-        protected void doInitialize() throws Exception {
-
-            renameDeprecatedStore();
-
-            super.doInitialize();
-        }
-
-        public ClusterAndShardCompatible setDeprecatedClusterAndShard(ClusterId clusterId, ShardId shardId) {
-            this.deprecatedClusterId = clusterId;
-            this.deprecatedShardId = shardId;
-            return this;
-        }
-
-        public void renameDeprecatedStore() {
-            if (null == deprecatedClusterId || null == deprecatedShardId) {
-                return;
-            }
-
-            File deprecated = new File(keeperBaseDir, deprecatedClusterId + "/" + deprecatedShardId);
-            File dest = new File(keeperBaseDir, replId.toString());
-
-            File deprecatedParent = new File(keeperBaseDir, deprecatedClusterId.toString());
-            if (deprecated.exists() && !dest.exists()) {
-                try {
-                    keeperBaseDir.mkdirs();
-                    Files.move(deprecated, dest);
-                    logger.info("[renameDeprecatedStore] {} -> {} success", deprecated.getAbsolutePath(), dest.getAbsolutePath());
-                    FileUtils.recursiveDelete(deprecatedParent);
-                } catch (IOException e) {
-                    logger.error("[renameDeprecatedStore] {} -> {} failure", deprecated.getAbsolutePath(), dest.getAbsolutePath(), e);
-                }
-            }
-        }
     }
 
 }
