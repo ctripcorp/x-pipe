@@ -43,6 +43,8 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncLocalFileSystem;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
@@ -108,6 +110,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private SyncRateManager syncRateManager;
 	
 	@VisibleForTesting ReplicationStoreManager replicationStoreManager;
+
+	private AsyncFileSystem asyncFileSystem;
 
 	private ServerSocketChannel serverSocketChannel;
 	
@@ -199,8 +203,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
 																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor,
 																	ScheduledExecutorService scheduled) {
-		return new DefaultReplicationStoreManager.ClusterAndShardCompatible(this.ckStore,keeperConfig, replId, currentKeeperMeta.getId(),
-				baseDir, keeperMonitor, redisOpParser, syncRateManager, scheduled).setDeprecatedClusterAndShard(clusterId, shardId);
+		return new DefaultReplicationStoreManager.ClusterAndShardCompatible(this.ckStore, keeperConfig, replId, currentKeeperMeta.getId(),
+				baseDir, keeperMonitor, redisOpParser, syncRateManager, scheduled, asyncFileSystem).setDeprecatedClusterAndShard(clusterId, shardId);
 	}
 
 	private LeaderElector createLeaderElector(){
@@ -246,6 +250,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		clientExecutors = Executors.newSingleThreadExecutor(KeeperReplIdAwareThreadFactory.create(replId, "RedisClient-" + threadPoolName));
 		scheduled = Executors.newScheduledThreadPool(DEFAULT_SCHEDULED_CORE_POOL_SIZE , KeeperReplIdAwareThreadFactory.create(replId, "sch-" + threadPoolName));
+
+		asyncFileSystem = new AsyncLocalFileSystem(1);
 
 		replicationStoreManager = createReplicationStoreManager(keeperConfig, clusterId, shardId, replId,
 				currentKeeperMeta, baseDir, keeperMonitor, scheduled);
@@ -481,6 +487,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		bossGroup.shutdownGracefully();
 		workerGroup.shutdownGracefully();
 		replicationStoreManager.dispose();
+		if (asyncFileSystem != null) {
+			asyncFileSystem.shutdown();
+		}
 		this.scheduled.shutdownNow();
 		this.clientExecutors.shutdownNow();
 		super.doDispose();

@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.exception.replication.KeeperReplicationStore
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
@@ -83,16 +84,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected ScheduledExecutorService commandNotifyScheduler;
 
-	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
-								   CommandReaderWriterFactory cmdReaderWriterFactory,
-								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp) throws IOException {
-		this(ckStore, baseDir, config, keeperRunid, cmdReaderWriterFactory, keeperMonitor, syncRateManager, redisOp, null);
-	}
+	protected final AsyncFileSystem asyncFileSystem;
 
 	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
 								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
-								   ScheduledExecutorService commandNotifyScheduler) throws IOException {
+								   ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
 		this.commandsRetainTimeoutMilli = config.getReplicationStoreCommandFileRetainTimeoutMilli();
@@ -103,8 +100,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		this.redisOpParser = redisOp;
 		this.ckStore = ckStore;
 		this.commandNotifyScheduler = commandNotifyScheduler;
+		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
 
-		this.metaStore = new DefaultMetaStore(baseDir, keeperRunid);
+		this.metaStore = new DefaultMetaStore(baseDir, keeperRunid, asyncFileSystem);
 
 		ReplicationStoreMeta meta = metaStore.dupReplicationStoreMeta();
 
@@ -131,9 +129,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	protected DefaultReplicationStore(File baseDir, KeeperConfig config,String keeperRunid,
-									  KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp
+									  KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
+									  AsyncFileSystem asyncFileSystem
 	) throws IOException {
-		this(null,baseDir, config,keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp, null);
+		this(null,baseDir, config,keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp, null, asyncFileSystem);
 	}
 
 
@@ -532,7 +531,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				config::getReplicationStoreCommandFileNumToKeep,
 				config.getCommandReaderFlyingThreshold(),
 				this::isCmdNotifyCoalescingEnabled,
-				cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, gtidCmdFilter,true
+				cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, gtidCmdFilter,true,
+				asyncFileSystem
 		);
 		cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 		try {
@@ -553,7 +553,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	//TODO remove rdbOffset
 	protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType) throws IOException {
-		RdbStore rdbStore = new DefaultRdbStore(rdb, replId, rdbOffset, eofType);
+		RdbStore rdbStore = new DefaultRdbStore(rdb, replId, rdbOffset, eofType, asyncFileSystem);
 		rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
 		return rdbStore;
 	}
@@ -571,7 +571,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	public DumpedRdbStore prepareNewRdb() throws IOException {
 		makeSureOpen();
 
-		DumpedRdbStore rdbStore = new DefaultDumpedRdbStore(new File(baseDir, newRdbFileName()));
+		DumpedRdbStore rdbStore = new DefaultDumpedRdbStore(new File(baseDir, newRdbFileName()), asyncFileSystem);
 		rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
 		return rdbStore;
 	}

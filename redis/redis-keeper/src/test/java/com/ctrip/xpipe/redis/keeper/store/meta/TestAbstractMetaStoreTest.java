@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.meta;
 
-import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
@@ -23,9 +23,11 @@ import static com.ctrip.xpipe.redis.keeper.store.meta.AbstractMetaStore.deserial
  * <p>
  * May 19, 2020
  */
-public class TestAbstractMetaStoreTest extends AbstractTest {
+public class TestAbstractMetaStoreTest extends AbstractRedisKeeperTest {
 
-    private AbstractMetaStore metaStore = new DefaultMetaStore(new File("/tmp/xpipe/test"), "20180118165046194-20180118165046194-294c90b4c9ed4d747a77b1b0f22ec28a8068013b");
+    private static final String KEEPER_RUN_ID = "20180118165046194-20180118165046194-294c90b4c9ed4d747a77b1b0f22ec28a8068013b";
+
+    private AbstractMetaStore metaStore;
 
     private final String TMP_META_STORE_DIR = "/tmp/xpipe/test/";
     private final String TMP_META_V1_JSON_FILE = TMP_META_STORE_DIR + META_V1_FILE;
@@ -34,6 +36,7 @@ public class TestAbstractMetaStoreTest extends AbstractTest {
 
     @Before
     public void beforeTestAbstractMetaStoreTest() {
+        metaStore = new DefaultMetaStore(new File("/tmp/xpipe/test"), KEEPER_RUN_ID, asyncFileSystem());
         File filev1 = new File(TMP_META_V1_JSON_FILE, "rw");
         filev1.delete();
         File filev2 = new File(TMP_META_V1_JSON_FILE, "rw");
@@ -52,7 +55,7 @@ public class TestAbstractMetaStoreTest extends AbstractTest {
     public void testSaveMetaToFile() throws Exception {
         ReplicationStoreMeta meta = deserializeFromStringV2(readFileAsString(PERSIST_META_JSON_FILE));
         metaStore.saveMetaToFileV2(new File(TMP_META_V2_JSON_FILE), meta);
-        metaStore = new DefaultMetaStore(new File("/tmp/xpipe/test"), "20180118165046194-20180118165046194-294c90b4c9ed4d747a77b1b0f22ec28a8068013b");
+        metaStore = new DefaultMetaStore(new File("/tmp/xpipe/test"), KEEPER_RUN_ID, asyncFileSystem());
         metaStore.loadMeta();
         logger.info("[result] {}", readFileAsString(TMP_META_V2_JSON_FILE));
         Assert.assertEquals(meta, metaStore.getMeta());

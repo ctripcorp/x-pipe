@@ -23,10 +23,13 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager.NoneKeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncLocalFileSystem;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.channel.ChannelFuture;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +49,23 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	@BeforeClass
 	public static void beforeAbstractCheckerTest(){
 		System.setProperty("DisableLoadProxyAgentJar", "true");
+	}
+
+	private AsyncFileSystem testAsyncFileSystem;
+
+	protected AsyncFileSystem asyncFileSystem() {
+		if (testAsyncFileSystem == null) {
+			testAsyncFileSystem = new AsyncLocalFileSystem(1);
+		}
+		return testAsyncFileSystem;
+	}
+
+	@After
+	public void shutdownTestAsyncFileSystem() {
+		if (testAsyncFileSystem != null) {
+			testAsyncFileSystem.shutdown();
+			testAsyncFileSystem = null;
+		}
 	}
 
 	protected ClusterId getClusterId() {
@@ -111,7 +131,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected ReplicationStoreManager createReplicationStoreManager(ReplId replId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
 		
-		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, replId, keeperRunid, storeDir, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), createRedisOpParser());
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, replId, keeperRunid, storeDir, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), createRedisOpParser(), null, asyncFileSystem());
 
 		replicationStoreManager.addObserver(new Observer() {
 			

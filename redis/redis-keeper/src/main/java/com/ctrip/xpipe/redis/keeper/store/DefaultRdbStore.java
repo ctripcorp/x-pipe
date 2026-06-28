@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import com.ctrip.xpipe.utils.SizeControllableFile;
 import io.netty.buffer.ByteBuf;
@@ -22,6 +23,7 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
@@ -58,13 +60,17 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	private AtomicReference<SyncRateLimiter> rateLimiterRef = new AtomicReference<>();
 
-	public DefaultRdbStore(File file, String replId, long rdbOffset, EofType eofType) throws IOException {
+	protected final AsyncFileSystem asyncFileSystem;
+
+	public DefaultRdbStore(File file, String replId, long rdbOffset, EofType eofType,
+						   AsyncFileSystem asyncFileSystem) throws IOException {
 
 		this.replId = replId;
 		this.file = file;
 		this.eofType = eofType;
 		this.rdbOffset = rdbOffset;
 		this.typeRef = new AtomicReference<>(Type.UNKNOWN);
+		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
 
 		if(file.length() > 0){
 			checkAndSetRdbState();

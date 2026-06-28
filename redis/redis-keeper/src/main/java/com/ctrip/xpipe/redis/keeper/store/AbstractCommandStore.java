@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStore;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindow;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
@@ -105,6 +106,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private CKStore ckStore;
 
     private TimerSlidingWindow timerSlidingWindow;
+
+    protected final AsyncFileSystem asyncFileSystem;
     
     public abstract Logger getLogger();
 
@@ -114,12 +117,14 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                                 BooleanSupplier commandOffsetNotifyCoalescingEnabled,
                                 CommandReaderWriterFactory cmdReaderWriterFactory,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
-                                GtidCmdFilter  gtidCmdFilter, boolean buildIndex
+                                GtidCmdFilter  gtidCmdFilter, boolean buildIndex,
+                                AsyncFileSystem asyncFileSystem
     ) throws IOException {
 
         this.baseDir = file.getParentFile();
         this.fileNamePrefix = file.getName();
         this.maxFileSize = maxFileSize;
+        this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
         this.maxTimeSecondKeeperCmdFileAfterModified = maxTimeSecondKeeperCmdFileAfterModified;
         this.fileNumToKeep = fileNumToKeep;
         this.commandReaderFlyingThreshold = commandReaderFlyingThreshold;

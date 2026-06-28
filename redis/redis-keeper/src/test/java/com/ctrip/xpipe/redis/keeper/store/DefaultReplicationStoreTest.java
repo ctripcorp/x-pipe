@@ -66,7 +66,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	@Test
 	public void testReadWhileDestroy() throws Exception{
 
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser, asyncFileSystem());
 		store.getMetaStore().becomeActive();
 
 		int dataLen = 1000;
@@ -177,7 +177,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	@Test
 	public void testReadWrite() throws Exception {
 
-		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser, asyncFileSystem());
 		store.getMetaStore().becomeActive();
 
 
@@ -203,7 +203,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	@Test
 	public void testGcNotContinueRdb() throws Exception {
 		TestKeeperConfig config = new TestKeeperConfig(100, 1, 1024, 0);
-		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
+		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser, asyncFileSystem());
 		store.getMetaStore().becomeActive();
 
 		int dataLen = 100;
@@ -245,7 +245,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 			}
 		};
 		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), keeperMonitor,
-				Mockito.mock(SyncRateManager.class), redisOpParser);
+				Mockito.mock(SyncRateManager.class), redisOpParser, asyncFileSystem());
 
 		Assert.assertTrue((Boolean) ReflectionTestUtils.invokeMethod(store, "isCmdNotifyCoalescingEnabled"));
 		Mockito.when(masterStats.currentMasterType()).thenReturn(SERVER_TYPE.KEEPER);
@@ -266,7 +266,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 			}
 		};
 		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), keeperMonitor,
-				Mockito.mock(SyncRateManager.class), redisOpParser);
+				Mockito.mock(SyncRateManager.class), redisOpParser, asyncFileSystem());
 
 		Assert.assertFalse((Boolean) ReflectionTestUtils.invokeMethod(store, "isCmdNotifyCoalescingEnabled"));
 	}
@@ -285,7 +285,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 			}
 		};
 		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), keeperMonitor,
-				Mockito.mock(SyncRateManager.class), redisOpParser);
+				Mockito.mock(SyncRateManager.class), redisOpParser, asyncFileSystem());
 		store.getMetaStore().becomeActive();
 		beginRdb(store, 1);
 
@@ -312,7 +312,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 			}
 		};
 		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), keeperMonitor,
-				Mockito.mock(SyncRateManager.class), redisOpParser);
+				Mockito.mock(SyncRateManager.class), redisOpParser, asyncFileSystem());
 
 		Assert.assertFalse((Boolean) ReflectionTestUtils.invokeMethod(store, "isCmdNotifyCoalescingEnabled"));
 	}
@@ -332,7 +332,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 			}
 		};
 		store = new DefaultReplicationStore(baseDir, config, randomKeeperRunid(), keeperMonitor,
-				Mockito.mock(SyncRateManager.class), redisOpParser);
+				Mockito.mock(SyncRateManager.class), redisOpParser, asyncFileSystem());
 		store.getMetaStore().becomeActive();
 		beginRdb(store, 1);
 
