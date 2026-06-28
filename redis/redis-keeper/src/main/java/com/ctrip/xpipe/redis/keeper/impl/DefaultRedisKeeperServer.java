@@ -203,8 +203,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
 																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor,
 																	ScheduledExecutorService scheduled) {
-		return new DefaultReplicationStoreManager.ClusterAndShardCompatible(this.ckStore, keeperConfig, replId, currentKeeperMeta.getId(),
-				baseDir, keeperMonitor, redisOpParser, syncRateManager, scheduled, asyncFileSystem).setDeprecatedClusterAndShard(clusterId, shardId);
+		return new DefaultReplicationStoreManager(this.ckStore, keeperConfig, replId, currentKeeperMeta.getId(),
+				baseDir, keeperMonitor, syncRateManager, redisOpParser, scheduled, asyncFileSystem);
 	}
 
 	private LeaderElector createLeaderElector(){
