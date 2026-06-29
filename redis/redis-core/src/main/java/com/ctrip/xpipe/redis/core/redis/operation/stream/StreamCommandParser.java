@@ -61,6 +61,9 @@ public class StreamCommandParser {
             this.reset();
             throw e;
         } finally {
+            if(byteBuf.readableBytes() >0){
+                log.error("[skip] {}",byteBuf.readableBytes());
+            }
             byteBuf.skipBytes(byteBuf.readableBytes());
         }
     }

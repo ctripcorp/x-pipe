@@ -29,6 +29,8 @@ public interface CommandWriterCallback {
     long getCurrentOffset();
 
     long getCmdFileLen();
+
+    int getPendingSize();
     
     /**
      * Get CommandWriter for file rotation and other operations.

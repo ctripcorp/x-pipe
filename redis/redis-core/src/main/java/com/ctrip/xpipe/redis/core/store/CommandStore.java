@@ -93,4 +93,5 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	void resetStateForContinue();
 
+	void flushSlidingWindow() throws IOException;
 }

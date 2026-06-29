@@ -124,6 +124,10 @@ public class TimerSlidingWindow implements AutoCloseable {
         flushBuffer();
     }
 
+    public int bufferSize(){
+        return window.readableBytes();
+    }
+
     @Override
     public void close() throws IOException {
     }

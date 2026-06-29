@@ -170,8 +170,10 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     @Override
     public boolean checkOffset(long offset) {
         long cmdFileLen = getCurrentCmdFileLen();
-        if (-1 != cmdFileLen && cmdFileLen != offset) {
-            logger.info("[checkOffset][mismatch] nextCmdBegin:{} cmdFileLen{}", offset, cmdFileLen);
+        int pendingSize = getPendingSize();
+        long logicOffset = cmdFileLen + pendingSize;
+        if (-1 != logicOffset && logicOffset != offset) {
+            logger.info("[checkOffset][mismatch] nextCmdBegin:{} cmdFileLen{},pendingSize {}", offset, cmdFileLen,pendingSize);
             return false;
         }
         return true;
@@ -261,13 +263,22 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         try {
             controllableFile = new DefaultControllableFile(new File(Paths.get(baseDir, cmdFileName).toString()));
             controllableFile.getFileChannel().position(cmdFileOffset);
+            logger.info("[buildIndexFromCmdFile] currentOffset {},fileSize {}",cmdFileOffset,controllableFile.size());
+
+            int cmdCount = 0;
             while(controllableFile.getFileChannel().position() < controllableFile.getFileChannel().size()) {
                 int size = (int)Math.min(1024*8, controllableFile.getFileChannel().size() - controllableFile.getFileChannel().position());
                 ByteBuffer buffer = ByteBuffer.allocate(size);
-                controllableFile.getFileChannel().read(buffer);
+                int readable = controllableFile.getFileChannel().read(buffer);
                 buffer.flip();
                 ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.array());
-                this.write(byteBuf);
+                try {
+                    this.write(byteBuf);
+                    cmdCount++;
+                }catch (Exception e){
+                    logger.error("[read] content {},pos {},size {},readable {},cmdCount {}",new String(buffer.array()),controllableFile.getFileChannel().position(),size,readable,cmdCount,e);
+                    throw e;
+                }
             }
             
             // Check for incomplete protocol parsing
@@ -487,6 +498,13 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
             return commandWriterCallback.getCmdFileLen();
         }
         return -1L;
+    }
+
+    public int getPendingSize() {
+        if (commandWriterCallback != null) {
+            return commandWriterCallback.getPendingSize();
+        }
+        return 0;
     }
 
     private void disableWriterCmd() {

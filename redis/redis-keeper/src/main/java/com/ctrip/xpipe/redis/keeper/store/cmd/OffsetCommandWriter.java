@@ -56,10 +56,11 @@ public class OffsetCommandWriter implements CommandWriter {
     public boolean rotateFileIfNecessary() throws IOException {
         CommandFileContext curCmdFileCtx = cmdFileCtxRef.get();
         if (curCmdFileCtx.fileLength() >= maxFileSize) {
+            cmdStore.flushSlidingWindow();
             CommandFile newCommandFile = cmdStore.newCommandFile(totalLength());
             File newFile = newCommandFile.getFile();
             long newStartOffset = newCommandFile.getStartOffset();
-            logger.info("Rotate to {}", newFile.getName());
+            logger.info("Rotate to {},filelength {},totallength {},newStartOffset {}", newFile.getName(),curCmdFileCtx.fileLength(),totalLength(),newStartOffset);
 
             synchronized (this) {
                 CommandFileContext newCmdFileCtx = new CommandFileContext(newStartOffset, newFile);

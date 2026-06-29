@@ -137,7 +137,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         allFileFilter = new PrefixFileFilter(new String[] {fileNamePrefix, INDEX_FILE_PREFIX + fileNamePrefix});
 
         intiCmdFileIndex();
-        cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
+        cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, this.maxFileSize, delayTraceLogger);
         this.buildIndex = buildIndex;
         indexStore = createIndexStore();
     }
@@ -164,9 +164,26 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
+    public int getPendingSize(){
+        if(timerSlidingWindow != null){
+            return timerSlidingWindow.bufferSize();
+        }
+        return 0;
+    }
+
+
+    @Override
     public CommandWriter getCommandWriter() {
         return cmdWriter;
     }
+
+    @Override
+    public void flushSlidingWindow() throws IOException{
+        if(timerSlidingWindow != null){
+            timerSlidingWindow.flushAll();
+        }
+    }
+
 
     @Override
     public void initialize() throws IOException {
@@ -771,6 +788,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if(indexStore != null) {
             indexStore.closeWithDeleteIndexFiles();
         }
+        flushSlidingWindow();
         indexStore = createIndexStore();
         indexStore.openWriter(cmdWriter);
         buildIndex = true;
@@ -780,6 +798,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     public synchronized void switchToPsync(String replId, long offset) throws IOException {
         if(!buildIndex)return;
         buildIndex = false;
+        flushSlidingWindow();
         if(indexStore != null) {
             indexStore.closeWriter();
         }
