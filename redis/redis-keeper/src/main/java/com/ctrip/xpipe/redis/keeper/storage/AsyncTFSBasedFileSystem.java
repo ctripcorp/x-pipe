@@ -22,12 +22,19 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class AsyncLocalFileSystem implements AsyncFileSystem {
+// low level file system implementation, not used directly.
+// TFS guarantees that metadata is synchronously delivered: create/rm operations are durable after returning.
+// TFS guarantees that close will flush all data before returning.
+public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
+    private static final Logger logger = LoggerFactory.getLogger(AsyncTFSBasedFileSystem.class);
+    private static final String TMP_REP_ = "TMP_REP_";
     private final ExecutorService ioExecutor;
 
-    public AsyncLocalFileSystem(int threadCount) {
+    public AsyncTFSBasedFileSystem(int threadCount) {
         this.ioExecutor = Executors.newFixedThreadPool(threadCount);
     }
 
@@ -38,6 +45,8 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
 
     // ---- AsyncFile ----
 
+    // atomicReplace uses tmp file approach instead of rename because tfs currently does not support rename.
+    // Tmp file format: [8-byte length][data].
     @Override
     public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient) {
         if (atomicReplace && !write) {
@@ -50,12 +59,15 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                 if (lenient && Files.exists(p) && !Files.isRegularFile(p)) {
                     return new AsyncFile(path, null, atomicReplace);
                 }
+                if (atomicReplace) {
+                    recoverFromTmp(p);
+                }
                 FileChannel ch;
-                if (!write) {
-                    ch = FileChannel.open(p, StandardOpenOption.READ);
-                } else {
+                if (write) {
                     ch = FileChannel.open(p, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
                     if (!atomicReplace) ch.position(ch.size());
+                } else {
+                    ch = FileChannel.open(p, StandardOpenOption.READ);
                 }
                 return new AsyncFile(path, ch, atomicReplace);
             } catch (IOException e) {
@@ -102,8 +114,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
     public CompletableFuture<Integer> read(AsyncFile file, long length, long offset, byte[] buffer) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                ByteBuffer buf = ByteBuffer.wrap(buffer, 0, (int) Math.min(length, buffer.length));
-                return file.channel.read(buf, offset);
+                return readFully(file.channel, length, offset, buffer);
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
@@ -114,29 +125,22 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
     public CompletableFuture<Integer> read(AsyncFile file, long length, byte[] buffer) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                ByteBuffer buf = ByteBuffer.wrap(buffer, 0, (int) Math.min(length, buffer.length));
-                return file.channel.read(buf);
+                return readFully(file.channel, length, buffer);
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
         }, ioExecutor);
     }
 
+    // TODO how to handle the race condition?
     @Override
     public CompletableFuture<Integer> write(AsyncFile file, byte[] data, long length) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                int len = (int) Math.min(length, data.length);
-                ByteBuffer buf = ByteBuffer.wrap(data, 0, len);
-                // TODO: should we use a temporary file to avoid the race condition?
                 if (file.atomicReplace) {
-                    file.channel.truncate(0);
-                    while (buf.hasRemaining()) {
-                        file.channel.write(buf);
-                    }
-                    return len;
+                    return atomicReplaceWrite(file, data, (int) Math.min(length, data.length));
                 }
-                return file.channel.write(buf);
+                return writeFully(file.channel, data, length);
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
@@ -267,6 +271,106 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
         }, ioExecutor);
     }
 
+    // ---- AsyncFile helpers ----
+
+    private int readFully(FileChannel ch, long length, byte[] buffer) throws IOException {
+        ByteBuffer buf = ByteBuffer.wrap(buffer, 0, (int) Math.min(length, buffer.length));
+        int totalRead = 0;
+        while (buf.hasRemaining()) {
+            int n = ch.read(buf);
+            if (n < 0) break;
+            totalRead += n;
+        }
+        return totalRead;
+    }
+
+    private int readFully(FileChannel ch, long length, long offset, byte[] buffer) throws IOException {
+        ByteBuffer buf = ByteBuffer.wrap(buffer, 0, (int) Math.min(length, buffer.length));
+        int totalRead = 0;
+        while (buf.hasRemaining()) {
+            int n = ch.read(buf, offset + totalRead);
+            if (n < 0) break;
+            totalRead += n;
+        }
+        return totalRead;
+    }
+
+    private int writeFully(FileChannel ch, byte[] data, long length) throws IOException {
+        ByteBuffer buf = ByteBuffer.wrap(data, 0, (int) Math.min(length, data.length));
+        int totalWritten = 0;
+        while (buf.hasRemaining()) {
+            totalWritten += ch.write(buf);
+        }
+        return totalWritten;
+    }
+
+    private Path getTmpPath(String filePath) {
+        Path p = Paths.get(filePath);
+        return Paths.get(p.getParent().toString(), TMP_REP_ + p.getFileName());
+    }
+
+    private void recoverFromTmp(Path filePath) throws IOException {
+        Path tmpPath = getTmpPath(filePath.toString());
+        if (!Files.exists(tmpPath)) {
+            return;
+        }
+        try (FileChannel tmpCh = FileChannel.open(tmpPath, StandardOpenOption.READ);
+             FileChannel fileCh = FileChannel.open(filePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
+            long tmpSize = tmpCh.size();
+            if (tmpSize < 8) {
+                logger.warn("tmp file size too small: {} < 8, deleting {}", tmpSize, tmpPath);
+                Files.deleteIfExists(tmpPath);
+                return;
+            }
+            byte[] lenBytes = new byte[8];
+            int lenRead = readFully(tmpCh, 8, lenBytes);
+            if (lenRead != 8) {
+                logger.warn("failed to read length from tmp file: read {} bytes, expected 8, deleting {}", lenRead, tmpPath);
+                Files.deleteIfExists(tmpPath);
+                return;
+            }
+            ByteBuffer lenBuf = ByteBuffer.wrap(lenBytes);
+            long expectedLen = lenBuf.getLong();
+            long expectedTmpSize = 8 + expectedLen;
+            if (tmpSize != expectedTmpSize) {
+                logger.warn("tmp file size mismatch: actual {} != expected {}, deleting {}", tmpSize, expectedTmpSize, tmpPath);
+                Files.deleteIfExists(tmpPath);
+                return;
+            }
+            byte[] dataBytes = new byte[(int) expectedLen];
+            int dataRead = readFully(tmpCh, expectedLen, dataBytes);
+            if (dataRead != expectedLen) {
+                logger.error("failed to read data from tmp file: read {} bytes, expected {}, deleting {}. This should not happen.",
+                    dataRead, expectedLen, tmpPath);
+                Files.deleteIfExists(tmpPath);
+                return;
+            }
+            fileCh.truncate(0);
+            writeFully(fileCh, dataBytes, dataBytes.length);
+            fileCh.force(true);
+            Files.deleteIfExists(tmpPath);
+            logger.info("recovered from tmp file: {}", tmpPath);
+        }
+    }
+
+    private int atomicReplaceWrite(AsyncFile file, byte[] data, int length) throws IOException {
+        Path tmpPath = getTmpPath(file.path);
+        try (FileChannel tmpCh = FileChannel.open(tmpPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+            ByteBuffer lenBuf = ByteBuffer.allocate(8);
+            lenBuf.putLong(length);
+            lenBuf.flip();
+            writeFully(tmpCh, lenBuf.array(), 8);
+            writeFully(tmpCh, data, length);
+            tmpCh.force(true);
+        }
+        file.channel.truncate(0);
+        file.channel.position(0);
+        int written = writeFully(file.channel, data, length);
+        file.channel.force(true);
+        Files.deleteIfExists(tmpPath);
+        return written;
+    }
+
     // ---- AsyncSegmentFile ----
 
     @Override
@@ -303,8 +407,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                         ? 0 : file.currentSegmentStartOffset + file.currentSegmentChannel.position();
                 ensureReadSegment(file, logicalPos);
                 file.currentSegmentChannel.position(logicalPos - file.currentSegmentStartOffset);
-                ByteBuffer buf = ByteBuffer.wrap(buffer, 0, (int) Math.min(length, buffer.length));
-                return file.currentSegmentChannel.read(buf);
+                return readFully(file.currentSegmentChannel, length, buffer);
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
@@ -315,9 +418,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
     public CompletableFuture<Integer> write(AsyncSegmentFile file, byte[] data, long length) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                ByteBuffer buf = ByteBuffer.wrap(data, 0, (int) Math.min(length, data.length));
-                int n = file.currentSegmentChannel.write(buf);
-                return n;
+                return writeFully(file.currentSegmentChannel, data, length);
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
@@ -345,6 +446,11 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
     @Override
     public List<Long> list(AsyncSegmentFile file) {
         return listSegmentOffsets(file.dirPath, file.prefix);
+    }
+
+    @Override
+    public long getCurrentSegmentStartOffset(AsyncSegmentFile file) {
+        return file.currentSegmentStartOffset;
     }
 
     @Override
@@ -380,6 +486,30 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return logicalSize(file);
+            } catch (IOException e) {
+                throw new StorageIOException(e);
+            }
+        }, ioExecutor);
+    }
+
+    @Override
+    public CompletableFuture<Long> lastModified(AsyncSegmentFile file) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return lastModifiedOfSegment(file, file.currentSegmentStartOffset).get();
+            } catch (IOException e) {
+                throw new StorageIOException(e);
+            } catch (Exception e) {
+                throw new StorageIOException(e);
+            }
+        }, ioExecutor);
+    }
+
+    @Override
+    public CompletableFuture<Long> lastModifiedOfSegment(AsyncSegmentFile file, long startOffset) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return Files.getLastModifiedTime(Paths.get(segmentPath(file.dirPath, file.prefix, startOffset))).toMillis();
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
