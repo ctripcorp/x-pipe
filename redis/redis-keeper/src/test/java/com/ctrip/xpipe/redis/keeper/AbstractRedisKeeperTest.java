@@ -24,7 +24,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager.NoneKeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
-import com.ctrip.xpipe.redis.keeper.storage.AsyncLocalFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystem;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
@@ -55,7 +55,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected AsyncFileSystem asyncFileSystem() {
 		if (testAsyncFileSystem == null) {
-			testAsyncFileSystem = new AsyncLocalFileSystem(1);
+			testAsyncFileSystem = new AsyncTFSBasedFileSystem(1);
 		}
 		return testAsyncFileSystem;
 	}

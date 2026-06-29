@@ -497,8 +497,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return lastModifiedOfSegment(file, file.currentSegmentStartOffset).get();
-            } catch (IOException e) {
-                throw new StorageIOException(e);
+//            } catch (IOException e) {
+//                throw new StorageIOException(e);
             } catch (Exception e) {
                 throw new StorageIOException(e);
             }

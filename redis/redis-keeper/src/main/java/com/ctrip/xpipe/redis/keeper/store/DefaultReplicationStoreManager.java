@@ -6,12 +6,12 @@ import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
-import com.ctrip.xpipe.redis.core.util.NonFinalizeFileInputStream;
-import com.ctrip.xpipe.redis.core.util.NonFinalizeFileOutputStream;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -170,7 +170,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         keeperMonitor.getReplicationStoreStats().increateReplicationStoreCreateCount();
 
         File storeBaseDir = new File(baseDir, UUID.randomUUID().toString());
-        storeBaseDir.mkdirs();
+        AsyncFileSystemHelper.await(asyncFileSystem.mkdir(storeBaseDir.getAbsolutePath(), true),
+                "mkdir replication store " + storeBaseDir.getAbsolutePath());
 
         logger.info("[create]{}", storeBaseDir);
 
@@ -208,9 +209,21 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
      * @throws IOException
      */
     private void saveMeta(Properties meta) throws IOException {
-        try (OutputStream out = new NonFinalizeFileOutputStream(metaFile)) {
-            meta.store(out, null);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        meta.store(out, null);
+        byte[] data = out.toByteArray();
+
+        AsyncFile asyncFile = AsyncFileSystemHelper.await(
+                asyncFileSystem.open(metaFile.getAbsolutePath(), true, true, true),
+                "open manager meta for write " + metaFile.getAbsolutePath());
+        try {
+            AsyncFileSystemHelper.await(asyncFileSystem.write(asyncFile, data, data.length),
+                    "write manager meta " + metaFile.getAbsolutePath());
+        } finally {
+            AsyncFileSystemHelper.await(asyncFileSystem.close(asyncFile),
+                    "close manager meta " + metaFile.getAbsolutePath());
         }
+
         logger.info("[saveMeta][before]{}", currentMeta.get());
         currentMeta.set(meta);
         logger.info("[saveMeta][after]{}", currentMeta.get());
@@ -222,10 +235,22 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
      */
     private Properties loadMeta() throws IOException {
 
-        if (metaFile.isFile()) {
+        if (AsyncFileSystemHelper.await(asyncFileSystem.exists(metaFile.getAbsolutePath()),
+                "check manager meta exists " + metaFile.getAbsolutePath())) {
             Properties meta = new Properties();
-            try (InputStream in = new NonFinalizeFileInputStream(metaFile)) {
-                meta.load(in);
+            AsyncFile asyncFile = AsyncFileSystemHelper.await(
+                    asyncFileSystem.open(metaFile.getAbsolutePath(), false, false, true),
+                    "open manager meta for read " + metaFile.getAbsolutePath());
+            try {
+                long size = AsyncFileSystemHelper.await(asyncFileSystem.size(asyncFile),
+                        "stat manager meta " + metaFile.getAbsolutePath());
+                byte[] data = AsyncFileSystemHelper.readFully(asyncFileSystem, asyncFile, size, metaFile.getAbsolutePath());
+                try (InputStream in = new ByteArrayInputStream(data)) {
+                    meta.load(in);
+                }
+            } finally {
+                AsyncFileSystemHelper.await(asyncFileSystem.close(asyncFile),
+                        "close manager meta " + metaFile.getAbsolutePath());
             }
             return meta;
         }
@@ -255,7 +280,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                 if (meta.getProperty(LATEST_STORE_DIR) != null) {
                     File latestStoreDir = new File(baseDir, meta.getProperty(LATEST_STORE_DIR));
                     logger.info("[getCurrent][latest]{}", latestStoreDir);
-                    if (latestStoreDir.isDirectory()) {
+                    if (AsyncFileSystemHelper.await(asyncFileSystem.exists(latestStoreDir.getAbsolutePath()),
+                            "check latest store dir exists " + latestStoreDir.getAbsolutePath())) {
                         currentStore.set(createReplicationStore(latestStoreDir, keeperConfig, keeperRunid, keeperMonitor, syncRateManager));
                     }
                 }

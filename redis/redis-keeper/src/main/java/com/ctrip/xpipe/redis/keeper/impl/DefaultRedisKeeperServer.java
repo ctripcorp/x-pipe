@@ -44,7 +44,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
-import com.ctrip.xpipe.redis.keeper.storage.AsyncLocalFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystem;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
@@ -251,7 +251,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		clientExecutors = Executors.newSingleThreadExecutor(KeeperReplIdAwareThreadFactory.create(replId, "RedisClient-" + threadPoolName));
 		scheduled = Executors.newScheduledThreadPool(DEFAULT_SCHEDULED_CORE_POOL_SIZE , KeeperReplIdAwareThreadFactory.create(replId, "sch-" + threadPoolName));
 
-		asyncFileSystem = new AsyncLocalFileSystem(1);
+		asyncFileSystem = new AsyncTFSBasedFileSystem(1);
 
 		replicationStoreManager = createReplicationStoreManager(keeperConfig, clusterId, shardId, replId,
 				currentKeeperMeta, baseDir, keeperMonitor, scheduled);
