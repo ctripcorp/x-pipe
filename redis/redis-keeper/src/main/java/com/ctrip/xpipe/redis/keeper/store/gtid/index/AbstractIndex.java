@@ -17,6 +17,9 @@ public abstract class AbstractIndex {
     public static final String BLOCK = "block_";
     public static final String INDEX = "index_";
 
+    public static final String INDEX_V2 = "index_v2_";
+    public static final String BLOCK_V2 = "block_v2_";
+
     private String fileName;
     private String baseDir;
 
@@ -118,7 +121,7 @@ public abstract class AbstractIndex {
         return true;
     }
 
-    public File findNextFile() {
+        public File findNextFile() {
         File directory = new File(baseDir);
         if (!directory.isDirectory()) {
             throw new IllegalArgumentException("is not a directory");
