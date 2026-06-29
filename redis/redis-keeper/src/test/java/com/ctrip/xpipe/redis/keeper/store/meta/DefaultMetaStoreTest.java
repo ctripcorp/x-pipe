@@ -6,12 +6,17 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystem;
+import com.ctrip.xpipe.utils.FileUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V2_FILE;
 import static com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
@@ -43,7 +48,20 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
         File metaFileV2 = new File(baseDir, META_V2_FILE);
         metaFileV2.delete();
 
+        Files.createDirectories(Paths.get(baseDir));
         metaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem());
+    }
+
+    @Test
+    public void saveMetaOpenV2WithAtomicReplace() throws IOException {
+        new File(baseDir, META_V2_FILE).delete();
+        AsyncFileSystem fileSystem = spy(new AsyncTFSBasedFileSystem(1));
+        try {
+            new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem);
+            verify(fileSystem, atLeastOnce()).open(contains(META_V2_FILE), eq(true), eq(true), eq(true));
+        } finally {
+            fileSystem.shutdown();
+        }
     }
 
     @Test (expected = UnexpectedReplIdException.class)
@@ -65,7 +83,7 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
 
         long beginReplOffsetA = 1, backlogOffA = 10000, rdbOffset;
 
-        String rdbReplId = replidA, rdbGtidSet = "", rdbFile = rdbFileA;
+        String rdbReplId = replidA, rdbFile = rdbFileA;
 
         metaStore.rdbConfirmPsync(replidA, beginReplOffsetA, backlogOffA, rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
 
