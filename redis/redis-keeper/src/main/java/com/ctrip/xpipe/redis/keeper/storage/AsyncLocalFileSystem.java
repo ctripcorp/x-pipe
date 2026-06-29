@@ -31,24 +31,37 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
         this.ioExecutor = Executors.newFixedThreadPool(threadCount);
     }
 
+    @Override
+    public void shutdown() {
+        ioExecutor.shutdown();
+    }
+
     // ---- AsyncFile ----
 
     @Override
-    public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace) {
+    public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean allowDirectory) {
         if (atomicReplace && !write) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("atomicReplace requires write=true"));
         }
         return CompletableFuture.supplyAsync(() -> {
             try {
+                Path p = Paths.get(path);
+                if (Files.isDirectory(p)) {
+                    if (allowDirectory) {
+                        return new AsyncFile(path, null, atomicReplace, true);
+                    } else {
+                        throw new IllegalArgumentException("path is a directory: " + path);
+                    }
+                }
                 FileChannel ch;
                 if (!write) {
-                    ch = FileChannel.open(Paths.get(path), StandardOpenOption.READ);
+                    ch = FileChannel.open(p, StandardOpenOption.READ);
                 } else {
-                    ch = FileChannel.open(Paths.get(path), StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+                    ch = FileChannel.open(p, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
                     if (!atomicReplace) ch.position(ch.size());
                 }
-                return new AsyncFile(path, ch, atomicReplace);
+                return new AsyncFile(path, ch, atomicReplace, false);
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
@@ -59,6 +72,12 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
     public CompletableFuture<Boolean> isFile(AsyncFile file) {
         return CompletableFuture.supplyAsync(
                 () -> Files.isRegularFile(Paths.get(file.path)), ioExecutor);
+    }
+
+    @Override
+    public CompletableFuture<Boolean> isDirectory(String path) {
+        return CompletableFuture.supplyAsync(
+                () -> Files.isDirectory(Paths.get(path)), ioExecutor);
     }
 
     @Override
