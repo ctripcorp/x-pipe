@@ -8,8 +8,12 @@ import java.util.concurrent.CompletableFuture;
 // currently only support append only mode and atomic replace mode.
 // TODO to prevent unnessery memory copy, we should reconsider the interface design.
 public interface AsyncFileSystem {
-    CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace);
+    void shutdown();
+
+    // ---- AsyncFile ----
+    CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean allowDirectory);
     CompletableFuture<Boolean> isFile(AsyncFile file);
+    CompletableFuture<Boolean> isDirectory(String path);
     CompletableFuture<Long> lastModified(AsyncFile file);
     CompletableFuture<Void> position(AsyncFile file, long position);
     CompletableFuture<Integer> read(AsyncFile file, long length, long offset, byte[] buffer);
@@ -27,6 +31,7 @@ public interface AsyncFileSystem {
     CompletableFuture<List<String>> list(String path);
     CompletableFuture<Long> transferTo(AsyncFile file, long position, long count, WritableByteChannel target);
 
+    // ---- AsyncSegmentFile ----
     // A segment file represents a list of files with the same prefix and monotonically increasing offsets.
     // Each segment file has 0 to n index files which share the same lifecycle.
     // Segment files operate using logical offsets instead of physical offsets.
