@@ -39,7 +39,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
     // ---- AsyncFile ----
 
     @Override
-    public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean allowDirectory) {
+    public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient) {
         if (atomicReplace && !write) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("atomicReplace requires write=true"));
@@ -47,12 +47,8 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Path p = Paths.get(path);
-                if (Files.isDirectory(p)) {
-                    if (allowDirectory) {
-                        return new AsyncFile(path, null, atomicReplace, true);
-                    } else {
-                        throw new IllegalArgumentException("path is a directory: " + path);
-                    }
+                if (lenient && Files.exists(p) && !Files.isRegularFile(p)) {
+                    return new AsyncFile(path, null, atomicReplace);
                 }
                 FileChannel ch;
                 if (!write) {
@@ -61,7 +57,7 @@ public class AsyncLocalFileSystem implements AsyncFileSystem {
                     ch = FileChannel.open(p, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
                     if (!atomicReplace) ch.position(ch.size());
                 }
-                return new AsyncFile(path, ch, atomicReplace, false);
+                return new AsyncFile(path, ch, atomicReplace);
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }

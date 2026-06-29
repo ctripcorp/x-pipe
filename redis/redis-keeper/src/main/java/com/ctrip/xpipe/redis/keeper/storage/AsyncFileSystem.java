@@ -11,7 +11,7 @@ public interface AsyncFileSystem {
     void shutdown();
 
     // ---- AsyncFile ----
-    CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean allowDirectory);
+    CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient);
     CompletableFuture<Boolean> isFile(AsyncFile file);
     CompletableFuture<Boolean> isDirectory(String path);
     CompletableFuture<Long> lastModified(AsyncFile file);
