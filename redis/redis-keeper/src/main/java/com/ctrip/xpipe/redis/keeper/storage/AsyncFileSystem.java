@@ -6,11 +6,13 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 // currently only support append only mode and atomic replace mode.
+// All read/write operations attempt to read/write as much as possible until EOF, I/O error, or completion.
 // TODO to prevent unnessery memory copy, we should reconsider the interface design.
 public interface AsyncFileSystem {
     void shutdown();
 
     // ---- AsyncFile ----
+    // lenient: if true and path is not a regular file, I/O operations will throw NPE
     CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient);
     CompletableFuture<Boolean> isFile(AsyncFile file);
     CompletableFuture<Boolean> isDirectory(String path);
@@ -44,6 +46,7 @@ public interface AsyncFileSystem {
     CompletableFuture<Integer> write(AsyncSegmentFile file, byte[] data, long length);
     CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file);
     List<Long> list(AsyncSegmentFile file);
+    long getCurrentSegmentStartOffset(AsyncSegmentFile file);
     // position to one segment and then call this method to get the current index files.
     CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<IndexFileMapping> indexMappings);
     CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file);
@@ -51,6 +54,8 @@ public interface AsyncFileSystem {
     CompletableFuture<Map<String, AsyncFile>> openIndexFiles(AsyncSegmentFile file, long startOffset);
     CompletableFuture<Long> size(AsyncSegmentFile file);
     CompletableFuture<Long> sizeOfSegment(AsyncSegmentFile file, long startOffset);
+    CompletableFuture<Long> lastModified(AsyncSegmentFile file);
+    CompletableFuture<Long> lastModifiedOfSegment(AsyncSegmentFile file, long startOffset);
     CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets);
     CompletableFuture<Void> truncate(AsyncSegmentFile file, long offset);
     CompletableFuture<Void> close(AsyncSegmentFile file);
