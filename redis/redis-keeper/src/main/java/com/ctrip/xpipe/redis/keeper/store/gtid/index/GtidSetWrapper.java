@@ -9,6 +9,10 @@ import java.nio.channels.FileChannel;
 
 public class GtidSetWrapper {
 
+    public static final int MAGIC = 0x47494458;   // "GIDX"
+    public static final int VERSION_1 = 1;
+    public static final int VERSION_2 = 2;
+
     private GtidSet gtidSet;
 
     public GtidSet getGtidSet() {
@@ -37,6 +41,20 @@ public class GtidSetWrapper {
         channel.write(buffer);
     }
 
+    // ---- v2 header ----
+    public void saveGtidSetV2(FileChannel channel) throws IOException {
+        channel.position(0);
+        byte[] gtidBytes = gtidSet.toString().getBytes();
+        ByteBuffer header = ByteBuffer.allocate(16 + gtidBytes.length);
+        header.putInt(MAGIC);
+        header.putInt(VERSION_2);
+        header.putLong(gtidBytes.length);
+        header.put(gtidBytes);
+        header.flip();
+        channel.write(header);
+    }
+
+
     static GtidSet readGtidSet(FileChannel channel) throws IOException {
         if(channel.size() < Long.BYTES) {
             throw new IllegalStateException("file channel should be empty before saving GTID set");
@@ -57,10 +75,58 @@ public class GtidSetWrapper {
         return clone;
     }
 
+    // 自动识别版本读取
+    public static GtidSet readGtidSetV2(FileChannel channel) throws IOException {
+        channel.position(0);
+        if (channel.size() < 4) throw new IOException("Index file too small");
+        ByteBuffer magicBuf = ByteBuffer.allocate(4);
+        channel.read(magicBuf);
+        magicBuf.flip();
+        int firstInt = magicBuf.getInt();
+
+        if (firstInt == MAGIC) {
+            ByteBuffer verBuf = ByteBuffer.allocate(4);
+            channel.read(verBuf);
+            verBuf.flip();
+            int version = verBuf.getInt();
+            long gtidLen = readLong(channel);
+            if (gtidLen == 0) return new GtidSet(Maps.newLinkedHashMap());
+            ByteBuffer gtidBuf = ByteBuffer.allocate((int) gtidLen);
+            channel.read(gtidBuf);
+            gtidBuf.flip();
+            return new GtidSet(new String(gtidBuf.array()));
+        }
+        return new GtidSet(Maps.newLinkedHashMap());
+    }
+
     private static long fileRemainingLength(FileChannel channel) throws IOException {
         long currentPosition = channel.position();
         long fileSize = channel.size();
         return fileSize - currentPosition;
+    }
+
+    public static long headerSize(FileChannel channel) throws IOException {
+        long saved = channel.position();
+        try {
+            channel.position(0);
+            if (channel.size() < 4) return 0L;
+            ByteBuffer magicBuf = ByteBuffer.allocate(4);
+            channel.read(magicBuf); magicBuf.flip();
+            int firstInt = magicBuf.getInt();
+            if (firstInt == MAGIC) {
+                channel.position(4);
+                ByteBuffer verBuf = ByteBuffer.allocate(4);
+                channel.read(verBuf);
+                long gtidLen = readLong(channel);
+                return 16 + gtidLen;
+            } else {
+                channel.position(0);
+                long gtidLen = readLong(channel);
+                return 8 + gtidLen;
+            }
+        } finally {
+            channel.position(saved);
+        }
     }
 
     public IndexEntry recover(FileChannel channel) throws IOException {
@@ -81,13 +147,13 @@ public class GtidSetWrapper {
     }
 
     public void compensate(IndexEntry indexEntry) {
-        if(indexEntry != null && indexEntry.getSize() > 0) {
+        if(indexEntry != null && !indexEntry.isZone() && indexEntry.getSize() > 0) {
             gtidSet.compensate(indexEntry.getUuid(), indexEntry.getStartGno(), indexEntry.getEndGno());
         }
     }
 
     public void compensate(IndexEntry unSavedindexEntry, BlockWriter blockWriter) {
-        if(unSavedindexEntry != null && blockWriter != null && blockWriter.getSize() > 0) {
+        if(unSavedindexEntry != null && !unSavedindexEntry.isZone() && blockWriter != null && blockWriter.getSize() > 0) {
             unSavedindexEntry.setSize(blockWriter.getSize());
             compensate(unSavedindexEntry);
         }

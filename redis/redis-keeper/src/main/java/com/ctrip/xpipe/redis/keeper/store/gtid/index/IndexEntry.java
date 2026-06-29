@@ -5,8 +5,15 @@ import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Arrays;
+import java.util.zip.CRC32C;
 
 public class IndexEntry {
+
+    // v2
+    private IndexEntryType type;
+    private byte flags;
+    private int lastCommandLength;      // v2 最后一条命令的长度
 
     private String uuid;
     private long startGno;
@@ -14,12 +21,49 @@ public class IndexEntry {
     private long blockStartOffset;
     private long blockEndOffset;
     private int size;
+    private long position;
+
 
     private static final String SEPARATOR = RedisProtocol.CRLF;
 
     public static final int SEGMENT_LENGTH = RedisProtocol.RUN_ID_LENGTH + Long.BYTES * 4 + SEPARATOR.getBytes().length + Integer.BYTES;
 
-    private long position;
+    // v2
+    public static final int SEGMENT_LENGTH_V2 = 88;
+    public static final String ZONE_UUID;
+    static {
+        char[] chars = new char[RedisProtocol.RUN_ID_LENGTH];
+        Arrays.fill(chars, '0');
+        ZONE_UUID = new String(chars);
+    }
+
+    // 构造器（GTID 条目）
+    public IndexEntry(String uuid, long startGno, long cmdStartOffset, long blockStartOffset) {
+        this.uuid = uuid;
+        this.startGno = startGno;
+        this.cmdStartOffset = cmdStartOffset;
+        this.blockStartOffset = blockStartOffset;
+        this.blockEndOffset = -1;
+        this.size = 0;
+        this.type = IndexEntryType.GTID;
+        this.flags = 0;
+        this.lastCommandLength = 0;
+        this.position = -1;
+    }
+
+    // ZONE 工厂方法
+    public static IndexEntry zone(long zoneStart, long zoneEnd, int cmdCount) {
+        IndexEntry e = new IndexEntry(ZONE_UUID, 0L, zoneStart, zoneEnd);
+        e.setBlockEndOffset(zoneEnd);
+        e.setSize(cmdCount);
+        e.type = IndexEntryType.ZONE;
+        e.lastCommandLength = 0;
+        return e;
+    }
+
+    public boolean isZone() {
+        return type == IndexEntryType.ZONE || ZONE_UUID.equals(uuid);
+    }
 
     public long getPosition() {
         return position;
@@ -35,17 +79,6 @@ public class IndexEntry {
 
     public int getSize() {
         return size;
-    }
-
-    public IndexEntry(String uuid, long startGno, long cmdStartOffset, long blockStartOffset) {
-        this.uuid = uuid;
-        this.startGno = startGno;
-        this.cmdStartOffset = cmdStartOffset;
-        this.blockStartOffset = blockStartOffset;
-        this.blockEndOffset = -1;
-        this.position = -1;
-        this.size = 0;
-        // -1 表示没有写完
     }
 
      public void setSize(int size) {
@@ -92,6 +125,32 @@ public class IndexEntry {
         this.blockEndOffset = blockEndOffset;
     }
 
+    public long getZoneStart() { return cmdStartOffset; }
+    public long getZoneEnd() { return blockEndOffset; }
+    public int getLastCommandLength() { return lastCommandLength; }
+    public void setLastCommandLength(int length) { this.lastCommandLength = length; }
+    public IndexEntryType getType() { return type; }
+    public byte getFlags() { return flags; }
+
+    // ---------- v2 序列化（88 字节，大端）----------
+    public ByteBuffer generateBufferV2() {
+        ByteBuffer buf = ByteBuffer.allocate(SEGMENT_LENGTH_V2);
+        buf.put(type.code());                  // 0
+        buf.put(flags);                        // 1
+        buf.putShort((short)0);                // 2-3 reserved
+        buf.put(uuid.getBytes());
+        buf.putLong(startGno);                 // 68-75
+        buf.putLong(cmdStartOffset);           // 4-11
+        buf.putLong(blockStartOffset);         // 12-19
+        buf.putLong(blockEndOffset);           // 20-27
+        buf.putInt(size);                      // 76-79
+        buf.putInt(lastCommandLength);         // 80-83
+        int crc = crc32c(buf.array(), 0, 84);
+        buf.putInt(crc);                       // 84-87
+        buf.flip();
+        return buf;
+    }
+
     public ByteBuffer generateBuffer() {
         ByteBuffer buffer = ByteBuffer.allocate(SEGMENT_LENGTH);
         buffer.put(uuid.getBytes());
@@ -103,6 +162,42 @@ public class IndexEntry {
         buffer.put(SEPARATOR.getBytes());
         buffer.flip();
         return buffer;
+    }
+
+    // ---------- v2 反序列化（CRC 校验）----------
+    public static IndexEntry readFromFileV2(FileChannel channel) throws IOException {
+        if (fileRemainingLength(channel) < SEGMENT_LENGTH_V2) return null;
+        ByteBuffer buf = ByteBuffer.allocate(SEGMENT_LENGTH_V2);
+        channel.read(buf);
+        buf.flip();
+
+        byte[] body = new byte[84];
+        buf.get(body);
+        int expectedCrc = crc32c(body, 0, 84);
+        int actualCrc = buf.getInt();
+        if (expectedCrc != actualCrc) return null;
+
+        ByteBuffer bodyBuf = ByteBuffer.wrap(body);
+        IndexEntryType type = IndexEntryType.fromCode(bodyBuf.get());
+        byte flags = bodyBuf.get();
+        bodyBuf.getShort(); // skip reserved
+        long cmdStartOffset = bodyBuf.getLong();
+        long blockStartOffset = bodyBuf.getLong();
+        long blockEndOffset = bodyBuf.getLong();
+        byte[] uuidBytes = new byte[40];
+        bodyBuf.get(uuidBytes);
+        String uuid = new String(uuidBytes);
+        long startGno = bodyBuf.getLong();
+        int size = bodyBuf.getInt();
+        int lastCommandLength = bodyBuf.getInt();
+
+        IndexEntry e = new IndexEntry(uuid, startGno, cmdStartOffset, blockStartOffset);
+        e.type = type;
+        e.flags = flags;
+        e.blockEndOffset = blockEndOffset;
+        e.size = size;
+        e.lastCommandLength = lastCommandLength;
+        return e;
     }
 
     public static IndexEntry fromBuffer(ByteBuffer buffer) {
@@ -134,6 +229,13 @@ public class IndexEntry {
         this.size = blockWriter.getSize();
     }
 
+    // ---------- 写入 ----------
+    public void saveToDiskV2(FileChannel channel) throws IOException {
+        long pos = channel.position();
+        this.position = pos;
+        channel.write(generateBufferV2());
+    }
+
     public void saveToDisk(BlockWriter blockWriter, FileChannel channel) throws IOException {
         this.syncDataFromBlockWriter(blockWriter);
         if(position > 0) {
@@ -159,6 +261,12 @@ public class IndexEntry {
         channel.read(buffer);
         IndexEntry indexEntry = fromBuffer(buffer);
         return indexEntry;
+    }
+
+    private static int crc32c(byte[] data, int offset, int length) {
+        CRC32C crc = new CRC32C();
+        crc.update(data, offset, length);
+        return (int) crc.getValue();
     }
 
     @Override
