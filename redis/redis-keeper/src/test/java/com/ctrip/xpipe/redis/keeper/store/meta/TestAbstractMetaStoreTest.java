@@ -12,7 +12,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V2_FILE;
 import static com.ctrip.xpipe.redis.keeper.store.meta.AbstractMetaStore.deserializeFromStringV2;
@@ -33,7 +36,8 @@ public class TestAbstractMetaStoreTest extends AbstractRedisKeeperTest {
     private final String PERSIST_META_JSON_FILE = "src/test/resources/meta.json";
 
     @Before
-    public void beforeTestAbstractMetaStoreTest() {
+    public void beforeTestAbstractMetaStoreTest() throws IOException {
+        Files.createDirectories(Paths.get(TMP_META_STORE_DIR));
         metaStore = new DefaultMetaStore(new File("/tmp/xpipe/test"), KEEPER_RUN_ID, asyncFileSystem());
         new File(TMP_META_V2_JSON_FILE).delete();
     }
