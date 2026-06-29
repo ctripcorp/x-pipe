@@ -48,7 +48,7 @@ public interface AsyncFileSystem {
     List<Long> list(AsyncSegmentFile file);
     long getCurrentSegmentStartOffset(AsyncSegmentFile file);
     // position to one segment and then call this method to get the current index files.
-    CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<IndexFileMapping> indexMappings);
+    CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes);
     CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file);
     // open index files by startOffset. no need to position to the startOffset. should close index files when done.
     CompletableFuture<Map<String, AsyncFile>> openIndexFiles(AsyncSegmentFile file, long startOffset);
@@ -56,7 +56,11 @@ public interface AsyncFileSystem {
     CompletableFuture<Long> sizeOfSegment(AsyncSegmentFile file, long startOffset);
     CompletableFuture<Long> lastModified(AsyncSegmentFile file);
     CompletableFuture<Long> lastModifiedOfSegment(AsyncSegmentFile file, long startOffset);
+    // startOffsets must be ordered and contiguous from the first offset, will delete segments accordingly.
+    // Cannot delete the last segment.
     CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets);
+    // Delete all known segment and index files.
+    CompletableFuture<Void> delete(AsyncSegmentFile file);
     CompletableFuture<Void> truncate(AsyncSegmentFile file, long offset);
     CompletableFuture<Void> close(AsyncSegmentFile file);
     CompletableFuture<Void> fsync(AsyncSegmentFile file);
