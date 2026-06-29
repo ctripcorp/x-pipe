@@ -1,0 +1,99 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/meta/RedisCreateInfo.java
+  s_14ed138f2d1438::t_3f8498885ca12b 77-85
+  s_14ed138f2d1438::t_f1cfb76820f168 22
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/RedisApiController.java
+  s_4aebb987041122::t_b2e6a5408c67c3 65-72
+  s_4aebb987041122::t_7902af0cbfe6d5 8
+  s_4aebb987041122::t_5ee4c9c8c3de66 27
+  s_4aebb987041122::t_8449de50c434f4 3
+  s_4aebb987041122::t_a1702c293c9a16 50-51
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/ClusterMetaSynchronizer.java
+  s_4aebb987041122::t_46993f50d30c3f 37
+  s_4aebb987041122::t_be0df966cbd2f2 12
+  s_4aebb987041122::t_280462137e582c 196
+  s_4aebb987041122::t_6eec130a3c2776 113
+  s_4aebb987041122::t_abeb5b9d17f3dd 50,63
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/ShardMetaSynchronizer.java
+  s_4aebb987041122::t_8cc8e4f68facc2 39,45
+  s_4aebb987041122::t_b33f233cd647ad 30
+  s_4aebb987041122::t_3516f5b87250df 90
+  s_4aebb987041122::t_6a072af9660cb8 108
+  s_4aebb987041122::t_646c8e71892634 8
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/ConsolePortalService.java
+  s_4aebb987041122::t_06e5736148a278 234-239
+  s_4aebb987041122::t_1fdbd5a7734d9b 51
+  s_4aebb987041122::t_bce07d7d173464 12
+  s_4aebb987041122::t_686e0039e9fbaf 13
+  s_4aebb987041122::t_87eff088af1d1f 231,243-244,246-253
+  s_14ed138f2d1438::t_5590c60fd5f425 223-226
+  s_4aebb987041122::t_a8da64a0eb4875 50,52
+  s_4aebb987041122::t_bc181f8af46bd4 232-233,240-242,245
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/MetaSynchronizer.java
+  s_14ed138f2d1438::t_176430378ad3a8 79,81
+  s_4aebb987041122::t_968eb0e6731e18 5
+  s_4aebb987041122::t_0987d34c63237d 80
+  s_4aebb987041122::t_3f1f36f07775a2 104
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/DcMetaSynchronizer.java
+  s_14ed138f2d1438::t_92ee8320bdb00a 275,284
+  s_4aebb987041122::t_4340935441f073 44,57
+  s_4aebb987041122::t_cfd87762ee00fa 12
+  s_14ed138f2d1438::t_5ccdd9bf239ad5 79
+  s_4aebb987041122::t_0b8900c0e17c70 78
+  s_4aebb987041122::t_98cbffa205159b 121
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/meta/RedisAzUpdateInfo.java
+  s_4aebb987041122::t_f5dcf31b2bc83c 12
+  s_4aebb987041122::t_76fa05a18a8831 45-50
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/RedisMetaSynchronizer.java
+  s_4aebb987041122::t_0ae8c10bdee7ca 128-130
+  s_14ed138f2d1438::t_d7d851918ed8e8 76-83,85,87-96,98
+  s_4aebb987041122::t_97c62e5a189570 26
+  s_4aebb987041122::t_56c0633e86d5e7 4
+  s_4aebb987041122::t_959ad06777ea0f 35,41
+  s_4aebb987041122::t_f6efee8e82e2a4 84,86
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/cache/AzCache.java
+  s_4aebb987041122::t_15a6b288e059df 1-14
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/RedisUpdateController.java
+  s_4aebb987041122::t_2bf9adc24e1bdb 43
+  s_4aebb987041122::t_b516de5eceb0f6 8
+  s_4aebb987041122::t_2319a33fb6eba3 67,72-83,85-86
+  s_4aebb987041122::t_9c5509bcc21386 84
+  s_4aebb987041122::t_9d45e17192b1ec 3
+  s_4aebb987041122::t_3d15ea5b10cade 15
+  s_4aebb987041122::t_56f9b5fa50613e 128-137
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/MetaUpdate.java
+  s_4aebb987041122::t_d125625361b959 673
+  s_14ed138f2d1438::t_f0e221e33dd544 356
+  s_4aebb987041122::t_66b57917af27f6 105
+  s_4aebb987041122::t_93d8ed3944009f 689-698
+  s_4aebb987041122::t_eb207ddd869c52 12
+  s_4aebb987041122::t_c0d94bbd057040 355
+  s_4aebb987041122::t_13b798336d40f4 13
+  s_4aebb987041122::t_567475a2d1dbc9 359
+  s_4aebb987041122::t_cb30dce518588c 671
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/cache/impl/AzCacheImpl.java
+  s_4aebb987041122::t_99a274f62db435 1-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "eec43f23c57e46ad906c0da040b6bb6e8cfd43c7",
+  "prompts": {},
+  "sessions": {
+    "s_14ed138f2d1438": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbb01398-3914-4f21-910e-39ab1452d2f5",
+        "model": "us.anthropic.claude-sonnet-4-6"
+      },
+      "human_author": null
+    },
+    "s_4aebb987041122": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a659f92f-9d0b-49ac-90f6-0659c9c84d0e",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": null
+    }
+  }
+}

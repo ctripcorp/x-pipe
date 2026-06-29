@@ -1,0 +1,23 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/resource/DefaultCheckerConsoleService.java
+  s_0b08afc9f9b66d::t_dffcb40cc970d4 25-26
+  s_0b08afc9f9b66d::t_94382f8beaf610 61-65
+  s_0b08afc9f9b66d::t_3cd90e4cf53678 76-80
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/checker/ConsoleCheckerController.java
+  s_0b08afc9f9b66d::t_22a9002ddc23e1 107,109-110,112,114,116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.17-trip",
+  "base_commit_sha": "61fbc22717c65345b18e8dd5c6870df60fb427a3",
+  "prompts": {},
+  "sessions": {
+    "s_0b08afc9f9b66d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9cf220ed-4c40-4147-b30c-beab988bdeed",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": "yihaohuang <yihaohuang@trip.com>"
+    }
+  }
+}

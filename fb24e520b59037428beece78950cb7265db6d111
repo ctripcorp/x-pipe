@@ -1,0 +1,29 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/ConsolePortalService.java
+  s_4aebb987041122::t_2eca61c73c682f 223-227
+  s_4aebb987041122::t_c5f91ae128cac1 230,235-238,240-249,252,254
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/MetaUpdate.java
+  s_4aebb987041122::t_e0e71a7317b1ce 351
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/RedisServiceImpl.java
+  s_4aebb987041122::t_37671542d362b6 233-248
+  s_4aebb987041122::t_a4d61298593836 191-195,203
+  s_4aebb987041122::t_cab000eb3a1029 653,660,662
+  s_4aebb987041122::t_9d8f17df3707ef 645,647,649,652,654-656
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/RedisServiceWithoutDB.java
+  s_4aebb987041122::t_ef5af3a7fb6687 86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "fb24e520b59037428beece78950cb7265db6d111",
+  "prompts": {},
+  "sessions": {
+    "s_4aebb987041122": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a659f92f-9d0b-49ac-90f6-0659c9c84d0e",
+        "model": "arn:aws:bedrock:us-west-2:671660153913:application-inference-profile/kh3mlhvjeex4"
+      },
+      "human_author": "yihaohuang <yihaohuang@trip.com>"
+    }
+  }
+}

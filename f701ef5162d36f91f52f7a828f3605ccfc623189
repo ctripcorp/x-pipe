@@ -1,0 +1,27 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/RedisMetaSynchronizer.java
+  s_4aebb987041122::t_4a316d05bf7fcb 75-77,79-86,88,90-91
+redis/redis-console/src/main/resources/static/scripts/services/ShardService.ts
+  s_4aebb987041122::t_fa0ce594879373 57
+  s_4aebb987041122::t_15cb0d15ff8575 221,224-226
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/consoleportal/RedisController.java
+  s_4aebb987041122::t_e19ab5f883a488 32-38,40-58
+  s_4aebb987041122::t_b642b0876ea619 39
+  s_4aebb987041122::t_eb44500ec3b4d9 4-5,8,10,12
+  s_4aebb987041122::t_39f68b712924b3 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "f701ef5162d36f91f52f7a828f3605ccfc623189",
+  "prompts": {},
+  "sessions": {
+    "s_4aebb987041122": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a659f92f-9d0b-49ac-90f6-0659c9c84d0e",
+        "model": "arn:aws:bedrock:us-west-2:671660153913:application-inference-profile/kh3mlhvjeex4"
+      },
+      "human_author": "yihaohuang <yihaohuang@trip.com>"
+    }
+  }
+}

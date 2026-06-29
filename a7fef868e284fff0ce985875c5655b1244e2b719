@@ -1,0 +1,22 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  s_bea4977c0325a6::t_2e63422adf0266 1815-1957
+  s_bea4977c0325a6::t_7e3cb03936a150 86-87,89-94
+  s_bea4977c0325a6::t_1a695d037c47a3 1432-1557
+  s_bea4977c0325a6::t_ffc4ae7f8d36b4 1558-1814
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.17-trip",
+  "base_commit_sha": "a7fef868e284fff0ce985875c5655b1244e2b719",
+  "prompts": {},
+  "sessions": {
+    "s_bea4977c0325a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58655c44-b5a1-486a-ad26-03492fcc83f0",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}

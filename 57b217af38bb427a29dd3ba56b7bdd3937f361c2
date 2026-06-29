@@ -1,0 +1,40 @@
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/meta/impl/RedisMetaServiceImplTest.java
+  s_4aebb987041122::t_d23c9d8e2c9e24 1-93
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/resources/RedisMetaSynchronizerTest.java
+  s_4aebb987041122::t_2f8ee41f5f93a1 1-133
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/resources/DcMetaSynchronizerTest.java
+  s_4aebb987041122::t_38e2b993cba710 361,433
+  s_4aebb987041122::t_d9213eae72edc3 225
+  s_4aebb987041122::t_11466c87a3edae 113,150,188,257,322,399,466,509
+  s_4aebb987041122::t_7b507c7a9a7b13 289
+core/src/test/java/com/ctrip/xpipe/api/migration/MonitorClusterMetaTest.java
+  s_a64a3620be82d2::t_baf1d5d64b41b8 121-182
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/AllTests.java
+  s_4aebb987041122::t_3db6283fb02727 74
+  s_4aebb987041122::t_882bf186c72f38 196
+  s_4aebb987041122::t_011676fded6c6b 206
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "57b217af38bb427a29dd3ba56b7bdd3937f361c2",
+  "prompts": {},
+  "sessions": {
+    "s_4aebb987041122": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a659f92f-9d0b-49ac-90f6-0659c9c84d0e",
+        "model": "arn:aws:bedrock:us-west-2:671660153913:application-inference-profile/kh3mlhvjeex4"
+      },
+      "human_author": "yihaohuang <yihaohuang@trip.com>"
+    },
+    "s_a64a3620be82d2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1712b0c5-96be-40e5-9fe9-cd01c6c4e55c",
+        "model": "arn:aws:bedrock:us-west-2:671660153913:application-inference-profile/kh3mlhvjeex4"
+      },
+      "human_author": "yihaohuang <yihaohuang@trip.com>"
+    }
+  }
+}

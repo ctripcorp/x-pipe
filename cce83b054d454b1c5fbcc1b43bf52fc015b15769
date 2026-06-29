@@ -1,0 +1,16 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  h_00df85a0850dc5 35,312-315
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/AbstractIndex.java
+  h_00df85a0850dc5 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.17-trip",
+  "base_commit_sha": "cce83b054d454b1c5fbcc1b43bf52fc015b15769",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  }
+}

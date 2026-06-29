@@ -1,0 +1,14 @@
+services/ctrip-service/src/main/java/com/ctrip/xpipe/service/kafka/CtripKafkaService.java
+  h_00df85a0850dc5 116,118,124,127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "d4f1ea42be2bca2d57200d2b5a3c1c92955b205c",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  }
+}

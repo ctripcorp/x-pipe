@@ -1,0 +1,30 @@
+upload_clog_scripts.sh
+  s_511b2bf44aacda::t_33b571179501de 44-45
+  s_511b2bf44aacda::t_d85eb757cade9a 5
+  s_511b2bf44aacda::t_48e9816677a796 43
+  s_511b2bf44aacda::t_7993a0d3a3321e 1-4,6-42
+redis/package/redis-keeper-package/src/main/scripts/network/start_clog.sh
+  s_511b2bf44aacda::t_7d5e4c8472285d 1-101
+redis/package/redis-keeper-package/src/main/scripts/network/remote_cron/isolate_clog.sh
+  s_511b2bf44aacda::t_9c0346e2c5f666 1-19
+redis/package/redis-keeper-package/src/main/scripts/network/stop_clog.sh
+  s_511b2bf44aacda::t_6db66986479e5a 1-90
+redis/package/redis-keeper-package/src/main/scripts/network/remote_cron/recovery_clog.sh
+  s_511b2bf44aacda::t_320b846e8ca9e8 1-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.18-trip",
+  "base_commit_sha": "e4fa0aa369ce4e4c047cb0249fd81b5fff590ffa",
+  "prompts": {},
+  "sessions": {
+    "s_511b2bf44aacda": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ea08cbcf-7fd4-4003-8342-c767a7303203",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": "Yihao Huang （黄奕浩） <yihaohuang@trip.com>"
+    }
+  }
+}
