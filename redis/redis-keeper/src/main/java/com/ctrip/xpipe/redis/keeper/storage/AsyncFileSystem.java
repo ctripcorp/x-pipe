@@ -17,17 +17,20 @@ public interface AsyncFileSystem {
     CompletableFuture<Boolean> isFile(AsyncFile file);
     CompletableFuture<Boolean> isDirectory(String path);
     CompletableFuture<Long> lastModified(AsyncFile file);
+    // Only available in read mode.
     CompletableFuture<Void> position(AsyncFile file, long position);
-    CompletableFuture<Integer> read(AsyncFile file, long length, long offset, byte[] buffer);
-    CompletableFuture<Integer> read(AsyncFile file, long length, byte[] buffer);
-    CompletableFuture<Integer> write(AsyncFile file, byte[] data, long length);
+    CompletableFuture<Long> read(AsyncFile file, long length, long offset, byte[] buffer);
+    CompletableFuture<Long> read(AsyncFile file, long length, byte[] buffer);
+    CompletableFuture<Long> write(AsyncFile file, byte[] data, long length);
     CompletableFuture<Void> delete(String path);
     CompletableFuture<Boolean> exists(String path);
     CompletableFuture<Long> size(AsyncFile file);
     CompletableFuture<Boolean> mkdir(String path, boolean recursive);
     CompletableFuture<Boolean> rmdir(String path, boolean recursive);
+    // Only available in write mode.
     CompletableFuture<Boolean> truncate(AsyncFile file, long size);
     CompletableFuture<Void> close(AsyncFile file);
+    // Only available in write mode.
     CompletableFuture<Void> fsync(AsyncFile file);
     // segment file return as raw file.
     CompletableFuture<List<String>> list(String path);
@@ -41,9 +44,11 @@ public interface AsyncFileSystem {
     // Write mode always opens the latest segment file and index files, and auto-closes them upon rollover.
     // Read mode opens the segment file after the first read, and opens index files when getCurrentIndexFiles() is called. They auto-close when reading the next segment.
     CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<IndexFileMapping> indexMappings, boolean write);
+    // Only available in read mode.
     CompletableFuture<Void> position(AsyncSegmentFile file, long offset);
-    CompletableFuture<Integer> read(AsyncSegmentFile file, long length, byte[] buffer);
-    CompletableFuture<Integer> write(AsyncSegmentFile file, byte[] data, long length);
+    CompletableFuture<Long> read(AsyncSegmentFile file, long length, byte[] buffer);
+    CompletableFuture<Long> write(AsyncSegmentFile file, byte[] data, long length);
+    // Only available in write mode.
     CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file);
     List<Long> list(AsyncSegmentFile file);
     long getCurrentSegmentStartOffset(AsyncSegmentFile file);
@@ -51,6 +56,7 @@ public interface AsyncFileSystem {
     CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes);
     CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file);
     // open index files by startOffset. no need to position to the startOffset. should close index files when done.
+    // Only available in read mode.
     CompletableFuture<Map<String, AsyncFile>> openIndexFiles(AsyncSegmentFile file, long startOffset);
     CompletableFuture<Long> size(AsyncSegmentFile file);
     CompletableFuture<Long> sizeOfSegment(AsyncSegmentFile file, long startOffset);
@@ -58,11 +64,15 @@ public interface AsyncFileSystem {
     CompletableFuture<Long> lastModifiedOfSegment(AsyncSegmentFile file, long startOffset);
     // startOffsets must be ordered and contiguous from the first offset, will delete segments accordingly.
     // Cannot delete the last segment.
+    // Only available in write mode.
     CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets);
     // Delete all known segment and index files.
+    // Only available in write mode.
     CompletableFuture<Void> delete(AsyncSegmentFile file);
+    // Only available in write mode.
     CompletableFuture<Void> truncate(AsyncSegmentFile file, long offset);
     CompletableFuture<Void> close(AsyncSegmentFile file);
+    // Only available in write mode.
     CompletableFuture<Void> fsync(AsyncSegmentFile file);
     CompletableFuture<Long> transferTo(AsyncSegmentFile file, long offset, long count, WritableByteChannel target);
 }
