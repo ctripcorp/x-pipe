@@ -3,11 +3,16 @@ package com.ctrip.xpipe.redis.keeper.storage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
@@ -43,6 +48,28 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         ioExecutor.shutdown();
     }
 
+    // Translates a checked IOException into a runtime exception that reflects
+    // recovery semantics: StaleStateException for mismatched state, StorageIOException for
+    // genuine transient IO failures.IllegalArgumentExceptions for invalid arguments.
+    // ClosedByInterruptException restores the interrupt flag and is re-thrown as a
+    // RuntimeException so callers can detect cancellation rather than treat it as stale.
+    private static RuntimeException wrap(IOException e) {
+        if (e instanceof ClosedByInterruptException) {
+            Thread.currentThread().interrupt();
+            return new RuntimeException(e);
+        }
+        if (e instanceof NoSuchFileException
+                || e instanceof FileAlreadyExistsException
+                || e instanceof DirectoryNotEmptyException
+                || e instanceof ClosedChannelException) {
+            return new StaleStateException(e);
+        }
+        if (e instanceof NotDirectoryException) {
+            return new IllegalArgumentException(e);
+        }
+        return new StorageIOException(e);
+    }
+
     // ---- AsyncFile ----
 
     // atomicReplace uses tmp file approach instead of rename because tfs currently does not support rename.
@@ -71,7 +98,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return new AsyncFile(path, ch, atomicReplace, write);
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -94,21 +121,22 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 return Files.getLastModifiedTime(Paths.get(file.path)).toMillis();
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
 
     @Override
     public CompletableFuture<Void> position(AsyncFile file, long position) {
+        if (file.writeMode) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("position() requires read mode"));
+        }
         return CompletableFuture.runAsync(() -> {
             try {
-                if (file.writeMode) {
-                    throw new IllegalArgumentException("position() requires read mode");
-                }
                 file.channel.position(position);
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -119,7 +147,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 return readFully(file.channel, length, offset, buffer);
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -130,7 +158,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 return readFully(file.channel, length, buffer);
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -144,7 +172,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return writeFully(file.channel, data, length);
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -155,7 +183,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 Files.deleteIfExists(Paths.get(path));
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -172,7 +200,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 return file.channel.size();
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -194,7 +222,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return true;
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -205,7 +233,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 Path dir = Paths.get(path);
                 if (!Files.exists(dir)) return true;
-                if (!Files.isDirectory(dir)) throw new IOException("not a directory: " + path);
+                if (!Files.isDirectory(dir)) throw new IllegalArgumentException("not a directory: " + path);
                 if (recursive) {
                     Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
                         @Override
@@ -225,25 +253,26 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return true;
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
 
     @Override
     public CompletableFuture<Boolean> truncate(AsyncFile file, long size) {
+        if (!file.writeMode) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("truncate() requires write mode"));
+        }
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (!file.writeMode) {
-                    throw new IllegalArgumentException("truncate() requires write mode");
-                }
                 file.channel.truncate(size);
                 if (!file.atomicReplace) {
                     file.channel.position(size);
                 }
                 return true;
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -254,21 +283,22 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 file.channel.close();
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
 
     @Override
     public CompletableFuture<Void> fsync(AsyncFile file) {
+        if (!file.writeMode) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("fsync() requires write mode"));
+        }
         return CompletableFuture.runAsync(() -> {
             try {
-                if (!file.writeMode) {
-                    throw new IllegalArgumentException("fsync() requires write mode");
-                }
                 file.channel.force(true);
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -386,29 +416,41 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public CompletableFuture<AsyncSegmentFile> open(String path, String prefix,
             List<IndexFileMapping> indexMappings, boolean write) {
         return CompletableFuture.supplyAsync(() -> {
-            String[] names = new File(path).list();
-            if (names == null) {
-                throw new StorageIOException(new IOException("failed to list directory: " + path));
+            try {
+                Path dir = Paths.get(path);
+                String[] names = new File(path).list();
+                if (names == null) {
+                    if (!Files.exists(dir)) {
+                        throw new IllegalArgumentException("directory does not exist: " + path);
+                    }
+                    if (!Files.isDirectory(dir)) {
+                        throw new IllegalArgumentException("not a directory: " + path);
+                    }
+                    throw new IOException("failed to list directory: " + path);
+                }
+                AsyncSegmentFile seg = new AsyncSegmentFile(path, prefix, indexMappings, write);
+                seg.initFromFiles(Arrays.asList(names));
+                return seg;
+            } catch (IOException e) {
+                throw wrap(e);
             }
-            AsyncSegmentFile seg = new AsyncSegmentFile(path, prefix, indexMappings, write);
-            seg.initFromFiles(Arrays.asList(names));
-            return seg;
         }, ioExecutor);
     }
 
     @Override
     public CompletableFuture<Void> position(AsyncSegmentFile file, long offset) {
+        if (file.writeMode) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("position() is not supported in write mode"));
+        }
         return CompletableFuture.runAsync(() -> {
             try {
-                if (file.writeMode) {
-                    throw new IllegalArgumentException("position() is not supported in write mode");
-                }
                 file.switchToSegment(offset);
                 if (file.currentSegmentChannel != null) {
                     file.currentSegmentChannel.position(offset - file.currentSegmentStartOffset);
                 }
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -423,9 +465,15 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                     }
                     file.openFirstSegmentChannelForRead();
                 }
-                return readFully(file.currentSegmentChannel, length, buffer);
+                long n = readFully(file.currentSegmentChannel, length, buffer);
+                if (n == 0 && file.currentSegmentStartOffset != file.segmentOffsets.last()) {
+                    Long next = file.segmentOffsets.higher(file.currentSegmentStartOffset);
+                    file.switchToSegment(next);
+                    n = readFully(file.currentSegmentChannel, length, buffer);
+                }
+                return n;
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -439,21 +487,22 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return writeFully(file.currentSegmentChannel, data, length);
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
 
     @Override
     public CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file) {
+        if (!file.writeMode) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("roll() requires write mode"));
+        }
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (!file.writeMode) {
-                    throw new IllegalArgumentException("roll() requires write mode");
-                }
                 return file.roll();
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -482,7 +531,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return file.getCurrentIndexFiles(indexPrefixes);
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -498,11 +547,12 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Map<String, AsyncFile>> openIndexFiles(AsyncSegmentFile file, long startOffset) {
+        if (file.writeMode) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("openIndexFiles() requires read mode"));
+        }
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (file.writeMode) {
-                    throw new IllegalArgumentException("openIndexFiles() requires read mode");
-                }
                 Map<String, AsyncFile> result = new HashMap<>();
                 Map<String, String> indexFileNames = file.segmentIndexFiles.get(startOffset);
                 if (indexFileNames == null) return result;
@@ -515,7 +565,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return result;
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -529,7 +579,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return file.maxValidOffset() - file.segmentOffsets.first();
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -548,7 +598,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 return Files.getLastModifiedTime(file.segmentPath(startOffset)).toMillis();
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -559,35 +609,37 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 return Files.size(file.segmentPath(startOffset));
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
 
     @Override
     public CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets) {
+        if (!file.writeMode) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("deleteSegments() requires write mode"));
+        }
         return CompletableFuture.runAsync(() -> {
             try {
-                if (!file.writeMode) {
-                    throw new IllegalArgumentException("deleteSegments() requires write mode");
-                }
                 file.deleteSegments(startOffsets);
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
 
     @Override
     public CompletableFuture<Map<String, AsyncFile>> truncate(AsyncSegmentFile file, long offset) {
+        if (!file.writeMode) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("truncate() requires write mode"));
+        }
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (!file.writeMode) {
-                    throw new IllegalArgumentException("truncate() requires write mode");
-                }
                 return file.truncate(offset);
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -598,35 +650,37 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 file.closeCurrent();
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
 
     @Override
     public CompletableFuture<Void> delete(AsyncSegmentFile file) {
+        if (!file.writeMode) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("delete() requires write mode"));
+        }
         return CompletableFuture.runAsync(() -> {
             try {
-                if (!file.writeMode) {
-                    throw new IllegalArgumentException("delete() requires write mode");
-                }
                 file.delete();
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
 
     @Override
     public CompletableFuture<Void> fsync(AsyncSegmentFile file) {
+        if (!file.writeMode) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("fsync() requires write mode"));
+        }
         return CompletableFuture.runAsync(() -> {
             try {
-                if (!file.writeMode) {
-                    throw new IllegalArgumentException("fsync() requires write mode");
-                }
                 if (file.currentSegmentChannel != null) file.currentSegmentChannel.force(true);
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -638,7 +692,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 return file.channel.transferTo(position, count, target);
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
@@ -651,11 +705,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 if (offset != file.lastTransferToOffset) {
                     if (file.segmentOffsets.isEmpty()) {
                         if (offset == 0) return 0L;
-                        throw new IllegalArgumentException("empty segment file, offset=" + offset);
+                        throw new StaleStateException("empty segment file, offset=" + offset);
                     }
                     long maxValid = file.maxValidOffset();
                     if (offset > maxValid) {
-                        throw new IllegalArgumentException("offset " + offset + " > maxValidOffset " + maxValid);
+                        throw new StaleStateException("offset " + offset + " > maxValidOffset " + maxValid);
                     }
                     if (offset == maxValid) return 0L;
                     file.switchToSegment(offset);
@@ -671,7 +725,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 file.lastTransferToOffset = offset + n;
                 return n;
             } catch (IOException e) {
-                throw new StorageIOException(e);
+                throw wrap(e);
             }
         }, ioExecutor);
     }
