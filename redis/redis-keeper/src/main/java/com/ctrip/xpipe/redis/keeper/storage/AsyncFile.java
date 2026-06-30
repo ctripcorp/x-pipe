@@ -7,14 +7,12 @@ public class AsyncFile {
     final String path;
     FileChannel channel;
     final boolean atomicReplace;
+    final boolean writeMode;
 
-    AsyncFile(String path, FileChannel channel) {
-        this(path, channel, false);
-    }
-
-    AsyncFile(String path, FileChannel channel, boolean atomicReplace) {
+    AsyncFile(String path, FileChannel channel, boolean atomicReplace, boolean writeMode) {
         this.path = path;
         this.channel = channel;
         this.atomicReplace = atomicReplace;
+        this.writeMode = writeMode;
     }
 }
