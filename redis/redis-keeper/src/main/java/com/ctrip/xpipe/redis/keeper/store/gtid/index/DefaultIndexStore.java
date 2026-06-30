@@ -297,6 +297,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
                     EventMonitor.DEFAULT.logAlertEvent("INCOMPLETE_TRANSACTION");
                     // Truncate file to transaction start offset to rollback incomplete transaction
                     controllableFile.setLength((int)transactionStartOffset);
+                    commandWriterCallback.getCommandWriter().getFileContext().setFileLength(transactionStartOffset);
                     this.streamCommandReader.resetParser();
                 } else {
                     // If startOffset is invalid, just reset parser to clear transaction state
@@ -308,6 +309,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
                 // Check for incomplete protocol parsing
                 EventMonitor.DEFAULT.logAlertEvent("TRUNCATE_CMD_FILE");
                 controllableFile.setLength((int)controllableFile.size() - remainBytes);
+                commandWriterCallback.getCommandWriter().getFileContext().setFileLength(controllableFile.size()-remainBytes);
                 this.streamCommandReader.resetParser();
             }
 

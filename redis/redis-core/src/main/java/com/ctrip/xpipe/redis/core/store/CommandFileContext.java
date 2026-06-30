@@ -57,6 +57,10 @@ public class CommandFileContext {
 		return currentStartOffset + fileLength();
 	}
 
+	public void setFileLength(long fileLen){
+		fileLength.set(fileLen);
+	}
+
 	public FileChannel getChannel() throws IOException {
 		return controllableFile.getFileChannel();
 	}
