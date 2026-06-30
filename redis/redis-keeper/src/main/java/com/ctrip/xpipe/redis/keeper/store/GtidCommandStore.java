@@ -33,7 +33,8 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
                             AsyncFileSystem asyncFileSystem) throws IOException {
         this(ckStore, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified,
                 minTimeMilliToGcAfterModified, fileNumToKeep, commandReaderFlyingThreshold, () -> true,
-                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex, asyncFileSystem);
+                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex, asyncFileSystem,
+                () -> DEFAULT_ASYNC_WRITE_MAX_BYTES);
     }
 
     public GtidCommandStore(CKStore ckStore, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
@@ -41,9 +42,20 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
                             BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
                             KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter, boolean buildIndex,
                             AsyncFileSystem asyncFileSystem) throws IOException {
+        this(ckStore, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified,
+                minTimeMilliToGcAfterModified, fileNumToKeep, commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
+                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex, asyncFileSystem,
+                () -> DEFAULT_ASYNC_WRITE_MAX_BYTES);
+    }
+
+    public GtidCommandStore(CKStore ckStore, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+                            int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
+                            BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
+                            KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter, boolean buildIndex,
+                            AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes) throws IOException {
         super(ckStore,file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
                 commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
-                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex, asyncFileSystem);
+                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex, asyncFileSystem, asyncWriteMaxBytes);
     }
 
     @Override
@@ -94,7 +106,7 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
                 logger.debug("[addCommandsListener] {}", redisOp);
 
                 // TODO: monitor send delay
-                ChannelFuture future = listener.onCommand(cmdReader.getCurCmdFile(), cmdReader.position(), redisOp);
+                ChannelFuture future = listener.onCommand(redisOp);
 
                 if(future != null){
                     CommandReader<RedisOp> finalCmdReader = cmdReader;

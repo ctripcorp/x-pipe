@@ -377,4 +377,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getCmdBatchLowRateBps() {
 		return 524288;
 	}
+
+	@Override
+	public int getAsyncWriteMaxBytes() {
+		return 65536;
+	}
 }

@@ -395,7 +395,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
+	public ChannelFuture onCommand(Object cmd) {
 		closeState.makeSureOpen();
 		getLogger().debug("[onCommand]{}, {}", this, cmd);
 

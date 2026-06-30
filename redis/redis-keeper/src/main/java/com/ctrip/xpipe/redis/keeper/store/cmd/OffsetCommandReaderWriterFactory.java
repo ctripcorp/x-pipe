@@ -46,7 +46,7 @@ public class OffsetCommandReaderWriterFactory implements CommandReaderWriterFact
             throw new IOException("File for offset " + replProgress.getProgress() + " in store " + cmdStore + " does not exist");
         }
 
-        return new OffsetCommandReader(commandFile, currentOffset, endOffsetExcluded, currentOffset - commandFile.getStartOffset(),
+        return new OffsetCommandReader(currentOffset, endOffsetExcluded,
                 cmdStore, offsetNotifier, replDelayConfig, commandReaderFlyingThreshold);
     }
 

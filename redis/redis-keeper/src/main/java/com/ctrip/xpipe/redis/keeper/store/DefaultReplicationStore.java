@@ -532,7 +532,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				config.getCommandReaderFlyingThreshold(),
 				this::isCmdNotifyCoalescingEnabled,
 				cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, gtidCmdFilter,true,
-				asyncFileSystem
+				asyncFileSystem,
+				config::getAsyncWriteMaxBytes
 		);
 		cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 		try {

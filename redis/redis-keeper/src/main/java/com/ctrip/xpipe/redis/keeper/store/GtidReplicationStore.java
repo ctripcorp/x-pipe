@@ -97,7 +97,8 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                 config::getReplicationStoreCommandFileNumToKeep,
                 config.getCommandReaderFlyingThreshold(),
                 this::isCmdNotifyCoalescingEnabled,
-                cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, filter, buildIndex, asyncFileSystem);
+                cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, filter, buildIndex, asyncFileSystem,
+                config::getAsyncWriteMaxBytes);
         cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 
         try {

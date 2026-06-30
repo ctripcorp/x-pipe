@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetNotifyingCommandWriter;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -137,7 +138,9 @@ public class TimerSlidingWindow implements AutoCloseable {
         commandWriter.write(data);
         long offset = commandWriter.totalLength() - 1;
         commandStoreDelay.endWrite(offset);
-        offsetNotifier.offsetIncreased(offset);
+        if (!(commandWriter instanceof OffsetNotifyingCommandWriter)) {
+            offsetNotifier.offsetIncreased(offset);
+        }
     }
 
 
@@ -156,7 +159,9 @@ public class TimerSlidingWindow implements AutoCloseable {
         }
         long offset = commandWriter.totalLength() - 1;
         commandStoreDelay.endWrite(offset);
-        offsetNotifier.offsetIncreased(offset);
+        if (!(commandWriter instanceof OffsetNotifyingCommandWriter)) {
+            offsetNotifier.offsetIncreased(offset);
+        }
 
         // 释放并重建窗口
         try {

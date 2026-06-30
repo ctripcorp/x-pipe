@@ -244,7 +244,15 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             try {
                 long size = AsyncFileSystemHelper.await(asyncFileSystem.size(asyncFile),
                         "stat manager meta " + metaFile.getAbsolutePath());
-                byte[] data = AsyncFileSystemHelper.readFully(asyncFileSystem, asyncFile, size, metaFile.getAbsolutePath());
+                if (size > Integer.MAX_VALUE) {
+                    throw new IOException("async file too large: " + metaFile.getAbsolutePath());
+                }
+                byte[] data = new byte[(int) size];
+                int read = AsyncFileSystemHelper.await(asyncFileSystem.read(asyncFile, size, 0, data),
+                        "read manager meta " + metaFile.getAbsolutePath());
+                if (read != size) {
+                    throw new IOException("failed to read full async file: " + metaFile.getAbsolutePath());
+                }
                 try (InputStream in = new ByteArrayInputStream(data)) {
                     meta.load(in);
                 }

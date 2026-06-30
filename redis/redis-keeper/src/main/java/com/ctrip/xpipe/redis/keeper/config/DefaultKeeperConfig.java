@@ -309,4 +309,9 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public int getCmdBatchLowRateBps() {
 		return getIntProperty(KEY_CMD_BATCH_LOW_RATE_BPS,524288);
 	}
+
+	@Override
+	public int getAsyncWriteMaxBytes() {
+		return getIntProperty(KEY_ASYNC_WRITE_MAX_BYTES, 65536);
+	}
 }

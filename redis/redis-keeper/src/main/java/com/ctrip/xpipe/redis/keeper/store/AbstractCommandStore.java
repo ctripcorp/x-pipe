@@ -9,6 +9,10 @@ import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
+import com.ctrip.xpipe.redis.keeper.storage.IndexFileMapping;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetNotifyingCommandWriter;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStore;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindow;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
@@ -30,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
@@ -40,7 +45,7 @@ import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
  * @author lishanglin
  * date 2022/5/24
  */
-public abstract class AbstractCommandStore extends AbstractStore implements CommandStore, CommandWriterCallback {
+public abstract class AbstractCommandStore extends AbstractStore implements CommandStore, CommandWriterCallback, AsyncCommandStore {
 
     private final static Logger delayTraceLogger = KeeperLogger.getDelayTraceLog();
 
@@ -108,6 +113,12 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private TimerSlidingWindow timerSlidingWindow;
 
     protected final AsyncFileSystem asyncFileSystem;
+
+    protected final AsyncSegmentFile asyncSegmentFile;
+
+    private final List<IndexFileMapping> commandIndexFileMappings;
+
+    private final IntSupplier asyncWriteMaxBytes;
     
     public abstract Logger getLogger();
 
@@ -118,13 +129,15 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                                 CommandReaderWriterFactory cmdReaderWriterFactory,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
                                 GtidCmdFilter  gtidCmdFilter, boolean buildIndex,
-                                AsyncFileSystem asyncFileSystem
+                                AsyncFileSystem asyncFileSystem,
+                                IntSupplier asyncWriteMaxBytes
     ) throws IOException {
 
         this.baseDir = file.getParentFile();
         this.fileNamePrefix = file.getName();
         this.maxFileSize = maxFileSize;
         this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
+        this.asyncWriteMaxBytes = asyncWriteMaxBytes == null ? () -> DEFAULT_ASYNC_WRITE_MAX_BYTES : asyncWriteMaxBytes;
         this.maxTimeSecondKeeperCmdFileAfterModified = maxTimeSecondKeeperCmdFileAfterModified;
         this.fileNumToKeep = fileNumToKeep;
         this.commandReaderFlyingThreshold = commandReaderFlyingThreshold;
@@ -141,10 +154,34 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
         allFileFilter = new PrefixFileFilter(new String[] {fileNamePrefix, INDEX_FILE_PREFIX + fileNamePrefix});
 
+        this.commandIndexFileMappings = Collections.singletonList(new IndexFileMapping(
+                INDEX_FILE_PREFIX + fileNamePrefix,
+                idxFileNameToOffset(),
+                offset -> INDEX_FILE_PREFIX + fileNamePrefix + offset
+        ));
+        this.asyncSegmentFile = AsyncFileSystemHelper.await(
+                asyncFileSystem.open(baseDir.getAbsolutePath(), fileNamePrefix, commandIndexFileMappings, true),
+                "open command segment " + fileNamePrefix);
+        // invalid 文件列表见 T-FS.2；FS initFromFiles 内部已 warn，Store 待 FS 暴露 invalidFiles() 后再补日志
+
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, maxFileSize, delayTraceLogger);
         this.buildIndex = buildIndex;
         indexStore = createIndexStore();
+    }
+
+    private Function<String, Long> idxFileNameToOffset() {
+        return name -> {
+            String prefix = INDEX_FILE_PREFIX + fileNamePrefix;
+            if (!name.startsWith(prefix)) {
+                return null;
+            }
+            try {
+                return Long.parseLong(name.substring(prefix.length()));
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        };
     }
 
     private IndexStore createIndexStore() throws IOException {
@@ -178,6 +215,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (initialized.compareAndSet(false, true)) {
             cmdWriter.initialize();
             offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
+            if (cmdWriter instanceof OffsetNotifyingCommandWriter) {
+                ((OffsetNotifyingCommandWriter) cmdWriter).setOffsetNotifier(offsetNotifier);
+            }
             if(buildIndex) {
                 indexStore.openWriter(cmdWriter);
             }
@@ -363,7 +403,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         commandStoreDelay.endWrite(offset);
 
-        offsetNotifier.offsetIncreased(offset);
+        if (!(cmdWriter instanceof OffsetNotifyingCommandWriter)) {
+            offsetNotifier.offsetIncreased(offset);
+        }
 
 
 
@@ -531,7 +573,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     public long lowestReadingOffset() {
         long lowestReadingOffset = Long.MAX_VALUE;
 
-        for (CommandReader reader : readers.keySet()) {
+        for (CommandReader<?> reader : readers.keySet()) {
             File readingFile = reader.getCurCmdFile().getFile();
             if (readingFile != null) {
                 lowestReadingOffset = Math.min(lowestReadingOffset, extractStartOffset(readingFile));
@@ -576,9 +618,40 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             if(indexStore != null) {
                 indexStore.closeWriter();
             }
+            AsyncFileSystemHelper.await(asyncFileSystem.close(asyncSegmentFile), "close command segment " + fileNamePrefix);
         }else{
             getLogger().warn("[close][already closed]{}", this);
         }
+    }
+
+    @Override
+    public AsyncFileSystem getAsyncFileSystem() {
+        return asyncFileSystem;
+    }
+
+    @Override
+    public AsyncSegmentFile getAsyncSegmentFile() {
+        return asyncSegmentFile;
+    }
+
+    @Override
+    public File getCommandBaseDir() {
+        return baseDir;
+    }
+
+    @Override
+    public String getCommandFileNamePrefix() {
+        return fileNamePrefix;
+    }
+
+    @Override
+    public List<IndexFileMapping> getCommandIndexFileMappings() {
+        return commandIndexFileMappings;
+    }
+
+    @Override
+    public int getAsyncWriteMaxBytes() {
+        return Math.max(1, asyncWriteMaxBytes.getAsInt());
     }
 
     @Override
