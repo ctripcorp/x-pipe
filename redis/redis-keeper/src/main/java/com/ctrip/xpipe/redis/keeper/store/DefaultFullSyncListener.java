@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.FullSyncListener;
@@ -37,7 +37,7 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	}
 
 	@Override
-	public void onFileData(DefaultReferenceFileRegion referenceFileRegion) {
+	public void onFileData(ReferenceFileRegion referenceFileRegion) {
 		
 		if (referenceFileRegion == null) {
 

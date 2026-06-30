@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.keeper;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
@@ -206,7 +205,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 
 			@Override
-			public void onFileData(DefaultReferenceFileRegion referenceFileRegion) throws IOException {
+			public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
 				if (referenceFileRegion == null) {
 					latch.countDown();
 					return;

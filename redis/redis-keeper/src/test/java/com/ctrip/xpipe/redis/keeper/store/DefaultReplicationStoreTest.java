@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
@@ -134,7 +134,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 						}
 
 						@Override
-						public void onFileData(DefaultReferenceFileRegion referenceFileRegion) throws IOException {
+						public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
 							sleep(100);
 						}
 						

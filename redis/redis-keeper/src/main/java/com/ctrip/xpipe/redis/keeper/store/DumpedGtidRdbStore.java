@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.IntSupplier;
 
 /**
  * @author lishanglin
@@ -14,8 +15,8 @@ import java.io.IOException;
  */
 public class DumpedGtidRdbStore extends GtidRdbStore implements DumpedRdbStore {
 
-    public DumpedGtidRdbStore(File file, AsyncFileSystem asyncFileSystem) throws IOException {
-        super(file, null, -1, null, null, null, null, null, asyncFileSystem);
+    public DumpedGtidRdbStore(File file, AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes) throws IOException {
+        super(file, null, -1, null, null, null, null, null, asyncFileSystem, asyncWriteMaxBytes);
     }
 
     @Override

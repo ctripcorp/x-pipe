@@ -49,7 +49,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
         if (meta != null && meta.getRdbFile() != null) {
             File rdb = new File(baseDir, meta.getRdbFile());
-            if (rdb.isFile()) {
+            if (rdbFileExists(rdb)) {
                 ReplStage replStage = meta.getCurReplStage();
                 ReplStage.ReplProto replProto = replStage != null ? replStage.getProto() : null;
                 GtidSet gtidLost = replStage != null ? replStage.getGtidLost() : null;
@@ -64,7 +64,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
         if (meta != null && meta.getRordbFile() != null) {
             File rordb = new File(baseDir, meta.getRordbFile());
-            if (rordb.isFile()) {
+            if (rdbFileExists(rordb)) {
                 ReplStage replStage = meta.getCurReplStage();
                 ReplStage.ReplProto replProto = replStage != null ? replStage.getProto() : null;
                 GtidSet gtidLost = replStage != null ? replStage.getGtidLost() : null;
@@ -112,7 +112,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     @Override
     protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType) throws IOException {
-        RdbStore rdbStore = new GtidRdbStore(rdb, replId, rdbOffset, eofType, null, null, null, null, asyncFileSystem);
+        RdbStore rdbStore = new GtidRdbStore(rdb, replId, rdbOffset, eofType, null, null, null, null, asyncFileSystem, asyncWriteMaxBytes);
         rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
         return rdbStore;
     }
@@ -120,7 +120,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     public RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
                                GtidSet gtidLost, String masterUuid) throws IOException {
         makeSureOpen();
-        getBaseDir().mkdirs();
+        ensureBaseDir();
 
         getLogger().info("[makeRdb] replId:{}, rdbOffset:{}, eof:{}, replProto:{}, gtidLost:{}, masterUuid: {}",
                 replId, rdbOffset, eofType, replProto, gtidLost, masterUuid);
@@ -131,7 +131,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
                                       GtidSet gtidLost, String masterUuid) throws IOException {
         RdbStore rdbStore = new GtidRdbStore(rdb, replId, rdbOffset, eofType, replProto, null,
-                gtidLost == null ? GtidSet.EMPTY_GTIDSET: gtidLost.toString(), masterUuid, asyncFileSystem);
+                gtidLost == null ? GtidSet.EMPTY_GTIDSET: gtidLost.toString(), masterUuid, asyncFileSystem, asyncWriteMaxBytes);
         rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
         return rdbStore;
     }
@@ -144,7 +144,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     @Override
     public DumpedRdbStore prepareNewRdb() throws IOException {
         makeSureOpen();
-        DumpedRdbStore rdbStore = new DumpedGtidRdbStore(new File(getBaseDir(), newRdbFileName()), asyncFileSystem);
+        DumpedRdbStore rdbStore = new DumpedGtidRdbStore(new File(getBaseDir(), newRdbFileName()), asyncFileSystem, asyncWriteMaxBytes);
         rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
         return rdbStore;
     }
