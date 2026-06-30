@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.keeper.storage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
@@ -51,13 +50,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     // Translates a checked IOException into a runtime exception that reflects
     // recovery semantics: StaleStateException for mismatched state, StorageIOException for
     // genuine transient IO failures.IllegalArgumentExceptions for invalid arguments.
-    // ClosedByInterruptException restores the interrupt flag and is re-thrown as a
-    // RuntimeException so callers can detect cancellation rather than treat it as stale.
     private static RuntimeException wrap(IOException e) {
-        if (e instanceof ClosedByInterruptException) {
-            Thread.currentThread().interrupt();
-            return new RuntimeException(e);
-        }
         if (e instanceof NoSuchFileException
                 || e instanceof FileAlreadyExistsException
                 || e instanceof DirectoryNotEmptyException
