@@ -31,6 +31,10 @@ public class AsyncSegmentFile {
     FileChannel currentSegmentChannel;
     Map<String, FileChannel> currentIndexChannels;
     long currentSegmentStartOffset;
+    // last logical offset reached by transferTo (== user offset + bytes transferred).
+    // Used to skip switchToSegment when the next transferTo continues sequentially.
+    // -1 means no cached position.
+    long lastTransferToOffset = -1;
 
     // start offsets of the maximal contiguous valid segment chain, ascending.
     // segment[i] covers [offsets[i], offsets[i+1] - 1]; last covers [offsets[last], max].
@@ -255,7 +259,8 @@ public class AsyncSegmentFile {
 
     void switchToSegment(long logicalOffset) throws IOException {
         if (segmentOffsets.isEmpty()) {
-            throw new IOException("No segments available");
+            if (logicalOffset == 0) return;
+            throw new IOException("No segments available, logicalOffset=" + logicalOffset);
         }
 
         long minOffset = segmentOffsets.first();
@@ -277,6 +282,14 @@ public class AsyncSegmentFile {
             currentSegmentChannel = FileChannel.open(
                     segmentPath(segStart), StandardOpenOption.READ);
         }
+    }
+
+    // lazy-open the first segment channel for read mode.
+    void openFirstSegmentChannelForRead() throws IOException {
+        long firstOffset = segmentOffsets.first();
+        currentSegmentStartOffset = firstOffset;
+        currentSegmentChannel = FileChannel.open(
+                segmentPath(firstOffset), StandardOpenOption.READ);
     }
 
     Map<String, AsyncFile> getCurrentIndexFiles(List<String> indexPrefixes) throws IOException {
