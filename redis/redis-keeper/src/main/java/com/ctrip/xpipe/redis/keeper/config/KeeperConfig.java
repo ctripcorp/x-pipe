@@ -18,7 +18,7 @@ public interface KeeperConfig extends CoreConfig{
 	String KEY_CMD_BATCH_FLUSH_INTERVAL_MILLIS = "keeper.cmd.batch.flush.interva.millis";
 	String KEY_CMD_BATCH_LOW_RATE_BPS = "keeper.cmd.batch.low.rate.bps";
 	String KEY_BLOCK_SIZE_THRESHOLD = "keeper.block.size.threshold";
-
+	String KEY_ASYNC_WRITE_MAX_BYTES = "keeper.async.write.max.bytes";
 
 
 	int getMetaServerConnectTimeout();
@@ -127,4 +127,6 @@ public interface KeeperConfig extends CoreConfig{
 	long getIndexMixedTotalBytesThreshold();
 
 	int getBlockSizeThreshold();
+
+	int getAsyncWriteMaxBytes();
 }

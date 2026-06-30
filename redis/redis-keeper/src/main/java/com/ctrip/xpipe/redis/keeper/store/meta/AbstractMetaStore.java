@@ -89,7 +89,15 @@ public abstract class AbstractMetaStore implements MetaStore{
 			try {
 				long size = AsyncFileSystemHelper.await(asyncFileSystem.size(asyncFile),
 						"stat meta " + file.getAbsolutePath());
-				byte[] data = AsyncFileSystemHelper.readFully(asyncFileSystem, asyncFile, size, file.getAbsolutePath());
+				if (size > Integer.MAX_VALUE) {
+					throw new IOException("async file too large: " + file.getAbsolutePath());
+				}
+				byte[] data = new byte[(int) size];
+				long read = AsyncFileSystemHelper.await(asyncFileSystem.read(asyncFile, size, 0, data),
+						"read meta " + file.getAbsolutePath());
+				if (read != size) {
+					throw new IOException("failed to read full async file: " + file.getAbsolutePath());
+				}
 				return deserializeFromStringV2(new String(data, StandardCharsets.UTF_8));
 			} finally {
 				AsyncFileSystemHelper.await(asyncFileSystem.close(asyncFile), "close meta " + file.getAbsolutePath());

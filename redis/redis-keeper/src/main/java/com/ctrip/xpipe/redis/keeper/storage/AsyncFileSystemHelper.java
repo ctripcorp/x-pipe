@@ -32,25 +32,4 @@ public final class AsyncFileSystemHelper {
             throw new IOException("async file IO failed: " + operation, cause);
         }
     }
-
-    public static byte[] readFully(AsyncFileSystem asyncFileSystem, AsyncFile asyncFile, long size, String path)
-            throws IOException {
-        if (size > Integer.MAX_VALUE) {
-            throw new IOException("async file too large: " + path);
-        }
-
-        byte[] data = new byte[(int) size];
-        int offset = 0;
-        while (offset < data.length) {
-            int length = data.length - offset;
-            byte[] chunk = new byte[length];
-            int read = await(asyncFileSystem.read(asyncFile, length, offset, chunk), "read " + path);
-            if (read <= 0) {
-                throw new IOException("failed to read full async file: " + path);
-            }
-            System.arraycopy(chunk, 0, data, offset, read);
-            offset += read;
-        }
-        return data;
-    }
 }

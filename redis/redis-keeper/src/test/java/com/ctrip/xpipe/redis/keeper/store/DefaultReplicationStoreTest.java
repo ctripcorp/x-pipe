@@ -108,7 +108,7 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 						}
 
 						@Override
-						public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
+						public ChannelFuture onCommand(Object cmd) {
 							
 							return null;
 						}
