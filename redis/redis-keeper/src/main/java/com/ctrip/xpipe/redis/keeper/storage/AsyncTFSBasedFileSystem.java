@@ -491,7 +491,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 for (Map.Entry<String, String> entry : indexFileNames.entrySet()) {
                     String prefix = entry.getKey();
                     String fileName = entry.getValue();
-                    String idxPath = file.dirPath + File.separator + fileName;
+                    String idxPath = file.absolutePathOf(fileName);
                     FileChannel ch = FileChannel.open(Paths.get(idxPath), StandardOpenOption.READ);
                     result.put(prefix, new AsyncFile(idxPath, ch, false, false));
                 }
@@ -509,10 +509,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 if (file.segmentOffsets.isEmpty()) {
                     return 0L;
                 }
-                long minOffset = file.segmentOffsets.first();
-                long maxOffset = file.segmentOffsets.last();
-                long lastSegmentSize = Files.size(Paths.get(file.dirPath, file.prefix + maxOffset));
-                return maxOffset + lastSegmentSize - minOffset;
+                return file.maxValidOffset() - file.segmentOffsets.first();
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
@@ -527,7 +524,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                     return 0L;
                 }
                 long lastOffset = file.segmentOffsets.last();
-                return Files.getLastModifiedTime(Paths.get(file.dirPath, file.prefix + lastOffset)).toMillis();
+                return Files.getLastModifiedTime(file.segmentPath(lastOffset)).toMillis();
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
@@ -538,7 +535,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public CompletableFuture<Long> lastModifiedOfSegment(AsyncSegmentFile file, long startOffset) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return Files.getLastModifiedTime(Paths.get(file.dirPath, file.prefix + startOffset)).toMillis();
+                return Files.getLastModifiedTime(file.segmentPath(startOffset)).toMillis();
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
@@ -549,7 +546,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public CompletableFuture<Long> sizeOfSegment(AsyncSegmentFile file, long startOffset) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return Files.size(Paths.get(file.dirPath, file.prefix + startOffset));
+                return Files.size(file.segmentPath(startOffset));
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
@@ -571,13 +568,13 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public CompletableFuture<Void> truncate(AsyncSegmentFile file, long offset) {
-        return CompletableFuture.runAsync(() -> {
+    public CompletableFuture<Map<String, AsyncFile>> truncate(AsyncSegmentFile file, long offset) {
+        return CompletableFuture.supplyAsync(() -> {
             try {
                 if (!file.writeMode) {
                     throw new IllegalArgumentException("truncate() requires write mode");
                 }
-                file.truncate(offset);
+                return file.truncate(offset);
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
@@ -588,11 +585,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public CompletableFuture<Void> close(AsyncSegmentFile file) {
         return CompletableFuture.runAsync(() -> {
             try {
-                if (file.currentSegmentChannel != null) file.currentSegmentChannel.close();
-                for (FileChannel ch : file.currentIndexChannels.values()) {
-                    ch.close();
-                }
-                file.currentIndexChannels.clear();
+                file.closeCurrent();
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
