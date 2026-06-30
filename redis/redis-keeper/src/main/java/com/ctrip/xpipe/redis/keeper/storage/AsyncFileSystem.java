@@ -43,6 +43,7 @@ public interface AsyncFileSystem {
     // It automatically deletes preceding non-contiguous segment files.
     // Write mode always opens the latest segment file and index files, and auto-closes them upon rollover.
     // Read mode opens the segment file after the first read, and opens index files when getCurrentIndexFiles() is called. They auto-close when reading the next segment.
+    // For a newly created (empty) segment file in write mode, truncate(offset) must be called once to specify the initial offset before writing.
     CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<IndexFileMapping> indexMappings, boolean write);
     // Only available in read mode.
     CompletableFuture<Void> position(AsyncSegmentFile file, long offset);
@@ -69,8 +70,12 @@ public interface AsyncFileSystem {
     // Delete all known segment and index files.
     // Only available in write mode.
     CompletableFuture<Void> delete(AsyncSegmentFile file);
+    // Truncate at logical offset, returning the index files of the resulting segment.
+    // If offset is in [minOffset, maxOffset + lastSegmentSize], truncate the containing segment and delete those to its right;
+    // otherwise delete everything and create a new empty segment starting at offset.
+    // Index file contents are NOT truncated; the caller must adjust them.
     // Only available in write mode.
-    CompletableFuture<Void> truncate(AsyncSegmentFile file, long offset);
+    CompletableFuture<Map<String, AsyncFile>> truncate(AsyncSegmentFile file, long offset);
     CompletableFuture<Void> close(AsyncSegmentFile file);
     // Only available in write mode.
     CompletableFuture<Void> fsync(AsyncSegmentFile file);
