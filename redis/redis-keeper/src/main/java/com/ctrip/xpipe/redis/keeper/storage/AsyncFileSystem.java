@@ -79,5 +79,7 @@ public interface AsyncFileSystem {
     CompletableFuture<Void> close(AsyncSegmentFile file);
     // Only available in write mode.
     CompletableFuture<Void> fsync(AsyncSegmentFile file);
+    // Mixing transferTo with read()/position() on the same AsyncSegmentFile is NOT supported
+    // as transferTo also requires a position to be set.
     CompletableFuture<Long> transferTo(AsyncSegmentFile file, long offset, long count, WritableByteChannel target);
 }

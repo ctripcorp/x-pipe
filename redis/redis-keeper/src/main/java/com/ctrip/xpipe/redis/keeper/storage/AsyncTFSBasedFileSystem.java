@@ -404,7 +404,9 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                     throw new IllegalArgumentException("position() is not supported in write mode");
                 }
                 file.switchToSegment(offset);
-                file.currentSegmentChannel.position(offset - file.currentSegmentStartOffset);
+                if (file.currentSegmentChannel != null) {
+                    file.currentSegmentChannel.position(offset - file.currentSegmentStartOffset);
+                }
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
@@ -415,6 +417,12 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public CompletableFuture<Long> read(AsyncSegmentFile file, long length, byte[] buffer) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                if (file.currentSegmentChannel == null) {
+                    if (file.segmentOffsets.isEmpty()) {
+                        return 0L;
+                    }
+                    file.openFirstSegmentChannelForRead();
+                }
                 return readFully(file.currentSegmentChannel, length, buffer);
             } catch (IOException e) {
                 throw new StorageIOException(e);
@@ -613,7 +621,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }, ioExecutor);
     }
 
-    // Non-blocking: single transferTo attempt; caller must retry if fewer bytes were transferred.
     @Override
     public CompletableFuture<Long> transferTo(AsyncFile file, long position, long count,
             WritableByteChannel target) {
@@ -626,18 +633,33 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }, ioExecutor);
     }
 
-    // Non-blocking: single transferTo attempt per segment; caller must retry if fewer bytes were transferred.
     @Override
     public CompletableFuture<Long> transferTo(AsyncSegmentFile file, long offset, long count,
             WritableByteChannel target) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                file.switchToSegment(offset);
+                if (offset != file.lastTransferToOffset) {
+                    if (file.segmentOffsets.isEmpty()) {
+                        if (offset == 0) return 0L;
+                        throw new IllegalArgumentException("empty segment file, offset=" + offset);
+                    }
+                    long maxValid = file.maxValidOffset();
+                    if (offset > maxValid) {
+                        throw new IllegalArgumentException("offset " + offset + " > maxValidOffset " + maxValid);
+                    }
+                    if (offset == maxValid) return 0L;
+                    file.switchToSegment(offset);
+                }
                 long physicalOffset = offset - file.currentSegmentStartOffset;
-                long segmentRemaining = file.currentSegmentChannel.size() - physicalOffset;
-                long toTransfer = Math.min(count, segmentRemaining);
-                if (toTransfer <= 0) return 0L;
-                return file.currentSegmentChannel.transferTo(physicalOffset, toTransfer, target);
+                long n = file.currentSegmentChannel.transferTo(physicalOffset, count, target);
+                if (n == 0 && physicalOffset >= file.currentSegmentChannel.size()
+                        && file.currentSegmentStartOffset != file.segmentOffsets.last()) {
+                    file.switchToSegment(offset);
+                    physicalOffset = offset - file.currentSegmentStartOffset;
+                    n = file.currentSegmentChannel.transferTo(physicalOffset, count, target);
+                }
+                file.lastTransferToOffset = offset + n;
+                return n;
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
