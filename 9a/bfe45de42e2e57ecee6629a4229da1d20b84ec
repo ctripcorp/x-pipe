@@ -1,0 +1,23 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  s_a1c5f3e201986d::t_2795541745c29f 295-299
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_a1c5f3e201986d::t_86506f44cfbc8b 438-439
+  s_a1c5f3e201986d::t_434ba5fe0ab7d0 476-482
+  s_a1c5f3e201986d::t_5a392c9f652e7b 437
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.26-trip",
+  "base_commit_sha": "9abfe45de42e2e57ecee6629a4229da1d20b84ec",
+  "prompts": {},
+  "sessions": {
+    "s_a1c5f3e201986d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8958bf39-148c-40af-a433-3380dfce7611",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
