@@ -81,7 +81,7 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
             byteBuf.readBytes(chunk);
 
             long expectedEndOffset = totalLength() + chunkLength - 1;
-            CompletableFuture<Integer> writeFuture = asyncFileSystem()
+            CompletableFuture<Long> writeFuture = asyncFileSystem()
                     .write(asyncSegmentFile(), chunk, chunkLength);
             wrote += chunkLength;
 
@@ -118,9 +118,9 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
         }
     }
 
-    private void awaitWrite(CompletableFuture<Integer> writeFuture, int expectedLength, long offset) throws IOException {
+    private void awaitWrite(CompletableFuture<Long> writeFuture, int expectedLength, long offset) throws IOException {
         try {
-            int flushed = AsyncFileSystemHelper.await(writeFuture, "write command segment offset " + offset);
+            long flushed = AsyncFileSystemHelper.await(writeFuture, "write command segment offset " + offset);
             if (flushed != expectedLength) {
                 throw new IOException("short async command write, expected " + expectedLength + " but flushed " + flushed);
             }
