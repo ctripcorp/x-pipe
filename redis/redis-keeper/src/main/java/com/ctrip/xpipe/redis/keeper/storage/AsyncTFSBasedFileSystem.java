@@ -518,17 +518,10 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> lastModified(AsyncSegmentFile file) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                if (file.segmentOffsets.isEmpty()) {
-                    return 0L;
-                }
-                long lastOffset = file.segmentOffsets.last();
-                return Files.getLastModifiedTime(file.segmentPath(lastOffset)).toMillis();
-            } catch (IOException e) {
-                throw new StorageIOException(e);
-            }
-        }, ioExecutor);
+        if (file.segmentOffsets.isEmpty()) {
+            return CompletableFuture.completedFuture(0L);
+        }
+        return lastModifiedOfSegment(file, file.segmentOffsets.last());
     }
 
     @Override
@@ -650,7 +643,4 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             }
         }, ioExecutor);
     }
-
-    // ---- helpers ----
-
 }
