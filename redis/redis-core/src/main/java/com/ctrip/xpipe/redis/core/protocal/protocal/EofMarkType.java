@@ -50,6 +50,11 @@ public class EofMarkType extends AbstractEofType{
 	public boolean fileOk(File file) {
 		return true;
 	}
+
+	@Override
+	public boolean fileOk(long fileLength) {
+		return true;
+	}
 	
 	@Override
 	public String toString() {

@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntSupplier;
 
 /**
  * @author lishanglin
@@ -28,8 +29,9 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
     protected String masterUuid;
 
     public GtidRdbStore(File file, String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
-                        String gtidSet, String gtidLost, String masterUuid, AsyncFileSystem asyncFileSystem) throws IOException {
-        super(file, replId, rdbOffset, eofType, asyncFileSystem);
+                        String gtidSet, String gtidLost, String masterUuid, AsyncFileSystem asyncFileSystem,
+                        IntSupplier asyncWriteMaxBytes) throws IOException {
+        super(file, replId, rdbOffset, eofType, asyncFileSystem, asyncWriteMaxBytes);
         this.replProto = replProto;
         this.gtidSet.set(gtidSet);
         this.gtidLost.set(gtidLost);

@@ -52,6 +52,11 @@ public class LenEofType extends AbstractEofType{
 		}
 		return false;
 	}
+
+	@Override
+	public boolean fileOk(long fileLength) {
+		return expectedLen == fileLength;
+	}
 	
 	@Override
 	public String toString() {

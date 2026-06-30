@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdExcept
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
@@ -36,6 +37,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntSupplier;
 
 // TODO make methods correctly sequenced
 public class DefaultReplicationStore extends AbstractStore implements ReplicationStore {
@@ -86,6 +88,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected final AsyncFileSystem asyncFileSystem;
 
+	protected final IntSupplier asyncWriteMaxBytes;
+
 	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
 								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
@@ -101,6 +105,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		this.ckStore = ckStore;
 		this.commandNotifyScheduler = commandNotifyScheduler;
 		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
+		this.asyncWriteMaxBytes = config::getAsyncWriteMaxBytes;
 
 		this.metaStore = new DefaultMetaStore(baseDir, keeperRunid, asyncFileSystem);
 
@@ -141,7 +146,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		if (meta != null && meta.getRdbFile() != null) {
 			File rdb = new File(baseDir, meta.getRdbFile());
-			if (rdb.isFile()) {
+			if (rdbFileExists(rdb)) {
 				rdbStore = createRdbStore(rdb, meta.getReplId(), 0, initRdbEofType(meta)); //TODO recover masterUuid, gtidLost, replProto...
 				rdbStore.updateRdbType(RdbStore.Type.NORMAL);
 				rdbStore.updateRdbGtidSet(null != meta.getRdbGtidSet() ? meta.getRdbGtidSet() : GtidSet.EMPTY_GTIDSET);
@@ -150,7 +155,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		if (meta != null && meta.getRordbFile() != null) {
 			File rordb = new File(baseDir, meta.getRordbFile());
-			if (rordb.isFile()) {
+			if (rdbFileExists(rordb)) {
 				rordbStore = createRdbStore(rordb, meta.getReplId(), 0, initRordbEofType(meta)); //TODO recover masterUuid, gtidLost, replProto...
 				rordbStore.updateRdbType(RdbStore.Type.RORDB);
 				rordbStore.updateRdbGtidSet(null != meta.getRordbGtidSet() ? meta.getRordbGtidSet() : GtidSet.EMPTY_GTIDSET);
@@ -228,7 +233,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		makeSureOpen();
 
 		getLogger().info("[xsyncContinueFrom] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}", replId, replOff, masterUuid, gtidCont);
-		baseDir.mkdirs();
+		ensureBaseDir();
 
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
 
@@ -327,7 +332,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType) throws IOException {
 		makeSureOpen();
-		baseDir.mkdirs();
+		ensureBaseDir();
 
 		getLogger().info("[makeRdb] replId:{}, rdbOffset:{}, eof:{}", replId, rdbOffset, eofType);
 		String rdbFile = newRdbFileName();
@@ -496,7 +501,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		makeSureOpen();
 
 		getLogger().info("[continueFromOffset] {}:{}", replId, continueOffset);
-		baseDir.mkdirs();
+		ensureBaseDir();
 
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
 		ReplicationStoreMeta newMeta = metaStore.continueFromOffset(replId, continueOffset, cmdFilePrefix);
@@ -511,7 +516,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		makeSureOpen();
 
 		getLogger().info("[psyncContinueFrom] {}:{}", replId, replOff);
-		baseDir.mkdirs();
+		ensureBaseDir();
 
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
 		ReplicationStoreMeta newMeta = metaStore.psyncContinueFrom(replId, replOff, backlogEndOffset(), cmdFilePrefix);
@@ -554,7 +559,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	//TODO remove rdbOffset
 	protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType) throws IOException {
-		RdbStore rdbStore = new DefaultRdbStore(rdb, replId, rdbOffset, eofType, asyncFileSystem);
+		RdbStore rdbStore = new DefaultRdbStore(rdb, replId, rdbOffset, eofType, asyncFileSystem, asyncWriteMaxBytes);
 		rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
 		return rdbStore;
 	}
@@ -572,7 +577,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	public DumpedRdbStore prepareNewRdb() throws IOException {
 		makeSureOpen();
 
-		DumpedRdbStore rdbStore = new DefaultDumpedRdbStore(new File(baseDir, newRdbFileName()), asyncFileSystem);
+		DumpedRdbStore rdbStore = new DefaultDumpedRdbStore(new File(baseDir, newRdbFileName()), asyncFileSystem, asyncWriteMaxBytes);
 		rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
 		return rdbStore;
 	}
@@ -746,6 +751,14 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected String newRdbFileName() {
 		return "rdb_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString();
+	}
+
+	protected boolean rdbFileExists(File rdb) throws IOException {
+		return AsyncFileSystemHelper.await(asyncFileSystem.exists(rdb.getAbsolutePath()), "exists rdb " + rdb);
+	}
+
+	protected void ensureBaseDir() throws IOException {
+		AsyncFileSystemHelper.await(asyncFileSystem.mkdir(baseDir.getAbsolutePath(), true), "mkdir " + baseDir);
 	}
 
 	@Override
