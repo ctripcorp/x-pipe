@@ -1,0 +1,14 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  h_00df85a0850dc5 110-112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.26-trip",
+  "base_commit_sha": "8585f43fd1e54b501902efedba60f53f4f131961",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  }
+}
