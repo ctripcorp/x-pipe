@@ -52,7 +52,7 @@ public class AsyncSegmentFile {
     }
 
     // Initialize from existing files, deleting any invalid files (segments outside the contiguous chain + orphan/duplicate index files).
-    void initFromFiles(List<String> allFiles) {
+    void initFromFiles(List<String> allFiles) throws IOException {
         List<long[]> segs = new ArrayList<>();
         // prefix -> offset -> list of matching filenames (may have duplicates mapping to same offset)
         Map<String, Map<Long, List<String>>> tempIndexFiles = new HashMap<>();
@@ -66,8 +66,6 @@ public class AsyncSegmentFile {
                     segs.add(new long[]{offset, size});
                 } catch (NumberFormatException e) {
                     invalidFiles.add(name);
-                } catch (IOException e) {
-                    throw new StorageIOException(e);
                 }
             } else {
                 for (IndexFileMapping mapping : indexMappings) {
@@ -140,31 +138,23 @@ public class AsyncSegmentFile {
         if (!invalidFiles.isEmpty()) {
             logger.warn("Found {} invalid files in {}: {}", invalidFiles.size(), dirPath, invalidFiles);
             for (String name : invalidFiles) {
-                try {
-                    Files.deleteIfExists(pathOf(name));
-                } catch (IOException e) {
-                    throw new StorageIOException(e);
-                }
+                Files.deleteIfExists(pathOf(name));
             }
         }
 
         if (!segmentOffsets.isEmpty()) {
             if (writeMode) {
                 currentSegmentStartOffset = segmentOffsets.last();
-                try {
-                    currentSegmentChannel = openForAppend(prefix + currentSegmentStartOffset);
-                    currentIndexChannels = new HashMap<>();
-                    Map<String, String> indexFiles = segmentIndexFiles.get(currentSegmentStartOffset);
-                    for (IndexFileMapping mapping : indexMappings) {
-                        String fileName = indexFiles.get(mapping.prefix);
-                        if (fileName == null) {
-                            fileName = mapping.offsetToFileName.apply(currentSegmentStartOffset);
-                            indexFiles.put(mapping.prefix, fileName);
-                        }
-                        currentIndexChannels.put(mapping.prefix, openForAppend(fileName));
+                currentSegmentChannel = openForAppend(prefix + currentSegmentStartOffset);
+                currentIndexChannels = new HashMap<>();
+                Map<String, String> indexFiles = segmentIndexFiles.get(currentSegmentStartOffset);
+                for (IndexFileMapping mapping : indexMappings) {
+                    String fileName = indexFiles.get(mapping.prefix);
+                    if (fileName == null) {
+                        fileName = mapping.offsetToFileName.apply(currentSegmentStartOffset);
+                        indexFiles.put(mapping.prefix, fileName);
                     }
-                } catch (IOException e) {
-                    throw new StorageIOException(e);
+                    currentIndexChannels.put(mapping.prefix, openForAppend(fileName));
                 }
             } else {
                 currentSegmentStartOffset = segmentOffsets.first();
@@ -172,16 +162,11 @@ public class AsyncSegmentFile {
         }
     }
 
-    private String resolveLatest(List<String> files, List<String> invalidFiles) {
+    private String resolveLatest(List<String> files, List<String> invalidFiles) throws IOException {
         String winner = null;
         long winnerTime = -1;
         for (String f : files) {
-            long modTime;
-            try {
-                modTime = Files.getLastModifiedTime(pathOf(f)).toMillis();
-            } catch (IOException e) {
-                throw new StorageIOException(e);
-            }
+            long modTime = Files.getLastModifiedTime(pathOf(f)).toMillis();
             if (modTime > winnerTime) {
                 if (winner != null) invalidFiles.add(winner);
                 winner = f;
@@ -260,18 +245,18 @@ public class AsyncSegmentFile {
     void switchToSegment(long logicalOffset) throws IOException {
         if (segmentOffsets.isEmpty()) {
             if (logicalOffset == 0) return;
-            throw new IOException("No segments available, logicalOffset=" + logicalOffset);
+            throw new StaleStateException("No segments available, logicalOffset=" + logicalOffset);
         }
 
         long minOffset = segmentOffsets.first();
 
         if (logicalOffset < minOffset) {
-            throw new IOException("logicalOffset " + logicalOffset + " is less than minimum segment offset " + minOffset);
+            throw new StaleStateException("logicalOffset " + logicalOffset + " is less than minimum segment offset " + minOffset);
         }
 
         long maxValid = maxValidOffset();
         if (logicalOffset >= maxValid) {
-            throw new IOException("logicalOffset " + logicalOffset + " is >= max valid offset " + maxValid);
+            throw new StaleStateException("logicalOffset " + logicalOffset + " is >= max valid offset " + maxValid);
         }
 
         Long segStart = segmentOffsets.floor(logicalOffset);
@@ -312,7 +297,7 @@ public class AsyncSegmentFile {
                 result.put(prefix, new AsyncFile(absolutePathOf(fileName), ch, false, writeMode));
             } else if (writeMode) {
                 logger.error("Index channel for prefix {} is null in write mode, segment offset: {}", prefix, currentSegmentStartOffset);
-                throw new IOException("Index channel for prefix " + prefix + " is null in write mode");
+                throw new IllegalStateException("Index channel for prefix " + prefix + " is null in write mode");
             } else {
                 FileChannel readCh = FileChannel.open(pathOf(fileName), StandardOpenOption.READ);
                 currentIndexChannels.put(prefix, readCh);
@@ -327,10 +312,10 @@ public class AsyncSegmentFile {
         for (long offset : startOffsets) {
             long first = segmentOffsets.first();
             if (offset != first) {
-                throw new IOException("deleteSegments requires deleting segments in order from the first: expected " + first + ", got " + offset);
+                throw new IllegalArgumentException("deleteSegments requires deleting segments in order from the first: expected " + first + ", got " + offset);
             }
             if (segmentOffsets.size() <= 1) {
-                throw new IOException("deleteSegments cannot delete the last segment");
+                throw new IllegalArgumentException("deleteSegments cannot delete the last segment");
             }
 
             deleteSegmentAndIndex(offset);
