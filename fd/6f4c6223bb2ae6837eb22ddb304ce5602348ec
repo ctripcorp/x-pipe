@@ -1,0 +1,48 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/StaleStateException.java
+  s_a1c5f3e201986d::t_1a1a6fd4d2f3a5 1-12
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  s_a1c5f3e201986d::t_52b89aa7b873d2 300
+  s_a1c5f3e201986d::t_5162f6a0dcd33a 315,318
+  s_a1c5f3e201986d::t_1afffde176541f 55,141,148-155,157,165,169
+  s_a1c5f3e201986d::t_b869b73bf87112 248,254,259
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_a1c5f3e201986d::t_3bdb0832490282 550-553
+  s_a1c5f3e201986d::t_a3845fcc32d28a 660-663,675-678
+  h_6ceeb547b3b36a 52-53,708
+  s_a1c5f3e201986d::t_4f7ef620b1315f 7,10,14-15,51,56,61-70
+  s_a1c5f3e201986d::t_2fdbbce43de3c2 6
+  s_a1c5f3e201986d::t_7a605e15cd7c39 468-472,474
+  s_a1c5f3e201986d::t_ea236c9dc8f816 236
+  s_a1c5f3e201986d::t_bbd35a5f1a25dc 263-266,293-296
+  s_a1c5f3e201986d::t_f528560f69387a 419-423,425-435
+  s_a1c5f3e201986d::t_208fd4481604cd 442-445
+  s_a1c5f3e201986d::t_093ad39c974581 101,124,139,150,161,175,186,203,225,256,275,286,301,453,476,490,505,534,568,582,601,612,627,642,653,668,683,695,728
+  s_a1c5f3e201986d::t_b905e226632b4e 619-622,634-637
+  s_a1c5f3e201986d::t_cfd73cf641f300 712
+  s_a1c5f3e201986d::t_8b7aae4fca4240 54-55,57-60
+  s_a1c5f3e201986d::t_f4a1ecf88b2efe 424
+  s_a1c5f3e201986d::t_87cb6da2b9f615 473
+  s_a1c5f3e201986d::t_dbaf2c5667ed47 131-134
+  s_a1c5f3e201986d::t_21c2204081afed 497-500
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.26-trip",
+  "base_commit_sha": "fd6f4c6223bb2ae6837eb22ddb304ce5602348ec",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_a1c5f3e201986d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8958bf39-148c-40af-a433-3380dfce7611",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
