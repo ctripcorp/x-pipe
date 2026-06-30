@@ -1,45 +1,40 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.api.utils.ControllableFile;
-import com.ctrip.xpipe.api.utils.FileSize;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.netty.ByteBufUtils;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
-import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
-import com.ctrip.xpipe.utils.DefaultControllableFile;
-import com.ctrip.xpipe.utils.SizeControllableFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongSupplier;
+import java.util.function.IntSupplier;
 
 public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultRdbStore.class);
 	
 	public static final long FAIL_RDB_LENGTH = -1; 
-	
-	private RandomAccessFile writeFile;
 
 	protected File file;
 
-	protected FileChannel channel;
+	// write handle for dump (append, atomicReplace=false, lenient=true)
+	protected volatile AsyncFile writeAsyncFile;
+
+	// cached read handle for recovered rdb metadata (size/mtime); lazily opened after dump ends
+	protected volatile AsyncFile readAsyncFile;
 
 	protected EofType eofType;
 
@@ -57,14 +52,18 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	
 	private Object truncateLock = new Object();
 
+	private final Object handleLock = new Object();
+
 	private AtomicReference<Type> typeRef;
 
 	private AtomicReference<SyncRateLimiter> rateLimiterRef = new AtomicReference<>();
 
 	protected final AsyncFileSystem asyncFileSystem;
 
+	protected final IntSupplier asyncWriteMaxBytes;
+
 	public DefaultRdbStore(File file, String replId, long rdbOffset, EofType eofType,
-						   AsyncFileSystem asyncFileSystem) throws IOException {
+						   AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes) throws IOException {
 
 		this.replId = replId;
 		this.file = file;
@@ -72,12 +71,19 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		this.rdbOffset = rdbOffset;
 		this.typeRef = new AtomicReference<>(Type.UNKNOWN);
 		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
+		this.asyncWriteMaxBytes = Objects.requireNonNull(asyncWriteMaxBytes, "asyncWriteMaxBytes");
 
-		if(file.length() > 0){
-			checkAndSetRdbState();
-		}else{
-			writeFile = new RandomAccessFile(file, "rw");
-			channel = writeFile.getChannel();
+		if (!AsyncFileSystemHelper.await(asyncFileSystem.exists(path()), "exists rdb " + file)) {
+			this.writeAsyncFile = openWriteHandle();
+		} else {
+			this.readAsyncFile = openReadHandle();
+			long len = AsyncFileSystemHelper.await(asyncFileSystem.size(readAsyncFile), "size rdb " + file);
+			if (len > 0) {
+				checkAndSetRdbState();
+			} else {
+				closeReadHandleQuietly();
+				this.writeAsyncFile = openWriteHandle();
+			}
 		}
 	}
 
@@ -152,7 +158,21 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		SyncRateLimiter rateLimiter = rateLimiterRef.get();
 		if (null != rateLimiter) rateLimiter.acquire(byteBuf.readableBytes());
 
-		return ByteBufUtils.writeByteBufToFileChannel(byteBuf, channel);
+		int maxChunk = Math.max(1, asyncWriteMaxBytes.getAsInt());
+		int wrote = 0;
+		while (byteBuf.isReadable()) {
+			int chunkLength = Math.min(byteBuf.readableBytes(), maxChunk);
+			byte[] chunk = new byte[chunkLength];
+			byteBuf.readBytes(chunk);
+
+			long flushed = AsyncFileSystemHelper.await(
+					asyncFileSystem.write(writeAsyncFile, chunk, chunkLength), "write rdb " + file);
+			if (flushed != chunkLength) {
+				throw new IOException("short async rdb write, expected " + chunkLength + " but flushed " + flushed);
+			}
+			wrote += chunkLength;
+		}
+		return wrote;
 	}
 
 	@Override
@@ -161,7 +181,9 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		getLogger().info("[truncateEndRdb]{}, {}", this, reduceLen);
 		
 		synchronized (truncateLock) {
-			channel.truncate(channel.size() - reduceLen);
+			long size = AsyncFileSystemHelper.await(asyncFileSystem.size(writeAsyncFile), "size rdb " + file);
+			getLogger().info("[truncateEndRdb]{}, size {}->{}", this, size, size - reduceLen);
+			AsyncFileSystemHelper.await(asyncFileSystem.truncate(writeAsyncFile, size - reduceLen), "truncate rdb " + file);
 			endRdb();
 		}
 	}
@@ -175,14 +197,17 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		}
 		
 		try{
+			if (writeAsyncFile != null) {
+				try {
+					AsyncFileSystemHelper.await(asyncFileSystem.fsync(writeAsyncFile), "fsync rdb " + file);
+				} catch (IOException e) {
+					getLogger().error("[endRdb][fsync]" + this, e);
+				}
+			}
 			checkAndSetRdbState();
 		}finally{
 			notifyListenersEndRdb();
-			try {
-				writeFile.close();
-			} catch (IOException e) {
-				getLogger().error("[endRdb]" + this, e);
-			}
+			closeWriteHandleQuietly();
 		}
 	}
 
@@ -208,11 +233,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		
 		status.set(Status.Fail);
 		notifyListenersEndRdb();
-		try {
-			writeFile.close();
-		} catch (IOException e1) {
-			getLogger().error("[failRdb]" + this, e1);
-		}
+		closeWriteHandleQuietly();
 	}
 
 	@Override
@@ -221,19 +242,28 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		if(status.get() == Status.Fail){
 			return FAIL_RDB_LENGTH;
 		}
-		return file.length();
+		try {
+			return fileSize();
+		} catch (IOException e) {
+			getLogger().error("[rdbFileLength]" + this, e);
+			return FAIL_RDB_LENGTH;
+		}
 	}
 
 	private void checkAndSetRdbState() {
-		
-		//TODO check file format
-		if(eofType.fileOk(file)){
-			status.set(Status.Success);
-			getLogger().info("[checkAndSetRdbState]{}, {}", this, status);
-		} else {
+
+		try {
+			long len = fileSize();
+			if(eofType.fileOk(len)){
+				status.set(Status.Success);
+				getLogger().info("[checkAndSetRdbState]{}, {}", this, status);
+			} else {
+				status.set(Status.Fail);
+				getLogger().error("[checkAndSetRdbState]actual:{}, expected:{}, file:{}, status:{}", len, eofType, file, status);
+			}
+		} catch (IOException e) {
 			status.set(Status.Fail);
-			long actualFileLen = file.length();
-			getLogger().error("[checkAndSetRdbState]actual:{}, expected:{}, file:{}, status:{}", actualFileLen, eofType, file, status);
+			getLogger().error("[checkAndSetRdbState][io]" + this, e);
 		}
 	}
 
@@ -266,9 +296,9 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		rdbFileListener.beforeFileData();
 		refCount.incrementAndGet();
 
-		try (ReferenceFileChannel channel = new ReferenceFileChannel(createControllableFile())) {
+		try {
 			doReadRdbFileInfo(rdbFileListener);
-			doReadRdbFile(rdbFileListener, channel);
+			doReadRdbFile(rdbFileListener);
 		} catch (Exception e) {
 			getLogger().error("[readRdbFile]Error read rdb file" + file, e);
 			rdbFileListener.exception(e);
@@ -294,53 +324,152 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		}
 	}
 
-	protected void doReadRdbFile(RdbFileListener rdbFileListener, ReferenceFileChannel referenceFileChannel) throws IOException {
+	protected void doReadRdbFile(RdbFileListener rdbFileListener) throws IOException {
 
+		AsyncFile readFile = AsyncFileSystemHelper.await(
+				asyncFileSystem.open(path(), false, false, true), "open rdb for read " + file);
+
+		long curPosition = 0;
 		long lastLogTime = System.currentTimeMillis();
-		while (rdbFileListener.isOpen() && (isRdbWriting(status.get()) || (status.get() == Status.Success && referenceFileChannel.hasAnythingToRead()))) {
-			int limitBytes = rdbFileListener.getFsyncLimitPerSecond();
-			DefaultReferenceFileRegion referenceFileRegion = referenceFileChannel.read(limitBytes);
-			try {
-				rdbFileListener.onFileData(referenceFileRegion);
-			} catch (Throwable t) {
-				logger.info("[doReadRdbFile] exception on send file data", t);
-				referenceFileRegion.deallocate();
-				throw t;
-			}
-			if(referenceFileRegion.count() <= 0) {
+		try {
+			while (true) {
+				if (!rdbFileListener.isOpen()) break;
+
+				Status cur = status.get();
+				long readable;
+				if (isRdbWriting(cur)) {
+					readable = readableSize(readFile);
+				} else if (cur == Status.Success) {
+					readable = readableSize(readFile);
+					if (curPosition >= readable) break;
+				} else { // Fail
+					break;
+				}
+
+				int limitBytes = rdbFileListener.getFsyncLimitPerSecond();
+				long available = readable - curPosition;
+				long count = available <= 0 ? 0
+						: (limitBytes > 0 ? Math.min(limitBytes, available) : available);
+
+				// emit even when count == 0 so listeners that fail-fast (or finish) are still driven,
+				// mirroring the legacy ReferenceFileChannel read loop.
+				ReferenceFileRegion referenceFileRegion = new AsyncRdbReferenceFileRegion(
+						asyncFileSystem, readFile, curPosition, count);
+				curPosition += count;
+				referenceFileRegion.setTotalPos(curPosition);
 				try {
-					Thread.sleep(1);
-					long currentTime = System.currentTimeMillis();
-					if (currentTime - lastLogTime > 10000) {
-						getLogger().info("[doReadRdbFile]status:{}, referenceFileChannel:{}, count:{}, rdbFileListener:{}",
-								status.get(), referenceFileChannel, referenceFileRegion.count(), rdbFileListener);
-						lastLogTime = currentTime;
+					rdbFileListener.onFileData(referenceFileRegion);
+				} catch (Throwable t) {
+					logger.info("[doReadRdbFile] exception on send file data", t);
+					referenceFileRegion.deallocate();
+					throw t;
+				}
+
+				if (count <= 0) {
+					try {
+						Thread.sleep(1);
+						long currentTime = System.currentTimeMillis();
+						if (currentTime - lastLogTime > 10000) {
+							getLogger().info("[doReadRdbFile]status:{}, pos:{}, rdbFileListener:{}",
+									status.get(), curPosition, rdbFileListener);
+							lastLogTime = currentTime;
+						}
+					} catch (InterruptedException e) {
+						getLogger().error("[doReadRdbFile]" + rdbFileListener, e);
+						Thread.currentThread().interrupt();
 					}
-				} catch (InterruptedException e) {
-					getLogger().error("[doReadRdbFile]" + rdbFileListener, e);
-					Thread.currentThread().interrupt();
 				}
 			}
-		}
 
-		getLogger().info("[doReadRdbFile] done with status {}", status.get());
+			getLogger().info("[doReadRdbFile] done with status {}", status.get());
 
-		switch (status.get()) {
-			case Success:
-				if(file.exists()){//this is necessery because file may be deleted
-					rdbFileListener.onFileData(null);
-				}else{
-					rdbFileListener.exception((new Exception("rdb file not exists now " + file)));
-				}
-				break;
-	
-			case Fail:
-				rdbFileListener.exception(new Exception("[rdb error]" + file));
-				break;
-			default:
-				rdbFileListener.exception(new Exception("[status not right]" + file + "," + status));
-				break;
+			switch (status.get()) {
+				case Success:
+					if (AsyncFileSystemHelper.await(asyncFileSystem.exists(path()), "exists rdb " + file)) {
+						rdbFileListener.onFileData(null);
+					} else {
+						rdbFileListener.exception((new Exception("rdb file not exists now " + file)));
+					}
+					break;
+
+				case Fail:
+					rdbFileListener.exception(new Exception("[rdb error]" + file));
+					break;
+				default:
+					rdbFileListener.exception(new Exception("[status not right]" + file + "," + status));
+					break;
+			}
+		} finally {
+			try {
+				AsyncFileSystemHelper.await(asyncFileSystem.close(readFile), "close rdb read " + file);
+			} catch (IOException e) {
+				getLogger().error("[doReadRdbFile][close]" + file, e);
+			}
 		}
+	}
+
+	// readable size visible to a streaming reader; while writing an EofMark rdb the trailing
+	// mark length is hidden (mirrors the legacy SizeControllableFile behaviour).
+	private long readableSize(AsyncFile readFile) throws IOException {
+		if (status.get() == Status.Writing && eofType instanceof EofMarkType) {
+			long realSize;
+			synchronized (truncateLock) {//truncate may make size wrong
+				realSize = AsyncFileSystemHelper.await(asyncFileSystem.size(readFile), "size rdb read " + file);
+			}
+			long ret = realSize - ((EofMarkType) eofType).getTag().length();
+			return ret < 0 ? 0 : ret;
+		}
+		return AsyncFileSystemHelper.await(asyncFileSystem.size(readFile), "size rdb read " + file);
+	}
+
+	private long fileSize() throws IOException {
+		AsyncFile h = metadataAsyncFile();
+		if (h == null) {
+			return 0L;
+		}
+		return AsyncFileSystemHelper.await(asyncFileSystem.size(h), "size rdb " + file);
+	}
+
+	private long getRdbFileLastModifiedViaFs() throws IOException {
+		AsyncFile h = metadataAsyncFile();
+		if (h == null) {
+			return 0L;
+		}
+		return AsyncFileSystemHelper.await(asyncFileSystem.lastModified(h), "lastModified rdb " + file);
+	}
+
+	// prefer live write handle while dumping; otherwise reuse cached/lazy read handle (no per-call open/close)
+	private AsyncFile metadataAsyncFile() throws IOException {
+		synchronized (handleLock) {
+			makeSureOpen();
+			AsyncFile h = writeAsyncFile;
+			if (h != null) {
+				return h;
+			}
+			h = readAsyncFile;
+			if (h != null) {
+				return h;
+			}
+			if (!AsyncFileSystemHelper.await(asyncFileSystem.exists(path()), "exists rdb " + file)) {
+				return null;
+			}
+			readAsyncFile = openReadHandle();
+			return readAsyncFile;
+		}
+	}
+
+	private AsyncFile openWriteHandle() throws IOException {
+		return AsyncFileSystemHelper.await(
+				asyncFileSystem.open(path(), true, false, true), "open rdb for write " + file);
+	}
+
+	private AsyncFile openReadHandle() throws IOException {
+		return AsyncFileSystemHelper.await(
+				asyncFileSystem.open(path(), false, false, true), "open rdb for read " + file);
+	}
+
+	private String path() {
+		return file.getAbsolutePath();
 	}
 
 	private boolean isRdbWriting(Status status) {
@@ -367,8 +496,19 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	@Override
 	public boolean checkOk() {
-		return status.get() == Status.Writing 
-				|| ( status.get() == Status.Success && file.exists());
+		Status cur = status.get();
+		if (cur == Status.Writing) {
+			return true;
+		}
+		if (cur == Status.Success) {
+			try {
+				return AsyncFileSystemHelper.await(asyncFileSystem.exists(path()), "exists rdb " + file);
+			} catch (IOException e) {
+				getLogger().error("[checkOk]" + this, e);
+				return false;
+			}
+		}
+		return false;
 	}
 
 	@Override
@@ -383,11 +523,38 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		
 		if(cmpAndSetClosed()){
 			getLogger().info("[close]{}", file);
-			if(writeFile != null){
-				writeFile.close();
-			}
+			closeWriteHandleQuietly();
+			closeReadHandleQuietly();
 		}else{
 			getLogger().warn("[close][already closed]{}", this);
+		}
+	}
+
+	private void closeWriteHandleQuietly() {
+		synchronized (handleLock) {
+			AsyncFile h = writeAsyncFile;
+			if (h != null) {
+				writeAsyncFile = null;
+				try {
+					AsyncFileSystemHelper.await(asyncFileSystem.close(h), "close rdb write " + file);
+				} catch (IOException e) {
+					getLogger().error("[closeWriteHandle]" + this, e);
+				}
+			}
+		}
+	}
+
+	private void closeReadHandleQuietly() {
+		synchronized (handleLock) {
+			AsyncFile h = readAsyncFile;
+			if (h != null) {
+				readAsyncFile = null;
+				try {
+					AsyncFileSystemHelper.await(asyncFileSystem.close(h), "close rdb read " + file);
+				} catch (IOException e) {
+					getLogger().error("[closeReadHandle]" + this, e);
+				}
+			}
 		}
 	}
 
@@ -401,40 +568,10 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		rdbStoreListeners.remove(rdbStoreListener);
 	}
 
-	private ControllableFile createControllableFile() throws IOException {
-		
-		if(eofType instanceof LenEofType){
-			return new DefaultControllableFile(file);
-		}else if(eofType instanceof EofMarkType){
-			
-			return new SizeControllableFile(file, new FileSize() {
-				
-				@Override
-				public long getSize(LongSupplier realSizeProvider) {
-					
-					long realSize = 0;
-					synchronized (truncateLock) {//truncate may make size wrong
-						realSize = realSizeProvider.getAsLong();
-					}
-					
-					if(status.get() == Status.Writing){
-						
-						long ret = realSize - ((EofMarkType)eofType).getTag().length(); 
-						getLogger().debug("[getSize][writing]{}, {}", DefaultRdbStore.this, ret);
-						return ret < 0 ? 0 : ret;
-					}
-					return realSize;
-				}
-			});
-		}else{
-			throw new IllegalStateException("unknown eoftype:" + eofType.getClass() + "," + eofType);
-		}
-	}
-
 	@Override
 	public String toString() {
-		return String.format("type:%s, eofType:%s, rdbOffset:%d,file:%s, exists:%b, status:%s",
-				typeRef.get().name(), eofType, rdbOffset, file, file.exists(), status.get());
+		return String.format("type:%s, eofType:%s, rdbOffset:%d, file:%s, status:%s",
+				typeRef.get().name(), eofType, rdbOffset, file, status.get());
 	}
 
 	@Override
@@ -458,7 +595,12 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	@Override
 	public long getRdbFileLastModified() {
-		return file.lastModified();
+		try {
+			return getRdbFileLastModifiedViaFs();
+		} catch (IOException e) {
+			getLogger().error("[getRdbFileLastModified]" + this, e);
+			return 0L;
+		}
 	}
 	
 	protected Logger getLogger() {
