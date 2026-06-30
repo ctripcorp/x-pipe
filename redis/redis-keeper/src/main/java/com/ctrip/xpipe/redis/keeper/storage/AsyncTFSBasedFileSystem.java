@@ -434,6 +434,9 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public CompletableFuture<Long> write(AsyncSegmentFile file, byte[] data, long length) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                if (file.segmentOffsets.isEmpty()) {
+                    file.openFirstSegmentChannelForWrite();
+                }
                 return writeFully(file.currentSegmentChannel, data, length);
             } catch (IOException e) {
                 throw new StorageIOException(e);
@@ -470,11 +473,19 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             List<String> indexPrefixes) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                if (file.segmentOffsets.isEmpty()) {
+                    if (file.writeMode) {
+                        file.openFirstSegmentChannelForWrite();
+                    } else {
+                        return new HashMap<String, AsyncFile>();
+                    }
+                }
                 return file.getCurrentIndexFiles(indexPrefixes);
             } catch (IOException e) {
                 throw new StorageIOException(e);
             }
         }, ioExecutor);
+    }
     }
 
     @Override

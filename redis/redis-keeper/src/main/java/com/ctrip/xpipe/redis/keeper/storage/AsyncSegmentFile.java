@@ -292,6 +292,11 @@ public class AsyncSegmentFile {
                 segmentPath(firstOffset), StandardOpenOption.READ);
     }
 
+    // lazy-create the first segment (starting at offset 0) and its index files for write mode.
+    void openFirstSegmentChannelForWrite() throws IOException {
+        createNewSegmentWithIndexes(0);
+    }
+
     Map<String, AsyncFile> getCurrentIndexFiles(List<String> indexPrefixes) throws IOException {
         Map<String, String> indexFileNames = segmentIndexFiles.get(currentSegmentStartOffset);
         Map<String, AsyncFile> result = new HashMap<>();
