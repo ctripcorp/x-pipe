@@ -10,8 +10,6 @@ public interface CommandReader<R> {
 
 	CommandFile getCurCmdFile();
 
-	long position() throws IOException;
-
 	void flushed(R cmdContent);
 
 	void close() throws IOException;

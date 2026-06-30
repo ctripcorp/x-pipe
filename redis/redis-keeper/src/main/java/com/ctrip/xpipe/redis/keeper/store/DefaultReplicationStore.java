@@ -524,7 +524,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
 											  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
 											  KeeperMonitor keeperMonitor, GtidCmdFilter gtidCmdFilter) throws IOException {
-		DefaultCommandStore cmdStore = new DefaultCommandStore(this.ckStore, config, new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
+		DefaultCommandStore cmdStore = new DefaultCommandStore(this.ckStore, new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
 				config::getRecordWrongStream,
 				config::getReplicationStoreCommandFileKeepTimeSeconds,
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
@@ -532,7 +532,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				config.getCommandReaderFlyingThreshold(),
 				this::isCmdNotifyCoalescingEnabled,
 				cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, gtidCmdFilter,true,
-				asyncFileSystem
+				asyncFileSystem, config,
+				config::getAsyncWriteMaxBytes
 		);
 		cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 		try {

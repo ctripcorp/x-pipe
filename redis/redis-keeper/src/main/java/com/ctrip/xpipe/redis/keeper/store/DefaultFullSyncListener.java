@@ -85,8 +85,8 @@ public class DefaultFullSyncListener implements FullSyncListener {
 	}
 
 	@Override
-	public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
-		return redisSlave.onCommand(currentFile, filePosition, cmd);
+	public ChannelFuture onCommand(Object cmd) {
+		return redisSlave.onCommand(cmd);
 	}
 
 	@Override

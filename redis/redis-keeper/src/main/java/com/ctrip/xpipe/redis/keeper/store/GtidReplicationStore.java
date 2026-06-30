@@ -90,14 +90,15 @@ public class GtidReplicationStore extends DefaultReplicationStore {
             buildIndex = false;
         }
         logger.info("[createCommandStore], replRdbGtidSet={}, buildIndex={}", replRdbGtidSet, buildIndex);
-        GtidCommandStore cmdStore = new GtidCommandStore(this.ckStore, config, new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
+        GtidCommandStore cmdStore = new GtidCommandStore(this.ckStore, new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
                 config::getRecordWrongStream,
                 config::getReplicationStoreCommandFileKeepTimeSeconds,
                 config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
                 config::getReplicationStoreCommandFileNumToKeep,
                 config.getCommandReaderFlyingThreshold(),
                 this::isCmdNotifyCoalescingEnabled,
-                cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, filter, buildIndex, asyncFileSystem);
+                cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, filter, buildIndex, asyncFileSystem, config,
+                config::getAsyncWriteMaxBytes);
         cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 
         try {

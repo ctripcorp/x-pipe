@@ -426,4 +426,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getBlockSizeThreshold() {
 		return blockSizeThreshold;
 	}
+
+	@Override
+	public int getAsyncWriteMaxBytes() {
+		return 65536;
+	}
 }

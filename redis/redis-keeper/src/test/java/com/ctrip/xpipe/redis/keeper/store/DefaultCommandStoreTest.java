@@ -1,7 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
+import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
@@ -28,11 +29,13 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -252,9 +255,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 				commandStore.addCommandsListener(new OffsetReplicationProgress(0), new CommandsListener() {
 
 					@Override
-					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object referenceFileRegion) {
+					public ChannelFuture onCommand(Object referenceFileRegion) {
 
-						sb.append(readFileChannelInfoMessageAsString((DefaultReferenceFileRegion)referenceFileRegion));
+						sb.append(readReferenceFileRegionAsString((ReferenceFileRegion) referenceFileRegion));
 						semaphore.release();
 						return null;
 					}
@@ -398,11 +401,12 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 					commandStore.addCommandsListener(new OffsetReplicationProgress(offset), new CommandsListener() {
 
 						@Override
-						public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object referenceFileRegion) {
+						public ChannelFuture onCommand(Object referenceFileRegion) {
 
 							logger.debug("[onCommand]{}", referenceFileRegion);
-							result.append(readFileChannelInfoMessageAsString((DefaultReferenceFileRegion)referenceFileRegion));
-							semaphore.release((int) ((DefaultReferenceFileRegion)referenceFileRegion).count());
+							ReferenceFileRegion region = (ReferenceFileRegion) referenceFileRegion;
+							result.append(readReferenceFileRegionAsString(region));
+							semaphore.release((int) region.count());
 							return null;
 						}
 
@@ -459,6 +463,25 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		String result = readCommandStoreTilNoMessage(commandStore, sb.length());
 		logger.info("[testReadWrite]{}, {}", sb.length(), result.length());
 		Assert.assertTrue(sb.toString().equals(result));
+	}
+
+	@Test
+	public void testAsyncSegmentWriteRollAndRead() throws Exception {
+		commandStore.close();
+		commandStore = new DefaultCommandStore(null, commandTemplate, 5, () -> false, () -> 3600, 0,
+				() -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> false, commandReaderWriterFactory,
+				createkeeperMonitor(), opParser, gtidCmdFilter, false, asyncFileSystem(), getKeeperConfig(), () -> 2);
+		commandStore.initialize();
+
+		String expected = "abcdefg";
+		commandStore.appendCommands(Unpooled.wrappedBuffer(expected.getBytes(Codec.defaultCharset)));
+
+		Assert.assertEquals(expected.length(), commandStore.totalLength());
+		Assert.assertTrue(new File(commandTemplate.getParentFile(), commandTemplate.getName() + "0").isFile());
+		Assert.assertTrue(new File(commandTemplate.getParentFile(), commandTemplate.getName() + "5").isFile());
+		Assert.assertTrue(new File(commandTemplate.getParentFile(), "idx_" + commandTemplate.getName() + "0").isFile());
+		Assert.assertTrue(new File(commandTemplate.getParentFile(), "idx_" + commandTemplate.getName() + "5").isFile());
+		Assert.assertEquals(expected, readCommandStoreTilNoMessage(commandStore, expected.length()));
 	}
 
 
@@ -599,7 +622,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			}
 
 			@Override
-			public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
+			public ChannelFuture onCommand(Object cmd) {
 				return null;
 			}
 
@@ -628,6 +651,46 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 				logger.info("[appendCommandsToStore][fail]", e);
 			}
 		});
+	}
+
+	private String readReferenceFileRegionAsString(ReferenceFileRegion referenceFileRegion) {
+		try {
+			OneByteWritableByteChannel channel = new OneByteWritableByteChannel();
+			referenceFileRegion.transferTo(channel, 0L);
+			return new String(channel.getResult(), Codec.defaultCharset);
+		} catch (IOException e) {
+			throw new IllegalStateException(String.format("[read]%s", referenceFileRegion), e);
+		}
+	}
+
+	private static class OneByteWritableByteChannel implements WritableByteChannel {
+
+		private final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+		private boolean open = true;
+
+		@Override
+		public int write(ByteBuffer src) {
+			if (!src.hasRemaining()) {
+				return 0;
+			}
+			output.write(src.get());
+			return 1;
+		}
+
+		@Override
+		public boolean isOpen() {
+			return open;
+		}
+
+		@Override
+		public void close() {
+			open = false;
+		}
+
+		byte[] getResult() {
+			return output.toByteArray();
+		}
 	}
 
 	@After

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
@@ -268,10 +269,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					}
 
 					@Override
-					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
+					public ChannelFuture onCommand(Object cmd) {
 						
 						try {
-							byte [] message = readFileChannelInfoMessageAsBytes((DefaultReferenceFileRegion) cmd);
+							byte [] message = readFileChannelInfoMessageAsBytes((ReferenceFileRegion) cmd);
 							baous.write(message);
 						} catch (IOException e) {
 							logger.error("[onCommand]" + cmd, e);
@@ -308,7 +309,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return new String(baous.toByteArray());
 	}
 
-	protected byte[] readFileChannelInfoMessageAsBytes(DefaultReferenceFileRegion referenceFileRegion) {
+	protected byte[] readFileChannelInfoMessageAsBytes(ReferenceFileRegion referenceFileRegion) {
 
 		try {
 			ByteArrayWritableByteChannel bach = new ByteArrayWritableByteChannel(); 
@@ -319,7 +320,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		}
 	}
 
-	protected String readFileChannelInfoMessageAsString(DefaultReferenceFileRegion referenceFileRegion) {
+	protected String readFileChannelInfoMessageAsString(ReferenceFileRegion referenceFileRegion) {
 
 		return new String(readFileChannelInfoMessageAsBytes(referenceFileRegion), Codec.defaultCharset);
 	}

@@ -85,7 +85,7 @@ public class GtidCommandSearcherTest extends AbstractTest {
         }).when(fileRegion).transferTo(any(WritableByteChannel.class), eq(0L));
 
         // Call onCommand
-        searcher.onCommand(commandFile, 0L, fileRegion);
+        searcher.onCommand(fileRegion);
 
         // Verify transferTo was called
         verify(fileRegion, times(1)).transferTo(any(WritableByteChannel.class), eq(0L));
@@ -101,7 +101,7 @@ public class GtidCommandSearcherTest extends AbstractTest {
         Object nonFileRegion = new Object();
 
         // Call onCommand
-        Object result = searcher.onCommand(commandFile, 0L, nonFileRegion);
+        Object result = searcher.onCommand(nonFileRegion);
 
         // Should return null and not process anything
         Assert.assertNull(result);
@@ -119,7 +119,7 @@ public class GtidCommandSearcherTest extends AbstractTest {
 
         // Call onCommand and expect exception
         try {
-            searcher.onCommand(commandFile, 0L, fileRegion);
+            searcher.onCommand(fileRegion);
             Assert.fail("Expected XpipeRuntimeException");
         } catch (XpipeRuntimeException e) {
             Assert.assertEquals("Error processing file region", e.getMessage());
@@ -152,7 +152,7 @@ public class GtidCommandSearcherTest extends AbstractTest {
         }).when(fileRegion).transferTo(any(WritableByteChannel.class), eq(0L));
 
         // Call onCommand
-        searcher.onCommand(commandFile, 0L, fileRegion);
+        searcher.onCommand(fileRegion);
 
         // Verify transferTo was called
         verify(fileRegion, times(1)).transferTo(any(WritableByteChannel.class), eq(0L));
@@ -174,7 +174,7 @@ public class GtidCommandSearcherTest extends AbstractTest {
         }).when(fileRegion).transferTo(any(WritableByteChannel.class), eq(0L));
 
         // Call onCommand
-        searcher.onCommand(commandFile, 0L, fileRegion);
+        searcher.onCommand(fileRegion);
 
         // Verify transferTo was called
         verify(fileRegion, times(1)).transferTo(any(WritableByteChannel.class), eq(0L));
@@ -207,7 +207,7 @@ public class GtidCommandSearcherTest extends AbstractTest {
 
         // Call onCommand and expect exception
         try {
-            searcher.onCommand(commandFile, 0L, fileRegion);
+            searcher.onCommand(fileRegion);
             Assert.fail("Expected XpipeRuntimeException");
         } catch (XpipeRuntimeException e) {
             Assert.assertEquals("Error processing file region", e.getMessage());
@@ -241,7 +241,7 @@ public class GtidCommandSearcherTest extends AbstractTest {
         }).when(fileRegion).transferTo(any(WritableByteChannel.class), eq(0L));
 
         // Call onCommand
-        searcher.onCommand(commandFile, 0L, fileRegion);
+        searcher.onCommand(fileRegion);
 
         // Verify reader.doRead was called
         verify(readerSpy, atLeastOnce()).doRead(byteBufCaptor.capture());
@@ -265,7 +265,7 @@ public class GtidCommandSearcherTest extends AbstractTest {
 
         // Call onCommand
         try {
-            searcher.onCommand(commandFile, 0L, fileRegion);
+            searcher.onCommand(fileRegion);
             Assert.fail("Expected XpipeRuntimeException");
         } catch (XpipeRuntimeException e) {
             // Expected
@@ -296,7 +296,7 @@ public class GtidCommandSearcherTest extends AbstractTest {
         }).when(fileRegion).transferTo(any(WritableByteChannel.class), eq(0L));
 
         // Call onCommand
-        searcher.onCommand(commandFile, 0L, fileRegion);
+        searcher.onCommand(fileRegion);
 
         // Verify transferTo was called
         verify(fileRegion, times(1)).transferTo(any(WritableByteChannel.class), eq(0L));
@@ -371,7 +371,7 @@ public class GtidCommandSearcherTest extends AbstractTest {
             return (long) written;
         }).when(fileRegion).transferTo(any(WritableByteChannel.class), eq(0L));
 
-        searcher.onCommand(commandFile, 0L, fileRegion);
+        searcher.onCommand(fileRegion);
         List<CmdKeyItem> items = searcher.getCmdKeyItems();
         logger.info("[test] {}", items);
         Assert.assertEquals("MSET", items.get(0).cmd);

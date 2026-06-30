@@ -95,7 +95,7 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
     }
 
     @Override
-    public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
+    public ChannelFuture onCommand(Object cmd) {
         if (cmd instanceof FileRegion) {
             FileRegion fileRegion = (FileRegion) cmd;
             try {

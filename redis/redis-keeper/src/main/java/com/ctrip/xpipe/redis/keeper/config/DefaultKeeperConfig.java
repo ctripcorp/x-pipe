@@ -338,4 +338,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public int getBlockSizeThreshold() {
 		return getIntProperty(KEY_BLOCK_SIZE_THRESHOLD, 8192);
 	}
+
+	public int getAsyncWriteMaxBytes() {
+		return getIntProperty(KEY_ASYNC_WRITE_MAX_BYTES, 65536);
+	}
 }
