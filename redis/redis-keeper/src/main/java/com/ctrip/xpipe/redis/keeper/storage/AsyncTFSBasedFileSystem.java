@@ -486,7 +486,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             }
         }, ioExecutor);
     }
-    }
 
     @Override
     public CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file) {
