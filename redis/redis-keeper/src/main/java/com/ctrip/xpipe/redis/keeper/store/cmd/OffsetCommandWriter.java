@@ -193,9 +193,15 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
 
     private long currentSegmentSize() throws IOException {
         long startOffset = currentSegmentStartOffset();
-        return AsyncFileSystemHelper.await(
-                asyncFileSystem().sizeOfSegment(asyncSegmentFile(), startOffset),
-                "sizeOfSegment command segment");
+        if (0 == startOffset) {
+            return AsyncFileSystemHelper.await(
+                    asyncFileSystem().size(asyncSegmentFile()),
+                    "sizeOfSegment");
+        } else {
+            return AsyncFileSystemHelper.await(
+                    asyncFileSystem().sizeOfSegment(asyncSegmentFile(), startOffset),
+                    "sizeOfSegment start " + startOffset);
+        }
     }
 
     private CommandFile currentCommandFile() {
