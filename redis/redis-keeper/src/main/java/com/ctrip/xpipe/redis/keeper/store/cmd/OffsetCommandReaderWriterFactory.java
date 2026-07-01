@@ -36,15 +36,6 @@ public class OffsetCommandReaderWriterFactory implements CommandReaderWriterFact
             if (endOffsetExcluded >= 0 && endOffsetExcluded <= currentOffset)
                 throw new UnsupportedOperationException("endOffset must gt beginOffset: " + endOffsetExcluded + ":" + currentOffset);
         }
-        CommandFile commandFile = cmdStore.findFileForOffset(currentOffset);
-        if (null == commandFile && currentOffset > 0) {
-            // may locate at tail of cmd file
-            logger.info("[createCmdReader][cmd miss] try currentOffset - 1 = {}", currentOffset);
-            commandFile = cmdStore.findFileForOffset(currentOffset - 1);
-        }
-        if (null == commandFile) {
-            throw new IOException("File for offset " + replProgress.getProgress() + " in store " + cmdStore + " does not exist");
-        }
 
         return new OffsetCommandReader(currentOffset, endOffsetExcluded,
                 cmdStore, offsetNotifier, replDelayConfig, commandReaderFlyingThreshold);
