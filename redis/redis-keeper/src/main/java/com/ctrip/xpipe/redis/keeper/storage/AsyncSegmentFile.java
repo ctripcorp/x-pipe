@@ -29,7 +29,7 @@ public class AsyncSegmentFile {
     final boolean writeMode;
 
     FileChannel currentSegmentChannel;
-    Map<String, FileChannel> currentIndexChannels;
+    Map<String, AsyncFile> currentIndexFiles;
     // Currently open segment covers logical range [openedSegmentStartOffset, openedSegmentEndOffset).
     // Long.MAX_VALUE for start means "no segment currently open"; Long.MAX_VALUE for end
     // means "open segment is the tail — end is unbounded (writer may still append)".
@@ -47,7 +47,7 @@ public class AsyncSegmentFile {
         this.dirPath = dirPath;
         this.prefix = prefix;
         this.indexMappings = indexMappings;
-        this.currentIndexChannels = new HashMap<>();
+        this.currentIndexFiles = new HashMap<>();
         this.writeMode = writeMode;
     }
 
@@ -147,7 +147,7 @@ public class AsyncSegmentFile {
                 openedSegmentStartOffset = segmentOffsets.last();
                 openedSegmentEndOffset = Long.MAX_VALUE;
                 currentSegmentChannel = openForAppend(prefix + openedSegmentStartOffset);
-                currentIndexChannels = new HashMap<>();
+                currentIndexFiles = new HashMap<>();
                 Map<String, String> indexFiles = segmentIndexFiles.get(openedSegmentStartOffset);
                 for (IndexFileMapping mapping : indexMappings) {
                     String fileName = indexFiles.get(mapping.prefix);
@@ -155,7 +155,8 @@ public class AsyncSegmentFile {
                         fileName = mapping.offsetToFileName.apply(openedSegmentStartOffset);
                         indexFiles.put(mapping.prefix, fileName);
                     }
-                    currentIndexChannels.put(mapping.prefix, openForAppend(fileName));
+                    FileChannel ch = openForAppend(fileName);
+                    currentIndexFiles.put(mapping.prefix, new AsyncFile(absolutePathOf(fileName), ch, false, true));
                 }
             } else {
                 readPosition = segmentOffsets.first();
@@ -209,8 +210,8 @@ public class AsyncSegmentFile {
     void closeCurrent() throws IOException {
         if (currentSegmentChannel != null) currentSegmentChannel.close();
         currentSegmentChannel = null;
-        for (FileChannel ch : currentIndexChannels.values()) ch.close();
-        currentIndexChannels.clear();
+        for (AsyncFile af : currentIndexFiles.values()) af.channel.close();
+        currentIndexFiles.clear();
         openedSegmentStartOffset = Long.MAX_VALUE;
         openedSegmentEndOffset = Long.MAX_VALUE;
     }
@@ -241,8 +242,9 @@ public class AsyncSegmentFile {
             indexFileNames.put(mapping.prefix, fileName);
             FileChannel ch = FileChannel.open(pathOf(fileName),
                     EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW));
-            currentIndexChannels.put(mapping.prefix, ch);
-            result.put(mapping.prefix, new AsyncFile(absolutePathOf(fileName), ch, false, true));
+            AsyncFile af = new AsyncFile(absolutePathOf(fileName), ch, false, true);
+            currentIndexFiles.put(mapping.prefix, af);
+            result.put(mapping.prefix, af);
         }
         return result;
     }
@@ -293,16 +295,17 @@ public class AsyncSegmentFile {
                 continue;
             }
 
-            FileChannel ch = currentIndexChannels.get(prefix);
-            if (ch != null) {
-                result.put(prefix, new AsyncFile(absolutePathOf(fileName), ch, false, writeMode));
+            AsyncFile af = currentIndexFiles.get(prefix);
+            if (af != null) {
+                result.put(prefix, af);
             } else if (writeMode) {
                 logger.error("Index channel for prefix {} is null in write mode, segment offset: {}", prefix, openedSegmentStartOffset);
                 throw new IllegalStateException("Index channel for prefix " + prefix + " is null in write mode");
             } else {
                 FileChannel readCh = FileChannel.open(pathOf(fileName), StandardOpenOption.READ);
-                currentIndexChannels.put(prefix, readCh);
-                result.put(prefix, new AsyncFile(absolutePathOf(fileName), readCh, false, false));
+                af = new AsyncFile(absolutePathOf(fileName), readCh, false, false);
+                currentIndexFiles.put(prefix, af);
+                result.put(prefix, af);
             }
         }
 
@@ -369,12 +372,13 @@ public class AsyncSegmentFile {
                 fileName = mapping.offsetToFileName.apply(targetStart);
                 indexFileNames.put(mapping.prefix, fileName);
             }
-            FileChannel ch = currentIndexChannels.get(mapping.prefix);
-            if (ch == null) {
-                ch = openForAppend(fileName);
-                currentIndexChannels.put(mapping.prefix, ch);
+            AsyncFile af = currentIndexFiles.get(mapping.prefix);
+            if (af == null) {
+                FileChannel ch = openForAppend(fileName);
+                af = new AsyncFile(absolutePathOf(fileName), ch, false, true);
+                currentIndexFiles.put(mapping.prefix, af);
             }
-            result.put(mapping.prefix, new AsyncFile(absolutePathOf(fileName), ch, false, true));
+            result.put(mapping.prefix, af);
         }
         return result;
     }
