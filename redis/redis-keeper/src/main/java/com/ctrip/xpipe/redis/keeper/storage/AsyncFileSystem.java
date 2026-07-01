@@ -46,12 +46,21 @@ public interface AsyncFileSystem {
     // For a newly created (empty) segment file in write mode, truncate(offset) must be called once to specify the initial offset before writing.
     CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<IndexFileMapping> indexMappings, boolean write);
     // Only available in read mode.
+    // Mixing them with pread/transferTo on the same AsyncSegmentFile is NOT supported
+    // as pread/transferTo also require a certain segment to be opened.
     CompletableFuture<Void> position(AsyncSegmentFile file, long offset);
+    // Mixing them with pread/transferTo on the same AsyncSegmentFile is NOT supported
+    // as pread/transferTo also require a certain segment to be opened.
     CompletableFuture<Long> read(AsyncSegmentFile file, long length, byte[] buffer);
+    // Mixing this with read()/position()/transferTo on the same AsyncSegmentFile is NOT supported
+    // as it also requires a certain segment to be opened.
+    CompletableFuture<Long> read(AsyncSegmentFile file, long length, long offset, byte[] buffer);
     CompletableFuture<Long> write(AsyncSegmentFile file, byte[] data, long length);
     // Only available in write mode.
     CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file);
     List<Long> list(AsyncSegmentFile file);
+    // Returns the start offset of the segment associated with the current position.
+    // Returns -1 if the position is invalid.
     long getCurrentSegmentStartOffset(AsyncSegmentFile file);
     // position to one segment and then call this method to get the current index files.
     CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes);
@@ -79,7 +88,7 @@ public interface AsyncFileSystem {
     CompletableFuture<Void> close(AsyncSegmentFile file);
     // Only available in write mode.
     CompletableFuture<Void> fsync(AsyncSegmentFile file);
-    // Mixing transferTo with read()/position() on the same AsyncSegmentFile is NOT supported
-    // as transferTo also requires a position to be set.
+    // Mixing transferTo with read()/position()/pread on the same AsyncSegmentFile is NOT supported
+    // as it also requires a certain segment to be opened.
     CompletableFuture<Long> transferTo(AsyncSegmentFile file, long offset, long count, WritableByteChannel target);
 }
