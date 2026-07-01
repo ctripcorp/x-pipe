@@ -301,7 +301,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return CompletableFuture.supplyAsync(() -> {
             String[] names = new File(path).list();
             if (names == null) return Collections.emptyList();
-            return Arrays.asList(names);
+            List<String> filtered = new ArrayList<>(names.length);
+            for (String name : names) {
+                if (!name.startsWith(TMP_REP_)) filtered.add(name);
+            }
+            return filtered;
         }, ioExecutor);
     }
 
@@ -438,9 +442,9 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
         return CompletableFuture.runAsync(() -> {
             try {
-                file.switchToSegment(offset);
-                if (file.currentSegmentChannel != null) {
-                    file.currentSegmentChannel.position(offset - file.currentSegmentStartOffset);
+                file.readPosition = offset;
+                if (file.switchToSegment(offset)) {
+                    file.currentSegmentChannel.position(offset - file.openedSegmentStartOffset);
                 }
             } catch (IOException e) {
                 throw wrap(e);
@@ -453,16 +457,46 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 if (file.currentSegmentChannel == null) {
-                    if (file.segmentOffsets.isEmpty()) {
-                        return 0L;
-                    }
-                    file.openFirstSegmentChannelForRead();
+                    if (!file.switchToSegment(file.readPosition)) return 0L;
+                    file.currentSegmentChannel.position(file.readPosition - file.openedSegmentStartOffset);
                 }
                 long n = readFully(file.currentSegmentChannel, length, buffer);
-                if (n == 0 && file.currentSegmentStartOffset != file.segmentOffsets.last()) {
-                    Long next = file.segmentOffsets.higher(file.currentSegmentStartOffset);
-                    file.switchToSegment(next);
-                    n = readFully(file.currentSegmentChannel, length, buffer);
+                file.readPosition += n;
+                boolean atSegmentBoundary = file.readPosition >= file.openedSegmentEndOffset;
+                boolean staleTailEof = n == 0
+                        && file.openedSegmentStartOffset != file.segmentOffsets.last()
+                        && file.currentSegmentChannel.size() <= file.readPosition - file.openedSegmentStartOffset;
+                if (atSegmentBoundary || staleTailEof) {
+                    file.closeCurrent();
+                    if (file.switchToSegment(file.readPosition)) {
+                        file.currentSegmentChannel.position(file.readPosition - file.openedSegmentStartOffset);
+                    }
+                }
+                return n;
+            } catch (IOException e) {
+                throw wrap(e);
+            }
+        }, ioExecutor);
+    }
+
+    @Override
+    public CompletableFuture<Long> read(AsyncSegmentFile file, long length, long offset, byte[] buffer) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                if (file.currentSegmentChannel == null
+                        || offset < file.openedSegmentStartOffset
+                        || offset >= file.openedSegmentEndOffset) {
+                    if (!file.switchToSegment(offset)) return 0L;
+                }
+                long physicalOffset = offset - file.openedSegmentStartOffset;
+                long n = readFully(file.currentSegmentChannel, length, physicalOffset, buffer);
+                boolean atSegmentBoundary = offset + n >= file.openedSegmentEndOffset;
+                boolean staleTailEof = n == 0
+                        && file.openedSegmentStartOffset != file.segmentOffsets.last()
+                        && file.currentSegmentChannel.size() <= physicalOffset;
+                if (atSegmentBoundary || staleTailEof) {
+                    file.closeCurrent();
+                    file.switchToSegment(offset + n);
                 }
                 return n;
             } catch (IOException e) {
@@ -507,7 +541,16 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public long getCurrentSegmentStartOffset(AsyncSegmentFile file) {
-        return file.currentSegmentStartOffset;
+        if (file.currentSegmentChannel != null) {
+            return file.openedSegmentStartOffset;
+        }
+        if (file.segmentOffsets.isEmpty()) {
+            return 0;
+        }
+        if (file.segmentOffsets.contains(file.readPosition)) {
+            return file.readPosition;
+        }
+        return -1;
     }
 
     @Override
@@ -520,6 +563,13 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                         file.openFirstSegmentChannelForWrite();
                     } else {
                         return new HashMap<String, AsyncFile>();
+                    }
+                } else if (!file.writeMode) {
+                    // Read mode: lazy open the current segment.
+                    if (file.currentSegmentChannel == null) {
+                        if (!file.switchToSegment(file.readPosition)) {
+                            return new HashMap<String, AsyncFile>();
+                        }
                     }
                 }
                 return file.getCurrentIndexFiles(indexPrefixes);
@@ -570,7 +620,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 if (file.segmentOffsets.isEmpty()) {
                     return 0L;
                 }
-                return file.maxValidOffset() - file.segmentOffsets.first();
+                return file.exclusiveEndOffset() - file.segmentOffsets.first();
             } catch (IOException e) {
                 throw wrap(e);
             }
@@ -695,27 +745,21 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             WritableByteChannel target) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (offset != file.lastTransferToOffset) {
-                    if (file.segmentOffsets.isEmpty()) {
-                        if (offset == 0) return 0L;
-                        throw new StaleStateException("empty segment file, offset=" + offset);
-                    }
-                    long maxValid = file.maxValidOffset();
-                    if (offset > maxValid) {
-                        throw new StaleStateException("offset " + offset + " > maxValidOffset " + maxValid);
-                    }
-                    if (offset == maxValid) return 0L;
-                    file.switchToSegment(offset);
+                if (file.currentSegmentChannel == null
+                        || offset < file.openedSegmentStartOffset
+                        || offset >= file.openedSegmentEndOffset) {
+                    if (!file.switchToSegment(offset)) return 0L;
                 }
-                long physicalOffset = offset - file.currentSegmentStartOffset;
+                long physicalOffset = offset - file.openedSegmentStartOffset;
                 long n = file.currentSegmentChannel.transferTo(physicalOffset, count, target);
-                if (n == 0 && physicalOffset >= file.currentSegmentChannel.size()
-                        && file.currentSegmentStartOffset != file.segmentOffsets.last()) {
-                    file.switchToSegment(offset);
-                    physicalOffset = offset - file.currentSegmentStartOffset;
-                    n = file.currentSegmentChannel.transferTo(physicalOffset, count, target);
+                boolean atSegmentBoundary = offset + n >= file.openedSegmentEndOffset;
+                boolean staleTailEof = n == 0
+                        && file.openedSegmentStartOffset != file.segmentOffsets.last()
+                        && file.currentSegmentChannel.size() <= physicalOffset;
+                if (atSegmentBoundary || staleTailEof) {
+                    file.closeCurrent();
+                    file.switchToSegment(offset + n);
                 }
-                file.lastTransferToOffset = offset + n;
                 return n;
             } catch (IOException e) {
                 throw wrap(e);

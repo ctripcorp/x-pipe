@@ -30,11 +30,12 @@ public class AsyncSegmentFile {
 
     FileChannel currentSegmentChannel;
     Map<String, FileChannel> currentIndexChannels;
-    long currentSegmentStartOffset;
-    // last logical offset reached by transferTo (== user offset + bytes transferred).
-    // Used to skip switchToSegment when the next transferTo continues sequentially.
-    // -1 means no cached position.
-    long lastTransferToOffset = -1;
+    // Currently open segment covers logical range [openedSegmentStartOffset, openedSegmentEndOffset).
+    // Long.MAX_VALUE for start means "no segment currently open"; Long.MAX_VALUE for end
+    // means "open segment is the tail — end is unbounded (writer may still append)".
+    long openedSegmentStartOffset = Long.MAX_VALUE;
+    long openedSegmentEndOffset = Long.MAX_VALUE;
+    long readPosition = 0;
 
     // start offsets of the maximal contiguous valid segment chain, ascending.
     // segment[i] covers [offsets[i], offsets[i+1] - 1]; last covers [offsets[last], max].
@@ -48,7 +49,6 @@ public class AsyncSegmentFile {
         this.indexMappings = indexMappings;
         this.currentIndexChannels = new HashMap<>();
         this.writeMode = writeMode;
-        this.currentSegmentStartOffset = 0;
     }
 
     // Initialize from existing files, deleting any invalid files (segments outside the contiguous chain + orphan/duplicate index files).
@@ -144,20 +144,21 @@ public class AsyncSegmentFile {
 
         if (!segmentOffsets.isEmpty()) {
             if (writeMode) {
-                currentSegmentStartOffset = segmentOffsets.last();
-                currentSegmentChannel = openForAppend(prefix + currentSegmentStartOffset);
+                openedSegmentStartOffset = segmentOffsets.last();
+                openedSegmentEndOffset = Long.MAX_VALUE;
+                currentSegmentChannel = openForAppend(prefix + openedSegmentStartOffset);
                 currentIndexChannels = new HashMap<>();
-                Map<String, String> indexFiles = segmentIndexFiles.get(currentSegmentStartOffset);
+                Map<String, String> indexFiles = segmentIndexFiles.get(openedSegmentStartOffset);
                 for (IndexFileMapping mapping : indexMappings) {
                     String fileName = indexFiles.get(mapping.prefix);
                     if (fileName == null) {
-                        fileName = mapping.offsetToFileName.apply(currentSegmentStartOffset);
+                        fileName = mapping.offsetToFileName.apply(openedSegmentStartOffset);
                         indexFiles.put(mapping.prefix, fileName);
                     }
                     currentIndexChannels.put(mapping.prefix, openForAppend(fileName));
                 }
             } else {
-                currentSegmentStartOffset = segmentOffsets.first();
+                readPosition = segmentOffsets.first();
             }
         }
     }
@@ -207,11 +208,14 @@ public class AsyncSegmentFile {
 
     void closeCurrent() throws IOException {
         if (currentSegmentChannel != null) currentSegmentChannel.close();
+        currentSegmentChannel = null;
         for (FileChannel ch : currentIndexChannels.values()) ch.close();
         currentIndexChannels.clear();
+        openedSegmentStartOffset = Long.MAX_VALUE;
+        openedSegmentEndOffset = Long.MAX_VALUE;
     }
 
-    long maxValidOffset() throws IOException {
+    long exclusiveEndOffset() throws IOException {
         long maxOffset = segmentOffsets.last();
         return maxOffset + Files.size(segmentPath(maxOffset));
     }
@@ -224,7 +228,8 @@ public class AsyncSegmentFile {
     }
 
     private Map<String, AsyncFile> createNewSegmentWithIndexes(long startOffset) throws IOException {
-        currentSegmentStartOffset = startOffset;
+        openedSegmentStartOffset = startOffset;
+        openedSegmentEndOffset = Long.MAX_VALUE;
         segmentOffsets.add(startOffset);
         Map<String, String> indexFileNames = new HashMap<>();
         segmentIndexFiles.put(startOffset, indexFileNames);
@@ -242,39 +247,35 @@ public class AsyncSegmentFile {
         return result;
     }
 
-    void switchToSegment(long logicalOffset) throws IOException {
+    boolean switchToSegment(long logicalOffset) throws IOException {
+        if (logicalOffset >= openedSegmentStartOffset && logicalOffset < openedSegmentEndOffset
+                && currentSegmentChannel != null) {
+            return true;
+        }
         if (segmentOffsets.isEmpty()) {
-            if (logicalOffset == 0) return;
-            throw new StaleStateException("No segments available, logicalOffset=" + logicalOffset);
-        }
-
-        long minOffset = segmentOffsets.first();
-
-        if (logicalOffset < minOffset) {
-            throw new StaleStateException("logicalOffset " + logicalOffset + " is less than minimum segment offset " + minOffset);
-        }
-
-        long maxValid = maxValidOffset();
-        if (logicalOffset >= maxValid) {
-            throw new StaleStateException("logicalOffset " + logicalOffset + " is >= max valid offset " + maxValid);
-        }
-
-        Long segStart = segmentOffsets.floor(logicalOffset);
-
-        if (segStart != currentSegmentStartOffset) {
             closeCurrent();
-            currentSegmentStartOffset = segStart;
-            currentSegmentChannel = FileChannel.open(
-                    segmentPath(segStart), StandardOpenOption.READ);
+            return false;
         }
-    }
-
-    // lazy-open the first segment channel for read mode.
-    void openFirstSegmentChannelForRead() throws IOException {
-        long firstOffset = segmentOffsets.first();
-        currentSegmentStartOffset = firstOffset;
+        if (logicalOffset < segmentOffsets.first()) {
+            closeCurrent();
+            return false;
+        }
+        long exclusiveEnd = exclusiveEndOffset();
+        if (logicalOffset >= exclusiveEnd) {
+            closeCurrent();
+            return false;
+        }
+        long segStart = segmentOffsets.floor(logicalOffset);
+        closeCurrent();
         currentSegmentChannel = FileChannel.open(
-                segmentPath(firstOffset), StandardOpenOption.READ);
+                segmentPath(segStart), StandardOpenOption.READ);
+        openedSegmentStartOffset = segStart;
+        if (segStart == segmentOffsets.last()) {
+            openedSegmentEndOffset = Long.MAX_VALUE;
+        } else {
+            openedSegmentEndOffset = segStart + Files.size(segmentPath(segStart));
+        }
+        return true;
     }
 
     // lazy-create the first segment (starting at offset 0) and its index files for write mode.
@@ -283,7 +284,7 @@ public class AsyncSegmentFile {
     }
 
     Map<String, AsyncFile> getCurrentIndexFiles(List<String> indexPrefixes) throws IOException {
-        Map<String, String> indexFileNames = segmentIndexFiles.get(currentSegmentStartOffset);
+        Map<String, String> indexFileNames = segmentIndexFiles.get(openedSegmentStartOffset);
         Map<String, AsyncFile> result = new HashMap<>();
 
         for (String prefix : indexPrefixes) {
@@ -296,7 +297,7 @@ public class AsyncSegmentFile {
             if (ch != null) {
                 result.put(prefix, new AsyncFile(absolutePathOf(fileName), ch, false, writeMode));
             } else if (writeMode) {
-                logger.error("Index channel for prefix {} is null in write mode, segment offset: {}", prefix, currentSegmentStartOffset);
+                logger.error("Index channel for prefix {} is null in write mode, segment offset: {}", prefix, openedSegmentStartOffset);
                 throw new IllegalStateException("Index channel for prefix " + prefix + " is null in write mode");
             } else {
                 FileChannel readCh = FileChannel.open(pathOf(fileName), StandardOpenOption.READ);
@@ -334,7 +335,7 @@ public class AsyncSegmentFile {
 
     Map<String, AsyncFile> truncate(long offset) throws IOException {
         if (!segmentOffsets.isEmpty()
-                && offset >= segmentOffsets.first() && offset <= maxValidOffset()) {
+                && offset >= segmentOffsets.first() && offset <= exclusiveEndOffset()) {
             return truncateInRange(offset);
         }
         return reset(offset);
@@ -342,11 +343,11 @@ public class AsyncSegmentFile {
 
     private Map<String, AsyncFile> truncateInRange(long offset) throws IOException {
         long targetStart = segmentOffsets.floor(offset);
-        boolean reuseCurrent = currentSegmentStartOffset == targetStart && currentSegmentChannel != null;
+        boolean reuseCurrent = openedSegmentStartOffset == targetStart && currentSegmentChannel != null;
 
         if (!reuseCurrent) {
             closeCurrent();
-            currentSegmentStartOffset = targetStart;
+            openedSegmentStartOffset = targetStart;
             currentSegmentChannel = FileChannel.open(
                     segmentPath(targetStart), StandardOpenOption.WRITE);
         }
@@ -391,7 +392,7 @@ public class AsyncSegmentFile {
     }
 
     Map<String, AsyncFile> roll() throws IOException {
-        long newStartOffset = currentSegmentStartOffset + currentSegmentChannel.size();
+        long newStartOffset = openedSegmentStartOffset + currentSegmentChannel.size();
         closeCurrent();
         return createNewSegmentWithIndexes(newStartOffset);
     }
