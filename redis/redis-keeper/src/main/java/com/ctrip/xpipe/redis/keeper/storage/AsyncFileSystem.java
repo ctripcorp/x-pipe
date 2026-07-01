@@ -43,7 +43,8 @@ public interface AsyncFileSystem {
     // It automatically deletes preceding non-contiguous segment files.
     // Write mode always opens the latest segment file and index files, and auto-closes them upon rollover.
     // Read mode opens the segment file after the first read, and opens index files when getCurrentIndexFiles() is called. They auto-close when reading the next segment.
-    // For a newly created (empty) segment file in write mode, truncate(offset) must be called once to specify the initial offset before writing.
+    // For a newly created (empty) segment file in write mode, the segment file will start at 0 unless truncate(offset) is calledto specify the initial offset before writing.
+    // For the same segment file,only the first opener's indexMappings takes effect and subsequent ones are ignored.in another word, indexMappings is immutable.
     CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<IndexFileMapping> indexMappings, boolean write);
     // Only available in read mode.
     // Mixing them with pread/transferTo on the same AsyncSegmentFile is NOT supported
