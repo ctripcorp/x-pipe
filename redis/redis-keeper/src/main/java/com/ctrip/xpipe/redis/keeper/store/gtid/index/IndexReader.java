@@ -17,9 +17,9 @@ public class IndexReader extends AbstractIndex implements Closeable {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultIndexStore.class);
 
-    private List<IndexEntry> indexItemList;
+    protected List<IndexEntry> indexItemList;
 
-    private GtidSet startGtidSet;
+    protected GtidSet startGtidSet;
 
     public IndexReader(String baseDir, String indexFile) {
         super(baseDir, indexFile);
