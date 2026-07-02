@@ -25,8 +25,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
+
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.command.ParallelCommandChain;
+
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 import static com.ctrip.xpipe.redis.console.resources.AbstractMetaCache.CURRENT_IDC;
 
@@ -47,6 +55,9 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
     private ConsoleConfig consoleConfig;
 
     private ConsoleLeaderElector leaderElector;
+
+    @Resource(name = GLOBAL_EXECUTOR)
+    private ExecutorService globalExecutor;
 
     @Autowired
     public ConsoleServiceManager(ConsoleConfig consoleConfig, @Nullable ConsoleLeaderElector leaderElector) {
@@ -231,6 +242,78 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return getServiceByDc(dcId).postMigrateSentinelBeacon(clusterName, shardMasters);
     }
 
+    /**
+     * 跨 DC 并发广播，每个 DC 执行同一任务，全部完成后返回 Map<DC, 结果>。
+     * 失败的 DC 对应 value 为 null。
+     */
+    public <T> Map<String, T> broadcast(Set<String> dcIds, Function<String, T> perDcTask) {
+        Map<String, T> result = new LinkedHashMap<>();
+        if (dcIds == null || dcIds.isEmpty()) return result;
+
+        ParallelCommandChain chain = new ParallelCommandChain(globalExecutor);
+        Map<String, CommandFuture<T>> futures = new LinkedHashMap<>();
+
+        for (String dcId : dcIds) {
+            AbstractCommand<T> cmd = new AbstractCommand<T>() {
+                @Override
+                protected void doExecute() throws Throwable {
+                    future().setSuccess(perDcTask.apply(dcId));
+                }
+                @Override
+                protected void doReset() {}
+                @Override
+                public String getName() { return "Broadcast-" + dcId; }
+            };
+            chain.add(cmd);
+            futures.put(dcId, cmd.future());
+        }
+
+        try {
+            chain.execute().sync();
+        } catch (Throwable th) {
+            logger.error("[broadcast] chain fail, collecting partial results", th);
+        }
+        futures.forEach((dcId, future) -> {
+            result.put(dcId.toUpperCase(), future.isSuccess() ? future.getNow() : null);
+        });
+
+        return result;
+    }
+
+    public Map<String, Object> getAllConsoleBeaconUsage(String system, boolean includeClusters) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        Map<String, List<Map<String, Object>>> raw = broadcast(
+                consoleConfig.getConsoleDomains().keySet(),
+                dcId -> getServiceByDc(dcId).getBeaconUsage(system, includeClusters));
+        raw.forEach((dc, data) -> {
+            result.put(dc, data != null
+                    ? wrapResponse(0, "success", data)
+                    : wrapResponse(-1, "broadcast failed", null));
+        });
+        return result;
+    }
+
+    public Map<String, Object> getAllConsoleClusterBeaconRoute(String clusterName, Set<String> targetDcs) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        Map<String, List<Map<String, Object>>> raw = broadcast(
+                targetDcs,
+                dcId -> getServiceByDc(dcId).getClusterBeaconRoute(clusterName));
+        raw.forEach((dc, data) -> {
+            result.put(dc, data != null
+                    ? wrapResponse(0, "success", data)
+                    : wrapResponse(-1, "broadcast failed", null));
+        });
+        return result;
+    }
+
+    public static Map<String, Object> wrapResponse(int code, String msg, Object data) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("code", code);
+        response.put("msg", msg);
+        response.put("data", data);
+        return response;
+    }
+
     public <T> boolean quorumSatisfy(List<T> results, Function<T, Boolean> predicate){
 
         int count = 0;
@@ -278,4 +361,5 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
 
         return consoleUrls;
     }
+
 }

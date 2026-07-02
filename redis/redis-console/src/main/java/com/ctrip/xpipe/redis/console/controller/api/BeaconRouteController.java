@@ -1,19 +1,24 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
-import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,6 +34,11 @@ public class BeaconRouteController extends AbstractConsoleController {
 
     @Autowired
     private BeaconManager beaconManager;
+
+    @Autowired(required = false)
+    private ConsoleServiceManager consoleServiceManager;
+
+    private static final Logger logger = LoggerFactory.getLogger(BeaconRouteController.class);
 
     @GetMapping("/sentinel/clusters")
     public Map<String, Set<String>> getSentinelBeaconClusters(@RequestParam(name = "system", required = false) String system,
@@ -86,6 +96,120 @@ public class BeaconRouteController extends AbstractConsoleController {
         result.put("dc", anchorDc);
         result.put("routeType", selectedRouteType.name());
         result.put("metaHash", metaHash);
+        return result;
+    }
+
+    @GetMapping("/usage")
+    public Object getBeaconUsage(@RequestParam String beaconMode,
+                                 @RequestParam(required = false, defaultValue = "xpipe") String system,
+                                 @RequestParam(required = false, defaultValue = "false") boolean includeClusters,
+                                 @RequestParam(required = false, defaultValue = "false") boolean inner) {
+        BeaconRouteType selectedRouteType = BeaconRouteType.valueOf(beaconMode.toUpperCase());
+        List<Map<String, Object>> localData = buildUsage(selectedRouteType, system, includeClusters);
+
+        if (inner) {
+            return localData;
+        }
+
+        if (selectedRouteType == BeaconRouteType.DR) {
+            return ConsoleServiceManager.wrapResponse(0, "success", localData);
+        }
+
+        // SENTINEL user-facing: forward to all consoles and group by DC
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put(FoundationService.DEFAULT.getDataCenter().toUpperCase(),
+                ConsoleServiceManager.wrapResponse(0, "success", localData));
+        try {
+            if (consoleServiceManager != null) {
+                result.putAll(consoleServiceManager.getAllConsoleBeaconUsage(system, includeClusters));
+            }
+        } catch (Exception e) {
+            logger.error("[getBeaconUsage] forward fail", e);
+        }
+        return result;
+    }
+
+    @GetMapping("/cluster/{clusterName}")
+    public Object getClusterBeaconRoute(@PathVariable String clusterName,
+                                        @RequestParam String beaconMode,
+                                        @RequestParam(required = false, defaultValue = "false") boolean inner) {
+        BeaconRouteType selectedRouteType = BeaconRouteType.valueOf(beaconMode.toUpperCase());
+        List<Map<String, Object>> localData = monitorManager.getClusterRoutes(clusterName, selectedRouteType);
+
+        if (inner) {
+            return localData;
+        }
+
+        // Group by DC and wrap each DC's result
+        Map<String, List<Map<String, Object>>> grouped = new LinkedHashMap<>();
+        for (Map<String, Object> item : localData) {
+            grouped.computeIfAbsent((String) item.get("dcName"), k -> new ArrayList<>()).add(item);
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        grouped.forEach((dc, data) -> result.put(dc, ConsoleServiceManager.wrapResponse(0, "success", data)));
+
+        if (selectedRouteType == BeaconRouteType.SENTINEL) {
+            try {
+                if (consoleServiceManager != null) {
+                    Set<String> beaconDcs = monitorManager.getBeaconDcs(clusterName, selectedRouteType);
+                    logger.info("[getClusterBeaconRoute] cluster={}, allBeaconDcs={}", clusterName, beaconDcs);
+                    beaconDcs.remove(FoundationService.DEFAULT.getDataCenter().toUpperCase());
+                    logger.info("[getClusterBeaconRoute] cluster={}, forwardTargets={}", clusterName, beaconDcs);
+                    if (!beaconDcs.isEmpty()) {
+                        result.putAll(consoleServiceManager.getAllConsoleClusterBeaconRoute(clusterName, beaconDcs));
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("[getClusterBeaconRoute] forward fail", e);
+            }
+        }
+        return result;
+    }
+
+    private List<Map<String, Object>> buildUsage(BeaconRouteType routeType, String system, boolean includeClusters) {
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> beaconData =
+                monitorManager.clustersByBeaconSystemOrg(routeType);
+
+        if (beaconData == null || beaconData.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Map<String, String> clusterTypeMap = includeClusters ? monitorManager.getClusterTypeMap(routeType) : null;
+        Map<String, Integer> shardCountMap = monitorManager.getClusterShardCounts();
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        beaconData.forEach((beaconSystem, orgMap) -> {
+            if (!beaconSystem.getSystemName().equalsIgnoreCase(system)) {
+                return;
+            }
+            orgMap.forEach((orgId, serviceMap) -> {
+                serviceMap.forEach((service, clusters) -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("system", beaconSystem.getSystemName());
+                    item.put("beaconMode", routeType.name());
+                    item.put("orgId", orgId);
+                    item.put("beaconName", service.getName());
+                    item.put("beaconHost", service.getHost());
+                    item.put("clusterCount", clusters.size());
+                    int totalShards = clusters.stream()
+                            .mapToInt(c -> shardCountMap.getOrDefault(c, 0)).sum();
+                    item.put("shardCount", totalShards);
+                    if (includeClusters) {
+                        List<Map<String, Object>> clusterList = new ArrayList<>();
+                        for (String clusterName : clusters) {
+                            Map<String, Object> clusterInfo = new LinkedHashMap<>();
+                            clusterInfo.put("name", clusterName);
+                            clusterInfo.put("type", clusterTypeMap.getOrDefault(clusterName, "UNKNOWN"));
+                            clusterInfo.put("shardCount", shardCountMap.getOrDefault(clusterName, 0));
+                            clusterList.add(clusterInfo);
+                        }
+                        item.put("clusters", clusterList);
+                    }
+                    result.add(item);
+                });
+            });
+        });
+
         return result;
     }
 
