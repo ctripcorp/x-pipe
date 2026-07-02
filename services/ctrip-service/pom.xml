@@ -127,6 +127,16 @@
         <dependency>
             <groupId>qunar.tc.qconfig</groupId>
             <artifactId>qconfig-client</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.grpc</groupId>
+                    <artifactId>grpc-stub</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.grpc</groupId>
+                    <artifactId>grpc-protobuf</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.ctrip.infosec</groupId>
