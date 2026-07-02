@@ -9,11 +9,14 @@ import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserMan
 import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -29,6 +32,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -70,11 +75,20 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	@Mock
 	private GtidCmdFilter gtidCmdFilter;
 
+	@Mock
+	private CKStore ckStore;
+
+	@Mock
+	private NioEventLoopGroup nioEventLoopGroup;
+
+	private AtomicInteger failed = new AtomicInteger(0);
+
+
 	@Before
 	public void beforeDefaultCommandStoreTest() throws Exception	 {
 
 		String testDir = getTestFileDir();
-		commandTemplate = new File(testDir, getTestName());
+		commandTemplate = new File(testDir, getTestName()+"_");
 		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
 		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
 		opParser = new GeneralRedisOpParser(redisOpParserManager);
@@ -101,7 +115,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		final int initDataKeep = 20;
 		final AtomicInteger dataKeep = new AtomicInteger(initDataKeep);
 		int gcAfterCreateMilli = 60000;
-		File commandTemplate = new File(getTestFileDir(), getTestName());
+		File commandTemplate = new File(getTestFileDir(), getTestName()+"_");
 
 		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, () -> 3600, gcAfterCreateMilli, () -> dataKeep.get(), DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
 				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter){
@@ -288,7 +302,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 
 		try {
 			String testDir = getTestFileDir();
-			File commandTemplate = new File(testDir, getTestName());
+			File commandTemplate = new File(testDir, getTestName()+"_");
 			commandStore.set(new DefaultCommandStore(commandTemplate, 1, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter));
 			commandStore.get().initialize();
 			final AtomicBoolean appendResult = new AtomicBoolean(false);
@@ -590,7 +604,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	@Test
 	public void testIndex() throws Exception {
 		String testDir = getTestFileDir();
-		commandTemplate = new File(testDir, getTestName());
+		commandTemplate = new File(testDir, getTestName()+"_");
 		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
 		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
 		opParser = new GeneralRedisOpParser(redisOpParserManager);
@@ -616,6 +630,211 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Test
+	public void testIndexOffsetCorrectnessWithRotationAndFlush() throws Exception {
+		writeCmdWithRotation(true);
+	}
+
+	@Test
+	public void testIndexOffsetCorrectnessWithRotationAndNoFlush() throws Exception {
+		writeCmdWithRotation(false);
+	}
+
+	private void writeCmdWithRotation(boolean flush) throws Exception {
+		// 1. 构造一个启用索引、滑动窗口、且 maxFileSize 很小的 CommandStore
+		int smallMaxFileSize = 300;
+		Mockito.when(gtidCmdFilter.gtidSetContains(anyString(), anyLong())).thenReturn(false);
+		Mockito.when(ckStore.getKeeperConfig()).thenReturn(new TestKeeperConfig());
+		Mockito.when(ckStore.getMasterEventLoop()).thenReturn(nioEventLoopGroup);
+
+		commandTemplate = new File(getTestFileDir(), getTestName()+"_");
+		commandStore = new DefaultCommandStore(ckStore,
+				commandTemplate, smallMaxFileSize,() -> false, () -> 3600, 0, () -> 20,
+				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,  // 启用滑动窗口
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter,true
+		);
+		commandStore.initialize();
+
+		if(!flush) {
+			CommandStore commandStore = Mockito.spy(this.commandStore);
+			Mockito.doNothing().when(commandStore).flushSlidingWindow();
+			this.commandStore = (DefaultCommandStore) commandStore;
+		}
+
+		// 获取内部的 DefaultIndexStore，以便后续手动调用 flush 和验证
+		IndexStore indexStore = (IndexStore) ReflectionTestUtils.getField(commandStore, "indexStore");
+		Assert.assertNotNull(indexStore);
+
+		// 用于记录每条命令的 GTID、完整字节内容以及预期的全局起始偏移
+		class CmdRecord {
+			String gtid;
+			byte[] rawBytes;
+			long expectedStartOffset; // 全局偏移
+		}
+		List<CmdRecord> records = new ArrayList<>();
+		AtomicLong globalOffset = new AtomicLong(0);
+
+		String uuid = "a4f566ef50a85e1119f17f9b746728b48609a2ab";
+		int gno = 1;
+
+		// 生成 GTID 命令的辅助函数（与 DefaultIndexStoreTest 中相同）
+		java.util.function.BiFunction<String, String[], ByteBuf> makeGtidCmd = (gtid, args) -> {
+			ByteBuf buf = Unpooled.buffer();
+			int totalArgs = 3 + args.length;
+			buf.writeByte('*');
+			buf.writeBytes(String.valueOf(totalArgs).getBytes());
+			buf.writeBytes("\r\n".getBytes());
+			writeBulkString(buf, "GTID");
+			writeBulkString(buf, gtid);
+			writeBulkString(buf, "0");
+			for (String arg : args) {
+				writeBulkString(buf, arg);
+			}
+			return buf;
+		};
+
+		// 2. 写入命令，直到至少发生一次文件滚动
+		int cmdsBeforeRotation = 0;
+		long lastFileLen = 0;
+		boolean rotated = false;
+
+		while (!rotated) {
+			String gtidStr = uuid + ":" + gno;
+			ByteBuf cmdBuf = makeGtidCmd.apply(gtidStr, new String[]{"SET", "key" + gno, "val" + gno});
+			byte[] cmdBytes = new byte[cmdBuf.readableBytes()];
+			cmdBuf.getBytes(cmdBuf.readerIndex(), cmdBytes);
+			cmdBuf.readerIndex(0); // reset for write
+
+			// 记录预期偏移（写入前的全局偏移）
+			long expectedStart = globalOffset.get();
+
+			// 写入命令（内部会走滑动窗口，可能不立即落盘）
+			commandStore.appendCommands(cmdBuf);
+
+			// 记录命令信息
+			CmdRecord rec = new CmdRecord();
+			rec.gtid = gtidStr;
+			rec.rawBytes = cmdBytes;
+			rec.expectedStartOffset = expectedStart;
+			records.add(rec);
+
+			globalOffset.addAndGet(cmdBytes.length);
+			cmdsBeforeRotation++;
+			gno++;
+
+			// 检查文件长度，如果超过阈值则触发滚动（但修复需要先 flush）
+			long currentFileLen = commandStore.getCommandWriter().fileLength();
+
+			if (currentFileLen >= smallMaxFileSize) {
+				// 修复点：在滚动前强制清空滑动窗口
+				commandStore.flushSlidingWindow();
+
+				// 现在执行滚动
+				commandStore.rotateFileIfNecessary();
+				rotated = true;
+			} else {
+				lastFileLen = currentFileLen;
+			}
+		}
+
+		// 3. 滚动后继续写入几条命令，验证新文件的偏移也正确
+		int cmdsAfterRotation = 3;
+		for (int i = 0; i < cmdsAfterRotation; i++) {
+			String gtidStr = uuid + ":" + gno;
+			ByteBuf cmdBuf = makeGtidCmd.apply(gtidStr, new String[]{"SET", "key" + gno, "val" + gno});
+			byte[] cmdBytes = new byte[cmdBuf.readableBytes()];
+			cmdBuf.getBytes(cmdBuf.readerIndex(), cmdBytes);
+			cmdBuf.readerIndex(0);
+
+			long expectedStart = globalOffset.get();
+			commandStore.appendCommands(cmdBuf);
+
+			CmdRecord rec = new CmdRecord();
+			rec.gtid = gtidStr;
+			rec.rawBytes = cmdBytes;
+			rec.expectedStartOffset = expectedStart;
+			records.add(rec);
+
+			globalOffset.addAndGet(cmdBytes.length);
+			gno++;
+		}
+
+		// 确保最终所有数据落盘（close 前会 flush）
+		commandStore.flushSlidingWindow();
+
+		// 4. 验证每条命令的索引偏移与文件内容匹配
+		for (CmdRecord rec : records) {
+			// 提取 gno
+			long gnoVal = Long.parseLong(rec.gtid.substring(uuid.length() + 1));
+			List<BacklogOffsetReplicationProgress> segments = commandStore.locateCmdSegment(uuid, gnoVal, gnoVal);
+			Assert.assertFalse("Should find a segment for " + rec.gtid, segments.isEmpty());
+
+			// 只取第一个匹配段（通常只有一个）
+			BacklogOffsetReplicationProgress seg = segments.get(0);
+			long startBacklogOffset = seg.getProgress();
+			long endBacklogOffset = seg.getEndProgressExcluded();
+
+			// 验证起始偏移与预期一致
+			Assert.assertEquals("Start offset mismatch for " + rec.gtid,
+					rec.expectedStartOffset, startBacklogOffset);
+
+			// 从命令文件中读取 [start, end) 的字节
+			byte[] fileData = readFileRange(commandStore, startBacklogOffset, endBacklogOffset);
+			if(!Arrays.equals(rec.rawBytes, fileData)){
+				failed.addAndGet(1);
+			}
+		}
+
+		if(flush){
+			Assert.assertTrue("flush Failed to read expected bytes",failed.get() == 0);
+		}else {
+			Assert.assertTrue("no flush Failed to read expected bytes", failed.get() > 0);
+		}
+
+		// 清理
+		failed.set(0);
+		commandStore.close();
+	}
+
+	// 辅助方法：写入 RESP Bulk String
+	private void writeBulkString(ByteBuf buf, String str) {
+		buf.writeByte('$');
+		buf.writeBytes(String.valueOf(str.length()).getBytes());
+		buf.writeBytes("\r\n".getBytes());
+		buf.writeBytes(str.getBytes());
+		buf.writeBytes("\r\n".getBytes());
+	}
+
+	// 从 CommandStore 中读取指定全局偏移范围的字节
+	private byte[] readFileRange(CommandStore store, long startOffset, long endOffset) throws IOException {
+		// 先找到包含 startOffset 的文件
+		CommandFile cf = store.findFileForOffset(startOffset);
+		Assert.assertNotNull("No file for offset " + startOffset, cf);
+		byte[] data = new byte[0];
+		try {
+			File file = cf.getFile();
+			long fileStartOffset = cf.getStartOffset();
+			long localStart = startOffset - fileStartOffset;
+			int length = (int) (endOffset - startOffset);
+
+			data = new byte[length];
+			try (FileInputStream fis = new FileInputStream(file);
+				 FileChannel channel = fis.getChannel()) {
+				channel.position(localStart);
+				ByteBuffer buf = ByteBuffer.allocate(length);
+				int read = channel.read(buf);
+				if (length != read) {
+					failed.addAndGet(1);
+				}
+				buf.flip();
+				buf.get(data);
+			}
+		}catch (Exception e) {
+			failed.addAndGet(1);
+		}
+		return data;
 	}
 
 }

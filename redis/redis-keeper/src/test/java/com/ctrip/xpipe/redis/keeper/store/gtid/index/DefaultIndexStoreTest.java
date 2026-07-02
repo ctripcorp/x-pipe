@@ -73,9 +73,6 @@ public class DefaultIndexStoreTest {
     CommandWriterCallback commandWriterCallback;
 
     @Mock
-    CommandWriter commandWriterForCallback;
-
-    @Mock
     GtidCmdFilter gtidCmdFilter;
 
     @Mock
@@ -110,9 +107,9 @@ public class DefaultIndexStoreTest {
 
         when(writer.getFileContext()).thenReturn(commandFileContext);
 
-        when(commandWriterCallback.getCommandWriter()).thenReturn(commandWriterForCallback);
-        when(commandWriterForCallback.rotateFileIfNecessary()).thenReturn(false);
-        when(commandWriterForCallback.totalLength()).thenReturn(0L);
+        when(commandWriterCallback.getCommandWriter()).thenReturn(writer);
+        when(writer.rotateFileIfNecessary()).thenReturn(false);
+        when(writer.totalLength()).thenReturn(0L);
 
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);

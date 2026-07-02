@@ -375,6 +375,6 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 
 	@Override
 	public int getCmdBatchLowRateBps() {
-		return 524288;
+		return -1;
 	}
 }
