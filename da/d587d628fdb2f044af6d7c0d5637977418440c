@@ -1,0 +1,24 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  s_1c0d12ae3cc688::t_a5a5c911f7c74a 14
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncLocalFileSystem.java
+  s_1c0d12ae3cc688::t_cfc45873b60126 42,60
+  s_1c0d12ae3cc688::t_dcea476ce42fba 50-51
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFile.java
+  s_1c0d12ae3cc688::t_2fdb9167f45f26 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.24-trip",
+  "base_commit_sha": "dad587d628fdb2f044af6d7c0d5637977418440c",
+  "prompts": {},
+  "sessions": {
+    "s_1c0d12ae3cc688": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba664ae6-efc5-445a-80dd-275a7540d3e0",
+        "model": "arn:aws:bedrock:us-east-1:133197901387:application-inference-profile/r3vgzaso9r25"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
