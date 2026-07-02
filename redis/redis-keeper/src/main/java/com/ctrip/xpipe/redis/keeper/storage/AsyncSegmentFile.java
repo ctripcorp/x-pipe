@@ -11,13 +11,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 public class AsyncSegmentFile {
 
@@ -25,7 +25,8 @@ public class AsyncSegmentFile {
 
     final String dirPath;
     final String prefix;
-    final List<IndexFileMapping> indexMappings;
+    final List<String> indexPrefixes;
+    final String key;
     final boolean writeMode;
 
     FileChannel currentSegmentChannel;
@@ -37,50 +38,46 @@ public class AsyncSegmentFile {
     long openedSegmentEndOffset = Long.MAX_VALUE;
     long readPosition = 0;
 
-    // start offsets of the maximal contiguous valid segment chain, ascending.
-    // segment[i] covers [offsets[i], offsets[i+1] - 1]; last covers [offsets[last], max].
-    final TreeSet<Long> segmentOffsets = new TreeSet<>();
-    // offsetToFileName may use random numbers, so we must record the actual file names.
-    final Map<Long, Map<String, String>> segmentIndexFiles = new HashMap<>();
-
-    AsyncSegmentFile(String dirPath, String prefix, List<IndexFileMapping> indexMappings, boolean writeMode) {
+    AsyncSegmentFile(String dirPath, String prefix, List<String> indexPrefixes, String key, boolean writeMode) {
         this.dirPath = dirPath;
         this.prefix = prefix;
-        this.indexMappings = indexMappings;
-        this.currentIndexFiles = new HashMap<>();
+        this.indexPrefixes = indexPrefixes;
+        this.key = key;
         this.writeMode = writeMode;
+        this.currentIndexFiles = new HashMap<>();
     }
 
-    // Initialize from existing files, deleting any invalid files (segments outside the contiguous chain + orphan/duplicate index files).
-    void initFromFiles(List<String> allFiles) throws IOException {
+    // Called once by the initializer opener.
+    // Scans the directory, builds the maximal contiguous segment chain, deletes invalid files,
+    // and publishes the initial SegmentDirState into entry.
+    static void initFromFiles(DirEntry entry, String dirPath, String prefix, List<String> indexPrefixes,
+            List<String> allFiles) throws IOException {
         List<long[]> segs = new ArrayList<>();
-        // prefix -> offset -> list of matching filenames (may have duplicates mapping to same offset)
-        Map<String, Map<Long, List<String>>> tempIndexFiles = new HashMap<>();
-        List<String> invalidFiles = new ArrayList<>();
+        Map<Long, List<String>> indexCandidates = new HashMap<>();
 
         for (String name : allFiles) {
             if (name.startsWith(prefix)) {
                 try {
                     long offset = Long.parseLong(name.substring(prefix.length()));
-                    long size = Files.size(pathOf(name));
+                    long size = Files.size(Paths.get(dirPath, name));
                     segs.add(new long[]{offset, size});
                 } catch (NumberFormatException e) {
-                    invalidFiles.add(name);
+                    logger.warn("Deleting unrecognized file in {}: {}", dirPath, name);
+                    Files.deleteIfExists(Paths.get(dirPath, name));
                 }
             } else {
-                for (IndexFileMapping mapping : indexMappings) {
-                    if (name.startsWith(mapping.prefix)) {
-                        Long offset = mapping.fileNameToOffset.apply(name);
-                        if (offset == null) {
-                            invalidFiles.add(name);
-                        } else {
-                            tempIndexFiles
-                                    .computeIfAbsent(mapping.prefix, k -> new HashMap<>())
-                                    .computeIfAbsent(offset, k -> new ArrayList<>())
-                                    .add(name);
-                        }
-                        break;
+                for (String indexPrefix : indexPrefixes) {
+                    if (!name.startsWith(indexPrefix)) continue;
+                    try {
+                        long offset = Long.parseLong(name.substring(indexPrefix.length()));
+                        indexCandidates
+                                .computeIfAbsent(offset, k -> new ArrayList<>())
+                                .add(name);
+                    } catch (NumberFormatException e) {
+                        logger.warn("Deleting unrecognized file in {}: {}", dirPath, name);
+                        Files.deleteIfExists(Paths.get(dirPath, name));
                     }
+                    break;
                 }
             }
         }
@@ -88,7 +85,6 @@ public class AsyncSegmentFile {
         segs.sort((a, b) -> Long.compare(b[0], a[0]));
 
         Set<Long> validOffsets = new HashSet<>();
-
         if (!segs.isEmpty()) {
             validOffsets.add(segs.get(0)[0]);
             long chainHead = segs.get(0)[0];
@@ -98,86 +94,57 @@ public class AsyncSegmentFile {
                 if (segEnd == chainHead) {
                     validOffsets.add(seg[0]);
                     chainHead = seg[0];
-                } else if (segEnd > chainHead) {
-                    logger.warn("Overlapping segment in {}: {} ends at {} but validOffsets is {}",
-                            dirPath, prefix + seg[0], segEnd, validOffsets);
-                    invalidFiles.add(prefix + seg[0]);
                 } else {
-                    invalidFiles.add(prefix + seg[0]);
-                }
-            }
-        }
-
-        segmentOffsets.addAll(validOffsets);
-
-        for (long offset : validOffsets) {
-            segmentIndexFiles.put(offset, new HashMap<>());
-        }
-
-        for (Map.Entry<String, Map<Long, List<String>>> e1 : tempIndexFiles.entrySet()) {
-            String mappingPrefix = e1.getKey();
-            for (Map.Entry<Long, List<String>> e2 : e1.getValue().entrySet()) {
-                long offset = e2.getKey();
-                List<String> files = e2.getValue();
-                if (!validOffsets.contains(offset)) {
-                    invalidFiles.addAll(files);
-                } else {
-                    String chosen;
-                    if (files.size() == 1) {
-                        chosen = files.get(0);
-                    } else {
-                        chosen = resolveLatest(files, invalidFiles);
-                        logger.warn("Multiple index files for offset {} under prefix {} in {}: {}, keeping {}",
-                                offset, mappingPrefix, dirPath, files, chosen);
+                    if (segEnd > chainHead) {
+                        logger.warn("Overlapping segment in {}: {} ends at {} but chain head is {}",
+                                dirPath, prefix + seg[0], segEnd, chainHead);
                     }
-                    segmentIndexFiles.get(offset).put(mappingPrefix, chosen);
+                    logger.warn("Deleting off-chain segment in {}: {}", dirPath, prefix + seg[0]);
+                    Files.deleteIfExists(Paths.get(dirPath, prefix + seg[0]));
                 }
             }
         }
 
-        if (!invalidFiles.isEmpty()) {
-            logger.warn("Found {} invalid files in {}: {}", invalidFiles.size(), dirPath, invalidFiles);
-            for (String name : invalidFiles) {
-                Files.deleteIfExists(pathOf(name));
+        for (Map.Entry<Long, List<String>> byOffset : indexCandidates.entrySet()) {
+            if (!validOffsets.contains(byOffset.getKey())) {
+                List<String> files = byOffset.getValue();
+                logger.warn("Deleting off-chain index files in {}: {}", dirPath, files);
+                for (String name : files) {
+                    Files.deleteIfExists(Paths.get(dirPath, name));
+                }
             }
         }
 
-        if (!segmentOffsets.isEmpty()) {
-            if (writeMode) {
-                openedSegmentStartOffset = segmentOffsets.last();
-                openedSegmentEndOffset = Long.MAX_VALUE;
-                currentSegmentChannel = openForAppend(prefix + openedSegmentStartOffset);
-                currentIndexFiles = new HashMap<>();
-                Map<String, String> indexFiles = segmentIndexFiles.get(openedSegmentStartOffset);
-                for (IndexFileMapping mapping : indexMappings) {
-                    String fileName = indexFiles.get(mapping.prefix);
-                    if (fileName == null) {
-                        fileName = mapping.offsetToFileName.apply(openedSegmentStartOffset);
-                        indexFiles.put(mapping.prefix, fileName);
-                    }
-                    FileChannel ch = openForAppend(fileName);
-                    currentIndexFiles.put(mapping.prefix, new AsyncFile(absolutePathOf(fileName), ch, false, true));
-                }
-            } else {
-                readPosition = segmentOffsets.first();
-            }
+        if (validOffsets.isEmpty()) {
+            entry.state = SegmentDirState.EMPTY;
+        } else {
+            long[] arr = new long[validOffsets.size()];
+            int i = 0;
+            for (long o : validOffsets) arr[i++] = o;
+            Arrays.sort(arr);
+            entry.state = new SegmentDirState(arr);
         }
     }
 
-    private String resolveLatest(List<String> files, List<String> invalidFiles) throws IOException {
-        String winner = null;
-        long winnerTime = -1;
-        for (String f : files) {
-            long modTime = Files.getLastModifiedTime(pathOf(f)).toMillis();
-            if (modTime > winnerTime) {
-                if (winner != null) invalidFiles.add(winner);
-                winner = f;
-                winnerTime = modTime;
-            } else {
-                invalidFiles.add(f);
+    // Called after initFromFiles has populated the shared state.
+    // Opens resources: for writer, open the tail segment + index files for append;
+    // for reader, seek readPosition to the first segment.
+    void openInitialResources(SegmentDirState s) throws IOException {
+        if (s.isEmpty()) return;
+
+        if (writeMode) {
+            openedSegmentStartOffset = s.lastOffset;
+            openedSegmentEndOffset = Long.MAX_VALUE;
+            currentSegmentChannel = openForAppend(prefix + openedSegmentStartOffset);
+            currentIndexFiles = new HashMap<>();
+            for (String indexPrefix : indexPrefixes) {
+                String fileName = indexPrefix + openedSegmentStartOffset;
+                FileChannel ch = openForAppend(fileName);
+                currentIndexFiles.put(indexPrefix, new AsyncFile(absolutePathOf(fileName), ch, false, true));
             }
+        } else {
+            readPosition = s.firstOffset;
         }
-        return winner;
     }
 
     // ---- path helpers ----
@@ -216,63 +183,60 @@ public class AsyncSegmentFile {
         openedSegmentEndOffset = Long.MAX_VALUE;
     }
 
-    long exclusiveEndOffset() throws IOException {
-        long maxOffset = segmentOffsets.last();
-        return maxOffset + Files.size(segmentPath(maxOffset));
+    long exclusiveEndOffset(long lastOffset) throws IOException {
+        return lastOffset + Files.size(segmentPath(lastOffset));
     }
 
     private void deleteSegmentAndIndex(long offset) throws IOException {
         Files.deleteIfExists(segmentPath(offset));
-        for (String indexFileName : segmentIndexFiles.get(offset).values()) {
-            Files.deleteIfExists(pathOf(indexFileName));
+        for (String indexPrefix : indexPrefixes) {
+            Files.deleteIfExists(pathOf(indexPrefix + offset));
         }
     }
 
-    private Map<String, AsyncFile> createNewSegmentWithIndexes(long startOffset) throws IOException {
+    private Map<String, AsyncFile> createNewSegmentWithIndexes(long startOffset, DirEntry entry) throws IOException {
         openedSegmentStartOffset = startOffset;
         openedSegmentEndOffset = Long.MAX_VALUE;
-        segmentOffsets.add(startOffset);
-        Map<String, String> indexFileNames = new HashMap<>();
-        segmentIndexFiles.put(startOffset, indexFileNames);
         currentSegmentChannel = FileChannel.open(segmentPath(startOffset),
                 StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
+
         Map<String, AsyncFile> result = new HashMap<>();
-        for (IndexFileMapping mapping : indexMappings) {
-            String fileName = mapping.offsetToFileName.apply(startOffset);
-            indexFileNames.put(mapping.prefix, fileName);
+        for (String indexPrefix : indexPrefixes) {
+            String fileName = indexPrefix + startOffset;
             FileChannel ch = FileChannel.open(pathOf(fileName),
                     EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW));
             AsyncFile af = new AsyncFile(absolutePathOf(fileName), ch, false, true);
-            currentIndexFiles.put(mapping.prefix, af);
-            result.put(mapping.prefix, af);
+            currentIndexFiles.put(indexPrefix, af);
+            result.put(indexPrefix, af);
         }
+
+        entry.state = new SegmentDirState(entry.state.copyAppend(startOffset));
         return result;
     }
 
-    boolean switchToSegment(long logicalOffset) throws IOException {
+    boolean switchToSegment(long logicalOffset, SegmentDirState s) throws IOException {
         if (logicalOffset >= openedSegmentStartOffset && logicalOffset < openedSegmentEndOffset
                 && currentSegmentChannel != null) {
             return true;
         }
-        if (segmentOffsets.isEmpty()) {
+        if (s.isEmpty()) {
             closeCurrent();
             return false;
         }
-        if (logicalOffset < segmentOffsets.first()) {
+        if (logicalOffset < s.firstOffset) {
             closeCurrent();
             return false;
         }
-        long exclusiveEnd = exclusiveEndOffset();
-        if (logicalOffset >= exclusiveEnd) {
+        if (logicalOffset >= exclusiveEndOffset(s.lastOffset)) {
             closeCurrent();
             return false;
         }
-        long segStart = segmentOffsets.floor(logicalOffset);
+        long segStart = s.floorKey(logicalOffset);
         closeCurrent();
         currentSegmentChannel = FileChannel.open(
                 segmentPath(segStart), StandardOpenOption.READ);
         openedSegmentStartOffset = segStart;
-        if (segStart == segmentOffsets.last()) {
+        if (segStart == s.lastOffset) {
             openedSegmentEndOffset = Long.MAX_VALUE;
         } else {
             openedSegmentEndOffset = segStart + Files.size(segmentPath(segStart));
@@ -281,72 +245,74 @@ public class AsyncSegmentFile {
     }
 
     // lazy-create the first segment (starting at offset 0) and its index files for write mode.
-    void openFirstSegmentChannelForWrite() throws IOException {
-        createNewSegmentWithIndexes(0);
+    void openFirstSegmentChannelForWrite(DirEntry entry) throws IOException {
+        createNewSegmentWithIndexes(0, entry);
     }
 
-    Map<String, AsyncFile> getCurrentIndexFiles(List<String> indexPrefixes) throws IOException {
-        Map<String, String> indexFileNames = segmentIndexFiles.get(openedSegmentStartOffset);
+    Map<String, AsyncFile> getCurrentIndexFiles(List<String> requestedPrefixes) throws IOException {
         Map<String, AsyncFile> result = new HashMap<>();
-
-        for (String prefix : indexPrefixes) {
-            String fileName = indexFileNames.get(prefix);
-            if (fileName == null) {
-                continue;
-            }
-
-            AsyncFile af = currentIndexFiles.get(prefix);
+        for (String indexPrefix : requestedPrefixes) {
+            AsyncFile af = currentIndexFiles.get(indexPrefix);
             if (af != null) {
-                result.put(prefix, af);
+                result.put(indexPrefix, af);
             } else if (writeMode) {
-                logger.error("Index channel for prefix {} is null in write mode, segment offset: {}", prefix, openedSegmentStartOffset);
-                throw new IllegalStateException("Index channel for prefix " + prefix + " is null in write mode");
+                logger.error("Index channel for prefix {} is null in write mode, segment offset: {}",
+                        indexPrefix, openedSegmentStartOffset);
+                throw new IllegalStateException("Index channel for prefix " + indexPrefix + " is null in write mode");
             } else {
-                FileChannel readCh = FileChannel.open(pathOf(fileName), StandardOpenOption.READ);
-                af = new AsyncFile(absolutePathOf(fileName), readCh, false, false);
-                currentIndexFiles.put(prefix, af);
-                result.put(prefix, af);
+                String fileName = indexPrefix + openedSegmentStartOffset;
+                Path p = pathOf(fileName);
+                if (Files.exists(p)) {
+                    FileChannel readCh = FileChannel.open(p, StandardOpenOption.READ);
+                    af = new AsyncFile(absolutePathOf(fileName), readCh, false, false);
+                    currentIndexFiles.put(indexPrefix, af);
+                    result.put(indexPrefix, af);
+                }
             }
         }
-
         return result;
     }
 
-    void deleteSegments(List<Long> startOffsets) throws IOException {
+    void deleteSegments(List<Long> startOffsets, DirEntry entry) throws IOException {
+        SegmentDirState cur = entry.state;
+        int drop = 0;
         for (long offset : startOffsets) {
-            long first = segmentOffsets.first();
+            long first = cur.get(drop);
             if (offset != first) {
                 throw new IllegalArgumentException("deleteSegments requires deleting segments in order from the first: expected " + first + ", got " + offset);
             }
-            if (segmentOffsets.size() <= 1) {
+            if (cur.size() - drop <= 1) {
                 throw new IllegalArgumentException("deleteSegments cannot delete the last segment");
             }
-
-            deleteSegmentAndIndex(offset);
-            segmentOffsets.remove(offset);
-            segmentIndexFiles.remove(offset);
+            drop++;
+        }
+        entry.state = new SegmentDirState(cur.copyFrom(drop));
+        for (int i = 0; i < drop; i++) {
+            deleteSegmentAndIndex(cur.get(i));
         }
     }
 
-    void delete() throws IOException {
-        for (long offset : new ArrayList<>(segmentOffsets)) {
-            deleteSegmentAndIndex(offset);
+    void delete(DirEntry entry) throws IOException {
+        SegmentDirState cur = entry.state;
+        entry.state = SegmentDirState.EMPTY;
+        closeCurrent();
+        for (int i = 0; i < cur.size(); i++) {
+            deleteSegmentAndIndex(cur.get(i));
         }
-        segmentOffsets.clear();
-        segmentIndexFiles.clear();
     }
 
-    Map<String, AsyncFile> truncate(long offset) throws IOException {
-        if (!segmentOffsets.isEmpty()
-                && offset >= segmentOffsets.first() && offset <= exclusiveEndOffset()) {
-            return truncateInRange(offset);
+    Map<String, AsyncFile> truncate(long offset, DirEntry entry) throws IOException {
+        SegmentDirState s = entry.state;
+        if (!s.isEmpty() && offset >= s.firstOffset && offset <= exclusiveEndOffset(s.lastOffset)) {
+            return truncateInRange(offset, entry);
         }
-        return reset(offset);
+        return reset(offset, entry);
     }
 
-    private Map<String, AsyncFile> truncateInRange(long offset) throws IOException {
-        long targetStart = segmentOffsets.floor(offset);
-        boolean reuseCurrent = openedSegmentStartOffset == targetStart && currentSegmentChannel != null;
+    private Map<String, AsyncFile> truncateInRange(long offset, DirEntry entry) throws IOException {
+        SegmentDirState cur = entry.state;
+        long targetStart = cur.floorKey(offset);
+        boolean reuseCurrent = openedSegmentStartOffset == targetStart;
 
         if (!reuseCurrent) {
             closeCurrent();
@@ -354,50 +320,46 @@ public class AsyncSegmentFile {
             currentSegmentChannel = FileChannel.open(
                     segmentPath(targetStart), StandardOpenOption.WRITE);
         }
+        openedSegmentEndOffset = Long.MAX_VALUE;
 
-        for (long o : new ArrayList<>(segmentOffsets.tailSet(targetStart, false))) {
-            deleteSegmentAndIndex(o);
-            segmentOffsets.remove(o);
-            segmentIndexFiles.remove(o);
-        }
+        int cut = cur.indexOf(targetStart) + 1;
+        long[] nextArr = cur.copyShrink(cut);
 
         currentSegmentChannel.truncate(offset - targetStart);
         currentSegmentChannel.position(offset - targetStart);
 
-        Map<String, String> indexFileNames = segmentIndexFiles.get(targetStart);
         Map<String, AsyncFile> result = new HashMap<>();
-        for (IndexFileMapping mapping : indexMappings) {
-            String fileName = indexFileNames.get(mapping.prefix);
-            if (fileName == null) {
-                fileName = mapping.offsetToFileName.apply(targetStart);
-                indexFileNames.put(mapping.prefix, fileName);
-            }
-            AsyncFile af = currentIndexFiles.get(mapping.prefix);
+        for (String indexPrefix : indexPrefixes) {
+            AsyncFile af = currentIndexFiles.get(indexPrefix);
             if (af == null) {
+                String fileName = indexPrefix + targetStart;
                 FileChannel ch = openForAppend(fileName);
                 af = new AsyncFile(absolutePathOf(fileName), ch, false, true);
-                currentIndexFiles.put(mapping.prefix, af);
+                currentIndexFiles.put(indexPrefix, af);
             }
-            result.put(mapping.prefix, af);
+            result.put(indexPrefix, af);
+        }
+
+        entry.state = new SegmentDirState(nextArr);
+        for (int i = cut; i < cur.size(); i++) {
+            deleteSegmentAndIndex(cur.get(i));
         }
         return result;
     }
 
-    private Map<String, AsyncFile> reset(long offset) throws IOException {
+    private Map<String, AsyncFile> reset(long offset, DirEntry entry) throws IOException {
         closeCurrent();
-
-        for (long o : new ArrayList<>(segmentOffsets)) {
-            deleteSegmentAndIndex(o);
+        SegmentDirState cur = entry.state;
+        entry.state = SegmentDirState.EMPTY;
+        for (int i = 0; i < cur.size(); i++) {
+            deleteSegmentAndIndex(cur.get(i));
         }
-        segmentOffsets.clear();
-        segmentIndexFiles.clear();
-
-        return createNewSegmentWithIndexes(offset);
+        return createNewSegmentWithIndexes(offset, entry);
     }
 
-    Map<String, AsyncFile> roll() throws IOException {
+    Map<String, AsyncFile> roll(DirEntry entry) throws IOException {
         long newStartOffset = openedSegmentStartOffset + currentSegmentChannel.size();
         closeCurrent();
-        return createNewSegmentWithIndexes(newStartOffset);
+        return createNewSegmentWithIndexes(newStartOffset, entry);
     }
 }

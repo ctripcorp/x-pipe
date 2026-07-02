@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
@@ -36,15 +37,32 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     private static final Logger logger = LoggerFactory.getLogger(AsyncTFSBasedFileSystem.class);
     private static final String TMP_REP_ = "TMP_REP_";
+    private static final int LOCK_STRIPES = 32;
+
     private final ExecutorService ioExecutor;
+
+    // Registry of shared segment-dir state, keyed by "dirPath\0prefix".
+    // First opener wins on DirEntry construction.
+    private final ConcurrentHashMap<String, DirEntry> registry = new ConcurrentHashMap<>();
+
+    private final Object[] openCloseLocks = new Object[LOCK_STRIPES];
 
     public AsyncTFSBasedFileSystem(int threadCount) {
         this.ioExecutor = Executors.newFixedThreadPool(threadCount);
+        for (int i = 0; i < LOCK_STRIPES; i++) openCloseLocks[i] = new Object();
     }
 
     @Override
     public void shutdown() {
         ioExecutor.shutdown();
+    }
+
+    private Object lockFor(String key) {
+        return openCloseLocks[(key.hashCode() & 0x7fffffff) % LOCK_STRIPES];
+    }
+
+    private static String registryKey(String path, String prefix) {
+        return path + "\0" + prefix;
     }
 
     // Translates a checked IOException into a runtime exception that reflects
@@ -59,6 +77,10 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
         if (e instanceof NotDirectoryException) {
             return new IllegalArgumentException(e);
+        }
+        String msg = e.getMessage();
+        if (msg != null && msg.startsWith("Input/output error")) {
+            return new EIOException(e);
         }
         return new StorageIOException(e);
     }
@@ -411,27 +433,90 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<AsyncSegmentFile> open(String path, String prefix,
-            List<IndexFileMapping> indexMappings, boolean write) {
+            List<String> indexPrefixes, boolean write) {
         return CompletableFuture.supplyAsync(() -> {
-            try {
-                Path dir = Paths.get(path);
-                String[] names = new File(path).list();
-                if (names == null) {
-                    if (!Files.exists(dir)) {
-                        throw new IllegalArgumentException("directory does not exist: " + path);
-                    }
-                    if (!Files.isDirectory(dir)) {
-                        throw new IllegalArgumentException("not a directory: " + path);
-                    }
-                    throw new IOException("failed to list directory: " + path);
+            String key = registryKey(path, prefix);
+            DirEntry entry;
+            boolean iAmInitializer = false;
+
+            synchronized (lockFor(key)) {
+                entry = registry.get(key);
+                if (entry == null) {
+                    entry = new DirEntry();
+                    registry.put(key, entry);
+                    iAmInitializer = true;
+                } else if (write && entry.writerOpen) {
+                    throw new IllegalStateException("writer already open for " + key);
                 }
-                AsyncSegmentFile seg = new AsyncSegmentFile(path, prefix, indexMappings, write);
-                seg.initFromFiles(Arrays.asList(names));
-                return seg;
-            } catch (IOException e) {
-                throw wrap(e);
+                if (write) entry.writerOpen = true;
+                entry.refCount++;
             }
+
+            if (iAmInitializer) {
+                try {
+                    initFromDisk(entry, path, prefix, indexPrefixes);
+                } catch (Throwable t) {
+                    logger.error("Failed to init segment file {}{} indexPrefixes:{}", path, prefix, indexPrefixes, t);
+                    entry.initFailed = true;
+                } finally {
+                    entry.initDone.countDown();
+                }
+            } else {
+                try {
+                    entry.initDone.await();
+                } catch (InterruptedException e) {
+                    releaseDirEntry(key, write);
+                    throw new RuntimeException(e);
+                }
+            }
+            if (entry.initFailed) {
+                releaseDirEntry(key, entry, write);
+                throw new StorageIOException("init failed for " + key);
+            }
+
+            AsyncSegmentFile file = new AsyncSegmentFile(path, prefix, indexPrefixes, key, write);
+            try {
+                file.openInitialResources(entry.state);
+            } catch (IOException e) {
+                releaseDirEntry(key, entry, write);
+                throw wrap(e);
+            } catch (Throwable t) {
+                // make sure to release the entry even if error like NPE is thrown
+                releaseDirEntry(key, entry, write);
+                throw t;
+            }
+            return file;
         }, ioExecutor);
+    }
+
+    private void initFromDisk(DirEntry entry, String path, String prefix, List<String> indexPrefixes) throws IOException {
+        Path dir = Paths.get(path);
+        String[] names = new File(path).list();
+        if (names == null) {
+            if (!Files.exists(dir)) {
+                throw new IllegalArgumentException("directory does not exist: " + path);
+            }
+            if (!Files.isDirectory(dir)) {
+                throw new IllegalArgumentException("not a directory: " + path);
+            }
+            throw new IOException("failed to list directory: " + path);
+        }
+        AsyncSegmentFile.initFromFiles(entry, path, prefix, indexPrefixes, Arrays.asList(names));
+    }
+
+    private void releaseDirEntry(String key, boolean write) {
+        synchronized (lockFor(key)) {
+            DirEntry entry = registry.get(key);
+            if (entry == null) return;
+            if (write) entry.writerOpen = false;
+            if (--entry.refCount == 0) registry.remove(key);
+        }
+    }
+
+    private DirEntry entryOrThrow(AsyncSegmentFile file) {
+        DirEntry entry = registry.get(file.key);
+        if (entry == null) throw new IllegalStateException("file is closed: " + file.key);
+        return entry;
     }
 
     @Override
@@ -443,7 +528,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return CompletableFuture.runAsync(() -> {
             try {
                 file.readPosition = offset;
-                if (file.switchToSegment(offset)) {
+                SegmentDirState s = entryOrThrow(file).state;
+                if (file.switchToSegment(offset, s)) {
                     file.currentSegmentChannel.position(offset - file.openedSegmentStartOffset);
                 }
             } catch (IOException e) {
@@ -456,19 +542,20 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public CompletableFuture<Long> read(AsyncSegmentFile file, long length, byte[] buffer) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                SegmentDirState s = entryOrThrow(file).state;
                 if (file.currentSegmentChannel == null) {
-                    if (!file.switchToSegment(file.readPosition)) return 0L;
+                    if (!file.switchToSegment(file.readPosition, s)) return 0L;
                     file.currentSegmentChannel.position(file.readPosition - file.openedSegmentStartOffset);
                 }
                 long n = readFully(file.currentSegmentChannel, length, buffer);
                 file.readPosition += n;
                 boolean atSegmentBoundary = file.readPosition >= file.openedSegmentEndOffset;
                 boolean staleTailEof = n == 0
-                        && file.openedSegmentStartOffset != file.segmentOffsets.last()
+                        && file.openedSegmentStartOffset != s.lastOffset
                         && file.currentSegmentChannel.size() <= file.readPosition - file.openedSegmentStartOffset;
                 if (atSegmentBoundary || staleTailEof) {
                     file.closeCurrent();
-                    if (file.switchToSegment(file.readPosition)) {
+                    if (file.switchToSegment(file.readPosition, s)) {
                         file.currentSegmentChannel.position(file.readPosition - file.openedSegmentStartOffset);
                     }
                 }
@@ -483,20 +570,21 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public CompletableFuture<Long> read(AsyncSegmentFile file, long length, long offset, byte[] buffer) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                SegmentDirState s = entryOrThrow(file).state;
                 if (file.currentSegmentChannel == null
                         || offset < file.openedSegmentStartOffset
                         || offset >= file.openedSegmentEndOffset) {
-                    if (!file.switchToSegment(offset)) return 0L;
+                    if (!file.switchToSegment(offset, s)) return 0L;
                 }
                 long physicalOffset = offset - file.openedSegmentStartOffset;
                 long n = readFully(file.currentSegmentChannel, length, physicalOffset, buffer);
                 boolean atSegmentBoundary = offset + n >= file.openedSegmentEndOffset;
                 boolean staleTailEof = n == 0
-                        && file.openedSegmentStartOffset != file.segmentOffsets.last()
+                        && file.openedSegmentStartOffset != s.lastOffset
                         && file.currentSegmentChannel.size() <= physicalOffset;
                 if (atSegmentBoundary || staleTailEof) {
                     file.closeCurrent();
-                    file.switchToSegment(offset + n);
+                    file.switchToSegment(offset + n, s);
                 }
                 return n;
             } catch (IOException e) {
@@ -509,8 +597,9 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public CompletableFuture<Long> write(AsyncSegmentFile file, byte[] data, long length) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (file.segmentOffsets.isEmpty()) {
-                    file.openFirstSegmentChannelForWrite();
+                DirEntry entry = entryOrThrow(file);
+                if (entry.state.isEmpty()) {
+                    file.openFirstSegmentChannelForWrite(entry);
                 }
                 return writeFully(file.currentSegmentChannel, data, length);
             } catch (IOException e) {
@@ -527,7 +616,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return file.roll();
+                DirEntry entry = entryOrThrow(file);
+                return file.roll(entry);
             } catch (IOException e) {
                 throw wrap(e);
             }
@@ -536,7 +626,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public List<Long> list(AsyncSegmentFile file) {
-        return new ArrayList<>(file.segmentOffsets);
+        return entryOrThrow(file).state.offsets();
     }
 
     @Override
@@ -544,10 +634,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         if (file.currentSegmentChannel != null) {
             return file.openedSegmentStartOffset;
         }
-        if (file.segmentOffsets.isEmpty()) {
+        SegmentDirState s = entryOrThrow(file).state;
+        if (s.isEmpty()) {
             return 0;
         }
-        if (file.segmentOffsets.contains(file.readPosition)) {
+        if (s.contains(file.readPosition)) {
             return file.readPosition;
         }
         return -1;
@@ -558,16 +649,18 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             List<String> indexPrefixes) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (file.segmentOffsets.isEmpty()) {
+                DirEntry entry = entryOrThrow(file);
+                SegmentDirState s = entry.state;
+                if (s.isEmpty()) {
                     if (file.writeMode) {
-                        file.openFirstSegmentChannelForWrite();
+                        file.openFirstSegmentChannelForWrite(entry);
                     } else {
                         return new HashMap<String, AsyncFile>();
                     }
                 } else if (!file.writeMode) {
                     // Read mode: lazy open the current segment.
                     if (file.currentSegmentChannel == null) {
-                        if (!file.switchToSegment(file.readPosition)) {
+                        if (!file.switchToSegment(file.readPosition, s)) {
                             return new HashMap<String, AsyncFile>();
                         }
                     }
@@ -581,11 +674,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file) {
-        List<String> prefixes = new ArrayList<>();
-        for (IndexFileMapping mapping : file.indexMappings) {
-            prefixes.add(mapping.prefix);
-        }
-        return getCurrentIndexFiles(file, prefixes);
+        return getCurrentIndexFiles(file, file.indexPrefixes);
     }
 
     @Override
@@ -597,14 +686,13 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Map<String, AsyncFile> result = new HashMap<>();
-                Map<String, String> indexFileNames = file.segmentIndexFiles.get(startOffset);
-                if (indexFileNames == null) return result;
-                for (Map.Entry<String, String> entry : indexFileNames.entrySet()) {
-                    String prefix = entry.getKey();
-                    String fileName = entry.getValue();
-                    String idxPath = file.absolutePathOf(fileName);
-                    FileChannel ch = FileChannel.open(Paths.get(idxPath), StandardOpenOption.READ);
-                    result.put(prefix, new AsyncFile(idxPath, ch, false, false));
+                if (!entryOrThrow(file).state.contains(startOffset)) return result;
+                for (String indexPrefix : file.indexPrefixes) {
+                    String fileName = indexPrefix + startOffset;
+                    Path p = Paths.get(file.absolutePathOf(fileName));
+                    if (!Files.exists(p)) continue;
+                    FileChannel ch = FileChannel.open(p, StandardOpenOption.READ);
+                    result.put(indexPrefix, new AsyncFile(file.absolutePathOf(fileName), ch, false, false));
                 }
                 return result;
             } catch (IOException e) {
@@ -617,10 +705,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public CompletableFuture<Long> size(AsyncSegmentFile file) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                if (file.segmentOffsets.isEmpty()) {
+                SegmentDirState s = entryOrThrow(file).state;
+                if (s.isEmpty()) {
                     return 0L;
                 }
-                return file.exclusiveEndOffset() - file.segmentOffsets.first();
+                return file.exclusiveEndOffset(s.lastOffset) - s.firstOffset;
             } catch (IOException e) {
                 throw wrap(e);
             }
@@ -629,10 +718,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> lastModified(AsyncSegmentFile file) {
-        if (file.segmentOffsets.isEmpty()) {
+        SegmentDirState s = entryOrThrow(file).state;
+        if (s.isEmpty()) {
             return CompletableFuture.completedFuture(0L);
         }
-        return lastModifiedOfSegment(file, file.segmentOffsets.last());
+        return lastModifiedOfSegment(file, s.lastOffset);
     }
 
     @Override
@@ -665,7 +755,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
         return CompletableFuture.runAsync(() -> {
             try {
-                file.deleteSegments(startOffsets);
+                DirEntry entry = entryOrThrow(file);
+                file.deleteSegments(startOffsets, entry);
             } catch (IOException e) {
                 throw wrap(e);
             }
@@ -680,7 +771,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return file.truncate(offset);
+                DirEntry entry = entryOrThrow(file);
+                return file.truncate(offset, entry);
             } catch (IOException e) {
                 throw wrap(e);
             }
@@ -690,11 +782,14 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Void> close(AsyncSegmentFile file) {
         return CompletableFuture.runAsync(() -> {
+            IOException closeErr = null;
             try {
                 file.closeCurrent();
             } catch (IOException e) {
-                throw wrap(e);
+                closeErr = e;
             }
+            releaseDirEntry(file.key, file.writeMode);
+            if (closeErr != null) throw wrap(closeErr);
         }, ioExecutor);
     }
 
@@ -706,7 +801,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
         return CompletableFuture.runAsync(() -> {
             try {
-                file.delete();
+                DirEntry entry = entryOrThrow(file);
+                file.delete(entry);
             } catch (IOException e) {
                 throw wrap(e);
             }
@@ -745,20 +841,21 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             WritableByteChannel target) {
         return CompletableFuture.supplyAsync(() -> {
             try {
+                SegmentDirState s = entryOrThrow(file).state;
                 if (file.currentSegmentChannel == null
                         || offset < file.openedSegmentStartOffset
                         || offset >= file.openedSegmentEndOffset) {
-                    if (!file.switchToSegment(offset)) return 0L;
+                    if (!file.switchToSegment(offset, s)) return 0L;
                 }
                 long physicalOffset = offset - file.openedSegmentStartOffset;
                 long n = file.currentSegmentChannel.transferTo(physicalOffset, count, target);
                 boolean atSegmentBoundary = offset + n >= file.openedSegmentEndOffset;
                 boolean staleTailEof = n == 0
-                        && file.openedSegmentStartOffset != file.segmentOffsets.last()
+                        && file.openedSegmentStartOffset != s.lastOffset
                         && file.currentSegmentChannel.size() <= physicalOffset;
                 if (atSegmentBoundary || staleTailEof) {
                     file.closeCurrent();
-                    file.switchToSegment(offset + n);
+                    file.switchToSegment(offset + n, s);
                 }
                 return n;
             } catch (IOException e) {
