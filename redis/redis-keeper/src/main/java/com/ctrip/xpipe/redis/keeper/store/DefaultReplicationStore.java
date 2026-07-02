@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.keeper.SERVER_TYPE;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.replication.KeeperReplicationStoreRuntimeException;
-import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
@@ -19,7 +18,6 @@ import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
@@ -27,8 +25,9 @@ import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Triple;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -43,14 +42,6 @@ import java.util.function.IntSupplier;
 public class DefaultReplicationStore extends AbstractStore implements ReplicationStore {
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultReplicationStore.class);
-
-	private final static FileFilter RDB_FILE_FILTER = new FileFilter() {
-
-		@Override
-		public boolean accept(File path) {
-			return path.isFile() && path.getName().startsWith("rdb_");
-		}
-	};
 
 	private File baseDir;
 
@@ -314,12 +305,18 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		RdbStore rdbStore = rdbStoreRef.get();
 		RdbStore rordbStore = rordbStoreRef.get();
 
-		for (File rdbFile : rdbFilesOnFS()) {
+		for (String rdbFileName : rdbFilesOnFS()) {
+			File rdbFile = new File(baseDir, rdbFileName);
 			if (rdbStore != null && rdbStore.sameRdbFile(rdbFile)) continue;
 			if (rordbStore != null && rordbStore.sameRdbFile(rdbFile)) continue;
 
 			getLogger().info("[removeUnusedRdbFile] {}", rdbFile);
-			rdbFile.delete();
+			try {
+				AsyncFileSystemHelper.await(asyncFileSystem.delete(rdbFile.getAbsolutePath()),
+						"delete unused rdb " + rdbFile);
+			} catch (IOException e) {
+				getLogger().error("[removeUnusedRdbFile][{}]", rdbFile, e);
+			}
 		}
 	}
 
@@ -671,9 +668,25 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		return 0L;
 	}
 
-	private File[] rdbFilesOnFS() {
-		File[] rdbFiles = baseDir.listFiles(RDB_FILE_FILTER);
-		return rdbFiles != null ? rdbFiles : new File[0];
+	private List<String> rdbFilesOnFS() {
+		List<String> entries;
+		try {
+			entries = AsyncFileSystemHelper.await(asyncFileSystem.list(baseDir.getAbsolutePath()),
+					"list rdb files in " + baseDir);
+		} catch (IOException e) {
+			getLogger().error("[rdbFilesOnFS][{}]", baseDir, e);
+			return Collections.emptyList();
+		}
+		if (entries == null || entries.isEmpty()) {
+			return Collections.emptyList();
+		}
+		List<String> rdbFiles = new ArrayList<>();
+		for (String name : entries) {
+			if (name != null && name.startsWith("rdb_")) {
+				rdbFiles.add(name);
+			}
+		}
+		return rdbFiles;
 	}
 
 	protected FullSyncContext lockAndCheckIfRordbFullSyncPossible() {
@@ -928,7 +941,34 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	public void destroy() throws Exception {
 
 		getLogger().info("[destroy]{}", this);
-		FileUtils.recursiveDelete(baseDir);
+		if (cmdStore != null) {
+			try {
+				cmdStore.destroy();
+			} catch (Exception e) {
+				getLogger().error("[destroy][cmdStore]" + cmdStore, e);
+			}
+		}
+		destroyActiveRdb(rdbStoreRef, "rdb");
+		destroyActiveRdb(rordbStoreRef, "rordb");
+		for (RdbStore rdbStore : previousRdbStores.keySet()) {
+			try {
+				rdbStore.destroy();
+			} catch (Exception e) {
+				getLogger().error("[destroy][previousRdb]" + rdbStore, e);
+			}
+		}
+		AsyncFileSystemHelper.await(asyncFileSystem.rmdir(baseDir.getAbsolutePath(), true),
+				"rmdir replication store " + baseDir);
+	}
+
+	private void destroyActiveRdb(AtomicReference<RdbStore> ref, String tag) {
+		RdbStore rdbStore = ref.getAndSet(null);
+		if (rdbStore == null) return;
+		try {
+			rdbStore.destroy();
+		} catch (Exception e) {
+			getLogger().error("[destroy][" + tag + "]" + rdbStore, e);
+		}
 	}
 
 	public void releaseRdb() throws IOException {
