@@ -1,0 +1,28 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/BeaconRouteController.java
+  s_1e01ddce8366b6::t_e59efc667d94fd 13
+  s_1e01ddce8366b6::t_90e22cd7a341ec 97,99-104,106-122,125,133,135-155,158,161-170
+  s_1e01ddce8366b6::t_3a8c651b83d9d7 94-96,98,105,123-124,126-129
+  s_1e01ddce8366b6::t_68646d9ad3beac 18
+  s_1e01ddce8366b6::t_a98b9b2290d3d0 130-132,134,156-157,159-160,171-172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.18-trip",
+  "base_commit_sha": "95905c3daddb6b551204b8208a6b2fa4d7008239",
+  "prompts": {},
+  "humans": {
+    "h_80880900b42b9d": {
+      "author": "yihaohuang <yihaohuang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_1e01ddce8366b6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "df6bfb43-48af-4793-a583-af594bf7529f",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": null
+    }
+  }
+}

@@ -1,0 +1,70 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/auto/DefaultMonitorManager.java
+  s_1e01ddce8366b6::t_6f19dfbabca1f0 197-200
+  s_1e01ddce8366b6::t_03b60460150700 188,193-195
+  s_1e01ddce8366b6::t_98631f3bf5846b 201
+  s_1e01ddce8366b6::t_3887c0a7ef02e7 207-301
+  s_1e01ddce8366b6::t_3329e0aef8786c 187,189-192,196,202-206
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/auto/MonitorManager.java
+  s_1e01ddce8366b6::t_c3c6220da769c6 26
+  s_1e01ddce8366b6::t_88265aad2a2972 27
+  s_1e01ddce8366b6::t_c81aa63b0e3c99 28-31
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/BeaconRouteController.java
+  s_1e01ddce8366b6::t_3a8c651b83d9d7 102,113,124-126
+  s_1e01ddce8366b6::t_a98b9b2290d3d0 127,190-191,193-194,199-200
+  s_1e01ddce8366b6::t_29ba63a946b3cb 38-42
+  s_1e01ddce8366b6::t_68646d9ad3beac 21
+  s_1e01ddce8366b6::t_e59efc667d94fd 16
+  s_1e01ddce8366b6::t_a770c6e9aa0b49 164,180-187
+  s_1e01ddce8366b6::t_67c3bab9930ff0 144
+  s_1e01ddce8366b6::t_a6b2c094c571e9 115
+  s_1e01ddce8366b6::t_8bc7da39cde4a8 163
+  s_1e01ddce8366b6::t_c73347940f6872 197
+  s_1e01ddce8366b6::t_7f42b0f9559829 198
+  s_1e01ddce8366b6::t_477f1be9439287 139
+  s_1e01ddce8366b6::t_66f4db684a45d8 103-108,110-111,114,116-123,128-131,133-137,140-142,149-162,165-179,188-189,192
+  s_1e01ddce8366b6::t_11a5b12498455f 138,143,145-147
+  s_1e01ddce8366b6::t_a62b7f1a44b6ef 132
+  s_1e01ddce8366b6::t_0d23d3fda498a4 4,8,12-13
+  s_1e01ddce8366b6::t_90e22cd7a341ec 109,112,195-196
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/impl/ConsoleServiceManager.java
+  s_1e01ddce8366b6::t_bec49deae25198 56-60
+  s_1e01ddce8366b6::t_9a5df9b09adb1d 244-256,258,262-265,267-268,273-275,277-283,285,289-292,294-295
+  s_1e01ddce8366b6::t_796e26f40ca21f 257,259-261,266,269-270,284,286-288,293,296-298
+  s_1e01ddce8366b6::t_8a2f8198204d1f 21,30-33
+  s_1e01ddce8366b6::t_9b10f9c37b8aed 272,276
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/ConsoleService.java
+  s_1e01ddce8366b6::t_703570d598ef95 60-61,63
+  s_1e01ddce8366b6::t_acc7bf66eba285 62
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/impl/DefaultConsoleService.java
+  s_1e01ddce8366b6::t_302f2965c9449d 291
+  s_1e01ddce8366b6::t_d4abc4252aeaa6 148-154
+  s_1e01ddce8366b6::t_4d83649808d916 99-100
+  s_1e01ddce8366b6::t_097661d96457cd 286,288-290,293-294
+  s_1e01ddce8366b6::t_30e6663364b487 287,292
+  s_1e01ddce8366b6::t_4ca7804f2d72bc 139-140
+  s_1e01ddce8366b6::t_4574a743232451 46
+  s_1e01ddce8366b6::t_dafd2905e72789 47
+  s_1e01ddce8366b6::t_30b9e66e94bdd4 101-104
+  s_1e01ddce8366b6::t_67dd4dd58a4e82 40-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.18-trip",
+  "base_commit_sha": "d8409d36fb234a3bda083f4971915c160bf8b962",
+  "prompts": {},
+  "humans": {
+    "h_80880900b42b9d": {
+      "author": "yihaohuang <yihaohuang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_1e01ddce8366b6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "df6bfb43-48af-4793-a583-af594bf7529f",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": null
+    }
+  }
+}

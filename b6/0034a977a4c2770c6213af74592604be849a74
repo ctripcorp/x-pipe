@@ -1,0 +1,16 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  h_00df85a0850dc5 12-13,78-79,86-87,119-120,125-132,169-172,196,224,252,307,328,353,410,437,440,449,470,502,505,513,534,578-582,585,891-1162
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  h_00df85a0850dc5 16,34,42-44,63-64,80,87,89-92,109-117,154-160,164-171,239-240,242,244-245,259-262,265,282-284,363-403,409-410,413-436,438-441,443-444,448-460,462,466-467,470-471,486-491,502-504,506,613-614,638,654-657,685-687,689
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.26-trip",
+  "base_commit_sha": "b60034a977a4c2770c6213af74592604be849a74",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  }
+}
