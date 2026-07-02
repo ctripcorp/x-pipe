@@ -53,7 +53,7 @@ public class IndexEntry {
 
     // ZONE 工厂方法
     public static IndexEntry zone(long zoneStart, long zoneEnd, int cmdCount) {
-        IndexEntry e = new IndexEntry(ZONE_UUID, 0L, zoneStart, zoneEnd);
+        IndexEntry e = new IndexEntry(ZONE_UUID, 0L, zoneStart, 0L);
         e.setBlockEndOffset(zoneEnd);
         e.setSize(cmdCount);
         e.type = IndexEntryType.ZONE;
@@ -138,11 +138,11 @@ public class IndexEntry {
         buf.put(type.code());                  // 0
         buf.put(flags);                        // 1
         buf.putShort((short)0);                // 2-3 reserved
-        buf.put(uuid.getBytes());
-        buf.putLong(startGno);                 // 68-75
-        buf.putLong(cmdStartOffset);           // 4-11
-        buf.putLong(blockStartOffset);         // 12-19
-        buf.putLong(blockEndOffset);           // 20-27
+        buf.put(uuid.getBytes());              // 4-43
+        buf.putLong(startGno);                 // 44-51
+        buf.putLong(cmdStartOffset);           // 52-59
+        buf.putLong(blockStartOffset);         // 60-67
+        buf.putLong(blockEndOffset);           // 68-75
         buf.putInt(size);                      // 76-79
         buf.putInt(lastCommandLength);         // 80-83
         int crc = crc32c(buf.array(), 0, 84);
@@ -164,32 +164,41 @@ public class IndexEntry {
         return buffer;
     }
 
-    // ---------- v2 反序列化（CRC 校验）----------
-    public static IndexEntry readFromFileV2(FileChannel channel) throws IOException {
-        if (fileRemainingLength(channel) < SEGMENT_LENGTH_V2) return null;
-        ByteBuffer buf = ByteBuffer.allocate(SEGMENT_LENGTH_V2);
-        channel.read(buf);
-        buf.flip();
 
+    /**
+     * 从 ByteBuffer 读取 v2 格式条目（88 字节）。
+     * 解析顺序与 generateBufferV2 严格一致，CRC 校验失败返回 null。
+     */
+    public static IndexEntry fromBufferV2(ByteBuffer buffer) {
+        if (buffer.remaining() < SEGMENT_LENGTH_V2) return null;
+        int startPos = buffer.position();
+
+        // 读取前 84 字节数据并计算 CRC
         byte[] body = new byte[84];
-        buf.get(body);
+        buffer.get(body);
         int expectedCrc = crc32c(body, 0, 84);
-        int actualCrc = buf.getInt();
-        if (expectedCrc != actualCrc) return null;
+        int actualCrc = buffer.getInt();
+        if (expectedCrc != actualCrc) {
+            buffer.position(startPos);   // 恢复位置
+            return null;
+        }
 
+        // 按照 generateBufferV2 的顺序解析各字段
         ByteBuffer bodyBuf = ByteBuffer.wrap(body);
-        IndexEntryType type = IndexEntryType.fromCode(bodyBuf.get());
-        byte flags = bodyBuf.get();
-        bodyBuf.getShort(); // skip reserved
-        long cmdStartOffset = bodyBuf.getLong();
-        long blockStartOffset = bodyBuf.getLong();
-        long blockEndOffset = bodyBuf.getLong();
+        IndexEntryType type = IndexEntryType.fromCode(bodyBuf.get());   // 0
+        byte flags = bodyBuf.get();                                     // 1
+        bodyBuf.getShort();                                             // 2-3 reserved
+
         byte[] uuidBytes = new byte[40];
-        bodyBuf.get(uuidBytes);
+        bodyBuf.get(uuidBytes);                                         // 4-43
         String uuid = new String(uuidBytes);
-        long startGno = bodyBuf.getLong();
-        int size = bodyBuf.getInt();
-        int lastCommandLength = bodyBuf.getInt();
+
+        long startGno = bodyBuf.getLong();                              // 44-51
+        long cmdStartOffset = bodyBuf.getLong();                        // 52-59
+        long blockStartOffset = bodyBuf.getLong();                      // 60-67
+        long blockEndOffset = bodyBuf.getLong();                        // 68-75
+        int size = bodyBuf.getInt();                                    // 76-79
+        int lastCommandLength = bodyBuf.getInt();                       // 80-83
 
         IndexEntry e = new IndexEntry(uuid, startGno, cmdStartOffset, blockStartOffset);
         e.type = type;
@@ -230,6 +239,13 @@ public class IndexEntry {
     }
 
     // ---------- 写入 ----------
+    public void saveToDiskV2(BlockWriter blockWriter, FileChannel channel) throws IOException {
+        this.syncDataFromBlockWriter(blockWriter);
+        long pos = channel.position();
+        this.position = pos;
+        channel.write(generateBufferV2());
+    }
+
     public void saveToDiskV2(FileChannel channel) throws IOException {
         long pos = channel.position();
         this.position = pos;
@@ -250,6 +266,15 @@ public class IndexEntry {
         long currentPosition = channel.position();
         long fileSize = channel.size();
         return fileSize - currentPosition;
+    }
+
+    // ---------- v2 反序列化（CRC 校验）----------
+    public static IndexEntry readFromFileV2(FileChannel channel) throws IOException {
+        if (fileRemainingLength(channel) < SEGMENT_LENGTH_V2) return null;
+        ByteBuffer buf = ByteBuffer.allocate(SEGMENT_LENGTH_V2);
+        channel.read(buf);
+        buf.flip();
+        return fromBufferV2(buf);
     }
 
     public static IndexEntry readFromFile(FileChannel channel) throws IOException {

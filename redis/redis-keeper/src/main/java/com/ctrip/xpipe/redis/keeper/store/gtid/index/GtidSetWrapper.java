@@ -83,20 +83,19 @@ public class GtidSetWrapper {
         channel.read(magicBuf);
         magicBuf.flip();
         int firstInt = magicBuf.getInt();
-
-        if (firstInt == MAGIC) {
-            ByteBuffer verBuf = ByteBuffer.allocate(4);
-            channel.read(verBuf);
-            verBuf.flip();
-            int version = verBuf.getInt();
-            long gtidLen = readLong(channel);
-            if (gtidLen == 0) return new GtidSet(Maps.newLinkedHashMap());
-            ByteBuffer gtidBuf = ByteBuffer.allocate((int) gtidLen);
-            channel.read(gtidBuf);
-            gtidBuf.flip();
-            return new GtidSet(new String(gtidBuf.array()));
+        if(firstInt != MAGIC){
+            throw new IllegalStateException("Not a valid v2 index file (bad magic)");
         }
-        return new GtidSet(Maps.newLinkedHashMap());
+        ByteBuffer verBuf = ByteBuffer.allocate(4);
+        channel.read(verBuf);
+        verBuf.flip();
+        int version = verBuf.getInt();
+        long gtidLen = readLong(channel);
+        if (gtidLen == 0) return new GtidSet(Maps.newLinkedHashMap());
+        ByteBuffer gtidBuf = ByteBuffer.allocate((int) gtidLen);
+        channel.read(gtidBuf);
+        gtidBuf.flip();
+        return new GtidSet(new String(gtidBuf.array()));
     }
 
     private static long fileRemainingLength(FileChannel channel) throws IOException {
