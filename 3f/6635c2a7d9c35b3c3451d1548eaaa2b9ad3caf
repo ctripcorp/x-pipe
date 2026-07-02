@@ -1,0 +1,35 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/protocal/cmd/GapAllowedSyncTest.java
+  s_42c382b83b2c13::t_08fdad124c3983 26
+  s_42c382b83b2c13::t_3b872d891c9f8f 184-186,189-192
+  s_42c382b83b2c13::t_e2cb552584617f 187-188
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/fakeredis/DefaultRedisKeeperServerConnectToFakeRedisTest.java
+  s_cc8970652b9e79::t_5e16c275fcf383 36-38,42
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/OffsetCommandWriter.java
+  ai_agent 18,194-203
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AbstractRedisKeeperTest.java
+  s_cc8970652b9e79::t_46741106e81575 292-293,295,304-305
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.26-trip",
+  "base_commit_sha": "3f6635c2a7d9c35b3c3451d1548eaaa2b9ad3caf",
+  "prompts": {},
+  "sessions": {
+    "s_42c382b83b2c13": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "149b63aa-ac7a-44c9-899d-92d247d18c95",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_cc8970652b9e79": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b8baf82c-a65e-4903-906a-da12e08c8137",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
