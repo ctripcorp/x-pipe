@@ -289,9 +289,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 		int lastSize = baous.size();
 		long equalCount = 0;
-		while (true) {
+		long deadline = System.currentTimeMillis() + 10000;
+		while (System.currentTimeMillis() < deadline) {
 			int currentSize = baous.size();
-			if(expectedLen >= 0 && currentSize >= expectedLen){
+			if (expectedLen >= 0 && currentSize >= expectedLen) {
 				break;
 			}
 			if (currentSize != lastSize) {
@@ -300,7 +301,8 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			} else {
 				equalCount++;
 			}
-			if (equalCount > 100) {
+			// Stall detection only applies when expected length is unknown.
+			if (expectedLen < 0 && equalCount > 100) {
 				break;
 			}
 			sleep(10);

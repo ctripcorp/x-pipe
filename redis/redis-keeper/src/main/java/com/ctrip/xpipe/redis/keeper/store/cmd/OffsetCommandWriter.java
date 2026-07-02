@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -188,7 +189,16 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
     }
 
     private long currentSegmentStartOffset() {
-        return asyncFileSystem().getCurrentSegmentStartOffset(asyncSegmentFile());
+        long startOffset = asyncFileSystem().getCurrentSegmentStartOffset(asyncSegmentFile());
+        if (startOffset >= 0) {
+            return startOffset;
+        }
+        // FS may return -1 when write channel is temporarily closed; fall back to latest segment.
+        List<Long> segmentOffsets = asyncFileSystem().list(asyncSegmentFile());
+        if (segmentOffsets.isEmpty()) {
+            return 0;
+        }
+        return segmentOffsets.get(segmentOffsets.size() - 1);
     }
 
     private long currentSegmentSize() throws IOException {

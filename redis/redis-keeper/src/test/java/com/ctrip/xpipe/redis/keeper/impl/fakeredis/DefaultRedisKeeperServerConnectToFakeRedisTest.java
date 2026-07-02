@@ -33,10 +33,13 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 
 		waitConditionUntilTimeOut( () -> null != ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbStore());
 		ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+		int expectedCommandsLen = fakeRedisServer.currentCommands().length();
+		waitConditionUntilTimeOut(() -> replicationStore.backlogEndOffset() - replicationStore.backlogBeginOffset()
+				>= expectedCommandsLen);
 		byte[] rdbContent = readRdbFileTilEnd(replicationStore);
 		Assert.assertArrayEquals(fakeRedisServer.getRdbContent(), rdbContent);
 
-		String commands = readCommandFileTilEnd(replicationStore, fakeRedisServer.currentCommands().length());
+		String commands = readCommandFileTilEnd(replicationStore, expectedCommandsLen);
 		Assert.assertEquals(fakeRedisServer.currentCommands(), commands);
 	}
 
