@@ -190,6 +190,16 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
         return 0;
     }
 
+    @Override
+    public void onNonGtidWritten(long offset, int length) throws IOException {
+
+    }
+
+    @Override
+    public void onGtidWritten(long offset, int length) throws IOException {
+
+    }
+
     private void appendCmdKeyItem(String uuid, long gno, RedisOpItem redisOpItem) {
         if (StringUtil.isEmpty(uuid) || gno <= 0) {
             logger.debug("[appendCmdKeyItem][miss gtid] {}:{}", uuid, gno);

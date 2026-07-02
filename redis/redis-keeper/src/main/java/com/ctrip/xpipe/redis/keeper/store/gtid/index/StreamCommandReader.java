@@ -146,14 +146,14 @@ public class StreamCommandReader implements StreamCommandLister {
         if (transactionContext.isActive()) {
             transactionContext.addCommand(payload, commandBuf);
         } else {
-            writeSingleCommand(commandBuf, payload);
+            writeSingleCommand(commandBuf, payload,false);
         }
     }
 
     private void processSingleGtidCommand(String gtid, Object[] payload, ByteBuf commandBuf) throws IOException {
         long offset = this.currentOffset;
         if (transactionListener.preAppend(gtid, offset)) {
-            writeSingleCommand(commandBuf, payload);
+            writeSingleCommand(commandBuf, payload,true);
         }
     }
 
@@ -186,11 +186,17 @@ public class StreamCommandReader implements StreamCommandLister {
         }
     }
 
-    private void writeSingleCommand(ByteBuf commandBuf, Object[] payload) throws IOException {
+    private void writeSingleCommand(ByteBuf commandBuf, Object[] payload,boolean hasGtid) throws IOException {
+        long start = this.currentOffset;
         int cmdLen = commandBuf.readableBytes();
         RedisOpItem redisOpItem = parsePayload(payload);
         transactionListener.postAppend(commandBuf, redisOpItem);
         this.currentOffset += cmdLen;
+        if(hasGtid){
+            transactionListener.onGtidWritten(start,cmdLen);
+        }else {
+            transactionListener.onNonGtidWritten(start,cmdLen);
+        }
         mayCheckOffset();
     }
 
