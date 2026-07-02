@@ -17,6 +17,9 @@ public abstract class AbstractIndex {
     public static final String BLOCK = "block_";
     public static final String INDEX = "index_";
 
+    public static final String INDEX_V2 = "indexv2_";
+    public static final String BLOCK_V2 = "blockv2_";
+
     private String fileName;
     private String baseDir;
 
@@ -33,12 +36,20 @@ public abstract class AbstractIndex {
 
     public abstract void init() throws IOException ;
 
+    protected String getIndexPrefix(){
+        return INDEX;
+    }
+
+    protected String getBlockPrefix(){
+        return BLOCK;
+    }
+
     String generateBlockName() {
-        return Paths.get(baseDir ,BLOCK + fileName).toString();
+        return Paths.get(baseDir ,getBlockPrefix() + fileName).toString();
     }
 
     String generateIndexName() {
-        return Paths.get(baseDir ,INDEX + fileName).toString();
+        return Paths.get(baseDir ,getIndexPrefix() + fileName).toString();
     }
 
     String generateCmdFileName() {
@@ -54,11 +65,15 @@ public abstract class AbstractIndex {
     }
 
     public static File findFloorIndexFileByOffset(String baseDir, long currentOffset) {
+        return findFloorIndexFileByOffset(baseDir,currentOffset,INDEX);
+    }
+
+    public static File findFloorIndexFileByOffset(String baseDir, long currentOffset,String prefix) {
         File directory = new File(baseDir);
         if (!directory.isDirectory()) {
             throw new IllegalArgumentException("is not a directory");
         }
-        File[] files = directory.listFiles((dir, name) -> name.matches("index_.*\\d+$"));
+        File[] files = directory.listFiles((dir, name) -> name.matches(prefix+".*\\d+$"));
         if (files == null || files.length == 0) {
             return null;
         }
@@ -78,12 +93,17 @@ public abstract class AbstractIndex {
         return targetFile;
     }
 
+
     public static File findFirstIndexFileByOffset(String baseDir) {
+        return findFirstIndexFileByOffset(baseDir,INDEX);
+    }
+
+    public static File findFirstIndexFileByOffset(String baseDir,String prefix) {
         File directory = new File(baseDir);
         if (!directory.isDirectory()) {
             throw new IllegalArgumentException("is not a directory");
         }
-        File[] files = directory.listFiles((dir, name) -> name.matches("index_.*\\d+$"));
+        File[] files = directory.listFiles((dir, name) -> name.matches(prefix+".*\\d+$"));
         if (files == null || files.length == 0) {
             return null;
         }
@@ -98,6 +118,7 @@ public abstract class AbstractIndex {
         return targetFile;
     }
 
+
     public static long extractOffset(String fileName) {
         if(fileName.contains("_")) {
             return Long.parseLong(fileName.substring(fileName.lastIndexOf("_") + 1));
@@ -111,19 +132,19 @@ public abstract class AbstractIndex {
         if(pre == null) {
             return false;
         }
-        fileName = pre.getName().replace(INDEX, "");
+        fileName = pre.getName().replace(getIndexPrefix(), "");
         closeIndexFile();
         indexFile = new DefaultControllableFile(pre);
         this.init();
         return true;
     }
 
-    public File findNextFile() {
+        public File findNextFile() {
         File directory = new File(baseDir);
         if (!directory.isDirectory()) {
             throw new IllegalArgumentException("is not a directory");
         }
-        File[] files = directory.listFiles((dir, name) -> name.matches("index_.*\\d+$"));
+        File[] files = directory.listFiles((dir, name) -> name.matches(getIndexPrefix()+".*\\d+$"));
         if (files == null || files.length == 0) {
             return null;
         }
@@ -150,7 +171,7 @@ public abstract class AbstractIndex {
             return false;
         }
 
-        fileName = nextFile.getName().replace(INDEX, "");
+        fileName = nextFile.getName().replace(getIndexPrefix(), "");
         closeIndexFile();
         indexFile = new DefaultControllableFile(nextFile);
         this.init();
