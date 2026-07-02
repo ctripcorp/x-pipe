@@ -6,6 +6,10 @@ public class StorageIOException extends RuntimeException {
         super(cause);
     }
 
+    public StorageIOException(String message) {
+        super(message);
+    }
+
     public StorageIOException(String message, Throwable cause) {
         super(message, cause);
     }
