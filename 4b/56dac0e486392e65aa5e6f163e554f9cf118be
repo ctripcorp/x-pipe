@@ -1,0 +1,14 @@
+.github/workflows/build.yml
+  h_80880900b42b9d 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.17-trip",
+  "base_commit_sha": "4b56dac0e486392e65aa5e6f163e554f9cf118be",
+  "prompts": {},
+  "humans": {
+    "h_80880900b42b9d": {
+      "author": "yihaohuang <yihaohuang@trip.com>"
+    }
+  }
+}

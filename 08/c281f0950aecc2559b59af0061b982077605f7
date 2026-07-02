@@ -1,0 +1,66 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/RedisServiceWithoutDB.java
+  s_4aebb987041122::t_80d530eb4d9b44 130
+  s_4aebb987041122::t_a5458a17716320 85-86
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/resources/DcMetaSynchronizerTest.java
+  s_4aebb987041122::t_c199ce91547a85 109,146,184,253,318,395,462,505
+  s_4aebb987041122::t_31cfb45375e8e9 81
+  s_4aebb987041122::t_9590ecb6b26901 357,429
+  s_4aebb987041122::t_220359d579f620 221,285
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/resources/RedisMetaSynchronizerTest.java
+  s_4aebb987041122::t_b557d5f3117a66 45,52,56,59-60,62,66,73,77,80-81,83,96,100,103,105,118
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/RedisServiceImpl.java
+  s_4aebb987041122::t_890a3f062ec2d6 199,212
+  s_4aebb987041122::t_c5db30134271ee 204-211,213-214
+  s_4aebb987041122::t_12233329affd8d 215
+  s_4aebb987041122::t_37b1862a41392f 60-62
+  s_4aebb987041122::t_6fa722c9e3c4dc 3
+  s_4aebb987041122::t_dea655679c8588 403,406
+  s_4aebb987041122::t_a3c6706e6380a7 394-402,404-405
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/RedisMetaSynchronizer.java
+  s_4aebb987041122::t_bcfdb7f70fe836 95,115-116,118-119
+  s_4aebb987041122::t_8b1cacc66740b3 33
+  s_4aebb987041122::t_8d26d61dfceb40 74,81,84
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/ConsolePortalService.java
+  s_4aebb987041122::t_9ed279d58df472 219,221,223,226,232,234
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/RedisApiController.java
+  s_4aebb987041122::t_dd459878c6a935 39
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/ShardMetaSynchronizer.java
+  s_4aebb987041122::t_a7b5822329939e 87
+  s_4aebb987041122::t_bf6e55b042000d 105
+  s_4aebb987041122::t_f355830c4cf66c 37
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/meta/RedisCreateInfo.java
+  s_4aebb987041122::t_a8a89a5b0a64c2 89-90,93,97,100
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/MetaUpdate.java
+  s_4aebb987041122::t_1e6ae249e3e2f2 655,658-659,664
+  s_4aebb987041122::t_2014e568f2d029 347
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/MetaSynchronizer.java
+  s_4aebb987041122::t_0bc85c3b797e1e 100
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/RedisService.java
+  s_4aebb987041122::t_66a8081a4ec9b4 34
+  s_4aebb987041122::t_e72c115a3354b6 49
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/DcMetaSynchronizer.java
+  s_4aebb987041122::t_cd4843466fc293 117
+  s_4aebb987041122::t_0ea702a0bb510b 43
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/ClusterMetaSynchronizer.java
+  s_4aebb987041122::t_3647d74693d081 48
+  s_4aebb987041122::t_94286b2ea95df9 110
+  s_4aebb987041122::t_5b36639002f5e6 193
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/RedisUpdateController.java
+  s_4aebb987041122::t_9c7bf31dae46b8 67,69,71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "08c281f0950aecc2559b59af0061b982077605f7",
+  "prompts": {},
+  "sessions": {
+    "s_4aebb987041122": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a659f92f-9d0b-49ac-90f6-0659c9c84d0e",
+        "model": "arn:aws:bedrock:us-west-2:671660153913:application-inference-profile/kh3mlhvjeex4"
+      },
+      "human_author": "yihaohuang <yihaohuang@trip.com>"
+    }
+  }
+}

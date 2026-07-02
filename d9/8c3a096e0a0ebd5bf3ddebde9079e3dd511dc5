@@ -1,0 +1,14 @@
+core/src/main/java/com/ctrip/xpipe/payload/DirectByteBufInOutPayload.java
+  h_00df85a0850dc5 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10-trip",
+  "base_commit_sha": "d98c3a096e0a0ebd5bf3ddebde9079e3dd511dc5",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  }
+}
