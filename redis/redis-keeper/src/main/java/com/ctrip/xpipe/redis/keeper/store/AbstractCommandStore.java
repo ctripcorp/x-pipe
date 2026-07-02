@@ -701,13 +701,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     public void destroy() throws Exception {
 
         getLogger().info("[destroy]{}", this);
-        File [] files = allFiles();
-        if(files != null){
-            for(File file : files){
-                boolean result = file.delete();
-                getLogger().info("[destroy][delete file]{}, {}", file, result);
-            }
-        }
+        close();
+        AsyncFileSystemHelper.await(asyncFileSystem.delete(asyncSegmentFile),
+                "destroy command segment " + fileNamePrefix);
     }
 
     @Override
@@ -807,24 +803,81 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             timeoutGuarantees();
             finishGuarantees();
 
-            long maxStartOffset = findMaxStartOffset();
-            for (File cmdFile : allCmdFiles()) {
-                long fileStartOffset = extractStartOffset(cmdFile);
-                if (fileStartOffset >= maxStartOffset) {
-                    getLogger().debug("[GC][skip writing cmd] writing:{} file:{}", maxStartOffset, fileStartOffset);
-                    continue;
+            List<Long> segmentOffsets = asyncFileSystem.list(asyncSegmentFile);
+            if (segmentOffsets == null || segmentOffsets.size() <= 1) {
+                getLogger().debug("[gc][no candidate segment] {}", segmentOffsets);
+                return;
+            }
+            int totalSegments = segmentOffsets.size();
+            long lowestReadOrGuarantee = Long.min(lowestReadingOffset(), minGuaranteeOffset());
+
+            List<Long> toDelete = new ArrayList<>();
+            for (int idx = 0; idx < totalSegments - 1; idx++) {
+                long startOffset = segmentOffsets.get(idx);
+                long size;
+                long lastModified;
+                try {
+                    size = AsyncFileSystemHelper.await(
+                            asyncFileSystem.sizeOfSegment(asyncSegmentFile, startOffset),
+                            "size of segment " + fileNamePrefix + startOffset);
+                    lastModified = AsyncFileSystemHelper.await(
+                            asyncFileSystem.lastModifiedOfSegment(asyncSegmentFile, startOffset),
+                            "last modified of segment " + fileNamePrefix + startOffset);
+                } catch (IOException e) {
+                    getLogger().error("[gc][stat segment {}]", startOffset, e);
+                    break;
                 }
-                if (canDeleteCmdFile(Long.min(lowestReadingOffset(), minGuaranteeOffset()), fileStartOffset, cmdFile.length(),
-                        cmdFile.lastModified())) {
-                    getLogger().info("[GC] delete command file {}", cmdFile);
-                    delCmdFile(cmdFile);
+
+                if (!canDeleteSegment(lowestReadOrGuarantee, startOffset, size, lastModified, idx, totalSegments)) {
+                    break; // must delete a contiguous prefix
                 }
+                toDelete.add(startOffset);
+            }
+
+            if (toDelete.isEmpty()) {
+                return;
+            }
+            getLogger().info("[gc][delete segments] {}", toDelete);
+            try {
+                AsyncFileSystemHelper.await(asyncFileSystem.deleteSegments(asyncSegmentFile, toDelete),
+                        "delete segments " + toDelete);
+            } catch (IOException e) {
+                getLogger().error("[gc][deleteSegments {}]", toDelete, e);
             }
         } finally {
             gcLock.unlock();
         }
     }
 
+    protected boolean canDeleteSegment(long lowestReadOrGuarantee, long startOffset, long size, long lastModified,
+                                       int idx, int totalSegments) {
+        getLogger().debug("[canDeleteSegment] start:{} size:{} idx:{} total:{}", startOffset, size, idx, totalSegments);
+
+        boolean lowestReading = (startOffset + size < lowestReadOrGuarantee);
+        getLogger().debug("[canDeleteSegment][lowestReading]{}, {}+{}<{}", lowestReading, startOffset, size, lowestReadOrGuarantee);
+        if (!lowestReading) {
+            return false;
+        }
+
+        long now = System.currentTimeMillis();
+        long age = now - lastModified;
+        long maxMilliKeepCmd = TimeUnit.SECONDS.toMillis(maxTimeSecondKeeperCmdFileAfterModified.getAsInt());
+
+        getLogger().debug("[canDeleteSegment][age]{} min:{} max:{}", age, minTimeMilliToGcAfterModified, maxMilliKeepCmd);
+        if (age < minTimeMilliToGcAfterModified) {
+            return false;
+        }
+        if (age > maxMilliKeepCmd) {
+            return true;
+        }
+
+        int newerCount = totalSegments - 1 - idx - 1; // exclude writing (last) segment
+        boolean fileKeep = newerCount > fileNumToKeep.getAsInt();
+        getLogger().debug("[canDeleteSegment][fileKeep]{}, newer:{} keep:{}", fileKeep, newerCount, fileNumToKeep.getAsInt());
+        return fileKeep;
+    }
+
+    @Deprecated
     protected boolean canDeleteCmdFile(long lowestReadingOffset, long fileStartOffset, long fileSize, long lastModified) {
         getLogger().debug("[canDeleteCmdFile] start from {}", fileStartOffset);
 

@@ -13,13 +13,13 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
-import com.ctrip.xpipe.utils.FileUtils;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.UUID;
@@ -315,26 +315,35 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         gcCount.incrementAndGet();
         Properties meta = currentMeta(true);
-        final String currentDirName;
         if (meta != null) {
-            currentDirName = meta.getProperty(LATEST_STORE_DIR);
-            File[] replicationStoreDirs = baseDir.listFiles(new FileFilter() {
+            final String currentDirName = meta.getProperty(LATEST_STORE_DIR);
+            List<String> children = AsyncFileSystemHelper.await(
+                    asyncFileSystem.list(baseDir.getAbsolutePath()),
+                    "list replication store manager baseDir " + baseDir);
 
-                @Override
-                public boolean accept(File path) {
-                    return path.isDirectory() && !currentDirName.equals(path.getName());
-                }
-            });
-
-            if (replicationStoreDirs != null && replicationStoreDirs.length > 0) {
+            if (children != null && !children.isEmpty()) {
 
                 logger.info("[GC][old replicationstore]newest:{}", currentDirName);
-                for (File dir : replicationStoreDirs) {
-                    if (System.currentTimeMillis() - dir.lastModified() > keeperConfig.getReplicationStoreMinTimeMilliToGcAfterCreate()) {
-                        logger.info("[GC] directory {}", dir.getCanonicalPath());
-                        FileUtils.recursiveDelete(dir);
+                for (String name : children) {
+                    if (currentDirName != null && currentDirName.equals(name)) {
+                        continue;
+                    }
+                    String childPath = new File(baseDir, name).getAbsolutePath();
+                    boolean isDir = AsyncFileSystemHelper.await(
+                            asyncFileSystem.isDirectory(childPath),
+                            "isDirectory " + childPath);
+                    if (!isDir) {
+                        continue;
+                    }
+                    // TODO T-FS.14: replace with asyncFileSystem.lastModified(childPath) once path-level mtime lands.
+                    long lastModified = new File(childPath).lastModified();
+                    if (System.currentTimeMillis() - lastModified > keeperConfig.getReplicationStoreMinTimeMilliToGcAfterCreate()) {
+                        logger.info("[GC] directory {}", childPath);
+                        AsyncFileSystemHelper.await(
+                                asyncFileSystem.rmdir(childPath, true),
+                                "rmdir " + childPath);
                     } else {
-                        logger.warn("[GC][directory is created too short, do not gc]{}, {}", dir, new Date(dir.lastModified()));
+                        logger.warn("[GC][directory is created too short, do not gc]{}, {}", childPath, new Date(lastModified));
                     }
                 }
             }
@@ -350,7 +359,9 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     @Override
     public void destroy() throws Exception {
         logger.info("[destroy]{}", this);
-        FileUtils.recursiveDelete(this.baseDir);
+        AsyncFileSystemHelper.await(
+                asyncFileSystem.rmdir(this.baseDir.getAbsolutePath(), true),
+                "rmdir replication store manager baseDir " + baseDir);
     }
 
     public long getGcCount() {
