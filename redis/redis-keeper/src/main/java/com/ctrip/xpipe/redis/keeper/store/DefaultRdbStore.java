@@ -505,9 +505,11 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	@Override
 	public void destroy() throws Exception {
-		
+
 		getLogger().info("[destroy][delete file]{}", file);
-		file.delete();
+		close();
+		AsyncFileSystemHelper.await(asyncFileSystem.delete(file.getAbsolutePath()),
+				"delete rdb file " + file);
 	}
 
 	@Override
