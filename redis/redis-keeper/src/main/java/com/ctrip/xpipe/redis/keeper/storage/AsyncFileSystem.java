@@ -13,7 +13,7 @@ public interface AsyncFileSystem {
 
     // ---- AsyncFile ----
     // lenient: if true and path is not a regular file, I/O operations will throw NPE
-    CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient);
+    CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant);
     CompletableFuture<Boolean> isFile(AsyncFile file);
     CompletableFuture<Boolean> isDirectory(String path);
     CompletableFuture<Long> lastModified(AsyncFile file);
@@ -44,7 +44,7 @@ public interface AsyncFileSystem {
     // Write mode always opens the latest segment file and index files, and auto-closes them upon rollover.
     // Read mode opens the segment file after the first read, and opens index files when getCurrentIndexFiles() is called. They auto-close when reading the next segment.
     // For a newly created (empty) segment file in write mode, the segment file will start at 0 unless truncate(offset) is called to specify the initial offset before writing.
-    CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write);
+    CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant);
     // Only available in read mode.
     // Mixing them with pread/transferTo on the same AsyncSegmentFile is NOT supported
     // as pread/transferTo also require a certain segment to be opened.

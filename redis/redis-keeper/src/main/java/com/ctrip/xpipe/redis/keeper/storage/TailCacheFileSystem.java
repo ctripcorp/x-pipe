@@ -4,13 +4,88 @@ import java.nio.channels.WritableByteChannel;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemConfig.BackingFsMode;
+import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemConfig.CacheMode;
 
 public class TailCacheFileSystem implements AsyncFileSystem {
 
     private final AsyncFileSystem delegate;
+    private volatile boolean readPreferCache;
+    private volatile boolean transferPreferCache;
+    private volatile BackingFsMode backingFsMode;
+    private volatile long maxCacheSizeBytes;
+    private volatile long maxCacheSizePerTenantBytes;
+    private volatile long expectedMinRetentionMs;
+    private volatile CacheMode defaultCacheMode;
 
-    public TailCacheFileSystem(AsyncFileSystem delegate) {
+    public TailCacheFileSystem(AsyncFileSystem delegate, TailCacheFileSystemConfig config) {
         this.delegate = delegate;
+        this.readPreferCache = config.isReadPreferCache();
+        this.transferPreferCache = config.isTransferPreferCache();
+        this.backingFsMode = config.getBackingFsMode();
+        this.maxCacheSizeBytes = config.getMaxCacheSizeBytes();
+        this.maxCacheSizePerTenantBytes = config.getMaxCacheSizePerTenantBytes();
+        this.expectedMinRetentionMs = config.getExpectedMinRetentionMs();
+        this.defaultCacheMode = config.getDefaultCacheMode();
+    }
+
+    public boolean isReadPreferCache() {
+        return readPreferCache;
+    }
+
+    public void setReadPreferCache(boolean readPreferCache) {
+        this.readPreferCache = readPreferCache;
+    }
+
+    public boolean isTransferPreferCache() {
+        return transferPreferCache;
+    }
+
+    public void setTransferPreferCache(boolean transferPreferCache) {
+        this.transferPreferCache = transferPreferCache;
+    }
+
+    public BackingFsMode getBackingFsMode() {
+        return backingFsMode;
+    }
+
+    public void setBackingFsMode(BackingFsMode backingFsMode) {
+        this.backingFsMode = backingFsMode;
+    }
+
+    public long getMaxCacheSizeBytes() {
+        return maxCacheSizeBytes;
+    }
+
+    public void setMaxCacheSizeBytes(long maxCacheSizeBytes) {
+        this.maxCacheSizeBytes = maxCacheSizeBytes;
+    }
+
+    public long getMaxCacheSizePerTenantBytes() {
+        return maxCacheSizePerTenantBytes;
+    }
+
+    public void setMaxCacheSizePerTenantBytes(long maxCacheSizePerTenantBytes) {
+        this.maxCacheSizePerTenantBytes = maxCacheSizePerTenantBytes;
+    }
+
+    public long getExpectedMinRetentionMs() {
+        return expectedMinRetentionMs;
+    }
+
+    public void setExpectedMinRetentionMs(long expectedMinRetentionMs) {
+        this.expectedMinRetentionMs = expectedMinRetentionMs;
+    }
+
+    public CacheMode getDefaultCacheMode() {
+        return defaultCacheMode;
+    }
+
+    public void setDefaultCacheMode(CacheMode defaultCacheMode) {
+        if (defaultCacheMode == CacheMode.DYNAMIC) {
+            throw new IllegalArgumentException("DYNAMIC cannot be used as defaultCacheMode");
+        }
+        this.defaultCacheMode = defaultCacheMode;
     }
 
     @Override
@@ -21,8 +96,16 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     // ---- AsyncFile ----
 
     @Override
-    public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient) {
-        return delegate.open(path, write, atomicReplace, lenient);
+    public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant) {
+        return open(path, write, atomicReplace, lenient, tenant, CacheMode.DYNAMIC);
+    }
+
+    public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant, CacheMode cacheMode) {
+        if (atomicReplace && cacheMode == CacheMode.TAIL_CACHE) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("TAIL_CACHE is not supported for atomicReplace open: " + path));
+        }
+        return delegate.open(path, write, atomicReplace, lenient, tenant);
     }
 
     @Override
@@ -113,8 +196,12 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     // ---- AsyncSegmentFile ----
 
     @Override
-    public CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write) {
-        return delegate.open(path, prefix, indexPrefixes, write);
+    public CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant) {
+        return open(path, prefix, indexPrefixes, write, tenant, CacheMode.DYNAMIC);
+    }
+
+    public CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant, CacheMode cacheMode) {
+        return delegate.open(path, prefix, indexPrefixes, write, tenant);
     }
 
     @Override
