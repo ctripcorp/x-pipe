@@ -1,0 +1,61 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_e6849488ec65b0::t_127ac25195a072 485
+  s_e6849488ec65b0::t_61ef837e66b02c 111
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  s_e6849488ec65b0::t_37d28507ea2b6e 16
+  s_e6849488ec65b0::t_b5718eb6eec4ba 47
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystemConfig.java
+  s_e6849488ec65b0::t_581cd8f46bde76 33,38-41
+  s_e6849488ec65b0::t_f2d673c77335b5 69,75-78,84-85,91-92,112
+  s_e6849488ec65b0::t_2c993e20281854 32
+  s_e6849488ec65b0::t_b678c21327a568 45-47
+  s_e6849488ec65b0::t_a28f106db26049 102-103
+  s_e6849488ec65b0::t_d72cacd9c45149 20,22-23,25-28
+  s_e6849488ec65b0::t_9194dc4376a728 42
+  h_6ceeb547b3b36a 5,9
+  s_e6849488ec65b0::t_d36947d21215bd 34-37
+  s_e6849488ec65b0::t_200a0d416ec99c 12-13,15
+  s_e6849488ec65b0::t_40dea2b05821c0 43
+  s_e6849488ec65b0::t_06562483d831c1 93-94,100-101
+  s_e6849488ec65b0::t_95a330c0ebf07c 1-4,8,11,14,16-19,21,24,29-31,44,48-49,55-58,64-68,113
+  s_e6849488ec65b0::t_98d14a657fb9da 6-7
+  s_e6849488ec65b0::t_39f8d000e39c9d 50-54,59-63,70-74,79-83,86-90,95-99,104-111
+  s_e6849488ec65b0::t_9c9318ddb2708c 10
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_e6849488ec65b0::t_a2bb4888670936 36-39,42-45,50-53,58-61,66-69,76-79,82-88
+  s_e6849488ec65b0::t_44ef91f23ce180 99-102,108
+  s_e6849488ec65b0::t_d8c6da5fe814ee 199-200,204
+  s_e6849488ec65b0::t_e5dde409eeff6c 21,23-25
+  s_e6849488ec65b0::t_3fbec2579ef174 203
+  s_e6849488ec65b0::t_f51077e3bd3cb3 18
+  s_e6849488ec65b0::t_03d78cbb789960 7-8
+  s_e6849488ec65b0::t_1b1b803ebab1f3 19,29
+  s_e6849488ec65b0::t_654c53ae48c4a5 13-15,30-35,40-41,46-49
+  s_e6849488ec65b0::t_9025c7e51b57f5 80-81
+  s_e6849488ec65b0::t_2cc93778c1faff 201-202
+  s_e6849488ec65b0::t_213e1c97d957f3 103-107
+  s_e6849488ec65b0::t_54366185bcec03 72-73
+  s_e6849488ec65b0::t_e58f2db5a1eb9f 28
+  s_e6849488ec65b0::t_3e94eb7ed426b8 16-17,26-27,54-57,62-65,70-71,74-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.28-trip",
+  "base_commit_sha": "7ca67d9ce82b8acf6dbfa68f14e8336d15a15111",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_e6849488ec65b0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "99170675-a06a-446a-b5bf-719e1768f2b1",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
