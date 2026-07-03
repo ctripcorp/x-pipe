@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class AsyncSegmentFile {
+public class AsyncSegmentFile extends AbstractStorageFile {
 
     private static final Logger logger = LoggerFactory.getLogger(AsyncSegmentFile.class);
 
@@ -37,6 +37,16 @@ public class AsyncSegmentFile {
     long openedSegmentStartOffset = Long.MAX_VALUE;
     long openedSegmentEndOffset = Long.MAX_VALUE;
     long readPosition = 0;
+
+    @Override
+    FileChannel currentWriteChannel() {
+        return currentSegmentChannel;
+    }
+
+    @Override
+    String identifier() {
+        return key;
+    }
 
     AsyncSegmentFile(String dirPath, String prefix, List<String> indexPrefixes, String key, boolean writeMode) {
         this.dirPath = dirPath;
@@ -181,6 +191,7 @@ public class AsyncSegmentFile {
         currentIndexFiles.clear();
         openedSegmentStartOffset = Long.MAX_VALUE;
         openedSegmentEndOffset = Long.MAX_VALUE;
+        pendingFsyncBytes = 0;
     }
 
     long exclusiveEndOffset(long lastOffset) throws IOException {

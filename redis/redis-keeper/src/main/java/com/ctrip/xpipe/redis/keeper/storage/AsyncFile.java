@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.keeper.storage;
 
 import java.nio.channels.FileChannel;
 
-public class AsyncFile {
+public class AsyncFile extends AbstractStorageFile {
 
     final String path;
     FileChannel channel;
@@ -14,5 +14,15 @@ public class AsyncFile {
         this.channel = channel;
         this.atomicReplace = atomicReplace;
         this.writeMode = writeMode;
+    }
+
+    @Override
+    FileChannel currentWriteChannel() {
+        return channel;
+    }
+
+    @Override
+    String identifier() {
+        return path;
     }
 }
