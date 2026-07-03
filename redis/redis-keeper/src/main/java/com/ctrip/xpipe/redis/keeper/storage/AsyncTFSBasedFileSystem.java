@@ -519,7 +519,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
             }
             if (entry.initFailed) {
-                releaseDirEntry(key, entry, write);
+                releaseDirEntry(key, write);
                 throw new StorageIOException("init failed for " + key);
             }
 
@@ -527,11 +527,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 file.openInitialResources(entry.state);
             } catch (IOException e) {
-                releaseDirEntry(key, entry, write);
+                releaseDirEntry(key, write);
                 throw wrap(e);
             } catch (Throwable t) {
                 // make sure to release the entry even if error like NPE is thrown
-                releaseDirEntry(key, entry, write);
+                releaseDirEntry(key, write);
                 throw t;
             }
             return file;
