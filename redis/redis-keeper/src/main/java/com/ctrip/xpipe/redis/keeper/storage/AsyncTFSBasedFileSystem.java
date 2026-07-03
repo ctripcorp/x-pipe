@@ -108,7 +108,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     // atomicReplace uses tmp file approach instead of rename because tfs currently does not support rename.
     // Tmp file format: [8-byte length][data].
     @Override
-    public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient) {
+    public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant) {
         if (atomicReplace && !write) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("atomicReplace requires write=true"));
@@ -482,7 +482,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<AsyncSegmentFile> open(String path, String prefix,
-            List<String> indexPrefixes, boolean write) {
+            List<String> indexPrefixes, boolean write, String tenant) {
         return supply(() -> {
             String key = registryKey(path, prefix);
             DirEntry entry;
