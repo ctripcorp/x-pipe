@@ -15,7 +15,9 @@ public interface CommandWriter extends Closeable {
 
     int write(ByteBuf byteBuf) throws IOException;
 
-    boolean rotateFileIfNecessary() throws IOException;
+    boolean needRotate();
+
+    void doRotate() throws IOException;
 
     long totalLength();
 

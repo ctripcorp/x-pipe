@@ -108,7 +108,7 @@ public class DefaultIndexStoreTest {
         when(writer.getFileContext()).thenReturn(commandFileContext);
 
         when(commandWriterCallback.getCommandWriter()).thenReturn(writer);
-        when(writer.rotateFileIfNecessary()).thenReturn(false);
+        when(writer.needRotate()).thenReturn(false);
         when(writer.totalLength()).thenReturn(0L);
 
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();

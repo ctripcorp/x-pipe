@@ -11,7 +11,7 @@ import java.util.List;
 public interface IndexStore {
 
     void write(ByteBuf byteBuf) throws IOException;
-    void rotateFileIfNecessary() throws IOException;
+    void doRotate() throws IOException;
     void openWriter(CommandWriter cmdWriter) throws IOException;
     List<Pair<Long,  Long>> locateGtidRange(String uuid, long begGno, long endGno) throws IOException;
     Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws IOException;

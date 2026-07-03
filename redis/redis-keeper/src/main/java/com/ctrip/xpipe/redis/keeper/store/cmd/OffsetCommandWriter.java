@@ -30,8 +30,6 @@ public class OffsetCommandWriter implements CommandWriter {
 
     private Logger delayTraceLogger;
 
-    private final AtomicLong fileSize = new AtomicLong();
-
     private static final Logger logger = LoggerFactory.getLogger(OffsetCommandWriter.class);
 
     public OffsetCommandWriter(CommandStore cmdStore, int maxFileSize,
@@ -50,29 +48,6 @@ public class OffsetCommandWriter implements CommandWriter {
         if (cmdFileCtxRef.compareAndSet(null, cmdFileCtx)) {
             logger.info("[initialize] write to {}", latestCommandFile.getFile().getName());
         }
-    }
-
-    @Override
-    public boolean rotateFileIfNecessary() throws IOException {
-        CommandFileContext curCmdFileCtx = cmdFileCtxRef.get();
-        if (curCmdFileCtx.fileLength() >= maxFileSize) {
-            cmdStore.flushSlidingWindow();
-            CommandFile newCommandFile = cmdStore.newCommandFile(totalLength());
-            File newFile = newCommandFile.getFile();
-            long newStartOffset = newCommandFile.getStartOffset();
-            logger.info("Rotate to {},filelength {},totallength {},newStartOffset {}", newFile.getName(),curCmdFileCtx.fileLength(),totalLength(),newStartOffset);
-
-            synchronized (this) {
-                CommandFileContext newCmdFileCtx = new CommandFileContext(newStartOffset, newFile);
-                newCmdFileCtx.createIfNotExist();
-                cmdFileCtxRef.set(newCmdFileCtx);
-
-                curCmdFileCtx.close();
-                return true;
-            }
-        }
-
-        return false;
     }
 
     @Override
@@ -96,6 +71,29 @@ public class OffsetCommandWriter implements CommandWriter {
         }
 
         return wrote;
+    }
+
+    @Override
+    public boolean needRotate() {
+        CommandFileContext curCmdFileCtx = cmdFileCtxRef.get();
+        return curCmdFileCtx.fileLength() >= maxFileSize;
+    }
+
+    @Override
+    public void doRotate() throws IOException {
+        CommandFileContext curCmdFileCtx = cmdFileCtxRef.get();
+        CommandFile newCommandFile = cmdStore.newCommandFile(totalLength());
+        File newFile = newCommandFile.getFile();
+        long newStartOffset = newCommandFile.getStartOffset();
+        logger.info("Rotate to {},filelength {},totallength {},newStartOffset {}", newFile.getName(),curCmdFileCtx.fileLength(),totalLength(),newStartOffset);
+
+        synchronized (this) {
+            CommandFileContext newCmdFileCtx = new CommandFileContext(newStartOffset, newFile);
+            newCmdFileCtx.createIfNotExist();
+            cmdFileCtxRef.set(newCmdFileCtx);
+
+            curCmdFileCtx.close();
+        }
     }
 
     @Override
