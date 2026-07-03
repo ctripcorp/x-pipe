@@ -404,10 +404,14 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     public void rotateFileIfNecessary() throws IOException {
-        if(cmdWriter.needRotate()){
+        if(cmdWriter.needRotate()) {
             flushSlidingWindow();
-            cmdWriter.doRotate();
-            if(buildIndex){
+            if(!buildIndex) {
+                cmdWriter.doRotate();
+                return;
+            }
+            if (indexStore.needRotate()) {
+                cmdWriter.doRotate();
                 indexStore.doRotate();
             }
         }

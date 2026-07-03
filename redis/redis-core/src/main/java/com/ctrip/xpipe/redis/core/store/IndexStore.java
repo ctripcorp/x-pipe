@@ -12,6 +12,7 @@ public interface IndexStore {
 
     void write(ByteBuf byteBuf) throws IOException;
     void doRotate() throws IOException;
+    boolean needRotate();
     void openWriter(CommandWriter cmdWriter) throws IOException;
     List<Pair<Long,  Long>> locateGtidRange(String uuid, long begGno, long endGno) throws IOException;
     Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws IOException;
