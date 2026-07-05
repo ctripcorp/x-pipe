@@ -1,0 +1,98 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  s_40e19e8e587b7b::t_ca746363cd9a9d 1276-1351
+  s_7fb5cb9a4af716::t_99e03d96a417ac 52-53,56
+  s_4edcb32cd6d675::t_dab0f257678aa1 1245-1263,1368-1369
+  s_7fb5cb9a4af716::t_7efefc73acdefb 138-159,162-165
+  s_40e19e8e587b7b::t_ffa07dbf395fa9 30,36,43,45
+  s_40e19e8e587b7b::t_a72052869e700f 1203-1204,1211-1229,1232-1241
+  s_40e19e8e587b7b::t_c899478f2411b7 1017-1020
+  s_7fb5cb9a4af716::t_c0ca44b6238379 42,44,46
+  s_7fb5cb9a4af716::t_3b46f702e2bbf7 102-103,106
+  s_40e19e8e587b7b::t_011ba406e5ceef 1205-1210
+  s_b4d68ccf316e20::t_d88a640a9ddabd 1399,1540-1562
+  s_7fb5cb9a4af716::t_a7b9ffb8223681 416
+  s_8f5b6cee4df954::t_200c9518e5adf1 1037,1039,1043
+  s_4edcb32cd6d675::t_cde8d299e54321 1165-1166
+  s_40e19e8e587b7b::t_35ba656fe2fbc2 1400-1471,1473-1508,1510-1512,1515-1523,1526-1539
+  s_40e19e8e587b7b::t_e19ca5cc67bc03 1472
+  s_40e19e8e587b7b::t_72643cb72e62dd 1524-1525
+  s_40e19e8e587b7b::t_a6906876d69654 1509
+  s_40e19e8e587b7b::t_50a899c6a5a8c4 1513-1514
+  s_40e19e8e587b7b::t_4d81bce165a29a 1230-1231
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/StreamCommandReader.java
+  s_8f5b6cee4df954::t_200c9518e5adf1 151
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/StreamCommandReaderTest.java
+  s_40e19e8e587b7b::t_6656a23defbefa 20
+  s_5f8ce3a8bded5c::t_e8134e1763d753 533-534
+  s_40e19e8e587b7b::t_1e97a58ee0aa23 458-504
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  s_b4d68ccf316e20::t_0e0798cca61e36 246
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriterV2.java
+  s_5f8ce3a8bded5c::t_e094cd39e21d58 133-135
+  s_5f8ce3a8bded5c::t_a54ebc7e3bfbe5 124
+  s_8f5b6cee4df954::t_200c9518e5adf1 142,152,170-173,192-193
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/AbstractIndex.java
+  s_b4d68ccf316e20::t_b6c33850f536da 131
+  s_b4d68ccf316e20::t_a4d979eb11d0c0 182,187,192-197
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReaderV2.java
+  s_b4d68ccf316e20::t_09c101ec7e4aba 46-48
+  s_b4d68ccf316e20::t_2849f4a112852d 7,25-34
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/protocal/protocal/AbstractBulkStringParser.java
+  s_8f5b6cee4df954::t_cb427270c4b239 115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.28-trip",
+  "base_commit_sha": "2674bba0c00588e6d315f748dfeb1febc19e4680",
+  "prompts": {},
+  "sessions": {
+    "s_40e19e8e587b7b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "dc6b859a-0392-4a95-ac41-eebc69193a8e",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_4edcb32cd6d675": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "402af618-2b01-4f65-b66a-164d01ce4226",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_5f8ce3a8bded5c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d99dede0-8de0-44b5-a53a-5a3c7bd5a63d",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_7fb5cb9a4af716": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1b31f885-1cc0-4658-b770-9f8f94dfd915",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_8f5b6cee4df954": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8be47c17-3b58-43ad-ad71-5cd4d293b2e1",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_b4d68ccf316e20": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "193dea39-93ab-4109-85b4-e4dca9988089",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
