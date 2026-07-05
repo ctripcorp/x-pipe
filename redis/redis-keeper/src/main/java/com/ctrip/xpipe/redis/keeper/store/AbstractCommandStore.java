@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
@@ -104,11 +105,13 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     private CKStore ckStore;
 
+    private KeeperConfig keeperConfig;
+
     private TimerSlidingWindow timerSlidingWindow;
     
     public abstract Logger getLogger();
 
-    public AbstractCommandStore(CKStore ckStore,File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+    public AbstractCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                                 int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
                                 long commandReaderFlyingThreshold,
                                 BooleanSupplier commandOffsetNotifyCoalescingEnabled,
@@ -131,6 +134,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.redisOpParser = redisOpParser;
         this.gtidCmdFilter = gtidCmdFilter;
         this.ckStore = ckStore;
+        this.keeperConfig = keeperConfig != null ? keeperConfig
+                : (ckStore != null ? ckStore.getKeeperConfig() : null);
 
         cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
@@ -143,7 +148,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     private IndexStore createIndexStore() throws IOException {
-        return new DefaultIndexStore(ckStore,baseDir.getAbsolutePath(), redisOpParser,
+        return new DefaultIndexStore(keeperConfig, ckStore, baseDir.getAbsolutePath(), redisOpParser,
                 this, gtidCmdFilter, findLatestFile().getFile().getName());
     }
 

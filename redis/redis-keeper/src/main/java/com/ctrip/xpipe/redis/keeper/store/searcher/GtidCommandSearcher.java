@@ -165,7 +165,7 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
     }
 
     @Override
-    public int postAppend(ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException {
+    public int postAppend(String gtid, long offset, int cmdLength, ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException {
         try {
             appendCmdKeyItem(currentUUID, currentGno, redisOpItem);
         } catch (Throwable th) {
@@ -177,7 +177,7 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
     }
 
     @Override
-    public int batchPostAppend(List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException {
+    public int batchPostAppend(String gtid, long offset, List<Integer> cmdLengths, List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException {
         try {
             for (RedisOpItem redisOpItem : payloads) {
                 appendCmdKeyItem(currentUUID, currentGno, redisOpItem);
@@ -188,16 +188,6 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
             afterAppend();
         }
         return 0;
-    }
-
-    @Override
-    public void onNonGtidWritten(long offset, int length) throws IOException {
-
-    }
-
-    @Override
-    public void onGtidWritten(long offset, int length) throws IOException {
-
     }
 
     private void appendCmdKeyItem(String uuid, long gno, RedisOpItem redisOpItem) {

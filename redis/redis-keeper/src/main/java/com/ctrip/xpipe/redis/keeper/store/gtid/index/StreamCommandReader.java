@@ -144,16 +144,21 @@ public class StreamCommandReader implements StreamCommandLister {
 
     private void handleRegularCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
         if (transactionContext.isActive()) {
-            transactionContext.addCommand(payload, commandBuf);
+            DirectByteBufInOutPayload commandPayload = (DirectByteBufInOutPayload) payload[0];
+            if (isExecCommand(commandPayload)) {
+                commitTransaction(null, payload, commandBuf);
+            } else {
+                transactionContext.addCommand(payload, commandBuf);
+            }
         } else {
-            writeSingleCommand(commandBuf, payload,false);
+            writeSingleCommand(commandBuf, payload, null);
         }
     }
 
     private void processSingleGtidCommand(String gtid, Object[] payload, ByteBuf commandBuf) throws IOException {
         long offset = this.currentOffset;
         if (transactionListener.preAppend(gtid, offset)) {
-            writeSingleCommand(commandBuf, payload,true);
+            writeSingleCommand(commandBuf, payload,gtid);
         }
     }
 
@@ -170,11 +175,6 @@ public class StreamCommandReader implements StreamCommandLister {
     }
 
     private void commitTransaction(String gtid, Object[] payload, ByteBuf execCommandBuf) throws IOException {
-        if (!transactionContext.isActive()) {
-            processSingleGtidCommand(gtid, payload, execCommandBuf);
-            return;
-        }
-
         transactionContext.setGtid(gtid);
         transactionContext.addCommand(payload, execCommandBuf);
 
@@ -186,27 +186,25 @@ public class StreamCommandReader implements StreamCommandLister {
         }
     }
 
-    private void writeSingleCommand(ByteBuf commandBuf, Object[] payload,boolean hasGtid) throws IOException {
+    private void writeSingleCommand(ByteBuf commandBuf, Object[] payload,String gtid) throws IOException {
         long start = this.currentOffset;
         int cmdLen = commandBuf.readableBytes();
         RedisOpItem redisOpItem = parsePayload(payload);
-        transactionListener.postAppend(commandBuf, redisOpItem);
+        transactionListener.postAppend(gtid, start, cmdLen, commandBuf, redisOpItem);
         this.currentOffset += cmdLen;
-        if(hasGtid){
-            transactionListener.onGtidWritten(start,cmdLen);
-        }else {
-            transactionListener.onNonGtidWritten(start,cmdLen);
-        }
         mayCheckOffset();
     }
 
-    private void writeMultiCommand(List<ByteBuf> commandBufs, List<RedisOpItem> redisOpItems) throws IOException {
-        int cmdLen = 0;
+    private void writeMultiCommand(String gtid, long startOffset, List<ByteBuf> commandBufs, List<RedisOpItem> redisOpItems) throws IOException {
+        List<Integer> cmdLengths = new ArrayList<>(commandBufs.size());
+        int totalLen = 0;
         for (ByteBuf commandBuf : commandBufs) {
-            cmdLen += commandBuf.readableBytes();
+            int len = commandBuf.readableBytes();
+            cmdLengths.add(len);
+            totalLen += len;
         }
-        transactionListener.batchPostAppend(commandBufs, redisOpItems);
-        this.currentOffset += cmdLen;
+        transactionListener.batchPostAppend(gtid, startOffset, cmdLengths, commandBufs, redisOpItems);
+        this.currentOffset += totalLen;
         mayCheckOffset();
     }
 
@@ -256,10 +254,10 @@ public class StreamCommandReader implements StreamCommandLister {
 
                 if (gtid != null && !StringUtil.isEmpty(gtid)) {
                     if (transactionListener.preAppend(gtid, transactionStartOffset)) {
-                        reader.writeMultiCommand(commandBufs, payloads);
+                        reader.writeMultiCommand(gtid, transactionStartOffset, commandBufs, payloads);
                     }
                 } else {
-                    reader.writeMultiCommand(commandBufs, payloads);
+                    reader.writeMultiCommand(null, transactionStartOffset, commandBufs, payloads);
                 }
             } finally {
                 clear();

@@ -46,6 +46,19 @@ public class BulkStringParserTest extends AbstractRedisProtocolTest{
 	}
 
 	@Test
+	public void testBlankLineBeforeEofMark() {
+		String eof = randomString(BulkStringEofMarkJudger.MARK_LENGTH);
+		String buff = "\n\r\n$EOF:" + eof + "\r\n" + content + eof;
+		int lengths[] = new int[]{1, 5, 10, eof.length()};
+		for (int i : lengths) {
+			bs = new RdbBulkStringParser(new TestPayload());
+			String[] contents = StringUtil.splitByLen(buff, i);
+			parse(bs, contents);
+			assertResult();
+		}
+	}
+
+	@Test
 	public void testEOFSplit(){
 		
 		bs = new RdbBulkStringParser(new TestPayload());

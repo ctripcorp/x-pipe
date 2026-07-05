@@ -23,7 +23,7 @@ public class IndexEntryTest {
     private long blockStartOffset;
     private long blockEndOffset;
     private int size;
-    private int lastCommandLength;
+    private long cmdEndOffset;
     private long zoneStart;
     private long zoneEnd;
     private int zoneCmdCount;
@@ -38,7 +38,7 @@ public class IndexEntryTest {
         blockStartOffset = 0L;
         blockEndOffset = 200L;
         size = 50;
-        lastCommandLength = 80;
+        cmdEndOffset = 580L;
         zoneStart = 1000L;
         zoneEnd = 2000L;
         zoneCmdCount = 30;
@@ -50,7 +50,7 @@ public class IndexEntryTest {
         IndexEntry entry = new IndexEntry(validUuid40, startGno, cmdStartOffset, blockStartOffset);
         entry.setBlockEndOffset(blockEndOffset);
         entry.setSize(size);
-        entry.setLastCommandLength(lastCommandLength);
+        entry.setCmdEndOffset(cmdEndOffset);
 
         ByteBuffer buffer = entry.generateBufferV2();
         assertNotNull(buffer);
@@ -66,7 +66,7 @@ public class IndexEntryTest {
         assertEquals(blockStartOffset, parsed.getBlockStartOffset());
         assertEquals(blockEndOffset, parsed.getBlockEndOffset());
         assertEquals(size, parsed.getSize());
-        assertEquals(lastCommandLength, parsed.getLastCommandLength());
+        assertEquals(cmdEndOffset, parsed.getCmdEndOffset());
         assertFalse(parsed.isZone());
     }
 
@@ -86,31 +86,33 @@ public class IndexEntryTest {
         assertEquals(0L, parsed.getStartGno());
         assertEquals(zoneStart, parsed.getCmdStartOffset());
         assertEquals(0L, parsed.getBlockStartOffset());   // ZONE 的 blockStartOffset 应为 0
-        assertEquals(zoneEnd, parsed.getBlockEndOffset()); // zoneEnd 复用 blockEndOffset
+        assertEquals(0L, parsed.getBlockEndOffset());   // ZONE 的 blockEndOffset 应为 0
         assertEquals(zoneCmdCount, parsed.getSize());
-        assertEquals(0, parsed.getLastCommandLength());    // ZONE 无最后命令长度
+        assertEquals(zoneEnd, parsed.getCmdEndOffset());   // ZONE 结束位置在 cmdEndOffset
         assertEquals(zoneEnd, parsed.getZoneEnd());
         assertEquals(zoneStart, parsed.getZoneStart());
     }
 
-    // ---------- CRC 校验失败返回 null ----------
+    // ---------- 破坏数据仍能解析（无 CRC 校验，字段直接读入） ----------
     @Test
-    public void testV2CrcValidationFailure() {
+    public void testV2BitFlipParsedButFieldsDiffer() {
         IndexEntry entry = new IndexEntry(validUuid40, startGno, cmdStartOffset, blockStartOffset);
         entry.setBlockEndOffset(blockEndOffset);
         entry.setSize(size);
-        entry.setLastCommandLength(lastCommandLength);
+        entry.setCmdEndOffset(cmdEndOffset);
         ByteBuffer buffer = entry.generateBufferV2();
 
-        // 修改 buffer 中某个字节（非 CRC 部分），破坏数据完整性
+        // 修改 buffer 中某个字节（非 UUID/CRC 部分），破坏 startGno
         byte[] array = buffer.array();
-        array[10] ^= 0xFF; // 翻转第 10 个字节
-        buffer.clear(); // 重置位置
+        int flipPos = 44; // startGno 起始
+        array[flipPos] ^= 0x01;
+        buffer.clear();
         buffer.put(array);
         buffer.flip();
 
         IndexEntry parsed = IndexEntry.fromBufferV2(buffer);
-        assertNull("CRC validation should fail and return null", parsed);
+        assertNotNull("v2 无 CRC，parse 不应返回 null", parsed);
+        assertNotEquals("被翻转的字段应产生不同值", startGno, parsed.getStartGno());
     }
 
     // ---------- 固定 88 字节 ----------
@@ -152,7 +154,7 @@ public class IndexEntryTest {
         IndexEntry gtidEntry = new IndexEntry(validUuid40, startGno, cmdStartOffset, blockStartOffset);
         gtidEntry.setBlockEndOffset(blockEndOffset);
         gtidEntry.setSize(size);
-        gtidEntry.setLastCommandLength(lastCommandLength);
+        gtidEntry.setCmdEndOffset(cmdEndOffset);
         ByteBuffer gtidBuf = gtidEntry.generateBufferV2();
         channel.write(gtidBuf);
 
@@ -202,8 +204,8 @@ public class IndexEntryTest {
         assertEquals(500L, entry.getBlockEndOffset());
         entry.setSize(10);
         assertEquals(10, entry.getSize());
-        entry.setLastCommandLength(120);
-        assertEquals(120, entry.getLastCommandLength());
+        entry.setCmdEndOffset(120L);
+        assertEquals(120L, entry.getCmdEndOffset());
         entry.setPosition(999);
         assertEquals(999, entry.getPosition());
         assertEquals(startGno + 10 - 1, entry.getEndGno());

@@ -66,7 +66,11 @@ public class BlockWriter implements AutoCloseable {
         return this.size >= BLOCK_NAX_SIZE;
     }
 
-    private boolean isGnoGap(String uuid, long gno) {
+    public boolean isBlockFull() {
+        return isFull();
+    }
+
+    public boolean isGnoGap(String uuid, long gno) {
         return !StringUtil.trimEquals(this.currentUuid, uuid) || gno != currentGno + 1;
     }
 
