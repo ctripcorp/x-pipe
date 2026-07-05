@@ -387,4 +387,14 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public boolean readV2() {
 		return true;
 	}
+
+	@Override
+	public int getIndexZoneConsecutiveThreshold() {
+		return 8192;
+	}
+
+	@Override
+	public long getIndexMixedTotalBytesThreshold() {
+		return 16L * 1024 * 1024;
+	}
 }

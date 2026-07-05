@@ -111,22 +111,36 @@ public abstract class AbstractBulkStringParser extends AbstractRedisClientProtoc
 	private LfReader lfReader = null;
 
 	private BulkStringEofJudger readEOfMark(ByteBuf byteBuf){
-		
-		if(lfReader == null){
-			lfReader = new LfReader();
-		}
-		RedisClientProtocol<byte[]> markBytes= lfReader.read(byteBuf);
-		if(markBytes == null){
-			return null;
-		}
-		byte[] markPayload = markBytes.getPayload();
-		
-		if(markPayload.length == 0){
+		while (byteBuf.readableBytes() > 0) {
+			if (lfReader == null) {
+				lfReader = new LfReader();
+			}
+			RedisClientProtocol<byte[]> markBytes = lfReader.read(byteBuf);
+			if (markBytes == null) {
+				return null;
+			}
+			byte[] markPayload = markBytes.getPayload();
 			lfReader = null;
-			return null;
+
+			if (isBlankLine(markPayload)) {
+				continue;
+			}
+
+			return BulkStringEofJuderManager.create(markPayload);
 		}
-		
-		return BulkStringEofJuderManager.create(markPayload);
+		return null;
+	}
+
+	private static boolean isBlankLine(byte[] payload) {
+		if (payload == null || payload.length == 0) {
+			return true;
+		}
+		for (byte b : payload) {
+			if (b != '\r' && b != '\n') {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	

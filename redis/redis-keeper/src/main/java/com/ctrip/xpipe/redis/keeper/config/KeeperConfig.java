@@ -119,4 +119,8 @@ public interface KeeperConfig extends CoreConfig{
 	boolean dualWrite();
 
 	boolean readV2();
+
+	int getIndexZoneConsecutiveThreshold();
+
+	long getIndexMixedTotalBytesThreshold();
 }

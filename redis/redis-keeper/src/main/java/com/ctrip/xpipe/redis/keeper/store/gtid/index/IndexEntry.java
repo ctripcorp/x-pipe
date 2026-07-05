@@ -6,14 +6,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
-import java.util.zip.CRC32C;
 
 public class IndexEntry {
 
     // v2
     private IndexEntryType type;
     private byte flags;
-    private int lastCommandLength;      // v2 最后一条命令的长度
+    private long cmdEndOffset;           // v2 GTID 条目结束在 cmd 文件的绝对位置（写完后 offset+cmdLength）
 
     private String uuid;
     private long startGno;
@@ -47,17 +46,17 @@ public class IndexEntry {
         this.size = 0;
         this.type = IndexEntryType.GTID;
         this.flags = 0;
-        this.lastCommandLength = 0;
+        this.cmdEndOffset = 0L;
         this.position = -1;
     }
 
     // ZONE 工厂方法
     public static IndexEntry zone(long zoneStart, long zoneEnd, int cmdCount) {
         IndexEntry e = new IndexEntry(ZONE_UUID, 0L, zoneStart, 0L);
-        e.setBlockEndOffset(zoneEnd);
+        e.setBlockEndOffset(0L);
         e.setSize(cmdCount);
         e.type = IndexEntryType.ZONE;
-        e.lastCommandLength = 0;
+        e.cmdEndOffset = zoneEnd;
         return e;
     }
 
@@ -126,9 +125,9 @@ public class IndexEntry {
     }
 
     public long getZoneStart() { return cmdStartOffset; }
-    public long getZoneEnd() { return blockEndOffset; }
-    public int getLastCommandLength() { return lastCommandLength; }
-    public void setLastCommandLength(int length) { this.lastCommandLength = length; }
+    public long getZoneEnd() { return cmdEndOffset; }
+    public long getCmdEndOffset() { return cmdEndOffset; }
+    public void setCmdEndOffset(long cmdEndOffset) { this.cmdEndOffset = cmdEndOffset; }
     public IndexEntryType getType() { return type; }
     public byte getFlags() { return flags; }
 
@@ -141,12 +140,10 @@ public class IndexEntry {
         buf.put(uuid.getBytes());              // 4-43
         buf.putLong(startGno);                 // 44-51
         buf.putLong(cmdStartOffset);           // 52-59
-        buf.putLong(blockStartOffset);         // 60-67
-        buf.putLong(blockEndOffset);           // 68-75
-        buf.putInt(size);                      // 76-79
-        buf.putInt(lastCommandLength);         // 80-83
-        int crc = crc32c(buf.array(), 0, 84);
-        buf.putInt(crc);                       // 84-87
+        buf.putLong(cmdEndOffset);             // 60-67
+        buf.putLong(blockStartOffset);         // 68-75
+        buf.putLong(blockEndOffset);           // 76-83
+        buf.putInt(size);                      // 84-87
         buf.flip();
         return buf;
     }
@@ -167,45 +164,31 @@ public class IndexEntry {
 
     /**
      * 从 ByteBuffer 读取 v2 格式条目（88 字节）。
-     * 解析顺序与 generateBufferV2 严格一致，CRC 校验失败返回 null。
      */
     public static IndexEntry fromBufferV2(ByteBuffer buffer) {
         if (buffer.remaining() < SEGMENT_LENGTH_V2) return null;
-        int startPos = buffer.position();
 
-        // 读取前 84 字节数据并计算 CRC
-        byte[] body = new byte[84];
-        buffer.get(body);
-        int expectedCrc = crc32c(body, 0, 84);
-        int actualCrc = buffer.getInt();
-        if (expectedCrc != actualCrc) {
-            buffer.position(startPos);   // 恢复位置
-            return null;
-        }
-
-        // 按照 generateBufferV2 的顺序解析各字段
-        ByteBuffer bodyBuf = ByteBuffer.wrap(body);
-        IndexEntryType type = IndexEntryType.fromCode(bodyBuf.get());   // 0
-        byte flags = bodyBuf.get();                                     // 1
-        bodyBuf.getShort();                                             // 2-3 reserved
+        IndexEntryType type = IndexEntryType.fromCode(buffer.get());   // 0
+        byte flags = buffer.get();                                     // 1
+        buffer.getShort();                                             // 2-3 reserved
 
         byte[] uuidBytes = new byte[40];
-        bodyBuf.get(uuidBytes);                                         // 4-43
+        buffer.get(uuidBytes);                                         // 4-43
         String uuid = new String(uuidBytes);
 
-        long startGno = bodyBuf.getLong();                              // 44-51
-        long cmdStartOffset = bodyBuf.getLong();                        // 52-59
-        long blockStartOffset = bodyBuf.getLong();                      // 60-67
-        long blockEndOffset = bodyBuf.getLong();                        // 68-75
-        int size = bodyBuf.getInt();                                    // 76-79
-        int lastCommandLength = bodyBuf.getInt();                       // 80-83
+        long startGno = buffer.getLong();                              // 44-51
+        long cmdStartOffset = buffer.getLong();                        // 52-59
+        long cmdEndOffset = buffer.getLong();                          // 60-67
+        long blockStartOffset = buffer.getLong();                      // 68-75
+        long blockEndOffset = buffer.getLong();                        // 76-83
+        int size = buffer.getInt();                                    // 84-87
 
         IndexEntry e = new IndexEntry(uuid, startGno, cmdStartOffset, blockStartOffset);
         e.type = type;
         e.flags = flags;
         e.blockEndOffset = blockEndOffset;
         e.size = size;
-        e.lastCommandLength = lastCommandLength;
+        e.cmdEndOffset = cmdEndOffset;
         return e;
     }
 
@@ -268,7 +251,7 @@ public class IndexEntry {
         return fileSize - currentPosition;
     }
 
-    // ---------- v2 反序列化（CRC 校验）----------
+    // ---------- v2 反序列化 ----------
     public static IndexEntry readFromFileV2(FileChannel channel) throws IOException {
         if (fileRemainingLength(channel) < SEGMENT_LENGTH_V2) return null;
         ByteBuffer buf = ByteBuffer.allocate(SEGMENT_LENGTH_V2);
@@ -288,12 +271,6 @@ public class IndexEntry {
         return indexEntry;
     }
 
-    private static int crc32c(byte[] data, int offset, int length) {
-        CRC32C crc = new CRC32C();
-        crc.update(data, offset, length);
-        return (int) crc.getValue();
-    }
-
     @Override
     public String toString() {
         return "IndexEntry{" +
@@ -301,6 +278,7 @@ public class IndexEntry {
                 ", startGno=" + startGno +
                 ", endGno=" + (startGno + size - 1) +
                 ", cmdStartOffset=" + cmdStartOffset +
+                ", cmdEndOffset=" + cmdEndOffset +
                 ", blockStartOffset=" + blockStartOffset +
                 ", blockEndOffset=" + blockEndOffset +
                 ", size=" + size +

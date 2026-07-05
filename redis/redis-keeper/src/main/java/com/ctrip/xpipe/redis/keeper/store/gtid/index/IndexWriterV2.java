@@ -22,7 +22,8 @@ import java.util.List;
 public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(IndexWriterV2.class);
-    static final int FLUSH_THRESHOLD = 8192;
+
+    private final Object writeLock = new Object();
 
     private BlockWriter blockWriter;
     private IndexEntry currentGtidEntry;
@@ -32,12 +33,24 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
 
     private long zoneStart = -1L, zoneEnd = 0L;
     private int zoneCmdCount = 0;
-    private int lastCommandLength = 0;
+    private long cmdBytesSinceLastIndex = 0L;
+    /** 当前 pending GTID entry 在 cmd 文件上的结束 offset，仅 appendGtid 更新 */
+    private long gtidCmdEndOffset = 0L;
+
+    private final int zoneConsecutiveThreshold;
+    private final long mixedTotalBytesThreshold;
 
     public IndexWriterV2(String baseDir, String cmdFileName, GtidSet gtidSet, DefaultIndexStore store) {
+        this(baseDir, cmdFileName, gtidSet, store, 8192, 16L * 1024 * 1024);
+    }
+
+    public IndexWriterV2(String baseDir, String cmdFileName, GtidSet gtidSet, DefaultIndexStore store,
+                         int zoneConsecutiveThreshold, long mixedTotalBytesThreshold) {
         super(baseDir, cmdFileName);
         this.gtidSetWrapper = new GtidSetWrapper(gtidSet);
         this.store = store;
+        this.zoneConsecutiveThreshold = zoneConsecutiveThreshold;
+        this.mixedTotalBytesThreshold = mixedTotalBytesThreshold;
     }
 
     @Override protected String getIndexPrefix() { return INDEX_V2; }
@@ -54,30 +67,94 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
         }
     }
 
-    // GTID 写入
-    public void append(String uuid, long gno, int commandOffset) throws IOException {
-        flushZone();
-        if (blockWriter == null || needChangeBlock(uuid, gno)) {
-            if (blockWriter != null) finishBlock();
-            createNewBlock(uuid, gno, commandOffset);
+    // GTID 事务写入：整批一次
+    public void appendGtid(String uuid, long gno, long offset, List<Integer> cmdLengths) throws IOException {
+        synchronized (writeLock) {
+            // R1/R2: GTID 到来 → 清空 pending zone 状态（不落 ZONE）
+            clearPendingZone();
+
+            int totalLen = 0;
+            for (int len : cmdLengths) totalLen += len;
+
+            // block 满或 uuid/gno gap：append 前先落盘当前 block（与 v1 IndexWriter 一致）
+            if (blockWriter != null && blockWriter.needChangeBlock(uuid, gno)) {
+                flushGtidEntryUnlocked();
+            }
+            if (blockWriter == null) {
+                createNewBlock(uuid, gno, (int) offset);
+            }
+            blockWriter.append(uuid, gno, (int) offset);
+
+            gtidCmdEndOffset = offset + totalLen;
+            cmdBytesSinceLastIndex += totalLen;
+
+            // 统一判断：block 满 or 累计字节达到强制滚动阈值 → 落 GTID entry
+            if (blockWriter.isBlockFull() || cmdBytesSinceLastIndex >= mixedTotalBytesThreshold) {
+                flushGtidEntryUnlocked();
+            }
         }
-        blockWriter.append(uuid, gno, commandOffset);
     }
 
-    public void setLastCommandLength(int length) { this.lastCommandLength = length; }
+    // 非 GTID 事务/单条写入：仅扩展 zone
+    public void appendNonGtid(long offset, List<Integer> cmdLengths) throws IOException {
+        synchronized (writeLock) {
+            int commandCount = cmdLengths.size();
+            int totalLen = 0;
+            for (int len : cmdLengths) totalLen += len;
 
-    // 非 GTID 写入
-    public void appendNonGtid(long offset, int length) throws IOException {
-        if (zoneStart == -1L) zoneStart = offset;
-        zoneEnd = offset + length;
-        if (++zoneCmdCount >= FLUSH_THRESHOLD) flushZone();
+            if (zoneStart == -1L) zoneStart = offset;
+            zoneEnd = offset + totalLen;
+            zoneCmdCount += commandCount;
+            cmdBytesSinceLastIndex += totalLen;
+
+            // 统一判断：连续 non-GTID 达到条数阈值 or 累计字节达到强制滚动阈值 → flush
+            if (zoneCmdCount >= zoneConsecutiveThreshold
+                    || cmdBytesSinceLastIndex >= mixedTotalBytesThreshold) {
+                flushIndexEntryUnlocked();
+            }
+        }
     }
 
-    public void flushZone() throws IOException {
-        if (isClosed.get() || zoneStart == -1L) return;
+    /**
+     * 落盘当前 pending 的 IndexEntry。GTID 与 ZONE 同时存在时先 GTID 后 ZONE；否则落存在的一方。
+     */
+    public void flushIndexEntry() throws IOException {
+        synchronized (writeLock) {
+            flushIndexEntryUnlocked();
+        }
+    }
+
+    private void flushIndexEntryUnlocked() throws IOException {
+        if (hasPendingGtidEntry()) {
+            flushGtidEntryUnlocked();
+        }
+        if (hasPendingZone()) {
+            flushZoneUnlocked();
+        }
+    }
+
+    private boolean hasPendingGtidEntry() {
+        return currentGtidEntry != null;
+    }
+
+    private boolean hasPendingZone() {
+        return zoneStart != -1L && zoneCmdCount > 0;
+    }
+
+    private void clearPendingZone() {
+        zoneStart = -1L;
+        zoneEnd = 0L;
+        zoneCmdCount = 0;
+    }
+
+    private void flushZoneUnlocked() throws IOException {
+        if (!hasPendingZone()) {
+            return;
+        }
         IndexEntry zoneEntry = IndexEntry.zone(zoneStart, zoneEnd, zoneCmdCount);
         zoneEntry.saveToDiskV2(indexFile.getFileChannel());
-        zoneStart = -1L; zoneEnd = 0L; zoneCmdCount = 0;
+        clearPendingZone();
+        cmdBytesSinceLastIndex = 0L;
     }
 
     private void createNewBlock(String uuid, long gno, int cmdOffset) throws IOException {
@@ -85,25 +162,16 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
         this.currentGtidEntry = new IndexEntry(uuid, gno, cmdOffset, blockWriter.getPosition());
     }
 
-    private void finishBlock() throws IOException {
-        saveIndexEntryV2();
-    }
-
-    public void saveIndexEntryV2() throws IOException {
-        if(isClosed.get()) {
+    private void flushGtidEntryUnlocked() throws IOException {
+        if (!hasPendingGtidEntry()) {
             return;
         }
-        if(currentGtidEntry != null) {
-            currentGtidEntry.setLastCommandLength(lastCommandLength);
-            currentGtidEntry.saveToDiskV2(blockWriter, indexFile.getFileChannel());
-            gtidSetWrapper.compensate(currentGtidEntry);
-            closeBlockWriter();
-            currentGtidEntry = null;
-        }
-    }
-
-    private boolean needChangeBlock(String uuid, long gno) {
-        return blockWriter != null && blockWriter.needChangeBlock(uuid, gno);
+        currentGtidEntry.setCmdEndOffset(gtidCmdEndOffset);
+        currentGtidEntry.saveToDiskV2(blockWriter, indexFile.getFileChannel());
+        gtidSetWrapper.compensate(currentGtidEntry);
+        closeBlockWriter();
+        currentGtidEntry = null;
+        cmdBytesSinceLastIndex = 0L;
     }
 
     private void closeBlockWriter() throws IOException {
@@ -113,17 +181,20 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
     @Override
     public void close() throws IOException {
         if (!isClosed.compareAndSet(false, true)) return;
-        flushZone();
-        finishBlock();
+        synchronized (writeLock) {
+            flushIndexEntryUnlocked();
+        }
         super.closeIndexFile();
     }
 
     public GtidSet getGtidSet() {
-        if (currentGtidEntry != null && blockWriter != null) {
-            currentGtidEntry.setSize(blockWriter.getSize());
-            gtidSetWrapper.compensate(currentGtidEntry);
+        synchronized (writeLock) {
+            if (currentGtidEntry != null && blockWriter != null) {
+                currentGtidEntry.setSize(blockWriter.getSize());
+                gtidSetWrapper.compensate(currentGtidEntry);
+            }
+            return gtidSetWrapper.getGtidSet();
         }
-        return gtidSetWrapper.getGtidSet();
     }
 
     // ---------- 恢复 ----------
@@ -136,49 +207,41 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
 
             GtidSet recoverGtidSet = GtidSetWrapper.readGtidSetV2(indexFile.getFileChannel());
 
-            List<IndexEntry> allEntries = new ArrayList<>();
             List<long[]> zones = new ArrayList<>();
-            IndexEntry lastCompleteGtid = null;
+            long headerEnd = indexFile.getFileChannel().position();
+            long lastValidEndPos = headerEnd;
+            long rebuildStart = 0L;
 
-            long pos = indexFile.getFileChannel().position();
+            long pos = headerEnd;
             while (indexFile.getFileChannel().size() - pos >= IndexEntry.SEGMENT_LENGTH_V2) {
                 indexFile.getFileChannel().position(pos);
                 IndexEntry e = IndexEntry.readFromFileV2(indexFile.getFileChannel());
                 if (e == null) break;
                 e.setPosition(pos);
-                allEntries.add(e);
-                pos += IndexEntry.SEGMENT_LENGTH_V2;
+
+                boolean valid;
+                if (e.isZone()) {
+                    valid = e.getZoneEnd() <= cmdSize;
+                } else {
+                    valid = e.getBlockEndOffset() != -1
+                            && e.getCmdEndOffset() <= cmdSize
+                            && e.getBlockEndOffset() <= blockSize;
+                }
+                if (!valid) break;
 
                 if (e.isZone()) {
-                    if (e.getZoneEnd() <= cmdSize) zones.add(new long[]{e.getZoneStart(), e.getZoneEnd()});
+                    zones.add(new long[]{e.getZoneStart(), e.getZoneEnd()});
+                    rebuildStart = Math.max(rebuildStart, e.getZoneEnd());
                 } else {
                     if (e.getSize() > 0) recoverGtidSet.compensate(e.getUuid(), e.getStartGno(), e.getEndGno());
-                    if (e.getBlockEndOffset() != -1 &&
-                            e.getCmdStartOffset() <= cmdSize &&
-                            e.getBlockEndOffset() <= blockSize) {
-                        lastCompleteGtid = e;
-                    }
+                    rebuildStart = Math.max(rebuildStart, e.getCmdEndOffset());
                 }
+                pos += IndexEntry.SEGMENT_LENGTH_V2;
+                lastValidEndPos = pos;
             }
 
-            long rebuildStart;
-            if (lastCompleteGtid != null) {
-                long lastDiff = new BlockReader(lastCompleteGtid.getBlockStartOffset(),
-                        lastCompleteGtid.getBlockEndOffset(), new File(generateBlockName()))
-                        .seek(lastCompleteGtid.getSize() - 1);
-                long lastCmdStart = lastCompleteGtid.getCmdStartOffset() + lastDiff;
-                long cmdEndOffset = lastCmdStart + lastCompleteGtid.getLastCommandLength();
-
-                long truncPos = lastCompleteGtid.getPosition() + IndexEntry.SEGMENT_LENGTH_V2;
-                indexFile.getFileChannel().truncate(truncPos);
-                indexFile.getFileChannel().position(truncPos);
-                rebuildStart = cmdEndOffset;
-            } else {
-                long headerEnd = GtidSetWrapper.headerSize(indexFile.getFileChannel());
-                indexFile.getFileChannel().truncate(headerEnd);
-                indexFile.getFileChannel().position(headerEnd);
-                rebuildStart = 0L;
-            }
+            indexFile.getFileChannel().truncate(lastValidEndPos);
+            indexFile.getFileChannel().position(lastValidEndPos);
 
             this.gtidSetWrapper = new GtidSetWrapper(recoverGtidSet);
             closeBlockWriter();

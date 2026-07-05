@@ -11,13 +11,9 @@ public interface StreamTransactionListener {
 
     boolean preAppend(String gtid, long offset) throws IOException;
 
-    int postAppend(ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException;
+    int postAppend(String gtid, long offset, int cmdLength, ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException;
 
-    int batchPostAppend(List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException;
-
-    void onNonGtidWritten(long offset, int length) throws IOException;
-
-    void onGtidWritten(long offset, int length) throws IOException;
+    int batchPostAppend(String gtid, long offset, List<Integer> cmdLengths, List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException;
 
     boolean checkOffset(long offset);
 

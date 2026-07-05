@@ -4,6 +4,7 @@ import com.ctrip.xpipe.gtid.GtidSet;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 
 /**
  * @author TB
@@ -22,6 +23,16 @@ public class IndexReaderV2 extends IndexReader {
     protected String getBlockPrefix() { return BLOCK_V2; }
 
     @Override
+    protected int getSegmentLength() {
+        return IndexEntry.SEGMENT_LENGTH_V2;
+    }
+
+    @Override
+    protected IndexEntry readIndexEntryFromFile(FileChannel channel) throws IOException {
+        return IndexEntry.readFromFileV2(channel);
+    }
+
+    @Override
     public void init() throws IOException {
         indexItemList = new java.util.ArrayList<>();
         super.initIndexFile();
@@ -32,7 +43,9 @@ public class IndexReaderV2 extends IndexReader {
         startGtidSet= GtidSetWrapper.readGtidSetV2(indexFile.getFileChannel());
         IndexEntry item = IndexEntry.readFromFileV2(indexFile.getFileChannel());
         while (item != null) {
-            if (!item.isZone()) indexItemList.add(item);
+            if (!item.isZone()) {
+                indexItemList.add(item);
+            }
             item = IndexEntry.readFromFileV2(indexFile.getFileChannel());
         }
     }

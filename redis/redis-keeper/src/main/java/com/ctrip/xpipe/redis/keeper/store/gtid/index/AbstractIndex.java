@@ -128,7 +128,7 @@ public abstract class AbstractIndex {
     }
 
     public boolean changeToPre() throws IOException {
-        File pre = findFloorIndexFileByOffset(baseDir, extractOffset(fileName));
+        File pre = findFloorIndexFileByOffset(baseDir, extractOffset(fileName), getIndexPrefix());
         if(pre == null) {
             return false;
         }
@@ -179,14 +179,22 @@ public abstract class AbstractIndex {
     }
 
     protected IndexEntry readPreIIndexEntry(IndexEntry currentEntry) throws IOException {
-        long preIndex = currentEntry.getPosition() - IndexEntry.SEGMENT_LENGTH;
+        long preIndex = currentEntry.getPosition() - getSegmentLength();
         if(preIndex <= 0) {
             return null;
         }
         this.indexFile.getFileChannel().position(preIndex);
-        IndexEntry result = IndexEntry.readFromFile(this.indexFile.getFileChannel());
+        IndexEntry result = readIndexEntryFromFile(this.indexFile.getFileChannel());
         result.setPosition(preIndex);
         return result;
+    }
+
+    protected int getSegmentLength() {
+        return IndexEntry.SEGMENT_LENGTH;
+    }
+
+    protected IndexEntry readIndexEntryFromFile(java.nio.channels.FileChannel channel) throws IOException {
+        return IndexEntry.readFromFile(channel);
     }
 
     public void closeIndexFile() throws IOException {
