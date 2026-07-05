@@ -34,7 +34,9 @@ import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.BLOCK;
+import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.BLOCK_V2;
 import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
+import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX_V2;
 
 /**
  * @author lishanglin
@@ -328,7 +330,21 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         File blockFile = new File(baseDir, BLOCK + cmdFile.getName());
         if(blockFile.exists()) {
             if(!blockFile.delete()) {
-                getLogger().warn("[delCmdFile][{}] del block file fail", indexFile);
+                getLogger().warn("[delCmdFile][{}] del block file fail", blockFile);
+            }
+        }
+
+        File indexV2File = new File(baseDir, INDEX_V2 + cmdFile.getName());
+        if(indexV2File.exists()) {
+            if(!indexV2File.delete()) {
+                getLogger().warn("[delCmdFile][{}] del index v2 file fail", indexV2File);
+            }
+        }
+
+        File blockV2File = new File(baseDir, BLOCK_V2 + cmdFile.getName());
+        if(blockV2File.exists()) {
+            if(!blockV2File.delete()) {
+                getLogger().warn("[delCmdFile][{}] del block v2 file fail", blockV2File);
             }
         }
 

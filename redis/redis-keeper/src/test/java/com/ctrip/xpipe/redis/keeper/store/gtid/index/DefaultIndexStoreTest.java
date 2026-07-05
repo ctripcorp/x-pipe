@@ -1557,6 +1557,54 @@ public class DefaultIndexStoreTest {
         Assert.assertEquals(uuid + ":622002", nextOp.getOpGtid());
     }
 
+    @Test
+    public void testDeleteAllIndexFile_IncludesV2() throws IOException {
+        write(filePath);
+        defaultIndexStore.closeWriter();
+
+        String cmdName = "00000000";
+        Assert.assertTrue(new File(baseDir, AbstractIndex.INDEX + cmdName).exists());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.BLOCK + cmdName).exists());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.INDEX_V2 + cmdName).exists());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.BLOCK_V2 + cmdName).exists());
+
+        defaultIndexStore.deleteAllIndexFile();
+
+        Assert.assertFalse(new File(baseDir, AbstractIndex.INDEX + cmdName).exists());
+        Assert.assertFalse(new File(baseDir, AbstractIndex.BLOCK + cmdName).exists());
+        Assert.assertFalse(new File(baseDir, AbstractIndex.INDEX_V2 + cmdName).exists());
+        Assert.assertFalse(new File(baseDir, AbstractIndex.BLOCK_V2 + cmdName).exists());
+    }
+
+    @Test
+    public void testLocateGtidRange_AfterGcRemovesOldestSegment() throws IOException {
+        write(file1);
+        defaultIndexStore.doSwitchCmdFile("cmd_19513000");
+        write(file2);
+
+        String oldestCmdName = "00000000";
+        Assert.assertTrue(new File(baseDir, oldestCmdName).delete());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.INDEX + oldestCmdName).delete());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.BLOCK + oldestCmdName).delete());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.INDEX_V2 + oldestCmdName).delete());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.BLOCK_V2 + oldestCmdName).delete());
+
+        String uuid = "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        List<Pair<Long, Long>> result = defaultIndexStore.locateGtidRange(uuid, 2, 10);
+
+        Assert.assertFalse("Should locate GTIDs in remaining segment after GC", result.isEmpty());
+        for (Pair<Long, Long> range : result) {
+            Assert.assertNotNull(range.getKey());
+            Assert.assertNotNull(range.getValue());
+            Assert.assertTrue(range.getKey() < range.getValue());
+            Assert.assertTrue("Start offset should be in remaining segment",
+                    range.getKey() >= 19513000);
+        }
+
+        Assert.assertTrue(new File(baseDir, AbstractIndex.INDEX_V2 + "cmd_19513000").exists());
+        Assert.assertFalse(new File(baseDir, AbstractIndex.INDEX_V2 + oldestCmdName).exists());
+    }
+
     // 辅助方法：从文件写入
     private void write(DefaultIndexStore store, String path) throws IOException {
         File f = new File(path);

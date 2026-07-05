@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -475,6 +476,30 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		appendCommandsToStore(1, 10);
 		commandStore.gc();
 		Assert.assertEquals(0, commandStore.lowestAvailableOffset());
+	}
+
+	@Test
+	public void testDelCmdFileDeletesIndexV2CompanionFiles() throws Exception {
+		appendCommandsToStore(1, 50);
+
+		File baseDir = commandTemplate.getParentFile();
+		File[] cmdFiles = baseDir.listFiles((dir, name) -> name.startsWith(commandTemplate.getName()));
+		Assert.assertNotNull(cmdFiles);
+		Assert.assertEquals(1, cmdFiles.length);
+		File cmdFile = cmdFiles[0];
+
+		new File(baseDir, AbstractIndex.INDEX + cmdFile.getName()).createNewFile();
+		new File(baseDir, AbstractIndex.BLOCK + cmdFile.getName()).createNewFile();
+		new File(baseDir, AbstractIndex.INDEX_V2 + cmdFile.getName()).createNewFile();
+		new File(baseDir, AbstractIndex.BLOCK_V2 + cmdFile.getName()).createNewFile();
+
+		ReflectionTestUtils.invokeMethod(commandStore, "delCmdFile", cmdFile);
+
+		Assert.assertFalse(cmdFile.exists());
+		Assert.assertFalse(new File(baseDir, AbstractIndex.INDEX + cmdFile.getName()).exists());
+		Assert.assertFalse(new File(baseDir, AbstractIndex.BLOCK + cmdFile.getName()).exists());
+		Assert.assertFalse(new File(baseDir, AbstractIndex.INDEX_V2 + cmdFile.getName()).exists());
+		Assert.assertFalse(new File(baseDir, AbstractIndex.BLOCK_V2 + cmdFile.getName()).exists());
 	}
 
 	@Test
