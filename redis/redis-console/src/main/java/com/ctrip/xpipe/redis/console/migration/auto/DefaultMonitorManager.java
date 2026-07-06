@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.model.BeaconClusterRoute;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.controller.api.dto.ClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -182,6 +183,93 @@ public class DefaultMonitorManager implements MonitorManager {
 
         fillMonitorServicePlaceholders(clusterByBeaconSystemOrg, orgIds, routeType);
         return clusterByBeaconSystemOrg;
+    }
+
+    @Override
+    public Set<String> getBeaconDcs(String clusterName, BeaconRouteType routeType) {
+        Set<String> result = new LinkedHashSet<>();
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null) {
+            logger.warn("[getBeaconDcs] xpipeMeta null");
+            return result;
+        }
+
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            if (isBeaconCandidate(dcMeta, clusterName, routeType)) {
+                result.add(dcMeta.getId().toUpperCase());
+            }
+        }
+        logger.info("[getBeaconDcs] cluster={}, routeType={}, result={}", clusterName, routeType, result);
+        return result;
+    }
+
+    @Override
+    public List<ClusterBeaconRouteItem> getClusterRoutes(String clusterName, BeaconRouteType routeType) {
+        List<ClusterBeaconRouteItem> result = new ArrayList<>();
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null) {
+            logger.warn("[getClusterRoutes] xpipeMeta is null, cluster={}", clusterName);
+            return result;
+        }
+
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            // SENTINEL: each console only emits its own DC's data; other DCs come via cross-console forwarding.
+            // DR: one console can enumerate all candidate DCs directly.
+            if (routeType == BeaconRouteType.SENTINEL && !dcMeta.getId().equalsIgnoreCase(currentDc)) {
+                continue;
+            }
+            if (!isBeaconCandidate(dcMeta, clusterName, routeType)) {
+                continue;
+            }
+
+            ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
+            ClusterType clusterType = ClusterType.lookup(!StringUtil.isEmpty(clusterMeta.getAzGroupType())
+                    ? clusterMeta.getAzGroupType() : clusterMeta.getType());
+            BeaconSystem beaconSystem = resolveBeaconSystemByRouteType(clusterType, routeType);
+            MonitorService monitorService = get(clusterMeta.getOrgId(), clusterMeta.getId(), dcMeta.getZone(), routeType);
+
+            ClusterBeaconRouteItem item = new ClusterBeaconRouteItem();
+            item.setSystem(beaconSystem.getSystemName());
+            item.setBeaconMode(routeType.name());
+            item.setClusterName(clusterName);
+            item.setDcName(dcMeta.getId().toUpperCase());
+            item.setType(clusterMeta.getType());
+            item.setAzGroupType(clusterMeta.getAzGroupType());
+            item.setOrgId(clusterMeta.getOrgId());
+            item.setActiveDc(dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc()));
+            item.setBeaconName(monitorService != null ? monitorService.getName() : null);
+            item.setBeaconHost(monitorService != null ? monitorService.getHost() : null);
+            result.add(item);
+        }
+
+        return result;
+    }
+
+    private boolean isBeaconCandidate(DcMeta dcMeta, String clusterName, BeaconRouteType routeType) {
+        ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
+        if (clusterMeta == null) return false;
+
+        ClusterType clusterType = ClusterType.lookup(!StringUtil.isEmpty(clusterMeta.getAzGroupType())
+                ? clusterMeta.getAzGroupType() : clusterMeta.getType());
+
+        if (routeType == BeaconRouteType.DR) {
+            Set<String> supportZones = consoleCommonConfig.getBeaconSupportZones();
+            if (!supportZones.isEmpty()
+                    && supportZones.stream().noneMatch(zone -> zone.equalsIgnoreCase(dcMeta.getZone()))) {
+                return false;
+            }
+            if (!ClusterType.supportClusterMigration(clusterMeta.getType(), clusterMeta.getAzGroupType())) {
+                return false;
+            }
+            if (clusterType.supportSingleActiveDC()
+                    && !dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc())) {
+                return false;
+            }
+        } else if (!isSentinelManagedClusterType(clusterType)) {
+            return false;
+        }
+
+        return resolveBeaconSystemByRouteType(clusterType, routeType) != null;
     }
 
     /**

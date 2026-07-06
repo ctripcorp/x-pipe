@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.CheckerService;
@@ -12,6 +13,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatu
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
+import com.ctrip.xpipe.redis.console.controller.api.dto.ApiResponse;
+import com.ctrip.xpipe.redis.console.controller.api.dto.BeaconUsageItem;
+import com.ctrip.xpipe.redis.console.controller.api.dto.ClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.exception.NotEnoughResultsException;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
@@ -25,8 +29,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
+
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.command.ParallelCommandChain;
+
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 import static com.ctrip.xpipe.redis.console.resources.AbstractMetaCache.CURRENT_IDC;
 
@@ -38,6 +52,8 @@ import static com.ctrip.xpipe.redis.console.resources.AbstractMetaCache.CURRENT_
 @Component
 public class ConsoleServiceManager implements RemoteCheckerManager {
 
+    private static final long BROADCAST_TIMEOUT_MILLI = 5000L;
+
     private Logger logger = LoggerFactory.getLogger(getClass());
 
     private Map<String, ConsoleService> services = Maps.newConcurrentMap();
@@ -47,6 +63,9 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
     private ConsoleConfig consoleConfig;
 
     private ConsoleLeaderElector leaderElector;
+
+    @Resource(name = GLOBAL_EXECUTOR)
+    private ExecutorService globalExecutor;
 
     @Autowired
     public ConsoleServiceManager(ConsoleConfig consoleConfig, @Nullable ConsoleLeaderElector leaderElector) {
@@ -231,6 +250,123 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return getServiceByDc(dcId).postMigrateSentinelBeacon(clusterName, shardMasters);
     }
 
+    private <T> Map<String, BroadcastResult<T>> broadcast(Set<String> dcIds, Function<String, T> perDcTask) {
+        Map<String, BroadcastResult<T>> result = new LinkedHashMap<>();
+        if (dcIds == null || dcIds.isEmpty()) return result;
+
+        ParallelCommandChain chain = new ParallelCommandChain(globalExecutor);
+        Map<String, CommandFuture<T>> futures = new LinkedHashMap<>();
+
+        for (String dcId : dcIds) {
+            AbstractCommand<T> cmd = new AbstractCommand<T>() {
+                @Override
+                protected void doExecute() throws Throwable {
+                    future().setSuccess(perDcTask.apply(dcId));
+                }
+                @Override
+                protected void doReset() {}
+                @Override
+                public String getName() { return "Broadcast-" + dcId; }
+            };
+            chain.add(cmd);
+            futures.put(dcId, cmd.future());
+        }
+
+        boolean timedOut = false;
+        try {
+            timedOut = !chain.execute().await(BROADCAST_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
+            if (timedOut) {
+                logger.warn("[broadcast] timeout after {}ms, collecting partial results", BROADCAST_TIMEOUT_MILLI);
+            }
+        } catch (Throwable th) {
+            logger.error("[broadcast] chain fail, collecting partial results", th);
+        }
+        futures.forEach((dcId, future) -> {
+            if (future.isSuccess()) {
+                result.put(dcId.toUpperCase(), BroadcastResult.success(future.getNow()));
+            } else if (!future.isDone()) {
+                result.put(dcId.toUpperCase(), BroadcastResult.fail("broadcast timeout after " + BROADCAST_TIMEOUT_MILLI + "ms"));
+            } else {
+                Throwable cause = future.cause();
+                String msg = cause != null ? cause.getClass().getSimpleName() + ": " + cause.getMessage()
+                                           : "broadcast failed";
+                logger.warn("[broadcast][{}] failed: {}", dcId, msg, cause);
+                result.put(dcId.toUpperCase(), BroadcastResult.fail(msg));
+            }
+        });
+
+        return result;
+    }
+
+    private static final class BroadcastResult<T> {
+        final T value;
+        final String errorMsg;
+
+        private BroadcastResult(T value, String errorMsg) {
+            this.value = value;
+            this.errorMsg = errorMsg;
+        }
+
+        static <T> BroadcastResult<T> success(T value) {
+            return new BroadcastResult<>(value, null);
+        }
+
+        static <T> BroadcastResult<T> fail(String msg) {
+            return new BroadcastResult<>(null, msg);
+        }
+
+        boolean isSuccess() {
+            return errorMsg == null;
+        }
+    }
+
+    public Map<String, ApiResponse<List<BeaconUsageItem>>> getAllConsoleBeaconUsage(
+            String system, boolean includeClusters,
+            Supplier<List<BeaconUsageItem>> localSupplier) {
+        return aggregateAcrossConsoles(
+                consoleConfig.getConsoleDomains().keySet(),
+                localSupplier,
+                dcId -> getServiceByDc(dcId).getBeaconUsage(system, includeClusters));
+    }
+
+    public Map<String, ApiResponse<List<ClusterBeaconRouteItem>>> getAllConsoleClusterBeaconRoute(
+            String clusterName, Set<String> targetDcs,
+            Supplier<List<ClusterBeaconRouteItem>> localSupplier) {
+        return aggregateAcrossConsoles(
+                targetDcs,
+                localSupplier,
+                dcId -> getServiceByDc(dcId).getClusterBeaconRoute(clusterName));
+    }
+
+    private <T> Map<String, ApiResponse<T>> aggregateAcrossConsoles(
+            Set<String> targetDcs,
+            Supplier<T> localSupplier,
+            Function<String, T> remoteFetch) {
+        String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
+        Map<String, ApiResponse<T>> result = new LinkedHashMap<>();
+
+        try {
+            result.put(currentDc, ApiResponse.success(localSupplier.get()));
+        } catch (Exception e) {
+            logger.error("[aggregateAcrossConsoles] local fail, dc={}", currentDc, e);
+            result.put(currentDc, ApiResponse.fail("local failed"));
+        }
+
+        Set<String> remoteDcs = new LinkedHashSet<>();
+        if (targetDcs != null) {
+            for (String dc : targetDcs) {
+                if (!dc.equalsIgnoreCase(currentDc)) {
+                    remoteDcs.add(dc);
+                }
+            }
+        }
+        Map<String, BroadcastResult<T>> raw = broadcast(remoteDcs, remoteFetch);
+        raw.forEach((dc, r) -> result.put(dc,
+                r.isSuccess() ? ApiResponse.success(r.value) : ApiResponse.fail(r.errorMsg)));
+
+        return result;
+    }
+
     public <T> boolean quorumSatisfy(List<T> results, Function<T, Boolean> predicate){
 
         int count = 0;
@@ -278,4 +414,5 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
 
         return consoleUrls;
     }
+
 }

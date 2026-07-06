@@ -6,6 +6,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconRouteType;
 import com.ctrip.xpipe.redis.console.config.model.BeaconClusterRoute;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
+import com.ctrip.xpipe.redis.console.controller.api.dto.ClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
@@ -197,6 +198,69 @@ public class DefaultMonitorManagerTest extends AbstractTest {
 
         Assert.assertFalse(byService.isEmpty());
         Assert.assertTrue(byService.values().stream().allMatch(Set::isEmpty));
+    }
+
+    @Test
+    public void testGetClusterRoutesOneWayActiveDc() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(new ClusterMeta("one-way-cluster").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setDcs("jq,sha"));
+        xpipeMeta.addDc(dcMeta);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        List<ClusterBeaconRouteItem> routes =
+                beaconServiceManager.getClusterRoutes("one-way-cluster", BeaconRouteType.SENTINEL);
+
+        Assert.assertEquals(1, routes.size());
+        ClusterBeaconRouteItem route = routes.get(0);
+        Assert.assertEquals("one-way-cluster", route.getClusterName());
+        Assert.assertEquals("JQ", route.getDcName());
+        Assert.assertEquals("ONE_WAY", route.getType());
+        Assert.assertTrue(route.isActiveDc());
+        Assert.assertNotNull(route.getBeaconName());
+        Assert.assertNotNull(route.getBeaconHost());
+    }
+
+    @Test
+    public void testGetClusterRoutesOneWayNonActiveDc() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(new ClusterMeta("one-way-cluster").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("fra").setDcs("jq,fra"));
+        xpipeMeta.addDc(dcMeta);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        List<ClusterBeaconRouteItem> routes =
+                beaconServiceManager.getClusterRoutes("one-way-cluster", BeaconRouteType.SENTINEL);
+
+        Assert.assertEquals(1, routes.size());
+        ClusterBeaconRouteItem route = routes.get(0);
+        Assert.assertEquals("one-way-cluster", route.getClusterName());
+        Assert.assertEquals("JQ", route.getDcName());
+        Assert.assertEquals("ONE_WAY", route.getType());
+        Assert.assertFalse(route.isActiveDc());
+        Assert.assertNotNull(route.getBeaconName());
+        Assert.assertNotNull(route.getBeaconHost());
+    }
+
+    @Test
+    public void testGetBeaconDcsDrFiltersOutUnsupportedZone() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta jqDc = new DcMeta("jq").setZone("ZONE_A");
+        jqDc.addCluster(new ClusterMeta("cluster1").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setDcs("jq,fra"));
+        DcMeta fraDc = new DcMeta("fra").setZone("ZONE_B");
+        fraDc.addCluster(new ClusterMeta("cluster1").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setDcs("jq,fra"));
+        xpipeMeta.addDc(jqDc);
+        xpipeMeta.addDc(fraDc);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+        Mockito.when(commonConfig.getBeaconSupportZones()).thenReturn(Collections.singleton("ZONE_A"));
+
+        Set<String> beaconDcs = beaconServiceManager.getBeaconDcs("cluster1", BeaconRouteType.DR);
+
+        Assert.assertEquals(Collections.singleton("JQ"), beaconDcs);
     }
 
 }

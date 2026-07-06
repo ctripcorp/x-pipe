@@ -240,6 +240,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public Map<String, Map<String, Integer>> getClusterShardCounts() {
+        return Collections.emptyMap();
+    }
+
+    @Override
     public boolean isDcClusterMigratable(String clusterName, String dc) {
         return false;
     }
