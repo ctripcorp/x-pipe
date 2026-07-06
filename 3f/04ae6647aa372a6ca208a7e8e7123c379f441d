@@ -1,0 +1,19 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStore.java
+  s_b366606da19969::t_a9f3f4ab74c514 951-971
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.26-trip",
+  "base_commit_sha": "3f04ae6647aa372a6ca208a7e8e7123c379f441d",
+  "prompts": {},
+  "sessions": {
+    "s_b366606da19969": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41dba7bd-5c67-4a6b-8348-1e7722afda1f",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

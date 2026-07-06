@@ -1,0 +1,25 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultCommandStoreTest.java
+  s_aaf608fc4fbc65::t_706805c359fee6 482-504
+  s_aaf608fc4fbc65::t_05a433ef6eb49f 15
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_aaf608fc4fbc65::t_c266173cd08536 37,39
+  s_aaf608fc4fbc65::t_8a0b8d91b452bf 333-347
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  s_aaf608fc4fbc65::t_e3e3fbf2f56aea 1563-1610
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.28-trip",
+  "base_commit_sha": "734de63f7ac23ab34acc3932a53ed9d2ab49960e",
+  "prompts": {},
+  "sessions": {
+    "s_aaf608fc4fbc65": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "736892ba-4909-449c-a3a4-74846eb9238d",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

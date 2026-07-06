@@ -1,0 +1,26 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  h_00df85a0850dc5 120-124,1427-1428
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/StreamCommandReader.java
+  h_00df85a0850dc5 104-106,127-128,137,141,143,149,151,155-157,173-175,186,189-190,194-196,213-214,222-223,226-227,249-251,254,271-272
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  h_00df85a0850dc5 142,147,149,156,158,174,181,186-187,192,196,222
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/searcher/GtidCommandSearcher.java
+  h_00df85a0850dc5 147-148,152-153,167,179
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriterV2.java
+  h_00df85a0850dc5 71,85-86,96,99-101
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/redis/operation/stream/StreamTransactionListener.java
+  h_00df85a0850dc5 12,14,16
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/StreamCommandReaderTest.java
+  h_00df85a0850dc5 167,413,527
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.28-trip",
+  "base_commit_sha": "af05128b8909eb09a6305a8c29d42ba6d525e0ba",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  }
+}

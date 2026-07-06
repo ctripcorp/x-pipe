@@ -1,0 +1,32 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/StreamCommandReader.java
+  h_00df85a0850dc5 149,156,189-190,195-199
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  h_00df85a0850dc5 16,34,42-44,63,80,87,89-92,109-117,154-156,158-160,164-166,170-173,237-243,257-258,260,263,280-282,350-433,435-436,441-443,446-447,449,453-455,457-458,473-478,489-491,493,600-602,625,641-644,665-667,669
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexEntryTest.java
+  h_00df85a0850dc5 1-211
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/GtidSetWrapper.java
+  h_00df85a0850dc5 86-87,98
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/searcher/GtidCommandSearcher.java
+  h_00df85a0850dc5 193-202
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriterV2.java
+  h_00df85a0850dc5 1-208
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexEntry.java
+  h_00df85a0850dc5 56,141-145,168-176,178,180-184,186,188-191,193,195-201,242,244-248,271-275,277
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  h_00df85a0850dc5 12-13,86-88,118,125-132,169-172,196,224,252,307,328,353,410,437,440,449,470,502,505,513,534,578-585,891-1162
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/AbstractIndex.java
+  h_00df85a0850dc5 20-21,39-46,48,52,68-71,76,98-101,106,135,147,174
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReaderV2.java
+  h_00df85a0850dc5 1-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.26-trip",
+  "base_commit_sha": "770eb08fcb88474d625f629892e6183f5cc1ad66",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  }
+}
