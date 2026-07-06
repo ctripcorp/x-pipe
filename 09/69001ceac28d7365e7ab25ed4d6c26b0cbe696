@@ -1,0 +1,24 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  h_00df85a0850dc5 140,166-171,173,180-184,186,791,801
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultCommandStoreTest.java
+  h_00df85a0850dc5 12-13,19,35-36,78-86,91,118,305,607,635-839
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  h_00df85a0850dc5 378
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/TimerSlidingWindow.java
+  h_00df85a0850dc5 127-130
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/CommandWriterCallback.java
+  h_00df85a0850dc5 32-33
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  h_00df85a0850dc5 173-176,266-268,272,275,277-281,503-507
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.24-trip",
+  "base_commit_sha": "0969001ceac28d7365e7ab25ed4d6c26b0cbe696",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  }
+}

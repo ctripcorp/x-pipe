@@ -1,0 +1,42 @@
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/KeeperCmdFileTruncatePsyncTest.java
+  s_541940d039025d::t_23b3a8bb76c1a6 20,28,30-37,39-41,49-58,62,65,67,69,71,73,81,83,85,88-89,96,101-105,108-110,113-115,120-124,126-128,131,135,137,141-142,144-148,150-151,162-163,174-175,180,182,185,189-195,209
+  s_541940d039025d::t_18385141ed6e24 1-19,21-27,29,38,42-48,59-61,63-64,66,68,70,72,74-80,82,84,86-87,90-95,97-100,106-107,111-112,116-119,125,129-130,132-134,136,138-140,143,149,152-161,164-173,176-179,181,183-184,186-188,196-208,210-216
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/fakeredis/xsync/CmdFileTruncateOffsetSyncTest.java
+  s_2f6399083ad3ce::t_c37ffdf68c0a7d 1-187
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/OffsetCommandWriter.java
+  s_2f6399083ad3ce::t_c350d2cc7d275a 120-124
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  s_2f6399083ad3ce::t_28c4b6b52a7d42 298-300
+  s_2f6399083ad3ce::t_14d58e3a8c1bb7 501-515
+  s_2f6399083ad3ce::t_62ea1e6329a490 288
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/CommandFileContext.java
+  s_2f6399083ad3ce::t_2538723dbf693c 51-55
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/CommandWriter.java
+  s_2f6399083ad3ce::t_0c8609cad4ce5f 27-32
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStore.java
+  s_541940d039025d::t_f3b7304494f6f9 858-861
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.24-trip",
+  "base_commit_sha": "748256d369dfa381b8aa6bafee774c85c654e66d",
+  "prompts": {},
+  "sessions": {
+    "s_2f6399083ad3ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5ab19e5e-0433-4e2d-96c2-d96b400c2250",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    },
+    "s_541940d039025d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "63f06c3d-8340-4d18-a83e-1d5c18cce8cc",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
