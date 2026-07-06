@@ -150,7 +150,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             for (String indexPrefix : indexPrefixes) {
                 String fileName = indexPrefix + openedSegmentStartOffset;
                 FileChannel ch = openForAppend(fileName);
-                currentIndexFiles.put(indexPrefix, new AsyncFile(absolutePathOf(fileName), ch, false, true));
+                currentIndexFiles.put(indexPrefix, new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, openedSegmentStartOffset, ch, true));
             }
         } else {
             readPosition = s.firstOffset;
@@ -216,7 +216,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             String fileName = indexPrefix + startOffset;
             FileChannel ch = FileChannel.open(pathOf(fileName),
                     EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW));
-            AsyncFile af = new AsyncFile(absolutePathOf(fileName), ch, false, true);
+            AsyncIndexFile af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, startOffset, ch, true);
             currentIndexFiles.put(indexPrefix, af);
             result.put(indexPrefix, af);
         }
@@ -275,7 +275,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
                 Path p = pathOf(fileName);
                 if (Files.exists(p)) {
                     FileChannel readCh = FileChannel.open(p, StandardOpenOption.READ);
-                    af = new AsyncFile(absolutePathOf(fileName), readCh, false, false);
+                    af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, openedSegmentStartOffset, readCh, false);
                     currentIndexFiles.put(indexPrefix, af);
                     result.put(indexPrefix, af);
                 }
@@ -345,7 +345,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             if (af == null) {
                 String fileName = indexPrefix + targetStart;
                 FileChannel ch = openForAppend(fileName);
-                af = new AsyncFile(absolutePathOf(fileName), ch, false, true);
+                af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, targetStart, ch, true);
                 currentIndexFiles.put(indexPrefix, af);
             }
             result.put(indexPrefix, af);

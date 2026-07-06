@@ -1,5 +1,4 @@
 package com.ctrip.xpipe.redis.keeper.storage;
 
-abstract class CacheEntry {
-    int refCount;
+final class FileCacheEntry extends CacheEntry {
 }

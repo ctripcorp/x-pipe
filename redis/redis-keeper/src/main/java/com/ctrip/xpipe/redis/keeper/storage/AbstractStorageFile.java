@@ -19,6 +19,7 @@ abstract class AbstractStorageFile {
     volatile CacheMode cacheMode = CacheMode.NO_CACHE;
     // when true, tail cache will be upgraded to full cache.
     volatile boolean fullCacheOnly = false;
+    volatile Runnable onClose = () -> {};
 
     abstract FileChannel currentWriteChannel();
 
