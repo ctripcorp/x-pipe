@@ -68,7 +68,6 @@ public class CtripKafkaService implements KafkaService {
                 }
             },"kafka-producer-init").start();
 
-            Runtime.getRuntime().addShutdownHook(new Thread(this::forceStopProducer));
         }
     }
 
