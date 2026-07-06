@@ -68,10 +68,15 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
     }
 
     // GTID 事务写入：整批一次
-    public void appendGtid(String uuid, long gno, long offset, long cmdTotalLen) throws IOException {
+    public void appendGtid(String uuid, long gno, long offset, List<Integer> cmdLengths) throws IOException {
         synchronized (writeLock) {
             // R1/R2: GTID 到来 → 清空 pending zone 状态（不落 ZONE）
             clearPendingZone();
+
+            int totalLen = 0;
+            for (int len : cmdLengths) {
+                totalLen += len;
+            }
 
             // block 满或 uuid/gno gap：append 前先落盘当前 block（与 v1 IndexWriter 一致）
             if (blockWriter != null && blockWriter.needChangeBlock(uuid, gno)) {
@@ -82,8 +87,8 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
             }
             blockWriter.append(uuid, gno, (int) offset);
 
-            gtidCmdEndOffset = offset + cmdTotalLen;
-            cmdBytesSinceLastIndex += cmdTotalLen;
+            gtidCmdEndOffset = offset + totalLen;
+            cmdBytesSinceLastIndex += totalLen;
 
             // 统一判断：block 满 or 累计字节达到强制滚动阈值 → 落 GTID entry
             if (blockWriter.isBlockFull() || cmdBytesSinceLastIndex >= mixedTotalBytesThreshold) {
@@ -93,12 +98,18 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
     }
 
     // 非 GTID 事务/单条写入：仅扩展 zone
-    public void appendNonGtid(long offset, long cmdTotalLen) throws IOException {
+    public void appendNonGtid(long offset, List<Integer> cmdLengths) throws IOException {
         synchronized (writeLock) {
+            int commandCount = cmdLengths.size();
+            int totalLen = 0;
+            for (int len : cmdLengths) {
+                totalLen += len;
+            }
+
             if (zoneStart == -1L) zoneStart = offset;
-            zoneEnd = offset + cmdTotalLen;
-            zoneCmdCount += 1;
-            cmdBytesSinceLastIndex += cmdTotalLen;
+            zoneEnd = offset + totalLen;
+            zoneCmdCount += commandCount;
+            cmdBytesSinceLastIndex += totalLen;
 
             // 统一判断：连续 non-GTID 达到条数阈值 or 累计字节达到强制滚动阈值 → flush
             if (zoneCmdCount >= zoneConsecutiveThreshold
