@@ -4,10 +4,13 @@ import java.nio.channels.WritableByteChannel;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile.CacheMode;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemConfig.BackingFsMode;
-import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemConfig.CacheMode;
 
 public class TailCacheFileSystem implements AsyncFileSystem {
+
+    private static final int LOCK_STRIPES = 32;
 
     private final AsyncFileSystem delegate;
     private volatile boolean readPreferCache;
@@ -18,6 +21,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private volatile long expectedMinRetentionMs;
     private volatile CacheMode defaultCacheMode;
 
+    private final ConcurrentHashMap<String, CacheEntry> cacheEntries = new ConcurrentHashMap<>();
+
+    private final Object[] locks = new Object[LOCK_STRIPES];
+
     public TailCacheFileSystem(AsyncFileSystem delegate, TailCacheFileSystemConfig config) {
         this.delegate = delegate;
         this.readPreferCache = config.isReadPreferCache();
@@ -27,6 +34,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         this.maxCacheSizePerTenantBytes = config.getMaxCacheSizePerTenantBytes();
         this.expectedMinRetentionMs = config.getExpectedMinRetentionMs();
         this.defaultCacheMode = config.getDefaultCacheMode();
+        for (int i = 0; i < LOCK_STRIPES; i++) locks[i] = new Object();
     }
 
     public boolean isReadPreferCache() {
@@ -93,6 +101,25 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         delegate.shutdown();
     }
 
+    // ---- lock helpers ----
+
+    private Object lockFor(String key) {
+        return locks[(key.hashCode() & 0x7fffffff) % LOCK_STRIPES];
+    }
+
+    // Acquire a cache entry for the given key. Must be called under lock.
+    private void acquireCacheEntry(String key) {
+        CacheEntry entry = cacheEntries.computeIfAbsent(key, k -> new CacheEntry());
+        entry.refCount++;
+    }
+
+    // Release a cache entry. Must be called under lock.
+    private void releaseCacheEntry(String key) {
+        CacheEntry entry = cacheEntries.get(key);
+        if (entry == null) return;
+        if (--entry.refCount == 0) cacheEntries.remove(key);
+    }
+
     // ---- AsyncFile ----
 
     @Override
@@ -101,11 +128,18 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant, CacheMode cacheMode) {
-        if (atomicReplace && cacheMode == CacheMode.TAIL_CACHE) {
-            return CompletableFuture.failedFuture(
-                    new IllegalArgumentException("TAIL_CACHE is not supported for atomicReplace open: " + path));
-        }
-        return delegate.open(path, write, atomicReplace, lenient, tenant);
+        String key = StorageUtil.fileKey(path);
+        return delegate.open(path, write, atomicReplace, lenient, tenant)
+                .whenComplete((file, ex) -> {
+                    if (ex != null) return;
+                    file.cacheMode = cacheMode;
+                    file.fullCacheOnly = atomicReplace;
+                    if (cacheMode != CacheMode.NO_CACHE) {
+                        synchronized (lockFor(key)) {
+                            acquireCacheEntry(key);
+                        }
+                    }
+                });
     }
 
     @Override
@@ -169,13 +203,20 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public CompletableFuture<Boolean> truncate(AsyncFile file, long size) {
+    public CompletableFuture<Void> truncate(AsyncFile file, long size) {
         return delegate.truncate(file, size);
     }
 
     @Override
     public CompletableFuture<Void> close(AsyncFile file) {
-        return delegate.close(file);
+        return delegate.close(file).whenComplete((v, ex) -> {
+            if (file.cacheMode != CacheMode.NO_CACHE) {
+                String key = StorageUtil.fileKey(file.path);
+                synchronized (lockFor(key)) {
+                    releaseCacheEntry(key);
+                }
+            }
+        });
     }
 
     @Override
@@ -201,7 +242,17 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     public CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant, CacheMode cacheMode) {
-        return delegate.open(path, prefix, indexPrefixes, write, tenant);
+        String key = StorageUtil.segmentKey(path, prefix);
+        return delegate.open(path, prefix, indexPrefixes, write, tenant)
+                .whenComplete((file, ex) -> {
+                    if (ex != null) return;
+                    file.cacheMode = cacheMode;
+                    if (cacheMode != CacheMode.NO_CACHE) {
+                        synchronized (lockFor(key)) {
+                            acquireCacheEntry(key);
+                        }
+                    }
+                });
     }
 
     @Override
@@ -291,7 +342,14 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> close(AsyncSegmentFile file) {
-        return delegate.close(file);
+        return delegate.close(file).whenComplete((v, ex) -> {
+            if (file.cacheMode != CacheMode.NO_CACHE) {
+                String key = StorageUtil.segmentKey(file.dirPath, file.prefix);
+                synchronized (lockFor(key)) {
+                    releaseCacheEntry(key);
+                }
+            }
+        });
     }
 
     @Override

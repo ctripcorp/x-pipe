@@ -1,20 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.storage;
 
-public class TailCacheFileSystemConfig {
+import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile.CacheMode;
 
-    // For a given file, only the CacheMode of the first open takes effect
-    // Dynamically switching defaultCacheMode to FULL_CACHE does not backfill existing cache entries —
-    // only data written after the switch is cached.
-    public enum CacheMode {
-        // Resolved at realtime. Cannot be used as defaultCacheMode itself.
-        DYNAMIC,
-        NO_CACHE,
-        // When used as defaultCacheMode, atomicReplace open calls are automatically upgraded to FULL_CACHE.
-        // Explicitly passing TAIL_CACHE to an atomicReplace open is an error.
-        TAIL_CACHE,
-        // Memory is held until close() is called.
-        FULL_CACHE
-    }
+public class TailCacheFileSystemConfig {
 
     public enum BackingFsMode {
         // Write to FS before returning; write failure surfaces as an error immediately.
@@ -40,6 +28,9 @@ public class TailCacheFileSystemConfig {
     private long maxCacheSizeBytes = 0;
     private long maxCacheSizePerTenantBytes = 0;
     private long expectedMinRetentionMs = 0;
+    // Dynamically switching defaultCacheMode to FULL_CACHE does not backfill existing cache entries
+    // if the writer is already open with a different cache mode.
+    // only data written after the switch is cached.
     private CacheMode defaultCacheMode = CacheMode.NO_CACHE;
 
     public TailCacheFileSystemConfig() {

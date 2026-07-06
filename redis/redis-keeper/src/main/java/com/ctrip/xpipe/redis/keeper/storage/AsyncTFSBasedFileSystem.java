@@ -44,7 +44,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     // Registry of shared segment-dir state, keyed by "dirPath\0prefix".
     // First opener wins on DirEntry construction.
-    private final ConcurrentHashMap<String, DirEntry> registry = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, DirEntry> dirEntries = new ConcurrentHashMap<>();
 
     private final Object[] openCloseLocks = new Object[LOCK_STRIPES];
 
@@ -292,18 +292,17 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public CompletableFuture<Boolean> truncate(AsyncFile file, long size) {
+    public CompletableFuture<Void> truncate(AsyncFile file, long size) {
         if (!file.writeMode) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("truncate() requires write mode"));
         }
-        return supply(() -> {
+        return run(() -> {
             try {
                 file.channel.truncate(size);
                 if (!file.atomicReplace) {
                     file.channel.position(size);
                 }
-                return true;
             } catch (IOException e) {
                 throw wrap(e);
             }
@@ -489,10 +488,10 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             boolean iAmInitializer = false;
 
             synchronized (lockFor(key)) {
-                entry = registry.get(key);
+                entry = dirEntries.get(key);
                 if (entry == null) {
                     entry = new DirEntry();
-                    registry.put(key, entry);
+                    dirEntries.put(key, entry);
                     iAmInitializer = true;
                 } else if (write && entry.writerOpen) {
                     throw new IllegalStateException("writer already open for " + key);
@@ -555,15 +554,15 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     private void releaseDirEntry(String key, boolean write) {
         synchronized (lockFor(key)) {
-            DirEntry entry = registry.get(key);
+            DirEntry entry = dirEntries.get(key);
             if (entry == null) return;
             if (write) entry.writerOpen = false;
-            if (--entry.refCount == 0) registry.remove(key);
+            if (--entry.refCount == 0) dirEntries.remove(key);
         }
     }
 
     private DirEntry entryOrThrow(AsyncSegmentFile file) {
-        DirEntry entry = registry.get(file.key);
+        DirEntry entry = dirEntries.get(file.key);
         if (entry == null) throw new IllegalStateException("file is closed: " + file.key);
         return entry;
     }
