@@ -344,10 +344,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         makeSureOpen();
 
+        rotateFileIfNecessary();
+
         if(buildIndex) {
             return appendCommandsWithIndex(byteBuf);
         } else {
-            cmdWriter.rotateFileIfNecessary();
             return onlyAppendCommand(byteBuf);
         }
     }
@@ -384,9 +385,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     private int appendCommandsWithIndex(ByteBuf byteBuf) throws IOException {
 
-        // index 和 cmd 一起 rotate，这个工作交给 index store一起封装
-        indexStore.rotateFileIfNecessary();
-
         indexStoreDelay.beginWrite();
 
         long beginOffset = cmdWriter.totalLength() - 1;
@@ -406,11 +404,18 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     public void rotateFileIfNecessary() throws IOException {
-        if(!buildIndex) {
-            cmdWriter.rotateFileIfNecessary();
-        } else {
-            indexStore.rotateFileIfNecessary();
+        if(cmdWriter.needRotate()) {
+            flushSlidingWindow();
+            if(!buildIndex) {
+                cmdWriter.doRotate();
+                return;
+            }
+            if (indexStore.needRotate()) {
+                cmdWriter.doRotate();
+                indexStore.doRotate();
+            }
         }
+
     }
 
     public CommandFile findFileForOffset(long targetStartOffset) {

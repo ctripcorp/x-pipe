@@ -104,17 +104,18 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     @Override
-    public synchronized void rotateFileIfNecessary() throws IOException {
+    public synchronized void doRotate() throws IOException {
+        this.switchCmdFile(commandWriterCallback.getCommandWriter());
+    }
+
+    @Override
+    public boolean needRotate() {
         if (streamCommandReader != null && streamCommandReader.isTransactionActive()) {
             logger.debug("[rotateFileIfNecessary] transaction active (size: {}), defer rotation",
-                      streamCommandReader.getTransactionSize());
-            return;
+                    streamCommandReader.getTransactionSize());
+            return false;
         }
-
-        boolean rotate = commandWriterCallback.getCommandWriter().rotateFileIfNecessary();
-        if(rotate) {
-            this.switchCmdFile(commandWriterCallback.getCommandWriter());
-        }
+        return true;
     }
 
     @Override
