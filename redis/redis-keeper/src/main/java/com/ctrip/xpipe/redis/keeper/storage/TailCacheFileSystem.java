@@ -21,7 +21,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private volatile long expectedMinRetentionMs;
     private volatile CacheMode defaultCacheMode;
 
-    private final ConcurrentHashMap<String, CacheEntry> cacheEntries = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, FileCacheEntry> fileCacheEntries = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, SegmentFileCacheEntry> segmentCacheEntries = new ConcurrentHashMap<>();
 
     private final Object[] locks = new Object[LOCK_STRIPES];
 
@@ -107,17 +108,30 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return locks[(key.hashCode() & 0x7fffffff) % LOCK_STRIPES];
     }
 
-    // Acquire a cache entry for the given key. Must be called under lock.
-    private void acquireCacheEntry(String key) {
-        CacheEntry entry = cacheEntries.computeIfAbsent(key, k -> new CacheEntry());
+    // Must be called under lockFor(key).
+    private void acquireFileCacheEntry(String key) {
+        FileCacheEntry entry = fileCacheEntries.computeIfAbsent(key, k -> new FileCacheEntry());
         entry.refCount++;
     }
 
-    // Release a cache entry. Must be called under lock.
-    private void releaseCacheEntry(String key) {
-        CacheEntry entry = cacheEntries.get(key);
+    // Must be called under lockFor(key).
+    private void releaseFileCacheEntry(String key) {
+        FileCacheEntry entry = fileCacheEntries.get(key);
         if (entry == null) return;
-        if (--entry.refCount == 0) cacheEntries.remove(key);
+        if (--entry.refCount == 0) fileCacheEntries.remove(key);
+    }
+
+    // Must be called under lockFor(key).
+    private void acquireSegmentCacheEntry(String key) {
+        SegmentFileCacheEntry entry = segmentCacheEntries.computeIfAbsent(key, k -> new SegmentFileCacheEntry());
+        entry.refCount++;
+    }
+
+    // Must be called under lockFor(key).
+    private void releaseSegmentCacheEntry(String key) {
+        SegmentFileCacheEntry entry = segmentCacheEntries.get(key);
+        if (entry == null) return;
+        if (--entry.refCount == 0) segmentCacheEntries.remove(key);
     }
 
     // ---- AsyncFile ----
@@ -128,16 +142,21 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant, CacheMode cacheMode) {
-        String key = StorageUtil.fileKey(path);
         return delegate.open(path, write, atomicReplace, lenient, tenant)
                 .whenComplete((file, ex) -> {
                     if (ex != null) return;
                     file.cacheMode = cacheMode;
                     file.fullCacheOnly = atomicReplace;
                     if (cacheMode != CacheMode.NO_CACHE) {
+                        String key = StorageUtil.fileKey(file.path);
                         synchronized (lockFor(key)) {
-                            acquireCacheEntry(key);
+                            acquireFileCacheEntry(key);
                         }
+                        file.onClose = () -> {
+                            synchronized (lockFor(key)) {
+                                releaseFileCacheEntry(key);
+                            }
+                        };
                     }
                 });
     }
@@ -209,14 +228,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> close(AsyncFile file) {
-        return delegate.close(file).whenComplete((v, ex) -> {
-            if (file.cacheMode != CacheMode.NO_CACHE) {
-                String key = StorageUtil.fileKey(file.path);
-                synchronized (lockFor(key)) {
-                    releaseCacheEntry(key);
-                }
-            }
-        });
+        return delegate.close(file);
     }
 
     @Override
@@ -249,8 +261,13 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                     file.cacheMode = cacheMode;
                     if (cacheMode != CacheMode.NO_CACHE) {
                         synchronized (lockFor(key)) {
-                            acquireCacheEntry(key);
+                            acquireSegmentCacheEntry(key);
                         }
+                        file.onClose = () -> {
+                            synchronized (lockFor(key)) {
+                                releaseSegmentCacheEntry(key);
+                            }
+                        };
                     }
                 });
     }
@@ -342,14 +359,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> close(AsyncSegmentFile file) {
-        return delegate.close(file).whenComplete((v, ex) -> {
-            if (file.cacheMode != CacheMode.NO_CACHE) {
-                String key = StorageUtil.segmentKey(file.dirPath, file.prefix);
-                synchronized (lockFor(key)) {
-                    releaseCacheEntry(key);
-                }
-            }
-        });
+        return delegate.close(file);
     }
 
     @Override

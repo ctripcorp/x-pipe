@@ -316,6 +316,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 file.channel.close();
             } catch (IOException e) {
                 throw wrap(e);
+            } finally {
+                file.onClose.run();
             }
         });
     }
@@ -726,7 +728,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                     Path p = Paths.get(file.absolutePathOf(fileName));
                     if (!Files.exists(p)) continue;
                     FileChannel ch = FileChannel.open(p, StandardOpenOption.READ);
-                    result.put(indexPrefix, new AsyncFile(file.absolutePathOf(fileName), ch, false, false));
+                    result.put(indexPrefix, new AsyncIndexFile(file.key, file.absolutePathOf(fileName), indexPrefix, startOffset, ch, false));
                 }
                 return result;
             } catch (IOException e) {
@@ -821,8 +823,10 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 file.closeCurrent();
             } catch (IOException e) {
                 closeErr = e;
+            } finally {
+                releaseDirEntry(file.key, file.writeMode);
+                file.onClose.run();
             }
-            releaseDirEntry(file.key, file.writeMode);
             if (closeErr != null) throw wrap(closeErr);
         });
     }
