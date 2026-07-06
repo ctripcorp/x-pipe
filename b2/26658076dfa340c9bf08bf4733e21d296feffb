@@ -1,0 +1,56 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncIndexFile.java
+  s_397ac31a98e357::t_9bccb2b240e1c9 16
+  s_397ac31a98e357::t_0eec9c4420c7ed 11-12
+  s_397ac31a98e357::t_371612126ea8c5 7,13,21
+  s_397ac31a98e357::t_faea292c277463 1-6,8-10,14-15,17-20,22-23
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  h_6ceeb547b3b36a 117,130
+  s_397ac31a98e357::t_e6a4ee0393d56a 231
+  s_397ac31a98e357::t_90c83b7d40444a 24-25
+  s_397ac31a98e357::t_ce66878a1a21d6 362
+  s_397ac31a98e357::t_3a9aab4c780665 264
+  s_397ac31a98e357::t_b4d8bda26eed15 155-159
+  s_397ac31a98e357::t_e0f5ef56f0cbb8 266-270
+  s_397ac31a98e357::t_5d1324c4f27b6d 111-113,118-119,121-129,131-134
+  s_397ac31a98e357::t_16a504f4353634 151,153
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  s_397ac31a98e357::t_959fa7b3449fa9 219
+  s_397ac31a98e357::t_ff067cbc7b6ce6 348
+  s_397ac31a98e357::t_7a39a849051834 153
+  s_397ac31a98e357::t_87d01707b27242 278
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/FileCacheEntry.java
+  s_397ac31a98e357::t_51c6af603b102c 1-4
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/SegmentFileCacheEntry.java
+  s_397ac31a98e357::t_e1c5fb95d2de8e 1-4
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AbstractStorageFile.java
+  s_397ac31a98e357::t_b0e0ec187c8869 22
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_397ac31a98e357::t_c2bea107aef03d 731
+  s_397ac31a98e357::t_bbfed5167c0746 828
+  s_397ac31a98e357::t_009ff20996d433 319
+  s_397ac31a98e357::t_0aa7f77120f79c 320
+  s_397ac31a98e357::t_ebc765f9a47268 826-827
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/CacheEntry.java
+  s_397ac31a98e357::t_d468edacb9b9a6 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.28-trip",
+  "base_commit_sha": "b226658076dfa340c9bf08bf4733e21d296feffb",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_397ac31a98e357": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "69158ebd-bbb9-4bc8-84be-efd06e3d7dbf",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
