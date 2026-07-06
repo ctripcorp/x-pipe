@@ -28,7 +28,7 @@ public interface AsyncFileSystem {
     CompletableFuture<Boolean> mkdir(String path, boolean recursive);
     CompletableFuture<Boolean> rmdir(String path, boolean recursive);
     // Only available in write mode.
-    CompletableFuture<Boolean> truncate(AsyncFile file, long size);
+    CompletableFuture<Void> truncate(AsyncFile file, long size);
     CompletableFuture<Void> close(AsyncFile file);
     // Only available in write mode.
     CompletableFuture<Void> fsync(AsyncFile file);
