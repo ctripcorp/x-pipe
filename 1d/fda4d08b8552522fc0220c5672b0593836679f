@@ -1,0 +1,58 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_397ac31a98e357::t_07c630fe2a4232 118,120
+  s_397ac31a98e357::t_4921047e8dc7b7 7,13-14,26-27,37,104-109,111,113,117,119,121-122,132-133,142,212,214-219,245-247,345,347-352
+  h_6ceeb547b3b36a 110,116
+  s_397ac31a98e357::t_6d51ff276b1cff 135
+  s_397ac31a98e357::t_0e0815c7eba004 206
+  s_397ac31a98e357::t_95bee4ab7e45d0 112
+  s_397ac31a98e357::t_0a69547bf72164 134,137-141
+  s_397ac31a98e357::t_53ecdf892971f7 8
+  s_397ac31a98e357::t_ca4537c77988f5 24
+  s_397ac31a98e357::t_d9eed0e11b3e5c 248-252
+  s_397ac31a98e357::t_116c119f546cf6 136
+  s_397ac31a98e357::t_201b7a43424f57 213,346
+  s_397ac31a98e357::t_5944b739b95769 131
+  s_397ac31a98e357::t_4cfe685451dfc8 253-255
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AbstractStorageFile.java
+  h_6ceeb547b3b36a 20
+  s_397ac31a98e357::t_d0447d9c6fa66c 21
+  s_397ac31a98e357::t_3367384ed42f50 19
+  s_397ac31a98e357::t_fcde71ddfded99 7-16
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystemConfig.java
+  h_6ceeb547b3b36a 31-32
+  s_397ac31a98e357::t_1c8a85c0a3876b 3,5,33
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_397ac31a98e357::t_ad49d2d73f00f1 560
+  h_6ceeb547b3b36a 565
+  s_397ac31a98e357::t_8a2ac9631493da 491,557
+  s_397ac31a98e357::t_8dbb102ef51752 295,300
+  s_397ac31a98e357::t_bae372c0ab1649 494
+  s_397ac31a98e357::t_d1b214c2366e66 47
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  s_397ac31a98e357::t_adcbe5a76c429e 31
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/CacheEntry.java
+  s_397ac31a98e357::t_dd165df062ab2c 1-6
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/StorageUtil.java
+  s_397ac31a98e357::t_0348346da2267f 1-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.28-trip",
+  "base_commit_sha": "1dfda4d08b8552522fc0220c5672b0593836679f",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_397ac31a98e357": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "69158ebd-bbb9-4bc8-84be-efd06e3d7dbf",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
