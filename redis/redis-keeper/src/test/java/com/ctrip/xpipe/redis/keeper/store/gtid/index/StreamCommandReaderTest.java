@@ -164,7 +164,7 @@ public class StreamCommandReaderTest {
         verify(defaultIndexStore, times(1)).preAppend(eq(gtid), anyLong());
         
         // Verify all commands were written (MULTI + SET + GTID+EXEC = 3)
-        verify(defaultIndexStore, times(1)).batchPostAppend(any(), anyLong(), anyList(), anyList(), anyList());
+        verify(defaultIndexStore, times(1)).batchPostAppend(anyString(), anyLong(),anyLong(), anyList(), anyList());
         
         // Verify ByteBufs were properly handled
         Assert.assertEquals("MULTI ByteBuf refCnt should remain unchanged", 1, multiBuf.refCnt());
@@ -410,7 +410,7 @@ public class StreamCommandReaderTest {
         
         // Verify all commands were written
         verify(defaultIndexStore, times(1)).preAppend(eq(gtid), eq(initialOffset));
-        verify(defaultIndexStore, times(1)).batchPostAppend(any(), anyLong(), anyList(), anyList(), anyList());
+        verify(defaultIndexStore, times(1)).batchPostAppend(anyString(), anyLong(), anyLong(), anyList(), anyList());
     }
 
     @Test
@@ -524,7 +524,7 @@ public class StreamCommandReaderTest {
         Assert.assertEquals(0, streamCommandReader.getTransactionSize());
 
         verify(defaultIndexStore, never()).preAppend(anyString(), anyLong());
-        verify(defaultIndexStore, times(1)).batchPostAppend(isNull(), anyLong(), anyList(), anyList(), anyList());
+        verify(defaultIndexStore, times(1)).batchPostAppend(isNull(), anyLong(), anyLong(), anyList(), anyList());
 
         // ByteBufs should be released (retained by tx, released in clear())
         Assert.assertEquals("MULTI buf released after clear", 1, multiBuf.refCnt());

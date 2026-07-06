@@ -140,24 +140,23 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     @Override
-    public boolean preAppend(String gtid, long offset) throws IOException {
+    public boolean preAppend(String uuid,long gno) throws IOException {
 //        String[] parts = gtid.split(":");
 //        if (parts.length != 2 || parts[0].length() != 40) {
 //            throw new IllegalArgumentException("Invalid gtid: " + gtid);
 //        }
-        String uuid = gtid.substring(0,40);
-        long gno = Long.parseLong(gtid.substring(41));
+
         if(gtidCmdFilter.gtidSetContains(uuid, gno)) {
-            logger.info("[onCommand] gtid command {} in lost, ignored", gtid);
+            logger.info("[onCommand] gtid command uuid {},gno {} in lost, ignored", uuid,gno);
             return false;
         }
         return true;
     }
 
     @Override
-    public int postAppend(String gtid, long offset, int cmdLength, ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException {
+    public int postAppend(String uuid,long gno, long offset, ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException {
         int written = appendCmdBuf(commandBuf);
-        appendIndex(gtid, offset, List.of(cmdLength));
+        appendIndex(uuid,gno, offset, written);
         if (redisOpItem != null && !isPingOrSelectCmd(redisOpItem)) {
             sendPayloadsToCk(List.of(redisOpItem));
         }
@@ -173,31 +172,29 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     @Override
-    public int batchPostAppend(String gtid, long offset, List<Integer> cmdLengths, List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException {
+    public int batchPostAppend(String uuid,long gno, long offset, List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException {
         int written = 0;
         for (ByteBuf buf : commandBufs) {
             if (buf != null) {
                 written += appendCmdBuf(buf);
             }
         }
-        appendIndex(gtid, offset, cmdLengths);
+        appendIndex(uuid,gno, offset, written);
         sendPayloadsToCk(payloads);
         return written;
     }
 
-    private void appendIndex(String gtid, long offset, List<Integer> cmdLengths) throws IOException {
-        if (gtid != null && !gtid.isEmpty()) {
-            String uuid = gtid.substring(0, 40);
-            long gno = Long.parseLong(gtid.substring(41));
+    private void appendIndex(String uuid,long gno, long offset, long totalCmdLen) throws IOException {
+        if (gno > 0) {
             if (keeperConfig.dualWrite() && indexWriter != null) {
                 indexWriter.append(uuid, gno, (int) offset);
             }
             if (indexWriterV2 != null) {
-                indexWriterV2.appendGtid(uuid, gno, offset, cmdLengths);
+                indexWriterV2.appendGtid(uuid, gno, offset, totalCmdLen);
             }
         } else {
             if (indexWriterV2 != null) {
-                indexWriterV2.appendNonGtid(offset, cmdLengths);
+                indexWriterV2.appendNonGtid(offset, totalCmdLen);
             }
         }
     }
@@ -223,7 +220,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         if(writerCmdEnabled && commandWriterCallback != null) {
             return commandWriterCallback.writeCommand(byteBuf);
         }
-        return 0;
+        return byteBuf.readableBytes();
     }
 
     private void sendPayloadsToCk(List<RedisOpItem> payloads){
