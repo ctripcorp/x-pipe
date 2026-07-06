@@ -146,7 +146,12 @@ public class StreamCommandReader implements StreamCommandLister {
 
     private void handleRegularCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
         if (transactionContext.isActive()) {
-            transactionContext.addCommand(payload, commandBuf);
+            DirectByteBufInOutPayload commandPayload = (DirectByteBufInOutPayload) payload[0];
+            if (isExecCommand(commandPayload)) {
+                commitTransaction(null, -1, payload, commandBuf);
+            } else {
+                transactionContext.addCommand(payload, commandBuf);
+            }
         } else {
             writeSingleCommand(commandBuf, payload, null,-1);
         }
@@ -185,15 +190,22 @@ public class StreamCommandReader implements StreamCommandLister {
 
     private void writeSingleCommand(ByteBuf commandBuf, Object[] payload,String uuid,long gno) throws IOException {
         long start = this.currentOffset;
+        int cmdLen = commandBuf.readableBytes();
         RedisOpItem redisOpItem = parsePayload(payload);
-        int written = transactionListener.postAppend(uuid,gno, start, commandBuf, redisOpItem);
-        this.currentOffset += written;
+        transactionListener.postAppend(uuid,gno, start, commandBuf, redisOpItem);
+        this.currentOffset += cmdLen;
         mayCheckOffset();
     }
 
     private void writeMultiCommand(String uuid,long gno, long startOffset, List<ByteBuf> commandBufs, List<RedisOpItem> redisOpItems) throws IOException {
-        int written = transactionListener.batchPostAppend(uuid,gno, startOffset, commandBufs, redisOpItems);
-        this.currentOffset += written;
+        int totalLen = 0;
+        for (ByteBuf commandBuf : commandBufs) {
+            if (commandBuf != null) {
+                totalLen += commandBuf.readableBytes();
+            }
+        }
+        transactionListener.batchPostAppend(uuid,gno, startOffset, commandBufs, redisOpItems);
+        this.currentOffset += totalLen;
         mayCheckOffset();
     }
 

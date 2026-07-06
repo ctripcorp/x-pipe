@@ -155,8 +155,9 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     @Override
     public int postAppend(String uuid,long gno, long offset, ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException {
+        int cmdLength = commandBuf.readableBytes();
         int written = appendCmdBuf(commandBuf);
-        appendIndex(uuid,gno, offset, written);
+        appendIndex(uuid, gno, offset, List.of(cmdLength));
         if (redisOpItem != null && !isPingOrSelectCmd(redisOpItem)) {
             sendPayloadsToCk(List.of(redisOpItem));
         }
@@ -173,28 +174,30 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     @Override
     public int batchPostAppend(String uuid,long gno, long offset, List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException {
+        List<Integer> cmdLengths = new ArrayList<>(commandBufs.size());
         int written = 0;
         for (ByteBuf buf : commandBufs) {
             if (buf != null) {
+                cmdLengths.add(buf.readableBytes());
                 written += appendCmdBuf(buf);
             }
         }
-        appendIndex(uuid,gno, offset, written);
+        appendIndex(uuid, gno, offset, cmdLengths);
         sendPayloadsToCk(payloads);
         return written;
     }
 
-    private void appendIndex(String uuid,long gno, long offset, long totalCmdLen) throws IOException {
+    private void appendIndex(String uuid, long gno, long offset, List<Integer> cmdLengths) throws IOException {
         if (gno > 0) {
             if (keeperConfig.dualWrite() && indexWriter != null) {
                 indexWriter.append(uuid, gno, (int) offset);
             }
             if (indexWriterV2 != null) {
-                indexWriterV2.appendGtid(uuid, gno, offset, totalCmdLen);
+                indexWriterV2.appendGtid(uuid, gno, offset, cmdLengths);
             }
         } else {
             if (indexWriterV2 != null) {
-                indexWriterV2.appendNonGtid(offset, totalCmdLen);
+                indexWriterV2.appendNonGtid(offset, cmdLengths);
             }
         }
     }

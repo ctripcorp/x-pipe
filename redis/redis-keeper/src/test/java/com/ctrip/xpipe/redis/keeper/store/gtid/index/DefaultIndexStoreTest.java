@@ -1417,12 +1417,12 @@ public class DefaultIndexStoreTest {
         when(gtidCmdFilter.gtidSetContains(anyString(), anyLong())).thenReturn(false);
 
         String uuid = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-        boolean accepted = store.preAppend(uuid + ":1", 100L);
+        boolean accepted = store.preAppend(uuid, 1L);
         Assert.assertTrue(accepted);
 
         verify(indexWriterMock, never()).append(anyString(), anyLong(), anyInt());
-        verify(indexWriterV2Mock, never()).appendGtid(anyString(), anyLong(), anyLong(), anyLong());
-        verify(indexWriterV2Mock, never()).appendNonGtid(anyLong(), anyLong());
+        verify(indexWriterV2Mock, never()).appendGtid(anyString(), anyLong(), anyLong(), anyList());
+        verify(indexWriterV2Mock, never()).appendNonGtid(anyLong(), anyList());
     }
 
     @Test
