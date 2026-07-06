@@ -1,0 +1,47 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/dto/ClusterShardInfo.java
+  s_ab9a35b1cbbb24::t_5e461f212bbea2 1-31
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/beacon/DefaultMonitorManagerTest.java
+  s_ab9a35b1cbbb24::t_307ec94a3d9d05 9,203-211,213-215,223-233,235-237,264-265
+  s_ab9a35b1cbbb24::t_83e4924ca63f1e 212,216-222,234,238-263
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/impl/DefaultConsoleService.java
+  s_ab9a35b1cbbb24::t_4c15ccb13f5f69 10-11,20,96-99,140-141,279,284-286,291-292
+  s_ab9a35b1cbbb24::t_351ddb4d02f101 100-105
+  s_ab9a35b1cbbb24::t_d6d7c58fd4d043 43-44
+  s_ab9a35b1cbbb24::t_34f250540e4023 280-283,287-290
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/dto/ClusterBeaconRouteItem.java
+  s_ab9a35b1cbbb24::t_d0f5516026e06a 1-98
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/dto/BeaconUsageItem.java
+  s_ab9a35b1cbbb24::t_208837b776052f 1-82
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/ConsoleService.java
+  s_ab9a35b1cbbb24::t_bf978d7e21fe69 62,64
+  s_ab9a35b1cbbb24::t_dc0fbd58fbc9ea 7-8,63,65
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/auto/DefaultMonitorManager.java
+  s_ab9a35b1cbbb24::t_b6b728fae20f84 15,188-197,199-206,209-215,219-220,224,226-230,242-247,249,251,254-255,267,270-271,273-274
+  s_ab9a35b1cbbb24::t_d0521426b13c5c 198,207-208,216-218,221-223,225,231-241,248,250,252-253,256-266,268-269,272
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/BeaconRouteController.java
+  s_ab9a35b1cbbb24::t_b84ed8a0c69dfd 10-13,16-18,21,26,43-50,110-214
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/impl/ConsoleServiceManager.java
+  s_ab9a35b1cbbb24::t_f149738e15d820 54-55
+  s_ab9a35b1cbbb24::t_8d2fa231b4424a 4,16-18,32,34-35,38-43,66-68,252-274,279-288,294,298-300,306,310-312,360
+  s_ab9a35b1cbbb24::t_0d5750a9ac2fe7 275-278,289-293,295-297,301-305,307-309
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/auto/MonitorManager.java
+  s_ab9a35b1cbbb24::t_8ea71d8c23c3a0 5,27-30
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/dto/ApiResponse.java
+  s_ab9a35b1cbbb24::t_208442b468bb78 1-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.28-trip",
+  "base_commit_sha": "3a3ea673777d1513dfdf0fd036e7d267e42734ac",
+  "prompts": {},
+  "sessions": {
+    "s_ab9a35b1cbbb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "597171fe-3fe8-4b35-a753-e9ab7dab2890",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "0G-C <190866728@qq.com>"
+    }
+  }
+}
