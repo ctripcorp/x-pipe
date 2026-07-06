@@ -114,6 +114,11 @@ public class DefaultIndexStoreTest {
         when(commandWriterCallback.getCommandWriter()).thenReturn(writer);
         when(writer.needRotate()).thenReturn(false);
         when(writer.totalLength()).thenReturn(0L);
+        when(commandWriterCallback.writeCommand(any(ByteBuf.class))).thenAnswer(inv -> {
+            ByteBuf b = inv.getArgument(0);
+            int n = b.readableBytes();
+            return n;
+        });
 
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
@@ -1416,8 +1421,8 @@ public class DefaultIndexStoreTest {
         Assert.assertTrue(accepted);
 
         verify(indexWriterMock, never()).append(anyString(), anyLong(), anyInt());
-        verify(indexWriterV2Mock, never()).appendGtid(anyString(), anyLong(), anyLong(), anyList());
-        verify(indexWriterV2Mock, never()).appendNonGtid(anyLong(), anyList());
+        verify(indexWriterV2Mock, never()).appendGtid(anyString(), anyLong(), anyLong(), anyLong());
+        verify(indexWriterV2Mock, never()).appendNonGtid(anyLong(), anyLong());
     }
 
     @Test
