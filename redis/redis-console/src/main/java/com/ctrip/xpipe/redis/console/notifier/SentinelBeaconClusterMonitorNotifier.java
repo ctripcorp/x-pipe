@@ -3,11 +3,14 @@ package com.ctrip.xpipe.redis.console.notifier;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.utils.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -23,20 +26,28 @@ import java.util.Set;
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class SentinelBeaconClusterMonitorNotifier implements BeaconRouteClusterMonitorNotifier {
 
+    private static final Logger logger = LoggerFactory.getLogger(SentinelBeaconClusterMonitorNotifier.class);
+
     private final BeaconManager beaconManager;
     private final MetaCache metaCache;
     private final ConsoleConfig consoleConfig;
+    private final CheckerDbConfig checkerDbConfig;
 
     @Autowired
     public SentinelBeaconClusterMonitorNotifier(BeaconManager beaconManager, MetaCache metaCache,
-                                                ConsoleConfig consoleConfig) {
+                                                ConsoleConfig consoleConfig, CheckerDbConfig checkerDbConfig) {
         this.beaconManager = beaconManager;
         this.metaCache = metaCache;
         this.consoleConfig = consoleConfig;
+        this.checkerDbConfig = checkerDbConfig;
     }
 
     @Override
     public boolean needNotify(String clusterName, String dc, long orgId) {
+        if (!checkerDbConfig.shouldSentinelCheck(clusterName)) {
+            logger.info("[needNotify][{}][skip] sentinel check excluded", clusterName);
+            return false;
+        }
         if (!consoleConfig.supportSentinelBeacon(orgId, clusterName)) {
             return false;
         }
