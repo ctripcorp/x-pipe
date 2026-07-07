@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.keeper.storage;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
@@ -27,6 +26,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,23 +87,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     // Translates a checked IOException into a runtime exception that reflects
     // recovery semantics: StaleStateException for mismatched state, StorageIOException for
     // genuine transient IO failures.IllegalArgumentExceptions for invalid arguments.
-    private static RuntimeException wrap(IOException e) {
-        if (e instanceof NoSuchFileException
-                || e instanceof FileAlreadyExistsException
-                || e instanceof DirectoryNotEmptyException
-                || e instanceof ClosedChannelException) {
-            return new StaleStateException(e);
-        }
-        if (e instanceof NotDirectoryException) {
-            return new IllegalArgumentException(e);
-        }
-        String msg = e.getMessage();
-        if (msg != null && msg.startsWith("Input/output error")) {
-            return new EIOException(e);
-        }
-        return new StorageIOException(e);
-    }
-
     // ---- AsyncFile ----
 
     // atomicReplace uses tmp file approach instead of rename because tfs currently does not support rename.
@@ -131,7 +115,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return new AsyncFile(path, ch, atomicReplace, write);
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -154,7 +138,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 return Files.getLastModifiedTime(Paths.get(file.path)).toMillis();
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -165,47 +149,47 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("position() requires read mode"));
         }
-        return run(() -> {
-            try {
-                file.channel.position(position);
-            } catch (IOException e) {
-                throw wrap(e);
-            }
-        });
+        file.position = position;
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public CompletableFuture<Long> read(AsyncFile file, long length, long offset, byte[] buffer) {
+    public CompletableFuture<ByteBuf> read(AsyncFile file, long length, long offset) {
         return supply(() -> {
             try {
-                return readFully(file.channel, length, offset, buffer);
+                return readFully(file.channel, length, offset);
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
 
     @Override
-    public CompletableFuture<Long> read(AsyncFile file, long length, byte[] buffer) {
+    public CompletableFuture<ByteBuf> read(AsyncFile file, long length) {
         return supply(() -> {
             try {
-                return readFully(file.channel, length, buffer);
+                long pos = file.position;
+                ByteBuf buf = readFully(file.channel, length, pos);
+                file.position += buf.readableBytes();
+                return buf;
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
 
     @Override
-    public CompletableFuture<Long> write(AsyncFile file, byte[] data, long length) {
+    public CompletableFuture<Long> write(AsyncFile file, ByteBuf data) {
         return supply(() -> {
             try {
                 if (file.atomicReplace) {
-                    return atomicReplaceWrite(file, data, Math.min(length, data.length));
+                    return atomicReplaceWrite(file, data);
                 }
-                return writeAndFlush(file, data, length);
+                return writeAndFlush(file, data);
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
+            } finally {
+                data.release();
             }
         });
     }
@@ -216,7 +200,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 Files.deleteIfExists(Paths.get(path));
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -233,7 +217,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 return file.channel.size();
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -255,7 +239,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return true;
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -286,7 +270,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return true;
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -304,7 +288,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                     file.channel.position(size);
                 }
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -315,7 +299,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 file.channel.close();
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             } finally {
                 file.onClose.run();
             }
@@ -332,7 +316,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 fsyncChannel(file);
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -352,39 +336,46 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     // ---- AsyncFile helpers ----
 
-    private long readFully(FileChannel ch, long length, byte[] buffer) throws IOException {
-        ByteBuffer buf = ByteBuffer.wrap(buffer, 0, (int) Math.min(length, buffer.length));
-        long totalRead = 0;
-        while (buf.hasRemaining()) {
-            int n = ch.read(buf);
-            if (n < 0) break;
-            totalRead += n;
+    private ByteBuf readFully(FileChannel ch, long length) throws IOException {
+        ByteBuf buf = StorageAllocator.ALLOC.directBuffer((int) length);
+        try {
+            while (buf.writableBytes() > 0) {
+                int n = buf.writeBytes(ch, buf.writableBytes());
+                if (n < 0) break;
+            }
+            return buf;
+        } catch (Throwable t) {
+            buf.release();
+            throw t;
         }
-        return totalRead;
     }
 
-    private long readFully(FileChannel ch, long length, long offset, byte[] buffer) throws IOException {
-        ByteBuffer buf = ByteBuffer.wrap(buffer, 0, (int) Math.min(length, buffer.length));
-        long totalRead = 0;
-        while (buf.hasRemaining()) {
-            int n = ch.read(buf, offset + totalRead);
-            if (n < 0) break;
-            totalRead += n;
+    private ByteBuf readFully(FileChannel ch, long length, long offset) throws IOException {
+        ByteBuf buf = StorageAllocator.ALLOC.directBuffer((int) length);
+        try {
+            long pos = offset;
+            while (buf.writableBytes() > 0) {
+                int n = buf.writeBytes(ch, pos, buf.writableBytes());
+                if (n < 0) break;
+                pos += n;
+            }
+            return buf;
+        } catch (Throwable t) {
+            buf.release();
+            throw t;
         }
-        return totalRead;
     }
 
-    private long writeFully(FileChannel ch, byte[] data, long length) throws IOException {
-        ByteBuffer buf = ByteBuffer.wrap(data, 0, (int) Math.min(length, data.length));
-        long totalWritten = 0;
-        while (buf.hasRemaining()) {
-            totalWritten += ch.write(buf);
+    private long writeFully(FileChannel ch, ByteBuf data) throws IOException {
+        int length = data.readableBytes();
+        while (data.isReadable()) {
+            data.readBytes(ch, data.readableBytes());
         }
-        return totalWritten;
+        return length;
     }
 
-    private long writeAndFlush(AbstractStorageFile file, byte[] data, long length) throws IOException {
-        long written = writeFully(file.currentWriteChannel(), data, length);
+    private long writeAndFlush(AbstractStorageFile file, ByteBuf data) throws IOException {
+        long written = writeFully(file.currentWriteChannel(), data);
         file.pendingFsyncBytes += written;
         if (file.pendingFsyncBytes >= fsyncIntervalBytes) {
             try {
@@ -432,48 +423,60 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 Files.deleteIfExists(tmpPath);
                 return;
             }
-            byte[] lenBytes = new byte[8];
-            long lenRead = readFully(tmpCh, 8, lenBytes);
-            if (lenRead != 8) {
-                logger.warn("failed to read length from tmp file: read {} bytes, expected 8, deleting {}", lenRead, tmpPath);
-                Files.deleteIfExists(tmpPath);
-                return;
+            long expectedLen = 0;
+            ByteBuf lenBuf = readFully(tmpCh, 8);
+            try {
+                int lenRead = lenBuf.readableBytes();
+                if (lenRead != 8) {
+                    logger.warn("failed to read length from tmp file: read {} bytes, expected 8, deleting {}", lenRead, tmpPath);
+                    Files.deleteIfExists(tmpPath);
+                    return;
+                }
+                expectedLen = lenBuf.readLong();
+            } finally {
+                lenBuf.release();
             }
-            ByteBuffer lenBuf = ByteBuffer.wrap(lenBytes);
-            long expectedLen = lenBuf.getLong();
             long expectedTmpSize = 8 + expectedLen;
             if (tmpSize != expectedTmpSize) {
                 logger.warn("tmp file size mismatch: actual {} != expected {}, deleting {}", tmpSize, expectedTmpSize, tmpPath);
                 Files.deleteIfExists(tmpPath);
                 return;
             }
-            byte[] dataBytes = new byte[(int) expectedLen];
-            long dataRead = readFully(tmpCh, expectedLen, dataBytes);
-            if (dataRead != expectedLen) {
-                logger.error("failed to read data from tmp file: read {} bytes, expected {}, deleting {}. This should not happen.",
-                    dataRead, expectedLen, tmpPath);
-                Files.deleteIfExists(tmpPath);
-                return;
+            ByteBuf dataBuf = readFully(tmpCh, expectedLen);
+            try {
+                int dataRead = dataBuf.readableBytes();
+                if (dataRead != expectedLen) {
+                    logger.error("failed to read data from tmp file: read {} bytes, expected {}, deleting {}. This should not happen.",
+                        dataRead, expectedLen, tmpPath);
+                    Files.deleteIfExists(tmpPath);
+                    return;
+                }
+                fileCh.truncate(0);
+                writeFully(fileCh, dataBuf);
+            } finally {
+                dataBuf.release();
             }
-            fileCh.truncate(0);
-            writeFully(fileCh, dataBytes, dataBytes.length);
             fileCh.force(true);
             Files.deleteIfExists(tmpPath);
             logger.info("recovered from tmp file: {}", tmpPath);
         }
     }
 
-    private long atomicReplaceWrite(AsyncFile file, byte[] data, long length) throws IOException {
+    private long atomicReplaceWrite(AsyncFile file, ByteBuf data) throws IOException {
+        long length = data.readableBytes();
+        int savedReaderIndex = data.readerIndex();
         Path tmpPath = getTmpPath(file.path);
         try (FileChannel tmpCh = FileChannel.open(tmpPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-            byte[] lenBytes = ByteBuffer.allocate(8).putLong(length).array();
-            writeFully(tmpCh, lenBytes, 8);
-            writeFully(tmpCh, data, length);
+            ByteBuf lenBuf = Unpooled.buffer(8);
+            lenBuf.writeLong(length);
+            writeFully(tmpCh, lenBuf);
+            writeFully(tmpCh, data);
             tmpCh.force(true);
         }
         file.channel.truncate(0);
         file.channel.position(0);
-        long written = writeFully(file.channel, data, length);
+        data.readerIndex(savedReaderIndex);
+        long written = writeFully(file.channel, data);
         file.channel.force(true);
         Files.deleteIfExists(tmpPath);
         return written;
@@ -529,7 +532,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 file.openInitialResources(entry.state);
             } catch (IOException e) {
                 releaseDirEntry(key, write);
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             } catch (Throwable t) {
                 // make sure to release the entry even if error like NPE is thrown
                 releaseDirEntry(key, write);
@@ -583,63 +586,66 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                     file.currentSegmentChannel.position(offset - file.openedSegmentStartOffset);
                 }
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
 
     @Override
-    public CompletableFuture<Long> read(AsyncSegmentFile file, long length, byte[] buffer) {
+    public CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length) {
         return supply(() -> {
             try {
                 SegmentDirState s = entryOrThrow(file).state;
                 if (file.currentSegmentChannel == null) {
-                    if (!file.switchToSegment(file.readPosition, s)) return 0L;
+                    if (!file.switchToSegment(file.readPosition, s)) return Unpooled.buffer(0);
                     file.currentSegmentChannel.position(file.readPosition - file.openedSegmentStartOffset);
                 }
-                long n = readFully(file.currentSegmentChannel, length, buffer);
+                ByteBuf buf = readFully(file.currentSegmentChannel, length);
+                long n = buf.readableBytes();
                 file.readPosition += n;
                 if (maybeSwitchSegment(file, s, file.readPosition, file.readPosition - file.openedSegmentStartOffset, n)) {
                     file.currentSegmentChannel.position(file.readPosition - file.openedSegmentStartOffset);
                 }
-                return n;
+                return buf;
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
 
     @Override
-    public CompletableFuture<Long> read(AsyncSegmentFile file, long length, long offset, byte[] buffer) {
+    public CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length, long offset) {
         return supply(() -> {
             try {
                 SegmentDirState s = entryOrThrow(file).state;
                 if (file.currentSegmentChannel == null
                         || offset < file.openedSegmentStartOffset
                         || offset >= file.openedSegmentEndOffset) {
-                    if (!file.switchToSegment(offset, s)) return 0L;
+                    if (!file.switchToSegment(offset, s)) return Unpooled.buffer(0);
                 }
                 long physicalOffset = offset - file.openedSegmentStartOffset;
-                long bytesRead = readFully(file.currentSegmentChannel, length, physicalOffset, buffer);
-                maybeSwitchSegment(file, s, offset + bytesRead, physicalOffset, bytesRead);
-                return bytesRead;
+                ByteBuf buf = readFully(file.currentSegmentChannel, length, physicalOffset);
+                maybeSwitchSegment(file, s, offset + buf.readableBytes(), physicalOffset, buf.readableBytes());
+                return buf;
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
 
     @Override
-    public CompletableFuture<Long> write(AsyncSegmentFile file, byte[] data, long length) {
+    public CompletableFuture<Long> write(AsyncSegmentFile file, ByteBuf data) {
         return supply(() -> {
             try {
                 DirEntry entry = entryOrThrow(file);
                 if (entry.state.isEmpty()) {
                     file.openFirstSegmentChannelForWrite(entry);
                 }
-                return writeAndFlush(file, data, length);
+                return writeAndFlush(file, data);
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
+            } finally {
+                data.release();
             }
         });
     }
@@ -655,7 +661,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 DirEntry entry = entryOrThrow(file);
                 return file.roll(entry);
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -703,7 +709,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return file.getCurrentIndexFiles(indexPrefixes);
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -732,7 +738,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return result;
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -747,7 +753,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 }
                 return file.exclusiveEndOffset(s.lastOffset) - s.firstOffset;
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -767,7 +773,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 return Files.getLastModifiedTime(file.segmentPath(startOffset)).toMillis();
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -778,7 +784,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 return Files.size(file.segmentPath(startOffset));
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -794,7 +800,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 DirEntry entry = entryOrThrow(file);
                 file.deleteSegments(startOffsets, entry);
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -810,7 +816,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 DirEntry entry = entryOrThrow(file);
                 return file.truncate(offset, entry);
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -842,7 +848,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 DirEntry entry = entryOrThrow(file);
                 file.delete(entry);
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -857,7 +863,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 fsyncChannel(file);
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -868,8 +874,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return supply(() -> {
             try {
                 return file.channel.transferTo(position, count, target);
+            } catch (ClosedChannelException e) {
+                if (!target.isOpen()) throw new SocketClosedException(e);
+                throw StorageUtil.wrapIOException(e);
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }
@@ -889,8 +898,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 long n = file.currentSegmentChannel.transferTo(physicalOffset, count, target);
                 maybeSwitchSegment(file, s, offset + n, physicalOffset, n);
                 return n;
+            } catch (ClosedChannelException e) {
+                if (!target.isOpen()) throw new SocketClosedException(e);
+                throw StorageUtil.wrapIOException(e);
             } catch (IOException e) {
-                throw wrap(e);
+                throw StorageUtil.wrapIOException(e);
             }
         });
     }

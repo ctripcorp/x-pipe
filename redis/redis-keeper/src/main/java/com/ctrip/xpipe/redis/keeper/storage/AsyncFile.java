@@ -8,6 +8,7 @@ public class AsyncFile extends AbstractStorageFile {
     FileChannel channel;
     final boolean atomicReplace;
     final boolean writeMode;
+    long position = 0;
 
     AsyncFile(String path, FileChannel channel, boolean atomicReplace, boolean writeMode) {
         this.path = path;
