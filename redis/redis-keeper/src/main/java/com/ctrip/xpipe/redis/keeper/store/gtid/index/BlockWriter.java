@@ -17,6 +17,17 @@ public class BlockWriter implements AutoCloseable {
 
     public static final int BLOCK_NAX_SIZE = 8 * 1024;
 
+    /** 生产默认 8192；同包单测可通过 {@link #setBlockMaxSizeForTest(int)} 临时调小以加速 */
+    private static int effectiveBlockMaxSize = BLOCK_NAX_SIZE;
+
+    static void setBlockMaxSizeForTest(int maxSize) {
+        effectiveBlockMaxSize = maxSize;
+    }
+
+    static void resetBlockMaxSizeForTest() {
+        effectiveBlockMaxSize = BLOCK_NAX_SIZE;
+    }
+
     private ByteBuffer blockCache;
 
     public BlockWriter(String currentUuid, long gno, int cmdOffset, String file,ByteBuffer blockCache) throws IOException {
@@ -63,7 +74,7 @@ public class BlockWriter implements AutoCloseable {
     }
 
     private boolean isFull() {
-        return this.size >= BLOCK_NAX_SIZE;
+        return this.size >= effectiveBlockMaxSize;
     }
 
     public boolean isBlockFull() {

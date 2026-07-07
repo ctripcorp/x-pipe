@@ -211,7 +211,6 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
 
             GtidSet recoverGtidSet = GtidSetWrapper.readGtidSetV2(indexFile.getFileChannel());
 
-            List<long[]> zones = new ArrayList<>();
             long headerEnd = indexFile.getFileChannel().position();
             long lastValidEndPos = headerEnd;
             long rebuildStart = 0L;
@@ -234,7 +233,6 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
                 if (!valid) break;
 
                 if (e.isZone()) {
-                    zones.add(new long[]{e.getZoneStart(), e.getZoneEnd()});
                     rebuildStart = Math.max(rebuildStart, e.getZoneEnd());
                 } else {
                     if (e.getSize() > 0) recoverGtidSet.compensate(e.getUuid(), e.getStartGno(), e.getEndGno());
@@ -251,14 +249,17 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
             closeBlockWriter();
             this.currentGtidEntry = null;
 
-            store.buildIndexFromCmdFileWithZones(super.getFileName(), rebuildStart, zones);
+            log.info("[recoverIndex] {} rebuildStart={}, lastValidEndPos={}, cmdSize={}",
+                    super.getFileName(), rebuildStart, lastValidEndPos, cmdSize);
+            store.buildIndexFromCmdFile(super.getFileName(), rebuildStart);
         } finally {
             cmdFile.close();
             blockFile.close();
         }
     }
 
-    public List<long[]> loadAllZones() throws IOException {
+    /** 仅单测使用：读取 index 文件中已落盘的 ZONE 区间。 */
+    List<long[]> loadAllZones() throws IOException {
         List<long[]> zones = new ArrayList<>();
         FileChannel ch = indexFile.getFileChannel();
         long headerEnd = GtidSetWrapper.headerSize(ch);

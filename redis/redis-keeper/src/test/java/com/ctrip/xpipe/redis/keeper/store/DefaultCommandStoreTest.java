@@ -670,27 +670,19 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	private void writeCmdWithRotation(boolean flush) throws Exception {
 		// 1. 构造一个启用索引、滑动窗口、且 maxFileSize 很小的 CommandStore
 		int smallMaxFileSize = 300;
+		failed.set(0);
 		Mockito.when(gtidCmdFilter.gtidSetContains(anyString(), anyLong())).thenReturn(false);
-		Mockito.when(ckStore.getKeeperConfig()).thenReturn(new TestKeeperConfig());
+		TestKeeperConfig keeperConfig = createRotationTestKeeperConfig(flush);
+		Mockito.when(ckStore.getKeeperConfig()).thenReturn(keeperConfig);
 		Mockito.when(ckStore.getMasterEventLoop()).thenReturn(nioEventLoopGroup);
 
 		commandTemplate = new File(getTestFileDir(), getTestName()+"_");
-		commandStore = new DefaultCommandStore(ckStore, getKeeperConfig(),
+		commandStore = new DefaultCommandStore(ckStore, keeperConfig,
 				commandTemplate, smallMaxFileSize,() -> false, () -> 3600, 0, () -> 20,
 				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,  // 启用滑动窗口
 				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter,true
 		);
 		commandStore.initialize();
-
-		if(!flush) {
-			CommandStore commandStore = Mockito.spy(this.commandStore);
-			Mockito.doNothing().when(commandStore).flushSlidingWindow();
-			this.commandStore = (DefaultCommandStore) commandStore;
-		}
-
-		// 获取内部的 DefaultIndexStore，以便后续手动调用 flush 和验证
-		IndexStore indexStore = (IndexStore) ReflectionTestUtils.getField(commandStore, "indexStore");
-		Assert.assertNotNull(indexStore);
 
 		// 用于记录每条命令的 GTID、完整字节内容以及预期的全局起始偏移
 		class CmdRecord {
@@ -721,8 +713,6 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		};
 
 		// 2. 写入命令，直到至少发生一次文件滚动
-		int cmdsBeforeRotation = 0;
-		long lastFileLen = 0;
 		boolean rotated = false;
 
 		while (!rotated) {
@@ -746,22 +736,23 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			records.add(rec);
 
 			globalOffset.addAndGet(cmdBytes.length);
-			cmdsBeforeRotation++;
 			gno++;
 
-			// 检查文件长度，如果超过阈值则触发滚动（但修复需要先 flush）
-			long currentFileLen = commandStore.getCommandWriter().fileLength();
-
-			if (currentFileLen >= smallMaxFileSize) {
-				// 修复点：在滚动前强制清空滑动窗口
+			// 与索引侧 StreamCommandReader.currentOffset 一致；totalLength() 不含滑动窗口 pending
+			if (globalOffset.get() >= smallMaxFileSize) {
 				commandStore.flushSlidingWindow();
-
-				// 现在执行滚动
 				commandStore.rotateFileIfNecessary();
 				rotated = true;
-			} else {
-				lastFileLen = currentFileLen;
 			}
+		}
+		int recordsBeforeRotation = records.size();
+
+		// no-flush 场景：滚动完成后再 mock，仅拦截滚动后的 flush
+		if (!flush) {
+			DefaultCommandStore store = this.commandStore;
+			CommandStore spy = Mockito.spy(store);
+			Mockito.doNothing().when(spy).flushSlidingWindow();
+			this.commandStore = (DefaultCommandStore) spy;
 		}
 
 		// 3. 滚动后继续写入几条命令，验证新文件的偏移也正确
@@ -790,7 +781,8 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		commandStore.flushSlidingWindow();
 
 		// 4. 验证每条命令的索引偏移与文件内容匹配
-		for (CmdRecord rec : records) {
+		for (int i = 0; i < records.size(); i++) {
+			CmdRecord rec = records.get(i);
 			// 提取 gno
 			long gnoVal = Long.parseLong(rec.gtid.substring(uuid.length() + 1));
 			List<BacklogOffsetReplicationProgress> segments = commandStore.locateCmdSegment(uuid, gnoVal, gnoVal);
@@ -805,10 +797,12 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			Assert.assertEquals("Start offset mismatch for " + rec.gtid,
 					rec.expectedStartOffset, startBacklogOffset);
 
-			// 从命令文件中读取 [start, end) 的字节
-			byte[] fileData = readFileRange(commandStore, startBacklogOffset, endBacklogOffset);
-			if(!Arrays.equals(rec.rawBytes, fileData)){
-				failed.addAndGet(1);
+			// flush 场景校验全部；no-flush 仅校验滚动后仍在窗口内的命令（滚动前已落盘）
+			if (flush || i >= recordsBeforeRotation) {
+				byte[] fileData = readFileRange(commandStore, startBacklogOffset, endBacklogOffset);
+				if (!Arrays.equals(rec.rawBytes, fileData)) {
+					failed.addAndGet(1);
+				}
 			}
 		}
 
@@ -821,6 +815,23 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		// 清理
 		failed.set(0);
 		commandStore.close();
+	}
+
+	/**
+	 * no-flush 场景需禁用 TimerSlidingWindow 按时间的自动刷盘（默认 4ms），
+	 * 否则整包跑时写入间隔变长会在 mock flushSlidingWindow 之前落盘，导致 failed==0 误判。
+	 * batch 阈值保持默认即可，旋转条件用 globalOffset 而非 totalLength()。
+	 */
+	private TestKeeperConfig createRotationTestKeeperConfig(boolean flush) {
+		if (flush) {
+			return new TestKeeperConfig();
+		}
+		return new TestKeeperConfig() {
+			@Override
+			public long getCmdBatchFlushIntervalMillis() {
+				return 3_600_000L;
+			}
+		};
 	}
 
 	// 辅助方法：写入 RESP Bulk String

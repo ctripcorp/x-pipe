@@ -3,9 +3,11 @@ package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryGapAllowedSync;
 import com.ctrip.xpipe.redis.core.utils.SimplePsyncObserver;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,6 +28,7 @@ public class FakeRedisHalfRdbServerFail extends AbstractFakeRedisTest {
 	@Before
 	public void beforeFakeRedisHalfRdbServerFail() throws Exception {
 
+		fakeRedisServer.setSendLFBeforeSendRdb(false);
 		fakeRedisServer.setSendHalfRdbAndCloseConnectionCount(1);
 		fakeRedisServer.setSleepBeforeSendFullSyncInfo(sleepBeforeSendFullSyncInfo);
 		redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis();
@@ -37,13 +40,19 @@ public class FakeRedisHalfRdbServerFail extends AbstractFakeRedisTest {
 	@Test
 	public void redisFailWhileSendingRdb() throws Exception {
 
-		waitConditionUntilTimeOut(() -> {return redisKeeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED;});
+		waitConditionUntilTimeOut(() -> redisKeeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED);
+		waitConditionUntilTimeOut(() -> {
+			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+			return replicationStore instanceof DefaultReplicationStore
+					&& ((DefaultReplicationStore) replicationStore).getRdbStore() != null;
+		});
 
 		logger.info(remarkableMessage("[redisFailWhileSendingRdb]"));
 		InMemoryGapAllowedSync inMemoryGAsync = sendInmemoryGAsync("localhost", redisKeeperServer.getListeningPort());
-
-		sleep(3000);
-		assertGAsyncResultEquals(inMemoryGAsync);
+		waitConditionUntilTimeOut(() -> assertSuccess(() -> {
+			Assert.assertArrayEquals(fakeRedisServer.getRdbContent(), inMemoryGAsync.getRdb());
+			Assert.assertEquals(fakeRedisServer.currentCommands(), new String(inMemoryGAsync.getCommands()));
+		}));
 
 	}
 
