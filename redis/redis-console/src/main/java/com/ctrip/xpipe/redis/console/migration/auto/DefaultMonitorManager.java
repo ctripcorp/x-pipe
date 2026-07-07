@@ -12,7 +12,12 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.model.BeaconClusterRoute;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
-import com.ctrip.xpipe.redis.console.controller.api.dto.ClusterBeaconRouteItem;
+import com.ctrip.xpipe.redis.console.controller.api.dto.ClusterShardInfo;
+import com.ctrip.xpipe.redis.console.controller.api.dto.DRBeaconUsageItem;
+import com.ctrip.xpipe.redis.console.controller.api.dto.DRClusterBeaconRouteItem;
+import com.ctrip.xpipe.redis.console.controller.api.dto.RegionBeaconUsage;
+import com.ctrip.xpipe.redis.console.controller.api.dto.SentinelBeaconUsageItem;
+import com.ctrip.xpipe.redis.console.controller.api.dto.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -30,7 +35,6 @@ import org.springframework.util.CollectionUtils;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import static com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean.KEY_BEACON_ORG_ROUTE;
 import static com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean.KEY_BEACON_SENTINEL_ORG_ROUTE;
 import static com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant.DEFAULT_ORG_ID;
@@ -53,6 +57,7 @@ public class DefaultMonitorManager implements MonitorManager {
 
     private static final int CONSISTENT_HASH_VIRTUAL_NODE_NUM = 100;
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
+    private static final String UNKNOWN_REGION = "UNKNOWN";
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultMonitorManager.class);
 
@@ -204,43 +209,173 @@ public class DefaultMonitorManager implements MonitorManager {
     }
 
     @Override
-    public List<ClusterBeaconRouteItem> getClusterRoutes(String clusterName, BeaconRouteType routeType) {
-        List<ClusterBeaconRouteItem> result = new ArrayList<>();
+    public List<SentinelClusterBeaconRouteItem> getSentinelClusterRoutes(String clusterName) {
+        List<SentinelClusterBeaconRouteItem> result = new ArrayList<>();
         XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
         if (xpipeMeta == null) {
-            logger.warn("[getClusterRoutes] xpipeMeta is null, cluster={}", clusterName);
+            logger.warn("[getSentinelClusterRoutes] xpipeMeta is null, cluster={}", clusterName);
             return result;
         }
 
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
-            // SENTINEL: each console only emits its own DC's data; other DCs come via cross-console forwarding.
-            // DR: one console can enumerate all candidate DCs directly.
-            if (routeType == BeaconRouteType.SENTINEL && !dcMeta.getId().equalsIgnoreCase(currentDc)) {
+            // Each console only emits its own DC's data; other DCs come via cross-console forwarding.
+            if (!dcMeta.getId().equalsIgnoreCase(currentDc)) {
                 continue;
             }
-            if (!isBeaconCandidate(dcMeta, clusterName, routeType)) {
+            if (!isBeaconCandidate(dcMeta, clusterName, BeaconRouteType.SENTINEL)) {
                 continue;
             }
 
             ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
             ClusterType clusterType = ClusterType.lookup(!StringUtil.isEmpty(clusterMeta.getAzGroupType())
                     ? clusterMeta.getAzGroupType() : clusterMeta.getType());
-            BeaconSystem beaconSystem = resolveBeaconSystemByRouteType(clusterType, routeType);
-            MonitorService monitorService = get(clusterMeta.getOrgId(), clusterMeta.getId(), dcMeta.getZone(), routeType);
+            BeaconSystem beaconSystem = resolveBeaconSystemByRouteType(clusterType, BeaconRouteType.SENTINEL);
+            MonitorService monitorService = get(clusterMeta.getOrgId(), clusterMeta.getId(), dcMeta.getZone(), BeaconRouteType.SENTINEL);
 
-            ClusterBeaconRouteItem item = new ClusterBeaconRouteItem();
-            item.setSystem(beaconSystem.getSystemName());
-            item.setBeaconMode(routeType.name());
-            item.setClusterName(clusterName);
-            item.setDcName(dcMeta.getId().toUpperCase());
-            item.setType(clusterMeta.getType());
-            item.setAzGroupType(clusterMeta.getAzGroupType());
-            item.setOrgId(clusterMeta.getOrgId());
-            item.setActiveDc(dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc()));
-            item.setBeaconName(monitorService != null ? monitorService.getName() : null);
-            item.setBeaconHost(monitorService != null ? monitorService.getHost() : null);
-            result.add(item);
+            result.add(new SentinelClusterBeaconRouteItem(beaconSystem, dcMeta, clusterMeta, monitorService));
         }
+
+        return result;
+    }
+
+    @Override
+    public Map<String, DRClusterBeaconRouteItem> getDRClusterRoutes(String clusterName) {
+        Map<String, DRClusterBeaconRouteItem> result = new LinkedHashMap<>();
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null) {
+            logger.warn("[getDRClusterRoutes] xpipeMeta is null, cluster={}", clusterName);
+            return result;
+        }
+
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            if (!isBeaconCandidate(dcMeta, clusterName, BeaconRouteType.DR)) {
+                continue;
+            }
+
+            ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
+            ClusterType clusterType = ClusterType.lookup(!StringUtil.isEmpty(clusterMeta.getAzGroupType())
+                    ? clusterMeta.getAzGroupType() : clusterMeta.getType());
+            BeaconSystem beaconSystem = resolveBeaconSystemByRouteType(clusterType, BeaconRouteType.DR);
+            MonitorService monitorService = get(clusterMeta.getOrgId(), clusterMeta.getId(), dcMeta.getZone(), BeaconRouteType.DR);
+
+            List<String> dcs = new ArrayList<>();
+            if (!StringUtil.isEmpty(clusterMeta.getActiveDc())) {
+                dcs.add(clusterMeta.getActiveDc().toUpperCase());
+            }
+            if (!StringUtil.isEmpty(clusterMeta.getBackupDcs())) {
+                for (String dc : clusterMeta.getBackupDcs().split("\\s*,\\s*")) {
+                    if (dc.isEmpty()) continue;
+                    String upper = dc.toUpperCase();
+                    if (!dcs.contains(upper)) dcs.add(upper);
+                }
+            }
+            String region = dcMeta.getZone() != null ? dcMeta.getZone().toUpperCase() : UNKNOWN_REGION;
+
+            result.put(region, new DRClusterBeaconRouteItem(beaconSystem, clusterMeta, dcs, monitorService));
+        }
+
+        return result;
+    }
+
+    @Override
+    public List<SentinelBeaconUsageItem> getSentinelBeaconUsage(String system, boolean includeClusters) {
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> beaconData = clustersByBeaconSystemOrg(BeaconRouteType.SENTINEL);
+        if (beaconData == null || beaconData.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String currentDcUpper = currentDc.toUpperCase();
+        Map<String, Map<String, Integer>> shardCountMap = metaCache.getClusterShardCounts();
+
+        List<SentinelBeaconUsageItem> result = new ArrayList<>();
+        beaconData.forEach((beaconSystem, orgMap) -> {
+            if (!beaconSystem.getSystemName().equalsIgnoreCase(system)) return;
+            orgMap.forEach((orgId, serviceMap) -> serviceMap.forEach((service, clusters) -> {
+                int totalShards = clusters.stream()
+                        .mapToInt(c -> shardCountMap.getOrDefault(c, Collections.emptyMap())
+                                .getOrDefault(currentDcUpper, 0))
+                        .sum();
+                List<ClusterShardInfo> clusterList = null;
+                if (includeClusters) {
+                    clusterList = new ArrayList<>();
+                    for (String clusterName : clusters) {
+                        int shards = shardCountMap.getOrDefault(clusterName, Collections.emptyMap())
+                                .getOrDefault(currentDcUpper, 0);
+                        clusterList.add(new ClusterShardInfo(clusterName, shards));
+                    }
+                }
+                result.add(new SentinelBeaconUsageItem(beaconSystem, BeaconRouteType.SENTINEL, orgId, service,
+                        clusters.size(), totalShards, clusterList));
+            }));
+        });
+
+        return result;
+    }
+
+    @Override
+    public Map<String, RegionBeaconUsage> getDRBeaconUsage(String system, boolean includeClusters) {
+        Map<String, RegionBeaconUsage> result = new LinkedHashMap<>();
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null) {
+            return result;
+        }
+
+        Set<String> supportZones = consoleCommonConfig.getBeaconSupportZones();
+        Map<String, String> dcToRegion = new HashMap<>();
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            String region = dcMeta.getZone();
+            if (region == null) continue;
+            if (!supportZones.isEmpty() && supportZones.stream().noneMatch(z -> z.equalsIgnoreCase(region))) {
+                continue;
+            }
+            dcToRegion.put(dcMeta.getId().toUpperCase(), region.toUpperCase());
+            result.computeIfAbsent(region.toUpperCase(), r -> new RegionBeaconUsage())
+                    .getDcs().add(dcMeta.getId().toUpperCase());
+        }
+
+        Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> beaconData = clustersByBeaconSystemOrg(BeaconRouteType.DR);
+        if (beaconData == null || beaconData.isEmpty()) {
+            return result;
+        }
+
+        Map<String, Map<String, Integer>> shardCountMap = metaCache.getClusterShardCounts();
+        Map<String, String> clusterToActiveDc = new HashMap<>();
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            for (ClusterMeta cm : dcMeta.getClusters().values()) {
+                if (cm.getActiveDc() != null) {
+                    clusterToActiveDc.putIfAbsent(cm.getId(), cm.getActiveDc().toUpperCase());
+                }
+            }
+        }
+
+        beaconData.forEach((beaconSystem, orgMap) -> {
+            if (!beaconSystem.getSystemName().equalsIgnoreCase(system)) return;
+            orgMap.forEach((orgId, serviceMap) -> serviceMap.forEach((service, clusters) -> {
+                String region = UNKNOWN_REGION;
+                List<ClusterShardInfo> clusterInfos = includeClusters ? new ArrayList<>() : null;
+                int totalShards = 0;
+                for (String clusterName : clusters) {
+                    String activeDc = clusterToActiveDc.get(clusterName);
+                    int shards = activeDc != null
+                            ? shardCountMap.getOrDefault(clusterName, Collections.emptyMap())
+                                    .getOrDefault(activeDc, 0)
+                            : 0;
+                    if (clusterInfos != null) {
+                        clusterInfos.add(new ClusterShardInfo(clusterName, shards));
+                    }
+                    totalShards += shards;
+                    if (region.equals(UNKNOWN_REGION) && activeDc != null) {
+                        String beaconRegion = dcToRegion.get(activeDc);
+                        if (beaconRegion != null) {
+                            region = beaconRegion;
+                        }
+                    }
+                }
+                RegionBeaconUsage regionUsage = result.computeIfAbsent(region, r -> new RegionBeaconUsage());
+                regionUsage.getBeacons().add(new DRBeaconUsageItem(beaconSystem, orgId, service,
+                        clusters.size(), totalShards, clusterInfos));
+            }));
+        });
 
         return result;
     }

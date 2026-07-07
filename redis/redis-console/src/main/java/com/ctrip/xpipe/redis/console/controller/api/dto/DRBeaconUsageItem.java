@@ -1,8 +1,12 @@
 package com.ctrip.xpipe.redis.console.controller.api.dto;
 
+import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
+
 import java.util.List;
 
-public class BeaconUsageItem {
+public class DRBeaconUsageItem {
 
     private String system;
     private String beaconMode;
@@ -13,7 +17,19 @@ public class BeaconUsageItem {
     private int shardCount;
     private List<ClusterShardInfo> clusters;
 
-    public BeaconUsageItem() {
+    public DRBeaconUsageItem() {
+    }
+
+    public DRBeaconUsageItem(BeaconSystem beaconSystem, long orgId, MonitorService service,
+                              int clusterCount, int shardCount, List<ClusterShardInfo> clusters) {
+        this.system = beaconSystem.getSystemName();
+        this.beaconMode = BeaconRouteType.DR.name();
+        this.orgId = orgId;
+        this.beaconName = service.getName();
+        this.beaconHost = service.getHost();
+        this.clusterCount = clusterCount;
+        this.shardCount = shardCount;
+        this.clusters = clusters;
     }
 
     public String getSystem() {

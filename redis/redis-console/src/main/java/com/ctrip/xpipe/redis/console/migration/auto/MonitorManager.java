@@ -2,7 +2,10 @@ package com.ctrip.xpipe.redis.console.migration.auto;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.redis.checker.BeaconRouteType;
-import com.ctrip.xpipe.redis.console.controller.api.dto.ClusterBeaconRouteItem;
+import com.ctrip.xpipe.redis.console.controller.api.dto.DRClusterBeaconRouteItem;
+import com.ctrip.xpipe.redis.console.controller.api.dto.RegionBeaconUsage;
+import com.ctrip.xpipe.redis.console.controller.api.dto.SentinelBeaconUsageItem;
+import com.ctrip.xpipe.redis.console.controller.api.dto.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 
 import java.util.List;
@@ -25,7 +28,13 @@ public interface MonitorManager {
 
     Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clustersByBeaconSystemOrg(BeaconRouteType routeType);
 
-    List<ClusterBeaconRouteItem> getClusterRoutes(String clusterName, BeaconRouteType routeType);
+    List<SentinelClusterBeaconRouteItem> getSentinelClusterRoutes(String clusterName);
+
+    Map<String, DRClusterBeaconRouteItem> getDRClusterRoutes(String clusterName);
 
     Set<String> getBeaconDcs(String clusterName, BeaconRouteType routeType);
+
+    List<SentinelBeaconUsageItem> getSentinelBeaconUsage(String system, boolean includeClusters);
+
+    Map<String, RegionBeaconUsage> getDRBeaconUsage(String system, boolean includeClusters);
 }

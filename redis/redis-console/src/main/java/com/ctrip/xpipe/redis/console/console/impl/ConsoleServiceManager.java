@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.CheckerService;
+import com.ctrip.xpipe.redis.checker.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
@@ -13,11 +14,12 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatu
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.console.controller.api.dto.ApiResponse;
-import com.ctrip.xpipe.redis.console.controller.api.dto.BeaconUsageItem;
-import com.ctrip.xpipe.redis.console.controller.api.dto.ClusterBeaconRouteItem;
+import com.ctrip.xpipe.redis.console.controller.api.dto.RestResponse;
+import com.ctrip.xpipe.redis.console.controller.api.dto.SentinelBeaconUsageItem;
+import com.ctrip.xpipe.redis.console.controller.api.dto.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.exception.NotEnoughResultsException;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
+import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.tuple.Pair;
@@ -66,6 +68,9 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
 
     @Resource(name = GLOBAL_EXECUTOR)
     private ExecutorService globalExecutor;
+
+    @Autowired(required = false)
+    private MonitorManager monitorManager;
 
     @Autowired
     public ConsoleServiceManager(ConsoleConfig consoleConfig, @Nullable ConsoleLeaderElector leaderElector) {
@@ -320,36 +325,34 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         }
     }
 
-    public Map<String, ApiResponse<List<BeaconUsageItem>>> getAllConsoleBeaconUsage(
-            String system, boolean includeClusters,
-            Supplier<List<BeaconUsageItem>> localSupplier) {
+    public Map<String, RestResponse<List<SentinelBeaconUsageItem>>> getAllConsoleSentinelBeaconUsage(
+            String system, boolean includeClusters) {
         return aggregateAcrossConsoles(
                 consoleConfig.getConsoleDomains().keySet(),
-                localSupplier,
-                dcId -> getServiceByDc(dcId).getBeaconUsage(system, includeClusters));
+                () -> monitorManager.getSentinelBeaconUsage(system, includeClusters),
+                dcId -> getServiceByDc(dcId).getSentinelBeaconUsage(system, includeClusters));
     }
 
-    public Map<String, ApiResponse<List<ClusterBeaconRouteItem>>> getAllConsoleClusterBeaconRoute(
-            String clusterName, Set<String> targetDcs,
-            Supplier<List<ClusterBeaconRouteItem>> localSupplier) {
+    public Map<String, RestResponse<List<SentinelClusterBeaconRouteItem>>> getAllConsoleSentinelClusterBeaconRoute(String clusterName) {
+        Set<String> targetDcs = monitorManager.getBeaconDcs(clusterName, BeaconRouteType.SENTINEL);
         return aggregateAcrossConsoles(
                 targetDcs,
-                localSupplier,
-                dcId -> getServiceByDc(dcId).getClusterBeaconRoute(clusterName));
+                () -> monitorManager.getSentinelClusterRoutes(clusterName),
+                dcId -> getServiceByDc(dcId).getSentinelClusterBeaconRoute(clusterName));
     }
 
-    private <T> Map<String, ApiResponse<T>> aggregateAcrossConsoles(
+    private <T> Map<String, RestResponse<T>> aggregateAcrossConsoles(
             Set<String> targetDcs,
             Supplier<T> localSupplier,
             Function<String, T> remoteFetch) {
         String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
-        Map<String, ApiResponse<T>> result = new LinkedHashMap<>();
+        Map<String, RestResponse<T>> result = new LinkedHashMap<>();
 
         try {
-            result.put(currentDc, ApiResponse.success(localSupplier.get()));
+            result.put(currentDc, RestResponse.success(localSupplier.get()));
         } catch (Exception e) {
             logger.error("[aggregateAcrossConsoles] local fail, dc={}", currentDc, e);
-            result.put(currentDc, ApiResponse.fail("local failed"));
+            result.put(currentDc, RestResponse.fail("local failed: " + e.getMessage()));
         }
 
         Set<String> remoteDcs = new LinkedHashSet<>();
@@ -362,7 +365,7 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         }
         Map<String, BroadcastResult<T>> raw = broadcast(remoteDcs, remoteFetch);
         raw.forEach((dc, r) -> result.put(dc,
-                r.isSuccess() ? ApiResponse.success(r.value) : ApiResponse.fail(r.errorMsg)));
+                r.isSuccess() ? RestResponse.success(r.value) : RestResponse.fail(r.errorMsg)));
 
         return result;
     }

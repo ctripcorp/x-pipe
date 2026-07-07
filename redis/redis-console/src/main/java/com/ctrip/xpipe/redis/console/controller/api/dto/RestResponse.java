@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.dto;
 
-public class ApiResponse<T> {
+public class RestResponse<T> {
 
     public static final int CODE_SUCCESS = 0;
     public static final int CODE_FAIL = -1;
@@ -9,21 +9,21 @@ public class ApiResponse<T> {
     private String msg;
     private T data;
 
-    public ApiResponse() {
+    public RestResponse() {
     }
 
-    public ApiResponse(int code, String msg, T data) {
+    public RestResponse(int code, String msg, T data) {
         this.code = code;
         this.msg = msg;
         this.data = data;
     }
 
-    public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(CODE_SUCCESS, "success", data);
+    public static <T> RestResponse<T> success(T data) {
+        return new RestResponse<>(CODE_SUCCESS, "success", data);
     }
 
-    public static <T> ApiResponse<T> fail(String msg) {
-        return new ApiResponse<>(CODE_FAIL, msg, null);
+    public static <T> RestResponse<T> fail(String msg) {
+        return new RestResponse<>(CODE_FAIL, msg, null);
     }
 
     public int getCode() {

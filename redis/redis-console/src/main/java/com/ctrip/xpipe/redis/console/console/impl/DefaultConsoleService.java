@@ -7,8 +7,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STAT
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.console.controller.api.dto.BeaconUsageItem;
-import com.ctrip.xpipe.redis.console.controller.api.dto.ClusterBeaconRouteItem;
+import com.ctrip.xpipe.redis.console.controller.api.dto.SentinelBeaconUsageItem;
+import com.ctrip.xpipe.redis.console.controller.api.dto.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.SentinelBeaconPostMigrateRequest;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
@@ -40,8 +40,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     private static final int SENTINEL_BEACON_MIGRATE_RETRY_TIMES = 0;
     private static final String SENTINEL_BEACON_PRE_MIGRATE_PATH = "/api/beacon/migration/sentinel/pre/{clusterName}";
     private static final String SENTINEL_BEACON_POST_MIGRATE_PATH = "/api/beacon/migration/sentinel/post/{clusterName}";
-    private static final String BEACON_USAGE_PATH = "/api/beacon/usage/local?beaconMode=SENTINEL&system={system}&includeClusters={includeClusters}";
-    private static final String BEACON_CLUSTER_PATH = "/api/beacon/cluster/{clusterName}/local?beaconMode=SENTINEL";
+    private static final String BEACON_USAGE_PATH = "/api/beacon/sentinel/usage/local?system={system}&includeClusters={includeClusters}";
+    private static final String BEACON_CLUSTER_PATH = "/api/beacon/sentinel/cluster/{clusterName}/local";
 
     private String address;
 
@@ -97,11 +97,11 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String beaconClusterUrl;
 
-    private static final ParameterizedTypeReference<List<BeaconUsageItem>> beaconUsageTypeDef =
-            new ParameterizedTypeReference<List<BeaconUsageItem>>(){};
+    private static final ParameterizedTypeReference<List<SentinelBeaconUsageItem>> beaconUsageTypeDef =
+            new ParameterizedTypeReference<List<SentinelBeaconUsageItem>>(){};
 
-    private static final ParameterizedTypeReference<List<ClusterBeaconRouteItem>> clusterBeaconRouteTypeDef =
-            new ParameterizedTypeReference<List<ClusterBeaconRouteItem>>(){};
+    private static final ParameterizedTypeReference<List<SentinelClusterBeaconRouteItem>> clusterBeaconRouteTypeDef =
+            new ParameterizedTypeReference<List<SentinelClusterBeaconRouteItem>>(){};
 
     private static final ParameterizedTypeReference<Map<HostPort, Long>> hostDelayTypeDef =
             new ParameterizedTypeReference<Map<HostPort, Long>>(){};
@@ -277,15 +277,15 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     }
 
     @Override
-    public List<BeaconUsageItem> getBeaconUsage(String system, boolean includeClusters) {
-        ResponseEntity<List<BeaconUsageItem>> response = restTemplate.exchange(
+    public List<SentinelBeaconUsageItem> getSentinelBeaconUsage(String system, boolean includeClusters) {
+        ResponseEntity<List<SentinelBeaconUsageItem>> response = restTemplate.exchange(
                 beaconUsageUrl, HttpMethod.GET, null, beaconUsageTypeDef, system, includeClusters);
         return response.getBody();
     }
 
     @Override
-    public List<ClusterBeaconRouteItem> getClusterBeaconRoute(String clusterName) {
-        ResponseEntity<List<ClusterBeaconRouteItem>> response = restTemplate.exchange(
+    public List<SentinelClusterBeaconRouteItem> getSentinelClusterBeaconRoute(String clusterName) {
+        ResponseEntity<List<SentinelClusterBeaconRouteItem>> response = restTemplate.exchange(
                 beaconClusterUrl, HttpMethod.GET, null, clusterBeaconRouteTypeDef, clusterName);
         return response.getBody();
     }
