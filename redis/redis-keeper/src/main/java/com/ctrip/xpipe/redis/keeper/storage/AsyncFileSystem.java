@@ -4,10 +4,10 @@ import java.nio.channels.WritableByteChannel;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import io.netty.buffer.ByteBuf;
 
 // currently only support append only mode and atomic replace mode.
 // All read/write operations attempt to read/write as much as possible until EOF, I/O error, or completion.
-// TODO to prevent unnessery memory copy, we should reconsider the interface design.
 public interface AsyncFileSystem {
     void shutdown();
 
@@ -19,9 +19,11 @@ public interface AsyncFileSystem {
     CompletableFuture<Long> lastModified(AsyncFile file);
     // Only available in read mode.
     CompletableFuture<Void> position(AsyncFile file, long position);
-    CompletableFuture<Long> read(AsyncFile file, long length, long offset, byte[] buffer);
-    CompletableFuture<Long> read(AsyncFile file, long length, byte[] buffer);
-    CompletableFuture<Long> write(AsyncFile file, byte[] data, long length);
+    // Caller must release() the returned ByteBuf when done.
+    CompletableFuture<ByteBuf> read(AsyncFile file, long length, long offset);
+    // Caller must release() the returned ByteBuf when done.
+    CompletableFuture<ByteBuf> read(AsyncFile file, long length);
+    CompletableFuture<Long> write(AsyncFile file, ByteBuf data);
     CompletableFuture<Void> delete(String path);
     CompletableFuture<Boolean> exists(String path);
     CompletableFuture<Long> size(AsyncFile file);
@@ -51,11 +53,13 @@ public interface AsyncFileSystem {
     CompletableFuture<Void> position(AsyncSegmentFile file, long offset);
     // Mixing them with pread/transferTo on the same AsyncSegmentFile is NOT supported
     // as pread/transferTo also require a certain segment to be opened.
-    CompletableFuture<Long> read(AsyncSegmentFile file, long length, byte[] buffer);
+    // Caller must release() the returned ByteBuf when done.
+    CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length);
     // Mixing this with read()/position()/transferTo on the same AsyncSegmentFile is NOT supported
     // as it also requires a certain segment to be opened.
-    CompletableFuture<Long> read(AsyncSegmentFile file, long length, long offset, byte[] buffer);
-    CompletableFuture<Long> write(AsyncSegmentFile file, byte[] data, long length);
+    // Caller must release() the returned ByteBuf when done.
+    CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length, long offset);
+    CompletableFuture<Long> write(AsyncSegmentFile file, ByteBuf data);
     // Only available in write mode.
     CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file);
     List<Long> list(AsyncSegmentFile file);
@@ -76,7 +80,7 @@ public interface AsyncFileSystem {
     // Cannot delete the last segment.
     // Only available in write mode.
     CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets);
-    // Delete all known segment and index files.
+    // Delete all known segment and index files. Caller must close() all open file objects (including this one) to release resources.
     // Only available in write mode.
     CompletableFuture<Void> delete(AsyncSegmentFile file);
     // Truncate at logical offset, returning the index files of the resulting segment.

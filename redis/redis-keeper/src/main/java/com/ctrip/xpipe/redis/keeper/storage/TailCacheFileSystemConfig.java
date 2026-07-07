@@ -32,6 +32,7 @@ public class TailCacheFileSystemConfig {
     // if the writer is already open with a different cache mode.
     // only data written after the switch is cached.
     private CacheMode defaultCacheMode = CacheMode.NO_CACHE;
+    private int chunkSize = 1 * 1024 * 1024;
 
     public TailCacheFileSystemConfig() {
     }
@@ -99,6 +100,16 @@ public class TailCacheFileSystemConfig {
             throw new IllegalArgumentException("DYNAMIC cannot be used as defaultCacheMode");
         }
         this.defaultCacheMode = defaultCacheMode;
+        return this;
+    }
+
+    public int getChunkSize() {
+        return chunkSize;
+    }
+
+    public TailCacheFileSystemConfig setChunkSize(int chunkSize) {
+        if (chunkSize <= 0) throw new IllegalArgumentException("chunkSize must be positive");
+        this.chunkSize = chunkSize;
         return this;
     }
 }

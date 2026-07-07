@@ -21,6 +21,12 @@ abstract class AbstractStorageFile {
     volatile boolean fullCacheOnly = false;
     volatile Runnable onClose = () -> {};
 
+    FileCacheEntry cacheEntry = null;
+
+    FileCacheEntry getCacheEntry() {
+        return cacheEntry;
+    }
+
     abstract FileChannel currentWriteChannel();
 
     abstract String identifier();

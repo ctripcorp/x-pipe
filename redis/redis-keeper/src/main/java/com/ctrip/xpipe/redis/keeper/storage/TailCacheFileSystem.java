@@ -1,5 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.storage;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+
+import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.GatheringByteChannel;
+
+import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +28,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private volatile long maxCacheSizePerTenantBytes;
     private volatile long expectedMinRetentionMs;
     private volatile CacheMode defaultCacheMode;
+    private final int chunkSize;
 
     private final ConcurrentHashMap<String, FileCacheEntry> fileCacheEntries = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, SegmentFileCacheEntry> segmentCacheEntries = new ConcurrentHashMap<>();
@@ -35,6 +44,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         this.maxCacheSizePerTenantBytes = config.getMaxCacheSizePerTenantBytes();
         this.expectedMinRetentionMs = config.getExpectedMinRetentionMs();
         this.defaultCacheMode = config.getDefaultCacheMode();
+        this.chunkSize = config.getChunkSize();
         for (int i = 0; i < LOCK_STRIPES; i++) locks[i] = new Object();
     }
 
@@ -109,9 +119,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     // Must be called under lockFor(key).
-    private void acquireFileCacheEntry(String key) {
-        FileCacheEntry entry = fileCacheEntries.computeIfAbsent(key, k -> new FileCacheEntry());
+    private FileCacheEntry acquireFileCacheEntry(String key) {
+        FileCacheEntry entry = fileCacheEntries.computeIfAbsent(key, k -> new FileCacheEntry(chunkSize));
         entry.refCount++;
+        return entry;
     }
 
     // Must be called under lockFor(key).
@@ -150,7 +161,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                     if (cacheMode != CacheMode.NO_CACHE) {
                         String key = StorageUtil.fileKey(file.path);
                         synchronized (lockFor(key)) {
-                            acquireFileCacheEntry(key);
+                            file.cacheEntry = acquireFileCacheEntry(key);
                         }
                         file.onClose = () -> {
                             synchronized (lockFor(key)) {
@@ -178,22 +189,99 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> position(AsyncFile file, long position) {
-        return delegate.position(file, position);
+        file.position = position;
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public CompletableFuture<Long> read(AsyncFile file, long length, long offset, byte[] buffer) {
-        return delegate.read(file, length, offset, buffer);
+    public CompletableFuture<ByteBuf> read(AsyncFile file, long length, long offset) {
+        FileCacheEntry entry = file.getCacheEntry();
+        if (preferDirectRead(file.cacheMode, entry, offset, readPreferCache)) {
+            return delegate.read(file, length, offset);
+        }
+        return readWithCache(file, length, offset, entry);
     }
 
     @Override
-    public CompletableFuture<Long> read(AsyncFile file, long length, byte[] buffer) {
-        return delegate.read(file, length, buffer);
+    public CompletableFuture<ByteBuf> read(AsyncFile file, long length) {
+        FileCacheEntry entry = file.getCacheEntry();
+        long pos = file.position;
+        CompletableFuture<ByteBuf> future = preferDirectRead(file.cacheMode, entry, pos, readPreferCache)
+                ? delegate.read(file, length, pos)
+                : readWithCache(file, length, pos, entry);
+        return future.thenApply(buf -> {
+            file.position += buf.readableBytes();
+            return buf;
+        });
+    }
+
+    private java.util.List<ByteBuf> collectChunkSlices(FileCacheEntry entry, long offset, long end) {
+        int cs = entry.chunkSize;
+        long pos = offset;
+        java.util.List<ByteBuf> slices = new java.util.ArrayList<>();
+        while (pos < end) {
+            long chunkIdx = pos / cs;
+            int inChunk = (int) (pos % cs);
+            ByteBuf chunk = entry.chunks.get(chunkIdx);
+            if (chunk == null) break;
+            int length = (int) Math.min(cs - inChunk, end - pos);
+            slices.add(chunk.retainedSlice(inChunk, length));
+            pos += length;
+        }
+        return slices;
+    }
+
+    private CompletableFuture<ByteBuf> readWithCache(AsyncFile file, long length, long offset,
+            FileCacheEntry entry) {
+        long end = Math.min(offset + length, entry.cacheEndOffset);
+        java.util.List<ByteBuf> slices = collectChunkSlices(entry, offset, end);
+        CompositeByteBuf composite = StorageAllocator.ALLOC.compositeDirectBuffer();
+        for (ByteBuf s : slices) {
+            composite.addComponent(true, s);
+        }
+        return CompletableFuture.completedFuture(composite);
+    }
+
+    boolean preferDirectRead(CacheMode mode, FileCacheEntry entry, long offset, boolean preferCache) {
+        if (entry == null || mode == CacheMode.NO_CACHE) return true;
+        long cacheStart = entry.cacheStartOffset;
+        if (cacheStart < 0 || offset < cacheStart) return true;
+        if ((mode == CacheMode.DYNAMIC && defaultCacheMode == CacheMode.NO_CACHE) || !preferCache) {
+            return offset < entry.writtenToFsOffset;
+        }
+        return false;
+    }
+
+    long transferToByCache(FileCacheEntry entry, long offset, long count, WritableByteChannel target) throws IOException {
+        long end = Math.min(offset + count, entry.cacheEndOffset);
+        java.util.List<ByteBuf> slices = collectChunkSlices(entry, offset, end);
+        if (slices.isEmpty()) return 0;
+        try {
+            if (target instanceof GatheringByteChannel) {
+                ByteBuffer[] nioBuffers = new ByteBuffer[slices.size()];
+                for (int i = 0; i < slices.size(); i++) {
+                    nioBuffers[i] = slices.get(i).nioBuffer();
+                }
+                return ((GatheringByteChannel) target).write(nioBuffers);
+            }
+
+            long transferred = 0;
+            for (ByteBuf s : slices) {
+                int sliceLength = s.readableBytes();
+                ByteBuffer nioSlice = s.nioBuffer();
+                int n = target.write(nioSlice);
+                transferred += n;
+                if (n < sliceLength) break;
+            }
+            return transferred;
+        } finally {
+            for (ByteBuf s : slices) s.release();
+        }
     }
 
     @Override
-    public CompletableFuture<Long> write(AsyncFile file, byte[] data, long length) {
-        return delegate.write(file, data, length);
+    public CompletableFuture<Long> write(AsyncFile file, ByteBuf data) {
+        return delegate.write(file, data);
     }
 
     @Override
@@ -243,7 +331,20 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> transferTo(AsyncFile file, long position, long count, WritableByteChannel target) {
-        return delegate.transferTo(file, position, count, target);
+        FileCacheEntry entry = file.getCacheEntry();
+        if (preferDirectRead(file.cacheMode, entry, position, transferPreferCache)) {
+            return delegate.transferTo(file, position, count, target);
+        }
+
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return transferToByCache(entry, position, count, target);
+            } catch (ClosedChannelException e) {
+                throw new SocketClosedException(e);
+            } catch (IOException e) {
+                throw StorageUtil.wrapIOException(e);
+            }
+        });
     }
 
     // ---- AsyncSegmentFile ----
@@ -278,18 +379,18 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public CompletableFuture<Long> read(AsyncSegmentFile file, long length, byte[] buffer) {
-        return delegate.read(file, length, buffer);
+    public CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length) {
+        return delegate.read(file, length);
     }
 
     @Override
-    public CompletableFuture<Long> read(AsyncSegmentFile file, long length, long offset, byte[] buffer) {
-        return delegate.read(file, length, offset, buffer);
+    public CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length, long offset) {
+        return delegate.read(file, length, offset);
     }
 
     @Override
-    public CompletableFuture<Long> write(AsyncSegmentFile file, byte[] data, long length) {
-        return delegate.write(file, data, length);
+    public CompletableFuture<Long> write(AsyncSegmentFile file, ByteBuf data) {
+        return delegate.write(file, data);
     }
 
     @Override
