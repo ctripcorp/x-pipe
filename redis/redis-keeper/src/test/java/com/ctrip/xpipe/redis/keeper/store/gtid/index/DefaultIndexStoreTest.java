@@ -39,9 +39,12 @@ import java.util.stream.IntStream;
 
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,6 +53,10 @@ public class DefaultIndexStoreTest {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultIndexStoreTest.class);
     private static final String DEFAULT_BASE_DIR_NAME = "IndexStoreTest";
+    /** 单测 ZONE 连续条数阈值；生产 KeeperConfig 默认 8192 */
+    private static final int TEST_ZONE_CONSECUTIVE_THRESHOLD = 100;
+    /** 单测 Block 满盘条数上限；生产 BlockWriter.BLOCK_NAX_SIZE = 8192 */
+    private static final int TEST_BLOCK_MAX_SIZE = 100;
 
     String tempDir = System.getProperty("java.io.tmpdir");
 
@@ -127,7 +134,7 @@ public class DefaultIndexStoreTest {
         // 1. 初始化 mock 的 KeeperConfig（启用双写 + v2 读取）
         when(keeperConfig.dualWrite()).thenReturn(true);   // 同时写 v1 和 v2
         when(keeperConfig.readV2()).thenReturn(true);      // 优先读 v2
-        when(keeperConfig.getIndexZoneConsecutiveThreshold()).thenReturn(8192);
+        when(keeperConfig.getIndexZoneConsecutiveThreshold()).thenReturn(TEST_ZONE_CONSECUTIVE_THRESHOLD);
         when(keeperConfig.getIndexMixedTotalBytesThreshold()).thenReturn(16L * 1024 * 1024);
 
         defaultIndexStore = new DefaultIndexStore(keeperConfig, ckStore, baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
@@ -1069,7 +1076,7 @@ public class DefaultIndexStoreTest {
         DefaultIndexStore store = createV2Store(cmdFile, cmdName);
         IndexWriterV2 writerV2 = store.getIndexWriterV2();
 
-        int threshold = 8192;
+        int threshold = TEST_ZONE_CONSECUTIVE_THRESHOLD;
         // 写入 threshold 条 PING
         for (int i = 0; i < threshold; i++) {
             store.write(createPingCommand());
@@ -1100,6 +1107,121 @@ public class DefaultIndexStoreTest {
     }
 
     @Test
+    public void testV2RecoverIndex_SkipsZoneMainInterval() throws IOException {
+        // T-R.5: 含 ZONE 时 recoverIndex 应以 max(cmdEndOffset) 为 rebuildStart，跳过已落盘 ZONE 主区间
+        baseDir = Paths.get(tempDir, "IndexStoreTest-v2RecoverSkipZone").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_v2_recover_skip_zone";
+        File cmdFile = new File(baseDir, cmdName);
+
+        int zoneThreshold = TEST_ZONE_CONSECUTIVE_THRESHOLD;
+        DefaultIndexStore store = createV2StoreWithThresholds(cmdFile, cmdName, zoneThreshold, 16L * 1024 * 1024);
+        for (int i = 0; i < zoneThreshold; i++) {
+            store.write(createPingCommand());
+        }
+        long offsetAfterZone = cmdFile.length();
+        List<long[]> zones = store.getIndexWriterV2().loadAllZones();
+        Assert.assertEquals(1, zones.size());
+        Assert.assertEquals(offsetAfterZone, zones.get(0)[1]);
+        store.closeWriter();
+
+        byte[] pingBytes = pingCommandBytes();
+        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true)) {
+            for (int i = 0; i < 3; i++) {
+                fos.write(pingBytes);
+            }
+        }
+
+        DefaultIndexStore store2 = spy(createV2StoreUnopened(cmdFile, cmdName, zoneThreshold, 16L * 1024 * 1024));
+        doCallRealMethod().when(store2).buildIndexFromCmdFile(anyString(), anyLong());
+        store2.openWriter(writer);
+        verify(store2).buildIndexFromCmdFile(eq(cmdName), eq(offsetAfterZone));
+        store2.closeWriter();
+    }
+
+    @Test
+    public void testV2RecoverIndex_TruncateMalformedTail() throws IOException {
+        // T-R.5: v2 index 尾部残缺 88B entry 应 truncate，GtidSet 不损坏
+        baseDir = Paths.get(tempDir, "IndexStoreTest-v2RecoverTruncate").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_v2_recover_truncate";
+        File cmdFile = new File(baseDir, cmdName);
+        String uuid = "cafebabecafebabecafebabecafebabecafebabe";
+        int zoneThreshold = TEST_ZONE_CONSECUTIVE_THRESHOLD;
+
+        DefaultIndexStore store = createV2StoreWithThresholds(cmdFile, cmdName, zoneThreshold, 16L * 1024 * 1024);
+        for (int i = 0; i < zoneThreshold; i++) {
+            store.write(createPingCommand());
+        }
+        store.write(createGtidCommand(uuid + ":1", "SET", "k", "v"));
+        GtidSet gtidSetBefore = store.getIndexGtidSet();
+        Assert.assertTrue(gtidSetBefore.contains(uuid, 1));
+        store.closeWriter();
+
+        File indexV2 = new File(baseDir, "indexv2_" + cmdName);
+        long indexSizeBefore = indexV2.length();
+        Assert.assertTrue(indexSizeBefore > IndexEntry.SEGMENT_LENGTH_V2);
+        long truncatedSize = indexSizeBefore - 44;
+        try (DefaultControllableFile indexFile = new DefaultControllableFile(indexV2)) {
+            indexFile.setLength((int) truncatedSize);
+        }
+        Assert.assertEquals(truncatedSize, indexV2.length());
+
+        DefaultIndexStore store2 = createV2StoreWithThresholds(cmdFile, cmdName, zoneThreshold, 16L * 1024 * 1024);
+        GtidSet gtidSetAfter = store2.getIndexGtidSet();
+        Assert.assertTrue(gtidSetAfter.contains(uuid, 1));
+        store2.closeWriter();
+        // recover 截断残缺 entry 后，尾部 GTID 在内存 pending，close 落盘后与截断前一致
+        Assert.assertEquals(indexSizeBefore, indexV2.length());
+    }
+
+    @Test
+    public void testV2RecoverIndex_RollbackIncompleteTransactionPreservesGtid() throws IOException {
+        // v2 完整写入/recover：已落盘 ZONE+GTID 保留；尾部 MULTI 无 EXEC 的 cmd 被回退
+        baseDir = Paths.get(tempDir, "IndexStoreTest-v2RecoverIncompleteTx").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_v2_recover_incomplete_tx";
+        File cmdFile = new File(baseDir, cmdName);
+        String uuid = "a4f566ef50a85e1119f17f9b746728b48609a2ab";
+        int zoneThreshold = TEST_ZONE_CONSECUTIVE_THRESHOLD;
+
+        DefaultIndexStore store = createV2StoreWithThresholds(cmdFile, cmdName, zoneThreshold, 16L * 1024 * 1024);
+        for (int i = 0; i < zoneThreshold; i++) {
+            store.write(createPingCommand());
+        }
+        store.write(createGtidCommand(uuid + ":1", "SET", "k1", "v1"));
+        store.write(createGtidCommand(uuid + ":2", "SET", "k2", "v2"));
+        GtidSet gtidSetBefore = store.getIndexGtidSet();
+        Assert.assertTrue(gtidSetBefore.contains(uuid, 1));
+        Assert.assertTrue(gtidSetBefore.contains(uuid, 2));
+        store.closeWriter();
+
+        long cmdLenBeforeIncomplete = cmdFile.length();
+        writeCommandToFile(cmdFile, createMultiCommand());
+        writeCommandToFile(cmdFile, createSetCommand("k3", "v3"));
+        writeCommandToFile(cmdFile, createSetCommand("k4", "v4"));
+
+        DefaultIndexStore store2 = createV2StoreWithThresholds(cmdFile, cmdName, zoneThreshold, 16L * 1024 * 1024);
+        Assert.assertEquals("Incomplete transaction tail should be rolled back",
+                cmdLenBeforeIncomplete, cmdFile.length());
+        GtidSet gtidSetAfter = store2.getIndexGtidSet();
+        Assert.assertTrue("GTID 1 should survive recover", gtidSetAfter.contains(uuid, 1));
+        Assert.assertTrue("GTID 2 should survive recover", gtidSetAfter.contains(uuid, 2));
+        Assert.assertFalse("No GTID should be added from rolled-back tail",
+                gtidSetAfter.contains(uuid, 3));
+        store2.closeWriter();
+    }
+
+    @Test
     public void testV2ZoneWriter_GtidEntryBeforeZoneOnFlush() throws IOException {
         // appendNonGtid 触发 flush 时若 blockWriter 仍有未落盘 GTID，须先落 GTID entry 再落 ZONE entry
         baseDir = Paths.get(tempDir, "IndexStoreTest-v2GtidBeforeZone").toString();
@@ -1111,8 +1233,8 @@ public class DefaultIndexStoreTest {
         File cmdFile = new File(baseDir, cmdName);
         String uuid = "cafebabecafebabecafebabecafebabecafebabe";
 
-        // 低字节阈值便于触发 mixed flush，无需写满 8192 条 PING
-        DefaultIndexStore store = createV2StoreWithThresholds(cmdFile, cmdName, 8192, 200);
+        // 低字节阈值便于触发 mixed flush，无需写满生产默认 8192 条 PING
+        DefaultIndexStore store = createV2StoreWithThresholds(cmdFile, cmdName, TEST_ZONE_CONSECUTIVE_THRESHOLD, 200);
 
         store.write(createGtidCommand(uuid + ":1", "SET", "k", "v"));
         while (cmdFile.length() < 250) {
@@ -1149,7 +1271,7 @@ public class DefaultIndexStoreTest {
         File cmdFile = new File(baseDir, cmdName);
         String uuid = "cafebabecafebabecafebabecafebabecafebabe";
 
-        DefaultIndexStore store = createV2StoreWithThresholds(cmdFile, cmdName, 8192, 16L * 1024 * 1024);
+        DefaultIndexStore store = createV2StoreWithThresholds(cmdFile, cmdName, TEST_ZONE_CONSECUTIVE_THRESHOLD, 16L * 1024 * 1024);
         IndexWriterV2 writerV2 = store.getIndexWriterV2();
 
         store.write(createGtidCommand(uuid + ":1", "SET", "k", "v"));
@@ -1190,7 +1312,7 @@ public class DefaultIndexStoreTest {
         when(ckStore.getKeeperConfig()).thenReturn(keeperConfig);
         when(keeperConfig.dualWrite()).thenReturn(true);
         when(keeperConfig.readV2()).thenReturn(true);
-        when(keeperConfig.getIndexZoneConsecutiveThreshold()).thenReturn(8192);
+        when(keeperConfig.getIndexZoneConsecutiveThreshold()).thenReturn(TEST_ZONE_CONSECUTIVE_THRESHOLD);
         when(keeperConfig.getIndexMixedTotalBytesThreshold()).thenReturn(16L * 1024 * 1024);
 
         RedisOpParserManager mgr = new DefaultRedisOpParserManager();
@@ -1202,9 +1324,44 @@ public class DefaultIndexStoreTest {
         return store;
     }
 
+    private DefaultIndexStore createV2StoreUnopened(File cmdFile, String cmdName) throws IOException {
+        return createV2StoreUnopened(cmdFile, cmdName, TEST_ZONE_CONSECUTIVE_THRESHOLD, 16L * 1024 * 1024);
+    }
+
+    private DefaultIndexStore createV2StoreUnopened(File cmdFile, String cmdName,
+                                                    int zoneThreshold, long mixedBytesThreshold) throws IOException {
+        when(commandFile.getFile()).thenReturn(cmdFile);
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+        when(commandWriterCallback.writeCommand(any(ByteBuf.class))).thenAnswer(inv -> {
+            ByteBuf b = inv.getArgument(0);
+            int n = b.readableBytes();
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true)) {
+                byte[] tmp = new byte[n];
+                b.getBytes(b.readerIndex(), tmp);
+                fos.write(tmp);
+            }
+            return n;
+        });
+
+        CKStore ckStoreLocal = mock(CKStore.class);
+        KeeperConfig config = mock(KeeperConfig.class);
+        when(ckStoreLocal.getKeeperConfig()).thenReturn(config);
+        when(config.dualWrite()).thenReturn(true);
+        when(config.readV2()).thenReturn(true);
+        when(config.getIndexZoneConsecutiveThreshold()).thenReturn(zoneThreshold);
+        when(config.getIndexMixedTotalBytesThreshold()).thenReturn(mixedBytesThreshold);
+
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        return new DefaultIndexStore(config, ckStoreLocal, baseDir, opParser,
+                commandWriterCallback, gtidCmdFilter, cmdName);
+    }
+
     private DefaultIndexStore createStoreWithFlags(File cmdFile, String cmdName,
                                                    boolean dualWrite, boolean readV2) throws IOException {
-        return createStoreWithFlags(cmdFile, cmdName, dualWrite, readV2, 8192, 16L * 1024 * 1024);
+        return createStoreWithFlags(cmdFile, cmdName, dualWrite, readV2, TEST_ZONE_CONSECUTIVE_THRESHOLD, 16L * 1024 * 1024);
     }
 
     private DefaultIndexStore createStoreWithFlags(File cmdFile, String cmdName,
@@ -1385,6 +1542,13 @@ public class DefaultIndexStoreTest {
         return buffer;
     }
 
+    private byte[] pingCommandBytes() {
+        ByteBuf buf = createPingCommand();
+        byte[] bytes = new byte[buf.readableBytes()];
+        buf.getBytes(buf.readerIndex(), bytes);
+        return bytes;
+    }
+
     private String createPublishCommand(int cmdCount){
         StringBuilder sb = new StringBuilder();
         IntStream.range(0, cmdCount).forEach(i -> {
@@ -1426,37 +1590,44 @@ public class DefaultIndexStoreTest {
     }
 
     @Test
-    public void testV2BlockFull8192GtidFlush() throws IOException {
-        baseDir = Paths.get(tempDir, "IndexStoreTest-v2BlockFull8192").toString();
-        File dir = new File(baseDir);
-        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
-        else dir.mkdirs();
+    public void testV2BlockFullGtidFlush() throws IOException {
+        // 单测临时调小 block 上限以加速；生产仍为 BlockWriter.BLOCK_NAX_SIZE
+        int testBlockMaxSize = TEST_BLOCK_MAX_SIZE;
+        BlockWriter.setBlockMaxSizeForTest(testBlockMaxSize);
+        try {
+            baseDir = Paths.get(tempDir, "IndexStoreTest-v2BlockFull8192").toString();
+            File dir = new File(baseDir);
+            if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+            else dir.mkdirs();
 
-        String cmdName = "cmd_v2_block_full_8192";
-        File cmdFile = new File(baseDir, cmdName);
-        String uuid = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
+            String cmdName = "cmd_v2_block_full_8192";
+            File cmdFile = new File(baseDir, cmdName);
+            String uuid = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
 
-        DefaultIndexStore store = createV2Store(cmdFile, cmdName);
-        for (int i = 1; i <= BlockWriter.BLOCK_NAX_SIZE + 1; i++) {
-            store.write(createGtidCommand(uuid + ":" + i, "SET", "k" + i, "v" + i));
-        }
-
-        List<IndexEntry> flushedGtidEntries = readV2GtidEntries(baseDir, cmdName);
-        Assert.assertFalse("Block full should flush at least one GTID entry to disk", flushedGtidEntries.isEmpty());
-        boolean hasFullBlock = false;
-        for (IndexEntry entry : flushedGtidEntries) {
-            Assert.assertTrue("GTID block size must not exceed " + BlockWriter.BLOCK_NAX_SIZE,
-                    entry.getSize() <= BlockWriter.BLOCK_NAX_SIZE);
-            if (entry.getSize() == BlockWriter.BLOCK_NAX_SIZE) {
-                hasFullBlock = true;
+            DefaultIndexStore store = createV2Store(cmdFile, cmdName);
+            for (int i = 1; i <= testBlockMaxSize + 1; i++) {
+                store.write(createGtidCommand(uuid + ":" + i, "SET", "k" + i, "v" + i));
             }
-        }
-        Assert.assertTrue("Should flush a full block of " + BlockWriter.BLOCK_NAX_SIZE + " GTIDs", hasFullBlock);
 
-        store.closeWriter();
-        List<IndexEntry> allGtidEntries = readV2GtidEntries(baseDir, cmdName);
-        int totalGtids = allGtidEntries.stream().mapToInt(IndexEntry::getSize).sum();
-        Assert.assertEquals(BlockWriter.BLOCK_NAX_SIZE + 1, totalGtids);
+            List<IndexEntry> flushedGtidEntries = readV2GtidEntries(baseDir, cmdName);
+            Assert.assertFalse("Block full should flush at least one GTID entry to disk", flushedGtidEntries.isEmpty());
+            boolean hasFullBlock = false;
+            for (IndexEntry entry : flushedGtidEntries) {
+                Assert.assertTrue("GTID block size must not exceed " + testBlockMaxSize,
+                        entry.getSize() <= testBlockMaxSize);
+                if (entry.getSize() == testBlockMaxSize) {
+                    hasFullBlock = true;
+                }
+            }
+            Assert.assertTrue("Should flush a full block of " + testBlockMaxSize + " GTIDs", hasFullBlock);
+
+            store.closeWriter();
+            List<IndexEntry> allGtidEntries = readV2GtidEntries(baseDir, cmdName);
+            int totalGtids = allGtidEntries.stream().mapToInt(IndexEntry::getSize).sum();
+            Assert.assertEquals(testBlockMaxSize + 1, totalGtids);
+        } finally {
+            BlockWriter.resetBlockMaxSizeForTest();
+        }
     }
 
     @Test
