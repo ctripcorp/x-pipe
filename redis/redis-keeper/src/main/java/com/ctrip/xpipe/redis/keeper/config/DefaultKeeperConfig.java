@@ -347,4 +347,9 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public long getAsyncFsyncIntervalBytes() {
 		return getLongProperty(KEY_ASYNC_FSYNC_INTERVAL_BYTES, DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
 	}
+
+	@Override
+	public int getAsyncIoThreads() {
+		return getIntProperty(KEY_ASYNC_IO_THREADS, DEFAULT_ASYNC_IO_THREADS);
+	}
 }

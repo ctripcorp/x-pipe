@@ -11,8 +11,8 @@ import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
-import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystem;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
@@ -190,7 +190,8 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 	@Test
 	public void saveManagerMetaWithAtomicReplace() throws Exception {
 
-		AsyncFileSystem fileSystem = spy(new AsyncTFSBasedFileSystem(1, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES));
+		AsyncFileSystem fileSystem = spy(ContainerResourceManager.createAsyncFileSystem(
+				KeeperConfig.DEFAULT_ASYNC_IO_THREADS, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES));
 		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
 				mock(SyncRateManager.class), createRedisOpParser(), null, fileSystem);

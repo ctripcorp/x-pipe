@@ -7,8 +7,8 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
+import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
-import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystem;
 import com.ctrip.xpipe.utils.FileUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -56,7 +56,8 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
     @Test
     public void saveMetaOpenV2WithAtomicReplace() throws IOException {
         new File(baseDir, META_V2_FILE).delete();
-        AsyncFileSystem fileSystem = spy(new AsyncTFSBasedFileSystem(1, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES));
+        AsyncFileSystem fileSystem = spy(ContainerResourceManager.createAsyncFileSystem(
+                KeeperConfig.DEFAULT_ASYNC_IO_THREADS, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES));
         try {
             new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
             verify(fileSystem, atLeastOnce()).open(contains(META_V2_FILE), eq(true), eq(true), eq(true), eq(getReplId().toString()));

@@ -66,7 +66,7 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 
 		return new DefaultRedisKeeperServer(replId, keeper, keeperConfig, baseDir, leaderElectorManager,
 				createkeepersMonitorManager(), getRegistry().getComponent(KeeperResourceManager.class),
-				Mockito.mock(SyncRateManager.class), opParser){
+				Mockito.mock(SyncRateManager.class), opParser, asyncFileSystem()){
 		
 			@Override
 			public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
