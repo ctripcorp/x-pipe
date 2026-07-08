@@ -160,7 +160,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public ByteBuf readSync(AsyncFile file, long length, long offset, int alignSize) {
+    public ByteBuf readSync(AsyncFile file, long length, long offset, long alignSize) {
         try {
             return readFully(file.channel, length, offset, alignSize);
         } catch (IOException e) {
@@ -386,7 +386,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
     }
 
-    private ByteBuf readFully(FileChannel ch, long length, long offset, int alignSize) throws IOException {
+    private ByteBuf readFully(FileChannel ch, long length, long offset, long alignSize) throws IOException {
         long alignedStart = alignSize > 0 ? (offset / alignSize) * alignSize : offset;
         long alignedEnd = alignSize > 0 ? ((offset + length + alignSize - 1) / alignSize) * alignSize : offset + length;
         int capacity = (int) (alignedEnd - alignedStart);

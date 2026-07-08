@@ -255,7 +255,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (fileSize <= preloadChunkThreshold * chunkSize) {
             // small file: aligned read — buffer capacity rounded up to chunkSize multiples,
             // so each chunk slice maps directly onto an aligned region without copying.
-            ByteBuf data = delegate.readSync(file, fileSize, 0, (int) chunkSize);
+            ByteBuf data = delegate.readSync(file, fileSize, 0, chunkSize);
             try {
                 long actualSize = data.readableBytes();
                 long offset = 0;
@@ -340,7 +340,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public ByteBuf readSync(AsyncFile file, long length, long offset, int alignSize) {
+    public ByteBuf readSync(AsyncFile file, long length, long offset, long alignSize) {
         throw new UnsupportedOperationException();
     }
 
