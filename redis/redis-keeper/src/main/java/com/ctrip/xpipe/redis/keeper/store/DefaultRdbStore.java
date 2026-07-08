@@ -166,14 +166,9 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		int wrote = 0;
 		while (byteBuf.isReadable()) {
 			int chunkLength = Math.min(byteBuf.readableBytes(), maxChunk);
-			byte[] chunk = new byte[chunkLength];
-			byteBuf.readBytes(chunk);
-
-			long flushed = AsyncFileSystemHelper.await(
-					asyncFileSystem.write(writeAsyncFile, chunk, chunkLength), "write rdb " + file);
-			if (flushed != chunkLength) {
-				throw new IOException("short async rdb write, expected " + chunkLength + " but flushed " + flushed);
-			}
+			ByteBuf chunk = byteBuf.readRetainedSlice(chunkLength);
+			AsyncFileSystemHelper.writeAndAwait(asyncFileSystem, writeAsyncFile, chunk, chunkLength,
+					"write rdb " + file);
 			wrote += chunkLength;
 		}
 		return wrote;
