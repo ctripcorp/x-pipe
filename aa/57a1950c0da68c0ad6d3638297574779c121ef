@@ -1,0 +1,34 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  h_00df85a0850dc5 28-33,386-389,392-397,402-407,412,419-427
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriter.java
+  h_00df85a0850dc5 106
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriterV2.java
+  h_00df85a0850dc5 42,45,49,55,96,124-128
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/AllXsyncTest.java
+  h_00df85a0850dc5 21
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/KeeperXsyncV2IndexTest.java
+  h_00df85a0850dc5 1-323
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexEntry.java
+  h_00df85a0850dc5 23,32,148,187-188,196
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperConfig.java
+  h_00df85a0850dc5 20-21,128-129
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java
+  h_00df85a0850dc5 336-340
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  h_00df85a0850dc5 139,1122-1123,1140,1159,1161,1179,1199-1200,1216,1240,1277,1320-1321,1333,1337,1359,1408,1431,1611,1615-1616,1627-1628
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  h_00df85a0850dc5 88-89,116-117
+redis/package/redis-keeper-package/src/main/scripts/tools/IndexParserV2.py
+  h_00df85a0850dc5 1-266
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.32-trip",
+  "base_commit_sha": "aa57a1950c0da68c0ad6d3638297574779c121ef",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  }
+}
