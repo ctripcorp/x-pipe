@@ -103,7 +103,7 @@ public class IndexWriter extends AbstractIndex implements Closeable {
 
 
     private boolean needChangeBlock(String uuid, long gno) {
-        return blockWriter.needChangeBlock(uuid, gno);
+        return blockWriter.getSize() >= BlockWriter.BLOCK_NAX_SIZE  || blockWriter.isGnoGap(uuid, gno);
     }
 
 

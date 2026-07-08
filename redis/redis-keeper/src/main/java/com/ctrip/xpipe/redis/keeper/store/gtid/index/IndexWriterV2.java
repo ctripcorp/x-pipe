@@ -39,18 +39,20 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
 
     private final int zoneConsecutiveThreshold;
     private final long mixedTotalBytesThreshold;
+    private final int blockSizeThreshold;
 
     public IndexWriterV2(String baseDir, String cmdFileName, GtidSet gtidSet, DefaultIndexStore store) {
-        this(baseDir, cmdFileName, gtidSet, store, 8192, 16L * 1024 * 1024);
+        this(baseDir, cmdFileName, gtidSet, store, 8192, 16L * 1024 * 1024,8192);
     }
 
     public IndexWriterV2(String baseDir, String cmdFileName, GtidSet gtidSet, DefaultIndexStore store,
-                         int zoneConsecutiveThreshold, long mixedTotalBytesThreshold) {
+                         int zoneConsecutiveThreshold, long mixedTotalBytesThreshold,int blockSizeThreshold) {
         super(baseDir, cmdFileName);
         this.gtidSetWrapper = new GtidSetWrapper(gtidSet);
         this.store = store;
         this.zoneConsecutiveThreshold = zoneConsecutiveThreshold;
         this.mixedTotalBytesThreshold = mixedTotalBytesThreshold;
+        this.blockSizeThreshold = blockSizeThreshold;
     }
 
     @Override protected String getIndexPrefix() { return INDEX_V2; }
@@ -79,7 +81,7 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
             }
 
             // block 满或 uuid/gno gap：append 前先落盘当前 block（与 v1 IndexWriter 一致）
-            if (blockWriter != null && blockWriter.needChangeBlock(uuid, gno)) {
+            if (needChangeBlock(uuid, gno)) {
                 flushGtidEntryUnlocked();
             }
             if (blockWriter == null) {
@@ -91,7 +93,7 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
             cmdBytesSinceLastIndex += totalLen;
 
             // 统一判断：block 满 or 累计字节达到强制滚动阈值 → 落 GTID entry
-            if (blockWriter.isBlockFull() || cmdBytesSinceLastIndex >= mixedTotalBytesThreshold) {
+            if (blockWriter.getSize() >= blockSizeThreshold || cmdBytesSinceLastIndex >= mixedTotalBytesThreshold) {
                 flushGtidEntryUnlocked();
             }
         }
@@ -118,6 +120,12 @@ public class IndexWriterV2 extends AbstractIndex implements AutoCloseable {
             }
         }
     }
+
+    private boolean needChangeBlock(String uuid, long gno) {
+        if(blockWriter == null) return false;
+        return blockWriter.getSize() >= blockSizeThreshold  || blockWriter.isGnoGap(uuid, gno);
+    }
+
 
     /**
      * 落盘当前 pending 的 IndexEntry。GTID 与 ZONE 同时存在时先 GTID 后 ZONE；否则落存在的一方。
