@@ -102,7 +102,7 @@ public class CrossDcSentinelHelloCheckControllerTest extends AbstractCheckerTest
         instance = newRandomClusterHealthCheckInstance(null, ClusterType.CROSS_DC);
         ((DefaultClusterHealthCheckInstance)instance).setHealthCheckConfig(healthCheckConfig);
         when(healthCheckConfig.supportSentinelHealthCheck(any(),any())).thenReturn(true);
-        checkAction = new SentinelHelloCheckAction(scheduled, instance, executors, config, persistence,metaCache,instanceManager);
+        checkAction = new SentinelHelloCheckAction(scheduled, instance, executors, config, metaCache, instanceManager);
         downgradeController = new CrossDcSentinelHelloAggregationCollector(metaCache, sentinelHelloCollector, clusterName, shardName, checkerConfig);
         downgradeController = Mockito.spy(downgradeController);
         Mockito.when(healthCheckConfig.getSentinelCheckIntervalMilli()).thenReturn(sentinelCheckInterval);
@@ -115,7 +115,6 @@ public class CrossDcSentinelHelloCheckControllerTest extends AbstractCheckerTest
         checkAction.addListener(checkActionController);
         when(config.isSentinelAutoProcess()).thenReturn(true);
         when(config.shouldSentinelCheck(Mockito.anyString())).thenReturn(true);
-        when(persistence.isClusterOnMigration(anyString())).thenReturn(false);
         when(instanceManager.findRedisHealthCheckInstance(new HostPort(jqMasterMeta.getIp(), jqMasterMeta.getPort()))).thenReturn(jqMaster.getRedisCheckInstance());
         when(instanceManager.findRedisHealthCheckInstance(new HostPort(jqSlaveMeta.getIp(), jqSlaveMeta.getPort()))).thenReturn(jqSlave.getRedisCheckInstance());
         when(instanceManager.findRedisHealthCheckInstance(new HostPort(oySlave1Meta.getIp(), oySlave1Meta.getPort()))).thenReturn(oySlave1.getRedisCheckInstance());

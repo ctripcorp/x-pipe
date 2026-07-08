@@ -22,6 +22,8 @@ public abstract class AbstractCheckInfo implements CheckInfo {
 
     protected List<RedisCheckRule> redisCheckRules;
 
+    protected String status;
+
     public AbstractCheckInfo() {
 
     }
@@ -80,6 +82,16 @@ public abstract class AbstractCheckInfo implements CheckInfo {
 
     public void setRedisCheckRules(List<RedisCheckRule>  redisCheckRules) {
         this.redisCheckRules = redisCheckRules;
+    }
+
+    @Override
+    public String getStatus() {
+        return status;
+    }
+
+    @Override
+    public void setStatus(String status) {
+        this.status = status;
     }
 
 }

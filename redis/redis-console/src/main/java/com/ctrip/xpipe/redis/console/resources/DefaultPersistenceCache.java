@@ -134,13 +134,6 @@ public class DefaultPersistenceCache extends AbstractPersistenceCache{
         return findConfigWhiteList(KEY_CLUSTER_ALERT_EXCLUDE);
     }
 
-    @Override
-    Set<String> doGetMigratingClusterList() {
-        return clusterDao.findMigratingClusterNames()
-                .stream().map(ClusterTbl::getClusterName)
-                .collect(Collectors.toSet());
-    }
-
     private boolean isConfigOnOrExpired(String key, boolean defaultVal) {
         try {
             ConfigTbl config = configDao.getByKey(key);

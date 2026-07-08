@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
@@ -45,8 +44,6 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
 
     private CheckerDbConfig checkerDbConfig;
 
-    private PersistenceCache persistenceCache;
-
     private MetaCache metaCache;
 
     @Resource(name = HELLO_CHECK_SCHEDULED)
@@ -59,9 +56,8 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
 
     @Autowired
     public SentinelHelloCheckActionFactory(List<SentinelHelloCollector> collectors, List<SentinelActionController> controllers,
-                                           CheckerConfig checkerConfig, CheckerDbConfig checkerDbConfig, PersistenceCache persistenceCache, MetaCache metaCache) {
+                                           CheckerConfig checkerConfig, CheckerDbConfig checkerDbConfig, MetaCache metaCache) {
         this.checkerDbConfig = checkerDbConfig;
-        this.persistenceCache = persistenceCache;
         this.collectorsByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(collectors);
         this.controllersByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(controllers);
         this.metaCache = metaCache;
@@ -71,7 +67,7 @@ public class SentinelHelloCheckActionFactory extends AbstractClusterLeaderAwareH
 
     @Override
     public SiteLeaderAwareHealthCheckAction create(ClusterHealthCheckInstance instance) {
-        SentinelHelloCheckAction action = new SentinelHelloCheckAction(helloCheckScheduled, instance, helloCheckExecutors, checkerDbConfig, persistenceCache, metaCache, healthCheckInstanceManager);
+        SentinelHelloCheckAction action = new SentinelHelloCheckAction(helloCheckScheduled, instance, helloCheckExecutors, checkerDbConfig, metaCache, healthCheckInstanceManager);
 
         ClusterInstanceInfo info = instance.getCheckInfo();
         ClusterType clusterType = info.getClusterType();

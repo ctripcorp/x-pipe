@@ -32,15 +32,11 @@ public class ConsoleCheckerPath {
 
     public static final String PATH_PERSISTENCE = "/api/persistence/";
 
-    public static final String PATH_GET_IS_CLUSTER_ON_MIGRATION = PATH_PERSISTENCE + "isClusterOnMigration/{clusterName}";
-
     public static final String PATH_PUT_UPDATE_REDIS_ROLE = PATH_PERSISTENCE + "updateRedisRole/{role}";
     
     public static final String PATH_GET_SENTINEL_CHECKER_WHITE_LIST = PATH_PERSISTENCE + "sentinelCheckerWhiteList";
     
     public static final String PATH_GET_CLUSTER_ALERT_WHITE_LIST = PATH_PERSISTENCE + "clusterAlertWhiteList";
-
-    public static final String PATH_GET_MIGRATING_CLUSTER_LIST = PATH_PERSISTENCE + "migratingClusterList";
 
     public static final String PATH_GET_IS_SENTINEL_AUTO_PROCESS = PATH_PERSISTENCE + "isSentinelAutoProcess";
 

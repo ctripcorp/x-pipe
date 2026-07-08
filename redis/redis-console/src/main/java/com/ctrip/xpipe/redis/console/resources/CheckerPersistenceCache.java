@@ -16,7 +16,6 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
 
     private final CachedValue<Set<String>> sentinelCheckWhiteListCache = new CachedValue<>();
     private final CachedValue<Set<String>> clusterAlertWhiteListCache = new CachedValue<>();
-    private final CachedValue<Set<String>> migratingClusterListCache = new CachedValue<>();
     private final CachedValue<Boolean> isSentinelAutoProcessCache = new CachedValue<>();
     private final CachedValue<Boolean> isAlertSystemOnCache = new CachedValue<>();
     private final CachedValue<Map<String, Date>> allClusterCreateTimeCache = new CachedValue<>();
@@ -66,21 +65,6 @@ public class CheckerPersistenceCache extends AbstractPersistenceCache {
         }
 
         return clusterAlertWhiteListCache.getOrElse(Collections.emptySet());
-    }
-
-    @Override
-    Set<String> doGetMigratingClusterList() {
-        try {
-            Set<String> result = service.migratingClusterList(getConsoleAddress());
-            migratingClusterListCache.update(result);
-            return result;
-        } catch (RestClientException e) {
-            logger.warn("[doGetMigratingClusterList] rest fail, {}", e.getMessage());
-        } catch (Throwable th) {
-            logger.warn("[doGetMigratingClusterList] fail", th);
-        }
-
-        return migratingClusterListCache.getOrElse(Collections.emptySet());
     }
 
     @Override

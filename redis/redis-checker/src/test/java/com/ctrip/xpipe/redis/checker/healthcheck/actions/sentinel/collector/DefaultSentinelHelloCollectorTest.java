@@ -6,7 +6,6 @@ import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
-import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -19,6 +18,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.comm
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.command.SentinelHelloCollectContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.meta.ClusterMetaStatus;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
@@ -86,9 +86,6 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     @Mock
     private SentinelLeakyBucket leakyBucket;
 
-    @Mock
-    private PersistenceCache persistenceCache;
-
     private int originTimeout;
 
     private static final String masterInfoReplication = "$481\r\n" +
@@ -129,7 +126,6 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
                 new HostPort("127.0.0.1", 5003),
                 new HostPort("127.0.0.1", 5004)
         );
-        when(persistenceCache.isClusterOnMigration(anyString())).thenReturn(false);
         sentinelMasterInfo.put("name", monitorName);
         sentinelMasterInfo.put("ip", master.getHost());
         sentinelMasterInfo.put("port", String.valueOf(master.getPort()));
@@ -183,19 +179,17 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
         sentinelCollector.new SentinelHelloCollectorCommand(new SentinelActionContext(instance, Collections.emptySet())).execute().addListener(commandFuture -> {
             Assert.assertTrue(commandFuture.isSuccess());
         });
-        verify(persistenceCache,never()).isClusterOnMigration(any());
         verify(sentinelManager, never()).monitorMaster(any(), any(), any(), anyInt());
     }
 
     @Test
     public void testSkipMigratingCluster() throws Exception {
         when(checkerDbConfig.shouldSentinelCheck(Mockito.any())).thenReturn(true);
-        when(persistenceCache.isClusterOnMigration(anyString())).thenReturn(true);
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
+        instance.getCheckInfo().setStatus(ClusterMetaStatus.MIGRATING);
         sentinelCollector.new SentinelHelloCollectorCommand(new SentinelActionContext(instance, Collections.emptySet())).execute().addListener(commandFuture -> {
             Assert.assertTrue(commandFuture.isSuccess());
         });
-        verify(persistenceCache,times(1)).isClusterOnMigration(any());
         verify(sentinelManager, never()).monitorMaster(any(), any(), any(), anyInt());
     }
 

@@ -5,7 +5,6 @@ import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
@@ -13,6 +12,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.meta.ClusterMetaStatus;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -43,8 +43,6 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     private CheckerDbConfig checkerDbConfig;
 
-    private PersistenceCache persistenceCache;
-
     public static final String LOG_TITLE = "SentinelHelloCollect";
 
     private MetaCache metaCache;
@@ -58,10 +56,9 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
     private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
     public SentinelHelloCheckAction(ScheduledExecutorService scheduled, ClusterHealthCheckInstance instance,
-                                    ExecutorService executors, CheckerDbConfig checkerDbConfig, PersistenceCache persistenceCache, MetaCache metaCache, HealthCheckInstanceManager instanceManager) {
+                                    ExecutorService executors, CheckerDbConfig checkerDbConfig, MetaCache metaCache, HealthCheckInstanceManager instanceManager) {
         super(scheduled, instance, executors);
         this.checkerDbConfig = checkerDbConfig;
-        this.persistenceCache = persistenceCache;
         this.metaCache = metaCache;
         this.instanceManager= instanceManager;
     }
@@ -252,7 +249,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             return false;
         }
 
-        if (persistenceCache.isClusterOnMigration(cluster)) {
+        if (ClusterMetaStatus.isMigrating(checkInstance.getCheckInfo().getStatus())) {
             logger.warn("[{}][{}] in migration, stop check", LOG_TITLE, cluster);
             return false;
         }

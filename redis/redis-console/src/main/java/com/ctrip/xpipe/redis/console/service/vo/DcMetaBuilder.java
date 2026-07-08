@@ -157,6 +157,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                 clusterMeta.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds());
                 clusterMeta.setDownstreamDcs("");
                 clusterMeta.setLastModifiedTime(cluster.getClusterLastModifiedTime());
+                clusterMeta.setStatus(cluster.getStatus());
 
                 // TODO:下一版本删除DcGroup相关逻辑
                 clusterMeta.setDcGroupName(getDcGroupName(dcMeta, dcClusterInfo));
