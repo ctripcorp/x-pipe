@@ -73,7 +73,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     // Tmp file format: [8-byte length][data].
     @Override
     public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant) {
-        if (checkAtomicReplace(atomicReplace, write)) {
+        if (atomicReplace && !write) {
             return CompletableFuture.failedFuture(new IllegalArgumentException("atomicReplace requires write=true"));
         }
         return StorageUtil.supply(ioExecutor, () -> openSyncInternal(path, write, atomicReplace, lenient));
@@ -81,15 +81,12 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public AsyncFile openSync(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant) {
-        if (checkAtomicReplace(atomicReplace, write)) {
+        if (atomicReplace && !write) {
             throw new IllegalArgumentException("atomicReplace requires write=true");
         }
         return openSyncInternal(path, write, atomicReplace, lenient);
     }
 
-    private static boolean checkAtomicReplace(boolean atomicReplace, boolean write) {
-        return atomicReplace && !write;
-    }
 
     private AsyncFile openSyncInternal(String path, boolean write, boolean atomicReplace, boolean lenient) {
         try {
@@ -187,29 +184,35 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> write(AsyncFile file, ByteBuf data) {
-        return StorageUtil.supply(ioExecutor, () -> {
-            try {
-                if (file.atomicReplace) {
-                    return atomicReplaceWrite(file, data);
-                }
-                return writeAndFlush(file, data);
-            } catch (IOException e) {
-                throw StorageUtil.wrapIOException(e);
-            } finally {
-                data.release();
+        return StorageUtil.supply(ioExecutor, () -> writeSync(file, data));
+    }
+
+    @Override
+    public long writeSync(AsyncFile file, ByteBuf data) {
+        try {
+            if (file.atomicReplace) {
+                return atomicReplaceWrite(file, data);
             }
-        });
+            return writeAndFlush(file, data);
+        } catch (IOException e) {
+            throw StorageUtil.wrapIOException(e);
+        } finally {
+            data.release();
+        }
     }
 
     @Override
     public CompletableFuture<Void> delete(String path) {
-        return StorageUtil.run(ioExecutor, () -> {
-            try {
-                Files.deleteIfExists(Paths.get(path));
-            } catch (IOException e) {
-                throw StorageUtil.wrapIOException(e);
-            }
-        });
+        return StorageUtil.run(ioExecutor, () -> deleteSync(path));
+    }
+
+    @Override
+    public void deleteSync(String path) {
+        try {
+            Files.deleteIfExists(Paths.get(path));
+        } catch (IOException e) {
+            throw StorageUtil.wrapIOException(e);
+        }
     }
 
     @Override
@@ -291,16 +294,26 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("truncate() requires write mode"));
         }
-        return StorageUtil.run(ioExecutor, () -> {
-            try {
-                file.channel.truncate(size);
-                if (!file.atomicReplace) {
-                    file.channel.position(size);
-                }
-            } catch (IOException e) {
-                throw StorageUtil.wrapIOException(e);
+        return StorageUtil.run(ioExecutor, () -> truncateInternal(file, size));
+    }
+
+    @Override
+    public void truncateSync(AsyncFile file, long size) {
+        if (!file.writeMode) {
+            throw new IllegalArgumentException("truncate() requires write mode");
+        }
+        truncateInternal(file, size);
+    }
+
+    private void truncateInternal(AsyncFile file, long size) {
+        try {
+            file.channel.truncate(size);
+            if (!file.atomicReplace) {
+                file.channel.position(size);
             }
-        });
+        } catch (IOException e) {
+            throw StorageUtil.wrapIOException(e);
+        }
     }
 
     @Override
@@ -325,13 +338,23 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("fsync() requires write mode"));
         }
-        return StorageUtil.run(ioExecutor, () -> {
-            try {
-                fsyncChannel(file);
-            } catch (IOException e) {
-                throw StorageUtil.wrapIOException(e);
-            }
-        });
+        return StorageUtil.run(ioExecutor, () -> fsyncInternal(file));
+    }
+
+    @Override
+    public void fsyncSync(AsyncFile file) {
+        if (!file.writeMode) {
+            throw new IllegalArgumentException("fsync() requires write mode");
+        }
+        fsyncInternal(file);
+    }
+
+    private void fsyncInternal(AsyncFile file) {
+        try {
+            fsyncChannel(file);
+        } catch (IOException e) {
+            throw StorageUtil.wrapIOException(e);
+        }
     }
 
     @Override
@@ -486,8 +509,12 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         Path tmpPath = getTmpPath(file.path);
         try (FileChannel tmpCh = FileChannel.open(tmpPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
             ByteBuf lenBuf = Unpooled.buffer(8);
-            lenBuf.writeLong(length);
-            writeFully(tmpCh, lenBuf);
+            try {
+                lenBuf.writeLong(length);
+                writeFully(tmpCh, lenBuf);
+            } finally {
+                lenBuf.release();
+            }
             writeFully(tmpCh, data);
             tmpCh.force(true);
         }

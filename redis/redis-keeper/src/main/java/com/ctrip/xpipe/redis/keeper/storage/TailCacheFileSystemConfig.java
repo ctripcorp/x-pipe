@@ -32,10 +32,11 @@ public class TailCacheFileSystemConfig {
     // if the writer is already open with a different cache mode.
     // only data written after the switch is cached.
     private CacheMode defaultCacheMode = CacheMode.NO_CACHE;
-    private int chunkSize = 1 * 1024 * 1024;
+    private long chunkSize = 1 * 1024 * 1024;
     // When file size <= preloadChunkThreshold * chunkSize, use aligned reads for zero-copy cache population.
     // Otherwise read the whole file in one shot and copy into chunks. Default is 8.
     private int preloadChunkThreshold = 8;
+    private int maxWriteChunkThreshold = 32;
 
     public TailCacheFileSystemConfig() {
     }
@@ -106,11 +107,11 @@ public class TailCacheFileSystemConfig {
         return this;
     }
 
-    public int getChunkSize() {
+    public long getChunkSize() {
         return chunkSize;
     }
 
-    public TailCacheFileSystemConfig setChunkSize(int chunkSize) {
+    public TailCacheFileSystemConfig setChunkSize(long chunkSize) {
         if (chunkSize <= 0) throw new IllegalArgumentException("chunkSize must be positive");
         this.chunkSize = chunkSize;
         return this;
@@ -123,6 +124,16 @@ public class TailCacheFileSystemConfig {
     public TailCacheFileSystemConfig setPreloadChunkThreshold(int preloadChunkThreshold) {
         if (preloadChunkThreshold <= 0) throw new IllegalArgumentException("preloadChunkThreshold must be positive");
         this.preloadChunkThreshold = preloadChunkThreshold;
+        return this;
+    }
+
+    public int getMaxWriteChunkThreshold() {
+        return maxWriteChunkThreshold;
+    }
+
+    public TailCacheFileSystemConfig setMaxWriteChunkThreshold(int maxWriteChunkThreshold) {
+        if (maxWriteChunkThreshold <= 0) throw new IllegalArgumentException("maxWriteChunkThreshold must be positive");
+        this.maxWriteChunkThreshold = maxWriteChunkThreshold;
         return this;
     }
 }

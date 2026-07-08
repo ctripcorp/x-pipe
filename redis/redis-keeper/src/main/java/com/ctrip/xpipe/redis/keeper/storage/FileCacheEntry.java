@@ -7,6 +7,8 @@ final class FileCacheEntry extends CacheEntry {
 
     final ConcurrentHashMap<Long, ByteBuf> chunks = new ConcurrentHashMap<>();
 
+    boolean writerOpen = false;
+
     // -1: no cache data yet
     volatile long cacheStartOffset = -1;
     // Exclusive upper bound of all cached data; also the max readable offset for the file.
