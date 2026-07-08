@@ -353,9 +353,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         fsyncInternal(file);
     }
 
-    private void fsyncInternal(AsyncFile file) {
+    private void fsyncInternal(AbstractStorageFile file) {
         try {
-            fsyncChannel(file);
+            FileChannel ch = file.currentWriteChannel();
+            if (ch != null) ch.force(true);
+            file.pendingFsyncBytes = 0;
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         }
@@ -431,11 +433,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             }
         }
         return written;
-    }
-
-    private void fsyncChannel(AbstractStorageFile file) throws IOException {
-        FileChannel ch = file.currentWriteChannel();
-        if (ch != null) ch.force(true);
     }
 
     private boolean maybeSwitchSegment(AsyncSegmentFile file, SegmentDirState s, long nextOffset, long physicalOffset, long bytesRead) throws IOException {
@@ -921,13 +918,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("fsync() requires write mode"));
         }
-        return StorageUtil.run(ioExecutor, () -> {
-            try {
-                fsyncChannel(file);
-            } catch (IOException e) {
-                throw StorageUtil.wrapIOException(e);
-            }
-        });
+        return StorageUtil.run(ioExecutor, () -> fsyncInternal(file));
     }
 
     @Override

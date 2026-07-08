@@ -419,26 +419,58 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return true;
     }
 
+    boolean shouldCacheAtomicWrite(AsyncFile file) {
+        FileCacheEntry entry = file.getCacheEntry();
+        if (entry == null) return false;
+        CacheMode mode = file.cacheMode;
+        if (mode == CacheMode.NO_CACHE) return false;
+        if (mode == CacheMode.DYNAMIC && defaultCacheMode == CacheMode.NO_CACHE) return false;
+        return true;
+    }
+
     @Override
     public CompletableFuture<Long> write(AsyncFile file, ByteBuf data) {
         FileCacheEntry entry = file.getCacheEntry();
-        if (shouldWriteCache(file)) {
-            long offset = entry.cacheEndOffset;
-            int savedReaderIndex = data.readerIndex();
-            while (data.isReadable()) {
-                long chunkIdx = offset / chunkSize;
-                int inChunk = (int) (offset % chunkSize);
-                int len = (int) Math.min(chunkSize - inChunk, data.readableBytes());
-                ByteBuf chunk = entry.chunks.computeIfAbsent(chunkIdx,
-                        k -> StorageAllocator.ALLOC.directBuffer((int) chunkSize));
-                chunk.writerIndex(inChunk);
-                chunk.writeBytes(data, len);
-                offset += len;
+        ByteBuf toWrite;
+        if (file.atomicReplace) {
+            if (shouldCacheAtomicWrite(file)) {
+                entry.chunks.values().forEach(buf -> buf.release());
+                entry.chunks.clear();
+                entry.cacheStartOffset = 0;
+                entry.writtenToFsOffset = 0;
+                long offset = 0;
+                int savedReaderIndex = data.readerIndex();
+                while (data.isReadable()) {
+                    long chunkIdx = offset / chunkSize;
+                    int len = (int) Math.min(chunkSize, data.readableBytes());
+                    ByteBuf chunk = StorageAllocator.ALLOC.directBuffer((int) chunkSize);
+                    chunk.writeBytes(data, len);
+                    entry.chunks.put(chunkIdx, chunk);
+                    offset += len;
+                }
+                entry.cacheEndOffset = offset;
+                data.readerIndex(savedReaderIndex);
             }
-            entry.cacheEndOffset = offset;
-            data.readerIndex(savedReaderIndex);
+            toWrite = data;
+        } else {
+            if (shouldWriteCache(file)) {
+                long offset = entry.cacheEndOffset;
+                int savedReaderIndex = data.readerIndex();
+                while (data.isReadable()) {
+                    long chunkIdx = offset / chunkSize;
+                    int inChunk = (int) (offset % chunkSize);
+                    int len = (int) Math.min(chunkSize - inChunk, data.readableBytes());
+                    ByteBuf chunk = entry.chunks.computeIfAbsent(chunkIdx,
+                            k -> StorageAllocator.ALLOC.directBuffer((int) chunkSize));
+                    chunk.writerIndex(inChunk);
+                    chunk.writeBytes(data, len);
+                    offset += len;
+                }
+                entry.cacheEndOffset = offset;
+                data.readerIndex(savedReaderIndex);
+            }
+            toWrite = buildWriteBuf(entry, data);
         }
-        ByteBuf toWrite = buildWriteBuf(entry, data);
         return StorageUtil.supply(ioExecutor, () -> {
             long written = delegate.writeSync(file, toWrite);
             if (entry != null) entry.writtenToFsOffset += written;
