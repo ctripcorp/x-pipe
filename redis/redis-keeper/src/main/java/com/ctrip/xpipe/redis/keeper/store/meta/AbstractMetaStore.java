@@ -76,7 +76,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 		AsyncFile asyncFile = AsyncFileSystemHelper.await(asyncFileSystem.open(file.getAbsolutePath(), true, true, true, fileSystemReplId.toString()),
 				"open meta for write " + file.getAbsolutePath());
 		try {
-			AsyncFileSystemHelper.await(asyncFileSystem.write(asyncFile, data, data.length),
+			AsyncFileSystemHelper.writeAllBytes(asyncFileSystem, asyncFile, data,
 					"write meta " + file.getAbsolutePath());
 		} finally {
 			AsyncFileSystemHelper.await(asyncFileSystem.close(asyncFile), "close meta " + file.getAbsolutePath());
@@ -95,13 +95,9 @@ public abstract class AbstractMetaStore implements MetaStore{
 				if (size > Integer.MAX_VALUE) {
 					throw new IOException("async file too large: " + file.getAbsolutePath());
 				}
-				byte[] data = new byte[(int) size];
-				long read = AsyncFileSystemHelper.await(asyncFileSystem.read(asyncFile, size, 0, data),
+				String content = AsyncFileSystemHelper.readAllUtf8(asyncFileSystem, asyncFile, size, 0,
 						"read meta " + file.getAbsolutePath());
-				if (read != size) {
-					throw new IOException("failed to read full async file: " + file.getAbsolutePath());
-				}
-				return deserializeFromStringV2(new String(data, StandardCharsets.UTF_8));
+				return deserializeFromStringV2(content);
 			} finally {
 				AsyncFileSystemHelper.await(asyncFileSystem.close(asyncFile), "close meta " + file.getAbsolutePath());
 			}

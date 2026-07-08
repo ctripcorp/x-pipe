@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @author lishanglin
@@ -65,15 +64,17 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
         int wrote = 0;
         while (byteBuf.isReadable()) {
             int chunkLength = nextChunkLength(byteBuf.readableBytes(), currentSegmentSize());
-            byte[] chunk = new byte[chunkLength];
-            byteBuf.readBytes(chunk);
+            ByteBuf chunk = byteBuf.readRetainedSlice(chunkLength);
 
             long expectedEndOffset = totalLength() + chunkLength - 1;
-            CompletableFuture<Long> writeFuture = asyncFileSystem()
-                    .write(asyncSegmentFile(), chunk, chunkLength);
+            try {
+                AsyncFileSystemHelper.writeAndAwait(asyncFileSystem(), asyncSegmentFile(), chunk, chunkLength,
+                        "write command segment offset " + expectedEndOffset);
+            } catch (IOException e) {
+                onAsyncWriteFailure(expectedEndOffset, e);
+                throw e;
+            }
             wrote += chunkLength;
-
-            awaitWrite(writeFuture, chunkLength, expectedEndOffset);
             notifyOffset(expectedEndOffset);
         }
 
@@ -103,18 +104,6 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
         OffsetNotifier notifier = offsetNotifier;
         if (notifier != null) {
             notifier.offsetIncreased(offset);
-        }
-    }
-
-    private void awaitWrite(CompletableFuture<Long> writeFuture, int expectedLength, long offset) throws IOException {
-        try {
-            long flushed = AsyncFileSystemHelper.await(writeFuture, "write command segment offset " + offset);
-            if (flushed != expectedLength) {
-                throw new IOException("short async command write, expected " + expectedLength + " but flushed " + flushed);
-            }
-        } catch (IOException e) {
-            onAsyncWriteFailure(offset, e);
-            throw e;
         }
     }
 

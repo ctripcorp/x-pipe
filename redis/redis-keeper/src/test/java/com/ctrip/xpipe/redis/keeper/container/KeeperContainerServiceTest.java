@@ -83,7 +83,7 @@ public class KeeperContainerServiceTest extends AbstractTest {
         when(keeperContainerConfig.keeperLeaderResetMinInterval()).thenReturn(10);
         when(containerResourceManager.isPortFree(anyInt())).thenReturn(true);
         when(containerResourceManager.applyPort(anyInt())).thenReturn(true);
-        when(containerResourceManager.getAsyncFileSystem()).thenReturn(Mockito.mock(AsyncFileSystem.class));
+        when(containerResourceManager.getAsyncFileSystem()).thenReturn(mock(AsyncFileSystem.class));
 
         ReflectionTestUtils.setField(ComponentRegistryHolder.class, "componentRegistry", componentRegistry);
     }
