@@ -33,7 +33,9 @@ public interface AsyncFileSystem {
     // Caller must release() the returned ByteBuf when done.
     CompletableFuture<ByteBuf> read(AsyncFile file, long length);
     CompletableFuture<Long> write(AsyncFile file, ByteBuf data);
+    long writeSync(AsyncFile file, ByteBuf data);
     CompletableFuture<Void> delete(String path);
+    void deleteSync(String path);
     CompletableFuture<Boolean> exists(String path);
     CompletableFuture<Long> size(AsyncFile file);
     long sizeSync(AsyncFile file);
@@ -41,10 +43,12 @@ public interface AsyncFileSystem {
     CompletableFuture<Boolean> rmdir(String path, boolean recursive);
     // Only available in write mode.
     CompletableFuture<Void> truncate(AsyncFile file, long size);
+    void truncateSync(AsyncFile file, long size);
     CompletableFuture<Void> close(AsyncFile file);
     void closeSync(AsyncFile file);
     // Only available in write mode.
     CompletableFuture<Void> fsync(AsyncFile file);
+    void fsyncSync(AsyncFile file);
     // segment file return as raw file.
     CompletableFuture<List<String>> list(String path);
     CompletableFuture<Long> transferTo(AsyncFile file, long position, long count, WritableByteChannel target);
