@@ -25,8 +25,13 @@ import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager.NoneK
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystem;
+import com.ctrip.xpipe.redis.keeper.store.AbstractCommandStore;
+import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.store.AsyncCommandStore;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.channel.ChannelFuture;
 import org.junit.After;
@@ -39,6 +44,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
+import java.util.function.IntSupplier;
 
 /**
  * @author wenchao.meng
@@ -55,7 +62,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected AsyncFileSystem asyncFileSystem() {
 		if (testAsyncFileSystem == null) {
-			testAsyncFileSystem = new AsyncTFSBasedFileSystem(1);
+			testAsyncFileSystem = new AsyncTFSBasedFileSystem(1, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
 		}
 		return testAsyncFileSystem;
 	}
@@ -78,6 +85,48 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected ReplId getReplId() {
 		return new ReplId(currentTestName() + "-", 0L);
+	}
+
+	protected DefaultCommandStore createDefaultCommandStore(File file, int maxFileSize,
+			CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,
+			RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter) throws IOException {
+		return createDefaultCommandStore(null, getKeeperConfig(), file, maxFileSize, () -> false, () -> 12 * 3600,
+				3600 * 1000, () -> 20, AbstractCommandStore.DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, true);
+	}
+
+	protected DefaultCommandStore createDefaultCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file,
+			int maxFileSize, BooleanSupplier recordWrongStreamConfig,
+			IntSupplier maxTimeSecondKeeperCmdFileAfterModified, int minTimeMilliToGcAfterModified,
+			IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
+			BooleanSupplier commandOffsetNotifyCoalescingEnabled,
+			CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,
+			RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex) throws IOException {
+		return new DefaultCommandStore(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig,
+				maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled, cmdReaderWriterFactory,
+				keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, asyncFileSystem(),
+				() -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId());
+	}
+
+	protected DefaultCommandStore createDefaultCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file,
+			int maxFileSize, BooleanSupplier recordWrongStreamConfig,
+			IntSupplier maxTimeSecondKeeperCmdFileAfterModified, int minTimeMilliToGcAfterModified,
+			IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
+			BooleanSupplier commandOffsetNotifyCoalescingEnabled,
+			CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,
+			RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex,
+			IntSupplier asyncWriteMaxBytes) throws IOException {
+		return new DefaultCommandStore(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig,
+				maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled, cmdReaderWriterFactory,
+				keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, asyncFileSystem(), asyncWriteMaxBytes, getReplId());
+	}
+
+	protected DefaultReplicationStore createDefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
+			KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOpParser) throws IOException {
+		return new DefaultReplicationStore(null, baseDir, config, keeperRunid, new OffsetCommandReaderWriterFactory(),
+				keeperMonitor, syncRateManager, redisOpParser, null, asyncFileSystem(), getReplId());
 	}
 
 	protected ShardId getShardId() {

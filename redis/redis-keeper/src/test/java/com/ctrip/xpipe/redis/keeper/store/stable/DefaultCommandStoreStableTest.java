@@ -55,7 +55,7 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
 		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
 		RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, asyncFileSystem(), getKeeperConfig());
+		commandStore = createDefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter);
 		commandStore.initialize();
 	}
 

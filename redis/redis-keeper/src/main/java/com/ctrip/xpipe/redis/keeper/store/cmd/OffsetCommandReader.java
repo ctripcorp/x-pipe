@@ -56,8 +56,9 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
                 asyncFileSystem.open(
                         asyncCommandStore.getCommandBaseDir().getAbsolutePath(),
                         asyncCommandStore.getCommandFileNamePrefix(),
-                        asyncCommandStore.getCommandIndexFileMappings(),
-                        false),
+                        asyncCommandStore.getCommandIndexPrefixes(),
+                        false,
+                        asyncCommandStore.getFileSystemReplId().toString()),
                 "open command segment for read");
         return file;
     }

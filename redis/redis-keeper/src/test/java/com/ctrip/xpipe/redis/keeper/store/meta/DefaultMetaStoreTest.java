@@ -5,6 +5,7 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystem;
@@ -49,16 +50,16 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
         metaFileV2.delete();
 
         Files.createDirectories(Paths.get(baseDir));
-        metaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem());
+        metaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem(), getReplId());
     }
 
     @Test
     public void saveMetaOpenV2WithAtomicReplace() throws IOException {
         new File(baseDir, META_V2_FILE).delete();
-        AsyncFileSystem fileSystem = spy(new AsyncTFSBasedFileSystem(1));
+        AsyncFileSystem fileSystem = spy(new AsyncTFSBasedFileSystem(1, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES));
         try {
-            new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem);
-            verify(fileSystem, atLeastOnce()).open(contains(META_V2_FILE), eq(true), eq(true), eq(true));
+            new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
+            verify(fileSystem, atLeastOnce()).open(contains(META_V2_FILE), eq(true), eq(true), eq(true), eq(getReplId().toString()));
         } finally {
             fileSystem.shutdown();
         }
@@ -67,7 +68,7 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
     @Test (expected = UnexpectedReplIdException.class)
     public void fixPsync0MakeSureReplIdsAreSame() throws IOException {
 
-        DefaultMetaStore metaStore = spy(new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem()));
+        DefaultMetaStore metaStore = spy(new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem(), getReplId()));
         metaStore.becomeActive();
 
         ReplicationStoreMeta meta = mock(ReplicationStoreMeta.class);
@@ -257,7 +258,7 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
         metaStore.rdbConfirmXsync(replidA, 1, 10000, masterUuidA,
                 new GtidSet(GtidSet.EMPTY_GTIDSET), new GtidSet(GtidSet.EMPTY_GTIDSET),
                 rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
-        MetaStore newMetaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem());
+        MetaStore newMetaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem(), getReplId());
         Assert.assertEquals(metaStore.getCurrentReplStage(), newMetaStore.getCurrentReplStage());
     }
 

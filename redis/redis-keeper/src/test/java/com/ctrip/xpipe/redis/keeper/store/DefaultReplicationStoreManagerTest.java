@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
@@ -189,7 +190,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 	@Test
 	public void saveManagerMetaWithAtomicReplace() throws Exception {
 
-		AsyncFileSystem fileSystem = spy(new AsyncTFSBasedFileSystem(1));
+		AsyncFileSystem fileSystem = spy(new AsyncTFSBasedFileSystem(1, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES));
 		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
 				mock(SyncRateManager.class), createRedisOpParser(), null, fileSystem);
@@ -199,7 +200,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			replicationStoreManager.create();
 
 			verify(fileSystem, atLeastOnce()).mkdir(contains(getReplId().toString()), eq(true));
-			verify(fileSystem, atLeastOnce()).open(contains("store_manager_meta.properties"), eq(true), eq(true), eq(true));
+			verify(fileSystem, atLeastOnce()).open(contains("store_manager_meta.properties"), eq(true), eq(true), eq(true), eq(getReplId().toString()));
 		} finally {
 			LifecycleHelper.disposeIfPossible(replicationStoreManager);
 			fileSystem.shutdown();

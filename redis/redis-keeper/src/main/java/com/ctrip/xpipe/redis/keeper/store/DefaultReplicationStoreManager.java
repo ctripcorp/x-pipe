@@ -190,7 +190,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid,
                                                       KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
         return new GtidReplicationStore(this.ckStore,storeBaseDir,keeperConfig,keeperRunid, keeperMonitor, redisOpParser,
-                syncRateManager, commandNotifyScheduler, asyncFileSystem);
+                syncRateManager, commandNotifyScheduler, asyncFileSystem, replId);
     }
 
     private void recrodLatestStore(String storeDir) throws IOException {
@@ -214,7 +214,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         byte[] data = out.toByteArray();
 
         AsyncFile asyncFile = AsyncFileSystemHelper.await(
-                asyncFileSystem.open(metaFile.getAbsolutePath(), true, true, true),
+                asyncFileSystem.open(metaFile.getAbsolutePath(), true, true, true, replId.toString()),
                 "open manager meta for write " + metaFile.getAbsolutePath());
         try {
             AsyncFileSystemHelper.await(asyncFileSystem.write(asyncFile, data, data.length),
@@ -239,7 +239,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                 "check manager meta exists " + metaFile.getAbsolutePath())) {
             Properties meta = new Properties();
             AsyncFile asyncFile = AsyncFileSystemHelper.await(
-                    asyncFileSystem.open(metaFile.getAbsolutePath(), false, false, true),
+                    asyncFileSystem.open(metaFile.getAbsolutePath(), false, false, true, replId.toString()),
                     "open manager meta for read " + metaFile.getAbsolutePath());
             try {
                 long size = AsyncFileSystemHelper.await(asyncFileSystem.size(asyncFile),

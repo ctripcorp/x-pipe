@@ -251,7 +251,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		clientExecutors = Executors.newSingleThreadExecutor(KeeperReplIdAwareThreadFactory.create(replId, "RedisClient-" + threadPoolName));
 		scheduled = Executors.newScheduledThreadPool(DEFAULT_SCHEDULED_CORE_POOL_SIZE , KeeperReplIdAwareThreadFactory.create(replId, "sch-" + threadPoolName));
 
-		asyncFileSystem = new AsyncTFSBasedFileSystem(1);
+		asyncFileSystem = new AsyncTFSBasedFileSystem(1, keeperConfig.getAsyncFsyncIntervalBytes());
 
 		replicationStoreManager = createReplicationStoreManager(keeperConfig, clusterId, shardId, replId,
 				currentKeeperMeta, baseDir, keeperMonitor, scheduled);

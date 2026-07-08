@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 
@@ -27,34 +26,16 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
 
     private static final Logger logger = LoggerFactory.getLogger(GtidCommandStore.class);
 
-    public GtidCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-                            int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
-                            CommandReaderWriterFactory cmdReaderWriterFactory,
-                            KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter, boolean buildIndex, AsyncFileSystem asyncFileSystem) throws IOException {
-        this(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified,
-                minTimeMilliToGcAfterModified, fileNumToKeep, commandReaderFlyingThreshold, () -> true,
-                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex, asyncFileSystem);
-    }
-
-
-    public GtidCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-                            int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
-                            BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
-                            KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter, boolean buildIndex, AsyncFileSystem asyncFileSystem) throws IOException {
-        this(ckStore, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified,
-                minTimeMilliToGcAfterModified, fileNumToKeep, commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
-                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex, asyncFileSystem, keeperConfig,
-                () -> DEFAULT_ASYNC_WRITE_MAX_BYTES);
-    }
-
-    public GtidCommandStore(CKStore ckStore,  File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+    public GtidCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize,
+                            BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                             int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
                             BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
                             KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter, boolean buildIndex,
-                            AsyncFileSystem asyncFileSystem, KeeperConfig keeperConfig, IntSupplier asyncWriteMaxBytes) throws IOException {
-        super(ckStore, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-                commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
-                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex, asyncFileSystem, keeperConfig, asyncWriteMaxBytes);
+                            AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes, ReplId fileSystemReplId) throws IOException {
+        super(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified,
+                minTimeMilliToGcAfterModified, fileNumToKeep, commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
+                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex, asyncFileSystem, asyncWriteMaxBytes,
+                fileSystemReplId);
     }
 
     @Override

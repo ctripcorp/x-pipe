@@ -17,8 +17,8 @@ import java.util.Objects;
  * Dec 4, 2016
  */
 public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter {
-	public DefaultMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem) {
-		super(baseDir, keeperRunid, asyncFileSystem);
+	public DefaultMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId) {
+		super(baseDir, keeperRunid, asyncFileSystem, fileSystemReplId);
 	}
 
 	@Override

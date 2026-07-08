@@ -60,10 +60,13 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	protected final AsyncFileSystem asyncFileSystem;
 
+	protected final ReplId fileSystemReplId;
+
 	protected final IntSupplier asyncWriteMaxBytes;
 
 	public DefaultRdbStore(File file, String replId, long rdbOffset, EofType eofType,
-						   AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes) throws IOException {
+						   AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes,
+						   ReplId fileSystemReplId) throws IOException {
 
 		this.replId = replId;
 		this.file = file;
@@ -71,6 +74,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		this.rdbOffset = rdbOffset;
 		this.typeRef = new AtomicReference<>(Type.UNKNOWN);
 		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
+		this.fileSystemReplId = Objects.requireNonNull(fileSystemReplId, "fileSystemReplId");
 		this.asyncWriteMaxBytes = Objects.requireNonNull(asyncWriteMaxBytes, "asyncWriteMaxBytes");
 
 		if (!AsyncFileSystemHelper.await(asyncFileSystem.exists(path()), "exists rdb " + file)) {
@@ -327,7 +331,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	protected void doReadRdbFile(RdbFileListener rdbFileListener) throws IOException {
 
 		AsyncFile readFile = AsyncFileSystemHelper.await(
-				asyncFileSystem.open(path(), false, false, true), "open rdb for read " + file);
+				asyncFileSystem.open(path(), false, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
 
 		long curPosition = 0;
 		long lastLogTime = System.currentTimeMillis();
@@ -460,12 +464,12 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	private AsyncFile openWriteHandle() throws IOException {
 		return AsyncFileSystemHelper.await(
-				asyncFileSystem.open(path(), true, false, true), "open rdb for write " + file);
+				asyncFileSystem.open(path(), true, false, true, fileSystemReplId.toString()), "open rdb for write " + file);
 	}
 
 	private AsyncFile openReadHandle() throws IOException {
 		return AsyncFileSystemHelper.await(
-				asyncFileSystem.open(path(), false, false, true), "open rdb for read " + file);
+				asyncFileSystem.open(path(), false, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
 	}
 
 	private String path() {

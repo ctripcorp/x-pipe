@@ -1,8 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
-import com.ctrip.xpipe.redis.keeper.storage.IndexFileMapping;
 
 import java.io.File;
 import java.util.List;
@@ -19,7 +19,9 @@ public interface AsyncCommandStore {
 
     String getCommandFileNamePrefix();
 
-    List<IndexFileMapping> getCommandIndexFileMappings();
+    List<String> getCommandIndexPrefixes();
+
+    ReplId getFileSystemReplId();
 
     int getAsyncWriteMaxBytes();
 }

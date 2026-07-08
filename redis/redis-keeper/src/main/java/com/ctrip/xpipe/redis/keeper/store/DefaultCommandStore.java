@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
@@ -32,76 +33,17 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 
 	BooleanSupplier recordWrongStreamConfig;
 
-	public DefaultCommandStore(File file, int maxFileSize, CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,  RedisOpParser redisOpParser,  GtidCmdFilter gtidCmdFilter, AsyncFileSystem asyncFileSystem, KeeperConfig keeperConfig) throws IOException {
-		this(file, maxFileSize, () -> 12 * 3600, 3600*1000, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD,
-				() -> true, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, asyncFileSystem,
-				keeperConfig, () -> DEFAULT_ASYNC_WRITE_MAX_BYTES);
-	}
-
-	public DefaultCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
-							   CommandReaderWriterFactory cmdReaderWriterFactory,
-							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex,
-							   AsyncFileSystem asyncFileSystem
-	) throws IOException {
-		this(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified,
-				fileNumToKeep, commandReaderFlyingThreshold, () -> true,
-				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, asyncFileSystem);
-	}
-
-	public DefaultCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+	public DefaultCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize,
+							   BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
 							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
 							   BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
 							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex,
-							   AsyncFileSystem asyncFileSystem
-	) throws IOException {
-		this(ckStore, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified,
-				minTimeMilliToGcAfterModified, fileNumToKeep, commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
-				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, asyncFileSystem, keeperConfig,
-				() -> DEFAULT_ASYNC_WRITE_MAX_BYTES);
-	}
-
-	public DefaultCommandStore(CKStore ckStore, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
-							   BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
-							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex,
-							   AsyncFileSystem asyncFileSystem, KeeperConfig keeperConfig, IntSupplier asyncWriteMaxBytes
-	) throws IOException {
+							   AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes, ReplId fileSystemReplId) throws IOException {
 		super(ckStore, keeperConfig, file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
 				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
-				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, asyncFileSystem, asyncWriteMaxBytes);
-		this.recordWrongStreamConfig = recordWrongStreamConfig;
-	}
-
-	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
-							   BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
-							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, AsyncFileSystem asyncFileSystem) throws IOException {
-		this(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
-				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, asyncFileSystem, null);
-	}
-
-	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
-							   BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
-							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter,
-							   AsyncFileSystem asyncFileSystem, KeeperConfig keeperConfig) throws IOException {
-		this(file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled, cmdReaderWriterFactory,
-				keeperMonitor, redisOpParser, gtidCmdFilter, asyncFileSystem, keeperConfig, () -> DEFAULT_ASYNC_WRITE_MAX_BYTES);
-	}
-
-	public DefaultCommandStore(File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
-							   BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
-							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter,
-							   AsyncFileSystem asyncFileSystem, KeeperConfig keeperConfig, IntSupplier asyncWriteMaxBytes) throws IOException {
-		super(null, keeperConfig, file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
-				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, true, asyncFileSystem,
-				asyncWriteMaxBytes);
-		this.recordWrongStreamConfig = () -> false;
+				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, asyncFileSystem, asyncWriteMaxBytes,
+				fileSystemReplId);
+		this.recordWrongStreamConfig = Objects.requireNonNull(recordWrongStreamConfig, "recordWrongStreamConfig");
 	}
 
 	private CommandReader<ReferenceFileRegion> beginRead(ReplicationProgress<Long> replicationProgress, ReplDelayConfig replDelayConfig) throws IOException {

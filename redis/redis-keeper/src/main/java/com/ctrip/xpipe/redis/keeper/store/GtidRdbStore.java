@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ReplStage;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import org.slf4j.Logger;
@@ -30,8 +31,8 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
 
     public GtidRdbStore(File file, String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
                         String gtidSet, String gtidLost, String masterUuid, AsyncFileSystem asyncFileSystem,
-                        IntSupplier asyncWriteMaxBytes) throws IOException {
-        super(file, replId, rdbOffset, eofType, asyncFileSystem, asyncWriteMaxBytes);
+                        IntSupplier asyncWriteMaxBytes, ReplId fileSystemReplId) throws IOException {
+        super(file, replId, rdbOffset, eofType, asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
         this.replProto = replProto;
         this.gtidSet.set(gtidSet);
         this.gtidLost.set(gtidLost);
