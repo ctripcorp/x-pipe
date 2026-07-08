@@ -1,0 +1,19 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  s_397ac31a98e357::t_e71b77e8cf4691 79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.28-trip",
+  "base_commit_sha": "54a0a1fd4ebf9e21f90b82947ae90e13519d72e6",
+  "prompts": {},
+  "sessions": {
+    "s_397ac31a98e357": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "69158ebd-bbb9-4bc8-84be-efd06e3d7dbf",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}

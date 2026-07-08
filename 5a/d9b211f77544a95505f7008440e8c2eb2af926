@@ -1,0 +1,52 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_245b07b4ee1e0d::t_295db48793db55 152-164
+  s_245b07b4ee1e0d::t_ede916491d5c2a 92-94
+  s_245b07b4ee1e0d::t_e45d0be0655720 490-501,503-516,518,520-528,530,532-549
+  s_245b07b4ee1e0d::t_ec5953725b60c3 76,84,86,90-91
+  h_6ceeb547b3b36a 48-49,837
+  s_245b07b4ee1e0d::t_47795bdf2c15c8 77
+  s_245b07b4ee1e0d::t_86c55174999219 79,130,151,169,183,199,216,227,249,284,298,315,326,588,603,625,645,666,699,735,755,779,790,805,821,833,851,867,879,894
+  s_245b07b4ee1e0d::t_6566c3c2af97ef 80-83,87-89,95-98,100-113
+  s_245b07b4ee1e0d::t_471a4e5933c2f6 85
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  h_6ceeb547b3b36a 11,18-19,27-28
+  s_245b07b4ee1e0d::t_6662d0eb46cfec 55
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_245b07b4ee1e0d::t_0d1c3804016716 357-363
+  s_245b07b4ee1e0d::t_129bfe22be46b5 233-234
+  s_245b07b4ee1e0d::t_603dec206bca57 166
+  s_245b07b4ee1e0d::t_b6e760247fa3f3 222-223
+  h_6ceeb547b3b36a 16-17,35,42,52
+  s_245b07b4ee1e0d::t_0372dbc9a3a4e5 21
+  s_245b07b4ee1e0d::t_2ef00ac4976190 161,167-184
+  s_245b07b4ee1e0d::t_eea7192d8c454b 235
+  s_245b07b4ee1e0d::t_84da2debf17080 165
+  s_245b07b4ee1e0d::t_e473affb35ff57 214,221,224-230
+  s_245b07b4ee1e0d::t_2e11ec97e6486a 254,261
+  s_245b07b4ee1e0d::t_36cfd34e364f27 375-378
+  s_245b07b4ee1e0d::t_e861e0b453fc65 379
+  s_245b07b4ee1e0d::t_9a6eab7d82570a 374,380-382,384-396
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/StorageUtil.java
+  s_245b07b4ee1e0d::t_b9f11a3e4cdfdb 9-11,15-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.32-trip",
+  "base_commit_sha": "5ad9b211f77544a95505f7008440e8c2eb2af926",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_245b07b4ee1e0d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f837fe8-3931-4a26-8f82-dfc963918e11",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
