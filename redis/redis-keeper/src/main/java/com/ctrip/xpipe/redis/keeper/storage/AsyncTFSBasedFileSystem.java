@@ -880,7 +880,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             try {
                 return file.channel.transferTo(position, count, target);
             } catch (ClosedChannelException e) {
-                if (!target.isOpen()) throw new SocketClosedException(e);
+                if (!target.isOpen()) throw new SocketErrorException(e);
                 throw StorageUtil.wrapIOException(e);
             } catch (IOException e) {
                 throw StorageUtil.wrapIOException(e);
@@ -904,7 +904,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 maybeSwitchSegment(file, s, offset + n, physicalOffset, n);
                 return n;
             } catch (ClosedChannelException e) {
-                if (!target.isOpen()) throw new SocketClosedException(e);
+                if (!target.isOpen()) throw new SocketErrorException(e);
                 throw StorageUtil.wrapIOException(e);
             } catch (IOException e) {
                 throw StorageUtil.wrapIOException(e);

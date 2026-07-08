@@ -37,8 +37,12 @@ class StorageUtil {
     }
 
     // Translates a checked IOException into a runtime exception that reflects
-    // recovery semantics: StaleStateException for mismatched state, StorageIOException for
-    // genuine transient IO failures, IllegalArgumentException for invalid arguments.
+    // recovery semantics:
+    //   StaleStateException  - mismatched state (file not found, already exists, channel closed, etc.)
+    //   SocketErrorException - socket-level errors (broken pipe, connection reset, closed channel on target)
+    //   EIOException         - Input/output error (EIO); on some filesystems like TFS this is transient and recoverable
+    //   StorageIOException   - other transient IO failures
+    //   IllegalArgumentException - invalid arguments (e.g. path is not a directory)
     static RuntimeException wrapIOException(IOException e) {
         if (e instanceof NoSuchFileException
                 || e instanceof FileAlreadyExistsException
@@ -50,8 +54,13 @@ class StorageUtil {
             return new IllegalArgumentException(e);
         }
         String msg = e.getMessage();
-        if (msg != null && msg.startsWith("Input/output error")) {
-            return new EIOException(e);
+        if (msg != null) {
+            if (msg.contains("Broken pipe") || msg.contains("Connection reset")) {
+                return new SocketErrorException(e);
+            }
+            if (msg.startsWith("Input/output error")) {
+                return new EIOException(e);
+            }
         }
         return new StorageIOException(e);
     }

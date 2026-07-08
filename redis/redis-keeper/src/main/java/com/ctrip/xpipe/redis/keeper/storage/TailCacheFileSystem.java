@@ -356,10 +356,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         try {
             return CompletableFuture.completedFuture(transferToByCache(entry, position, count, target));
-        } catch (ClosedChannelException e) {
-            return CompletableFuture.failedFuture(new SocketClosedException(e));
         } catch (IOException e) {
-            return CompletableFuture.failedFuture(StorageUtil.wrapIOException(e));
+            return CompletableFuture.failedFuture(new SocketErrorException(e));
         }
     }
 
