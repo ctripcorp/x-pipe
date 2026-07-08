@@ -14,9 +14,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatu
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.console.controller.api.dto.RestResponse;
-import com.ctrip.xpipe.redis.console.controller.api.dto.SentinelBeaconUsageItem;
-import com.ctrip.xpipe.redis.console.controller.api.dto.SentinelClusterBeaconRouteItem;
+import com.ctrip.xpipe.redis.console.controller.api.vo.RestResponse;
+import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
+import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.exception.NotEnoughResultsException;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
@@ -348,11 +348,15 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
         Map<String, RestResponse<T>> result = new LinkedHashMap<>();
 
-        try {
-            result.put(currentDc, RestResponse.success(localSupplier.get()));
-        } catch (Exception e) {
-            logger.error("[aggregateAcrossConsoles] local fail, dc={}", currentDc, e);
-            result.put(currentDc, RestResponse.fail("local failed: " + e.getMessage()));
+        boolean localIncluded = targetDcs != null
+                && targetDcs.stream().anyMatch(dc -> dc.equalsIgnoreCase(currentDc));
+        if (localIncluded) {
+            try {
+                result.put(currentDc, RestResponse.success(localSupplier.get()));
+            } catch (Exception e) {
+                logger.error("[aggregateAcrossConsoles] local fail, dc={}", currentDc, e);
+                result.put(currentDc, RestResponse.fail("local failed: " + e.getMessage()));
+            }
         }
 
         Set<String> remoteDcs = new LinkedHashSet<>();

@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.console.controller.api.dto;
+package com.ctrip.xpipe.redis.console.controller.api.vo;
 
 public class RestResponse<T> {
 

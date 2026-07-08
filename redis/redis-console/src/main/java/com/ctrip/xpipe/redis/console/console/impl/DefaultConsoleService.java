@@ -7,8 +7,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STAT
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
-import com.ctrip.xpipe.redis.console.controller.api.dto.SentinelBeaconUsageItem;
-import com.ctrip.xpipe.redis.console.controller.api.dto.SentinelClusterBeaconRouteItem;
+import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
+import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.SentinelBeaconPostMigrateRequest;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
