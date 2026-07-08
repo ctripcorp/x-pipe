@@ -16,11 +16,13 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.*;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.*;
+import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.UnlimitedSyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
 import com.ctrip.xpipe.utils.DefaultLeakyBucket;
 import com.ctrip.xpipe.zk.ZkConfig;
@@ -67,6 +69,15 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	private Set<RedisMeta> allRedisStarted = new HashSet<>();
 
 	protected KeeperResourceManager resourceManager = new DefaultKeeperResourceManager(new DefaultLeakyBucket(100));
+
+	private AsyncFileSystem testAsyncFileSystem;
+
+	protected AsyncFileSystem createTestAsyncFileSystem() {
+		if (testAsyncFileSystem == null) {
+			testAsyncFileSystem = ContainerResourceManager.createAsyncFileSystem(new TestKeeperConfig());
+		}
+		return testAsyncFileSystem;
+	}
 
 	@BeforeClass
 	public static void beforereAbstractIntegratedTestClass(){
@@ -188,7 +199,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 		Long replId = keeperMeta.parent().getDbId();
 		return new DefaultRedisKeeperServer(replId, keeperMeta, keeperConfig, baseDir,
-				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager, redisOpParser, new ReplDelayConfigCache(new TestKeeperCommonConfig(), new TestKeeperConfig()));
+				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager, redisOpParser,
+				createTestAsyncFileSystem(), new ReplDelayConfigCache(new TestKeeperCommonConfig(), new TestKeeperConfig()));
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
@@ -197,7 +209,8 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 		Long replId = keeperMeta.parent().getDbId();
 		return new DefaultRedisKeeperServer(replId, keeperMeta, keeperConfig, baseDir,
-				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser());
+				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser(),
+				createTestAsyncFileSystem());
 	}
 
 	public static RedisOpParser generateRedisOpParser() {

@@ -23,8 +23,8 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager.NoneKeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
-import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystem;
 import com.ctrip.xpipe.redis.keeper.store.AbstractCommandStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
@@ -62,7 +62,8 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected AsyncFileSystem asyncFileSystem() {
 		if (testAsyncFileSystem == null) {
-			testAsyncFileSystem = new AsyncTFSBasedFileSystem(1, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
+			testAsyncFileSystem = ContainerResourceManager.createAsyncFileSystem(
+					KeeperConfig.DEFAULT_ASYNC_IO_THREADS, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
 		}
 		return testAsyncFileSystem;
 	}

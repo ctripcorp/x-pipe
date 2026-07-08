@@ -93,7 +93,7 @@ public class XRedisPartialTest extends AbstractKeeperIntegratedSingleDc {
                                                         SyncRateManager syncRateManager) {
 
         return new DefaultRedisKeeperServer(keeperMeta.parent().getDbId(), keeperMeta, keeperConfig, baseDir, leaderElectorManager,
-                keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser()) {
+                keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser(), createTestAsyncFileSystem()) {
 
             private int count = 0;
 

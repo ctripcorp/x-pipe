@@ -436,4 +436,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public long getAsyncFsyncIntervalBytes() {
 		return DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES;
 	}
+
+	@Override
+	public int getAsyncIoThreads() {
+		return DEFAULT_ASYNC_IO_THREADS;
+	}
 }

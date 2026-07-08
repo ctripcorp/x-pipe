@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.health.HealthState;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import org.junit.Before;
@@ -82,6 +83,7 @@ public class KeeperContainerServiceTest extends AbstractTest {
         when(keeperContainerConfig.keeperLeaderResetMinInterval()).thenReturn(10);
         when(containerResourceManager.isPortFree(anyInt())).thenReturn(true);
         when(containerResourceManager.applyPort(anyInt())).thenReturn(true);
+        when(containerResourceManager.getAsyncFileSystem()).thenReturn(Mockito.mock(AsyncFileSystem.class));
 
         ReflectionTestUtils.setField(ComponentRegistryHolder.class, "componentRegistry", componentRegistry);
     }
