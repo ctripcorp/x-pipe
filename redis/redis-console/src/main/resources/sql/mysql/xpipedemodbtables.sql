@@ -181,6 +181,7 @@ CREATE TABLE `DC_CLUSTER_SHARD_TBL` (
   `shard_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference shard id',
   `setinel_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'setinel id',
   `dc_cluster_shard_phase` int(11) NOT NULL DEFAULT '1' COMMENT 'structure phase',
+  `meta_exclude_until_timestamp` bigint(20) DEFAULT NULL COMMENT 'beacon sentinel meta exclude until timestamp',
   `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`dc_cluster_shard_id`),

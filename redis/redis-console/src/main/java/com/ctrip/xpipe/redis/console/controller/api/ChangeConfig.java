@@ -3,8 +3,10 @@ package com.ctrip.xpipe.redis.console.controller.api;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.model.BeaconCheckConfigRequest;
 import com.ctrip.xpipe.redis.console.model.ClusterConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
+import com.ctrip.xpipe.redis.console.service.BeaconCheckConfigService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -33,6 +35,9 @@ public class ChangeConfig extends AbstractConsoleController{
 
     @Autowired
     private ClusterService clusterService;
+
+    @Autowired
+    private BeaconCheckConfigService beaconCheckConfigService;
 
     @RequestMapping(value = "/config/sentinel_auto_process/start", method = RequestMethod.POST)
     public void startSentinelAutoProcess(HttpServletRequest request,
@@ -157,6 +162,49 @@ public class ChangeConfig extends AbstractConsoleController{
         List<String> whitelist = configModels.stream().map(ConfigModel::getSubKey).collect(Collectors.toList());
         logger.info("[alert][whitelist] {}", whitelist);
         return whitelist;
+    }
+
+    @PostMapping(value = {"/config/beacon/check/stop/{maintainMinutes}", "/config/beacon/check/stop"})
+    public RetMessage stopBeaconCheck(HttpServletRequest request,
+                                      @PathVariable(required = false) Integer maintainMinutes,
+                                      @RequestBody BeaconCheckConfigRequest beaconCheckConfigRequest) throws Exception {
+        if (null == maintainMinutes || maintainMinutes <= 0) {
+            maintainMinutes = consoleConfig.getHealthCheckSuspendMinutes();
+        }
+        maintainMinutes = Math.min(maintainMinutes, consoleConfig.getConfigDefaultRestoreHours() * 60);
+        validateBeaconCheckConfigRequest(beaconCheckConfigRequest);
+        beaconCheckConfigService.stopBeaconCheck(beaconCheckConfigRequest.getClusterName(),
+                beaconCheckConfigRequest.getDc(), beaconCheckConfigRequest.getShards(), maintainMinutes);
+        return RetMessage.createSuccessMessage("success");
+    }
+
+    @PostMapping(value = "/config/beacon/check/start")
+    public RetMessage startBeaconCheck(HttpServletRequest request,
+                                       @RequestBody BeaconCheckConfigRequest beaconCheckConfigRequest) throws Exception {
+        validateBeaconCheckConfigRequest(beaconCheckConfigRequest);
+        beaconCheckConfigService.startBeaconCheck(beaconCheckConfigRequest.getClusterName(),
+                beaconCheckConfigRequest.getDc(), beaconCheckConfigRequest.getShards());
+        return RetMessage.createSuccessMessage("success");
+    }
+
+    private void validateBeaconCheckConfigRequest(BeaconCheckConfigRequest beaconCheckConfigRequest) {
+        if (beaconCheckConfigRequest == null) {
+            throw new IllegalArgumentException("request body can not be empty");
+        }
+        if (StringUtil.isEmpty(beaconCheckConfigRequest.getClusterName())) {
+            throw new IllegalArgumentException("clusterName can not be empty");
+        }
+        if (StringUtil.isEmpty(beaconCheckConfigRequest.getDc())) {
+            throw new IllegalArgumentException("dc can not be empty");
+        }
+        if (beaconCheckConfigRequest.getShards() == null || beaconCheckConfigRequest.getShards().isEmpty()) {
+            throw new IllegalArgumentException("shards can not be empty");
+        }
+        for (String shard : beaconCheckConfigRequest.getShards()) {
+            if (StringUtil.isEmpty(shard)) {
+                throw new IllegalArgumentException("shard name can not be empty");
+            }
+        }
     }
 
     private void checkClusterName(String clusterName) {

@@ -85,6 +85,9 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
         for (Map.Entry<String, ShardMeta> entry : clusterMeta.getShards().entrySet()) {
             String shardName = entry.getKey();
             ShardMeta shardMeta = entry.getValue();
+            if (isSentinelBeaconMetaExcluded(shardMeta)) {
+                continue;
+            }
             List<MonitorGroupMeta> groups = shardMeta.getRedises().stream().map(redisMeta -> {
                 HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
                 MonitorGroupMeta group = new MonitorGroupMeta(hostPort.toString(), canonicalDc,
@@ -213,6 +216,15 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
             return ClusterType.lookup(clusterMeta.getAzGroupType());
         }
         return clusterType;
+    }
+
+    @VisibleForTesting
+    boolean isSentinelBeaconMetaExcluded(ShardMeta shardMeta) {
+        if (shardMeta == null) {
+            return false;
+        }
+        Long until = shardMeta.getMetaExcludeUntilTimestamp();
+        return until != null && until > 0 && System.currentTimeMillis() < until;
     }
 
     @VisibleForTesting

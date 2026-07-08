@@ -48,6 +48,7 @@ import com.ctrip.xpipe.redis.console.keeper.impl.*;
 import com.ctrip.xpipe.redis.console.migration.MigrationShardRollbackTest;
 import com.ctrip.xpipe.redis.console.migration.MultiClusterMigrationTest;
 import com.ctrip.xpipe.redis.console.migration.SingleShardMigrationTest;
+import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManagerSentinelExcludeTest;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManagerTest;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorClusterManagerTest;
 import com.ctrip.xpipe.redis.console.migration.manager.DefaultMigrationEventManagerTest;
@@ -66,6 +67,7 @@ import com.ctrip.xpipe.redis.console.model.DcClusterShardTest;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.DefaultClusterMonitorModifiedNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.DrBeaconClusterMonitorNotifierTest;
+import com.ctrip.xpipe.redis.console.notifier.SentinelBeaconClusterMonitorNotifierTest;
 import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventListenerTest;
 import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
@@ -119,6 +121,7 @@ import org.junit.runners.Suite.SuiteClasses;
         ClusterMetaServiceMigrationStatusChangeTest.class,
         DcServiceImplTest.class,
         ConfigServiceImplTest.class,
+        BeaconCheckConfigServiceImplTest.class,
         AutoMigrationOffCheckerTest.class,
         AppliercontainerServiceImplTest.class,
         ReplDirectionServiceImplTest.class,
@@ -244,7 +247,9 @@ import org.junit.runners.Suite.SuiteClasses;
         SentinelBeaconClusterMonitorCheckTest.class,
         DefaultClusterMonitorModifiedNotifierTest.class,
         DrBeaconClusterMonitorNotifierTest.class,
+        SentinelBeaconClusterMonitorNotifierTest.class,
         DefaultBeaconManagerTest.class,
+        DefaultBeaconManagerSentinelExcludeTest.class,
         BeaconRouteControllerTest.class,
 
         DefaultPersistenceCacheTest.class,

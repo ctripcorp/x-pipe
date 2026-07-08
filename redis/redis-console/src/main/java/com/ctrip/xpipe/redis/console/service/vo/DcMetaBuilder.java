@@ -426,6 +426,7 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                             getDcClusterInfo(cluster.getId(), dcId), getAzGroupCluster(cluster.getId(), dcId));
                         ShardMeta shardMeta = getOrCreateShardMeta(dcMeta, clusterMeta.getId(),
                             dcClusterShard.getShardInfo(), dcClusterShard.getSetinelId());
+                        shardMeta.setMetaExcludeUntilTimestamp(dcClusterShard.getMetaExcludeUntilTimestamp());
 
                         RedisTbl redis = dcClusterShard.getRedisInfo();
                         if (Server.SERVER_ROLE.KEEPER.sameRole(redis.getRedisRole())) {

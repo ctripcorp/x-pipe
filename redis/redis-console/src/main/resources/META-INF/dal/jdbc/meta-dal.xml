@@ -807,6 +807,9 @@
 			<readset name="SENTINEL_ID">
 				<member name="setinel-id"/>
 			</readset>
+			<readset name="META_EXCLUDE_UNTIL_TIMESTAMP">
+				<member name="meta-exclude-until-timestamp"/>
+			</readset>
 			<readset name="CLUSTER_COUNT_AND_SHARD_COUNT">
 				<member name="cluster-count" />
 				<member name="shard-count" />
@@ -830,6 +833,7 @@
 			</readset>
 			<readset name="DC_CLUSTER_SHARD_REDIS_META_INFO">
 				<readset-ref name="SENTINEL_ID"/>
+				<readset-ref name="META_EXCLUDE_UNTIL_TIMESTAMP"/>
 				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
 				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
 				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>

@@ -154,6 +154,67 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
                 .isMasterGroup());
     }
 
+    @Test
+    public void testBuildSentinelBeaconShardsExcludeAllShards() {
+        XpipeMeta xpipeMeta = getXpipeMeta();
+        long until = System.currentTimeMillis() + 60_000L;
+        xpipeMeta.getDcs().get("jq").getClusters().get("cluster1").getShards().values()
+                .forEach(shard -> shard.setMetaExcludeUntilTimestamp(until));
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        Set<MonitorShardMeta> shards = beaconMetaService.buildSentinelBeaconShards("cluster1", "jq",
+                Collections.emptyMap());
+        Assert.assertTrue(shards.isEmpty());
+    }
+
+    @Test
+    public void testIsSentinelBeaconMetaExcluded() {
+        com.ctrip.xpipe.redis.core.entity.ShardMeta shardMeta = new com.ctrip.xpipe.redis.core.entity.ShardMeta("shard1");
+        Assert.assertFalse(beaconMetaService.isSentinelBeaconMetaExcluded(shardMeta));
+
+        shardMeta.setMetaExcludeUntilTimestamp(System.currentTimeMillis() + 60_000L);
+        Assert.assertTrue(beaconMetaService.isSentinelBeaconMetaExcluded(shardMeta));
+
+        shardMeta.setMetaExcludeUntilTimestamp(System.currentTimeMillis() - 1L);
+        Assert.assertFalse(beaconMetaService.isSentinelBeaconMetaExcluded(shardMeta));
+    }
+
+    @Test
+    public void testCompareDrBeaconMetaUnchangedWhenShardExcluded() {
+        XpipeMeta xpipeMeta = getXpipeMeta();
+        xpipeMeta.getDcs().get("jq").getClusters().get("cluster1").getShards().get("shard1")
+                .setMetaExcludeUntilTimestamp(System.currentTimeMillis() + 60_000L);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        Set<MonitorGroupMeta> groups = beaconMetaService.buildDrBeaconGroups("cluster1", "jq");
+        Assert.assertEquals(expectedBeaconGroups(), groups);
+    }
+
+    @Test
+    public void testBuildSentinelBeaconShardsExcludeExpiredShard() {
+        XpipeMeta xpipeMeta = getXpipeMeta();
+        xpipeMeta.getDcs().get("jq").getClusters().get("cluster1").getShards().get("shard1")
+                .setMetaExcludeUntilTimestamp(System.currentTimeMillis() - 1L);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        Set<MonitorShardMeta> shards = beaconMetaService.buildSentinelBeaconShards("cluster1", "jq",
+                Collections.emptyMap());
+        Assert.assertEquals(expectedBeaconShards(), shards);
+    }
+
+    @Test
+    public void testBuildSentinelBeaconShardsExcludeActiveShard() {
+        XpipeMeta xpipeMeta = getXpipeMeta();
+        xpipeMeta.getDcs().get("jq").getClusters().get("cluster1").getShards().get("shard1")
+                .setMetaExcludeUntilTimestamp(System.currentTimeMillis() + 60_000L);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        Set<MonitorShardMeta> shards = beaconMetaService.buildSentinelBeaconShards("cluster1", "jq",
+                Collections.emptyMap());
+        Assert.assertEquals(1, shards.size());
+        Assert.assertTrue(shards.stream().anyMatch(shard -> "shard2".equals(shard.getName())));
+    }
+
     @Override
     protected String getXpipeMetaConfigFile() {
         return "multi-zone-meta.xml";

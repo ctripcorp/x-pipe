@@ -27,6 +27,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -299,6 +300,55 @@ public class DefaultBeaconManagerTest extends AbstractConsoleTest {
 
         Mockito.verify(monitorService).registerCluster(Mockito.eq("xpipe"), Mockito.eq(CLUSTER_ID), Mockito.isNull(),
                 Mockito.eq(shards), Mockito.anyMap());
+    }
+
+    @Test
+    public void sentinelRouteShouldDetectInconsistencyWhenShardExcluded() {
+        mockShouldComputeExtraInHash(true);
+        Set<MonitorShardMeta> fullShards = sentinelShardsWithTwoShards();
+        Set<MonitorShardMeta> reducedShards = sentinelShards();
+        int beaconHash = new MonitorClusterMeta(null, fullShards, hashExtra(LAST_MODIFY_TIME))
+                .generateHashCodeForBeaconCheck(true);
+        int localHash = new MonitorClusterMeta(null, reducedShards, hashExtra(LAST_MODIFY_TIME))
+                .generateHashCodeForBeaconCheck(true);
+        Assert.assertNotEquals(beaconHash, localHash);
+
+        Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, ZONE, BeaconRouteType.SENTINEL)).thenReturn(monitorService);
+        Mockito.when(beaconMetaService.buildSentinelBeaconShards(CLUSTER_ID, DC, Collections.emptyMap()))
+                .thenReturn(reducedShards);
+        Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER_ID)).thenReturn(beaconHash);
+
+        BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER_ID, DC, CLUSTER_TYPE, ORG_ID,
+                LAST_MODIFY_TIME, BeaconRouteType.SENTINEL);
+        Assert.assertEquals(BeaconCheckStatus.INCONSISTENCY, status);
+    }
+
+    @Test
+    public void sentinelInconsistentShouldRegisterReducedShards() throws Exception {
+        mockShouldComputeExtraInHash(true);
+        Set<MonitorShardMeta> fullShards = sentinelShardsWithTwoShards();
+        Set<MonitorShardMeta> reducedShards = sentinelShards();
+
+        Mockito.when(monitorManager.get(ORG_ID, CLUSTER_ID, ZONE, BeaconRouteType.SENTINEL)).thenReturn(monitorService);
+        Mockito.when(beaconMetaService.buildSentinelBeaconShards(CLUSTER_ID, DC, Collections.emptyMap()))
+                .thenReturn(reducedShards);
+
+        beaconManager.registerCluster(CLUSTER_ID, DC, CLUSTER_TYPE, ORG_ID, LAST_MODIFY_TIME,
+                BeaconRouteType.SENTINEL, Collections.emptyMap());
+
+        Mockito.verify(monitorService).registerCluster(Mockito.eq("xpipe"), Mockito.eq(CLUSTER_ID), Mockito.isNull(),
+                Mockito.eq(reducedShards), Mockito.anyMap());
+    }
+
+    private Set<MonitorShardMeta> sentinelShardsWithTwoShards() {
+        return new HashSet<>(Arrays.asList(
+                new MonitorShardMeta("shard1", Arrays.asList(
+                        new MonitorGroupMeta("127.0.0.1:6379", DC,
+                                Collections.singleton(new HostPort("127.0.0.1", 6379)), true))),
+                new MonitorShardMeta("shard2", Arrays.asList(
+                        new MonitorGroupMeta("127.0.0.1:6381", DC,
+                                Collections.singleton(new HostPort("127.0.0.1", 6381)), true)))
+        ));
     }
 
     private Set<MonitorShardMeta> sentinelShards() {

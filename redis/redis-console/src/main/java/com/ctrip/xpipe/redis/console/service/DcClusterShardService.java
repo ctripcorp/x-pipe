@@ -17,6 +17,7 @@ public interface DcClusterShardService {
 	List<DcClusterShardTbl> findAllByDcCluster(long dcClusterId);
 	List<DcClusterShardTbl> findAllByDcCluster(String dcName, String clusterName);
 	void updateDcClusterShard(DcClusterShardTbl dcClusterShardTbl) throws DalException;
+	void updateMetaExcludeUntilTimestamp(DcClusterShardTbl dcClusterShardTbl) throws DalException;
 	List<DcClusterShardTbl> findAllByDcId(long dcId);
 	List<DcClusterShardTbl> findAllByDcIdAndInClusterTypes(long dcId, Set<String> clusterTypes);
 	List<DcClusterShardTbl> findAllByClusterTypes(Set<String> clusterTypes);

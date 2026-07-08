@@ -111,6 +111,11 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
 	}
 
 	@Override
+	public void updateMetaExcludeUntilTimestamp(DcClusterShardTbl dcClusterShardTbl) throws DalException {
+		dao.updateByPK(dcClusterShardTbl, DcClusterShardTblEntity.UPDATESET_META_EXCLUDE_UNTIL_TIMESTAMP);
+	}
+
+	@Override
 	public List<DcClusterShardTbl> findAllByDcId(long dcId) {
 		return queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
 			@Override
