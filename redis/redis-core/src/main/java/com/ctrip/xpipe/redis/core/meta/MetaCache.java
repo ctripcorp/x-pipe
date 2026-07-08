@@ -108,6 +108,8 @@ public interface MetaCache {
 
     Map<String, Integer> getClusterCntMap(String clusterName);
 
+    Map<String, Map<String, Integer>> getClusterShardCounts();
+
     boolean isDcClusterMigratable(String dc, String clusterName);
 
     boolean anyDcMigratable(String clusterName);

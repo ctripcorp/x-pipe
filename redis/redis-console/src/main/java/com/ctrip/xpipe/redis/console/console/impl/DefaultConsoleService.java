@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STAT
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
+import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
+import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.SentinelBeaconPostMigrateRequest;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
@@ -15,10 +17,9 @@ import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.web.client.RestOperations;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestOperations;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     private static final int SENTINEL_BEACON_MIGRATE_RETRY_TIMES = 0;
     private static final String SENTINEL_BEACON_PRE_MIGRATE_PATH = "/api/beacon/migration/sentinel/pre/{clusterName}";
     private static final String SENTINEL_BEACON_POST_MIGRATE_PATH = "/api/beacon/migration/sentinel/post/{clusterName}";
+    private static final String BEACON_USAGE_PATH = "/api/beacon/sentinel/usage/local?system={system}&includeClusters={includeClusters}";
+    private static final String BEACON_CLUSTER_PATH = "/api/beacon/sentinel/cluster/{clusterName}/local";
 
     private String address;
 
@@ -90,6 +93,16 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final RestOperations sentinelMigrationRestTemplate;
 
+    private final String beaconUsageUrl;
+
+    private final String beaconClusterUrl;
+
+    private static final ParameterizedTypeReference<List<SentinelBeaconUsageItem>> beaconUsageTypeDef =
+            new ParameterizedTypeReference<List<SentinelBeaconUsageItem>>(){};
+
+    private static final ParameterizedTypeReference<List<SentinelClusterBeaconRouteItem>> clusterBeaconRouteTypeDef =
+            new ParameterizedTypeReference<List<SentinelClusterBeaconRouteItem>>(){};
+
     private static final ParameterizedTypeReference<Map<HostPort, Long>> hostDelayTypeDef =
             new ParameterizedTypeReference<Map<HostPort, Long>>(){};
 
@@ -124,6 +137,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         dcsInSameRegionUrl = String.format("%s%s", this.address, PATH_GET_REGION_DCS);
         sentinelBeaconPreMigrateUrl = String.format("%s%s", this.address, SENTINEL_BEACON_PRE_MIGRATE_PATH);
         sentinelBeaconPostMigrateUrl = String.format("%s%s", this.address, SENTINEL_BEACON_POST_MIGRATE_PATH);
+        beaconUsageUrl = String.format("%s%s", this.address, BEACON_USAGE_PATH);
+        beaconClusterUrl = String.format("%s%s", this.address, BEACON_CLUSTER_PATH);
         sentinelMigrationRestTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(
                 SENTINEL_BEACON_MIGRATE_MAX_CONN,
                 SENTINEL_BEACON_MIGRATE_MAX_CONN * 4,
@@ -259,6 +274,20 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         SentinelBeaconPostMigrateRequest request = new SentinelBeaconPostMigrateRequest();
         request.setShardMasters(shardMasters);
         return sentinelMigrationRestTemplate.postForObject(sentinelBeaconPostMigrateUrl, request, RetMessage.class, clusterName);
+    }
+
+    @Override
+    public List<SentinelBeaconUsageItem> getSentinelBeaconUsage(String system, boolean includeClusters) {
+        ResponseEntity<List<SentinelBeaconUsageItem>> response = restTemplate.exchange(
+                beaconUsageUrl, HttpMethod.GET, null, beaconUsageTypeDef, system, includeClusters);
+        return response.getBody();
+    }
+
+    @Override
+    public List<SentinelClusterBeaconRouteItem> getSentinelClusterBeaconRoute(String clusterName) {
+        ResponseEntity<List<SentinelClusterBeaconRouteItem>> response = restTemplate.exchange(
+                beaconClusterUrl, HttpMethod.GET, null, clusterBeaconRouteTypeDef, clusterName);
+        return response.getBody();
     }
 
     @Override

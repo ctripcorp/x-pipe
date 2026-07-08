@@ -6,6 +6,10 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconRouteType;
 import com.ctrip.xpipe.redis.console.config.model.BeaconClusterRoute;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
+import com.ctrip.xpipe.redis.console.controller.api.vo.DRBeaconUsageItem;
+import com.ctrip.xpipe.redis.console.controller.api.vo.DRClusterBeaconRouteItem;
+import com.ctrip.xpipe.redis.console.controller.api.vo.RegionBeaconUsage;
+import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
@@ -199,4 +203,195 @@ public class DefaultMonitorManagerTest extends AbstractTest {
         Assert.assertTrue(byService.values().stream().allMatch(Set::isEmpty));
     }
 
+    @Test
+    public void testGetClusterRoutesOneWayActiveDc() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(new ClusterMeta("one-way-cluster").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setDcs("jq,sha"));
+        xpipeMeta.addDc(dcMeta);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        List<SentinelClusterBeaconRouteItem> routes =
+                beaconServiceManager.getSentinelClusterRoutes("one-way-cluster");
+
+        Assert.assertEquals(1, routes.size());
+        SentinelClusterBeaconRouteItem route = routes.get(0);
+        Assert.assertEquals("one-way-cluster", route.getClusterName());
+        Assert.assertEquals("JQ", route.getDcName());
+        Assert.assertEquals("ONE_WAY", route.getType());
+        Assert.assertTrue(route.isActiveDc());
+        Assert.assertNotNull(route.getBeaconName());
+        Assert.assertNotNull(route.getBeaconHost());
+    }
+
+    @Test
+    public void testGetClusterRoutesOneWayNonActiveDc() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(new ClusterMeta("one-way-cluster").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("fra").setDcs("jq,fra"));
+        xpipeMeta.addDc(dcMeta);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        List<SentinelClusterBeaconRouteItem> routes =
+                beaconServiceManager.getSentinelClusterRoutes("one-way-cluster");
+
+        Assert.assertEquals(1, routes.size());
+        SentinelClusterBeaconRouteItem route = routes.get(0);
+        Assert.assertEquals("one-way-cluster", route.getClusterName());
+        Assert.assertEquals("JQ", route.getDcName());
+        Assert.assertEquals("ONE_WAY", route.getType());
+        Assert.assertFalse(route.isActiveDc());
+        Assert.assertNotNull(route.getBeaconName());
+        Assert.assertNotNull(route.getBeaconHost());
+    }
+
+    @Test
+    public void testGetBeaconDcsDrFiltersOutUnsupportedZone() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta jqDc = new DcMeta("jq").setZone("ZONE_A");
+        jqDc.addCluster(new ClusterMeta("cluster1").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setDcs("jq,fra"));
+        DcMeta fraDc = new DcMeta("fra").setZone("ZONE_B");
+        fraDc.addCluster(new ClusterMeta("cluster1").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setDcs("jq,fra"));
+        xpipeMeta.addDc(jqDc);
+        xpipeMeta.addDc(fraDc);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+        Mockito.when(commonConfig.getBeaconSupportZones()).thenReturn(Collections.singleton("ZONE_A"));
+
+        Set<String> beaconDcs = beaconServiceManager.getBeaconDcs("cluster1", BeaconRouteType.DR);
+
+        Assert.assertEquals(Collections.singleton("JQ"), beaconDcs);
+    }
+
+    @Test
+    public void testGetDrBeaconUsageGroupsByRegion() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta jqDc = new DcMeta("jq").setZone("ZONE_A");
+        jqDc.addCluster(new ClusterMeta("cluster-a").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setDcs("jq,sha"));
+        DcMeta shaDc = new DcMeta("sha").setZone("ZONE_A");
+        shaDc.addCluster(new ClusterMeta("cluster-a").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setDcs("jq,sha"));
+        DcMeta fraDc = new DcMeta("fra").setZone("ZONE_B");
+        fraDc.addCluster(new ClusterMeta("cluster-b").setOrgId(2)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("fra").setDcs("fra"));
+        xpipeMeta.addDc(jqDc);
+        xpipeMeta.addDc(shaDc);
+        xpipeMeta.addDc(fraDc);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        Map<String, RegionBeaconUsage> result = beaconServiceManager.getDRBeaconUsage("xpipe", true);
+
+        Assert.assertTrue(result.containsKey("ZONE_A"));
+        Assert.assertTrue(result.containsKey("ZONE_B"));
+        Assert.assertEquals(new HashSet<>(java.util.Arrays.asList("JQ", "SHA")),
+                new HashSet<>(result.get("ZONE_A").getDcs()));
+        Assert.assertEquals(Collections.singletonList("FRA"), result.get("ZONE_B").getDcs());
+
+        Set<String> zoneAClusters = result.get("ZONE_A").getBeacons().stream()
+                .flatMap(b -> b.getClusters().stream())
+                .map(c -> c.getName())
+                .collect(Collectors.toSet());
+        Assert.assertTrue(zoneAClusters.contains("cluster-a"));
+        Assert.assertFalse(zoneAClusters.contains("cluster-b"));
+
+        Set<String> zoneBClusters = result.get("ZONE_B").getBeacons().stream()
+                .flatMap(b -> b.getClusters().stream())
+                .map(c -> c.getName())
+                .collect(Collectors.toSet());
+        Assert.assertTrue(zoneBClusters.contains("cluster-b"));
+        Assert.assertFalse(zoneBClusters.contains("cluster-a"));
+    }
+
+    @Test
+    public void testGetDrBeaconUsageEmptyBeaconGoesToUnknownRegion() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta jqDc = new DcMeta("jq").setZone("ZONE_A");
+        xpipeMeta.addDc(jqDc);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        Map<String, RegionBeaconUsage> result = beaconServiceManager.getDRBeaconUsage("xpipe", true);
+
+        Assert.assertTrue("empty beacons should be grouped under UNKNOWN region",
+                result.containsKey("UNKNOWN"));
+        RegionBeaconUsage unknown = result.get("UNKNOWN");
+        Assert.assertTrue(unknown.getDcs().isEmpty());
+        Assert.assertFalse(unknown.getBeacons().isEmpty());
+        for (DRBeaconUsageItem beacon : unknown.getBeacons()) {
+            Assert.assertEquals(0, beacon.getClusterCount());
+            Assert.assertEquals(0, beacon.getShardCount());
+        }
+    }
+
+    @Test
+    public void testGetDrClusterRoutesGroupsByRegion() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta jqDc = new DcMeta("jq").setZone("SHA");
+        jqDc.addCluster(new ClusterMeta("cluster-a").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setBackupDcs("sha"));
+        DcMeta shaDc = new DcMeta("sha").setZone("SHA");
+        shaDc.addCluster(new ClusterMeta("cluster-a").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setBackupDcs("sha"));
+        xpipeMeta.addDc(jqDc);
+        xpipeMeta.addDc(shaDc);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        Map<String, DRClusterBeaconRouteItem> result = beaconServiceManager.getDRClusterRoutes("cluster-a");
+
+        Assert.assertTrue(result.containsKey("SHA"));
+        DRClusterBeaconRouteItem item = result.get("SHA");
+        Assert.assertEquals("cluster-a", item.getClusterName());
+        Assert.assertEquals("JQ", item.getActiveDc());
+        Assert.assertEquals(new HashSet<>(java.util.Arrays.asList("JQ", "SHA")), new HashSet<>(item.getDcs()));
+        Assert.assertNotNull(item.getBeaconName());
+    }
+
+    @Test
+    public void testGetDrClusterRoutesSkipsNonSupportedZone() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta uatDc = new DcMeta("uat").setZone("SHA");
+        uatDc.addCluster(new ClusterMeta("hetero-cluster").setOrgId(1)
+                .setType(ClusterType.HETERO.name()).setAzGroupType(ClusterType.ONE_WAY.name())
+                .setActiveDc("uat").setBackupDcs("ntgxh"));
+        DcMeta awsDc = new DcMeta("uat-aws").setZone("FRA");
+        awsDc.addCluster(new ClusterMeta("hetero-cluster").setOrgId(1)
+                .setType(ClusterType.HETERO.name()).setAzGroupType(ClusterType.ONE_WAY.name())
+                .setActiveDc("uat-aws").setBackupDcs("johor"));
+        xpipeMeta.addDc(uatDc);
+        xpipeMeta.addDc(awsDc);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+        Mockito.when(commonConfig.getBeaconSupportZones()).thenReturn(Collections.singleton("SHA"));
+
+        Map<String, DRClusterBeaconRouteItem> result = beaconServiceManager.getDRClusterRoutes("hetero-cluster");
+
+        Assert.assertTrue("SHA should be present", result.containsKey("SHA"));
+        Assert.assertNotNull(result.get("SHA").getBeaconName());
+        Assert.assertFalse("zone outside supportZones should not appear in DR cluster routes",
+                result.containsKey("FRA"));
+    }
+
+    @Test
+    public void testGetDrBeaconUsageIncludeClustersFalse() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta jqDc = new DcMeta("jq").setZone("ZONE_A");
+        jqDc.addCluster(new ClusterMeta("cluster-a").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setBackupDcs("sha"));
+        DcMeta shaDc = new DcMeta("sha").setZone("ZONE_A");
+        shaDc.addCluster(new ClusterMeta("cluster-a").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setBackupDcs("sha"));
+        xpipeMeta.addDc(jqDc);
+        xpipeMeta.addDc(shaDc);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        Map<String, RegionBeaconUsage> result = beaconServiceManager.getDRBeaconUsage("xpipe", false);
+
+        Assert.assertTrue(result.containsKey("ZONE_A"));
+        for (DRBeaconUsageItem beacon : result.get("ZONE_A").getBeacons()) {
+            Assert.assertNull("clusters must be null when includeClusters=false", beacon.getClusters());
+            Assert.assertEquals(1, beacon.getClusterCount());
+        }
+    }
 }

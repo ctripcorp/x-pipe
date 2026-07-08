@@ -691,6 +691,20 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public Map<String, Map<String, Integer>> getClusterShardCounts() {
+        Map<String, Map<String, Integer>> result = new HashMap<>();
+        XpipeMeta xpipeMeta = meta.getKey();
+        if (xpipeMeta == null) return result;
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                result.computeIfAbsent(clusterMeta.getId(), k -> new HashMap<>())
+                        .put(dcMeta.getId(), clusterMeta.getShards().size());
+            }
+        }
+        return result;
+    }
+
+    @Override
     public Set<String> getAllShardNamesByClusterName(String clusterName) {
         Set<String> shards = new HashSet<>();
         XpipeMeta xpipeMeta = meta.getKey();

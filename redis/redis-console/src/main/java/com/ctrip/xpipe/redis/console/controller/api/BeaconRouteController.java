@@ -1,19 +1,27 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
-import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.controller.api.vo.DRClusterBeaconRouteItem;
+import com.ctrip.xpipe.redis.console.controller.api.vo.RegionBeaconUsage;
+import com.ctrip.xpipe.redis.console.controller.api.vo.RestResponse;
+import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
+import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,6 +37,9 @@ public class BeaconRouteController extends AbstractConsoleController {
 
     @Autowired
     private BeaconManager beaconManager;
+
+    @Autowired(required = false)
+    private ConsoleServiceManager consoleServiceManager;
 
     @GetMapping("/sentinel/clusters")
     public Map<String, Set<String>> getSentinelBeaconClusters(@RequestParam(name = "system", required = false) String system,
@@ -86,6 +97,62 @@ public class BeaconRouteController extends AbstractConsoleController {
         result.put("dc", anchorDc);
         result.put("routeType", selectedRouteType.name());
         result.put("metaHash", metaHash);
+        return result;
+    }
+
+    @GetMapping("/sentinel/usage")
+    public Map<String, RestResponse<List<SentinelBeaconUsageItem>>> getSentinelBeaconUsage(
+            @RequestParam(required = false, defaultValue = "xpipe") String system,
+            @RequestParam(required = false, defaultValue = "false") boolean includeClusters) {
+        if (consoleServiceManager == null) {
+            String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
+            Map<String, RestResponse<List<SentinelBeaconUsageItem>>> result = new LinkedHashMap<>();
+            result.put(currentDc, RestResponse.success(monitorManager.getSentinelBeaconUsage(system, includeClusters)));
+            return result;
+        }
+        return consoleServiceManager.getAllConsoleSentinelBeaconUsage(system, includeClusters);
+    }
+
+    @GetMapping("/sentinel/usage/local")
+    public List<SentinelBeaconUsageItem> getSentinelBeaconUsageLocal(
+            @RequestParam(required = false, defaultValue = "xpipe") String system,
+            @RequestParam(required = false, defaultValue = "false") boolean includeClusters) {
+        return monitorManager.getSentinelBeaconUsage(system, includeClusters);
+    }
+
+    @GetMapping("/dr/usage")
+    public RestResponse<Map<String, RegionBeaconUsage>> getDRBeaconUsage(
+            @RequestParam(required = false, defaultValue = "xpipe") String system,
+            @RequestParam(required = false, defaultValue = "false") boolean includeClusters) {
+        return RestResponse.success(monitorManager.getDRBeaconUsage(system, includeClusters));
+    }
+
+    @GetMapping("/sentinel/cluster/{clusterName}")
+    public Map<String, RestResponse<List<SentinelClusterBeaconRouteItem>>> getSentinelClusterBeaconRoute(
+            @PathVariable String clusterName) {
+        if (consoleServiceManager == null) {
+            return groupLocalByDc(monitorManager.getSentinelClusterRoutes(clusterName));
+        }
+        return consoleServiceManager.getAllConsoleSentinelClusterBeaconRoute(clusterName);
+    }
+
+    @GetMapping("/sentinel/cluster/{clusterName}/local")
+    public List<SentinelClusterBeaconRouteItem> getSentinelClusterBeaconRouteLocal(@PathVariable String clusterName) {
+        return monitorManager.getSentinelClusterRoutes(clusterName);
+    }
+
+    @GetMapping("/dr/cluster/{clusterName}")
+    public RestResponse<Map<String, DRClusterBeaconRouteItem>> getDRClusterBeaconRoute(@PathVariable String clusterName) {
+        return RestResponse.success(monitorManager.getDRClusterRoutes(clusterName));
+    }
+
+    private Map<String, RestResponse<List<SentinelClusterBeaconRouteItem>>> groupLocalByDc(List<SentinelClusterBeaconRouteItem> localData) {
+        Map<String, List<SentinelClusterBeaconRouteItem>> grouped = new LinkedHashMap<>();
+        for (SentinelClusterBeaconRouteItem item : localData) {
+            grouped.computeIfAbsent(item.getDcName(), k -> new ArrayList<>()).add(item);
+        }
+        Map<String, RestResponse<List<SentinelClusterBeaconRouteItem>>> result = new LinkedHashMap<>();
+        grouped.forEach((dc, data) -> result.put(dc, RestResponse.success(data)));
         return result;
     }
 
