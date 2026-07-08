@@ -180,18 +180,36 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     private FileChannel openForAppend(String fileName) throws IOException {
         FileChannel ch = FileChannel.open(pathOf(fileName),
                 EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE));
-        ch.position(ch.size());
+        try {
+            ch.position(ch.size());
+        } catch (IOException e) {
+            ch.close();
+            throw e;
+        }
         return ch;
     }
 
     void closeCurrent() throws IOException {
-        if (currentSegmentChannel != null) currentSegmentChannel.close();
-        currentSegmentChannel = null;
-        for (AsyncFile af : currentIndexFiles.values()) af.channel.close();
+        IOException first = null;
+        try {
+            if (currentSegmentChannel != null) currentSegmentChannel.close();
+        } catch (IOException e) {
+            first = e;
+        } finally {
+            currentSegmentChannel = null;
+        }
+        for (AsyncFile af : currentIndexFiles.values()) {
+            try {
+                af.channel.close();
+            } catch (IOException e) {
+                if (first == null) first = e;
+            }
+        }
         currentIndexFiles.clear();
         openedSegmentStartOffset = Long.MAX_VALUE;
         openedSegmentEndOffset = Long.MAX_VALUE;
         pendingFsyncBytes = 0;
+        if (first != null) throw first;
     }
 
     long exclusiveEndOffset(long lastOffset) throws IOException {

@@ -103,7 +103,12 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             FileChannel ch;
             if (write) {
                 ch = FileChannel.open(p, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-                if (!atomicReplace) ch.position(ch.size());
+                try {
+                    if (!atomicReplace) ch.position(ch.size());
+                } catch (IOException e) {
+                    ch.close();
+                    throw e;
+                }
             } else {
                 ch = FileChannel.open(p, StandardOpenOption.READ);
             }
@@ -148,17 +153,19 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<ByteBuf> read(AsyncFile file, long length, long offset) {
-        return StorageUtil.supply(ioExecutor, () -> readSyncInternal(file, length, offset));
+        return StorageUtil.supply(ioExecutor, () -> {
+            try {
+                return readFully(file.channel, length, offset, 0);
+            } catch (IOException e) {
+                throw StorageUtil.wrapIOException(e);
+            }
+        });
     }
 
     @Override
-    public ByteBuf readSync(AsyncFile file, long length, long offset) {
-        return readSyncInternal(file, length, offset);
-    }
-
-    private ByteBuf readSyncInternal(AsyncFile file, long length, long offset) {
+    public ByteBuf readSync(AsyncFile file, long length, long offset, int alignSize) {
         try {
-            return readFully(file.channel, length, offset);
+            return readFully(file.channel, length, offset, alignSize);
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         }
@@ -169,7 +176,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return StorageUtil.supply(ioExecutor, () -> {
             try {
                 long pos = file.position;
-                ByteBuf buf = readFully(file.channel, length, pos);
+                ByteBuf buf = readFully(file.channel, length, pos, 0);
                 file.position += buf.readableBytes();
                 return buf;
             } catch (IOException e) {
@@ -213,13 +220,16 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> size(AsyncFile file) {
-        return StorageUtil.supply(ioExecutor, () -> {
-            try {
-                return file.channel.size();
-            } catch (IOException e) {
-                throw StorageUtil.wrapIOException(e);
-            }
-        });
+        return StorageUtil.supply(ioExecutor, () -> sizeSync(file));
+    }
+
+    @Override
+    public long sizeSync(AsyncFile file) {
+        try {
+            return file.channel.size();
+        } catch (IOException e) {
+            throw StorageUtil.wrapIOException(e);
+        }
     }
 
     @Override
@@ -295,15 +305,18 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> close(AsyncFile file) {
-        return StorageUtil.run(ioExecutor, () -> {
-            try {
-                file.channel.close();
-            } catch (IOException e) {
-                throw StorageUtil.wrapIOException(e);
-            } finally {
-                file.onClose.run();
-            }
-        });
+        return StorageUtil.run(ioExecutor, () -> closeSync(file));
+    }
+
+    @Override
+    public void closeSync(AsyncFile file) {
+        try {
+            file.channel.close();
+        } catch (IOException e) {
+            throw StorageUtil.wrapIOException(e);
+        } finally {
+            file.onClose.run();
+        }
     }
 
     @Override
@@ -350,15 +363,20 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
     }
 
-    private ByteBuf readFully(FileChannel ch, long length, long offset) throws IOException {
-        ByteBuf buf = StorageAllocator.ALLOC.directBuffer((int) length);
+    private ByteBuf readFully(FileChannel ch, long length, long offset, int alignSize) throws IOException {
+        long alignedStart = alignSize > 0 ? (offset / alignSize) * alignSize : offset;
+        long alignedEnd = alignSize > 0 ? ((offset + length + alignSize - 1) / alignSize) * alignSize : offset + length;
+        int capacity = (int) (alignedEnd - alignedStart);
+        ByteBuf buf = StorageAllocator.ALLOC.directBuffer(capacity);
         try {
-            long pos = offset;
+            long pos = alignedStart;
             while (buf.writableBytes() > 0) {
                 int n = buf.writeBytes(ch, pos, buf.writableBytes());
                 if (n < 0) break;
                 pos += n;
             }
+            // set readerIndex to skip leading alignment padding before offset
+            buf.readerIndex((int) (offset - alignedStart));
             return buf;
         } catch (Throwable t) {
             buf.release();
@@ -536,15 +554,20 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
 
         AsyncSegmentFile file = new AsyncSegmentFile(path, prefix, indexPrefixes, key, write);
+        boolean success = false;
         try {
             file.openInitialResources(entry.state);
+            success = true;
         } catch (IOException e) {
-            releaseDirEntry(key, write);
             throw StorageUtil.wrapIOException(e);
-        } catch (Throwable t) {
-            // make sure to release the entry even if error like NPE is thrown
-            releaseDirEntry(key, write);
-            throw t;
+        } finally {
+            if (!success) {
+                try {
+                    closeSync(file);
+                } catch (Throwable t) {
+                    logger.error("Failed to close segment file after openInitialResources failure {}", file.key, t);
+                }
+            }
         }
         return file;
     }
@@ -562,6 +585,18 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             throw new IOException("failed to list directory: " + path);
         }
         AsyncSegmentFile.initFromFiles(entry, path, prefix, indexPrefixes, Arrays.asList(names));
+    }
+
+    @Override
+    public void closeSync(AsyncSegmentFile file) {
+        try {
+            file.closeCurrent();
+        } catch (IOException e) {
+            throw StorageUtil.wrapIOException(e);
+        } finally {
+            releaseDirEntry(file.key, file.writeMode);
+            file.onClose.run();
+        }
     }
 
     private void releaseDirEntry(String key, boolean write) {
@@ -631,7 +666,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                     if (!file.switchToSegment(offset, s)) return Unpooled.buffer(0);
                 }
                 long physicalOffset = offset - file.openedSegmentStartOffset;
-                ByteBuf buf = readFully(file.currentSegmentChannel, length, physicalOffset);
+                ByteBuf buf = readFully(file.currentSegmentChannel, length, physicalOffset, 0);
                 maybeSwitchSegment(file, s, offset + buf.readableBytes(), physicalOffset, buf.readableBytes());
                 return buf;
             } catch (IOException e) {
@@ -830,16 +865,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> close(AsyncSegmentFile file) {
-        return StorageUtil.run(ioExecutor, () -> {
-            try {
-                file.closeCurrent();
-            } catch (IOException e) {
-                throw StorageUtil.wrapIOException(e);
-            } finally {
-                releaseDirEntry(file.key, file.writeMode);
-                file.onClose.run();
-            }
-        });
+        return StorageUtil.run(ioExecutor, () -> closeSync(file));
     }
 
     @Override
