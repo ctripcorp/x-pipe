@@ -29,7 +29,7 @@ public interface AsyncFileSystem {
     // The returned buffer's readerIndex points to the requested offset (leading padding is skipped),
     // and total capacity covers the full aligned range, allowing zero-copy chunk slicing.
     // Caller must release() the returned ByteBuf when done.
-    ByteBuf readSync(AsyncFile file, long length, long offset, int alignSize);
+    ByteBuf readSync(AsyncFile file, long length, long offset, long alignSize);
     // Caller must release() the returned ByteBuf when done.
     CompletableFuture<ByteBuf> read(AsyncFile file, long length);
     CompletableFuture<Long> write(AsyncFile file, ByteBuf data);
