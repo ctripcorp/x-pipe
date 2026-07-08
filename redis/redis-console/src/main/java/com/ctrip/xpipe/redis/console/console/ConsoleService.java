@@ -4,6 +4,8 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.CheckerService;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
+import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
+import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
@@ -56,6 +58,10 @@ public interface ConsoleService extends CheckerService {
     RetMessage preMigrateSentinelBeacon(String clusterName);
 
     RetMessage postMigrateSentinelBeacon(String clusterName, Map<String, HostPort> shardMasters);
+
+    List<SentinelBeaconUsageItem> getSentinelBeaconUsage(String system, boolean includeClusters);
+
+    List<SentinelClusterBeaconRouteItem> getSentinelClusterBeaconRoute(String clusterName);
 
     class ShardCheckerHealthCheckModels extends ArrayList<ShardCheckerHealthCheckModel> {}
 
