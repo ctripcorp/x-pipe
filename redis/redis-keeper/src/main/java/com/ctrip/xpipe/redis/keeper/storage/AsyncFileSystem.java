@@ -24,19 +24,25 @@ public interface AsyncFileSystem {
     CompletableFuture<Void> position(AsyncFile file, long position);
     // Caller must release() the returned ByteBuf when done.
     CompletableFuture<ByteBuf> read(AsyncFile file, long length, long offset);
-    // Read the file synchronously.
-    ByteBuf readSync(AsyncFile file, long length, long offset);
+    // Read the file synchronously. alignSize=0 means no alignment.
+    // When alignSize > 0, the read range is expanded so both start and end are aligned to alignSize boundaries.
+    // The returned buffer's readerIndex points to the requested offset (leading padding is skipped),
+    // and total capacity covers the full aligned range, allowing zero-copy chunk slicing.
+    // Caller must release() the returned ByteBuf when done.
+    ByteBuf readSync(AsyncFile file, long length, long offset, int alignSize);
     // Caller must release() the returned ByteBuf when done.
     CompletableFuture<ByteBuf> read(AsyncFile file, long length);
     CompletableFuture<Long> write(AsyncFile file, ByteBuf data);
     CompletableFuture<Void> delete(String path);
     CompletableFuture<Boolean> exists(String path);
     CompletableFuture<Long> size(AsyncFile file);
+    long sizeSync(AsyncFile file);
     CompletableFuture<Boolean> mkdir(String path, boolean recursive);
     CompletableFuture<Boolean> rmdir(String path, boolean recursive);
     // Only available in write mode.
     CompletableFuture<Void> truncate(AsyncFile file, long size);
     CompletableFuture<Void> close(AsyncFile file);
+    void closeSync(AsyncFile file);
     // Only available in write mode.
     CompletableFuture<Void> fsync(AsyncFile file);
     // segment file return as raw file.
@@ -96,6 +102,7 @@ public interface AsyncFileSystem {
     // Only available in write mode.
     CompletableFuture<Map<String, AsyncFile>> truncate(AsyncSegmentFile file, long offset);
     CompletableFuture<Void> close(AsyncSegmentFile file);
+    void closeSync(AsyncSegmentFile file);
     // Only available in write mode.
     CompletableFuture<Void> fsync(AsyncSegmentFile file);
     // Mixing transferTo with read()/position()/pread on the same AsyncSegmentFile is NOT supported

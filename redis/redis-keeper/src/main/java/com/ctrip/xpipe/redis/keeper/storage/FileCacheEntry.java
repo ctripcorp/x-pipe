@@ -5,7 +5,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 final class FileCacheEntry extends CacheEntry {
 
-    final int chunkSize;
     final ConcurrentHashMap<Long, ByteBuf> chunks = new ConcurrentHashMap<>();
 
     // -1: no cache data yet
@@ -18,7 +17,6 @@ final class FileCacheEntry extends CacheEntry {
     // Exclusive upper bound of data fsync'd to the backing FS.
     volatile long fsyncedToFsOffset = 0;
 
-    FileCacheEntry(int chunkSize) {
-        this.chunkSize = chunkSize;
+    FileCacheEntry() {
     }
 }

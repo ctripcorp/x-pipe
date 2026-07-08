@@ -4,7 +4,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.GatheringByteChannel;
 
 import java.io.IOException;
@@ -18,9 +17,13 @@ import java.util.concurrent.ExecutorService;
 import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile.CacheMode;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemConfig.BackingFsMode;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 // Sync methods (openSync, readSync) are not supported by default; add on demand.
 public class TailCacheFileSystem implements AsyncFileSystem {
 
+    private static final Logger logger = LoggerFactory.getLogger(TailCacheFileSystem.class);
     private static final int LOCK_STRIPES = 32;
 
     private final AsyncFileSystem delegate;
@@ -32,6 +35,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private volatile long expectedMinRetentionMs;
     private volatile CacheMode defaultCacheMode;
     private final int chunkSize;
+    private volatile int preloadChunkThreshold;
     private final ExecutorService ioExecutor;
 
     private final ConcurrentHashMap<String, FileCacheEntry> fileCacheEntries = new ConcurrentHashMap<>();
@@ -49,6 +53,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         this.expectedMinRetentionMs = config.getExpectedMinRetentionMs();
         this.defaultCacheMode = config.getDefaultCacheMode();
         this.chunkSize = config.getChunkSize();
+        this.preloadChunkThreshold = config.getPreloadChunkThreshold();
         this.ioExecutor = ioExecutor;
         for (int i = 0; i < LOCK_STRIPES; i++) locks[i] = new Object();
     }
@@ -112,6 +117,15 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         this.defaultCacheMode = defaultCacheMode;
     }
 
+    public int getPreloadChunkThreshold() {
+        return preloadChunkThreshold;
+    }
+
+    public void setPreloadChunkThreshold(int preloadChunkThreshold) {
+        if (preloadChunkThreshold <= 0) throw new IllegalArgumentException("preloadChunkThreshold must be positive");
+        this.preloadChunkThreshold = preloadChunkThreshold;
+    }
+
     @Override
     public void shutdown() {
         delegate.shutdown();
@@ -125,7 +139,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     // Must be called under lockFor(key).
     private FileCacheEntry acquireFileCacheEntry(String key) {
-        FileCacheEntry entry = fileCacheEntries.computeIfAbsent(key, k -> new FileCacheEntry(chunkSize));
+        FileCacheEntry entry = fileCacheEntries.computeIfAbsent(key, k -> new FileCacheEntry());
         entry.refCount++;
         return entry;
     }
@@ -134,7 +148,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private void releaseFileCacheEntry(String key) {
         FileCacheEntry entry = fileCacheEntries.get(key);
         if (entry == null) return;
-        if (--entry.refCount == 0) fileCacheEntries.remove(key);
+        if (--entry.refCount == 0) {
+            fileCacheEntries.remove(key);
+            entry.chunks.values().forEach(ByteBuf::release);
+        }
     }
 
     // Must be called under lockFor(key).
@@ -180,8 +197,76 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                     releaseFileCacheEntry(key);
                 }
             };
+            if (shouldPreloadCache(cacheMode, atomicReplace)) {
+                try {
+                    preloadCache(file);
+                } catch (Throwable t) {
+                    logger.error("preloadCache failed for {}, closing file", file.path, t);
+                    try {
+                        delegate.closeSync(file);
+                    } catch (Throwable ce) {
+                        logger.error("closeSync failed after preloadCache failure for {}", file.path, ce);
+                    }
+                    throw t;
+                }
+            }
         }
         return file;
+    }
+
+    private boolean shouldPreloadCache(CacheMode cacheMode, boolean atomicReplace) {
+        if (cacheMode == CacheMode.FULL_CACHE) return true;
+        if (cacheMode == CacheMode.DYNAMIC) {
+            if (defaultCacheMode == CacheMode.FULL_CACHE) return true;
+            if (defaultCacheMode == CacheMode.TAIL_CACHE && atomicReplace) return true;
+        }
+        return false;
+    }
+
+    private void preloadCache(AsyncFile file) {
+        FileCacheEntry entry = file.cacheEntry;
+        long fileSize = delegate.sizeSync(file);
+        if (fileSize == 0) return;
+
+        if (fileSize <= (long) preloadChunkThreshold * chunkSize) {
+            // small file: aligned read — buffer capacity rounded up to chunkSize multiples,
+            // so each chunk slice maps directly onto an aligned region without copying.
+            ByteBuf data = delegate.readSync(file, fileSize, 0, chunkSize);
+            try {
+                long actualSize = data.readableBytes();
+                long offset = 0;
+                while (offset < data.capacity()) {
+                    long chunkIdx = offset / chunkSize;
+                    entry.chunks.put(chunkIdx, data.retainedSlice((int) offset, chunkSize));
+                    offset += chunkSize;
+                }
+                entry.cacheStartOffset = 0;
+                entry.cacheEndOffset = actualSize;
+                entry.writtenToFsOffset = actualSize;
+            } finally {
+                data.release();
+            }
+        } else {
+            // large file: single read, copy into per-chunk buffers
+            ByteBuf data = delegate.readSync(file, fileSize, 0, 0);
+            try {
+                long offset = 0;
+                long actualSize = data.readableBytes();
+                while (offset < actualSize) {
+                    long chunkIdx = offset / chunkSize;
+                    int dataLen = (int) Math.min(chunkSize, actualSize - offset);
+                    ByteBuf chunk = StorageAllocator.ALLOC.directBuffer(chunkSize);
+                    chunk.writeBytes(data, (int) offset, dataLen);
+                    entry.chunks.put(chunkIdx, chunk);
+                    offset += dataLen;
+                }
+                entry.cacheStartOffset = 0;
+                entry.cacheEndOffset = actualSize;
+                entry.writtenToFsOffset = actualSize;
+            } finally {
+                data.release();
+            }
+        }
     }
 
     @Override
@@ -220,7 +305,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         long pos = file.position;
         if (preferDirectRead(file.cacheMode, entry, pos, readPreferCache)) {
             return StorageUtil.supply(ioExecutor, () -> {
-                ByteBuf buf = delegate.readSync(file, length, pos);
+                ByteBuf buf = delegate.readSync(file, length, pos, 0);
                 file.position += buf.readableBytes();
                 return buf;
             });
@@ -231,20 +316,20 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public ByteBuf readSync(AsyncFile file, long length, long offset) {
+    public ByteBuf readSync(AsyncFile file, long length, long offset, int alignSize) {
         throw new UnsupportedOperationException();
     }
 
     private java.util.List<ByteBuf> collectChunkSlices(FileCacheEntry entry, long offset, long end) {
-        int cs = entry.chunkSize;
+
         long pos = offset;
         java.util.List<ByteBuf> slices = new java.util.ArrayList<>();
         while (pos < end) {
-            long chunkIdx = pos / cs;
-            int inChunk = (int) (pos % cs);
+            long chunkIdx = pos / chunkSize;
+            int inChunk = (int) (pos % chunkSize);
             ByteBuf chunk = entry.chunks.get(chunkIdx);
             if (chunk == null) break;
-            int length = (int) Math.min(cs - inChunk, end - pos);
+            int length = (int) Math.min(chunkSize - inChunk, end - pos);
             slices.add(chunk.retainedSlice(inChunk, length));
             pos += length;
         }
@@ -319,6 +404,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     @Override
+    public long sizeSync(AsyncFile file) {
+        return delegate.sizeSync(file);
+    }
+
+    @Override
     public CompletableFuture<Boolean> mkdir(String path, boolean recursive) {
         return delegate.mkdir(path, recursive);
     }
@@ -336,6 +426,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Void> close(AsyncFile file) {
         return delegate.close(file);
+    }
+
+    @Override
+    public void closeSync(AsyncFile file) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -482,6 +577,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Void> close(AsyncSegmentFile file) {
         return delegate.close(file);
+    }
+
+    @Override
+    public void closeSync(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
