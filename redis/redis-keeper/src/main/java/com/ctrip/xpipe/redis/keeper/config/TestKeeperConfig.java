@@ -431,4 +431,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getAsyncWriteMaxBytes() {
 		return 65536;
 	}
+
+	@Override
+	public long getAsyncFsyncIntervalBytes() {
+		return DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES;
+	}
 }

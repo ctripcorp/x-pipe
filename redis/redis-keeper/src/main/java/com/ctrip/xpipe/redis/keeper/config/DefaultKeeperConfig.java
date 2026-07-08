@@ -342,4 +342,9 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public int getAsyncWriteMaxBytes() {
 		return getIntProperty(KEY_ASYNC_WRITE_MAX_BYTES, 65536);
 	}
+
+	@Override
+	public long getAsyncFsyncIntervalBytes() {
+		return getLongProperty(KEY_ASYNC_FSYNC_INTERVAL_BYTES, DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
+	}
 }

@@ -38,10 +38,13 @@ public abstract class AbstractMetaStore implements MetaStore{
 
 	protected final AsyncFileSystem asyncFileSystem;
 
-	public AbstractMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem) {
+	protected final ReplId fileSystemReplId;
+
+	public AbstractMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId) {
 		this.baseDir = baseDir;
 		this.keeperRunid = keeperRunid;
 		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
+		this.fileSystemReplId = Objects.requireNonNull(fileSystemReplId, "fileSystemReplId");
 		try {
 			loadMeta();
 			checkOrSaveKeeperRunid(keeperRunid);
@@ -70,7 +73,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 	protected void saveMetaToFileV2(File file, ReplicationStoreMeta replicationStoreMeta) throws IOException {
 		logger.info("[saveMetaToFileV2]{}, {}", file, replicationStoreMeta);
 		byte[] data = Codec.DEFAULT.encode(replicationStoreMeta).getBytes(StandardCharsets.UTF_8);
-		AsyncFile asyncFile = AsyncFileSystemHelper.await(asyncFileSystem.open(file.getAbsolutePath(), true, true, true),
+		AsyncFile asyncFile = AsyncFileSystemHelper.await(asyncFileSystem.open(file.getAbsolutePath(), true, true, true, fileSystemReplId.toString()),
 				"open meta for write " + file.getAbsolutePath());
 		try {
 			AsyncFileSystemHelper.await(asyncFileSystem.write(asyncFile, data, data.length),
@@ -84,7 +87,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 
 		if(AsyncFileSystemHelper.await(asyncFileSystem.exists(file.getAbsolutePath()),
 				"check meta exists " + file.getAbsolutePath())){
-			AsyncFile asyncFile = AsyncFileSystemHelper.await(asyncFileSystem.open(file.getAbsolutePath(), false, false, true),
+			AsyncFile asyncFile = AsyncFileSystemHelper.await(asyncFileSystem.open(file.getAbsolutePath(), false, false, true, fileSystemReplId.toString()),
 					"open meta for read " + file.getAbsolutePath());
 			try {
 				long size = AsyncFileSystemHelper.await(asyncFileSystem.size(asyncFile),

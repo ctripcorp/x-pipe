@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
-import com.ctrip.xpipe.redis.keeper.storage.IndexFileMapping;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetNotifyingCommandWriter;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStore;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindow;
@@ -35,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
@@ -121,7 +119,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     protected final AsyncSegmentFile asyncSegmentFile;
 
-    private final List<IndexFileMapping> commandIndexFileMappings;
+    private final List<String> commandIndexPrefixes;
+
+    private final ReplId fileSystemReplId;
 
     private final IntSupplier asyncWriteMaxBytes;
     
@@ -135,13 +135,15 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
                                 GtidCmdFilter  gtidCmdFilter, boolean buildIndex,
                                 AsyncFileSystem asyncFileSystem,
-                                IntSupplier asyncWriteMaxBytes
+                                IntSupplier asyncWriteMaxBytes,
+                                ReplId fileSystemReplId
     ) throws IOException {
 
         this.baseDir = file.getParentFile();
         this.fileNamePrefix = file.getName();
         this.maxFileSize = maxFileSize;
         this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
+        this.fileSystemReplId = Objects.requireNonNull(fileSystemReplId, "fileSystemReplId");
         this.asyncWriteMaxBytes = asyncWriteMaxBytes == null ? () -> DEFAULT_ASYNC_WRITE_MAX_BYTES : asyncWriteMaxBytes;
         this.maxTimeSecondKeeperCmdFileAfterModified = maxTimeSecondKeeperCmdFileAfterModified;
         this.fileNumToKeep = fileNumToKeep;
@@ -161,13 +163,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
         allFileFilter = new PrefixFileFilter(new String[] {fileNamePrefix, INDEX_FILE_PREFIX + fileNamePrefix});
 
-        this.commandIndexFileMappings = Collections.singletonList(new IndexFileMapping(
-                INDEX_FILE_PREFIX + fileNamePrefix,
-                idxFileNameToOffset(),
-                offset -> INDEX_FILE_PREFIX + fileNamePrefix + offset
-        ));
+        this.commandIndexPrefixes = Arrays.asList(
+                INDEX + fileNamePrefix,
+                BLOCK + fileNamePrefix);
         this.asyncSegmentFile = AsyncFileSystemHelper.await(
-                asyncFileSystem.open(baseDir.getAbsolutePath(), fileNamePrefix, commandIndexFileMappings, true),
+                asyncFileSystem.open(baseDir.getAbsolutePath(), fileNamePrefix, commandIndexPrefixes, true, fileSystemReplId.toString()),
                 "open command segment " + fileNamePrefix);
         // invalid 文件列表见 T-FS.2；FS initFromFiles 内部已 warn，Store 待 FS 暴露 invalidFiles() 后再补日志
 
@@ -175,20 +175,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, this.maxFileSize, delayTraceLogger);
         this.buildIndex = buildIndex;
         indexStore = createIndexStore();
-    }
-
-    private Function<String, Long> idxFileNameToOffset() {
-        return name -> {
-            String prefix = INDEX_FILE_PREFIX + fileNamePrefix;
-            if (!name.startsWith(prefix)) {
-                return null;
-            }
-            try {
-                return Long.parseLong(name.substring(prefix.length()));
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        };
     }
 
     private IndexStore createIndexStore() throws IOException {
@@ -688,8 +674,13 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
-    public List<IndexFileMapping> getCommandIndexFileMappings() {
-        return commandIndexFileMappings;
+    public List<String> getCommandIndexPrefixes() {
+        return commandIndexPrefixes;
+    }
+
+    @Override
+    public ReplId getFileSystemReplId() {
+        return fileSystemReplId;
     }
 
     @Override

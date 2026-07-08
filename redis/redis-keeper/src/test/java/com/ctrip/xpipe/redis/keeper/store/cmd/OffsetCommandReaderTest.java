@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store.cmd;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
@@ -50,8 +51,9 @@ public class OffsetCommandReaderTest {
         Mockito.when(asyncCommandStore.getAsyncFileSystem()).thenReturn(asyncFileSystem);
         Mockito.when(asyncCommandStore.getCommandBaseDir()).thenReturn(new java.io.File("/tmp"));
         Mockito.when(asyncCommandStore.getCommandFileNamePrefix()).thenReturn("cmd_");
-        Mockito.when(asyncCommandStore.getCommandIndexFileMappings()).thenReturn(Collections.emptyList());
-        Mockito.when(asyncFileSystem.open(Mockito.anyString(), Mockito.anyString(), Mockito.anyList(), Mockito.eq(false)))
+        Mockito.when(asyncCommandStore.getCommandIndexPrefixes()).thenReturn(Collections.emptyList());
+        Mockito.when(asyncCommandStore.getFileSystemReplId()).thenReturn(ReplId.from(1L));
+        Mockito.when(asyncFileSystem.open(Mockito.anyString(), Mockito.anyString(), Mockito.anyList(), Mockito.eq(false), Mockito.eq("repl_1")))
                 .thenReturn(CompletableFuture.completedFuture(readAsyncSegmentFile));
         Mockito.when(commandStore.totalLength()).thenReturn(200L);
         Mockito.when(config.getPsyncLimitPerSecond()).thenReturn(-1);

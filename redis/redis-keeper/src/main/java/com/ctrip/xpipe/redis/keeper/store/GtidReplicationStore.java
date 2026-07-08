@@ -29,18 +29,20 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager,
-                                ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem) throws IOException {
+                                ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+                                ReplId fileSystemReplId) throws IOException {
         super(null,baseDir, config, keeperRunid,
                 new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
-                keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem);
+                keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem, fileSystemReplId);
     }
 
     public GtidReplicationStore(CKStore ckStore,File baseDir, KeeperConfig config,String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager,
-                                ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem) throws IOException {
+                                ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+                                ReplId fileSystemReplId) throws IOException {
         super(ckStore,baseDir, config,keeperRunid,
                 new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
-                keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem);
+                keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem, fileSystemReplId);
     }
 
     @Override
@@ -90,15 +92,15 @@ public class GtidReplicationStore extends DefaultReplicationStore {
             buildIndex = false;
         }
         logger.info("[createCommandStore], replRdbGtidSet={}, buildIndex={}", replRdbGtidSet, buildIndex);
-        GtidCommandStore cmdStore = new GtidCommandStore(this.ckStore, new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
+        GtidCommandStore cmdStore = new GtidCommandStore(this.ckStore, config, new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
                 config::getRecordWrongStream,
                 config::getReplicationStoreCommandFileKeepTimeSeconds,
                 config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
                 config::getReplicationStoreCommandFileNumToKeep,
                 config.getCommandReaderFlyingThreshold(),
                 this::isCmdNotifyCoalescingEnabled,
-                cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, filter, buildIndex, asyncFileSystem, config,
-                config::getAsyncWriteMaxBytes);
+                cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, filter, buildIndex, asyncFileSystem,
+                config::getAsyncWriteMaxBytes, fileSystemReplId);
         cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 
         try {
@@ -112,7 +114,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     @Override
     protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType) throws IOException {
-        RdbStore rdbStore = new GtidRdbStore(rdb, replId, rdbOffset, eofType, null, null, null, null, asyncFileSystem, asyncWriteMaxBytes);
+        RdbStore rdbStore = new GtidRdbStore(rdb, replId, rdbOffset, eofType, null, null, null, null, asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
         rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
         return rdbStore;
     }
@@ -131,7 +133,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
                                       GtidSet gtidLost, String masterUuid) throws IOException {
         RdbStore rdbStore = new GtidRdbStore(rdb, replId, rdbOffset, eofType, replProto, null,
-                gtidLost == null ? GtidSet.EMPTY_GTIDSET: gtidLost.toString(), masterUuid, asyncFileSystem, asyncWriteMaxBytes);
+                gtidLost == null ? GtidSet.EMPTY_GTIDSET: gtidLost.toString(), masterUuid, asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
         rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
         return rdbStore;
     }
@@ -144,7 +146,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     @Override
     public DumpedRdbStore prepareNewRdb() throws IOException {
         makeSureOpen();
-        DumpedRdbStore rdbStore = new DumpedGtidRdbStore(new File(getBaseDir(), newRdbFileName()), asyncFileSystem, asyncWriteMaxBytes);
+        DumpedRdbStore rdbStore = new DumpedGtidRdbStore(new File(getBaseDir(), newRdbFileName()), asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
         rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
         return rdbStore;
     }
