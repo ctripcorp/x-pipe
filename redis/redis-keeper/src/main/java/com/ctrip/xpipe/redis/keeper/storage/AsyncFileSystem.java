@@ -8,12 +8,15 @@ import io.netty.buffer.ByteBuf;
 
 // currently only support append only mode and atomic replace mode.
 // All read/write operations attempt to read/write as much as possible until EOF, I/O error, or completion.
+// also support synchronous operations. add on need
 public interface AsyncFileSystem {
     void shutdown();
 
     // ---- AsyncFile ----
     // lenient: if true and path is not a regular file, I/O operations will throw NPE
     CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant);
+    // Open the file synchronously.
+    AsyncFile openSync(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant);
     CompletableFuture<Boolean> isFile(AsyncFile file);
     CompletableFuture<Boolean> isDirectory(String path);
     CompletableFuture<Long> lastModified(AsyncFile file);
@@ -21,6 +24,8 @@ public interface AsyncFileSystem {
     CompletableFuture<Void> position(AsyncFile file, long position);
     // Caller must release() the returned ByteBuf when done.
     CompletableFuture<ByteBuf> read(AsyncFile file, long length, long offset);
+    // Read the file synchronously.
+    ByteBuf readSync(AsyncFile file, long length, long offset);
     // Caller must release() the returned ByteBuf when done.
     CompletableFuture<ByteBuf> read(AsyncFile file, long length);
     CompletableFuture<Long> write(AsyncFile file, ByteBuf data);
@@ -47,6 +52,7 @@ public interface AsyncFileSystem {
     // Read mode opens the segment file after the first read, and opens index files when getCurrentIndexFiles() is called. They auto-close when reading the next segment.
     // For a newly created (empty) segment file in write mode, the segment file will start at 0 unless truncate(offset) is called to specify the initial offset before writing.
     CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant);
+    AsyncSegmentFile openSync(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant);
     // Only available in read mode.
     // Mixing them with pread/transferTo on the same AsyncSegmentFile is NOT supported
     // as pread/transferTo also require a certain segment to be opened.
