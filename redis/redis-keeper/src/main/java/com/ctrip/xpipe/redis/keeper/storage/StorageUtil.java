@@ -6,8 +6,27 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 
 class StorageUtil {
+
+    static <T> CompletableFuture<T> supply(ExecutorService executor, java.util.function.Supplier<T> task) {
+        try {
+            return CompletableFuture.supplyAsync(task, executor);
+        } catch (RejectedExecutionException e) {
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    static CompletableFuture<Void> run(ExecutorService executor, Runnable task) {
+        try {
+            return CompletableFuture.runAsync(task, executor);
+        } catch (RejectedExecutionException e) {
+            return CompletableFuture.failedFuture(e);
+        }
+    }
 
     static String fileKey(String path) {
         return path;

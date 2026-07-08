@@ -13,9 +13,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+
 import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile.CacheMode;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemConfig.BackingFsMode;
 
+// Sync methods (openSync, readSync) are not supported by default; add on demand.
 public class TailCacheFileSystem implements AsyncFileSystem {
 
     private static final int LOCK_STRIPES = 32;
@@ -29,13 +32,14 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private volatile long expectedMinRetentionMs;
     private volatile CacheMode defaultCacheMode;
     private final int chunkSize;
+    private final ExecutorService ioExecutor;
 
     private final ConcurrentHashMap<String, FileCacheEntry> fileCacheEntries = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, SegmentFileCacheEntry> segmentCacheEntries = new ConcurrentHashMap<>();
 
     private final Object[] locks = new Object[LOCK_STRIPES];
 
-    public TailCacheFileSystem(AsyncFileSystem delegate, TailCacheFileSystemConfig config) {
+    public TailCacheFileSystem(AsyncFileSystem delegate, TailCacheFileSystemConfig config, ExecutorService ioExecutor) {
         this.delegate = delegate;
         this.readPreferCache = config.isReadPreferCache();
         this.transferPreferCache = config.isTransferPreferCache();
@@ -45,6 +49,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         this.expectedMinRetentionMs = config.getExpectedMinRetentionMs();
         this.defaultCacheMode = config.getDefaultCacheMode();
         this.chunkSize = config.getChunkSize();
+        this.ioExecutor = ioExecutor;
         for (int i = 0; i < LOCK_STRIPES; i++) locks[i] = new Object();
     }
 
@@ -153,23 +158,30 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant, CacheMode cacheMode) {
-        return delegate.open(path, write, atomicReplace, lenient, tenant)
-                .whenComplete((file, ex) -> {
-                    if (ex != null) return;
-                    file.cacheMode = cacheMode;
-                    file.fullCacheOnly = atomicReplace;
-                    if (cacheMode != CacheMode.NO_CACHE) {
-                        String key = StorageUtil.fileKey(file.path);
-                        synchronized (lockFor(key)) {
-                            file.cacheEntry = acquireFileCacheEntry(key);
-                        }
-                        file.onClose = () -> {
-                            synchronized (lockFor(key)) {
-                                releaseFileCacheEntry(key);
-                            }
-                        };
-                    }
-                });
+        return StorageUtil.supply(ioExecutor, () -> openFileSync(path, write, atomicReplace, lenient, tenant, cacheMode));
+    }
+
+    @Override
+    public AsyncFile openSync(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant) {
+        throw new UnsupportedOperationException();
+    }
+
+    private AsyncFile openFileSync(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant, CacheMode cacheMode) {
+        AsyncFile file = delegate.openSync(path, write, atomicReplace, lenient, tenant);
+        file.cacheMode = cacheMode;
+        file.fullCacheOnly = atomicReplace;
+        if (cacheMode != CacheMode.NO_CACHE) {
+            String key = StorageUtil.fileKey(file.path);
+            synchronized (lockFor(key)) {
+                file.cacheEntry = acquireFileCacheEntry(key);
+            }
+            file.onClose = () -> {
+                synchronized (lockFor(key)) {
+                    releaseFileCacheEntry(key);
+                }
+            };
+        }
+        return file;
     }
 
     @Override
@@ -199,20 +211,28 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (preferDirectRead(file.cacheMode, entry, offset, readPreferCache)) {
             return delegate.read(file, length, offset);
         }
-        return readWithCache(file, length, offset, entry);
+        return CompletableFuture.completedFuture(readWithCache(length, offset, entry));
     }
 
     @Override
     public CompletableFuture<ByteBuf> read(AsyncFile file, long length) {
         FileCacheEntry entry = file.getCacheEntry();
         long pos = file.position;
-        CompletableFuture<ByteBuf> future = preferDirectRead(file.cacheMode, entry, pos, readPreferCache)
-                ? delegate.read(file, length, pos)
-                : readWithCache(file, length, pos, entry);
-        return future.thenApply(buf -> {
-            file.position += buf.readableBytes();
-            return buf;
-        });
+        if (preferDirectRead(file.cacheMode, entry, pos, readPreferCache)) {
+            return StorageUtil.supply(ioExecutor, () -> {
+                ByteBuf buf = delegate.readSync(file, length, pos);
+                file.position += buf.readableBytes();
+                return buf;
+            });
+        }
+        ByteBuf buf = readWithCache(length, pos, entry);
+        file.position += buf.readableBytes();
+        return CompletableFuture.completedFuture(buf);
+    }
+
+    @Override
+    public ByteBuf readSync(AsyncFile file, long length, long offset) {
+        throw new UnsupportedOperationException();
     }
 
     private java.util.List<ByteBuf> collectChunkSlices(FileCacheEntry entry, long offset, long end) {
@@ -231,15 +251,14 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return slices;
     }
 
-    private CompletableFuture<ByteBuf> readWithCache(AsyncFile file, long length, long offset,
-            FileCacheEntry entry) {
+    private ByteBuf readWithCache(long length, long offset, FileCacheEntry entry) {
         long end = Math.min(offset + length, entry.cacheEndOffset);
         java.util.List<ByteBuf> slices = collectChunkSlices(entry, offset, end);
         CompositeByteBuf composite = StorageAllocator.ALLOC.compositeDirectBuffer();
         for (ByteBuf s : slices) {
             composite.addComponent(true, s);
         }
-        return CompletableFuture.completedFuture(composite);
+        return composite;
     }
 
     boolean preferDirectRead(CacheMode mode, FileCacheEntry entry, long offset, boolean preferCache) {
@@ -335,16 +354,13 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (preferDirectRead(file.cacheMode, entry, position, transferPreferCache)) {
             return delegate.transferTo(file, position, count, target);
         }
-
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return transferToByCache(entry, position, count, target);
-            } catch (ClosedChannelException e) {
-                throw new SocketClosedException(e);
-            } catch (IOException e) {
-                throw StorageUtil.wrapIOException(e);
-            }
-        });
+        try {
+            return CompletableFuture.completedFuture(transferToByCache(entry, position, count, target));
+        } catch (ClosedChannelException e) {
+            return CompletableFuture.failedFuture(new SocketClosedException(e));
+        } catch (IOException e) {
+            return CompletableFuture.failedFuture(StorageUtil.wrapIOException(e));
+        }
     }
 
     // ---- AsyncSegmentFile ----
@@ -355,22 +371,29 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     public CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant, CacheMode cacheMode) {
+        return StorageUtil.supply(ioExecutor, () -> openSegmentSync(path, prefix, indexPrefixes, write, tenant, cacheMode));
+    }
+
+    @Override
+    public AsyncSegmentFile openSync(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant) {
+        throw new UnsupportedOperationException();
+    }
+
+    private AsyncSegmentFile openSegmentSync(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant, CacheMode cacheMode) {
         String key = StorageUtil.segmentKey(path, prefix);
-        return delegate.open(path, prefix, indexPrefixes, write, tenant)
-                .whenComplete((file, ex) -> {
-                    if (ex != null) return;
-                    file.cacheMode = cacheMode;
-                    if (cacheMode != CacheMode.NO_CACHE) {
-                        synchronized (lockFor(key)) {
-                            acquireSegmentCacheEntry(key);
-                        }
-                        file.onClose = () -> {
-                            synchronized (lockFor(key)) {
-                                releaseSegmentCacheEntry(key);
-                            }
-                        };
-                    }
-                });
+        AsyncSegmentFile file = delegate.openSync(path, prefix, indexPrefixes, write, tenant);
+        file.cacheMode = cacheMode;
+        if (cacheMode != CacheMode.NO_CACHE) {
+            synchronized (lockFor(key)) {
+                acquireSegmentCacheEntry(key);
+            }
+            file.onClose = () -> {
+                synchronized (lockFor(key)) {
+                    releaseSegmentCacheEntry(key);
+                }
+            };
+        }
+        return file;
     }
 
     @Override
