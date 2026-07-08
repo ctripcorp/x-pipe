@@ -333,4 +333,9 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public long getIndexMixedTotalBytesThreshold() {
 		return getLongProperty(KEY_INDEX_MIXED_TOTAL_BYTES_THRESHOLD, 16L * 1024 * 1024);
 	}
+
+	@Override
+	public int getBlockSizeThreshold() {
+		return getIntProperty(KEY_BLOCK_SIZE_THRESHOLD, 8192);
+	}
 }

@@ -25,7 +25,12 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private long commandReaderFlyingThreshold = DefaultCommandStore.DEFAULT_COMMAND_READER_FLYING_THRESHOLD;
 	private int maxAllowedMaxGap = DEFAULT_XSYNC_MAXGAP;
 	private int maxMaxGapCrossRegion = DEFAULT_XSYNC_MAXGAP_CROSSREGION;
-	
+
+	private boolean dualWrite;
+	private boolean readV2;
+	private int indexZoneConsecutiveThreshold = 8192;
+	private int blockSizeThreshold = 8192;
+
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
 	
 	
@@ -378,23 +383,47 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return -1;
 	}
 
+	public TestKeeperConfig setDualWrite(boolean dualWrite){
+		this.dualWrite = dualWrite;
+		return this;
+	}
 	@Override
 	public boolean dualWrite() {
-		return true;
+		return dualWrite;
+	}
+
+	public TestKeeperConfig setReadV2(boolean readV2){
+		this.readV2 = readV2;
+		return this;
 	}
 
 	@Override
 	public boolean readV2() {
-		return true;
+		return readV2;
+	}
+
+	public TestKeeperConfig setIndexZoneConsecutiveThreshold(int indexZoneConsecutiveThreshold){
+		this.indexZoneConsecutiveThreshold = indexZoneConsecutiveThreshold;
+		return this;
 	}
 
 	@Override
 	public int getIndexZoneConsecutiveThreshold() {
-		return 8192;
+		return indexZoneConsecutiveThreshold;
 	}
 
 	@Override
 	public long getIndexMixedTotalBytesThreshold() {
 		return 16L * 1024 * 1024;
+	}
+
+	public TestKeeperConfig setBlockSizeThreshold(int blockSizeThreshold){
+		this.blockSizeThreshold = blockSizeThreshold;
+		return this;
+	}
+
+	@Override
+	public int getBlockSizeThreshold() {
+		return blockSizeThreshold;
 	}
 }

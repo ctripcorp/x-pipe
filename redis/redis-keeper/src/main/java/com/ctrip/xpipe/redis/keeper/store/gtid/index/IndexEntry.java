@@ -20,6 +20,7 @@ public class IndexEntry {
     private long blockStartOffset;
     private long blockEndOffset;
     private int size;
+    private long extReserved;
     private long position;
 
 
@@ -28,7 +29,7 @@ public class IndexEntry {
     public static final int SEGMENT_LENGTH = RedisProtocol.RUN_ID_LENGTH + Long.BYTES * 4 + SEPARATOR.getBytes().length + Integer.BYTES;
 
     // v2
-    public static final int SEGMENT_LENGTH_V2 = 88;
+    public static final int SEGMENT_LENGTH_V2 = 96;
     public static final String ZONE_UUID;
     static {
         char[] chars = new char[RedisProtocol.RUN_ID_LENGTH];
@@ -144,6 +145,7 @@ public class IndexEntry {
         buf.putLong(blockStartOffset);         // 68-75
         buf.putLong(blockEndOffset);           // 76-83
         buf.putInt(size);                      // 84-87
+        buf.putLong(extReserved);              // 88-95 新增
         buf.flip();
         return buf;
     }
@@ -182,6 +184,8 @@ public class IndexEntry {
         long blockStartOffset = buffer.getLong();                      // 68-75
         long blockEndOffset = buffer.getLong();                        // 76-83
         int size = buffer.getInt();                                    // 84-87
+        long extReserved = buffer.getLong();   // 88-95 新增
+
 
         IndexEntry e = new IndexEntry(uuid, startGno, cmdStartOffset, blockStartOffset);
         e.type = type;
@@ -189,6 +193,7 @@ public class IndexEntry {
         e.blockEndOffset = blockEndOffset;
         e.size = size;
         e.cmdEndOffset = cmdEndOffset;
+        e.extReserved = extReserved;
         return e;
     }
 

@@ -85,7 +85,8 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         }
         this.indexWriterV2 = new IndexWriterV2(baseDir, currentCmdFileName, startGtidSet, this,
                 keeperConfig.getIndexZoneConsecutiveThreshold(),
-                keeperConfig.getIndexMixedTotalBytesThreshold());
+                keeperConfig.getIndexMixedTotalBytesThreshold(),
+                keeperConfig.getBlockSizeThreshold());
         this.indexWriterV2.init();
     }
 
@@ -112,7 +113,8 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         }
         this.indexWriterV2 = new IndexWriterV2(baseDir, cmdFileName, continueGtidSet, this,
                 keeperConfig.getIndexZoneConsecutiveThreshold(),
-                keeperConfig.getIndexMixedTotalBytesThreshold());
+                keeperConfig.getIndexMixedTotalBytesThreshold(),
+                keeperConfig.getBlockSizeThreshold());
         this.indexWriterV2.init();
         this.currentCmdFileName = cmdFileName;
         this.streamCommandReader.resetOffset();

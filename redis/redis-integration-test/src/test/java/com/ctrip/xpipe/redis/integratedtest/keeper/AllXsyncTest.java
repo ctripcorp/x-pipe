@@ -18,6 +18,7 @@ import org.junit.runners.Suite;
         PsyncXsyncSwitchAlways.class,
         KeeperRdbNotContinueTest.class,
         KeeperXfullResyncLostTest.class,
+        KeeperXsyncV2IndexTest.class,
 })
 public class AllXsyncTest {
 }
