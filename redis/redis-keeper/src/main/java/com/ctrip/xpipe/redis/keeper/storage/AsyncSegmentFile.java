@@ -354,8 +354,13 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         int cut = cur.indexOf(targetStart) + 1;
         long[] nextArr = cur.copyShrink(cut);
 
-        currentSegmentChannel.truncate(offset - targetStart);
-        currentSegmentChannel.position(offset - targetStart);
+        long newSegmentSize = offset - targetStart;
+        long oldSegmentSize = currentSegmentChannel.size();
+        currentSegmentChannel.truncate(newSegmentSize);
+        currentSegmentChannel.position(newSegmentSize);
+        if (newSegmentSize < oldSegmentSize) {
+            pendingFsyncBytes = Math.max(0, pendingFsyncBytes - (oldSegmentSize - newSegmentSize));
+        }
 
         Map<String, AsyncFile> result = new HashMap<>();
         for (String indexPrefix : indexPrefixes) {

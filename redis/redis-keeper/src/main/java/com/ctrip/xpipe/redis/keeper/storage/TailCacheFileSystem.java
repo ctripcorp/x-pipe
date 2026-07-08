@@ -488,7 +488,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 entry.cacheStartOffset = -1;
                 entry.cacheEndOffset = 0;
                 entry.writtenToFsOffset = 0;
-                entry.fsyncedToFsOffset = 0;
             }
             return null;
         });
@@ -535,7 +534,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 }
                 entry.cacheEndOffset = newEnd;
                 entry.writtenToFsOffset = Math.min(size, entry.writtenToFsOffset);
-                entry.fsyncedToFsOffset = Math.min(size, entry.fsyncedToFsOffset);
             }
             return null;
         });
@@ -558,13 +556,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> fsync(AsyncFile file) {
-        return StorageUtil.run(ioExecutor, () -> {
-            delegate.fsyncSync(file);
-            FileCacheEntry entry = file.getCacheEntry();
-            if (entry != null) {
-                entry.fsyncedToFsOffset = entry.writtenToFsOffset;
-            }
-        });
+        return StorageUtil.run(ioExecutor, () -> delegate.fsyncSync(file));
     }
 
     @Override

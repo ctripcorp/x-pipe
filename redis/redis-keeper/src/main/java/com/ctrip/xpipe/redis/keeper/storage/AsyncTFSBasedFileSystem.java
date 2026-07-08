@@ -307,9 +307,13 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     private void truncateInternal(AsyncFile file, long size) {
         try {
+            long oldSize = file.channel.size();
             file.channel.truncate(size);
             if (!file.atomicReplace) {
                 file.channel.position(size);
+            }
+            if (size < oldSize) {
+                file.pendingFsyncBytes = Math.max(0, file.pendingFsyncBytes - (oldSize - size));
             }
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
