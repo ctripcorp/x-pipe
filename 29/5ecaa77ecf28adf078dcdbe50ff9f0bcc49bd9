@@ -1,0 +1,104 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/fakeredis/FakeRedisHalfRdbServerFail.java
+  s_6eb45837c65c31::t_5bf6b167487a0a 43-48
+  s_6eb45837c65c31::t_1ffd5a46e95e32 6,10
+  s_6eb45837c65c31::t_1b4f6318eaee50 31
+  s_6eb45837c65c31::t_af5651fc23c5b5 52-55
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriterV2.java
+  s_8a916c9c54ff4d::t_c6052f0c4e3b51 261-262
+  s_8a916c9c54ff4d::t_f5401531f62f32 254
+  s_b3f5ea55d529a9::t_b6b66bb0feb4f6 252-253
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultCommandStoreTest.java
+  s_6eb45837c65c31::t_09b1d33e95024f 832
+  s_6eb45837c65c31::t_5b696efad32ece 673,675-676,680
+  s_6eb45837c65c31::t_01cce803f6848f 784-785,800-805
+  s_6eb45837c65c31::t_369139dc603fe9 741-742,748
+  s_6eb45837c65c31::t_5a4939e18f2a32 820,824-831,833-836
+  s_6eb45837c65c31::t_bf6ca777611362 749-755
+  s_6eb45837c65c31::t_bb275b6a6157ef 821-823
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/handler/keeper/ConfigHandlerTest.java
+  s_7e66b503dfb717::t_8fc0c37e9d8a5d 6
+  s_7e66b503dfb717::t_fa5e50b69a0a0c 42,52
+  s_7e66b503dfb717::t_3765dd118d1a8e 71
+  s_7e66b503dfb717::t_8d687a16882ff9 22-23,28-29,31-32
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/BlockWriter.java
+  s_18c24a3df63eda::t_536bb9cf113811 77
+  s_18c24a3df63eda::t_396e3ead59a0a9 20-30
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  s_b3f5ea55d529a9::t_6fe8b1c7220eb9 42-43,47
+  s_18c24a3df63eda::t_0db0b67c389048 1355-1356
+  s_18c24a3df63eda::t_12bd44c4bedcf9 1597,1599-1613,1615-1623,1625-1632
+  s_b3f5ea55d529a9::t_5d54c59e7b0fa7 1330,1336-1354,1357-1364
+  s_18c24a3df63eda::t_a155672fc78aab 1331
+  s_18c24a3df63eda::t_f9afbf2228f94a 1123
+  s_18c24a3df63eda::t_3de390716221de 56-59
+  s_1900c3b2d8adb6::t_f869ede1d04ab4 1161-1162,1173,1175,1177,1179
+  s_1900c3b2d8adb6::t_47cfbadb2effdf 1188-1197,1199-1226
+  s_18c24a3df63eda::t_710c0283516068 1082
+  s_18c24a3df63eda::t_31de5166aaa6b8 1159,1198
+  s_1900c3b2d8adb6::t_cf72407d9ff01e 1183-1184
+  s_18c24a3df63eda::t_545a100e77d286 1367
+  s_b3f5ea55d529a9::t_b56df0104ddbb3 1548-1554
+  s_18c24a3df63eda::t_51e092019eeefb 1277
+  s_b3f5ea55d529a9::t_016780ea9a53ad 1113-1122,1126-1140,1142-1158,1160,1163-1172,1174,1176,1178,1180-1182,1185-1187
+  s_18c24a3df63eda::t_63f77cc93a82f5 140,1318
+  s_18c24a3df63eda::t_73908b05f7f4f1 1124-1125,1141
+  s_18c24a3df63eda::t_929cecf71ecb46 1332-1335
+  s_18c24a3df63eda::t_d979b098d3d5f2 1598
+  s_18c24a3df63eda::t_423f8e4bc7f8fd 1239-1240
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.28-trip",
+  "base_commit_sha": "295ecaa77ecf28adf078dcdbe50ff9f0bcc49bd9",
+  "prompts": {},
+  "sessions": {
+    "s_18c24a3df63eda": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "506d3dec-5ecc-4530-a2da-6f7621fa3251",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_1900c3b2d8adb6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0556d691-573c-41e3-8ff6-412c61bd0b89",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_6eb45837c65c31": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "608578a9-932c-428d-ab7e-cb51e14f7a45",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_7e66b503dfb717": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d31ead16-7ffa-45f8-98be-acb4a9e1c1a0",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_8a916c9c54ff4d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3bfaeb67-7dd7-4a35-9726-803d9c1a7ca7",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_b3f5ea55d529a9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "20e72465-8166-474c-81fe-4d116a648af5",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
