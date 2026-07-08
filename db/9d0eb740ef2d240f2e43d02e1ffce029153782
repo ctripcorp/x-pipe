@@ -1,0 +1,27 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_245b07b4ee1e0d::t_930345705e314b 360
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/StorageUtil.java
+  s_245b07b4ee1e0d::t_930345705e314b 42,59
+  s_245b07b4ee1e0d::t_84f4fbf7d8eaa7 57-58,60-63
+  s_245b07b4ee1e0d::t_34b0cd1e97ac15 40-41,43-45
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_245b07b4ee1e0d::t_930345705e314b 883,907
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/SocketErrorException.java
+  s_245b07b4ee1e0d::t_f490803e7839f4 5-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.32-trip",
+  "base_commit_sha": "db9d0eb740ef2d240f2e43d02e1ffce029153782",
+  "prompts": {},
+  "sessions": {
+    "s_245b07b4ee1e0d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f837fe8-3931-4a26-8f82-dfc963918e11",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
