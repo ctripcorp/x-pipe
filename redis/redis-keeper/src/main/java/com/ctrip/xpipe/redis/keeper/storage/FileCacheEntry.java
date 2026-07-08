@@ -16,8 +16,6 @@ final class FileCacheEntry extends CacheEntry {
 
     // Exclusive upper bound of data written to the backing FS.
     volatile long writtenToFsOffset = 0;
-    // Exclusive upper bound of data fsync'd to the backing FS.
-    volatile long fsyncedToFsOffset = 0;
 
     FileCacheEntry() {
     }
