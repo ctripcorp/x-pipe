@@ -1,0 +1,82 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/migration/status/ClusterStatus.java
+  s_f6aa65f7012ddd::t_94db87c36cc9c4 1-29
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/collector/DefaultSentinelHelloCollector.java
+  s_f6aa65f7012ddd::t_b4171bf0caf2e9 223
+  s_f6aa65f7012ddd::t_43d2c615274c12 26
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/migration/model/DefaultMigrationClusterTest.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 8
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/meta/impl/ClusterMetaServiceImplHeteroMigrationTest.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 5
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/migration/SingleShardMigrationTest.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 8
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/DcApiController.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 6
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/migration/model/impl/DefaultMigrationClusterTest2.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 6
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/meta/impl/ClusterMetaServiceImplTest.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 7
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/collector/DefaultSentinelHelloCollectorTest.java
+  s_f6aa65f7012ddd::t_ce1e8592a32f02 21
+  s_f6aa65f7012ddd::t_071086e37aea32 189
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/MigrationServiceTest.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 5
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/migration/cmd/beacon/MigrationFetchProcessingEventCmdTest.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 8
+services/ctrip-integration-test/src/test/java/com/ctrip/xpipe/redis/ctrip/integratedtest/console/db/TransactionManagerTest.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 4
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/status/MigrationStatus.java
+  s_f6aa65f7012ddd::t_a6d0e40494bb04 3
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/migration/status/ClusterStatusTest.java
+  s_f6aa65f7012ddd::t_6f22386ea45652 1,6,10-13
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/SentinelHelloCheckActionTest.java
+  s_f6aa65f7012ddd::t_fb0e0ea8a8720e 11
+  s_f6aa65f7012ddd::t_12fc1efcc4ca6d 156
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/ClusterService.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 8
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/meta/impl/ClusterMetaServiceImpl.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 10
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/ClusterServiceImplTest.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 7
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/ClusterServiceWithoutDB.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 11
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/dao/MigrationEventDao.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 16
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/migration/impl/MigrationServiceImpl.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 32
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/migration/MigrationShardRollbackTest.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 8
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/clusteractions/beacon/SentinelBeaconMigrationControllerTest.java
+  s_f6aa65f7012ddd::t_7fc92072deb208 9
+  s_f6aa65f7012ddd::t_4e32ce7c4b5507 57
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/SentinelHelloCheckAction.java
+  s_f6aa65f7012ddd::t_b21a795da29b5c 15
+  s_f6aa65f7012ddd::t_14f5d5c91ce5cb 252
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/AllTests.java
+  s_f6aa65f7012ddd::t_26396016f2fd42 103
+  s_f6aa65f7012ddd::t_08b1297a2923d9 93
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/clusteractions/beacon/SentinelBeaconMigrationController.java
+  s_f6aa65f7012ddd::t_8622b59ff53c86 7
+  s_f6aa65f7012ddd::t_c9d0a01fb1d762 43
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/ClusterMetaServiceTest.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 4
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/migration/cmd/beacon/MigrationFetchProcessingEventCmd.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 7
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/migration/MultiShardMigrationTest.java
+  s_f6aa65f7012ddd::t_b2a4849dd0f3a9 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.33-trip",
+  "base_commit_sha": "628f713033072a951599539273114e129a4d9b93",
+  "prompts": {},
+  "sessions": {
+    "s_f6aa65f7012ddd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8fbe2ff7-5dc6-4c1b-b369-9ad8277e733b",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}
