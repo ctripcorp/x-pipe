@@ -1,0 +1,81 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/vo/DcMetaBuilder.java
+  s_f6aa65f7012ddd::t_87586ce0786087 433
+  s_f6aa65f7012ddd::t_95aeaefe22519c 431
+  s_f6aa65f7012ddd::t_b01f00445a036e 432
+  s_f6aa65f7012ddd::t_4fa7a3facf5af0 22
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/meta/impl/BeaconMetaServiceImplTest.java
+  s_f6aa65f7012ddd::t_7f1415c3e65309 198
+  s_f6aa65f7012ddd::t_870bad1c19cfb5 179
+  s_f6aa65f7012ddd::t_66113cb75227a8 7
+  s_f6aa65f7012ddd::t_553a8ef23716f4 172,174,176-177,180
+  s_f6aa65f7012ddd::t_44f7fca23b29f3 187,210
+  s_f6aa65f7012ddd::t_bca0d63a47b695 163
+redis/redis-console/src/main/resources/META-INF/dal/jdbc/meta-dal.xml
+  s_f6aa65f7012ddd::t_72a5ae077717e8 1045-1048,1050-1053,1055-1069
+  s_f6aa65f7012ddd::t_d638bebdb7e821 1049,1054
+  s_f6aa65f7012ddd::t_da27d435becfd9 837
+  s_f6aa65f7012ddd::t_d10f0a50aef445 811-812
+  s_f6aa65f7012ddd::t_fd3d4a16839d01 790
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/DcClusterShardService.java
+  s_f6aa65f7012ddd::t_71c7e51379473d 6
+  s_f6aa65f7012ddd::t_29d9c56f3ad963 21
+  s_f6aa65f7012ddd::t_ef0014e8abf67b 22
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/meta/impl/BeaconMetaServiceImpl.java
+  s_f6aa65f7012ddd::t_7c9514b4752f92 3
+  s_f6aa65f7012ddd::t_3236f5116fff89 92
+  s_f6aa65f7012ddd::t_84f91beaad4928 230
+  s_f6aa65f7012ddd::t_1a1d114b14b464 35-36
+  s_f6aa65f7012ddd::t_66eb5b0d854e71 93-96
+  s_f6aa65f7012ddd::t_6b110aa300c538 12
+  s_f6aa65f7012ddd::t_7a6f2ad89e110f 234-235,237
+  s_f6aa65f7012ddd::t_46a20c9debd073 236
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/BeaconCheckConfigServiceImplTest.java
+  s_f6aa65f7012ddd::t_c568da8a9782fa 56-57
+  s_f6aa65f7012ddd::t_58dec674d6596d 85
+  s_f6aa65f7012ddd::t_05d452af705731 26,76-78,84
+  s_f6aa65f7012ddd::t_a5825ceaab21a7 50
+  s_f6aa65f7012ddd::t_96fbf93e70bc47 12
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/notifier/SentinelBeaconClusterMonitorNotifierTest.java
+  s_f6aa65f7012ddd::t_f30b21d9af8c20 36-38,43
+  s_f6aa65f7012ddd::t_85d5f0350a5a5e 6
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/beacon/BeaconConstant.java
+  s_f6aa65f7012ddd::t_bd5a8f37f7d948 1,7,10
+redis/redis-console/src/main/resources/sql/h2/xpipedemodbtables.sql
+  s_f6aa65f7012ddd::t_e06061590ab8f1 161
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/DcClusterShardServiceImpl.java
+  s_f6aa65f7012ddd::t_9e6b2aa09f2b42 12
+  s_f6aa65f7012ddd::t_b967b8a8672b1b 121
+  s_f6aa65f7012ddd::t_7efd74d86fa9ff 115-116,122
+  s_f6aa65f7012ddd::t_f15e1739569629 117-120
+redis/dockerPackage/xpipe-console/sql/xpipedemodbtables.sql
+  s_f6aa65f7012ddd::t_442fa36e36aeb7 144
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/BeaconCheckConfigServiceImpl.java
+  s_f6aa65f7012ddd::t_2bcff0f4699c4b 161,163
+  s_f6aa65f7012ddd::t_132a693cee2900 162
+  s_f6aa65f7012ddd::t_ce1ecb2f500de2 32
+  s_f6aa65f7012ddd::t_fcdf88551dccb0 10
+  s_f6aa65f7012ddd::t_efc72ca2d15a4f 31
+  s_f6aa65f7012ddd::t_5e5ee30389e4ba 57,59
+  s_f6aa65f7012ddd::t_c47d8c51f68291 66,68
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/migration/auto/DefaultBeaconManagerSentinelExcludeTest.java
+  s_f6aa65f7012ddd::t_e0b411e278a42b 146
+  s_f6aa65f7012ddd::t_af15e8723a812e 103
+redis/redis-core/src/main/resources/META-INF/dal/model/keeper-model.xml
+  s_f6aa65f7012ddd::t_0662d5f4f03382 69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.33-trip",
+  "base_commit_sha": "0858bb6e75e9b651e8a8dabfe95c5f7cda90b1fc",
+  "prompts": {},
+  "sessions": {
+    "s_f6aa65f7012ddd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8fbe2ff7-5dc6-4c1b-b369-9ad8277e733b",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}
