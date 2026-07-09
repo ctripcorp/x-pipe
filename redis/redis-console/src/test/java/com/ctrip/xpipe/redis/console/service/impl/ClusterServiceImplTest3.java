@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.ShardService;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -97,6 +98,10 @@ public class ClusterServiceImplTest3 extends AbstractConsoleIntegrationTest{
         DcClusterTbl dcClusterTbl = dcClusterService.find("jq", "cluster7");
         DcClusterShardTbl proto = new DcClusterShardTbl().setShardId(shardTbl.getId()).setDcClusterId(dcClusterTbl.getDcClusterId());
         dcClusterShardService.insertBatch(Lists.newArrayList(proto));
+
+        DcClusterShardTbl inserted = dcClusterShardService.find("jq", "cluster7", "shard1");
+        Assert.assertNotNull(inserted);
+        Assert.assertEquals(DateTimeUtils.DEFAULT_OPERATING_UNTIL, inserted.getOperatingUntil());
 
         clusterService.bindDc(new DcClusterTbl().setClusterName("cluster7").setDcName("oy").setGroupType(DcGroupType.DR_MASTER.toString()));
         DcClusterShardTbl dcClusterShardTbl = dcClusterShardService.find("oy", "cluster7", "shard1");

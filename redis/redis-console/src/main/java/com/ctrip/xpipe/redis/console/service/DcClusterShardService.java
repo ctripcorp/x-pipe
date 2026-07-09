@@ -18,8 +18,8 @@ public interface DcClusterShardService {
 	List<DcClusterShardTbl> findAllByDcCluster(long dcClusterId);
 	List<DcClusterShardTbl> findAllByDcCluster(String dcName, String clusterName);
 	void updateDcClusterShard(DcClusterShardTbl dcClusterShardTbl) throws DalException;
-	int batchUpdateOperatingUntil(String dcName, String clusterName, List<String> shardNames, Date operatingUntil)
-			throws DalException;
+	List<DcClusterShardTbl> findDcClusterShardsByNames(String dcName, String clusterName, List<String> shardNames);
+	int updateOperatingUntilByIds(List<Long> dcClusterShardIds, Date operatingUntil) throws DalException;
 	List<DcClusterShardTbl> findAllByDcId(long dcId);
 	List<DcClusterShardTbl> findAllByDcIdAndInClusterTypes(long dcId, Set<String> clusterTypes);
 	List<DcClusterShardTbl> findAllByClusterTypes(Set<String> clusterTypes);

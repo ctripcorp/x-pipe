@@ -9,7 +9,7 @@ import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.beacon.BeaconConstant;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -239,7 +239,7 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
         }
         Long operatingUntil = shardMeta.getOperatingUntil();
         return operatingUntil != null
-                && operatingUntil > BeaconConstant.DEFAULT_OPERATING_UNTIL_MILLIS
+                && operatingUntil > DateTimeUtils.DEFAULT_OPERATING_UNTIL_MILLIS
                 && System.currentTimeMillis() < operatingUntil;
     }
 

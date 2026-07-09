@@ -71,6 +71,8 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     public static final String KEY_CONSOLE_CHECK_ISOLATE_INTERVAL_MILLI = "console.check.isolate.interval.milli";
     public static final String KEY_CONSOLE_REGION_DCS_REFRESH_INTERVAL_MILLI = "console.region.dcs.refresh.interval.milli";
+    public static final String KEY_CONSOLE_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI =
+            "console.abnormal.cluster.status.monitor.interval.milli";
 
     private FoundationService foundationService;
 
@@ -205,5 +207,9 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     public long getRegionDcsRefreshIntervalMilli() {
         return getLongProperty(KEY_CONSOLE_REGION_DCS_REFRESH_INTERVAL_MILLI, 60 * 1000L);
+    }
+
+    public long getAbnormalClusterStatusMonitorIntervalMilli() {
+        return getLongProperty(KEY_CONSOLE_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI, 30 * 1000L);
     }
 }

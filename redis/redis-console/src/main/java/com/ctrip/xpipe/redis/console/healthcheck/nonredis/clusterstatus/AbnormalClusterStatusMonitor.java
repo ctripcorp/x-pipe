@@ -26,8 +26,6 @@ public class AbnormalClusterStatusMonitor extends AbstractCrossDcIntervalAction 
 
     static final String METRIC_TYPE = "abnormal.cluster.status";
 
-    private static final long INTERVAL_MILLI = 30_000L;
-
     @Autowired
     private ClusterService clusterService;
 
@@ -99,12 +97,12 @@ public class AbnormalClusterStatusMonitor extends AbstractCrossDcIntervalAction 
 
     @Override
     protected long getIntervalMilli() {
-        return INTERVAL_MILLI;
+        return consoleConfig.getAbnormalClusterStatusMonitorIntervalMilli();
     }
 
     @Override
     protected long getLeastIntervalMilli() {
-        return INTERVAL_MILLI;
+        return consoleConfig.getAbnormalClusterStatusMonitorIntervalMilli();
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.clusterstatus;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.metric.MetricProxyException;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -39,11 +40,15 @@ public class AbnormalClusterStatusMonitorTest {
     @Mock
     private MetricProxy metricProxy;
 
+    @Mock
+    private ConsoleConfig consoleConfig;
+
     private final Map<Long, String> dcNameMap = new HashMap<>();
 
     @Before
     public void setUp() {
         monitor.setMetricProxy(metricProxy);
+        when(consoleConfig.getAbnormalClusterStatusMonitorIntervalMilli()).thenReturn(30_000L);
         dcNameMap.put(1L, "jq");
         dcNameMap.put(2L, "oy");
         dcNameMap.put(3L, "fra");

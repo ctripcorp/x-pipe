@@ -158,7 +158,7 @@ create table DC_CLUSTER_SHARD_TBL
 	shard_id bigint unsigned not null,
     setinel_id bigint unsigned  not null,
     dc_cluster_shard_phase int not null default 1,
-    operating_until timestamp default '1970-01-01 00:00:00' not null,
+    operating_until datetime default '1970-01-01 00:00:00' not null,
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0
 );

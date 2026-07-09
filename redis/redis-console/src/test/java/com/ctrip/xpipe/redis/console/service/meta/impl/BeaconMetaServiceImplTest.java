@@ -4,7 +4,7 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
-import com.ctrip.xpipe.redis.core.beacon.BeaconConstant;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -176,7 +176,7 @@ public class BeaconMetaServiceImplTest extends AbstractConsoleIntegrationTest {
         shardMeta.setOperatingUntil(System.currentTimeMillis() + 60_000L);
         Assert.assertTrue(beaconMetaService.isSentinelBeaconOperatingExcluded(shardMeta));
 
-        shardMeta.setOperatingUntil(BeaconConstant.DEFAULT_OPERATING_UNTIL_MILLIS);
+        shardMeta.setOperatingUntil(DateTimeUtils.DEFAULT_OPERATING_UNTIL_MILLIS);
         Assert.assertFalse(beaconMetaService.isSentinelBeaconOperatingExcluded(shardMeta));
     }
 

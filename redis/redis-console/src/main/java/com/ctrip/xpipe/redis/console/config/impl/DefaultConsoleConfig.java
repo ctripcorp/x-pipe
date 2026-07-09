@@ -677,6 +677,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public long getAbnormalClusterStatusMonitorIntervalMilli() {
+        return consoleConfigBean.getAbnormalClusterStatusMonitorIntervalMilli();
+    }
+
+    @Override
     public void addListener(ConfigKeyListener listener) {
         this.listenersSet.add(listener);
     }

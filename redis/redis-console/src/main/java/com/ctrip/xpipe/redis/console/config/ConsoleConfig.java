@@ -176,4 +176,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	long getCheckIsolateInterval();
 
 	long getRegionDcsRefreshIntervalMilli();
+
+	long getAbnormalClusterStatusMonitorIntervalMilli();
 }

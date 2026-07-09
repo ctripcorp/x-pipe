@@ -3,6 +3,7 @@ package com.ctrip.xpipe.utils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 
+import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -12,6 +13,9 @@ import java.util.Date;
  *         Mar 16, 2017
  */
 public class DateTimeUtils {
+
+	public static final Timestamp DEFAULT_OPERATING_UNTIL = Timestamp.valueOf("1970-01-01 00:00:00");
+	public static final long DEFAULT_OPERATING_UNTIL_MILLIS = DEFAULT_OPERATING_UNTIL.getTime();
 
 	public static String format = "yyyy-MM-dd'T'HH:mm:ss.SSS";
 

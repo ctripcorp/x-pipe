@@ -788,6 +788,7 @@
 		<var name="cluster-name" value-type="String"/>
 		<var name="shard-name" value-type="String"/>
 		<var name="shard-names" value-type="java.util.List&lt;String&gt;"/>
+		<var name="dc-cluster-shard-ids" value-type="java.util.List&lt;Long&gt;"/>
 		<var name="cluster-types" value-type="java.util.Set&lt;String&gt;" />
 		<var name="redis-ip" value-type="String"/>
 		<var name="redis-port" value-type="Integer"/>
@@ -881,6 +882,31 @@
 					WHERE <FIELD name='shard-id'/> = st2.id
 					AND <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
 					AND st2.shard_name = ${shard-name}
+					AND dct.dc_id = dt.id
+					AND dct.cluster_id = ct.id
+					AND dt.dc_name = ${dc-name}
+					AND ct.cluster_name = ${cluster-name}
+					AND dt.deleted = 0
+					AND ct.deleted = 0
+					AND st2.deleted = 0
+					AND dct.deleted = 0
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-dc-cluster-shards-by-names" type="SELECT" multiple="true">
+				<param name="dc-name"/>
+				<param name="cluster-name"/>
+				<param name="shard-names"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='dc-info'/>, <TABLE name='cluster-info'/>,
+						<TABLE name='shard-info'/>, <TABLE name='dc-cluster-info'/>
+					WHERE <FIELD name='shard-id'/> = st2.id
+					AND <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
+					AND st2.shard_name IN <IN>${shard-names}</IN>
+					AND st2.cluster_id = ct.id
 					AND dct.dc_id = dt.id
 					AND dct.cluster_id = ct.id
 					AND dt.dc_name = ${dc-name}
@@ -1042,27 +1068,14 @@
 					]]>
 				</statement>
 			</query>
-			<query name="update-operating-until-by-dc-cluster-shard-names" type="UPDATE">
-				<param name="dc-name"/>
-				<param name="cluster-name"/>
-				<param name="shard-names"/>
+			<query name="update-operating-until-by-ids" type="UPDATE">
+				<param name="dc-cluster-shard-ids"/>
 				<param name="operating-until"/>
 				<statement>
 					<![CDATA[
-					UPDATE <TABLE/>, <TABLE name='dc-info'/>, <TABLE name='cluster-info'/>,
-						<TABLE name='shard-info'/>, <TABLE name='dc-cluster-info'/>
+					UPDATE <TABLE/>
 					SET <FIELD name='operating-until'/> = ${operating-until}
-					WHERE <FIELD name='shard-id'/> = st2.id
-					AND <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
-					AND st2.shard_name IN <IN>${shard-names}</IN>
-					AND dct.dc_id = dt.id
-					AND dct.cluster_id = ct.id
-					AND dt.dc_name = ${dc-name}
-					AND ct.cluster_name = ${cluster-name}
-					AND dt.deleted = 0
-					AND ct.deleted = 0
-					AND st2.deleted = 0
-					AND dct.deleted = 0
+					WHERE <FIELD name='dc-cluster-shard-id'/> IN <IN>${dc-cluster-shard-ids}</IN>
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
