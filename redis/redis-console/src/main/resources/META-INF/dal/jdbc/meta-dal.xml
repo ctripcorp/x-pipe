@@ -196,7 +196,7 @@
 			<readset name="FULL_WITH_MIGRATION_OVERVIEW">
 				<readset-ref name="FULL"/>
 				<readset-ref name="ID" relation-name="migration-event"/>
-				<readset-ref name="STATUS" relation-name="migration-clusters"/>
+				<readset-ref name="STATUS_AND_DC" relation-name="migration-clusters"/>
 			</readset>
 		</readsets>
 		
@@ -2067,6 +2067,11 @@
 			</readset>
 			<readset name="STATUS" >
 				<member name="status" />
+			</readset>
+			<readset name="STATUS_AND_DC" >
+				<member name="status" />
+				<member name="source-dc-id" />
+				<member name="destination-dc-id" />
 			</readset>
 			<readset name="FULL_ALL">
 				<readset-ref name="FULL"/>

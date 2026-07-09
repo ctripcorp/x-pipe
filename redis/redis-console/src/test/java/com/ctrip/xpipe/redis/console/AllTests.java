@@ -26,6 +26,7 @@ import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone.KeeperAvailableZoneCheckTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clusterstatus.AbnormalClusterStatusMonitorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.SentinelBeaconClusterMonitorCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig.CheckClusterTest;
@@ -258,6 +259,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultSentinelBalanceServiceTest.class,
 
         KeeperAvailableZoneCheckTest.class,
+        AbnormalClusterStatusMonitorTest.class,
         RedisConfigCheckMonitorTest.class,
         RedisCheckRuleServiceImplTest.class,
         RedisCheckRuleServiceWithoutDBTest.class,
