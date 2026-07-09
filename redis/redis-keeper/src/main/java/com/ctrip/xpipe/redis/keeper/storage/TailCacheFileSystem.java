@@ -517,7 +517,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                         data.readerIndex(savedReaderIndex);
                     }
                 }
-                if (hasPendingWrite(entry)) {
+                if (entry.writtenToFsOffset < entry.cacheEndOffset) {
                     synchronized (entry) {
                         long maxBytes = cacheWrite ? Long.MAX_VALUE : maxWriteChunkThreshold * chunkSize;
                         toWrite = buildWriteBuf(entry, data, maxBytes);
@@ -535,10 +535,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
             return written;
         });
-    }
-
-    private boolean hasPendingWrite(FileCacheEntry entry) {
-        return entry.writtenToFsOffset < entry.cacheEndOffset;
     }
 
     private ByteBuf buildWriteBuf(FileCacheEntry entry, ByteBuf data, long maxBytes) {
