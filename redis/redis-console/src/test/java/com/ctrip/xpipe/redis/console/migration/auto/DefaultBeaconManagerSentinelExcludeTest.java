@@ -100,7 +100,7 @@ public class DefaultBeaconManagerSentinelExcludeTest extends AbstractConsoleInte
     }
 
     @Test
-    public void drHashShouldIgnoreMetaExcludeUntilTimestamp() {
+    public void drHashShouldIgnoreOperatingUntil() {
         int fullHash = beaconManager.computeClusterMetaHash(CLUSTER, DC, ClusterType.ONE_WAY, BeaconRouteType.DR);
 
         excludeShard("shard1");
@@ -143,7 +143,7 @@ public class DefaultBeaconManagerSentinelExcludeTest extends AbstractConsoleInte
         XpipeMeta xpipeMeta = MetaCloneFacade.INSTANCE.clone(getXpipeMeta());
         xpipeMeta.getDcs().get(DC).getClusters().get(CLUSTER).setLastModifiedTime(LAST_MODIFY_TIME);
         xpipeMeta.getDcs().get(DC).getClusters().get(CLUSTER).getShards().get(shardName)
-                .setMetaExcludeUntilTimestamp(System.currentTimeMillis() + 60_000L);
+                .setOperatingUntil(System.currentTimeMillis() + 60_000L);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
     }
 

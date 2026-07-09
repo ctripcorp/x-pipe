@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
 import com.ctrip.xpipe.cluster.ClusterType;
@@ -8,6 +9,7 @@ import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.beacon.BeaconConstant;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -29,6 +31,8 @@ import java.util.stream.Collectors;
 public class BeaconMetaServiceImpl implements BeaconMetaService {
 
     private static final Logger logger = LoggerFactory.getLogger(BeaconMetaServiceImpl.class);
+
+    private static final String SENTINEL_SHARD_EXCLUDE_CAT_TYPE = "Beacon.Sentinel.Shard.Exclude";
 
     private MetaCache metaCache;
 
@@ -85,7 +89,11 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
         for (Map.Entry<String, ShardMeta> entry : clusterMeta.getShards().entrySet()) {
             String shardName = entry.getKey();
             ShardMeta shardMeta = entry.getValue();
-            if (isSentinelBeaconMetaExcluded(shardMeta)) {
+            if (isSentinelBeaconOperatingExcluded(shardMeta)) {
+                logger.info("[buildSentinelBeaconShards][{}][{}][{}][operatingExcluded] until {}",
+                        cluster, dc, shardName, shardMeta.getOperatingUntil());
+                EventMonitor.DEFAULT.logEvent(SENTINEL_SHARD_EXCLUDE_CAT_TYPE,
+                        String.format("%s:%s:%s", cluster, dc, shardName));
                 continue;
             }
             List<MonitorGroupMeta> groups = shardMeta.getRedises().stream().map(redisMeta -> {
@@ -219,12 +227,14 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
     }
 
     @VisibleForTesting
-    boolean isSentinelBeaconMetaExcluded(ShardMeta shardMeta) {
+    boolean isSentinelBeaconOperatingExcluded(ShardMeta shardMeta) {
         if (shardMeta == null) {
             return false;
         }
-        Long until = shardMeta.getMetaExcludeUntilTimestamp();
-        return until != null && until > 0 && System.currentTimeMillis() < until;
+        Long operatingUntil = shardMeta.getOperatingUntil();
+        return operatingUntil != null
+                && operatingUntil > BeaconConstant.DEFAULT_OPERATING_UNTIL_MILLIS
+                && System.currentTimeMillis() < operatingUntil;
     }
 
     @VisibleForTesting

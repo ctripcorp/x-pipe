@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -111,8 +112,14 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
 	}
 
 	@Override
-	public void updateMetaExcludeUntilTimestamp(DcClusterShardTbl dcClusterShardTbl) throws DalException {
-		dao.updateByPK(dcClusterShardTbl, DcClusterShardTblEntity.UPDATESET_META_EXCLUDE_UNTIL_TIMESTAMP);
+	public int batchUpdateOperatingUntil(String dcName, String clusterName, List<String> shardNames,
+	                                     Date operatingUntil) throws DalException {
+		DcClusterShardTbl proto = new DcClusterShardTbl();
+		proto.setDcName(dcName);
+		proto.setClusterName(clusterName);
+		proto.setShardNames(shardNames);
+		proto.setOperatingUntil(operatingUntil);
+		return dao.updateOperatingUntilByDcClusterShardNames(proto, DcClusterShardTblEntity.UPDATESET_FULL);
 	}
 
 	@Override

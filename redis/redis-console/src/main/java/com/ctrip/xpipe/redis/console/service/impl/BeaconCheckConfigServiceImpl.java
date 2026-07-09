@@ -3,11 +3,11 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.service.BeaconCheckConfigService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.beacon.BeaconConstant;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -27,6 +27,8 @@ import java.util.List;
 public class BeaconCheckConfigServiceImpl implements BeaconCheckConfigService {
 
     private static final Logger logger = LoggerFactory.getLogger(BeaconCheckConfigServiceImpl.class);
+
+    private static final Date DEFAULT_OPERATING_UNTIL = BeaconConstant.DEFAULT_OPERATING_UNTIL;
 
     private final DcClusterShardService dcClusterShardService;
 
@@ -52,18 +54,18 @@ public class BeaconCheckConfigServiceImpl implements BeaconCheckConfigService {
         validateRequest(clusterName, dc, shards);
         validateSentinelBeaconCluster(clusterName, dc);
         Date until = DateTimeUtils.getMinutesLaterThan(new Date(), maintainMinutes);
-        updateMetaExcludeUntilTimestamp(clusterName, dc, shards, until.getTime());
+        int affected = updateOperatingUntil(clusterName, dc, shards, until);
         // 不主动刷新缓存，等待自动刷新生效
-        logger.info("[stopBeaconCheck][{}][{}][{}] until {}", clusterName, dc, shards, until);
+        logger.info("[stopBeaconCheck][{}][{}][{}] until {}, affected {}", clusterName, dc, shards, until, affected);
     }
 
     @Override
     public void startBeaconCheck(String clusterName, String dc, List<String> shards) throws Exception {
         validateRequest(clusterName, dc, shards);
         validateSentinelBeaconCluster(clusterName, dc);
-        updateMetaExcludeUntilTimestamp(clusterName, dc, shards, null);
+        int affected = updateOperatingUntil(clusterName, dc, shards, DEFAULT_OPERATING_UNTIL);
         // 不主动刷新缓存，等待自动刷新生效
-        logger.info("[startBeaconCheck][{}][{}][{}]", clusterName, dc, shards);
+        logger.info("[startBeaconCheck][{}][{}][{}] affected {}", clusterName, dc, shards, affected);
     }
 
     private void validateSentinelBeaconCluster(String clusterName, String dc) {
@@ -156,16 +158,8 @@ public class BeaconCheckConfigServiceImpl implements BeaconCheckConfigService {
         }
     }
 
-    private void updateMetaExcludeUntilTimestamp(String clusterName, String dc, List<String> shards,
-                                                 Long metaExcludeUntilTimestamp) throws Exception {
-        for (String shardName : shards) {
-            DcClusterShardTbl dcClusterShard = dcClusterShardService.find(dc, clusterName, shardName);
-            if (dcClusterShard == null) {
-                throw new IllegalArgumentException(String.format("shard %s not found for cluster %s in dc %s",
-                        shardName, clusterName, dc));
-            }
-            dcClusterShard.setMetaExcludeUntilTimestamp(metaExcludeUntilTimestamp);
-            dcClusterShardService.updateMetaExcludeUntilTimestamp(dcClusterShard);
-        }
+    private int updateOperatingUntil(String clusterName, String dc, List<String> shards, Date operatingUntil)
+            throws Exception {
+        return dcClusterShardService.batchUpdateOperatingUntil(dc, clusterName, shards, operatingUntil);
     }
 }

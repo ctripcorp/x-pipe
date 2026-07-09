@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
+import com.ctrip.xpipe.redis.core.beacon.BeaconConstant;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.MapUtils;
@@ -427,7 +428,9 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                             getDcClusterInfo(cluster.getId(), dcId), getAzGroupCluster(cluster.getId(), dcId));
                         ShardMeta shardMeta = getOrCreateShardMeta(dcMeta, clusterMeta.getId(),
                             dcClusterShard.getShardInfo(), dcClusterShard.getSetinelId());
-                        shardMeta.setMetaExcludeUntilTimestamp(dcClusterShard.getMetaExcludeUntilTimestamp());
+                        shardMeta.setOperatingUntil(dcClusterShard.getOperatingUntil() == null
+                                ? BeaconConstant.DEFAULT_OPERATING_UNTIL_MILLIS
+                                : dcClusterShard.getOperatingUntil().getTime());
 
                         RedisTbl redis = dcClusterShard.getRedisInfo();
                         if (Server.SERVER_ROLE.KEEPER.sameRole(redis.getRedisRole())) {

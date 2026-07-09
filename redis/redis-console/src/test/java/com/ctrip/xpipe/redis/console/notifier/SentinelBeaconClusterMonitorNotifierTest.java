@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.notifier;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -32,11 +33,14 @@ public class SentinelBeaconClusterMonitorNotifierTest {
     @Mock
     private ConsoleConfig consoleConfig;
 
+    @Mock
+    private CheckerDbConfig checkerDbConfig;
+
     private SentinelBeaconClusterMonitorNotifier notifier;
 
     @Before
     public void setup() {
-        notifier = new SentinelBeaconClusterMonitorNotifier(beaconManager, metaCache, consoleConfig);
+        notifier = new SentinelBeaconClusterMonitorNotifier(beaconManager, metaCache, consoleConfig, checkerDbConfig);
         Mockito.when(consoleConfig.supportSentinelBeacon(1L, CLUSTER)).thenReturn(true);
         Mockito.when(metaCache.getClusterType(CLUSTER)).thenReturn(ClusterType.SINGLE_DC);
 

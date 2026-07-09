@@ -787,6 +787,7 @@
 		<var name="cluster-id" value-type="Long"/>
 		<var name="cluster-name" value-type="String"/>
 		<var name="shard-name" value-type="String"/>
+		<var name="shard-names" value-type="java.util.List&lt;String&gt;"/>
 		<var name="cluster-types" value-type="java.util.Set&lt;String&gt;" />
 		<var name="redis-ip" value-type="String"/>
 		<var name="redis-port" value-type="Integer"/>
@@ -807,8 +808,8 @@
 			<readset name="SENTINEL_ID">
 				<member name="setinel-id"/>
 			</readset>
-			<readset name="META_EXCLUDE_UNTIL_TIMESTAMP">
-				<member name="meta-exclude-until-timestamp"/>
+			<readset name="OPERATING_UNTIL">
+				<member name="operating-until"/>
 			</readset>
 			<readset name="CLUSTER_COUNT_AND_SHARD_COUNT">
 				<member name="cluster-count" />
@@ -833,7 +834,7 @@
 			</readset>
 			<readset name="DC_CLUSTER_SHARD_REDIS_META_INFO">
 				<readset-ref name="SENTINEL_ID"/>
-				<readset-ref name="META_EXCLUDE_UNTIL_TIMESTAMP"/>
+				<readset-ref name="OPERATING_UNTIL"/>
 				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
 				<readset-ref name="REDIS_META_INFO" relation-name="redis-info"/>
 				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
@@ -1036,6 +1037,31 @@
 					AND st2.deleted = 0
 					AND rt.deleted = 0
 					AND ct.deleted = 0
+					AND dct.deleted = 0
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="update-operating-until-by-dc-cluster-shard-names" type="UPDATE">
+				<param name="dc-name"/>
+				<param name="cluster-name"/>
+				<param name="shard-names"/>
+				<param name="operating-until"/>
+				<statement>
+					<![CDATA[
+					UPDATE <TABLE/>, <TABLE name='dc-info'/>, <TABLE name='cluster-info'/>,
+						<TABLE name='shard-info'/>, <TABLE name='dc-cluster-info'/>
+					SET <FIELD name='operating-until'/> = ${operating-until}
+					WHERE <FIELD name='shard-id'/> = st2.id
+					AND <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
+					AND st2.shard_name IN <IN>${shard-names}</IN>
+					AND dct.dc_id = dt.id
+					AND dct.cluster_id = ct.id
+					AND dt.dc_name = ${dc-name}
+					AND ct.cluster_name = ${cluster-name}
+					AND dt.deleted = 0
+					AND ct.deleted = 0
+					AND st2.deleted = 0
 					AND dct.deleted = 0
 					AND <FIELD name='deleted'/> = 0
 					]]>
