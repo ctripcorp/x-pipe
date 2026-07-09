@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.core.beacon.BeaconConstant;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -158,6 +159,11 @@ public class ClusterDao extends AbstractXpipeConsoleDAO{
 								dcClusterShard.setSetinelId(allShards.get(0).getSetinelId());
 						}
 						dcClusterShards.add(dcClusterShard);
+					}
+					for (DcClusterShardTbl dcClusterShard : dcClusterShards) {
+						if (dcClusterShard.getOperatingUntil() == null) {
+							dcClusterShard.setOperatingUntil(BeaconConstant.DEFAULT_OPERATING_UNTIL);
+						}
 					}
 					queryHandler.handleBatchInsert(new DalQuery<int[]>() {
 						@Override

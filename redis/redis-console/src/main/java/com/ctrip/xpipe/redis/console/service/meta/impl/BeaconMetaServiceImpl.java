@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.beacon.BeaconConstant;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -51,7 +52,7 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
             return Collections.emptySet();
         }
 
-        if (resolveEffectiveClusterType(dcClusterMeta) != ClusterType.ONE_WAY) {
+        if (BeaconSentinelMetaUtil.resolveEffectiveClusterType(dcClusterMeta) != ClusterType.ONE_WAY) {
             return Collections.emptySet();
         }
 
@@ -166,19 +167,7 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
     }
 
     private DcMeta findDcMeta(String dc) {
-        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        if (xpipeMeta == null || xpipeMeta.getDcs() == null || StringUtil.isEmpty(dc)) {
-            return null;
-        }
-        DcMeta dcMeta = xpipeMeta.getDcs().get(dc);
-        if (dcMeta != null) {
-            return dcMeta;
-        }
-        return xpipeMeta.getDcs().entrySet().stream()
-                .filter(entry -> entry.getKey().equalsIgnoreCase(dc))
-                .map(Map.Entry::getValue)
-                .findFirst()
-                .orElse(null);
+        return BeaconSentinelMetaUtil.findDcMeta(metaCache.getXpipeMeta(), dc);
     }
 
     private String resolveCanonicalDcId(String dc) {
@@ -218,12 +207,29 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
         return supportZones.stream().anyMatch(zone -> metaCache.isDcInRegion(dc, zone));
     }
 
-    private ClusterType resolveEffectiveClusterType(ClusterMeta clusterMeta) {
-        ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
-        if (clusterType == ClusterType.HETERO && !StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
-            return ClusterType.lookup(clusterMeta.getAzGroupType());
+    @Override
+    public void validateSentinelBeaconOperatingDc(String clusterName, String dc) {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null || xpipeMeta.getDcs() == null) {
+            throw new IllegalStateException("meta cache not ready");
         }
-        return clusterType;
+        DcMeta dcMeta = findDcMeta(dc);
+        if (dcMeta == null) {
+            throw new IllegalArgumentException(String.format("dc %s not found", dc));
+        }
+        ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
+        if (clusterMeta == null) {
+            throw new IllegalArgumentException(String.format("cluster %s not found in dc %s", clusterName, dc));
+        }
+        ClusterType clusterType = BeaconSentinelMetaUtil.resolveEffectiveClusterType(clusterMeta);
+        if (!BeaconSentinelMetaUtil.isSentinelManagedClusterType(clusterType)) {
+            throw new IllegalArgumentException(String.format("cluster %s type %s is not supported by beacon sentinel mode",
+                    clusterName, clusterType));
+        }
+        if (!BeaconSentinelMetaUtil.isSentinelInterestedDc(clusterMeta, clusterType, dc)) {
+            throw new IllegalArgumentException(String.format("dc %s is not a sentinel beacon interested dc for cluster %s",
+                    dc, clusterName));
+        }
     }
 
     @VisibleForTesting

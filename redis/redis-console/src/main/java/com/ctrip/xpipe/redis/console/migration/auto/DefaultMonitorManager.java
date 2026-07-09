@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.console.controller.api.vo.DRClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.controller.api.vo.RegionBeaconUsage;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -146,7 +147,7 @@ public class DefaultMonitorManager implements MonitorManager {
                 if (!StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
                     clusterType = ClusterType.lookup(clusterMeta.getAzGroupType());
                 }
-                if (routeType == BeaconRouteType.SENTINEL && !isSentinelManagedClusterType(clusterType)) {
+                if (routeType == BeaconRouteType.SENTINEL && !BeaconSentinelMetaUtil.isSentinelManagedClusterType(clusterType)) {
                     continue;
                 }
 
@@ -400,7 +401,7 @@ public class DefaultMonitorManager implements MonitorManager {
                     && !dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc())) {
                 return false;
             }
-        } else if (!isSentinelManagedClusterType(clusterType)) {
+        } else if (!BeaconSentinelMetaUtil.isSentinelManagedClusterType(clusterType)) {
             return false;
         }
 
@@ -431,12 +432,6 @@ public class DefaultMonitorManager implements MonitorManager {
             return beaconSystem;
         }
         return BeaconSystem.XPIPE_ONE_WAY;
-    }
-
-    private boolean isSentinelManagedClusterType(ClusterType clusterType) {
-        return clusterType == ClusterType.ONE_WAY
-                || clusterType == ClusterType.SINGLE_DC
-                || clusterType == ClusterType.LOCAL_DC;
     }
 
     private void registerRouteListener(String configKey, BeaconRouteType routeType, MetaCache cache, long checkInterval) {

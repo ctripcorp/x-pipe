@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTblDao;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTblEntity;
+import com.ctrip.xpipe.redis.core.beacon.BeaconConstant;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
@@ -183,6 +184,13 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
 
 	@Override
 	public void insertBatch(List<DcClusterShardTbl> dcClusterShardTbls) {
+		if (dcClusterShardTbls != null) {
+			for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
+				if (dcClusterShardTbl != null && dcClusterShardTbl.getOperatingUntil() == null) {
+					dcClusterShardTbl.setOperatingUntil(BeaconConstant.DEFAULT_OPERATING_UNTIL);
+				}
+			}
+		}
 		queryHandler.handleBatchInsert(new DalQuery<int[]>() {
 			@Override
 			public int[] doQuery() throws DalException {

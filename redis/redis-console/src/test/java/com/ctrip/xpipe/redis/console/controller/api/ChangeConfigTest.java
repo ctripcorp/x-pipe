@@ -1,14 +1,18 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.model.BeaconCheckConfigRequest;
 import com.ctrip.xpipe.redis.console.service.BeaconCheckConfigService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
+import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -33,8 +37,14 @@ public class ChangeConfigTest {
     @Mock
     private BeaconCheckConfigService beaconCheckConfigService;
 
+    @Mock
+    private BeaconMetaService beaconMetaService;
+
     @InjectMocks
     private ChangeConfig controller;
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     private String clusterName = "cluster1";
 
@@ -44,7 +54,11 @@ public class ChangeConfigTest {
 
     @Before
     public void setupChangeConfigTest() {
-        Mockito.when(clusterService.find(clusterName)).thenReturn(new ClusterTbl());
+        ClusterTbl clusterTbl = new ClusterTbl();
+        clusterTbl.setClusterOrgId(1L);
+        clusterTbl.setClusterType(ClusterType.SINGLE_DC.name());
+        Mockito.when(clusterService.find(clusterName)).thenReturn(clusterTbl);
+        Mockito.when(consoleConfig.supportSentinelBeacon(1L, clusterName)).thenReturn(true);
         Mockito.when(consoleConfig.getConfigDefaultRestoreHours()).thenReturn(configDefaultRestoreHours);
         Mockito.when(consoleConfig.getHealthCheckSuspendMinutes()).thenReturn(noAlarmMinutesForClusterUpdate);
     }
@@ -122,6 +136,37 @@ public class ChangeConfigTest {
     public void testStopBeaconCheckRejectsEmptyShardInRequest() throws Exception {
         BeaconCheckConfigRequest request = new BeaconCheckConfigRequest()
                 .setClusterName(clusterName).setDc("jq").setShards(java.util.Collections.singletonList(""));
+        controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, request);
+    }
+
+    @Test
+    public void testStopBeaconCheckRejectsEmptyShards() throws Exception {
+        thrown.expect(IllegalArgumentException.class);
+        thrown.expectMessage("shards can not be empty");
+        BeaconCheckConfigRequest request = new BeaconCheckConfigRequest()
+                .setClusterName(clusterName).setDc("jq").setShards(java.util.Collections.emptyList());
+        controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, request);
+    }
+
+    @Test
+    public void testStopBeaconCheckRejectsNonSentinelBeaconCluster() throws Exception {
+        Mockito.when(consoleConfig.supportSentinelBeacon(1L, clusterName)).thenReturn(false);
+        thrown.expect(IllegalArgumentException.class);
+        thrown.expectMessage("cluster cluster1 is not managed by beacon sentinel mode");
+        BeaconCheckConfigRequest request = new BeaconCheckConfigRequest()
+                .setClusterName(clusterName).setDc("jq").setShards(java.util.Collections.singletonList("shard1"));
+        controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, request);
+    }
+
+    @Test
+    public void testStopBeaconCheckRejectsWrongDc() throws Exception {
+        Mockito.doThrow(new IllegalArgumentException(
+                "dc oy is not a sentinel beacon interested dc for cluster cluster1"))
+                .when(beaconMetaService).validateSentinelBeaconOperatingDc(clusterName, "oy");
+        thrown.expect(IllegalArgumentException.class);
+        thrown.expectMessage("dc oy is not a sentinel beacon interested dc for cluster cluster1");
+        BeaconCheckConfigRequest request = new BeaconCheckConfigRequest()
+                .setClusterName(clusterName).setDc("oy").setShards(java.util.Collections.singletonList("shard1"));
         controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, request);
     }
 

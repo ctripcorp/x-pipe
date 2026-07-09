@@ -4,11 +4,13 @@ import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.BeaconCheckConfigRequest;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ClusterConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.service.BeaconCheckConfigService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
+import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +40,9 @@ public class ChangeConfig extends AbstractConsoleController{
 
     @Autowired
     private BeaconCheckConfigService beaconCheckConfigService;
+
+    @Autowired
+    private BeaconMetaService beaconMetaService;
 
     @RequestMapping(value = "/config/sentinel_auto_process/start", method = RequestMethod.POST)
     public void startSentinelAutoProcess(HttpServletRequest request,
@@ -172,7 +177,7 @@ public class ChangeConfig extends AbstractConsoleController{
             maintainMinutes = consoleConfig.getHealthCheckSuspendMinutes();
         }
         maintainMinutes = Math.min(maintainMinutes, consoleConfig.getConfigDefaultRestoreHours() * 60);
-        validateBeaconCheckConfigRequest(beaconCheckConfigRequest);
+        validateSentinelBeaconCheckRequest(beaconCheckConfigRequest);
         beaconCheckConfigService.stopBeaconCheck(beaconCheckConfigRequest.getClusterName(),
                 beaconCheckConfigRequest.getDc(), beaconCheckConfigRequest.getShards(), maintainMinutes);
         return RetMessage.createSuccessMessage("success");
@@ -181,10 +186,23 @@ public class ChangeConfig extends AbstractConsoleController{
     @PostMapping(value = "/config/beacon/check/start")
     public RetMessage startBeaconCheck(HttpServletRequest request,
                                        @RequestBody BeaconCheckConfigRequest beaconCheckConfigRequest) throws Exception {
-        validateBeaconCheckConfigRequest(beaconCheckConfigRequest);
+        validateSentinelBeaconCheckRequest(beaconCheckConfigRequest);
         beaconCheckConfigService.startBeaconCheck(beaconCheckConfigRequest.getClusterName(),
                 beaconCheckConfigRequest.getDc(), beaconCheckConfigRequest.getShards());
         return RetMessage.createSuccessMessage("success");
+    }
+
+    private void validateSentinelBeaconCheckRequest(BeaconCheckConfigRequest beaconCheckConfigRequest) {
+        validateBeaconCheckConfigRequest(beaconCheckConfigRequest);
+        String clusterName = beaconCheckConfigRequest.getClusterName();
+        ClusterTbl cluster = clusterService.find(clusterName);
+        if (cluster == null) {
+            throw new IllegalArgumentException(String.format("cluster %s not found", clusterName));
+        }
+        if (!consoleConfig.supportSentinelBeacon(cluster.getClusterOrgId(), clusterName)) {
+            throw new IllegalArgumentException(String.format("cluster %s is not managed by beacon sentinel mode", clusterName));
+        }
+        beaconMetaService.validateSentinelBeaconOperatingDc(clusterName, beaconCheckConfigRequest.getDc());
     }
 
     private void validateBeaconCheckConfigRequest(BeaconCheckConfigRequest beaconCheckConfigRequest) {

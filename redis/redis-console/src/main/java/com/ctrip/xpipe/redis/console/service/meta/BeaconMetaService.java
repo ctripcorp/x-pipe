@@ -27,4 +27,6 @@ public interface BeaconMetaService {
     boolean compareDrBeaconMetaWithXPipe(String clusterName, String dc, Set<MonitorGroupMeta> beaconGroups)
             throws ClusterNotFoundException;
 
+    void validateSentinelBeaconOperatingDc(String clusterName, String dc);
+
 }
