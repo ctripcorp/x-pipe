@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.controller.api;
 import com.ctrip.xpipe.redis.checker.controller.result.GenericRetMessage;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcModel;

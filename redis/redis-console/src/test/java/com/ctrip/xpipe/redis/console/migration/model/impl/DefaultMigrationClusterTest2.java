@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.migration.model.impl;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
-import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingState;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationMigratingState;
 import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishState;

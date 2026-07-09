@@ -18,7 +18,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.comm
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.command.SentinelHelloCollectContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.meta.ClusterMetaStatus;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand;
@@ -186,7 +186,7 @@ public class DefaultSentinelHelloCollectorTest extends AbstractCheckerTest {
     public void testSkipMigratingCluster() throws Exception {
         when(checkerDbConfig.shouldSentinelCheck(Mockito.any())).thenReturn(true);
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance(randomPort());
-        instance.getCheckInfo().setStatus(ClusterMetaStatus.MIGRATING);
+        instance.getCheckInfo().setStatus(ClusterStatus.Migrating.name());
         sentinelCollector.new SentinelHelloCollectorCommand(new SentinelActionContext(instance, Collections.emptySet())).execute().addListener(commandFuture -> {
             Assert.assertTrue(commandFuture.isSuccess());
         });

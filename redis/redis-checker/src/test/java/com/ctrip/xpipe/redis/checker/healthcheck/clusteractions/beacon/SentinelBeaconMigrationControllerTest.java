@@ -6,7 +6,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterInstanceInfo;
-import com.ctrip.xpipe.redis.core.meta.ClusterMetaStatus;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,7 +54,7 @@ public class SentinelBeaconMigrationControllerTest {
 
     @Test
     public void shouldSkipWhenClusterOnMigration() {
-        instance.getCheckInfo().setStatus(ClusterMetaStatus.MIGRATING);
+        instance.getCheckInfo().setStatus(ClusterStatus.Migrating.name());
         Assert.assertFalse(controller.shouldCheck(instance));
     }
 

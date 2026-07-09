@@ -62,7 +62,6 @@ import org.junit.runners.Suite.SuiteClasses;
         ReplicationStoreMetaTest.class,
         DcMetaComparatorTest.class,
         ClusterMetaComparatorTest.class,
-        ClusterMetaStatusTest.class,
         ShardMetaComparatorTest.class,
         InfoResultExtractorTest.class,
         CrdtInfoResultExtractorTest.class,

@@ -4,7 +4,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.CheckInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
-import com.ctrip.xpipe.redis.core.meta.ClusterMetaStatus;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +40,7 @@ public class SentinelBeaconMigrationController implements SentinelBeaconMetaCont
             return false;
         }
 
-        if (ClusterMetaStatus.isMigrating(checkInfo.getStatus())) {
+        if (ClusterStatus.isMigrating(checkInfo.getStatus())) {
             logger.warn("[{}] in migration, stop check", cluster);
             return false;
         }

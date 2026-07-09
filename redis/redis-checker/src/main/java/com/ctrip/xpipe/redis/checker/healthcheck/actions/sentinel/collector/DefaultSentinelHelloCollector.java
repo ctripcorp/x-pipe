@@ -23,7 +23,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloC
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelLeakyBucket;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.command.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
-import com.ctrip.xpipe.redis.core.meta.ClusterMetaStatus;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -220,7 +220,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
                 if (!checkerDbConfig.shouldSentinelCheck(info.getClusterId())) {
                     logger.info("[{}-{}+{}] {} in white list, skip", LOG_TITLE, info.getClusterId(), info.getShardId(), info.getClusterId());
                     future().setSuccess();
-                } else if (ClusterMetaStatus.isMigrating(info.getStatus())) {
+                } else if (ClusterStatus.isMigrating(info.getStatus())) {
                     logger.info("[{}-{}+{}] {} in migration, skip", LOG_TITLE, cluster, info.getShardId(), cluster);
                     future().setSuccess();
                 } else {

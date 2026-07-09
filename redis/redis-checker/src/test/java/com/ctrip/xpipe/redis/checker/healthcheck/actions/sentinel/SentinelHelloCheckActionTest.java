@@ -8,7 +8,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.ClusterMetaStatus;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Lists;
@@ -153,7 +153,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     @Test
     public void testDoScheduledTaskWithMigratingCluster() {
         action = spy(action);
-        instance.getCheckInfo().setStatus(ClusterMetaStatus.MIGRATING);
+        instance.getCheckInfo().setStatus(ClusterStatus.Migrating.name());
         Assert.assertFalse(action.shouldCheck(instance));
         verify(action, never()).processSentinelHellos();
     }

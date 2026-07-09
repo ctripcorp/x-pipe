@@ -12,7 +12,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.meta.ClusterMetaStatus;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -249,7 +249,7 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
             return false;
         }
 
-        if (ClusterMetaStatus.isMigrating(checkInstance.getCheckInfo().getStatus())) {
+        if (ClusterStatus.isMigrating(checkInstance.getCheckInfo().getStatus())) {
             logger.warn("[{}][{}] in migration, stop check", LOG_TITLE, cluster);
             return false;
         }

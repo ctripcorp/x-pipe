@@ -90,6 +90,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRouteChooserTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.DefaultDcMetaChangeManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityInspectorTest;
 import com.ctrip.xpipe.redis.checker.impl.*;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatusTest;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResultSerializeTest;
 import com.ctrip.xpipe.redis.checker.resource.DefaultCheckerConsoleServiceTest;
 import org.junit.runner.RunWith;
@@ -99,6 +100,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses(value = {
         CommonConfigBeanTest.class,
         DefaultCheckerDbConfigTest.class,
+        ClusterStatusTest.class,
 
         DefaultSentinelHelloCollectorTest.class,
         AnalyseHellosTest.class,
