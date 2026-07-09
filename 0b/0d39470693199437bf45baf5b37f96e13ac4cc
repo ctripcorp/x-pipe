@@ -1,0 +1,70 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/DefaultHealthCheckInstanceFactory.java
+  s_31dc4cff0431ca::t_67c9c9390f159f 154
+  s_31dc4cff0431ca::t_35c2b1138e3a30 182
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/clusteractions/beacon/SentinelBeaconMigrationController.java
+  s_31dc4cff0431ca::t_9a3ed2125a0a5d 7
+  s_31dc4cff0431ca::t_81dda0d18f9871 43
+  s_31dc4cff0431ca::t_c20f39c37b4cbf 21
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/SentinelHelloCheckActionTest.java
+  s_31dc4cff0431ca::t_6106dc9fe04439 11
+  s_31dc4cff0431ca::t_fb54c0a3cb49df 139
+  s_31dc4cff0431ca::t_fa1c8a95083447 153
+  s_31dc4cff0431ca::t_4a010d8190195e 154-160
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/SentinelHelloCheckActionFactory.java
+  s_31dc4cff0431ca::t_de49a6c0500d08 59
+  s_31dc4cff0431ca::t_ba5b9a8705e76e 70
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/AllTests.java
+  s_31dc4cff0431ca::t_f55b883ad3d5b9 64
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/vo/DcMetaBuilder.java
+  s_31dc4cff0431ca::t_bbcab8c55f1282 160
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/meta/impl/ClusterMetaServiceImpl.java
+  s_31dc4cff0431ca::t_d70ceaa9f25493 164
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/controller/CrossRegionSentinelHelloCheckControllerTest.java
+  s_31dc4cff0431ca::t_60500390f27fa9 105
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/collector/DefaultSentinelHelloCollector.java
+  s_31dc4cff0431ca::t_914d906c0053ba 223
+  s_31dc4cff0431ca::t_816e2409f276ba 26
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/SentinelHelloCheckAction.java
+  s_31dc4cff0431ca::t_f38a84cb7b113a 59
+  s_31dc4cff0431ca::t_7408c40b67f450 252
+  s_31dc4cff0431ca::t_6460f2c1661dd9 15
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/CheckInfo.java
+  s_31dc4cff0431ca::t_e279402bdad719 28-31
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/controller/CurrentDcSentinelHelloCheckControllerTest.java
+  s_31dc4cff0431ca::t_3749957f593b49 105
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/AbstractCheckInfo.java
+  s_31dc4cff0431ca::t_3743d4e8021e3f 25-26
+  s_31dc4cff0431ca::t_a229f59c7182d6 87-96
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/meta/ClusterMetaStatus.java
+  s_31dc4cff0431ca::t_b1d8ad4afe8185 1-16
+redis/redis-core/src/main/resources/META-INF/dal/model/keeper-codegen.xml
+  s_31dc4cff0431ca::t_2f5fcac4d540d7 73
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/controller/OneWaySentinelHelloCheckControllerTest.java
+  s_31dc4cff0431ca::t_ef8b3aa96d5f7e 106
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/controller/CrossDcSentinelHelloCheckControllerTest.java
+  s_31dc4cff0431ca::t_3911ee8b6a2022 105
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/clusteractions/beacon/SentinelBeaconMigrationControllerTest.java
+  s_31dc4cff0431ca::t_26f447b5a06405 57
+  s_31dc4cff0431ca::t_2b92f26914301d 9,19,33
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/collector/DefaultSentinelHelloCollectorTest.java
+  s_31dc4cff0431ca::t_1a16aa3728bd8a 21
+  s_31dc4cff0431ca::t_c2eff7b433e6a3 189
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/meta/ClusterMetaStatusTest.java
+  s_31dc4cff0431ca::t_12b16374d3d851 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.26-trip",
+  "base_commit_sha": "0b0d39470693199437bf45baf5b37f96e13ac4cc",
+  "prompts": {},
+  "sessions": {
+    "s_31dc4cff0431ca": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "29da6445-c9fc-4449-a200-cbf4899d3d55",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}

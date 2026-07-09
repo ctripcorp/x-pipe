@@ -1,0 +1,59 @@
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/beacon/BeaconSentinelMetaUtilTest.java
+  s_f6aa65f7012ddd::t_ba9a17b91a5bc0 26-30
+  s_f6aa65f7012ddd::t_95cfc51a873a7a 1-25,31-46
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/beacon/BeaconSentinelMetaUtil.java
+  s_f6aa65f7012ddd::t_42aa8378395592 1-62
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/meta/BeaconMetaService.java
+  s_f6aa65f7012ddd::t_ed1c749b6b451b 30-31
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/auto/DefaultMonitorManager.java
+  s_f6aa65f7012ddd::t_28df973fa1c13c 150
+  s_f6aa65f7012ddd::t_42bc2fd43ccaae 404
+  s_f6aa65f7012ddd::t_59d187ce443d28 21
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/ChangeConfig.java
+  s_f6aa65f7012ddd::t_1d48e46f1b4b98 189
+  s_f6aa65f7012ddd::t_0d4db49d3e61b4 7,13
+  s_f6aa65f7012ddd::t_47c5f4bf2ff78b 44-46
+  s_f6aa65f7012ddd::t_27cb0a9da2073b 195-207
+  s_f6aa65f7012ddd::t_2ab0bfe9dc7df6 180
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/dao/ClusterDao.java
+  s_f6aa65f7012ddd::t_e3f6e2e70d1926 9
+  s_f6aa65f7012ddd::t_f35527d8acc39f 163-167
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/meta/impl/BeaconMetaServiceImpl.java
+  s_f6aa65f7012ddd::t_b7b4b78d293594 55
+  s_f6aa65f7012ddd::t_a709de66571220 170
+  s_f6aa65f7012ddd::t_b0a7d1df65fb7c 13
+  s_f6aa65f7012ddd::t_0949af4a443c30 224-225,229
+  s_f6aa65f7012ddd::t_161af11068a8d1 210-223,226-228,230-231
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/AllTests.java
+  s_f6aa65f7012ddd::t_913a0859730a06 96
+  s_f6aa65f7012ddd::t_3d77b887b7909f 3
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/BeaconCheckConfigServiceImpl.java
+  s_f6aa65f7012ddd::t_88d7daadef6e7c 24,31,38
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/DcClusterShardServiceImpl.java
+  s_f6aa65f7012ddd::t_1310ce72b0a1d0 6
+  s_f6aa65f7012ddd::t_5acb0cc9b54f5b 187-193
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/controller/api/ChangeConfigTest.java
+  s_f6aa65f7012ddd::t_0d3aff7f8d03bb 57-61
+  s_f6aa65f7012ddd::t_81b6eb986c6468 40-42,46-47
+  s_f6aa65f7012ddd::t_f2ea5cd9ac79b8 3,10,13,15,48
+  s_f6aa65f7012ddd::t_f55085ac72e382 142-172
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/notifier/SentinelBeaconClusterMonitorNotifier.java
+  s_f6aa65f7012ddd::t_3ff5532718bda0 8
+  s_f6aa65f7012ddd::t_1715aa7c7e8408 96-97,100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.33-trip",
+  "base_commit_sha": "d85c0fe4a62de10a6c158ee0b63c0a68e0fc2f0f",
+  "prompts": {},
+  "sessions": {
+    "s_f6aa65f7012ddd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8fbe2ff7-5dc6-4c1b-b369-9ad8277e733b",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}
