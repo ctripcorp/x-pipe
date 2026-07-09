@@ -1,0 +1,25 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_94d0b7161f4d19::t_6fbc0f62ddc0da 343
+  s_94d0b7161f4d19::t_04baad9c9dc8d3 258
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  s_94d0b7161f4d19::t_fbeceb78633027 32
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_94d0b7161f4d19::t_4fb421180631cf 389
+  s_94d0b7161f4d19::t_cf082550057d83 163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.32-trip",
+  "base_commit_sha": "b6208771a0eaa3f3cc28756c69e83b5f44af1835",
+  "prompts": {},
+  "sessions": {
+    "s_94d0b7161f4d19": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9a566c97-67cf-4efb-a831-333a415e0dc7",
+        "model": "qwen3.7-plus"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
