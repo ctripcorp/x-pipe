@@ -26,8 +26,8 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int maxAllowedMaxGap = DEFAULT_XSYNC_MAXGAP;
 	private int maxMaxGapCrossRegion = DEFAULT_XSYNC_MAXGAP_CROSSREGION;
 
-	private boolean dualWrite;
-	private boolean readV2;
+	private boolean dualWrite = true;
+	private boolean readV2 = true;
 	private int indexZoneConsecutiveThreshold = 8192;
 	private int blockSizeThreshold = 8192;
 
