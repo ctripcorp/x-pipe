@@ -27,7 +27,6 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     final String prefix;
     final List<String> indexPrefixes;
     final String key;
-    final boolean writeMode;
 
     FileChannel currentSegmentChannel;
     Map<String, AsyncFile> currentIndexFiles;
@@ -49,11 +48,11 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     AsyncSegmentFile(String dirPath, String prefix, List<String> indexPrefixes, String key, boolean writeMode) {
+        super(writeMode);
         this.dirPath = dirPath;
         this.prefix = prefix;
         this.indexPrefixes = indexPrefixes;
         this.key = key;
-        this.writeMode = writeMode;
         this.currentIndexFiles = new HashMap<>();
     }
 

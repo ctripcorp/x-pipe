@@ -85,9 +85,6 @@ public interface AsyncFileSystem {
     // position to one segment and then call this method to get the current index files.
     CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes);
     CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file);
-    // open index files by startOffset. no need to position to the startOffset. should close index files when done.
-    // Only available in read mode.
-    CompletableFuture<Map<String, AsyncFile>> openIndexFiles(AsyncSegmentFile file, long startOffset);
     CompletableFuture<Long> size(AsyncSegmentFile file);
     CompletableFuture<Long> sizeOfSegment(AsyncSegmentFile file, long startOffset);
     CompletableFuture<Long> lastModified(AsyncSegmentFile file);

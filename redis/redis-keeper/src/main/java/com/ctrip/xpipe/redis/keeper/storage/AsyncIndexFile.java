@@ -13,7 +13,7 @@ public class AsyncIndexFile extends AsyncFile {
         this.key = key;
         this.indexPrefix = indexPrefix;
         this.startOffset = startOffset;
-        this.fullCacheOnly = true;
+        this.cacheMode = CacheMode.FULL_CACHE;
     }
 
     @Override

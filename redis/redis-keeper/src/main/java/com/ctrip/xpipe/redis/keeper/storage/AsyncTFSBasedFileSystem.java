@@ -790,30 +790,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public CompletableFuture<Map<String, AsyncFile>> openIndexFiles(AsyncSegmentFile file, long startOffset) {
-        if (file.writeMode) {
-            return CompletableFuture.failedFuture(
-                    new IllegalArgumentException("openIndexFiles() requires read mode"));
-        }
-        return StorageUtil.supply(ioExecutor, () -> {
-            try {
-                Map<String, AsyncFile> result = new HashMap<>();
-                if (!entryOrThrow(file).state.contains(startOffset)) return result;
-                for (String indexPrefix : file.indexPrefixes) {
-                    String fileName = indexPrefix + startOffset;
-                    Path p = Paths.get(file.absolutePathOf(fileName));
-                    if (!Files.exists(p)) continue;
-                    FileChannel ch = FileChannel.open(p, StandardOpenOption.READ);
-                    result.put(indexPrefix, new AsyncIndexFile(file.key, file.absolutePathOf(fileName), indexPrefix, startOffset, ch, false));
-                }
-                return result;
-            } catch (IOException e) {
-                throw StorageUtil.wrapIOException(e);
-            }
-        });
-    }
-
-    @Override
     public CompletableFuture<Long> size(AsyncSegmentFile file) {
         return StorageUtil.supply(ioExecutor, () -> {
             try {
