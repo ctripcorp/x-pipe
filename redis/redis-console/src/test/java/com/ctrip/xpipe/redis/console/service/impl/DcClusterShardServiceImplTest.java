@@ -94,6 +94,12 @@ public class DcClusterShardServiceImplTest extends AbstractServiceImplTest {
 
         DcClusterShardTbl updated = service.find(dcNames[0], clusterName, shardNames[0]);
         Assert.assertEquals(until.getTime(), updated.getOperatingUntil().getTime());
+
+        List<DcClusterShardTbl> operatingShards = service.findOperatingDcClusterShards();
+        Assert.assertEquals(1, operatingShards.size());
+        Assert.assertEquals(shardNames[0], operatingShards.get(0).getShardName());
+        Assert.assertEquals(clusterName, operatingShards.get(0).getClusterName());
+        Assert.assertEquals(dcNames[0], operatingShards.get(0).getDcName());
     }
 
     @Test

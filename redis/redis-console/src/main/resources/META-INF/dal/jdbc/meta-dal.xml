@@ -789,6 +789,8 @@
 		<var name="shard-name" value-type="String"/>
 		<var name="shard-names" value-type="java.util.List&lt;String&gt;"/>
 		<var name="dc-cluster-shard-ids" value-type="java.util.List&lt;Long&gt;"/>
+		<var name="query-time" value-type="Date"/>
+		<var name="default-operating-until" value-type="Date"/>
 		<var name="cluster-types" value-type="java.util.Set&lt;String&gt;" />
 		<var name="redis-ip" value-type="String"/>
 		<var name="redis-port" value-type="Integer"/>
@@ -811,6 +813,12 @@
 			</readset>
 			<readset name="OPERATING_UNTIL">
 				<member name="operating-until"/>
+			</readset>
+			<readset name="OPERATING_SHARD_MONITOR">
+				<readset-ref name="OPERATING_UNTIL"/>
+				<readset-ref name="NAME" relation-name="dc-info"/>
+				<readset-ref name="CLUSTER_META_INFO" relation-name="cluster-info"/>
+				<readset-ref name="NAME_AND_MONITOR_NAME" relation-name="shard-info"/>
 			</readset>
 			<readset name="CLUSTER_COUNT_AND_SHARD_COUNT">
 				<member name="cluster-count" />
@@ -1076,6 +1084,29 @@
 					UPDATE <TABLE/>
 					SET <FIELD name='operating-until'/> = ${operating-until}
 					WHERE <FIELD name='dc-cluster-shard-id'/> IN <IN>${dc-cluster-shard-ids}</IN>
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-operating-dc-cluster-shards" type="SELECT" multiple="true">
+				<param name="query-time"/>
+				<param name="default-operating-until"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>, <TABLE name='dc-info'/>, <TABLE name='cluster-info'/>,
+						<TABLE name='shard-info'/>, <TABLE name='dc-cluster-info'/>
+					WHERE <FIELD name='shard-id'/> = st2.id
+					AND <FIELD name='dc-cluster-id'/> = dct.dc_cluster_id
+					AND st2.cluster_id = ct.id
+					AND dct.dc_id = dt.id
+					AND dct.cluster_id = ct.id
+					AND <FIELD name='operating-until'/> > ${default-operating-until}
+					AND <FIELD name='operating-until'/> > ${query-time}
+					AND dt.deleted = 0
+					AND ct.deleted = 0
+					AND st2.deleted = 0
+					AND dct.deleted = 0
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>

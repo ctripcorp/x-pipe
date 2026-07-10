@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.DcService;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,8 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -35,24 +32,15 @@ public class AbnormalClusterStatusMonitorTest {
     private ClusterService clusterService;
 
     @Mock
-    private DcService dcService;
-
-    @Mock
     private MetricProxy metricProxy;
 
     @Mock
     private ConsoleConfig consoleConfig;
 
-    private final Map<Long, String> dcNameMap = new HashMap<>();
-
     @Before
     public void setUp() {
         monitor.setMetricProxy(metricProxy);
         when(consoleConfig.getAbnormalClusterStatusMonitorIntervalMilli()).thenReturn(30_000L);
-        dcNameMap.put(1L, "jq");
-        dcNameMap.put(2L, "oy");
-        dcNameMap.put(3L, "fra");
-        when(dcService.dcNameMap()).thenReturn(dcNameMap);
     }
 
     @Test
@@ -61,12 +49,9 @@ public class AbnormalClusterStatusMonitorTest {
         cluster.setClusterName("cluster1");
         cluster.setStatus("Migrating");
         cluster.setClusterType("one_way");
-        cluster.setActivedcId(1L);
 
         MigrationClusterTbl migrationCluster = new MigrationClusterTbl();
         migrationCluster.setStatus("Migrating");
-        migrationCluster.setSourceDcId(1L);
-        migrationCluster.setDestinationDcId(2L);
         cluster.setMigrationClusters(migrationCluster);
 
         when(clusterService.findMigratingClusters()).thenReturn(Collections.singletonList(cluster));
@@ -83,10 +68,10 @@ public class AbnormalClusterStatusMonitorTest {
         Assert.assertEquals("cluster1", metricData.getTags().get("clusterName"));
         Assert.assertEquals("Migrating", metricData.getTags().get("clusterStatus"));
         Assert.assertEquals("Migrating", metricData.getTags().get("migrationStatus"));
-        Assert.assertEquals("jq", metricData.getTags().get("sourceDc"));
-        Assert.assertEquals("oy", metricData.getTags().get("destDc"));
-        Assert.assertEquals("jq", metricData.getTags().get("activeDc"));
         Assert.assertEquals("one_way", metricData.getTags().get("clusterType"));
+        Assert.assertNull(metricData.getTags().get("sourceDc"));
+        Assert.assertNull(metricData.getTags().get("destDc"));
+        Assert.assertNull(metricData.getTags().get("activeDc"));
     }
 
     @Test
@@ -95,7 +80,6 @@ public class AbnormalClusterStatusMonitorTest {
         cluster.setClusterName("cluster2");
         cluster.setStatus("Lock");
         cluster.setClusterType("bi_direction");
-        cluster.setActivedcId(3L);
 
         when(clusterService.findMigratingClusters()).thenReturn(Collections.singletonList(cluster));
 
@@ -107,9 +91,7 @@ public class AbnormalClusterStatusMonitorTest {
         MetricData metricData = metricCaptor.getValue();
         Assert.assertEquals("Lock", metricData.getTags().get("clusterStatus"));
         Assert.assertEquals("", metricData.getTags().get("migrationStatus"));
-        Assert.assertEquals("", metricData.getTags().get("sourceDc"));
-        Assert.assertEquals("", metricData.getTags().get("destDc"));
-        Assert.assertEquals("fra", metricData.getTags().get("activeDc"));
+        Assert.assertEquals("bi_direction", metricData.getTags().get("clusterType"));
     }
 
     @Test
