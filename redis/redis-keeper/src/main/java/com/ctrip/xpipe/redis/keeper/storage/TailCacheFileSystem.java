@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile.CacheMode;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemConfig.BackingFsMode;
@@ -36,6 +37,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private volatile boolean cacheEnabled;
     private final long chunkSize;
     private volatile int preloadChunkThreshold;
+    private volatile long preloadTimeoutMs;
     private volatile int maxWriteChunkThreshold;
     private final ExecutorService ioExecutor;
 
@@ -55,6 +57,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         this.cacheEnabled = config.isCacheEnabled();
         this.chunkSize = config.getChunkSize();
         this.preloadChunkThreshold = config.getPreloadChunkThreshold();
+        this.preloadTimeoutMs = config.getPreloadTimeoutMs();
         this.maxWriteChunkThreshold = config.getMaxWriteChunkThreshold();
         this.ioExecutor = ioExecutor;
         for (int i = 0; i < LOCK_STRIPES; i++) locks[i] = new Object();
@@ -133,11 +136,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return CacheMode.TAIL_CACHE;
     }
 
-    private void ensureFullCacheLoaded(AsyncFile file) {
-        if (!shouldPreloadCache(file)) return;
-        loadFullCacheFromFile(file);
-    }
-
     public int getPreloadChunkThreshold() {
         return preloadChunkThreshold;
     }
@@ -145,6 +143,15 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     public void setPreloadChunkThreshold(int preloadChunkThreshold) {
         if (preloadChunkThreshold <= 0) throw new IllegalArgumentException("preloadChunkThreshold must be positive");
         this.preloadChunkThreshold = preloadChunkThreshold;
+    }
+
+    public long getPreloadTimeoutMs() {
+        return preloadTimeoutMs;
+    }
+
+    public void setPreloadTimeoutMs(long preloadTimeoutMs) {
+        if (preloadTimeoutMs < 0) throw new IllegalArgumentException("preloadTimeoutMs must be non-negative");
+        this.preloadTimeoutMs = preloadTimeoutMs;
     }
 
     public int getMaxWriteChunkThreshold() {
@@ -358,9 +365,21 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     private CompletableFuture<ByteBuf> readInternal(AsyncFile file, long length, long offset, boolean fromPosition) {
-        ensureFullCacheLoaded(file);
         FileCacheEntry entry = file.getCacheEntry();
         long readOffset = fromPosition ? file.position : offset;
+        if (shouldPreloadCache(file)) {
+            return StorageUtil.supply(ioExecutor, () -> {
+                loadFullCacheFromFile(file);
+                ByteBuf cached;
+                synchronized (entry) {
+                    cached = readWithCache(length, readOffset, entry);
+                }
+                if (fromPosition) {
+                    file.position = readOffset + cached.readableBytes();
+                }
+                return cached;
+            });
+        }
         ByteBuf cached = null;
         if (!preferDirectRead(file.cacheMode, entry, readOffset, readPreferCache)) {
             synchronized (entry) {
@@ -390,6 +409,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         throw new UnsupportedOperationException();
     }
 
+    // Must be called under synchronized(entry).
     private java.util.List<ByteBuf> collectChunkSlices(FileCacheEntry entry, long offset, long end) {
 
         long pos = offset;
@@ -473,9 +493,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Long> write(AsyncFile file, ByteBuf data) {
         requireWriteMode(file);
-        ensureFullCacheLoaded(file);
         FileCacheEntry entry = file.getCacheEntry();
         ByteBuf toWrite = null;
+        boolean dataCachedInThisWrite = false;
         if (entry != null) {
             if (file.atomicReplace) {
                 if (shouldCacheAtomicWrite(file)) {
@@ -496,10 +516,26 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                         entry.cacheEndOffset = offset;
                         data.readerIndex(savedReaderIndex);
                     }
+                    dataCachedInThisWrite = true;
                 }
             } else {
                 boolean cacheWrite = shouldWriteCache(file);
                 if (cacheWrite) {
+                    if (shouldPreloadCache(file)) {
+                        try {
+                            CompletableFuture<Void> preloadFuture = StorageUtil.run(ioExecutor, () -> loadFullCacheFromFile(file));
+                            long timeoutMs = preloadTimeoutMs;
+                            if (timeoutMs > 0) {
+                                preloadFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
+                            } else {
+                                preloadFuture.get();
+                            }
+                        } catch (Exception e) {
+                            data.release();
+                            logger.error("preload failed for {}", file.path, e);
+                            throw new PreloadFailedException(e);
+                        }
+                    }
                     synchronized (entry) {
                         long offset = entry.cacheEndOffset;
                         int savedReaderIndex = data.readerIndex();
@@ -516,6 +552,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                         entry.cacheEndOffset = offset;
                         data.readerIndex(savedReaderIndex);
                     }
+                    dataCachedInThisWrite = true;
                 }
                 if (entry.writtenToFsOffset < entry.cacheEndOffset) {
                     synchronized (entry) {
@@ -526,6 +563,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
         }
         final ByteBuf writeBuf = toWrite != null ? toWrite : data;
+        final boolean flushAfterCache = dataCachedInThisWrite;
         return StorageUtil.supply(ioExecutor, () -> {
             long written = delegate.writeSync(file, writeBuf);
             if (entry != null) {
@@ -534,11 +572,17 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 }
             }
             return written;
+        }).exceptionallyCompose(ex -> {
+            return CompletableFuture.failedFuture(flushAfterCache ? new CacheWrittenPersistFailedException(ex) : ex);
         });
     }
 
+    // Must be called under synchronized(entry).
     private ByteBuf buildWriteBuf(FileCacheEntry entry, ByteBuf data, long maxBytes) {
         long pendingBytes = entry.cacheEndOffset - entry.writtenToFsOffset;
+        if (pendingBytes == 0) {
+            return data;
+        }
         boolean overflow = pendingBytes + data.readableBytes() > maxBytes;
         long collectEnd = overflow
                 ? entry.writtenToFsOffset + Math.min(pendingBytes, maxBytes)
@@ -666,8 +710,17 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> transferTo(AsyncFile file, long position, long count, WritableByteChannel target) {
-        ensureFullCacheLoaded(file);
         FileCacheEntry entry = file.getCacheEntry();
+        if (shouldPreloadCache(file)) {
+            return StorageUtil.supply(ioExecutor, () -> {
+                loadFullCacheFromFile(file);
+                try {
+                    return transferToByCache(entry, position, count, target);
+                } catch (IOException e) {
+                    throw new SocketErrorException(e);
+                }
+            });
+        }
         if (preferDirectRead(file.cacheMode, entry, position, transferPreferCache)) {
             return delegate.transferTo(file, position, count, target);
         }

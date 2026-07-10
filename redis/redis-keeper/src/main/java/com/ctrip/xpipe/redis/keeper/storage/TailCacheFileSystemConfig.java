@@ -29,6 +29,8 @@ public class TailCacheFileSystemConfig {
     // When file size <= preloadChunkThreshold * chunkSize, use aligned reads for zero-copy cache population.
     // Otherwise read the whole file in one shot and copy into chunks. Default is 8.
     private int preloadChunkThreshold = 8;
+    // Max wait for FULL_CACHE preload; 0 wait until preload completes.
+    private long preloadTimeoutMs = 1000;
     private int maxWriteChunkThreshold = 32;
 
     public TailCacheFileSystemConfig() {
@@ -122,6 +124,16 @@ public class TailCacheFileSystemConfig {
     public TailCacheFileSystemConfig setPreloadChunkThreshold(int preloadChunkThreshold) {
         if (preloadChunkThreshold <= 0) throw new IllegalArgumentException("preloadChunkThreshold must be positive");
         this.preloadChunkThreshold = preloadChunkThreshold;
+        return this;
+    }
+
+    public long getPreloadTimeoutMs() {
+        return preloadTimeoutMs;
+    }
+
+    public TailCacheFileSystemConfig setPreloadTimeoutMs(long preloadTimeoutMs) {
+        if (preloadTimeoutMs < 0) throw new IllegalArgumentException("preloadTimeoutMs must be non-negative");
+        this.preloadTimeoutMs = preloadTimeoutMs;
         return this;
     }
 
