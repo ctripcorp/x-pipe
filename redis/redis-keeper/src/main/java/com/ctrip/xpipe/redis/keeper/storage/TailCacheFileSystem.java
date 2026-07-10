@@ -236,7 +236,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             synchronized (lockFor(key)) {
                 file.cacheEntry = acquireFileCacheEntry(key, write);
             }
-            file.onClose = () -> {
+            file.onCacheClose = () -> {
                 synchronized (lockFor(key)) {
                     releaseFileCacheEntry(key, write);
                 }
@@ -298,7 +298,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     private void awaitIoCachePrep(AsyncFile file, Runnable task) throws Exception {
         CompletableFuture<Void> future = StorageUtil.run(ioExecutor, () -> {
-            StorageUtil.requireOpen(file);
+            StorageUtil.requireCacheOpen(file);
             task.run();
         });
         if (preloadTimeoutMs > 0) {
@@ -401,7 +401,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         long readOffset = fromPosition ? file.position : offset;
         if (shouldPreloadCache(file)) {
             return StorageUtil.supply(ioExecutor, () -> {
-                StorageUtil.requireOpen(file);
+                StorageUtil.requireCacheOpen(file);
                 loadFullCacheFromFile(file);
                 ByteBuf cached;
                 synchronized (entry) {
@@ -429,7 +429,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
 
         return StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireOpen(file);
+            StorageUtil.requireCacheOpen(file);
             ByteBuf buf = delegate.readSync(file, length, readOffset, 0);
             if (fromPosition) {
                 file.position = readOffset + buf.readableBytes();
@@ -530,6 +530,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             data.release();
             throw new IllegalArgumentException("operation requires write mode: " + file.identifier());
         }
+        if (file.cacheClosed) {
+            data.release();
+            throw new IllegalStateException("file cache is closed: " + file.identifier());
+        }
         FileCacheEntry entry = file.getCacheEntry();
         final long writeSize = data.readableBytes();
         ByteBuf toWrite = null;
@@ -602,7 +606,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         final ByteBuf writeBuf = toWrite != null ? toWrite : data;
         CompletableFuture<Long> ioFuture = StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireOpen(file);
+            StorageUtil.requireCacheOpen(file);
             long written = delegate.writeSync(file, writeBuf);
             if (entry != null) {
                 synchronized (entry) {
@@ -617,7 +621,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return CompletableFuture.completedFuture(writeSize);
     }
 
-    private boolean shouldWaitForWriteIo(AsyncFile file) {
+    private boolean shouldWaitForWriteIo(AbstractStorageFile file) {
         return backingFsMode == BackingFsMode.NO_CACHE || file.cacheMode == CacheMode.NO_CACHE;
     }
 
@@ -657,7 +661,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     public CompletableFuture<Void> delete(AsyncFile file) {
         requireWriteMode(file);
         return StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireOpen(file);
+            StorageUtil.requireCacheOpen(file);
             delegate.deleteSync(file.path);
             FileCacheEntry entry = file.getCacheEntry();
             if (entry != null) {
@@ -700,7 +704,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Void> truncate(AsyncFile file, long size) {
         requireWriteMode(file);
-        StorageUtil.requireOpen(file);
+        StorageUtil.requireCacheOpen(file);
         FileCacheEntry entry = file.getCacheEntry();
         if (entry != null) {
             synchronized (entry) {
@@ -726,7 +730,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
         }
         CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
-            StorageUtil.requireOpen(file);
+            StorageUtil.requireCacheOpen(file);
             delegate.truncateSync(file, size);
         });
         if (shouldWaitForWriteIo(file)) {
@@ -742,7 +746,16 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> close(AsyncFile file) {
-        return delegate.close(file);
+        if (file.cacheClosed) {
+            return CompletableFuture.completedFuture(null);
+        }
+        file.cacheClosed = true;
+        file.onCacheClose.run();
+        CompletableFuture<Void> ioFuture = delegate.close(file);
+        if (shouldWaitForWriteIo(file)) {
+            return ioFuture;
+        }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -754,7 +767,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     public CompletableFuture<Void> fsync(AsyncFile file) {
         requireWriteMode(file);
         return StorageUtil.run(ioExecutor, () -> {
-            StorageUtil.requireOpen(file);
+            StorageUtil.requireCacheOpen(file);
             delegate.fsyncSync(file);
         });
     }
@@ -774,7 +787,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         FileCacheEntry entry = file.getCacheEntry();
         if (shouldPreloadCache(file)) {
             return StorageUtil.supply(ioExecutor, () -> {
-                StorageUtil.requireOpen(file);
+                StorageUtil.requireCacheOpen(file);
                 loadFullCacheFromFile(file);
                 try {
                     return transferToByCache(entry, position, count, target);
@@ -787,7 +800,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return delegate.transferTo(file, position, count, target);
         }
         return StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireOpen(file);
+            StorageUtil.requireCacheOpen(file);
             try {
                 return transferToByCache(entry, position, count, target);
             } catch (IOException e) {
@@ -821,7 +834,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             synchronized (lockFor(key)) {
                 acquireSegmentCacheEntry(key);
             }
-            file.onClose = () -> {
+            file.onCacheClose = () -> {
                 synchronized (lockFor(key)) {
                     releaseSegmentCacheEntry(key);
                 }
@@ -921,7 +934,16 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> close(AsyncSegmentFile file) {
-        return delegate.close(file);
+        if (file.cacheClosed) {
+            return CompletableFuture.completedFuture(null);
+        }
+        file.cacheClosed = true;
+        file.onCacheClose.run();
+        CompletableFuture<Void> ioFuture = delegate.close(file);
+        if (shouldWaitForWriteIo(file)) {
+            return ioFuture;
+        }
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override

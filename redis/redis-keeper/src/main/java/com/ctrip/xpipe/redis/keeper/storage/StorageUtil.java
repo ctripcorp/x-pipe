@@ -42,6 +42,12 @@ class StorageUtil {
         }
     }
 
+    static void requireCacheOpen(AbstractStorageFile file) {
+        if (file.cacheClosed) {
+            throw new IllegalStateException("file cache is closed: " + file.identifier());
+        }
+    }
+
     // Translates a checked IOException into a runtime exception that reflects
     // recovery semantics:
     //   StaleStateException  - mismatched state (file not found, already exists, channel closed, etc.)
