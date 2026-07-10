@@ -35,7 +35,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     // means "open segment is the tail — end is unbounded (writer may still append)".
     long openedSegmentStartOffset = Long.MAX_VALUE;
     long openedSegmentEndOffset = Long.MAX_VALUE;
-    long readPosition = 0;
+    long position = 0;
 
     @Override
     FileChannel currentWriteChannel() {
@@ -137,7 +137,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
 
     // Called after initFromFiles has populated the shared state.
     // Opens resources: for writer, open the tail segment + index files for append;
-    // for reader, seek readPosition to the first segment.
+    // for reader, seek position to the first segment.
     void openInitialResources(SegmentDirState s) throws IOException {
         if (s.isEmpty()) return;
 
@@ -152,7 +152,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
                 currentIndexFiles.put(indexPrefix, new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, openedSegmentStartOffset, ch, true));
             }
         } else {
-            readPosition = s.firstOffset;
+            position = s.firstOffset;
         }
     }
 
@@ -243,8 +243,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     boolean switchToSegment(long logicalOffset, SegmentDirState s) throws IOException {
-        if (logicalOffset >= openedSegmentStartOffset && logicalOffset < openedSegmentEndOffset
-                && currentSegmentChannel != null) {
+        if (logicalOffset >= openedSegmentStartOffset && logicalOffset < openedSegmentEndOffset) {
             return true;
         }
         if (s.isEmpty()) {
@@ -261,8 +260,6 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         }
         long segStart = s.floorKey(logicalOffset);
         closeCurrent();
-        currentSegmentChannel = FileChannel.open(
-                segmentPath(segStart), StandardOpenOption.READ);
         openedSegmentStartOffset = segStart;
         if (segStart == s.lastOffset) {
             openedSegmentEndOffset = Long.MAX_VALUE;
@@ -270,6 +267,14 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             openedSegmentEndOffset = segStart + Files.size(segmentPath(segStart));
         }
         return true;
+    }
+
+    void openSegmentChannelForRead() throws IOException {
+        if (currentSegmentChannel != null) {
+            return;
+        }
+        currentSegmentChannel = FileChannel.open(
+                segmentPath(openedSegmentStartOffset), StandardOpenOption.READ);
     }
 
     // lazy-create the first segment (starting at offset 0) and its index files for write mode.

@@ -59,30 +59,28 @@ public interface AsyncFileSystem {
     // Segment files operate using logical offsets instead of physical offsets.
     // It automatically deletes preceding non-contiguous segment files.
     // Write mode always opens the latest segment file and index files, and auto-closes them upon rollover.
-    // Read mode opens the segment file after the first read, and opens index files when getCurrentIndexFiles() is called. They auto-close when reading the next segment.
+    // Read mode opens the segment data channel lazily on read()/pread()/transferTo() only.
+    // file.position tracks the last logical read offset (initialized to the first segment start on open).
+    // getCurrentIndexFiles() opens index files for the segment at file.position without opening the data channel.
+    // Opened data and index channels auto-close when read()/transferTo() advances to the next segment.
+    // Mixing read()/position() with pread()/transferTo() on the same AsyncSegmentFile is NOT supported.
     // For a newly created (empty) segment file in write mode, the segment file will start at 0 unless truncate(offset) is called to specify the initial offset before writing.
     CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant);
     AsyncSegmentFile openSync(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant);
     // Only available in read mode.
-    // Mixing them with pread/transferTo on the same AsyncSegmentFile is NOT supported
-    // as pread/transferTo also require a certain segment to be opened.
     CompletableFuture<Void> position(AsyncSegmentFile file, long offset);
-    // Mixing them with pread/transferTo on the same AsyncSegmentFile is NOT supported
-    // as pread/transferTo also require a certain segment to be opened.
     // Caller must release() the returned ByteBuf when done.
     CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length);
-    // Mixing this with read()/position()/transferTo on the same AsyncSegmentFile is NOT supported
-    // as it also requires a certain segment to be opened.
     // Caller must release() the returned ByteBuf when done.
     CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length, long offset);
     CompletableFuture<Long> write(AsyncSegmentFile file, ByteBuf data);
     // Only available in write mode.
     CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file);
     List<Long> list(AsyncSegmentFile file);
-    // Returns the start offset of the segment associated with the current position.
-    // Returns -1 if the position is invalid.
+    // Returns the start offset of the currently opened segment; if none is open, returns the segment start
+    // at file.position when it equals a segment boundary (e.g. on first open). Returns -1 otherwise.
     long getCurrentSegmentStartOffset(AsyncSegmentFile file);
-    // position to one segment and then call this method to get the current index files.
+    // Returns index files for the segment at file.position.
     CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes);
     CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file);
     CompletableFuture<Long> size(AsyncSegmentFile file);
@@ -106,7 +104,5 @@ public interface AsyncFileSystem {
     void closeSync(AsyncSegmentFile file);
     // Only available in write mode.
     CompletableFuture<Void> fsync(AsyncSegmentFile file);
-    // Mixing transferTo with read()/position()/pread on the same AsyncSegmentFile is NOT supported
-    // as it also requires a certain segment to be opened.
     CompletableFuture<Long> transferTo(AsyncSegmentFile file, long offset, long count, WritableByteChannel target);
 }
