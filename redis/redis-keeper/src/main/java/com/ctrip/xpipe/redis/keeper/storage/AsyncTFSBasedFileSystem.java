@@ -352,8 +352,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             }
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
-        } finally {
-            file.onClose.run();
         }
     }
 
@@ -642,7 +640,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             throw StorageUtil.wrapIOException(e);
         } finally {
             releaseDirEntry(file.key, file.writeMode);
-            file.onClose.run();
         }
     }
 

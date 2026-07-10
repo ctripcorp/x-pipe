@@ -15,7 +15,8 @@ abstract class AbstractStorageFile {
     long pendingFsyncBytes = 0;
     final boolean writeMode;
     volatile CacheMode cacheMode = CacheMode.NO_CACHE;
-    volatile Runnable onClose = () -> {};
+    volatile Runnable onCacheClose = () -> {};
+    volatile boolean cacheClosed = false;
     volatile boolean closed = false;
 
     FileCacheEntry cacheEntry = null;

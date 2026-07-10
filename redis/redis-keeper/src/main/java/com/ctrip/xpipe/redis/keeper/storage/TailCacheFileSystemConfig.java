@@ -5,7 +5,7 @@ public class TailCacheFileSystemConfig {
     public enum BackingFsMode {
         // Cache writes; flush to FS asynchronously and return without waiting for IO.
         ASYNC,
-        // Cache reads and writes; FS is never touched. Runtime-only — not allowed at initialization.
+        // Cache reads and writes; FS is never touched.
         NO_FS,
         // No in-memory cache for writes; go directly to FS and wait for IO.
         NO_CACHE
@@ -56,16 +56,8 @@ public class TailCacheFileSystemConfig {
     }
 
     public TailCacheFileSystemConfig setBackingFsMode(BackingFsMode backingFsMode) {
-        requireConfigBackingFsMode(backingFsMode);
         this.backingFsMode = backingFsMode;
         return this;
-    }
-
-    static void requireConfigBackingFsMode(BackingFsMode backingFsMode) {
-        if (backingFsMode == BackingFsMode.NO_FS) {
-            throw new IllegalArgumentException(
-                    "backingFsMode NO_FS is not allowed at initialization; use TailCacheFileSystem.setBackingFsMode at runtime");
-        }
     }
 
     public long getMaxCacheSizeBytes() {
