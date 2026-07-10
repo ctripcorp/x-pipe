@@ -3,14 +3,12 @@ package com.ctrip.xpipe.redis.keeper.storage;
 public class TailCacheFileSystemConfig {
 
     public enum BackingFsMode {
-        // Write to FS before returning; write failure surfaces as an error immediately.
-        SYNC,
-        // Write to cache and return immediately; data is flushed to FS asynchronously.
-        // Requires cacheEnabled.
+        // Cache writes; flush to FS asynchronously and return without waiting for IO.
         ASYNC,
-        // All reads and writes go through cache only; FS is never touched.
-        // Requires cacheEnabled.
-        DISABLED
+        // Cache reads and writes; FS is never touched. Runtime-only — not allowed at initialization.
+        NO_FS,
+        // No in-memory cache for writes; go directly to FS and wait for IO.
+        NO_CACHE
     }
 
     // Setting to false prefers reading from the backing FS when data is available there; only intended for testing.
@@ -20,11 +18,10 @@ public class TailCacheFileSystemConfig {
     // independent — cache hit with page cache miss is entirely possible. Defaults to true for
     // more stable behavior.
     private boolean transferPreferCache = true;
-    private BackingFsMode backingFsMode = BackingFsMode.SYNC;
+    private BackingFsMode backingFsMode = BackingFsMode.ASYNC;
     private long maxCacheSizeBytes = 0;
     private long maxCacheSizePerTenantBytes = 0;
     private long expectedMinRetentionMs = 0;
-    private boolean cacheEnabled = true;
     private long chunkSize = 1 * 1024 * 1024;
     // When file size <= preloadChunkThreshold * chunkSize, use aligned reads for zero-copy cache population.
     // Otherwise read the whole file in one shot and copy into chunks. Default is 8.
@@ -59,14 +56,15 @@ public class TailCacheFileSystemConfig {
     }
 
     public TailCacheFileSystemConfig setBackingFsMode(BackingFsMode backingFsMode) {
-        requireCacheEnabledForBackingFsMode(cacheEnabled, backingFsMode);
+        requireConfigBackingFsMode(backingFsMode);
         this.backingFsMode = backingFsMode;
         return this;
     }
 
-    static void requireCacheEnabledForBackingFsMode(boolean cacheEnabled, BackingFsMode backingFsMode) {
-        if (!cacheEnabled && backingFsMode != BackingFsMode.SYNC) {
-            throw new IllegalArgumentException("when cacheEnabled is false, backingFsMode must be SYNC");
+    static void requireConfigBackingFsMode(BackingFsMode backingFsMode) {
+        if (backingFsMode == BackingFsMode.NO_FS) {
+            throw new IllegalArgumentException(
+                    "backingFsMode NO_FS is not allowed at initialization; use TailCacheFileSystem.setBackingFsMode at runtime");
         }
     }
 
@@ -94,16 +92,6 @@ public class TailCacheFileSystemConfig {
 
     public TailCacheFileSystemConfig setExpectedMinRetentionMs(long expectedMinRetentionMs) {
         this.expectedMinRetentionMs = expectedMinRetentionMs;
-        return this;
-    }
-
-    public boolean isCacheEnabled() {
-        return cacheEnabled;
-    }
-
-    public TailCacheFileSystemConfig setCacheEnabled(boolean cacheEnabled) {
-        requireCacheEnabledForBackingFsMode(cacheEnabled, backingFsMode);
-        this.cacheEnabled = cacheEnabled;
         return this;
     }
 
