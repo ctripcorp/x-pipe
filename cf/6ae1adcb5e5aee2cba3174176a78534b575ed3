@@ -1,0 +1,62 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/fakeredis/FakeRedisExceptionTest.java
+  s_8a78f8b0646572::t_7f2d2bdfbe8a6c 69
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/AbstractIntegratedTest.java
+  s_8a78f8b0646572::t_c3170d3ae1f0a7 19,25
+  s_8a78f8b0646572::t_35532420a33f6a 73-81
+  s_8a78f8b0646572::t_0dd521aa4378a8 202-203,212-213
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_8a78f8b0646572::t_0268b7314ecbf0 175-176,178,184-185,201
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AbstractRedisKeeperContextTest.java
+  s_8a78f8b0646572::t_9be4951e2a8b7c 127-128
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/ContainerResourceManager.java
+  s_8a78f8b0646572::t_da3d930231031d 3-8,10,14-15,26-30,43-72
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  s_8a78f8b0646572::t_c1fbfc6d2a7344 410-414
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/KeeperContainerService.java
+  s_8a78f8b0646572::t_4844575ee56869 131
+  s_8a78f8b0646572::t_936a77359a96ae 345
+  s_8a78f8b0646572::t_07dd2cde006f86 88
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/manul/BadKeeper.java
+  s_8a78f8b0646572::t_26bff79ad78735 47
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/container/KeeperContainerServiceTest.java
+  s_8a78f8b0646572::t_628d3c9ea023d7 16
+  s_8a78f8b0646572::t_e5aaee32c03eb8 86
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/manul/GivenDataKeeper.java
+  s_8a78f8b0646572::t_d592d6de915b5d 57
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManagerTest.java
+  s_8a78f8b0646572::t_f8d5c444ca739b 14
+  s_8a78f8b0646572::t_02ae6b3adb47a7 193-194
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/manul/KeeperCloseConnectionAfterPsync.java
+  s_8a78f8b0646572::t_5e1f50d80f2383 41
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java
+  s_8a78f8b0646572::t_adb75685bceb5c 345-349
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AbstractRedisKeeperTest.java
+  s_8a78f8b0646572::t_7e1859ac9d28bd 26
+  s_8a78f8b0646572::t_52700f09c2375a 65-66
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/meta/DefaultMetaStoreTest.java
+  s_8a78f8b0646572::t_003c90ecabcdc7 10
+  s_8a78f8b0646572::t_247f0fa4d77009 59-60
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/XRedisPartialTest.java
+  s_8a78f8b0646572::t_1f57b6a75d3422 96
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/GtidRedisKeeperServerTest.java
+  s_8a78f8b0646572::t_5db0d5ef7c6a0d 65-66
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperConfig.java
+  s_8a78f8b0646572::t_5cef0c9516ba9e 136-137
+  s_8a78f8b0646572::t_c46a59ba6f3f8c 22,25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.32-trip",
+  "base_commit_sha": "cf6ae1adcb5e5aee2cba3174176a78534b575ed3",
+  "prompts": {},
+  "sessions": {
+    "s_8a78f8b0646572": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d6876ad6-44bd-4e16-92ba-bb14c2c64b24",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
