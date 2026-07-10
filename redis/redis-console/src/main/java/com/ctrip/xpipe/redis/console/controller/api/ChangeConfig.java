@@ -193,7 +193,10 @@ public class ChangeConfig extends AbstractConsoleController{
     }
 
     private void validateSentinelBeaconCheckRequest(BeaconCheckConfigRequest beaconCheckConfigRequest) {
-        validateBeaconCheckConfigRequest(beaconCheckConfigRequest);
+        if (beaconCheckConfigRequest == null) {
+            throw new IllegalArgumentException("request body can not be empty");
+        }
+        beaconCheckConfigRequest.validate();
         String clusterName = beaconCheckConfigRequest.getClusterName();
         ClusterTbl cluster = clusterService.find(clusterName);
         if (cluster == null) {
@@ -203,26 +206,6 @@ public class ChangeConfig extends AbstractConsoleController{
             throw new IllegalArgumentException(String.format("cluster %s is not managed by beacon sentinel mode", clusterName));
         }
         beaconMetaService.validateSentinelBeaconOperatingDc(clusterName, beaconCheckConfigRequest.getDc());
-    }
-
-    private void validateBeaconCheckConfigRequest(BeaconCheckConfigRequest beaconCheckConfigRequest) {
-        if (beaconCheckConfigRequest == null) {
-            throw new IllegalArgumentException("request body can not be empty");
-        }
-        if (StringUtil.isEmpty(beaconCheckConfigRequest.getClusterName())) {
-            throw new IllegalArgumentException("clusterName can not be empty");
-        }
-        if (StringUtil.isEmpty(beaconCheckConfigRequest.getDc())) {
-            throw new IllegalArgumentException("dc can not be empty");
-        }
-        if (beaconCheckConfigRequest.getShards() == null || beaconCheckConfigRequest.getShards().isEmpty()) {
-            throw new IllegalArgumentException("shards can not be empty");
-        }
-        for (String shard : beaconCheckConfigRequest.getShards()) {
-            if (StringUtil.isEmpty(shard)) {
-                throw new IllegalArgumentException("shard name can not be empty");
-            }
-        }
     }
 
     private void checkClusterName(String clusterName) {

@@ -201,7 +201,8 @@ public class DefaultMonitorManager implements MonitorManager {
         }
 
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
-            if (isBeaconCandidate(dcMeta, clusterName, routeType)) {
+            if (BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, clusterName, routeType == BeaconRouteType.DR,
+                    consoleCommonConfig.getBeaconSupportZones())) {
                 result.add(dcMeta.getId().toUpperCase());
             }
         }
@@ -223,7 +224,8 @@ public class DefaultMonitorManager implements MonitorManager {
             if (!dcMeta.getId().equalsIgnoreCase(currentDc)) {
                 continue;
             }
-            if (!isBeaconCandidate(dcMeta, clusterName, BeaconRouteType.SENTINEL)) {
+            if (!BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, clusterName, false,
+                    Collections.emptySet())) {
                 continue;
             }
 
@@ -249,7 +251,8 @@ public class DefaultMonitorManager implements MonitorManager {
         }
 
         for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
-            if (!isBeaconCandidate(dcMeta, clusterName, BeaconRouteType.DR)) {
+            if (!BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, clusterName, true,
+                    consoleCommonConfig.getBeaconSupportZones())) {
                 continue;
             }
 
@@ -381,37 +384,6 @@ public class DefaultMonitorManager implements MonitorManager {
         return result;
     }
 
-    private boolean isBeaconCandidate(DcMeta dcMeta, String clusterName, BeaconRouteType routeType) {
-        ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
-        if (clusterMeta == null) return false;
-
-        ClusterType clusterType = ClusterType.lookup(!StringUtil.isEmpty(clusterMeta.getAzGroupType())
-                ? clusterMeta.getAzGroupType() : clusterMeta.getType());
-
-        if (routeType == BeaconRouteType.DR) {
-            Set<String> supportZones = consoleCommonConfig.getBeaconSupportZones();
-            if (!supportZones.isEmpty()
-                    && supportZones.stream().noneMatch(zone -> zone.equalsIgnoreCase(dcMeta.getZone()))) {
-                return false;
-            }
-            if (!ClusterType.supportClusterMigration(clusterMeta.getType(), clusterMeta.getAzGroupType())) {
-                return false;
-            }
-            if (clusterType.supportSingleActiveDC()
-                    && !dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc())) {
-                return false;
-            }
-        } else if (!BeaconSentinelMetaUtil.isSentinelManagedClusterType(clusterType)) {
-            return false;
-        }
-
-        return resolveBeaconSystemByRouteType(clusterType, routeType) != null;
-    }
-
-    /**
-     * Ensure each org exposes every configured {@link MonitorService}, even when no cluster matches.
-     * Cleanup jobs rely on MonitorService -> empty Set entries to unregister stale beacon clusters.
-     */
     private void fillMonitorServicePlaceholders(
             Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clusterByBeaconSystemOrg,
             Set<Long> orgIds, BeaconRouteType routeType) {

@@ -158,16 +158,4 @@ public class ChangeConfigTest {
         controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, request);
     }
 
-    @Test
-    public void testStopBeaconCheckRejectsWrongDc() throws Exception {
-        Mockito.doThrow(new IllegalArgumentException(
-                "dc oy is not a sentinel beacon interested dc for cluster cluster1"))
-                .when(beaconMetaService).validateSentinelBeaconOperatingDc(clusterName, "oy");
-        thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage("dc oy is not a sentinel beacon interested dc for cluster cluster1");
-        BeaconCheckConfigRequest request = new BeaconCheckConfigRequest()
-                .setClusterName(clusterName).setDc("oy").setShards(java.util.Collections.singletonList("shard1"));
-        controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, request);
-    }
-
 }

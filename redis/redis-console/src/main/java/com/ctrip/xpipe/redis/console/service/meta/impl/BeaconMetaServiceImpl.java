@@ -217,18 +217,14 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
         if (dcMeta == null) {
             throw new IllegalArgumentException(String.format("dc %s not found", dc));
         }
-        ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
-        if (clusterMeta == null) {
-            throw new IllegalArgumentException(String.format("cluster %s not found in dc %s", clusterName, dc));
-        }
-        ClusterType clusterType = BeaconSentinelMetaUtil.resolveEffectiveClusterType(clusterMeta);
-        if (!BeaconSentinelMetaUtil.isSentinelManagedClusterType(clusterType)) {
+        if (!BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, clusterName, false, Collections.emptySet())) {
+            ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
+            if (clusterMeta == null) {
+                throw new IllegalArgumentException(String.format("cluster %s not found in dc %s", clusterName, dc));
+            }
+            ClusterType clusterType = BeaconSentinelMetaUtil.resolveEffectiveClusterType(clusterMeta);
             throw new IllegalArgumentException(String.format("cluster %s type %s is not supported by beacon sentinel mode",
                     clusterName, clusterType));
-        }
-        if (!BeaconSentinelMetaUtil.isSentinelInterestedDc(clusterMeta, clusterType, dc)) {
-            throw new IllegalArgumentException(String.format("dc %s is not a sentinel beacon interested dc for cluster %s",
-                    dc, clusterName));
         }
     }
 

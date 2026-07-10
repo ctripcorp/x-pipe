@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * Shared sentinel-beacon meta helpers.
@@ -58,5 +60,34 @@ public final class BeaconSentinelMetaUtil {
                 .map(entry -> entry.getValue())
                 .findFirst()
                 .orElse(null);
+    }
+
+    public static boolean isBeaconCandidate(DcMeta dcMeta, String clusterName, boolean drRoute,
+                                            Set<String> beaconSupportZones) {
+        if (dcMeta == null || StringUtil.isEmpty(clusterName) || dcMeta.getClusters() == null) {
+            return false;
+        }
+        ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
+        if (clusterMeta == null) {
+            return false;
+        }
+
+        ClusterType clusterType = resolveEffectiveClusterType(clusterMeta);
+        if (drRoute) {
+            Set<String> supportZones = beaconSupportZones == null ? Collections.emptySet() : beaconSupportZones;
+            if (!supportZones.isEmpty()
+                    && supportZones.stream().noneMatch(zone -> zone.equalsIgnoreCase(dcMeta.getZone()))) {
+                return false;
+            }
+            if (!ClusterType.supportClusterMigration(clusterMeta.getType(), clusterMeta.getAzGroupType())) {
+                return false;
+            }
+            if (clusterType.supportSingleActiveDC()
+                    && !dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc())) {
+                return false;
+            }
+            return true;
+        }
+        return isSentinelManagedClusterType(clusterType);
     }
 }
