@@ -1,0 +1,52 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  h_6ceeb547b3b36a 412,580
+  s_c0872ebf037cc7::t_80f7593fae3605 40
+  s_c0872ebf037cc7::t_a9cfc96ae4b190 524-534
+  s_c0872ebf037cc7::t_7bc89ea1bd17b3 714,723
+  s_c0872ebf037cc7::t_2fc508a16aefca 371-372,374,376,381
+  s_c0872ebf037cc7::t_65a71f27b4ab88 555
+  s_c0872ebf037cc7::t_40f5be8e2ba050 715-722
+  s_c0872ebf037cc7::t_cd7550a7243e47 583,585
+  s_c0872ebf037cc7::t_7337006f38b702 148-156
+  s_c0872ebf037cc7::t_6255b3b1256c27 538
+  s_c0872ebf037cc7::t_82c0de2175e34d 535-536
+  s_c0872ebf037cc7::t_6193dc322c1304 566
+  s_c0872ebf037cc7::t_411a3c708e1e20 498,519
+  s_c0872ebf037cc7::t_dbde25b7895ac2 16
+  s_c0872ebf037cc7::t_9ce2046030bfc7 373,375,377-380
+  s_c0872ebf037cc7::t_6bdb8ec82cc56a 575
+  s_c0872ebf037cc7::t_13804dfa2e9d50 576
+  s_c0872ebf037cc7::t_e2c63386504d41 370,382
+  s_c0872ebf037cc7::t_c2dd4ddd5b23bc 584
+  s_c0872ebf037cc7::t_93647592e383bd 537
+  s_c0872ebf037cc7::t_6f58998c480b60 60
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystemConfig.java
+  h_6ceeb547b3b36a 32
+  s_c0872ebf037cc7::t_5b215bd6595f33 33
+  s_c0872ebf037cc7::t_4617d8e49c98f1 130-139
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/PreloadFailedException.java
+  s_c0872ebf037cc7::t_80b6e6063a5644 1-13
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/CacheWrittenPersistFailedException.java
+  s_c0872ebf037cc7::t_8348aae4d674a2 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.33-trip",
+  "base_commit_sha": "156c98135ce7a65d4f9cc49b0aa1e894796268e5",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_c0872ebf037cc7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "afaf16d3-6dea-4caa-b39a-139d1c5f4a77",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
