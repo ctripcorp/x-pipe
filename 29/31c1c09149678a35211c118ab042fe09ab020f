@@ -1,0 +1,33 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/beacon/BeaconSentinelMetaUtil.java
+  s_f6aa65f7012ddd::t_481b307f17a4ff 64-92
+  s_f6aa65f7012ddd::t_800fbc1e36963f 10-11
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/model/BeaconCheckConfigRequest.java
+  s_f6aa65f7012ddd::t_e963832d27212f 3-4,15-31
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/auto/DefaultMonitorManager.java
+  s_f6aa65f7012ddd::t_3dddf685a60f60 254-255
+  s_f6aa65f7012ddd::t_140038b64edc22 204-205
+  s_f6aa65f7012ddd::t_41f3212aee718f 227-228
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/ChangeConfig.java
+  s_f6aa65f7012ddd::t_dc2ada92192061 196-199
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/meta/impl/BeaconMetaServiceImpl.java
+  s_f6aa65f7012ddd::t_5d85bbde3d5b69 220-225
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/beacon/BeaconSentinelMetaUtilTest.java
+  s_f6aa65f7012ddd::t_a31cbea34a1c6a 10-13
+  s_f6aa65f7012ddd::t_1d4b237c131b64 50-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.33-trip",
+  "base_commit_sha": "2931c1c09149678a35211c118ab042fe09ab020f",
+  "prompts": {},
+  "sessions": {
+    "s_f6aa65f7012ddd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8fbe2ff7-5dc6-4c1b-b369-9ad8277e733b",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}
