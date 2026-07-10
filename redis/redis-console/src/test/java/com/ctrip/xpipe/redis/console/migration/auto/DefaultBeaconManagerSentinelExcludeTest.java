@@ -4,7 +4,7 @@ import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorClusterMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconCheckStatus;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;

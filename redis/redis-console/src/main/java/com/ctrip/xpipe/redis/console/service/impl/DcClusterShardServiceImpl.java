@@ -135,13 +135,6 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
 	}
 
 	@Override
-	public List<DcClusterShardTbl> findOperatingDcClusterShards() {
-		Date queryTime = new Date();
-		return queryHandler.handleQuery(() -> dao.findOperatingDcClusterShards(
-				queryTime, DateTimeUtils.DEFAULT_OPERATING_UNTIL, DcClusterShardTblEntity.READSET_OPERATING_SHARD_MONITOR));
-	}
-
-	@Override
 	public List<DcClusterShardTbl> findAllByDcId(long dcId) {
 		return queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
 			@Override

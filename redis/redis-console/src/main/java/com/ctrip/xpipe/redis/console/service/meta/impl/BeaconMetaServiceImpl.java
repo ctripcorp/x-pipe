@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -90,7 +91,7 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
         for (Map.Entry<String, ShardMeta> entry : clusterMeta.getShards().entrySet()) {
             String shardName = entry.getKey();
             ShardMeta shardMeta = entry.getValue();
-            if (isSentinelBeaconOperatingExcluded(shardMeta)) {
+            if (BeaconSentinelMetaUtil.isOperatingExcluded(shardMeta)) {
                 logger.info("[buildSentinelBeaconShards][{}][{}][{}][operatingExcluded] until {}",
                         cluster, dc, shardName, shardMeta.getOperatingUntil());
                 EventMonitor.DEFAULT.logEvent(SENTINEL_SHARD_EXCLUDE_CAT_TYPE,
@@ -217,7 +218,7 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
         if (dcMeta == null) {
             throw new IllegalArgumentException(String.format("dc %s not found", dc));
         }
-        if (!BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, clusterName, false, Collections.emptySet())) {
+        if (!BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, clusterName, BeaconRouteType.SENTINEL)) {
             ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
             if (clusterMeta == null) {
                 throw new IllegalArgumentException(String.format("cluster %s not found in dc %s", clusterName, dc));
@@ -230,13 +231,7 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
 
     @VisibleForTesting
     boolean isSentinelBeaconOperatingExcluded(ShardMeta shardMeta) {
-        if (shardMeta == null) {
-            return false;
-        }
-        Long operatingUntil = shardMeta.getOperatingUntil();
-        return operatingUntil != null
-                && operatingUntil > DateTimeUtils.DEFAULT_OPERATING_UNTIL_MILLIS
-                && System.currentTimeMillis() < operatingUntil;
+        return BeaconSentinelMetaUtil.isOperatingExcluded(shardMeta);
     }
 
     @VisibleForTesting

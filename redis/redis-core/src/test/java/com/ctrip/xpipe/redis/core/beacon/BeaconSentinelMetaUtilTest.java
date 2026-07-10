@@ -3,7 +3,9 @@ package com.ctrip.xpipe.redis.core.beacon;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -49,19 +51,40 @@ public class BeaconSentinelMetaUtilTest {
     }
 
     @Test
+    public void testIsOperatingExcluded() {
+        ShardMeta shardMeta = new ShardMeta("shard1");
+        Assert.assertFalse(BeaconSentinelMetaUtil.isOperatingExcluded(shardMeta));
+
+        shardMeta.setOperatingUntil(System.currentTimeMillis() + 60_000L);
+        Assert.assertTrue(BeaconSentinelMetaUtil.isOperatingExcluded(shardMeta));
+
+        shardMeta.setOperatingUntil(DateTimeUtils.DEFAULT_OPERATING_UNTIL_MILLIS);
+        Assert.assertFalse(BeaconSentinelMetaUtil.isOperatingExcluded(shardMeta));
+
+        shardMeta.setOperatingUntil(System.currentTimeMillis() - 1L);
+        Assert.assertFalse(BeaconSentinelMetaUtil.isOperatingExcluded(shardMeta));
+    }
+
+    @Test
     public void testIsBeaconCandidateForSentinelRoute() {
         DcMeta dcMeta = new DcMeta("jq");
         ClusterMeta oneWay = new ClusterMeta("cluster1");
         oneWay.setType(ClusterType.ONE_WAY.name());
         dcMeta.addCluster(oneWay);
 
-        Assert.assertTrue(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster1", false, Collections.emptySet()));
-        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "missing", false, Collections.emptySet()));
+        Assert.assertTrue(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster1", BeaconRouteType.SENTINEL));
+        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "missing", BeaconRouteType.SENTINEL));
 
         ClusterMeta biDirection = new ClusterMeta("cluster2");
         biDirection.setType(ClusterType.BI_DIRECTION.name());
         dcMeta.addCluster(biDirection);
-        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster2", false, Collections.emptySet()));
+        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster2", BeaconRouteType.SENTINEL));
+
+        ClusterMeta azGroupOverride = new ClusterMeta("cluster3");
+        azGroupOverride.setType(ClusterType.ONE_WAY.name());
+        azGroupOverride.setAzGroupType(ClusterType.BI_DIRECTION.name());
+        dcMeta.addCluster(azGroupOverride);
+        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster3", BeaconRouteType.SENTINEL));
     }
 
     @Test
@@ -74,7 +97,7 @@ public class BeaconSentinelMetaUtilTest {
         dcMeta.addCluster(oneWay);
 
         Set<String> supportZones = new HashSet<>(Collections.singleton("SHA"));
-        Assert.assertTrue(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster1", true, supportZones));
-        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster1", true, Collections.singleton("AWS")));
+        Assert.assertTrue(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster1", BeaconRouteType.DR, supportZones));
+        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster1", BeaconRouteType.DR, Collections.singleton("AWS")));
     }
 }

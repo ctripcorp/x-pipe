@@ -70,6 +70,11 @@ public class CommonConfigBean extends AbstractConfigBean {
     public static final String KEY_BEACON_SENTINEL_GRAY_CLUSTERS = "beacon.sentinel.gray.clusters";
     public static final String KEY_BEACON_SENTINEL_GRAY_BU = "beacon.sentinel.gray.bu";
 
+    public static final String KEY_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI =
+            "console.abnormal.cluster.status.monitor.interval.milli";
+
+    private static final long DEFAULT_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI = 60 * 1000L;
+
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
 
     public CommonConfigBean() {
@@ -208,6 +213,11 @@ public class CommonConfigBean extends AbstractConfigBean {
             }
         });
         return result;
+    }
+
+    public long getAbnormalClusterStatusMonitorIntervalMilli() {
+        return getLongProperty(KEY_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI,
+                DEFAULT_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI);
     }
 
 }

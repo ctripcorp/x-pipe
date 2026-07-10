@@ -3,9 +3,12 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.clusterstatus;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.metric.MetricProxyException;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
-import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
-import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -15,10 +18,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.Arrays;
-import java.util.Collections;
-
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -31,31 +30,34 @@ public class OperatingShardMonitorTest {
     private OperatingShardMonitor monitor;
 
     @Mock
-    private DcClusterShardService dcClusterShardService;
+    private MetaCache metaCache;
 
     @Mock
     private MetricProxy metricProxy;
 
     @Mock
-    private ConsoleConfig consoleConfig;
+    private ConsoleCommonConfig commonConfig;
 
     @Before
     public void setUp() {
         monitor.setMetricProxy(metricProxy);
-        when(consoleConfig.getAbnormalClusterStatusMonitorIntervalMilli()).thenReturn(30_000L);
+        when(commonConfig.getAbnormalClusterStatusMonitorIntervalMilli()).thenReturn(60_000L);
     }
 
     @Test
     public void testReportOperatingShards() throws MetricProxyException {
-        DcClusterShardTbl shard1 = mock(DcClusterShardTbl.class);
-        when(shard1.getDcName()).thenReturn("jq");
-        when(shard1.getClusterName()).thenReturn("cluster1");
-        when(shard1.getShardName()).thenReturn("shard1");
-        DcClusterShardTbl shard2 = mock(DcClusterShardTbl.class);
-        when(shard2.getDcName()).thenReturn("jq");
-        when(shard2.getClusterName()).thenReturn("cluster1");
-        when(shard2.getShardName()).thenReturn("shard2");
-        when(dcClusterShardService.findOperatingDcClusterShards()).thenReturn(Arrays.asList(shard1, shard2));
+        ShardMeta shard1 = new ShardMeta("shard1");
+        shard1.setOperatingUntil(System.currentTimeMillis() + 60_000L);
+        ShardMeta shard2 = new ShardMeta("shard2");
+        shard2.setOperatingUntil(System.currentTimeMillis() + 60_000L);
+        ClusterMeta clusterMeta = new ClusterMeta("cluster1");
+        clusterMeta.addShard(shard1);
+        clusterMeta.addShard(shard2);
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(clusterMeta);
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        xpipeMeta.addDc(dcMeta);
+        when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
 
         monitor.doAction();
 
@@ -72,7 +74,23 @@ public class OperatingShardMonitorTest {
 
     @Test
     public void testSkipWhenNoOperatingShard() throws MetricProxyException {
-        when(dcClusterShardService.findOperatingDcClusterShards()).thenReturn(Collections.emptyList());
+        ShardMeta shard1 = new ShardMeta("shard1");
+        ClusterMeta clusterMeta = new ClusterMeta("cluster1");
+        clusterMeta.addShard(shard1);
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(clusterMeta);
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        xpipeMeta.addDc(dcMeta);
+        when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        monitor.doAction();
+
+        verifyNoInteractions(metricProxy);
+    }
+
+    @Test
+    public void testSkipWhenMetaNotReady() throws MetricProxyException {
+        when(metaCache.getXpipeMeta()).thenReturn(null);
 
         monitor.doAction();
 
@@ -81,7 +99,7 @@ public class OperatingShardMonitorTest {
 
     @Test
     public void testInterval() {
-        Assert.assertEquals(30_000L, monitor.getIntervalMilli());
-        Assert.assertEquals(30_000L, monitor.getLeastIntervalMilli());
+        Assert.assertEquals(60_000L, monitor.getIntervalMilli());
+        Assert.assertEquals(60_000L, monitor.getLeastIntervalMilli());
     }
 }

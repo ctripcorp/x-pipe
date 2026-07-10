@@ -62,11 +62,12 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 		int rdbDumpCount1 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
 
 		InMemoryGapAllowedSync gasync = sendInmemoryGAsync("localhost", keeperPort);
-		waitConditionUntilTimeOut(() -> gasync.getCommands().length >= fakeRedisServer.getCommandsLength());
-		int rdbDumpCount2 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
-		Assert.assertEquals(rdbDumpCount1 + 1, rdbDumpCount2);
-
-		assertGAsyncResultEquals(gasync);
+		waitConditionUntilTimeOut(() -> assertSuccess(() -> {
+			Assert.assertEquals(rdbDumpCount1 + 1,
+					((DefaultReplicationStore) redisKeeperServer.getReplicationStore()).getRdbUpdateCount());
+			Assert.assertArrayEquals(fakeRedisServer.getRdbContent(), gasync.getRdb());
+			Assert.assertEquals(fakeRedisServer.currentCommands(), new String(gasync.getCommands()));
+		}));
 	}
 
 

@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.clusterstatus;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.metric.MetricProxyException;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -35,12 +35,12 @@ public class AbnormalClusterStatusMonitorTest {
     private MetricProxy metricProxy;
 
     @Mock
-    private ConsoleConfig consoleConfig;
+    private ConsoleCommonConfig commonConfig;
 
     @Before
     public void setUp() {
         monitor.setMetricProxy(metricProxy);
-        when(consoleConfig.getAbnormalClusterStatusMonitorIntervalMilli()).thenReturn(30_000L);
+        when(commonConfig.getAbnormalClusterStatusMonitorIntervalMilli()).thenReturn(60_000L);
     }
 
     @Test
@@ -96,7 +96,7 @@ public class AbnormalClusterStatusMonitorTest {
 
     @Test
     public void testInterval() {
-        Assert.assertEquals(30_000L, monitor.getIntervalMilli());
-        Assert.assertEquals(30_000L, monitor.getLeastIntervalMilli());
+        Assert.assertEquals(60_000L, monitor.getIntervalMilli());
+        Assert.assertEquals(60_000L, monitor.getLeastIntervalMilli());
     }
 }

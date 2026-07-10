@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon;
 
 import com.ctrip.xpipe.redis.checker.BeaconManager;
-import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.healthcheck.CheckInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstance;

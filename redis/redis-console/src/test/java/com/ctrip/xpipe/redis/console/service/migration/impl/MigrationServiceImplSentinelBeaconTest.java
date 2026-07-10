@@ -4,7 +4,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
-import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;

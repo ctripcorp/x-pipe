@@ -3,7 +3,9 @@ package com.ctrip.xpipe.redis.core.beacon;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.Arrays;
@@ -30,6 +32,16 @@ public final class BeaconSentinelMetaUtil {
         return clusterType == ClusterType.ONE_WAY
                 || clusterType == ClusterType.SINGLE_DC
                 || clusterType == ClusterType.LOCAL_DC;
+    }
+
+    public static boolean isOperatingExcluded(ShardMeta shardMeta) {
+        if (shardMeta == null) {
+            return false;
+        }
+        Long operatingUntil = shardMeta.getOperatingUntil();
+        return operatingUntil != null
+                && operatingUntil > DateTimeUtils.DEFAULT_OPERATING_UNTIL_MILLIS
+                && System.currentTimeMillis() < operatingUntil;
     }
 
     public static boolean isDcInClusterDcs(ClusterMeta clusterMeta, String dc) {
@@ -62,7 +74,19 @@ public final class BeaconSentinelMetaUtil {
                 .orElse(null);
     }
 
-    public static boolean isBeaconCandidate(DcMeta dcMeta, String clusterName, boolean drRoute,
+    public static BeaconSystem resolveBeaconSystemByRouteType(ClusterType clusterType, BeaconRouteType routeType) {
+        BeaconSystem beaconSystem = BeaconSystem.findByClusterType(clusterType);
+        if (beaconSystem != null) {
+            return beaconSystem;
+        }
+        return BeaconSystem.XPIPE_ONE_WAY;
+    }
+
+    public static boolean isBeaconCandidate(DcMeta dcMeta, String clusterName, BeaconRouteType routeType) {
+        return isBeaconCandidate(dcMeta, clusterName, routeType, Collections.emptySet());
+    }
+
+    public static boolean isBeaconCandidate(DcMeta dcMeta, String clusterName, BeaconRouteType routeType,
                                             Set<String> beaconSupportZones) {
         if (dcMeta == null || StringUtil.isEmpty(clusterName) || dcMeta.getClusters() == null) {
             return false;
@@ -72,8 +96,10 @@ public final class BeaconSentinelMetaUtil {
             return false;
         }
 
-        ClusterType clusterType = resolveEffectiveClusterType(clusterMeta);
-        if (drRoute) {
+        ClusterType clusterType = ClusterType.lookup(!StringUtil.isEmpty(clusterMeta.getAzGroupType())
+                ? clusterMeta.getAzGroupType() : clusterMeta.getType());
+
+        if (routeType == BeaconRouteType.DR) {
             Set<String> supportZones = beaconSupportZones == null ? Collections.emptySet() : beaconSupportZones;
             if (!supportZones.isEmpty()
                     && supportZones.stream().noneMatch(zone -> zone.equalsIgnoreCase(dcMeta.getZone()))) {
@@ -86,8 +112,10 @@ public final class BeaconSentinelMetaUtil {
                     && !dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc())) {
                 return false;
             }
-            return true;
+        } else if (!isSentinelManagedClusterType(clusterType)) {
+            return false;
         }
-        return isSentinelManagedClusterType(clusterType);
+
+        return resolveBeaconSystemByRouteType(clusterType, routeType) != null;
     }
 }

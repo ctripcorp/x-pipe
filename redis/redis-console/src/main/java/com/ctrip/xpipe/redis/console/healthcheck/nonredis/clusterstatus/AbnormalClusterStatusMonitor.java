@@ -6,6 +6,7 @@ import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.metric.MetricProxyException;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.MigrationClusterTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -26,6 +27,9 @@ public class AbnormalClusterStatusMonitor extends AbstractCrossDcIntervalAction 
 
     @Autowired
     private ClusterService clusterService;
+
+    @Autowired
+    private ConsoleCommonConfig commonConfig;
 
     private MetricProxy metricProxy = ServicesUtil.getMetricProxy();
 
@@ -75,12 +79,12 @@ public class AbnormalClusterStatusMonitor extends AbstractCrossDcIntervalAction 
 
     @Override
     protected long getIntervalMilli() {
-        return consoleConfig.getAbnormalClusterStatusMonitorIntervalMilli();
+        return commonConfig.getAbnormalClusterStatusMonitorIntervalMilli();
     }
 
     @Override
     protected long getLeastIntervalMilli() {
-        return consoleConfig.getAbnormalClusterStatusMonitorIntervalMilli();
+        return commonConfig.getAbnormalClusterStatusMonitorIntervalMilli();
     }
 
     @Override

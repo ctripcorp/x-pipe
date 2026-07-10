@@ -6,8 +6,13 @@ import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.metric.MetricProxyException;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.AbstractCrossDcIntervalAction;
-import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
-import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class OperatingShardMonitor extends AbstractCrossDcIntervalAction {
@@ -24,32 +30,49 @@ public class OperatingShardMonitor extends AbstractCrossDcIntervalAction {
     static final String METRIC_TYPE = "operating.shard";
 
     @Autowired
-    private DcClusterShardService dcClusterShardService;
+    private MetaCache metaCache;
+
+    @Autowired
+    private ConsoleCommonConfig commonConfig;
 
     private MetricProxy metricProxy = ServicesUtil.getMetricProxy();
 
     @Override
     protected void doAction() {
-        List<DcClusterShardTbl> operatingShards = dcClusterShardService.findOperatingDcClusterShards();
-        if (operatingShards == null || operatingShards.isEmpty()) {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null || xpipeMeta.getDcs() == null) {
             logger.info("[doAction][{}] report 0 operating shards", METRIC_TYPE);
             return;
         }
-        for (DcClusterShardTbl shard : operatingShards) {
-            reportShard(shard);
+
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            if (dcMeta.getClusters() == null) {
+                continue;
+            }
+            for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                if (clusterMeta.getShards() == null) {
+                    continue;
+                }
+                for (Map.Entry<String, ShardMeta> entry : clusterMeta.getShards().entrySet()) {
+                    if (BeaconSentinelMetaUtil.isOperatingExcluded(entry.getValue())) {
+                        reportShard(dcMeta.getId(), clusterMeta.getId(), entry.getKey());
+                    }
+                }
+            }
         }
-        logger.info("[doAction][{}] report {} operating shards", METRIC_TYPE, operatingShards.size());
+
+        logger.info("[doAction][{}] report operating shards", METRIC_TYPE);
     }
 
-    private void reportShard(DcClusterShardTbl shard) {
-        String dcName = nullToEmpty(shard.getDcName());
-        String clusterName = nullToEmpty(shard.getClusterName());
-        String shardName = nullToEmpty(shard.getShardName());
-        EventMonitor.DEFAULT.logEvent(CAT_TYPE, shardName);
+    private void reportShard(String dcName, String clusterName, String shardName) {
+        String dc = nullToEmpty(dcName);
+        String cluster = nullToEmpty(clusterName);
+        String shard = nullToEmpty(shardName);
+        EventMonitor.DEFAULT.logEvent(CAT_TYPE, shard);
         try {
-            metricProxy.writeBinMultiDataPoint(buildMetricData(dcName, clusterName, shardName));
+            metricProxy.writeBinMultiDataPoint(buildMetricData(dc, cluster, shard));
         } catch (MetricProxyException e) {
-            logger.error("[reportShard][{}][{}][{}]", dcName, clusterName, shardName, e);
+            logger.error("[reportShard][{}][{}][{}]", dc, cluster, shard, e);
         }
     }
 
@@ -69,12 +92,12 @@ public class OperatingShardMonitor extends AbstractCrossDcIntervalAction {
 
     @Override
     protected long getIntervalMilli() {
-        return consoleConfig.getAbnormalClusterStatusMonitorIntervalMilli();
+        return commonConfig.getAbnormalClusterStatusMonitorIntervalMilli();
     }
 
     @Override
     protected long getLeastIntervalMilli() {
-        return consoleConfig.getAbnormalClusterStatusMonitorIntervalMilli();
+        return commonConfig.getAbnormalClusterStatusMonitorIntervalMilli();
     }
 
     @Override

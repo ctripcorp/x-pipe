@@ -1,4 +1,4 @@
-package com.ctrip.xpipe.redis.checker;
+package com.ctrip.xpipe.redis.core.beacon;
 
 public enum BeaconRouteType {
 

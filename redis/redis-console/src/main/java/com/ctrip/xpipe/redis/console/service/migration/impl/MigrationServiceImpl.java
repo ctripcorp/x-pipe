@@ -8,7 +8,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
-import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.DcRelationsService;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;

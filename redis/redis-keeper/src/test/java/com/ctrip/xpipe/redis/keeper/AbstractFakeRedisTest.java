@@ -22,7 +22,6 @@ import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -163,8 +162,10 @@ public class AbstractFakeRedisTest extends AbstractRedisKeeperContextTest{
 	}
 
 	protected void waitForGAsyncResultEquals(InMemoryGapAllowedSync gasync) throws Exception {
-		waitConditionUntilTimeOut(() -> Arrays.equals(gasync.getRdb(), fakeRedisServer.getRdbContent())
-						&& new String(gasync.getCommands()).equals(fakeRedisServer.currentCommands()));
+		waitConditionUntilTimeOut(() -> assertSuccess(() -> {
+			Assert.assertArrayEquals(fakeRedisServer.getRdbContent(), gasync.getRdb());
+			Assert.assertEquals(fakeRedisServer.currentCommands(), new String(gasync.getCommands()));
+		}));
 	}
 
 	protected void assertGAsyncResultEquals(InMemoryGapAllowedSync gasync) {

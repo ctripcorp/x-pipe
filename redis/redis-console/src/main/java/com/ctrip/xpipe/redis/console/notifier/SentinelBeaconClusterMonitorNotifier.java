@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.notifier;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
-import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;

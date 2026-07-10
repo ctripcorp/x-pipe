@@ -13,4 +13,6 @@ public interface ConsoleCommonConfig {
     int monitorUnregisterProtectCount();
 
     boolean isKeeperMsgCollectOn();
+
+    long getAbnormalClusterStatusMonitorIntervalMilli();
 }

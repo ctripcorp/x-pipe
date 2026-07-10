@@ -5,7 +5,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.CheckerService;
-import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;

@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.console.beacon;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.console.config.model.BeaconClusterRoute;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
 import com.ctrip.xpipe.redis.console.controller.api.vo.DRBeaconUsageItem;

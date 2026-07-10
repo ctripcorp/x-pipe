@@ -20,6 +20,9 @@ public class DefaultCommonConfig extends AbstractConfigBean implements ConsoleCo
     private static final String KEY_BEACON_SUPPORT_ZONE = "beacon.zone";
     private static final String KEY_MONITOR_UNREGISTER_PROTECT_COUNT = "monitor.unregister.protect.count";
     private static final String KEY_KEEPER_MSG_COLLECT = "keeper.msg.collect";
+    private static final String KEY_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI =
+            "console.abnormal.cluster.status.monitor.interval.milli";
+    private static final long DEFAULT_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI = 60 * 1000L;
 
     public DefaultCommonConfig() {
         super(ConfigProvider.DEFAULT.getOrCreateConfig(COMMON_CONFIG));
@@ -38,6 +41,12 @@ public class DefaultCommonConfig extends AbstractConfigBean implements ConsoleCo
     @Override
     public boolean isKeeperMsgCollectOn() {
         return getBooleanProperty(KEY_KEEPER_MSG_COLLECT, true);
+    }
+
+    @Override
+    public long getAbnormalClusterStatusMonitorIntervalMilli() {
+        return getLongProperty(KEY_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI,
+                DEFAULT_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI);
     }
 
 }
