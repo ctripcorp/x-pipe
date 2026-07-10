@@ -327,8 +327,14 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public void closeSync(AsyncFile file) {
+        if (file.closed) {
+            return;
+        }
+        file.closed = true;
         try {
-            file.channel.close();
+            if (file.channel != null) {
+                file.channel.close();
+            }
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         } finally {
@@ -608,6 +614,10 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public void closeSync(AsyncSegmentFile file) {
+        if (file.closed) {
+            return;
+        }
+        file.closed = true;
         try {
             file.closeCurrent();
         } catch (IOException e) {
