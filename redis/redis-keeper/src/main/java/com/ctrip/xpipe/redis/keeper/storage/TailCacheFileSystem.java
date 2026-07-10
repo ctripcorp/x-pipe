@@ -842,27 +842,21 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     public CompletableFuture<Long> transferTo(AsyncFile file, long position, long count, WritableByteChannel target) {
         FileCacheEntry entry = file.getCacheEntry();
         if (shouldPreloadCache(file)) {
-            return StorageUtil.supply(ioExecutor, () -> {
-                StorageUtil.requireCacheOpen(file);
-                loadFullCacheFromFile(file);
-                try {
-                    return transferToByCache(entry, position, count, target);
-                } catch (IOException e) {
-                    throw new SocketErrorException(e);
-                }
-            });
-        }
-        if (preferDirectRead(file.cacheMode, entry, position, transferPreferCache)) {
+            try {
+                awaitIoCachePrep(file, () -> loadFullCacheFromFile(file));
+            } catch (Exception e) {
+                logger.error("preload failed for {}", file.path, e);
+                throw new PreloadFailedException(e);
+            }
+        } else if (preferDirectRead(file.cacheMode, entry, position, transferPreferCache)) {
             return delegate.transferTo(file, position, count, target);
         }
-        return StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
-            try {
-                return transferToByCache(entry, position, count, target);
-            } catch (IOException e) {
-                throw new SocketErrorException(e);
-            }
-        });
+        StorageUtil.requireCacheOpen(file);
+        try {
+            return CompletableFuture.completedFuture(transferToByCache(entry, position, count, target));
+        } catch (IOException e) {
+            return CompletableFuture.failedFuture(new SocketErrorException(e));
+        }
     }
 
     // ---- AsyncSegmentFile ----
