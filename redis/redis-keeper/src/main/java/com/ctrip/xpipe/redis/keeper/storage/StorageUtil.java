@@ -36,6 +36,12 @@ class StorageUtil {
         return path + "\0" + prefix;
     }
 
+    static void requireOpen(AbstractStorageFile file) {
+        if (file.closed) {
+            throw new IllegalStateException("file is closed: " + file.identifier());
+        }
+    }
+
     // Translates a checked IOException into a runtime exception that reflects
     // recovery semantics:
     //   StaleStateException  - mismatched state (file not found, already exists, channel closed, etc.)
