@@ -32,46 +32,8 @@ public class BlockWriter implements AutoCloseable {
         this.controllableFile = new DefaultControllableFile(file);
     }
 
-    public void recover(long offset, long startGno) throws IOException {
-        long fileSize = this.controllableFile.getFileChannel().size();
-        if (offset < 0 || offset >= fileSize) {
-            throw new IOException("Invalid offset for recovery.");
-        }
-
-        long remain = this.controllableFile.getFileChannel().size() - offset;
-        if(remain >= BLOCK_NAX_SIZE * Integer.BYTES) {
-            // remain
-            throw new IOException(String.format("[%d] recover offset %d fail", remain, offset));
-        }
-        ByteBuffer buffer = ByteBuffer.allocate((int) remain);
-        this.controllableFile.getFileChannel().position(offset);
-        int bytesRead = this.controllableFile.getFileChannel().read(buffer);
-        if (bytesRead != remain) {
-            throw new IOException("Could not read the specified amount of data from the file.");
-        }
-        buffer.flip(); // Prepare the buffer for reading
-        int cnt = 0;
-        long gno = startGno - 1;
-        while (buffer.remaining() > 0) {
-            int val = VarInt.getVarInt(buffer);
-            this.cmdOffset += val;
-            cnt++;
-            gno++;
-        }
-        this.size = cnt;
-        this.currentGno = gno;
-    }
-
-    private boolean isFull() {
-        return this.size >= BLOCK_NAX_SIZE;
-    }
-
-    private boolean isGnoGap(String uuid, long gno) {
+    public boolean isGnoGap(String uuid, long gno) {
         return !StringUtil.trimEquals(this.currentUuid, uuid) || gno != currentGno + 1;
-    }
-
-    public boolean needChangeBlock(String uuid, long gno) {
-        return isFull() || isGnoGap(uuid, gno);
     }
 
     public void append(String uuid, long gno, int offset) throws IOException {

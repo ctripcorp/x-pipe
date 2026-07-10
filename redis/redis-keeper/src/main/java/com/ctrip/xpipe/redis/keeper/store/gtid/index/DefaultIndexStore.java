@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.redis.core.store.CommandWriterCallback;
 import com.ctrip.xpipe.redis.core.store.GtidCmdFilter;
 import com.ctrip.xpipe.redis.core.store.IndexStore;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.replication.LostGtidsetBacklogConflictException;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.tuple.Pair;
@@ -30,12 +31,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
+import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX_V2;
 
 public class DefaultIndexStore implements IndexStore, StreamTransactionListener {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultIndexStore.class);
 
     private IndexWriter indexWriter;
+
+    private IndexWriterV2 indexWriterV2;      // v2
+
 
     private StreamCommandReader streamCommandReader;
 
@@ -55,7 +60,9 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     private CKStore ckStore;
 
-    public DefaultIndexStore(String baseDir, RedisOpParser redisOpParser,
+    private KeeperConfig keeperConfig;
+
+    public DefaultIndexStore(KeeperConfig keeperConfig, CKStore ckStore, String baseDir, RedisOpParser redisOpParser,
                              CommandWriterCallback commandWriterCallback, GtidCmdFilter gtidCmdFilter, String currentCmdFileName) {
         this.baseDir = baseDir;
         this.opParser = redisOpParser;
@@ -64,11 +71,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         this.gtidCmdFilter = gtidCmdFilter;
         this.writerCmdEnabled = true;
         this.currentCmdFileName = currentCmdFileName;
-    }
-
-    public DefaultIndexStore(CKStore ckStore, String baseDir, RedisOpParser redisOpParser,
-                             CommandWriterCallback commandWriterCallback, GtidCmdFilter gtidCmdFilter, String currentCmdFileName) {
-        this(baseDir,redisOpParser,commandWriterCallback,gtidCmdFilter,currentCmdFileName);
+        this.keeperConfig = keeperConfig;
         this.ckStore = ckStore;
     }
 
@@ -76,13 +79,20 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     public void openWriter(CommandWriter cmdWriter) throws IOException {
         this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
         this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size());
-        this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
-        this.indexWriter.init();
+        if(keeperConfig.dualWrite()) {
+            this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
+            this.indexWriter.init();
+        }
+        this.indexWriterV2 = new IndexWriterV2(baseDir, currentCmdFileName, startGtidSet, this,
+                keeperConfig.getIndexZoneConsecutiveThreshold(),
+                keeperConfig.getIndexMixedTotalBytesThreshold(),
+                keeperConfig.getBlockSizeThreshold());
+        this.indexWriterV2.init();
     }
 
     @Override
     public synchronized void write(ByteBuf byteBuf) throws IOException {
-        if(indexWriter == null) {
+        if(indexWriterV2 == null && indexWriter == null) {
             throw new IllegalStateException("index writer not open");
         }
         streamCommandReader.doRead(byteBuf);
@@ -94,11 +104,19 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     public synchronized void doSwitchCmdFile(String cmdFileName) throws IOException {
-        GtidSet continueGtidSet = this.indexWriter.getGtidSet();
+        GtidSet continueGtidSet = (indexWriterV2 != null) ? indexWriterV2.getGtidSet() : indexWriter.getGtidSet();
+        if (indexWriter != null) indexWriter.close();
+        if (indexWriterV2 != null) indexWriterV2.close();
+        if (keeperConfig.dualWrite()) {
+            this.indexWriter = new IndexWriter(baseDir, cmdFileName, continueGtidSet, this);
+            this.indexWriter.init();
+        }
+        this.indexWriterV2 = new IndexWriterV2(baseDir, cmdFileName, continueGtidSet, this,
+                keeperConfig.getIndexZoneConsecutiveThreshold(),
+                keeperConfig.getIndexMixedTotalBytesThreshold(),
+                keeperConfig.getBlockSizeThreshold());
+        this.indexWriterV2.init();
         this.currentCmdFileName = cmdFileName;
-        this.indexWriter.close();
-        this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, continueGtidSet, this);
-        this.indexWriter.init();
         this.streamCommandReader.resetOffset();
         logger.info("[switchCmdFile] index_store switch to {}", currentCmdFileName);
     }
@@ -124,24 +142,24 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     @Override
-    public boolean preAppend(String gtid, long offset) throws IOException {
+    public boolean preAppend(String uuid,long gno) throws IOException {
 //        String[] parts = gtid.split(":");
 //        if (parts.length != 2 || parts[0].length() != 40) {
 //            throw new IllegalArgumentException("Invalid gtid: " + gtid);
 //        }
-        String uuid = gtid.substring(0,40);
-        long gno = Long.parseLong(gtid.substring(41));
+
         if(gtidCmdFilter.gtidSetContains(uuid, gno)) {
-            logger.info("[onCommand] gtid command {} in lost, ignored", gtid);
+            logger.info("[onCommand] gtid command uuid {},gno {} in lost, ignored", uuid,gno);
             return false;
         }
-        indexWriter.append(uuid, gno, (int)offset);
         return true;
     }
 
     @Override
-    public int postAppend(ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException {
+    public int postAppend(String uuid,long gno, long offset, ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException {
+        int cmdLength = commandBuf.readableBytes();
         int written = appendCmdBuf(commandBuf);
+        appendIndex(uuid, gno, offset, List.of(cmdLength));
         if (redisOpItem != null && !isPingOrSelectCmd(redisOpItem)) {
             sendPayloadsToCk(List.of(redisOpItem));
         }
@@ -157,15 +175,33 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     @Override
-    public int batchPostAppend(List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException {
+    public int batchPostAppend(String uuid,long gno, long offset, List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException {
+        List<Integer> cmdLengths = new ArrayList<>(commandBufs.size());
         int written = 0;
         for (ByteBuf buf : commandBufs) {
             if (buf != null) {
+                cmdLengths.add(buf.readableBytes());
                 written += appendCmdBuf(buf);
             }
         }
+        appendIndex(uuid, gno, offset, cmdLengths);
         sendPayloadsToCk(payloads);
         return written;
+    }
+
+    private void appendIndex(String uuid, long gno, long offset, List<Integer> cmdLengths) throws IOException {
+        if (gno > 0) {
+            if (keeperConfig.dualWrite() && indexWriter != null) {
+                indexWriter.append(uuid, gno, (int) offset);
+            }
+            if (indexWriterV2 != null) {
+                indexWriterV2.appendGtid(uuid, gno, offset, cmdLengths);
+            }
+        } else {
+            if (indexWriterV2 != null) {
+                indexWriterV2.appendNonGtid(offset, cmdLengths);
+            }
+        }
     }
 
     @Override
@@ -189,7 +225,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         if(writerCmdEnabled && commandWriterCallback != null) {
             return commandWriterCallback.writeCommand(byteBuf);
         }
-        return 0;
+        return byteBuf.readableBytes();
     }
 
     private void sendPayloadsToCk(List<RedisOpItem> payloads){
@@ -204,8 +240,13 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     @Override
     public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws IOException {
-        if(indexWriter != null) {
-            this.indexWriter.saveIndexEntry();
+        if(keeperConfig.dualWrite()) {
+            if (indexWriter != null) {
+                this.indexWriter.saveIndexEntry();
+            }
+        }
+        if (indexWriterV2 != null) {
+            this.indexWriterV2.flushIndexEntry();
         }
         try (IndexReader indexReader = createIndexReader()) {
             if(indexReader == null) {
@@ -219,11 +260,13 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     private IndexReader createIndexReader() throws IOException {
-        if(indexWriter != null) {
-            return new IndexReader(baseDir, currentCmdFileName);
-        } else {
-            return IndexReader.getLastIndexReader(baseDir);
+        if (indexWriterV2 != null && keeperConfig.readV2()) {
+            return new IndexReaderV2(baseDir, currentCmdFileName);
         }
+        if (indexWriter != null) {
+            return new IndexReader(baseDir, currentCmdFileName);
+        }
+        return keeperConfig.readV2() ? IndexReaderV2.getLastIndexReader(baseDir) : IndexReader.getLastIndexReader(baseDir);
     }
 
     @Override
@@ -240,11 +283,9 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     @Override
     public synchronized GtidSet getIndexGtidSet() {
-        if(indexWriter == null) {
-            // search from reader
-            return getIndexGtidSetByIndexReader();
-        }
-        return indexWriter.getGtidSet();
+        if (indexWriterV2 != null && keeperConfig.readV2()) return indexWriterV2.getGtidSet();
+        if (indexWriter != null) return indexWriter.getGtidSet();
+        return getIndexGtidSetByIndexReader();
     }
 
     @Override
@@ -324,15 +365,30 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     private synchronized GtidSet saveIndex() {
-        if (indexWriter != null) {
+        GtidSet result = null;
+        if(keeperConfig.dualWrite()) {
+            if (indexWriter != null) {
+                try {
+                    this.indexWriter.saveIndexEntry();
+                } catch (IOException e) {
+                    logger.error("[locateGtidRange] failed to save index entry", e);
+                }
+                result = indexWriter.getGtidSet();
+            }
+        }
+
+        if (indexWriterV2 != null) {
             try {
-                this.indexWriter.saveIndexEntry();
+                this.indexWriterV2.flushIndexEntry();
             } catch (IOException e) {
                 logger.error("[locateGtidRange] failed to save index entry", e);
             }
-            return indexWriter.getGtidSet();
+            if(result == null) {
+               result = indexWriterV2.getGtidSet();
+            }
         }
-        return null;
+
+        return result;
     }
 
     @Override
@@ -347,7 +403,12 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         }
 
         // Start from the first index file since GNO is monotonically increasing
-        IndexReader indexReader = IndexReader.getFirstIndexReader(baseDir);
+        IndexReader indexReader = null;
+        if(keeperConfig.readV2()) {
+            indexReader = IndexReaderV2.getFirstIndexReader(baseDir);
+        }else {
+            indexReader = IndexReader.getFirstIndexReader(baseDir);
+        }
         IndexReader nextIndexReader = null;
         if(indexReader == null) {
             logger.info("[locateGtidRange] index reader is null, uuid: {}, begGno: {}, endGno: {}", uuid, begGno, endGno);
@@ -358,7 +419,11 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
             indexReader.init();
             File nextFile = indexReader.findNextFile();
             if (null != nextFile) {
-                nextIndexReader = new IndexReader(baseDir, nextFile.getName().replace(INDEX, ""));
+                if(keeperConfig.readV2()) {
+                    nextIndexReader = new IndexReaderV2(baseDir, nextFile.getName().replace(INDEX_V2, ""));
+                }else {
+                    nextIndexReader = new IndexReader(baseDir, nextFile.getName().replace(INDEX, ""));
+                }
                 nextIndexReader.init();
             }
 
@@ -465,6 +530,9 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
             logger.debug("[doClose] close index writer {}", indexWriter.getFileName());
             this.indexWriter.close();
         }
+        if (this.indexWriterV2 != null) {
+            this.indexWriterV2.close();
+        }
     }
 
     @Override
@@ -487,7 +555,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         if (!directory.exists() || !directory.isDirectory()) {
             return;
         }
-        File[] files = directory.listFiles((dir, name) -> name.startsWith(INDEX) || name.startsWith(AbstractIndex.BLOCK));
+        File[] files = directory.listFiles((dir, name) -> name.startsWith(INDEX) || name.startsWith(AbstractIndex.BLOCK) || name.startsWith(INDEX_V2) || name.startsWith(AbstractIndex.BLOCK_V2));
         if (files == null) {
             return;
         }
@@ -510,6 +578,10 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         return 0;
     }
 
+    public IndexWriterV2 getIndexWriterV2() {
+        return indexWriterV2;
+    }
+
     private void disableWriterCmd() {
         this.writerCmdEnabled = false;
     }
@@ -530,7 +602,11 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     private GtidSet tryGetIndexGtidSet() throws IOException {
         IndexReader indexReader = null;
         try {
-            indexReader = IndexReader.getLastIndexReader(baseDir);
+            if(keeperConfig.readV2()) {
+                indexReader = IndexReaderV2.getLastIndexReader(baseDir);
+            }else {
+                indexReader = IndexReader.getLastIndexReader(baseDir);
+            }
             if(indexReader == null) {
                 return new GtidSet(GtidSet.EMPTY_GTIDSET);
             }

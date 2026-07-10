@@ -5,8 +5,14 @@ import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Arrays;
 
 public class IndexEntry {
+
+    // v2
+    private IndexEntryType type;
+    private byte flags;
+    private long cmdEndOffset;           // v2 GTID 条目结束在 cmd 文件的绝对位置（写完后 offset+cmdLength）
 
     private String uuid;
     private long startGno;
@@ -14,12 +20,50 @@ public class IndexEntry {
     private long blockStartOffset;
     private long blockEndOffset;
     private int size;
+    private long extReserved;
+    private long position;
+
 
     private static final String SEPARATOR = RedisProtocol.CRLF;
 
     public static final int SEGMENT_LENGTH = RedisProtocol.RUN_ID_LENGTH + Long.BYTES * 4 + SEPARATOR.getBytes().length + Integer.BYTES;
 
-    private long position;
+    // v2
+    public static final int SEGMENT_LENGTH_V2 = 96;
+    public static final String ZONE_UUID;
+    static {
+        char[] chars = new char[RedisProtocol.RUN_ID_LENGTH];
+        Arrays.fill(chars, '0');
+        ZONE_UUID = new String(chars);
+    }
+
+    // 构造器（GTID 条目）
+    public IndexEntry(String uuid, long startGno, long cmdStartOffset, long blockStartOffset) {
+        this.uuid = uuid;
+        this.startGno = startGno;
+        this.cmdStartOffset = cmdStartOffset;
+        this.blockStartOffset = blockStartOffset;
+        this.blockEndOffset = -1;
+        this.size = 0;
+        this.type = IndexEntryType.GTID;
+        this.flags = 0;
+        this.cmdEndOffset = 0L;
+        this.position = -1;
+    }
+
+    // ZONE 工厂方法
+    public static IndexEntry zone(long zoneStart, long zoneEnd, int cmdCount) {
+        IndexEntry e = new IndexEntry(ZONE_UUID, 0L, zoneStart, 0L);
+        e.setBlockEndOffset(0L);
+        e.setSize(cmdCount);
+        e.type = IndexEntryType.ZONE;
+        e.cmdEndOffset = zoneEnd;
+        return e;
+    }
+
+    public boolean isZone() {
+        return type == IndexEntryType.ZONE || ZONE_UUID.equals(uuid);
+    }
 
     public long getPosition() {
         return position;
@@ -35,17 +79,6 @@ public class IndexEntry {
 
     public int getSize() {
         return size;
-    }
-
-    public IndexEntry(String uuid, long startGno, long cmdStartOffset, long blockStartOffset) {
-        this.uuid = uuid;
-        this.startGno = startGno;
-        this.cmdStartOffset = cmdStartOffset;
-        this.blockStartOffset = blockStartOffset;
-        this.blockEndOffset = -1;
-        this.position = -1;
-        this.size = 0;
-        // -1 表示没有写完
     }
 
      public void setSize(int size) {
@@ -92,6 +125,31 @@ public class IndexEntry {
         this.blockEndOffset = blockEndOffset;
     }
 
+    public long getZoneStart() { return cmdStartOffset; }
+    public long getZoneEnd() { return cmdEndOffset; }
+    public long getCmdEndOffset() { return cmdEndOffset; }
+    public void setCmdEndOffset(long cmdEndOffset) { this.cmdEndOffset = cmdEndOffset; }
+    public IndexEntryType getType() { return type; }
+    public byte getFlags() { return flags; }
+
+    // ---------- v2 序列化（88 字节，大端）----------
+    public ByteBuffer generateBufferV2() {
+        ByteBuffer buf = ByteBuffer.allocate(SEGMENT_LENGTH_V2);
+        buf.put(type.code());                  // 0
+        buf.put(flags);                        // 1
+        buf.putShort((short)0);                // 2-3 reserved
+        buf.put(uuid.getBytes());              // 4-43
+        buf.putLong(startGno);                 // 44-51
+        buf.putLong(cmdStartOffset);           // 52-59
+        buf.putLong(cmdEndOffset);             // 60-67
+        buf.putLong(blockStartOffset);         // 68-75
+        buf.putLong(blockEndOffset);           // 76-83
+        buf.putInt(size);                      // 84-87
+        buf.putLong(extReserved);              // 88-95 新增
+        buf.flip();
+        return buf;
+    }
+
     public ByteBuffer generateBuffer() {
         ByteBuffer buffer = ByteBuffer.allocate(SEGMENT_LENGTH);
         buffer.put(uuid.getBytes());
@@ -103,6 +161,40 @@ public class IndexEntry {
         buffer.put(SEPARATOR.getBytes());
         buffer.flip();
         return buffer;
+    }
+
+
+    /**
+     * 从 ByteBuffer 读取 v2 格式条目（88 字节）。
+     */
+    public static IndexEntry fromBufferV2(ByteBuffer buffer) {
+        if (buffer.remaining() < SEGMENT_LENGTH_V2) return null;
+
+        IndexEntryType type = IndexEntryType.fromCode(buffer.get());   // 0
+        byte flags = buffer.get();                                     // 1
+        buffer.getShort();                                             // 2-3 reserved
+
+        byte[] uuidBytes = new byte[40];
+        buffer.get(uuidBytes);                                         // 4-43
+        String uuid = new String(uuidBytes);
+
+        long startGno = buffer.getLong();                              // 44-51
+        long cmdStartOffset = buffer.getLong();                        // 52-59
+        long cmdEndOffset = buffer.getLong();                          // 60-67
+        long blockStartOffset = buffer.getLong();                      // 68-75
+        long blockEndOffset = buffer.getLong();                        // 76-83
+        int size = buffer.getInt();                                    // 84-87
+        long extReserved = buffer.getLong();   // 88-95 新增
+
+
+        IndexEntry e = new IndexEntry(uuid, startGno, cmdStartOffset, blockStartOffset);
+        e.type = type;
+        e.flags = flags;
+        e.blockEndOffset = blockEndOffset;
+        e.size = size;
+        e.cmdEndOffset = cmdEndOffset;
+        e.extReserved = extReserved;
+        return e;
     }
 
     public static IndexEntry fromBuffer(ByteBuffer buffer) {
@@ -134,6 +226,20 @@ public class IndexEntry {
         this.size = blockWriter.getSize();
     }
 
+    // ---------- 写入 ----------
+    public void saveToDiskV2(BlockWriter blockWriter, FileChannel channel) throws IOException {
+        this.syncDataFromBlockWriter(blockWriter);
+        long pos = channel.position();
+        this.position = pos;
+        channel.write(generateBufferV2());
+    }
+
+    public void saveToDiskV2(FileChannel channel) throws IOException {
+        long pos = channel.position();
+        this.position = pos;
+        channel.write(generateBufferV2());
+    }
+
     public void saveToDisk(BlockWriter blockWriter, FileChannel channel) throws IOException {
         this.syncDataFromBlockWriter(blockWriter);
         if(position > 0) {
@@ -148,6 +254,15 @@ public class IndexEntry {
         long currentPosition = channel.position();
         long fileSize = channel.size();
         return fileSize - currentPosition;
+    }
+
+    // ---------- v2 反序列化 ----------
+    public static IndexEntry readFromFileV2(FileChannel channel) throws IOException {
+        if (fileRemainingLength(channel) < SEGMENT_LENGTH_V2) return null;
+        ByteBuffer buf = ByteBuffer.allocate(SEGMENT_LENGTH_V2);
+        channel.read(buf);
+        buf.flip();
+        return fromBufferV2(buf);
     }
 
     public static IndexEntry readFromFile(FileChannel channel) throws IOException {
@@ -168,6 +283,7 @@ public class IndexEntry {
                 ", startGno=" + startGno +
                 ", endGno=" + (startGno + size - 1) +
                 ", cmdStartOffset=" + cmdStartOffset +
+                ", cmdEndOffset=" + cmdEndOffset +
                 ", blockStartOffset=" + blockStartOffset +
                 ", blockEndOffset=" + blockEndOffset +
                 ", size=" + size +

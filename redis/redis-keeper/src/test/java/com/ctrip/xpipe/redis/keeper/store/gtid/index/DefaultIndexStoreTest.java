@@ -9,6 +9,8 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import io.netty.buffer.ByteBuf;
@@ -25,25 +27,40 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class DefaultIndexStoreTest {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultIndexStoreTest.class);
+    private static final String DEFAULT_BASE_DIR_NAME = "IndexStoreTest";
+    /** 单测 ZONE 连续条数阈值；生产 KeeperConfig 默认 8192 */
+    private static final int TEST_ZONE_CONSECUTIVE_THRESHOLD = 100;
+    /** 单测 Block 满盘条数上限；生产 BlockWriter.BLOCK_NAX_SIZE = 8192 */
+    private static final int TEST_BLOCK_MAX_SIZE = 100;
+
     String tempDir = System.getProperty("java.io.tmpdir");
 
-    String baseDir = Paths.get(tempDir, "IndexStoreTest").toString();
+    String baseDir = Paths.get(tempDir, DEFAULT_BASE_DIR_NAME).toString();
 
     String filePath = "src/test/resources/GtidTest/appendonly.aof";
 
@@ -78,25 +95,19 @@ public class DefaultIndexStoreTest {
     @Mock
     IndexWriter indexWriter;
 
+    @Mock
+    CKStore ckStore;
+
+    @Mock
+    KeeperConfig keeperConfig;
+
     @Before
     public void setUp() throws IOException {
-        File dir = new File(baseDir);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
+        baseDir = Paths.get(tempDir, DEFAULT_BASE_DIR_NAME).toString();
+        cleanDir(baseDir);
 
         Path destinationPath = Paths.get(baseDir, "00000000");
-        File tmpFile = new File(file1);
-        if(!Files.exists(destinationPath)) {
-            File destDir = new File(baseDir);
-            if (!destDir.exists()) {
-                boolean created = destDir.mkdirs();
-                if (!created) {
-                    throw new IOException("create folder fail" + destDir.getAbsolutePath());
-                }
-            }
-            Files.copy(tmpFile.toPath(), destinationPath);
-        }
+        Files.copy(new File(file1).toPath(), destinationPath);
 
         when(channel.size()).thenReturn(0l);
 
@@ -110,25 +121,58 @@ public class DefaultIndexStoreTest {
         when(commandWriterCallback.getCommandWriter()).thenReturn(writer);
         when(writer.needRotate()).thenReturn(false);
         when(writer.totalLength()).thenReturn(0L);
+        when(commandWriterCallback.writeCommand(any(ByteBuf.class))).thenAnswer(inv -> {
+            ByteBuf b = inv.getArgument(0);
+            int n = b.readableBytes();
+            return n;
+        });
 
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+
+        // 1. 初始化 mock 的 KeeperConfig（启用双写 + v2 读取）
+        when(keeperConfig.dualWrite()).thenReturn(true);   // 同时写 v1 和 v2
+        when(keeperConfig.readV2()).thenReturn(true);      // 优先读 v2
+        when(keeperConfig.getIndexZoneConsecutiveThreshold()).thenReturn(TEST_ZONE_CONSECUTIVE_THRESHOLD);
+        when(keeperConfig.getIndexMixedTotalBytesThreshold()).thenReturn(16L * 1024 * 1024);
+        when(keeperConfig.getBlockSizeThreshold()).thenReturn(TEST_BLOCK_MAX_SIZE);
+
+        defaultIndexStore = new DefaultIndexStore(keeperConfig, ckStore, baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
     }
 
     @After
     public void tearDown() throws IOException {
-        defaultIndexStore.closeWriter();
-        // 删除basedir文件夹
-        File dir = new File(baseDir);
-        if (dir.exists()) {
-            for (File file : dir.listFiles()) {
+        if (defaultIndexStore != null) {
+            try {
+                defaultIndexStore.closeWriter();
+            } catch (Exception ignore) {
+            }
+        }
+        cleanDir(baseDir);
+        String defaultBaseDir = Paths.get(tempDir, DEFAULT_BASE_DIR_NAME).toString();
+        if (!defaultBaseDir.equals(baseDir)) {
+            cleanDir(defaultBaseDir);
+        }
+    }
+
+    private void cleanDir(String dirPath) throws IOException {
+        File dir = new File(dirPath);
+        if (!dir.exists()) {
+            dir.mkdirs();
+            return;
+        }
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file : files) {
                 file.delete();
             }
-            dir.delete();
+        }
+        dir.delete();
+        if (!dir.mkdirs() && !dir.exists()) {
+            throw new IOException("create folder fail " + dir.getAbsolutePath());
         }
     }
 
@@ -148,6 +192,10 @@ public class DefaultIndexStoreTest {
 
     public void writeRawStr(String cmdStr) throws IOException {
         ByteBuf byteBuf = Unpooled.wrappedBuffer(cmdStr.getBytes());
+        defaultIndexStore.write(byteBuf);
+    }
+
+    public void writeGtidCommand(ByteBuf byteBuf) throws IOException {
         defaultIndexStore.write(byteBuf);
     }
 
@@ -174,7 +222,7 @@ public class DefaultIndexStoreTest {
         int initSize = directory.listFiles().length;
         defaultIndexStore.closeWithDeleteIndexFiles();
         int lastSize = directory.listFiles().length;
-        Assert.assertEquals(initSize, lastSize + 2);
+        Assert.assertEquals(initSize, lastSize + 4);
     }
 
     @Test
@@ -202,7 +250,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
         defaultIndexStore.closeWriter();
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore = new DefaultIndexStore(keeperConfig, ckStore,baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
         for(int i = 633744; i < 633750; i++) {
             Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + i));
@@ -230,7 +278,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
         defaultIndexStore.closeWriter();
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore = new DefaultIndexStore(keeperConfig, ckStore,baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
 
@@ -285,7 +333,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
         defaultIndexStore.closeWriter();
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore = new DefaultIndexStore(keeperConfig, ckStore,baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
@@ -306,7 +354,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
         defaultIndexStore.closeWriter();
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore = new DefaultIndexStore(keeperConfig, ckStore,baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
@@ -331,7 +379,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
         defaultIndexStore.closeWriter();
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore = new DefaultIndexStore(keeperConfig, ckStore,baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
         gtidSet = defaultIndexStore.getIndexGtidSet();
@@ -375,7 +423,7 @@ public class DefaultIndexStoreTest {
 
     @Test
     public void testMetaStoreFilter() throws IOException {
-        gtidCmdFilter = mock(GtidCmdFilter.class);
+        reset(gtidCmdFilter);
         when(gtidCmdFilter.gtidSetContains(anyString(), anyLong())).thenAnswer(invocation -> {
             String gtid = invocation.getArgument(0);
             long num = invocation.getArgument(1);
@@ -388,7 +436,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
         defaultIndexStore.closeWriter();
-        defaultIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
+        defaultIndexStore = new DefaultIndexStore(keeperConfig, ckStore,baseDir, opParser, commandWriterCallback, gtidCmdFilter, writer.getFileContext().getCommandFile().getFile().getName());
         defaultIndexStore.openWriter(writer);
 
 
@@ -415,8 +463,10 @@ public class DefaultIndexStoreTest {
         }
         String testCmdFile = "cmd_test_incomplete_transaction_0";
         String testIndexFile = "index_cmd_test_incomplete_transaction_0";
+        String testIndexV2File = "indexv2_cmd_test_incomplete_transaction_0";
         File cmdFile = new File(baseDir, testCmdFile);
         File indexFile = new File(baseDir, testIndexFile);
+        File indexV2File = new File(baseDir, testIndexV2File);
 
         // First, write some valid commands with GTID
         String gtid1 = "a4f566ef50a85e1119f17f9b746728b48609a2ab:1";
@@ -425,6 +475,7 @@ public class DefaultIndexStoreTest {
         // Write first complete GTID command
         writeCommandToFile(cmdFile, createGtidCommand(gtid1, "SET", "key1", "value1"));
         writeGtidSetToFile(indexFile, new GtidSet(""));
+        writeGtidSetV2ToFile(indexV2File, new GtidSet(""));
         // Record the position before MULTI (this will be the rollback point)
         long positionBeforeMulti = cmdFile.length();
 
@@ -445,7 +496,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        DefaultIndexStore testIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, testCmdFile);
+        DefaultIndexStore testIndexStore = new DefaultIndexStore(keeperConfig, ckStore,baseDir, opParser, commandWriterCallback, gtidCmdFilter, testCmdFile);
         testIndexStore.openWriter(writer); // do buildIO
 
         // Verify file was truncated to position before MULTI
@@ -477,8 +528,10 @@ public class DefaultIndexStoreTest {
         }
         String testCmdFile = "cmd_test_incomplete_transaction2_0";
         String testIndexFile = "index_cmd_test_incomplete_transaction2_0";
+        String testIndexV2File = "indexv2_cmd_test_incomplete_transaction2_0";
         File cmdFile = new File(baseDir, testCmdFile);
         File indexFile = new File(baseDir, testIndexFile);
+        File indexV2File = new File(baseDir, testIndexV2File);
 
         // Write multiple valid GTID commands
         String gtid1 = "a4f566ef50a85e1119f17f9b746728b48609a2ab:1";
@@ -486,6 +539,7 @@ public class DefaultIndexStoreTest {
         String gtid3 = "a4f566ef50a85e1119f17f9b746728b48609a2ab:3";
 
         writeGtidSetToFile(indexFile, new GtidSet(""));
+        writeGtidSetV2ToFile(indexV2File, new GtidSet(""));
         writeCommandToFile(cmdFile, createGtidCommand(gtid1, "SET", "key1", "value1"));
         writeCommandToFile(cmdFile, createGtidCommand(gtid2, "SET", "key2", "value2"));
 
@@ -506,7 +560,7 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
         RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-        DefaultIndexStore testIndexStore = new DefaultIndexStore(baseDir, opParser, commandWriterCallback, gtidCmdFilter, testCmdFile);
+        DefaultIndexStore testIndexStore = new DefaultIndexStore(keeperConfig, ckStore,baseDir, opParser, commandWriterCallback, gtidCmdFilter, testCmdFile);
         testIndexStore.openWriter(writer);
 
         // Verify file was truncated to position before incomplete transaction
@@ -549,6 +603,15 @@ public class DefaultIndexStoreTest {
             gtidSetWrapper.saveGtidSet(channel);
         }
     }
+
+    private void writeGtidSetV2ToFile(File file, GtidSet gtidSet) throws IOException {
+        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(file, true);
+             java.nio.channels.FileChannel channel = fos.getChannel()) {
+            GtidSetWrapper gtidSetWrapper = new GtidSetWrapper(gtidSet);
+            gtidSetWrapper.saveGtidSetV2(channel);
+        }
+    }
+
 
     private ByteBuf createGtidCommand(String gtid, String... args) {
         ByteBuf buffer = Unpooled.buffer();
@@ -852,6 +915,887 @@ public class DefaultIndexStoreTest {
         String uuid = "a4f566ef50a85e1119f17f9b746728b48609a2ab";
         List<Pair<Long, Long>> result = defaultIndexStore.locateGtidRange(uuid, 3, 3);
         Assert.assertFalse("Should find single GTID", result.isEmpty());
+    }
+
+    @Test
+    public void testV2WriteAndRead() throws Exception {
+
+        write(file1);
+
+        // 验证 GTID Set
+        GtidSet gtidSet = defaultIndexStore.getIndexGtidSet();
+        Assert.assertEquals("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750", gtidSet.toString());
+
+
+        // 验证 v2 索引文件存在
+        File indexV2 = new File(baseDir, "indexv2_00000000");
+        File blockV2 = new File(baseDir, "blockv2_00000000");
+        Assert.assertTrue("v2 index file should exist", indexV2.exists());
+        Assert.assertTrue("v2 block file should exist", blockV2.exists());
+
+        // 检查 v1 文件也存在（双写）
+        File indexV1 = new File(baseDir, "index_00000000");
+        File blockV1 = new File(baseDir, "block_00000000");
+        Assert.assertTrue("v1 index file should exist (dual write)", indexV1.exists());
+        Assert.assertTrue("v1 block file should exist (dual write)", blockV1.exists());
+
+        // 通过 DefaultIndexStore 的 locateContinueGtidSet 验证读取（内部使用 v2 reader）
+        Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(
+                new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-633745"));
+        Assert.assertNotNull(point);
+//        Assert.assertEquals("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-633745", point.getValue().toString());
+        // 不校验 GtidSet 字符串（因为文件不含 1-633743），只验证偏移对应的命令
+        RedisOp redisOp2 = IndexTestTool.readBytebufAfter(file1, point.getKey());
+        Assert.assertEquals("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633746", redisOp2.getOpGtid());
+        defaultIndexStore.closeWriter();
+    }
+
+    @Test
+    public void testV2AlternatingWriteAndRead() throws Exception{
+        String uuid = "b4f566ef50a85e1119f17f9b746728b48609a2ab";
+
+        baseDir = Paths.get(tempDir, "IndexStoreTest-zoneAlternating").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) {
+            for (File f : dir.listFiles()) f.delete();
+        } else {
+            dir.mkdirs();
+        }
+        String cmdName = "cmd_zone_alt_0";
+        File cmdFile = new File(baseDir, cmdName);
+
+        when(commandFile.getFile()).thenReturn(cmdFile);
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        DefaultIndexStore store = new DefaultIndexStore(keeperConfig, ckStore,baseDir, opParser, commandWriterCallback,
+                gtidCmdFilter, cmdName);
+        // hook commandWriterCallback to actually persist bytes to cmdFile
+        when(commandWriterCallback.writeCommand(any(ByteBuf.class))).thenAnswer(inv -> {
+            ByteBuf b = inv.getArgument(0);
+            int n = b.readableBytes();
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true)) {
+                byte[] tmp = new byte[n];
+                b.getBytes(b.readerIndex(), tmp);
+                fos.write(tmp);
+            }
+            return n;
+        });
+        store.openWriter(writer);
+
+        defaultIndexStore = store;
+
+        writeGtidRangeCommand(uuid,1,3);
+
+        writeRawStr(createPublishCommand(2));
+
+        writeGtidRangeCommand(uuid,4,8);
+
+        writeRawStr(createPublishCommand(1));
+
+        writeGtidRangeCommand(uuid,9,12);
+
+        // 验证整体 GTID Set 包含新写入的区间
+        GtidSet fullGtidSet = defaultIndexStore.getIndexGtidSet();
+        Assert.assertEquals("GTID set expected", new GtidSet("b4f566ef50a85e1119f17f9b746728b48609a2ab:1-12"),fullGtidSet);
+
+        File indexV2 = new File(baseDir, "indexv2_"+cmdName);
+        File blockV2 = new File(baseDir, "blockv2_"+cmdName);
+        Assert.assertTrue("v2 index file should exist", indexV2.exists());
+        Assert.assertTrue("v2 block file should exist", blockV2.exists());
+
+        // 通过 locateContinueGtidSet 验证断点续传偏移
+        // 请求方已有 testUuid:1-5，应该返回下一条命令 (gno=6) 的偏移
+        Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(
+                new GtidSet(uuid + ":1-5"));
+        Assert.assertNotNull(point);
+        RedisOp op6 = IndexTestTool.readBytebufAfter(cmdFile.getPath(), point.getKey());
+        Assert.assertNotNull(op6);
+        Assert.assertEquals(uuid + ":6", op6.getOpGtid());
+
+        // 请求方已有 testUuid:1-8，应返回 gno=9 的偏移
+        point = defaultIndexStore.locateContinueGtidSet(
+                new GtidSet(uuid + ":1-8"));
+        Assert.assertNotNull(point);
+        RedisOp op9 = IndexTestTool.readBytebufAfter(cmdFile.getPath(), point.getKey());
+        Assert.assertNotNull(op9);
+        Assert.assertEquals(uuid + ":9", op9.getOpGtid());
+
+        // 交替场景 GTID 清空 pending zone，不应产生 ZONE entry
+        List<long[]> zones = defaultIndexStore.getIndexWriterV2().loadAllZones();
+        Assert.assertEquals("Alternating GTID/non-GTID should not flush small zones", 0, zones.size());
+
+    }
+
+    @Test
+    public void testV2ZoneWriter_ClearOnGtid() throws IOException {
+        // R1/R2: GTID 到来清空 pending zone（不落 ZONE），前面的 non-GTID 由 recover 阶段的 rebuildStart 补上。
+        baseDir = Paths.get(tempDir, "IndexStoreTest-v2zoneClearOnGtid").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_v2zone_clear_on_gtid_0";
+        File cmdFile = new File(baseDir, cmdName);
+
+        DefaultIndexStore store = createV2Store(cmdFile,cmdName);
+
+        ByteBuf pingCmd = createPingCommand();
+        String uuid = "cafebabecafebabecafebabecafebabecafebabe";
+
+        store.write(pingCmd);
+        pingCmd = createPingCommand();
+        store.write(pingCmd);
+
+        IndexWriterV2 writerV2 = store.getIndexWriterV2();
+        List<long[]> zonesBeforeGtid = writerV2.loadAllZones();
+        Assert.assertEquals("No zone before GTID (threshold not reached)", 0, zonesBeforeGtid.size());
+
+        ByteBuf gtidCmd = createGtidCommand(uuid + ":1", "SET", "k", "v");
+        store.write(gtidCmd);
+
+        // R1/R2: GTID 到来清空 pending zone 而不落盘，因此仍为 0 条 zone
+        List<long[]> zonesAfterGtid = writerV2.loadAllZones();
+        Assert.assertEquals("Pending zone cleared on GTID arrival", 0, zonesAfterGtid.size());
+
+        store.closeWriter();
+    }
+
+    @Test
+    public void testV2ZoneWriter_FlushOnThreshold() throws IOException {
+        baseDir = Paths.get(tempDir, "IndexStoreTest-v2zoneFlushOnThreshold").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_v2zone_flush_threshold";
+        File cmdFile = new File(baseDir, cmdName);
+
+        DefaultIndexStore store = createV2Store(cmdFile, cmdName);
+        IndexWriterV2 writerV2 = store.getIndexWriterV2();
+
+        int threshold = TEST_ZONE_CONSECUTIVE_THRESHOLD;
+        // 写入 threshold 条 PING
+        for (int i = 0; i < threshold; i++) {
+            store.write(createPingCommand());
+        }
+        long offsetAfterThreshold = cmdFile.length();
+
+        // 应恰好有一个 zone 落盘
+        List<long[]> zones = writerV2.loadAllZones();
+        Assert.assertEquals(1, zones.size());
+        Assert.assertArrayEquals(new long[]{0, offsetAfterThreshold}, zones.get(0));
+
+        // 再写 7 条 PING，然后 close，应产生第二个 zone
+        for (int i = 0; i < 7; i++) {
+            store.write(createPingCommand());
+        }
+        long finalOffset = cmdFile.length();
+        store.closeWriter();
+
+        // 重新打开 store 并加载 zones
+        DefaultIndexStore store2 = createV2Store(cmdFile, cmdName);
+        writerV2 = store2.getIndexWriterV2();
+
+        zones = writerV2.loadAllZones();
+        Assert.assertEquals(2, zones.size());
+        Assert.assertArrayEquals(new long[]{0, offsetAfterThreshold}, zones.get(0));
+        Assert.assertArrayEquals(new long[]{offsetAfterThreshold, finalOffset}, zones.get(1));
+        store2.closeWriter();
+    }
+
+    @Test
+    public void testV2RecoverIndex_SkipsZoneMainInterval() throws IOException {
+        // T-R.5: 含 ZONE 时 recoverIndex 应以 max(cmdEndOffset) 为 rebuildStart，跳过已落盘 ZONE 主区间
+        baseDir = Paths.get(tempDir, "IndexStoreTest-v2RecoverSkipZone").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_v2_recover_skip_zone";
+        File cmdFile = new File(baseDir, cmdName);
+
+        int zoneThreshold = TEST_ZONE_CONSECUTIVE_THRESHOLD;
+        int blockSizeThreshold = TEST_BLOCK_MAX_SIZE;
+        DefaultIndexStore store = createV2StoreWithThresholds(cmdFile, cmdName, zoneThreshold, 16L * 1024 * 1024,blockSizeThreshold);
+        for (int i = 0; i < zoneThreshold; i++) {
+            store.write(createPingCommand());
+        }
+        long offsetAfterZone = cmdFile.length();
+        List<long[]> zones = store.getIndexWriterV2().loadAllZones();
+        Assert.assertEquals(1, zones.size());
+        Assert.assertEquals(offsetAfterZone, zones.get(0)[1]);
+        store.closeWriter();
+
+        byte[] pingBytes = pingCommandBytes();
+        try (java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true)) {
+            for (int i = 0; i < 3; i++) {
+                fos.write(pingBytes);
+            }
+        }
+
+        DefaultIndexStore store2 = spy(createV2StoreUnopened(cmdFile, cmdName, zoneThreshold, 16L * 1024 * 1024,blockSizeThreshold));
+        doCallRealMethod().when(store2).buildIndexFromCmdFile(anyString(), anyLong());
+        store2.openWriter(writer);
+        verify(store2).buildIndexFromCmdFile(eq(cmdName), eq(offsetAfterZone));
+        store2.closeWriter();
+    }
+
+    @Test
+    public void testV2RecoverIndex_TruncateMalformedTail() throws IOException {
+        // T-R.5: v2 index 尾部残缺 88B entry 应 truncate，GtidSet 不损坏
+        baseDir = Paths.get(tempDir, "IndexStoreTest-v2RecoverTruncate").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_v2_recover_truncate";
+        File cmdFile = new File(baseDir, cmdName);
+        String uuid = "cafebabecafebabecafebabecafebabecafebabe";
+        int zoneThreshold = TEST_ZONE_CONSECUTIVE_THRESHOLD;
+        int blockSizeThreshold = TEST_BLOCK_MAX_SIZE;
+
+        DefaultIndexStore store = createV2StoreWithThresholds(cmdFile, cmdName, zoneThreshold, 16L * 1024 * 1024,blockSizeThreshold);
+        for (int i = 0; i < zoneThreshold; i++) {
+            store.write(createPingCommand());
+        }
+        store.write(createGtidCommand(uuid + ":1", "SET", "k", "v"));
+        GtidSet gtidSetBefore = store.getIndexGtidSet();
+        Assert.assertTrue(gtidSetBefore.contains(uuid, 1));
+        store.closeWriter();
+
+        File indexV2 = new File(baseDir, "indexv2_" + cmdName);
+        long indexSizeBefore = indexV2.length();
+        Assert.assertTrue(indexSizeBefore > IndexEntry.SEGMENT_LENGTH_V2);
+        long truncatedSize = indexSizeBefore - 44;
+        try (DefaultControllableFile indexFile = new DefaultControllableFile(indexV2)) {
+            indexFile.setLength((int) truncatedSize);
+        }
+        Assert.assertEquals(truncatedSize, indexV2.length());
+
+        DefaultIndexStore store2 = createV2StoreWithThresholds(cmdFile, cmdName, zoneThreshold, 16L * 1024 * 1024,blockSizeThreshold);
+        GtidSet gtidSetAfter = store2.getIndexGtidSet();
+        Assert.assertTrue(gtidSetAfter.contains(uuid, 1));
+        store2.closeWriter();
+        // recover 截断残缺 entry 后，尾部 GTID 在内存 pending，close 落盘后与截断前一致
+        Assert.assertEquals(indexSizeBefore, indexV2.length());
+    }
+
+    @Test
+    public void testV2RecoverIndex_RollbackIncompleteTransactionPreservesGtid() throws IOException {
+        // v2 完整写入/recover：已落盘 ZONE+GTID 保留；尾部 MULTI 无 EXEC 的 cmd 被回退
+        baseDir = Paths.get(tempDir, "IndexStoreTest-v2RecoverIncompleteTx").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_v2_recover_incomplete_tx";
+        File cmdFile = new File(baseDir, cmdName);
+        String uuid = "a4f566ef50a85e1119f17f9b746728b48609a2ab";
+        int zoneThreshold = TEST_ZONE_CONSECUTIVE_THRESHOLD;
+        int blockSizeThreshold = TEST_BLOCK_MAX_SIZE;
+        DefaultIndexStore store = createV2StoreWithThresholds(cmdFile, cmdName, zoneThreshold, 16L * 1024 * 1024,blockSizeThreshold);
+        for (int i = 0; i < zoneThreshold; i++) {
+            store.write(createPingCommand());
+        }
+        store.write(createGtidCommand(uuid + ":1", "SET", "k1", "v1"));
+        store.write(createGtidCommand(uuid + ":2", "SET", "k2", "v2"));
+        GtidSet gtidSetBefore = store.getIndexGtidSet();
+        Assert.assertTrue(gtidSetBefore.contains(uuid, 1));
+        Assert.assertTrue(gtidSetBefore.contains(uuid, 2));
+        store.closeWriter();
+
+        long cmdLenBeforeIncomplete = cmdFile.length();
+        writeCommandToFile(cmdFile, createMultiCommand());
+        writeCommandToFile(cmdFile, createSetCommand("k3", "v3"));
+        writeCommandToFile(cmdFile, createSetCommand("k4", "v4"));
+
+        DefaultIndexStore store2 = createV2StoreWithThresholds(cmdFile, cmdName, zoneThreshold, 16L * 1024 * 1024,blockSizeThreshold);
+        Assert.assertEquals("Incomplete transaction tail should be rolled back",
+                cmdLenBeforeIncomplete, cmdFile.length());
+        GtidSet gtidSetAfter = store2.getIndexGtidSet();
+        Assert.assertTrue("GTID 1 should survive recover", gtidSetAfter.contains(uuid, 1));
+        Assert.assertTrue("GTID 2 should survive recover", gtidSetAfter.contains(uuid, 2));
+        Assert.assertFalse("No GTID should be added from rolled-back tail",
+                gtidSetAfter.contains(uuid, 3));
+        store2.closeWriter();
+    }
+
+    @Test
+    public void testV2ZoneWriter_GtidEntryBeforeZoneOnFlush() throws IOException {
+        // appendNonGtid 触发 flush 时若 blockWriter 仍有未落盘 GTID，须先落 GTID entry 再落 ZONE entry
+        baseDir = Paths.get(tempDir, "IndexStoreTest-v2GtidBeforeZone").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_v2_gtid_before_zone";
+        File cmdFile = new File(baseDir, cmdName);
+        String uuid = "cafebabecafebabecafebabecafebabecafebabe";
+
+        // 低字节阈值便于触发 mixed flush，无需写满生产默认 8192 条 PING
+        DefaultIndexStore store = createV2StoreWithThresholds(cmdFile, cmdName, TEST_ZONE_CONSECUTIVE_THRESHOLD, 200,TEST_BLOCK_MAX_SIZE);
+
+        store.write(createGtidCommand(uuid + ":1", "SET", "k", "v"));
+        while (cmdFile.length() < 250) {
+            store.write(createPingCommand());
+        }
+
+        List<IndexEntryType> entryTypes = readIndexEntryTypes(baseDir, cmdName);
+        int gtidIdx = -1;
+        int zoneIdx = -1;
+        for (int i = 0; i < entryTypes.size(); i++) {
+            if (entryTypes.get(i) == IndexEntryType.GTID && gtidIdx == -1) {
+                gtidIdx = i;
+            }
+            if (entryTypes.get(i) == IndexEntryType.ZONE) {
+                zoneIdx = i;
+            }
+        }
+        Assert.assertTrue("GTID entry should exist", gtidIdx >= 0);
+        Assert.assertTrue("ZONE entry should exist", zoneIdx >= 0);
+        Assert.assertTrue("GTID entry must precede ZONE entry", gtidIdx < zoneIdx);
+
+        store.closeWriter();
+    }
+
+    @Test
+    public void testV2FlushIndexEntry_GtidThenZone() throws IOException {
+        // flushIndexEntry 同时 pending GTID + ZONE 时，须先落 GTID entry 再落 ZONE entry
+        baseDir = Paths.get(tempDir, "IndexStoreTest-v2FlushIndexEntry").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_v2_flush_index_entry";
+        File cmdFile = new File(baseDir, cmdName);
+        String uuid = "cafebabecafebabecafebabecafebabecafebabe";
+
+        DefaultIndexStore store = createV2StoreWithThresholds(cmdFile, cmdName, TEST_ZONE_CONSECUTIVE_THRESHOLD, 16L * 1024 * 1024,TEST_BLOCK_MAX_SIZE);
+        IndexWriterV2 writerV2 = store.getIndexWriterV2();
+
+        store.write(createGtidCommand(uuid + ":1", "SET", "k", "v"));
+        store.write(createPingCommand());
+        store.write(createPingCommand());
+
+        writerV2.flushIndexEntry();
+
+        List<IndexEntryType> entryTypes = readIndexEntryTypes(baseDir, cmdName);
+        Assert.assertEquals(2, entryTypes.size());
+        Assert.assertEquals(IndexEntryType.GTID, entryTypes.get(0));
+        Assert.assertEquals(IndexEntryType.ZONE, entryTypes.get(1));
+
+        store.closeWriter();
+    }
+
+    /**
+     * 创建一个启用双写 + v2 读取的 DefaultIndexStore，
+     * 并 hook commandWriterCallback 将命令字节写入指定 cmdFile。
+     */
+    private DefaultIndexStore createV2Store(File cmdFile, String cmdName) throws IOException {
+        when(commandFile.getFile()).thenReturn(cmdFile);
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+        when(commandWriterCallback.writeCommand(any(ByteBuf.class))).thenAnswer(inv -> {
+            ByteBuf b = inv.getArgument(0);
+            int n = b.readableBytes();
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true)) {
+                byte[] tmp = new byte[n];
+                b.getBytes(b.readerIndex(), tmp);
+                fos.write(tmp);
+            }
+            return n;
+        });
+
+        CKStore ckStore = mock(CKStore.class);
+        KeeperConfig keeperConfig = mock(KeeperConfig.class);
+        when(ckStore.getKeeperConfig()).thenReturn(keeperConfig);
+        when(keeperConfig.dualWrite()).thenReturn(true);
+        when(keeperConfig.readV2()).thenReturn(true);
+        when(keeperConfig.getIndexZoneConsecutiveThreshold()).thenReturn(TEST_ZONE_CONSECUTIVE_THRESHOLD);
+        when(keeperConfig.getIndexMixedTotalBytesThreshold()).thenReturn(16L * 1024 * 1024);
+        when(keeperConfig.getBlockSizeThreshold()).thenReturn(TEST_BLOCK_MAX_SIZE);
+
+
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        DefaultIndexStore store = new DefaultIndexStore(keeperConfig, ckStore, baseDir, opParser,
+                commandWriterCallback, gtidCmdFilter, cmdName);
+        store.openWriter(writer);
+        return store;
+    }
+
+    private DefaultIndexStore createV2StoreUnopened(File cmdFile, String cmdName) throws IOException {
+        return createV2StoreUnopened(cmdFile, cmdName, TEST_ZONE_CONSECUTIVE_THRESHOLD, 16L * 1024 * 1024,TEST_BLOCK_MAX_SIZE);
+    }
+
+    private DefaultIndexStore createV2StoreUnopened(File cmdFile, String cmdName,
+                                                    int zoneThreshold, long mixedBytesThreshold,int blockSizeTheshold) throws IOException {
+        when(commandFile.getFile()).thenReturn(cmdFile);
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+        when(commandWriterCallback.writeCommand(any(ByteBuf.class))).thenAnswer(inv -> {
+            ByteBuf b = inv.getArgument(0);
+            int n = b.readableBytes();
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true)) {
+                byte[] tmp = new byte[n];
+                b.getBytes(b.readerIndex(), tmp);
+                fos.write(tmp);
+            }
+            return n;
+        });
+
+        CKStore ckStoreLocal = mock(CKStore.class);
+        KeeperConfig config = mock(KeeperConfig.class);
+        when(ckStoreLocal.getKeeperConfig()).thenReturn(config);
+        when(config.dualWrite()).thenReturn(true);
+        when(config.readV2()).thenReturn(true);
+        when(config.getIndexZoneConsecutiveThreshold()).thenReturn(zoneThreshold);
+        when(config.getIndexMixedTotalBytesThreshold()).thenReturn(mixedBytesThreshold);
+        when(config.getBlockSizeThreshold()).thenReturn(blockSizeTheshold);
+
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        return new DefaultIndexStore(config, ckStoreLocal, baseDir, opParser,
+                commandWriterCallback, gtidCmdFilter, cmdName);
+    }
+
+    private DefaultIndexStore createStoreWithFlags(File cmdFile, String cmdName,
+                                                   boolean dualWrite, boolean readV2) throws IOException {
+        return createStoreWithFlags(cmdFile, cmdName, dualWrite, readV2, TEST_ZONE_CONSECUTIVE_THRESHOLD, 16L * 1024 * 1024);
+    }
+
+    private DefaultIndexStore createStoreWithFlags(File cmdFile, String cmdName,
+                                                   boolean dualWrite, boolean readV2,
+                                                   int zoneThreshold, long mixedBytesThreshold) throws IOException {
+        when(commandFile.getFile()).thenReturn(cmdFile);
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+        when(commandWriterCallback.writeCommand(any(ByteBuf.class))).thenAnswer(inv -> {
+            ByteBuf b = inv.getArgument(0);
+            int n = b.readableBytes();
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true)) {
+                byte[] tmp = new byte[n];
+                b.getBytes(b.readerIndex(), tmp);
+                fos.write(tmp);
+            }
+            return n;
+        });
+
+        CKStore ckStoreLocal = mock(CKStore.class);
+        KeeperConfig config = mock(KeeperConfig.class);
+        when(ckStoreLocal.getKeeperConfig()).thenReturn(config);
+        when(config.dualWrite()).thenReturn(dualWrite);
+        when(config.readV2()).thenReturn(readV2);
+        when(config.getIndexZoneConsecutiveThreshold()).thenReturn(zoneThreshold);
+        when(config.getIndexMixedTotalBytesThreshold()).thenReturn(mixedBytesThreshold);
+
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        DefaultIndexStore store = new DefaultIndexStore(config, ckStoreLocal, baseDir, opParser,
+                commandWriterCallback, gtidCmdFilter, cmdName);
+        store.openWriter(writer);
+        return store;
+    }
+
+    private DefaultIndexStore createV2StoreWithThresholds(File cmdFile, String cmdName,
+                                                            int zoneThreshold, long mixedBytesThreshold,int blockSizeThreshold)
+            throws IOException {
+        when(commandFile.getFile()).thenReturn(cmdFile);
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+        when(commandWriterCallback.writeCommand(any(ByteBuf.class))).thenAnswer(inv -> {
+            ByteBuf b = inv.getArgument(0);
+            int n = b.readableBytes();
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true)) {
+                byte[] tmp = new byte[n];
+                b.getBytes(b.readerIndex(), tmp);
+                fos.write(tmp);
+            }
+            return n;
+        });
+
+        CKStore ckStore = mock(CKStore.class);
+        KeeperConfig keeperConfig = mock(KeeperConfig.class);
+        when(ckStore.getKeeperConfig()).thenReturn(keeperConfig);
+        when(keeperConfig.dualWrite()).thenReturn(true);
+        when(keeperConfig.readV2()).thenReturn(true);
+        when(keeperConfig.getIndexZoneConsecutiveThreshold()).thenReturn(zoneThreshold);
+        when(keeperConfig.getIndexMixedTotalBytesThreshold()).thenReturn(mixedBytesThreshold);
+        when(keeperConfig.getBlockSizeThreshold()).thenReturn(blockSizeThreshold);
+
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        DefaultIndexStore store = new DefaultIndexStore(keeperConfig, ckStore, baseDir, opParser,
+                commandWriterCallback, gtidCmdFilter, cmdName);
+        store.openWriter(writer);
+        return store;
+    }
+
+    private static void setField(Object target, String fieldName, Object value) throws Exception {
+        Field field = DefaultIndexStore.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(target, value);
+    }
+
+    private static class GtidIndexSnapshot {
+        final String uuid;
+        final long startGno;
+        final int size;
+        final long cmdStartOffset;
+        final long blockStartOffset;
+        final long blockEndOffset;
+
+        GtidIndexSnapshot(IndexEntry entry) {
+            this.uuid = entry.getUuid();
+            this.startGno = entry.getStartGno();
+            this.size = entry.getSize();
+            this.cmdStartOffset = entry.getCmdStartOffset();
+            this.blockStartOffset = entry.getBlockStartOffset();
+            this.blockEndOffset = entry.getBlockEndOffset();
+        }
+    }
+
+    private void assertGtidSnapshotEquals(GtidIndexSnapshot v1, GtidIndexSnapshot v2) {
+        Assert.assertEquals("uuid", v1.uuid, v2.uuid);
+        Assert.assertEquals("startGno", v1.startGno, v2.startGno);
+        Assert.assertEquals("size", v1.size, v2.size);
+        Assert.assertEquals("cmdStartOffset", v1.cmdStartOffset, v2.cmdStartOffset);
+        Assert.assertEquals("blockStartOffset", v1.blockStartOffset, v2.blockStartOffset);
+        Assert.assertEquals("blockEndOffset", v1.blockEndOffset, v2.blockEndOffset);
+    }
+
+    private List<GtidIndexSnapshot> readV1GtidSnapshots(String baseDir, String cmdName) throws IOException {
+        List<GtidIndexSnapshot> snapshots = new ArrayList<>();
+        File indexV1 = new File(baseDir, "index_" + cmdName);
+        try (ControllableFile indexFile = new DefaultControllableFile(indexV1)) {
+            FileChannel ch = indexFile.getFileChannel();
+            GtidSetWrapper.readGtidSet(ch);
+            IndexEntry entry = IndexEntry.readFromFile(ch);
+            while (entry != null) {
+                snapshots.add(new GtidIndexSnapshot(entry));
+                entry = IndexEntry.readFromFile(ch);
+            }
+        }
+        return snapshots;
+    }
+
+    private List<GtidIndexSnapshot> readV2GtidSnapshots(String baseDir, String cmdName) throws IOException {
+        List<GtidIndexSnapshot> snapshots = new ArrayList<>();
+        for (IndexEntry entry : readV2GtidEntries(baseDir, cmdName)) {
+            snapshots.add(new GtidIndexSnapshot(entry));
+        }
+        return snapshots;
+    }
+
+    private List<IndexEntry> readV2GtidEntries(String baseDir, String cmdName) throws IOException {
+        List<IndexEntry> gtidEntries = new ArrayList<>();
+        File indexV2 = new File(baseDir, "indexv2_" + cmdName);
+        try (ControllableFile indexFile = new DefaultControllableFile(indexV2)) {
+            FileChannel ch = indexFile.getFileChannel();
+            long headerEnd = GtidSetWrapper.headerSize(ch);
+            ch.position(headerEnd);
+            while (ch.size() - ch.position() >= IndexEntry.SEGMENT_LENGTH_V2) {
+                IndexEntry entry = IndexEntry.readFromFileV2(ch);
+                if (entry == null) {
+                    break;
+                }
+                if (!entry.isZone()) {
+                    gtidEntries.add(entry);
+                }
+            }
+        }
+        return gtidEntries;
+    }
+
+    private List<IndexEntryType> readIndexEntryTypes(String baseDir, String cmdName) throws IOException {
+        File indexV2 = new File(baseDir, "indexv2_" + cmdName);
+        List<IndexEntryType> types = new java.util.ArrayList<>();
+        try (ControllableFile indexFile = new DefaultControllableFile(indexV2)) {
+            FileChannel ch = indexFile.getFileChannel();
+            long headerEnd = GtidSetWrapper.headerSize(ch);
+            ch.position(headerEnd);
+            while (ch.size() - ch.position() >= IndexEntry.SEGMENT_LENGTH_V2) {
+                IndexEntry e = IndexEntry.readFromFileV2(ch);
+                if (e == null) {
+                    break;
+                }
+                types.add(e.getType());
+            }
+        }
+        return types;
+    }
+
+
+    private void writeGtidRangeCommand(String uuid,int startInclusive,int endInclusive) throws IOException {
+        for(int i = startInclusive;i<=endInclusive;i++){
+            writeGtidCommand(createGtidCommand(uuid+":"+i,"SET", "key"+i, "value"+i));
+        }
+    }
+
+    private ByteBuf createPingCommand() {
+        ByteBuf buffer = Unpooled.buffer();
+        buffer.writeByte((byte) '*');
+        buffer.writeBytes("1".getBytes());
+        buffer.writeBytes("\r\n".getBytes());
+        writeBulkString(buffer, "PING");
+        return buffer;
+    }
+
+    private byte[] pingCommandBytes() {
+        ByteBuf buf = createPingCommand();
+        byte[] bytes = new byte[buf.readableBytes()];
+        buf.getBytes(buf.readerIndex(), bytes);
+        return bytes;
+    }
+
+    private String createPublishCommand(int cmdCount){
+        StringBuilder sb = new StringBuilder();
+        IntStream.range(0, cmdCount).forEach(i -> {
+            sb.append("*3\r\n" +
+                    "$7\r\n" +
+                    "PUBLISH\r\n" +
+                    "$18\r\n" +
+                    "__sentinel__:hello\r\n" +
+                    "$147\r\n" +
+                    "10.120.125.145,5026,ce1896062762e2920bc81db3edbad6bd66c97cde,0,xpipe-test-gap-allow-xsync+xpipe-test-gap-allow-xsync_1+NTGXH,10.120.125.145,20004,0\r\n");
+        });
+        return sb.toString();
+    }
+    @Test
+    public void testPreAppendDoesNotTriggerIndexAppend() throws Exception {
+        baseDir = Paths.get(tempDir, "IndexStoreTest-preAppendNoIndex").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_pre_append_no_index";
+        File cmdFile = new File(baseDir, cmdName);
+        DefaultIndexStore store = createV2Store(cmdFile, cmdName);
+
+        IndexWriter indexWriterMock = mock(IndexWriter.class);
+        IndexWriterV2 indexWriterV2Mock = mock(IndexWriterV2.class);
+        setField(store, "indexWriter", indexWriterMock);
+        setField(store, "indexWriterV2", indexWriterV2Mock);
+
+        when(gtidCmdFilter.gtidSetContains(anyString(), anyLong())).thenReturn(false);
+
+        String uuid = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        boolean accepted = store.preAppend(uuid, 1L);
+        Assert.assertTrue(accepted);
+
+        verify(indexWriterMock, never()).append(anyString(), anyLong(), anyInt());
+        verify(indexWriterV2Mock, never()).appendGtid(anyString(), anyLong(), anyLong(), anyList());
+        verify(indexWriterV2Mock, never()).appendNonGtid(anyLong(), anyList());
+    }
+
+    @Test
+    public void testV2BlockFullGtidFlush() throws IOException {
+        // 单测临时调小 block 上限以加速；生产仍为 BlockWriter.BLOCK_NAX_SIZE
+        int testBlockMaxSize = TEST_BLOCK_MAX_SIZE;
+        baseDir = Paths.get(tempDir, "IndexStoreTest-v2BlockFull8192").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_v2_block_full_8192";
+        File cmdFile = new File(baseDir, cmdName);
+        String uuid = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
+
+        DefaultIndexStore store = createV2Store(cmdFile, cmdName);
+        for (int i = 1; i <= testBlockMaxSize + 1; i++) {
+            store.write(createGtidCommand(uuid + ":" + i, "SET", "k" + i, "v" + i));
+        }
+
+        List<IndexEntry> flushedGtidEntries = readV2GtidEntries(baseDir, cmdName);
+        Assert.assertFalse("Block full should flush at least one GTID entry to disk", flushedGtidEntries.isEmpty());
+        boolean hasFullBlock = false;
+        for (IndexEntry entry : flushedGtidEntries) {
+            Assert.assertTrue("GTID block size must not exceed " + testBlockMaxSize,
+                    entry.getSize() <= testBlockMaxSize);
+            if (entry.getSize() == testBlockMaxSize) {
+                hasFullBlock = true;
+            }
+        }
+        Assert.assertTrue("Should flush a full block of " + testBlockMaxSize + " GTIDs", hasFullBlock);
+
+        store.closeWriter();
+        List<IndexEntry> allGtidEntries = readV2GtidEntries(baseDir, cmdName);
+        int totalGtids = allGtidEntries.stream().mapToInt(IndexEntry::getSize).sum();
+        Assert.assertEquals(testBlockMaxSize + 1, totalGtids);
+    }
+
+    @Test
+    public void testDualWriteV1V2GtidParity() throws IOException {
+        baseDir = Paths.get(tempDir, "IndexStoreTest-dualWriteParity").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_dual_write_parity";
+        File cmdFile = new File(baseDir, cmdName);
+        String uuid = "feedfacefeedfacefeedfacefeedfacefeedface";
+
+        DefaultIndexStore store = createV2Store(cmdFile, cmdName);
+        defaultIndexStore = store;
+        writeGtidRangeCommand(uuid, 1, 20);
+        for (int i = 0; i < 50; i++) {
+            store.write(createPingCommand());
+        }
+        writeGtidRangeCommand(uuid, 21, 40);
+        store.closeWriter();
+
+        Assert.assertTrue(new File(baseDir, "index_" + cmdName).exists());
+        Assert.assertTrue(new File(baseDir, "indexv2_" + cmdName).exists());
+
+        List<GtidIndexSnapshot> v1Snapshots = readV1GtidSnapshots(baseDir, cmdName);
+        List<GtidIndexSnapshot> v2Snapshots = readV2GtidSnapshots(baseDir, cmdName);
+        Assert.assertFalse("v1 should have GTID index entries", v1Snapshots.isEmpty());
+        Assert.assertEquals("v1/v2 GTID entry count should match", v1Snapshots.size(), v2Snapshots.size());
+        for (int i = 0; i < v1Snapshots.size(); i++) {
+            assertGtidSnapshotEquals(v1Snapshots.get(i), v2Snapshots.get(i));
+        }
+
+        GtidSet expected = new GtidSet(uuid + ":1-40");
+        try (IndexReader v1Reader = new IndexReader(baseDir, cmdName)) {
+            v1Reader.init();
+            Assert.assertEquals(expected, v1Reader.getAllGtidSet());
+        }
+        try (IndexReaderV2 v2Reader = new IndexReaderV2(baseDir, cmdName)) {
+            v2Reader.init();
+            Assert.assertEquals(expected, v2Reader.getAllGtidSet());
+        }
+    }
+
+    @Test
+    public void testReadV2FalseUsesV1ReaderForRecover() throws Exception {
+        baseDir = Paths.get(tempDir, "IndexStoreTest-readV2False").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) for (File f : dir.listFiles()) f.delete();
+        else dir.mkdirs();
+
+        String cmdName = "cmd_readv2_0";
+        File cmdFile = new File(baseDir, cmdName);
+        String uuid = "abababababababababababababababababababab";
+
+        DefaultIndexStore writeStore = createStoreWithFlags(cmdFile, cmdName, true, true, 50, 200);
+        defaultIndexStore = writeStore;
+        writeGtidRangeCommand(uuid, 1, 15);
+        for (int i = 0; i < 100; i++) {
+            writeStore.write(createPingCommand());
+        }
+        writeGtidRangeCommand(uuid, 16, 25);
+        writeStore.closeWriter();
+
+        Assert.assertTrue("v2 index should exist from dual write",
+                new File(baseDir, "indexv2_" + cmdName).exists());
+        Assert.assertTrue("v1 index should exist for rollback read path",
+                new File(baseDir, "index_" + cmdName).exists());
+
+        DefaultIndexStore readStore = createStoreWithFlags(cmdFile, cmdName, true, false);
+        GtidSet gtidSet = readStore.getIndexGtidSet();
+        Assert.assertEquals(new GtidSet(uuid + ":1-25"), gtidSet);
+
+        Pair<Long, GtidSet> point = readStore.locateContinueGtidSet(new GtidSet(uuid + ":1-10"));
+        Assert.assertNotNull(point);
+        RedisOp op11 = IndexTestTool.readBytebufAfter(cmdFile.getPath(), point.getKey());
+        Assert.assertEquals(uuid + ":11", op11.getOpGtid());
+
+        readStore.closeWriter();
+    }
+
+    @Test
+    public void testV2LocateContinueXsyncScenario() throws Exception {
+        String uuid = "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        baseDir = Paths.get(tempDir, "IndexStoreTest-xsyncContinue").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) {
+            for (File f : dir.listFiles()) f.delete();
+        } else {
+            dir.mkdirs();
+        }
+        String cmdName = "cmd_xsync_continue_0";
+        File cmdFile = new File(baseDir, cmdName);
+        DefaultIndexStore store = createV2Store(cmdFile, cmdName);
+        defaultIndexStore = store;
+
+        writeGtidRangeCommand(uuid, 622000, 622009);
+
+        Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(
+                new GtidSet("bca392ffb0fa8415cbf6a88bb7937f323c7367ac:1-2," + uuid + ":622000-622001"));
+        Assert.assertEquals(uuid + ":622000-622001", point.getValue().toString());
+        RedisOp nextOp = IndexTestTool.readBytebufAfter(cmdFile.getPath(), point.getKey());
+        Assert.assertEquals(uuid + ":622002", nextOp.getOpGtid());
+    }
+
+    @Test
+    public void testDeleteAllIndexFile_IncludesV2() throws IOException {
+        write(filePath);
+        defaultIndexStore.closeWriter();
+
+        String cmdName = "00000000";
+        Assert.assertTrue(new File(baseDir, AbstractIndex.INDEX + cmdName).exists());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.BLOCK + cmdName).exists());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.INDEX_V2 + cmdName).exists());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.BLOCK_V2 + cmdName).exists());
+
+        defaultIndexStore.deleteAllIndexFile();
+
+        Assert.assertFalse(new File(baseDir, AbstractIndex.INDEX + cmdName).exists());
+        Assert.assertFalse(new File(baseDir, AbstractIndex.BLOCK + cmdName).exists());
+        Assert.assertFalse(new File(baseDir, AbstractIndex.INDEX_V2 + cmdName).exists());
+        Assert.assertFalse(new File(baseDir, AbstractIndex.BLOCK_V2 + cmdName).exists());
+    }
+
+    @Test
+    public void testLocateGtidRange_AfterGcRemovesOldestSegment() throws IOException {
+        write(file1);
+        defaultIndexStore.doSwitchCmdFile("cmd_19513000");
+        write(file2);
+
+        String oldestCmdName = "00000000";
+        Assert.assertTrue(new File(baseDir, oldestCmdName).delete());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.INDEX + oldestCmdName).delete());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.BLOCK + oldestCmdName).delete());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.INDEX_V2 + oldestCmdName).delete());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.BLOCK_V2 + oldestCmdName).delete());
+
+        String uuid = "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        List<Pair<Long, Long>> result = defaultIndexStore.locateGtidRange(uuid, 2, 10);
+
+        Assert.assertFalse("Should locate GTIDs in remaining segment after GC", result.isEmpty());
+        for (Pair<Long, Long> range : result) {
+            Assert.assertNotNull(range.getKey());
+            Assert.assertNotNull(range.getValue());
+            Assert.assertTrue(range.getKey() < range.getValue());
+            Assert.assertTrue("Start offset should be in remaining segment",
+                    range.getKey() >= 19513000);
+        }
+
+        Assert.assertTrue(new File(baseDir, AbstractIndex.INDEX_V2 + "cmd_19513000").exists());
+        Assert.assertFalse(new File(baseDir, AbstractIndex.INDEX_V2 + oldestCmdName).exists());
+    }
+
+    // 辅助方法：从文件写入
+    private void write(DefaultIndexStore store, String path) throws IOException {
+        File f = new File(path);
+        ControllableFile controllableFile = new DefaultControllableFile(f);
+        controllableFile.getFileChannel().position(0);
+        while (controllableFile.getFileChannel().position() < controllableFile.getFileChannel().size()) {
+            int size = (int) Math.min(1024, controllableFile.getFileChannel().size() - controllableFile.getFileChannel().position());
+            ByteBuffer buffer = ByteBuffer.allocate(size);
+            controllableFile.getFileChannel().read(buffer);
+            buffer.flip();
+            ByteBuf byteBuf = Unpooled.wrappedBuffer(buffer.array());
+            store.write(byteBuf);
+        }
     }
 
 }

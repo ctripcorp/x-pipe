@@ -9,11 +9,11 @@ import java.util.List;
 
 public interface StreamTransactionListener {
 
-    boolean preAppend(String gtid, long offset) throws IOException;
+    boolean preAppend(String uuid,long gno) throws IOException;
 
-    int postAppend(ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException;
+    int postAppend(String uuid,long gno, long offset, ByteBuf commandBuf, RedisOpItem redisOpItem) throws IOException;
 
-    int batchPostAppend(List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException;
+    int batchPostAppend(String uuid,long gno, long offset, List<ByteBuf> commandBufs, List<RedisOpItem> payloads) throws IOException;
 
     boolean checkOffset(long offset);
 

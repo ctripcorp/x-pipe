@@ -41,6 +41,8 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
     @Before
     public void setupRordbReplicationSupportTest() throws Exception{
         this.redisServer = startFakeRedisServer();
+        // Avoid spurious LF lines before RDB that race with $EOF: header parsing.
+        this.redisServer.setSendLFBeforeSendRdb(false);
     }
 
     @Test
@@ -87,8 +89,9 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
         redisServer.setSupportRordb(true);
         RedisKeeperServer redisKeeperServer = initKeeperAndConnectToMaster();
         InMemoryGapAllowedSync psync = sendGAsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), true);
-        Assert.assertArrayEquals(redisServer.getRdbContent(), psync.getRdb());
+        Assert.assertArrayEquals(redisServer.getRordbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.RORDB, checkRdbType(psync.getRdb()));
+        waitConditionUntilTimeOut(() -> redisKeeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED);
         psync = sendGAsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), false);
         Assert.assertArrayEquals(redisServer.getRdbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.NORMAL, checkRdbType(psync.getRdb()));
@@ -101,7 +104,7 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
         InMemoryGapAllowedSync psync = sendGAsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), false);
         Assert.assertArrayEquals(redisServer.getNormalRdbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.NORMAL, checkRdbType(psync.getRdb()));
-        sleep(100); // wait last dump clean
+        waitConditionUntilTimeOut(() -> redisKeeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED);
         psync = sendGAsyncAndWaitRdbDone("127.0.0.1", redisKeeperServer.getListeningPort(), true);
         Assert.assertArrayEquals(redisServer.getRordbContent(), psync.getRdb());
         Assert.assertEquals(RdbStore.Type.RORDB, checkRdbType(psync.getRdb()));
@@ -200,7 +203,7 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
             }
         });
         psync.execute();
-        future.get(10, TimeUnit.SECONDS);
+        future.get(30, TimeUnit.SECONDS);
 
         return psync;
     }

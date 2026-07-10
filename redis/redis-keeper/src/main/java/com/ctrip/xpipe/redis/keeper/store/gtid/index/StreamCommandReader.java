@@ -101,7 +101,9 @@ public class StreamCommandReader implements StreamCommandLister {
             handleMultiCommand(payload, commandBuf);
         } else if (isGtidCommand(commandPayload)) {
             String gtid = readGtid(payload);
-            handleGtidCommand(gtid, payload, commandBuf);
+            String uuid = gtid.substring(0,40);
+            long gno = Long.parseLong(gtid.substring(41));
+            handleGtidCommand(uuid,gno, payload, commandBuf);
         } else {
             handleRegularCommand(payload, commandBuf);
         }
@@ -122,8 +124,8 @@ public class StreamCommandReader implements StreamCommandLister {
         transactionContext.addCommand(payload, commandBuf);
     }
 
-    private void handleGtidCommand(String gtid, Object[] payload, ByteBuf commandBuf) throws IOException {
-        if (StringUtil.isEmpty(gtid)) {
+    private void handleGtidCommand(String uuid,long gno, Object[] payload, ByteBuf commandBuf) throws IOException {
+        if (gno < 0) {
             handleRegularCommand(payload, commandBuf);
             return;
         }
@@ -132,28 +134,32 @@ public class StreamCommandReader implements StreamCommandLister {
         boolean isExec = isExecCommand(execPayload);
 
         if (isExec && transactionContext.isActive()) {
-            commitTransaction(gtid, payload, commandBuf);
+            commitTransaction(uuid,gno, payload, commandBuf);
         } else if (isExec && !transactionContext.isActive()) {
             logger.warn("[handleGtidCommand] EXEC without MULTI, treating as regular command");
             EventMonitor.DEFAULT.logEvent(EVENT_TYPE, EVENT_MULTI_MISS);
-            processSingleGtidCommand(gtid, payload, commandBuf);
+            processSingleGtidCommand(uuid,gno, payload, commandBuf);
         } else {
-            processSingleGtidCommand(gtid, payload, commandBuf);
+            processSingleGtidCommand(uuid,gno, payload, commandBuf);
         }
     }
 
     private void handleRegularCommand(Object[] payload, ByteBuf commandBuf) throws IOException {
         if (transactionContext.isActive()) {
-            transactionContext.addCommand(payload, commandBuf);
+            DirectByteBufInOutPayload commandPayload = (DirectByteBufInOutPayload) payload[0];
+            if (isExecCommand(commandPayload)) {
+                commitTransaction(null, -1, payload, commandBuf);
+            } else {
+                transactionContext.addCommand(payload, commandBuf);
+            }
         } else {
-            writeSingleCommand(commandBuf, payload);
+            writeSingleCommand(commandBuf, payload, null,-1);
         }
     }
 
-    private void processSingleGtidCommand(String gtid, Object[] payload, ByteBuf commandBuf) throws IOException {
-        long offset = this.currentOffset;
-        if (transactionListener.preAppend(gtid, offset)) {
-            writeSingleCommand(commandBuf, payload);
+    private void processSingleGtidCommand(String uuid,long gno, Object[] payload, ByteBuf commandBuf) throws IOException {
+        if (transactionListener.preAppend(uuid,gno)) {
+            writeSingleCommand(commandBuf, payload,uuid,gno);
         }
     }
 
@@ -169,13 +175,9 @@ public class StreamCommandReader implements StreamCommandLister {
         return commandPayload != null && commandPayload.equalsIgnoreCaseAsciiExpectedUppercase(EXEC_BYTES);
     }
 
-    private void commitTransaction(String gtid, Object[] payload, ByteBuf execCommandBuf) throws IOException {
-        if (!transactionContext.isActive()) {
-            processSingleGtidCommand(gtid, payload, execCommandBuf);
-            return;
-        }
-
-        transactionContext.setGtid(gtid);
+    private void commitTransaction(String uuid,long gno, Object[] payload, ByteBuf execCommandBuf) throws IOException {
+        transactionContext.setUuid(uuid);
+        transactionContext.setGno(gno);
         transactionContext.addCommand(payload, execCommandBuf);
 
         try {
@@ -186,21 +188,24 @@ public class StreamCommandReader implements StreamCommandLister {
         }
     }
 
-    private void writeSingleCommand(ByteBuf commandBuf, Object[] payload) throws IOException {
+    private void writeSingleCommand(ByteBuf commandBuf, Object[] payload,String uuid,long gno) throws IOException {
+        long start = this.currentOffset;
         int cmdLen = commandBuf.readableBytes();
         RedisOpItem redisOpItem = parsePayload(payload);
-        transactionListener.postAppend(commandBuf, redisOpItem);
+        transactionListener.postAppend(uuid,gno, start, commandBuf, redisOpItem);
         this.currentOffset += cmdLen;
         mayCheckOffset();
     }
 
-    private void writeMultiCommand(List<ByteBuf> commandBufs, List<RedisOpItem> redisOpItems) throws IOException {
-        int cmdLen = 0;
+    private void writeMultiCommand(String uuid,long gno, long startOffset, List<ByteBuf> commandBufs, List<RedisOpItem> redisOpItems) throws IOException {
+        int totalLen = 0;
         for (ByteBuf commandBuf : commandBufs) {
-            cmdLen += commandBuf.readableBytes();
+            if (commandBuf != null) {
+                totalLen += commandBuf.readableBytes();
+            }
         }
-        transactionListener.batchPostAppend(commandBufs, redisOpItems);
-        this.currentOffset += cmdLen;
+        transactionListener.batchPostAppend(uuid,gno, startOffset, commandBufs, redisOpItems);
+        this.currentOffset += totalLen;
         mayCheckOffset();
     }
 
@@ -217,7 +222,8 @@ public class StreamCommandReader implements StreamCommandLister {
         private final List<ByteBuf> commandBufs = new ArrayList<>();
         private boolean active = false;
         private long startOffset = -1;
-        private String gtid = null;
+        private String uuid = null;
+        private long gno = -1;
 
         public void start(long offset) {
             clear();
@@ -225,8 +231,12 @@ public class StreamCommandReader implements StreamCommandLister {
             startOffset = offset;
         }
 
-        public void setGtid(String gtid) {
-            this.gtid = gtid;
+        public void setUuid(String uuid) {
+            this.uuid = uuid;
+        }
+
+        public void setGno(long gno){
+            this.gno = gno;
         }
 
         public void addCommand(Object[] payload, ByteBuf commandBuf) {
@@ -248,12 +258,12 @@ public class StreamCommandReader implements StreamCommandLister {
             try {
                 long transactionStartOffset = startOffset > -1 ? startOffset : reader.currentOffset;
 
-                if (gtid != null && !StringUtil.isEmpty(gtid)) {
-                    if (transactionListener.preAppend(gtid, transactionStartOffset)) {
-                        reader.writeMultiCommand(commandBufs, payloads);
+                if (gno > 0) {
+                    if (transactionListener.preAppend(uuid,gno)) {
+                        reader.writeMultiCommand(uuid,gno, transactionStartOffset, commandBufs, payloads);
                     }
                 } else {
-                    reader.writeMultiCommand(commandBufs, payloads);
+                    reader.writeMultiCommand(null, -1,transactionStartOffset, commandBufs, payloads);
                 }
             } finally {
                 clear();
@@ -270,7 +280,8 @@ public class StreamCommandReader implements StreamCommandLister {
             payloads = new ArrayList<>();
             active = false;
             startOffset = -1;
-            gtid = null;
+            uuid = null;
+            gno = -1;
         }
 
         public boolean isActive() {

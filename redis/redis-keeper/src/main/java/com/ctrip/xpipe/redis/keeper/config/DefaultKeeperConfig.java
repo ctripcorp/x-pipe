@@ -57,6 +57,10 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	private static String KEY_CROSS_REGION_MAX_FSYNC_SLAVES = "crossregion.replication.loading.slaves.max";
 
 	private static String KEY_FSYNC_RATE_LIMIT = "keeper.repl.fsync.rate.limit";
+	private static String KEY_INDEX_DUAL_WRITE = "keeper.index.dual.write";
+	private static String KEY_INDEX_READ_V2 = "keeper.index.read.v2";
+	private static String KEY_INDEX_ZONE_CONSECUTIVE_THRESHOLD = "keeper.index.zone.consecutive.threshold";
+	private static String KEY_INDEX_MIXED_TOTAL_BYTES_THRESHOLD = "keeper.index.mixed.total.bytes.threshold";
 	private static String KEY_TRY_ROR_RDB = "keeper.try.ror.rdb";
 	private static String KEY_XSYNC_MAX_GAP = "keeper.xsync.max.gap";
 	private static String KEY_XSYNC_MAX_GAP_CROSSREGION = "keeper.xsync.max.gap.crossregion";
@@ -308,5 +312,30 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getCmdBatchLowRateBps() {
 		return getIntProperty(KEY_CMD_BATCH_LOW_RATE_BPS,524288);
+	}
+
+	@Override
+	public boolean dualWrite() {
+		return getBooleanProperty(KEY_INDEX_DUAL_WRITE, true);
+	}
+
+	@Override
+	public boolean readV2() {
+		return getBooleanProperty(KEY_INDEX_READ_V2, true);
+	}
+
+	@Override
+	public int getIndexZoneConsecutiveThreshold() {
+		return getIntProperty(KEY_INDEX_ZONE_CONSECUTIVE_THRESHOLD, 8192);
+	}
+
+	@Override
+	public long getIndexMixedTotalBytesThreshold() {
+		return getLongProperty(KEY_INDEX_MIXED_TOTAL_BYTES_THRESHOLD, 16L * 1024 * 1024);
+	}
+
+	@Override
+	public int getBlockSizeThreshold() {
+		return getIntProperty(KEY_BLOCK_SIZE_THRESHOLD, 8192);
 	}
 }
