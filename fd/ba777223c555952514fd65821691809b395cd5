@@ -1,0 +1,71 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/impl/ConsoleServiceManager.java
+  s_ab9a35b1cbbb24::t_04f493f5d2138a 8
+  s_ab9a35b1cbbb24::t_c2c52c71a2deb5 72-74
+  s_ab9a35b1cbbb24::t_cf3836afe35f5e 355
+  s_ab9a35b1cbbb24::t_79eb411a3eebaf 19
+  s_ab9a35b1cbbb24::t_e0908353c665d4 336-337,340-341
+  s_ab9a35b1cbbb24::t_7815436760e07d 328-329,332-333
+  s_ab9a35b1cbbb24::t_733e6f06161be6 17,344,349,352,368
+  s_ab9a35b1cbbb24::t_67d9e14b427466 18
+  s_ab9a35b1cbbb24::t_eb30e4610d037f 22
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/BeaconRouteController.java
+  s_ab9a35b1cbbb24::t_e88cc57a504bb2 146
+  s_ab9a35b1cbbb24::t_d0520585fb95f3 124,127
+  s_ab9a35b1cbbb24::t_e5353e1e205792 10-14,103-106,109-110,113,116-120,123,125-126,128,130-134,136,139-141,144,149-152,154-155
+  s_ab9a35b1cbbb24::t_d5de0afc34fe0d 145
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/dto/SentinelBeaconUsageItem.java
+  s_ab9a35b1cbbb24::t_9f0680b869d448 9-25
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/impl/DefaultConsoleService.java
+  s_ab9a35b1cbbb24::t_4563597c6d893b 10
+  s_ab9a35b1cbbb24::t_bd3511d42ffcb0 100-101
+  s_ab9a35b1cbbb24::t_31af95c86fa532 11
+  s_ab9a35b1cbbb24::t_e07954ac878909 280-281
+  s_ab9a35b1cbbb24::t_89ec8d8a114328 103-104
+  s_ab9a35b1cbbb24::t_b37236ecc46204 287-288
+  s_ab9a35b1cbbb24::t_05b2cdec0d0479 43-44
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/dto/RegionBeaconUsage.java
+  s_ab9a35b1cbbb24::t_79ea210ff85363 1-31
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/auto/DefaultMonitorManager.java
+  s_ab9a35b1cbbb24::t_6a53c3adce3fb2 17,243,274
+  s_ab9a35b1cbbb24::t_6157e6e17b94a4 15-16,18-20,60,212-213,216,221-222,225,232-241,244-245,247-273,275-284,287-315,317-379
+  s_ab9a35b1cbbb24::t_8d239b25e4a2f5 242,246
+  s_ab9a35b1cbbb24::t_fdd5706defc9ad 316
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/dto/SentinelClusterBeaconRouteItem.java
+  s_ab9a35b1cbbb24::t_02dc24140b655e 5-8
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/dto/DRBeaconUsageItem.java
+  s_ab9a35b1cbbb24::t_192e8d7d5fe4f0 5-6,9
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/beacon/DefaultMonitorManagerTest.java
+  s_ab9a35b1cbbb24::t_4279db9b2df222 10,345
+  s_ab9a35b1cbbb24::t_5b4599a9d688c9 9,11-12,215-216,219,237-238,241,269-285,287-315,317-341,343-344,346-367,369-388,390-396
+  s_ab9a35b1cbbb24::t_e6928d9a3e34c8 342,368
+  s_ab9a35b1cbbb24::t_145358ecd53804 286,316,389
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/ConsoleService.java
+  s_ab9a35b1cbbb24::t_adc976cac4edf4 64
+  s_ab9a35b1cbbb24::t_1152b3bca89488 8
+  s_ab9a35b1cbbb24::t_5f8ef1d0bd6108 7
+  s_ab9a35b1cbbb24::t_7d9bca82d0752a 62
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/dto/RestResponse.java
+  s_ab9a35b1cbbb24::t_77ede8709749de 3,12,15,21-22,25-26
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/dto/DRClusterBeaconRouteItem.java
+  s_ab9a35b1cbbb24::t_96a8faf6363a03 10-26
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/auto/MonitorManager.java
+  s_ab9a35b1cbbb24::t_ac4402e3ee901f 39
+  s_ab9a35b1cbbb24::t_49cd06705755ed 5-8,31-32,36-38
+  s_ab9a35b1cbbb24::t_173cc509ec6fe3 33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.28-trip",
+  "base_commit_sha": "fdba777223c555952514fd65821691809b395cd5",
+  "prompts": {},
+  "sessions": {
+    "s_ab9a35b1cbbb24": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "597171fe-3fe8-4b35-a753-e9ab7dab2890",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": null
+    }
+  }
+}

@@ -1,0 +1,30 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java
+  s_5901fdb19696d1::t_0c4a64357004ba 79,98,100
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java
+  s_5901fdb19696d1::t_e6354ab2a5e712 250
+  s_5901fdb19696d1::t_b0bbac5d85f541 220
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultRdbStore.java
+  s_5901fdb19696d1::t_9b18326363d7a3 169
+  s_5901fdb19696d1::t_ba9733ad51fa53 170-171
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelper.java
+  s_5901fdb19696d1::t_142bc041fcfb6f 3-5,7-8,11,13,43-132
+  s_5901fdb19696d1::t_844416358ec334 9
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/OffsetCommandWriter.java
+  s_5901fdb19696d1::t_37391e5552b565 67,70-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.32-trip",
+  "base_commit_sha": "e44cba9ea6f095689dc74ac9a354e06b1af9c452",
+  "prompts": {},
+  "sessions": {
+    "s_5901fdb19696d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0e048c1c-3696-4c24-a24c-ba16d98796ea",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
