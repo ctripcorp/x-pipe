@@ -1,0 +1,129 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/auto/DefaultMonitorManager.java
+  s_f6aa65f7012ddd::t_57d6926ee845a2 18
+  s_f6aa65f7012ddd::t_cfb3582234dc09 382-386
+  s_f6aa65f7012ddd::t_6ca17289f942e8 152
+  s_f6aa65f7012ddd::t_43821831510354 202
+  s_f6aa65f7012ddd::t_8b6ad0eb0a4098 250,257
+  s_f6aa65f7012ddd::t_ffe6f9c6f7e616 224,231
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/beacon/BeaconRouteType.java
+  s_f6aa65f7012ddd::t_44b5a8c11470a5 1
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/beacon/DefaultMonitorManagerTest.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 6
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/controller/api/BeaconRouteControllerTest.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 4
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/migration/auto/DefaultBeaconManagerSentinelExcludeTest.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 7
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/fakeredis/DefaultRedisKeeperServerConnectToFakeRedisTest.java
+  s_f6aa65f7012ddd::t_4da894d1383201 65-70
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/clusteractions/beacon/SentinelBeaconConsistencyCheckAction.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 4
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/clusteractions/beacon/SentinelBeaconConsistencyCheckActionTest.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 7
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/healthcheck/nonredis/clusterstatus/AbnormalClusterStatusMonitorTest.java
+  s_f6aa65f7012ddd::t_c1c0b9c5974afa 99-100
+  s_f6aa65f7012ddd::t_26e8e0f320d436 6
+  s_f6aa65f7012ddd::t_fbbf430465655e 38,43
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/beacon/BeaconSentinelMetaUtilTest.java
+  s_f6aa65f7012ddd::t_922a2769b79c2f 6,8
+  s_f6aa65f7012ddd::t_ef5e2640323b35 54-67
+  s_f6aa65f7012ddd::t_7579f4b13ad9c3 75-76,81,87
+  s_f6aa65f7012ddd::t_a1c6a881b92d80 100-101
+  s_f6aa65f7012ddd::t_7fee4aafde06e2 53,82-86
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/clusteractions/beacon/BeaconConsistencyCheckActionTest.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 7
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/clusteractions/beacon/BeaconConsistencyCheckAction.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 9
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/impl/ConsoleServiceManager.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 8
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/config/impl/CommonConfigBean.java
+  s_f6aa65f7012ddd::t_1b8ae41cfaa171 74
+  s_f6aa65f7012ddd::t_ee200b8ae35dfc 73,75-77
+  s_f6aa65f7012ddd::t_cf1cab6a64fbd9 218-222
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/BeaconRouteController.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 7
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/notifier/DrBeaconClusterMonitorNotifier.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 5
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/healthcheck/nonredis/beacon/SentinelBeaconClusterMonitorCheck.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 4
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/config/ConsoleCommonConfig.java
+  s_f6aa65f7012ddd::t_3d7764588a3099 16-17
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/notifier/SentinelBeaconClusterMonitorNotifier.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 5
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/BeaconManager.java
+  s_f6aa65f7012ddd::t_61a5e117a20796 6
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/meta/impl/BeaconMetaServiceImpl.java
+  s_f6aa65f7012ddd::t_896724233ef577 234
+  s_f6aa65f7012ddd::t_ed78d41f6b5054 221
+  s_f6aa65f7012ddd::t_8c0d2880f1753e 13
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/healthcheck/nonredis/beacon/BeaconClusterMonitorCheckTest.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 5
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/config/impl/DefaultCommonConfig.java
+  s_f6aa65f7012ddd::t_3c588f6542cdab 23,25
+  s_f6aa65f7012ddd::t_7be0e4a68d37e3 24
+  s_f6aa65f7012ddd::t_12677c6b0307d9 46-51
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/vo/SentinelClusterBeaconRouteItem.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 4
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/healthcheck/nonredis/clusterstatus/OperatingShardMonitorTest.java
+  s_f6aa65f7012ddd::t_a0f29cdfc5257e 102-103
+  s_f6aa65f7012ddd::t_bc6448ffb640a8 7-11,33,49-60,77-93
+  s_f6aa65f7012ddd::t_d665c17413f207 6
+  s_f6aa65f7012ddd::t_da1a39b81a7b00 39,44
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/migration/impl/MigrationServiceImpl.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 11
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/vo/DRBeaconUsageItem.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 4
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/healthcheck/nonredis/beacon/SentinelBeaconClusterMonitorCheckTest.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 4
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/migration/auto/DefaultBeaconManagerTest.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 9
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/vo/SentinelBeaconUsageItem.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 4
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/migration/impl/MigrationServiceImplSentinelBeaconTest.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 7
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/TestBeaconManager.java
+  s_f6aa65f7012ddd::t_daa3bc51311514 6
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/auto/DefaultBeaconManager.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 12
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AbstractFakeRedisTest.java
+  s_f6aa65f7012ddd::t_094beddb40c48b 165-168
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/healthcheck/nonredis/clusterstatus/OperatingShardMonitor.java
+  s_f6aa65f7012ddd::t_f038e63ced8d3b 35-36
+  s_f6aa65f7012ddd::t_e0ad21947370ee 10
+  s_f6aa65f7012ddd::t_9ebe19837b937b 95,100
+  s_f6aa65f7012ddd::t_d513ce648ee291 9,11-15,23,33,42-43,47-57,59-60,67-71,73,75
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/beacon/BeaconSentinelMetaUtil.java
+  s_f6aa65f7012ddd::t_fc5f03eed766f6 77,85-89,102,119
+  s_f6aa65f7012ddd::t_dd33ccc2bfd524 78-84,99-101,115-116,118
+  s_f6aa65f7012ddd::t_7b5f1c7ed88c3e 6,8
+  s_f6aa65f7012ddd::t_6b5e56f1e9a3bf 37-46
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/TestCommonConfig.java
+  s_f6aa65f7012ddd::t_6307ad61f25735 29-33
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/healthcheck/nonredis/beacon/BeaconClusterMonitorCheck.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 4
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/healthcheck/nonredis/clusterstatus/AbnormalClusterStatusMonitor.java
+  s_f6aa65f7012ddd::t_873f0736a33cfd 9
+  s_f6aa65f7012ddd::t_81263f030208e9 31-33
+  s_f6aa65f7012ddd::t_07ebd86886b538 82,87
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/auto/MonitorManager.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 4
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/notifier/SentinelBeaconClusterMonitorNotifierTest.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 5
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/vo/DRClusterBeaconRouteItem.java
+  s_f6aa65f7012ddd::t_9719cc4439fdab 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.33-trip",
+  "base_commit_sha": "b4bcd3a128997526aeb13b7b35c63b37713a49d4",
+  "prompts": {},
+  "sessions": {
+    "s_f6aa65f7012ddd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8fbe2ff7-5dc6-4c1b-b369-9ad8277e733b",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}
