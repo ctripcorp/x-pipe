@@ -28,6 +28,8 @@ public class TailCacheFileSystemConfig {
     private int preloadChunkThreshold = 8;
     // Max wait for FULL_CACHE preload; 0 wait until preload completes.
     private long preloadTimeoutMs = 1000;
+    // Max wait for IO.
+    private long ioWaitTimeoutMs = 1000;
     private int maxWriteChunkThreshold = 32;
 
     public TailCacheFileSystemConfig() {
@@ -114,6 +116,16 @@ public class TailCacheFileSystemConfig {
     public TailCacheFileSystemConfig setPreloadTimeoutMs(long preloadTimeoutMs) {
         if (preloadTimeoutMs < 0) throw new IllegalArgumentException("preloadTimeoutMs must be non-negative");
         this.preloadTimeoutMs = preloadTimeoutMs;
+        return this;
+    }
+
+    public long getIoWaitTimeoutMs() {
+        return ioWaitTimeoutMs;
+    }
+
+    public TailCacheFileSystemConfig setIoWaitTimeoutMs(long ioWaitTimeoutMs) {
+        if (ioWaitTimeoutMs < 0) throw new IllegalArgumentException("ioWaitTimeoutMs must be non-negative");
+        this.ioWaitTimeoutMs = ioWaitTimeoutMs;
         return this;
     }
 
