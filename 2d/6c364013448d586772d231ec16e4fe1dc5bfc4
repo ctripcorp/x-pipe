@@ -1,0 +1,22 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexEntry.java
+  s_5a275051465b83::t_bb1f7770d579a1 258
+  s_5a275051465b83::t_0f9f75adaa1796 86,88
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexEntryTest.java
+  s_5a275051465b83::t_b388214d97b1e4 122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.33-trip",
+  "base_commit_sha": "2d6c364013448d586772d231ec16e4fe1dc5bfc4",
+  "prompts": {},
+  "sessions": {
+    "s_5a275051465b83": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8626a4e2-b5f9-4029-8c5d-2d89c57d93d1",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
