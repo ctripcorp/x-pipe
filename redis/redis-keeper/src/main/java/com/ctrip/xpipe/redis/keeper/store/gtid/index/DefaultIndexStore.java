@@ -77,8 +77,10 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     @Override
     public void openWriter(CommandWriter cmdWriter) throws IOException {
-        this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
-        this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size());
+        // currentCmdFileName was populated via constructor (from AsyncCommandStore-supplied latest file);
+        // T-X1a.1: rely on CommandWriter#fileLength() instead of getFileContext().getChannel().size() to
+        // decouple IndexStore from the sync FileChannel handle held by CommandFileContext.
+        this.streamCommandReader = new StreamCommandReader(this, cmdWriter.fileLength());
         if(keeperConfig.dualWrite()) {
             this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
             this.indexWriter.init();
