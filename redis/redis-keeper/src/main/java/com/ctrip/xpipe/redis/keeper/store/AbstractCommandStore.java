@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
@@ -163,9 +164,14 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
         allFileFilter = new PrefixFileFilter(new String[] {fileNamePrefix, INDEX_FILE_PREFIX + fileNamePrefix});
 
+        // T-X1a.2: expand from V1-only (index_/block_) to include V2 (indexv2_/blockv2_).
+        // fs.open must register all 4 index prefixes so that segment truncate/delete keeps
+        // both V1 and V2 index/block files consistent with the cmd segment.
         this.commandIndexPrefixes = Arrays.asList(
                 INDEX + fileNamePrefix,
-                BLOCK + fileNamePrefix);
+                BLOCK + fileNamePrefix,
+                INDEX_V2 + fileNamePrefix,
+                BLOCK_V2 + fileNamePrefix);
         this.asyncSegmentFile = AsyncFileSystemHelper.await(
                 asyncFileSystem.open(baseDir.getAbsolutePath(), fileNamePrefix, commandIndexPrefixes, true, fileSystemReplId.toString()),
                 "open command segment " + fileNamePrefix);
@@ -661,6 +667,46 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     @Override
     public AsyncSegmentFile getAsyncSegmentFile() {
         return asyncSegmentFile;
+    }
+
+    @Override
+    public AsyncSegmentFile getWriteSegmentFile() {
+        return asyncSegmentFile;
+    }
+
+    /**
+     * Index-only tail truncate for the current write segment (spec §3.7.3). Callers pass the V1 or V2
+     * prefix pair depending on which writer is recovering. Cmd segment position is untouched.
+     * <p>T-X1a.5 lands the API only — no caller is wired up until T-X1c/T-X1d.
+     */
+    @Override
+    public Map<String, AsyncFile> truncateIndex(String indexPrefix, String blockPrefix,
+                                                long indexSize, long blockSize) throws IOException {
+        List<String> prefixes = Arrays.asList(indexPrefix, blockPrefix);
+        Map<String, AsyncFile> handles = AsyncFileSystemHelper.await(
+                asyncFileSystem.getCurrentIndexFiles(asyncSegmentFile, prefixes),
+                "getCurrentIndexFiles for truncateIndex " + indexPrefix + "/" + blockPrefix);
+        AsyncFile indexFile = handles.get(indexPrefix);
+        AsyncFile blockFile = handles.get(blockPrefix);
+        if (indexFile == null || blockFile == null) {
+            throw new IOException("[truncateIndex] missing index/block handle for " + indexPrefix + "/" + blockPrefix);
+        }
+        AsyncFileSystemHelper.await(asyncFileSystem.truncate(indexFile, indexSize),
+                "truncate " + indexPrefix + " to " + indexSize);
+        AsyncFileSystemHelper.await(asyncFileSystem.truncate(blockFile, blockSize),
+                "truncate " + blockPrefix + " to " + blockSize);
+        return handles;
+    }
+
+    /**
+     * Cmd-only tail truncate for the write segment (spec §3.7.3). Companion index/block file contents
+     * are NOT modified by FS truncate — callers roll their own {@link #truncateIndex} follow-up.
+     */
+    @Override
+    public Map<String, AsyncFile> truncateCmdSegment(long cmdStartOffset) throws IOException {
+        return AsyncFileSystemHelper.await(
+                asyncFileSystem.truncate(asyncSegmentFile, cmdStartOffset),
+                "truncate cmd segment to " + cmdStartOffset);
     }
 
     @Override
