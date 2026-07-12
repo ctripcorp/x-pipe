@@ -183,9 +183,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         indexStore = createIndexStore();
     }
 
-    private IndexStore createIndexStore() throws IOException {
-        return new DefaultIndexStore(keeperConfig, ckStore, baseDir.getAbsolutePath(), redisOpParser,
-                this, gtidCmdFilter, findLatestFile().getFile().getName());
+    private IndexStore createIndexStore() {
+        return new DefaultIndexStore(keeperConfig, ckStore, this, baseDir.getAbsolutePath(), redisOpParser,
+                this, gtidCmdFilter);
     }
 
     @Override
@@ -703,10 +703,21 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
      * are NOT modified by FS truncate — callers roll their own {@link #truncateIndex} follow-up.
      */
     @Override
-    public Map<String, AsyncFile> truncateCmdSegment(long cmdStartOffset) throws IOException {
+    public Map<String, AsyncFile> truncateCmdSegment(long cmdSegmentOffset) throws IOException {
+        long globalOffset = getCurrentSegmentStartOffset() + cmdSegmentOffset;
         return AsyncFileSystemHelper.await(
-                asyncFileSystem.truncate(asyncSegmentFile, cmdStartOffset),
-                "truncate cmd segment to " + cmdStartOffset);
+                asyncFileSystem.truncate(asyncSegmentFile, globalOffset),
+                "truncate cmd segment to " + globalOffset);
+    }
+
+    @Override
+    public long getCurrentSegmentStartOffset() throws IOException {
+        long startOffset = asyncFileSystem.getCurrentSegmentStartOffset(asyncSegmentFile);
+        if (startOffset < 0) {
+            List<Long> offsets = asyncFileSystem.list(asyncSegmentFile);
+            startOffset = offsets.isEmpty() ? 0 : offsets.get(offsets.size() - 1);
+        }
+        return startOffset;
     }
 
     @Override
@@ -732,6 +743,14 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     @Override
     public int getAsyncWriteMaxBytes() {
         return Math.max(1, asyncWriteMaxBytes.getAsInt());
+    }
+
+    @Override
+    public long currentSegmentSize() throws IOException {
+        if (cmdWriter == null) {
+            throw new IOException("cmd writer not initialized");
+        }
+        return cmdWriter.fileLength();
     }
 
     @Override

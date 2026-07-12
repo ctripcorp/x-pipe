@@ -1,12 +1,14 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.Arrays;
 
 public class IndexEntry {
@@ -219,10 +221,11 @@ public class IndexEntry {
         return e;
     }
 
-    /**
-     * 从 ByteBuffer 读取 v2 格式条目（legacy {@link FileChannel} 路径，X1c 前保留）。
-     */
+    /** 从 {@link ByteBuffer} 读取 v2 格式条目（Reader 短读路径）。 */
     public static IndexEntry fromBufferV2(ByteBuffer buffer) {
+        if (buffer.remaining() == 0 && buffer.position() > 0) {
+            buffer.flip();
+        }
         if (buffer.remaining() < SEGMENT_LENGTH_V2) {
             return null;
         }
@@ -263,9 +266,7 @@ public class IndexEntry {
         return indexEntry;
     }
 
-    /**
-     * 从 ByteBuffer 读取 v1 格式条目（legacy {@link FileChannel} 路径，X1c 前保留）。
-     */
+    /** 从 {@link ByteBuffer} 读取 v1 格式条目（Reader 短读路径）。 */
     public static IndexEntry fromBuffer(ByteBuffer buffer) {
         buffer.flip();
         if (buffer.remaining() < SEGMENT_LENGTH) {
@@ -280,60 +281,56 @@ public class IndexEntry {
         }
     }
 
-    public void syncDataFromBlockWriter(BlockWriter blockWriter) throws IOException {
-        blockWriter.flushBlock();
-        this.blockEndOffset = blockWriter.getPosition();
-        this.size = blockWriter.getSize();
+    public void syncDataFromBlockEntry(BlockEntry blockEntry, AsyncFileSystem fs, AsyncFile blockFile)
+            throws IOException {
+        ByteBuf blockBuf = blockEntry.drainToByteBuf();
+        if (blockBuf != null && blockBuf.isReadable()) {
+            // AsyncFileSystem.write releases the buffer; caller must not release again.
+            AsyncFileSystemHelper.writeAndAwait(fs, blockFile, blockBuf, blockBuf.readableBytes(),
+                    "write block entry");
+        }
+        this.blockEndOffset = AsyncFileSystemHelper.await(fs.size(blockFile), "size block file");
+        this.size = blockEntry.getSize();
     }
 
-    // ---------- 写入 ----------
-    public void saveToDiskV2(BlockWriter blockWriter, FileChannel channel) throws IOException {
-        this.syncDataFromBlockWriter(blockWriter);
-        long pos = channel.position();
-        this.position = pos;
-        channel.write(generateBufferV2());
+    public void saveToDiskV2(AsyncFileSystem fs, AsyncFile indexV2File, BlockEntry blockEntry, AsyncFile blockV2File)
+            throws IOException {
+        syncDataFromBlockEntry(blockEntry, fs, blockV2File);
+        writeBufferV2(fs, indexV2File);
     }
 
-    public void saveToDiskV2(FileChannel channel) throws IOException {
-        long pos = channel.position();
-        this.position = pos;
-        channel.write(generateBufferV2());
+    public void saveToDiskV2(AsyncFileSystem fs, AsyncFile indexV2File) throws IOException {
+        writeBufferV2(fs, indexV2File);
     }
 
-    public void saveToDisk(BlockWriter blockWriter, FileChannel channel) throws IOException {
-        this.syncDataFromBlockWriter(blockWriter);
-        if(position > 0) {
-            channel.position(position);
+    private void writeBufferV2(AsyncFileSystem fs, AsyncFile indexV2File) throws IOException {
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(SEGMENT_LENGTH_V2);
+        try {
+            encodeV2(buf);
+            buf.retain();
+            AsyncFileSystemHelper.writeAndAwait(fs, indexV2File, buf, SEGMENT_LENGTH_V2, "write index v2 entry");
+        } finally {
+            buf.release();
+        }
+    }
+
+    /** V1 truncate-then-write semantics for async FS. */
+    public void saveToDisk(AsyncFileSystem fs, AsyncFile indexFile, BlockEntry blockEntry, AsyncFile blockFile)
+            throws IOException {
+        syncDataFromBlockEntry(blockEntry, fs, blockFile);
+        if (position > 0) {
+            AsyncFileSystemHelper.await(fs.truncate(indexFile, position), "truncate index v1");
         } else {
-            position = channel.position();
+            position = AsyncFileSystemHelper.await(fs.size(indexFile), "size index v1");
         }
-        channel.write(generateBuffer());
-    }
-
-    private static long fileRemainingLength(FileChannel channel) throws IOException {
-        long currentPosition = channel.position();
-        long fileSize = channel.size();
-        return fileSize - currentPosition;
-    }
-
-    // ---------- v2 反序列化 ----------
-    public static IndexEntry readFromFileV2(FileChannel channel) throws IOException {
-        if (fileRemainingLength(channel) < SEGMENT_LENGTH_V2) return null;
-        ByteBuffer buf = ByteBuffer.allocate(SEGMENT_LENGTH_V2);
-        channel.read(buf);
-        buf.flip();
-        return fromBufferV2(buf);
-    }
-
-    public static IndexEntry readFromFile(FileChannel channel) throws IOException {
-
-        if(fileRemainingLength(channel) < SEGMENT_LENGTH) {
-            return null;
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(SEGMENT_LENGTH);
+        try {
+            encode(buf);
+            buf.retain();
+            AsyncFileSystemHelper.writeAndAwait(fs, indexFile, buf, SEGMENT_LENGTH, "write index v1 entry");
+        } finally {
+            buf.release();
         }
-        ByteBuffer buffer = ByteBuffer.allocate(SEGMENT_LENGTH);
-        channel.read(buffer);
-        IndexEntry indexEntry = fromBuffer(buffer);
-        return indexEntry;
     }
 
     @Override

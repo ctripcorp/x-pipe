@@ -1,11 +1,15 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.google.common.collect.Maps;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
 public class GtidSetWrapper {
 
@@ -27,23 +31,24 @@ public class GtidSetWrapper {
         this.gtidSet = gtidSet;
     }
 
-    public void saveGtidSet(FileChannel channel) throws IOException {
-        if(channel.size() != 0) {
-            throw new IllegalStateException("file channel should be empty before saving GTID set");
+    public void saveGtidSet(AsyncFileSystem fs, AsyncFile file) throws IOException {
+        if (AsyncFileSystemHelper.await(fs.size(file), "size index") != 0) {
+            throw new IllegalStateException("index file should be empty before saving GTID set");
         }
-        channel.position(0);
         byte[] gtidBytes = gtidSet.toString().getBytes();
-        int length = gtidBytes.length;
-        ByteBuffer buffer = ByteBuffer.allocate(length + Long.BYTES);
-        buffer.putLong(length);
+        ByteBuffer buffer = ByteBuffer.allocate(gtidBytes.length + Long.BYTES);
+        buffer.putLong(gtidBytes.length);
         buffer.put(gtidBytes);
         buffer.flip();
-        channel.write(buffer);
+        ByteBuf buf = Unpooled.wrappedBuffer(buffer).retain();
+        try {
+            AsyncFileSystemHelper.writeAndAwait(fs, file, buf, buffer.remaining(), "write gtid set v1 header");
+        } finally {
+            buf.release();
+        }
     }
 
-    // ---- v2 header ----
-    public void saveGtidSetV2(FileChannel channel) throws IOException {
-        channel.position(0);
+    public void saveGtidSetV2(AsyncFileSystem fs, AsyncFile file) throws IOException {
         byte[] gtidBytes = gtidSet.toString().getBytes();
         ByteBuffer header = ByteBuffer.allocate(16 + gtidBytes.length);
         header.putInt(MAGIC);
@@ -51,131 +56,183 @@ public class GtidSetWrapper {
         header.putLong(gtidBytes.length);
         header.put(gtidBytes);
         header.flip();
-        channel.write(header);
-    }
-
-
-    static GtidSet readGtidSet(FileChannel channel) throws IOException {
-        if(channel.size() < Long.BYTES) {
-            throw new IllegalStateException("file channel should be empty before saving GTID set");
-        }
-        channel.position(0);
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        channel.read(buffer);
-        buffer.flip();
-        long gtidLength = buffer.getLong();
-        if(gtidLength == 0) {
-            return new GtidSet(Maps.newLinkedHashMap());
-        }
-        ByteBuffer gtidBuffer = ByteBuffer.allocate((int)gtidLength);
-        channel.read(gtidBuffer);
-        gtidBuffer.flip();
-        String gtidString = new String(gtidBuffer.array());
-        GtidSet clone = new GtidSet(gtidString);
-        return clone;
-    }
-
-    // 自动识别版本读取
-    public static GtidSet readGtidSetV2(FileChannel channel) throws IOException {
-        channel.position(0);
-        if (channel.size() < 4) throw new IOException("Index file too small");
-        ByteBuffer magicBuf = ByteBuffer.allocate(4);
-        channel.read(magicBuf);
-        magicBuf.flip();
-        int firstInt = magicBuf.getInt();
-        if(firstInt != MAGIC){
-            throw new IllegalStateException("Not a valid v2 index file (bad magic)");
-        }
-        ByteBuffer verBuf = ByteBuffer.allocate(4);
-        channel.read(verBuf);
-        verBuf.flip();
-        int version = verBuf.getInt();
-        long gtidLen = readLong(channel);
-        if (gtidLen == 0) return new GtidSet(Maps.newLinkedHashMap());
-        ByteBuffer gtidBuf = ByteBuffer.allocate((int) gtidLen);
-        channel.read(gtidBuf);
-        gtidBuf.flip();
-        return new GtidSet(new String(gtidBuf.array()));
-    }
-
-    private static long fileRemainingLength(FileChannel channel) throws IOException {
-        long currentPosition = channel.position();
-        long fileSize = channel.size();
-        return fileSize - currentPosition;
-    }
-
-    public static long headerSize(FileChannel channel) throws IOException {
-        long saved = channel.position();
+        ByteBuf buf = Unpooled.wrappedBuffer(header).retain();
         try {
-            channel.position(0);
-            if (channel.size() < 4) return 0L;
-            ByteBuffer magicBuf = ByteBuffer.allocate(4);
-            channel.read(magicBuf); magicBuf.flip();
-            int firstInt = magicBuf.getInt();
-            if (firstInt == MAGIC) {
-                channel.position(4);
-                ByteBuffer verBuf = ByteBuffer.allocate(4);
-                channel.read(verBuf);
-                long gtidLen = readLong(channel);
-                return 16 + gtidLen;
+            AsyncFileSystemHelper.writeAndAwait(fs, file, buf, header.remaining(), "write gtid set v2 header");
+        } finally {
+            buf.release();
+        }
+    }
+
+    public static boolean isV1HeaderComplete(AsyncFileSystem fs, AsyncFile file) throws IOException {
+        long size = AsyncFileSystemHelper.await(fs.size(file), "size index v1");
+        if (size < Long.BYTES) {
+            return false;
+        }
+        ByteBuf lenBuf = AsyncFileSystemHelper.await(fs.read(file, Long.BYTES, 0), "read v1 header len");
+        try {
+            long gtidLen = lenBuf.readLong();
+            return gtidLen >= 0 && size >= Long.BYTES + gtidLen;
+        } finally {
+            lenBuf.release();
+        }
+    }
+
+    public static boolean isV2HeaderComplete(AsyncFileSystem fs, AsyncFile file) throws IOException {
+        long size = AsyncFileSystemHelper.await(fs.size(file), "size index v2");
+        if (size < 16) {
+            return false;
+        }
+        ByteBuf headerBuf = AsyncFileSystemHelper.await(fs.read(file, 16, 0), "read v2 header prefix");
+        try {
+            if (headerBuf.readInt() != MAGIC) {
+                return false;
+            }
+            headerBuf.readInt();
+            long gtidLen = headerBuf.readLong();
+            return gtidLen >= 0 && size >= 16 + gtidLen;
+        } finally {
+            headerBuf.release();
+        }
+    }
+
+    public static GtidSet readGtidSet(AsyncFileSystem fs, AsyncFile file) throws IOException {
+        long size = AsyncFileSystemHelper.await(fs.size(file), "size index v1");
+        if (size < Long.BYTES) {
+            throw new IllegalStateException("index file too small for v1 header");
+        }
+        ByteBuf buf = AsyncFileSystemHelper.await(fs.read(file, Long.BYTES, 0), "read gtid set v1 length");
+        try {
+            long gtidLength = buf.readLong();
+            if (gtidLength == 0) {
+                return new GtidSet(Maps.newLinkedHashMap());
+            }
+            byte[] data = AsyncFileSystemHelper.readAllBytes(fs, file, gtidLength, Long.BYTES, "read gtid set v1");
+            return new GtidSet(new String(data));
+        } finally {
+            buf.release();
+        }
+    }
+
+    public static GtidSet readGtidSetV2(AsyncFileSystem fs, AsyncFile file) throws IOException {
+        return readV2Header(fs, file).gtidSet;
+    }
+
+    public static final class V2Header {
+        public final GtidSet gtidSet;
+        public final long headerEnd;
+
+        V2Header(GtidSet gtidSet, long headerEnd) {
+            this.gtidSet = gtidSet;
+            this.headerEnd = headerEnd;
+        }
+    }
+
+    public static V2Header readV2Header(AsyncFileSystem fs, AsyncFile file) throws IOException {
+        long size = AsyncFileSystemHelper.await(fs.size(file), "size index v2");
+        if (size < 16) {
+            throw new IOException("Index file too small");
+        }
+        ByteBuf headerBuf = AsyncFileSystemHelper.await(fs.read(file, 16, 0), "read gtid set v2 header");
+        try {
+            if (headerBuf.readInt() != MAGIC) {
+                throw new IllegalStateException("Not a valid v2 index file (bad magic)");
+            }
+            headerBuf.readInt();
+            long gtidLen = headerBuf.readLong();
+            GtidSet gtidSet;
+            if (gtidLen == 0) {
+                gtidSet = new GtidSet(Maps.newLinkedHashMap());
             } else {
-                channel.position(0);
-                long gtidLen = readLong(channel);
+                byte[] data = AsyncFileSystemHelper.readAllBytes(fs, file, gtidLen, 16, "read gtid set v2 body");
+                gtidSet = new GtidSet(new String(data));
+            }
+            return new V2Header(gtidSet, 16 + gtidLen);
+        } finally {
+            headerBuf.release();
+        }
+    }
+
+    public static long headerSize(AsyncFileSystem fs, AsyncFile file) throws IOException {
+        long size = AsyncFileSystemHelper.await(fs.size(file), "size index v2 header");
+        if (size < 4) {
+            return 0L;
+        }
+        ByteBuf magicBuf = AsyncFileSystemHelper.await(fs.read(file, 4, 0), "read index magic");
+        try {
+            int firstInt = magicBuf.readInt();
+            if (firstInt == MAGIC) {
+                ByteBuf lenBuf = AsyncFileSystemHelper.await(fs.read(file, Long.BYTES, 8), "read v2 gtid length");
+                try {
+                    long gtidLen = lenBuf.readLong();
+                    return 16 + gtidLen;
+                } finally {
+                    lenBuf.release();
+                }
+            }
+            ByteBuf lenBuf = AsyncFileSystemHelper.await(fs.read(file, Long.BYTES, 0), "read v1 gtid length");
+            try {
+                long gtidLen = lenBuf.readLong();
                 return 8 + gtidLen;
+            } finally {
+                lenBuf.release();
             }
         } finally {
-            channel.position(saved);
+            magicBuf.release();
         }
     }
 
-    public IndexEntry recover(FileChannel channel) throws IOException {
-        channel.position(0);
+    public IndexEntry recover(AsyncFileSystem fs, AsyncFile indexFile) throws IOException {
+        GtidSet recoverGtidSet = readGtidSet(fs, indexFile);
+        ByteBuf lenBuf = AsyncFileSystemHelper.await(fs.read(indexFile, Long.BYTES, 0), "read v1 header len");
+        long gtidLength;
+        try {
+            gtidLength = lenBuf.readLong();
+        } finally {
+            lenBuf.release();
+        }
+        long headerEnd = Long.BYTES + gtidLength;
+        long fileSize = AsyncFileSystemHelper.await(fs.size(indexFile), "size index v1");
         IndexEntry indexEntry = null;
-        GtidSet recoverGtidSet = GtidSetWrapper.readGtidSet(channel);
-        while (fileRemainingLength(channel) >= IndexEntry.SEGMENT_LENGTH) {
-            long pos = channel.position();
-            IndexEntry item = IndexEntry.readFromFile(channel);
-            if(item.getSize() > 0) {
-                recoverGtidSet.compensate(item.getUuid(), item.getStartGno(), item.getEndGno());
+        long pos = headerEnd;
+        while (fileSize - pos >= IndexEntry.SEGMENT_LENGTH) {
+            ByteBuf entryBuf = AsyncFileSystemHelper.await(fs.read(indexFile, IndexEntry.SEGMENT_LENGTH, pos),
+                    "read index v1 entry");
+            try {
+                IndexEntry item = IndexEntry.fromBuffer(entryBuf);
+                if (item == null) {
+                    break;
+                }
+                if (item.getSize() > 0) {
+                    recoverGtidSet.compensate(item.getUuid(), item.getStartGno(), item.getEndGno());
+                }
+                item.setPosition(pos);
+                indexEntry = item;
+            } finally {
+                entryBuf.release();
             }
-            item.setPosition(pos);
-            indexEntry = item;
+            pos += IndexEntry.SEGMENT_LENGTH;
         }
         this.gtidSet = recoverGtidSet;
         return indexEntry;
     }
 
     public void compensate(IndexEntry indexEntry) {
-        if(indexEntry != null && !indexEntry.isZone() && indexEntry.getSize() > 0) {
+        if (indexEntry != null && !indexEntry.isZone() && indexEntry.getSize() > 0) {
             gtidSet.compensate(indexEntry.getUuid(), indexEntry.getStartGno(), indexEntry.getEndGno());
         }
     }
 
-    public void compensate(IndexEntry unSavedindexEntry, BlockWriter blockWriter) {
-        if(unSavedindexEntry != null && !unSavedindexEntry.isZone() && blockWriter != null && blockWriter.getSize() > 0) {
-            unSavedindexEntry.setSize(blockWriter.getSize());
+    public void compensate(IndexEntry unSavedindexEntry, BlockEntry blockEntry) {
+        if (unSavedindexEntry != null && !unSavedindexEntry.isZone() && blockEntry != null && blockEntry.getSize() > 0) {
+            unSavedindexEntry.setSize(blockEntry.getSize());
             compensate(unSavedindexEntry);
         }
     }
 
     public void compensate(String uuid, long startGno, long endGno) {
-        if(endGno >= startGno) {
+        if (endGno >= startGno) {
             gtidSet.compensate(uuid, startGno, endGno);
         }
-
     }
-
-    private static long readLong(FileChannel channel) throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        channel.read(buffer);
-        buffer.flip();
-        return buffer.getLong();
-    }
-
-    public static void skipGtidSet(FileChannel channel) throws IOException {
-        channel.position(0);
-        long gtidLength = readLong(channel);
-        channel.position(gtidLength + Long.BYTES);
-    }
-
 }

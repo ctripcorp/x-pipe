@@ -48,11 +48,20 @@ public interface AsyncCommandStore {
                                          long indexSize, long blockSize) throws IOException;
 
     /**
-     * Truncate the cmd segment tail down to {@code cmdStartOffset} (spec §3.7.3). Companion index files are
-     * <b>not</b> modified by this call — callers must follow up with {@link #truncateIndex} when rolling back
-     * a partially-indexed transaction.
+     * Truncate the cmd segment tail down to {@code cmdSegmentOffset} (spec §3.7.3). The offset is
+     * <b>within the current write segment</b> (same coordinate system as {@code IndexEntry.cmdEndOffset}
+     * and {@code StreamCommandReader}); it is converted to the global logical offset expected by
+     * {@code fs.truncate(writeSeg, ...)} internally. Companion index files are <b>not</b> modified by
+     * this call — callers must follow up with {@link #truncateIndex} when rolling back a partially-indexed
+     * transaction.
      *
-     * @return the index handles returned by {@code fs.truncate(writeSeg, cmdStartOffset)} for the resulting segment.
+     * @return the index handles returned by {@code fs.truncate(writeSeg, globalOffset)} for the resulting segment.
      */
-    Map<String, AsyncFile> truncateCmdSegment(long cmdStartOffset) throws IOException;
+    Map<String, AsyncFile> truncateCmdSegment(long cmdSegmentOffset) throws IOException;
+
+    /** Start offset of the current write segment (global logical offset of the tail segment). */
+    long getCurrentSegmentStartOffset() throws IOException;
+
+    /** Current write segment file size in bytes (segment-local, not global). */
+    long currentSegmentSize() throws IOException;
 }

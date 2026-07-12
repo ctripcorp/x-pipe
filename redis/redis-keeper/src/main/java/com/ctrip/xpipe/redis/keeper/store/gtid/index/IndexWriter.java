@@ -1,165 +1,163 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
-import com.ctrip.xpipe.api.utils.ControllableFile;
 import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.utils.DefaultControllableFile;
-import com.google.common.collect.Maps;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.store.AsyncCommandStore;
+import io.netty.buffer.ByteBuf;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-public class IndexWriter extends AbstractIndex implements Closeable {
+import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.BLOCK;
+import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
 
-    private static final Logger log = LoggerFactory.getLogger(IndexWriter.class);
-    private BlockWriter blockWriter;
+public class IndexWriter implements Closeable {
+
+    private final DefaultIndexStore store;
+    private final AsyncCommandStore cmdStore;
+    private final AsyncFileSystem fs;
+
+    private BlockEntry currentBlock;
     private IndexEntry indexEntry;
     private GtidSetWrapper gtidSetWrapper;
-    private DefaultIndexStore defaultIndexStore;
-    private ByteBuffer byteBuffer;
+    private AsyncFile indexFile;
+    private AsyncFile blockFile;
+    private volatile boolean closed;
 
-
-    public IndexWriter(String baseDir, String fileName, GtidSet gtidSet, DefaultIndexStore defaultIndexStore) {
-        super(baseDir, fileName);
+    public IndexWriter(GtidSet gtidSet, DefaultIndexStore store) {
+        this.store = store;
+        this.cmdStore = store.getAsyncCommandStore();
+        this.fs = cmdStore.getAsyncFileSystem();
         this.gtidSetWrapper = new GtidSetWrapper(gtidSet);
-        this.defaultIndexStore = defaultIndexStore;
     }
 
+    public void init(AsyncFile indexFile, AsyncFile blockFile) throws IOException {
+        this.indexFile = indexFile;
+        this.blockFile = blockFile;
+        ensureHeaderIfEmpty();
+    }
 
-    public void init() throws IOException {
+    void ensureHeaderIfEmpty() throws IOException {
+        if (indexFile == null) {
+            return;
+        }
+        if (AsyncFileSystemHelper.await(fs.size(indexFile), "size index v1") == 0) {
+            gtidSetWrapper.saveGtidSet(fs, indexFile);
+        }
+    }
 
-        super.initIndexFile();
+    void recoverIndex(AsyncFile indexFile, AsyncFile blockFile) throws IOException {
+        AsyncFileSystemHelper.await(fs.position(indexFile, 0), "position index v1 to start for recover");
+        AsyncFileSystemHelper.await(fs.position(blockFile, 0), "position block v1 to start for recover");
 
-        byteBuffer = ByteBuffer.allocateDirect(32768);
+        String cmdPrefix = cmdStore.getCommandFileNamePrefix();
+        if (!GtidSetWrapper.isV1HeaderComplete(fs, indexFile)) {
+            this.gtidSetWrapper = new GtidSetWrapper(new GtidSet(""));
+            this.indexEntry = null;
+            store.buildIndexFromCmdFile(0, INDEX + cmdPrefix, BLOCK + cmdPrefix, 0, 0);
+            return;
+        }
+        long cmdSize = cmdStore.currentSegmentSize();
+        long blockSize = AsyncFileSystemHelper.await(fs.size(blockFile), "size block v1");
+        long headerEnd = readV1HeaderEnd(indexFile);
 
-        if(indexFile.getFileChannel().size() == 0) {
-            initForCreateNew();
+        this.indexEntry = gtidSetWrapper.recover(fs, indexFile);
+        IndexEntry index = this.indexEntry;
+        while (index != null && (index.getCmdStartOffset() > cmdSize || index.getBlockStartOffset() > blockSize)) {
+            index = readPreIndexEntry(index, indexFile, headerEnd);
+        }
+        if (index != null) {
+            long indexSize = index.getPosition() + IndexEntry.SEGMENT_LENGTH;
+            long blockTruncate = index.getBlockEndOffset() >= 0 ? index.getBlockEndOffset() : blockSize;
+            currentBlock = null;
+            this.indexEntry = null;
+            store.buildIndexFromCmdFile(index.getCmdStartOffset(), INDEX + cmdPrefix, BLOCK + cmdPrefix, indexSize, blockTruncate);
         } else {
-            initForContinue();
+            this.indexEntry = null;
+            store.buildIndexFromCmdFile(0, INDEX + cmdPrefix, BLOCK + cmdPrefix, headerEnd, 0);
         }
-
     }
 
-    private void initForCreateNew() throws IOException {
-        if(gtidSetWrapper == null) {
-            gtidSetWrapper = new GtidSetWrapper(new GtidSet(Maps.newLinkedHashMap()));
-        }
-        gtidSetWrapper.saveGtidSet(indexFile.getFileChannel());
-    }
-
-    private void initForContinue() throws IOException {
-        this.indexEntry = gtidSetWrapper.recover(indexFile.getFileChannel());
-        recoverIndex();
-        gtidSetWrapper.recover(indexFile.getFileChannel());
-    }
-
-    private void recoverIndex() throws IOException {
-        ControllableFile cmdFile = null;
-        ControllableFile blockFile = null;
+    private long readV1HeaderEnd(AsyncFile indexFile) throws IOException {
+        ByteBuf lenBuf = AsyncFileSystemHelper.await(fs.read(indexFile, Long.BYTES, 0), "read v1 header len");
         try {
-            cmdFile = new DefaultControllableFile(new File(generateCmdFileName()));
-            blockFile = new DefaultControllableFile(new File(generateBlockName()));
-
-            long cmdFilePosition = cmdFile.getFileChannel().size();
-            long blockFilePosition = blockFile.getFileChannel().size();
-
-            IndexEntry index = this.indexEntry;
-            while(index != null && (index.getCmdStartOffset()  > cmdFilePosition ||
-                    index.getBlockStartOffset() > blockFilePosition)) {
-                // find a IndexEntry which BlockEndOffset and cmd offset is exit.
-                index = readPreIIndexEntry(index);
-            }
-            if(index != null) {
-                this.indexFile.setLength((int)index.getPosition());
-                closeBlockWriter();
-                this.indexEntry = null;
-                defaultIndexStore.buildIndexFromCmdFile(super.getFileName(), index.getCmdStartOffset());
-            } else {
-                this.indexEntry = null;
-                defaultIndexStore.buildIndexFromCmdFile(super.getFileName(), 0);
-            }
+            return Long.BYTES + lenBuf.readLong();
         } finally {
-            if(cmdFile != null) {
-                cmdFile.close();
+            lenBuf.release();
+        }
+    }
+
+    private IndexEntry readPreIndexEntry(IndexEntry currentEntry, AsyncFile indexFile, long headerEnd) throws IOException {
+        long preIndex = currentEntry.getPosition() - IndexEntry.SEGMENT_LENGTH;
+        if (preIndex < headerEnd) {
+            return null;
+        }
+        ByteBuf buf = AsyncFileSystemHelper.await(fs.read(indexFile, IndexEntry.SEGMENT_LENGTH, preIndex),
+                "read previous index entry");
+        try {
+            IndexEntry result = IndexEntry.fromBuffer(buf);
+            if (result != null) {
+                result.setPosition(preIndex);
             }
-            if(blockFile != null) {
-                blockFile.close();
-            }
+            return result;
+        } finally {
+            buf.release();
         }
     }
 
     public void append(String uuid, long gno, int commandOffset) throws IOException {
-
-        if(blockWriter == null) {
-            this.createNewBlock(uuid, gno, commandOffset);
-        } else if(needChangeBlock(uuid, gno)) {
+        if (currentBlock == null) {
+            createNewBlock(uuid, gno, commandOffset);
+        } else if (currentBlock.needChangeBlock(uuid, gno)) {
             changeBlock(uuid, gno, commandOffset);
         }
-        this.blockWriter.append(uuid, gno, commandOffset);
+        currentBlock.append(uuid, gno, commandOffset);
     }
-
-
-    private boolean needChangeBlock(String uuid, long gno) {
-        return blockWriter.getSize() >= BlockWriter.BLOCK_NAX_SIZE  || blockWriter.isGnoGap(uuid, gno);
-    }
-
 
     private void finishBlock() throws IOException {
         saveIndexEntry();
         gtidSetWrapper.compensate(indexEntry);
-        closeBlockWriter();
+        currentBlock = null;
     }
 
-
     private void createNewBlock(String uuid, long gno, int commandOffset) throws IOException {
-        this.blockWriter = new BlockWriter(uuid, gno, commandOffset, generateBlockName(),byteBuffer);
-        this.indexEntry = new IndexEntry(uuid, gno, commandOffset, this.blockWriter.getPosition());
+        this.currentBlock = new BlockEntry(uuid, gno, commandOffset);
+        long blockStart = AsyncFileSystemHelper.await(fs.size(blockFile), "size block v1");
+        this.indexEntry = new IndexEntry(uuid, gno, commandOffset, blockStart);
         saveIndexEntry();
     }
 
     private void changeBlock(String uuid, long gno, int commandOffset) throws IOException {
-        this.finishBlock();
-        this.createNewBlock(uuid, gno, commandOffset);
+        finishBlock();
+        createNewBlock(uuid, gno, commandOffset);
     }
 
     public void finish() throws IOException {
-        this.finishBlock();
+        finishBlock();
     }
 
     @Override
     public void close() throws IOException {
-
-        saveIndexEntry();
-
-        if(!isClosed.compareAndSet(false, true)) {
+        if (closed) {
             return;
         }
-        super.closeIndexFile();
-        closeBlockWriter();
+        closed = true;
+        saveIndexEntry();
+        currentBlock = null;
     }
 
     public GtidSet getGtidSet() {
-        gtidSetWrapper.compensate(indexEntry, blockWriter);
+        gtidSetWrapper.compensate(indexEntry, currentBlock);
         return gtidSetWrapper.getGtidSet();
     }
 
     public void saveIndexEntry() throws IOException {
-        if(isClosed.get()) {
+        if (closed || indexEntry == null) {
             return;
         }
-        if(indexEntry != null) {
-            indexEntry.saveToDisk(blockWriter, indexFile.getFileChannel());
-        }
-    }
-
-    private void closeBlockWriter() throws IOException {
-        if(this.blockWriter != null) {
-            this.blockWriter.close();
-            this.blockWriter = null;
-        }
+        indexEntry.saveToDisk(fs, indexFile, currentBlock, blockFile);
     }
 
 }
