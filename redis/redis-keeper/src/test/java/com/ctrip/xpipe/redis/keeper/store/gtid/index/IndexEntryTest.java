@@ -169,21 +169,27 @@ public class IndexEntryTest {
         channel.position(0);
 
         // 读取第一条 GTID 条目
-        IndexEntry readGtid = IndexEntry.readFromFileV2(channel);
+        ByteBuffer gtidReadBuf = ByteBuffer.allocate(IndexEntry.SEGMENT_LENGTH_V2);
+        channel.read(gtidReadBuf);
+        IndexEntry readGtid = IndexEntry.fromBufferV2(gtidReadBuf);
         assertNotNull(readGtid);
         assertEquals(validUuid40, readGtid.getUuid());
         assertEquals(startGno, readGtid.getStartGno());
         assertFalse(readGtid.isZone());
 
         // 读取第二条 ZONE 条目
-        IndexEntry readZone = IndexEntry.readFromFileV2(channel);
+        ByteBuffer zoneReadBuf = ByteBuffer.allocate(IndexEntry.SEGMENT_LENGTH_V2);
+        channel.read(zoneReadBuf);
+        IndexEntry readZone = IndexEntry.fromBufferV2(zoneReadBuf);
         assertNotNull(readZone);
         assertTrue(readZone.isZone());
         assertEquals(zoneStart, readZone.getZoneStart());
         assertEquals(zoneEnd, readZone.getZoneEnd());
 
         // 文件末尾应返回 null
-        IndexEntry readNull = IndexEntry.readFromFileV2(channel);
+        ByteBuffer eofBuf = ByteBuffer.allocate(IndexEntry.SEGMENT_LENGTH_V2);
+        int read = channel.read(eofBuf);
+        IndexEntry readNull = read < IndexEntry.SEGMENT_LENGTH_V2 ? null : IndexEntry.fromBufferV2(eofBuf);
         assertNull(readNull);
 
         channel.close();
