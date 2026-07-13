@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -10,9 +11,7 @@ import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -42,9 +41,6 @@ public class ChangeConfigTest {
 
     @InjectMocks
     private ChangeConfig controller;
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     private String clusterName = "cluster1";
 
@@ -132,30 +128,32 @@ public class ChangeConfigTest {
                 clusterName, "jq", request.getShards());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testStopBeaconCheckRejectsEmptyShardInRequest() throws Exception {
         BeaconCheckConfigRequest request = new BeaconCheckConfigRequest()
                 .setClusterName(clusterName).setDc("jq").setShards(java.util.Collections.singletonList(""));
-        controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, request);
+        RetMessage result = controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, request);
+        Assert.assertEquals(RetMessage.FAIL_STATE, result.getState());
+        Assert.assertEquals("shard name can not be empty", result.getMessage());
     }
 
     @Test
     public void testStopBeaconCheckRejectsEmptyShards() throws Exception {
-        thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage("shards can not be empty");
         BeaconCheckConfigRequest request = new BeaconCheckConfigRequest()
                 .setClusterName(clusterName).setDc("jq").setShards(java.util.Collections.emptyList());
-        controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, request);
+        RetMessage result = controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, request);
+        Assert.assertEquals(RetMessage.FAIL_STATE, result.getState());
+        Assert.assertEquals("shards can not be empty", result.getMessage());
     }
 
     @Test
     public void testStopBeaconCheckRejectsNonSentinelBeaconCluster() throws Exception {
         Mockito.when(consoleConfig.supportSentinelBeacon(1L, clusterName)).thenReturn(false);
-        thrown.expect(IllegalArgumentException.class);
-        thrown.expectMessage("cluster cluster1 is not managed by beacon sentinel mode");
         BeaconCheckConfigRequest request = new BeaconCheckConfigRequest()
                 .setClusterName(clusterName).setDc("jq").setShards(java.util.Collections.singletonList("shard1"));
-        controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, request);
+        RetMessage result = controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, request);
+        Assert.assertEquals(RetMessage.FAIL_STATE, result.getState());
+        Assert.assertEquals("cluster cluster1 is not managed by beacon sentinel mode", result.getMessage());
     }
 
 }

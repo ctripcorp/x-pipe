@@ -172,24 +172,41 @@ public class ChangeConfig extends AbstractConsoleController{
     @PostMapping(value = {"/config/beacon/check/stop/{maintainMinutes}", "/config/beacon/check/stop"})
     public RetMessage stopBeaconCheck(HttpServletRequest request,
                                       @PathVariable(required = false) Integer maintainMinutes,
-                                      @RequestBody BeaconCheckConfigRequest beaconCheckConfigRequest) throws Exception {
-        if (null == maintainMinutes || maintainMinutes <= 0) {
-            maintainMinutes = consoleConfig.getHealthCheckSuspendMinutes();
+                                      @RequestBody BeaconCheckConfigRequest beaconCheckConfigRequest) {
+        try {
+            if (null == maintainMinutes || maintainMinutes <= 0) {
+                maintainMinutes = consoleConfig.getHealthCheckSuspendMinutes();
+            }
+            maintainMinutes = Math.min(maintainMinutes, consoleConfig.getConfigDefaultRestoreHours() * 60);
+            validateSentinelBeaconCheckRequest(beaconCheckConfigRequest);
+            beaconCheckConfigService.stopBeaconCheck(beaconCheckConfigRequest.getClusterName(),
+                    beaconCheckConfigRequest.getDc(), beaconCheckConfigRequest.getShards(), maintainMinutes);
+            return RetMessage.createSuccessMessage("success");
+        } catch (Exception e) {
+            return beaconCheckFail("stopBeaconCheck", e);
         }
-        maintainMinutes = Math.min(maintainMinutes, consoleConfig.getConfigDefaultRestoreHours() * 60);
-        validateSentinelBeaconCheckRequest(beaconCheckConfigRequest);
-        beaconCheckConfigService.stopBeaconCheck(beaconCheckConfigRequest.getClusterName(),
-                beaconCheckConfigRequest.getDc(), beaconCheckConfigRequest.getShards(), maintainMinutes);
-        return RetMessage.createSuccessMessage("success");
     }
 
     @PostMapping(value = "/config/beacon/check/start")
     public RetMessage startBeaconCheck(HttpServletRequest request,
-                                       @RequestBody BeaconCheckConfigRequest beaconCheckConfigRequest) throws Exception {
-        validateSentinelBeaconCheckRequest(beaconCheckConfigRequest);
-        beaconCheckConfigService.startBeaconCheck(beaconCheckConfigRequest.getClusterName(),
-                beaconCheckConfigRequest.getDc(), beaconCheckConfigRequest.getShards());
-        return RetMessage.createSuccessMessage("success");
+                                       @RequestBody BeaconCheckConfigRequest beaconCheckConfigRequest) {
+        try {
+            validateSentinelBeaconCheckRequest(beaconCheckConfigRequest);
+            beaconCheckConfigService.startBeaconCheck(beaconCheckConfigRequest.getClusterName(),
+                    beaconCheckConfigRequest.getDc(), beaconCheckConfigRequest.getShards());
+            return RetMessage.createSuccessMessage("success");
+        } catch (Exception e) {
+            return beaconCheckFail("startBeaconCheck", e);
+        }
+    }
+
+    private RetMessage beaconCheckFail(String operation, Exception e) {
+        String message = e.getMessage();
+        if (message == null || message.isEmpty()) {
+            message = e.getClass().getSimpleName();
+        }
+        logger.warn("[{}] {}", operation, message, e);
+        return RetMessage.createFailMessage(message);
     }
 
     private void validateSentinelBeaconCheckRequest(BeaconCheckConfigRequest beaconCheckConfigRequest) {
