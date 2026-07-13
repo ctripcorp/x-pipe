@@ -82,10 +82,6 @@ public final class BeaconSentinelMetaUtil {
         return BeaconSystem.XPIPE_ONE_WAY;
     }
 
-    public static boolean isBeaconCandidate(DcMeta dcMeta, String clusterName, BeaconRouteType routeType) {
-        return isBeaconCandidate(dcMeta, clusterName, routeType, Collections.emptySet());
-    }
-
     public static boolean isBeaconCandidate(DcMeta dcMeta, String clusterName, BeaconRouteType routeType,
                                             Set<String> beaconSupportZones) {
         if (dcMeta == null || StringUtil.isEmpty(clusterName) || dcMeta.getClusters() == null) {

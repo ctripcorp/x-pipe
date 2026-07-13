@@ -72,19 +72,23 @@ public class BeaconSentinelMetaUtilTest {
         oneWay.setType(ClusterType.ONE_WAY.name());
         dcMeta.addCluster(oneWay);
 
-        Assert.assertTrue(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster1", BeaconRouteType.SENTINEL));
-        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "missing", BeaconRouteType.SENTINEL));
+        Assert.assertTrue(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster1", BeaconRouteType.SENTINEL,
+                Collections.emptySet()));
+        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "missing", BeaconRouteType.SENTINEL,
+                Collections.emptySet()));
 
         ClusterMeta biDirection = new ClusterMeta("cluster2");
         biDirection.setType(ClusterType.BI_DIRECTION.name());
         dcMeta.addCluster(biDirection);
-        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster2", BeaconRouteType.SENTINEL));
+        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster2", BeaconRouteType.SENTINEL,
+                Collections.emptySet()));
 
         ClusterMeta azGroupOverride = new ClusterMeta("cluster3");
         azGroupOverride.setType(ClusterType.ONE_WAY.name());
         azGroupOverride.setAzGroupType(ClusterType.BI_DIRECTION.name());
         dcMeta.addCluster(azGroupOverride);
-        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster3", BeaconRouteType.SENTINEL));
+        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, "cluster3", BeaconRouteType.SENTINEL,
+                Collections.emptySet()));
     }
 
     @Test
