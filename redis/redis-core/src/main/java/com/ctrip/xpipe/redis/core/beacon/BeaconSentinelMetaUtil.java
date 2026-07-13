@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.core.beacon;
 
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -83,7 +84,7 @@ public final class BeaconSentinelMetaUtil {
     }
 
     public static boolean isBeaconCandidate(DcMeta dcMeta, String clusterName, BeaconRouteType routeType,
-                                            Set<String> beaconSupportZones) {
+                                            ConsoleCommonConfig config) {
         if (dcMeta == null || StringUtil.isEmpty(clusterName) || dcMeta.getClusters() == null) {
             return false;
         }
@@ -96,7 +97,7 @@ public final class BeaconSentinelMetaUtil {
                 ? clusterMeta.getAzGroupType() : clusterMeta.getType());
 
         if (routeType == BeaconRouteType.DR) {
-            Set<String> supportZones = beaconSupportZones == null ? Collections.emptySet() : beaconSupportZones;
+            Set<String> supportZones = config == null ? Collections.emptySet() : config.getBeaconSupportZones();
             if (!supportZones.isEmpty()
                     && supportZones.stream().noneMatch(zone -> zone.equalsIgnoreCase(dcMeta.getZone()))) {
                 return false;

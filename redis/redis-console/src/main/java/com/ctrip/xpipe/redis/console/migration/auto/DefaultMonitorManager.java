@@ -382,8 +382,7 @@ public class DefaultMonitorManager implements MonitorManager {
     }
 
     private boolean isBeaconCandidate(DcMeta dcMeta, String clusterName, BeaconRouteType routeType) {
-        return BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, clusterName, routeType,
-                consoleCommonConfig.getBeaconSupportZones());
+        return BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, clusterName, routeType, consoleCommonConfig);
     }
 
     private void fillMonitorServicePlaceholders(

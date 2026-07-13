@@ -218,8 +218,7 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
         if (dcMeta == null) {
             throw new IllegalArgumentException(String.format("dc %s not found", dc));
         }
-        if (!BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, clusterName, BeaconRouteType.SENTINEL,
-                config.getBeaconSupportZones())) {
+        if (!BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, clusterName, BeaconRouteType.SENTINEL, config)) {
             ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
             if (clusterMeta == null) {
                 throw new IllegalArgumentException(String.format("cluster %s not found in dc %s", clusterName, dc));
