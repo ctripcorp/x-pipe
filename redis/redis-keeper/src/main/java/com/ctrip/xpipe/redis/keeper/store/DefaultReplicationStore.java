@@ -953,6 +953,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			if (cmdStore != null) {
 				cmdStore.close();
 			}
+
+			if (metaStore != null) {
+				metaStore.close();
+			}
 		}else{
 			getLogger().warn("[close][already closed!]{}", this);
 		}
@@ -976,6 +980,13 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				rdbStore.destroy();
 			} catch (Exception e) {
 				getLogger().error("[destroy][previousRdb]" + rdbStore, e);
+			}
+		}
+		if (metaStore != null) {
+			try {
+				metaStore.destroy();
+			} catch (Exception e) {
+				getLogger().error("[destroy][metaStore]" + metaStore, e);
 			}
 		}
 		AsyncFileSystemHelper.await(asyncFileSystem.rmdir(baseDir.getAbsolutePath(), true),
