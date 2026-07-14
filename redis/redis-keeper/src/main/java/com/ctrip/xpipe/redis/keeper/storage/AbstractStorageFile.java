@@ -53,6 +53,8 @@ abstract class AbstractStorageFile {
 
     abstract void reopenCurrentChannel() throws java.io.IOException;
 
+    abstract String getKey();
+
     abstract String identifier();
 
     AbstractStorageFile(OpenMode openMode) {

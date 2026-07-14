@@ -67,6 +67,11 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     @Override
+    String getKey() {
+        return key;
+    }
+
+    @Override
     String identifier() {
         return key;
     }
@@ -83,7 +88,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     // Called once by the initializer opener.
     // Scans the directory, builds the maximal contiguous segment chain, deletes invalid files,
     // and publishes the initial SegmentDirState into entry.
-    static void initFromFiles(DirEntry entry, String dirPath, String prefix, List<String> indexPrefixes,
+    static void initFromFiles(FileEntry entry, String dirPath, String prefix, List<String> indexPrefixes,
             List<String> allFiles) throws IOException {
         List<long[]> segs = new ArrayList<>();
         Map<Long, List<String>> indexCandidates = new HashMap<>();
@@ -236,7 +241,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         }
     }
 
-    private Map<String, AsyncFile> createNewSegmentWithIndexes(long startOffset, DirEntry entry) throws IOException {
+    private Map<String, AsyncFile> createNewSegmentWithIndexes(long startOffset, FileEntry entry) throws IOException {
         openedSegmentStartOffset = startOffset;
         openedSegmentEndOffset = Long.MAX_VALUE;
         openCurrentChannel();
@@ -290,7 +295,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     // lazy-create the first segment (starting at offset 0) and its index files for write mode.
-    void openFirstSegmentChannelForWrite(DirEntry entry) throws IOException {
+    void openFirstSegmentChannelForWrite(FileEntry entry) throws IOException {
         createNewSegmentWithIndexes(0, entry);
     }
 
@@ -319,7 +324,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         return result;
     }
 
-    void deleteSegments(List<Long> startOffsets, DirEntry entry) throws IOException {
+    void deleteSegments(List<Long> startOffsets, FileEntry entry) throws IOException {
         SegmentDirState cur = entry.state;
         int drop = 0;
         for (long offset : startOffsets) {
@@ -338,7 +343,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         }
     }
 
-    void delete(DirEntry entry) throws IOException {
+    void delete(FileEntry entry) throws IOException {
         SegmentDirState cur = entry.state;
         entry.state = SegmentDirState.EMPTY;
         closeCurrent();
@@ -347,7 +352,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         }
     }
 
-    Map<String, AsyncFile> truncate(long offset, DirEntry entry) throws IOException {
+    Map<String, AsyncFile> truncate(long offset, FileEntry entry) throws IOException {
         SegmentDirState s = entry.state;
         if (!s.isEmpty() && offset >= s.firstOffset && offset <= exclusiveEndOffset(s.lastOffset)) {
             return truncateInRange(offset, entry);
@@ -355,7 +360,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         return reset(offset, entry);
     }
 
-    private Map<String, AsyncFile> truncateInRange(long offset, DirEntry entry) throws IOException {
+    private Map<String, AsyncFile> truncateInRange(long offset, FileEntry entry) throws IOException {
         SegmentDirState cur = entry.state;
         long targetStart = cur.floorKey(offset);
         boolean reuseCurrent = openedSegmentStartOffset == targetStart;
@@ -398,7 +403,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         return result;
     }
 
-    private Map<String, AsyncFile> reset(long offset, DirEntry entry) throws IOException {
+    private Map<String, AsyncFile> reset(long offset, FileEntry entry) throws IOException {
         closeCurrent();
         SegmentDirState cur = entry.state;
         entry.state = SegmentDirState.EMPTY;
@@ -408,7 +413,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         return createNewSegmentWithIndexes(offset, entry);
     }
 
-    Map<String, AsyncFile> roll(DirEntry entry) throws IOException {
+    Map<String, AsyncFile> roll(FileEntry entry) throws IOException {
         long newStartOffset = openedSegmentStartOffset + currentSegmentChannel.size();
         closeCurrent();
         return createNewSegmentWithIndexes(newStartOffset, entry);

@@ -323,7 +323,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         AsyncFile file = delegate.openSync(path, effectiveOpenMode, atomicReplace, lenient, tenant);
         file.cacheMode = cacheMode;
         if (cacheMode != CacheMode.NO_CACHE) {
-            String key = StorageUtil.fileKey(file.path);
+            String key = file.getKey();
             try {
                 synchronized (lockFor(key)) {
                     file.cacheEntry = acquireFileCacheEntry(key, file.canWrite());
