@@ -53,6 +53,7 @@ public interface AsyncFileSystem {
     // segment file return as raw file.
     CompletableFuture<List<String>> list(String path);
     CompletableFuture<Long> transferTo(AsyncFile file, long position, long count, WritableByteChannel target);
+    long transferToSync(AsyncFile file, long position, long count, WritableByteChannel target);
 
     // ---- AsyncSegmentFile ----
     // A segment file represents a list of files with the same prefix and monotonically increasing offsets.
