@@ -12,7 +12,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,12 +42,37 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     @Override
+    void openCurrentChannel() throws IOException {
+        if (canWrite()) {
+            currentSegmentChannel = FileChannel.open(segmentPath(openedSegmentStartOffset),
+                    StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+            currentSegmentChannel.position(currentSegmentChannel.size());
+        } else {
+            currentSegmentChannel = FileChannel.open(segmentPath(openedSegmentStartOffset), StandardOpenOption.READ);
+        }
+    }
+
+    @Override
+    void reopenCurrentChannel() throws IOException {
+        if (currentSegmentChannel == null) {
+            return;
+        }
+        currentSegmentChannel.close();
+        try {
+            openCurrentChannel();
+        } catch (IOException e) {
+            currentSegmentChannel = null;
+            throw e;
+        }
+    }
+
+    @Override
     String identifier() {
         return key;
     }
 
     AsyncSegmentFile(String dirPath, String prefix, List<String> indexPrefixes, String key, boolean writeMode) {
-        super(writeMode);
+        super(writeMode ? OpenMode.WRITE : OpenMode.READ);
         this.dirPath = dirPath;
         this.prefix = prefix;
         this.indexPrefixes = indexPrefixes;
@@ -141,15 +165,17 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     void openInitialResources(SegmentDirState s) throws IOException {
         if (s.isEmpty()) return;
 
-        if (writeMode) {
+        if (canWrite()) {
             openedSegmentStartOffset = s.lastOffset;
             openedSegmentEndOffset = Long.MAX_VALUE;
-            currentSegmentChannel = openForAppend(prefix + openedSegmentStartOffset);
+            openCurrentChannel();
             currentIndexFiles = new HashMap<>();
             for (String indexPrefix : indexPrefixes) {
                 String fileName = indexPrefix + openedSegmentStartOffset;
-                FileChannel ch = openForAppend(fileName);
-                currentIndexFiles.put(indexPrefix, new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, openedSegmentStartOffset, ch, true));
+                AsyncIndexFile af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix,
+                        openedSegmentStartOffset, OpenMode.READ_WRITE);
+                af.openCurrentChannel();
+                currentIndexFiles.put(indexPrefix, af);
             }
         } else {
             position = s.firstOffset;
@@ -175,18 +201,6 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     // ---- io / state helpers ----
-
-    private FileChannel openForAppend(String fileName) throws IOException {
-        FileChannel ch = FileChannel.open(pathOf(fileName),
-                EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE));
-        try {
-            ch.position(ch.size());
-        } catch (IOException e) {
-            ch.close();
-            throw e;
-        }
-        return ch;
-    }
 
     void closeCurrent() throws IOException {
         IOException first = null;
@@ -225,15 +239,14 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     private Map<String, AsyncFile> createNewSegmentWithIndexes(long startOffset, DirEntry entry) throws IOException {
         openedSegmentStartOffset = startOffset;
         openedSegmentEndOffset = Long.MAX_VALUE;
-        currentSegmentChannel = FileChannel.open(segmentPath(startOffset),
-                StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
+        openCurrentChannel();
 
         Map<String, AsyncFile> result = new HashMap<>();
         for (String indexPrefix : indexPrefixes) {
             String fileName = indexPrefix + startOffset;
-            FileChannel ch = FileChannel.open(pathOf(fileName),
-                    EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW));
-            AsyncIndexFile af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, startOffset, ch, true);
+            AsyncIndexFile af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, startOffset,
+                    OpenMode.READ_WRITE);
+            af.openCurrentChannel();
             currentIndexFiles.put(indexPrefix, af);
             result.put(indexPrefix, af);
         }
@@ -273,8 +286,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         if (currentSegmentChannel != null) {
             return;
         }
-        currentSegmentChannel = FileChannel.open(
-                segmentPath(openedSegmentStartOffset), StandardOpenOption.READ);
+        openCurrentChannel();
     }
 
     // lazy-create the first segment (starting at offset 0) and its index files for write mode.
@@ -288,7 +300,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             AsyncFile af = currentIndexFiles.get(indexPrefix);
             if (af != null) {
                 result.put(indexPrefix, af);
-            } else if (writeMode) {
+            } else if (canWrite()) {
                 logger.error("Index channel for prefix {} is null in write mode, segment offset: {}",
                         indexPrefix, openedSegmentStartOffset);
                 throw new IllegalStateException("Index channel for prefix " + indexPrefix + " is null in write mode");
@@ -296,8 +308,9 @@ public class AsyncSegmentFile extends AbstractStorageFile {
                 String fileName = indexPrefix + openedSegmentStartOffset;
                 Path p = pathOf(fileName);
                 if (Files.exists(p)) {
-                    FileChannel readCh = FileChannel.open(p, StandardOpenOption.READ);
-                    af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, openedSegmentStartOffset, readCh, false);
+                    af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, openedSegmentStartOffset,
+                            OpenMode.READ);
+                    af.openCurrentChannel();
                     currentIndexFiles.put(indexPrefix, af);
                     result.put(indexPrefix, af);
                 }
@@ -350,8 +363,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         if (!reuseCurrent) {
             closeCurrent();
             openedSegmentStartOffset = targetStart;
-            currentSegmentChannel = FileChannel.open(
-                    segmentPath(targetStart), StandardOpenOption.WRITE);
+            openCurrentChannel();
         }
         openedSegmentEndOffset = Long.MAX_VALUE;
 
@@ -371,8 +383,9 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             AsyncFile af = currentIndexFiles.get(indexPrefix);
             if (af == null) {
                 String fileName = indexPrefix + targetStart;
-                FileChannel ch = openForAppend(fileName);
-                af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, targetStart, ch, true);
+                af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, targetStart,
+                        OpenMode.READ_WRITE);
+                af.openCurrentChannel();
                 currentIndexFiles.put(indexPrefix, af);
             }
             result.put(indexPrefix, af);
