@@ -964,16 +964,21 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public CompletableFuture<Long> transferTo(AsyncFile file, long position, long count,
             WritableByteChannel target) {
         return StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireOpen(file);
-            try {
-                return file.channel.transferTo(position, count, target);
-            } catch (ClosedChannelException e) {
-                if (!target.isOpen()) throw new SocketErrorException(e);
-                throw StorageUtil.wrapIOException(e);
-            } catch (IOException e) {
-                throw StorageUtil.wrapIOException(e);
-            }
+            return transferToSync(file, position, count, target);
         });
+    }
+
+    @Override
+    public long transferToSync(AsyncFile file, long position, long count, WritableByteChannel target) {
+        StorageUtil.requireOpen(file);
+        try {
+            return file.channel.transferTo(position, count, target);
+        } catch (ClosedChannelException e) {
+            if (!target.isOpen()) throw new SocketErrorException(e);
+            throw StorageUtil.wrapIOException(e);
+        } catch (IOException e) {
+            throw StorageUtil.wrapIOException(e);
+        }
     }
 
     @Override

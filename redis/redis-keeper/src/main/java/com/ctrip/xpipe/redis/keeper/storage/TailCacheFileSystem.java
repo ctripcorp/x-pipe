@@ -243,12 +243,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         op.whenComplete((r, e) -> inFlightIo.remove(id, op));
     }
 
-    @SuppressWarnings("unused")
-    private void executeWithEioRetry(AbstractStorageFile file, Runnable ioAction, Runnable postEioAction) {
+    private <T> T executeWithEioRetry(AbstractStorageFile file,
+            java.util.function.Supplier<T> ioAction) {
         int maxAttempts = eioRetryMaxAttempts;
         try {
-            ioAction.run();
-            return;
+            return ioAction.get();
         } catch (RuntimeException e) {
             if (!(e instanceof EIOException)) {
                 throw e;
@@ -258,10 +257,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 try {
                     file.reopenCurrentChannel();
                     resetWrittenToFsOffsetIfNeeded(file);
-                    postEioAction.run();
-                    return;
-                } catch (Exception reopenError) {
-                    logger.error("reopen attempt {}/{} failed for {}", attempt, maxAttempts, file.identifier(), reopenError);
+                    break;
+                } catch (Exception retryError) {
+                    logger.error("retry attempt {}/{} failed for {}", attempt, maxAttempts, file.identifier(), retryError);
                 }
             }
             throw e;
@@ -377,7 +375,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     private boolean initTailCacheSync(AsyncFile file) {
         try {
-            long fileSize = awaitIoCachePrep(file, () -> delegate.sizeSync(file));
+            long fileSize = awaitIoCachePrep(file, () -> executeWithEioRetry(file,
+                    () -> delegate.sizeSync(file)));
             FileCacheEntry entry = file.cacheEntry;
             synchronized (entry) {
                 if (entry.cacheStartOffset >= 0) {
@@ -456,18 +455,21 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     private Pair<Boolean, ByteBuf> readFullData(AsyncFile file) {
-        long fileSize = delegate.sizeSync(file);
+        long fileSize = executeWithEioRetry(file,
+                () -> delegate.sizeSync(file));
         boolean aligned = true;
         if (fileSize == 0) return new Pair<>(true, Unpooled.buffer(0));
         ByteBuf data;
         if (fileSize <= preloadChunkThreshold * chunkSize) {
             // small file: aligned read — buffer capacity rounded up to chunkSize multiples,
             // so each chunk slice maps directly onto an aligned region without copying.
-            data = delegate.readSync(file, fileSize, 0, chunkSize);
+            data = executeWithEioRetry(file,
+                    () -> delegate.readSync(file, fileSize, 0, chunkSize));
         } else {
             // large file: single read, copy into per-chunk buffers
             aligned = false;
-            data = delegate.readSync(file, fileSize, 0, 0);
+            data = executeWithEioRetry(file,
+                    () -> delegate.readSync(file, fileSize, 0, 0));
         }
         return new Pair<>(aligned, data);
     }
@@ -538,7 +540,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
         return StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
-            ByteBuf buf = delegate.readSync(file, length, readOffset, 0);
+            ByteBuf buf = executeWithEioRetry(file,
+                    () -> delegate.readSync(file, length, readOffset, 0));
             if (fromPosition) {
                 file.position = readOffset + buf.readableBytes();
             }
@@ -651,7 +654,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         CompletableFuture<Long> ioFuture = StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
-            long written = delegate.writeSync(file, writeBuf);
+            long written = executeWithEioRetry(file,
+                    () -> delegate.writeSync(file, writeBuf));
             if (entry != null) {
                 synchronized (entry) {
                     entry.writtenToFsOffset += written;
@@ -803,7 +807,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> size(AsyncFile file) {
-        return delegate.size(file);
+        return StorageUtil.supply(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            return executeWithEioRetry(file, () -> delegate.sizeSync(file));
+        });
     }
 
     @Override
@@ -862,13 +869,13 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
-            delegate.truncateSync(file, size);
+            executeWithEioRetry(file, () -> {
+                delegate.truncateSync(file, size);
+                return null;
+            });
         });
         registerInFlight(id, ioFuture);
-        if (!useCache(file)) {
-            return ioFuture;
-        }
-        return CompletableFuture.completedFuture(null);
+        return ioFuture;
     }
 
     @Override
@@ -907,7 +914,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         StorageUtil.requireWriteMode(file);
         return StorageUtil.run(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
-            delegate.fsyncSync(file);
+            executeWithEioRetry(file, () -> {
+                delegate.fsyncSync(file);
+                return null;
+            });
         });
     }
 
@@ -925,10 +935,16 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     public CompletableFuture<Long> transferTo(AsyncFile file, long position, long count, WritableByteChannel target) {
         FileCacheEntry entry = file.getCacheEntry();
         if (shouldPreloadCache(file)) {
-            loadFullFileCache(file);
+            if (!loadFullFileCache(file)) {
+                return CompletableFuture.completedFuture(0L);
+            }
         }
         if (preferDirectRead(file, entry, position, transferPreferCache)) {
-            return delegate.transferTo(file, position, count, target);
+            return StorageUtil.supply(ioExecutor, () -> {
+                StorageUtil.requireCacheOpen(file);
+                return executeWithEioRetry(file,
+                        () -> delegate.transferToSync(file, position, count, target));
+            });
         }
         StorageUtil.requireCacheOpen(file);
         try {
@@ -936,6 +952,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         } catch (IOException e) {
             return CompletableFuture.failedFuture(new SocketErrorException(e));
         }
+    }
+
+    @Override
+    public long transferToSync(AsyncFile file, long position, long count, WritableByteChannel target) {
+        throw new UnsupportedOperationException();
     }
 
     // ---- AsyncSegmentFile ----
@@ -1068,11 +1089,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         file.cacheClosed = true;
         file.onCacheClose.run();
-        CompletableFuture<Void> ioFuture = delegate.close(file);
-        if (!useCache(file)) {
-            return ioFuture;
-        }
-        return CompletableFuture.completedFuture(null);
+        return delegate.close(file);
     }
 
     @Override
