@@ -48,6 +48,12 @@ class StorageUtil {
         }
     }
 
+    static void requireWriteMode(AbstractStorageFile file) {
+        if (!file.canWrite()) {
+            throw new IllegalArgumentException("operation requires write mode: " + file.identifier());
+        }
+    }
+
     // Translates a checked IOException into a runtime exception that reflects
     // recovery semantics:
     //   StaleStateException  - mismatched state (file not found, already exists, channel closed, etc.)

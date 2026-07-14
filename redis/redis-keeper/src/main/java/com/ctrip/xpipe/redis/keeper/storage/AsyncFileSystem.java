@@ -14,9 +14,9 @@ public interface AsyncFileSystem {
 
     // ---- AsyncFile ----
     // lenient: if true and path is not a regular file, I/O operations will throw NPE
-    CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant);
+    CompletableFuture<AsyncFile> open(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant);
     // Open the file synchronously.
-    AsyncFile openSync(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant);
+    AsyncFile openSync(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant);
     CompletableFuture<Boolean> isFile(AsyncFile file);
     CompletableFuture<Boolean> isDirectory(String path);
     CompletableFuture<Long> lastModified(AsyncFile file);
@@ -39,6 +39,7 @@ public interface AsyncFileSystem {
     CompletableFuture<Boolean> exists(String path);
     CompletableFuture<Long> size(AsyncFile file);
     long sizeSync(AsyncFile file);
+    long currentSizeSync(AbstractStorageFile file);
     CompletableFuture<Boolean> mkdir(String path, boolean recursive);
     CompletableFuture<Boolean> rmdir(String path, boolean recursive);
     // Only available in write mode.

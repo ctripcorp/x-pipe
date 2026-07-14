@@ -72,44 +72,33 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     // atomicReplace uses tmp file approach instead of rename because tfs currently does not support rename.
     // Tmp file format: [8-byte length][data].
     @Override
-    public CompletableFuture<AsyncFile> open(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant) {
-        if (atomicReplace && !write) {
-            return CompletableFuture.failedFuture(new IllegalArgumentException("atomicReplace requires write=true"));
+    public CompletableFuture<AsyncFile> open(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant) {
+        if (atomicReplace && !openMode.canWrite()) {
+            return CompletableFuture.failedFuture(new IllegalArgumentException("atomicReplace requires writable mode"));
         }
-        return StorageUtil.supply(ioExecutor, () -> openSyncInternal(path, write, atomicReplace, lenient));
+        return StorageUtil.supply(ioExecutor, () -> openSyncInternal(path, openMode, atomicReplace, lenient));
     }
 
     @Override
-    public AsyncFile openSync(String path, boolean write, boolean atomicReplace, boolean lenient, String tenant) {
-        if (atomicReplace && !write) {
-            throw new IllegalArgumentException("atomicReplace requires write=true");
+    public AsyncFile openSync(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant) {
+        if (atomicReplace && !openMode.canWrite()) {
+            throw new IllegalArgumentException("atomicReplace requires writable mode");
         }
-        return openSyncInternal(path, write, atomicReplace, lenient);
+        return openSyncInternal(path, openMode, atomicReplace, lenient);
     }
 
-
-    private AsyncFile openSyncInternal(String path, boolean write, boolean atomicReplace, boolean lenient) {
+    private AsyncFile openSyncInternal(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient) {
         try {
             Path p = Paths.get(path);
+            AsyncFile file = new AsyncFile(path, atomicReplace, openMode);
             if (lenient && Files.exists(p) && !Files.isRegularFile(p)) {
-                return new AsyncFile(path, null, atomicReplace, write);
+                return file;
             }
             if (atomicReplace) {
                 recoverFromTmp(p);
             }
-            FileChannel ch;
-            if (write) {
-                ch = FileChannel.open(p, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-                try {
-                    if (!atomicReplace) ch.position(ch.size());
-                } catch (IOException e) {
-                    ch.close();
-                    throw e;
-                }
-            } else {
-                ch = FileChannel.open(p, StandardOpenOption.READ);
-            }
-            return new AsyncFile(path, ch, atomicReplace, write);
+            file.openCurrentChannel();
+            return file;
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         }
@@ -139,7 +128,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> position(AsyncFile file, long position) {
-        if (file.writeMode) {
+        if (file.openMode != AbstractStorageFile.OpenMode.READ) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("position() requires read mode"));
         }
@@ -244,6 +233,15 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     }
 
     @Override
+    public long currentSizeSync(AbstractStorageFile file) {
+        try {
+            return file.currentWriteChannel().size();
+        } catch (IOException e) {
+            throw StorageUtil.wrapIOException(e);
+        }
+    }
+
+    @Override
     public CompletableFuture<Boolean> mkdir(String path, boolean recursive) {
         return StorageUtil.supply(ioExecutor, () -> {
             try {
@@ -298,7 +296,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> truncate(AsyncFile file, long size) {
-        if (!file.writeMode) {
+        if (!file.canWrite()) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("truncate() requires write mode"));
         }
@@ -310,7 +308,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public void truncateSync(AsyncFile file, long size) {
-        if (!file.writeMode) {
+        if (!file.canWrite()) {
             throw new IllegalArgumentException("truncate() requires write mode");
         }
         truncateInternal(file, size);
@@ -357,7 +355,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> fsync(AsyncFile file) {
-        if (!file.writeMode) {
+        if (!file.canWrite()) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("fsync() requires write mode"));
         }
@@ -369,7 +367,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public void fsyncSync(AsyncFile file) {
-        if (!file.writeMode) {
+        if (!file.canWrite()) {
             throw new IllegalArgumentException("fsync() requires write mode");
         }
         fsyncInternal(file);
@@ -639,7 +637,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         } finally {
-            releaseDirEntry(file.key, file.writeMode);
+            releaseDirEntry(file.key, file.canWrite());
         }
     }
 
@@ -660,7 +658,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> position(AsyncSegmentFile file, long offset) {
-        if (file.writeMode) {
+        if (file.openMode != AbstractStorageFile.OpenMode.READ) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("position() is not supported in write mode"));
         }
@@ -744,7 +742,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file) {
-        if (!file.writeMode) {
+        if (!file.canWrite()) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("roll() requires write mode"));
         }
@@ -788,12 +786,12 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 DirEntry entry = entryOrThrow(file);
                 SegmentDirState s = entry.state;
                 if (s.isEmpty()) {
-                    if (file.writeMode) {
+                    if (file.canWrite()) {
                         file.openFirstSegmentChannelForWrite(entry);
                     } else {
                         return new HashMap<String, AsyncFile>();
                     }
-                } else if (!file.writeMode) {
+                } else if (!file.canWrite()) {
                     if (file.openedSegmentStartOffset == Long.MAX_VALUE) {
                         if (!file.switchToSegment(file.position, s)) {
                             return new HashMap<String, AsyncFile>();
@@ -861,7 +859,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets) {
-        if (!file.writeMode) {
+        if (!file.canWrite()) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("deleteSegments() requires write mode"));
         }
@@ -878,7 +876,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Map<String, AsyncFile>> truncate(AsyncSegmentFile file, long offset) {
-        if (!file.writeMode) {
+        if (!file.canWrite()) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("truncate() requires write mode"));
         }
@@ -902,7 +900,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> delete(AsyncSegmentFile file) {
-        if (!file.writeMode) {
+        if (!file.canWrite()) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("delete() requires write mode"));
         }
@@ -919,7 +917,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> fsync(AsyncSegmentFile file) {
-        if (!file.writeMode) {
+        if (!file.canWrite()) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("fsync() requires write mode"));
         }

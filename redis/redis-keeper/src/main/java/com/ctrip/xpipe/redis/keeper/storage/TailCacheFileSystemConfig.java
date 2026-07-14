@@ -31,6 +31,7 @@ public class TailCacheFileSystemConfig {
     // Max wait for IO.
     private long ioWaitTimeoutMs = 1000;
     private int maxWriteChunkThreshold = 32;
+    private int eioRetryMaxAttempts = 3;
 
     public TailCacheFileSystemConfig() {
     }
@@ -136,6 +137,16 @@ public class TailCacheFileSystemConfig {
     public TailCacheFileSystemConfig setMaxWriteChunkThreshold(int maxWriteChunkThreshold) {
         if (maxWriteChunkThreshold <= 0) throw new IllegalArgumentException("maxWriteChunkThreshold must be positive");
         this.maxWriteChunkThreshold = maxWriteChunkThreshold;
+        return this;
+    }
+
+    public int getEioRetryMaxAttempts() {
+        return eioRetryMaxAttempts;
+    }
+
+    public TailCacheFileSystemConfig setEioRetryMaxAttempts(int eioRetryMaxAttempts) {
+        if (eioRetryMaxAttempts <= 0) throw new IllegalArgumentException("eioRetryMaxAttempts must be positive");
+        this.eioRetryMaxAttempts = eioRetryMaxAttempts;
         return this;
     }
 }

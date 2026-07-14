@@ -4,6 +4,20 @@ import java.nio.channels.FileChannel;
 
 abstract class AbstractStorageFile {
 
+    public enum OpenMode {
+        READ,
+        WRITE,
+        READ_WRITE;
+
+        boolean canRead() {
+            return this != WRITE;
+        }
+
+        boolean canWrite() {
+            return this != READ;
+        }
+    }
+
     public enum CacheMode {
         NO_CACHE,
         // Not valid for atomicReplace open.
@@ -13,7 +27,7 @@ abstract class AbstractStorageFile {
     }
 
     long pendingFsyncBytes = 0;
-    final boolean writeMode;
+    final OpenMode openMode;
     volatile CacheMode cacheMode = CacheMode.NO_CACHE;
     volatile Runnable onCacheClose = () -> {};
     volatile boolean cacheClosed = false;
@@ -25,11 +39,23 @@ abstract class AbstractStorageFile {
         return cacheEntry;
     }
 
+    boolean canRead() {
+        return openMode.canRead();
+    }
+
+    boolean canWrite() {
+        return openMode.canWrite();
+    }
+
     abstract FileChannel currentWriteChannel();
+
+    abstract void openCurrentChannel() throws java.io.IOException;
+
+    abstract void reopenCurrentChannel() throws java.io.IOException;
 
     abstract String identifier();
 
-    AbstractStorageFile(boolean writeMode) {
-        this.writeMode = writeMode;
+    AbstractStorageFile(OpenMode openMode) {
+        this.openMode = openMode;
     }
 }
