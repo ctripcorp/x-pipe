@@ -134,7 +134,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                                 BooleanSupplier commandOffsetNotifyCoalescingEnabled,
                                 CommandReaderWriterFactory cmdReaderWriterFactory,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
-                                GtidCmdFilter  gtidCmdFilter, boolean buildIndex,
+                                GtidCmdFilter  gtidCmdFilter, boolean buildIndex, long cmdStoreStartOffset,
                                 AsyncFileSystem asyncFileSystem,
                                 IntSupplier asyncWriteMaxBytes,
                                 ReplId fileSystemReplId
@@ -180,12 +180,12 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, this.maxFileSize, delayTraceLogger);
         this.buildIndex = buildIndex;
-        indexStore = createIndexStore();
+        indexStore = createIndexStore(cmdStoreStartOffset);
     }
 
-    private IndexStore createIndexStore() {
+    private IndexStore createIndexStore(long cmdStoreStartOffset) {
         return new DefaultIndexStore(keeperConfig, ckStore, this, baseDir.getAbsolutePath(), redisOpParser,
-                this, gtidCmdFilter);
+                this, gtidCmdFilter, cmdStoreStartOffset);
     }
 
     @Override
@@ -997,12 +997,17 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     @Override
     public synchronized void switchToXSync(GtidSet gtidSet) throws IOException {
-        if(buildIndex)return;
-        if(indexStore != null) {
-            indexStore.closeWithDeleteIndexFiles();
+        if (buildIndex) {
+            return;
         }
         flushSlidingWindow();
-        indexStore = createIndexStore();
+        if (indexStore != null) {
+            indexStore.closeWriter();
+        }
+        AsyncFileSystemHelper.await(asyncFileSystem.roll(asyncSegmentFile), "roll on switchToXSync");
+        long newCmdStoreStartOffset = getCurrentSegmentStartOffset();
+        getLogger().info("[switchToXSync] new cmdStoreStartOffset={}", newCmdStoreStartOffset);
+        indexStore = createIndexStore(newCmdStoreStartOffset);
         indexStore.openWriter(cmdWriter);
         buildIndex = true;
     }

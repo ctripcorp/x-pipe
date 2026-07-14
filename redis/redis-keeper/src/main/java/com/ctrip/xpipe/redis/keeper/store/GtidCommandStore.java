@@ -31,11 +31,12 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
                             int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
                             BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
                             KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter, boolean buildIndex,
-                            AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes, ReplId fileSystemReplId) throws IOException {
+                            long cmdStoreStartOffset, AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes,
+                            ReplId fileSystemReplId) throws IOException {
         super(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified,
                 minTimeMilliToGcAfterModified, fileNumToKeep, commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
-                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex, asyncFileSystem, asyncWriteMaxBytes,
-                fileSystemReplId);
+                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex, cmdStoreStartOffset,
+                asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
     }
 
     @Override

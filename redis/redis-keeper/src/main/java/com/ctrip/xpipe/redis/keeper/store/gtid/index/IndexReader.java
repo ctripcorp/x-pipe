@@ -34,6 +34,11 @@ public class IndexReader implements Closeable {
     protected GtidSet startGtidSet;
     protected AsyncFile indexFile;
     protected AsyncFile blockFile;
+    protected long cmdStoreStartOffset;
+
+    public void setCmdStoreStartOffset(long cmdStoreStartOffset) {
+        this.cmdStoreStartOffset = Math.max(0L, cmdStoreStartOffset);
+    }
 
     public IndexReader(AsyncFileSystem fs, String baseDir, String cmdPrefix, long segmentStartOffset, ReplId tenant)
             throws IOException {
@@ -158,6 +163,9 @@ public class IndexReader implements Closeable {
     }
 
     public Pair<Long, GtidSet> seek(GtidSet request) throws IOException {
+        if (segmentStartOffset < cmdStoreStartOffset) {
+            return new Pair<>(-1L, new GtidSet(GtidSet.EMPTY_GTIDSET));
+        }
         long offset = -1L;
         GtidSet gtidSet = null;
         boolean changeFileSuccess = true;
@@ -195,12 +203,24 @@ public class IndexReader implements Closeable {
             if (startGtidSet.isEmpty()) {
                 break;
             }
+            if (!canChangeToPre()) {
+                break;
+            }
             changeFileSuccess = changeToPre();
         }
         if (gtidSet == null) {
             gtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
         }
         return new Pair<>(offset, gtidSet);
+    }
+
+    private boolean canChangeToPre() throws IOException {
+        if (segmentStartOffset <= cmdStoreStartOffset) {
+            return false;
+        }
+        List<Long> offsets = fs.list(readSeg);
+        Long pre = offsets.stream().filter(o -> o < segmentStartOffset).max(Long::compare).orElse(null);
+        return pre != null && pre >= cmdStoreStartOffset;
     }
 
     public boolean noIndex() {

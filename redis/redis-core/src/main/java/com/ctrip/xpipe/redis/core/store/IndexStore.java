@@ -20,7 +20,6 @@ public interface IndexStore {
     boolean increaseLost(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException;
     Pair<Long, GtidSet> locateTailOfCmd();
     GtidSet getIndexGtidSet();
-    void closeWithDeleteIndexFiles() throws IOException;
     void closeWriter() throws IOException;
     void resetParserState();
 }

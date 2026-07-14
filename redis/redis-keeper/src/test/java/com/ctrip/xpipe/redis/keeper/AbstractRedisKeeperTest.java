@@ -106,7 +106,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return new DefaultCommandStore(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig,
 				maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
 				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled, cmdReaderWriterFactory,
-				keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, asyncFileSystem(),
+				keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, 0L, asyncFileSystem(),
 				() -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId());
 	}
 
@@ -121,7 +121,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return new DefaultCommandStore(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig,
 				maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
 				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled, cmdReaderWriterFactory,
-				keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, asyncFileSystem(), asyncWriteMaxBytes, getReplId());
+				keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, 0L, asyncFileSystem(), asyncWriteMaxBytes, getReplId());
 	}
 
 	protected DefaultReplicationStore createDefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
