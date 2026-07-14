@@ -1,0 +1,188 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_d0cc38e6480138::t_c0913a3cd788f3 3
+  s_d0cc38e6480138::t_f2368665d4dd42 4
+  h_6ceeb547b3b36a 5,7,10,16-17,35,42,52,286-287,305,373,375,378,380-383,478,516-518,528,530
+  s_d0cc38e6480138::t_d71fd4c66d66b1 6,8-9
+  s_94d0b7161f4d19::t_80690da5ab15e0 20-22,26
+  s_d0cc38e6480138::t_2c5e9886be7b85 31,47
+  s_d72a750777a3bf::t_cd0261ababa1f7 36
+  s_94d0b7161f4d19::t_e4e41e5a27429c 37
+  s_245b07b4ee1e0d::t_4da0b340832ff4 38
+  s_94d0b7161f4d19::t_6d2c50991d2c57 39
+  s_d72a750777a3bf::t_9d2095f0719166 55
+  s_245b07b4ee1e0d::t_b674ec5300d444 56
+  s_94d0b7161f4d19::t_b12603627dd214 58
+  s_d72a750777a3bf::t_8cf94c996c1e23 84
+  s_d72a750777a3bf::t_ac7ce2f035486f 112-113,116,118-126,128-135
+  s_d72a750777a3bf::t_a7892a02f04420 117
+  s_245b07b4ee1e0d::t_02ecef2f335d8a 127
+  s_245b07b4ee1e0d::t_a51737ba6b96e9 142
+  s_c0872ebf037cc7::t_7337006f38b702 148-149
+  s_94d0b7161f4d19::t_889ddf2277c528 151,153
+  s_94d0b7161f4d19::t_a7557cd75b61e2 152,157,163,166
+  s_94d0b7161f4d19::t_b071b353549a00 154-156
+  s_245b07b4ee1e0d::t_2ef00ac4976190 161,167-184
+  s_d0cc38e6480138::t_0aca7eae3484e7 164
+  s_245b07b4ee1e0d::t_84da2debf17080 165
+  s_d72a750777a3bf::t_80d6ee76ce5ba3 188-197
+  s_d0cc38e6480138::t_5c92c2829ed4d7 198
+  s_d0cc38e6480138::t_c2c70041f0e5fc 199
+  s_d72a750777a3bf::t_8186927659093c 200,202
+  s_d72a750777a3bf::t_d51affe6d7b5e0 201
+  s_94d0b7161f4d19::t_3a9b3732c6e487 203-205
+  s_94d0b7161f4d19::t_a369a9be8b0bcb 206-209
+  s_94d0b7161f4d19::t_fc0512960ff0aa 210-211
+  s_94d0b7161f4d19::t_eae74cf8b852c8 212,216
+  s_d0cc38e6480138::t_3f477c46f01695 213
+  s_245b07b4ee1e0d::t_e473affb35ff57 214
+  s_d0cc38e6480138::t_4c61bbb12995e9 215
+  s_245b07b4ee1e0d::t_b6f8e35a03f07b 217-218,224-227,269
+  s_245b07b4ee1e0d::t_c707f277f3bcd9 219-222
+  s_d72a750777a3bf::t_6219a81e838ca4 223
+  s_245b07b4ee1e0d::t_03ae82980eb67d 228-229
+  s_245b07b4ee1e0d::t_ee22e83f640c59 230,324
+  s_245b07b4ee1e0d::t_2911bae7f25b38 231,234,239,256,328-329,332
+  s_245b07b4ee1e0d::t_53375055912785 232-233,242,246-247,254,260,262
+  s_d72a750777a3bf::t_ccbd0847413297 235-236
+  s_245b07b4ee1e0d::t_e6c29525093fa7 237-238,240,243-245
+  s_245b07b4ee1e0d::t_8adcd6447c517b 241
+  s_94d0b7161f4d19::t_5b13d96cd3ec11 248,250,252
+  s_d72a750777a3bf::t_98beb50e613409 249
+  s_d72a750777a3bf::t_a399effd477c3e 251,253,257,273-274,276-277,282,284-285,288-289,301-304,306-307,322-323
+  s_94d0b7161f4d19::t_1b27d74e003fe2 255
+  s_94d0b7161f4d19::t_04baad9c9dc8d3 258
+  s_245b07b4ee1e0d::t_0d951722ce24b8 259,261
+  s_245b07b4ee1e0d::t_7b265938d1391b 263,265
+  s_94d0b7161f4d19::t_3845e97bc44689 264
+  s_d72a750777a3bf::t_fe79ccaeadaf17 266
+  s_d72a750777a3bf::t_0367a7dd65aa59 267-268
+  s_d0cc38e6480138::t_6d7b4fe5994b55 270
+  s_d72a750777a3bf::t_3426c0ca96a311 271
+  s_d0cc38e6480138::t_6f2991ce47b73c 272,275
+  s_d72a750777a3bf::t_504979c3bbbd80 278
+  s_d0cc38e6480138::t_1a88c2fb20bada 279
+  s_d72a750777a3bf::t_ae2879030c8f21 280-281,291-300,309-321
+  s_d0cc38e6480138::t_88c4d4177d399a 283
+  s_d72a750777a3bf::t_ab36c0d3e9c2e4 290
+  s_d72a750777a3bf::t_033d71c2202cc0 308
+  s_d0cc38e6480138::t_f479f77cf6e57e 334,336-340,344,346-347
+  s_d0cc38e6480138::t_4ef676ab5680b8 335
+  s_d0cc38e6480138::t_0474294195bb50 341
+  s_d0cc38e6480138::t_24345dbbbe7e7b 342
+  s_94d0b7161f4d19::t_6fbc0f62ddc0da 343
+  s_d0cc38e6480138::t_ab54bbf243c368 345
+  s_d72a750777a3bf::t_93485082af7cf3 352,357-360,363,365,367-368,379,384-385
+  s_245b07b4ee1e0d::t_0d1c3804016716 362
+  s_d72a750777a3bf::t_dd794d85db1882 364,366,369
+  s_d72a750777a3bf::t_f2019be2904c04 370-372,376
+  s_d72a750777a3bf::t_f295f8d5bd95ef 374
+  s_245b07b4ee1e0d::t_36cfd34e364f27 377
+  s_245b07b4ee1e0d::t_9a6eab7d82570a 386-396
+  s_245b07b4ee1e0d::t_046de1b4e12e88 407-409
+  s_94d0b7161f4d19::t_e85d5d16bb2272 410-411
+  s_94d0b7161f4d19::t_de464cb5346988 412,417-419
+  s_94d0b7161f4d19::t_2f340d24e8af39 413-416
+  s_d72a750777a3bf::t_c4c4131a99ed91 420
+  s_d72a750777a3bf::t_0dba629966289a 421,430
+  s_d72a750777a3bf::t_8536550b0d79dc 422
+  s_d72a750777a3bf::t_42dc4e8439106c 423-427
+  s_d72a750777a3bf::t_6c17a0c7e66cfa 428-429,431-432
+  s_94d0b7161f4d19::t_7e8921819df948 433
+  s_d72a750777a3bf::t_fd5ba54b02aee4 434-438
+  s_d72a750777a3bf::t_67e26b518fb0ec 439-444,447,449-453
+  s_d72a750777a3bf::t_f00fcd146e72f0 445
+  s_d72a750777a3bf::t_7196aefe194ccc 446,448
+  s_d72a750777a3bf::t_5435d547b7d142 454-463,466-468,472
+  s_d72a750777a3bf::t_7579a4bf0ebf9a 464,469
+  s_d72a750777a3bf::t_763fba6d27125a 465
+  s_d72a750777a3bf::t_0d2d7307f652d8 470
+  s_d72a750777a3bf::t_bf90100008b856 479-498
+  s_d72a750777a3bf::t_f7f5eabc13156c 500-501,515
+  s_d72a750777a3bf::t_08993231782c7f 502-503,519,521
+  s_d72a750777a3bf::t_2da31542697ce1 504-514,522-523
+  s_7bce6c42e84ba8::t_aa10c1b2756339 520
+  s_d72a750777a3bf::t_809d37faa80713 524
+  s_94d0b7161f4d19::t_2a66d293f70078 525-526
+  s_94d0b7161f4d19::t_136c9250dd6da0 527
+  s_94d0b7161f4d19::t_ccfcdeaad04d43 529,536-538
+  s_d72a750777a3bf::t_b0c76d1eee50a9 531-534
+  s_d72a750777a3bf::t_795cd66a90fe08 535
+  s_94d0b7161f4d19::t_bb1ea128e881a3 539
+  s_d72a750777a3bf::t_697f37fac80599 540
+  s_d72a750777a3bf::t_19e159751e6fb6 541,546-548,550-551
+  s_d72a750777a3bf::t_663af643c696a0 542-545,549
+  s_d72a750777a3bf::t_145063c4ebd224 555
+  s_94d0b7161f4d19::t_cc982775b4f90c 557-568
+  s_d72a750777a3bf::t_2b5cec635d6b00 571
+  s_d72a750777a3bf::t_fa263c1bdca13c 575-580
+  s_94d0b7161f4d19::t_dafe8149924ad6 581-582
+  s_d72a750777a3bf::t_22bc5d4bda16d7 614
+  s_d72a750777a3bf::t_701f45f1de6756 617-629
+  s_d72a750777a3bf::t_1a426c51d66871 653
+  s_d72a750777a3bf::t_fc77cf5de422fe 685
+  s_d72a750777a3bf::t_2f94e78caa19c4 697-698
+  s_d72a750777a3bf::t_10416b46619335 732,738
+  s_d72a750777a3bf::t_d3c390869b03f9 784,790,796
+  s_d72a750777a3bf::t_b936c8f6f5c164 812
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.33-trip",
+  "base_commit_sha": "6d90c89753226898c4e231047c41fce25cca4d75",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_245b07b4ee1e0d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f837fe8-3931-4a26-8f82-dfc963918e11",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_7bce6c42e84ba8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "42963dfd-f4a6-44bd-a637-f0a8c68f0303",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_94d0b7161f4d19": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9a566c97-67cf-4efb-a831-333a415e0dc7",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_c0872ebf037cc7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "afaf16d3-6dea-4caa-b39a-139d1c5f4a77",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_d0cc38e6480138": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "28b138a7-d409-4ddc-9b10-3f221f30e6bc",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": null
+    },
+    "s_d72a750777a3bf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f5b2648b-448f-4026-84ab-aa89fa96d91a",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
