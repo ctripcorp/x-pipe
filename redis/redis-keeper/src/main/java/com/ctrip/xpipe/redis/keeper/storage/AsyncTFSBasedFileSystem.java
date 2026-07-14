@@ -22,10 +22,15 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.ctrip.xpipe.tuple.Pair;
 
 // low level file system implementation, not used directly.
 // TFS guarantees that metadata is synchronously delivered: create/rm operations are durable after returning.
@@ -39,9 +44,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     private final ExecutorService ioExecutor;
     private final long fsyncIntervalBytes;
 
-    // Registry of shared segment-dir state, keyed by "dirPath\0prefix".
-    // First opener wins on DirEntry construction.
-    private final ConcurrentHashMap<String, DirEntry> dirEntries = new ConcurrentHashMap<>();
+    // Registry of shared file state, keyed by file key.
+    private final ConcurrentHashMap<String, FileEntry> fileEntries = new ConcurrentHashMap<>();
 
     private final Object[] openCloseLocks = new Object[LOCK_STRIPES];
 
@@ -58,10 +62,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     private Object lockFor(String key) {
         return openCloseLocks[(key.hashCode() & 0x7fffffff) % LOCK_STRIPES];
-    }
-
-    private static String registryKey(String path, String prefix) {
-        return path + "\0" + prefix;
     }
 
     // Translates a checked IOException into a runtime exception that reflects
@@ -81,21 +81,105 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return openSyncInternal(path, openMode, atomicReplace, lenient);
     }
 
-    private AsyncFile openSyncInternal(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient) {
-        try {
-            Path p = Paths.get(path);
-            AsyncFile file = new AsyncFile(path, atomicReplace, openMode);
-            if (lenient && Files.exists(p) && !Files.isRegularFile(p)) {
-                return file;
+    private Pair<Boolean, FileEntry> acquireFileEntry(String key, boolean write) {
+        synchronized (lockFor(key)) {
+            FileEntry entry = fileEntries.get(key);
+            boolean first = false;
+            if (entry == null) {
+                entry = new FileEntry();
+                fileEntries.put(key, entry);
+                first = true;
+            } else if (write && entry.writerOpen) {
+                throw new IllegalStateException("writer already open for " + key);
             }
-            if (atomicReplace) {
-                recoverFromTmp(p);
+            if (write) {
+                entry.writerOpen = true;
             }
-            file.openCurrentChannel();
-            return file;
-        } catch (IOException e) {
-            throw StorageUtil.wrapIOException(e);
+            entry.refCount++;
+            return new Pair<>(first, entry);
         }
+    }
+
+    private void releaseFileEntry(String key, boolean write) {
+        synchronized (lockFor(key)) {
+            FileEntry entry = fileEntries.get(key);
+            if (entry == null) return;
+            if (write) entry.writerOpen = false;
+            if (--entry.refCount == 0) fileEntries.remove(key);
+        }
+    }
+
+    private <T extends AbstractStorageFile> T openWithFileEntry(String key, boolean write,
+            Consumer<FileEntry> initAction, Supplier<T> fileFactory,
+            BiConsumer<T, FileEntry> openAction, Consumer<T> cleanupAction) {
+        Pair<Boolean, FileEntry> acquired = acquireFileEntry(key, write);
+        boolean iAmInitializer = acquired.getKey();
+        FileEntry entry = acquired.getValue();
+
+        if (iAmInitializer) {
+            try {
+                initAction.accept(entry);
+            } catch (Throwable t) {
+                logger.error("Failed to initialize file entry {}", key, t);
+                entry.initFailed = true;
+            } finally {
+                entry.initDone.countDown();
+            }
+        } else {
+            try {
+                entry.initDone.await();
+            } catch (InterruptedException e) {
+                releaseFileEntry(key, write);
+                throw new RuntimeException(e);
+            }
+        }
+        if (entry.initFailed) {
+            releaseFileEntry(key, write);
+            throw new StorageIOException("init failed for " + key);
+        }
+
+        T file = fileFactory.get();
+        boolean success = false;
+        try {
+            openAction.accept(file, entry);
+            success = true;
+            return file;
+        } finally {
+            if (!success) {
+                try {
+                    cleanupAction.accept(file);
+                } catch (Throwable t) {
+                    logger.error("Failed to cleanup opened file {}", key, t);
+                }
+            }
+        }
+    }
+
+    private AsyncFile openSyncInternal(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient) {
+        String key = path;
+        Path p = Paths.get(path);
+        return openWithFileEntry(key, openMode.canWrite(),
+                entry -> {
+                    if (atomicReplace) {
+                        try {
+                            recoverFromTmp(p);
+                        } catch (IOException e) {
+                            throw StorageUtil.wrapIOException(e);
+                        }
+                    }
+                },
+                () -> new AsyncFile(path, atomicReplace, openMode),
+                (file, entry) -> {
+                    if (lenient && Files.exists(p) && !Files.isRegularFile(p)) {
+                        return;
+                    }
+                    try {
+                        file.openCurrentChannel();
+                    } catch (IOException e) {
+                        throw StorageUtil.wrapIOException(e);
+                    }
+                },
+                this::closeSync);
     }
 
     @Override
@@ -122,7 +206,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> position(AsyncFile file, long position) {
-        if (file.openMode != AbstractStorageFile.OpenMode.READ) {
+        if (!file.canRead()) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("position() requires read mode"));
         }
@@ -344,6 +428,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             }
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
+        } finally {
+            releaseFileEntry(file.path, file.canWrite());
         }
     }
 
@@ -547,65 +633,27 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     }
 
     private AsyncSegmentFile openSyncInternal(String path, String prefix, List<String> indexPrefixes, boolean write) {
-        String key = registryKey(path, prefix);
-        DirEntry entry;
-        boolean iAmInitializer = false;
-
-        synchronized (lockFor(key)) {
-            entry = dirEntries.get(key);
-            if (entry == null) {
-                entry = new DirEntry();
-                dirEntries.put(key, entry);
-                iAmInitializer = true;
-            } else if (write && entry.writerOpen) {
-                throw new IllegalStateException("writer already open for " + key);
-            }
-            if (write) entry.writerOpen = true;
-            entry.refCount++;
-        }
-
-        if (iAmInitializer) {
-            try {
-                initFromDisk(entry, path, prefix, indexPrefixes);
-            } catch (Throwable t) {
-                logger.error("Failed to init segment file {}{} indexPrefixes:{}", path, prefix, indexPrefixes, t);
-                entry.initFailed = true;
-            } finally {
-                entry.initDone.countDown();
-            }
-        } else {
-            try {
-                entry.initDone.await();
-            } catch (InterruptedException e) {
-                releaseDirEntry(key, write);
-                throw new RuntimeException(e);
-            }
-        }
-        if (entry.initFailed) {
-            releaseDirEntry(key, write);
-            throw new StorageIOException("init failed for " + key);
-        }
-
-        AsyncSegmentFile file = new AsyncSegmentFile(path, prefix, indexPrefixes, key, write);
-        boolean success = false;
-        try {
-            file.openInitialResources(entry.state);
-            success = true;
-        } catch (IOException e) {
-            throw StorageUtil.wrapIOException(e);
-        } finally {
-            if (!success) {
-                try {
-                    closeSync(file);
-                } catch (Throwable t) {
-                    logger.error("Failed to close segment file after openInitialResources failure {}", file.key, t);
-                }
-            }
-        }
-        return file;
+        String key = StorageUtil.segmentKey(path, prefix);
+        return openWithFileEntry(key, write,
+                entry -> {
+                    try {
+                        initFromDisk(entry, path, prefix, indexPrefixes);
+                    } catch (IOException e) {
+                        throw StorageUtil.wrapIOException(e);
+                    }
+                },
+                () -> new AsyncSegmentFile(path, prefix, indexPrefixes, key, write),
+                (file, entry) -> {
+                    try {
+                        file.openInitialResources(entry.state);
+                    } catch (IOException e) {
+                        throw StorageUtil.wrapIOException(e);
+                    }
+                },
+                file -> closeSync(file));
     }
 
-    private void initFromDisk(DirEntry entry, String path, String prefix, List<String> indexPrefixes) throws IOException {
+    private void initFromDisk(FileEntry entry, String path, String prefix, List<String> indexPrefixes) throws IOException {
         Path dir = Paths.get(path);
         String[] names = new File(path).list();
         if (names == null) {
@@ -631,28 +679,19 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         } finally {
-            releaseDirEntry(file.key, file.canWrite());
+            releaseFileEntry(file.key, file.canWrite());
         }
     }
 
-    private void releaseDirEntry(String key, boolean write) {
-        synchronized (lockFor(key)) {
-            DirEntry entry = dirEntries.get(key);
-            if (entry == null) return;
-            if (write) entry.writerOpen = false;
-            if (--entry.refCount == 0) dirEntries.remove(key);
-        }
-    }
-
-    private DirEntry entryOrThrow(AsyncSegmentFile file) {
-        DirEntry entry = dirEntries.get(file.key);
+    private FileEntry entryOrThrow(AsyncSegmentFile file) {
+        FileEntry entry = fileEntries.get(file.key);
         if (entry == null) throw new IllegalStateException("file is closed: " + file.key);
         return entry;
     }
 
     @Override
     public CompletableFuture<Void> position(AsyncSegmentFile file, long offset) {
-        if (file.openMode != AbstractStorageFile.OpenMode.READ) {
+        if (!file.canRead()) {
             return CompletableFuture.failedFuture(
                     new IllegalArgumentException("position() is not supported in write mode"));
         }
@@ -721,7 +760,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireOpen(file);
             try {
-                DirEntry entry = entryOrThrow(file);
+                FileEntry entry = entryOrThrow(file);
                 if (entry.state.isEmpty()) {
                     file.openFirstSegmentChannelForWrite(entry);
                 }
@@ -743,7 +782,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireOpen(file);
             try {
-                DirEntry entry = entryOrThrow(file);
+                FileEntry entry = entryOrThrow(file);
                 return file.roll(entry);
             } catch (IOException e) {
                 throw StorageUtil.wrapIOException(e);
@@ -777,7 +816,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireOpen(file);
             try {
-                DirEntry entry = entryOrThrow(file);
+                FileEntry entry = entryOrThrow(file);
                 SegmentDirState s = entry.state;
                 if (s.isEmpty()) {
                     if (file.canWrite()) {
@@ -860,7 +899,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return StorageUtil.run(ioExecutor, () -> {
             StorageUtil.requireOpen(file);
             try {
-                DirEntry entry = entryOrThrow(file);
+                FileEntry entry = entryOrThrow(file);
                 file.deleteSegments(startOffsets, entry);
             } catch (IOException e) {
                 throw StorageUtil.wrapIOException(e);
@@ -877,7 +916,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireOpen(file);
             try {
-                DirEntry entry = entryOrThrow(file);
+                FileEntry entry = entryOrThrow(file);
                 Map<String, AsyncFile> result = file.truncate(offset, entry);
                 fsyncInternal(file);
                 return result;
@@ -901,7 +940,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return StorageUtil.run(ioExecutor, () -> {
             StorageUtil.requireOpen(file);
             try {
-                DirEntry entry = entryOrThrow(file);
+                FileEntry entry = entryOrThrow(file);
                 file.delete(entry);
             } catch (IOException e) {
                 throw StorageUtil.wrapIOException(e);

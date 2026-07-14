@@ -50,6 +50,11 @@ public class AsyncFile extends AbstractStorageFile {
     }
 
     @Override
+    String getKey() {
+        return path;
+    }
+
+    @Override
     String identifier() {
         return path;
     }

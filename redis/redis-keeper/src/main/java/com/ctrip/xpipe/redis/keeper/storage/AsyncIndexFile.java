@@ -15,6 +15,11 @@ public class AsyncIndexFile extends AsyncFile {
     }
 
     @Override
+    String getKey() {
+        return key;
+    }
+
+    @Override
     String identifier() {
         return key + "\0" + indexPrefix + "\0" + startOffset;
     }
