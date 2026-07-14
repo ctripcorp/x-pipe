@@ -69,7 +69,6 @@ public class TestConsoleWeb extends AbstractXpipeServerMultiDcTest {
         Assert.assertEquals(0, service.sentinelCheckWhiteList(consoleUrl).size());
         Assert.assertNotNull(service.getClusterCreateTime(consoleUrl, "cluster1"));
         Assert.assertEquals(service.isAlertSystemOn(consoleUrl), true);
-        Assert.assertEquals(service.isClusterOnMigration(consoleUrl, "cluster1"), false);
 
 
         RedisMeta redisMeta = newRandomFakeRedisMeta().setPort(1000);

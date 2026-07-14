@@ -77,6 +77,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.Cur
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.OneWaySentinelHelloCheckControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.DefaultSentinelMonitorsCheckTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconConsistencyCheckActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.SentinelBeaconConsistencyCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.DefaultBeaconMetaControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.SentinelBeaconMigrationControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfigTest;
@@ -89,6 +90,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRouteChooserTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.DefaultDcMetaChangeManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityInspectorTest;
 import com.ctrip.xpipe.redis.checker.impl.*;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatusTest;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResultSerializeTest;
 import com.ctrip.xpipe.redis.checker.resource.DefaultCheckerConsoleServiceTest;
 import org.junit.runner.RunWith;
@@ -98,6 +100,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses(value = {
         CommonConfigBeanTest.class,
         DefaultCheckerDbConfigTest.class,
+        ClusterStatusTest.class,
 
         DefaultSentinelHelloCollectorTest.class,
         AnalyseHellosTest.class,
@@ -157,6 +160,7 @@ import org.junit.runners.Suite;
         OutClientRedisMasterActionListenerTest.class,
 
         BeaconConsistencyCheckActionTest.class,
+        SentinelBeaconConsistencyCheckActionTest.class,
         DefaultBeaconMetaControllerTest.class,
         SentinelBeaconMigrationControllerTest.class,
 

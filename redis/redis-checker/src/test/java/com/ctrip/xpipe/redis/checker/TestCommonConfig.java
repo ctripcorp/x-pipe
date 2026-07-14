@@ -26,4 +26,9 @@ public class TestCommonConfig implements ConsoleCommonConfig {
         return true;
     }
 
+    @Override
+    public long getAbnormalClusterStatusMonitorIntervalMilli() {
+        return 60 * 1000L;
+    }
+
 }

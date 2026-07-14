@@ -60,6 +60,7 @@
     <member name="shard-id" field="shard_id" value-type="long" length="20" nullable="false" />
     <member name="setinel-id" field="setinel_id" value-type="long" length="20" nullable="false" />
     <member name="dc-cluster-shard-phase" field="dc_cluster_shard_phase" value-type="int" length="10" nullable="false" />
+    <member name="operating-until" field="operating_until" value-type="Date" nullable="false" />
     <member name="data-change-last-time" field="DataChange_LastTime" value-type="Date" nullable="false" />
     <member name="deleted" field="deleted" value-type="boolean" nullable="false" />
     <var name="key-dc-cluster-shard-id" value-type="long" key-member="dc-cluster-shard-id" />
@@ -75,6 +76,9 @@
     </readsets>
     <updatesets>
       <updateset name="FULL" all="true" />
+      <updateset name="OPERATING_UNTIL">
+        <member name="operating-until"/>
+      </updateset>
     </updatesets>
     <query-defs>
       <query name="find-by-PK" type="SELECT">

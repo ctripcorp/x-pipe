@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.migration.auto;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
-import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.console.controller.api.vo.DRClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.controller.api.vo.RegionBeaconUsage;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;

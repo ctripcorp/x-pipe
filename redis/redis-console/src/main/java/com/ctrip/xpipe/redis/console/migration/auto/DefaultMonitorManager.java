@@ -7,7 +7,6 @@ import com.ctrip.xpipe.api.migration.auto.MonitorServiceFactory;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
-import com.ctrip.xpipe.redis.checker.BeaconRouteType;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.model.BeaconClusterRoute;
 import com.ctrip.xpipe.redis.console.config.model.BeaconOrgRoute;
@@ -18,6 +17,8 @@ import com.ctrip.xpipe.redis.console.controller.api.vo.DRClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.controller.api.vo.RegionBeaconUsage;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -146,11 +147,11 @@ public class DefaultMonitorManager implements MonitorManager {
                 if (!StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
                     clusterType = ClusterType.lookup(clusterMeta.getAzGroupType());
                 }
-                if (routeType == BeaconRouteType.SENTINEL && !isSentinelManagedClusterType(clusterType)) {
+                if (routeType == BeaconRouteType.SENTINEL && !BeaconSentinelMetaUtil.isSentinelManagedClusterType(clusterType)) {
                     continue;
                 }
 
-                BeaconSystem beaconSystem = resolveBeaconSystemByRouteType(clusterType, routeType);
+                BeaconSystem beaconSystem = BeaconSentinelMetaUtil.resolveBeaconSystemByRouteType(clusterType, routeType);
                 if (null == beaconSystem) {
                     continue;
                 }
@@ -229,7 +230,7 @@ public class DefaultMonitorManager implements MonitorManager {
             ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
             ClusterType clusterType = ClusterType.lookup(!StringUtil.isEmpty(clusterMeta.getAzGroupType())
                     ? clusterMeta.getAzGroupType() : clusterMeta.getType());
-            BeaconSystem beaconSystem = resolveBeaconSystemByRouteType(clusterType, BeaconRouteType.SENTINEL);
+            BeaconSystem beaconSystem = BeaconSentinelMetaUtil.resolveBeaconSystemByRouteType(clusterType, BeaconRouteType.SENTINEL);
             MonitorService monitorService = get(clusterMeta.getOrgId(), clusterMeta.getId(), dcMeta.getZone(), BeaconRouteType.SENTINEL);
 
             result.add(new SentinelClusterBeaconRouteItem(beaconSystem, dcMeta, clusterMeta, monitorService));
@@ -255,7 +256,7 @@ public class DefaultMonitorManager implements MonitorManager {
             ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
             ClusterType clusterType = ClusterType.lookup(!StringUtil.isEmpty(clusterMeta.getAzGroupType())
                     ? clusterMeta.getAzGroupType() : clusterMeta.getType());
-            BeaconSystem beaconSystem = resolveBeaconSystemByRouteType(clusterType, BeaconRouteType.DR);
+            BeaconSystem beaconSystem = BeaconSentinelMetaUtil.resolveBeaconSystemByRouteType(clusterType, BeaconRouteType.DR);
             MonitorService monitorService = get(clusterMeta.getOrgId(), clusterMeta.getId(), dcMeta.getZone(), BeaconRouteType.DR);
 
             List<String> dcs = new ArrayList<>();
@@ -381,36 +382,9 @@ public class DefaultMonitorManager implements MonitorManager {
     }
 
     private boolean isBeaconCandidate(DcMeta dcMeta, String clusterName, BeaconRouteType routeType) {
-        ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
-        if (clusterMeta == null) return false;
-
-        ClusterType clusterType = ClusterType.lookup(!StringUtil.isEmpty(clusterMeta.getAzGroupType())
-                ? clusterMeta.getAzGroupType() : clusterMeta.getType());
-
-        if (routeType == BeaconRouteType.DR) {
-            Set<String> supportZones = consoleCommonConfig.getBeaconSupportZones();
-            if (!supportZones.isEmpty()
-                    && supportZones.stream().noneMatch(zone -> zone.equalsIgnoreCase(dcMeta.getZone()))) {
-                return false;
-            }
-            if (!ClusterType.supportClusterMigration(clusterMeta.getType(), clusterMeta.getAzGroupType())) {
-                return false;
-            }
-            if (clusterType.supportSingleActiveDC()
-                    && !dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc())) {
-                return false;
-            }
-        } else if (!isSentinelManagedClusterType(clusterType)) {
-            return false;
-        }
-
-        return resolveBeaconSystemByRouteType(clusterType, routeType) != null;
+        return BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, clusterName, routeType, consoleCommonConfig);
     }
 
-    /**
-     * Ensure each org exposes every configured {@link MonitorService}, even when no cluster matches.
-     * Cleanup jobs rely on MonitorService -> empty Set entries to unregister stale beacon clusters.
-     */
     private void fillMonitorServicePlaceholders(
             Map<BeaconSystem, Map<Long, Map<MonitorService, Set<String>>>> clusterByBeaconSystemOrg,
             Set<Long> orgIds, BeaconRouteType routeType) {
@@ -423,20 +397,6 @@ public class DefaultMonitorManager implements MonitorManager {
             Map<MonitorService, Set<String>> byService = clustersByOrg.get(orgId);
             services.forEach(service -> byService.computeIfAbsent(service, ignored -> new HashSet<>()));
         }));
-    }
-
-    private BeaconSystem resolveBeaconSystemByRouteType(ClusterType clusterType, BeaconRouteType routeType) {
-        BeaconSystem beaconSystem = BeaconSystem.findByClusterType(clusterType);
-        if (beaconSystem != null) {
-            return beaconSystem;
-        }
-        return BeaconSystem.XPIPE_ONE_WAY;
-    }
-
-    private boolean isSentinelManagedClusterType(ClusterType clusterType) {
-        return clusterType == ClusterType.ONE_WAY
-                || clusterType == ClusterType.SINGLE_DC
-                || clusterType == ClusterType.LOCAL_DC;
     }
 
     private void registerRouteListener(String configKey, BeaconRouteType routeType, MetaCache cache, long checkInterval) {

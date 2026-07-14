@@ -48,8 +48,6 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     
     private static final ParameterizedTypeReference<List<ProxyTunnelInfo>> proxyTunnelInfosTypeDef = new ParameterizedTypeReference<List<ProxyTunnelInfo>>(){};
 
-    private static final ParameterizedTypeReference<Set<String>> stringSetRespTypeDef =
-            new ParameterizedTypeReference<Set<String>>(){};
     private static final ParameterizedTypeReference<Map<String, OuterClientService.ClusterInfo>> clusterInfoMapTypeDef =
             new ParameterizedTypeReference<Map<String, OuterClientService.ClusterInfo>>(){};
 
@@ -115,17 +113,6 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     }
 
     @Override
-    public boolean isClusterOnMigration(String console, String clusterId) {
-        UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_GET_IS_CLUSTER_ON_MIGRATION)
-                .buildAndExpand(clusterId);
-        Boolean result = restTemplate.getForObject(comp.toString() , Boolean.class);
-        if (result == null) {
-            throw new XpipeRuntimeException("result of isClusterOnMigration is null");
-        }
-        return result;
-    }
-
-    @Override
     public void updateRedisRole(String console, RedisHealthCheckInstance instance, Server.SERVER_ROLE role) {
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(console + ConsoleCheckerPath.PATH_PUT_UPDATE_REDIS_ROLE)
                 .buildAndExpand(role.toString());
@@ -140,13 +127,6 @@ public class DefaultCheckerConsoleService extends AbstractService implements Che
     @Override
     public Set<String> clusterAlertWhiteList(String console) {
         return restTemplate.getForObject(console + ConsoleCheckerPath.PATH_GET_CLUSTER_ALERT_WHITE_LIST, Set.class);
-    }
-
-    @Override
-    public Set<String> migratingClusterList(String console) {
-        ResponseEntity<Set<String>> response = restTemplate
-                .exchange(console + ConsoleCheckerPath.PATH_GET_MIGRATING_CLUSTER_LIST, HttpMethod.GET, null, stringSetRespTypeDef);
-        return response.getBody();
     }
 
     @Override

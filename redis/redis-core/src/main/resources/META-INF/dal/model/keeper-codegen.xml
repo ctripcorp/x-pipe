@@ -70,6 +70,7 @@
     <attribute name="phase" value-type="int" />
     <attribute name="lastModifiedTime" value-type="String" />
     <attribute name="type" value-type="String" />
+    <attribute name="status" value-type="String" />
     <attribute name="hints" value-type="String" />
     <attribute name="admin-emails" value-type="String" />
     <attribute name="dcs" value-type="String" />
@@ -90,6 +91,7 @@
     <attribute name="sentinelId" value-type="int" />
     <attribute name="sentinelMonitorName" value-type="String" />
     <attribute name="phase" value-type="int" />
+    <attribute name="operatingUntil" value-type="Long" />
     <entity-ref name="keeper" type="list" names="keepers" />
     <entity-ref name="redis" type="list" names="redises" />
     <entity-ref name="applier" type="list" names="appliers" />

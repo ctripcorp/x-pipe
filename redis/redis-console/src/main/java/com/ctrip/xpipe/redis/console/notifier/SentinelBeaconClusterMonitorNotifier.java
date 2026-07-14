@@ -2,9 +2,10 @@ package com.ctrip.xpipe.redis.console.notifier;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
-import com.ctrip.xpipe.redis.checker.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
@@ -15,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -93,43 +93,15 @@ public class SentinelBeaconClusterMonitorNotifier implements BeaconRouteClusterM
             if (clusterMeta == null) {
                 return;
             }
-            ClusterType clusterType = resolveEffectiveClusterType(clusterMeta);
-            if (!isSentinelManagedClusterType(clusterType)) {
+            ClusterType clusterType = BeaconSentinelMetaUtil.resolveEffectiveClusterType(clusterMeta);
+            if (!BeaconSentinelMetaUtil.isSentinelManagedClusterType(clusterType)) {
                 return;
             }
-            if (clusterType.supportMultiActiveDC()) {
-                if (isDcInClusterDcs(clusterMeta, dc)) {
-                    interestedDcs.add(dc);
-                }
-                return;
-            }
-            if (dc.equalsIgnoreCase(clusterMeta.getActiveDc())) {
+            if (BeaconSentinelMetaUtil.isSentinelInterestedDc(clusterMeta, clusterType, dc)) {
                 interestedDcs.add(dc);
             }
         });
         return interestedDcs;
-    }
-
-    private boolean isSentinelManagedClusterType(ClusterType clusterType) {
-        return clusterType == ClusterType.ONE_WAY
-                || clusterType == ClusterType.SINGLE_DC
-                || clusterType == ClusterType.LOCAL_DC;
-    }
-
-    private ClusterType resolveEffectiveClusterType(ClusterMeta clusterMeta) {
-        ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
-        if (clusterType == ClusterType.HETERO && !StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
-            return ClusterType.lookup(clusterMeta.getAzGroupType());
-        }
-        return clusterType;
-    }
-
-    private boolean isDcInClusterDcs(ClusterMeta clusterMeta, String dc) {
-        if (StringUtil.isEmpty(clusterMeta.getDcs()) || StringUtil.isEmpty(dc)) {
-            return false;
-        }
-        return Arrays.stream(clusterMeta.getDcs().split("\\s*,\\s*"))
-                .anyMatch(clusterDc -> clusterDc.equalsIgnoreCase(dc));
     }
 
 }

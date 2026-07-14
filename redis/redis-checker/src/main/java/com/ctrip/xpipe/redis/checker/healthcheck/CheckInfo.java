@@ -25,4 +25,8 @@ public interface CheckInfo {
 
     List<RedisCheckRule> getRedisCheckRules();
 
+    String getStatus();
+
+    void setStatus(String status);
+
 }

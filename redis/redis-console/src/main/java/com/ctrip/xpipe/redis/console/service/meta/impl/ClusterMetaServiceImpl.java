@@ -7,7 +7,7 @@ import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
-import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
@@ -161,6 +161,7 @@ public class ClusterMetaServiceImpl extends AbstractMetaService implements Clust
         clusterMeta.setId(cluster.getClusterName());
         clusterMeta.setDbId(cluster.getId());
         clusterMeta.setType(cluster.getClusterType());
+        clusterMeta.setStatus(cluster.getStatus());
         clusterMeta.setActiveRedisCheckRules(dcCluster.getActiveRedisCheckRules());
         clusterMeta.setClusterDesignatedRouteIds(cluster.getClusterDesignatedRouteIds());
         clusterMeta.setOrgId(Math.toIntExact(cluster.getClusterOrgId()));

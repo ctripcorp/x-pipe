@@ -4,11 +4,11 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.CommandTimeoutException;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
-import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.simpleserver.Server;
 import com.google.common.collect.Lists;
@@ -88,9 +88,6 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
     protected CheckerDbConfig config;
 
     @Mock
-    private PersistenceCache persistenceCache;
-
-    @Mock
     private HealthCheckInstanceManager instanceManager;
 
     @Mock
@@ -139,8 +136,7 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         when(config.shouldSentinelCheck(anyString())).thenReturn(true);
 
         prepareMetaCache();
-        when(persistenceCache.isClusterOnMigration(anyString())).thenReturn(false);
-        action = new SentinelHelloCheckAction(scheduled, instance, executors, config, persistenceCache, metaCache, instanceManager);
+        action = new SentinelHelloCheckAction(scheduled, instance, executors, config, metaCache, instanceManager);
         action.addController(healthCheckActionController);
     }
 
@@ -152,6 +148,14 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
             } catch (Exception e) {
                 // ignore
             }
+    }
+
+    @Test
+    public void testDoScheduledTaskWithMigratingCluster() {
+        action = spy(action);
+        instance.getCheckInfo().setStatus(ClusterStatus.Migrating.name());
+        Assert.assertFalse(action.shouldCheck(instance));
+        verify(action, never()).processSentinelHellos();
     }
 
     @Test

@@ -3,12 +3,15 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTblDao;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTblEntity;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import org.springframework.stereotype.Service;
 import org.unidal.dal.jdbc.DalException;
 
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -111,6 +114,27 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
 	}
 
 	@Override
+	public List<DcClusterShardTbl> findDcClusterShardsByNames(String dcName, String clusterName,
+	                                                          List<String> shardNames) {
+		if (shardNames == null || shardNames.isEmpty()) {
+			return Collections.emptyList();
+		}
+		return queryHandler.handleQuery(() -> dao.findDcClusterShardsByNames(
+				dcName, clusterName, shardNames, DcClusterShardTblEntity.READSET_FULL));
+	}
+
+	@Override
+	public int updateOperatingUntilByIds(List<Long> dcClusterShardIds, Date operatingUntil) throws DalException {
+		if (dcClusterShardIds == null || dcClusterShardIds.isEmpty()) {
+			return 0;
+		}
+		DcClusterShardTbl updateProto = new DcClusterShardTbl();
+		updateProto.setDcClusterShardIds(dcClusterShardIds);
+		updateProto.setOperatingUntil(operatingUntil);
+		return dao.updateOperatingUntilByIds(updateProto, DcClusterShardTblEntity.UPDATESET_OPERATING_UNTIL);
+	}
+
+	@Override
 	public List<DcClusterShardTbl> findAllByDcId(long dcId) {
 		return queryHandler.handleQuery(new DalQuery<List<DcClusterShardTbl>>() {
 			@Override
@@ -171,6 +195,13 @@ public class DcClusterShardServiceImpl extends AbstractConsoleService<DcClusterS
 
 	@Override
 	public void insertBatch(List<DcClusterShardTbl> dcClusterShardTbls) {
+		if (dcClusterShardTbls != null) {
+			for (DcClusterShardTbl dcClusterShardTbl : dcClusterShardTbls) {
+				if (dcClusterShardTbl != null && dcClusterShardTbl.getOperatingUntil() == null) {
+					dcClusterShardTbl.setOperatingUntil(DateTimeUtils.DEFAULT_OPERATING_UNTIL);
+				}
+			}
+		}
 		queryHandler.handleBatchInsert(new DalQuery<int[]>() {
 			@Override
 			public int[] doQuery() throws DalException {

@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon;
 
-import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.CheckInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,12 +17,9 @@ public class SentinelBeaconMigrationController implements SentinelBeaconMetaCont
 
     private final CheckerDbConfig checkerDbConfig;
 
-    private final PersistenceCache persistenceCache;
-
     @Autowired
-    public SentinelBeaconMigrationController(CheckerDbConfig checkerDbConfig, PersistenceCache persistenceCache) {
+    public SentinelBeaconMigrationController(CheckerDbConfig checkerDbConfig) {
         this.checkerDbConfig = checkerDbConfig;
-        this.persistenceCache = persistenceCache;
     }
 
     @Override
@@ -43,7 +40,7 @@ public class SentinelBeaconMigrationController implements SentinelBeaconMetaCont
             return false;
         }
 
-        if (persistenceCache.isClusterOnMigration(cluster)) {
+        if (ClusterStatus.isMigrating(checkInfo.getStatus())) {
             logger.warn("[{}] in migration, stop check", cluster);
             return false;
         }

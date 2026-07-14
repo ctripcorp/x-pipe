@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core;
 
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtilTest;
 import com.ctrip.xpipe.redis.core.entity.DiskIOStatInfoTest;
 import com.ctrip.xpipe.redis.core.meta.*;
 import com.ctrip.xpipe.redis.core.meta.comparator.*;
@@ -91,6 +92,7 @@ import org.junit.runners.Suite.SuiteClasses;
         TunnelTrafficResultTest.class,
         DcRouteMetaComparatorTest.class,
         SentinelUtilTest.class,
+        BeaconSentinelMetaUtilTest.class,
         CrdtPublishCommandTest.class,
         CrdtSubscribeCommandTest.class,
         TestAbstractSubscribeTest.class,

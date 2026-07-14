@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.meta.impl;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
 import com.ctrip.xpipe.cluster.ClusterType;
@@ -8,6 +9,9 @@ import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -30,6 +34,8 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
 
     private static final Logger logger = LoggerFactory.getLogger(BeaconMetaServiceImpl.class);
 
+    private static final String SENTINEL_SHARD_EXCLUDE_CAT_TYPE = "Beacon.Sentinel.Shard.Exclude";
+
     private MetaCache metaCache;
 
     private ConsoleCommonConfig config;
@@ -47,7 +53,7 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
             return Collections.emptySet();
         }
 
-        if (resolveEffectiveClusterType(dcClusterMeta) != ClusterType.ONE_WAY) {
+        if (BeaconSentinelMetaUtil.resolveEffectiveClusterType(dcClusterMeta) != ClusterType.ONE_WAY) {
             return Collections.emptySet();
         }
 
@@ -85,6 +91,13 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
         for (Map.Entry<String, ShardMeta> entry : clusterMeta.getShards().entrySet()) {
             String shardName = entry.getKey();
             ShardMeta shardMeta = entry.getValue();
+            if (BeaconSentinelMetaUtil.isOperatingExcluded(shardMeta)) {
+                logger.info("[buildSentinelBeaconShards][{}][{}][{}][operatingExcluded] until {}",
+                        cluster, dc, shardName, shardMeta.getOperatingUntil());
+                EventMonitor.DEFAULT.logEvent(SENTINEL_SHARD_EXCLUDE_CAT_TYPE,
+                        String.format("%s:%s:%s", cluster, dc, shardName));
+                continue;
+            }
             List<MonitorGroupMeta> groups = shardMeta.getRedises().stream().map(redisMeta -> {
                 HostPort hostPort = new HostPort(redisMeta.getIp(), redisMeta.getPort());
                 MonitorGroupMeta group = new MonitorGroupMeta(hostPort.toString(), canonicalDc,
@@ -155,19 +168,7 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
     }
 
     private DcMeta findDcMeta(String dc) {
-        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
-        if (xpipeMeta == null || xpipeMeta.getDcs() == null || StringUtil.isEmpty(dc)) {
-            return null;
-        }
-        DcMeta dcMeta = xpipeMeta.getDcs().get(dc);
-        if (dcMeta != null) {
-            return dcMeta;
-        }
-        return xpipeMeta.getDcs().entrySet().stream()
-                .filter(entry -> entry.getKey().equalsIgnoreCase(dc))
-                .map(Map.Entry::getValue)
-                .findFirst()
-                .orElse(null);
+        return BeaconSentinelMetaUtil.findDcMeta(metaCache.getXpipeMeta(), dc);
     }
 
     private String resolveCanonicalDcId(String dc) {
@@ -207,12 +208,30 @@ public class BeaconMetaServiceImpl implements BeaconMetaService {
         return supportZones.stream().anyMatch(zone -> metaCache.isDcInRegion(dc, zone));
     }
 
-    private ClusterType resolveEffectiveClusterType(ClusterMeta clusterMeta) {
-        ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
-        if (clusterType == ClusterType.HETERO && !StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
-            return ClusterType.lookup(clusterMeta.getAzGroupType());
+    @Override
+    public void validateSentinelBeaconOperatingDc(String clusterName, String dc) {
+        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        if (xpipeMeta == null || xpipeMeta.getDcs() == null) {
+            throw new IllegalStateException("meta cache not ready");
         }
-        return clusterType;
+        DcMeta dcMeta = findDcMeta(dc);
+        if (dcMeta == null) {
+            throw new IllegalArgumentException(String.format("dc %s not found", dc));
+        }
+        if (!BeaconSentinelMetaUtil.isBeaconCandidate(dcMeta, clusterName, BeaconRouteType.SENTINEL, config)) {
+            ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
+            if (clusterMeta == null) {
+                throw new IllegalArgumentException(String.format("cluster %s not found in dc %s", clusterName, dc));
+            }
+            ClusterType clusterType = BeaconSentinelMetaUtil.resolveEffectiveClusterType(clusterMeta);
+            throw new IllegalArgumentException(String.format("cluster %s type %s is not supported by beacon sentinel mode",
+                    clusterName, clusterType));
+        }
+    }
+
+    @VisibleForTesting
+    boolean isSentinelBeaconOperatingExcluded(ShardMeta shardMeta) {
+        return BeaconSentinelMetaUtil.isOperatingExcluded(shardMeta);
     }
 
     @VisibleForTesting

@@ -176,11 +176,6 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @Resource
     PersistenceCache persistenceCache;
 
-    @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_CLUSTER_ON_MIGRATION, method = RequestMethod.GET)
-    public boolean isClusterOnMigration(@PathVariable String clusterName) {
-        return persistenceCache.isClusterOnMigration(clusterName);
-    }
-
     @RequestMapping(value = ConsoleCheckerPath.PATH_GET_INNER_DC_ISOLATED, method = RequestMethod.GET)
     public boolean isInnerNetworkIsolated() {
         return networkStabilityInspector.isolated();
@@ -220,11 +215,6 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     @RequestMapping(value = ConsoleCheckerPath.PATH_GET_CLUSTER_ALERT_WHITE_LIST, method = RequestMethod.GET)
     public Set<String> clusterAlertWhiteList() {
         return persistenceCache.clusterAlertWhiteList();
-    }
-
-    @GetMapping(ConsoleCheckerPath.PATH_GET_MIGRATING_CLUSTER_LIST)
-    public Set<String> migratingClusterList() {
-        return persistenceCache.migratingClusterList();
     }
 
     @RequestMapping(value = ConsoleCheckerPath.PATH_GET_IS_SENTINEL_AUTO_PROCESS, method = RequestMethod.GET)

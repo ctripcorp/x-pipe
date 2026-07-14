@@ -10,15 +10,12 @@ import java.util.Map;
 import java.util.Set;
 
 public interface PersistenceCache {
-    boolean isClusterOnMigration(String clusterId);
 
     void updateRedisRole(RedisHealthCheckInstance instance, Server.SERVER_ROLE role);
 
     Set<String> sentinelCheckWhiteList();
 
     Set<String> clusterAlertWhiteList();
-
-    Set<String> migratingClusterList();
 
     boolean isSentinelAutoProcess();
 

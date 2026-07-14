@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconCheckStatus;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 
 import java.util.Map;
 

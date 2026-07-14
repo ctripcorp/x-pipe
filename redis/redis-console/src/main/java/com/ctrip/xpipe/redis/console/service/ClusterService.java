@@ -5,7 +5,7 @@ import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSu
 import com.ctrip.xpipe.redis.console.dto.ClusterUpdateDTO;
 import com.ctrip.xpipe.redis.console.dto.MultiGroupClusterCreateDTO;
 import com.ctrip.xpipe.redis.console.dto.SingleGroupClusterCreateDTO;
-import com.ctrip.xpipe.redis.console.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterDcGroupModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ClusterListUnhealthyClusterModel;

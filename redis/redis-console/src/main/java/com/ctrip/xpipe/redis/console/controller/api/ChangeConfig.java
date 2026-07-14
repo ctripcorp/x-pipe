@@ -3,10 +3,14 @@ package com.ctrip.xpipe.redis.console.controller.api;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
+import com.ctrip.xpipe.redis.console.model.BeaconCheckConfigRequest;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ClusterConfigModel;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
+import com.ctrip.xpipe.redis.console.service.BeaconCheckConfigService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
+import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -33,6 +37,12 @@ public class ChangeConfig extends AbstractConsoleController{
 
     @Autowired
     private ClusterService clusterService;
+
+    @Autowired
+    private BeaconCheckConfigService beaconCheckConfigService;
+
+    @Autowired
+    private BeaconMetaService beaconMetaService;
 
     @RequestMapping(value = "/config/sentinel_auto_process/start", method = RequestMethod.POST)
     public void startSentinelAutoProcess(HttpServletRequest request,
@@ -157,6 +167,62 @@ public class ChangeConfig extends AbstractConsoleController{
         List<String> whitelist = configModels.stream().map(ConfigModel::getSubKey).collect(Collectors.toList());
         logger.info("[alert][whitelist] {}", whitelist);
         return whitelist;
+    }
+
+    @PostMapping(value = {"/config/beacon/check/stop/{maintainMinutes}", "/config/beacon/check/stop"})
+    public RetMessage stopBeaconCheck(HttpServletRequest request,
+                                      @PathVariable(required = false) Integer maintainMinutes,
+                                      @RequestBody BeaconCheckConfigRequest beaconCheckConfigRequest) {
+        try {
+            if (null == maintainMinutes || maintainMinutes <= 0) {
+                maintainMinutes = consoleConfig.getHealthCheckSuspendMinutes();
+            }
+            maintainMinutes = Math.min(maintainMinutes, consoleConfig.getConfigDefaultRestoreHours() * 60);
+            validateSentinelBeaconCheckRequest(beaconCheckConfigRequest);
+            beaconCheckConfigService.stopBeaconCheck(beaconCheckConfigRequest.getClusterName(),
+                    beaconCheckConfigRequest.getDc(), beaconCheckConfigRequest.getShards(), maintainMinutes);
+            return RetMessage.createSuccessMessage("success");
+        } catch (Exception e) {
+            return beaconCheckFail("stopBeaconCheck", e);
+        }
+    }
+
+    @PostMapping(value = "/config/beacon/check/start")
+    public RetMessage startBeaconCheck(HttpServletRequest request,
+                                       @RequestBody BeaconCheckConfigRequest beaconCheckConfigRequest) {
+        try {
+            validateSentinelBeaconCheckRequest(beaconCheckConfigRequest);
+            beaconCheckConfigService.startBeaconCheck(beaconCheckConfigRequest.getClusterName(),
+                    beaconCheckConfigRequest.getDc(), beaconCheckConfigRequest.getShards());
+            return RetMessage.createSuccessMessage("success");
+        } catch (Exception e) {
+            return beaconCheckFail("startBeaconCheck", e);
+        }
+    }
+
+    private RetMessage beaconCheckFail(String operation, Exception e) {
+        String message = e.getMessage();
+        if (message == null || message.isEmpty()) {
+            message = e.getClass().getSimpleName();
+        }
+        logger.warn("[{}] {}", operation, message, e);
+        return RetMessage.createFailMessage(message);
+    }
+
+    private void validateSentinelBeaconCheckRequest(BeaconCheckConfigRequest beaconCheckConfigRequest) {
+        if (beaconCheckConfigRequest == null) {
+            throw new IllegalArgumentException("request body can not be empty");
+        }
+        beaconCheckConfigRequest.validate();
+        String clusterName = beaconCheckConfigRequest.getClusterName();
+        ClusterTbl cluster = clusterService.find(clusterName);
+        if (cluster == null) {
+            throw new IllegalArgumentException(String.format("cluster %s not found", clusterName));
+        }
+        if (!consoleConfig.supportSentinelBeacon(cluster.getClusterOrgId(), clusterName)) {
+            throw new IllegalArgumentException(String.format("cluster %s is not managed by beacon sentinel mode", clusterName));
+        }
+        beaconMetaService.validateSentinelBeaconOperatingDc(clusterName, beaconCheckConfigRequest.getDc());
     }
 
     private void checkClusterName(String clusterName) {

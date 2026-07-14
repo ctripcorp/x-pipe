@@ -151,6 +151,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         } else if (clusterType.supportMultiActiveDC()) {
             info.setCrossRegion(metaCache.isCrossRegion(currentDcId, info.getDcId()));
         }
+        info.setStatus(clusterMeta.getStatus());
 
         return info;
     }
@@ -178,6 +179,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         DefaultClusterInstanceInfo info = new DefaultClusterInstanceInfo(clusterMeta.getId(), clusterMeta.getActiveDc(),
                 clusterType, clusterMeta.getOrgId(), clusterMeta.getLastModifiedTime());
         info.setBackupDcs(Lists.newArrayList(backupDcs));
+        info.setStatus(clusterMeta.getStatus());
         return info;
     }
 

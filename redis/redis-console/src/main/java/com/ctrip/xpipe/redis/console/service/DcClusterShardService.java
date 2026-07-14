@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import org.unidal.dal.jdbc.DalException;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -17,6 +18,8 @@ public interface DcClusterShardService {
 	List<DcClusterShardTbl> findAllByDcCluster(long dcClusterId);
 	List<DcClusterShardTbl> findAllByDcCluster(String dcName, String clusterName);
 	void updateDcClusterShard(DcClusterShardTbl dcClusterShardTbl) throws DalException;
+	List<DcClusterShardTbl> findDcClusterShardsByNames(String dcName, String clusterName, List<String> shardNames);
+	int updateOperatingUntilByIds(List<Long> dcClusterShardIds, Date operatingUntil) throws DalException;
 	List<DcClusterShardTbl> findAllByDcId(long dcId);
 	List<DcClusterShardTbl> findAllByDcIdAndInClusterTypes(long dcId, Set<String> clusterTypes);
 	List<DcClusterShardTbl> findAllByClusterTypes(Set<String> clusterTypes);

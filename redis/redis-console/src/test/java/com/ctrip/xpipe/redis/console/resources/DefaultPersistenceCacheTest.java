@@ -53,12 +53,6 @@ public class DefaultPersistenceCacheTest extends AbstractConsoleIntegrationTest 
     }
     
     @Test
-    public void testIsClusterOnMigration() {
-        Assert.assertFalse(persistenceCache.isClusterOnMigration("Cluster1"));
-        Assert.assertTrue(persistenceCache.isClusterOnMigration("Cluster2"));
-    }
-
-    @Test
     public void testAlertSystemOn() throws Exception {
         Assert.assertTrue(persistenceCache.isAlertSystemOn());
         configService.stopAlertSystem(new ConfigModel(), 1);
