@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
@@ -326,7 +327,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	protected void doReadRdbFile(RdbFileListener rdbFileListener) throws IOException {
 
 		AsyncFile readFile = AsyncFileSystemHelper.await(
-				asyncFileSystem.open(path(), false, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
+				asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.READ, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
 
 		long curPosition = 0;
 		long lastLogTime = System.currentTimeMillis();
@@ -459,12 +460,12 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	private AsyncFile openWriteHandle() throws IOException {
 		return AsyncFileSystemHelper.await(
-				asyncFileSystem.open(path(), true, false, true, fileSystemReplId.toString()), "open rdb for write " + file);
+				asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.WRITE, false, true, fileSystemReplId.toString()), "open rdb for write " + file);
 	}
 
 	private AsyncFile openReadHandle() throws IOException {
 		return AsyncFileSystemHelper.await(
-				asyncFileSystem.open(path(), false, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
+				asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.READ, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
 	}
 
 	private String path() {

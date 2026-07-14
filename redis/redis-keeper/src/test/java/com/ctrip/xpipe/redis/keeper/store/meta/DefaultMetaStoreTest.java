@@ -8,8 +8,11 @@ import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
 import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.utils.FileUtils;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,43 +43,116 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
     private String rdbFileB = "B.rdb";
     private String rdbFileC = "C.rdb";
     private String cmdPrefix = "cmd_prefidx_";
-    private String baseDir = "/tmp/xpipe/test";
+    private String baseDir;
     private String keeperRunId = "20180118165046194-20180118165046194-294c90b4c9ed4d747a77b1b0f22ec28a8068013b";
     private MetaStore metaStore;
 
     @Before
     public void beforeDefaultMetaTest() throws IOException {
-        File metaFileV2 = new File(baseDir, META_V2_FILE);
-        metaFileV2.delete();
-
+        if (metaStore != null) {
+            metaStore.close();
+            metaStore = null;
+        }
+        baseDir = "/tmp/xpipe/test/" + currentTestName();
         Files.createDirectories(Paths.get(baseDir));
-        metaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem(), getReplId());
+        AsyncFileSystem fs = asyncFileSystem();
+        String metaPath = new File(baseDir, META_V2_FILE).getAbsolutePath();
+        if (AsyncFileSystemHelper.await(fs.exists(metaPath), "check meta exists before test")) {
+            AsyncFileSystemHelper.await(fs.delete(metaPath), "delete meta before test " + metaPath);
+        }
+        metaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, fs, getReplId());
+    }
+
+    @After
+    public void afterDefaultMetaTest() throws IOException {
+        if (metaStore != null) {
+            metaStore.close();
+            metaStore = null;
+        }
     }
 
     @Test
     public void saveMetaOpenV2WithAtomicReplace() throws IOException {
-        new File(baseDir, META_V2_FILE).delete();
+        metaStore.close();
+        metaStore = null;
         AsyncFileSystem fileSystem = spy(ContainerResourceManager.createAsyncFileSystem(
                 KeeperConfig.DEFAULT_ASYNC_IO_THREADS, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES));
         try {
-            new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
-            verify(fileSystem, atLeastOnce()).open(contains(META_V2_FILE), eq(true), eq(true), eq(true), eq(getReplId().toString()));
+            DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
+            verify(fileSystem, times(1)).open(contains(META_V2_FILE), eq(AbstractStorageFile.OpenMode.READ_WRITE),
+                    eq(true), eq(true), eq(getReplId().toString()));
+            store.setRdbFileSize(1024);
+            verify(fileSystem, times(1)).open(contains(META_V2_FILE), eq(AbstractStorageFile.OpenMode.READ_WRITE),
+                    eq(true), eq(true), eq(getReplId().toString()));
+            store.close();
         } finally {
             fileSystem.shutdown();
         }
     }
 
+    @Test
+    public void destroyClosesAndDeletesMetaFile() throws Exception {
+        metaStore.close();
+        DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem(), getReplId());
+        File metaFile = new File(baseDir, META_V2_FILE);
+        Assert.assertTrue(metaFile.exists());
+        store.destroy();
+        Assert.assertFalse(metaFile.exists());
+        try {
+            store.setRdbFileSize(1024);
+            Assert.fail("expected IOException after destroy");
+        } catch (IOException expected) {
+            Assert.assertTrue(expected.getMessage().contains("MetaStore closed"));
+        }
+        try {
+            store.loadMeta();
+            Assert.fail("expected IOException after destroy");
+        } catch (IOException expected) {
+            Assert.assertTrue(expected.getMessage().contains("MetaStore closed"));
+        }
+    }
+
+    @Test
+    public void closeRejectsFurtherSave() throws IOException {
+        metaStore.close();
+        DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem(), getReplId());
+        store.close();
+        try {
+            store.setRdbFileSize(1024);
+            Assert.fail("expected IOException after close");
+        } catch (IOException expected) {
+            Assert.assertTrue(expected.getMessage().contains("MetaStore closed"));
+        } finally {
+            store.close();
+        }
+    }
+
+    @Test
+    public void closeRejectsFurtherLoad() throws IOException {
+        metaStore.close();
+        try {
+            metaStore.loadMeta();
+            Assert.fail("expected IOException after close");
+        } catch (IOException expected) {
+            Assert.assertTrue(expected.getMessage().contains("MetaStore closed"));
+        }
+    }
+
     @Test (expected = UnexpectedReplIdException.class)
     public void fixPsync0MakeSureReplIdsAreSame() throws IOException {
+        metaStore.close();
+        DefaultMetaStore spyStore = spy(new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem(), getReplId()));
+        try {
+            spyStore.becomeActive();
 
-        DefaultMetaStore metaStore = spy(new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem(), getReplId()));
-        metaStore.becomeActive();
+            ReplicationStoreMeta meta = mock(ReplicationStoreMeta.class);
+            when(meta.getReplId()).thenReturn("ReplId A");
 
-        ReplicationStoreMeta meta = mock(ReplicationStoreMeta.class);
-        when(meta.getReplId()).thenReturn("ReplId A");
-
-        doReturn(meta).when(metaStore).dupReplicationStoreMeta();
-        metaStore.checkReplIdAndUpdateRdbInfo("rdb_1620671301121_e67222d2-eee1-48c4-bde7-5c6d37734ca4", new EofMarkType("94480e125b6ebb54dc7b9eae7b9c8ea00aeed56e"), 572767153, "ReplId B");
+            doReturn(meta).when(spyStore).dupReplicationStoreMeta();
+            spyStore.checkReplIdAndUpdateRdbInfo("rdb_1620671301121_e67222d2-eee1-48c4-bde7-5c6d37734ca4", new EofMarkType("94480e125b6ebb54dc7b9eae7b9c8ea00aeed56e"), 572767153, "ReplId B");
+        } finally {
+            spyStore.close();
+        }
     }
 
     @Test
@@ -256,11 +332,26 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
 
     @Test
     public void testXSyncProtoSaveAndLoad() throws IOException {
-        metaStore.rdbConfirmXsync(replidA, 1, 10000, masterUuidA,
-                new GtidSet(GtidSet.EMPTY_GTIDSET), new GtidSet(GtidSet.EMPTY_GTIDSET),
-                rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
-        MetaStore newMetaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem(), getReplId());
-        Assert.assertEquals(metaStore.getCurrentReplStage(), newMetaStore.getCurrentReplStage());
+        metaStore.close();
+        metaStore = null;
+        AsyncFileSystem fileSystem = ContainerResourceManager.createAsyncFileSystem(
+                KeeperConfig.DEFAULT_ASYNC_IO_THREADS, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
+        try {
+            MetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
+            store.rdbConfirmXsync(replidA, 1, 10000, masterUuidA,
+                    new GtidSet(GtidSet.EMPTY_GTIDSET), new GtidSet(GtidSet.EMPTY_GTIDSET),
+                    rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
+            ReplStage expectedStage = store.getCurrentReplStage();
+            store.close();
+            MetaStore reloadedStore = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
+            try {
+                Assert.assertEquals(expectedStage, reloadedStore.getCurrentReplStage());
+            } finally {
+                reloadedStore.close();
+            }
+        } finally {
+            fileSystem.shutdown();
+        }
     }
 
     @Test

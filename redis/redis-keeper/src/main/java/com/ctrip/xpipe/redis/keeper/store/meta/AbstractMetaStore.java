@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.exception.BadMetaStoreException;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
@@ -39,6 +40,10 @@ public abstract class AbstractMetaStore implements MetaStore{
 	protected final AsyncFileSystem asyncFileSystem;
 
 	protected final ReplId fileSystemReplId;
+
+	private AsyncFile metaAsyncFile;
+
+	private boolean closed;
 
 	public AbstractMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId) {
 		this.baseDir = baseDir;
@@ -73,37 +78,75 @@ public abstract class AbstractMetaStore implements MetaStore{
 	protected void saveMetaToFileV2(File file, ReplicationStoreMeta replicationStoreMeta) throws IOException {
 		logger.info("[saveMetaToFileV2]{}, {}", file, replicationStoreMeta);
 		byte[] data = Codec.DEFAULT.encode(replicationStoreMeta).getBytes(StandardCharsets.UTF_8);
-		AsyncFile asyncFile = AsyncFileSystemHelper.await(asyncFileSystem.open(file.getAbsolutePath(), true, true, true, fileSystemReplId.toString()),
-				"open meta for write " + file.getAbsolutePath());
-		try {
-			AsyncFileSystemHelper.writeAllBytes(asyncFileSystem, asyncFile, data,
-					"write meta " + file.getAbsolutePath());
-		} finally {
-			AsyncFileSystemHelper.await(asyncFileSystem.close(asyncFile), "close meta " + file.getAbsolutePath());
+		AsyncFile asyncFile = getOrOpenMetaFile();
+		AsyncFileSystemHelper.writeAllBytes(asyncFileSystem, asyncFile, data,
+				"write meta " + file.getAbsolutePath());
+	}
+
+	protected ReplicationStoreMeta loadMetaFromFileV2(File file) throws IOException {
+		AsyncFile asyncFile = getOrOpenMetaFile();
+		long size = AsyncFileSystemHelper.await(asyncFileSystem.size(asyncFile),
+				"stat meta " + file.getAbsolutePath());
+		if (size > Integer.MAX_VALUE) {
+			throw new IOException("async file too large: " + file.getAbsolutePath());
+		}
+		if (size == 0) {
+			throw new RedisKeeperRuntimeException("[loadMetaFromFileV2][empty file]" + file.getAbsolutePath());
+		}
+		String content = AsyncFileSystemHelper.readAllUtf8(asyncFileSystem, asyncFile, size, 0,
+				"read meta " + file.getAbsolutePath());
+		return deserializeFromStringV2(content);
+	}
+
+	private AsyncFile getOrOpenMetaFile() throws IOException {
+		synchronized (metaRef) {
+			ensureOpen();
+			return metaAsyncFile;
 		}
 	}
 
-	protected ReplicationStoreMeta loadMetaFromFileV2(File file) throws IOException{
+	private void ensureOpen() throws IOException {
+		if (closed) {
+			throw new IOException("MetaStore closed: " + baseDir);
+		}
+		if (metaAsyncFile != null) {
+			return;
+		}
+		File file = metaV2File();
+		AsyncFile asyncFile = AsyncFileSystemHelper.await(
+				asyncFileSystem.open(file.getAbsolutePath(), AbstractStorageFile.OpenMode.READ_WRITE, true, true,
+						fileSystemReplId.toString()),
+				"open meta file " + file.getAbsolutePath());
+		metaAsyncFile = asyncFile;
+	}
 
-		if(AsyncFileSystemHelper.await(asyncFileSystem.exists(file.getAbsolutePath()),
-				"check meta exists " + file.getAbsolutePath())){
-			AsyncFile asyncFile = AsyncFileSystemHelper.await(asyncFileSystem.open(file.getAbsolutePath(), false, false, true, fileSystemReplId.toString()),
-					"open meta for read " + file.getAbsolutePath());
-			try {
-				long size = AsyncFileSystemHelper.await(asyncFileSystem.size(asyncFile),
-						"stat meta " + file.getAbsolutePath());
-				if (size > Integer.MAX_VALUE) {
-					throw new IOException("async file too large: " + file.getAbsolutePath());
-				}
-				String content = AsyncFileSystemHelper.readAllUtf8(asyncFileSystem, asyncFile, size, 0,
-						"read meta " + file.getAbsolutePath());
-				return deserializeFromStringV2(content);
-			} finally {
-				AsyncFileSystemHelper.await(asyncFileSystem.close(asyncFile), "close meta " + file.getAbsolutePath());
+	private File metaV2File() {
+		return new File(baseDir, META_V2_FILE);
+	}
+
+	@Override
+	public void close() throws IOException {
+		synchronized (metaRef) {
+			if (closed) {
+				return;
+			}
+			closed = true;
+			if (metaAsyncFile != null) {
+				AsyncFileSystemHelper.await(asyncFileSystem.close(metaAsyncFile),
+						"close meta file " + metaV2File().getAbsolutePath());
+				metaAsyncFile = null;
 			}
 		}
+	}
 
-		throw new RedisKeeperRuntimeException("[loadMetaFromFileV2][not file]" + file.getAbsolutePath());
+	@Override
+	public void destroy() throws Exception {
+		close();
+		File metaFile = metaV2File();
+		String path = metaFile.getAbsolutePath();
+		if (AsyncFileSystemHelper.await(asyncFileSystem.exists(path), "check meta exists for destroy " + path)) {
+			AsyncFileSystemHelper.await(asyncFileSystem.delete(path), "delete meta file " + path);
+		}
 	}
 
 	public static ReplicationStoreMeta deserializeFromStringV2(String str){
@@ -143,6 +186,9 @@ public abstract class AbstractMetaStore implements MetaStore{
 	public final void loadMeta() throws IOException {
 		
 		synchronized (metaRef) {
+			if (closed) {
+				throw new IOException("MetaStore closed: " + baseDir);
+			}
 			File metaV2File = new File(baseDir, META_V2_FILE);
 			ReplicationStoreMeta meta;
 			File source;

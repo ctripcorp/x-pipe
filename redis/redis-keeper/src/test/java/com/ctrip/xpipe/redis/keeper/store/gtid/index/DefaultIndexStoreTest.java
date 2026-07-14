@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
@@ -175,7 +176,7 @@ public class DefaultIndexStoreTest {
 
     private AsyncFile openTestAsyncFile(File file, boolean write) throws IOException {
         return AsyncFileSystemHelper.await(
-                testFs.open(file.getAbsolutePath(), write, false, true, "test-repl-0"),
+                testFs.open(file.getAbsolutePath(), write ? AbstractStorageFile.OpenMode.WRITE : AbstractStorageFile.OpenMode.READ, false, true, "test-repl-0"),
                 "open test async file " + file.getName());
     }
 

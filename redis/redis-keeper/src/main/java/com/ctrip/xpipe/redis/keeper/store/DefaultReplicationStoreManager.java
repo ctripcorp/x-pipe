@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
@@ -214,7 +215,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         byte[] data = out.toByteArray();
 
         AsyncFile asyncFile = AsyncFileSystemHelper.await(
-                asyncFileSystem.open(metaFile.getAbsolutePath(), true, true, true, replId.toString()),
+                asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.WRITE, true, true, replId.toString()),
                 "open manager meta for write " + metaFile.getAbsolutePath());
         try {
             AsyncFileSystemHelper.writeAllBytes(asyncFileSystem, asyncFile, data,
@@ -239,7 +240,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                 "check manager meta exists " + metaFile.getAbsolutePath())) {
             Properties meta = new Properties();
             AsyncFile asyncFile = AsyncFileSystemHelper.await(
-                    asyncFileSystem.open(metaFile.getAbsolutePath(), false, false, true, replId.toString()),
+                    asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.READ, false, true, replId.toString()),
                     "open manager meta for read " + metaFile.getAbsolutePath());
             try {
                 long size = AsyncFileSystemHelper.await(asyncFileSystem.size(asyncFile),

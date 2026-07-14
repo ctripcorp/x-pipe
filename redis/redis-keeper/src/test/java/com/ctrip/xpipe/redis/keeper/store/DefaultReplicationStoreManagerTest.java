@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -201,7 +202,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			replicationStoreManager.create();
 
 			verify(fileSystem, atLeastOnce()).mkdir(contains(getReplId().toString()), eq(true));
-			verify(fileSystem, atLeastOnce()).open(contains("store_manager_meta.properties"), eq(true), eq(true), eq(true), eq(getReplId().toString()));
+			verify(fileSystem, atLeastOnce()).open(contains("store_manager_meta.properties"), eq(AbstractStorageFile.OpenMode.WRITE), eq(true), eq(true), eq(getReplId().toString()));
 		} finally {
 			LifecycleHelper.disposeIfPossible(replicationStoreManager);
 			fileSystem.shutdown();

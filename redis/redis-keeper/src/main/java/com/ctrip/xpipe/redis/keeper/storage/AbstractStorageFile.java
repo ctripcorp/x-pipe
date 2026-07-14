@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.keeper.storage;
 
 import java.nio.channels.FileChannel;
 
-abstract class AbstractStorageFile {
+public abstract class AbstractStorageFile {
 
     public enum OpenMode {
         READ,
