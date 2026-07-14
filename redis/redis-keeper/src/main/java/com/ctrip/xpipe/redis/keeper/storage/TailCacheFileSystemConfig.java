@@ -30,6 +30,7 @@ public class TailCacheFileSystemConfig {
     private long preloadTimeoutMs = 1000;
     // Max wait for IO.
     private long ioWaitTimeoutMs = 1000;
+    private long writeBatchBytes = 1 * 1024 * 1024;
     private int maxWriteChunkThreshold = 32;
     private int eioRetryMaxAttempts = 3;
 
@@ -127,6 +128,16 @@ public class TailCacheFileSystemConfig {
     public TailCacheFileSystemConfig setIoWaitTimeoutMs(long ioWaitTimeoutMs) {
         if (ioWaitTimeoutMs < 0) throw new IllegalArgumentException("ioWaitTimeoutMs must be non-negative");
         this.ioWaitTimeoutMs = ioWaitTimeoutMs;
+        return this;
+    }
+
+    public long getWriteBatchBytes() {
+        return writeBatchBytes;
+    }
+
+    public TailCacheFileSystemConfig setWriteBatchBytes(long writeBatchBytes) {
+        if (writeBatchBytes <= 0) throw new IllegalArgumentException("writeBatchBytes must be positive");
+        this.writeBatchBytes = writeBatchBytes;
         return this;
     }
 
