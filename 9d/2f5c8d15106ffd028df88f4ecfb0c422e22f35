@@ -1,0 +1,22 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/ChangeConfig.java
+  s_1b31e87959e2e9::t_cc4ac1b36a9a3d 175-186,192-209
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/controller/api/ChangeConfigTest.java
+  s_1b31e87959e2e9::t_6b26c0a5450638 4
+  s_1b31e87959e2e9::t_b4422ff018e59b 131,135-137,144-146,154-156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.33-trip",
+  "base_commit_sha": "9d2f5c8d15106ffd028df88f4ecfb0c422e22f35",
+  "prompts": {},
+  "sessions": {
+    "s_1b31e87959e2e9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2656b487-9099-48ab-882e-979ec7cd3b07",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}
