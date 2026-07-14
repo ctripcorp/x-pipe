@@ -73,17 +73,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     // Tmp file format: [8-byte length][data].
     @Override
     public CompletableFuture<AsyncFile> open(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant) {
-        if (atomicReplace && !openMode.canWrite()) {
-            return CompletableFuture.failedFuture(new IllegalArgumentException("atomicReplace requires writable mode"));
-        }
         return StorageUtil.supply(ioExecutor, () -> openSyncInternal(path, openMode, atomicReplace, lenient));
     }
 
     @Override
     public AsyncFile openSync(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant) {
-        if (atomicReplace && !openMode.canWrite()) {
-            throw new IllegalArgumentException("atomicReplace requires writable mode");
-        }
         return openSyncInternal(path, openMode, atomicReplace, lenient);
     }
 
