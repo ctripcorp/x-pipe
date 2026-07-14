@@ -38,11 +38,12 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
 							   BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
 							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex,
-							   AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes, ReplId fileSystemReplId) throws IOException {
+							   long cmdStoreStartOffset, AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes,
+							   ReplId fileSystemReplId) throws IOException {
 		super(ckStore, keeperConfig, file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
 				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
-				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, asyncFileSystem, asyncWriteMaxBytes,
-				fileSystemReplId);
+				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, cmdStoreStartOffset,
+				asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
 		this.recordWrongStreamConfig = Objects.requireNonNull(recordWrongStreamConfig, "recordWrongStreamConfig");
 	}
 

@@ -124,7 +124,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		File commandTemplate = new File(getTestFileDir(), getTestName()+"_");
 
 		commandStore = new DefaultCommandStore(null, getKeeperConfig(), commandTemplate, maxFileSize, () -> false, () -> 3600, gcAfterCreateMilli, () -> dataKeep.get(), DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
-				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true, asyncFileSystem(), () -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId()){
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true, 0L, asyncFileSystem(), () -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId()){
 			@Override
 			public long totalLength() {
 				return initDataKeep * maxFileSize;

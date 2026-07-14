@@ -91,7 +91,9 @@ public class GtidReplicationStore extends DefaultReplicationStore {
         if(replMeta.getCurReplStage() != null && replMeta.getCurReplStage().getProto() == ReplStage.ReplProto.PSYNC) {
             buildIndex = false;
         }
-        logger.info("[createCommandStore], replRdbGtidSet={}, buildIndex={}", replRdbGtidSet, buildIndex);
+        long cmdStoreStartOffset = resolveCmdStoreStartOffset(replMeta);
+        logger.info("[createCommandStore], replRdbGtidSet={}, buildIndex={}, cmdStoreStartOffset={}",
+                replRdbGtidSet, buildIndex, cmdStoreStartOffset);
         GtidCommandStore cmdStore = new GtidCommandStore(this.ckStore, config, new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
                 config::getRecordWrongStream,
                 config::getReplicationStoreCommandFileKeepTimeSeconds,
@@ -99,8 +101,8 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                 config::getReplicationStoreCommandFileNumToKeep,
                 config.getCommandReaderFlyingThreshold(),
                 this::isCmdNotifyCoalescingEnabled,
-                cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, filter, buildIndex, asyncFileSystem,
-                config::getAsyncWriteMaxBytes, fileSystemReplId);
+                cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, filter, buildIndex, cmdStoreStartOffset,
+                asyncFileSystem, config::getAsyncWriteMaxBytes, fileSystemReplId);
         cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 
         try {

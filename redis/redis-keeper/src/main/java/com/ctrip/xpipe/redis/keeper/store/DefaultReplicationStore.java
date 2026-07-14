@@ -193,10 +193,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public long getCurReplStageReplOff() {
 		ReplStage curStage = metaStore.getCurrentReplStage();
+		long backlogEnd = backlogEndOffset();
 		if (getLogger().isDebugEnabled()) {
-			getLogger().debug("getCurReplStageReplOff: {}, {}, {}", curStage.getBegOffsetRepl(), backlogEndOffset(), curStage.getBegOffsetBacklog());
+			getLogger().debug("getCurReplStageReplOff: {}, {}, {}", curStage.getBegOffsetRepl(), backlogEnd, curStage.getBegOffsetBacklog());
 		}
-		return curStage.getBegOffsetRepl() - 1 + backlogEndOffset() - curStage.getBegOffsetBacklog();
+		return curStage.getBegOffsetRepl() - 1 + backlogEnd - curStage.getBegOffsetBacklog();
 	}
 
 	@Override
@@ -212,8 +213,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	public void psyncContinue(String newReplId) throws IOException {
 		getLogger().info("[psyncContinue] newReplId:{}", newReplId);
 		if (newReplId == null) return;
-		metaStore.psyncContinue(newReplId, backlogEndOffset());
-		cmdStore.switchToPsync(newReplId, backlogEndOffset());
+		long backlogEnd = backlogEndOffset();
+		metaStore.psyncContinue(newReplId, backlogEnd);
+		cmdStore.switchToPsync(newReplId, backlogEnd);
 	}
 
 	@Override
@@ -246,7 +248,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
 		getLogger().info("[switchToXSync] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}, gtidLost:{}", replId, replOff, masterUuid, gtidCont, gtidLost);
-		metaStore.switchToXsync(replId, replOff+1, backlogEndOffset(), masterUuid, gtidCont, gtidLost);
+		metaStore.switchToXsync(replId, replOff + 1, backlogEndOffset(), masterUuid, gtidCont, gtidLost);
 		cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
 	}
 
@@ -421,9 +423,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 			UPDATE_RDB_RESULT result;
 			long rdbContBacklogOffset;
+			long backlogEnd = backlogEndOffset();
 			if (replProto == ReplStage.ReplProto.PSYNC) {
 				result = metaStore.checkReplIdAndUpdateRdbInfoPsync(dumpedRdbFile.getName(),
-						rdbType, eofType, rdbOffset, rdbReplId, backlogBeginOffset(), backlogEndOffset());
+						rdbType, eofType, rdbOffset, rdbReplId, backlogBeginOffset(), backlogEnd);
 				Long rdbContBacklogOffsetTmp = getMetaStore().replOffsetToBacklogOffset(rdbOffset);
 				rdbContBacklogOffset = rdbContBacklogOffsetTmp == null ? 0 : rdbContBacklogOffsetTmp;
 			} else {
@@ -445,12 +448,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				if (rdbContBacklogOffset < 0) {
 					// repl proto will be checked before backlogOffset, so we can assume that repl proto is XSYNC.
 					logger.info("[checkReplIdAndUpdateRdbGapAllowed] adjust rdbContinuouseBacklogOffset from {} to {}",
-							rdbContBacklogOffset, backlogEndOffset());
-					rdbContBacklogOffset = backlogEndOffset();
+							rdbContBacklogOffset, backlogEnd);
+					rdbContBacklogOffset = backlogEnd;
 				}
 				result = metaStore.checkReplIdAndUpdateRdbInfoXsync(dumpedRdbFile.getName(),
 						rdbType, eofType, rdbOffset, rdbReplId, rdbStore.getMasterUuid(), rdbGtidExecuted, rdbGtidLost,
-						backlogBeginOffset(), backlogEndOffset(), rdbContBacklogOffset, cont.getContinueGtidSet());
+						backlogBeginOffset(), backlogEnd, rdbContBacklogOffset, cont.getContinueGtidSet());
 			}
 			if (result != UPDATE_RDB_RESULT.OK) return result;
 			rdbStore.setContiguousBacklogOffset(rdbContBacklogOffset);
@@ -527,6 +530,14 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		cmdStore.switchToPsync(replId, replOff);
 	}
 
+	protected long resolveCmdStoreStartOffset(ReplicationStoreMeta replMeta) {
+		ReplStage stage = replMeta != null ? replMeta.getCurReplStage() : null;
+		if (stage != null && stage.getProto() == ReplStage.ReplProto.XSYNC) {
+			return stage.getBegOffsetBacklog();
+		}
+		return 0L;
+	}
+
 	protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
 											  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
 											  KeeperMonitor keeperMonitor, GtidCmdFilter gtidCmdFilter) throws IOException {
@@ -538,7 +549,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				config.getCommandReaderFlyingThreshold(),
 				this::isCmdNotifyCoalescingEnabled,
 				cmdReaderWriterFactory, keeperMonitor, this.redisOpParser, gtidCmdFilter, true,
-				asyncFileSystem, config::getAsyncWriteMaxBytes, fileSystemReplId
+				resolveCmdStoreStartOffset(replMeta), asyncFileSystem, config::getAsyncWriteMaxBytes, fileSystemReplId
 		);
 		cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
 		try {
@@ -634,7 +645,14 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public long backlogEndOffset() {
 		makeSureOpen();
-		if (null == cmdStore) return ReplicationStoreMeta.DEFAULT_END_OFFSET;
+		if (null == cmdStore) {
+			return ReplicationStoreMeta.DEFAULT_END_OFFSET;
+		}
+		try {
+			cmdStore.flushSlidingWindow();
+		} catch (IOException e) {
+			throw new XpipeRuntimeException("[backlogEndOffset] flush sliding window failed", e);
+		}
 		return cmdStore.totalLength();
 	}
 

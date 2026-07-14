@@ -277,9 +277,9 @@ public class DefaultIndexStoreTest {
         write(filePath);
         File directory = new File(baseDir);
         int initSize = directory.listFiles().length;
-        defaultIndexStore.closeWithDeleteIndexFiles();
+        defaultIndexStore.closeWriter();
         int lastSize = directory.listFiles().length;
-        Assert.assertEquals(initSize, lastSize + 4);
+        Assert.assertEquals(initSize, lastSize);
     }
 
     @Test
@@ -727,7 +727,11 @@ public class DefaultIndexStoreTest {
     public void testLocateGtidRange_NoIndexFile() throws IOException {
         // Test when there's no index file
         defaultIndexStore.closeWriter();
-        defaultIndexStore.deleteAllIndexFile();
+        String cmdName = testCmdStore.getCommandFileNamePrefix();
+        new File(baseDir, AbstractIndex.INDEX + cmdName).delete();
+        new File(baseDir, AbstractIndex.BLOCK + cmdName).delete();
+        new File(baseDir, AbstractIndex.INDEX_V2 + cmdName).delete();
+        new File(baseDir, AbstractIndex.BLOCK_V2 + cmdName).delete();
         
         List<Pair<Long, Long>> result = defaultIndexStore.locateGtidRange(
             "a4f566ef50a85e1119f17f9b746728b48609a2ab", 1, 10);
@@ -1835,25 +1839,6 @@ public class DefaultIndexStoreTest {
         Assert.assertEquals(uuid + ":622000-622001", point.getValue().toString());
         RedisOp nextOp = IndexTestTool.readBytebufAfter(cmdFile.getPath(), point.getKey());
         Assert.assertEquals(uuid + ":622002", nextOp.getOpGtid());
-    }
-
-    @Test
-    public void testDeleteAllIndexFile_IncludesV2() throws IOException {
-        write(filePath);
-        defaultIndexStore.closeWriter();
-
-        String cmdName = "00000000";
-        Assert.assertTrue(new File(baseDir, AbstractIndex.INDEX + cmdName).exists());
-        Assert.assertTrue(new File(baseDir, AbstractIndex.BLOCK + cmdName).exists());
-        Assert.assertTrue(new File(baseDir, AbstractIndex.INDEX_V2 + cmdName).exists());
-        Assert.assertTrue(new File(baseDir, AbstractIndex.BLOCK_V2 + cmdName).exists());
-
-        defaultIndexStore.deleteAllIndexFile();
-
-        Assert.assertFalse(new File(baseDir, AbstractIndex.INDEX + cmdName).exists());
-        Assert.assertFalse(new File(baseDir, AbstractIndex.BLOCK + cmdName).exists());
-        Assert.assertFalse(new File(baseDir, AbstractIndex.INDEX_V2 + cmdName).exists());
-        Assert.assertFalse(new File(baseDir, AbstractIndex.BLOCK_V2 + cmdName).exists());
     }
 
     @Test

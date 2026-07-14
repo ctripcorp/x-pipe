@@ -57,10 +57,19 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     private boolean writerCmdEnabled;
     private final CKStore ckStore;
     private final KeeperConfig keeperConfig;
+    private long cmdStoreStartOffset;
 
     public DefaultIndexStore(KeeperConfig keeperConfig, CKStore ckStore, AsyncCommandStore asyncCommandStore,
                              String baseDir, RedisOpParser redisOpParser,
                              CommandWriterCallback commandWriterCallback, GtidCmdFilter gtidCmdFilter) {
+        this(keeperConfig, ckStore, asyncCommandStore, baseDir, redisOpParser,
+                commandWriterCallback, gtidCmdFilter, 0L);
+    }
+
+    public DefaultIndexStore(KeeperConfig keeperConfig, CKStore ckStore, AsyncCommandStore asyncCommandStore,
+                             String baseDir, RedisOpParser redisOpParser,
+                             CommandWriterCallback commandWriterCallback, GtidCmdFilter gtidCmdFilter,
+                             long cmdStoreStartOffset) {
         this.baseDir = baseDir;
         this.asyncCommandStore = asyncCommandStore;
         this.fs = asyncCommandStore.getAsyncFileSystem();
@@ -72,6 +81,11 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         this.writerCmdEnabled = true;
         this.keeperConfig = keeperConfig;
         this.ckStore = ckStore;
+        this.cmdStoreStartOffset = cmdStoreStartOffset;
+    }
+
+    public long getCmdStoreStartOffset() {
+        return Math.max(0L, cmdStoreStartOffset);
     }
 
     public AsyncCommandStore getAsyncCommandStore() {
@@ -300,6 +314,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
                 logger.info("[locateContinueGtidSet] index reader is null");
                 return new Pair<>(-1L, new GtidSet(GtidSet.EMPTY_GTIDSET));
             }
+            indexReader.setCmdStoreStartOffset(cmdStoreStartOffset);
             indexReader.init();
             return indexReader.seek(request);
         }
@@ -602,22 +617,6 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     public void resetParserState() {
         if (streamCommandReader != null) {
             streamCommandReader.resetParser();
-        }
-    }
-
-    @Override
-    public void closeWithDeleteIndexFiles() throws IOException {
-        this.closeWriter();
-        deleteAllIndexFile();
-    }
-
-    public void deleteAllIndexFile() throws IOException {
-        logger.info("[deleteAllIndexFile] {}", baseDir);
-        Map<String, AsyncFile> handles = getWriteIndexHandles(true);
-        for (AsyncFile file : handles.values()) {
-            if (file != null) {
-                AsyncFileSystemHelper.await(fs.truncate(file, 0), "truncate index file on deleteAll");
-            }
         }
     }
 
