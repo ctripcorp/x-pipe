@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.core.client;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
-import com.ctrip.xpipe.exception.XpipeException;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.netty.commands.AsyncNettyClient;
 import com.ctrip.xpipe.netty.commands.ByteBufReceiver;
 import com.ctrip.xpipe.netty.commands.NettyClient;
@@ -13,8 +13,6 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.utils.ChannelUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.dianping.cat.Cat;
-import com.dianping.cat.message.Transaction;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -23,7 +21,6 @@ import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -66,14 +63,11 @@ public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNett
         }
         RequestStringParser requestString = new RequestStringParser(CLIENT_SET_NAME, clientName);
         SimpleStringParser simpleStringParser = new SimpleStringParser();
-        Transaction transaction = Cat.newTransaction("netty.client.setName", clientName);
         try {
             RedisAsyncNettyClient.super.sendRequest(requestString.format(), new ByteBufReceiver() {
                 @Override
                 public RECEIVER_RESULT receive(Channel channel, ByteBuf byteBuf) {
                     try{
-                        transaction.addData("remoteAddress", ChannelUtil.getSimpleIpport(channel.remoteAddress()));
-                        transaction.addData("commandTimeoutMills", getAfterConnectCommandTimeoutMill());
                         RedisClientProtocol<String> payload = simpleStringParser.read(byteBuf);
                         String result = null;
                         if(payload != null){
@@ -83,20 +77,21 @@ public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNett
                             return RECEIVER_RESULT.CONTINUE;
                         }
                         if (EXPECT_RESP.equalsIgnoreCase(result)){
-                            transaction.setStatus(Transaction.SUCCESS);
                             doAfterConnectedSuccess = true;
-                            logger.info("[redisAsync][clientSetName][success][{}] {}", desc, result);
+                            EventMonitor.DEFAULT.logEvent("netty.client.setName", "success");
+                            logger.info("[redisAsync][clientSetName][{}][success] result:{}", desc, result);
                         } else {
                             doAfterConnectedSuccess = false;
-                            transaction.setStatus(new XpipeException(String.format("[redisAsync][clientSetName][wont-result][%s] result:%s", desc, result)));
-                            logger.warn("[redisAsync][clientSetName][err-result][{}] {}", desc, result);
+                            EventMonitor.DEFAULT.logError("netty.client.setName", "fail",
+                                    Map.of("remote", ChannelUtil.getSimpleIpport(channel.remoteAddress()),
+                                            "result", result));
+                            logger.error("[redisAsync][clientSetName][{}][fail] err-result result:{}", desc, result);
                         }
-                        transaction.complete();
                     }catch(Throwable th){
                         doAfterConnectedSuccess = false;
-                        transaction.setStatus(th);
-                        transaction.complete();
-                        logger.error("[logTransaction]" + "netty.client.setName" + "," + clientName, th);
+                        EventMonitor.DEFAULT.logError("netty.client.setName", "fail",
+                                Map.of("remote", ChannelUtil.getSimpleIpport(channel.remoteAddress())));
+                        logger.error("[redisAsync][clientSetName][{}][fail] receive error", desc, th);
                         throw th;
                     }
                     return RECEIVER_RESULT.SUCCESS;
@@ -104,22 +99,31 @@ public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNett
 
                 @Override
                 public void clientClosed(NettyClient nettyClient) {
-                    logger.warn("[redisAsync][clientSetName][wont-send][{}] {}", desc, nettyClient.channel());
-                    transaction.setStatus(new XpipeException(String.format("[redisAsync][clientSetName][wont-send][%s]client closed %s", desc, nettyClient.channel())));
-                    transaction.complete();
+                    if (doAfterConnectedOver.get()) {
+                        EventMonitor.DEFAULT.logError("netty.client.setName", "fail",
+                                Map.of("remote", ChannelUtil.getSimpleIpport(nettyClient.channel().remoteAddress())));
+                        logger.error("[redisAsync][clientSetName][{}][fail] no-response channel:{}", desc, nettyClient.channel());
+                    } else {
+                        EventMonitor.DEFAULT.logError("netty.client.setName", "wont-send");
+                        logger.error("[redisAsync][clientSetName][{}][wont-send] channel:{}", desc, nettyClient.channel());
+                    }
                 }
 
                 @Override
                 public void clientClosed(NettyClient nettyClient, Throwable th) {
-                    logger.warn("[redisAsync][clientSetName][wont-send][{}] {}", desc, nettyClient.channel(), th);
-                    transaction.setStatus(th);
-                    transaction.complete();
+                    if (doAfterConnectedOver.get()) {
+                        EventMonitor.DEFAULT.logError("netty.client.setName", "fail",
+                                Map.of("remote", ChannelUtil.getSimpleIpport(nettyClient.channel().remoteAddress())));
+                        logger.error("[redisAsync][clientSetName][{}][fail] no-response channel:{}", desc, nettyClient.channel(), th);
+                    } else {
+                        EventMonitor.DEFAULT.logError("netty.client.setName", "wont-send");
+                        logger.error("[redisAsync][clientSetName][{}][wont-send] channel:{}", desc, nettyClient.channel(), th);
+                    }
                 }
             });
         } catch (Exception e) {
-            transaction.setStatus(e);
-            transaction.complete();
-            logger.error("[redisAsync][clientSetName] err", e);
+            EventMonitor.DEFAULT.logError("netty.client.setName", "fail");
+            logger.error("[redisAsync][clientSetName][{}][fail] send error", desc, e);
         }
 
     }
