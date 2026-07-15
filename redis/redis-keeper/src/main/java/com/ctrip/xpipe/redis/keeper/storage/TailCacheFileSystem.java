@@ -132,7 +132,12 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     private CacheMode resolveSegmentCacheMode(CacheMode override) {
-        if (override != null) return override;
+        if (override != null) {
+            if (override == CacheMode.FULL_CACHE) {
+                throw new IllegalArgumentException("FULL_CACHE is not supported for segment files");
+            }
+            return override;
+        }
         return CacheMode.TAIL_CACHE;
     }
 
@@ -316,7 +321,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
     }
 
-    private <T> T executeWithEioRetry(AbstractStorageFile file,
+    private <F extends AbstractStorageFile, T> T executeWithEioRetry(F file,
+            java.util.function.Supplier<Long> getCurrentWrittenToFsOffset,
             java.util.function.Supplier<T> ioAction) {
         int maxAttempts = eioRetryMaxAttempts;
         try {
@@ -329,7 +335,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             for (int attempt = 1; attempt <= maxAttempts; attempt++) {
                 try {
                     file.reopenCurrentChannel();
-                    resetWrittenToFsOffsetIfNeeded(file);
+                    resetWrittenToFsOffsetIfNeeded(file, getCurrentWrittenToFsOffset);
                     break;
                 } catch (Exception retryError) {
                     logger.error("retry attempt {}/{} failed for {}", attempt, maxAttempts, file.identifier(), retryError);
@@ -339,7 +345,12 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
     }
 
-    private void resetWrittenToFsOffsetIfNeeded(AbstractStorageFile file) throws Exception {
+    private <T> T executeWithEioRetry(AsyncFile file, java.util.function.Supplier<T> ioAction) {
+        return executeWithEioRetry(file, () -> delegate.sizeSync(file), ioAction);
+    }
+
+    private <F extends AbstractStorageFile> void resetWrittenToFsOffsetIfNeeded(F file,
+            java.util.function.Supplier<Long> getCurrentWrittenToFsOffset) throws Exception {
         if (!file.canWrite()) {
             return;
         }
@@ -350,23 +361,37 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (file.currentWriteChannel() == null) {
             return;
         }
-        long fileSize = awaitIoCachePrep(file, () -> delegate.currentSizeSync(file));
+        long fileSize = awaitIoCachePrep(file, getCurrentWrittenToFsOffset);
         synchronized (entry) {
             entry.writtenToFsOffset = fileSize;
         }
     }
 
     // Must be called under lockFor(key).
-    private void acquireSegmentCacheEntry(String key) {
+    private SegmentFileCacheEntry acquireSegmentCacheEntry(String key, boolean write) {
         SegmentFileCacheEntry entry = segmentCacheEntries.computeIfAbsent(key, k -> new SegmentFileCacheEntry());
+        if (write) {
+            if (entry.writerOpen) throw new IllegalStateException("writer already open for " + key);
+            entry.writerOpen = true;
+        }
         entry.refCount++;
+        return entry;
     }
 
     // Must be called under lockFor(key).
-    private void releaseSegmentCacheEntry(String key) {
+    private void releaseSegmentCacheEntry(String key, boolean write) {
         SegmentFileCacheEntry entry = segmentCacheEntries.get(key);
         if (entry == null) return;
-        if (--entry.refCount == 0) segmentCacheEntries.remove(key);
+        if (write) entry.writerOpen = false;
+        if (--entry.refCount == 0) {
+            segmentCacheEntries.remove(key);
+            releaseAllChunks(entry);
+            entry.indexFiles.values().forEach(indexFileMap ->
+                    indexFileMap.values().forEach(indexEntry -> {
+                        releaseAllChunks(indexEntry);
+                    }));
+            entry.indexFiles.clear();
+        }
     }
 
     // ---- AsyncFile ----
@@ -430,6 +455,19 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             delegate.closeSync(file);
         } catch (Throwable t) {
             logger.error("closeSync failed during open cleanup for {}", file.path, t);
+        }
+    }
+
+    private void cleanupOpenFailedSegment(AsyncSegmentFile file) {
+        try {
+            file.onCacheClose.run();
+        } catch (Throwable t) {
+            logger.error("failed to release segment cache entry for {}", file.identifier(), t);
+        }
+        try {
+            delegate.closeSync(file);
+        } catch (Throwable t) {
+            logger.error("closeSync failed during open cleanup for {}", file.identifier(), t);
         }
     }
 
@@ -914,19 +952,23 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> size(AsyncFile file) {
-        return StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
-            return executeWithEioRetry(file, () -> delegate.sizeSync(file));
-        });
+        StorageUtil.requireCacheOpen(file);
+        if (file.cacheMode == CacheMode.NO_CACHE) {
+            return StorageUtil.supply(ioExecutor, () -> {
+                StorageUtil.requireCacheOpen(file);
+                return executeWithEioRetry(file, () -> delegate.sizeSync(file));
+            });
+        }
+        FileCacheEntry entry = file.getCacheEntry();
+        long size;
+        synchronized (entry) {
+            size = Math.max(entry.writtenToFsOffset, entry.cacheEndOffset);
+        }
+        return CompletableFuture.completedFuture(size);
     }
 
     @Override
     public long sizeSync(AsyncFile file) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long currentSizeSync(AbstractStorageFile file) {
         throw new UnsupportedOperationException();
     }
 
@@ -1088,12 +1130,18 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         AsyncSegmentFile file = delegate.openSync(path, prefix, indexPrefixes, write, tenant);
         file.cacheMode = cacheMode;
         if (cacheMode != CacheMode.NO_CACHE) {
-            synchronized (lockFor(key)) {
-                acquireSegmentCacheEntry(key);
+            try {
+                synchronized (lockFor(key)) {
+                    file.cacheEntry = acquireSegmentCacheEntry(key, write);
+                }
+            } catch (Throwable t) {
+                logger.error("acquireSegmentCacheEntry failed for {}, closing file", file.identifier(), t);
+                cleanupOpenFailedSegment(file);
+                throw t;
             }
             file.onCacheClose = () -> {
                 synchronized (lockFor(key)) {
-                    releaseSegmentCacheEntry(key);
+                    releaseSegmentCacheEntry(key, write);
                 }
             };
         }
