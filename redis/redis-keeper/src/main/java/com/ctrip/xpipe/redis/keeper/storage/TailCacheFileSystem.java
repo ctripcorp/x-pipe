@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -261,11 +262,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return Math.max(0, entry.cacheEndOffset - entry.writtenToFsOffset);
     }
 
-    private void flushPendingWriteAndAwaitClose(AsyncFile file, String id) {
+    private void flushPendingWriteAndAwait(AsyncFile file, String id) {
         FileCacheEntry entry = file.getCacheEntry();
-        if (entry == null) {
-            return;
-        }
         long pendingBytes = pendingFlushBytes(entry);
         if (pendingBytes <= 0) {
             return;
@@ -287,11 +285,34 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         });
         registerInFlight(id, flushFuture);
         awaitInFlightIo(id);
+        Throwable flushError = null;
+        boolean retryableFailure = false;
+        try {
+            flushFuture.get(1, TimeUnit.NANOSECONDS);
+        } catch (ExecutionException e) {
+            flushError = e.getCause();
+            retryableFailure = flushError instanceof EIOException;
+        } catch (TimeoutException e) {
+            flushError = e;
+            retryableFailure = true;
+        } catch (Exception e) {
+            flushError = e;
+        }
 
         long remainingBytes = pendingFlushBytes(entry);
         if (remainingBytes > 0) {
-            RuntimeException e = new RuntimeException("still has " + remainingBytes + " bytes not flushed, cannot close");
-            throw new OperationNotExecutedException(id, e);
+            if (retryableFailure) {
+                throw new OperationNotExecutedException(id, flushError);
+            }
+            if (flushError != null) {
+                logger.error("data lost for {}, still has {} bytes not flushed after flush", id, remainingBytes, flushError);
+            } else {
+                logger.error("data lost for {}, still has {} bytes not flushed after flush with non error", id, remainingBytes);
+            }
+            return;
+        }
+        if (flushError != null) {
+            logger.error("flush finished with error for {}, unexpected", id, flushError);
         }
     }
 
@@ -609,7 +630,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     // Must be called under synchronized(entry).
-    private java.util.List<ByteBuf> collectChunkSlices(FileCacheEntry entry, long offset, long end) {
+    private java.util.List<ByteBuf> collectChunkSlices(FileCacheEntry entry, long offset, long end, boolean failOnMissingChunk) {
 
         long pos = offset;
         java.util.List<ByteBuf> slices = new java.util.ArrayList<>();
@@ -617,7 +638,16 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             long chunkIdx = pos / chunkSize;
             int inChunk = (int) (pos % chunkSize);
             ByteBuf chunk = entry.chunks.get(chunkIdx);
-            if (chunk == null) break;
+            if (chunk == null) {
+                if (!failOnMissingChunk) {
+                    break;
+                }
+                for (ByteBuf slice : slices) {
+                    slice.release();
+                }
+                throw new CacheChunksNotContinuousException(
+                        "cache chunks not continuous, missing chunk " + chunkIdx + " for range [" + offset + ", " + end + ")");
+            }
             int length = (int) Math.min(chunkSize - inChunk, end - pos);
             slices.add(chunk.retainedSlice(inChunk, length));
             pos += length;
@@ -627,7 +657,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     private ByteBuf readWithCache(long length, long offset, FileCacheEntry entry) {
         long end = Math.min(offset + length, entry.cacheEndOffset);
-        java.util.List<ByteBuf> slices = collectChunkSlices(entry, offset, end);
+        java.util.List<ByteBuf> slices = collectChunkSlices(entry, offset, end, false);
         CompositeByteBuf composite = StorageAllocator.ALLOC.compositeDirectBuffer();
         for (ByteBuf s : slices) {
             composite.addComponent(true, s);
@@ -653,7 +683,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         java.util.List<ByteBuf> slices;
         synchronized (entry) {
             long end = Math.min(offset + count, entry.cacheEndOffset);
-            slices = collectChunkSlices(entry, offset, end);
+            slices = collectChunkSlices(entry, offset, end, false);
         }
         if (slices.isEmpty()) return 0;
         try {
@@ -708,9 +738,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                     return CompletableFuture.completedFuture(writeSize);
                 }
             }
-        } catch (OperationNotExecutedException e) {
+        } catch (Exception e) {
             writeBuf.release();
-            return CompletableFuture.failedFuture(e);
+            throw e;
         }
         CompletableFuture<Long> ioFuture = StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
@@ -805,6 +835,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (entry.writtenToFsOffset < entry.cacheEndOffset) {
             synchronized (entry) {
                 long maxBytes = cacheWrite ? Long.MAX_VALUE : maxWriteChunkThreshold * chunkSize;
+                if (cacheWrite) {
+                    data.release();
+                    return buildWriteBufFromCache(entry, Unpooled.buffer(0), maxBytes);
+                }
                 return buildWriteBufFromCache(entry, data, maxBytes);
             }
         }
@@ -817,15 +851,25 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (pendingBytes <= 0) {
             return data;
         }
-        boolean overflow = pendingBytes + data.readableBytes() > maxBytes;
+        boolean appendData = data.isReadable();
+        boolean overflow = pendingBytes + (appendData ? data.readableBytes() : 0) > maxBytes;
         long collectEnd = overflow
                 ? entry.writtenToFsOffset + Math.min(pendingBytes, maxBytes)
                 : entry.cacheEndOffset;
-        java.util.List<ByteBuf> pending = collectChunkSlices(entry, entry.writtenToFsOffset, collectEnd);
+        java.util.List<ByteBuf> pending;
+        try {
+            pending = collectChunkSlices(entry, entry.writtenToFsOffset, collectEnd, true);
+        } catch (Exception e) {
+            data.release();
+            throw e;
+        }
         CompositeByteBuf composed = StorageAllocator.ALLOC.compositeDirectBuffer();
         for (ByteBuf s : pending) composed.addComponent(true, s);
-        if (!overflow) composed.addComponent(true, data);
-        else data.release();
+        if (!overflow && appendData) {
+            composed.addComponent(true, data);
+        } else {
+            data.release();
+        }
         return composed;
     }
 
@@ -901,11 +945,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         StorageUtil.requireWriteMode(file);
         StorageUtil.requireCacheOpen(file);
         final String id = file.identifier();
-        try {
-            awaitInFlightIo(id);
-        } catch (OperationNotExecutedException e) {
-            return CompletableFuture.failedFuture(e);
-        }
+        awaitInFlightIo(id);
         FileCacheEntry entry = file.getCacheEntry();
         if (entry != null) {
             synchronized (entry) {
@@ -952,11 +992,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return CompletableFuture.completedFuture(null);
         }
         final String id = file.identifier();
-        try {
-            awaitInFlightIo(id);
-            flushPendingWriteAndAwaitClose(file, id);
-        } catch (OperationNotExecutedException e) {
-            return CompletableFuture.failedFuture(e);
+        awaitInFlightIo(id);
+        if (file.getCacheEntry() != null) {
+            flushPendingWriteAndAwait(file, id);
         }
         file.cacheClosed = true;
         return StorageUtil.run(ioExecutor, () -> {
@@ -976,13 +1014,17 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Void> fsync(AsyncFile file) {
         StorageUtil.requireWriteMode(file);
-        return StorageUtil.run(ioExecutor, () -> {
+        final String id = file.identifier();
+        awaitInFlightIo(id);
+        CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
             executeWithEioRetry(file, () -> {
                 delegate.fsyncSync(file);
                 return null;
             });
         });
+        registerInFlight(id, ioFuture);
+        return ioFuture;
     }
 
     @Override
