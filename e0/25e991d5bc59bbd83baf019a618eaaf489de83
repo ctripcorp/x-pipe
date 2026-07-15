@@ -1,0 +1,29 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/CacheEntry.java
+  s_0cf0a8fdaf84ee::t_946821fc1254b3 10-15
+  s_0cf0a8fdaf84ee::t_ace05de6f52bf6 3-6,16
+  s_0cf0a8fdaf84ee::t_869d91e51a5da6 9
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/SegmentFileCacheEntry.java
+  s_0cf0a8fdaf84ee::t_7be2e873a05780 3-4,7
+  h_6ceeb547b3b36a 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "e025e991d5bc59bbd83baf019a618eaaf489de83",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_0cf0a8fdaf84ee": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "174bcbfb-55c1-4854-8aa0-daf718f7a05a",
+        "model": "gpt-5.4"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
