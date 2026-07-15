@@ -23,4 +23,9 @@ public class AsyncIndexFile extends AsyncFile {
     String identifier() {
         return key + "\0" + indexPrefix + "\0" + startOffset;
     }
+
+    @Override
+    SegmentFileCacheEntry getCacheEntry() {
+        return (SegmentFileCacheEntry) cacheEntry;
+    }
 }

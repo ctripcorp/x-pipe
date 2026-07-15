@@ -81,6 +81,13 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         return (SegmentFileCacheEntry) cacheEntry;
     }
 
+    void setCacheEntry(SegmentFileCacheEntry entry) {
+        this.cacheEntry = entry;
+        for (AsyncFile af : currentIndexFiles.values()) {
+            af.cacheEntry = entry;
+        }
+    }
+
     AsyncSegmentFile(String dirPath, String prefix, List<String> indexPrefixes, String key, boolean writeMode) {
         super(writeMode ? OpenMode.WRITE : OpenMode.READ);
         this.dirPath = dirPath;
@@ -184,6 +191,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
                 String fileName = indexPrefix + openedSegmentStartOffset;
                 AsyncIndexFile af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix,
                         openedSegmentStartOffset, OpenMode.READ_WRITE);
+                af.cacheEntry = cacheEntry;
                 af.openCurrentChannel();
                 currentIndexFiles.put(indexPrefix, af);
             }
@@ -256,6 +264,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             String fileName = indexPrefix + startOffset;
             AsyncIndexFile af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, startOffset,
                     OpenMode.READ_WRITE);
+            af.cacheEntry = cacheEntry;
             af.openCurrentChannel();
             currentIndexFiles.put(indexPrefix, af);
             result.put(indexPrefix, af);
@@ -320,6 +329,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
                 if (Files.exists(p)) {
                     af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, openedSegmentStartOffset,
                             OpenMode.READ);
+                    af.cacheEntry = cacheEntry;
                     af.openCurrentChannel();
                     currentIndexFiles.put(indexPrefix, af);
                     result.put(indexPrefix, af);
@@ -395,6 +405,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
                 String fileName = indexPrefix + targetStart;
                 af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, targetStart,
                         OpenMode.READ_WRITE);
+                af.cacheEntry = cacheEntry;
                 af.openCurrentChannel();
                 currentIndexFiles.put(indexPrefix, af);
             }
