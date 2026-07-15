@@ -26,7 +26,6 @@ import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// Sync methods (openSync, readSync) are not supported by default; add on demand.
 public class TailCacheFileSystem implements AsyncFileSystem {
 
     private static final Logger logger = LoggerFactory.getLogger(TailCacheFileSystem.class);
@@ -405,10 +404,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return StorageUtil.supply(ioExecutor, () -> openFileSync(path, openMode, atomicReplace, lenient, tenant, cacheMode));
     }
 
-    @Override
-    public AsyncFile openSync(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant) {
-        throw new UnsupportedOperationException();
-    }
 
     private AsyncFile openFileSync(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant, CacheMode cacheModeOverride) {
         CacheMode cacheMode = resolveFileCacheMode(atomicReplace, cacheModeOverride);
@@ -603,8 +598,19 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> position(AsyncFile file, long position) {
-        return delegate.position(file, position);
+        if (!file.canRead()) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("position() requires read mode"));
+        }
+        try {
+            StorageUtil.requireCacheOpen(file);
+            delegate.positionSync(file, position);
+            return CompletableFuture.completedFuture(null);
+        } catch (RuntimeException e) {
+            return CompletableFuture.failedFuture(e);
+        }
     }
+
 
     @Override
     public CompletableFuture<ByteBuf> read(AsyncFile file, long length, long offset) {
@@ -662,10 +668,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         });
     }
 
-    @Override
-    public ByteBuf readSync(AsyncFile file, long length, long offset, long alignSize) {
-        throw new UnsupportedOperationException();
-    }
 
     // Must be called under synchronized(entry).
     private java.util.List<ByteBuf> collectChunkSlices(FileCacheEntry entry, long offset, long end, boolean failOnMissingChunk) {
@@ -911,20 +913,12 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return composed;
     }
 
-    @Override
-    public long writeSync(AsyncFile file, ByteBuf data) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public CompletableFuture<Void> delete(String path) {
         return delegate.delete(path);
     }
 
-    @Override
-    public void deleteSync(String path) {
-        throw new UnsupportedOperationException();
-    }
 
     public CompletableFuture<Void> delete(AsyncFile file) {
         StorageUtil.requireWriteMode(file);
@@ -967,10 +961,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return CompletableFuture.completedFuture(size);
     }
 
-    @Override
-    public long sizeSync(AsyncFile file) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public CompletableFuture<Boolean> mkdir(String path, boolean recursive) {
@@ -1023,13 +1013,13 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return ioFuture;
     }
 
-    @Override
-    public void truncateSync(AsyncFile file, long size) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public CompletableFuture<Void> close(AsyncFile file) {
+        if (!file.canCloseByUser) {
+            return CompletableFuture.failedFuture(
+                    new IllegalStateException("close is not allowed for: " + file.identifier()));
+        }
         if (file.cacheClosed) {
             return CompletableFuture.completedFuture(null);
         }
@@ -1048,10 +1038,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         });
     }
 
-    @Override
-    public void closeSync(AsyncFile file) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public CompletableFuture<Void> fsync(AsyncFile file) {
@@ -1069,10 +1055,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return ioFuture;
     }
 
-    @Override
-    public void fsyncSync(AsyncFile file) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public CompletableFuture<List<String>> list(String path) {
@@ -1103,10 +1085,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
     }
 
-    @Override
-    public long transferToSync(AsyncFile file, long position, long count, WritableByteChannel target) {
-        throw new UnsupportedOperationException();
-    }
 
     // ---- AsyncSegmentFile ----
 
@@ -1119,10 +1097,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return StorageUtil.supply(ioExecutor, () -> openSegmentSync(path, prefix, indexPrefixes, write, tenant, cacheMode));
     }
 
-    @Override
-    public AsyncSegmentFile openSync(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant) {
-        throw new UnsupportedOperationException();
-    }
 
     private AsyncSegmentFile openSegmentSync(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant, CacheMode cacheModeOverride) {
         CacheMode cacheMode = resolveSegmentCacheMode(cacheModeOverride);
@@ -1150,18 +1124,34 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> position(AsyncSegmentFile file, long offset) {
-        return delegate.position(file, offset);
+        if (!file.canRead()) {
+            return CompletableFuture.failedFuture(
+                    new IllegalArgumentException("position() is not supported in write mode"));
+        }
+        return StorageUtil.run(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            delegate.positionSync(file, offset);
+        });
     }
+
 
     @Override
     public CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length) {
-        return delegate.read(file, length);
+        return StorageUtil.supply(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            return delegate.readSync(file, length);
+        });
     }
+
 
     @Override
     public CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length, long offset) {
-        return delegate.read(file, length, offset);
+        return StorageUtil.supply(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            return delegate.readSync(file, length, offset);
+        });
     }
+
 
     @Override
     public CompletableFuture<Long> write(AsyncSegmentFile file, ByteBuf data) {
@@ -1169,14 +1159,22 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             data.release();
             throw new IllegalArgumentException("operation requires write mode: " + file.identifier());
         }
-        return delegate.write(file, data);
+        return StorageUtil.supply(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            return delegate.writeSync(file, data);
+        });
     }
+
 
     @Override
     public CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file) {
         StorageUtil.requireWriteMode(file);
-        return delegate.roll(file);
+        return StorageUtil.supply(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            return delegate.rollSync(file);
+        });
     }
+
 
     @Override
     public List<Long> list(AsyncSegmentFile file) {
@@ -1190,23 +1188,53 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes) {
-        return delegate.getCurrentIndexFiles(file, indexPrefixes);
+        return StorageUtil.supply(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            return delegate.getCurrentIndexFilesSync(file, indexPrefixes);
+        });
     }
+
 
     @Override
     public CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file) {
-        return delegate.getCurrentIndexFiles(file);
+        return StorageUtil.supply(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            return delegate.getCurrentIndexFilesSync(file);
+        });
     }
+
 
     @Override
     public CompletableFuture<Long> size(AsyncSegmentFile file) {
-        return delegate.size(file);
+        StorageUtil.requireCacheOpen(file);
+        if (file.cacheMode == CacheMode.NO_CACHE) {
+            return StorageUtil.supply(ioExecutor, () -> {
+                StorageUtil.requireCacheOpen(file);
+                return delegate.sizeSync(file);
+            });
+        }
+        List<Long> offsets = list(file);
+        if (offsets.isEmpty()) {
+            return CompletableFuture.completedFuture(0L);
+        }
+        long firstOffset = offsets.get(0);
+        SegmentFileCacheEntry entry = file.getCacheEntry();
+        long end;
+        synchronized (entry) {
+            end = Math.max(entry.writtenToFsOffset, entry.cacheEndOffset);
+        }
+        return CompletableFuture.completedFuture(Math.max(0L, end - firstOffset));
     }
+
 
     @Override
     public CompletableFuture<Long> sizeOfSegment(AsyncSegmentFile file, long startOffset) {
-        return delegate.sizeOfSegment(file, startOffset);
+        return StorageUtil.supply(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            return delegate.sizeOfSegmentSync(file, startOffset);
+        });
     }
+
 
     @Override
     public CompletableFuture<Long> lastModified(AsyncSegmentFile file) {
@@ -1221,8 +1249,12 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets) {
         StorageUtil.requireWriteMode(file);
-        return delegate.deleteSegments(file, startOffsets);
+        return StorageUtil.run(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            delegate.deleteSegmentsSync(file, startOffsets);
+        });
     }
+
 
     @Override
     public CompletableFuture<Void> delete(AsyncSegmentFile file) {
@@ -1234,8 +1266,12 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Map<String, AsyncFile>> truncate(AsyncSegmentFile file, long offset) {
         StorageUtil.requireWriteMode(file);
-        return delegate.truncate(file, offset);
+        return StorageUtil.supply(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            return delegate.truncateSync(file, offset);
+        });
     }
+
 
     @Override
     public CompletableFuture<Void> close(AsyncSegmentFile file) {
@@ -1243,23 +1279,32 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return CompletableFuture.completedFuture(null);
         }
         file.cacheClosed = true;
-        file.onCacheClose.run();
-        return delegate.close(file);
+        return StorageUtil.run(ioExecutor, () -> {
+            try {
+                delegate.closeSync(file);
+            } finally {
+                file.onCacheClose.run();
+            }
+        });
     }
 
-    @Override
-    public void closeSync(AsyncSegmentFile file) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public CompletableFuture<Void> fsync(AsyncSegmentFile file) {
         StorageUtil.requireWriteMode(file);
-        return delegate.fsync(file);
+        return StorageUtil.run(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            delegate.fsyncSync(file);
+        });
     }
+
 
     @Override
     public CompletableFuture<Long> transferTo(AsyncSegmentFile file, long offset, long count, WritableByteChannel target) {
-        return delegate.transferTo(file, offset, count, target);
+        return StorageUtil.supply(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            return delegate.transferToSync(file, offset, count, target);
+        });
     }
+
 }
