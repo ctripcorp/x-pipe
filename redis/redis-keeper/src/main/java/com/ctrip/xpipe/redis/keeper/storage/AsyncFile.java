@@ -12,12 +12,18 @@ public class AsyncFile extends AbstractStorageFile {
     final String path;
     FileChannel channel;
     final boolean atomicReplace;
+    final boolean canCloseByUser;
     long position = 0;
 
     AsyncFile(String path, boolean atomicReplace, OpenMode openMode) {
+        this(path, atomicReplace, openMode, true);
+    }
+
+    AsyncFile(String path, boolean atomicReplace, OpenMode openMode, boolean canCloseByUser) {
         super(openMode);
         this.path = path;
         this.atomicReplace = atomicReplace;
+        this.canCloseByUser = canCloseByUser;
     }
 
     @Override
@@ -28,7 +34,7 @@ public class AsyncFile extends AbstractStorageFile {
     @Override
     void openCurrentChannel() throws java.io.IOException {
         if (openMode == OpenMode.READ) {
-            channel = FileChannel.open(Paths.get(path), StandardOpenOption.READ);
+            channel = FileChannel.open(Paths.get(path), StandardOpenOption.READ, StandardOpenOption.CREATE);
         } else {
             Set<? extends OpenOption> options = openMode == OpenMode.WRITE
                     ? EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE)

@@ -14,45 +14,86 @@ public interface AsyncFileSystem {
 
     // ---- AsyncFile ----
     // lenient: if true and path is not a regular file, I/O operations will throw NPE
-    CompletableFuture<AsyncFile> open(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant);
+    default CompletableFuture<AsyncFile> open(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant) {
+        throw new UnsupportedOperationException();
+    }
     // Open the file synchronously.
-    AsyncFile openSync(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant);
+    default AsyncFile openSync(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant) {
+        throw new UnsupportedOperationException();
+    }
     CompletableFuture<Boolean> isFile(AsyncFile file);
     CompletableFuture<Boolean> isDirectory(String path);
     CompletableFuture<Long> lastModified(AsyncFile file);
     // Only available in read mode.
-    CompletableFuture<Void> position(AsyncFile file, long position);
+    default CompletableFuture<Void> position(AsyncFile file, long position) {
+        throw new UnsupportedOperationException();
+    }
+    default void positionSync(AsyncFile file, long position) {
+        throw new UnsupportedOperationException();
+    }
     // Caller must release() the returned ByteBuf when done.
-    CompletableFuture<ByteBuf> read(AsyncFile file, long length, long offset);
+    default CompletableFuture<ByteBuf> read(AsyncFile file, long length, long offset) {
+        throw new UnsupportedOperationException();
+    }
     // Read the file synchronously. alignSize=0 means no alignment.
     // When alignSize > 0, the read range is expanded so both start and end are aligned to alignSize boundaries.
     // The returned buffer's readerIndex points to the requested offset (leading padding is skipped),
     // and total capacity covers the full aligned range, allowing zero-copy chunk slicing.
     // Caller must release() the returned ByteBuf when done.
-    ByteBuf readSync(AsyncFile file, long length, long offset, long alignSize);
+    default ByteBuf readSync(AsyncFile file, long length, long offset, long alignSize) {
+        throw new UnsupportedOperationException();
+    }
     // Caller must release() the returned ByteBuf when done.
-    CompletableFuture<ByteBuf> read(AsyncFile file, long length);
-    CompletableFuture<Long> write(AsyncFile file, ByteBuf data);
-    long writeSync(AsyncFile file, ByteBuf data);
+    default CompletableFuture<ByteBuf> read(AsyncFile file, long length) {
+        throw new UnsupportedOperationException();
+    }
+    default CompletableFuture<Long> write(AsyncFile file, ByteBuf data) {
+        throw new UnsupportedOperationException();
+    }
+    default long writeSync(AsyncFile file, ByteBuf data) {
+        throw new UnsupportedOperationException();
+    }
     CompletableFuture<Void> delete(String path);
-    void deleteSync(String path);
+    default void deleteSync(String path) {
+        throw new UnsupportedOperationException();
+    }
     CompletableFuture<Boolean> exists(String path);
-    CompletableFuture<Long> size(AsyncFile file);
-    long sizeSync(AsyncFile file);
+    default CompletableFuture<Long> size(AsyncFile file) {
+        throw new UnsupportedOperationException();
+    }
+    default long sizeSync(AsyncFile file) {
+        throw new UnsupportedOperationException();
+    }
     CompletableFuture<Boolean> mkdir(String path, boolean recursive);
     CompletableFuture<Boolean> rmdir(String path, boolean recursive);
     // Only available in write mode.
-    CompletableFuture<Void> truncate(AsyncFile file, long size);
-    void truncateSync(AsyncFile file, long size);
-    CompletableFuture<Void> close(AsyncFile file);
-    void closeSync(AsyncFile file);
+    default CompletableFuture<Void> truncate(AsyncFile file, long size) {
+        throw new UnsupportedOperationException();
+    }
+    default void truncateSync(AsyncFile file, long size) {
+        throw new UnsupportedOperationException();
+    }
+    default CompletableFuture<Void> close(AsyncFile file) {
+        throw new UnsupportedOperationException();
+    }
+    default void closeSync(AsyncFile file) {
+        throw new UnsupportedOperationException();
+    }
     // Only available in write mode.
-    CompletableFuture<Void> fsync(AsyncFile file);
-    void fsyncSync(AsyncFile file);
+    default CompletableFuture<Void> fsync(AsyncFile file) {
+        throw new UnsupportedOperationException();
+    }
+    default void fsyncSync(AsyncFile file) {
+        throw new UnsupportedOperationException();
+    }
     // segment file return as raw file.
     CompletableFuture<List<String>> list(String path);
-    CompletableFuture<Long> transferTo(AsyncFile file, long position, long count, WritableByteChannel target);
-    long transferToSync(AsyncFile file, long position, long count, WritableByteChannel target);
+    default CompletableFuture<Long> transferTo(AsyncFile file, long position, long count, WritableByteChannel target) {
+        throw new UnsupportedOperationException();
+    }
+    default long transferToSync(AsyncFile file, long position, long count, WritableByteChannel target) {
+        throw new UnsupportedOperationException();
+    }
 
     // ---- AsyncSegmentFile ----
     // A segment file represents a list of files with the same prefix and monotonically increasing offsets.
@@ -66,32 +107,86 @@ public interface AsyncFileSystem {
     // Opened data and index channels auto-close when read()/transferTo() advances to the next segment.
     // Mixing read()/position() with pread()/transferTo() on the same AsyncSegmentFile is NOT supported.
     // For a newly created (empty) segment file in write mode, the segment file will start at 0 unless truncate(offset) is called to specify the initial offset before writing.
-    CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant);
-    AsyncSegmentFile openSync(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant);
+    default CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant) {
+        throw new UnsupportedOperationException();
+    }
+    default AsyncSegmentFile openSync(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant) {
+        throw new UnsupportedOperationException();
+    }
     // Only available in read mode.
-    CompletableFuture<Void> position(AsyncSegmentFile file, long offset);
+    default CompletableFuture<Void> position(AsyncSegmentFile file, long offset) {
+        throw new UnsupportedOperationException();
+    }
+    default void positionSync(AsyncSegmentFile file, long offset) {
+        throw new UnsupportedOperationException();
+    }
     // Caller must release() the returned ByteBuf when done.
-    CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length);
+    default CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length) {
+        throw new UnsupportedOperationException();
+    }
+    default ByteBuf readSync(AsyncSegmentFile file, long length) {
+        throw new UnsupportedOperationException();
+    }
     // Caller must release() the returned ByteBuf when done.
-    CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length, long offset);
-    CompletableFuture<Long> write(AsyncSegmentFile file, ByteBuf data);
+    default CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length, long offset) {
+        throw new UnsupportedOperationException();
+    }
+    default ByteBuf readSync(AsyncSegmentFile file, long length, long offset) {
+        throw new UnsupportedOperationException();
+    }
+    default CompletableFuture<Long> write(AsyncSegmentFile file, ByteBuf data) {
+        throw new UnsupportedOperationException();
+    }
+    default long writeSync(AsyncSegmentFile file, ByteBuf data) {
+        throw new UnsupportedOperationException();
+    }
     // Only available in write mode.
-    CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file);
+    default CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
+    default Map<String, AsyncFile> rollSync(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
     List<Long> list(AsyncSegmentFile file);
     // Returns the start offset of the currently opened segment; if none is open, returns the segment start
     // at file.position when it equals a segment boundary (e.g. on first open). Returns -1 otherwise.
     long getCurrentSegmentStartOffset(AsyncSegmentFile file);
     // Returns index files for the segment at file.position.
-    CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes);
-    CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file);
-    CompletableFuture<Long> size(AsyncSegmentFile file);
-    CompletableFuture<Long> sizeOfSegment(AsyncSegmentFile file, long startOffset);
+    default CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes) {
+        throw new UnsupportedOperationException();
+    }
+    default Map<String, AsyncFile> getCurrentIndexFilesSync(AsyncSegmentFile file, List<String> indexPrefixes) {
+        throw new UnsupportedOperationException();
+    }
+    default CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
+    default Map<String, AsyncFile> getCurrentIndexFilesSync(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
+    default CompletableFuture<Long> size(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
+    default long sizeSync(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
+    default CompletableFuture<Long> sizeOfSegment(AsyncSegmentFile file, long startOffset) {
+        throw new UnsupportedOperationException();
+    }
+    default long sizeOfSegmentSync(AsyncSegmentFile file, long startOffset) {
+        throw new UnsupportedOperationException();
+    }
     CompletableFuture<Long> lastModified(AsyncSegmentFile file);
     CompletableFuture<Long> lastModifiedOfSegment(AsyncSegmentFile file, long startOffset);
     // startOffsets must be ordered and contiguous from the first offset, will delete segments accordingly.
     // Cannot delete the last segment.
     // Only available in write mode.
-    CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets);
+    default CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets) {
+        throw new UnsupportedOperationException();
+    }
+    default void deleteSegmentsSync(AsyncSegmentFile file, List<Long> startOffsets) {
+        throw new UnsupportedOperationException();
+    }
     // Delete all known segment and index files. Caller must close() all open file objects (including this one) to release resources.
     // Only available in write mode.
     CompletableFuture<Void> delete(AsyncSegmentFile file);
@@ -100,10 +195,29 @@ public interface AsyncFileSystem {
     // otherwise delete everything and create a new empty segment starting at offset.
     // Index file contents are NOT truncated; the caller must adjust them.
     // Only available in write mode.
-    CompletableFuture<Map<String, AsyncFile>> truncate(AsyncSegmentFile file, long offset);
-    CompletableFuture<Void> close(AsyncSegmentFile file);
-    void closeSync(AsyncSegmentFile file);
+    default CompletableFuture<Map<String, AsyncFile>> truncate(AsyncSegmentFile file, long offset) {
+        throw new UnsupportedOperationException();
+    }
+    default Map<String, AsyncFile> truncateSync(AsyncSegmentFile file, long offset) {
+        throw new UnsupportedOperationException();
+    }
+    default CompletableFuture<Void> close(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
+    default void closeSync(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
     // Only available in write mode.
-    CompletableFuture<Void> fsync(AsyncSegmentFile file);
-    CompletableFuture<Long> transferTo(AsyncSegmentFile file, long offset, long count, WritableByteChannel target);
+    default CompletableFuture<Void> fsync(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
+    default void fsyncSync(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
+    default CompletableFuture<Long> transferTo(AsyncSegmentFile file, long offset, long count, WritableByteChannel target) {
+        throw new UnsupportedOperationException();
+    }
+    default long transferToSync(AsyncSegmentFile file, long offset, long count, WritableByteChannel target) {
+        throw new UnsupportedOperationException();
+    }
 }
