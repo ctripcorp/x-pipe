@@ -125,7 +125,8 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
     @Override
     public synchronized long totalLength() {
         try {
-            return currentSegmentStartOffset() + currentSegmentSize();
+            long startOffset = currentSegmentStartOffset();
+            return startOffset + segmentSizeAt(startOffset);
         } catch (IOException e) {
             throw new IllegalStateException("failed to query command segment total length", e);
         }
@@ -191,16 +192,18 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
     }
 
     private long currentSegmentSize() throws IOException {
-        long startOffset = currentSegmentStartOffset();
+        return segmentSizeAt(currentSegmentStartOffset());
+    }
+
+    private long segmentSizeAt(long startOffset) throws IOException {
         if (0 == startOffset) {
             return AsyncFileSystemHelper.await(
                     asyncFileSystem().size(asyncSegmentFile()),
                     "sizeOfSegment");
-        } else {
-            return AsyncFileSystemHelper.await(
-                    asyncFileSystem().sizeOfSegment(asyncSegmentFile(), startOffset),
-                    "sizeOfSegment start " + startOffset);
         }
+        return AsyncFileSystemHelper.await(
+                asyncFileSystem().sizeOfSegment(asyncSegmentFile(), startOffset),
+                "sizeOfSegment start " + startOffset);
     }
 
     private CommandFile currentCommandFile() {
