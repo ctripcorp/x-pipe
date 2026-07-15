@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.cache.impl;
 
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
@@ -72,26 +74,37 @@ public class AzGroupCacheImpl implements AzGroupCache {
     }
 
     private void loadAzGroupCache() {
-        try {
-            List<AzGroupEntity> azGroupEntities = azGroupRepository.selectAll();
-            Map<Long, List<Long>> azGroupAzsMap = azGroupMappingRepository.getAzGroupAzsMap();
-            Map<Long, String> azIdNameMap = dcRepository.getDcIdNameMap();
+        TransactionMonitor.DEFAULT.logTransactionSwallowException("AzGroupCache", "load", new Task() {
+            @Override
+            public void go() throws Exception {
+                List<AzGroupEntity> azGroupEntities = azGroupRepository.selectAll();
+                Map<Long, List<Long>> azGroupAzsMap = azGroupMappingRepository.getAzGroupAzsMap();
+                Map<Long, String> azIdNameMap = dcRepository.getDcIdNameMap();
 
-            List<AzGroupModel> azGroupModels = new ArrayList<>();
-            for (AzGroupEntity entity : azGroupEntities) {
-                List<Long> azIds = azGroupAzsMap.get(entity.getId());
-                if (azIds != null) {
-                    List<String> azs = azIds.stream().map(azIdNameMap::get).collect(Collectors.toList());
+                List<AzGroupModel> azGroupModels = new ArrayList<>();
+                for (AzGroupEntity entity : azGroupEntities) {
+                    List<Long> azIds = azGroupAzsMap.get(entity.getId());
+                    if (azIds != null) {
+                        List<String> azs = azIds.stream().map(azIdNameMap::get).collect(Collectors.toList());
 
-                    AzGroupModel azGroupModel = new AzGroupModel(entity.getId(), entity.getName(), entity.getRegion(), azs);
-                    azGroupModels.add(azGroupModel);
+                        AzGroupModel azGroupModel = new AzGroupModel(entity.getId(), entity.getName(), entity.getRegion(), azs);
+                        azGroupModels.add(azGroupModel);
+                    }
                 }
+                refreshAzGroupCache(azGroupModels);
             }
-            this.azGroupModels = azGroupModels;
-            this.idAzGroupMap = azGroupModels.stream().collect(Collectors.toMap(AzGroupModel::getId, Function.identity()));
-        } catch (Throwable th) {
-            logger.error("[loadAzGroupCache]refresh az group failed", th);
-        }
+
+            @Override
+            public Map getData() {
+                return Map.of();
+            }
+        });
+
+    }
+
+    void refreshAzGroupCache(List<AzGroupModel> azGroupModels) {
+        this.azGroupModels = azGroupModels;
+        this.idAzGroupMap = azGroupModels.stream().collect(Collectors.toMap(AzGroupModel::getId, Function.identity()));
     }
 
     @Override
