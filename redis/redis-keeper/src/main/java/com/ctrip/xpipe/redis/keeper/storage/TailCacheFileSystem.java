@@ -1132,7 +1132,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (cacheMode != CacheMode.NO_CACHE) {
             try {
                 synchronized (lockFor(key)) {
-                    file.cacheEntry = acquireSegmentCacheEntry(key, write);
+                    file.setCacheEntry(acquireSegmentCacheEntry(key, write));
                 }
             } catch (Throwable t) {
                 logger.error("acquireSegmentCacheEntry failed for {}, closing file", file.identifier(), t);
