@@ -19,8 +19,10 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -241,5 +243,98 @@ public class TimerSlidingWindowTest {
         clearInvocations(commandWriter);
         window.flushAll();
         verify(commandWriter, never()).write(any(ByteBuf.class));
+    }
+
+    @Test
+    public void testConcurrentFlushAll() throws Exception {
+        setRate(1_000_000.0);
+        ByteBuf firstData = Unpooled.wrappedBuffer(new byte[100]);
+        ByteBuf secondData = Unpooled.wrappedBuffer(new byte[100]);
+        window.write(firstData);
+        window.write(secondData);
+        assertEquals(200, window.bufferSize());
+
+        clearInvocations(commandWriter, commandStoreDelay, offsetNotifier);
+        writeSizes.clear();
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(2);
+        AtomicReference<Throwable> error = new AtomicReference<>();
+
+        Runnable concurrentFlush = () -> {
+            try {
+                startLatch.await(5, TimeUnit.SECONDS);
+                window.flushAll();
+            } catch (Throwable t) {
+                error.compareAndSet(null, t);
+            } finally {
+                doneLatch.countDown();
+            }
+        };
+
+        Thread flushThread1 = new Thread(concurrentFlush, "flush-1");
+        Thread flushThread2 = new Thread(concurrentFlush, "flush-2");
+        flushThread1.start();
+        flushThread2.start();
+        startLatch.countDown();
+        assertTrue("concurrent flush should finish", doneLatch.await(5, TimeUnit.SECONDS));
+
+        assertNull("concurrent flush should not fail: " + error.get(), error.get());
+        verify(commandWriter, times(1)).write(any(ByteBuf.class));
+        assertEquals("only one flush should write window bytes", Integer.valueOf(200), writeSizes.get(0));
+        assertEquals(0, window.bufferSize());
+
+        firstData.release();
+        secondData.release();
+    }
+
+    @Test
+    public void testConcurrentDelayFlushAndFlushAll() throws Exception {
+        setRate(1_000_000.0);
+        ByteBuf data = Unpooled.wrappedBuffer(new byte[200]);
+        window.write(data);
+        assertEquals(1, scheduledTasks.size());
+        assertEquals(200, window.bufferSize());
+
+        clearInvocations(commandWriter, commandStoreDelay, offsetNotifier);
+        writeSizes.clear();
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(2);
+        AtomicReference<Throwable> error = new AtomicReference<>();
+
+        Thread delayFlushThread = new Thread(() -> {
+            try {
+                startLatch.await(5, TimeUnit.SECONDS);
+                scheduledTasks.get(0).run();
+            } catch (Throwable t) {
+                error.compareAndSet(null, t);
+            } finally {
+                doneLatch.countDown();
+            }
+        }, "delay-flush");
+
+        Thread flushAllThread = new Thread(() -> {
+            try {
+                startLatch.await(5, TimeUnit.SECONDS);
+                window.flushAll();
+            } catch (Throwable t) {
+                error.compareAndSet(null, t);
+            } finally {
+                doneLatch.countDown();
+            }
+        }, "flush-all");
+
+        delayFlushThread.start();
+        flushAllThread.start();
+        startLatch.countDown();
+        assertTrue("delayFlush + flushAll should finish", doneLatch.await(5, TimeUnit.SECONDS));
+
+        assertNull("concurrent delayFlush and flushAll should not fail: " + error.get(), error.get());
+        verify(commandWriter, times(1)).write(any(ByteBuf.class));
+        assertEquals(Integer.valueOf(200), writeSizes.get(0));
+        assertEquals(0, window.bufferSize());
+
+        data.release();
     }
 }
