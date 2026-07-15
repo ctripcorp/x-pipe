@@ -54,7 +54,6 @@ public class AzGroupCacheImpl implements AzGroupCache {
     }
 
     private static final Logger logger = LoggerFactory.getLogger(AzGroupCacheImpl.class.getName());
-//    private static final AzGroupModel DEFAULT_AZ_GROUP = new AzGroupModel(0L, "", "", Collections.emptyList());
 
     private final ScheduledExecutorService executor =
         new ScheduledThreadPoolExecutor(1, XpipeThreadFactory.create(getClass().getSimpleName()));
@@ -69,24 +68,30 @@ public class AzGroupCacheImpl implements AzGroupCache {
 
     @PostConstruct
     public void init() {
-        executor.scheduleWithFixedDelay(this::loadAzGroupCache, 1L, 30L, TimeUnit.MINUTES);
+        executor.scheduleWithFixedDelay(this::loadAzGroupCache, config.getAzGroupCacheRefreshInterval(), config.getAzGroupCacheRefreshInterval(), TimeUnit.MILLISECONDS);
     }
 
     private void loadAzGroupCache() {
-        List<AzGroupEntity> azGroupEntities = azGroupRepository.selectAll();
-        Map<Long, List<Long>> azGroupAzsMap = azGroupMappingRepository.getAzGroupAzsMap();
-        Map<Long, String> azIdNameMap = dcRepository.getDcIdNameMap();
+        try {
+            List<AzGroupEntity> azGroupEntities = azGroupRepository.selectAll();
+            Map<Long, List<Long>> azGroupAzsMap = azGroupMappingRepository.getAzGroupAzsMap();
+            Map<Long, String> azIdNameMap = dcRepository.getDcIdNameMap();
 
-        List<AzGroupModel> azGroupModels = new ArrayList<>();
-        for (AzGroupEntity entity : azGroupEntities) {
-            List<Long> azIds = azGroupAzsMap.get(entity.getId());
-            List<String> azs = azIds.stream().map(azIdNameMap::get).collect(Collectors.toList());
+            List<AzGroupModel> azGroupModels = new ArrayList<>();
+            for (AzGroupEntity entity : azGroupEntities) {
+                List<Long> azIds = azGroupAzsMap.get(entity.getId());
+                if (azIds != null) {
+                    List<String> azs = azIds.stream().map(azIdNameMap::get).collect(Collectors.toList());
 
-            AzGroupModel azGroupModel = new AzGroupModel(entity.getId(), entity.getName(), entity.getRegion(), azs);
-            azGroupModels.add(azGroupModel);
+                    AzGroupModel azGroupModel = new AzGroupModel(entity.getId(), entity.getName(), entity.getRegion(), azs);
+                    azGroupModels.add(azGroupModel);
+                }
+            }
+            this.azGroupModels = azGroupModels;
+            this.idAzGroupMap = azGroupModels.stream().collect(Collectors.toMap(AzGroupModel::getId, Function.identity()));
+        } catch (Throwable th) {
+            logger.error("[loadAzGroupCache]refresh az group failed", th);
         }
-        this.azGroupModels = azGroupModels;
-        this.idAzGroupMap = azGroupModels.stream().collect(Collectors.toMap(AzGroupModel::getId, Function.identity()));
     }
 
     @Override

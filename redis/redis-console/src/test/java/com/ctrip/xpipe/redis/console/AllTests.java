@@ -3,13 +3,14 @@ package com.ctrip.xpipe.redis.console;
 
 import com.ctrip.xpipe.redis.console.alert.EmailSentCounterTest;
 import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorManagerTest;
+import com.ctrip.xpipe.redis.console.cache.impl.AzGroupCacheImplTest;
 import com.ctrip.xpipe.redis.console.checker.DefaultCheckerManagerTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManagerTest;
-import com.ctrip.xpipe.redis.console.controller.api.ChangeConfigTest;
 import com.ctrip.xpipe.redis.console.controller.api.BeaconRouteControllerTest;
+import com.ctrip.xpipe.redis.console.controller.api.ChangeConfigTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
@@ -26,8 +27,6 @@ import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
 import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone.KeeperAvailableZoneCheckTest;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clusterstatus.AbnormalClusterStatusMonitorTest;
-import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clusterstatus.OperatingShardMonitorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.SentinelBeaconClusterMonitorCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clientconfig.CheckClusterTest;
@@ -35,6 +34,8 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthS
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorManagerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultClusterHealthMonitorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.impl.DefaultLeveledEmbededSetTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clusterstatus.AbnormalClusterStatusMonitorTest;
+import com.ctrip.xpipe.redis.console.healthcheck.nonredis.clusterstatus.OperatingShardMonitorTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.console.AutoMigrationOffCheckerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.DBVariablesCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.dbvariables.checker.VariablesCheckerTest;
@@ -59,27 +60,15 @@ import com.ctrip.xpipe.redis.console.migration.model.DefaultMigrationShardTest;
 import com.ctrip.xpipe.redis.console.migration.model.impl.DefaultShardMigrationResultTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatTest;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatusTest;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationCheckingStateTest;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationInitiatedStateTest;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPartialSuccessStateTest;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPreMigratingStateTest;
-import com.ctrip.xpipe.redis.console.migration.status.migration.MigrationPublishStatTest;
+import com.ctrip.xpipe.redis.console.migration.status.migration.*;
 import com.ctrip.xpipe.redis.console.migration.status.migration.statemachine.StateMachineTest;
 import com.ctrip.xpipe.redis.console.model.DcClusterShardTest;
-import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifierTest;
-import com.ctrip.xpipe.redis.console.notifier.DefaultClusterMonitorModifiedNotifierTest;
-import com.ctrip.xpipe.redis.console.notifier.DrBeaconClusterMonitorNotifierTest;
-import com.ctrip.xpipe.redis.console.notifier.SentinelBeaconClusterMonitorNotifierTest;
-import com.ctrip.xpipe.redis.console.notifier.MetaNotifyTaskTest;
+import com.ctrip.xpipe.redis.console.notifier.*;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterTypeUpdateEventListenerTest;
 import com.ctrip.xpipe.redis.console.proxy.ProxyPingRecorderTest;
 import com.ctrip.xpipe.redis.console.proxy.impl.*;
 import com.ctrip.xpipe.redis.console.reporter.DefaultMigrationProcessReporterTest;
-import com.ctrip.xpipe.redis.console.resources.CheckerPersistenceCacheTest;
-import com.ctrip.xpipe.redis.console.resources.DcMetaSynchronizerTest;
-import com.ctrip.xpipe.redis.console.resources.RedisMetaSynchronizerTest;
-import com.ctrip.xpipe.redis.console.resources.DefaultMetaCacheTest;
-import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCacheTest;
+import com.ctrip.xpipe.redis.console.resources.*;
 import com.ctrip.xpipe.redis.console.sentinel.impl.DefaultSentinelBalanceServiceTest;
 import com.ctrip.xpipe.redis.console.service.BasicServiceTest;
 import com.ctrip.xpipe.redis.console.service.MetaServiceTest;
@@ -89,7 +78,6 @@ import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.*;
 import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.*;
-import com.ctrip.xpipe.redis.console.service.meta.impl.ClusterMetaServiceImplHeteroMigrationTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderHeteroMigrationTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
 import com.ctrip.xpipe.redis.console.spring.XPipeHandlerMethodCommandTest;
@@ -288,7 +276,9 @@ import org.junit.runners.Suite.SuiteClasses;
         KeeperContainerUsedInfoMsgCollectorTest.class,
 
         NetworkStabilityInspectorTest.class,
-        NetworkStabilityHolderTest.class
+        NetworkStabilityHolderTest.class,
+
+        AzGroupCacheImplTest.class
 })
 public class AllTests {
 
