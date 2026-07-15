@@ -76,6 +76,11 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         return key;
     }
 
+    @Override
+    SegmentFileCacheEntry getCacheEntry() {
+        return (SegmentFileCacheEntry) cacheEntry;
+    }
+
     AsyncSegmentFile(String dirPath, String prefix, List<String> indexPrefixes, String key, boolean writeMode) {
         super(writeMode ? OpenMode.WRITE : OpenMode.READ);
         this.dirPath = dirPath;

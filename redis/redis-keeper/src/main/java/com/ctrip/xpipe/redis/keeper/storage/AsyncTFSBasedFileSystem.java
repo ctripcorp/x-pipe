@@ -311,15 +311,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public long currentSizeSync(AbstractStorageFile file) {
-        try {
-            return file.currentWriteChannel().size();
-        } catch (IOException e) {
-            throw StorageUtil.wrapIOException(e);
-        }
-    }
-
-    @Override
     public CompletableFuture<Boolean> mkdir(String path, boolean recursive) {
         return StorageUtil.supply(ioExecutor, () -> {
             try {

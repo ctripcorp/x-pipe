@@ -39,7 +39,6 @@ public interface AsyncFileSystem {
     CompletableFuture<Boolean> exists(String path);
     CompletableFuture<Long> size(AsyncFile file);
     long sizeSync(AsyncFile file);
-    long currentSizeSync(AbstractStorageFile file);
     CompletableFuture<Boolean> mkdir(String path, boolean recursive);
     CompletableFuture<Boolean> rmdir(String path, boolean recursive);
     // Only available in write mode.
