@@ -78,6 +78,7 @@ import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.*;
 import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.*;
+import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderAzGroupExceptionTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderHeteroMigrationTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
 import com.ctrip.xpipe.redis.console.spring.XPipeHandlerMethodCommandTest;
@@ -205,6 +206,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DBVariablesCheckTest.class,
         DcMetaBuilderTest.class,
         DcMetaBuilderHeteroMigrationTest.class,
+        DcMetaBuilderAzGroupExceptionTest.class,
         ClusterMetaServiceImplHeteroMigrationTest.class,
         DcClusterServiceImplTest.class,
         CrossMasterDelayServiceTest.class,

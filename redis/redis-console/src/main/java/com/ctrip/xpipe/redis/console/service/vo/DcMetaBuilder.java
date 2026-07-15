@@ -1,12 +1,10 @@
 package com.ctrip.xpipe.redis.console.service.vo;
 
-import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.DcGroupType;
-import com.ctrip.xpipe.cluster.Hints;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.RetryCommandFactory;
@@ -14,20 +12,23 @@ import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
+import com.ctrip.xpipe.redis.console.exception.DcMetaBuilderException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
-import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.DcClusterService;
+import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
+import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.meta.ClusterMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.RedisMetaService;
-import com.ctrip.xpipe.utils.DateTimeUtils;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -185,6 +186,12 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
                 if (azGroupCluster != null) {
                     ClusterType azGroupType = ClusterType.lookup(azGroupCluster.getAzGroupClusterType());
                     AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+                    if (azGroup == null) {
+                        String msg = String.format("[getOrCreateClusterMeta][%s] azGroup not found for azGroupId=%d",
+                                cluster.getClusterName(), azGroupCluster.getAzGroupId());
+                        getLogger().error(msg);
+                        throw new DcMetaBuilderException(msg);
+                    }
                     clusterMeta.setAzGroupName(azGroup.getName());
                     clusterMeta.setAzGroupType(azGroupType.toString());
 
@@ -418,30 +425,41 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             try {
                 for (Map.Entry<Long, List<DcClusterShardTbl>> entry : dc2DcClusterShardMap.entrySet()) {
                     Long dcId = entry.getKey();
-                    DcMeta dcMeta = dcMetaMap.get(dcNameMap.get(dcId).toUpperCase());
+                    String dcName = dcNameMap.get(dcId);
+                    if (dcName == null) {
+                        getLogger().warn("[BuildDcMetaCommand] dcName not found for dcId={}, skip", dcId);
+                        continue;
+                    }
+                    DcMeta dcMeta = dcMetaMap.get(dcName.toUpperCase());
                     if (dcMeta == null) {
                         continue;
                     }
                     for (DcClusterShardTbl dcClusterShard : entry.getValue()) {
                         ClusterTbl cluster = dcClusterShard.getClusterInfo();
-                        ClusterMeta clusterMeta = getOrCreateClusterMeta(dcMeta, dcId, cluster,
-                            getDcClusterInfo(cluster.getId(), dcId), getAzGroupCluster(cluster.getId(), dcId));
-                        ShardMeta shardMeta = getOrCreateShardMeta(dcMeta, clusterMeta.getId(),
-                            dcClusterShard.getShardInfo(), dcClusterShard.getSetinelId());
-                        shardMeta.setOperatingUntil(dcClusterShard.getOperatingUntil() == null
-                                ? DateTimeUtils.DEFAULT_OPERATING_UNTIL_MILLIS
-                                : dcClusterShard.getOperatingUntil().getTime());
+                        try {
+                            ClusterMeta clusterMeta = getOrCreateClusterMeta(dcMeta, dcId, cluster,
+                                getDcClusterInfo(cluster.getId(), dcId), getAzGroupCluster(cluster.getId(), dcId));
+                            ShardMeta shardMeta = getOrCreateShardMeta(dcMeta, clusterMeta.getId(),
+                                dcClusterShard.getShardInfo(), dcClusterShard.getSetinelId());
+                            shardMeta.setOperatingUntil(dcClusterShard.getOperatingUntil() == null
+                                    ? DateTimeUtils.DEFAULT_OPERATING_UNTIL_MILLIS
+                                    : dcClusterShard.getOperatingUntil().getTime());
 
-                        RedisTbl redis = dcClusterShard.getRedisInfo();
-                        if (Server.SERVER_ROLE.KEEPER.sameRole(redis.getRedisRole())) {
-                            shardMeta.addKeeper(redisMetaService.getKeeperMeta(shardMeta, redis));
-                        } else {
-                            if (!StringUtil.isEmpty(clusterMeta.getActiveDc())
-                                    && !clusterMeta.getActiveDc().equalsIgnoreCase(dcMeta.getId())) {
-                                // redis role haven't changed but activeDc already switch in migration
-                                redis.setMaster(false);
+                            RedisTbl redis = dcClusterShard.getRedisInfo();
+                            if (Server.SERVER_ROLE.KEEPER.sameRole(redis.getRedisRole())) {
+                                shardMeta.addKeeper(redisMetaService.getKeeperMeta(shardMeta, redis));
+                            } else {
+                                if (!StringUtil.isEmpty(clusterMeta.getActiveDc())
+                                        && !clusterMeta.getActiveDc().equalsIgnoreCase(dcMeta.getId())) {
+                                    // redis role haven't changed but activeDc already switch in migration
+                                    redis.setMaster(false);
+                                }
+                                shardMeta.addRedis(redisMetaService.getRedisMeta(shardMeta, redis));
                             }
-                            shardMeta.addRedis(redisMetaService.getRedisMeta(shardMeta, redis));
+                        } catch (Exception e) {
+                            String errMsg = String.format("[BuildDcMetaCommand][%s] build cluster meta in dc:%s failed, skip",
+                                    cluster == null ? "unknown" : cluster.getClusterName(), dcName);
+                            getLogger().error(errMsg, new DcMetaBuilderException(errMsg, e));
                         }
                     }
                 }
@@ -494,6 +512,12 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
             String dc = dcNameMap.get(dcId);
             for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
                 AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+                if (azGroup == null) {
+                    String msg = String.format("[getAzGroupCluster] azGroup not found for azGroupId=%d, clusterId=%d",
+                            azGroupCluster.getAzGroupId(), clusterId);
+                    getLogger().error(msg);
+                    throw new DcMetaBuilderException(msg);
+                }
                 if (azGroup.containsAz(dc)) {
                     return azGroupCluster;
                 }
@@ -534,6 +558,11 @@ public class DcMetaBuilder extends AbstractCommand<Map<String, DcMeta>> {
 
     public DcMetaBuilder setCluster2DcClusterMap(Map<Long, List<DcClusterTbl>> cluster2DcClusterMap) {
         this.cluster2DcClusterMap = cluster2DcClusterMap;
+        return this;
+    }
+
+    public DcMetaBuilder setAzGroupCache(AzGroupCache azGroupCache) {
+        this.azGroupCache = azGroupCache;
         return this;
     }
 
