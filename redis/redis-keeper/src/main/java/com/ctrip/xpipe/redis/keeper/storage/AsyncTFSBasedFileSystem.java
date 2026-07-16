@@ -442,6 +442,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         if (!atSegmentBoundary && !staleTailEof) {
             return;
         }
+        // Close first to trigger recalculation of opened range.
         file.closeCurrent();
         if (!file.switchToSegment(nextOffset, s)) {
             return;
@@ -591,6 +592,17 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return entry;
     }
 
+    private boolean ensureSegmentOpenForRead(AsyncSegmentFile file, long offset, SegmentDirState s)
+            throws IOException {
+        if (!file.switchToSegment(offset, s)) {
+            return false;
+        }
+        if (file.currentSegmentChannel == null) {
+            file.openSegmentChannelForRead();
+        }
+        return true;
+    }
+
 
     @Override
     public void positionSync(AsyncSegmentFile file, long offset) {
@@ -610,12 +622,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         StorageUtil.requireOpen(file);
         try {
             SegmentDirState s = entryOrThrow(file).state;
-            if (file.currentSegmentChannel == null
-                    || file.position < file.openedSegmentStartOffset
-                    || file.position >= file.openedSegmentEndOffset) {
-                if (!file.switchToSegment(file.position, s)) return Unpooled.buffer(0);
-                file.openSegmentChannelForRead();
-            }
+            if (!ensureSegmentOpenForRead(file, file.position, s)) return Unpooled.buffer(0);
             long physicalOffset = file.position - file.openedSegmentStartOffset;
             ByteBuf buf = readFully(file.currentSegmentChannel, length, physicalOffset, 0);
             long n = buf.readableBytes();
@@ -633,12 +640,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         StorageUtil.requireOpen(file);
         try {
             SegmentDirState s = entryOrThrow(file).state;
-            if (file.currentSegmentChannel == null
-                    || offset < file.openedSegmentStartOffset
-                    || offset >= file.openedSegmentEndOffset) {
-                if (!file.switchToSegment(offset, s)) return Unpooled.buffer(0);
-                file.openSegmentChannelForRead();
-            }
+            if (!ensureSegmentOpenForRead(file, offset, s)) return Unpooled.buffer(0);
             long physicalOffset = offset - file.openedSegmentStartOffset;
             ByteBuf buf = readFully(file.currentSegmentChannel, length, physicalOffset, 0);
             long n = buf.readableBytes();
@@ -686,17 +688,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public long getCurrentSegmentStartOffset(AsyncSegmentFile file) {
-        if (file.openedSegmentStartOffset != Long.MAX_VALUE) {
-            return file.openedSegmentStartOffset;
-        }
-        SegmentDirState s = entryOrThrow(file).state;
-        if (s.isEmpty()) {
-            return 0;
-        }
-        if (s.contains(file.position)) {
-            return file.position;
-        }
-        return -1;
+        return file.openedSegmentStartOffset;
     }
 
 
@@ -713,10 +705,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                     return new HashMap<String, AsyncFile>();
                 }
             } else if (!file.canWrite()) {
-                if (file.openedSegmentStartOffset == Long.MAX_VALUE) {
-                    if (!file.switchToSegment(file.position, s)) {
-                        return new HashMap<String, AsyncFile>();
-                    }
+                if (!file.switchToSegment(file.position, s)) {
+                    return new HashMap<String, AsyncFile>();
                 }
             }
             return file.getCurrentIndexFiles(indexPrefixes);
@@ -735,14 +725,14 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     @Override
     public long sizeSync(AsyncSegmentFile file) {
         StorageUtil.requireOpen(file);
+        SegmentDirState s = entryOrThrow(file).state;
+        if (s.isEmpty()) {
+            return 0L;
+        }
         try {
-            SegmentDirState s = entryOrThrow(file).state;
-            if (s.isEmpty()) {
-                return 0L;
-            }
             return file.exclusiveEndOffset(s.lastOffset) - s.firstOffset;
         } catch (NoSuchFileException e) {
-            return 0L;
+            return s.lastOffset - s.firstOffset;
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         }
@@ -849,12 +839,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         StorageUtil.requireOpen(file);
         try {
             SegmentDirState s = entryOrThrow(file).state;
-            if (file.currentSegmentChannel == null
-                    || offset < file.openedSegmentStartOffset
-                    || offset >= file.openedSegmentEndOffset) {
-                if (!file.switchToSegment(offset, s)) return 0L;
-                file.openSegmentChannelForRead();
-            }
+            if (!ensureSegmentOpenForRead(file, offset, s)) return 0L;
             long physicalOffset = offset - file.openedSegmentStartOffset;
             long n = file.currentSegmentChannel.transferTo(physicalOffset, count, target);
             file.position = offset + n;
