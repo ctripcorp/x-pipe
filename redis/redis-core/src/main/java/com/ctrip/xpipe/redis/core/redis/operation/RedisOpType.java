@@ -83,6 +83,8 @@ public enum RedisOpType {
 
     // Bit single
     SETBIT(false, 4),
+    BITCOUNT(false, 4),
+
 
     // String multi
     DEL(true, -2),
