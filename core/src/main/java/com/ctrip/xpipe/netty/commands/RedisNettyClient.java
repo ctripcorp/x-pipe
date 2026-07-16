@@ -4,6 +4,8 @@ public interface RedisNettyClient {
 
     boolean getDoAfterConnectedOver();
 
+    boolean getDoAfterConnectedSuccess();
+
     int getAfterConnectCommandTimeoutMill();
 
 }

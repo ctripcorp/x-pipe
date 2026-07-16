@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.core.client;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
-import com.ctrip.xpipe.api.monitor.Task;
-import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.exception.XpipeException;
 import com.ctrip.xpipe.netty.commands.AsyncNettyClient;
 import com.ctrip.xpipe.netty.commands.ByteBufReceiver;
@@ -12,7 +10,6 @@ import com.ctrip.xpipe.redis.core.protocal.RedisClientProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
 import com.ctrip.xpipe.utils.ChannelUtil;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.dianping.cat.Cat;
 import com.dianping.cat.message.Transaction;
 import io.netty.buffer.ByteBuf;
@@ -23,9 +20,8 @@ import io.netty.util.concurrent.GenericFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNettyClient {
 
@@ -41,9 +37,11 @@ public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNett
 
     private static final int DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI = 660;
 
-    private boolean doAfterConnectedSuccess = false;
+    private final AtomicBoolean doAfterConnectedSuccess = new AtomicBoolean(false);
 
-    protected final AtomicReference<Boolean> doAfterConnectedOver = new AtomicReference<>(false);
+    private final AtomicBoolean doAfterConnectedOver = new AtomicBoolean(false);
+
+    private final CompletableFuture<Boolean> afterConnectedFuture = new CompletableFuture<>();
 
     public RedisAsyncNettyClient(ChannelFuture future, Endpoint endpoint, String clientName, AsyncConnectionCondition asyncConnectionCondition) {
         super(future, endpoint);
@@ -54,7 +52,8 @@ public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNett
             public void operationComplete(Future<? super Void> future) throws Exception {
                 if (future.isSuccess()) {
                     doAfterConnected();
-                    doAfterConnectedOver.set(true);
+                } else {
+                    finishAfterConnected(false);
                 }
             }
         });
@@ -62,6 +61,7 @@ public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNett
 
     protected void doAfterConnected() {
         if (asyncConnectionCondition != null && !asyncConnectionCondition.shouldDo()) {
+            finishAfterConnected(true);
             return;
         }
         RequestStringParser requestString = new RequestStringParser(CLIENT_SET_NAME, clientName);
@@ -84,16 +84,16 @@ public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNett
                         }
                         if (EXPECT_RESP.equalsIgnoreCase(result)){
                             transaction.setStatus(Transaction.SUCCESS);
-                            doAfterConnectedSuccess = true;
                             logger.info("[redisAsync][clientSetName][success][{}] {}", desc, result);
+                            finishAfterConnected(true);
                         } else {
-                            doAfterConnectedSuccess = false;
                             transaction.setStatus(new XpipeException(String.format("[redisAsync][clientSetName][wont-result][%s] result:%s", desc, result)));
                             logger.warn("[redisAsync][clientSetName][err-result][{}] {}", desc, result);
+                            finishAfterConnected(false);
                         }
                         transaction.complete();
                     }catch(Throwable th){
-                        doAfterConnectedSuccess = false;
+                        finishAfterConnected(false);
                         transaction.setStatus(th);
                         transaction.complete();
                         logger.error("[logTransaction]" + "netty.client.setName" + "," + clientName, th);
@@ -107,6 +107,7 @@ public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNett
                     logger.warn("[redisAsync][clientSetName][wont-send][{}] {}", desc, nettyClient.channel());
                     transaction.setStatus(new XpipeException(String.format("[redisAsync][clientSetName][wont-send][%s]client closed %s", desc, nettyClient.channel())));
                     transaction.complete();
+                    finishAfterConnected(false);
                 }
 
                 @Override
@@ -114,14 +115,66 @@ public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNett
                     logger.warn("[redisAsync][clientSetName][wont-send][{}] {}", desc, nettyClient.channel(), th);
                     transaction.setStatus(th);
                     transaction.complete();
+                    finishAfterConnected(false);
                 }
             });
         } catch (Exception e) {
             transaction.setStatus(e);
             transaction.complete();
             logger.error("[redisAsync][clientSetName] err", e);
+            finishAfterConnected(false);
         }
 
+    }
+
+    private void finishAfterConnected(boolean success) {
+        if (doAfterConnectedOver.compareAndSet(false, true)) {
+            doAfterConnectedSuccess.set(success);
+            afterConnectedFuture.complete(success);
+            if (!success && channel != null) {
+                channel.close();
+            }
+        }
+    }
+
+    @Override
+    public void sendRequest(ByteBuf byteBuf) {
+        if (doAfterConnectedOver.get()) {
+            if (doAfterConnectedSuccess.get()) {
+                super.sendRequest(byteBuf);
+            } else {
+                logger.warn("[async][wont-send][afterConnected-fail][{}]", desc);
+            }
+            return;
+        }
+        afterConnectedFuture.whenComplete((success, throwable) -> {
+            if (Boolean.TRUE.equals(success)) {
+                RedisAsyncNettyClient.super.sendRequest(byteBuf);
+            } else {
+                logger.warn("[async][wont-send][afterConnected-fail][{}]", desc);
+            }
+        });
+    }
+
+    @Override
+    public void sendRequest(ByteBuf byteBuf, ByteBufReceiver byteBufReceiver) {
+        if (doAfterConnectedOver.get()) {
+            if (doAfterConnectedSuccess.get()) {
+                super.sendRequest(byteBuf, byteBufReceiver);
+            } else {
+                logger.warn("[async][wont-send][afterConnected-fail][{}] {}", desc, byteBufReceiver.getClass().getSimpleName());
+                byteBufReceiver.clientClosed(this);
+            }
+            return;
+        }
+        afterConnectedFuture.whenComplete((success, throwable) -> {
+            if (Boolean.TRUE.equals(success)) {
+                RedisAsyncNettyClient.super.sendRequest(byteBuf, byteBufReceiver);
+            } else {
+                logger.warn("[async][wont-send][afterConnected-fail][{}] {}", desc, byteBufReceiver.getClass().getSimpleName());
+                byteBufReceiver.clientClosed(RedisAsyncNettyClient.this);
+            }
+        });
     }
 
     @Override
@@ -130,13 +183,13 @@ public class RedisAsyncNettyClient extends AsyncNettyClient implements RedisNett
     }
 
     @Override
-    public int getAfterConnectCommandTimeoutMill() {
-        return DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
+    public boolean getDoAfterConnectedSuccess() {
+        return doAfterConnectedSuccess.get();
     }
 
-    @VisibleForTesting
-    public boolean getDoAfterConnectedSuccess() {
-        return doAfterConnectedSuccess;
+    @Override
+    public int getAfterConnectCommandTimeoutMill() {
+        return DEFAULT_REDIS_COMMAND_TIME_OUT_MILLI;
     }
 
 }

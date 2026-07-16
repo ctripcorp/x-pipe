@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.netty.commands.NettyClientHandler;
 import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
+import com.ctrip.xpipe.netty.commands.RedisNettyClient;
 import io.netty.channel.ChannelFuture;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
@@ -26,6 +27,19 @@ public class NettyRedisPoolClientFactory extends NettyKeyedPoolClientFactory {
         NettyClient nettyClient = new RedisAsyncNettyClient(f, key, clientName, asyncConnectionCondition);
         f.channel().attr(NettyClientHandler.KEY_CLIENT).set(nettyClient);
         return new DefaultPooledObject<NettyClient>(nettyClient);
+    }
+
+    @Override
+    public boolean validateObject(Endpoint key, PooledObject<NettyClient> p) {
+        if (!super.validateObject(key, p)) {
+            return false;
+        }
+        NettyClient client = p.getObject();
+        if (client instanceof RedisNettyClient) {
+            RedisNettyClient redisClient = (RedisNettyClient) client;
+            return !redisClient.getDoAfterConnectedOver() || redisClient.getDoAfterConnectedSuccess();
+        }
+        return true;
     }
 
 }
