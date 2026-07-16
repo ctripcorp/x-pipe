@@ -51,6 +51,9 @@ public class DefaultRdbParseContext implements RdbParseContext {
 
     @Override
     public RdbParser getOrCreateParser(RdbType rdbType) {
+        if(this.getRdbVersion() <= 9 && rdbType.getCode() == 16){
+            rdbType = RdbType.BITMAP;
+        }
         RdbParser parser = parsers.get(rdbType);
         if (null != parser) return parser;
 
