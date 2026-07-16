@@ -32,7 +32,7 @@ public class TailCacheFileSystemConfig {
     private long ioWaitTimeoutMs = 1000;
     private long writeBatchBytes = 1 * 1024 * 1024;
     private int maxWriteChunkThreshold = 32;
-    private int eioRetryMaxAttempts = 3;
+    private int eioRetryMaxAttempts = 1;
 
     public TailCacheFileSystemConfig() {
     }

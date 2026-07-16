@@ -57,6 +57,11 @@ public interface AsyncFileSystem {
     default void deleteSync(String path) {
         throw new UnsupportedOperationException();
     }
+    // Cache is cleared before the backing FS delete. If the FS delete fails, the caller must retry
+    // delete; otherwise cache and disk stay inconsistent.
+    default CompletableFuture<Void> delete(AsyncFile file) {
+        throw new UnsupportedOperationException();
+    }
     CompletableFuture<Boolean> exists(String path);
     default CompletableFuture<Long> size(AsyncFile file) {
         throw new UnsupportedOperationException();
@@ -67,6 +72,8 @@ public interface AsyncFileSystem {
     CompletableFuture<Boolean> mkdir(String path, boolean recursive);
     CompletableFuture<Boolean> rmdir(String path, boolean recursive);
     // Only available in write mode.
+    // Cache is shrunk before the backing FS truncate. If the FS truncate fails, the caller must retry
+    // truncate with the same size; otherwise cache and disk stay inconsistent.
     default CompletableFuture<Void> truncate(AsyncFile file, long size) {
         throw new UnsupportedOperationException();
     }
@@ -107,6 +114,15 @@ public interface AsyncFileSystem {
     // Opened data and index channels auto-close when read()/transferTo() advances to the next segment.
     // Mixing read()/position() with pread()/transferTo() on the same AsyncSegmentFile is NOT supported.
     // For a newly created (empty) segment file in write mode, the segment file will start at 0 unless truncate(offset) is called to specify the initial offset before writing.
+    //
+    // deleteSegments / delete / truncate: disk files are removed before metadata (SegmentDirState) is
+    // published; TailCache also clears in-memory cache before the disk op. If the call fails, the caller
+    // must retry, otherwise memory and disk stay inconsistent. Concurrent readers may hit
+    // StaleStateException (e.g. underlying NoSuchFile) while files are already gone but metadata is not
+    // published yet. After a successful writer retry, readers may recover, or may get
+    // SegmentOffsetBeforeFirstException if their offset fell into a deleted prefix. If truncate shrinks
+    // past the reader's current offset (offset is to the right of the new max size), reads do not error
+    // and simply return 0.
     default CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant) {
         throw new UnsupportedOperationException();
     }

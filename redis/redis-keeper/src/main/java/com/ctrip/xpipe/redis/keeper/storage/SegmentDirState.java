@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.storage;
 import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.RandomAccess;
 
 import com.ctrip.xpipe.tuple.Pair;
 
@@ -88,9 +89,24 @@ final class SegmentDirState {
     }
 
     List<Long> offsets() {
-        return new AbstractList<>() {
-            @Override public Long get(int index) { return offsets[index]; }
-            @Override public int size() { return offsets.length; }
-        };
+        return new OffsetList(offsets);
+    }
+
+    private static final class OffsetList extends AbstractList<Long> implements RandomAccess {
+        private final long[] offsets;
+
+        OffsetList(long[] offsets) {
+            this.offsets = offsets;
+        }
+
+        @Override
+        public Long get(int index) {
+            return offsets[index];
+        }
+
+        @Override
+        public int size() {
+            return offsets.length;
+        }
     }
 }
