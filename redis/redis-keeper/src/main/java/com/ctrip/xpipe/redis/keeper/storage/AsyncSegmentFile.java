@@ -31,11 +31,11 @@ public class AsyncSegmentFile extends AbstractStorageFile {
 
     FileChannel currentSegmentChannel;
     Map<String, AsyncIndexFile> currentIndexFiles;
-    // Currently open segment covers logical range [openedSegmentStartOffset, openedSegmentEndOffset).
-    // Long.MAX_VALUE for start means "no segment currently open"; Long.MAX_VALUE for end
-    // means "open segment is the tail — end is unbounded (writer may still append)".
-    long openedSegmentStartOffset = Long.MAX_VALUE;
-    long openedSegmentEndOffset = Long.MAX_VALUE;
+    // Selected segment covers logical range [openedSegmentStartOffset, openedSegmentEndOffset).
+    // Empty directory uses [0, Long.MAX_VALUE). Long.MAX_VALUE for end means the selected
+    // segment is the tail — end is unbounded (writer may still append).
+    long openedSegmentStartOffset;
+    long openedSegmentEndOffset;
     long position = 0;
 
     @Override
@@ -51,7 +51,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             currentSegmentChannel.position(currentSegmentChannel.size());
         } else {
             currentSegmentChannel = FileChannel.open(segmentPath(openedSegmentStartOffset),
-                    StandardOpenOption.READ, StandardOpenOption.CREATE);
+                    StandardOpenOption.READ);
         }
     }
 
@@ -118,6 +118,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         this.indexPrefixes = indexPrefixes;
         this.key = key;
         this.currentIndexFiles = new HashMap<>();
+        markEmptyOpenedRange();
     }
 
     // Called once by the initializer opener.
@@ -203,7 +204,9 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     // Opens resources: for writer, open the tail segment + index files for append;
     // for reader, seek position to the first segment.
     void openInitialResources(SegmentDirState s) throws IOException {
-        if (s.isEmpty()) return;
+        if (s.isEmpty()) {
+            return;
+        }
 
         if (canWrite()) {
             openedSegmentStartOffset = s.lastOffset;
@@ -216,6 +219,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             }
         } else {
             position = s.firstOffset;
+            switchToSegment(position, s);
         }
     }
 
@@ -262,10 +266,13 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             }
         }
         currentIndexFiles.clear();
-        openedSegmentStartOffset = Long.MAX_VALUE;
-        openedSegmentEndOffset = Long.MAX_VALUE;
         pendingFsyncBytes = 0;
         if (first != null) throw first;
+    }
+
+    private void markEmptyOpenedRange() {
+        openedSegmentStartOffset = 0;
+        openedSegmentEndOffset = Long.MAX_VALUE;
     }
 
     long exclusiveEndOffset(long lastOffset) throws IOException {
@@ -295,28 +302,33 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         return result;
     }
 
+    // Returns true when non-empty and logicalOffset >= firstOffset (including past the
+    // current exclusive end — then the last segment is selected). Returns false only for empty.
+    // Left of firstOffset: closes resources, keeps prior range, throws SegmentOffsetBeforeFirstException.
     boolean switchToSegment(long logicalOffset, SegmentDirState s) throws IOException {
-        if (logicalOffset >= openedSegmentStartOffset && logicalOffset < openedSegmentEndOffset) {
+        if (currentSegmentChannel != null
+                && logicalOffset >= openedSegmentStartOffset
+                && logicalOffset < openedSegmentEndOffset) {
             return true;
         }
+        closeCurrent();
         if (s.isEmpty()) {
-            closeCurrent();
+            markEmptyOpenedRange();
             return false;
         }
         if (logicalOffset < s.firstOffset) {
-            closeCurrent();
-            return false;
+            throw new SegmentOffsetBeforeFirstException(
+                    "logical offset " + logicalOffset + " is before first segment offset " + s.firstOffset);
         }
         if (logicalOffset >= exclusiveEndOffset(s.lastOffset)) {
-            closeCurrent();
-            return false;
+            openedSegmentStartOffset = s.lastOffset;
+            openedSegmentEndOffset = Long.MAX_VALUE;
+            return true;
         }
         Pair<Long, Long> range = s.floorKeyAndNext(logicalOffset);
         long segStart = range.getKey();
         long nextStart = range.getValue();
-        closeCurrent();
-        openedSegmentStartOffset = segStart;
-        openedSegmentEndOffset = nextStart;
+        long endOffset = nextStart;
         if (nextStart != Long.MAX_VALUE) {
             long actualSize = Files.size(segmentPath(segStart));
             long expectedSize = nextStart - segStart;
@@ -326,8 +338,10 @@ public class AsyncSegmentFile extends AbstractStorageFile {
                                 + " expected size " + expectedSize
                                 + " but actual file size " + actualSize);
             }
-            openedSegmentEndOffset = segStart + actualSize;
+            endOffset = segStart + actualSize;
         }
+        openedSegmentStartOffset = segStart;
+        openedSegmentEndOffset = endOffset;
         return true;
     }
 
@@ -389,6 +403,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         SegmentDirState cur = entry.state;
         entry.state = SegmentDirState.EMPTY;
         closeCurrent();
+        markEmptyOpenedRange();
         for (int i = 0; i < cur.size(); i++) {
             deleteSegmentAndIndex(cur.get(i));
         }
