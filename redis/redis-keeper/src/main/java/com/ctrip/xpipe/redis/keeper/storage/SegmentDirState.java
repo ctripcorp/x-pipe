@@ -4,6 +4,8 @@ import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.ctrip.xpipe.tuple.Pair;
+
 // Immutable snapshot of a segment directory: the set of segment start offsets, in ascending order.
 // Reader path reads a single volatile reference and gets an internally-consistent snapshot.
 // Writer path builds a new snapshot per mutation (copy-on-write) and publishes atomically.
@@ -35,6 +37,25 @@ final class SegmentDirState {
         if (i >= 0) return offsets[i];
         int ins = -i - 1;
         return ins == 0 ? -1L : offsets[ins - 1];
+    }
+
+    // Greatest key <= offset and the next key after it.
+    // Returns (-1, Long.MAX_VALUE) if none; next is Long.MAX_VALUE when floor is the last offset.
+    Pair<Long, Long> floorKeyAndNext(long offset) {
+        int i = Arrays.binarySearch(offsets, offset);
+        int floorIdx;
+        if (i >= 0) {
+            floorIdx = i;
+        } else {
+            int ins = -i - 1;
+            if (ins == 0) {
+                return new Pair<>(-1L, Long.MAX_VALUE);
+            }
+            floorIdx = ins - 1;
+        }
+        long floor = offsets[floorIdx];
+        long next = floorIdx + 1 < offsets.length ? offsets[floorIdx + 1] : Long.MAX_VALUE;
+        return new Pair<>(floor, next);
     }
 
     int size() {
