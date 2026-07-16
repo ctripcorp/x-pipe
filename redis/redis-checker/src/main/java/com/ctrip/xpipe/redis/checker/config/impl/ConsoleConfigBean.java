@@ -31,6 +31,8 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     public static final String KEY_CACHE_REFERSH_INTERVAL = "console.cache.refresh.interval";
 
+    public static final String KEY_AZ_GROUP_CACHE_REFERSH_INTERVAL = "console.azgroup.cache.refresh.interval";
+
     public static final String KEY_MIGRATION_TIMEOUT_MILLI = "migration.timeout.milli";
 
     public static final String KEY_SERVLET_METHOD_TIMEOUT_MILLI = "servlet.method.timeout.milli";
@@ -116,6 +118,10 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     public int getCacheRefreshInterval() {
         return getIntProperty(KEY_CACHE_REFERSH_INTERVAL, 1000);
+    }
+
+    public int getAzGroupCacheRefreshInterval() {
+        return getIntProperty(KEY_AZ_GROUP_CACHE_REFERSH_INTERVAL, 60000);
     }
 
     public long getMigrationTimeoutMilli() {

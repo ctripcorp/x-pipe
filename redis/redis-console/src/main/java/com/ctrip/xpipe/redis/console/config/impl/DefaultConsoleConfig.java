@@ -167,6 +167,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public int getAzGroupCacheRefreshInterval() {
+        return consoleConfigBean.getAzGroupCacheRefreshInterval();
+    }
+
+    @Override
     public Set<String> getAlertWhileList() {
         return commonConfigBean.getAlertWhileList();
     }
