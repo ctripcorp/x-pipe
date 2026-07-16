@@ -382,31 +382,21 @@ public class AsyncSegmentFile extends AbstractStorageFile {
 
     void deleteSegments(List<Long> startOffsets, FileEntry entry) throws IOException {
         SegmentDirState cur = entry.state;
-        int drop = 0;
-        for (long offset : startOffsets) {
-            long first = cur.get(drop);
-            if (offset != first) {
-                throw new IllegalArgumentException("deleteSegments requires deleting segments in order from the first: expected " + first + ", got " + offset);
-            }
-            if (cur.size() - drop <= 1) {
-                throw new IllegalArgumentException("deleteSegments cannot delete the last segment");
-            }
-            drop++;
-        }
-        entry.state = new SegmentDirState(cur.copyFrom(drop));
+        int drop = startOffsets.size();
         for (int i = 0; i < drop; i++) {
             deleteSegmentAndIndex(cur.get(i));
         }
+        entry.state = new SegmentDirState(cur.copyFrom(drop));
     }
 
     void delete(FileEntry entry) throws IOException {
         SegmentDirState cur = entry.state;
-        entry.state = SegmentDirState.EMPTY;
         closeCurrent();
         markEmptyOpenedRange();
         for (int i = 0; i < cur.size(); i++) {
             deleteSegmentAndIndex(cur.get(i));
         }
+        entry.state = SegmentDirState.EMPTY;
     }
 
     Map<String, AsyncFile> truncate(long offset, FileEntry entry) throws IOException {
@@ -450,24 +440,29 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             result.put(indexPrefix, af);
         }
 
-        entry.state = new SegmentDirState(nextArr);
         for (int i = cut; i < cur.size(); i++) {
             deleteSegmentAndIndex(cur.get(i));
         }
+        entry.state = new SegmentDirState(nextArr);
         return result;
     }
 
     private Map<String, AsyncFile> reset(long offset, FileEntry entry) throws IOException {
         closeCurrent();
         SegmentDirState cur = entry.state;
-        entry.state = SegmentDirState.EMPTY;
         for (int i = 0; i < cur.size(); i++) {
             deleteSegmentAndIndex(cur.get(i));
         }
+        entry.state = SegmentDirState.EMPTY;
         return createNewSegmentWithIndexes(offset, entry);
     }
 
     Map<String, AsyncFile> roll(FileEntry entry) throws IOException {
+        if (currentSegmentChannel.size() == 0) {
+            Map<String, AsyncFile> result = new HashMap<>();
+            result.putAll(currentIndexFiles);
+            return result;
+        }
         long newStartOffset = openedSegmentStartOffset + currentSegmentChannel.size();
         closeCurrent();
         return createNewSegmentWithIndexes(newStartOffset, entry);

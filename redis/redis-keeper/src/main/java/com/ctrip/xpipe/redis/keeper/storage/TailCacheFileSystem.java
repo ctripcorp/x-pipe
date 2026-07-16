@@ -8,6 +8,7 @@ import java.nio.channels.GatheringByteChannel;
 
 import java.io.IOException;
 import java.nio.channels.WritableByteChannel;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -263,6 +264,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     private long pendingFlushBytes(FileCacheEntry entry) {
+        if (entry.cacheStartOffset < 0) return 0;
         return Math.max(0, entry.cacheEndOffset - entry.writtenToFsOffset);
     }
 
@@ -276,6 +278,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             StorageUtil.requireCacheOpen(file);
             ByteBuf writeBuf;
             synchronized (entry) {
+                // atomicReplace overwrites the whole file; always flush from offset 0.
+                if (file.atomicReplace) {
+                    entry.writtenToFsOffset = 0;
+                }
                 if (pendingFlushBytes(entry) <= 0) {
                     return 0L;
                 }
@@ -763,30 +769,34 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         FileCacheEntry entry = file.getCacheEntry();
         final long writeSize = data.readableBytes();
         final boolean useCacheSnapshot = useCache(file);
-        final ByteBuf writeBuf = initCacheAndBuildWriteBuf(file, data, useCacheSnapshot);
-        if (!writeBuf.isReadable()) {
-            writeBuf.release();
-            return CompletableFuture.completedFuture(writeSize);
-        }
+
+        initCacheAndAppend(file, data, useCacheSnapshot);
         final String id = file.identifier();
         try {
             if (hasInFlightIo(id)) {
                 if (!useCacheSnapshot) {
                     awaitInFlightIo(id);
                 } else {
-                    writeBuf.release();
                     return CompletableFuture.completedFuture(writeSize);
                 }
             }
         } catch (Exception e) {
-            writeBuf.release();
+            if (!useCacheSnapshot) {
+                data.release();
+            }
             throw e;
+        }
+
+        final ByteBuf writeBuf = buildWriteBufAfterInFlight(file, entry, data, useCacheSnapshot);
+        if (!writeBuf.isReadable()) {
+            writeBuf.release();
+            return CompletableFuture.completedFuture(writeSize);
         }
         CompletableFuture<Long> ioFuture = StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
             long written = executeWithEioRetry(file,
                     () -> delegate.writeSync(file, writeBuf));
-            if (entry != null) {
+            if (entry != null && useCacheSnapshot) {
                 synchronized (entry) {
                     entry.writtenToFsOffset += written;
                 }
@@ -804,10 +814,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return backingFsMode != BackingFsMode.NO_CACHE && file.cacheMode != CacheMode.NO_CACHE;
     }
 
-    private ByteBuf initCacheAndBuildWriteBuf(AsyncFile file, ByteBuf data, boolean cacheWrite) {
+    private void initCacheAndAppend(AsyncFile file, ByteBuf data, boolean cacheWrite) {
         FileCacheEntry entry = file.getCacheEntry();
         if (entry == null) {
-            return data;
+            return;
         }
         if (file.atomicReplace) {
             if (cacheWrite) {
@@ -816,7 +826,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                     entry.cacheStartOffset = 0;
                     entry.writtenToFsOffset = 0;
                     long offset = 0;
-                    int savedReaderIndex = data.readerIndex();
                     while (data.isReadable()) {
                         long chunkIdx = offset / chunkSize;
                         int len = (int) Math.min(chunkSize, data.readableBytes());
@@ -829,57 +838,68 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                     if (file.cacheMode == CacheMode.FULL_CACHE) {
                         entry.fullCacheInitializedByWriter = true;
                     }
-                    data.readerIndex(savedReaderIndex);
                 }
+                data.release();
             }
-            return data;
+            return;
         }
 
-        if (cacheWrite) {
-            if (shouldPreloadCache(file, cacheWrite)) {
-                if (!loadFullFileCache(file, cacheWrite)) {
-                    data.release();
-                    throw new PreloadFailedException("preload failed for " + file.path);
-                }
-            }
-            if (shouldInitTailCache(file, cacheWrite)) {
-                if (!initTailCacheSync(file)) {
-                    data.release();
-                    throw new PreloadFailedException("tail cache init failed for " + file.path);
-                }
-            }
-            synchronized (entry) {
-                long offset = entry.cacheEndOffset;
-                int savedReaderIndex = data.readerIndex();
-                while (data.isReadable()) {
-                    long chunkIdx = offset / chunkSize;
-                    int inChunk = (int) (offset % chunkSize);
-                    int len = (int) Math.min(chunkSize - inChunk, data.readableBytes());
-                    ByteBuf chunk = entry.chunks.computeIfAbsent(chunkIdx,
-                            k -> StorageAllocator.ALLOC.directBuffer((int) chunkSize));
-                    chunk.writerIndex(inChunk);
-                    chunk.writeBytes(data, len);
-                    offset += len;
-                }
-                entry.cacheEndOffset = offset;
-                if (file.cacheMode == CacheMode.FULL_CACHE) {
-                    entry.fullCacheInitializedByWriter = true;
-                }
-                data.readerIndex(savedReaderIndex);
-            }
-            if (entry.cacheEndOffset - entry.writtenToFsOffset < writeBatchBytes) {
+        if (!cacheWrite) {
+            return;
+        }
+        if (shouldPreloadCache(file, cacheWrite)) {
+            if (!loadFullFileCache(file, cacheWrite)) {
                 data.release();
-                return Unpooled.buffer(0);
+                throw new PreloadFailedException("preload failed for " + file.path);
+            }
+        }
+        if (shouldInitTailCache(file, cacheWrite)) {
+            if (!initTailCacheSync(file)) {
+                data.release();
+                throw new PreloadFailedException("tail cache init failed for " + file.path);
+            }
+        }
+        synchronized (entry) {
+            long offset = entry.cacheEndOffset;
+            while (data.isReadable()) {
+                long chunkIdx = offset / chunkSize;
+                int inChunk = (int) (offset % chunkSize);
+                int len = (int) Math.min(chunkSize - inChunk, data.readableBytes());
+                ByteBuf chunk = entry.chunks.computeIfAbsent(chunkIdx,
+                        k -> StorageAllocator.ALLOC.directBuffer((int) chunkSize));
+                chunk.writerIndex(inChunk);
+                chunk.writeBytes(data, len);
+                offset += len;
+            }
+            entry.cacheEndOffset = offset;
+            if (file.cacheMode == CacheMode.FULL_CACHE) {
+                entry.fullCacheInitializedByWriter = true;
+            }
+        }
+        data.release();
+    }
+
+    // Must be called only when there is no in-flight IO for this file.
+    private ByteBuf buildWriteBufAfterInFlight(AsyncFile file, FileCacheEntry entry, ByteBuf data,
+            boolean cacheWrite) {
+        if (entry == null) {
+            return data;
+        }
+        if (cacheWrite) {
+            synchronized (entry) {
+                long pending = pendingFlushBytes(entry);
+                if (pending <= 0) {
+                    return Unpooled.buffer(0);
+                }
+                if (!file.atomicReplace && pending < writeBatchBytes) {
+                    return Unpooled.buffer(0);
+                }
+                return buildWriteBufFromCache(entry, Unpooled.buffer(0), maxWriteChunkThreshold * chunkSize);
             }
         }
         if (entry.writtenToFsOffset < entry.cacheEndOffset) {
             synchronized (entry) {
-                long maxBytes = cacheWrite ? Long.MAX_VALUE : maxWriteChunkThreshold * chunkSize;
-                if (cacheWrite) {
-                    data.release();
-                    return buildWriteBufFromCache(entry, Unpooled.buffer(0), maxBytes);
-                }
-                return buildWriteBufFromCache(entry, data, maxBytes);
+                return buildWriteBufFromCache(entry, data, Long.MAX_VALUE);
             }
         }
         return data;
@@ -920,22 +940,27 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
 
+    @Override
     public CompletableFuture<Void> delete(AsyncFile file) {
         StorageUtil.requireWriteMode(file);
-        return StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
-            delegate.deleteSync(file.path);
-            FileCacheEntry entry = file.getCacheEntry();
-            if (entry != null) {
-                synchronized (entry) {
+        StorageUtil.requireCacheOpen(file);
+        final String id = file.identifier();
+        awaitInFlightIo(id);
+        FileCacheEntry entry = file.getCacheEntry();
+        if (entry != null) {
+            synchronized (entry) {
+                if (entry.cacheStartOffset >= 0) {
                     releaseAllChunks(entry);
-                    entry.cacheStartOffset = -1;
+                    entry.cacheStartOffset = 0;
                     entry.cacheEndOffset = 0;
                     entry.writtenToFsOffset = 0;
                     entry.fullCacheInitializedByWriter = false;
                 }
             }
-            return null;
+        }
+        return StorageUtil.run(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            delegate.deleteSync(file.path);
         });
     }
 
@@ -947,18 +972,19 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Long> size(AsyncFile file) {
         StorageUtil.requireCacheOpen(file);
-        if (file.cacheMode == CacheMode.NO_CACHE) {
-            return StorageUtil.supply(ioExecutor, () -> {
-                StorageUtil.requireCacheOpen(file);
-                return executeWithEioRetry(file, () -> delegate.sizeSync(file));
-            });
+        if (file.cacheMode != CacheMode.NO_CACHE) {
+            FileCacheEntry entry = file.getCacheEntry();
+            synchronized (entry) {
+                if (entry.cacheStartOffset >= 0) {
+                    return CompletableFuture.completedFuture(
+                            Math.max(entry.writtenToFsOffset, entry.cacheEndOffset));
+                }
+            }
         }
-        FileCacheEntry entry = file.getCacheEntry();
-        long size;
-        synchronized (entry) {
-            size = Math.max(entry.writtenToFsOffset, entry.cacheEndOffset);
-        }
-        return CompletableFuture.completedFuture(size);
+        return StorageUtil.supply(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            return executeWithEioRetry(file, () -> delegate.sizeSync(file));
+        });
     }
 
 
@@ -1025,7 +1051,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         final String id = file.identifier();
         awaitInFlightIo(id);
-        if (file.getCacheEntry() != null) {
+        if (file.canWrite() && file.getCacheEntry() != null) {
             flushPendingWriteAndAwait(file, id);
         }
         file.cacheClosed = true;
@@ -1207,28 +1233,50 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Long> size(AsyncSegmentFile file) {
         StorageUtil.requireCacheOpen(file);
-        if (file.cacheMode == CacheMode.NO_CACHE) {
-            return StorageUtil.supply(ioExecutor, () -> {
-                StorageUtil.requireCacheOpen(file);
-                return delegate.sizeSync(file);
-            });
+        if (file.cacheMode != CacheMode.NO_CACHE) {
+            SegmentFileCacheEntry entry = file.getCacheEntry();
+            List<Long> offsets = list(file);
+            if (offsets.isEmpty()) {
+                return CompletableFuture.completedFuture(0L);
+            }
+            long firstOffset = offsets.get(0);
+            synchronized (entry) {
+                if (entry.cacheStartOffset >= 0) {
+                    long end = Math.max(entry.writtenToFsOffset, entry.cacheEndOffset);
+                    return CompletableFuture.completedFuture(Math.max(0L, end - firstOffset));
+                }
+            }
         }
-        List<Long> offsets = list(file);
-        if (offsets.isEmpty()) {
-            return CompletableFuture.completedFuture(0L);
-        }
-        long firstOffset = offsets.get(0);
-        SegmentFileCacheEntry entry = file.getCacheEntry();
-        long end;
-        synchronized (entry) {
-            end = Math.max(entry.writtenToFsOffset, entry.cacheEndOffset);
-        }
-        return CompletableFuture.completedFuture(Math.max(0L, end - firstOffset));
+        return StorageUtil.supply(ioExecutor, () -> {
+            StorageUtil.requireCacheOpen(file);
+            return delegate.sizeSync(file);
+        });
     }
 
 
     @Override
     public CompletableFuture<Long> sizeOfSegment(AsyncSegmentFile file, long startOffset) {
+        StorageUtil.requireCacheOpen(file);
+        if (file.cacheMode != CacheMode.NO_CACHE) {
+            List<Long> offsets = list(file);
+            if (offsets.isEmpty()) {
+                return CompletableFuture.completedFuture(0L);
+            }
+            int idx = Collections.binarySearch(offsets, startOffset);
+            if (idx < 0) {
+                return CompletableFuture.completedFuture(0L);
+            }
+            if (idx + 1 < offsets.size()) {
+                return CompletableFuture.completedFuture(offsets.get(idx + 1) - startOffset);
+            }
+            SegmentFileCacheEntry entry = file.getCacheEntry();
+            synchronized (entry) {
+                if (entry.cacheStartOffset >= 0) {
+                    long end = Math.max(entry.writtenToFsOffset, entry.cacheEndOffset);
+                    return CompletableFuture.completedFuture(Math.max(0L, end - startOffset));
+                }
+            }
+        }
         return StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
             return delegate.sizeOfSegmentSync(file, startOffset);
@@ -1249,16 +1297,114 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets) {
         StorageUtil.requireWriteMode(file);
+        StorageUtil.requireCacheOpen(file);
+        if (startOffsets.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        List<Long> offsets = list(file);
+        int drop = startOffsets.size();
+        if (drop >= offsets.size()) {
+            throw new IllegalArgumentException("deleteSegments cannot delete the last segment");
+        }
+        for (int i = 0; i < drop; i++) {
+            if (!startOffsets.get(i).equals(offsets.get(i))) {
+                throw new IllegalArgumentException(
+                        "deleteSegments requires deleting segments in order from the first: expected "
+                                + offsets.get(i) + ", got " + startOffsets.get(i));
+            }
+        }
+        long newFirstOffset = offsets.get(drop);
+        if (file.cacheMode != CacheMode.NO_CACHE) {
+            SegmentFileCacheEntry entry = file.getCacheEntry();
+            synchronized (entry) {
+                if (entry.cacheStartOffset >= 0) {
+                    long cacheStart = entry.cacheStartOffset;
+                    long cacheEnd = entry.cacheEndOffset;
+                    if (cacheEnd <= newFirstOffset) {
+                        // deleteSegments keeps the last segment; cacheEnd should still cover newFirstOffset.
+                        throw new IllegalStateException(
+                                "segment cache unreliable on deleteSegments for " + file.identifier()
+                                        + ": cacheEndOffset=" + cacheEnd
+                                        + " <= newFirstOffset=" + newFirstOffset
+                                        + ", cacheStartOffset=" + cacheStart
+                                        + ", writtenToFsOffset=" + entry.writtenToFsOffset);
+                    }
+                    if (cacheStart < newFirstOffset) {
+                        // Only the dropped body range [cacheStart, newFirstOffset).
+                        for (int i = 0; i < drop; i++) {
+                            long segStart = offsets.get(i);
+                            long segEnd = offsets.get(i + 1);
+                            if (cacheStart < segEnd && segStart < newFirstOffset) {
+                                for (String indexPrefix : file.indexPrefixes) {
+                                    entry.releaseIndexFileCacheEntry(segStart, indexPrefix, false);
+                                }
+                            }
+                        }
+                        long firstDrop = cacheStart / chunkSize;
+                        long firstKeep = newFirstOffset / chunkSize;
+                        for (long i = firstDrop; i < firstKeep; i++) {
+                            ByteBuf chunk = entry.chunks.remove(i);
+                            if (chunk != null) {
+                                chunk.release();
+                            }
+                        }
+                        entry.cacheStartOffset = newFirstOffset;
+                        entry.cacheEndOffset = Math.max(cacheEnd, newFirstOffset);
+                    }
+                }
+            }
+        }
         return StorageUtil.run(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
             delegate.deleteSegmentsSync(file, startOffsets);
         });
     }
 
-
     @Override
     public CompletableFuture<Void> delete(AsyncSegmentFile file) {
         StorageUtil.requireWriteMode(file);
+        StorageUtil.requireCacheOpen(file);
+        if (file.cacheMode != CacheMode.NO_CACHE) {
+            List<Long> startOffsets = list(file);
+            SegmentFileCacheEntry entry = file.getCacheEntry();
+            synchronized (entry) {
+                if (entry.cacheStartOffset >= 0) {
+                    long cacheStart = entry.cacheStartOffset;
+                    long cacheEnd = entry.cacheEndOffset;
+                    for (int i = 0; i < startOffsets.size(); i++) {
+                        long segStart = startOffsets.get(i);
+                        long segEnd = i + 1 < startOffsets.size()
+                                ? startOffsets.get(i + 1) : Long.MAX_VALUE;
+                        // [cacheStart, cacheEnd) overlaps [segStart, segEnd)
+                        if (cacheStart < segEnd && segStart < cacheEnd) {
+                            for (String indexPrefix : file.indexPrefixes) {
+                                entry.releaseIndexFileCacheEntry(segStart, indexPrefix, false);
+                            }
+                        }
+                    }
+                }
+
+                // Remaining index entries (still held by open channels): clear cached data.
+                for (ConcurrentHashMap<String, FileCacheEntry> byPrefix : entry.indexFiles.values()) {
+                    for (FileCacheEntry indexEntry : byPrefix.values()) {
+                        synchronized (indexEntry) {
+                            if (indexEntry.cacheStartOffset >= 0) {
+                                releaseAllChunks(indexEntry);
+                                indexEntry.cacheStartOffset = 0;
+                                indexEntry.cacheEndOffset = 0;
+                                indexEntry.writtenToFsOffset = 0;
+                            }
+                        }
+                    }
+                }
+                if (entry.cacheStartOffset >= 0) {
+                    releaseAllChunks(entry);
+                    entry.cacheStartOffset = 0;
+                    entry.cacheEndOffset = 0;
+                    entry.writtenToFsOffset = 0;
+                }
+            }
+        }
         return delegate.delete(file);
     }
 
