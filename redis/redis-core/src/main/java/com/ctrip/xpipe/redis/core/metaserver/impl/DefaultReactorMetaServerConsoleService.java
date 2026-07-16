@@ -99,7 +99,8 @@ public class DefaultReactorMetaServerConsoleService implements ReactorMetaServer
         CommandFuture<MetaServerConsoleService.PrimaryDcChangeMessage> future = new DefaultCommandFuture<>();
 
         WebClient.RequestBodySpec bodySpec = metaServerClient.put()
-                .uri(this.pathDoChangePrimaryDc, clusterId, shardId, newPrimaryDc);
+                .uri(this.pathDoChangePrimaryDc, clusterId, shardId, newPrimaryDc)
+                .contentType(MediaType.APPLICATION_JSON);
         WebClient.RequestHeadersSpec<?> headersSpec = null != request ? bodySpec.bodyValue(request): bodySpec;
 
         long startTime = System.currentTimeMillis();
