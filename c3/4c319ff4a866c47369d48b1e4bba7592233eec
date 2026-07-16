@@ -1,0 +1,51 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  s_ecc2e4aef5f5bf::t_4d2c925125be28 273-275
+  s_ecc2e4aef5f5bf::t_a24ae0c4f460ef 207-209
+  s_0cf0a8fdaf84ee::t_3c4bb551e0778e 276-277
+  s_ecc2e4aef5f5bf::t_0b1c0f9549ac0c 314
+  s_ecc2e4aef5f5bf::t_35b21f1b475257 34-35
+  h_6ceeb547b3b36a 54,121,222
+  s_ecc2e4aef5f5bf::t_f0d87a89c5cc9a 406
+  s_ecc2e4aef5f5bf::t_88e65c231cee0a 305-307,309-311,316,320-321,324-326,331,341,343-344
+  s_ecc2e4aef5f5bf::t_e934b568f06970 36-37
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/SegmentOffsetBeforeFirstException.java
+  s_ecc2e4aef5f5bf::t_aadaeafbb0304a 1-12
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_ecc2e4aef5f5bf::t_bdd76c2243f1e3 708-709
+  s_ecc2e4aef5f5bf::t_0cac2cb7b5cc1e 643
+  s_ecc2e4aef5f5bf::t_5840f90ed6e73e 595-605
+  s_ecc2e4aef5f5bf::t_66fdf97227e4f4 691
+  h_6ceeb547b3b36a 445
+  s_ecc2e4aef5f5bf::t_872b14e90abd11 728-731,735
+  s_ecc2e4aef5f5bf::t_03584c77b38ef1 842
+  s_ecc2e4aef5f5bf::t_90cd7631dd16ca 625
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "c34c319ff4a866c47369d48b1e4bba7592233eec",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_0cf0a8fdaf84ee": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "174bcbfb-55c1-4854-8aa0-daf718f7a05a",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_ecc2e4aef5f5bf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c59fac0b-d1f3-48a0-b616-9bd353bf498b",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
