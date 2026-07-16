@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.ctrip.xpipe.tuple.Pair;
+
 public class AsyncSegmentFile extends AbstractStorageFile {
 
     private static final Logger logger = LoggerFactory.getLogger(AsyncSegmentFile.class);
@@ -309,13 +311,22 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             closeCurrent();
             return false;
         }
-        long segStart = s.floorKey(logicalOffset);
+        Pair<Long, Long> range = s.floorKeyAndNext(logicalOffset);
+        long segStart = range.getKey();
+        long nextStart = range.getValue();
         closeCurrent();
         openedSegmentStartOffset = segStart;
-        if (segStart == s.lastOffset) {
-            openedSegmentEndOffset = Long.MAX_VALUE;
-        } else {
-            openedSegmentEndOffset = segStart + Files.size(segmentPath(segStart));
+        openedSegmentEndOffset = nextStart;
+        if (nextStart != Long.MAX_VALUE) {
+            long actualSize = Files.size(segmentPath(segStart));
+            long expectedSize = nextStart - segStart;
+            if (expectedSize > actualSize) {
+                throw new SegmentFilesNotContinuousException(
+                        "segment files not continuous, segment " + segStart
+                                + " expected size " + expectedSize
+                                + " but actual file size " + actualSize);
+            }
+            openedSegmentEndOffset = segStart + actualSize;
         }
         return true;
     }
