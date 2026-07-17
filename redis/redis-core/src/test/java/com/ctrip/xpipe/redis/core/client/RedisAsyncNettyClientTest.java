@@ -177,6 +177,28 @@ public class RedisAsyncNettyClientTest extends AsyncNettyClientTest {
     }
 
     @Test
+    public void testSetNameSuccess() throws Exception {
+        server = startEchoServer(randomPort(), "+OK\r\n");
+        RedisAsyncNettyClient client = new RedisAsyncNettyClient(b.connect("localhost", server.getPort()),
+                new DefaultEndPoint("localhost", server.getPort()), "xpipe", () -> true);
+        client.channel().attr(NettyClientHandler.KEY_CLIENT).set(client);
+        waitConditionUntilTimeOut(()->client.channel().isActive(), 1000);
+        sleep(500);
+        Assert.assertTrue(client.getDoAfterConnectedSuccess());
+    }
+
+    @Test
+    public void testSetNameFail() throws Exception {
+        server = startEchoServer(randomPort(), "+ERR\r\n");
+        RedisAsyncNettyClient client = new RedisAsyncNettyClient(b.connect("localhost", server.getPort()),
+                new DefaultEndPoint("localhost", server.getPort()), "xpipe", () -> true);
+        client.channel().attr(NettyClientHandler.KEY_CLIENT).set(client);
+        waitConditionUntilTimeOut(()->client.channel().isActive(), 1000);
+        sleep(500);
+        Assert.assertFalse(client.getDoAfterConnectedSuccess());
+    }
+
+    @Test
     public void testFutureClosed() {
         RedisAsyncNettyClient client = new RedisAsyncNettyClient(b.connect("localhost", server.getPort()),
                 new DefaultEndPoint("localhost", server.getPort()), "xpipe", () -> true);

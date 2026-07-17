@@ -36,6 +36,16 @@ public class CatEventMonitor implements EventMonitor {
     }
 
     @Override
+    public void logError(String type, String name) {
+        Cat.logEvent(type, shorten(name), FAIL, "");
+    }
+
+    @Override
+    public void logError(String type, String name, Map<String, String> nameValuePairs) {
+        Cat.logEvent(type, shorten(name), FAIL, nameValuePairs);
+    }
+
+    @Override
     public void logAlertEvent(String simpleAlertMessage) {
 
         logger.info("{}", simpleAlertMessage);

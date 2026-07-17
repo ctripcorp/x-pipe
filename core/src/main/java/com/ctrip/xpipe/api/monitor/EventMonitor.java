@@ -21,5 +21,9 @@ public interface EventMonitor {
 
     void logEvent(String type, String name, Map<String, String> nameValuePairs);
 
+    void logError(String type, String name);
+
+    void logError(String type, String name, Map<String, String> nameValuePairs);
+
     void logAlertEvent(String simpleAlertMessage);
 }
