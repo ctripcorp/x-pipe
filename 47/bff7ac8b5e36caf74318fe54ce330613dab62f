@@ -1,0 +1,25 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/client/RedisAsyncNettyClient.java
+  h_2a4fc97c4bee49 102,111
+  s_0f243635e06b1d::t_12d4e4abaef7a2 6,81,85,90-91,99-101,108-110,116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "47bff7ac8b5e36caf74318fe54ce330613dab62f",
+  "prompts": {},
+  "humans": {
+    "h_2a4fc97c4bee49": {
+      "author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_0f243635e06b1d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "04d16ad9-a508-4b07-91cf-f06319d44c86",
+        "model": "glm-5.2"
+      },
+      "human_author": null
+    }
+  }
+}
