@@ -1,0 +1,32 @@
+core/src/main/java/com/ctrip/xpipe/netty/commands/RedisNettyClient.java
+  s_a2602fc9570fa2::t_09cab7821a7395 7-8
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/client/RedisAsyncNettyClient.java
+  s_a2602fc9570fa2::t_d9b1a0e93acf8b 134-136
+  s_a2602fc9570fa2::t_98cdcd28070880 23-24,40,42-44,55-56,64,88,92,96,110,118,125-133,137-148,150-157,159-177,186-187,190-192
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/client/RedisAsyncNettyClientTest.java
+  s_a2602fc9570fa2::t_e98b28688139bf 30,44,51,59,78-82,86,93,117-118,120-122,331-335,351-363,365,385,407,440-471,493-498
+  s_a2602fc9570fa2::t_98b9764bf4d1f5 379-384,386-393,395-397,399-403,405-406
+  s_a2602fc9570fa2::t_2219eb8375b5f8 24-28,32
+  s_a2602fc9570fa2::t_813e0a37949ce3 45
+  s_a2602fc9570fa2::t_94329d9ad95631 123-174,177-250,252-294,296-299,301-330
+  s_a2602fc9570fa2::t_058bd5879cb6c9 404
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/client/NettyRedisPoolClientFactory.java
+  s_a2602fc9570fa2::t_6c8ec9845dc4d6 7,32-39,41-44
+  s_a2602fc9570fa2::t_ebf27e154fc89e 40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "35790402488814dd2fa0193c534055677bfe0b86",
+  "prompts": {},
+  "sessions": {
+    "s_a2602fc9570fa2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4a30cc95-8a02-480e-a4d3-a3131d0796ed",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}

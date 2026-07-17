@@ -1,0 +1,19 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/metaserver/impl/DefaultReactorMetaServerConsoleService.java
+  s_5ac9361053f46d::t_95064e5ea394cc 102-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "83698316484db8b8fa3ceb594a8e10152108c75d",
+  "prompts": {},
+  "sessions": {
+    "s_5ac9361053f46d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "46e014a4-cf5e-4412-8a52-c1f016e21d2e",
+        "model": "glm-5.2"
+      },
+      "human_author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  }
+}
