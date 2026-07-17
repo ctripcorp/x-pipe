@@ -1,0 +1,41 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/client/RedisAsyncNettyClient.java
+  s_0f243635e06b1d::t_9f09f100da5497 6,81,102,109,114,121
+  s_0f243635e06b1d::t_d6220eefc55508 93,104,116
+  s_0f243635e06b1d::t_f5fb2f4474c276 106,118
+  s_0f243635e06b1d::t_0026b9324f960d 126
+  s_0f243635e06b1d::t_c2bd39f2828732 82,88,94
+  s_0f243635e06b1d::t_fda0ddfd2391e3 103,115
+  s_0f243635e06b1d::t_818a6033cf4b86 108,120
+  s_0f243635e06b1d::t_e994676c9eca03 105,117
+  s_0f243635e06b1d::t_46a46b3c1770c5 125
+  s_0f243635e06b1d::t_af285abb15eedf 85-87,92
+  s_0f243635e06b1d::t_10700b08ad04be 107,119
+core/src/main/java/com/ctrip/xpipe/api/monitor/EventMonitor.java
+  s_0f243635e06b1d::t_651bc66f929a0c 24-25
+  s_0f243635e06b1d::t_a8cadee23f1f0f 26-27
+core/src/main/java/com/ctrip/xpipe/monitor/CatEventMonitor.java
+  s_0f243635e06b1d::t_f1753fd03486cc 39,41-43
+  s_0f243635e06b1d::t_3f9d16711a2f8c 38,44-47
+  s_0f243635e06b1d::t_b5b03c701e4fab 40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "28bf4b4e7328f44a3e5d891472a27bf2533d9ab1",
+  "prompts": {},
+  "humans": {
+    "h_2a4fc97c4bee49": {
+      "author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_0f243635e06b1d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "04d16ad9-a508-4b07-91cf-f06319d44c86",
+        "model": "glm-5.2"
+      },
+      "human_author": null
+    }
+  }
+}
