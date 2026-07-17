@@ -227,7 +227,6 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             openedSegmentStartOffset = s.lastOffset;
             openedSegmentEndOffset = Long.MAX_VALUE;
             openCurrentChannel();
-            currentIndexFiles = new HashMap<>();
             for (String indexPrefix : indexPrefixes) {
                 AsyncIndexFile af = openIndexFile(indexPrefix, openedSegmentStartOffset, OpenMode.READ_WRITE);
                 currentIndexFiles.put(indexPrefix, af);
