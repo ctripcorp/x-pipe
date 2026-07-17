@@ -1147,13 +1147,6 @@
                     <version>${maven-jar-plugin_version}</version>
                     <executions>
                         <execution>
-                            <id>default-jar</id>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>jar</goal>
-                            </goals>
-                        </execution>
-                        <execution>
                             <id>test-jar</id>
                             <phase>package</phase>
                             <goals>
