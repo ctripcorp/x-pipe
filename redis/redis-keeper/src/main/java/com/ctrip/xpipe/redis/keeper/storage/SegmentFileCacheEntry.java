@@ -1,12 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.storage;
 
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 
 final class SegmentFileCacheEntry extends FileCacheEntry {
     // Reserve all index files for the segment referenced by chunks.
     final ConcurrentHashMap<Long, ConcurrentHashMap<String, FileCacheEntry>> indexFiles = new ConcurrentHashMap<>();
-    // Last segment startOffset for which writer index cache leases were taken (first body write).
-    private long indexCacheLeaseStart = -1L;
+    // Segment starts that currently hold a writer index cache lease.
+    final LinkedList<Long> writerIndexLeaseStarts = new LinkedList<>();
 
     FileCacheEntry acquireIndexFileCacheEntry(long startOffset, String indexPrefix, boolean write) {
         synchronized (this) {
@@ -24,19 +25,48 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
             return entry;
         }
     }
-    
-    void ensureWriterIndexCacheLease(long startOffset) {
-        if (indexCacheLeaseStart == startOffset) {
+
+    void bindWriterIndexLease(long startOffset) {
+        synchronized (this) {
+            if (!writerIndexLeaseStarts.isEmpty()
+                    && startOffset <= writerIndexLeaseStarts.getLast()) {
+                return;
+            }
+            ConcurrentHashMap<String, FileCacheEntry> byPrefix = indexFiles.get(startOffset);
+            if (byPrefix == null || byPrefix.isEmpty()) {
+                return;
+            }
+            writerIndexLeaseStarts.addLast(startOffset);
+            for (FileCacheEntry entry : byPrefix.values()) {
+                entry.refCount++;
+            }
+        }
+    }
+
+    // Must be called under synchronized(this).
+    // Drop leases for segment starts strictly before newCacheStart.
+    void releaseWriterIndexLeasesThrough(long newCacheStart) {
+        while (!writerIndexLeaseStarts.isEmpty()
+                && writerIndexLeaseStarts.getFirst() < newCacheStart) {
+            releaseWriterIndexLease(writerIndexLeaseStarts.removeFirst());
+        }
+    }
+
+    // Must be called under synchronized(this).
+    void releaseAllWriterIndexLeases() {
+        while (!writerIndexLeaseStarts.isEmpty()) {
+            releaseWriterIndexLease(writerIndexLeaseStarts.removeFirst());
+        }
+    }
+
+    // Must be called under synchronized(this).
+    private void releaseWriterIndexLease(long startOffset) {
+        ConcurrentHashMap<String, FileCacheEntry> byPrefix = indexFiles.get(startOffset);
+        if (byPrefix == null) {
             return;
         }
-        synchronized (this) {
-            ConcurrentHashMap<String, FileCacheEntry> byPrefix = indexFiles.get(startOffset);
-            if (byPrefix != null) {
-                for (FileCacheEntry indexEntry : byPrefix.values()) {
-                    indexEntry.refCount++;
-                }
-            }
-            indexCacheLeaseStart = startOffset;
+        for (String indexPrefix : byPrefix.keySet()) {
+            releaseIndexFileCacheEntry(startOffset, indexPrefix, false);
         }
     }
 

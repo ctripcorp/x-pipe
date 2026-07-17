@@ -432,22 +432,28 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return written;
     }
 
-    private void maybeSwitchSegment(AsyncSegmentFile file, SegmentDirState s, long bytesRead) throws IOException {
+    private void maybeSwitchSegment(AsyncSegmentFile file, SegmentDirState s, long bytesRead) {
         long nextOffset = file.position;
         long physicalOffset = nextOffset - file.openedSegmentStartOffset;
         boolean atSegmentBoundary = nextOffset >= file.openedSegmentEndOffset;
-        boolean staleTailEof = bytesRead == 0
-                && file.openedSegmentStartOffset != s.lastOffset
-                && file.currentSegmentChannel.size() <= physicalOffset;
-        if (!atSegmentBoundary && !staleTailEof) {
-            return;
+        try {
+            boolean staleTailEof = bytesRead == 0
+                    && file.openedSegmentStartOffset != s.lastOffset
+                    && file.currentSegmentChannel.size() <= physicalOffset;
+            if (!atSegmentBoundary && !staleTailEof) {
+                return;
+            }
+            // Close first to trigger recalculation of opened range.
+            // Prefetch only; next read recovers via ensureSegmentOpenForRead if this fails.
+            file.closeCurrent();
+            if (!file.switchToSegment(nextOffset, s)) {
+                return;
+            }
+            file.openSegmentChannelForRead();
+        } catch (IOException e) {
+            logger.error("maybeSwitchSegment failed for {} at position {}, will retry on next read",
+                    file.identifier(), nextOffset, e);
         }
-        // Close first to trigger recalculation of opened range.
-        file.closeCurrent();
-        if (!file.switchToSegment(nextOffset, s)) {
-            return;
-        }
-        file.openSegmentChannelForRead();
     }
 
     private Path getTmpPath(String filePath) {

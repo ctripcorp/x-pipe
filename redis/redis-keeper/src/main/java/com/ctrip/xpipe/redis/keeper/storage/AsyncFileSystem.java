@@ -115,9 +115,8 @@ public interface AsyncFileSystem {
     // Mixing read()/position() with pread()/transferTo() on the same AsyncSegmentFile is NOT supported.
     // For a newly created (empty) segment file in write mode, the segment file will start at 0 unless truncate(offset) is called to specify the initial offset before writing.
     //
-    // deleteSegments / delete / truncate: disk files are removed before metadata (SegmentDirState) is
-    // published; TailCache also clears in-memory cache before the disk op. If the call fails, the caller
-    // must retry, otherwise memory and disk stay inconsistent. Concurrent readers may hit
+    // Metadata-related ops (e.g. deleteSegments / delete / truncate / roll): if the call fails, the caller
+    // must retry, otherwise metadata and cache may stay inconsistent. Concurrent readers may hit
     // StaleStateException (e.g. underlying NoSuchFile) while files are already gone but metadata is not
     // published yet. After a successful writer retry, readers may recover, or may get
     // SegmentOffsetBeforeFirstException if their offset fell into a deleted prefix. If truncate shrinks
