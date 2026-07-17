@@ -36,7 +36,6 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     // segment is the tail — end is unbounded (writer may still append).
     long openedSegmentStartOffset;
     long openedSegmentEndOffset;
-    long position = 0;
 
     @Override
     FileChannel currentWriteChannel() {
@@ -86,11 +85,6 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     @Override
-    String identifier() {
-        return key;
-    }
-
-    @Override
     SegmentFileCacheEntry getCacheEntry() {
         return (SegmentFileCacheEntry) cacheEntry;
     }
@@ -133,7 +127,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     AsyncSegmentFile(String dirPath, String prefix, List<String> indexPrefixes, String key, boolean writeMode) {
-        super(writeMode ? OpenMode.WRITE : OpenMode.READ);
+        super(writeMode ? OpenMode.WRITE : OpenMode.READ, false);
         this.dirPath = dirPath;
         this.prefix = prefix;
         this.indexPrefixes = indexPrefixes;
@@ -278,13 +272,13 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             try {
                 af.channel.close();
             } catch (IOException e) {
-                logger.error("failed to close index channel {}", af.identifier(), e);
+                logger.error("failed to close index channel {}", af.getKey(), e);
                 if (first == null) first = e;
             } finally {
                 try {
                     af.onCacheClose.run();
                 } catch (Throwable t) {
-                    logger.error("onCacheClose failed for {}", af.identifier(), t);
+                    logger.error("onCacheClose failed for {}", af.getKey(), t);
                 }
             }
         }

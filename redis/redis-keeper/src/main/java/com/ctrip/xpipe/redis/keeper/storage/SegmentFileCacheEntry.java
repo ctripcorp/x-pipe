@@ -53,6 +53,15 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
     }
 
     // Must be called under synchronized(this).
+    // Drop leases for segment starts strictly after truncateOffset (segments deleted by truncate).
+    void releaseWriterIndexLeasesAfter(long truncateOffset) {
+        while (!writerIndexLeaseStarts.isEmpty()
+                && writerIndexLeaseStarts.getLast() > truncateOffset) {
+            releaseWriterIndexLease(writerIndexLeaseStarts.removeLast());
+        }
+    }
+
+    // Must be called under synchronized(this).
     void releaseAllWriterIndexLeases() {
         while (!writerIndexLeaseStarts.isEmpty()) {
             releaseWriterIndexLease(writerIndexLeaseStarts.removeFirst());

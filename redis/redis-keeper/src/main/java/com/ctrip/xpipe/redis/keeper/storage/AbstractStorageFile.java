@@ -28,10 +28,12 @@ public abstract class AbstractStorageFile {
 
     long pendingFsyncBytes = 0;
     final OpenMode openMode;
+    final boolean atomicReplace;
     volatile CacheMode cacheMode = CacheMode.NO_CACHE;
     volatile Runnable onCacheClose = () -> {};
     volatile boolean cacheClosed = false;
     volatile boolean closed = false;
+    long position = 0;
 
     FileCacheEntry cacheEntry = null;
 
@@ -55,9 +57,8 @@ public abstract class AbstractStorageFile {
 
     abstract String getKey();
 
-    abstract String identifier();
-
-    AbstractStorageFile(OpenMode openMode) {
+    AbstractStorageFile(OpenMode openMode, boolean atomicReplace) {
         this.openMode = openMode;
+        this.atomicReplace = atomicReplace;
     }
 }
