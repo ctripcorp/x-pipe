@@ -59,6 +59,7 @@ public interface AsyncFileSystem {
     }
     // Cache is cleared before the backing FS delete. If the FS delete fails, the caller must retry
     // delete; otherwise cache and disk stay inconsistent.
+    // shall not call any other operations on the file after this call.
     default CompletableFuture<Void> delete(AsyncFile file) {
         throw new UnsupportedOperationException();
     }
@@ -80,6 +81,7 @@ public interface AsyncFileSystem {
     default void truncateSync(AsyncFile file, long size) {
         throw new UnsupportedOperationException();
     }
+    // If the FS op fails, the caller must retry.
     default CompletableFuture<Void> close(AsyncFile file) {
         throw new UnsupportedOperationException();
     }
@@ -95,6 +97,7 @@ public interface AsyncFileSystem {
     }
     // segment file return as raw file.
     CompletableFuture<List<String>> list(String path);
+    // If the FS op fails, some data may be transferred, but the position is not guaranteed to be updated.
     default CompletableFuture<Long> transferTo(AsyncFile file, long position, long count, WritableByteChannel target) {
         throw new UnsupportedOperationException();
     }
@@ -128,6 +131,7 @@ public interface AsyncFileSystem {
     default AsyncSegmentFile openSync(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant) {
         throw new UnsupportedOperationException();
     }
+    // If the FS op fails, the caller must retry.
     // Only available in read mode.
     default CompletableFuture<Void> position(AsyncSegmentFile file, long offset) {
         throw new UnsupportedOperationException();
@@ -155,6 +159,7 @@ public interface AsyncFileSystem {
     default long writeSync(AsyncSegmentFile file, ByteBuf data) {
         throw new UnsupportedOperationException();
     }
+    // If the FS op fails, the caller must retry.
     // Only available in write mode.
     default CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
@@ -195,6 +200,7 @@ public interface AsyncFileSystem {
     CompletableFuture<Long> lastModifiedOfSegment(AsyncSegmentFile file, long startOffset);
     // startOffsets must be ordered and contiguous from the first offset, will delete segments accordingly.
     // Cannot delete the last segment.
+    // If the FS op fails, the caller must retry.
     // Only available in write mode.
     default CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets) {
         throw new UnsupportedOperationException();
@@ -203,12 +209,15 @@ public interface AsyncFileSystem {
         throw new UnsupportedOperationException();
     }
     // Delete all known segment and index files. Caller must close() all open file objects (including this one) to release resources.
+    // shall not call any other operations on the file after this call. otherwise it will cause inconsistent state or orphaned files.
+    // If the FS op fails, the caller must retry.
     // Only available in write mode.
     CompletableFuture<Void> delete(AsyncSegmentFile file);
     // Truncate at logical offset, returning the index files of the resulting segment.
     // If offset is in [minOffset, maxOffset + lastSegmentSize], truncate the containing segment and delete those to its right;
     // otherwise delete everything and create a new empty segment starting at offset.
     // Index file contents are NOT truncated; the caller must adjust them.
+    // If the FS op fails, the caller must retry.
     // Only available in write mode.
     default CompletableFuture<Map<String, AsyncFile>> truncate(AsyncSegmentFile file, long offset) {
         throw new UnsupportedOperationException();
@@ -216,6 +225,7 @@ public interface AsyncFileSystem {
     default Map<String, AsyncFile> truncateSync(AsyncSegmentFile file, long offset) {
         throw new UnsupportedOperationException();
     }
+    // If the FS op fails, the caller must retry.
     default CompletableFuture<Void> close(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
     }
@@ -229,6 +239,7 @@ public interface AsyncFileSystem {
     default void fsyncSync(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
     }
+    // If the FS op fails, some data may be transferred, but the position is not guaranteed to be updated.
     default CompletableFuture<Long> transferTo(AsyncSegmentFile file, long offset, long count, WritableByteChannel target) {
         throw new UnsupportedOperationException();
     }

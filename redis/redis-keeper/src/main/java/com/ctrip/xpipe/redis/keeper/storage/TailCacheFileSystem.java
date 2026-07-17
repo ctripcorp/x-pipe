@@ -268,8 +268,12 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return Math.max(0, entry.cacheEndOffset - entry.writtenToFsOffset);
     }
 
+    // require file inflight io to be completed before calling this
     private void flushPendingWriteAndAwait(AbstractStorageFile file,
             java.util.function.Function<ByteBuf, Long> fsWrite) {
+        if (!file.canWrite() || file.getCacheEntry() == null) {
+            return;
+        }
         FileCacheEntry entry = file.getCacheEntry();
         long pendingBytes = pendingFlushBytes(entry);
         if (pendingBytes <= 0) {
@@ -325,6 +329,23 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         if (flushError != null) {
             logger.error("flush finished with error for {}, unexpected", id, flushError);
+        }
+    }
+
+    // require segment inflight io to be completed before calling this
+    private void segmentFlushPendingWriteAndAwait(AsyncSegmentFile file) {
+        flushPendingWriteAndAwait(file, writeBuf -> executeWithEioRetry(file, () -> {
+            long written = delegate.writeSync(file, writeBuf);
+            delegate.fsyncSync(file);
+            return written;
+        }));
+        for (AsyncIndexFile indexFile : file.currentIndexFiles.values()) {
+            awaitInFlightIo(indexFile.getKey());
+            flushPendingWriteAndAwait(indexFile, writeBuf -> executeWithEioRetry(indexFile, () -> {
+                long written = delegate.writeSync(indexFile, writeBuf);
+                delegate.fsyncSync(indexFile);
+                return written;
+            }));
         }
     }
 
@@ -1100,19 +1121,21 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         return closeInternal(file,
                 () -> delegate.closeSync(file),
-                writeBuf -> executeWithEioRetry(file, () -> delegate.writeSync(file, writeBuf)));
+                f -> flushPendingWriteAndAwait(f, writeBuf -> executeWithEioRetry(f, () -> {
+                    long written = delegate.writeSync(f, writeBuf);
+                    delegate.fsyncSync(f);
+                    return written;
+                })));
     }
 
-    private CompletableFuture<Void> closeInternal(AbstractStorageFile file, Runnable fsClose,
-            java.util.function.Function<ByteBuf, Long> fsWrite) {
+    private <T extends AbstractStorageFile> CompletableFuture<Void> closeInternal(T file,
+            Runnable fsClose, java.util.function.Consumer<T> flush) {
         if (file.cacheClosed) {
             return CompletableFuture.completedFuture(null);
         }
         final String id = file.getKey();
         awaitInFlightIo(id);
-        if (file.canWrite() && file.getCacheEntry() != null) {
-            flushPendingWriteAndAwait(file, fsWrite);
-        }
+        flush.accept(file);
         file.cacheClosed = true;
         return StorageUtil.run(ioExecutor, () -> {
             try {
@@ -1275,6 +1298,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         StorageUtil.requireCacheOpen(file);
         final String id = file.getKey();
         awaitInFlightIo(id);
+        segmentFlushPendingWriteAndAwait(file);
         CompletableFuture<Map<String, AsyncFile>> ioFuture = StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
             return executeWithEioRetry(file, () -> delegate.rollSync(file));
@@ -1532,9 +1556,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> close(AsyncSegmentFile file) {
-        return closeInternal(file,
-                () -> delegate.closeSync(file),
-                writeBuf -> executeWithEioRetry(file, () -> delegate.writeSync(file, writeBuf)));
+        return closeInternal(file, () -> delegate.closeSync(file), this::segmentFlushPendingWriteAndAwait);
     }
 
     @Override
