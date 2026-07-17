@@ -1,0 +1,68 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_b5e1137ea08a70::t_1799b76f705885 435,439-455
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_b5e1137ea08a70::t_d85975a407ef1d 1362
+  s_b5e1137ea08a70::t_3f61a26bba4094 1334
+  h_6ceeb547b3b36a 399
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  h_6ceeb547b3b36a 467
+  s_b5e1137ea08a70::t_25909ee4688a17 51-53,55,57,60-61
+  s_32d4895e92a196::t_02b6613a6af4cf 131
+  s_b5e1137ea08a70::t_87035cba93f0bb 318-319,325,328-330,335
+  s_32d4895e92a196::t_1384c1aecaa82a 120,122-123
+  s_b5e1137ea08a70::t_741b26e74271d7 331
+  s_32d4895e92a196::t_77772aa10c12b4 118,124
+  s_b5e1137ea08a70::t_7b855e1b83ee81 56,58
+  s_32d4895e92a196::t_c5d73a20da06dd 105,119,125-126
+  s_b5e1137ea08a70::t_6145b7736e44ce 448-449,453-459,461-465,479-482,485-494
+  s_32d4895e92a196::t_6ef5a7da84d3c6 469-477,484
+  s_b5e1137ea08a70::t_a9b7132b42b675 313-314,333-334
+  s_32d4895e92a196::t_6fa46dd0924659 320-324,326-327
+  s_b5e1137ea08a70::t_7a80219139a80a 512-514
+  s_b5e1137ea08a70::t_d7a5e6c8330917 54,59,62
+  s_32d4895e92a196::t_ec4678b557c539 121
+  s_b5e1137ea08a70::t_e7152541a48886 332
+  s_32d4895e92a196::t_2fa69917cc7e4a 483
+  s_b5e1137ea08a70::t_b34851ef8a07c4 272,281
+  s_b5e1137ea08a70::t_47db9472e6dce8 509-511
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  s_b5e1137ea08a70::t_6dd4120d926713 118-119
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/SegmentFileCacheEntry.java
+  s_b5e1137ea08a70::t_6209e6b84cb146 3,9-10,44-46,48,51-69
+  s_32d4895e92a196::t_13926970f0b8f7 29,33,37
+  s_32d4895e92a196::t_7e3cabb8c13df4 31-32
+  s_32d4895e92a196::t_7ff8a3d2735104 39,41
+  s_32d4895e92a196::t_b5aab7cab06e17 36,38,40
+  s_32d4895e92a196::t_58b852d3c5f41f 47,49-50
+  s_32d4895e92a196::t_1bbaedb02a38a7 43
+  s_32d4895e92a196::t_97a1be2cc1893f 28,34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "bc4e76dc3c231688e4e5f6414b696f26d76db3f8",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_32d4895e92a196": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4a70fdc1-a409-4762-a5e8-5948f72af077",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_b5e1137ea08a70": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6b6be456-5bae-4596-8bdd-7b59caad80be",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}

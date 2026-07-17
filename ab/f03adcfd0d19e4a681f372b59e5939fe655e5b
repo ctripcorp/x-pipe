@@ -1,0 +1,27 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/SegmentDirState.java
+  s_0cf0a8fdaf84ee::t_89d8af87c77510 42-60
+  s_0cf0a8fdaf84ee::t_3b73415f9703ad 7-8
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  s_0cf0a8fdaf84ee::t_47177c863e3526 321-329
+  s_0cf0a8fdaf84ee::t_162827a29a3b9d 314-316
+  s_0cf0a8fdaf84ee::t_c710d71e25625f 319-320
+  s_0cf0a8fdaf84ee::t_b5fc6213d84dd2 21-22
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/SegmentFilesNotContinuousException.java
+  s_0cf0a8fdaf84ee::t_7ce43df1c925ab 1-8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "abf03adcfd0d19e4a681f372b59e5939fe655e5b",
+  "prompts": {},
+  "sessions": {
+    "s_0cf0a8fdaf84ee": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "174bcbfb-55c1-4854-8aa0-daf718f7a05a",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
