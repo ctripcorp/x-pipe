@@ -21,6 +21,7 @@
         <maven_assembly_plugin_version>3.7.0</maven_assembly_plugin_version>
         <maven-jar-plugin_version>3.3.0</maven-jar-plugin_version>
         <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
+        <maven.source.skip>true</maven.source.skip>
         <framework-parent.version>1.23.0</framework-parent.version>
         <commons-io.version>2.4</commons-io.version>
         <curator.version>5.7.0</curator.version>
@@ -1163,8 +1164,6 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
                     <version>${maven-source-plugin.version}</version>
-                    <!-- 不要在此绑定 attach-sources：super-pom / 编译门户已会执行一次，
-                         再绑一次会触发 source-plugin 3.x “execute twice” 错误 -->
                 </plugin>
                 <plugin>
                     <groupId>org.unidal.maven.plugins</groupId>
