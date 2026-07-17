@@ -1163,14 +1163,8 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
                     <version>${maven-source-plugin.version}</version>
-                    <executions>
-                        <execution>
-                            <id>attach-sources</id>
-                            <goals>
-                                <goal>jar-no-fork</goal>
-                            </goals>
-                        </execution>
-                    </executions>
+                    <!-- 不要在此绑定 attach-sources：super-pom / 编译门户已会执行一次，
+                         再绑一次会触发 source-plugin 3.x “execute twice” 错误 -->
                 </plugin>
                 <plugin>
                     <groupId>org.unidal.maven.plugins</groupId>
