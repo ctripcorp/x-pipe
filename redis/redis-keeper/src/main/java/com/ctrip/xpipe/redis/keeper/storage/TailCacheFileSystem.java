@@ -396,6 +396,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                         releaseAllChunks(indexEntry);
                     }));
             entry.indexFiles.clear();
+            entry.writerIndexLeaseStarts.clear();
         }
     }
 
@@ -1330,16 +1331,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                                         + ", writtenToFsOffset=" + entry.writtenToFsOffset);
                     }
                     if (cacheStart < newFirstOffset) {
-                        // Only the dropped body range [cacheStart, newFirstOffset).
-                        for (int i = 0; i < drop; i++) {
-                            long segStart = offsets.get(i);
-                            long segEnd = offsets.get(i + 1);
-                            if (cacheStart < segEnd && segStart < newFirstOffset) {
-                                for (String indexPrefix : file.indexPrefixes) {
-                                    entry.releaseIndexFileCacheEntry(segStart, indexPrefix, false);
-                                }
-                            }
-                        }
+                        entry.releaseWriterIndexLeasesThrough(newFirstOffset);
                         long firstDrop = cacheStart / chunkSize;
                         long firstKeep = newFirstOffset / chunkSize;
                         for (long i = firstDrop; i < firstKeep; i++) {
@@ -1365,25 +1357,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         StorageUtil.requireWriteMode(file);
         StorageUtil.requireCacheOpen(file);
         if (file.cacheMode != CacheMode.NO_CACHE) {
-            List<Long> startOffsets = list(file);
             SegmentFileCacheEntry entry = file.getCacheEntry();
             synchronized (entry) {
-                if (entry.cacheStartOffset >= 0) {
-                    long cacheStart = entry.cacheStartOffset;
-                    long cacheEnd = entry.cacheEndOffset;
-                    for (int i = 0; i < startOffsets.size(); i++) {
-                        long segStart = startOffsets.get(i);
-                        long segEnd = i + 1 < startOffsets.size()
-                                ? startOffsets.get(i + 1) : Long.MAX_VALUE;
-                        // [cacheStart, cacheEnd) overlaps [segStart, segEnd)
-                        if (cacheStart < segEnd && segStart < cacheEnd) {
-                            for (String indexPrefix : file.indexPrefixes) {
-                                entry.releaseIndexFileCacheEntry(segStart, indexPrefix, false);
-                            }
-                        }
-                    }
-                }
-
+                entry.releaseAllWriterIndexLeases();
                 // Remaining index entries (still held by open channels): clear cached data.
                 for (ConcurrentHashMap<String, FileCacheEntry> byPrefix : entry.indexFiles.values()) {
                     for (FileCacheEntry indexEntry : byPrefix.values()) {
