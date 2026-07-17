@@ -34,19 +34,19 @@ class StorageUtil {
 
     static void requireOpen(AbstractStorageFile file) {
         if (file.closed) {
-            throw new IllegalStateException("file is closed: " + file.identifier());
+            throw new IllegalStateException("file is closed: " + file.getKey());
         }
     }
 
     static void requireCacheOpen(AbstractStorageFile file) {
         if (file.cacheClosed) {
-            throw new IllegalStateException("file cache is closed: " + file.identifier());
+            throw new IllegalStateException("file cache is closed: " + file.getKey());
         }
     }
 
     static void requireWriteMode(AbstractStorageFile file) {
         if (!file.canWrite()) {
-            throw new IllegalArgumentException("operation requires write mode: " + file.identifier());
+            throw new IllegalArgumentException("operation requires write mode: " + file.getKey());
         }
     }
 

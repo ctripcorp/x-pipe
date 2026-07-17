@@ -426,7 +426,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 file.currentWriteChannel().force(true);
                 file.pendingFsyncBytes = 0;
             } catch (Throwable t) {
-                logger.error("fsync failed for {}", file.identifier(), t);
+                logger.error("fsync failed for {}", file.getKey(), t);
             }
         }
         return written;
@@ -452,7 +452,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             file.openSegmentChannelForRead();
         } catch (IOException e) {
             logger.error("maybeSwitchSegment failed for {} at position {}, will retry on next read",
-                    file.identifier(), nextOffset, e);
+                    file.getKey(), nextOffset, e);
         }
     }
 
