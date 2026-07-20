@@ -438,6 +438,11 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	}
 
 	@Override
+	public long getAsyncFsyncIntervalMillis() {
+		return DEFAULT_ASYNC_FSYNC_INTERVAL_MILLIS;
+	}
+
+	@Override
 	public int getAsyncIoThreads() {
 		return DEFAULT_ASYNC_IO_THREADS;
 	}
