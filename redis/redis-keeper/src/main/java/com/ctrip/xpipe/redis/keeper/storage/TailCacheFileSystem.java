@@ -861,9 +861,20 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         FileCacheEntry entry = file.getCacheEntry();
         final long writeSize = data.readableBytes();
         final boolean useCacheSnapshot = useCache(file);
+        final String id = file.getKey();
+        // First cache build (sizeSync/preload/atomic) must see settled FS; skip wait if cache already live.
+        if (useCacheSnapshot && entry != null && entry.cacheStartOffset < 0) {
+            try {
+                if (hasInFlightIo(id)) {
+                    awaitInFlightIo(id);
+                }
+            } catch (Exception e) {
+                data.release();
+                throw e;
+            }
+        }
 
         initCacheAndAppend.accept(useCacheSnapshot);
-        final String id = file.getKey();
         try {
             if (hasInFlightIo(id)) {
                 if (!useCacheSnapshot) {
