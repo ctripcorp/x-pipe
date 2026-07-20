@@ -89,7 +89,7 @@ public class DefaultRdbParser extends AbstractRdbParser<Void> implements RdbPars
 
                 case READ_TYPE:
                     short type = byteBuf.readUnsignedByte();
-                    RdbParseContext.RdbType newType = RdbParseContext.RdbType.findByCode(type);
+                    RdbParseContext.RdbType newType = RdbParseContext.RdbType.findByCode(rdbVersion,type);
                     if (currentType == RdbParseContext.RdbType.AUX && newType != RdbParseContext.RdbType.AUX) {
                         auxFinished.set(true);
                         notifyAuxEnd(rdbParseContext.getAllAux());
