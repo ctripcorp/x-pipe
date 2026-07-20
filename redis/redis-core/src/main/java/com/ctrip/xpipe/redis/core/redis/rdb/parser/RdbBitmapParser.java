@@ -115,12 +115,10 @@ public class RdbBitmapParser extends AbstractRdbParser<Integer> implements RdbPa
                 new byte[][]{RedisOpType.SET.name().getBytes(), context.getKey().get(), value},
                 context.getKey(), value));
 
-        if(this.context.getRdbVersion() > 9) {
-            notifyRedisOp(new RedisOpSingleKey(
-                    RedisOpType.BITCOUNT,
-                    new byte[][]{RedisOpType.BITCOUNT.name().getBytes(), context.getKey().get()},
-                    context.getKey(), value));
-        }
+        notifyRedisOp(new RedisOpSingleKey(
+                RedisOpType.BITCOUNT,
+                new byte[][]{RedisOpType.BITCOUNT.name().getBytes(), context.getKey().get()},
+                context.getKey(), value));
     }
 
     @Override
