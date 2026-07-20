@@ -40,6 +40,8 @@ public enum RedisOpType {
     LREM(false, 4),
     LSET(false, 4),
     LTRIM(false, 4),
+    BLMPOP(true,-5),
+    LMPOP(true,-4),
 
     // Hash single
     HDEL(false, -3),
@@ -47,8 +49,15 @@ public enum RedisOpType {
     HINCRBYFLOAT(false, 4),
     HMSET(false, -4),
     HSET(false, -4),
-    HSETEX(false, -4),
+    HSETEX(false, -6),
     HSETNX(false, 4),
+    HEXPIREAT(false,-6),
+    HPEXPIREAT(false,-6),
+    HEXPIRE(false,-6),
+    HPEXPIRE(false,-6),
+    HGETDEL(false,-5),
+    HPERSIST(false,-5),
+    HGETEX(false,-5),
 
     // Set single
     SADD(false, -3),
@@ -62,6 +71,8 @@ public enum RedisOpType {
     ZREMRANGEBYLEX(false, 4),
     ZREMRANGEBYRANK(false, 4),
     ZREMRANGEBYSCORE(false, 4),
+    ZMPOP(true,-4),
+    BZMPOP(true,-5),
 
     // Stream single
     XADD(false, -5),
@@ -69,6 +80,9 @@ public enum RedisOpType {
     XSETID(false, 3),
     XGROUP(false, -2),
     XCLAIM(false, -6),
+    XDELEX(false,-6),
+    XACKDEL(false,-7),
+
 
     // TTL single
     EXPIRE(false, 3),
