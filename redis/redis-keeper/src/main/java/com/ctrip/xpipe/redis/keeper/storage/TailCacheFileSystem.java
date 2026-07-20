@@ -27,6 +27,18 @@ import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * No idle/background flush for residual cache below writeBatchBytes when writes stop:
+ * streaming workloads keep writing; non-streaming callers are expected to close() (or fsync())
+ * to seal. In current use, small loss in extreme cases is recoverable externally.
+ * <p>
+ * If idle/async flush is added later, a workable approach is to tighten in-flight ownership:
+ * change await into a locked await-and-register (wait prior IO, then claim the slot under the
+ * same lock), and change register into bind-future (attach the real IO future to the claimed
+ * slot). That removes the await/register TOCTOU that would otherwise race with write/close.
+ * A claimed placeholder must count as in-flight; after claim, always bind the real future or
+ * release the claim, including on failure paths.
+ */
 public class TailCacheFileSystem implements AsyncFileSystem {
 
     private static final Logger logger = LoggerFactory.getLogger(TailCacheFileSystem.class);
@@ -332,6 +344,15 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
     }
 
+    // require file inflight io to be completed before calling this
+    private void asyncFileFlushPendingWriteAndAwait(AsyncFile file) {
+        flushPendingWriteAndAwait(file, writeBuf -> executeWithEioRetry(file, () -> {
+            long written = delegate.writeSync(file, writeBuf);
+            delegate.fsyncSync(file);
+            return written;
+        }));
+    }
+
     // require segment inflight io to be completed before calling this
     private void segmentFlushPendingWriteAndAwait(AsyncSegmentFile file) {
         flushPendingWriteAndAwait(file, writeBuf -> executeWithEioRetry(file, () -> {
@@ -341,11 +362,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }));
         for (AsyncIndexFile indexFile : file.currentIndexFiles.values()) {
             awaitInFlightIo(indexFile.getKey());
-            flushPendingWriteAndAwait(indexFile, writeBuf -> executeWithEioRetry(indexFile, () -> {
-                long written = delegate.writeSync(indexFile, writeBuf);
-                delegate.fsyncSync(indexFile);
-                return written;
-            }));
+            asyncFileFlushPendingWriteAndAwait(indexFile);
         }
     }
 
@@ -1121,11 +1138,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         return closeInternal(file,
                 () -> delegate.closeSync(file),
-                f -> flushPendingWriteAndAwait(f, writeBuf -> executeWithEioRetry(f, () -> {
-                    long written = delegate.writeSync(f, writeBuf);
-                    delegate.fsyncSync(f);
-                    return written;
-                })));
+                this::asyncFileFlushPendingWriteAndAwait);
     }
 
     private <T extends AbstractStorageFile> CompletableFuture<Void> closeInternal(T file,
@@ -1149,17 +1162,20 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> fsync(AsyncFile file) {
-        return fsyncInternal(file, () -> executeWithEioRetry(file, () -> {
-            delegate.fsyncSync(file);
-            return null;
-        }));
+        return fsyncInternal(file,
+                () -> asyncFileFlushPendingWriteAndAwait(file),
+                () -> executeWithEioRetry(file, () -> {
+                    delegate.fsyncSync(file);
+                    return null;
+                }));
     }
 
-    private CompletableFuture<Void> fsyncInternal(AbstractStorageFile file, Runnable fsFsync) {
+    private CompletableFuture<Void> fsyncInternal(AbstractStorageFile file, Runnable flushPending, Runnable fsFsync) {
         StorageUtil.requireWriteMode(file);
         StorageUtil.requireCacheOpen(file);
         final String id = file.getKey();
         awaitInFlightIo(id);
+        flushPending.run();
         CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
             fsFsync.run();
@@ -1561,10 +1577,13 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Void> fsync(AsyncSegmentFile file) {
-        return fsyncInternal(file, () -> executeWithEioRetry(file, () -> {
-            delegate.fsyncSync(file);
-            return null;
-        }));
+        return fsyncInternal(file,
+                () -> flushPendingWriteAndAwait(file, writeBuf -> executeWithEioRetry(file,
+                        () -> delegate.writeSync(file, writeBuf))),
+                () -> executeWithEioRetry(file, () -> {
+                    delegate.fsyncSync(file);
+                    return null;
+                }));
     }
 
     @Override
