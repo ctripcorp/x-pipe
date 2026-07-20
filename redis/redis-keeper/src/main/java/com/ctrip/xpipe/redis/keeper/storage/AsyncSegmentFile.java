@@ -283,6 +283,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         }
         currentIndexFiles.clear();
         pendingFsyncBytes = 0;
+        lastFsyncNanos = System.nanoTime();
         if (first != null) throw first;
     }
 
