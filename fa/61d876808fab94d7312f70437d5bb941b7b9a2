@@ -1,0 +1,72 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  s_078f7b10056a6e::t_ff354feca67b28 96-98,115-116,121
+  s_078f7b10056a6e::t_9cff521728d4d2 36
+  s_078f7b10056a6e::t_c12ae6e2c4fdec 23
+  s_078f7b10056a6e::t_00bdb57461e9e9 24
+  s_078f7b10056a6e::t_2683ecaa2a1a3c 117,119-120
+  s_078f7b10056a6e::t_801ff7d90138f6 95
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/FileCacheEntry.java
+  s_078f7b10056a6e::t_9da71ceb009854 6,11
+  h_6ceeb547b3b36a 18
+  s_078f7b10056a6e::t_7df5fcca3e08d6 19-20
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/SegmentFileCacheEntry.java
+  s_078f7b10056a6e::t_2a557429061427 3-4,14,27
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_078f7b10056a6e::t_9a7c94ae11714c 875,878,880,886,889
+  s_078f7b10056a6e::t_c9a2bf0f7b6369 877
+  s_078f7b10056a6e::t_2e1e31a2810f3a 1289,1292
+  s_078f7b10056a6e::t_ecd4962d185c25 222,229
+  s_078f7b10056a6e::t_6bad8c59e4abab 900
+  s_078f7b10056a6e::t_4f9cd23b03d6f8 312
+  s_078f7b10056a6e::t_0e207ec6c20c81 547-553,557-558,560,562,565,567,571-572,575,577
+  s_078f7b10056a6e::t_81c4587012d1fb 345,347-348,350-351
+  s_078f7b10056a6e::t_d8da4b6c80243a 1002
+  s_078f7b10056a6e::t_c379177924664b 882-884
+  s_078f7b10056a6e::t_b083c43a32c82e 1024,1026,1032,1038,1047
+  s_078f7b10056a6e::t_74ae5637398525 1028-1030
+  s_078f7b10056a6e::t_41f3a9c34e8039 482-483,486,493,496
+  s_078f7b10056a6e::t_2dfd5d6eb8b54c 295-297
+  s_078f7b10056a6e::t_3d964412325b11 314,338-341
+  s_078f7b10056a6e::t_b7a7a09798d442 1288,1304-1305
+  s_078f7b10056a6e::t_21c497989d4e7b 301,316-317
+  s_078f7b10056a6e::t_27728a1950ec4c 313,315
+  s_078f7b10056a6e::t_62b8d718b8b500 887
+  s_078f7b10056a6e::t_f5ad7aa4869e98 881,885
+  s_078f7b10056a6e::t_3965b68b736073 532,536,543,554-556,569-570
+  s_078f7b10056a6e::t_82185594554a6a 933
+  s_078f7b10056a6e::t_834700b9d04262 1034
+  s_078f7b10056a6e::t_0e6983ae8fc68d 899,904-906
+  s_078f7b10056a6e::t_4af73d3b7d4e2e 1006
+  s_078f7b10056a6e::t_d44db3da16843b 291-294,298-300,302-304
+  s_078f7b10056a6e::t_a47088ad470094 1020
+  s_078f7b10056a6e::t_c6cd6c14165087 1027,1031,1033,1039,1041-1046
+  s_078f7b10056a6e::t_9b2edf98a2255a 499,559,561,563-564,566,568,573-574,576,578
+  s_078f7b10056a6e::t_3d2f57651b0005 433,440
+  s_078f7b10056a6e::t_7009dcb7d35030 542,544-546
+  s_078f7b10056a6e::t_870e0df06cddfa 1025
+  h_6ceeb547b3b36a 1021
+  s_078f7b10056a6e::t_8f8a1324ff1761 1022-1023,1035-1037,1040
+  s_078f7b10056a6e::t_a122a72450891a 901,903
+  s_078f7b10056a6e::t_ec7cd8374a2a8b 876,879,888,902
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "fa61d876808fab94d7312f70437d5bb941b7b9a2",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_078f7b10056a6e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7d462759-d752-4a61-a701-62edcd9dc666",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
