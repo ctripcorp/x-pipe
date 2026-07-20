@@ -9,6 +9,10 @@ import io.netty.buffer.ByteBuf;
 // currently only support append only mode and atomic replace mode.
 // All read/write operations attempt to read/write as much as possible until EOF, I/O error, or completion.
 // also support synchronous operations. add on need
+//
+// Caller must serialize mutating ops on the same open file handle: do not concurrent write with
+// close / fsync / roll / truncate / delete (or other metadata mutators) on that file. Implementations
+// do not provide this mutual exclusion.
 public interface AsyncFileSystem {
     void shutdown();
 
