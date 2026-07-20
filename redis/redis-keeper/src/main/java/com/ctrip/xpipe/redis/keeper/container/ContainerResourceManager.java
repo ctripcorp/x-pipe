@@ -61,13 +61,20 @@ public class ContainerResourceManager {
     }
 
     public static AsyncFileSystem createAsyncFileSystem(KeeperConfig keeperConfig) {
-        return createAsyncFileSystem(keeperConfig.getAsyncIoThreads(), keeperConfig.getAsyncFsyncIntervalBytes());
+        return createAsyncFileSystem(keeperConfig.getAsyncIoThreads(), keeperConfig.getAsyncFsyncIntervalBytes(),
+                keeperConfig.getAsyncFsyncIntervalMillis());
     }
 
     public static AsyncFileSystem createAsyncFileSystem(int ioThreads, long fsyncIntervalBytes) {
+        return createAsyncFileSystem(ioThreads, fsyncIntervalBytes, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_MILLIS);
+    }
+
+    public static AsyncFileSystem createAsyncFileSystem(int ioThreads, long fsyncIntervalBytes,
+            long fsyncIntervalMillis) {
         ExecutorService ioExecutor = Executors.newFixedThreadPool(ioThreads,
                 XpipeThreadFactory.create("keeper-async-io"));
-        AsyncTFSBasedFileSystem backing = new AsyncTFSBasedFileSystem(ioExecutor, fsyncIntervalBytes);
+        AsyncTFSBasedFileSystem backing = new AsyncTFSBasedFileSystem(ioExecutor, fsyncIntervalBytes,
+                fsyncIntervalMillis);
         return new TailCacheFileSystem(backing, new TailCacheFileSystemConfig(), ioExecutor);
     }
 }

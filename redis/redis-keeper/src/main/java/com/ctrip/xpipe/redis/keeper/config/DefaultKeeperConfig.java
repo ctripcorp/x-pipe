@@ -349,6 +349,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	}
 
 	@Override
+	public long getAsyncFsyncIntervalMillis() {
+		return getLongProperty(KEY_ASYNC_FSYNC_INTERVAL_MILLIS, DEFAULT_ASYNC_FSYNC_INTERVAL_MILLIS);
+	}
+
+	@Override
 	public int getAsyncIoThreads() {
 		return getIntProperty(KEY_ASYNC_IO_THREADS, DEFAULT_ASYNC_IO_THREADS);
 	}

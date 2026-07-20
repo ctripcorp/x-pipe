@@ -20,9 +20,11 @@ public interface KeeperConfig extends CoreConfig{
 	String KEY_BLOCK_SIZE_THRESHOLD = "keeper.block.size.threshold";
 	String KEY_ASYNC_WRITE_MAX_BYTES = "keeper.async.write.max.bytes";
 	String KEY_ASYNC_FSYNC_INTERVAL_BYTES = "keeper.async.fsync.interval.bytes";
+	String KEY_ASYNC_FSYNC_INTERVAL_MILLIS = "keeper.async.fsync.interval.millis";
 	String KEY_ASYNC_IO_THREADS = "keeper.async.io.threads";
 
 	long DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES = 1024L * 1024L;
+	long DEFAULT_ASYNC_FSYNC_INTERVAL_MILLIS = 1000L;
 	int DEFAULT_ASYNC_IO_THREADS = Runtime.getRuntime().availableProcessors() * 8;
 
 
@@ -136,6 +138,8 @@ public interface KeeperConfig extends CoreConfig{
 	int getAsyncWriteMaxBytes();
 
 	long getAsyncFsyncIntervalBytes();
+
+	long getAsyncFsyncIntervalMillis();
 
 	int getAsyncIoThreads();
 }
