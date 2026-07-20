@@ -336,15 +336,15 @@ public class DefaultRdbParserTest extends AbstractTest implements RdbParseListen
         Assert.assertEquals("SELECT 0", redisOps.get(0).toString());
         Assert.assertEquals("SET mykey ", redisOps.get(1).toString());
 
-        byte[][] bitmapKey2 = redisOps.get(2).buildRawOpArgs();
+        byte[][] bitmapKey2 = redisOps.get(3).buildRawOpArgs();
         Assert.assertEquals("bitmap_key2", new String(bitmapKey2[1]));
         Assert.assertEquals(700 / 8 + (700 % 8 == 0 ? 0 : 1),bitmapKey2[2].length);
-        byte[][] bitmapKey = redisOps.get(3).buildRawOpArgs();
+        byte[][] bitmapKey = redisOps.get(5).buildRawOpArgs();
         Assert.assertEquals("bitmap_key", new String(bitmapKey[1]));
         Assert.assertEquals(700 / 8 + (700 % 8 == 0 ? 0 : 1),bitmapKey[2].length);
         Assert.assertNotEquals(0, bitmapKey[2][87] & (1 << 3)); // getbit bitmap_key 700  ->  1
         Assert.assertNotEquals(0, bitmapKey[2][8] & (1 << 1)); // getbit bitmap_key 70  ->  1
-        Assert.assertEquals("SET common_key value", redisOps.get(4).toString());
+        Assert.assertEquals("SET common_key value", redisOps.get(7).toString());
     }
 
     @Test
