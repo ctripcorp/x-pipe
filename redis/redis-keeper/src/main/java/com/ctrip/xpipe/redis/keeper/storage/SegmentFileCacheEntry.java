@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.storage;
 
+import com.ctrip.xpipe.tuple.Pair;
+
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -9,7 +11,7 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
     // Segment starts that currently hold a writer index cache lease.
     final LinkedList<Long> writerIndexLeaseStarts = new LinkedList<>();
 
-    FileCacheEntry acquireIndexFileCacheEntry(long startOffset, String indexPrefix, boolean write) {
+    Pair<Boolean, FileCacheEntry> acquireIndexFileCacheEntry(long startOffset, String indexPrefix, boolean write) {
         synchronized (this) {
             ConcurrentHashMap<String, FileCacheEntry> byPrefix =
                     indexFiles.computeIfAbsent(startOffset, k -> new ConcurrentHashMap<>());
@@ -22,7 +24,7 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
                 entry.writerOpen = true;
             }
             entry.refCount++;
-            return entry;
+            return Pair.of(entry.refCount == 1, entry);
         }
     }
 
