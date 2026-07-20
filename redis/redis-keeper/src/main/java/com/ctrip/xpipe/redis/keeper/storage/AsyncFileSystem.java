@@ -233,9 +233,11 @@ public interface AsyncFileSystem {
         throw new UnsupportedOperationException();
     }
     // Only available in write mode.
+    // Fsyncs the current segment body only; index files are not included and must be fsynced separately.
     default CompletableFuture<Void> fsync(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
     }
+    // Same scope as fsync(AsyncSegmentFile): segment body only, not index files.
     default void fsyncSync(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
     }

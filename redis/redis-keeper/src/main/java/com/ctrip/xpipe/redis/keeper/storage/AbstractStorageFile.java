@@ -26,8 +26,8 @@ public abstract class AbstractStorageFile {
         FULL_CACHE
     }
 
-    long pendingFsyncBytes = 0;
-    long lastFsyncNanos = System.nanoTime();
+    volatile long pendingFsyncBytes = 0;
+    volatile long lastFsyncNanos = System.nanoTime();
     final OpenMode openMode;
     final boolean atomicReplace;
     volatile CacheMode cacheMode = CacheMode.NO_CACHE;
