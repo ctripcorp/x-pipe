@@ -43,17 +43,35 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     private static final int LOCK_STRIPES = 32;
 
     private final ExecutorService ioExecutor;
-    private final long fsyncIntervalBytes;
+    private volatile long fsyncIntervalBytes;
+    private volatile long fsyncIntervalNanos;
 
     // Registry of shared file state, keyed by file key.
     private final ConcurrentHashMap<String, FileEntry> fileEntries = new ConcurrentHashMap<>();
 
     private final Object[] openCloseLocks = new Object[LOCK_STRIPES];
 
-    public AsyncTFSBasedFileSystem(ExecutorService ioExecutor, long fsyncIntervalBytes) {
+    public AsyncTFSBasedFileSystem(ExecutorService ioExecutor, long fsyncIntervalBytes, long fsyncIntervalMillis) {
         this.ioExecutor = ioExecutor;
         this.fsyncIntervalBytes = fsyncIntervalBytes;
+        this.fsyncIntervalNanos = fsyncIntervalMillis * 1_000_000L;
         for (int i = 0; i < LOCK_STRIPES; i++) openCloseLocks[i] = new Object();
+    }
+
+    public long getFsyncIntervalBytes() {
+        return fsyncIntervalBytes;
+    }
+
+    public void setFsyncIntervalBytes(long fsyncIntervalBytes) {
+        this.fsyncIntervalBytes = fsyncIntervalBytes;
+    }
+
+    public long getFsyncIntervalMillis() {
+        return fsyncIntervalNanos / 1_000_000L;
+    }
+
+    public void setFsyncIntervalMillis(long fsyncIntervalMillis) {
+        this.fsyncIntervalNanos = fsyncIntervalMillis * 1_000_000L;
     }
 
     @Override
@@ -368,6 +386,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             FileChannel ch = file.currentWriteChannel();
             if (ch != null) ch.force(true);
             file.pendingFsyncBytes = 0;
+            file.lastFsyncNanos = System.nanoTime();
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         }
@@ -421,10 +440,12 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     private long writeAndFlush(AbstractStorageFile file, ByteBuf data) throws IOException {
         long written = writeFully(file.currentWriteChannel(), data);
         file.pendingFsyncBytes += written;
-        if (file.pendingFsyncBytes >= fsyncIntervalBytes) {
+        if (file.pendingFsyncBytes >= fsyncIntervalBytes
+                || System.nanoTime() - file.lastFsyncNanos >= fsyncIntervalNanos) {
             try {
                 file.currentWriteChannel().force(true);
                 file.pendingFsyncBytes = 0;
+                file.lastFsyncNanos = System.nanoTime();
             } catch (Throwable t) {
                 logger.error("fsync failed for {}", file.getKey(), t);
             }
@@ -513,6 +534,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
     }
 
+    // Whole-file replace is durable after force; pendingFsyncBytes / lastFsyncNanos are unused on this path.
     private long atomicReplaceWrite(AsyncFile file, ByteBuf data) throws IOException {
         long length = data.readableBytes();
         int savedReaderIndex = data.readerIndex();
