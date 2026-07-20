@@ -20,6 +20,8 @@ import java.util.Set;
 
 import com.ctrip.xpipe.tuple.Pair;
 
+import java.util.function.BiConsumer;
+
 public class AsyncSegmentFile extends AbstractStorageFile {
 
     private static final Logger logger = LoggerFactory.getLogger(AsyncSegmentFile.class);
@@ -31,6 +33,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
 
     FileChannel currentSegmentChannel;
     Map<String, AsyncIndexFile> currentIndexFiles;
+    private BiConsumer<AsyncFile, Boolean> indexCacheInitializer;
     // Selected segment covers logical range [openedSegmentStartOffset, openedSegmentEndOffset).
     // Empty directory uses [0, Long.MAX_VALUE). Long.MAX_VALUE for end means the selected
     // segment is the tail — end is unbounded (writer may still append).
@@ -89,6 +92,10 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         return (SegmentFileCacheEntry) cacheEntry;
     }
 
+    void setIndexCacheInitializer(BiConsumer<AsyncFile, Boolean> indexCacheInitializer) {
+        this.indexCacheInitializer = indexCacheInitializer;
+    }
+
     void setCacheEntry(SegmentFileCacheEntry entry) {
         this.cacheEntry = entry;
         for (AsyncIndexFile af : currentIndexFiles.values()) {
@@ -105,8 +112,13 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             return;
         }
         boolean write = af.canWrite();
-        af.cacheEntry = segmentEntry.acquireIndexFileCacheEntry(af.startOffset, af.indexPrefix, write);
+        Pair<Boolean, FileCacheEntry> acquired =
+                segmentEntry.acquireIndexFileCacheEntry(af.startOffset, af.indexPrefix, write);
+        af.cacheEntry = acquired.getValue();
         af.onCacheClose = () -> segmentEntry.releaseIndexFileCacheEntry(af.startOffset, af.indexPrefix, write);
+        if (indexCacheInitializer != null) {
+            indexCacheInitializer.accept(af, acquired.getKey());
+        }
     }
 
     // Only after IO succeeded; adds writer lease (+1) when needed. otherwise error may cause memory leak until segment cache is dropped. more worse offset inconsistency.
