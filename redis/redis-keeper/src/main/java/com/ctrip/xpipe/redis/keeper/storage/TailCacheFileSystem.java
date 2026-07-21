@@ -634,14 +634,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                             entry.cacheEndOffset = 0;
                             entry.writtenToFsOffset = 0;
                         } else if (file.atomicReplace) {
-                            ByteBuf chunk;
-                            try {
-                                chunk = StorageAllocator.ALLOC.directBuffer((int) actualSize);
-                            } catch (Throwable t) {
-                                logger.error("allocate atomic full cache failed for {}, size={}",
-                                        file.path, actualSize, t);
-                                return false;
-                            }
+                            ByteBuf chunk = StorageAllocator.ALLOC.directBuffer((int) actualSize);
                             chunk.writeBytes(data, data.readerIndex(), (int) actualSize);
                             entry.chunks.put(0L, chunk);
                             entry.cacheStartOffset = 0;
