@@ -1,0 +1,41 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_ecb0a2e168181d::t_64fea951dc1753 250
+  s_ecb0a2e168181d::t_930ba9af374be8 246,378,458,466,471,543
+  s_ecb0a2e168181d::t_f1a5ec2b55c568 657-658
+  h_6ceeb547b3b36a 260-262,938-940,1092
+  s_ecb0a2e168181d::t_7f33e1bc40fe3c 544
+  s_ecb0a2e168181d::t_f99b946ab62bd0 467,472
+  s_ecb0a2e168181d::t_ca0a3b75fe17f0 247
+  s_ecb0a2e168181d::t_fa1e67128d34ed 810-813
+  s_ecb0a2e168181d::t_8af568fd98182e 379,459
+  s_ecb0a2e168181d::t_31b74e53b4e8b2 917-920
+  s_ecb0a2e168181d::t_005406aec3cc30 943-947,957-959
+  s_ecb0a2e168181d::t_57c8cc4c889e3d 872-875
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_ecb0a2e168181d::t_4a6f30c13fc342 967
+  s_ecb0a2e168181d::t_3cb74da74e77bb 971-972,974-981
+  h_6ceeb547b3b36a 973
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  s_ecb0a2e168181d::t_e6d046df66a9b4 56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.33-trip",
+  "base_commit_sha": "4a8be4e2a936d6e086d72b68deb6b97530a64e66",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_ecb0a2e168181d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "58917a95-e8e5-4f5f-888d-a89ac9214134",
+        "model": "gpt-5.4"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/TimerSlidingWindow.java
+  s_2b2f3053d0f533::t_8cb7df07676ff0 141
+  s_2b2f3053d0f533::t_5ba970830c5fd3 76-78,81
+  s_2b2f3053d0f533::t_ca2663b96557aa 80,83-84,88,98,109-126,139,142-143,145-146,148,150-158,160-167,171-177,181-183,194,279
+  s_2b2f3053d0f533::t_1eeadca00ef9b7 71
+  s_2b2f3053d0f533::t_68ba2b9f411ac0 144
+  s_2b2f3053d0f533::t_548f2f5143d723 44-46
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/TimerSlidingWindowTest.java
+  s_2b2f3053d0f533::t_4005a26d15dace 247-339
+  s_2b2f3053d0f533::t_757681971d1955 22,25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "b58dc14a0b82c50bc3d767c237c82e049c28fe13",
+  "prompts": {},
+  "sessions": {
+    "s_2b2f3053d0f533": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ccc5a32b-7fdc-42a6-b045-7e24369de0b2",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

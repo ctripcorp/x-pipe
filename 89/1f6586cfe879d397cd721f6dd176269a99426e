@@ -1,0 +1,19 @@
+pom.xml
+  s_1ec021719635a8::t_366b8a01eecc72 1166-1167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "891f6586cfe879d397cd721f6dd176269a99426e",
+  "prompts": {},
+  "sessions": {
+    "s_1ec021719635a8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "97a2d587-03a7-4d91-a581-14ba8c55d9ef",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}

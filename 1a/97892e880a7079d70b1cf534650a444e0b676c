@@ -1,0 +1,61 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  s_8c100bf084c39c::t_a0636407d0e6e8 65-72
+  s_8c100bf084c39c::t_1d3809f79fd187 317
+  s_8c100bf084c39c::t_168afcdf0aeadc 60
+  s_8c100bf084c39c::t_334ed873e7f4e9 88
+  s_8c100bf084c39c::t_f08bbeedb803ce 84-87
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultCommandStoreTest.java
+  s_23de0ef7d74441::t_e09a5f214d00d3 127
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_23de0ef7d74441::t_dca68fe98b552e 137
+  s_23de0ef7d74441::t_24d56976f6314b 183
+  s_8c100bf084c39c::t_2eb1471a90d7f8 186,188
+  s_8c100bf084c39c::t_c259b93a59f994 1000-1001,1004-1010
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReader.java
+  s_8c100bf084c39c::t_0e75a5950fe556 37-41
+  s_8c100bf084c39c::t_768bcf2324a2e5 166-168,206-208,217,221-223
+  s_23de0ef7d74441::t_be4f39a34f4085 218-220
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/GtidReplicationStore.java
+  s_23de0ef7d74441::t_f7d75f00bcbe6b 94-96,104-105
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  s_8c100bf084c39c::t_b1799b2f88fee1 280,282
+  s_8c100bf084c39c::t_572279ce1de85d 730-734
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/GtidCommandStore.java
+  s_23de0ef7d74441::t_373779b12ecf99 34-35,38-39
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultCommandStore.java
+  s_23de0ef7d74441::t_af0f9a1b5c0f7c 41-42,45-46
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AbstractRedisKeeperTest.java
+  s_23de0ef7d74441::t_bcb803132e138c 109
+  s_23de0ef7d74441::t_64eb15cbe335fa 124
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStore.java
+  s_23de0ef7d74441::t_c910d64666ef16 251
+  s_23de0ef7d74441::t_33ed81ab3087b9 533-540,552
+  s_23de0ef7d74441::t_26e5624c37b396 426,429,451-452,456
+  s_23de0ef7d74441::t_053a65ec548c0e 648-655
+  s_23de0ef7d74441::t_12e45d5fc445fa 196,198,200
+  s_23de0ef7d74441::t_64600d6c89bdc6 216-218
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.33-trip",
+  "base_commit_sha": "1a97892e880a7079d70b1cf534650a444e0b676c",
+  "prompts": {},
+  "sessions": {
+    "s_23de0ef7d74441": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5ab361f4-e44c-41a4-82d6-65bb24a27e98",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_8c100bf084c39c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a24625d6-51f1-4de6-b795-24a73045d22d",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

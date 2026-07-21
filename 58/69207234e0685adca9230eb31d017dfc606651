@@ -1,0 +1,114 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystemConfig.java
+  s_ecb0a2e168181d::t_cebe6701804d95 34,142-149
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_c0872ebf037cc7::t_3e00ff72066637 351,355,360
+  s_ecb0a2e168181d::t_3760b335524086 366
+  s_ecb0a2e168181d::t_25520dbc30f1c8 473-474
+  s_c0872ebf037cc7::t_e7194d657fe8c2 582,584
+  s_ecb0a2e168181d::t_c6f0c3238bbcfd 20-22,459,462-468,470
+  s_ecb0a2e168181d::t_9361eecf549373 248,258-260,265-266,268-270,273-281,283,285-287
+  s_ecb0a2e168181d::t_a7fc6e3adf1b49 678-700,702-743,748
+  s_ecb0a2e168181d::t_6e61ca348d1a66 261-262
+  s_ecb0a2e168181d::t_f95e78e31f2d3d 368
+  s_ecb0a2e168181d::t_e834067df17aa8 45,67
+  s_ecb0a2e168181d::t_c018b42a2ddbac 257
+  s_ecb0a2e168181d::t_5776a95f0795fd 171-179
+  s_ecb0a2e168181d::t_b730495f4c85e3 322,444-445,451
+  s_ecb0a2e168181d::t_48cd0b85aa1528 284,814-815
+  s_ecb0a2e168181d::t_aff9e61e605bf2 342,378-388,390-393,409-423,425-433,438,442,448-449,452-453
+  s_ecb0a2e168181d::t_34af8eeaa42f47 511-513
+  s_ecb0a2e168181d::t_17866a879379a8 637,673-677,701,744
+  s_c0872ebf037cc7::t_05fe12e009c30c 525
+  s_ecb0a2e168181d::t_38a0b0f337d97f 246
+  s_ecb0a2e168181d::t_d586743abd0478 263
+  s_ecb0a2e168181d::t_d2e1f523a9e442 247,251,267
+  s_ecb0a2e168181d::t_f29832f0ceca9c 327-328,330-334
+  s_ecb0a2e168181d::t_4d0bf4be304934 929-930
+  s_ecb0a2e168181d::t_97413823925969 249,252,255
+  s_c0872ebf037cc7::t_0960801589ce23 352-354,356-359,361-363
+  s_c0872ebf037cc7::t_7c72ec5c50ee4d 581
+  s_ecb0a2e168181d::t_37c0233ff20404 341
+  s_ecb0a2e168181d::t_601402e880f105 892-897
+  s_ecb0a2e168181d::t_3e4269205b8363 254
+  h_6ceeb547b3b36a 271,282,345,397,424,434-437,439-441,454,891,928
+  s_ecb0a2e168181d::t_cc783273578d29 272,329,338,367,372,443,627,992
+  s_ecb0a2e168181d::t_4f6a74c03f63f4 398,400,403,405
+  s_ecb0a2e168181d::t_729b4ea92839ee 305,309,323
+  s_ecb0a2e168181d::t_c5e5105d4f016b 792
+  s_ecb0a2e168181d::t_ce912719919f58 304,308,313,317,319-321
+  s_c0872ebf037cc7::t_48a4f9e6f02f22 781,831,907,1001,1047,1053,1060,1085
+  s_ecb0a2e168181d::t_ed9c5b1f995d81 250,253,256,264
+  s_ecb0a2e168181d::t_5590d4de1dbf8b 458,460-461,469,472
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AbstractStorageFile.java
+  s_ecb0a2e168181d::t_9ce0dabc1bea40 7-20,30,58-59
+  s_ecb0a2e168181d::t_38db497384ee91 54-55
+  s_ecb0a2e168181d::t_184339faa7d3a7 42-49
+  s_ecb0a2e168181d::t_182eb7e091691a 52-53
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncIndexFile.java
+  s_ecb0a2e168181d::t_efb08cdace6be5 9-10
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_ecb0a2e168181d::t_f0a878d2d4224e 131
+  s_ecb0a2e168181d::t_7e6e0a2939ed4d 299,311,358,370,640,745,789,794,862,879,903,920
+  s_ecb0a2e168181d::t_5d353557f08133 93
+  s_ecb0a2e168181d::t_a357e20e4799d9 95,100-101
+  s_ecb0a2e168181d::t_b1890f8559f12f 236-243
+  s_ecb0a2e168181d::t_5b31dfeb1216d0 661
+  s_ecb0a2e168181d::t_d2164120ba1ce4 75-77,79,83-85,87,90
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/StorageUtil.java
+  s_ecb0a2e168181d::t_10e4307005e18c 52
+  s_c0872ebf037cc7::t_380cd0b541b478 51,53-56
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  s_ecb0a2e168181d::t_e30404781d0d0e 176,248,312,387
+  s_ecb0a2e168181d::t_0dd134bd463e6e 46,168,303
+  s_ecb0a2e168181d::t_9eb67347f13c28 51,57,60,64
+  s_ecb0a2e168181d::t_4644f8b99cb334 58-59,61,63,65-68
+  s_ecb0a2e168181d::t_84aaf4d5ef5be9 171,289
+  s_ecb0a2e168181d::t_6cd86130b7cd57 47-49,175,177-178,242,247,249,311,313,366,386,388
+  s_ecb0a2e168181d::t_8476ba5e5238c6 45,50,52-56,62
+  s_ecb0a2e168181d::t_3aafcfaf96d67c 75
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  s_ecb0a2e168181d::t_5d5f9a8e45ff3b 42
+  s_ecb0a2e168181d::t_fd93ddc98a8759 17,19
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/PreloadFailedException.java
+  s_ecb0a2e168181d::t_3f4ff40c931b10 6-7
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/FileCacheEntry.java
+  s_ecb0a2e168181d::t_33f90e26048c5c 13
+  s_ecb0a2e168181d::t_409c18f108a151 11-12
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFile.java
+  s_ecb0a2e168181d::t_b76116961eee06 28
+  s_ecb0a2e168181d::t_e254a2dc955f74 4
+  s_ecb0a2e168181d::t_06dc6c3a3925d6 7-8,32,40
+  s_ecb0a2e168181d::t_ebfde5d54563df 18,30-31,37-39
+  s_ecb0a2e168181d::t_cf4a2e13f18a95 29,41-49
+  s_ecb0a2e168181d::t_7309b7bf82c98e 5-6,33-36
+  s_ecb0a2e168181d::t_ee6ce82d8514de 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.33-trip",
+  "base_commit_sha": "5869207234e0685adca9230eb31d017dfc606651",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_c0872ebf037cc7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "afaf16d3-6dea-4caa-b39a-139d1c5f4a77",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_ecb0a2e168181d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "58917a95-e8e5-4f5f-888d-a89ac9214134",
+        "model": "gpt-5.4"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
