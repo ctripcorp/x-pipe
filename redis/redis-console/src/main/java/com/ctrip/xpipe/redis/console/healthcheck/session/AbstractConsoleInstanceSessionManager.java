@@ -134,6 +134,14 @@ public abstract class AbstractConsoleInstanceSessionManager implements InstanceS
 
     protected abstract Set<HostPort> getInUseInstances();
 
+    @Override
+    public boolean removeSession(Endpoint endpoint) {
+        RedisSession session = sessions.remove(endpoint);
+        if (session == null) return false;
+        session.closeConnection();
+        return true;
+    }
+
     protected void closeAllConnections() {
         try {
             executors.execute(new Runnable() {
