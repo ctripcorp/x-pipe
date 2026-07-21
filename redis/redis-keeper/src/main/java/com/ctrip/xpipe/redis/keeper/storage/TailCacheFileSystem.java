@@ -843,6 +843,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (file.cacheMode == CacheMode.NO_CACHE) return true;
         if (!inCacheRange(entry, offset)) return true;
         if (!preferCache || backingFsMode == BackingFsMode.NO_CACHE) {
+            if (file.atomicReplace) {
+                return entry.cacheGen == entry.writtenGen;
+            }
             return offset < entry.writtenToFsOffset;
         }
         return false;
@@ -905,6 +908,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
         FileCacheEntry entry = file.getCacheEntry();
         final long writeSize = data.readableBytes();
+        if (file.atomicReplace && writeSize == 0) {
+            data.release();
+            throw new IllegalArgumentException("atomic replace requires non-empty data: " + file.getKey());
+        }
         final boolean useCacheSnapshot = useCache(file);
         final String id = file.getKey();
         // First cache build (sizeSync/preload/atomic) must see settled FS; skip wait if cache already live.
@@ -1091,6 +1098,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return Pair.of(0L, data);
         }
         if (entry.writtenGen > entry.cacheGen) {
+            logger.warn("atomic cache generation {} is behind written generation {}, advancing it",
+                    entry.cacheGen, entry.writtenGen);
             entry.cacheGen = entry.writtenGen + 1;
         }
         if (entry.cacheGen == entry.writtenGen) {
