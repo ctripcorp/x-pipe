@@ -177,14 +177,13 @@ public class DefaultCommandDispatcher extends AbstractInstanceComponent implemen
     }
 
     private void addTransactionStart(RedisOpCommand<?> multiCommand, long commandOffsetToAccumulate, String gtid) {
-        transactionCommand.set(new TransactionAsyncCommand(client));
+        transactionCommand.set(new TransactionAsyncCommand(client,workerThreads));
         transactionCommand.get().addTransactionStart(multiCommand, commandOffsetToAccumulate, gtid);
     }
 
     private void addTransactionEndAndSubmit(RedisOpCommand<?> execCommand, long commandOffsetToAccumulate, String gtid) {
         transactionCommand.get().addTransactionEnd(execCommand, commandOffsetToAccumulate, gtid);
         TransactionAsyncCommand command = transactionCommand.getAndSet(null);
-        if(!command.validTransaction()) throw new RedisRuntimeException("diff keys or no hash tag not supported");
         sequenceController.submit(command, command.commandOffset(), command.getGtidSet());
     }
 
