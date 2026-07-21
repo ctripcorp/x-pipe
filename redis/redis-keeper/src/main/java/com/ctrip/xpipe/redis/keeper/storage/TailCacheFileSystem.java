@@ -295,7 +295,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         final ByteBuf writeBuf;
         final long ioGen;
         if (file.atomicReplace) {
-            Pair<Long, ByteBuf> atomic = getAtomicBufAfterInFlight(entry, Unpooled.buffer(0), true);
+            Pair<Long, ByteBuf> atomic = getPendingAtomicWriteBufAfterInFlight(
+                    entry, Unpooled.buffer(0), true);
             writeBuf = atomic.getValue();
             ioGen = atomic.getKey();
         } else {
@@ -633,6 +634,13 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                             entry.cacheStartOffset = 0;
                             entry.cacheEndOffset = 0;
                             entry.writtenToFsOffset = 0;
+                        } else if (file.atomicReplace) {
+                            ByteBuf chunk = StorageAllocator.ALLOC.directBuffer((int) actualSize);
+                            chunk.writeBytes(data, data.readerIndex(), (int) actualSize);
+                            entry.chunks.put(0L, chunk);
+                            entry.cacheStartOffset = 0;
+                            entry.cacheEndOffset = actualSize;
+                            entry.writtenToFsOffset = actualSize;
                         } else {
                             long offset = 0;
                             long loadEnd = aligned ? data.capacity() : actualSize;
@@ -670,7 +678,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         boolean aligned = true;
         if (fileSize == 0) return new Pair<>(true, Unpooled.buffer(0));
         ByteBuf data;
-        if (fileSize <= preloadChunkThreshold * chunkSize) {
+        if (file.atomicReplace) {
+            aligned = false;
+            data = executeWithEioRetry(file,
+                    () -> delegate.readSync(file, fileSize, 0, 0));
+        } else if (fileSize <= preloadChunkThreshold * chunkSize) {
             // small file: aligned read — buffer capacity rounded up to chunkSize multiples,
             // so each chunk slice maps directly onto an aligned region without copying.
             data = executeWithEioRetry(file,
@@ -737,7 +749,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (!preferDirectRead(file, entry, readOffset, readPreferCache)) {
             synchronized (entry) {
                 if (inCacheRange(entry, readOffset)) {
-                    cached = readWithCache(length, readOffset, entry);
+                    cached = readWithCache(length, readOffset, entry, file.atomicReplace);
                 }
             }
         }
@@ -785,9 +797,41 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return slices;
     }
 
-    private ByteBuf readWithCache(long length, long offset, FileCacheEntry entry) {
+    // Must be called under synchronized(entry).
+    private java.util.List<ByteBuf> collectAtomicChunkSlice(
+            FileCacheEntry entry, long offset, long end, boolean failOnMissingChunk) {
+        java.util.List<ByteBuf> slices = new java.util.ArrayList<>(1);
+        if (offset >= end) {
+            return slices;
+        }
+        ByteBuf chunk = entry.chunks.get(0L);
+        int length = (int) (end - offset);
+        if (end > entry.cacheEndOffset) {
+            if (failOnMissingChunk) {
+                throw new CacheChunksNotContinuousException(
+                        "atomic cache chunk 0 with size " + entry.cacheEndOffset
+                                + " does not cover range [" + offset + ", " + end + ")");
+            }
+            return slices;
+        }
+        slices.add(chunk.retainedSlice((int) offset, length));
+        return slices;
+    }
+
+    // Must be called under synchronized(entry).
+    private java.util.List<ByteBuf> collectCacheSlices(
+            FileCacheEntry entry, long offset, long end, boolean failOnMissingChunk, boolean atomicReplace) {
+        if (atomicReplace) {
+            return collectAtomicChunkSlice(entry, offset, end, failOnMissingChunk);
+        }
+        return collectChunkSlices(entry, offset, end, failOnMissingChunk);
+    }
+
+    private ByteBuf readWithCache(
+            long length, long offset, FileCacheEntry entry, boolean atomicReplace) {
         long end = Math.min(offset + length, entry.cacheEndOffset);
-        java.util.List<ByteBuf> slices = collectChunkSlices(entry, offset, end, false);
+        java.util.List<ByteBuf> slices =
+                collectCacheSlices(entry, offset, end, false, atomicReplace);
         CompositeByteBuf composite = StorageAllocator.ALLOC.compositeDirectBuffer();
         for (ByteBuf s : slices) {
             composite.addComponent(true, s);
@@ -809,11 +853,12 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return cacheStart >= 0 && offset >= cacheStart;
     }
 
-    long transferToByCache(FileCacheEntry entry, long offset, long count, WritableByteChannel target) throws IOException {
+    long transferToByCache(FileCacheEntry entry, long offset, long count,
+            WritableByteChannel target, boolean atomicReplace) throws IOException {
         java.util.List<ByteBuf> slices;
         synchronized (entry) {
             long end = Math.min(offset + count, entry.cacheEndOffset);
-            slices = collectChunkSlices(entry, offset, end, false);
+            slices = collectCacheSlices(entry, offset, end, false, atomicReplace);
         }
         if (slices.isEmpty()) return 0;
         try {
@@ -906,7 +951,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             writeBuf = data;
             atomicIoGen = 0;
         } else if (file.atomicReplace) {
-            Pair<Long, ByteBuf> atomic = getAtomicBufAfterInFlight(entry, data, useCacheSnapshot);
+            Pair<Long, ByteBuf> atomic = getPendingAtomicWriteBufAfterInFlight(
+                    entry, data, useCacheSnapshot);
             writeBuf = atomic.getValue();
             atomicIoGen = atomic.getKey();
         } else {
@@ -952,20 +998,15 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         if (file.atomicReplace) {
             synchronized (entry) {
+                int length = data.readableBytes();
                 releaseAllChunks(entry);
                 entry.cacheStartOffset = 0;
+                entry.cacheEndOffset = length;
                 entry.writtenToFsOffset = 0;
                 entry.cacheGen++;
-                long offset = 0;
-                while (data.isReadable()) {
-                    long chunkIdx = offset / chunkSize;
-                    int len = (int) Math.min(chunkSize, data.readableBytes());
-                    ByteBuf chunk = StorageAllocator.ALLOC.directBuffer((int) chunkSize);
-                    chunk.writeBytes(data, len);
-                    entry.chunks.put(chunkIdx, chunk);
-                    offset += len;
-                }
-                entry.cacheEndOffset = offset;
+                ByteBuf chunk = StorageAllocator.ALLOC.directBuffer(length);
+                chunk.writeBytes(data, length);
+                entry.chunks.put(0L, chunk);
             }
             data.release();
             return;
@@ -1044,7 +1085,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     // Empty buf with ioGen == 0: nothing to flush.
     // ioGen == 0 with data: no cache write.
     // ioGen > 0 with data: after FS write, update writtenGen to ioGen.
-    private Pair<Long, ByteBuf> getAtomicBufAfterInFlight(FileCacheEntry entry, ByteBuf data, boolean cacheWrite) {
+    private Pair<Long, ByteBuf> getPendingAtomicWriteBufAfterInFlight(
+            FileCacheEntry entry, ByteBuf data, boolean cacheWrite) {
         if (!cacheWrite || entry.cacheStartOffset < 0) {
             return Pair.of(0L, data);
         }
@@ -1061,13 +1103,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return Pair.of(0L, Unpooled.buffer(0));
         }
         long ioGen = entry.cacheGen;
-        java.util.List<ByteBuf> slices =
-                collectChunkSlices(entry, entry.cacheStartOffset, entry.cacheEndOffset, true);
-        CompositeByteBuf composed = StorageAllocator.ALLOC.compositeDirectBuffer();
-        for (ByteBuf s : slices) {
-            composed.addComponent(true, s);
-        }
-        return Pair.of(ioGen, composed);
+        java.util.List<ByteBuf> slices = collectAtomicChunkSlice(
+                entry, entry.cacheStartOffset, entry.cacheEndOffset, true);
+        return Pair.of(ioGen, slices.get(0));
     }
 
     private ByteBuf buildWriteBufFromCache(FileCacheEntry entry, long maxBytes) {
@@ -1166,6 +1204,17 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                         releaseAllChunks(entry);
                         entry.cacheStartOffset = size;
                         entry.cacheEndOffset = size;
+                    } else if (file.atomicReplace) {
+                        long newEnd = Math.min(size, entry.cacheEndOffset);
+                        if (newEnd < entry.cacheEndOffset) {
+                            int length = (int) newEnd;
+                            ByteBuf oldChunk = entry.chunks.get(0L);
+                            ByteBuf newChunk = StorageAllocator.ALLOC.directBuffer(length);
+                            newChunk.writeBytes(oldChunk, 0, length);
+                            entry.chunks.put(0L, newChunk);
+                            oldChunk.release();
+                            entry.cacheEndOffset = newEnd;
+                        }
                     } else {
                         long newEnd = Math.min(size, entry.cacheEndOffset);
                         if (newEnd < entry.cacheEndOffset) {
@@ -1272,7 +1321,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             });
         }
         try {
-            return CompletableFuture.completedFuture(transferToByCache(entry, offset, count, target));
+            return CompletableFuture.completedFuture(
+                    transferToByCache(entry, offset, count, target, file.atomicReplace));
         } catch (IOException e) {
             return CompletableFuture.failedFuture(new SocketErrorException(e));
         }
