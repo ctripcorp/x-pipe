@@ -1,0 +1,23 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/FileCacheEntry.java
+  s_1c9c9d493d7e99::t_92675ea5c530fd 19-20
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_1c9c9d493d7e99::t_1919d994d23a96 911-914
+  s_1c9c9d493d7e99::t_77f65bb5a57f56 846-848
+  s_1c9c9d493d7e99::t_13ac3961625ed9 1101-1102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.35-trip",
+  "base_commit_sha": "938dcf5af27ec14eafe8563c227fb1a60f208cd8",
+  "prompts": {},
+  "sessions": {
+    "s_1c9c9d493d7e99": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6d56a606-f76d-4a91-ac27-1141c1ac005b",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
