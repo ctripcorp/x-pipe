@@ -1,0 +1,44 @@
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/session/PsubRaceTest.java
+  s_11b6446428d721::t_c6fcff34d634ee 115-119,124,127,138-139,141,144-148
+  s_11b6446428d721::t_701c2573ec0a69 128-132,134
+  s_11b6446428d721::t_4334c4b19584b5 5,24-26,29,31-34,36-44,52-55,64-65,91-102,104-106,108-109,113-114,120-123,133,135-137,140,142-143,149-157,164,166-169,171-176
+  s_11b6446428d721::t_2a5fab36899b6f 30,35
+  s_11b6446428d721::t_f2f93e8985ee31 125-126
+  s_11b6446428d721::t_faf578018634b0 1-4,6-23,27-28,45-51,56-63,66-75,78-79,81,86-90,103,107,170,177-183
+  s_11b6446428d721::t_4d76b40948b24e 76-77,82-84
+  s_11b6446428d721::t_f65d6d32d51e47 80,85
+  s_11b6446428d721::t_2fdabf132c1ef4 110-112
+  s_11b6446428d721::t_5bd13a42f6ff5e 158-160,162-163
+  s_11b6446428d721::t_53368d7cf1f6df 161,165
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/RedisSession.java
+  s_11b6446428d721::t_89a70d86d59de7 481-484
+  s_11b6446428d721::t_2785f0ba833288 44-45
+  s_11b6446428d721::t_aceac1f8de821c 121-124
+  s_11b6446428d721::t_b8519d3b2a8434 466-468
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/DefaultHealthCheckInstanceFactory.java
+  s_11b6446428d721::t_391dc361f8eaac 20
+  s_11b6446428d721::t_54feca3acb095d 96-97
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/AbstractInstanceSessionManager.java
+  s_11b6446428d721::t_5b188300660a33 104-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.35-trip",
+  "base_commit_sha": "51e8fe8b3463020931cc0dbd6905f4c7a30e57bc",
+  "prompts": {},
+  "humans": {
+    "h_2a4fc97c4bee49": {
+      "author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_11b6446428d721": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08a18e5e-a702-4603-8198-763644e4220d",
+        "model": "glm-5.2"
+      },
+      "human_author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  }
+}
