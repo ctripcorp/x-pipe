@@ -16,7 +16,7 @@ class FileCacheEntry {
     // Exclusive upper bound of data written to the backing FS.
     volatile long writtenToFsOffset = 0;
     // Atomic FULL_CACHE content version, used to track dirty state.
-    long cacheGen = 0;
-    long writtenGen = 0;
+    volatile long cacheGen = 0;
+    volatile long writtenGen = 0;
     final ConcurrentHashMap<Long, ByteBuf> chunks = new ConcurrentHashMap<>();
 }
