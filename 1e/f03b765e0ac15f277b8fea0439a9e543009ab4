@@ -1,0 +1,19 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_08a1e4b57d7360::t_6bc6046cc595ce 637
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.35-trip",
+  "base_commit_sha": "1ef03b765e0ac15f277b8fea0439a9e543009ab4",
+  "prompts": {},
+  "sessions": {
+    "s_08a1e4b57d7360": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "41943865-c62a-4c06-b8cb-0754a8ba3849",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
