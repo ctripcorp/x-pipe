@@ -19,7 +19,7 @@ public class TailCacheFileSystemConfig {
     // more stable behavior.
     private boolean transferPreferCache = true;
     private BackingFsMode backingFsMode = BackingFsMode.ASYNC;
-    private long maxCacheSizeBytes = 0;
+    private long maxCacheSizeBytes = 1024 * 1024 * 1024;
     private long maxCacheSizePerTenantBytes = 0;
     private long expectedMinRetentionMs = 0;
     private long chunkSize = 1 * 1024 * 1024;
