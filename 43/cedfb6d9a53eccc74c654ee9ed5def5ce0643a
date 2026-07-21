@@ -1,0 +1,26 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java
+  s_c99494f6ca6f03::t_d6a572a8a3d561 352-355
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  s_c99494f6ca6f03::t_6a6835a8429881 441-444
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/ContainerResourceManager.java
+  s_c99494f6ca6f03::t_d2a3052a092aa6 64-65,69-73,76-77
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperConfig.java
+  s_c99494f6ca6f03::t_ad49ad5408b632 23,27
+  s_c99494f6ca6f03::t_fe155de4d7e839 142-143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "43cedfb6d9a53eccc74c654ee9ed5def5ce0643a",
+  "prompts": {},
+  "sessions": {
+    "s_c99494f6ca6f03": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "78591dab-c1b4-44a8-bce2-cdfef9a1d4d1",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

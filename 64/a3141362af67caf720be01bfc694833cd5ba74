@@ -1,0 +1,69 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/InstanceSessionManager.java
+  s_11b6446428d721::t_2631e572f75232 16-17
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/AbstractInstanceSessionManager.java
+  s_11b6446428d721::t_01f04d43a38145 153-159
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/RedisSession.java
+  s_11b6446428d721::t_37ded81e27ea53 199
+  s_11b6446428d721::t_6cb4d8e0224673 356
+  s_11b6446428d721::t_2785f0ba833288 45-46
+  s_11b6446428d721::t_89a70d86d59de7 514-515
+  s_11b6446428d721::t_e754e675b849ad 24
+  s_11b6446428d721::t_5577460d610e0c 124
+  s_11b6446428d721::t_4fd8444bcc9b7d 482-484
+  s_11b6446428d721::t_907c61b4b69aaa 75
+  s_11b6446428d721::t_aceac1f8de821c 125-127
+  s_11b6446428d721::t_3af04b493c22f5 47-48
+  s_11b6446428d721::t_b94d5b9a7deb28 102
+  s_11b6446428d721::t_1156d8f8a16176 165
+  s_11b6446428d721::t_d947c6a2fb3b77 263
+  s_11b6446428d721::t_95da1abc2a8a0a 216
+  s_11b6446428d721::t_6837b89c6feb4e 233
+  s_11b6446428d721::t_a87b23d929fd07 303
+  s_11b6446428d721::t_1a7e90aa58a006 320
+  s_11b6446428d721::t_cf231707217e5c 337
+  s_11b6446428d721::t_7fa2dd468de381 371
+  s_11b6446428d721::t_38a2b36a52d900 180
+  s_11b6446428d721::t_65bf47c044847a 275
+  s_11b6446428d721::t_b64f84167d10b3 363
+  s_11b6446428d721::t_1b25c2d507515e 498-513
+  s_11b6446428d721::t_b3013f5daa36ab 269
+  s_11b6446428d721::t_b8519d3b2a8434 485
+  s_11b6446428d721::t_a2582f1ae469d8 150
+  s_11b6446428d721::t_270b79d241b4c8 257
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/DefaultHealthCheckInstanceFactory.java
+  s_11b6446428d721::t_814e36c4b78993 95
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/session/PsubRaceTest.java
+  s_11b6446428d721::t_f2f93e8985ee31 125-126
+  s_11b6446428d721::t_dabc55a28c7fca 165-166
+  s_11b6446428d721::t_faf578018634b0 1-4,6-23,27-28,45-51,56-63,66-75,78-79,81,86-90,103,107,171,178-184
+  s_11b6446428d721::t_53368d7cf1f6df 161
+  s_11b6446428d721::t_2fdabf132c1ef4 110-112
+  s_11b6446428d721::t_c6fcff34d634ee 115-119,124,127,138-139,141,144-148
+  s_11b6446428d721::t_2a5fab36899b6f 30,35
+  s_11b6446428d721::t_701c2573ec0a69 128-132,134
+  s_11b6446428d721::t_f65d6d32d51e47 80,85
+  s_11b6446428d721::t_4334c4b19584b5 5,24-26,29,31-34,36-44,52-55,64-65,91-102,104-106,108-109,113-114,120-123,133,135-137,140,142-143,149-157,164,167-170,172-177
+  s_11b6446428d721::t_5bd13a42f6ff5e 158-160,162-163
+  s_11b6446428d721::t_4d76b40948b24e 76-77,82-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.35-trip",
+  "base_commit_sha": "64a3141362af67caf720be01bfc694833cd5ba74",
+  "prompts": {},
+  "humans": {
+    "h_2a4fc97c4bee49": {
+      "author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_11b6446428d721": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08a18e5e-a702-4603-8198-763644e4220d",
+        "model": "glm-5.2"
+      },
+      "human_author": null
+    }
+  }
+}
