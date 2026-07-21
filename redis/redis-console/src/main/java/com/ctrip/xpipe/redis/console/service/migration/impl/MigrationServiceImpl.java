@@ -543,17 +543,48 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             throw new ClusterMigratingNowButMisMatch(clusterName, realFromIdc, realToIdc, unfinished.getMigrationEventId(), fromIdc, toIdc);
         }
 
-        long activedcId = clusterTbl.getActivedcId();
-        DcTbl activeDc = dcService.find(activedcId);
-        if (fromIdc != null && !fromIdc.equalsIgnoreCase(activeDc.getDcName())) {
-            throw new ClusterActiveDcNotRequest(clusterName, fromIdc, activeDc.getDcName());
+        AzGroupClusterEntity azGroupCluster = null;
+        DcTbl activeDc;
+        if (heteroMigrationSupport.isHeteroCluster(clusterTbl)) {
+            azGroupCluster = resolveHeteroAzGroupClusterForTryMigrate(clusterTbl, fromIdc);
+            activeDc = dcCache.find(azGroupCluster.getActiveAzId());
+            if (activeDc == null) {
+                throw new ClusterActiveDcNotRequest(clusterName, fromIdc, "active az dc not found");
+            }
+            if (!fromIdc.equalsIgnoreCase(activeDc.getDcName())) {
+                throw new ClusterActiveDcNotRequest(clusterName, fromIdc, activeDc.getDcName());
+            }
+        } else {
+            activeDc = dcService.find(clusterTbl.getActivedcId());
+            if (fromIdc != null && !fromIdc.equalsIgnoreCase(activeDc.getDcName())) {
+                throw new ClusterActiveDcNotRequest(clusterName, fromIdc, activeDc.getDcName());
+            }
         }
 
         List<DcTbl> clusterRelatedDc = dcService.findClusterRelatedDc(clusterName);
         logger.debug("[tryMigrate][clusterRelatedDc]{}", clusterRelatedDc);
 
-        DcTbl toDc = findToDc(clusterTbl, fromIdc, toIdc, clusterRelatedDc);
+        DcTbl toDc = findToDc(clusterTbl, fromIdc, toIdc, clusterRelatedDc, azGroupCluster);
         return new TryMigrateResult(clusterTbl, activeDc, toDc);
+    }
+
+    private AzGroupClusterEntity resolveHeteroAzGroupClusterForTryMigrate(ClusterTbl clusterTbl, String fromIdc)
+            throws ClusterActiveDcNotRequest {
+        String clusterName = clusterTbl.getClusterName();
+        if (StringUtil.isEmpty(fromIdc)) {
+            throw new ClusterActiveDcNotRequest(clusterName, fromIdc, "fromIdc required for HETERO cluster");
+        }
+        AzGroupClusterEntity azGroupCluster = heteroMigrationSupport.resolveMigrationAzGroupClusters(
+                Collections.singletonList(clusterTbl.getId()), fromIdc).get(clusterTbl.getId());
+        if (azGroupCluster == null) {
+            logger.warn("[tryMigrate][{}] cannot resolve ONE_WAY az group for sourceDc {}", clusterName, fromIdc);
+            throw new ClusterActiveDcNotRequest(clusterName, fromIdc, "cannot resolve ONE_WAY az group");
+        }
+        if (azGroupCluster.getActiveAzId() == null) {
+            logger.warn("[tryMigrate][{}] az group active_az_id is null", clusterName);
+            throw new ClusterActiveDcNotRequest(clusterName, fromIdc, "az group active_az_id is not configured");
+        }
+        return azGroupCluster;
     }
 
     @Override
@@ -671,7 +702,13 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         logger.info("[updateStorageClusterStatus][getdb]{}, {}", clusterName, newCluster != null ? newCluster.getStatus() : null);
     }
 
-    protected DcTbl findToDc(ClusterTbl cluster, String fromIdc, String toIdc, List<DcTbl> clusterRelatedDc) throws ToIdcNotFoundException {
+    protected DcTbl findToDc(ClusterTbl cluster, String fromIdc, String toIdc, List<DcTbl> clusterRelatedDc)
+            throws ToIdcNotFoundException {
+        return findToDc(cluster, fromIdc, toIdc, clusterRelatedDc, null);
+    }
+
+    protected DcTbl findToDc(ClusterTbl cluster, String fromIdc, String toIdc, List<DcTbl> clusterRelatedDc,
+                             AzGroupClusterEntity azGroupCluster) throws ToIdcNotFoundException {
 
         DcTbl fromIdcInfo = null;
         for(DcTbl dcTbl : clusterRelatedDc) {
@@ -683,7 +720,8 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         if(StringUtil.isEmpty(toIdc)){
             Map<String, DcTbl> availableDcs = new HashMap<>();
             for (DcTbl dcTbl : clusterRelatedDc) {
-                if (!dcTbl.getDcName().equalsIgnoreCase(fromIdc) && isSameZone(fromIdcInfo, dcTbl)) {
+                if (!dcTbl.getDcName().equalsIgnoreCase(fromIdc)
+                        && isTargetDcAllowed(cluster, fromIdcInfo, dcTbl, azGroupCluster)) {
                     availableDcs.put(dcTbl.getDcName().toUpperCase(), dcTbl);
                 }
             }
@@ -704,14 +742,32 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
 
             for (DcTbl dcTbl : clusterRelatedDc) {
                 if (dcTbl.getDcName().equalsIgnoreCase(toIdc)) {
-                    if(!isSameZone(fromIdcInfo, dcTbl)) {
-                        throw new ToIdcNotFoundException("To Idc should be in same zone with from Idc");
+                    if(!isTargetDcAllowed(cluster, fromIdcInfo, dcTbl, azGroupCluster)) {
+                        throw new ToIdcNotFoundException(targetDcScopeMismatchMessage(azGroupCluster));
                     }
                     return dcTbl;
                 }
             }
             throw new ToIdcNotFoundException(String.format("toIdc : %s, can not find it in all related dcs:%s", toIdc, clusterRelatedDcToString(clusterRelatedDc)));
         }
+    }
+
+    private boolean isTargetDcAllowed(ClusterTbl cluster, DcTbl fromIdc, DcTbl toDc,
+                                      AzGroupClusterEntity azGroupCluster) {
+        if (fromIdc == null || toDc == null) {
+            return false;
+        }
+        if (azGroupCluster != null) {
+            return heteroMigrationSupport.isSameAzGroup(cluster.getId(), fromIdc.getDcName(), toDc.getDcName());
+        }
+        return isSameZone(fromIdc, toDc);
+    }
+
+    private String targetDcScopeMismatchMessage(AzGroupClusterEntity azGroupCluster) {
+        if (azGroupCluster != null) {
+            return "To Idc should be in same az group with from Idc";
+        }
+        return "To Idc should be in same zone with from Idc";
     }
 
     protected boolean isSameZone(DcTbl fromIdc, DcTbl toIdc) {
