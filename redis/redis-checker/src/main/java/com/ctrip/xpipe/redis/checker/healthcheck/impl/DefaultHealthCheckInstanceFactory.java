@@ -92,6 +92,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     public void remove(RedisHealthCheckInstance instance) {
         Endpoint endpoint = instance.getEndpoint();
         endpointFactory.remove(new HostPort(endpoint.getHost(), endpoint.getPort()));
+        redisSessionManager.removeSession(endpoint);
         stopCheck(instance);
     }
 
