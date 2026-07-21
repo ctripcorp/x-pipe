@@ -63,8 +63,8 @@ public class RdbQuickList2Parser extends AbstractRdbParser<Integer> implements R
                     break;
                 case READ_DATA:
                     byte[] data = rdbStringParser.read(byteBuf);
-                    rdbStringParser.reset();
                     if (data != null) {
+                        rdbStringParser.reset();
                         readCnt++;
 
                         if (readCnt >= len.getLenValue()) {

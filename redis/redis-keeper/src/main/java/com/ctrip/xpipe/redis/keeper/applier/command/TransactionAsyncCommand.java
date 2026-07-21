@@ -1,14 +1,16 @@
 package com.ctrip.xpipe.redis.keeper.applier.command;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.client.redis.AsyncRedisClient;
+import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisKey;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisMultiKeyOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisSingleKeyOp;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 /**
  * @author TB
@@ -24,77 +26,58 @@ public class TransactionAsyncCommand extends TransactionCommand{
 
     private Object resource;
 
-    public TransactionAsyncCommand(AsyncRedisClient client){
+    final ExecutorService workThreads;
+
+    public TransactionAsyncCommand(AsyncRedisClient client,ExecutorService workThreads){
         super();
         this.client = client;
         this.redisKeys = new HashSet<>();
+        this.workThreads = workThreads;
     }
 
     public void addTransactionCommands(RedisOpCommand<?> redisOpCommand, long commandOffset, String gtid) {
-        if(redisOpCommand instanceof MultiDataCommand){
-            MultiDataCommand multiDataCommand = (MultiDataCommand) redisOpCommand;
-            redisKeys.addAll(multiDataCommand.keys());
-        }else if(redisOpCommand instanceof DefaultDataCommand){
-            DefaultDataCommand defaultDataCommand = (DefaultDataCommand) redisOpCommand;
-            redisKeys.add(defaultDataCommand.key());
-        }
         super.addTransactionCommands(redisOpCommand,commandOffset,gtid);
     }
 
     @Override
     protected void doExecute() throws Throwable{
-        List<Object[]> multiRawArgs = new ArrayList<>(transactionCommands.size());
-
+        Map<Object,List<byte[][]>> resourceMultiRawArgs = new HashMap<>();
         for(RedisOpCommand redisOpCommand:transactionCommands){
             if(redisOpCommand instanceof MultiDataCommand){
                 MultiDataCommand multiDataCommand = (MultiDataCommand) redisOpCommand;
-                if(resource == null){
-                    resource = client.select(multiDataCommand.keys().get(0).get());
+                List<Object> keys = multiDataCommand.keys().stream().map(RedisKey::get).collect(Collectors.toList());
+                Map<Object,List<Object>> resourceOps = client.selectMulti(keys);
+                for(Map.Entry<Object,List<Object>> entry:resourceOps.entrySet()){
+                    List<byte[][]> args = resourceMultiRawArgs.computeIfAbsent(entry.getKey(),(key)-> new ArrayList<>());
+                    if(multiDataCommand.getDbNumber() != 0) {
+                        byte[][] selectArgs = new byte[][]{"select".getBytes(), (multiDataCommand.getDbNumber() + "").getBytes()};
+                        args.add(selectArgs);
+                    }
+                    args.add(multiDataCommand.redisOpAsMulti().subOp(entry.getValue().stream().map(keys::indexOf).collect(Collectors.toSet())).buildRawOpArgs());
                 }
-                if(multiDataCommand.getDbNumber() != 0) {
-                    Object[] selectArgs = new byte[][]{"select".getBytes(), (multiDataCommand.getDbNumber() + "").getBytes()};
-                    multiRawArgs.add(selectArgs);
-                }
-                multiRawArgs.add(multiDataCommand.redisOp().buildRawOpArgs());
             }else if(redisOpCommand instanceof DefaultDataCommand){
                 DefaultDataCommand defaultDataCommand = (DefaultDataCommand) redisOpCommand;
-                if(resource == null) {
-                    resource = client.select(defaultDataCommand.key().get());
-                }
+                Object  resource = client.select(defaultDataCommand.key().get());
+                List<byte[][]> args = resourceMultiRawArgs.computeIfAbsent(resource,(key)-> new ArrayList<>());
                 if(defaultDataCommand.getDbNumber() != 0) {
-                    Object[] selectArgs = new byte[][]{"select".getBytes(), (defaultDataCommand.getDbNumber() + "").getBytes()};
-                    multiRawArgs.add(selectArgs);
+                    byte[][] selectArgs = new byte[][]{"select".getBytes(), (defaultDataCommand.getDbNumber() + "").getBytes()};
+                    args.add(selectArgs);
                 }
-                multiRawArgs.add(defaultDataCommand.redisOp().buildRawOpArgs());
+                args.add(defaultDataCommand.redisOp().buildRawOpArgs());
             }
         }
 
-        long startTime = System.nanoTime();
+        ParallelCommandChain parallelCommandChain = new ParallelCommandChain(workThreads, false);
 
-        client
-                .writeMulti(resource, 0, multiRawArgs.toArray())
-                .addListener(f -> {
-                    if (getLogger().isDebugEnabled()) {
-                        getLogger().debug("[command] write key {} end, total time {}", redisOp() instanceof RedisSingleKeyOp ? ((RedisSingleKeyOp) redisOp()).getKey() : (redisOp() instanceof RedisMultiKeyOp ? keys() : "none"), System.nanoTime() - startTime);
-                    }
-                    if (f.isSuccess()) {
-                        future().setSuccess(true);
-                    } else {
-                        if (f.cause().getMessage().startsWith(ERR_GTID_COMMAND_EXECUTED)) {
-                            future().setSuccess(true);
-                        } else {
-                            future().setFailure(f.cause());
-                        }
-                    }
-                });
-    }
-
-    public boolean validTransaction(){
-        if(redisKeys.size() == 1) return true;
-        for(RedisKey redisKey:redisKeys) {
-            byte[] tag = client.hashTag(redisKey.get());
-            return tag != null;
+        for(Map.Entry<Object,List<byte[][]>> entry:resourceMultiRawArgs.entrySet()){
+            parallelCommandChain.add(new DefaultRawCommand(client,entry.getKey(),entry.getValue()));
         }
-        return false;
+        parallelCommandChain.execute().addListener(commandFuture -> {
+            if (commandFuture.isSuccess()) {
+                TransactionAsyncCommand.this.future().setSuccess(true);
+            } else {
+                TransactionAsyncCommand.this.future().setFailure(commandFuture.cause());
+            }
+        });
     }
 }

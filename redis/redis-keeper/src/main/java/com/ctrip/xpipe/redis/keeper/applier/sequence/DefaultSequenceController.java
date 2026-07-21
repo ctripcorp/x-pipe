@@ -358,46 +358,32 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         List<RedisOp> transactionOps = redisOpTransactionAdapter.getTransactionOps();
         List<SequenceCommand<?>> dependencies = new ArrayList<>();
         Set<RedisKey> transactionOpKeys = new HashSet<>();
-        RedisKey commandKey = null;
+
         for(RedisOp transactionOp:transactionOps){
             if(transactionOp instanceof RedisSingleKeyOp) {
                 RedisSingleKeyOp redisSingleKeyOp = (RedisSingleKeyOp) transactionOp;
                 RedisKey redisKey = redisSingleKeyOp.getKey();
-                if(commandKey == null) {
-                    commandKey = redisKey;
-                }
                 transactionOpKeys.add(redisKey);
             }else if(transactionOp instanceof RedisMultiKeyOp){
                 RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) transactionOp;
                 for(RedisKey redisKey:redisMultiKeyOp.getKeys()){
-                    transactionOpKeys.add(redisKey);
-                    if(commandKey == null) {
-                        commandKey = redisKey;
+                    RedisKey commandKey = redisKey;
+                    if (redisKey != null && redisKey.get()[0] == TAG_START) {
+                        commandKey = new RedisKey(client.hashTag(redisKey.get()));
+                        transactionOpKeys.add(commandKey);
+                        break;
                     }
+                    transactionOpKeys.add(commandKey);
                 }
             }else if(transactionOp instanceof RedisMultiSubKeyOp){
                 RedisMultiSubKeyOp redisMultiSubKeyOp = (RedisMultiSubKeyOp) transactionOp;
                 RedisKey redisKey = redisMultiSubKeyOp.getKey();
-                if(commandKey == null) {
-                    commandKey = redisKey;
-                }
                 transactionOpKeys.add(redisKey);
             }
         }
-        SequenceCommand<?> lastSameKey = runningCommands.get(commandKey);
-        if (lastSameKey != null) {
-            dependencies.add(lastSameKey);
-        }
 
-        if (transactionOpKeys.size() != 1) {
-            if (commandKey != null && commandKey.get()[0] == TAG_START) {
-                commandKey = new RedisKey(client.hashTag(commandKey.get()));
-            }
-        }
-
-        lastSameKey = multiRunningCommands.get(commandKey);
-        if (lastSameKey != null) {
-            dependencies.add(lastSameKey);
+        for(RedisKey redisKey:transactionOpKeys){
+            addIfDependencies(dependencies,redisKey);
         }
 
         /* make command */
@@ -408,9 +394,11 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
 //        runningCommands = new HashMap<>();
         obstacle = current;
-        multiRunningCommands.put(commandKey,current);
+        for(RedisKey commandKey:transactionOpKeys) {
+            multiRunningCommands.put(commandKey, current);
 
-        forgetObstacleWhenDone(current,commandKey);
+            forgetObstacleWhenDone(current, commandKey);
+        }
 
         /* do some stuff when finish */
 
@@ -420,6 +408,18 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
         /* run self */
 
         current.execute();
+    }
+
+    private void addIfDependencies(List<SequenceCommand<?>> dependencies,RedisKey commandKey){
+        SequenceCommand<?> lastSameKey = runningCommands.get(commandKey);
+        if (lastSameKey != null) {
+            dependencies.add(lastSameKey);
+        }
+
+        lastSameKey = multiRunningCommands.get(commandKey);
+        if (lastSameKey != null) {
+            dependencies.add(lastSameKey);
+        }
     }
 
     private void forgetObstacleWhenDone(SequenceCommand<?> sequenceCommand,RedisKey commandKey) {
