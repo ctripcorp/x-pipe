@@ -9,7 +9,6 @@ import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -41,21 +40,7 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	void rotateFileIfNecessary() throws IOException;
 
-	CommandFile newCommandFile(long startOffset) throws IOException;
-
-	File findIndexFile(CommandFile commandFile);
-
-	void addIndex(CommandFileOffsetGtidIndex index);
-
 	CommandFile findFileForOffset(long offset) throws IOException;
-
-	CommandFile findLatestFile() throws IOException;
-
-	CommandFileSegment findFirstFileSegment(GtidSet excludedGtidSet);
-
-	CommandFileSegment findLastFileSegment();
-
-	GtidSet getBeginGtidSet() throws IOException;
 
 	String simpleDesc();
 
@@ -63,13 +48,7 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	void removeReader(CommandReader<?> reader);
 
-	CommandFile findNextFile(File file);
-
 	void makeSureOpen();
-
-	default void setBaseIndex(String baseGtidSet, long localOffset) {
-		//ignore
-	}
 
 	void attachRateLimiter(SyncRateLimiter rateLimiter);
 
@@ -86,8 +65,6 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 	void switchToPsync(String replId, long offset) throws IOException;
 
 	int onlyAppendCommand(ByteBuf byteBuf) throws IOException;
-
-	CommandWriter getCommandWriter();
 
 	boolean increaseLostNotInCmdStore(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException ;
 

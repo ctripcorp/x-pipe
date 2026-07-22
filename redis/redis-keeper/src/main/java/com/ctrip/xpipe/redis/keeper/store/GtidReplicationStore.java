@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
-import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandReaderWriterFactory;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.ctrip.xpipe.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                                 ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
                                 ReplId fileSystemReplId) throws IOException {
         super(null,baseDir, config, keeperRunid,
-                new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
+                new OffsetCommandReaderWriterFactory(),
                 keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem, fileSystemReplId);
     }
 
@@ -41,7 +41,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
                                 ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
                                 ReplId fileSystemReplId) throws IOException {
         super(ckStore,baseDir, config,keeperRunid,
-                new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
+                new OffsetCommandReaderWriterFactory(),
                 keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem, fileSystemReplId);
     }
 
@@ -180,18 +180,8 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     }
 
     @Override
-    public GtidSet getBeginGtidSet() throws IOException {
-        if (null == cmdStore) return new GtidSet("");
-        return cmdStore.getBeginGtidSet();
-    }
-
-    @Override
     public GtidSet getEndGtidSet() {
         return cmdStore.getIndexGtidSet();
     }
 
-    @Override
-    public boolean supportGtidSet() {
-        return getRdbStore().supportGtidSet();
-    }
 }

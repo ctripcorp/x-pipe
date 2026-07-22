@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.cmd;
 
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.utils.OffsetNotifier;
@@ -39,11 +37,5 @@ public class OffsetCommandReaderWriterFactory implements CommandReaderWriterFact
 
         return new OffsetCommandReader(currentOffset, endOffsetExcluded,
                 cmdStore, offsetNotifier, replDelayConfig, commandReaderFlyingThreshold);
-    }
-
-    @Override
-    public CommandReader<RedisOp> createCmdReader(GtidSetReplicationProgress replProgress, CommandStore cmdStore,
-                                                  OffsetNotifier offsetNotifier, long commandReaderFlyingThreshold) throws IOException {
-        throw new UnsupportedOperationException();
     }
 }

@@ -77,13 +77,7 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	long backlogEndOffset();
 
-	GtidSet getBeginGtidSet() throws IOException;
-
 	GtidSet getEndGtidSet();
-
-	boolean supportGtidSet();
-
-	long beginOffsetWhenCreated();
 
 	long lastReplDataUpdatedAt();
 

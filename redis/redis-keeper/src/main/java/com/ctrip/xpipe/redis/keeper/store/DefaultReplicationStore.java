@@ -117,12 +117,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		if (null != meta && null != meta.getCmdFilePrefix()) {
 			cmdStore = createCommandStore(baseDir, meta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
 					metaStore.generateGtidCmdFilter());
-			//TODO remove obselete gtid feature
-			if (meta.getRdbLastOffset() != null) {
-				cmdStore.setBaseIndex(meta.getRdbGtidSet(), meta.getRdbLastOffset() - (meta.getBeginOffset() - 1));
-			} else if (meta.getRordbLastOffset() != null) {
-				cmdStore.setBaseIndex(meta.getRordbGtidSet(), meta.getRordbLastOffset() - (meta.getBeginOffset() - 1));
-			}
 		}
 
 		removeUnusedRdbFiles();
@@ -357,7 +351,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		storeRef.set(rdbStore);
 		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
 				metaStore.generateGtidCmdFilter());
-		cmdStore.setBaseIndex(rdbStore.getGtidSet(), rdbStore.rdbOffset() - (newMeta.getBeginOffset() - 1));
 
 		if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
 			cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
@@ -496,7 +489,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			RdbStore oldRdbStore = storeRef.get();
 			storeRef.set(rdbStore);
 			if (null!= oldRdbStore) previousRdbStores.put(oldRdbStore, Boolean.TRUE);
-			cmdStore.setBaseIndex(rdbStore.getGtidSet(), rdbStore.rdbOffset() - (metaDup.getBeginOffset() - 1));
 		}
 	}
 
@@ -595,15 +587,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	public RdbStore getRdbStore() {
 		return rdbStoreRef.get();
-	}
-
-	@Override
-	public long beginOffsetWhenCreated() {
-
-		if(metaStore == null || metaStore.beginOffset() == null){
-			throw new IllegalStateException("meta store null:" + this);
-		}
-		return metaStore.beginOffset();
 	}
 
 	@Override
@@ -869,18 +852,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
-	public GtidSet getBeginGtidSet() throws IOException {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public GtidSet getEndGtidSet() {
 		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean supportGtidSet() {
-		return false;
 	}
 
 	@Override
