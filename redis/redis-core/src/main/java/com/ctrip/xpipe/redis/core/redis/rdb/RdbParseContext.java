@@ -144,10 +144,7 @@ public interface RdbParseContext {
         private static final Map<Integer,Map<Short, RdbType>> versionTypes = new HashMap<>();
 
         RdbType(short code, boolean rdbOp, Function<RdbParseContext, RdbParser> parserConstructor) {
-            this.version = 0;
-            this.code = code;
-            this.rdbOp = rdbOp;
-            this.parserConstructor = parserConstructor;
+            this(0,code,rdbOp,parserConstructor);
         }
 
         RdbType(int version,short code, boolean rdbOp, Function<RdbParseContext, RdbParser> parserConstructor) {
