@@ -57,7 +57,7 @@ public class RedisOpWithSubKeysParser extends AbstractRedisOpParser implements R
         Pair<RedisOpType, byte[][]> pair = redisOpType.transfer(redisOpType, args);
         args = pair.getValue();
 
-        if(usesFieldsSyntax(redisOpType)) {
+        if(redisOpType.isFields()) {
             return parseFieldsCommand(redisOpType,args);
         }
         return parseGeneralCommands(args, pair);
@@ -107,13 +107,6 @@ public class RedisOpWithSubKeysParser extends AbstractRedisOpParser implements R
 
     private boolean nonKey(byte[] args){
         return NON_KEY_COMMANDS.contains(ByteBuffer.wrap(args));
-    }
-
-    private boolean usesFieldsSyntax(RedisOpType opType) {
-        return opType == RedisOpType.HSETEX || opType == RedisOpType.HEXPIRE
-                || opType == RedisOpType.HEXPIREAT || opType == RedisOpType.HGETEX
-                || opType == RedisOpType.HGETDEL || opType == RedisOpType.HPEXPIRE
-                || opType == RedisOpType.HPEXPIREAT || opType == RedisOpType.HPERSIST;
     }
 
     private RedisOp parseFieldsCommand(RedisOpType opType, byte[][] args) {
