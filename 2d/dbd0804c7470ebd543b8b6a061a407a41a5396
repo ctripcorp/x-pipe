@@ -1,0 +1,64 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/SegmentFileCacheEntry.java
+  s_078f7b10056a6e::t_cdbca4686b0624 56-63
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_078f7b10056a6e::t_0f0470a88dac3d 1143
+  s_078f7b10056a6e::t_f0c43cb78f8888 487,494,504-506
+  s_078f7b10056a6e::t_aebcef5ffac27d 445
+  s_078f7b10056a6e::t_67b3d6018839c2 888
+  s_078f7b10056a6e::t_d2442f5c93e4ae 1206-1211
+  s_078f7b10056a6e::t_3d730e46236253 1243-1245
+  s_078f7b10056a6e::t_972b2340b17f60 1272,1282
+  s_078f7b10056a6e::t_cbdb1526089f52 1526-1538
+  s_078f7b10056a6e::t_653238923c477e 1446-1488
+  s_078f7b10056a6e::t_b03c7a42c95ff7 784-791,805,829
+  s_078f7b10056a6e::t_9890e6e6d6c96c 893-912
+  s_078f7b10056a6e::t_66915c7118314e 1121
+  h_6ceeb547b3b36a 933
+  s_078f7b10056a6e::t_8b9fee5962c0c2 673
+  s_078f7b10056a6e::t_ad440a7210455f 1218
+  s_078f7b10056a6e::t_d1b79b437ac89f 629-634,639-645,648-649,651-652,654-672,674-675,693,738
+  s_078f7b10056a6e::t_06e74c8fa98cc6 1230,1237
+  s_078f7b10056a6e::t_0f5df07db7b8ab 495,497-498
+  s_078f7b10056a6e::t_db791e9943670f 1184,1199,1201
+  s_078f7b10056a6e::t_5e3f8f50d650b3 1228-1229,1236
+  s_078f7b10056a6e::t_81da2942662a5c 1200
+  s_078f7b10056a6e::t_c8ea35fa765c7b 1252
+  s_078f7b10056a6e::t_30f6dc35dc7485 1515,1525
+  s_078f7b10056a6e::t_7496049512b929 339,346,471,476,510,794,798,806,997,1055,1097,1102,1122,1190,1383
+  s_078f7b10056a6e::t_9f019a1a65c698 357-360
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/StorageUtil.java
+  s_078f7b10056a6e::t_4cb8d4dd3c270a 37,43,49
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AbstractStorageFile.java
+  s_078f7b10056a6e::t_8362b9ed639a57 31,60,62
+  s_078f7b10056a6e::t_a565316097c61b 36
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncIndexFile.java
+  s_078f7b10056a6e::t_df8f4dd2a17651 9,11
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFile.java
+  s_078f7b10056a6e::t_df0eac9551350d 21
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_078f7b10056a6e::t_a15aa9595be299 429,455
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  s_078f7b10056a6e::t_de5fd928fd94d4 130
+  s_078f7b10056a6e::t_e909b84e02749e 275,281
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "2ddbd0804c7470ebd543b8b6a061a407a41a5396",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_078f7b10056a6e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7d462759-d752-4a61-a701-62edcd9dc666",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}

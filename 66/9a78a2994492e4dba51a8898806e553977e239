@@ -1,0 +1,37 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  s_078f7b10056a6e::t_63b73a82530f05 236
+  s_078f7b10056a6e::t_4f21e5d2a45e06 240
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_078f7b10056a6e::t_9d4d5a3a0a8b92 1581-1582
+  s_078f7b10056a6e::t_32efad878f76fb 30-33,41
+  s_078f7b10056a6e::t_a7b17951d72017 347-355,365
+  s_078f7b10056a6e::t_2c77bf72e89499 34-38
+  s_078f7b10056a6e::t_e6563afb7cb070 1141
+  s_078f7b10056a6e::t_12762c09b320d0 1165,1167-1170,1173,1178
+  s_078f7b10056a6e::t_4f4a248a39dc15 1580,1583-1586
+  s_078f7b10056a6e::t_4aa98f5d4754d2 39-40
+  s_078f7b10056a6e::t_774cfb03774c28 1166
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AbstractStorageFile.java
+  s_078f7b10056a6e::t_e19be56967f951 29-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "669a78a2994492e4dba51a8898806e553977e239",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_078f7b10056a6e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7d462759-d752-4a61-a701-62edcd9dc666",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}

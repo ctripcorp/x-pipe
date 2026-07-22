@@ -1,0 +1,20 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/OffsetCommandWriter.java
+  s_943b5694c2289b::t_ae26ef2004ff43 195-198,204-206
+  s_943b5694c2289b::t_d38fbaf408a58f 128-129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.34-trip",
+  "base_commit_sha": "7b6263cb8ac756535ce02f94214bc0b38d662d26",
+  "prompts": {},
+  "sessions": {
+    "s_943b5694c2289b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f34942d5-f91b-4a45-bca8-225dbbd0efd4",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
