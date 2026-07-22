@@ -1,0 +1,66 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/DefaultHealthCheckInstanceFactory.java
+  s_11b6446428d721::t_814e36c4b78993 95
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/AbstractInstanceSessionManager.java
+  s_11b6446428d721::t_77bbe129c1e742 168,179
+  h_2a4fc97c4bee49 116
+  s_11b6446428d721::t_d26eeaf82e22e8 104,108-109
+  s_11b6446428d721::t_474f0b669c93fb 71-72,77,80,86-87,89-91,93,95,100
+  s_11b6446428d721::t_876adb70b0ce0f 5-6
+  s_11b6446428d721::t_bde91f620457a8 122-125,145-152
+  s_11b6446428d721::t_4abdb8de531625 126-134,136-140,142-143
+  s_11b6446428d721::t_04ff9f14764459 121
+  s_11b6446428d721::t_01f04d43a38145 165-167,169-171
+  s_11b6446428d721::t_1780ccf9bf6d91 69
+  s_11b6446428d721::t_b897cdeeac7a61 154-157
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/InstanceSessionManager.java
+  s_11b6446428d721::t_2631e572f75232 16-17
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/healthcheck/session/AbstractConsoleInstanceSessionManager.java
+  s_11b6446428d721::t_4a3a97371c4374 56
+  s_11b6446428d721::t_6975b150efbc0c 111-119,121-125,127-128
+  s_11b6446428d721::t_07e8f63049dd05 89,93-94
+  s_11b6446428d721::t_ef7e7d775bfb82 139-142
+  s_11b6446428d721::t_b3883a1a5f3bf2 57,138,156
+  s_11b6446428d721::t_2c7b487efe4213 107-110,130-137
+  s_11b6446428d721::t_0055a0fbf5c61b 5-6
+  s_11b6446428d721::t_dbfe2d5ecb111a 58-59,65,71-72,74-76,78,80,85
+  h_2a4fc97c4bee49 101
+  s_11b6446428d721::t_990c68539a6256 106,149-155,163
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/RedisSession.java
+  s_11b6446428d721::t_8dc4fb70516f8e 45-46
+  s_11b6446428d721::t_82ce53e07369f0 24,35
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/session/PsubRaceTest.java
+  s_11b6446428d721::t_4d76b40948b24e 76-77,82-84
+  s_11b6446428d721::t_2fdabf132c1ef4 110-112
+  s_11b6446428d721::t_53368d7cf1f6df 161
+  s_11b6446428d721::t_f2f93e8985ee31 125-126
+  s_11b6446428d721::t_6a17045e85e1c6 129,168,177
+  s_11b6446428d721::t_2a5fab36899b6f 30,35
+  s_11b6446428d721::t_dabc55a28c7fca 165-166
+  s_11b6446428d721::t_4334c4b19584b5 5,24-26,29,31-34,36-44,52-55,64-65,91-102,104-106,108-109,113-114,120-123,133,135-137,140,142-143,149-157,164,167,169-170,172-176
+  s_11b6446428d721::t_f65d6d32d51e47 80,85
+  s_11b6446428d721::t_c6fcff34d634ee 115-119,124,127,138-139,141,144-148
+  s_11b6446428d721::t_701c2573ec0a69 128,130-132,134
+  s_11b6446428d721::t_5bd13a42f6ff5e 158-160,162-163
+  s_11b6446428d721::t_faf578018634b0 1-4,6-23,27-28,45-51,56-63,66-75,78-79,81,86-90,103,107,171,178-184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.35-trip",
+  "base_commit_sha": "432bd26c7c2ec70f4dc706e21545a57e84a00f46",
+  "prompts": {},
+  "humans": {
+    "h_2a4fc97c4bee49": {
+      "author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_11b6446428d721": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08a18e5e-a702-4603-8198-763644e4220d",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": null
+    }
+  }
+}
