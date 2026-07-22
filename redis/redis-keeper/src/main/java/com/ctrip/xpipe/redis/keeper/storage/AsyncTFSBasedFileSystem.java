@@ -687,7 +687,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             StorageUtil.requireOpen(file);
             FileEntry entry = entryOrThrow(file);
             if (entry.state.isEmpty()) {
-                file.openFirstSegmentChannelForWrite(entry);
+                file.roll(entry);
             }
             return writeAndFlush(file, data);
         } catch (IOException e) {
@@ -728,7 +728,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             SegmentDirState s = entry.state;
             if (s.isEmpty()) {
                 if (file.canWrite()) {
-                    file.openFirstSegmentChannelForWrite(entry);
+                    file.roll(entry);
                 } else {
                     return new HashMap<String, AsyncFile>();
                 }

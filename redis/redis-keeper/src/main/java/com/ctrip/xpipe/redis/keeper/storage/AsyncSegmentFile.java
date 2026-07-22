@@ -392,11 +392,6 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         openCurrentChannel();
     }
 
-    // lazy-create the first segment (starting at offset 0) and its index files for write mode.
-    void openFirstSegmentChannelForWrite(FileEntry entry) throws IOException {
-        createNewSegmentWithIndexes(0, entry);
-    }
-
     Map<String, AsyncFile> getCurrentIndexFiles(List<String> requestedPrefixes) throws IOException {
         Map<String, AsyncFile> result = new HashMap<>();
         for (String indexPrefix : requestedPrefixes) {
@@ -512,16 +507,16 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     Map<String, AsyncFile> roll(FileEntry entry) throws IOException {
-        if (currentSegmentChannel == null) {
-            openCurrentChannel();
+        if (entry.state.isEmpty()) {
+            return createNewSegmentWithIndexes(0, entry);
         }
-        if (currentSegmentChannel.size() == 0
-                && !entry.state.isEmpty()
-                && openedSegmentStartOffset == entry.state.lastOffset) {
+
+        if (currentSegmentChannel.size() == 0) {
             Map<String, AsyncFile> result = new HashMap<>();
             result.putAll(currentIndexFiles);
             return result;
         }
+
         long newStartOffset = openedSegmentStartOffset + currentSegmentChannel.size();
         closeCurrent();
         return createNewSegmentWithIndexes(newStartOffset, entry);

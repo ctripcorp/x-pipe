@@ -1468,6 +1468,20 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> write(AsyncSegmentFile file, ByteBuf data) {
+        StorageUtil.requireWriteMode(file);
+        StorageUtil.requireCacheOpen(file);
+        if (delegate.list(file).isEmpty()) {
+            final String id = file.getKey();
+            awaitInFlightIo(id);
+            if (delegate.list(file).isEmpty()) {
+                CompletableFuture<Map<String, AsyncFile>> ioFuture = StorageUtil.supply(ioExecutor, () -> {
+                    StorageUtil.requireCacheOpen(file);
+                    return executeWithEioRetry(file, () -> delegate.rollSync(file));
+                });
+                registerInFlight(id, ioFuture);
+                awaitInFlightIo(id);
+            }
+        }
         return writeInternal(file, data,
                 cacheWrite -> initCacheAndAppend(file, data, cacheWrite),
                 writeBuf -> executeWithEioRetry(file, () -> delegate.writeSync(file, writeBuf)),
