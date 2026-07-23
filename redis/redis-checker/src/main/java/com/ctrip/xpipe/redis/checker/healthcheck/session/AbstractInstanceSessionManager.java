@@ -2,14 +2,13 @@ package com.ctrip.xpipe.redis.checker.healthcheck.session;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
-import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -68,9 +67,6 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
     @Autowired
     private CheckerConfig config;
 
-    @Autowired
-    private AlertManager alertManager;
-
     @VisibleForTesting
     public static long checkRedisDelaySeconds = 4;
 
@@ -85,8 +81,7 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
             removeUnusedTask.start();
         } catch (Exception e) {
             logger.error("[postConstruct] start removeUnusedTask fail", e);
-            alertManager.alert(null, null, null, ALERT_TYPE.CHECKER_SESSION_MANAGER_FAIL,
-                    "session removeUnusedTask start fail: " + e.getMessage());
+            EventMonitor.DEFAULT.logAlertEvent("session-removeUnused-startFail");
         }
 
         scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
