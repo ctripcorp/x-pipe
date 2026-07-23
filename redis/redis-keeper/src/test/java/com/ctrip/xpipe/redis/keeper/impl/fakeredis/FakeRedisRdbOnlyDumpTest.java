@@ -17,7 +17,7 @@ public class FakeRedisRdbOnlyDumpTest extends AbstractFakeRedisTest {
         RedisKeeperServer activeDcKeeperServer = startRedisKeeperServerAndConnectToFakeRedis();
         RedisKeeperServer backupDcKeeperServer = startRedisKeeperServer(1, allCommandsSize, 1);
         backupDcKeeperServer.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", activeDcKeeperServer.getListeningPort()));
-        ((DefaultReplicationStore)backupDcKeeperServer.getReplicationStore()).setCommandsRetainTimeoutMilli(1);
+        ((DefaultReplicationStore)backupDcKeeperServer.getReplicationStore()).setCommandsRetainTimeoutMilli(() -> 1);
         waitRedisKeeperServerConnected(backupDcKeeperServer);
 
         InMemoryGapAllowedSync firstSlave = sendInmemoryGAsync("127.0.0.1", backupDcKeeperServer.getListeningPort());

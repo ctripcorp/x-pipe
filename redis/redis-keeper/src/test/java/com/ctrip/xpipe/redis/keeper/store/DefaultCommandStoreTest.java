@@ -608,7 +608,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			public Long processedBacklogOffset() {
 				return processedOffset.getAsLong();
 			}
-		}, backlogOffset, timeoutMilli);
+		}, backlogOffset, () -> (int)timeoutMilli);
 	}
 
 	private void appendCommandsToStore(int batch, int batchSize) {
