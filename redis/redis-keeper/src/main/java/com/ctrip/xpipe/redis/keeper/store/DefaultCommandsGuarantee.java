@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
+import java.util.function.IntSupplier;
 
 /**
  * @author lishanglin
@@ -19,15 +20,15 @@ public class DefaultCommandsGuarantee implements CommandsGuarantee {
 
     private final long startAt;
 
-    private final long timeoutAt;
+    private IntSupplier timeoutMill;
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultCommandsGuarantee.class);
 
-    public DefaultCommandsGuarantee(CommandsListener commandsListener, long backlogOffset, long timeoutMill) {
+    public DefaultCommandsGuarantee(CommandsListener commandsListener, long backlogOffset, IntSupplier timeoutMill) {
         this.commandsListener = commandsListener;
         this.backlogOffset = backlogOffset;
         this.startAt = System.currentTimeMillis();
-        this.timeoutAt = startAt + timeoutMill;
+        this.timeoutMill = timeoutMill;
     }
 
     @Override
@@ -56,7 +57,7 @@ public class DefaultCommandsGuarantee implements CommandsGuarantee {
         if (!commandsListener.isOpen()) {
             logger.info("[timeout][listener close] {}", this);
             return true;
-        } else if (current > timeoutAt) {
+        } else if (current > timeoutAt()) {
             logger.info("[timeout][timeout] {}", this);
             return true;
         } else if (current < startAt) {
@@ -65,6 +66,10 @@ public class DefaultCommandsGuarantee implements CommandsGuarantee {
         }
 
         return false;
+    }
+
+    private long timeoutAt(){
+        return startAt + timeoutMill.getAsInt();
     }
 
     @Override

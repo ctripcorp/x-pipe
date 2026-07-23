@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntSupplier;
 
 // TODO make methods correctly sequenced
 public class DefaultReplicationStore extends AbstractStore implements ReplicationStore {
@@ -71,7 +72,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private KeeperMonitor keeperMonitor;
 
-	protected int commandsRetainTimeoutMilli;
+	protected IntSupplier commandsRetainTimeoutMilli;
 
 	private CommandReaderWriterFactory cmdReaderWriterFactory;
 
@@ -95,7 +96,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 								   ScheduledExecutorService commandNotifyScheduler) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
-		this.commandsRetainTimeoutMilli = config.getReplicationStoreCommandFileRetainTimeoutMilli();
+		this.commandsRetainTimeoutMilli = config::getReplicationStoreCommandFileRetainTimeoutMilli;
 		this.config = config;
 		this.keeperMonitor = keeperMonitor;
 		this.cmdReaderWriterFactory = cmdReaderWriterFactory;
@@ -985,7 +986,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@VisibleForTesting
-	public void setCommandsRetainTimeoutMilli(int timeoutMilli) {
+	public void setCommandsRetainTimeoutMilli(IntSupplier timeoutMilli) {
 		this.commandsRetainTimeoutMilli = timeoutMilli;
 	}
 
