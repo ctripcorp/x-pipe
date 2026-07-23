@@ -325,8 +325,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
 
         if(!multiRunningCommands.isEmpty()) {
             for (RedisKey key : keys) {
-                if (key.get()[0] == TAG_START) {
-                    key = new RedisKey(client.hashTag(key.get()));
+                byte[] hashTag = client.hashTag(key.get());
+                if (hashTag != null) {
+                    key = new RedisKey(hashTag);
                 }
                 SequenceCommand<?> lastSameKey = multiRunningCommands.get(key);
                 if (lastSameKey != null) {
@@ -368,8 +369,9 @@ public class DefaultSequenceController extends AbstractInstanceComponent impleme
                 RedisMultiKeyOp redisMultiKeyOp = (RedisMultiKeyOp) transactionOp;
                 for(RedisKey redisKey:redisMultiKeyOp.getKeys()){
                     RedisKey commandKey = redisKey;
-                    if (redisKey != null && redisKey.get()[0] == TAG_START) {
-                        commandKey = new RedisKey(client.hashTag(redisKey.get()));
+                    byte[] hashTag = client.hashTag(redisKey.get());
+                    if (hashTag != null) {
+                        commandKey = new RedisKey(hashTag);
                         transactionOpKeys.add(commandKey);
                         break;
                     }

@@ -57,47 +57,92 @@ public class RedisOpWithSubKeysParser extends AbstractRedisOpParser implements R
         Pair<RedisOpType, byte[][]> pair = redisOpType.transfer(redisOpType, args);
         args = pair.getValue();
 
-        if(redisOpType.isFields()) {
-            return parseFieldsCommand(redisOpType,args);
-        }
-        return parseGeneralCommands(args, pair);
-    }
+        RedisKey key = new RedisKey(args[keyStartIndex]);
+        int dataStart = keyStartIndex + 1;          // 主键之后的数据起始位置
+        int subKeyStart;
+        int subKeyCount;
 
-    private RedisOpMultiSubKey parseGeneralCommands(byte[][] args, Pair<RedisOpType, byte[][]> pair) {
-        // 计算容量 - 主键 + 子键数量
-        int subKeyCount = (args.length - keyStartIndex-1) / kvNum;
-        int capacity = 1 + subKeyCount;
-        List<RedisKey> subKeys = new ArrayList<>(capacity);
-
-        int i = keyStartIndex;
-        RedisKey key = new RedisKey(args[i++]);
-        // 处理子键
-        while (i < args.length) {
-            RedisKey subKey = null;
-
-            if (!kvReverse) {
-                // 正常顺序：子键在前
-                subKey = new RedisKey(args[i]);
-                i += kvNum; // 跳过值部分
-            } else {
-                // 反向顺序：值在前，子键在后
-                if (kvNum == 2) {
-                    if(RedisOpType.ZADD == redisOpType && nonKey(args[i])){
-                        i++;
-                        continue;
-                    }
-                    subKey = new RedisKey(args[i + 1]); // 跳过第一个值，取第二个作为子键
-                    i += 2;
-                } else if (kvNum == 3) {
-                    subKey = new RedisKey(args[i + 2]); // 跳过前两个值，取第三个作为子键
-                    i += 3;
+        if (redisOpType.isFields()) {
+            // 1. 跳过 FIELDS 之前的所有标志
+            int idx = dataStart;
+            while (idx < args.length) {
+                if (isFieldsKeyword(args[idx])) {
+                    idx++;
+                    break;
+                }
+                int skipped = skipNonKeyTokenIfPresent(args, idx);
+                if (skipped > idx) {
+                    idx = skipped;
+                } else {
+                    idx++;
                 }
             }
-
-            subKeys.add(subKey);
+            if (idx >= args.length) throw new IllegalArgumentException("Missing numfields");
+            subKeyCount = Integer.parseInt(new String(args[idx++]));
+            subKeyStart = idx;
+        } else {
+            // 2. 普通命令：跳过开头的非键标志（如 ZADD 的 NX/EX 等）
+            subKeyStart = skipLeadingNonKeyTokens(args, dataStart);
+            subKeyCount = (args.length - subKeyStart) / kvNum;
         }
 
-        return new RedisOpMultiSubKey(pair.getKey(), args, key, subKeys);
+        // 3. 共用同一套子键提取逻辑
+        List<RedisKey> subKeys = extractSubKeys(args, subKeyStart, subKeyCount);
+        RedisOpType finalOpType = redisOpType.isFields() ? redisOpType : pair.getKey();
+        return new RedisOpMultiSubKey(finalOpType, args, key, subKeys);
+    }
+
+    /**
+     * 统一子键提取：从 start 开始，每次取一个子键，然后按 kvNum 跳过值部分。
+     * 支持 kvReverse（反向模式）和 ZADD 非键标志跳过。
+     */
+    private List<RedisKey> extractSubKeys(byte[][] args, int start, int count) {
+        List<RedisKey> subKeys = new ArrayList<>(count);
+        int i = start;
+        for (int k = 0; k < count; k++) {
+            if (kvReverse) {
+                // 反向顺序：值在前，子键在后
+                if (kvNum == 2 && RedisOpType.ZADD == redisOpType) {
+                    int skipped = skipNonKeyTokenIfPresent(args, i);
+                    if (skipped > i) {
+                        i = skipped;
+                        k--;    // 未消耗子键，重新处理当前子键
+                        continue;
+                    }
+                }
+                int keyOffset = kvNum - 1;        // kvNum=2 → offset=1, kvNum=3 → offset=2
+                subKeys.add(new RedisKey(args[i + keyOffset]));
+                i += kvNum;
+            } else {
+                subKeys.add(new RedisKey(args[i]));
+                i += kvNum;
+            }
+        }
+        return subKeys;
+    }
+
+    /** 跳过从 index 开始的所有连续非键标志，返回第一个非标志的索引 */
+    private int skipLeadingNonKeyTokens(byte[][] args, int index) {
+        while (index < args.length) {
+            int skipped = skipNonKeyTokenIfPresent(args, index);
+            if (skipped == index) break;
+            index = skipped;
+        }
+        return index;
+    }
+
+    /** 跳过单个非键标志（及其可能的参数），返回新的索引 */
+    private int skipNonKeyTokenIfPresent(byte[][] args, int index) {
+        if (index >= args.length || !nonKey(args[index])) return index;
+        index++;
+        if (index < args.length && NON_KEY_COMMANDS_WITH_ARGS.contains(ByteBuffer.wrap(args[index - 1]))) {
+            index++;
+        }
+        return index;
+    }
+
+    private boolean isFieldsKeyword(byte[] arg) {
+        return Arrays.equals(arg, FIELDS_BYTES) || Arrays.equals(arg, FIELDS_BYTES_LOWER);
     }
 
     @Override
@@ -105,39 +150,7 @@ public class RedisOpWithSubKeysParser extends AbstractRedisOpParser implements R
         return 0;
     }
 
-    private boolean nonKey(byte[] args){
-        return NON_KEY_COMMANDS.contains(ByteBuffer.wrap(args));
-    }
-
-    private RedisOp parseFieldsCommand(RedisOpType opType, byte[][] args) {
-        int idx = keyStartIndex;
-        RedisKey key = new RedisKey(args[idx++]);
-
-        // 跳过 FIELDS 之前的所有可选标志
-        while (idx < args.length) {
-            ByteBuffer tokenBuf = ByteBuffer.wrap(args[idx]);
-            if (NON_KEY_COMMANDS.contains(tokenBuf)) {
-                idx++;
-                if (NON_KEY_COMMANDS_WITH_ARGS.contains(tokenBuf) && idx < args.length) {
-                    idx++; // 跳过标志的参数
-                }
-            } else if (Arrays.equals(args[idx], FIELDS_BYTES) || Arrays.equals(args[idx], FIELDS_BYTES_LOWER)) {
-                idx++;
-                break;
-            } else {
-                idx++;
-            }
-        }
-
-        if (idx >= args.length) throw new IllegalArgumentException("Missing numfields");
-        int numFields = Integer.parseInt(new String(args[idx++]));
-        List<RedisKey> subKeys = new ArrayList<>(numFields);
-
-        for (int i = 0; i < numFields; i++) {
-            if (idx >= args.length) throw new IllegalArgumentException("Incomplete field list");
-            subKeys.add(new RedisKey(args[idx]));
-            idx += kvNum;
-        }
-        return new RedisOpMultiSubKey(opType, args, key, subKeys);
+    private boolean nonKey(byte[] arg) {
+        return NON_KEY_COMMANDS.contains(ByteBuffer.wrap(arg));
     }
 }
