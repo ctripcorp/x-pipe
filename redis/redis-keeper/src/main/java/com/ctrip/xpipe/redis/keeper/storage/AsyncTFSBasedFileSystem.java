@@ -93,7 +93,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public AsyncFile openSync(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant) {
-        String key = path;
+        String key = StorageUtil.asyncFileKey(path);
         Path p = Paths.get(path);
         return openWithFileEntry(key, openMode.canWrite(),
                 entry -> {
@@ -537,7 +537,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     // Whole-file replace is durable after force; pendingFsyncBytes / lastFsyncNanos are unused on this path.
     private long atomicReplaceWrite(AsyncFile file, ByteBuf data) throws IOException {
         long length = data.readableBytes();
-        int savedReaderIndex = data.readerIndex();
         Path tmpPath = getTmpPath(file.path);
         try (FileChannel tmpCh = FileChannel.open(tmpPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
             ByteBuf lenBuf = Unpooled.buffer(8);
@@ -547,12 +546,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             } finally {
                 lenBuf.release();
             }
-            writeFully(tmpCh, data);
+            writeFully(tmpCh, data.duplicate());
             tmpCh.force(true);
         }
         file.channel.truncate(0);
         file.channel.position(0);
-        data.readerIndex(savedReaderIndex);
         long written = writeFully(file.channel, data);
         file.channel.force(true);
         Files.deleteIfExists(tmpPath);
