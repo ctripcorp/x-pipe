@@ -55,8 +55,28 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
         }
     }
 
+
+    @Override
+    void reset() {
+        synchronized (this) {
+            if (cacheStartOffset < 0) return;
+            releaseAllWriterIndexLeases();
+            for (ConcurrentHashMap<String, FileCacheEntry> byPrefix : indexFiles.values()) {
+                for (FileCacheEntry indexEntry : byPrefix.values()) {
+                    synchronized (indexEntry) {
+                        if (indexEntry.cacheStartOffset >= 0) {
+                            indexEntry.reset();
+                        }
+                    }
+                }
+            }
+            super.reset();
+        }
+    }
+
     // Must be called under synchronized(this).
-    void clearSegment() {
+    @Override
+    void clear() {
         if (cacheStartOffset < 0) return;
         releaseAllWriterIndexLeases();
         for (ConcurrentHashMap<String, FileCacheEntry> byPrefix : indexFiles.values()) {
@@ -68,9 +88,7 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
                 }
             }
         }
-        if (cacheStartOffset >= 0) {
-            clear();
-        }
+        super.clear();
     }
 
     @Override
@@ -172,14 +190,17 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
     }
 
     @Override
-    void releaseMemory() {
-        super.releaseMemory();
-        for (ConcurrentHashMap<String, FileCacheEntry> byPrefix : indexFiles.values()) {
-            for (FileCacheEntry indexEntry : byPrefix.values()) {
-                indexEntry.releaseMemory();
+    boolean releaseEntry(boolean write) {
+        boolean released = super.releaseEntry(write);
+        if (released) {
+            for (ConcurrentHashMap<String, FileCacheEntry> byPrefix : indexFiles.values()) {
+                for (FileCacheEntry indexEntry : byPrefix.values()) {
+                    indexEntry.releaseAllChunks();
+                }
             }
+            indexFiles.clear();
+            writerIndexLeaseStarts.clear();
         }
-        indexFiles.clear();
-        writerIndexLeaseStarts.clear();
+        return released;
     }
 }

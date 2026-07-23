@@ -412,7 +412,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         boolean cacheDirty = file.atomicReplace
                 ? entry.cacheGen != entry.writtenGen
                 : entry.cacheEndOffset > entry.writtenToFsOffset;
-        boolean fsyncDirty = file.pendingFsyncBytes > 0;
+        boolean fsyncDirty = entry.pendingFsyncBytes > 0;
         if (!cacheDirty && !fsyncDirty) {
             return;
         }
@@ -449,8 +449,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 } else {
                     entry.writtenToFsOffset += written;
                 }
+                entry.pendingFsyncBytes = file.pendingFsyncBytes;
             }
             fsFsync.run();
+            entry.pendingFsyncBytes = file.pendingFsyncBytes;
             return written;
         });
         registerInFlight(id, flushFuture);
@@ -472,7 +474,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         boolean stillDirty = file.atomicReplace
                 ? entry.cacheGen != entry.writtenGen
                 : entry.cacheEndOffset > entry.writtenToFsOffset
-                        || file.pendingFsyncBytes > 0;
+                        || entry.pendingFsyncBytes > 0;
         if (stillDirty) {
             if (retryableFailure) {
                 throw new OperationNotExecutedException(id, flushError);
@@ -568,9 +570,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return;
         }
         long fileSize = awaitIoCachePrep(file, getCurrentWrittenToFsOffset);
-        synchronized (entry) {
-            entry.writtenToFsOffset = fileSize;
-        }
+        entry.writtenToFsOffset = fileSize;
     }
 
     // ---- AsyncFile ----
@@ -1147,6 +1147,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                     } else {
                         entry.writtenToFsOffset += written;
                     }
+                    entry.pendingFsyncBytes = file.pendingFsyncBytes;
                 }
             }
             return writeSize;
@@ -1204,7 +1205,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             long newFirst = entry.chunks.containsKey(first) ? first + 1 : first;
             int newChunkCount = (int) (last - newFirst + 1);
             long newBytes = newChunkCount * chunkSize;
-            boolean dirty = entry.cacheEndOffset > entry.writtenToFsOffset - file.pendingFsyncBytes;
+            boolean dirty = entry.cacheEndOffset > entry.writtenToFsOffset - entry.pendingFsyncBytes;
             if (!dirty && entry.bodySizeBytes + newBytes > maxCacheSizePerFileBytes) {
                 entry.largeFile = true;
                 return false;
@@ -1248,7 +1249,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             long last = (endOffset - 1) / chunkSize;
             newFirst = entry.chunks.containsKey(first) ? first + 1 : first;
             newChunkCount = (int) (last - newFirst + 1);
-            evictTailBeforeAppend(file, entry, startOffset, newChunkCount);
+            evictTailBeforeAppend(file.getKey(), entry, newChunkCount);
         }
         long newBytes = newChunkCount * chunkSize;
         if (!memoryTracker.reserve(newBytes, maxCacheSizeBytes)) return false;
@@ -1320,14 +1321,13 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return true;
     }
 
-    private void evictTailBeforeAppend(AbstractStorageFile file, FileCacheEntry entry,
-            long appendStartOffset, int newChunks) {
+    private void evictTailBeforeAppend(String fileKey, FileCacheEntry entry, int newChunks) {
         int existingChunks = entry.chunks.size();
         int maxEvictable = Math.max(0, existingChunks - minRetainChunks);
         if (maxEvictable <= 0) return;
-        Pair<Integer, Long> decision = decideEvictionPolicy(file.getKey(), maxEvictable, newChunks);
+        Pair<Integer, Long> decision = decideEvictionPolicy(fileKey, maxEvictable, newChunks);
         long minEvict = decision.getKey();
-        long durableFsOffset = Math.max(0, entry.writtenToFsOffset - file.pendingFsyncBytes);
+        long durableFsOffset = Math.max(0, entry.writtenToFsOffset - entry.pendingFsyncBytes);
         long expireBeforeNanos = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(decision.getValue());
         int evicted = 0;
         long index = entry.cacheStartOffset / chunkSize;
@@ -1522,7 +1522,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 delegate.truncateSync(file, size);
                 return null;
             });
-            if (entry != null) entry.largeFile = false;
+            if (entry != null) {
+                entry.pendingFsyncBytes = file.pendingFsyncBytes;
+                entry.largeFile = false;
+            }
         });
         registerInFlight(id, ioFuture);
         return ioFuture;
@@ -1573,11 +1576,15 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         StorageUtil.requireWriteMode(file);
         StorageUtil.requireCacheOpen(file);
         final String id = file.getKey();
+        final FileCacheEntry entry = file.getCacheEntry();
         awaitInFlightIo(id);
         flushPending.run();
         CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
             fsFsync.run();
+            if (entry != null) {
+                entry.pendingFsyncBytes = file.pendingFsyncBytes;
+            }
         });
         registerInFlight(id, ioFuture);
         return ioFuture;
@@ -1888,7 +1895,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (file.cacheMode != CacheMode.NO_CACHE) {
             SegmentFileCacheEntry entry = file.getCacheEntry();
             synchronized (entry) {
-                entry.clearSegment();
+                if (entry.cacheStartOffset >= 0) {
+                    entry.clear();
+                }
             }
         }
         CompletableFuture<Void> ioFuture = delegate.delete(file);
@@ -1914,7 +1923,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         awaitInFlightIo(id);
         CompletableFuture<Map<String, AsyncFile>> ioFuture = StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
-            return executeWithEioRetry(file, () -> delegate.truncateSync(file, offset));
+            Map<String, AsyncFile> result = executeWithEioRetry(file, () -> delegate.truncateSync(file, offset));
+            if (file.getCacheEntry() != null) {
+                file.getCacheEntry().pendingFsyncBytes = file.pendingFsyncBytes;
+            }
+            return result;
         });
         registerInFlight(id, ioFuture);
         return ioFuture;

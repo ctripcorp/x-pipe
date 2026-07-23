@@ -21,6 +21,8 @@ class FileCacheEntry {
     volatile long cacheEndOffset = 0;
     // Exclusive upper bound of data written to the backing FS.
     volatile long writtenToFsOffset = 0;
+    // Bytes written to FS but not yet fsynced.
+    volatile long pendingFsyncBytes = 0;
     // Atomic FULL_CACHE content version, used to track dirty state.
     volatile long cacheGen = 0;
     volatile long writtenGen = 0;
@@ -49,7 +51,7 @@ class FileCacheEntry {
         if (--refCount != 0) {
             return false;
         }
-        releaseMemory();
+        releaseAllChunks();
         return true;
     }
 
@@ -90,13 +92,9 @@ class FileCacheEntry {
         }
     }
 
-    void releaseMemory() {
-        releaseAllChunks();
-    }
-
     void reset() {
         synchronized (this) {
-            releaseMemory();
+            releaseAllChunks();
             cacheStartOffset = -1;
             cacheEndOffset = 0;
             writtenGen = 0;
@@ -105,7 +103,7 @@ class FileCacheEntry {
     }
 
     void clear() {
-        releaseMemory();
+        releaseAllChunks();
         cacheStartOffset = 0;
         cacheEndOffset = 0;
         writtenToFsOffset = 0;
@@ -125,7 +123,7 @@ class FileCacheEntry {
 
     void truncateTo(long size, long chunkSize) {
         if (size <= cacheStartOffset) {
-            releaseMemory();
+            releaseAllChunks();
             cacheStartOffset = size;
             cacheEndOffset = size;
         } else {
