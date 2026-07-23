@@ -1,0 +1,19 @@
+redis/package/redis-proxy-package/pom.xml
+  s_ad8edece119beb::t_9578b135eb3af1 148-154
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.35-trip",
+  "base_commit_sha": "70d4bcd81a6e08aab48e14f1910c99140b3ff5bf",
+  "prompts": {},
+  "sessions": {
+    "s_ad8edece119beb": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3ddb8764-77e1-42fe-bb5d-89a2ec5885b3",
+        "model": "default"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
