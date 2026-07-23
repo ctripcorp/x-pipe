@@ -40,6 +40,8 @@ public enum RedisOpType {
     LREM(false, 4),
     LSET(false, 4),
     LTRIM(false, 4),
+    BLMPOP(true,-5),
+    LMPOP(true,-4),
 
     // Hash single
     HDEL(false, -3),
@@ -47,8 +49,15 @@ public enum RedisOpType {
     HINCRBYFLOAT(false, 4),
     HMSET(false, -4),
     HSET(false, -4),
-    HSETEX(false, -4),
     HSETNX(false, 4),
+    HSETEX(false, true,-6),
+    HEXPIREAT(false,true,-6),
+    HPEXPIREAT(false,true,-6),
+    HEXPIRE(false,true,-6),
+    HPEXPIRE(false,true,-6),
+    HGETDEL(false,true,-5),
+    HPERSIST(false,true,-5),
+    HGETEX(false,true,-5),
 
     // Set single
     SADD(false, -3),
@@ -62,6 +71,8 @@ public enum RedisOpType {
     ZREMRANGEBYLEX(false, 4),
     ZREMRANGEBYRANK(false, 4),
     ZREMRANGEBYSCORE(false, 4),
+    ZMPOP(true,-4),
+    BZMPOP(true,-5),
 
     // Stream single
     XADD(false, -5),
@@ -69,6 +80,9 @@ public enum RedisOpType {
     XSETID(false, 3),
     XGROUP(false, -2),
     XCLAIM(false, -6),
+    XDELEX(false,-6),
+    XACKDEL(false,-7),
+
 
     // TTL single
     EXPIRE(false, 3),
@@ -83,6 +97,8 @@ public enum RedisOpType {
 
     // Bit single
     SETBIT(false, 4),
+    BITCOUNT(false, 4),
+
 
     // String multi
     DEL(true, -2),
@@ -154,6 +170,8 @@ public enum RedisOpType {
 
     private RedisOpCrdtTransfer transfer;
 
+    private boolean fields;
+
     private static final Map<String, RedisOpType> NAME_CACHE = new HashMap<>();
     static {
         for (RedisOpType op : values()) {
@@ -173,6 +191,12 @@ public enum RedisOpType {
 
     RedisOpType(boolean multiKey, int arity, boolean swallow) {
         this(multiKey, arity, swallow, null);
+    }
+
+    RedisOpType(boolean multiKey, boolean fields, int artiy) {
+        this.supportMultiKey = multiKey;
+        this.fields = fields;
+        this.arity = artiy;
     }
 
     RedisOpType(boolean multiKey, int arity, RedisOpCrdtTransfer transfer) {
@@ -197,6 +221,8 @@ public enum RedisOpType {
     public boolean isSwallow() {
         return swallow;
     }
+
+    public boolean isFields() {return fields;}
 
     public Pair<RedisOpType, byte[][]> transfer(RedisOpType redisOpType, byte[][] args) {
         if (null == transfer) {
