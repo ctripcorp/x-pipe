@@ -25,9 +25,10 @@ public class TailCacheFileSystemConfig {
     private long expectedMinRetentionMs = 0;
     private double lowWatermarkRatio = 0.7;
     private double highWatermarkRatio = 0.9;
-    private long scoreScanIntervalMs = 60_000;
-    private double scoreBandWidthRatio = 0.1;
-    private int scoreBandCount = 3;
+    private long evictScanIntervalMs = 60_000;
+    private double evictBandWidthRatio = 0.1;
+    private int evictBandCount = 3;
+    private double maxEvictRatioPerWrite = 0.2;
     private long chunkSize = 1 * 1024 * 1024;
     // When file size <= preloadChunkThreshold * chunkSize, use aligned reads for zero-copy cache population.
     // Otherwise read the whole file in one shot and copy into chunks. Default is 8.
@@ -75,15 +76,15 @@ public class TailCacheFileSystemConfig {
         }
     }
 
-    public static void validateScoreScanIntervalMs(long scoreScanIntervalMs) {
-        if (scoreScanIntervalMs <= 0) throw new IllegalArgumentException("scoreScanIntervalMs must be positive");
+    public static void validateEvictScanIntervalMs(long evictScanIntervalMs) {
+        if (evictScanIntervalMs <= 0) throw new IllegalArgumentException("evictScanIntervalMs must be positive");
     }
 
-    public static void validateScoreBands(double scoreBandWidthRatio, int scoreBandCount) {
-        if (!(scoreBandWidthRatio > 0 && scoreBandCount >= 1
-                && scoreBandWidthRatio * scoreBandCount <= 1)) {
+    public static void validateEvictBands(double evictBandWidthRatio, int evictBandCount) {
+        if (!(evictBandWidthRatio > 0 && evictBandCount >= 1
+                && evictBandWidthRatio * evictBandCount <= 1)) {
             throw new IllegalArgumentException(
-                    "require scoreBandWidthRatio > 0, scoreBandCount >= 1, and coverage <= 1");
+                    "require evictBandWidthRatio > 0, evictBandCount >= 1, and coverage <= 1");
         }
     }
 
@@ -194,28 +195,44 @@ public class TailCacheFileSystemConfig {
         return this;
     }
 
-    public long getScoreScanIntervalMs() {
-        return scoreScanIntervalMs;
+    public long getEvictScanIntervalMs() {
+        return evictScanIntervalMs;
     }
 
-    public TailCacheFileSystemConfig setScoreScanIntervalMs(long scoreScanIntervalMs) {
-        validateScoreScanIntervalMs(scoreScanIntervalMs);
-        this.scoreScanIntervalMs = scoreScanIntervalMs;
+    public TailCacheFileSystemConfig setEvictScanIntervalMs(long evictScanIntervalMs) {
+        validateEvictScanIntervalMs(evictScanIntervalMs);
+        this.evictScanIntervalMs = evictScanIntervalMs;
         return this;
     }
 
-    public double getScoreBandWidthRatio() {
-        return scoreBandWidthRatio;
+    public double getEvictBandWidthRatio() {
+        return evictBandWidthRatio;
     }
 
-    public int getScoreBandCount() {
-        return scoreBandCount;
+    public int getEvictBandCount() {
+        return evictBandCount;
     }
 
-    public TailCacheFileSystemConfig setScoreBands(double scoreBandWidthRatio, int scoreBandCount) {
-        validateScoreBands(scoreBandWidthRatio, scoreBandCount);
-        this.scoreBandWidthRatio = scoreBandWidthRatio;
-        this.scoreBandCount = scoreBandCount;
+    public TailCacheFileSystemConfig setEvictBands(double evictBandWidthRatio, int evictBandCount) {
+        validateEvictBands(evictBandWidthRatio, evictBandCount);
+        this.evictBandWidthRatio = evictBandWidthRatio;
+        this.evictBandCount = evictBandCount;
+        return this;
+    }
+
+    public static void validateMaxEvictRatioPerWrite(double maxEvictRatioPerWrite) {
+        if (maxEvictRatioPerWrite <= 0 || maxEvictRatioPerWrite > 1) {
+            throw new IllegalArgumentException("maxEvictRatioPerWrite must be in (0, 1]");
+        }
+    }
+
+    public double getMaxEvictRatioPerWrite() {
+        return maxEvictRatioPerWrite;
+    }
+
+    public TailCacheFileSystemConfig setMaxEvictRatioPerWrite(double maxEvictRatioPerWrite) {
+        validateMaxEvictRatioPerWrite(maxEvictRatioPerWrite);
+        this.maxEvictRatioPerWrite = maxEvictRatioPerWrite;
         return this;
     }
 

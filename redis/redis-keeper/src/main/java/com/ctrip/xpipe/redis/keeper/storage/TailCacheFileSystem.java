@@ -60,9 +60,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private volatile long expectedMinRetentionMs;
     private volatile double lowWatermarkRatio;
     private volatile double highWatermarkRatio;
-    private volatile long scoreScanIntervalMs;
-    private volatile double scoreBandWidthRatio;
-    private volatile int scoreBandCount;
+    private volatile long evictScanIntervalMs;
+    private volatile double evictBandWidthRatio;
+    private volatile int evictBandCount;
+    private volatile double maxEvictRatioPerWrite;
     private final long chunkSize;
     private volatile int preloadChunkThreshold;
     private volatile long preloadTimeoutMs;
@@ -72,9 +73,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private volatile int eioRetryMaxAttempts;
     private final ExecutorService ioExecutor;
     private final CacheMemoryTracker memoryTracker = new CacheMemoryTracker();
-    private final ScheduledExecutorService scoreExecutor;
+    private final ScheduledExecutorService evictExecutor;
     private final AtomicBoolean shuttingDown = new AtomicBoolean();
-    private volatile Map<String, Double> fileScores = Collections.emptyMap();
+    private volatile Map<String, Double> fileEvictRatios = Collections.emptyMap();
 
     private final ConcurrentHashMap<String, FileCacheEntry> fileCacheEntries = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, SegmentFileCacheEntry> segmentCacheEntries = new ConcurrentHashMap<>();
@@ -93,9 +94,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         this.expectedMinRetentionMs = config.getExpectedMinRetentionMs();
         this.lowWatermarkRatio = config.getLowWatermarkRatio();
         this.highWatermarkRatio = config.getHighWatermarkRatio();
-        this.scoreScanIntervalMs = config.getScoreScanIntervalMs();
-        this.scoreBandWidthRatio = config.getScoreBandWidthRatio();
-        this.scoreBandCount = config.getScoreBandCount();
+        this.evictScanIntervalMs = config.getEvictScanIntervalMs();
+        this.evictBandWidthRatio = config.getEvictBandWidthRatio();
+        this.evictBandCount = config.getEvictBandCount();
+        this.maxEvictRatioPerWrite = config.getMaxEvictRatioPerWrite();
         this.chunkSize = config.getChunkSize();
         this.preloadChunkThreshold = config.getPreloadChunkThreshold();
         this.preloadTimeoutMs = config.getPreloadTimeoutMs();
@@ -105,12 +107,12 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         this.eioRetryMaxAttempts = config.getEioRetryMaxAttempts();
         this.ioExecutor = ioExecutor;
         for (int i = 0; i < LOCK_STRIPES; i++) locks[i] = new Object();
-        this.scoreExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread thread = new Thread(r, "tail-cache-score-scanner");
+        this.evictExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread thread = new Thread(r, "tail-cache-evict-scanner");
             thread.setDaemon(true);
             return thread;
         });
-        scheduleNextScoreScan();
+        scheduleNextEvictScan();
     }
 
     public boolean isReadPreferCache() {
@@ -187,31 +189,36 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         this.highWatermarkRatio = highWatermarkRatio;
     }
 
-    public long getScoreScanIntervalMs() {
-        return scoreScanIntervalMs;
+    public long getEvictScanIntervalMs() {
+        return evictScanIntervalMs;
     }
 
-    public void setScoreScanIntervalMs(long scoreScanIntervalMs) {
-        TailCacheFileSystemConfig.validateScoreScanIntervalMs(scoreScanIntervalMs);
-        this.scoreScanIntervalMs = scoreScanIntervalMs;
+    public void setEvictScanIntervalMs(long evictScanIntervalMs) {
+        TailCacheFileSystemConfig.validateEvictScanIntervalMs(evictScanIntervalMs);
+        this.evictScanIntervalMs = evictScanIntervalMs;
     }
 
-    public double getScoreBandWidthRatio() {
-        return scoreBandWidthRatio;
+    public double getEvictBandWidthRatio() {
+        return evictBandWidthRatio;
     }
 
-    public int getScoreBandCount() {
-        return scoreBandCount;
+    public int getEvictBandCount() {
+        return evictBandCount;
     }
 
-    public void setScoreBands(double scoreBandWidthRatio, int scoreBandCount) {
-        TailCacheFileSystemConfig.validateScoreBands(scoreBandWidthRatio, scoreBandCount);
-        this.scoreBandWidthRatio = scoreBandWidthRatio;
-        this.scoreBandCount = scoreBandCount;
+    public void setEvictBands(double evictBandWidthRatio, int evictBandCount) {
+        TailCacheFileSystemConfig.validateEvictBands(evictBandWidthRatio, evictBandCount);
+        this.evictBandWidthRatio = evictBandWidthRatio;
+        this.evictBandCount = evictBandCount;
     }
 
-    Map<String, Double> getFileScores() {
-        return fileScores;
+    public double getMaxEvictRatioPerWrite() {
+        return maxEvictRatioPerWrite;
+    }
+
+    public void setMaxEvictRatioPerWrite(double maxEvictRatioPerWrite) {
+        TailCacheFileSystemConfig.validateMaxEvictRatioPerWrite(maxEvictRatioPerWrite);
+        this.maxEvictRatioPerWrite = maxEvictRatioPerWrite;
     }
 
     public long getGlobalCommittedBytes() {
@@ -295,21 +302,21 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public void shutdown() {
         shuttingDown.set(true);
-        scoreExecutor.shutdownNow();
+        evictExecutor.shutdownNow();
         delegate.shutdown();
     }
 
-    private void scheduleNextScoreScan() {
+    private void scheduleNextEvictScan() {
         if (shuttingDown.get()) return;
-        scoreExecutor.schedule(this::runScoreScan, scoreScanIntervalMs, TimeUnit.MILLISECONDS);
+        evictExecutor.schedule(this::runEvictScan, evictScanIntervalMs, TimeUnit.MILLISECONDS);
     }
 
-    private void runScoreScan() {
+    private void runEvictScan() {
         try {
             long committed = memoryTracker.committedBytes();
             double ratio = (double) committed / maxCacheSizeBytes;
             if (ratio < lowWatermarkRatio) {
-                fileScores = Collections.emptyMap();
+                fileEvictRatios = Collections.emptyMap();
                 return;
             }
             List<Pair<String, Long>> candidates = new ArrayList<>();
@@ -322,26 +329,40 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 if (bytes > 0) candidates.add(Pair.of(key, bytes));
             });
             candidates.sort(Comparator.comparingLong((Pair<String, Long> p) -> p.getValue()).reversed());
-            Map<String, Double> scores = new HashMap<>();
+            Map<String, Double> ratios = new HashMap<>();
             long sumBefore = 0;
-            double coverage = scoreBandWidthRatio * scoreBandCount;
+            double coverage = evictBandWidthRatio * evictBandCount;
+            int lastBand = -1;
+            double lastRatio = 0;
             for (Pair<String, Long> candidate : candidates) {
                 double startRatio = (double) sumBefore / committed;
                 if (startRatio >= coverage) break;
-                int band = Math.min(scoreBandCount - 1, (int) (startRatio / scoreBandWidthRatio));
-                scores.put(candidate.getKey(), scoreForBand(band));
+                int band = (int) (startRatio / evictBandWidthRatio);
+                if (band != lastBand) {
+                    lastRatio = evictRatioForBand(band);
+                    lastBand = band;
+                }
+                ratios.put(candidate.getKey(), lastRatio);
                 sumBefore += candidate.getValue();
             }
-            fileScores = Collections.unmodifiableMap(scores);
+            fileEvictRatios = Collections.unmodifiableMap(ratios);
         } catch (Throwable t) {
-            logger.warn("tail cache score scan failed", t);
+            logger.warn("tail cache evict scan failed", t);
         } finally {
-            scheduleNextScoreScan();
+            scheduleNextEvictScan();
         }
     }
 
-    private double scoreForBand(int band) {
-        return 1.0;
+    private double evictRatioForBand(int band) {
+        double ratio = maxEvictRatioPerWrite;
+        int bands = evictBandCount;
+        double maxRatio = ratio / 2;
+        double minRatio = ratio / 4;
+        if (bands == 1) {
+            return maxRatio;
+        }
+        double step = (maxRatio - minRatio) / (bands - 1);
+        return maxRatio - band * step;
     }
 
     // ---- lock helpers ----
@@ -1303,7 +1324,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             long appendStartOffset, int newChunks) {
         int existingChunks = entry.chunks.size();
         int maxEvictable = Math.max(0, existingChunks - minRetainChunks);
-        Pair<Integer, Long> decision = decideEvictionPolicy();
+        if (maxEvictable <= 0) return;
+        Pair<Integer, Long> decision = decideEvictionPolicy(file.getKey(), maxEvictable, newChunks);
         long minEvict = decision.getKey();
         long durableFsOffset = Math.max(0, entry.writtenToFsOffset - file.pendingFsyncBytes);
         long expireBeforeNanos = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(decision.getValue());
@@ -1320,7 +1342,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             chunkEnd += chunkSize;
         }
         if (!durableLimit) {
-            while (evicted < Math.min(maxEvictable, minEvict)) {
+            while (evicted < minEvict) {
                 if (chunkEnd > durableFsOffset) break;
                 evicted++;
                 index++;
@@ -1332,8 +1354,31 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
     }
 
-    private Pair<Integer, Long> decideEvictionPolicy() {
-        return Pair.of(0, expectedMinRetentionMs);
+    private Pair<Integer, Long> decideEvictionPolicy(String fileKey, int maxEvictable, int newChunks) {
+        double low = lowWatermarkRatio;
+        double high = highWatermarkRatio;
+        if (low >= high) {
+            return Pair.of(0, expectedMinRetentionMs);
+        }
+        double ratio = (double) memoryTracker.committedBytes() / maxCacheSizeBytes;
+        if (ratio < low) {
+            return Pair.of(0, expectedMinRetentionMs);
+        }
+        final long retentionMs;
+        final int minEvict;
+        if (ratio < high) {
+            double pressureFactor = (ratio - low) / (high - low);
+            Double evictRatio = fileEvictRatios.get(fileKey);
+            if (evictRatio == null) {
+                return Pair.of(0, expectedMinRetentionMs);
+            }
+            retentionMs = (long) (expectedMinRetentionMs * (1 - 0.5 * pressureFactor));
+            minEvict = (int) Math.round(maxEvictable * evictRatio * (1 + pressureFactor));
+        } else {
+            retentionMs = expectedMinRetentionMs / 2;
+            minEvict = (int) Math.round(maxEvictable * maxEvictRatioPerWrite);
+        }
+        return Pair.of(Math.min(maxEvictable, minEvict + newChunks), retentionMs);
     }
 
     // Must be called only when there is no in-flight IO for this file.
