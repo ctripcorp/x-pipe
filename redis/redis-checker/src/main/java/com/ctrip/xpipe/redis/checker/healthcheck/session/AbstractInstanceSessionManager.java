@@ -8,10 +8,13 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
+import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,25 +68,26 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
     @Autowired
     private CheckerConfig config;
 
-    @VisibleForTesting
-    public static long checkUnusedRedisDelaySeconds = 3600;
+    @Autowired
+    private AlertManager alertManager;
 
     @VisibleForTesting
     public static long checkRedisDelaySeconds = 4;
 
+    private DynamicDelayPeriodTask removeUnusedTask;
+
 
     @PostConstruct
     public void postConstruct() {
-        scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
-            @Override
-            protected void doRun() {
-                try {
-                    removeUnusedInstances();
-                } catch (Exception e) {
-                    logger.error("[removeUnusedInstances]", e);
-                }
-            }
-        }, checkUnusedRedisDelaySeconds, checkUnusedRedisDelaySeconds, TimeUnit.SECONDS);
+        this.removeUnusedTask = new DynamicDelayPeriodTask("RemoveUnusedInstances",
+                this::removeUnusedInstances, config::getSessionRemoveUnusedDelayMillis, scheduled);
+        try {
+            removeUnusedTask.start();
+        } catch (Exception e) {
+            logger.error("[postConstruct] start removeUnusedTask fail", e);
+            alertManager.alert(null, null, null, ALERT_TYPE.CHECKER_SESSION_MANAGER_FAIL,
+                    "session removeUnusedTask start fail: " + e.getMessage());
+        }
 
         scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
             @Override
@@ -186,6 +190,13 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
 
     @PreDestroy
     public void preDestroy(){
+        if (removeUnusedTask != null) {
+            try {
+                removeUnusedTask.stop();
+            } catch (Exception e) {
+                logger.error("[preDestroy] stop removeUnusedTask fail", e);
+            }
+        }
         closeAllConnections();
     }
 

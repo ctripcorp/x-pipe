@@ -853,6 +853,22 @@ public enum ALERT_TYPE {
         public ALERT_LEVEL getAlertLevel() {
             return ALERT_LEVEL.HIGH;
         }
+    },
+    CHECKER_SESSION_MANAGER_FAIL("checker session manager fail", EMAIL_XPIPE_ADMIN) {
+        @Override
+        public boolean urgent() { return false; }
+
+        @Override
+        public boolean reportRecovery() { return false; }
+
+        @Override
+        public DetailDesc detailDesc() {
+            return new DetailDesc("session manager task start fail",
+                    "session removeUnusedTask start fail, 可能会导致连接泄露");
+        }
+
+        @Override
+        public ALERT_LEVEL getAlertLevel() { return ALERT_LEVEL.HIGH; }
     };
 
 
