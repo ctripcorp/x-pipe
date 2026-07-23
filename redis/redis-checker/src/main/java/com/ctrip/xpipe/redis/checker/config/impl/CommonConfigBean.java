@@ -220,4 +220,10 @@ public class CommonConfigBean extends AbstractConfigBean {
                 DEFAULT_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI);
     }
 
+    public static final String KEY_SESSION_REMOVE_UNUSED_DELAY_MILLIS = "checker.session.remove.unused.delay.millis";
+
+    public int getSessionRemoveUnusedDelayMillis() {
+        return getIntProperty(KEY_SESSION_REMOVE_UNUSED_DELAY_MILLIS, 3600000);
+    }
+
 }
