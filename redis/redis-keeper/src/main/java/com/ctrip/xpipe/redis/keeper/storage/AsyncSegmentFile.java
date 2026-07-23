@@ -29,7 +29,6 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     final String dirPath;
     final String prefix;
     final List<String> indexPrefixes;
-    final String key;
 
     FileChannel currentSegmentChannel;
     Map<String, AsyncIndexFile> currentIndexFiles;
@@ -83,11 +82,6 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     @Override
-    String getKey() {
-        return key;
-    }
-
-    @Override
     SegmentFileCacheEntry getCacheEntry() {
         return (SegmentFileCacheEntry) cacheEntry;
     }
@@ -115,7 +109,8 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         Pair<Boolean, FileCacheEntry> acquired =
                 segmentEntry.acquireIndexFileCacheEntry(af.startOffset, af.indexPrefix, write);
         af.cacheEntry = acquired.getValue();
-        af.onCacheClose = () -> segmentEntry.releaseIndexFileCacheEntry(af.startOffset, af.indexPrefix, write);
+        af.onCacheClose = () -> segmentEntry.releaseIndexFileCacheEntry(
+                af.startOffset, af.indexPrefix, write, af.getCacheEntry());
         if (indexCacheInitializer != null) {
             indexCacheInitializer.accept(af, acquired.getKey());
         }
@@ -139,11 +134,10 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     AsyncSegmentFile(String dirPath, String prefix, List<String> indexPrefixes, String key, boolean writeMode) {
-        super(writeMode ? OpenMode.WRITE : OpenMode.READ, false);
+        super(writeMode ? OpenMode.WRITE : OpenMode.READ, false, key);
         this.dirPath = dirPath;
         this.prefix = prefix;
         this.indexPrefixes = indexPrefixes;
-        this.key = key;
         this.currentIndexFiles = new HashMap<>();
         markEmptyOpenedRange();
     }

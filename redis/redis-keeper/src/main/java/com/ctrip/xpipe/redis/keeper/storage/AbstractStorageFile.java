@@ -37,6 +37,7 @@ public abstract class AbstractStorageFile {
     long position = 0;
 
     FileCacheEntry cacheEntry = null;
+    final String key;
 
     FileCacheEntry getCacheEntry() {
         return cacheEntry;
@@ -56,10 +57,13 @@ public abstract class AbstractStorageFile {
 
     abstract void reopenCurrentChannel() throws java.io.IOException;
 
-    abstract String getKey();
+    String getKey() {
+        return key;
+    }
 
-    AbstractStorageFile(OpenMode openMode, boolean atomicReplace) {
+    AbstractStorageFile(OpenMode openMode, boolean atomicReplace, String key) {
         this.openMode = openMode;
         this.atomicReplace = atomicReplace;
+        this.key = key;
     }
 }

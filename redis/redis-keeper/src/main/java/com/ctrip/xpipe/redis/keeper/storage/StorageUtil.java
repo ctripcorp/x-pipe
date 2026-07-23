@@ -28,8 +28,19 @@ class StorageUtil {
         }
     }
 
+    static String asyncFileKey(String path) {
+        return "f\0" + path;
+    }
+
     static String segmentKey(String path, String prefix) {
-        return path + "\0" + prefix;
+        return "s\0" + path + "\0" + prefix;
+    }
+
+    static long chunkCapacityForBytes(long bytes, long chunkSize) {
+        if (bytes == 0) {
+            return chunkSize;
+        }
+        return (bytes + chunkSize - 1) / chunkSize * chunkSize;
     }
 
     static void requireOpen(AbstractStorageFile file) {

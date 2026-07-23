@@ -1,30 +1,31 @@
 package com.ctrip.xpipe.redis.keeper.storage;
 
 import com.ctrip.xpipe.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 
 final class SegmentFileCacheEntry extends FileCacheEntry {
+    private static final Logger logger = LoggerFactory.getLogger(SegmentFileCacheEntry.class);
+
     // Reserve all index files for the segment referenced by chunks.
     final ConcurrentHashMap<Long, ConcurrentHashMap<String, FileCacheEntry>> indexFiles = new ConcurrentHashMap<>();
     // Segment starts that currently hold a writer index cache lease.
     final LinkedList<Long> writerIndexLeaseStarts = new LinkedList<>();
 
+    SegmentFileCacheEntry(CacheMemoryTracker memoryTracker) {
+        super(memoryTracker, true);
+    }
+
     Pair<Boolean, FileCacheEntry> acquireIndexFileCacheEntry(long startOffset, String indexPrefix, boolean write) {
         synchronized (this) {
             ConcurrentHashMap<String, FileCacheEntry> byPrefix =
                     indexFiles.computeIfAbsent(startOffset, k -> new ConcurrentHashMap<>());
-            FileCacheEntry entry = byPrefix.computeIfAbsent(indexPrefix, k -> new FileCacheEntry());
-            if (write) {
-                if (entry.writerOpen) {
-                    throw new IllegalStateException(
-                            "writer already open for index " + indexPrefix + " at offset " + startOffset);
-                }
-                entry.writerOpen = true;
-            }
-            entry.refCount++;
-            return Pair.of(entry.refCount == 1, entry);
+            FileCacheEntry entry = byPrefix.computeIfAbsent(
+                    indexPrefix, k -> new FileCacheEntry(memoryTracker, false));
+            return Pair.of(entry.retainEntry(write), entry);
         }
     }
 
@@ -55,12 +56,58 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
     }
 
     // Must be called under synchronized(this).
+    void clearSegment() {
+        if (cacheStartOffset < 0) return;
+        releaseAllWriterIndexLeases();
+        for (ConcurrentHashMap<String, FileCacheEntry> byPrefix : indexFiles.values()) {
+            for (FileCacheEntry indexEntry : byPrefix.values()) {
+                synchronized (indexEntry) {
+                    if (indexEntry.cacheStartOffset >= 0) {
+                        indexEntry.clear();
+                    }
+                }
+            }
+        }
+        if (cacheStartOffset >= 0) {
+            clear();
+        }
+    }
+
+    @Override
+    void dropCacheBefore(long newStartOffset, long chunkSize) {
+        releaseWriterIndexLeasesThrough(newStartOffset);
+        super.dropCacheBefore(newStartOffset, chunkSize);
+    }
+
+    // Must be called under synchronized(this).
+    void resetSegmentCache(long offset, long newWrittenToFsOffset) {
+        releaseAllChunks();
+        cacheStartOffset = offset;
+        cacheEndOffset = offset;
+        writtenToFsOffset = newWrittenToFsOffset;
+        releaseAllWriterIndexLeases();
+    }
+
+    // Must be called under synchronized(this).
     // Drop leases for segment starts strictly after truncateOffset (segments deleted by truncate).
     void releaseWriterIndexLeasesAfter(long truncateOffset) {
         while (!writerIndexLeaseStarts.isEmpty()
                 && writerIndexLeaseStarts.getLast() > truncateOffset) {
             releaseWriterIndexLease(writerIndexLeaseStarts.removeLast());
         }
+    }
+
+    // Must be called under synchronized(this).
+    void truncateTo(long offset, long chunkSize, long prevStartOffset) {
+        if (offset < prevStartOffset || offset > cacheEndOffset) {
+            resetSegmentCache(offset, offset);
+        } else if (offset <= cacheStartOffset) {
+            resetSegmentCache(offset, Math.min(offset, writtenToFsOffset));
+        } else if (offset < cacheEndOffset) {
+            super.truncateTo(offset, chunkSize);
+            releaseWriterIndexLeasesAfter(offset);
+        }
+        // offset == cacheEndOffset: nothing to do
     }
 
     // Must be called under synchronized(this).
@@ -74,6 +121,8 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
     private void releaseWriterIndexLease(long startOffset) {
         ConcurrentHashMap<String, FileCacheEntry> byPrefix = indexFiles.get(startOffset);
         if (byPrefix == null) {
+            // bindWriterIndexLease only records startOffset when index entries exist; null here is unexpected.
+            logger.error("writer index lease has no index map at offset {}", startOffset);
             return;
         }
         for (String indexPrefix : byPrefix.keySet()) {
@@ -82,30 +131,55 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
     }
 
     void releaseIndexFileCacheEntry(long startOffset, String indexPrefix, boolean write) {
-        FileCacheEntry entry;
         synchronized (this) {
             ConcurrentHashMap<String, FileCacheEntry> byPrefix = indexFiles.get(startOffset);
             if (byPrefix == null) {
                 return;
             }
-            entry = byPrefix.get(indexPrefix);
-            if (entry == null) {
+            releaseIndexFileCacheEntry(startOffset, indexPrefix, write, byPrefix.get(indexPrefix));
+        }
+    }
+
+    void releaseIndexFileCacheEntry(long startOffset, String indexPrefix, boolean write,
+            FileCacheEntry entry) {
+        if (entry == null) {
+            return;
+        }
+        synchronized (this) {
+            if (!entry.releaseEntry(write)) {
                 return;
             }
-            if (write) {
-                entry.writerOpen = false;
-            }
-            if (--entry.refCount != 0) {
+            ConcurrentHashMap<String, FileCacheEntry> byPrefix = indexFiles.get(startOffset);
+            if (byPrefix == null) {
                 return;
             }
-            byPrefix.remove(indexPrefix);
+            byPrefix.remove(indexPrefix, entry);
             if (byPrefix.isEmpty()) {
-                indexFiles.remove(startOffset, byPrefix);
+                indexFiles.remove(startOffset);
             }
         }
-        synchronized (entry) {
-            entry.chunks.values().forEach(buf -> buf.release());
-            entry.chunks.clear();
+    }
+
+    @Override
+    long cacheSizeBytes() {
+        long bytes = super.cacheSizeBytes();
+        for (ConcurrentHashMap<String, FileCacheEntry> byPrefix : indexFiles.values()) {
+            for (FileCacheEntry indexEntry : byPrefix.values()) {
+                bytes += indexEntry.cacheSizeBytes();
+            }
         }
+        return bytes;
+    }
+
+    @Override
+    void releaseMemory() {
+        super.releaseMemory();
+        for (ConcurrentHashMap<String, FileCacheEntry> byPrefix : indexFiles.values()) {
+            for (FileCacheEntry indexEntry : byPrefix.values()) {
+                indexEntry.releaseMemory();
+            }
+        }
+        indexFiles.clear();
+        writerIndexLeaseStarts.clear();
     }
 }

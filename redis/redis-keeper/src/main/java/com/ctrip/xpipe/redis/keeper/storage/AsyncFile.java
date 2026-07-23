@@ -18,7 +18,11 @@ public class AsyncFile extends AbstractStorageFile {
     }
 
     AsyncFile(String path, boolean atomicReplace, OpenMode openMode, boolean canCloseByUser) {
-        super(openMode, atomicReplace);
+        this(path, atomicReplace, openMode, canCloseByUser, StorageUtil.asyncFileKey(path));
+    }
+
+    AsyncFile(String path, boolean atomicReplace, OpenMode openMode, boolean canCloseByUser, String key) {
+        super(openMode, atomicReplace, key);
         this.path = path;
         this.canCloseByUser = canCloseByUser;
     }
@@ -50,10 +54,5 @@ public class AsyncFile extends AbstractStorageFile {
         }
         channel.close();
         openCurrentChannel();
-    }
-
-    @Override
-    String getKey() {
-        return path;
     }
 }

@@ -14,14 +14,20 @@ public class TailCacheFileSystemConfig {
     // Setting to false prefers reading from the backing FS when data is available there; only intended for testing.
     private boolean readPreferCache = true;
     // Cache read requires a memory-to-kernel copy; transferTo is zero-copy when page cache is hot,
-    // but a page cache miss blocks the calling thread on disk IO. Cache hit and page cache hit are
+    // but a page cache miss blocks the calling thread on disk IO. Cache hit and page cache miss are
     // independent — cache hit with page cache miss is entirely possible. Defaults to true for
     // more stable behavior.
     private boolean transferPreferCache = true;
     private BackingFsMode backingFsMode = BackingFsMode.ASYNC;
     private long maxCacheSizeBytes = 1024 * 1024 * 1024;
-    private long maxCacheSizePerTenantBytes = 0;
+    private long maxCacheSizePerFileBytes = 100 * 1024 * 1024;
+    private int minRetainChunks = 1;
     private long expectedMinRetentionMs = 0;
+    private double lowWatermarkRatio = 0.7;
+    private double highWatermarkRatio = 0.9;
+    private long scoreScanIntervalMs = 60_000;
+    private double scoreBandWidthRatio = 0.1;
+    private int scoreBandCount = 3;
     private long chunkSize = 1 * 1024 * 1024;
     // When file size <= preloadChunkThreshold * chunkSize, use aligned reads for zero-copy cache population.
     // Otherwise read the whole file in one shot and copy into chunks. Default is 8.
@@ -35,6 +41,74 @@ public class TailCacheFileSystemConfig {
     private int eioRetryMaxAttempts = 1;
 
     public TailCacheFileSystemConfig() {
+    }
+
+    public static void validateMaxCacheSizeBytes(long maxCacheSizeBytes) {
+        if (maxCacheSizeBytes <= 0) throw new IllegalArgumentException("maxCacheSizeBytes must be positive");
+    }
+
+    public static void validatePerFileCacheLimits(long maxCacheSizePerFileBytes, int minRetainChunks, long chunkSize) {
+        if (maxCacheSizePerFileBytes <= 0) {
+            throw new IllegalArgumentException("maxCacheSizePerFileBytes must be positive");
+        }
+        if (minRetainChunks < 1) {
+            throw new IllegalArgumentException("minRetainChunks must be positive");
+        }
+        if (chunkSize <= 0) {
+            throw new IllegalArgumentException("chunkSize must be positive");
+        }
+        if (minRetainChunks > maxCacheSizePerFileBytes / chunkSize) {
+            throw new IllegalArgumentException(
+                    "minRetainChunks * chunkSize must not exceed maxCacheSizePerFileBytes");
+        }
+    }
+
+    public static void validateExpectedMinRetentionMs(long expectedMinRetentionMs) {
+        if (expectedMinRetentionMs < 0) {
+            throw new IllegalArgumentException("expectedMinRetentionMs must be non-negative");
+        }
+    }
+
+    public static void validateWatermarkRatios(double lowWatermarkRatio, double highWatermarkRatio) {
+        if (!(lowWatermarkRatio > 0 && lowWatermarkRatio < highWatermarkRatio && highWatermarkRatio <= 1)) {
+            throw new IllegalArgumentException("require 0 < lowWatermarkRatio < highWatermarkRatio <= 1");
+        }
+    }
+
+    public static void validateScoreScanIntervalMs(long scoreScanIntervalMs) {
+        if (scoreScanIntervalMs <= 0) throw new IllegalArgumentException("scoreScanIntervalMs must be positive");
+    }
+
+    public static void validateScoreBands(double scoreBandWidthRatio, int scoreBandCount) {
+        if (!(scoreBandWidthRatio > 0 && scoreBandCount >= 1
+                && scoreBandWidthRatio * scoreBandCount <= 1)) {
+            throw new IllegalArgumentException(
+                    "require scoreBandWidthRatio > 0, scoreBandCount >= 1, and coverage <= 1");
+        }
+    }
+
+    public static void validatePreloadChunkThreshold(int preloadChunkThreshold) {
+        if (preloadChunkThreshold <= 0) throw new IllegalArgumentException("preloadChunkThreshold must be positive");
+    }
+
+    public static void validatePreloadTimeoutMs(long preloadTimeoutMs) {
+        if (preloadTimeoutMs < 0) throw new IllegalArgumentException("preloadTimeoutMs must be non-negative");
+    }
+
+    public static void validateIoWaitTimeoutMs(long ioWaitTimeoutMs) {
+        if (ioWaitTimeoutMs < 0) throw new IllegalArgumentException("ioWaitTimeoutMs must be non-negative");
+    }
+
+    public static void validateWriteBatchBytes(long writeBatchBytes) {
+        if (writeBatchBytes <= 0) throw new IllegalArgumentException("writeBatchBytes must be positive");
+    }
+
+    public static void validateMaxWriteChunkThreshold(int maxWriteChunkThreshold) {
+        if (maxWriteChunkThreshold <= 0) throw new IllegalArgumentException("maxWriteChunkThreshold must be positive");
+    }
+
+    public static void validateEioRetryMaxAttempts(int eioRetryMaxAttempts) {
+        if (eioRetryMaxAttempts <= 0) throw new IllegalArgumentException("eioRetryMaxAttempts must be positive");
     }
 
     public boolean isReadPreferCache() {
@@ -69,16 +143,29 @@ public class TailCacheFileSystemConfig {
     }
 
     public TailCacheFileSystemConfig setMaxCacheSizeBytes(long maxCacheSizeBytes) {
+        validateMaxCacheSizeBytes(maxCacheSizeBytes);
         this.maxCacheSizeBytes = maxCacheSizeBytes;
         return this;
     }
 
-    public long getMaxCacheSizePerTenantBytes() {
-        return maxCacheSizePerTenantBytes;
+    public long getMaxCacheSizePerFileBytes() {
+        return maxCacheSizePerFileBytes;
     }
 
-    public TailCacheFileSystemConfig setMaxCacheSizePerTenantBytes(long maxCacheSizePerTenantBytes) {
-        this.maxCacheSizePerTenantBytes = maxCacheSizePerTenantBytes;
+    public int getMinRetainChunks() {
+        return minRetainChunks;
+    }
+
+    public long getChunkSize() {
+        return chunkSize;
+    }
+
+    public TailCacheFileSystemConfig setPerFileCacheLimits(long maxCacheSizePerFileBytes, int minRetainChunks,
+            long chunkSize) {
+        validatePerFileCacheLimits(maxCacheSizePerFileBytes, minRetainChunks, chunkSize);
+        this.maxCacheSizePerFileBytes = maxCacheSizePerFileBytes;
+        this.minRetainChunks = minRetainChunks;
+        this.chunkSize = chunkSize;
         return this;
     }
 
@@ -87,17 +174,48 @@ public class TailCacheFileSystemConfig {
     }
 
     public TailCacheFileSystemConfig setExpectedMinRetentionMs(long expectedMinRetentionMs) {
+        validateExpectedMinRetentionMs(expectedMinRetentionMs);
         this.expectedMinRetentionMs = expectedMinRetentionMs;
         return this;
     }
 
-    public long getChunkSize() {
-        return chunkSize;
+    public double getLowWatermarkRatio() {
+        return lowWatermarkRatio;
     }
 
-    public TailCacheFileSystemConfig setChunkSize(long chunkSize) {
-        if (chunkSize <= 0) throw new IllegalArgumentException("chunkSize must be positive");
-        this.chunkSize = chunkSize;
+    public double getHighWatermarkRatio() {
+        return highWatermarkRatio;
+    }
+
+    public TailCacheFileSystemConfig setWatermarkRatios(double lowWatermarkRatio, double highWatermarkRatio) {
+        validateWatermarkRatios(lowWatermarkRatio, highWatermarkRatio);
+        this.lowWatermarkRatio = lowWatermarkRatio;
+        this.highWatermarkRatio = highWatermarkRatio;
+        return this;
+    }
+
+    public long getScoreScanIntervalMs() {
+        return scoreScanIntervalMs;
+    }
+
+    public TailCacheFileSystemConfig setScoreScanIntervalMs(long scoreScanIntervalMs) {
+        validateScoreScanIntervalMs(scoreScanIntervalMs);
+        this.scoreScanIntervalMs = scoreScanIntervalMs;
+        return this;
+    }
+
+    public double getScoreBandWidthRatio() {
+        return scoreBandWidthRatio;
+    }
+
+    public int getScoreBandCount() {
+        return scoreBandCount;
+    }
+
+    public TailCacheFileSystemConfig setScoreBands(double scoreBandWidthRatio, int scoreBandCount) {
+        validateScoreBands(scoreBandWidthRatio, scoreBandCount);
+        this.scoreBandWidthRatio = scoreBandWidthRatio;
+        this.scoreBandCount = scoreBandCount;
         return this;
     }
 
@@ -106,7 +224,7 @@ public class TailCacheFileSystemConfig {
     }
 
     public TailCacheFileSystemConfig setPreloadChunkThreshold(int preloadChunkThreshold) {
-        if (preloadChunkThreshold <= 0) throw new IllegalArgumentException("preloadChunkThreshold must be positive");
+        validatePreloadChunkThreshold(preloadChunkThreshold);
         this.preloadChunkThreshold = preloadChunkThreshold;
         return this;
     }
@@ -116,7 +234,7 @@ public class TailCacheFileSystemConfig {
     }
 
     public TailCacheFileSystemConfig setPreloadTimeoutMs(long preloadTimeoutMs) {
-        if (preloadTimeoutMs < 0) throw new IllegalArgumentException("preloadTimeoutMs must be non-negative");
+        validatePreloadTimeoutMs(preloadTimeoutMs);
         this.preloadTimeoutMs = preloadTimeoutMs;
         return this;
     }
@@ -126,7 +244,7 @@ public class TailCacheFileSystemConfig {
     }
 
     public TailCacheFileSystemConfig setIoWaitTimeoutMs(long ioWaitTimeoutMs) {
-        if (ioWaitTimeoutMs < 0) throw new IllegalArgumentException("ioWaitTimeoutMs must be non-negative");
+        validateIoWaitTimeoutMs(ioWaitTimeoutMs);
         this.ioWaitTimeoutMs = ioWaitTimeoutMs;
         return this;
     }
@@ -136,7 +254,7 @@ public class TailCacheFileSystemConfig {
     }
 
     public TailCacheFileSystemConfig setWriteBatchBytes(long writeBatchBytes) {
-        if (writeBatchBytes <= 0) throw new IllegalArgumentException("writeBatchBytes must be positive");
+        validateWriteBatchBytes(writeBatchBytes);
         this.writeBatchBytes = writeBatchBytes;
         return this;
     }
@@ -146,7 +264,7 @@ public class TailCacheFileSystemConfig {
     }
 
     public TailCacheFileSystemConfig setMaxWriteChunkThreshold(int maxWriteChunkThreshold) {
-        if (maxWriteChunkThreshold <= 0) throw new IllegalArgumentException("maxWriteChunkThreshold must be positive");
+        validateMaxWriteChunkThreshold(maxWriteChunkThreshold);
         this.maxWriteChunkThreshold = maxWriteChunkThreshold;
         return this;
     }
@@ -156,7 +274,7 @@ public class TailCacheFileSystemConfig {
     }
 
     public TailCacheFileSystemConfig setEioRetryMaxAttempts(int eioRetryMaxAttempts) {
-        if (eioRetryMaxAttempts <= 0) throw new IllegalArgumentException("eioRetryMaxAttempts must be positive");
+        validateEioRetryMaxAttempts(eioRetryMaxAttempts);
         this.eioRetryMaxAttempts = eioRetryMaxAttempts;
         return this;
     }
