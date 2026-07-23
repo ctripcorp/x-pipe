@@ -1,0 +1,24 @@
+pom.xml
+  s_4c3227c386bed3::t_839e329ecff6c3 730-759
+  s_4c3227c386bed3::t_bf94000a283f83 760-777
+  s_4c3227c386bed3::t_fc5492e360abd8 725-729
+  s_4c3227c386bed3::t_b6577055e96834 71-73
+  s_4c3227c386bed3::t_f808e72b5b6c33 110-115
+  s_4c3227c386bed3::t_df9646249843a9 74-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.35-trip",
+  "base_commit_sha": "c9084916986389ad311d522fdfa145e229c4c154",
+  "prompts": {},
+  "sessions": {
+    "s_4c3227c386bed3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "45ccce87-4902-49f9-87b4-d05ed2304d4d",
+        "model": "composer-2.5"
+      },
+      "human_author": null
+    }
+  }
+}
