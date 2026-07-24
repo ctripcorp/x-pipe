@@ -1239,7 +1239,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 entry.largeFile = true;
                 return false;
             }
-            if (!memoryTracker.reserve(newBytes, maxCacheSizeBytes)) return false;
+            memoryTracker.reserve(newBytes, maxCacheSizeBytes, ioWaitTimeoutMs);
             ByteBuf[] bufs = new ByteBuf[newChunkCount];
             try {
                 for (int j = 0; j < newChunkCount; j++) {
@@ -1284,7 +1284,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
         }
         long newBytes = newChunkCount * chunkSize;
-        if (!memoryTracker.reserve(newBytes, maxCacheSizeBytes)) return false;
+        memoryTracker.reserve(newBytes, maxCacheSizeBytes, ioWaitTimeoutMs);
         ByteBuf[] bufs = new ByteBuf[newChunkCount];
         try {
             for (int j = 0; j < newChunkCount; j++) {
@@ -1315,7 +1315,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         long oldBytes = old == null ? 0 : old.buffer.capacity();
         final long delta = length - oldBytes;
         if (delta > 0) {
-            if (!memoryTracker.reserve(delta, maxCacheSizeBytes)) return false;
+            memoryTracker.reserve(delta, maxCacheSizeBytes, ioWaitTimeoutMs);
         }
         ByteBuf newBuffer;
         try {
