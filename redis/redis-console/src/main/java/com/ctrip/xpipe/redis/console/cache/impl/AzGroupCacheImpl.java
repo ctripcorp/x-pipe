@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -71,6 +72,11 @@ public class AzGroupCacheImpl implements AzGroupCache {
     @PostConstruct
     public void init() {
         executor.scheduleWithFixedDelay(this::loadAzGroupCache, config.getAzGroupCacheRefreshInterval(), config.getAzGroupCacheRefreshInterval(), TimeUnit.MILLISECONDS);
+    }
+
+    @PreDestroy
+    public void destroy() {
+        executor.shutdownNow();
     }
 
     private void loadAzGroupCache() {
