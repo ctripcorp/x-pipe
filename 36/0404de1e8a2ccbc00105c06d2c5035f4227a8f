@@ -1,0 +1,18 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/StorageUtil.java
+  h_6ceeb547b3b36a 13-14,20-25,28-29
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelper.java
+  h_6ceeb547b3b36a 49,95,106
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  h_6ceeb547b3b36a 470-473,494,1098,1190-1193,1209,1745-1752,1754-1755,1761-1767
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "360404de1e8a2ccbc00105c06d2c5035f4227a8f",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
