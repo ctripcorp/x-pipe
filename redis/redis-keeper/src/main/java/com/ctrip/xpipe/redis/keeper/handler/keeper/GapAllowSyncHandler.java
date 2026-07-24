@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
 import com.ctrip.xpipe.utils.StringUtil;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import static com.ctrip.xpipe.redis.core.protocal.Psync.PARTIAL_SYNC;
 
@@ -31,23 +32,25 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
     protected void doHandle(final String[] args, final RedisClient<?> redisClient) throws Exception {
         final RedisKeeperServer redisKeeperServer = (RedisKeeperServer) redisClient.getRedisServer();
 
-        if(redisKeeperServer.rdbDumper() == null && redisKeeperServer.getReplicationStore().isFresh()){
-            redisClient.sendMessage(new RedisErrorParser(new NoMasterlinkRedisError("Can't SYNC while replicationstore fresh")).format());
-            return;
-        }
+        try {
+            if (redisKeeperServer.rdbDumper() == null && redisKeeperServer.getReplicationStore().isFresh()) {
+                redisClient.sendMessage(new RedisErrorParser(new NoMasterlinkRedisError("Can't SYNC while replicationstore fresh")).format());
+                return;
+            }
 
-        if(!redisKeeperServer.getRedisKeeperServerState().psync(redisClient, args)){
+            if (!redisKeeperServer.getRedisKeeperServerState().psync(redisClient, args)) {
+                return;
+            }
+        }catch (Throwable tx){
+            logger.error("[doHandle] command {} for client {}", Arrays.asList(args), redisClient, tx);
+            closeRedisClient(redisClient);
             return;
         }
 
         final RedisSlave redisSlave  = redisClient.becomeGapAllowRedisSlave();
         if(redisSlave == null){
-            logger.warn("[doHandle][client already slave] {}", redisClient);
-            try {
-                redisClient.close();
-            } catch (IOException e) {
-                logger.error("[doHandle]" + redisClient, e);
-            }
+            logger.warn("[doHandle][client already slave] command {} for client {}", Arrays.asList(args),redisClient);
+            closeRedisClient(redisClient);
             return;
         }
 
@@ -81,6 +84,14 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 }
             }
         });
+    }
+
+    private void closeRedisClient(RedisClient redisClient){
+        try {
+            redisClient.close();
+        } catch (IOException e) {
+            logger.error("[doHandle]" + redisClient, e);
+        }
     }
 
     protected abstract SyncRequest parseRequest(final String[] args, RedisSlave redisSlave);
