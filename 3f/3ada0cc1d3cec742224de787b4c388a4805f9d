@@ -1,0 +1,64 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_c646f58e39bd47::t_6a4aa5b04b3d2a 1192
+  s_c646f58e39bd47::t_a07f80872ef3ae 776-778
+  s_c646f58e39bd47::t_fe3d8d06c9fe6d 815-817,819-821,829-831,833-835,846-848,850-852
+  s_c646f58e39bd47::t_dfc0c0b2721086 713,724
+  h_6ceeb547b3b36a 787,818,832,849,855,1135,1224,1311,1534
+  s_c646f58e39bd47::t_30b657e2a4c8d2 1132
+  s_c646f58e39bd47::t_860e992c4acc5f 755-756
+  s_c646f58e39bd47::t_3f8ae6fb19eee9 860,867
+  s_c646f58e39bd47::t_8d15353c836b08 1322,1326
+  s_c646f58e39bd47::t_f2799cac6e4232 774,792
+  s_c646f58e39bd47::t_40aafde93ba09a 760
+  s_c646f58e39bd47::t_5d5b3feb9629d3 423
+  s_c646f58e39bd47::t_e40a907b8641f8 1222,1231
+  s_c646f58e39bd47::t_f7ff78934fd893 1228,1232
+  s_c646f58e39bd47::t_571fdab618c843 689,693-698,702-709,711,718-723,725
+  s_c646f58e39bd47::t_b1420b945a6669 710
+  s_c646f58e39bd47::t_05898e6ebe34e4 1088
+  s_c646f58e39bd47::t_d4eebfdba8ccec 425-426
+  s_c646f58e39bd47::t_271308cde95485 691
+  s_c646f58e39bd47::t_f7497bb9b685a1 1258
+  s_c646f58e39bd47::t_dd3f2926855d38 779
+  s_c646f58e39bd47::t_c2b2630e389bbb 1129-1131,1133-1134,1136-1138
+  s_c646f58e39bd47::t_1d65d6a755cd99 1269
+  s_c646f58e39bd47::t_87e00f2f4b1299 1282,1285
+  s_c646f58e39bd47::t_afdecb73292eaf 1531-1533,1535-1536
+  s_c646f58e39bd47::t_37938cdf8cc0af 744,749-754
+  s_c646f58e39bd47::t_dc9a9b67a0eeef 1166
+  s_c646f58e39bd47::t_db081ec44d49c9 1227,1234,1238,1240
+  s_c646f58e39bd47::t_d6b2d9ef36b5b3 1339
+  s_c646f58e39bd47::t_5825d3f0dd99ca 796-798
+  s_c646f58e39bd47::t_52bca283627dad 729,731-736,738-740
+  s_c646f58e39bd47::t_a43fc09502bc29 1757
+  s_c646f58e39bd47::t_e284d5e1669fd6 1097
+  s_c646f58e39bd47::t_3365bc12ef3053 712
+  s_c646f58e39bd47::t_166a95f56a801c 799
+  s_c646f58e39bd47::t_71cd256c1e108c 1243,1245
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/CacheMemoryReserveException.java
+  s_c646f58e39bd47::t_16c5fc461fcd11 10-13
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  h_6ceeb547b3b36a 418
+  s_c646f58e39bd47::t_e729a9f5638a6d 415-417,419-420
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "3f3ada0cc1d3cec742224de787b4c388a4805f9d",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_c646f58e39bd47": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "31095a01-2b70-48f8-b351-16b6529dd0f1",
+        "model": "qwen3.7-plus"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
