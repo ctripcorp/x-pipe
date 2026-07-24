@@ -2,6 +2,9 @@ package com.ctrip.xpipe.redis.checker.healthcheck.session;
 
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.api.monitor.Task;
+import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
@@ -10,6 +13,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,90 +68,104 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
     private CheckerConfig config;
 
     @VisibleForTesting
-    public static long checkUnusedRedisDelaySeconds = 4;
+    public static long checkRedisDelaySeconds = 4;
+
+    private DynamicDelayPeriodTask removeUnusedTask;
 
 
     @PostConstruct
-    public void postConstruct(){
+    public void postConstruct() {
+        this.removeUnusedTask = new DynamicDelayPeriodTask("RemoveUnusedInstances",
+                this::removeUnusedInstances, config::getSessionRemoveUnusedDelayMillis, scheduled);
+        try {
+            removeUnusedTask.start();
+        } catch (Exception e) {
+            logger.error("[postConstruct] start removeUnusedTask fail", e);
+            EventMonitor.DEFAULT.logAlertEvent("session-removeUnused-startFail");
+        }
+
         scheduled.scheduleAtFixedRate(new AbstractExceptionLogTask() {
             @Override
-            protected void doRun() throws Exception {
-                try {
-                    removeUnusedInstances();
-                } catch (Exception e) {
-                    logger.error("[removeUnusedInstances]", e);
-                }
-
+            protected void doRun() {
                 for(RedisSession redisSession : sessions.values()){
-                    try{
+                    try {
                         redisSession.check();
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         logger.error("[check]" + redisSession, e);
                     }
                 }
             }
-        }, checkUnusedRedisDelaySeconds, checkUnusedRedisDelaySeconds, TimeUnit.SECONDS);
+        }, checkRedisDelaySeconds, checkRedisDelaySeconds, TimeUnit.SECONDS);
     }
 
     @Override
-    public RedisSession findOrCreateSession(Endpoint endpoint) {
+    public synchronized RedisSession findOrCreateSession(Endpoint endpoint) {
         RedisSession session = sessions.get(endpoint);
 
         if (session == null) {
-            synchronized (this) {
-                session = sessions.get(endpoint);
-                if (session == null) {
-                    session = new RedisSession(endpoint, scheduled, keyedObjectPool, config);
-                    sessions.put(endpoint, session);
-                }
-            }
+            session = new RedisSession(endpoint, scheduled, keyedObjectPool, config);
+            sessions.put(endpoint, session);
         }
 
         return session;
     }
 
     @Override
-    public RedisSession findOrCreateSession(HostPort hostPort) {
+    public synchronized RedisSession findOrCreateSession(HostPort hostPort) {
         return findOrCreateSession(endpointFactory.getOrCreateEndpoint(hostPort));
     }
 
     @VisibleForTesting
-    protected void removeUnusedInstances() {
-        Set<Endpoint> currentStoredRedises = sessions.keySet();
-        if(currentStoredRedises.isEmpty())
-            return;
+    protected synchronized void removeUnusedInstances() {
+        TransactionMonitor.DEFAULT.logTransactionSwallowException(
+                "session.cleanup", "removeUnusedInstances", new Task() {
+            @Override
+            public void go() {
+                Set<Endpoint> currentStoredRedises = sessions.keySet();
+                if(currentStoredRedises.isEmpty())
+                    return;
 
-        Set<HostPort> redisInUse = getInUseInstances();
-        if(redisInUse == null || redisInUse.isEmpty()) {
-            return;
-        }
-        List<Endpoint> unusedRedises = new LinkedList<>();
-
-        for(Endpoint endpoint : currentStoredRedises) {
-            if(!redisInUse.contains(new HostPort(endpoint.getHost(), endpoint.getPort()))) {
-                unusedRedises.add(endpoint);
-            }
-        }
-
-        if(unusedRedises.isEmpty()) {
-            return;
-        }
-        unusedRedises.forEach(endpoint -> {
-            RedisSession redisSession = sessions.getOrDefault(endpoint, null);
-            if(redisSession != null) {
-                logger.info("[removeUnusedRedises]Redis: {} not in use, remove from session manager", endpoint);
-                // add try logic to continue working on others
-                try {
-                    redisSession.closeConnection();
-                } catch (Exception ignore) {
-
+                Set<HostPort> redisInUse = getInUseInstances();
+                if(redisInUse == null || redisInUse.isEmpty()) {
+                    return;
                 }
-                sessions.remove(endpoint);
+                List<Endpoint> unusedRedises = new LinkedList<>();
+
+                for(Endpoint endpoint : currentStoredRedises) {
+                    if(!redisInUse.contains(new HostPort(endpoint.getHost(), endpoint.getPort()))) {
+                        unusedRedises.add(endpoint);
+                    }
+                }
+
+                if(unusedRedises.isEmpty()) {
+                    return;
+                }
+                unusedRedises.forEach(endpoint -> {
+                    try {
+                        logger.info("[removeUnusedRedises]Redis: {} not in use, remove from session manager", endpoint);
+                        removeSession(endpoint);
+                    } catch (Exception e) {
+                        logger.warn("[removeUnusedRedises] close session {} failed", endpoint, e);
+                    }
+                });
+            }
+
+            @Override
+            public java.util.Map<String, Object> getData() {
+                return null;
             }
         });
     }
 
     protected abstract Set<HostPort> getInUseInstances();
+
+
+    public synchronized boolean removeSession(Endpoint endpoint) {
+        RedisSession session = sessions.remove(endpoint);
+        if (session == null) return false;
+        session.close();
+        return true;
+    }
 
 
     protected void closeAllConnections() {
@@ -156,7 +174,7 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
                 @Override
                 public void run() {
                     for (RedisSession session : sessions.values()) {
-                        session.closeConnection();
+                        session.close();
                     }
                 }
             });
@@ -167,6 +185,13 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
 
     @PreDestroy
     public void preDestroy(){
+        if (removeUnusedTask != null) {
+            try {
+                removeUnusedTask.stop();
+            } catch (Exception e) {
+                logger.error("[preDestroy] stop removeUnusedTask fail", e);
+            }
+        }
         closeAllConnections();
     }
 

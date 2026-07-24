@@ -13,4 +13,6 @@ public interface InstanceSessionManager {
     RedisSession findOrCreateSession(Endpoint endpoint);
 
     RedisSession findOrCreateSession(HostPort hostPort);
+
+    boolean removeSession(Endpoint endpoint);
 }
