@@ -1,0 +1,24 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/AbstractInstanceSessionManager.java
+  s_11b6446428d721::t_6a5b62e817a530 84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.35-trip",
+  "base_commit_sha": "9bc78087d0d5aacae14cc4a7ade28cc07e0b03a7",
+  "prompts": {},
+  "humans": {
+    "h_2a4fc97c4bee49": {
+      "author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_11b6446428d721": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08a18e5e-a702-4603-8198-763644e4220d",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  }
+}
