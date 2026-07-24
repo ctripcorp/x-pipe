@@ -1,0 +1,39 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/CacheMemoryTracker.java
+  s_f1c324fd485c40::t_ac0a68bceaac61 46-47
+  h_6ceeb547b3b36a 17,24-28,31,33,39,42,48-51,60
+  s_f1c324fd485c40::t_6bbb451e6fe643 4-5,10-11,21-23,29-30,32,34-38,40-41,43-44,52-53,62-68
+  s_f1c324fd485c40::t_ea775f20a502db 61
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/CacheFileTooLargeException.java
+  s_c646f58e39bd47::t_a62d28590e72eb 1-8
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/CacheMemoryReserveException.java
+  s_f1c324fd485c40::t_3a2ff2e896b916 1-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "b9216558b570468448f776636f97c907c1e34a3c",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_c646f58e39bd47": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "31095a01-2b70-48f8-b351-16b6529dd0f1",
+        "model": "qwen3.7-plus"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_f1c324fd485c40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "beb82640-6469-48e3-a0ff-20bd76391026",
+        "model": "qwen3.7-plus"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
