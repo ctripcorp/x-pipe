@@ -10,12 +10,23 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 
+import io.netty.buffer.ByteBuf;
+
 class StorageUtil {
 
     static <T> CompletableFuture<T> supply(ExecutorService executor, java.util.function.Supplier<T> task) {
         try {
             return CompletableFuture.supplyAsync(task, executor);
-        } catch (RejectedExecutionException e) {
+        } catch (Exception e) {
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
+    static <T> CompletableFuture<T> supply(ExecutorService executor, java.util.function.Supplier<T> task, ByteBuf data) {
+        try {
+            return CompletableFuture.supplyAsync(task, executor);
+        } catch (Exception e) {
+            data.release();
             return CompletableFuture.failedFuture(e);
         }
     }

@@ -45,16 +45,13 @@ public final class AsyncFileSystemHelper {
             throws IOException {
         ByteBuf buf = Unpooled.wrappedBuffer(data);
         buf.retain();
-        CompletableFuture<Long> future = fs.write(file, buf);
         try {
+            CompletableFuture<Long> future = fs.write(file, buf);
             long written = await(future, operation);
             if (written != data.length) {
                 throw new IOException("short async write, expected " + data.length + " but wrote " + written
                         + ": " + operation);
             }
-        } catch (IOException e) {
-            releaseIfWriteNeverStarted(future, buf);
-            throw e;
         } finally {
             buf.release();
         }
@@ -90,46 +87,22 @@ public final class AsyncFileSystemHelper {
     public static long writeAndAwait(AsyncFileSystem fs, AsyncSegmentFile file, ByteBuf data, int expectedLength,
                                      String operation) throws IOException {
         CompletableFuture<Long> future = fs.write(file, data);
-        try {
-            long flushed = await(future, operation);
-            if (flushed != expectedLength) {
-                throw new IOException("short async write, expected " + expectedLength + " but flushed " + flushed
-                        + ": " + operation);
-            }
-            return flushed;
-        } catch (IOException e) {
-            releaseIfWriteNeverStarted(future, data);
-            throw e;
+        long flushed = await(future, operation);
+        if (flushed != expectedLength) {
+            throw new IOException("short async write, expected " + expectedLength + " but flushed " + flushed
+                    + ": " + operation);
         }
+        return flushed;
     }
 
     public static long writeAndAwait(AsyncFileSystem fs, AsyncFile file, ByteBuf data, int expectedLength,
                                      String operation) throws IOException {
         CompletableFuture<Long> future = fs.write(file, data);
-        try {
-            long flushed = await(future, operation);
-            if (flushed != expectedLength) {
-                throw new IOException("short async write, expected " + expectedLength + " but flushed " + flushed
-                        + ": " + operation);
-            }
-            return flushed;
-        } catch (IOException e) {
-            releaseIfWriteNeverStarted(future, data);
-            throw e;
+        long flushed = await(future, operation);
+        if (flushed != expectedLength) {
+            throw new IOException("short async write, expected " + expectedLength + " but flushed " + flushed
+                    + ": " + operation);
         }
-    }
-
-    static void releaseIfWriteNeverStarted(CompletableFuture<?> future, ByteBuf data) {
-        if (!future.isDone()) {
-            return;
-        }
-        try {
-            future.getNow(null);
-        } catch (CancellationException | CompletionException e) {
-            Throwable cause = e instanceof CompletionException ? e.getCause() : e;
-            if (cause instanceof RejectedExecutionException) {
-                data.release();
-            }
-        }
+        return flushed;
     }
 }
