@@ -412,7 +412,12 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         long alignedStart = alignSize > 0 ? (offset / alignSize) * alignSize : offset;
         long alignedEnd = alignSize > 0 ? ((offset + length + alignSize - 1) / alignSize) * alignSize : offset + length;
         int capacity = (int) (alignedEnd - alignedStart);
-        ByteBuf buf = StorageAllocator.ALLOC.directBuffer(capacity);
+        ByteBuf buf;
+        try {
+            buf = StorageAllocator.ALLOC.directBuffer(capacity);
+        } catch (Throwable e) {
+            throw new CacheMemoryReserveException(capacity, e);
+        }
         try {
             long pos = alignedStart;
             while (buf.writableBytes() > 0) {

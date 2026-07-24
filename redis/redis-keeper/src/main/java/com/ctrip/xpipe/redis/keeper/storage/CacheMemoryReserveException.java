@@ -7,4 +7,8 @@ public class CacheMemoryReserveException extends RuntimeException {
                 + ", limit=" + limitBytes
                 + ", committed=" + committedBytes);
     }
+
+    public CacheMemoryReserveException(long bytes, Throwable cause) {
+        super("cache memory reserve failed: requested=" + bytes, cause);
+    }
 }
