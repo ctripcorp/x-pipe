@@ -1,0 +1,35 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/cache/impl/AzGroupCacheImpl.java
+  s_d949fcb7e69f41::t_026693d31e5f3c 77-81
+  s_d949fcb7e69f41::t_6279cca66202bd 24
+pom.xml
+  s_4c3227c386bed3::t_bf94000a283f83 760-777
+  s_4c3227c386bed3::t_df9646249843a9 74-75
+  s_4c3227c386bed3::t_f808e72b5b6c33 110-115
+  s_4c3227c386bed3::t_b6577055e96834 71-73
+  s_4c3227c386bed3::t_fc5492e360abd8 725-729
+  s_4c3227c386bed3::t_839e329ecff6c3 730-759
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "b605a635ecc94f190915e2f2fb4031f571b2c132",
+  "prompts": {},
+  "sessions": {
+    "s_4c3227c386bed3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "45ccce87-4902-49f9-87b4-d05ed2304d4d",
+        "model": "composer-2.5"
+      },
+      "human_author": null
+    },
+    "s_d949fcb7e69f41": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "655412f2-ea92-45ce-ad6f-59563d04fa45",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": null
+    }
+  }
+}
