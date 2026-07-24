@@ -1,0 +1,33 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/config/impl/CommonConfigBean.java
+  s_11b6446428d721::t_7840ce06f1878d 223-228
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/AbstractInstanceSessionManager.java
+  s_11b6446428d721::t_33ccf369febf0b 92-96
+  s_11b6446428d721::t_e2fe6782c2022b 75-76,80-91
+  s_11b6446428d721::t_e55b0fbbc9ddc5 15
+  s_11b6446428d721::t_1d9b0da484df34 199-205
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/config/CheckerConfig.java
+  s_11b6446428d721::t_4fa9302d8a2a51 131-132
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/TestConfig.java
+  s_11b6446428d721::t_e361ff515337c7 337-341
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.35-trip",
+  "base_commit_sha": "ae1b5e3bb7658d018adc9d2322505db3fc76987a",
+  "prompts": {},
+  "humans": {
+    "h_2a4fc97c4bee49": {
+      "author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_11b6446428d721": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08a18e5e-a702-4603-8198-763644e4220d",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  }
+}
