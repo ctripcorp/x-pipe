@@ -43,6 +43,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
@@ -109,6 +110,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	@VisibleForTesting ReplicationStoreManager replicationStoreManager;
 
+	private AsyncFileSystem asyncFileSystem;
+
 	private ServerSocketChannel serverSocketChannel;
 	
     private EventLoopGroup bossGroup ;
@@ -169,15 +172,17 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager,
-									KeeperResourceManager resourceManager, SyncRateManager syncRateManager, RedisOpParser redisOpParser){
+									KeeperResourceManager resourceManager, SyncRateManager syncRateManager, RedisOpParser redisOpParser,
+									AsyncFileSystem asyncFileSystem){
 
-		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, redisOpParser, null);
+		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, redisOpParser, asyncFileSystem, null);
 	}
 
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager,
-									SyncRateManager syncRateManager, RedisOpParser redisOpParser, ReplDelayConfigCache replDelayConfigCache){
+									SyncRateManager syncRateManager, RedisOpParser redisOpParser,
+									AsyncFileSystem asyncFileSystem, ReplDelayConfigCache replDelayConfigCache){
 
 		this.clusterId = ClusterId.from(((ClusterMeta) currentKeeperMeta.parent().parent()).getDbId());
 		this.shardId = ShardId.from(currentKeeperMeta.parent().getDbId());
@@ -193,14 +198,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.crossRegion = new AtomicBoolean(false);
 		this.syncRateManager = syncRateManager;
 		this.replDelayConfigCache = replDelayConfigCache;
+		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
 		ckStore = new CKStore(this.replId,this.redisOpParser,String.format("%s:%d",currentKeeperMeta.getIp(),currentKeeperMeta.getPort()),keeperConfig);
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
 																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor,
 																	ScheduledExecutorService scheduled) {
-		return new DefaultReplicationStoreManager.ClusterAndShardCompatible(this.ckStore,keeperConfig, replId, currentKeeperMeta.getId(),
-				baseDir, keeperMonitor, redisOpParser, syncRateManager, scheduled).setDeprecatedClusterAndShard(clusterId, shardId);
+		return new DefaultReplicationStoreManager(this.ckStore, keeperConfig, replId, currentKeeperMeta.getId(),
+				baseDir, keeperMonitor, syncRateManager, redisOpParser, scheduled, asyncFileSystem);
 	}
 
 	private LeaderElector createLeaderElector(){

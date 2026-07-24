@@ -447,6 +447,11 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
+	public KeeperMeta getPreviousActiveKeeper(Long clusterDbId, Long shardDbId) {
+		return currentMeta.getPreviousActiveKeeper(clusterDbId, shardDbId);
+	}
+
+	@Override
 	public List<ApplierMeta> getSurviveAppliers(Long clusterDbId, Long shardDbId) {
 	    return currentMeta.getSurviveAppliers(clusterDbId, shardDbId);
 	}
@@ -494,22 +499,18 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
-	public boolean updateKeeperActive(Long clusterDbId, Long shardDbId, KeeperMeta activeKeeper) {
-		boolean result = currentMeta.setKeeperActive(clusterDbId, shardDbId, activeKeeper);
-		notifyKeeperActiveElected(clusterDbId, shardDbId, activeKeeper);
-		return result;
-	}
-	
-	@Override
 	public void addResource(Long clusterDbId, Long shardDbId, Releasable releasable) {
 		currentMeta.addResource(clusterDbId, shardDbId, releasable);
 	}
 
 
 	@Override
-	public void setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers, KeeperMeta activeKeeper) {
-		if (!currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers, activeKeeper)) return ;
+	public boolean setSurviveKeepers(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers, KeeperMeta activeKeeper) {
+		if (!currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers, activeKeeper)) {
+			return false;
+		}
 		notifyKeeperActiveElected(clusterDbId, shardDbId, activeKeeper);
+		return true;
 	}
 
 	@Override

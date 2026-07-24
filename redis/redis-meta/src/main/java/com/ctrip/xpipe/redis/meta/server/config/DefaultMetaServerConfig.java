@@ -12,6 +12,7 @@ import com.ctrip.xpipe.config.DefaultPropertyConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperElectStrategy;
 import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
@@ -61,6 +62,17 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	private static final String KEY_MAX_KEEPER_ELECT_TIMES_IN_FIXED_TIME = "max.keeper.elect.times.in.fixed.time";
 
 	private static final String KEY_KEEPER_ELECT_TIMING_CYLCLE_MILLS = "keeper.elect.timing.cycle.mills";
+
+	public static final String KEY_KEEPER_ELECT_STRATEGY = "keeper.elect.strategy";
+
+	public static final String KEY_TFS_GATEWAY_ENDPOINT = "metaserver.tfs.gateway.endpoint";
+
+	public static final String KEY_TFS_DIR_PATH_TEMPLATE = "metaserver.tfs.dir_path.template";
+
+	public static final String DEFAULT_TFS_GATEWAY_ENDPOINT = "mock://tfs-gateway";
+
+	public static final String DEFAULT_TFS_DIR_PATH_TEMPLATE =
+			"/opt/data/100004376/rsd/replication_store_{keeper_port}";
 
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 
@@ -217,6 +229,21 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public int getConsoleNotifycationTaskQueueSize() {
 		return getIntProperty(KEY_CONSOLE_NOTIFYCATION_TASK_QUEUE_SIZE, 5000);
+	}
+
+	@Override
+	public KeeperElectStrategy getKeeperElectStrategy() {
+		return KeeperElectStrategy.from(getProperty(KEY_KEEPER_ELECT_STRATEGY, KeeperElectStrategy.AUTO.name()));
+	}
+
+	@Override
+	public String getTfsGatewayEndpoint() {
+		return getProperty(KEY_TFS_GATEWAY_ENDPOINT, DEFAULT_TFS_GATEWAY_ENDPOINT);
+	}
+
+	@Override
+	public String getTfsDirPathTemplate() {
+		return getProperty(KEY_TFS_DIR_PATH_TEMPLATE, DEFAULT_TFS_DIR_PATH_TEMPLATE);
 	}
 
 	public void setDefaultServerPort(int defaultServerPort) {

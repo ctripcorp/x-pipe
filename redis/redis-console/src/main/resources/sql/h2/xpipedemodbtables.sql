@@ -89,6 +89,7 @@ create table CLUSTER_TBL (
 	activedc_id bigint unsigned not null default 0,
 	cluster_description varchar(1024) not null default 'nothing',
 	cluster_org_id bigint unsigned not null default 0,
+	logical_bu_id bigint unsigned not null default 0,
 	cluster_admin_emails varchar(250) default '',
 	status varchar(24) not null default 'Normal',
     migration_event_id bigint unsigned not null default 0 COMMENT 'related migration event on processing',
@@ -178,6 +179,7 @@ create table REDIS_TBL
 	master tinyint(1) not null default 0,
 	redis_master bigint unsigned default null,
 	keepercontainer_id bigint unsigned default null,
+	keeper_priority int not null default 1,
    	DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	create_time datetime not null default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0,
@@ -200,6 +202,7 @@ create table KEEPERCONTAINER_TBL
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0,
 	keepercontainer_org_id bigint(20) unsigned NOT NULL DEFAULT 0,
+	logical_bu_id bigint unsigned default null,
     keepercontainer_disk_type varchar(64) not null default 'default',
     tag varchar(32) not null default '',
 );
@@ -264,6 +267,29 @@ CREATE TABLE `config_tbl` (
 );
 INSERT INTO config_tbl (`key`, `value`, `desc`) VALUES ('sentinel.auto.process', 'true', '自动增删哨兵');
 INSERT INTO config_tbl (`key`, `value`, `desc`) VALUES ('alert.system.on', 'true', '邮件报警系统开关');
+
+-- Logical BU Table
+drop table if exists LOGICAL_BU_ORG_TBL;
+drop table if exists LOGICAL_BU_TBL;
+CREATE TABLE `LOGICAL_BU_TBL` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT primary key,
+  `name` varchar(128) NOT NULL DEFAULT '',
+  `tfs_fs_id` varchar(128) NOT NULL DEFAULT '',
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `description` varchar(1024) NOT NULL DEFAULT '',
+  `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
+  `deleted` tinyint(1) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE `LOGICAL_BU_ORG_TBL` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT primary key,
+  `logical_bu_id` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `cms_org_id` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
+  `deleted` tinyint(1) NOT NULL DEFAULT 0,
+  `deleted_at` int not null default 0,
+  UNIQUE KEY `uk_logical_bu_org` (`logical_bu_id`,`cms_org_id`,`deleted_at`)
+);
 
 -- Organization Table
 drop table if exists organization_tbl;

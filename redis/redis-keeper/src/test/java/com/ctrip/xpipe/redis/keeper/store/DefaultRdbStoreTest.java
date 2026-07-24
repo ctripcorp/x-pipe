@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
@@ -38,7 +38,7 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 		
 		String fileName = String.format("%s/%s.rdb", getTestFileDir(), getTestName());
 		rdbFile = new File(fileName);
-		rdbStore = new DefaultRdbStore(rdbFile, "replId",1L, new LenEofType(rdbFileSize));
+		rdbStore = new DefaultRdbStore(rdbFile, "replId",1L, new LenEofType(rdbFileSize), asyncFileSystem(), () -> 65536, getReplId());
 	}
 
 	@Test
@@ -50,7 +50,7 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 			}
 
 			@Override
-			public void onFileData(DefaultReferenceFileRegion referenceFileRegion) throws IOException {
+			public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
 				logger.info("[onFileData]");
 				throw new CloseState.CloseStateException("mock already closed");
 			}
@@ -126,7 +126,7 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 						}
 
 						@Override
-						public void onFileData(DefaultReferenceFileRegion referenceFileRegion) throws IOException {
+						public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
 							
 							if(referenceFileRegion != null){
 								logger.info("[onFileData]{}", referenceFileRegion);
@@ -164,7 +164,7 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 	@Test
 	public void testOnException() throws InterruptedException {
 
-		final DefaultReferenceFileRegion[] reference = {null};
+		final AsyncRdbReferenceFileRegion[] reference = {null};
 
 		Thread t = new Thread(new Runnable() {
 
@@ -183,8 +183,8 @@ public class DefaultRdbStoreTest extends AbstractRedisKeeperTest{
 						}
 
 						@Override
-						public void onFileData(DefaultReferenceFileRegion referenceFileRegion) throws IOException {
-							reference[0] = referenceFileRegion;
+						public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
+							reference[0] = (AsyncRdbReferenceFileRegion) referenceFileRegion;
 							Assert.assertEquals(reference[0].isDeallocated(), false);
 							throw new IOException("just fail it");
 						}

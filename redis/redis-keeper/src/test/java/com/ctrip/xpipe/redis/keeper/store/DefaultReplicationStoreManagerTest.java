@@ -4,13 +4,16 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
-import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
-import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
@@ -23,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * @author marsqing
@@ -182,6 +186,27 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		
 		Assert.assertTrue(!store.getBaseDir().exists());
 		
+	}
+
+	@Test
+	public void saveManagerMetaWithAtomicReplace() throws Exception {
+
+		AsyncFileSystem fileSystem = spy(ContainerResourceManager.createAsyncFileSystem(
+				KeeperConfig.DEFAULT_ASYNC_IO_THREADS, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES));
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
+				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
+				mock(SyncRateManager.class), createRedisOpParser(), null, fileSystem);
+
+		try {
+			LifecycleHelper.initializeIfPossible(replicationStoreManager);
+			replicationStoreManager.create();
+
+			verify(fileSystem, atLeastOnce()).mkdir(contains(getReplId().toString()), eq(true));
+			verify(fileSystem, atLeastOnce()).open(contains("store_manager_meta.properties"), eq(AbstractStorageFile.OpenMode.WRITE), eq(true), eq(true), eq(getReplId().toString()));
+		} finally {
+			LifecycleHelper.disposeIfPossible(replicationStoreManager);
+			fileSystem.shutdown();
+		}
 	}
 	
 	

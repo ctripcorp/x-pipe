@@ -6,20 +6,22 @@ import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
-import com.ctrip.xpipe.redis.core.util.NonFinalizeFileInputStream;
-import com.ctrip.xpipe.redis.core.util.NonFinalizeFileOutputStream;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
-import com.ctrip.xpipe.utils.FileUtils;
-import com.google.common.io.Files;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -72,23 +74,15 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private CKStore ckStore;
 
+    private final AsyncFileSystem asyncFileSystem;
+
     private final ScheduledExecutorService commandNotifyScheduler;
-
-    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
-                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) {
-        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, null, null);
-    }
-
-    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
-                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
-                                          SyncRateManager syncRateManager, RedisOpParser redisOpParser) {
-        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, null);
-    }
 
     public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
                                           SyncRateManager syncRateManager, RedisOpParser redisOpParser,
-                                          ScheduledExecutorService commandNotifyScheduler) {
+                                          ScheduledExecutorService commandNotifyScheduler,
+                                          AsyncFileSystem asyncFileSystem) {
         super(MoreExecutors.directExecutor());
         this.replId = replId;
         this.keeperRunid = keeperRunid;
@@ -98,19 +92,15 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         this.redisOpParser = redisOpParser;
         this.syncRateManager = syncRateManager;
         this.commandNotifyScheduler = commandNotifyScheduler;
-    }
-
-    public DefaultReplicationStoreManager(CKStore ckStore, KeeperConfig keeperConfig, ReplId replId,
-                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
-                                          SyncRateManager syncRateManager, RedisOpParser redisOpParser) {
-        this(ckStore, keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, null);
+        this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
     }
 
     public DefaultReplicationStoreManager(CKStore ckStore, KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
                                           SyncRateManager syncRateManager, RedisOpParser redisOpParser,
-                                          ScheduledExecutorService commandNotifyScheduler) {
-        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler);
+                                          ScheduledExecutorService commandNotifyScheduler,
+                                          AsyncFileSystem asyncFileSystem) {
+        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem);
         this.ckStore = ckStore;
     }
 
@@ -181,7 +171,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         keeperMonitor.getReplicationStoreStats().increateReplicationStoreCreateCount();
 
         File storeBaseDir = new File(baseDir, UUID.randomUUID().toString());
-        storeBaseDir.mkdirs();
+        AsyncFileSystemHelper.await(asyncFileSystem.mkdir(storeBaseDir.getAbsolutePath(), true),
+                "mkdir replication store " + storeBaseDir.getAbsolutePath());
 
         logger.info("[create]{}", storeBaseDir);
 
@@ -200,7 +191,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid,
                                                       KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
         return new GtidReplicationStore(this.ckStore,storeBaseDir,keeperConfig,keeperRunid, keeperMonitor, redisOpParser,
-                syncRateManager, commandNotifyScheduler);
+                syncRateManager, commandNotifyScheduler, asyncFileSystem, replId);
     }
 
     private void recrodLatestStore(String storeDir) throws IOException {
@@ -219,9 +210,21 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
      * @throws IOException
      */
     private void saveMeta(Properties meta) throws IOException {
-        try (OutputStream out = new NonFinalizeFileOutputStream(metaFile)) {
-            meta.store(out, null);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        meta.store(out, null);
+        byte[] data = out.toByteArray();
+
+        AsyncFile asyncFile = AsyncFileSystemHelper.await(
+                asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.WRITE, true, true, replId.toString()),
+                "open manager meta for write " + metaFile.getAbsolutePath());
+        try {
+            AsyncFileSystemHelper.writeAllBytes(asyncFileSystem, asyncFile, data,
+                    "write manager meta " + metaFile.getAbsolutePath());
+        } finally {
+            AsyncFileSystemHelper.await(asyncFileSystem.close(asyncFile),
+                    "close manager meta " + metaFile.getAbsolutePath());
         }
+
         logger.info("[saveMeta][before]{}", currentMeta.get());
         currentMeta.set(meta);
         logger.info("[saveMeta][after]{}", currentMeta.get());
@@ -233,10 +236,26 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
      */
     private Properties loadMeta() throws IOException {
 
-        if (metaFile.isFile()) {
+        if (AsyncFileSystemHelper.await(asyncFileSystem.exists(metaFile.getAbsolutePath()),
+                "check manager meta exists " + metaFile.getAbsolutePath())) {
             Properties meta = new Properties();
-            try (InputStream in = new NonFinalizeFileInputStream(metaFile)) {
-                meta.load(in);
+            AsyncFile asyncFile = AsyncFileSystemHelper.await(
+                    asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.READ, false, true, replId.toString()),
+                    "open manager meta for read " + metaFile.getAbsolutePath());
+            try {
+                long size = AsyncFileSystemHelper.await(asyncFileSystem.size(asyncFile),
+                        "stat manager meta " + metaFile.getAbsolutePath());
+                if (size > Integer.MAX_VALUE) {
+                    throw new IOException("async file too large: " + metaFile.getAbsolutePath());
+                }
+                byte[] data = AsyncFileSystemHelper.readAllBytes(asyncFileSystem, asyncFile, size, 0,
+                        "read manager meta " + metaFile.getAbsolutePath());
+                try (InputStream in = new ByteArrayInputStream(data)) {
+                    meta.load(in);
+                }
+            } finally {
+                AsyncFileSystemHelper.await(asyncFileSystem.close(asyncFile),
+                        "close manager meta " + metaFile.getAbsolutePath());
             }
             return meta;
         }
@@ -266,7 +285,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                 if (meta.getProperty(LATEST_STORE_DIR) != null) {
                     File latestStoreDir = new File(baseDir, meta.getProperty(LATEST_STORE_DIR));
                     logger.info("[getCurrent][latest]{}", latestStoreDir);
-                    if (latestStoreDir.isDirectory()) {
+                    if (AsyncFileSystemHelper.await(asyncFileSystem.exists(latestStoreDir.getAbsolutePath()),
+                            "check latest store dir exists " + latestStoreDir.getAbsolutePath())) {
                         currentStore.set(createReplicationStore(latestStoreDir, keeperConfig, keeperRunid, keeperMonitor, syncRateManager));
                     }
                 }
@@ -292,26 +312,35 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         gcCount.incrementAndGet();
         Properties meta = currentMeta(true);
-        final String currentDirName;
         if (meta != null) {
-            currentDirName = meta.getProperty(LATEST_STORE_DIR);
-            File[] replicationStoreDirs = baseDir.listFiles(new FileFilter() {
+            final String currentDirName = meta.getProperty(LATEST_STORE_DIR);
+            List<String> children = AsyncFileSystemHelper.await(
+                    asyncFileSystem.list(baseDir.getAbsolutePath()),
+                    "list replication store manager baseDir " + baseDir);
 
-                @Override
-                public boolean accept(File path) {
-                    return path.isDirectory() && !currentDirName.equals(path.getName());
-                }
-            });
-
-            if (replicationStoreDirs != null && replicationStoreDirs.length > 0) {
+            if (children != null && !children.isEmpty()) {
 
                 logger.info("[GC][old replicationstore]newest:{}", currentDirName);
-                for (File dir : replicationStoreDirs) {
-                    if (System.currentTimeMillis() - dir.lastModified() > keeperConfig.getReplicationStoreMinTimeMilliToGcAfterCreate()) {
-                        logger.info("[GC] directory {}", dir.getCanonicalPath());
-                        FileUtils.recursiveDelete(dir);
+                for (String name : children) {
+                    if (currentDirName != null && currentDirName.equals(name)) {
+                        continue;
+                    }
+                    String childPath = new File(baseDir, name).getAbsolutePath();
+                    boolean isDir = AsyncFileSystemHelper.await(
+                            asyncFileSystem.isDirectory(childPath),
+                            "isDirectory " + childPath);
+                    if (!isDir) {
+                        continue;
+                    }
+                    // TODO T-FS.14: replace with asyncFileSystem.lastModified(childPath) once path-level mtime lands.
+                    long lastModified = new File(childPath).lastModified();
+                    if (System.currentTimeMillis() - lastModified > keeperConfig.getReplicationStoreMinTimeMilliToGcAfterCreate()) {
+                        logger.info("[GC] directory {}", childPath);
+                        AsyncFileSystemHelper.await(
+                                asyncFileSystem.rmdir(childPath, true),
+                                "rmdir " + childPath);
                     } else {
-                        logger.warn("[GC][directory is created too short, do not gc]{}, {}", dir, new Date(dir.lastModified()));
+                        logger.warn("[GC][directory is created too short, do not gc]{}, {}", childPath, new Date(lastModified));
                     }
                 }
             }
@@ -327,7 +356,9 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     @Override
     public void destroy() throws Exception {
         logger.info("[destroy]{}", this);
-        FileUtils.recursiveDelete(this.baseDir);
+        AsyncFileSystemHelper.await(
+                asyncFileSystem.rmdir(this.baseDir.getAbsolutePath(), true),
+                "rmdir replication store manager baseDir " + baseDir);
     }
 
     public long getGcCount() {
@@ -342,68 +373,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     public File getBaseDir() {
         return baseDir;
-    }
-
-    public static class ClusterAndShardCompatible extends DefaultReplicationStoreManager {
-
-        private final Logger logger = LoggerFactory.getLogger(ClusterAndShardCompatible.class);
-
-        private final File keeperBaseDir;
-
-        private ReplId replId;
-
-        private ClusterId deprecatedClusterId;
-
-        private ShardId deprecatedShardId;
-
-        public ClusterAndShardCompatible(CKStore ckStore,KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
-                                         File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
-                                         SyncRateManager syncRateManager) {
-            this(ckStore, keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, redisOpParser, syncRateManager, null);
-        }
-
-        public ClusterAndShardCompatible(CKStore ckStore,KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
-                                         File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
-                                         SyncRateManager syncRateManager, ScheduledExecutorService commandNotifyScheduler) {
-            super(ckStore,keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler);
-            this.keeperBaseDir = baseDir;
-            this.replId = replId;
-        }
-
-        @Override
-        protected void doInitialize() throws Exception {
-
-            renameDeprecatedStore();
-
-            super.doInitialize();
-        }
-
-        public ClusterAndShardCompatible setDeprecatedClusterAndShard(ClusterId clusterId, ShardId shardId) {
-            this.deprecatedClusterId = clusterId;
-            this.deprecatedShardId = shardId;
-            return this;
-        }
-
-        public void renameDeprecatedStore() {
-            if (null == deprecatedClusterId || null == deprecatedShardId) {
-                return;
-            }
-
-            File deprecated = new File(keeperBaseDir, deprecatedClusterId + "/" + deprecatedShardId);
-            File dest = new File(keeperBaseDir, replId.toString());
-
-            File deprecatedParent = new File(keeperBaseDir, deprecatedClusterId.toString());
-            if (deprecated.exists() && !dest.exists()) {
-                try {
-                    keeperBaseDir.mkdirs();
-                    Files.move(deprecated, dest);
-                    logger.info("[renameDeprecatedStore] {} -> {} success", deprecated.getAbsolutePath(), dest.getAbsolutePath());
-                    FileUtils.recursiveDelete(deprecatedParent);
-                } catch (IOException e) {
-                    logger.error("[renameDeprecatedStore] {} -> {} failure", deprecated.getAbsolutePath(), dest.getAbsolutePath(), e);
-                }
-            }
-        }
     }
 
 }

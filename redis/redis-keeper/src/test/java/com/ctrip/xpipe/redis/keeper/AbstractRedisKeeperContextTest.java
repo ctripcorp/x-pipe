@@ -124,7 +124,8 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 	protected RedisKeeperServer createRedisKeeperServer(Long replId, KeeperMeta keeper, KeeperConfig keeperConfig,
 			File baseDir, LeaderElectorManager leaderElectorManager) {
 		return new DefaultRedisKeeperServer(replId, keeper, keeperConfig, baseDir, leaderElectorManager,
-				createkeepersMonitorManager(), getResourceManager(), Mockito.mock(SyncRateManager.class), createRedisOpParser(), new ReplDelayConfigCache(new TestKeeperCommonConfig(), new TestKeeperConfig()));
+				createkeepersMonitorManager(), getResourceManager(), Mockito.mock(SyncRateManager.class), createRedisOpParser(),
+				asyncFileSystem(), new ReplDelayConfigCache(new TestKeeperCommonConfig(), new TestKeeperConfig()));
 	}
 
 	protected RedisOpParser createRedisOpParser() {

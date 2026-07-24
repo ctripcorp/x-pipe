@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTblDao;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -19,6 +21,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
 
@@ -38,6 +41,9 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
 
   @Autowired
   private AzService azService;
+
+  @Autowired
+  private ConsoleConfig consoleConfig;
 
   @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
   ExecutorService executor;
@@ -59,7 +65,7 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     List<KeeperBasicInfo> result = new LinkedList<>();
 
     List<KeepercontainerTbl> keepercontainerTbls =
-        keeperContainerService.findBestKeeperContainersByDcCluster(dcName, clusterName);
+        filterByDiskType(keeperContainerService.findBestKeeperContainersByDcCluster(dcName, clusterName));
     if (keepercontainerTbls.size() < returnCount) {
       throw new IllegalStateException(
           "Organization keepers size:" + keepercontainerTbls.size() + ", but we need:" + returnCount);
@@ -67,7 +73,17 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
 
     fillInResult(keepercontainerTbls, result, beginPort, keeperGood, returnCount);
     return result;
+  }
 
+  private List<KeepercontainerTbl> filterByDiskType(List<KeepercontainerTbl> keepercontainerTbls) {
+    String policy = consoleConfig.getKeeperAutoSelectDiskType();
+    if (policy == null || "ANY".equalsIgnoreCase(policy)) {
+      return keepercontainerTbls;
+    }
+    boolean wantTfs = "TFS".equalsIgnoreCase(policy);
+    return keepercontainerTbls.stream()
+        .filter(kc -> KeeperDiskTypeUtils.isTfs(kc.getKeepercontainerDiskType()) == wantTfs)
+        .collect(Collectors.toList());
   }
 
   @Override
@@ -78,10 +94,6 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
       if (!ObjectUtils.equals(keeper.getRedisIp(), srcKeeperContainerIp)) {
         newKeepers.add(keeper);
       }
-    }
-
-    if (newKeepers.size() == 2) {
-      return null;
     }
 
     if (newKeepers.isEmpty()) {

@@ -4,6 +4,10 @@ import org.junit.Test;
 import org.junit.Before;
 import static org.junit.Assert.*;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.io.RandomAccessFile;
@@ -115,7 +119,7 @@ public class IndexEntryTest {
         assertNotEquals("被翻转的字段应产生不同值", startGno, parsed.getStartGno());
     }
 
-    // ---------- 固定 88 字节 ----------
+    // ---------- 固定 96 字节（SEGMENT_LENGTH_V2）----------
     @Test
     public void testV2BufferLength() {
         IndexEntry gtidEntry = new IndexEntry(validUuid40, startGno, cmdStartOffset, blockStartOffset);
@@ -165,21 +169,27 @@ public class IndexEntryTest {
         channel.position(0);
 
         // 读取第一条 GTID 条目
-        IndexEntry readGtid = IndexEntry.readFromFileV2(channel);
+        ByteBuffer gtidReadBuf = ByteBuffer.allocate(IndexEntry.SEGMENT_LENGTH_V2);
+        channel.read(gtidReadBuf);
+        IndexEntry readGtid = IndexEntry.fromBufferV2(gtidReadBuf);
         assertNotNull(readGtid);
         assertEquals(validUuid40, readGtid.getUuid());
         assertEquals(startGno, readGtid.getStartGno());
         assertFalse(readGtid.isZone());
 
         // 读取第二条 ZONE 条目
-        IndexEntry readZone = IndexEntry.readFromFileV2(channel);
+        ByteBuffer zoneReadBuf = ByteBuffer.allocate(IndexEntry.SEGMENT_LENGTH_V2);
+        channel.read(zoneReadBuf);
+        IndexEntry readZone = IndexEntry.fromBufferV2(zoneReadBuf);
         assertNotNull(readZone);
         assertTrue(readZone.isZone());
         assertEquals(zoneStart, readZone.getZoneStart());
         assertEquals(zoneEnd, readZone.getZoneEnd());
 
         // 文件末尾应返回 null
-        IndexEntry readNull = IndexEntry.readFromFileV2(channel);
+        ByteBuffer eofBuf = ByteBuffer.allocate(IndexEntry.SEGMENT_LENGTH_V2);
+        int read = channel.read(eofBuf);
+        IndexEntry readNull = read < IndexEntry.SEGMENT_LENGTH_V2 ? null : IndexEntry.fromBufferV2(eofBuf);
         assertNull(readNull);
 
         channel.close();
@@ -194,6 +204,123 @@ public class IndexEntryTest {
         entry.setBlockEndOffset(zoneEnd);
         // 不设置 type，默认是 GTID
         assertTrue(entry.isZone()); // 因为 uuid 是全 0
+    }
+
+    // ---------- ByteBuf encode/decode 与 ByteBuffer 对拍（Phase X1b）----------
+
+    @Test
+    public void testEncodeV2ByteBufMatchesGenerateBufferV2() {
+        IndexEntry entry = new IndexEntry(validUuid40, startGno, cmdStartOffset, blockStartOffset);
+        entry.setBlockEndOffset(blockEndOffset);
+        entry.setSize(size);
+        entry.setCmdEndOffset(cmdEndOffset);
+
+        ByteBuffer jdkBuf = entry.generateBufferV2();
+        ByteBuf nettyBuf = Unpooled.buffer(IndexEntry.SEGMENT_LENGTH_V2);
+        entry.encodeV2(nettyBuf);
+
+        assertEquals(IndexEntry.SEGMENT_LENGTH_V2, nettyBuf.readableBytes());
+        byte[] jdkBytes = new byte[IndexEntry.SEGMENT_LENGTH_V2];
+        jdkBuf.get(jdkBytes);
+        byte[] nettyBytes = new byte[IndexEntry.SEGMENT_LENGTH_V2];
+        nettyBuf.getBytes(nettyBuf.readerIndex(), nettyBytes);
+        assertArrayEquals(jdkBytes, nettyBytes);
+    }
+
+    @Test
+    public void testFromBufferV2ByteBufMatchesByteBuffer() {
+        IndexEntry entry = IndexEntry.zone(zoneStart, zoneEnd, zoneCmdCount);
+        ByteBuffer jdkBuf = entry.generateBufferV2();
+
+        IndexEntry fromJdk = IndexEntry.fromBufferV2(jdkBuf.duplicate());
+        ByteBuf nettyBuf = Unpooled.wrappedBuffer(jdkBuf.duplicate());
+        IndexEntry fromNetty = IndexEntry.fromBufferV2(nettyBuf);
+
+        assertEquals(fromJdk.getUuid(), fromNetty.getUuid());
+        assertEquals(fromJdk.getCmdStartOffset(), fromNetty.getCmdStartOffset());
+        assertEquals(fromJdk.getCmdEndOffset(), fromNetty.getCmdEndOffset());
+        assertEquals(fromJdk.getSize(), fromNetty.getSize());
+        assertEquals(fromJdk.getType(), fromNetty.getType());
+        assertTrue(fromNetty.isZone());
+    }
+
+    @Test
+    public void testEncodeByteBufMatchesGenerateBuffer() {
+        IndexEntry entry = new IndexEntry(validUuid40, startGno, cmdStartOffset, blockStartOffset);
+        entry.setBlockEndOffset(blockEndOffset);
+        entry.setSize(size);
+
+        ByteBuffer jdkBuf = entry.generateBuffer();
+        ByteBuf nettyBuf = Unpooled.buffer(IndexEntry.SEGMENT_LENGTH);
+        entry.encode(nettyBuf);
+
+        assertEquals(IndexEntry.SEGMENT_LENGTH, nettyBuf.readableBytes());
+        byte[] jdkBytes = new byte[IndexEntry.SEGMENT_LENGTH];
+        jdkBuf.get(jdkBytes);
+        byte[] nettyBytes = new byte[IndexEntry.SEGMENT_LENGTH];
+        nettyBuf.getBytes(nettyBuf.readerIndex(), nettyBytes);
+        assertArrayEquals(jdkBytes, nettyBytes);
+    }
+
+    @Test
+    public void testFromBufferByteBufMatchesByteBuffer() {
+        IndexEntry entry = new IndexEntry(validUuid40, startGno, cmdStartOffset, blockStartOffset);
+        entry.setBlockEndOffset(blockEndOffset);
+        entry.setSize(size);
+
+        ByteBuffer serialized = entry.generateBuffer();
+        ByteBuffer copyForLegacy = ByteBuffer.allocate(IndexEntry.SEGMENT_LENGTH);
+        copyForLegacy.put(serialized.duplicate());
+        IndexEntry fromJdk = IndexEntry.fromBuffer(copyForLegacy);
+
+        ByteBuf nettyBuf = Unpooled.wrappedBuffer(serialized.duplicate());
+        IndexEntry fromNetty = IndexEntry.fromBuffer(nettyBuf);
+
+        assertEquals(fromJdk.getUuid(), fromNetty.getUuid());
+        assertEquals(fromJdk.getStartGno(), fromNetty.getStartGno());
+        assertEquals(fromJdk.getBlockEndOffset(), fromNetty.getBlockEndOffset());
+        assertEquals(fromJdk.getSize(), fromNetty.getSize());
+    }
+
+    @Test
+    public void testFromBufferV2ByteBufInsufficientData() {
+        ByteBuf buf = Unpooled.wrappedBuffer(new byte[10]);
+        assertNull(IndexEntry.fromBufferV2(buf));
+        assertEquals(10, buf.readableBytes());
+    }
+
+    @Test
+    public void testFromBufferByteBufInsufficientData() {
+        ByteBuf buf = Unpooled.wrappedBuffer(new byte[10]);
+        assertNull(IndexEntry.fromBuffer(buf));
+        assertEquals(10, buf.readableBytes());
+    }
+
+    @Test
+    public void testByteBufRoundTripV2GtidAndZone() {
+        IndexEntry gtid = new IndexEntry(validUuid40, startGno, cmdStartOffset, blockStartOffset);
+        gtid.setBlockEndOffset(blockEndOffset);
+        gtid.setSize(size);
+        gtid.setCmdEndOffset(cmdEndOffset);
+
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(IndexEntry.SEGMENT_LENGTH_V2 * 2);
+        try {
+            gtid.encodeV2(buf);
+            IndexEntry zone = IndexEntry.zone(zoneStart, zoneEnd, zoneCmdCount);
+            zone.encodeV2(buf);
+
+            IndexEntry readGtid = IndexEntry.fromBufferV2(buf);
+            assertNotNull(readGtid);
+            assertEquals(validUuid40, readGtid.getUuid());
+            assertFalse(readGtid.isZone());
+
+            IndexEntry readZone = IndexEntry.fromBufferV2(buf);
+            assertNotNull(readZone);
+            assertTrue(readZone.isZone());
+            assertEquals(zoneEnd, readZone.getZoneEnd());
+        } finally {
+            buf.release();
+        }
     }
 
     // ---------- getters/setters 覆盖 ----------

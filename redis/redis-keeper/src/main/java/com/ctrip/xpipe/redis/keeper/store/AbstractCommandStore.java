@@ -9,6 +9,11 @@ import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetNotifyingCommandWriter;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStore;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindow;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
@@ -42,7 +47,7 @@ import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX_
  * @author lishanglin
  * date 2022/5/24
  */
-public abstract class AbstractCommandStore extends AbstractStore implements CommandStore, CommandWriterCallback {
+public abstract class AbstractCommandStore extends AbstractStore implements CommandStore, CommandWriterCallback, AsyncCommandStore {
 
     private final static Logger delayTraceLogger = KeeperLogger.getDelayTraceLog();
 
@@ -110,6 +115,16 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private KeeperConfig keeperConfig;
 
     private TimerSlidingWindow timerSlidingWindow;
+
+    protected final AsyncFileSystem asyncFileSystem;
+
+    protected final AsyncSegmentFile asyncSegmentFile;
+
+    private final List<String> commandIndexPrefixes;
+
+    private final ReplId fileSystemReplId;
+
+    private final IntSupplier asyncWriteMaxBytes;
     
     public abstract Logger getLogger();
 
@@ -119,12 +134,18 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                                 BooleanSupplier commandOffsetNotifyCoalescingEnabled,
                                 CommandReaderWriterFactory cmdReaderWriterFactory,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
-                                GtidCmdFilter  gtidCmdFilter, boolean buildIndex
+                                GtidCmdFilter  gtidCmdFilter, boolean buildIndex, long cmdStoreStartOffset,
+                                AsyncFileSystem asyncFileSystem,
+                                IntSupplier asyncWriteMaxBytes,
+                                ReplId fileSystemReplId
     ) throws IOException {
 
         this.baseDir = file.getParentFile();
         this.fileNamePrefix = file.getName();
         this.maxFileSize = maxFileSize;
+        this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
+        this.fileSystemReplId = Objects.requireNonNull(fileSystemReplId, "fileSystemReplId");
+        this.asyncWriteMaxBytes = asyncWriteMaxBytes == null ? () -> DEFAULT_ASYNC_WRITE_MAX_BYTES : asyncWriteMaxBytes;
         this.maxTimeSecondKeeperCmdFileAfterModified = maxTimeSecondKeeperCmdFileAfterModified;
         this.fileNumToKeep = fileNumToKeep;
         this.commandReaderFlyingThreshold = commandReaderFlyingThreshold;
@@ -143,15 +164,28 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
         allFileFilter = new PrefixFileFilter(new String[] {fileNamePrefix, INDEX_FILE_PREFIX + fileNamePrefix});
 
+        // T-X1a.2: expand from V1-only (index_/block_) to include V2 (indexv2_/blockv2_).
+        // fs.open must register all 4 index prefixes so that segment truncate/delete keeps
+        // both V1 and V2 index/block files consistent with the cmd segment.
+        this.commandIndexPrefixes = Arrays.asList(
+                INDEX + fileNamePrefix,
+                BLOCK + fileNamePrefix,
+                INDEX_V2 + fileNamePrefix,
+                BLOCK_V2 + fileNamePrefix);
+        this.asyncSegmentFile = AsyncFileSystemHelper.await(
+                asyncFileSystem.open(baseDir.getAbsolutePath(), fileNamePrefix, commandIndexPrefixes, true, fileSystemReplId.toString()),
+                "open command segment " + fileNamePrefix);
+        // invalid 文件列表见 T-FS.2；FS initFromFiles 内部已 warn，Store 待 FS 暴露 invalidFiles() 后再补日志
+
         intiCmdFileIndex();
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, this.maxFileSize, delayTraceLogger);
         this.buildIndex = buildIndex;
-        indexStore = createIndexStore();
+        indexStore = createIndexStore(cmdStoreStartOffset);
     }
 
-    private IndexStore createIndexStore() throws IOException {
-        return new DefaultIndexStore(keeperConfig, ckStore, baseDir.getAbsolutePath(), redisOpParser,
-                this, gtidCmdFilter, findLatestFile().getFile().getName());
+    private IndexStore createIndexStore(long cmdStoreStartOffset) {
+        return new DefaultIndexStore(keeperConfig, ckStore, this, baseDir.getAbsolutePath(), redisOpParser,
+                this, gtidCmdFilter, cmdStoreStartOffset);
     }
 
     @Override
@@ -197,6 +231,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (initialized.compareAndSet(false, true)) {
             cmdWriter.initialize();
             offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
+            if (cmdWriter instanceof OffsetNotifyingCommandWriter) {
+                ((OffsetNotifyingCommandWriter) cmdWriter).setOffsetNotifier(offsetNotifier);
+            }
             if(buildIndex) {
                 indexStore.openWriter(cmdWriter);
             }
@@ -397,7 +434,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         commandStoreDelay.endWrite(offset);
 
-        offsetNotifier.offsetIncreased(offset);
+        if (!(cmdWriter instanceof OffsetNotifyingCommandWriter)) {
+            offsetNotifier.offsetIncreased(offset);
+        }
 
 
 
@@ -569,7 +608,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     public long lowestReadingOffset() {
         long lowestReadingOffset = Long.MAX_VALUE;
 
-        for (CommandReader reader : readers.keySet()) {
+        for (CommandReader<?> reader : readers.keySet()) {
             File readingFile = reader.getCurCmdFile().getFile();
             if (readingFile != null) {
                 lowestReadingOffset = Math.min(lowestReadingOffset, extractStartOffset(readingFile));
@@ -614,22 +653,113 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             if(indexStore != null) {
                 indexStore.closeWriter();
             }
+            AsyncFileSystemHelper.await(asyncFileSystem.close(asyncSegmentFile), "close command segment " + fileNamePrefix);
         }else{
             getLogger().warn("[close][already closed]{}", this);
         }
     }
 
     @Override
+    public AsyncFileSystem getAsyncFileSystem() {
+        return asyncFileSystem;
+    }
+
+    @Override
+    public AsyncSegmentFile getAsyncSegmentFile() {
+        return asyncSegmentFile;
+    }
+
+    @Override
+    public AsyncSegmentFile getWriteSegmentFile() {
+        return asyncSegmentFile;
+    }
+
+    /**
+     * Index-only tail truncate for the current write segment (spec §3.7.3). Callers pass the V1 or V2
+     * prefix pair depending on which writer is recovering. Cmd segment position is untouched.
+     * <p>T-X1a.5 lands the API only — no caller is wired up until T-X1c/T-X1d.
+     */
+    @Override
+    public Map<String, AsyncFile> truncateIndex(String indexPrefix, String blockPrefix,
+                                                long indexSize, long blockSize) throws IOException {
+        List<String> prefixes = Arrays.asList(indexPrefix, blockPrefix);
+        Map<String, AsyncFile> handles = AsyncFileSystemHelper.await(
+                asyncFileSystem.getCurrentIndexFiles(asyncSegmentFile, prefixes),
+                "getCurrentIndexFiles for truncateIndex " + indexPrefix + "/" + blockPrefix);
+        AsyncFile indexFile = handles.get(indexPrefix);
+        AsyncFile blockFile = handles.get(blockPrefix);
+        if (indexFile == null || blockFile == null) {
+            throw new IOException("[truncateIndex] missing index/block handle for " + indexPrefix + "/" + blockPrefix);
+        }
+        AsyncFileSystemHelper.await(asyncFileSystem.truncate(indexFile, indexSize),
+                "truncate " + indexPrefix + " to " + indexSize);
+        AsyncFileSystemHelper.await(asyncFileSystem.truncate(blockFile, blockSize),
+                "truncate " + blockPrefix + " to " + blockSize);
+        return handles;
+    }
+
+    /**
+     * Cmd-only tail truncate for the write segment (spec §3.7.3). Companion index/block file contents
+     * are NOT modified by FS truncate — callers roll their own {@link #truncateIndex} follow-up.
+     */
+    @Override
+    public Map<String, AsyncFile> truncateCmdSegment(long cmdSegmentOffset) throws IOException {
+        long globalOffset = getCurrentSegmentStartOffset() + cmdSegmentOffset;
+        return AsyncFileSystemHelper.await(
+                asyncFileSystem.truncate(asyncSegmentFile, globalOffset),
+                "truncate cmd segment to " + globalOffset);
+    }
+
+    @Override
+    public long getCurrentSegmentStartOffset() throws IOException {
+        long startOffset = asyncFileSystem.getCurrentSegmentStartOffset(asyncSegmentFile);
+        if (startOffset < 0) {
+            List<Long> offsets = asyncFileSystem.list(asyncSegmentFile);
+            startOffset = offsets.isEmpty() ? 0 : offsets.get(offsets.size() - 1);
+        }
+        return startOffset;
+    }
+
+    @Override
+    public File getCommandBaseDir() {
+        return baseDir;
+    }
+
+    @Override
+    public String getCommandFileNamePrefix() {
+        return fileNamePrefix;
+    }
+
+    @Override
+    public List<String> getCommandIndexPrefixes() {
+        return commandIndexPrefixes;
+    }
+
+    @Override
+    public ReplId getFileSystemReplId() {
+        return fileSystemReplId;
+    }
+
+    @Override
+    public int getAsyncWriteMaxBytes() {
+        return Math.max(1, asyncWriteMaxBytes.getAsInt());
+    }
+
+    @Override
+    public long currentSegmentSize() throws IOException {
+        if (cmdWriter == null) {
+            throw new IOException("cmd writer not initialized");
+        }
+        return cmdWriter.fileLength();
+    }
+
+    @Override
     public void destroy() throws Exception {
 
         getLogger().info("[destroy]{}", this);
-        File [] files = allFiles();
-        if(files != null){
-            for(File file : files){
-                boolean result = file.delete();
-                getLogger().info("[destroy][delete file]{}, {}", file, result);
-            }
-        }
+        close();
+        AsyncFileSystemHelper.await(asyncFileSystem.delete(asyncSegmentFile),
+                "destroy command segment " + fileNamePrefix);
     }
 
     @Override
@@ -729,24 +859,81 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             timeoutGuarantees();
             finishGuarantees();
 
-            long maxStartOffset = findMaxStartOffset();
-            for (File cmdFile : allCmdFiles()) {
-                long fileStartOffset = extractStartOffset(cmdFile);
-                if (fileStartOffset >= maxStartOffset) {
-                    getLogger().debug("[GC][skip writing cmd] writing:{} file:{}", maxStartOffset, fileStartOffset);
-                    continue;
+            List<Long> segmentOffsets = asyncFileSystem.list(asyncSegmentFile);
+            if (segmentOffsets == null || segmentOffsets.size() <= 1) {
+                getLogger().debug("[gc][no candidate segment] {}", segmentOffsets);
+                return;
+            }
+            int totalSegments = segmentOffsets.size();
+            long lowestReadOrGuarantee = Long.min(lowestReadingOffset(), minGuaranteeOffset());
+
+            List<Long> toDelete = new ArrayList<>();
+            for (int idx = 0; idx < totalSegments - 1; idx++) {
+                long startOffset = segmentOffsets.get(idx);
+                long size;
+                long lastModified;
+                try {
+                    size = AsyncFileSystemHelper.await(
+                            asyncFileSystem.sizeOfSegment(asyncSegmentFile, startOffset),
+                            "size of segment " + fileNamePrefix + startOffset);
+                    lastModified = AsyncFileSystemHelper.await(
+                            asyncFileSystem.lastModifiedOfSegment(asyncSegmentFile, startOffset),
+                            "last modified of segment " + fileNamePrefix + startOffset);
+                } catch (IOException e) {
+                    getLogger().error("[gc][stat segment {}]", startOffset, e);
+                    break;
                 }
-                if (canDeleteCmdFile(Long.min(lowestReadingOffset(), minGuaranteeOffset()), fileStartOffset, cmdFile.length(),
-                        cmdFile.lastModified())) {
-                    getLogger().info("[GC] delete command file {}", cmdFile);
-                    delCmdFile(cmdFile);
+
+                if (!canDeleteSegment(lowestReadOrGuarantee, startOffset, size, lastModified, idx, totalSegments)) {
+                    break; // must delete a contiguous prefix
                 }
+                toDelete.add(startOffset);
+            }
+
+            if (toDelete.isEmpty()) {
+                return;
+            }
+            getLogger().info("[gc][delete segments] {}", toDelete);
+            try {
+                AsyncFileSystemHelper.await(asyncFileSystem.deleteSegments(asyncSegmentFile, toDelete),
+                        "delete segments " + toDelete);
+            } catch (IOException e) {
+                getLogger().error("[gc][deleteSegments {}]", toDelete, e);
             }
         } finally {
             gcLock.unlock();
         }
     }
 
+    protected boolean canDeleteSegment(long lowestReadOrGuarantee, long startOffset, long size, long lastModified,
+                                       int idx, int totalSegments) {
+        getLogger().debug("[canDeleteSegment] start:{} size:{} idx:{} total:{}", startOffset, size, idx, totalSegments);
+
+        boolean lowestReading = (startOffset + size < lowestReadOrGuarantee);
+        getLogger().debug("[canDeleteSegment][lowestReading]{}, {}+{}<{}", lowestReading, startOffset, size, lowestReadOrGuarantee);
+        if (!lowestReading) {
+            return false;
+        }
+
+        long now = System.currentTimeMillis();
+        long age = now - lastModified;
+        long maxMilliKeepCmd = TimeUnit.SECONDS.toMillis(maxTimeSecondKeeperCmdFileAfterModified.getAsInt());
+
+        getLogger().debug("[canDeleteSegment][age]{} min:{} max:{}", age, minTimeMilliToGcAfterModified, maxMilliKeepCmd);
+        if (age < minTimeMilliToGcAfterModified) {
+            return false;
+        }
+        if (age > maxMilliKeepCmd) {
+            return true;
+        }
+
+        int newerCount = totalSegments - 1 - idx - 1; // exclude writing (last) segment
+        boolean fileKeep = newerCount > fileNumToKeep.getAsInt();
+        getLogger().debug("[canDeleteSegment][fileKeep]{}, newer:{} keep:{}", fileKeep, newerCount, fileNumToKeep.getAsInt());
+        return fileKeep;
+    }
+
+    @Deprecated
     protected boolean canDeleteCmdFile(long lowestReadingOffset, long fileStartOffset, long fileSize, long lastModified) {
         getLogger().debug("[canDeleteCmdFile] start from {}", fileStartOffset);
 
@@ -810,12 +997,17 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     @Override
     public synchronized void switchToXSync(GtidSet gtidSet) throws IOException {
-        if(buildIndex)return;
-        if(indexStore != null) {
-            indexStore.closeWithDeleteIndexFiles();
+        if (buildIndex) {
+            return;
         }
         flushSlidingWindow();
-        indexStore = createIndexStore();
+        if (indexStore != null) {
+            indexStore.closeWriter();
+        }
+        AsyncFileSystemHelper.await(asyncFileSystem.roll(asyncSegmentFile), "roll on switchToXSync");
+        long newCmdStoreStartOffset = getCurrentSegmentStartOffset();
+        getLogger().info("[switchToXSync] new cmdStoreStartOffset={}", newCmdStoreStartOffset);
+        indexStore = createIndexStore(newCmdStoreStartOffset);
         indexStore.openWriter(cmdWriter);
         buildIndex = true;
     }

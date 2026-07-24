@@ -1,35 +1,35 @@
 package com.ctrip.xpipe.redis.keeper.store.cmd;
 
-import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.netty.filechannel.ReferenceFileChannel;
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.store.CommandFile;
-import com.ctrip.xpipe.redis.core.store.CommandReader;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
-import com.ctrip.xpipe.utils.DefaultControllableFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
+import com.ctrip.xpipe.redis.keeper.store.AsyncCommandStore;
 import com.ctrip.xpipe.utils.OffsetNotifier;
-import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collections;
 
 /**
  * @author lishanglin
  * date 2022/4/17
  */
-public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<ReferenceFileRegion> implements CommandReader<ReferenceFileRegion> {
-
-    private CommandFile curCmdFile;
+public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<ReferenceFileRegion> {
 
     private long curPosition;
 
     private long endPositionExcluded;
 
-    private ReferenceFileChannel referenceFileChannel;
-
     private CommandStore commandStore;
+
+    private AsyncCommandStore asyncCommandStore;
+
+    private final AsyncSegmentFile readAsyncSegmentFile;
 
     private OffsetNotifier offsetNotifier;
 
@@ -37,17 +37,30 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     private static final Logger logger = LoggerFactory.getLogger(OffsetCommandReader.class);
 
-    public OffsetCommandReader(CommandFile commandFile, long globalPosition, long endPositionExcluded, long filePosition, CommandStore commandStore,
+    public OffsetCommandReader(long globalPosition, long endPositionExcluded, CommandStore commandStore,
                                OffsetNotifier offsetNotifier, ReplDelayConfig replDelayConfig, long flyingThreshold)
             throws IOException {
         super(commandStore, flyingThreshold);
         this.commandStore = commandStore;
         this.offsetNotifier = offsetNotifier;
-        this.curCmdFile = commandFile;
+        this.asyncCommandStore = (AsyncCommandStore) commandStore;
         this.replDelayConfig = replDelayConfig;
         this.curPosition = globalPosition;
         this.endPositionExcluded = endPositionExcluded;
-        referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(curCmdFile.getFile()), filePosition);
+        this.readAsyncSegmentFile = openReadAsyncSegmentFile();
+    }
+
+    private AsyncSegmentFile openReadAsyncSegmentFile() throws IOException {
+        AsyncFileSystem asyncFileSystem = asyncCommandStore.getAsyncFileSystem();
+        AsyncSegmentFile file = AsyncFileSystemHelper.await(
+                asyncFileSystem.open(
+                        asyncCommandStore.getCommandBaseDir().getAbsolutePath(),
+                        asyncCommandStore.getCommandFileNamePrefix(),
+                        asyncCommandStore.getCommandIndexPrefixes(),
+                        false,
+                        asyncCommandStore.getFileSystemReplId().toString()),
+                "open command segment for read");
+        return file;
     }
 
     @Override
@@ -55,22 +68,27 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
         try {
             if (milliSeconds < 0) offsetNotifier.await(curPosition);
             else offsetNotifier.await(curPosition, milliSeconds);
-            readNextFileIfNecessary();
         } catch (InterruptedException e) {
             logger.info("[read]", e);
             Thread.currentThread().interrupt();
             return null;
         }
 
-        if (!referenceFileChannel.hasAnythingToRead()) return null;
+        commandStore.makeSureOpen();
+
+        long readableBytes = commandStore.totalLength() - curPosition;
+        if (readableBytes <= 0) return null;
+
         long limitBytes = replDelayConfig.getPsyncLimitPerSecond();
         if (endPositionExcluded > 0) {
             if (endPositionExcluded == curPosition) return ReferenceFileRegion.EOF;
             long bytesToEnd = endPositionExcluded - curPosition;
             if (limitBytes < 0 || bytesToEnd < limitBytes) limitBytes = bytesToEnd;
         }
+        if (limitBytes < 0 || readableBytes < limitBytes) limitBytes = readableBytes;
 
-        ReferenceFileRegion referenceFileRegion = referenceFileChannel.read(limitBytes);
+        ReferenceFileRegion referenceFileRegion = new AsyncReferenceFileRegion(asyncCommandStore.getAsyncFileSystem(),
+                readAsyncSegmentFile, curPosition, limitBytes);
 
         curPosition += referenceFileRegion.count();
 
@@ -83,41 +101,21 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
         return referenceFileRegion;
     }
 
-    private void readNextFileIfNecessary() throws IOException {
-        commandStore.makeSureOpen();
-
-        if (!referenceFileChannel.hasAnythingToRead()) {
-            // TODO notify when next file ready
-            CommandFile nextCommandFile = commandStore.findNextFile(curCmdFile.getFile());
-            if (nextCommandFile != null) {
-                if (referenceFileChannel.hasAnythingToRead()) {
-                    logger.error("[readNextFileIfNecessary][miss current tail]{}", referenceFileChannel);
-                    EventMonitor.DEFAULT.logEvent("REPL_WRONG","MISS_TAIL");
-                    return;
-                }
-                curCmdFile = nextCommandFile;
-                referenceFileChannel.close();
-                referenceFileChannel = new ReferenceFileChannel(new DefaultControllableFile(curCmdFile.getFile()));
-            } else {
-                logger.debug("[readNextFileIfNecessary][next file not ready] {}", curCmdFile.getFile());
-            }
+    @Override
+    public CommandFile getCurCmdFile() {
+        try {
+            return commandStore.findFileForOffset(curPosition);
+        } catch (IOException e) {
+            throw new IllegalStateException("failed to find command file for offset " + curPosition, e);
         }
     }
 
     @Override
-    public long position() throws IOException {
-        return referenceFileChannel.position();
-    }
-
-    @Override
-    public CommandFile getCurCmdFile() {
-        return curCmdFile;
-    }
-
-    @Override
     public void close() throws IOException {
+        AsyncFileSystemHelper.await(
+                asyncCommandStore.getAsyncFileSystem().close(readAsyncSegmentFile),
+                "close read command segment");
         commandStore.removeReader(this);
-        referenceFileChannel.close();
     }
 
     @Override
@@ -127,12 +125,8 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     @Override
     public String toString() {
-        return "curFile:" + curCmdFile.getFile();
-    }
-
-    @VisibleForTesting
-    protected void setFileChannel(ReferenceFileChannel fileChannel) {
-        this.referenceFileChannel = fileChannel;
+        CommandFile curCmdFile = getCurCmdFile();
+        return "curFile:" + (curCmdFile == null ? "null" : curCmdFile.getFile());
     }
 
 }

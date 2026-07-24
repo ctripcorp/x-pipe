@@ -95,9 +95,20 @@
                                 allow_single_deselect=true
                                 ng-options="orgName for orgName in organizationNames"
                                 style="width:330px;"
-                                ng-required="true"
                         >
                             <option value=""></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" ng-if="operateType == 'update'">
+                    <label class="col-sm-4 control-label no-padding-right">逻辑 BU</label>
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="selectedLogicalBuId"
+                                style="width:330px;"
+                                ng-options="bu.id as bu.name for bu in logicalBusWithUnbound"
+                        >
                         </select>
                     </div>
                 </div>
@@ -182,7 +193,15 @@
                     <label class="col-sm-4 control-label no-padding-right">部门信息</label>
 
                     <div class="col-sm-7">
-                        <label ng-bind="cluster.organizationInfo.orgName"></label>
+                        <label ng-bind="cluster.organizationInfo.orgName || '未选择'"></label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right">逻辑 BU</label>
+
+                    <div class="col-sm-7">
+                        <label ng-bind="logicalBuDisplayName"></label>
                     </div>
                 </div>
 

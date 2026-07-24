@@ -2,9 +2,9 @@ angular
     .module('index')
     .controller('KeepercontainerFormCtl', KeepercontainerFormCtl);
 
-KeepercontainerFormCtl.$inject = ['$scope', '$stateParams', '$window', 'toastr', 'AppUtil', 'KeeperContainerService', 'DcService', 'AzService', 'NgTableParams'];
+KeepercontainerFormCtl.$inject = ['$scope', '$stateParams', '$window', 'toastr', 'AppUtil', 'KeeperContainerService', 'DcService', 'AzService', 'LogicalBuService', 'NgTableParams'];
 
-function KeepercontainerFormCtl($scope, $stateParams, $window, toastr, AppUtil, KeeperContainerService, DcService, AzService, NgTableParams) {
+function KeepercontainerFormCtl($scope, $stateParams, $window, toastr, AppUtil, KeeperContainerService, DcService, AzService, LogicalBuService, NgTableParams) {
 
     $scope.routes = {};
     $scope.tableParams = new NgTableParams({}, {});
@@ -24,6 +24,8 @@ function KeepercontainerFormCtl($scope, $stateParams, $window, toastr, AppUtil, 
     $scope.organizations = [];
     $scope.dcAzs = [];
     $scope.keepercontainer=[];
+    $scope.logicalBus = [];
+    $scope.logicalBusWithNone = [{id: 0, name: '未绑定'}];
 
     $scope.doAddKeepercontainer = doAddKeepercontainer;
 
@@ -59,7 +61,13 @@ function KeepercontainerFormCtl($scope, $stateParams, $window, toastr, AppUtil, 
         KeeperContainerService.getAllDiskTypes()
             .then(function(result) {
                 $scope.diskTypes = result;
-            })
+            });
+
+        LogicalBuService.findAll()
+            .then(function(result) {
+                $scope.logicalBus = result || [];
+                $scope.logicalBusWithNone = [{id: 0, name: '未绑定'}].concat($scope.logicalBus);
+            });
 
         if($scope.operateType != OPERATE_TYPE.CREATE) {
             KeeperContainerService.findKeepercontainerById($scope.keepercontainerId)
@@ -69,14 +77,19 @@ function KeepercontainerFormCtl($scope, $stateParams, $window, toastr, AppUtil, 
                 toastr.error(AppUtil.errorMsg(result));
             });
         } else {
-            $scope.keepercontainer = {};
+            $scope.keepercontainer = {logicalBuId: 0};
         }
     }
 
     function doAddKeepercontainer() {
+        var logicalBuId = $scope.keepercontainer.logicalBuId;
+        if (logicalBuId == null || logicalBuId === '') {
+            logicalBuId = 0;
+        }
         if($scope.operateType == OPERATE_TYPE.CREATE) {
             KeeperContainerService.addKeepercontainer($scope.keepercontainer.addr, $scope.keepercontainer.dcName,
-                        $scope.keepercontainer.orgName, $scope.keepercontainer.azName, $scope.keepercontainer.active, $scope.keepercontainer.diskType, $scope.keepercontainer.tag)
+                        $scope.keepercontainer.orgName, $scope.keepercontainer.azName, $scope.keepercontainer.active,
+                        $scope.keepercontainer.diskType, $scope.keepercontainer.tag, logicalBuId)
                 .then(function(result) {
                     if(result.message == 'success' ) {
                         toastr.success("添加成功");
@@ -89,7 +102,8 @@ function KeepercontainerFormCtl($scope, $stateParams, $window, toastr, AppUtil, 
                 });
         } else {
             KeeperContainerService.updateKeepercontainer($scope.keepercontainer.addr, $scope.keepercontainer.dcName,
-                        $scope.keepercontainer.orgName, $scope.keepercontainer.azName, $scope.keepercontainer.active, $scope.keepercontainer.diskType, $scope.keepercontainer.tag)
+                        $scope.keepercontainer.orgName, $scope.keepercontainer.azName, $scope.keepercontainer.active,
+                        $scope.keepercontainer.diskType, $scope.keepercontainer.tag, logicalBuId)
                 .then(function(result) {
                     if(result.message == 'success' ) {
                         toastr.success("修改成功");

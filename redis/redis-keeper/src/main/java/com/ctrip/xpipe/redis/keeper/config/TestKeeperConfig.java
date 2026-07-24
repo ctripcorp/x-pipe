@@ -426,4 +426,24 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getBlockSizeThreshold() {
 		return blockSizeThreshold;
 	}
+
+	@Override
+	public int getAsyncWriteMaxBytes() {
+		return 65536;
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalBytes() {
+		return DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES;
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalMillis() {
+		return DEFAULT_ASYNC_FSYNC_INTERVAL_MILLIS;
+	}
+
+	@Override
+	public int getAsyncIoThreads() {
+		return DEFAULT_ASYNC_IO_THREADS;
+	}
 }

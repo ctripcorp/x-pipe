@@ -60,6 +60,7 @@
                 <td data-title="'集群类型'" filter="{clusterType: 'select'}" filter-data="clusterTypes" ng-bind="getTypeName(cluster.clusterType)"></td>
                 <td ng-if="showDetails" data-title="'描述'" ng-bind="cluster.clusterDescription"></td>
                 <td ng-if="true" data-title="'组织'" filter="{clusterOrgName: 'select'}" filter-data="organizationNames" ng-bind="cluster.clusterOrgName" ></td>
+                <td data-title="'逻辑 BU'" filter="{logicalBuName: 'select'}" filter-data="logicalBuFilterData" ng-bind="cluster.logicalBuName"></td>
                 <td ng-if="showDetails" data-title="'联系人邮箱'" ng-bind="cluster.clusterAdminEmails"></td>
                 <td ng-if="showDetails" data-title="'Tag'" filter="{ tag : 'text' }"  ng-bind="cluster.tag"></td>
                 <td data-title="'操作'">

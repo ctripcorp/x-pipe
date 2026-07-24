@@ -1,7 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
+import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
@@ -28,11 +29,13 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -93,7 +96,8 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
 		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
 		opParser = new GeneralRedisOpParser(redisOpParserManager);
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
+		commandStore = createDefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory,
+				createkeeperMonitor(), opParser, gtidCmdFilter);
 		commandStore.initialize();
 	}
 
@@ -102,7 +106,8 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testLoadIdxFromFile() throws Exception {
 		File baseDir = new File("./src/test/resources/DefaultCommandStoreTest");
 		String prefix = "abcdefg_";
-		commandStore = new DefaultCommandStore(new File(baseDir, prefix), maxFileSize, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
+		commandStore = createDefaultCommandStore(new File(baseDir, prefix), maxFileSize, commandReaderWriterFactory,
+				createkeeperMonitor(), opParser, gtidCmdFilter);
 		commandStore.initialize();
 		List<CommandFileOffsetGtidIndex> idxList = commandStore.getIndexList();
 		logger.info("[testLoadIdxFromFile] idxList {}", idxList);
@@ -118,8 +123,8 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		int gcAfterCreateMilli = 60000;
 		File commandTemplate = new File(getTestFileDir(), getTestName()+"_");
 
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, () -> 3600, gcAfterCreateMilli, () -> dataKeep.get(), DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
-				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig()){
+		commandStore = new DefaultCommandStore(null, getKeeperConfig(), commandTemplate, maxFileSize, () -> false, () -> 3600, gcAfterCreateMilli, () -> dataKeep.get(), DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true, 0L, asyncFileSystem(), () -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId()){
 			@Override
 			public long totalLength() {
 				return initDataKeep * maxFileSize;
@@ -140,9 +145,8 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	@Test
 	public void testNotifyImmediatelyWhenCoalescingDisabled() throws Exception {
 		commandStore.close();
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, () -> 3600, 0, () -> 20,
-				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> false,
-				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
+		commandStore = createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, maxFileSize, () -> false, () -> 3600, 0, () -> 20,
+				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> false, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true);
 		commandStore.initialize();
 		ReflectionTestUtils.setField(commandStore, "buildIndex", false);
 
@@ -250,9 +254,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 				commandStore.addCommandsListener(new OffsetReplicationProgress(0), new CommandsListener() {
 
 					@Override
-					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object referenceFileRegion) {
+					public ChannelFuture onCommand(Object referenceFileRegion) {
 
-						sb.append(readFileChannelInfoMessageAsString((DefaultReferenceFileRegion)referenceFileRegion));
+						sb.append(readReferenceFileRegionAsString((ReferenceFileRegion) referenceFileRegion));
 						semaphore.release();
 						return null;
 					}
@@ -304,7 +308,8 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		try {
 			String testDir = getTestFileDir();
 			File commandTemplate = new File(testDir, getTestName()+"_");
-			commandStore.set(new DefaultCommandStore(commandTemplate, 1, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig()));
+			commandStore.set(createDefaultCommandStore(commandTemplate, 1, commandReaderWriterFactory, createkeeperMonitor(),
+					opParser, gtidCmdFilter));
 			commandStore.get().initialize();
 			final AtomicBoolean appendResult = new AtomicBoolean(false);
 			final SettableFuture<Void> future = SettableFuture.create();
@@ -395,11 +400,12 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 					commandStore.addCommandsListener(new OffsetReplicationProgress(offset), new CommandsListener() {
 
 						@Override
-						public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object referenceFileRegion) {
+						public ChannelFuture onCommand(Object referenceFileRegion) {
 
 							logger.debug("[onCommand]{}", referenceFileRegion);
-							result.append(readFileChannelInfoMessageAsString((DefaultReferenceFileRegion)referenceFileRegion));
-							semaphore.release((int) ((DefaultReferenceFileRegion)referenceFileRegion).count());
+							ReferenceFileRegion region = (ReferenceFileRegion) referenceFileRegion;
+							result.append(readReferenceFileRegionAsString(region));
+							semaphore.release((int) region.count());
 							return null;
 						}
 
@@ -458,13 +464,33 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		Assert.assertTrue(sb.toString().equals(result));
 	}
 
+	@Test
+	public void testAsyncSegmentWriteRollAndRead() throws Exception {
+		commandStore.close();
+		commandStore = createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 5, () -> false, () -> 3600, 0,
+				() -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> false, commandReaderWriterFactory,
+				createkeeperMonitor(), opParser, gtidCmdFilter, false, () -> 2);
+		commandStore.initialize();
+
+		String expected = "abcdefg";
+		commandStore.appendCommands(Unpooled.wrappedBuffer(expected.getBytes(Codec.defaultCharset)));
+
+		Assert.assertEquals(expected.length(), commandStore.totalLength());
+		Assert.assertTrue(new File(commandTemplate.getParentFile(), commandTemplate.getName() + "0").isFile());
+		Assert.assertTrue(new File(commandTemplate.getParentFile(), commandTemplate.getName() + "5").isFile());
+		Assert.assertTrue(new File(commandTemplate.getParentFile(), "idx_" + commandTemplate.getName() + "0").isFile());
+		Assert.assertTrue(new File(commandTemplate.getParentFile(), "idx_" + commandTemplate.getName() + "5").isFile());
+		Assert.assertEquals(expected, readCommandStoreTilNoMessage(commandStore, expected.length()));
+	}
+
 
 	@Test
 	public void testGcOldCmdFile() throws Exception {
 		AtomicInteger maxSecondsKeepCmdFile = new AtomicInteger(60);
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, maxSecondsKeepCmdFile::get, 0,
-				() -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
+		commandStore = createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 100, () -> false, maxSecondsKeepCmdFile::get, 0,
+				() -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory, createkeeperMonitor(),
+				opParser, gtidCmdFilter, true);
 		commandStore.initialize();
 		appendCommandsToStore(10, 100);
 
@@ -506,8 +532,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testGc() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD,() -> true, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
+		commandStore = createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 100, () -> false, () -> 3600, 0,
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory,
+				createkeeperMonitor(), opParser, gtidCmdFilter, true);
 		commandStore.initialize();
 		appendCommandsToStore(3, 100);
 
@@ -523,8 +550,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testRetainCommands() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
+		commandStore = createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 100, () -> false, () -> 3600, 0,
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory,
+				createkeeperMonitor(), opParser, gtidCmdFilter, true);
 		commandStore.initialize();
 		appendCommandsToStore(3, 100);
 
@@ -538,8 +566,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testRetainCommandsButTimeout() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
+		commandStore = createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 100, () -> false, () -> 3600, 0,
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true);
 		commandStore.initialize();
 		appendCommandsToStore(3, 100);
 
@@ -554,8 +583,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testRetainCommandsButListenerClosed() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD,() -> true, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
+		commandStore = createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 100, () -> false, () -> 3600, 0,
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory,
+				createkeeperMonitor(), opParser, gtidCmdFilter, true);
 		commandStore.initialize();
 		appendCommandsToStore(3, 100);
 
@@ -570,8 +600,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testRetainCommandsAndFinish() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD,() -> true, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
+		commandStore = createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 100, () -> false, () -> 3600, 0,
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true);
 		commandStore.initialize();
 		appendCommandsToStore(3, 100);
 
@@ -590,7 +621,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			}
 
 			@Override
-			public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
+			public ChannelFuture onCommand(Object cmd) {
 				return null;
 			}
 
@@ -621,6 +652,46 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		});
 	}
 
+	private String readReferenceFileRegionAsString(ReferenceFileRegion referenceFileRegion) {
+		try {
+			OneByteWritableByteChannel channel = new OneByteWritableByteChannel();
+			referenceFileRegion.transferTo(channel, 0L);
+			return new String(channel.getResult(), Codec.defaultCharset);
+		} catch (IOException e) {
+			throw new IllegalStateException(String.format("[read]%s", referenceFileRegion), e);
+		}
+	}
+
+	private static class OneByteWritableByteChannel implements WritableByteChannel {
+
+		private final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+		private boolean open = true;
+
+		@Override
+		public int write(ByteBuffer src) {
+			if (!src.hasRemaining()) {
+				return 0;
+			}
+			output.write(src.get());
+			return 1;
+		}
+
+		@Override
+		public boolean isOpen() {
+			return open;
+		}
+
+		@Override
+		public void close() {
+			open = false;
+		}
+
+		byte[] getResult() {
+			return output.toByteArray();
+		}
+	}
+
 	@After
 	public void afterDefaultCommandStoreTest() throws IOException {
 		commandStore.close();
@@ -634,7 +705,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
 		opParser = new GeneralRedisOpParser(redisOpParserManager);
 		Mockito.when(gtidCmdFilter.gtidSetContains(anyString(), anyLong())).thenReturn(false);
-		commandStore = new DefaultCommandStore(commandTemplate, 18067200, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
+		commandStore = createDefaultCommandStore(commandTemplate, 18067200, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter);
 		commandStore.initialize();
 
 		String filePath = "src/test/resources/GtidTest/appendonly.aof";
@@ -677,11 +748,10 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		Mockito.when(ckStore.getMasterEventLoop()).thenReturn(nioEventLoopGroup);
 
 		commandTemplate = new File(getTestFileDir(), getTestName()+"_");
-		commandStore = new DefaultCommandStore(ckStore, keeperConfig,
-				commandTemplate, smallMaxFileSize,() -> false, () -> 3600, 0, () -> 20,
-				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,  // 启用滑动窗口
-				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter,true
-		);
+		commandStore = createDefaultCommandStore(ckStore, keeperConfig,
+				commandTemplate, smallMaxFileSize, () -> false, () -> 3600, 0, () -> 20,
+				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true);
 		commandStore.initialize();
 
 		// 用于记录每条命令的 GTID、完整字节内容以及预期的全局起始偏移

@@ -54,7 +54,7 @@ public class GivenDataKeeper extends AbstractKeeperIntegratedSingleDc {
                                                         SyncRateManager syncRateManager) {
 
         return new DefaultRedisKeeperServer(keeperMeta.parent().getDbId(), keeperMeta, keeperConfig, baseDir, leaderElectorManager,
-                keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser()) {
+                keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser(), createTestAsyncFileSystem()) {
             @Override
             public void endWriteRdb() {
                 super.endWriteRdb();

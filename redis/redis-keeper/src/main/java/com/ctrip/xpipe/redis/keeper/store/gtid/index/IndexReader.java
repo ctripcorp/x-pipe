@@ -1,87 +1,171 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.core.store.ReplId;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
+import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+public class IndexReader implements Closeable {
 
-public class IndexReader extends AbstractIndex implements Closeable {
+    private static final Logger log = LoggerFactory.getLogger(IndexReader.class);
 
-    private static final Logger log = LoggerFactory.getLogger(DefaultIndexStore.class);
+    protected final AsyncFileSystem fs;
+    protected final String baseDir;
+    protected final String cmdPrefix;
+    protected long segmentStartOffset;
+    protected final ReplId tenant;
+    protected final AsyncSegmentFile readSeg;
+    protected final List<String> indexPrefixes;
 
     protected List<IndexEntry> indexItemList;
-
     protected GtidSet startGtidSet;
+    protected AsyncFile indexFile;
+    protected AsyncFile blockFile;
+    protected long cmdStoreStartOffset;
 
-    public IndexReader(String baseDir, String indexFile) {
-        super(baseDir, indexFile);
+    public void setCmdStoreStartOffset(long cmdStoreStartOffset) {
+        this.cmdStoreStartOffset = Math.max(0L, cmdStoreStartOffset);
+    }
+
+    public IndexReader(AsyncFileSystem fs, String baseDir, String cmdPrefix, long segmentStartOffset, ReplId tenant)
+            throws IOException {
+        this(fs, baseDir, cmdPrefix, segmentStartOffset, tenant,
+                List.of(AbstractIndex.INDEX + cmdPrefix, AbstractIndex.BLOCK + cmdPrefix));
+    }
+
+    protected IndexReader(AsyncFileSystem fs, String baseDir, String cmdPrefix, long segmentStartOffset,
+                          ReplId tenant, List<String> indexPrefixes) throws IOException {
+        this.fs = fs;
+        this.baseDir = baseDir;
+        this.cmdPrefix = cmdPrefix;
+        this.segmentStartOffset = segmentStartOffset;
+        this.tenant = tenant;
+        this.indexPrefixes = indexPrefixes;
+        this.readSeg = AsyncFileSystemHelper.await(
+                fs.open(baseDir, cmdPrefix, indexPrefixes, false, tenant.toString()),
+                "open read segment for index");
+    }
+
+    protected String getIndexKey() {
+        return AbstractIndex.INDEX + cmdPrefix;
+    }
+
+    protected String getBlockKey() {
+        return AbstractIndex.BLOCK + cmdPrefix;
+    }
+
+    protected int getSegmentLength() {
+        return IndexEntry.SEGMENT_LENGTH;
+    }
+
+    protected GtidSet readStartGtidSet() throws IOException {
+        return GtidSetWrapper.readGtidSet(fs, indexFile);
+    }
+
+    protected long headerEndPosition() throws IOException {
+        ByteBuf lenBuf = AsyncFileSystemHelper.await(fs.read(indexFile, Long.BYTES, 0), "read v1 header length");
+        try {
+            long gtidLength = lenBuf.readLong();
+            return Long.BYTES + gtidLength;
+        } finally {
+            lenBuf.release();
+        }
+    }
+
+    protected IndexEntry decodeEntry(ByteBuffer buffer) {
+        return IndexEntry.fromBuffer(buffer);
+    }
+
+    protected boolean isHeaderComplete() throws IOException {
+        return GtidSetWrapper.isV1HeaderComplete(fs, indexFile);
+    }
+
+    public void init() throws IOException {
+        indexItemList = new ArrayList<>();
+        AsyncFileSystemHelper.await(fs.position(readSeg, segmentStartOffset), "position read segment");
+        var handles = AsyncFileSystemHelper.await(fs.getCurrentIndexFiles(readSeg, indexPrefixes), "get index files");
+        indexFile = handles.get(getIndexKey());
+        blockFile = handles.get(getBlockKey());
+
+        long size = AsyncFileSystemHelper.await(fs.size(indexFile), "size index file");
+        if (size == 0) {
+            log.warn("[IndexReader] file length is 0");
+            startGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
+            return;
+        }
+        if (!isHeaderComplete()) {
+            log.warn("[IndexReader] incomplete index header at segment {}", segmentStartOffset);
+            startGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
+            return;
+        }
+        startGtidSet = readStartGtidSet();
+        long pos = headerEndPosition();
+        while (size - pos >= getSegmentLength()) {
+            ByteBuf buf = AsyncFileSystemHelper.await(fs.read(indexFile, getSegmentLength(), pos), "read index entry");
+            try {
+                IndexEntry item = decodeEntry(buf.nioBuffer());
+                if (item == null) {
+                    break;
+                }
+                indexItemList.add(item);
+            } finally {
+                buf.release();
+            }
+            pos += getSegmentLength();
+        }
     }
 
     public GtidSet getStartGtidSet() {
         return startGtidSet;
     }
 
-
-
-    public void init() throws IOException {
-
-        indexItemList = new ArrayList<>();
-        super.initIndexFile();
-
-        if(indexFile.getFileChannel().size() == 0) {
-            log.warn("[IndexReader], file: {} length is 0", indexFile);
-            startGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
-            return;
-        }
-        // skip gtid set
-        startGtidSet =  GtidSetWrapper.readGtidSet(indexFile.getFileChannel());
-        IndexEntry item = IndexEntry.readFromFile(indexFile.getFileChannel());
-        while (item != null) {
-            indexItemList.add(item);
-            item = IndexEntry.readFromFile(indexFile.getFileChannel());
-        }
+    public String getFileName() {
+        return cmdPrefix + segmentStartOffset;
     }
 
-    // ignore only call by test
+    public long getStartOffset() {
+        return segmentStartOffset;
+    }
+
+    /** Used by IndexReaderTest only. */
     public long seek(String uuid, long gno) throws IOException {
         int index = -1;
-        for(int i = indexItemList.size() - 1; i >= 0; i--) {
+        for (int i = indexItemList.size() - 1; i >= 0; i--) {
             IndexEntry item = indexItemList.get(i);
-            if(!StringUtil.trimEquals(item.getUuid(), uuid)) {
+            if (!StringUtil.trimEquals(item.getUuid(), uuid)) {
                 continue;
             }
-            if(gno >= item.getStartGno() && gno <= item.getEndGno()) {
+            if (gno >= item.getStartGno() && gno <= item.getEndGno()) {
                 index = i;
                 break;
-            };
+            }
         }
-
-        // todo fix -1
         IndexEntry item = indexItemList.get(index);
-        if(gno == item.getStartGno()) {
+        if (gno == item.getStartGno()) {
             return item.getCmdStartOffset();
         }
-
         int arrayIndex = (int) gno - (int) item.getStartGno();
-
-        try (BlockReader blockReader = new BlockReader(item.getBlockStartOffset(), item.getBlockEndOffset(),
-                new File(generateBlockName()))
-        ){
-            return blockReader.seek(arrayIndex) + item.getCmdStartOffset();
-        }
-
+        return BlockReader.seek(fs, blockFile, item.getBlockStartOffset(), item.getBlockEndOffset(), arrayIndex)
+                + item.getCmdStartOffset();
     }
 
     public Pair<Long, GtidSet> seek(GtidSet request) throws IOException {
-
+        if (segmentStartOffset < cmdStoreStartOffset) {
+            return new Pair<>(-1L, new GtidSet(GtidSet.EMPTY_GTIDSET));
+        }
         long offset = -1L;
         GtidSet gtidSet = null;
         boolean changeFileSuccess = true;
@@ -89,78 +173,64 @@ public class IndexReader extends AbstractIndex implements Closeable {
         while (changeFileSuccess) {
             for (int i = indexItemList.size() - 1; i >= 0; i--) {
                 IndexEntry indexEntry = indexItemList.get(i);
-                if(indexEntry.getBlockEndOffset() == -1) {
-                    // 每次查之前需要保存一下，如果遇到没有保存是-1
+                if (indexEntry.getBlockEndOffset() == -1) {
                     continue;
                 }
                 GtidSet.UUIDSet uuidSet = request.getUUIDSet(indexEntry.getUuid());
                 long nexGno = uuidSet != null ? uuidSet.getLastGno() + 1 : GtidSet.GTID_GNO_INITIAL;
 
-                if(nexGno > indexEntry.getEndGno()) {
+                if (nexGno > indexEntry.getEndGno()) {
                     finish = true;
-                    if(gtidSet == null) {
+                    if (gtidSet == null) {
                         gtidSet = calculateGtidSet(i + 1);
-                    }
-                    if(log.isDebugEnabled()) {
-                        log.debug("nexGno {} > indexEntry {}, locate offset {},coninute gtid set {}", nexGno, indexEntry, offset, gtidSet);
                     }
                     break;
                 } else if (nexGno >= indexEntry.getStartGno() && nexGno <= indexEntry.getEndGno()) {
-                    // 读block 获取
-                    try(BlockReader blockReader = new BlockReader(indexEntry.getBlockStartOffset(), indexEntry.getBlockEndOffset(),
-                            new File(generateBlockName()))) {
-                        long index = nexGno - indexEntry.getStartGno();
-                        offset = blockReader.seek((int) index) + indexEntry.getCmdStartOffset() + getStartOffset();
-                        gtidSet = calculateGtidSet(i, nexGno - 1);
-                        if(log.isDebugEnabled()) {
-                            log.debug("nexGno {} >= indexEntry {}, locate offset {},coninute gtid set {}", nexGno, indexEntry, offset, gtidSet);
-                        }
-                        finish = true;
-                        break;
-                    }
-                } else if(nexGno < indexEntry.getStartGno()) {
+                    long index = nexGno - indexEntry.getStartGno();
+                    offset = BlockReader.seek(fs, blockFile, indexEntry.getBlockStartOffset(),
+                            indexEntry.getBlockEndOffset(), (int) index) + indexEntry.getCmdStartOffset() + getStartOffset();
+                    gtidSet = calculateGtidSet(i, nexGno - 1);
+                    finish = true;
+                    break;
+                } else if (nexGno < indexEntry.getStartGno()) {
                     offset = indexEntry.getCmdStartOffset() + getStartOffset();
                     gtidSet = calculateGtidSet(i);
-                    if(log.isDebugEnabled()) {
-                        log.debug("nexGno {} < indexEntry {}, locate offset {},coninute gtid set {}", nexGno, indexEntry, offset, gtidSet);
-                    }
                 }
             }
-            // find in pre index;
-            if(finish) {
+            if (finish) {
                 break;
             }
-            changeFileSuccess = this.changeToPre();
+            if (startGtidSet.isEmpty()) {
+                break;
+            }
+            if (!canChangeToPre()) {
+                break;
+            }
+            changeFileSuccess = changeToPre();
         }
-
-        if(gtidSet == null) {
+        if (gtidSet == null) {
             gtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
         }
         return new Pair<>(offset, gtidSet);
     }
 
-    public Pair<Long, GtidSet> getFirstPoint() throws IOException {
-        if(noIndex()) {
-            return new Pair<>(0L, startGtidSet);
+    private boolean canChangeToPre() throws IOException {
+        if (segmentStartOffset <= cmdStoreStartOffset) {
+            return false;
         }
-        IndexEntry indexEntry = indexItemList.get(0);
-        try(BlockReader blockReader = new BlockReader(indexEntry.getBlockStartOffset(), indexEntry.getBlockEndOffset(),
-                new File(generateBlockName()))) {
-            long index  = 0;
-            return new Pair<>(blockReader.seek((int)index) + indexEntry.getCmdStartOffset(),
-                    calculateGtidSet(0, indexEntry.getStartGno()));
-        }
+        List<Long> offsets = fs.list(readSeg);
+        Long pre = offsets.stream().filter(o -> o < segmentStartOffset).max(Long::compare).orElse(null);
+        return pre != null && pre >= cmdStoreStartOffset;
     }
 
     public boolean noIndex() {
-        return indexItemList.size() == 0;
+        return indexItemList.isEmpty();
     }
 
-    //caculate continue gtid set
     private GtidSet calculateGtidSet(int index, long gno) {
         GtidSet startGtid = new GtidSet(getStartGtidSet().toString());
         GtidSetWrapper gtidSetWrapper = new GtidSetWrapper(startGtid);
-        for(int i = 0; i < index; i++) {
+        for (int i = 0; i < index; i++) {
             IndexEntry indexEntry = indexItemList.get(i);
             gtidSetWrapper.compensate(indexEntry.getUuid(), indexEntry.getStartGno(), indexEntry.getEndGno());
         }
@@ -173,109 +243,139 @@ public class IndexReader extends AbstractIndex implements Closeable {
     private GtidSet calculateGtidSet(int index) {
         GtidSet startGtid = new GtidSet(getStartGtidSet().toString());
         GtidSetWrapper gtidSetWrapper = new GtidSetWrapper(startGtid);
-        for(int i = 0; i < index; i++) {
+        for (int i = 0; i < index; i++) {
             IndexEntry indexEntry = indexItemList.get(i);
             gtidSetWrapper.compensate(indexEntry.getUuid(), indexEntry.getStartGno(), indexEntry.getEndGno());
         }
         return gtidSetWrapper.getGtidSet();
     }
 
-    @Override
-    public void close() throws IOException {
-        super.closeIndexFile();
-    }
-
     public GtidSet getAllGtidSet() {
-        int len = indexItemList.size();
-        return calculateGtidSet(len);
+        return calculateGtidSet(indexItemList.size());
     }
 
-    public static IndexReader getLastIndexReader(String baseDir) {
-        File lastIndexFile = findFloorIndexFileByOffset(baseDir, -1);
-        if(lastIndexFile == null) {
-            return null;
+    public boolean changeToPre() throws IOException {
+        List<Long> offsets = fs.list(readSeg);
+        Long pre = offsets.stream().filter(o -> o < segmentStartOffset).max(Long::compare).orElse(null);
+        if (pre == null) {
+            return false;
         }
-        String fileName = lastIndexFile.getName().replace(INDEX, "");
-        IndexReader indexReader = new IndexReader(baseDir, fileName);
-        return indexReader;
+        segmentStartOffset = pre;
+        init();
+        return true;
     }
 
-    public static IndexReader getFirstIndexReader(String baseDir) {
-        File firstIndexFile = findFirstIndexFileByOffset(baseDir);
-        if(firstIndexFile == null) {
-            return null;
+    public boolean changeToNext() throws IOException {
+        List<Long> offsets = fs.list(readSeg);
+        Long next = offsets.stream().filter(o -> o > segmentStartOffset).min(Long::compare).orElse(null);
+        if (next == null) {
+            return false;
         }
-        String fileName = firstIndexFile.getName().replace(INDEX, "");
-        IndexReader indexReader = new IndexReader(baseDir, fileName);
-        return indexReader;
+        segmentStartOffset = next;
+        init();
+        return true;
     }
 
-    /**
-     * Calculate the cmdStartOffset for a specific GNO within an IndexEntry.
-     */
-    private long calculateOffsetForGno(IndexEntry item, long gno) throws IOException {
-        if(gno == item.getStartGno()) {
-            return item.getCmdStartOffset();
-        }
-        
-        int arrayIndex = (int) (gno - item.getStartGno());
-        try (BlockReader blockReader = new BlockReader(item.getBlockStartOffset(), item.getBlockEndOffset(),
-                new File(generateBlockName()))
-        ){
-            return blockReader.seek(arrayIndex) + item.getCmdStartOffset();
+    public Long findNextSegmentOffset() throws IOException {
+        List<Long> offsets = fs.list(readSeg);
+        return offsets.stream().filter(o -> o > segmentStartOffset).min(Long::compare).orElse(null);
+    }
+
+    public static IndexReader getLastIndexReader(AsyncFileSystem fs, String baseDir, String cmdPrefix, ReplId tenant)
+            throws IOException {
+        return getFloorIndexReader(fs, baseDir, cmdPrefix, tenant, -1, AbstractIndex.INDEX + cmdPrefix);
+    }
+
+    public static IndexReader getFirstIndexReader(AsyncFileSystem fs, String baseDir, String cmdPrefix, ReplId tenant)
+            throws IOException {
+        AsyncSegmentFile tempSeg = openTempReadSeg(fs, baseDir, cmdPrefix, tenant,
+                List.of(AbstractIndex.INDEX + cmdPrefix, AbstractIndex.BLOCK + cmdPrefix));
+        try {
+            List<Long> offsets = fs.list(tempSeg);
+            if (offsets.isEmpty()) {
+                return null;
+            }
+            return new IndexReader(fs, baseDir, cmdPrefix, offsets.get(0), tenant);
+        } finally {
+            AsyncFileSystemHelper.await(fs.close(tempSeg), "close temp read segment");
         }
     }
 
-    /**
-     * Find all matching ranges in [begGno, endGno] for the given uuid in current index file.
-     * Returns a list of pairs, each pair represents a range (startOffset, endOffset) in cmdStartOffset.
-     * endOffset is the start offset of the next command, or null if it's the last command in the file.
-     */
+    protected static IndexReader getFloorIndexReader(AsyncFileSystem fs, String baseDir, String cmdPrefix,
+                                                     ReplId tenant, long currentOffset, String indexPrefix)
+            throws IOException {
+        AsyncSegmentFile tempSeg = openTempReadSeg(fs, baseDir, cmdPrefix, tenant,
+                List.of(indexPrefix, indexPrefix.replace(AbstractIndex.INDEX, AbstractIndex.BLOCK)));
+        try {
+            List<Long> offsets = fs.list(tempSeg);
+            if (offsets.isEmpty()) {
+                return null;
+            }
+            Long target = offsets.stream()
+                    .filter(o -> o < currentOffset || currentOffset < 0)
+                    .max(Long::compare)
+                    .orElse(null);
+            if (target == null) {
+                return null;
+            }
+            if (indexPrefix.startsWith(AbstractIndex.INDEX_V2)) {
+                return new IndexReaderV2(fs, baseDir, cmdPrefix, target, tenant);
+            }
+            return new IndexReader(fs, baseDir, cmdPrefix, target, tenant);
+        } finally {
+            AsyncFileSystemHelper.await(fs.close(tempSeg), "close temp read segment");
+        }
+    }
+
+    protected static AsyncSegmentFile openTempReadSeg(AsyncFileSystem fs, String baseDir, String cmdPrefix,
+                                                      ReplId tenant, List<String> prefixes) throws IOException {
+        return AsyncFileSystemHelper.await(
+                fs.open(baseDir, cmdPrefix, prefixes, false, tenant.toString()),
+                "open temp read segment");
+    }
+
     public List<Pair<Long, Long>> findMatchingRanges(String uuid, long begGno, long endGno) throws IOException {
         List<Pair<Long, Long>> ranges = new ArrayList<>();
-        
-        for(int i = 0; i < indexItemList.size(); i++) {
+        for (int i = 0; i < indexItemList.size(); i++) {
             IndexEntry item = indexItemList.get(i);
-            if(!StringUtil.trimEquals(item.getUuid(), uuid)) {
+            if (!StringUtil.trimEquals(item.getUuid(), uuid)) {
                 continue;
             }
-            
             long entryStartGno = item.getStartGno();
             long entryEndGno = item.getEndGno();
-            
-            // Check if ranges overlap: [begGno, endGno] and [entryStartGno, entryEndGno]
-            if(entryEndGno < begGno || entryStartGno > endGno) {
-                continue; // No overlap
-            }
-            
-            // Skip if entry is not fully written
-            if(item.getBlockEndOffset() == -1) {
+            if (entryEndGno < begGno || entryStartGno > endGno) {
                 continue;
             }
-            
-            // Calculate the actual range within the entry
+            if (item.getBlockEndOffset() == -1) {
+                continue;
+            }
             long rangeStartGno = Math.max(entryStartGno, begGno);
             long rangeEndGno = Math.min(entryEndGno, endGno);
-            
-            // Calculate start offset
             long startOffset = calculateOffsetForGno(item, rangeStartGno);
-            
-            // Calculate end offset (next command's start, or null if last)
             Long endOffset;
-            if(rangeEndGno < item.getEndGno()) {
-                // Not the last gno in this entry, get next gno's start offset
+            if (rangeEndGno < item.getEndGno()) {
                 endOffset = calculateOffsetForGno(item, rangeEndGno + 1);
             } else if (i + 1 < indexItemList.size()) {
-                IndexEntry nextEntry = indexItemList.get(i + 1);
-                endOffset = nextEntry.getCmdStartOffset();
+                endOffset = indexItemList.get(i + 1).getCmdStartOffset();
             } else {
-                // If no next entry found, endOffset remains null (will use file end)
                 endOffset = null;
             }
-            
             ranges.add(new Pair<>(startOffset, endOffset));
         }
-        
         return ranges;
+    }
+
+    private long calculateOffsetForGno(IndexEntry item, long gno) throws IOException {
+        if (gno == item.getStartGno()) {
+            return item.getCmdStartOffset();
+        }
+        int arrayIndex = (int) (gno - item.getStartGno());
+        return BlockReader.seek(fs, blockFile, item.getBlockStartOffset(), item.getBlockEndOffset(), arrayIndex)
+                + item.getCmdStartOffset();
+    }
+
+    @Override
+    public void close() throws IOException {
+        AsyncFileSystemHelper.await(fs.close(readSeg), "close read segment");
     }
 }
