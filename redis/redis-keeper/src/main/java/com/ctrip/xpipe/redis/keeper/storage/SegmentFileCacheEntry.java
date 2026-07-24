@@ -48,7 +48,7 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
 
     // Must be called under synchronized(this).
     // Drop leases for segment starts strictly before newCacheStart.
-    void releaseWriterIndexLeasesThrough(long newCacheStart) {
+    private void releaseWriterIndexLeasesThrough(long newCacheStart) {
         while (!writerIndexLeaseStarts.isEmpty()
                 && writerIndexLeaseStarts.getFirst() < newCacheStart) {
             releaseWriterIndexLease(writerIndexLeaseStarts.removeFirst());
@@ -98,7 +98,7 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
     }
 
     // Must be called under synchronized(this).
-    void resetSegmentCache(long offset, long newWrittenToFsOffset) {
+    private void resetSegmentCache(long offset, long newWrittenToFsOffset) {
         releaseAllChunks();
         cacheStartOffset = offset;
         cacheEndOffset = offset;
@@ -108,7 +108,7 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
 
     // Must be called under synchronized(this).
     // Drop leases for segment starts strictly after truncateOffset (segments deleted by truncate).
-    void releaseWriterIndexLeasesAfter(long truncateOffset) {
+    private void releaseWriterIndexLeasesAfter(long truncateOffset) {
         while (!writerIndexLeaseStarts.isEmpty()
                 && writerIndexLeaseStarts.getLast() > truncateOffset) {
             releaseWriterIndexLease(writerIndexLeaseStarts.removeLast());
@@ -129,7 +129,7 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
     }
 
     // Must be called under synchronized(this).
-    void releaseAllWriterIndexLeases() {
+    private void releaseAllWriterIndexLeases() {
         while (!writerIndexLeaseStarts.isEmpty()) {
             releaseWriterIndexLease(writerIndexLeaseStarts.removeFirst());
         }

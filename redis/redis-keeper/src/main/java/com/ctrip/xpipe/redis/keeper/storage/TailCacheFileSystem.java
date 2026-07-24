@@ -64,9 +64,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private volatile double evictBandWidthRatio;
     private volatile int evictBandCount;
     private volatile double maxEvictRatioPerWrite;
+    private volatile long asyncEvictIdleDeltaMs;
     private final long chunkSize;
     private volatile int preloadChunkThreshold;
-    private volatile long preloadTimeoutMs;
     private volatile long ioWaitTimeoutMs;
     private volatile long writeBatchBytes;
     private volatile int maxWriteChunkThreshold;
@@ -98,9 +98,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         this.evictBandWidthRatio = config.getEvictBandWidthRatio();
         this.evictBandCount = config.getEvictBandCount();
         this.maxEvictRatioPerWrite = config.getMaxEvictRatioPerWrite();
+        this.asyncEvictIdleDeltaMs = config.getAsyncEvictIdleDeltaMs();
         this.chunkSize = config.getChunkSize();
         this.preloadChunkThreshold = config.getPreloadChunkThreshold();
-        this.preloadTimeoutMs = config.getPreloadTimeoutMs();
         this.ioWaitTimeoutMs = config.getIoWaitTimeoutMs();
         this.writeBatchBytes = config.getWriteBatchBytes();
         this.maxWriteChunkThreshold = config.getMaxWriteChunkThreshold();
@@ -221,6 +221,15 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         this.maxEvictRatioPerWrite = maxEvictRatioPerWrite;
     }
 
+    public long getAsyncEvictIdleDeltaMs() {
+        return asyncEvictIdleDeltaMs;
+    }
+
+    public void setAsyncEvictIdleDeltaMs(long asyncEvictIdleDeltaMs) {
+        TailCacheFileSystemConfig.validateAsyncEvictIdleDeltaMs(asyncEvictIdleDeltaMs);
+        this.asyncEvictIdleDeltaMs = asyncEvictIdleDeltaMs;
+    }
+
     public long getGlobalCommittedBytes() {
         return memoryTracker.committedBytes();
     }
@@ -252,15 +261,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     public void setPreloadChunkThreshold(int preloadChunkThreshold) {
         TailCacheFileSystemConfig.validatePreloadChunkThreshold(preloadChunkThreshold);
         this.preloadChunkThreshold = preloadChunkThreshold;
-    }
-
-    public long getPreloadTimeoutMs() {
-        return preloadTimeoutMs;
-    }
-
-    public void setPreloadTimeoutMs(long preloadTimeoutMs) {
-        TailCacheFileSystemConfig.validatePreloadTimeoutMs(preloadTimeoutMs);
-        this.preloadTimeoutMs = preloadTimeoutMs;
     }
 
     public long getIoWaitTimeoutMs() {
@@ -319,30 +319,39 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 fileEvictRatios = Collections.emptyMap();
                 return;
             }
+
+            boolean shouldAsyncEvict = ratio > (lowWatermarkRatio + highWatermarkRatio) / 2;
+            long now = System.nanoTime();
             List<Pair<String, Long>> candidates = new ArrayList<>();
             fileCacheEntries.forEach((key, entry) -> {
                 long bytes = entry.cacheSizeBytes();
-                if (entry.evictable && bytes > 0) candidates.add(Pair.of(key, bytes));
+                if (entry.evictable && bytes > 0 && entry.chunks.size() > minRetainChunks) {
+                    candidates.add(Pair.of(key, bytes));
+                    if (shouldAsyncEvict) {
+                        tryAsyncEvict(key, entry, now);
+                    }
+                }
             });
             segmentCacheEntries.forEach((key, entry) -> {
                 long bytes = entry.cacheSizeBytes();
-                if (bytes > 0) candidates.add(Pair.of(key, bytes));
+                if (bytes > 0 && entry.chunks.size() > minRetainChunks) {
+                    candidates.add(Pair.of(key, bytes));
+                    if (shouldAsyncEvict) {
+                        tryAsyncEvict(key, entry, now);
+                    }
+                }
             });
             candidates.sort(Comparator.comparingLong((Pair<String, Long> p) -> p.getValue()).reversed());
             Map<String, Double> ratios = new HashMap<>();
             long sumBefore = 0;
-            double coverage = evictBandWidthRatio * evictBandCount;
-            int lastBand = -1;
-            double lastRatio = 0;
+            double bandWidthRatio = evictBandWidthRatio;
+            int bandCount = evictBandCount;
+            double[] evictRatios = computeEvictRatios(bandCount);
             for (Pair<String, Long> candidate : candidates) {
                 double startRatio = (double) sumBefore / committed;
-                if (startRatio >= coverage) break;
-                int band = (int) (startRatio / evictBandWidthRatio);
-                if (band != lastBand) {
-                    lastRatio = evictRatioForBand(band);
-                    lastBand = band;
-                }
-                ratios.put(candidate.getKey(), lastRatio);
+                int band = (int) (startRatio / bandWidthRatio);
+                if (band >= bandCount) break;
+                ratios.put(candidate.getKey(), evictRatios[band]);
                 sumBefore += candidate.getValue();
             }
             fileEvictRatios = Collections.unmodifiableMap(ratios);
@@ -353,16 +362,41 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
     }
 
-    private double evictRatioForBand(int band) {
-        double ratio = maxEvictRatioPerWrite;
-        int bands = evictBandCount;
-        double maxRatio = ratio / 2;
-        double minRatio = ratio / 4;
-        if (bands == 1) {
-            return maxRatio;
+    private void tryAsyncEvict(String fileKey, FileCacheEntry entry, long nowNanos) {
+        long lastChunkIndex = (entry.cacheEndOffset - 1) / chunkSize;
+        CacheChunk lastChunk = entry.chunks.get(lastChunkIndex);
+        if (lastChunk == null) return;
+        long lastAppendNanos = lastChunk.lastAppendNanos;
+        if (lastAppendNanos == 0) return; // Not yet written
+        long threshold = nowNanos - TimeUnit.MILLISECONDS.toNanos(expectedMinRetentionMs + asyncEvictIdleDeltaMs);
+        if (lastAppendNanos > threshold) return;
+
+        // Check durableFsOffset > first chunk end
+        long durableFsOffset = entry.writtenToFsOffset - entry.pendingFsyncBytes;
+        long firstChunkEnd = (entry.cacheStartOffset / chunkSize + 1) * chunkSize;
+        if (durableFsOffset <= firstChunkEnd) return;
+
+        synchronized (entry) {
+            if (entry.isInitialized()) {
+                evictTailBeforeAppend(fileKey, entry, 0, nowNanos);
+            }
         }
-        double step = (maxRatio - minRatio) / (bands - 1);
-        return maxRatio - band * step;
+    }
+
+    private double[] computeEvictRatios(int bandCount) {
+        double maxEvictRatio = maxEvictRatioPerWrite;
+        double maxRatio = maxEvictRatio / 2;
+        double minRatio = maxEvictRatio / 4;
+        double[] ratios = new double[bandCount];
+        if (bandCount == 1) {
+            ratios[0] = maxRatio;
+        } else {
+            double step = (maxRatio - minRatio) / (bandCount - 1);
+            for (int i = 0; i < bandCount; i++) {
+                ratios[i] = maxRatio - i * step;
+            }
+        }
+        return ratios;
     }
 
     // ---- lock helpers ----
@@ -406,7 +440,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return;
         }
         FileCacheEntry entry = file.getCacheEntry();
-        if (entry.cacheStartOffset < 0) {
+        if (!entry.isInitialized()) {
             return;
         }
         boolean cacheDirty = file.atomicReplace
@@ -670,10 +704,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private boolean initFileCache(AsyncFile file, boolean first) {
         return initCache(file.cacheEntry, first, () -> {
             if (!useCache(file)) return true;
-            if (file.cacheMode == CacheMode.TAIL_CACHE && file.cacheEntry.cacheStartOffset < 0) {
+            if (file.cacheMode == CacheMode.TAIL_CACHE && !file.cacheEntry.isInitialized()) {
                 return initTailCacheSync(file, () -> delegate.sizeSync(file));
             }
-            if (file.cacheMode == CacheMode.FULL_CACHE && file.cacheEntry.cacheStartOffset < 0) {
+            if (file.cacheMode == CacheMode.FULL_CACHE && !file.cacheEntry.isInitialized()) {
                 return loadFullFileCache(file, 0L);
             }
             return true;
@@ -682,7 +716,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     private boolean initSegmentCache(AsyncSegmentFile file, boolean first) {
         return initCache(file.cacheEntry, first, () -> {
-            if (!useCache(file) || file.cacheEntry.cacheStartOffset >= 0) return true;
+            if (!useCache(file) || file.cacheEntry.isInitialized()) return true;
             return initTailCacheSync(file, () -> segmentExclusiveEndOffset(file));
         });
     }
@@ -694,7 +728,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                     () -> executeWithEioRetry(file, endOffsetSupplier, endOffsetSupplier));
             FileCacheEntry entry = file.cacheEntry;
             synchronized (entry) {
-                if (entry.cacheStartOffset >= 0) {
+                if (entry.isInitialized()) {
                     return true;
                 }
                 entry.cacheStartOffset = endOffset;
@@ -713,8 +747,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             StorageUtil.requireCacheOpen(file);
             return task.get();
         });
-        if (preloadTimeoutMs > 0) {
-            return future.get(preloadTimeoutMs, TimeUnit.MILLISECONDS);
+        if (ioWaitTimeoutMs > 0) {
+            return future.get(ioWaitTimeoutMs, TimeUnit.MILLISECONDS);
         } else {
             return future.get();
         }
@@ -738,6 +772,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 return false;
             }
             if (!memoryTracker.reserve(initialCapacity, maxCacheSizeBytes)) return false;
+            reservedBytes = initialCapacity;
 
             Pair<Boolean, ByteBuf> fullData = awaitIoCachePrep(file, () -> readFullData(file, initialSize));
             boolean aligned = fullData.getKey();
@@ -804,7 +839,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
 
         synchronized (entry) {
-            if (entry.cacheStartOffset >= 0) {
+            if (entry.isInitialized()) {
                 for (ByteBuf chunk : allocated.values()) chunk.release();
                 fileData.release();
                 memoryTracker.release(reservedBytes);
@@ -896,7 +931,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         ByteBuf cached = null;
         if (!preferDirectRead(file, entry, readOffset, readPreferCache)) {
             synchronized (entry) {
-                if (inCacheRange(entry, readOffset)) {
+                if (readOffset >= entry.cacheStartOffset && entry.isInitialized()) {
                     cached = readWithCache(length, readOffset, entry, file.atomicReplace);
                 }
             }
@@ -920,8 +955,19 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
 
     // Must be called under synchronized(entry).
-    private java.util.List<ByteBuf> collectChunkSlices(FileCacheEntry entry, long offset, long end, boolean failOnMissingChunk) {
+    boolean preferDirectRead(AbstractStorageFile file, FileCacheEntry entry, long offset, boolean preferCache) {
+        if (file.cacheMode == CacheMode.NO_CACHE) return true;
+        if (!(entry.isInitialized() && offset >= entry.cacheStartOffset)) return true;
+        if (!preferCache || backingFsMode == BackingFsMode.NO_CACHE) {
+            if (file.atomicReplace) {
+                return entry.cacheGen == entry.writtenGen;
+            }
+            return offset < entry.writtenToFsOffset;
+        }
+        return false;
+    }
 
+    private java.util.List<ByteBuf> collectChunkSlices(FileCacheEntry entry, long offset, long end, boolean failOnMissingChunk) {
         long pos = offset;
         java.util.List<ByteBuf> slices = new java.util.ArrayList<>();
         while (pos < end) {
@@ -985,23 +1031,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             composite.addComponent(true, s);
         }
         return composite;
-    }
-
-    boolean preferDirectRead(AbstractStorageFile file, FileCacheEntry entry, long offset, boolean preferCache) {
-        if (file.cacheMode == CacheMode.NO_CACHE) return true;
-        if (!inCacheRange(entry, offset)) return true;
-        if (!preferCache || backingFsMode == BackingFsMode.NO_CACHE) {
-            if (file.atomicReplace) {
-                return entry.cacheGen == entry.writtenGen;
-            }
-            return offset < entry.writtenToFsOffset;
-        }
-        return false;
-    }
-
-    private boolean inCacheRange(FileCacheEntry entry, long offset) {
-        long cacheStart = entry.cacheStartOffset;
-        return cacheStart >= 0 && offset >= cacheStart;
     }
 
     long transferToByCache(FileCacheEntry entry, long offset, long count,
@@ -1068,7 +1097,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         final boolean useCacheRequested = useCache(file);
         final String id = file.getKey();
         // First cache build (sizeSync/preload/atomic) must see settled FS; skip wait if cache already live.
-        if (useCacheRequested && entry != null && entry.cacheStartOffset < 0) {
+        if (useCacheRequested && entry != null && !entry.isInitialized()) {
             try {
                 if (hasInFlightIo(id)) {
                     awaitInFlightIo(id);
@@ -1102,7 +1131,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             throw e;
         }
 
-        if (!useCacheSnapshot && entry != null && entry.cacheStartOffset >= 0) {
+        if (!useCacheSnapshot && entry != null && entry.isInitialized()) {
             try {
                 flushPendingWriteAndAwait(file, fsWrite, fsFsync, true);
             } catch (RuntimeException e) {
@@ -1192,7 +1221,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     private boolean initFullCacheAndAppend(AsyncFile file, FileCacheEntry entry, ByteBuf data) {
-        if (entry.cacheStartOffset < 0) {
+        if (!entry.isInitialized()) {
             if (!loadFullFileCache(file, data.readableBytes())) {
                 return false;
             }
@@ -1228,20 +1257,21 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
         }
         synchronized (entry) {
-            appendToChunkedCache(entry, data);
+            entry.appendToChunkedCache(data, 0, chunkSize);
         }
         return true;
     }
 
     private boolean initTailCacheAndAppend(AbstractStorageFile file, FileCacheEntry entry, ByteBuf data,
             java.util.function.Supplier<Long> endOffsetSupplier) {
-        if (entry.cacheStartOffset < 0) {
+        if (!entry.isInitialized()) {
             if (!initTailCacheSync(file, endOffsetSupplier)) {
                 return false;
             }
         }
         final long newFirst;
         final int newChunkCount;
+        final long nowNanos = System.nanoTime();
         synchronized (entry) {
             long startOffset = entry.cacheEndOffset;
             long endOffset = startOffset + data.readableBytes();
@@ -1249,7 +1279,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             long last = (endOffset - 1) / chunkSize;
             newFirst = entry.chunks.containsKey(first) ? first + 1 : first;
             newChunkCount = (int) (last - newFirst + 1);
-            evictTailBeforeAppend(file.getKey(), entry, newChunkCount);
+            if (newChunkCount > 0) {
+                evictTailBeforeAppend(file.getKey(), entry, newChunkCount, nowNanos);
+            }
         }
         long newBytes = newChunkCount * chunkSize;
         if (!memoryTracker.reserve(newBytes, maxCacheSizeBytes)) return false;
@@ -1267,34 +1299,12 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             for (int j = 0; j < newChunkCount; j++) {
                 entry.putChunk(newFirst + j, new CacheChunk(bufs[j]));
             }
-            appendToChunkedCache(entry, data);
+            entry.appendToChunkedCache(data, nowNanos, chunkSize);
         }
         return true;
     }
 
     // Must be called under synchronized(entry).
-    private void appendToChunkedCache(FileCacheEntry entry, ByteBuf data) {
-        long offset = entry.cacheEndOffset;
-        long now = System.nanoTime();
-        while (data.isReadable()) {
-            long chunkIdx = offset / chunkSize;
-            int remaining = (int) (chunkSize - offset % chunkSize);
-            int len = data.readableBytes();
-            boolean chunkFull = len >= remaining;
-            if (chunkFull) len = remaining;
-            CacheChunk cacheChunk = entry.chunks.get(chunkIdx);
-            ByteBuf chunk = cacheChunk.buffer;
-            chunk.writeBytes(data, len);
-            offset += len;
-            if (chunkFull) {
-                cacheChunk.close(now);
-            }
-        }
-        entry.cacheEndOffset = offset;
-    }
-
-
-
     private boolean replaceAtomicCache(AsyncFile file, FileCacheEntry entry, ByteBuf data) {
         int length = data.readableBytes();
         if (length > maxCacheSizePerFileBytes) {
@@ -1302,7 +1312,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return false;
         }
         CacheChunk old = entry.chunks.get(0L);
-        long oldBytes = old == null ? 0 : old.capacity();
+        long oldBytes = old == null ? 0 : old.buffer.capacity();
         final long delta = length - oldBytes;
         if (delta > 0) {
             if (!memoryTracker.reserve(delta, maxCacheSizeBytes)) return false;
@@ -1321,14 +1331,14 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return true;
     }
 
-    private void evictTailBeforeAppend(String fileKey, FileCacheEntry entry, int newChunks) {
+    private void evictTailBeforeAppend(String fileKey, FileCacheEntry entry, int newChunks, long nowNanos) {
         int existingChunks = entry.chunks.size();
         int maxEvictable = Math.max(0, existingChunks - minRetainChunks);
         if (maxEvictable <= 0) return;
         Pair<Integer, Long> decision = decideEvictionPolicy(fileKey, maxEvictable, newChunks);
         long minEvict = decision.getKey();
         long durableFsOffset = Math.max(0, entry.writtenToFsOffset - entry.pendingFsyncBytes);
-        long expireBeforeNanos = System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(decision.getValue());
+        long expireBeforeNanos = nowNanos - TimeUnit.MILLISECONDS.toNanos(decision.getValue());
         int evicted = 0;
         long index = entry.cacheStartOffset / chunkSize;
         long chunkEnd = (index + 1) * chunkSize;
@@ -1336,7 +1346,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         while (evicted < maxEvictable) {
             CacheChunk chunk = entry.chunks.get(index);
             if (chunkEnd > durableFsOffset) { durableLimit = true; break; }
-            if (chunk.closeNanos > expireBeforeNanos) break;
+            if (chunk.lastAppendNanos > expireBeforeNanos) break;
             evicted++;
             index++;
             chunkEnd += chunkSize;
@@ -1381,20 +1391,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return Pair.of(Math.min(maxEvictable, minEvict + newChunks), retentionMs);
     }
 
-    // Must be called only when there is no in-flight IO for this file.
-    private ByteBuf buildWriteBufAfterInFlight(FileCacheEntry entry) {
-        long pending = Math.max(0, entry.cacheEndOffset - entry.writtenToFsOffset);
-        if (pending < writeBatchBytes) {
-            return Unpooled.buffer(0);
-        }
-        return buildWriteBufFromCache(entry, maxWriteChunkThreshold * chunkSize);
-    }
-
     // Empty buf with ioGen == 0: nothing to flush.
     // ioGen == 0 with data: no cache write.
     // ioGen > 0 with data: after FS write, update writtenGen to ioGen.
     private Pair<Long, ByteBuf> getPendingAtomicWriteBufAfterInFlight(FileCacheEntry entry) {
-        if (entry.cacheStartOffset < 0) {
+        if (!entry.isInitialized()) {
             return Pair.of(0L, Unpooled.buffer(0));
         }
         if (entry.writtenGen > entry.cacheGen) {
@@ -1412,9 +1413,18 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return Pair.of(0L, Unpooled.buffer(0));
         }
         long ioGen = entry.cacheGen;
-        java.util.List<ByteBuf> slices = collectAtomicChunkSlice(
-                entry, entry.cacheStartOffset, entry.cacheEndOffset, true);
+        java.util.List<ByteBuf> slices = collectCacheSlices(
+                entry, entry.cacheStartOffset, entry.cacheEndOffset, true, true);
         return Pair.of(ioGen, slices.get(0));
+    }
+
+    // Must be called only when there is no in-flight IO for this file.
+    private ByteBuf buildWriteBufAfterInFlight(FileCacheEntry entry) {
+        long pending = Math.max(0, entry.cacheEndOffset - entry.writtenToFsOffset);
+        if (pending < writeBatchBytes) {
+            return Unpooled.buffer(0);
+        }
+        return buildWriteBufFromCache(entry, maxWriteChunkThreshold * chunkSize);
     }
 
     private ByteBuf buildWriteBufFromCache(FileCacheEntry entry, long maxBytes) {
@@ -1434,7 +1444,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return composed;
     }
 
-
     @Override
     public CompletableFuture<Void> delete(String path) {
         return delegate.delete(path);
@@ -1450,7 +1459,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         FileCacheEntry entry = file.getCacheEntry();
         if (entry != null) {
             synchronized (entry) {
-                if (entry.cacheStartOffset >= 0) {
+                if (entry.isInitialized()) {
                     entry.clear();
                 }
             }
@@ -1472,7 +1481,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (file.cacheMode != CacheMode.NO_CACHE) {
             FileCacheEntry entry = file.getCacheEntry();
             synchronized (entry) {
-                if (entry.cacheStartOffset >= 0) {
+                if (entry.isInitialized()) {
                     return CompletableFuture.completedFuture(
                             Math.max(entry.writtenToFsOffset, entry.cacheEndOffset));
                 }
@@ -1504,7 +1513,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         FileCacheEntry entry = file.getCacheEntry();
         if (entry != null) {
             synchronized (entry) {
-                if (entry.cacheStartOffset >= 0 && size < entry.cacheEndOffset) {
+                if (entry.isInitialized() && size < entry.cacheEndOffset) {
                     if (file.atomicReplace) {
                         ByteBuf newChunk = StorageAllocator.ALLOC.directBuffer((int) size);
                         CacheChunk oldChunk = entry.chunks.get(0L);
@@ -1789,7 +1798,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
             long firstOffset = offsets.get(0);
             synchronized (entry) {
-                if (entry.cacheStartOffset >= 0) {
+                if (entry.isInitialized()) {
                     long end = Math.max(entry.writtenToFsOffset, entry.cacheEndOffset);
                     return CompletableFuture.completedFuture(Math.max(0L, end - firstOffset));
                 }
@@ -1819,7 +1828,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
             SegmentFileCacheEntry entry = file.getCacheEntry();
             synchronized (entry) {
-                if (entry.cacheStartOffset >= 0) {
+                if (entry.isInitialized()) {
                     long end = Math.max(entry.writtenToFsOffset, entry.cacheEndOffset);
                     return CompletableFuture.completedFuture(Math.max(0L, end - startOffset));
                 }
@@ -1865,7 +1874,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (file.cacheMode != CacheMode.NO_CACHE) {
             SegmentFileCacheEntry entry = file.getCacheEntry();
             synchronized (entry) {
-                if (entry.cacheStartOffset >= 0) {
+                if (entry.isInitialized()) {
                     long cacheStart = entry.cacheStartOffset;
                     if (cacheStart < newFirstOffset) {
                         entry.dropCacheBefore(newFirstOffset, chunkSize);
@@ -1895,7 +1904,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (file.cacheMode != CacheMode.NO_CACHE) {
             SegmentFileCacheEntry entry = file.getCacheEntry();
             synchronized (entry) {
-                if (entry.cacheStartOffset >= 0) {
+                if (entry.isInitialized()) {
                     entry.clear();
                 }
             }
@@ -1911,7 +1920,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (file.cacheMode != CacheMode.NO_CACHE) {
             SegmentFileCacheEntry entry = file.getCacheEntry();
             synchronized (entry) {
-                if (entry.cacheStartOffset >= 0) {
+                if (entry.isInitialized()) {
                     List<Long> offsets = list(file);
                     if (!offsets.isEmpty()) {
                         entry.truncateTo(offset, chunkSize, offsets.get(0));

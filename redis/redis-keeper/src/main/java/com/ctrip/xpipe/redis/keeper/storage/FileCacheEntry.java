@@ -5,6 +5,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 
 class FileCacheEntry {
     private static final Logger logger = LoggerFactory.getLogger(FileCacheEntry.class);
@@ -61,31 +64,31 @@ class FileCacheEntry {
         }
     }
 
-    int removeChunk(long index) {
+    private int removeChunk(long index) {
         CacheChunk removed = chunks.remove(index);
-        int capacity = removed.capacity();
+        int capacity = removed.buffer.capacity();
         bodySizeBytes -= capacity;
-        removed.release();
+        removed.buffer.release();
         return capacity;
     }
 
     // Returns true if an existing chunk was replaced.
-    boolean replaceChunk(long index, CacheChunk chunk) {
+    private boolean replaceChunk(long index, CacheChunk chunk) {
         CacheChunk old = chunks.put(index, chunk);
         if (old == null) {
-            bodySizeBytes += chunk.capacity();
+            bodySizeBytes += chunk.buffer.capacity();
             return false;
         }
-        bodySizeBytes = bodySizeBytes - old.capacity() + chunk.capacity();
-        old.release();
+        bodySizeBytes = bodySizeBytes - old.buffer.capacity() + chunk.buffer.capacity();
+        old.buffer.release();
         return true;
     }
 
-    void releaseAllChunks() {
+    protected void releaseAllChunks() {
         synchronized (this) {
             memoryTracker.release(bodySizeBytes);
             for (CacheChunk chunk : chunks.values()) {
-                chunk.release();
+                chunk.buffer.release();
             }
             chunks.clear();
             bodySizeBytes = 0;
@@ -111,12 +114,12 @@ class FileCacheEntry {
 
     void setAtomicChunk(CacheChunk chunk, long newWrittenToFsOffset) {
         CacheChunk old = chunks.get(0L);
-        long oldBytes = old == null ? 0 : old.capacity();
-        long delta = chunk.capacity() - oldBytes;
+        long oldBytes = old == null ? 0 : old.buffer.capacity();
+        long delta = chunk.buffer.capacity() - oldBytes;
         replaceChunk(0L, chunk);
         if (delta < 0) memoryTracker.release(-delta);
         cacheStartOffset = 0;
-        cacheEndOffset = chunk.capacity();
+        cacheEndOffset = chunk.buffer.capacity();
         writtenToFsOffset = newWrittenToFsOffset;
         cacheGen++;
     }
@@ -135,8 +138,6 @@ class FileCacheEntry {
             }
             memoryTracker.release(dropCount * chunkSize);
             cacheEndOffset = size;
-            CacheChunk tailChunk = chunks.get((size - 1) / chunkSize);
-            if (tailChunk != null) tailChunk.reopen();
         }
         writtenToFsOffset = Math.min(size, writtenToFsOffset);
     }
@@ -152,8 +153,66 @@ class FileCacheEntry {
         cacheStartOffset = newStartOffset;
     }
 
-    long bodySizeBytes() {
-        return bodySizeBytes;
+    boolean isInitialized() {
+        return cacheStartOffset >= 0;
+    }
+
+    void appendToChunkedCache(ByteBuf data, long nowNanos, long chunkSize) {
+        long offset = cacheEndOffset;
+        while (data.isReadable()) {
+            long chunkIdx = offset / chunkSize;
+            int remaining = (int) (chunkSize - offset % chunkSize);
+            int len = data.readableBytes();
+            boolean chunkFull = len >= remaining;
+            if (chunkFull) len = remaining;
+            CacheChunk cacheChunk = chunks.get(chunkIdx);
+            ByteBuf chunk = cacheChunk.buffer;
+            chunk.writeBytes(data, len);
+            cacheChunk.lastAppendNanos = nowNanos;
+            offset += len;
+        }
+        cacheEndOffset = offset;
+    }
+
+    private java.util.List<ByteBuf> collectChunkSlices(long offset, long end, boolean failOnMissingChunk, long chunkSize) {
+        long pos = offset;
+        java.util.List<ByteBuf> slices = new java.util.ArrayList<>();
+        while (pos < end) {
+            long chunkIdx = pos / chunkSize;
+            int inChunk = (int) (pos % chunkSize);
+            CacheChunk cacheChunk = chunks.get(chunkIdx);
+            if (cacheChunk == null) {
+                if (!failOnMissingChunk) {
+                    break;
+                }
+                for (ByteBuf slice : slices) {
+                    slice.release();
+                }
+                throw new CacheChunksNotContinuousException(
+                        "cache chunks not continuous, missing chunk " + chunkIdx + " for range [" + offset + ", " + end + ")");
+            }
+            int length = (int) Math.min(chunkSize - inChunk, end - pos);
+            slices.add(cacheChunk.buffer.retainedSlice(inChunk, length));
+            pos += length;
+        }
+        return slices;
+    }
+
+    ByteBuf buildWriteBufFromCache(long maxBytes, long chunkSize) {
+        long pendingBytes = Math.max(0, cacheEndOffset - writtenToFsOffset);
+        if (pendingBytes <= 0) {
+            return Unpooled.buffer(0);
+        }
+        boolean overflow = pendingBytes > maxBytes;
+        long collectEnd = overflow
+                ? writtenToFsOffset + Math.min(pendingBytes, maxBytes)
+                : cacheEndOffset;
+        java.util.List<ByteBuf> pending = collectChunkSlices(writtenToFsOffset, collectEnd, true, chunkSize);
+        CompositeByteBuf composed = StorageAllocator.ALLOC.compositeDirectBuffer();
+        for (ByteBuf s : pending) {
+            composed.addComponent(true, s);
+        }
+        return composed;
     }
 
     long cacheSizeBytes() {

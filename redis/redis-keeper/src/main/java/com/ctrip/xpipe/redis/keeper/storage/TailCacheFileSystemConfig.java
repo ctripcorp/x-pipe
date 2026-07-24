@@ -29,12 +29,12 @@ public class TailCacheFileSystemConfig {
     private double evictBandWidthRatio = 0.1;
     private int evictBandCount = 3;
     private double maxEvictRatioPerWrite = 0.2;
+    // Delta time beyond expected retention time for async eviction.
+    private long asyncEvictIdleDeltaMs = 120_000;
     private long chunkSize = 1 * 1024 * 1024;
     // When file size <= preloadChunkThreshold * chunkSize, use aligned reads for zero-copy cache population.
-    // Otherwise read the whole file in one shot and copy into chunks. Default is 8.
-    private int preloadChunkThreshold = 8;
-    // Max wait for FULL_CACHE preload; 0 wait until preload completes.
-    private long preloadTimeoutMs = 1000;
+    // Otherwise read the whole file in one shot and copy into chunks.
+    private int preloadChunkThreshold = 1;
     // Max wait for IO.
     private long ioWaitTimeoutMs = 1000;
     private long writeBatchBytes = 1 * 1024 * 1024;
@@ -88,12 +88,14 @@ public class TailCacheFileSystemConfig {
         }
     }
 
-    public static void validatePreloadChunkThreshold(int preloadChunkThreshold) {
-        if (preloadChunkThreshold <= 0) throw new IllegalArgumentException("preloadChunkThreshold must be positive");
+    public static void validateAsyncEvictIdleDeltaMs(long asyncEvictIdleDeltaMs) {
+        if (asyncEvictIdleDeltaMs < 0) {
+            throw new IllegalArgumentException("asyncEvictIdleDeltaMs must be non-negative");
+        }
     }
 
-    public static void validatePreloadTimeoutMs(long preloadTimeoutMs) {
-        if (preloadTimeoutMs < 0) throw new IllegalArgumentException("preloadTimeoutMs must be non-negative");
+    public static void validatePreloadChunkThreshold(int preloadChunkThreshold) {
+        if (preloadChunkThreshold <= 0) throw new IllegalArgumentException("preloadChunkThreshold must be positive");
     }
 
     public static void validateIoWaitTimeoutMs(long ioWaitTimeoutMs) {
@@ -220,6 +222,16 @@ public class TailCacheFileSystemConfig {
         return this;
     }
 
+    public long getAsyncEvictIdleDeltaMs() {
+        return asyncEvictIdleDeltaMs;
+    }
+
+    public TailCacheFileSystemConfig setAsyncEvictIdleDeltaMs(long asyncEvictIdleDeltaMs) {
+        validateAsyncEvictIdleDeltaMs(asyncEvictIdleDeltaMs);
+        this.asyncEvictIdleDeltaMs = asyncEvictIdleDeltaMs;
+        return this;
+    }
+
     public static void validateMaxEvictRatioPerWrite(double maxEvictRatioPerWrite) {
         if (maxEvictRatioPerWrite <= 0 || maxEvictRatioPerWrite > 1) {
             throw new IllegalArgumentException("maxEvictRatioPerWrite must be in (0, 1]");
@@ -243,16 +255,6 @@ public class TailCacheFileSystemConfig {
     public TailCacheFileSystemConfig setPreloadChunkThreshold(int preloadChunkThreshold) {
         validatePreloadChunkThreshold(preloadChunkThreshold);
         this.preloadChunkThreshold = preloadChunkThreshold;
-        return this;
-    }
-
-    public long getPreloadTimeoutMs() {
-        return preloadTimeoutMs;
-    }
-
-    public TailCacheFileSystemConfig setPreloadTimeoutMs(long preloadTimeoutMs) {
-        validatePreloadTimeoutMs(preloadTimeoutMs);
-        this.preloadTimeoutMs = preloadTimeoutMs;
         return this;
     }
 
