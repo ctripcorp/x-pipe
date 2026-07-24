@@ -1,0 +1,40 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_d88e8753c2442a::t_f20d21c7d1c616 690
+  s_d88e8753c2442a::t_0212fa635a5621 731
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_d88e8753c2442a::t_b1e33412e3e3a3 1473,1484
+  s_d88e8753c2442a::t_b3c5e7abddaba8 1474-1483
+  h_6ceeb547b3b36a 1471-1472
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  s_24bad6bef1b5ad::t_c993ac34033d2e 510-511
+  h_6ceeb547b3b36a 513,519
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.35-trip",
+  "base_commit_sha": "d277ffa2dffac22148142bde57755931a0bdbcd1",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_24bad6bef1b5ad": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4e4ab541-a252-4807-a8b5-eb79279f5c83",
+        "model": "qwen3.7-plus"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_d88e8753c2442a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "33947d7e-fb7a-4ebc-b847-b96eddf9ee72",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}

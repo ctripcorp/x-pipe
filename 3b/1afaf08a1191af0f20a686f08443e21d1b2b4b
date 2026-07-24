@@ -1,0 +1,52 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystemConfig.java
+  h_6ceeb547b3b36a 29,31
+  s_d88e8753c2442a::t_a99de77c55cabc 28,30,79-80,83-85,87,198-199,202-204,208-209,212-213,216-219
+  s_d88e8753c2442a::t_08aa6418f3fc51 223-228,234
+  s_d88e8753c2442a::t_8b31100bb8ebe8 229-233,235
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_d88e8753c2442a::t_b3bebb67f4053f 1367-1368,1375,1378-1379,1381
+  s_d88e8753c2442a::t_3d6c78eb248f67 63-65,76,97,110-111,115,192-193,196,198,202,206,209,211-212,305,309,311,314,334,350,352
+  s_d88e8753c2442a::t_691a894f0d5478 78
+  s_d88e8753c2442a::t_9c4d52cbf3bd83 98-99,197,201,205,210
+  s_d88e8753c2442a::t_51a554e739afc5 340
+  s_d88e8753c2442a::t_191544df7bceda 332
+  s_d88e8753c2442a::t_61fae1b163d811 215-221
+  s_d88e8753c2442a::t_a54e469c702857 66
+  s_d88e8753c2442a::t_5e3e4796746df1 356
+  s_d88e8753c2442a::t_e99cf47a5d6424 362-363,365
+  s_d88e8753c2442a::t_5b2614746d6c8c 335-336,341-345
+  s_d88e8753c2442a::t_6368a64dd5903f 319
+  s_d88e8753c2442a::t_e5388153731d85 100
+  s_d88e8753c2442a::t_4b661e74d5c929 1327
+  s_d88e8753c2442a::t_7927b011ca4206 1328
+  s_d88e8753c2442a::t_ca0ce4af0e6db3 1345
+  s_d88e8753c2442a::t_105932d1dfcd7f 1357-1358,1363-1366
+  s_d88e8753c2442a::t_a8ba73f4dde8d2 1359-1362
+  s_d88e8753c2442a::t_60be60eabe27d1 1371-1372,1376
+  s_d88e8753c2442a::t_0cfc71c342db6d 348
+  s_d88e8753c2442a::t_b14c1a39c34cd5 1370
+  s_d88e8753c2442a::t_79e7f916c716ea 1380
+  s_d88e8753c2442a::t_c03948c7555db0 1369,1373-1374,1377
+  s_d88e8753c2442a::t_18fae95f549153 357-361,364
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.35-trip",
+  "base_commit_sha": "3b1afaf08a1191af0f20a686f08443e21d1b2b4b",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_d88e8753c2442a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "33947d7e-fb7a-4ebc-b847-b96eddf9ee72",
+        "model": "qwen3.7-plus"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
