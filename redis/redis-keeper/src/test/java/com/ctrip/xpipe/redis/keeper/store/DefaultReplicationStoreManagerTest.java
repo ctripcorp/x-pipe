@@ -297,15 +297,20 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		cmdBuf.writeByte(9);
 		newCurrentStore.cmdStore.appendCommands(cmdBuf);
 
+		// Release long-lived meta writer before second manager recovers same store on shared FS.
+		String expectedReplId = metaStore.getReplId();
+		Long expectedBeginOffset = metaStore.beginOffset();
+		DefaultEndPoint expectedMasterAddress = metaStore.getMasterAddress();
+		LifecycleHelper.disposeIfPossible(mgr);
+
 		DefaultReplicationStoreManager mgr2 = (DefaultReplicationStoreManager) createReplicationStoreManager(replId, keeperRunid, baseDir);
 		LifecycleHelper.initializeIfPossible(mgr2);
 
-		assertEquals(metaStore.getReplId(), mgr2.getCurrent().getMetaStore().getReplId());
-		assertEquals(metaStore.beginOffset(), mgr2.getCurrent().getMetaStore().beginOffset());
-		assertEquals(metaStore.getMasterAddress(), mgr2.getCurrent().getMetaStore().getMasterAddress());
-		assertEquals(metaStore.beginOffset(), mgr2.getCurrent().getMetaStore().beginOffset());
+		assertEquals(expectedReplId, mgr2.getCurrent().getMetaStore().getReplId());
+		assertEquals(expectedBeginOffset, mgr2.getCurrent().getMetaStore().beginOffset());
+		assertEquals(expectedMasterAddress, mgr2.getCurrent().getMetaStore().getMasterAddress());
+		assertEquals(expectedBeginOffset, mgr2.getCurrent().getMetaStore().beginOffset());
 
-		LifecycleHelper.disposeIfPossible(mgr);
 		LifecycleHelper.disposeIfPossible(mgr2);
 	}
 

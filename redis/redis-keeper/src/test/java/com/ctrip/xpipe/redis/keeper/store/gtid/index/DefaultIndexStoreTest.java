@@ -246,11 +246,11 @@ public class DefaultIndexStoreTest {
 
     /**
      * Roll the current write segment (same prefix) and notify IndexStore —
-     * mirrors production rotate: closeWriter → roll → doSwitchCmdFile (spec §3.7.7).
+     * mirrors production rotate: flushWriter → roll → doSwitchCmdFile (spec §3.7.7).
      */
     private void switchCmdSegment(String ignoredLegacyName) throws Exception {
         lastRollSegmentStart = testCmdStore.getCurrentSegmentStartOffset() + testCmdStore.currentSegmentSize();
-        defaultIndexStore.closeWriter();
+        defaultIndexStore.flushWriter();
         testCmdStore.roll();
         segmentWritten = 0L;
         defaultIndexStore.doSwitchCmdFile();
@@ -1370,18 +1370,18 @@ public class DefaultIndexStoreTest {
         while (testCmdStore.currentSegmentSize() < 250) {
             store.write(createPingCommand());
         }
-        store.getIndexWriterV2().flushIndexEntry();
+        store.getIndexWriterV2().flush();
         List<long[]> zones = store.getIndexWriterV2().loadAllZones();
         Assert.assertFalse("ZONE entry should exist after mixed flush", zones.isEmpty());
         Assert.assertTrue(store.getIndexGtidSet().contains(uuid, 1));
-        // ZONE end should be after GTID cmd bytes (GTID flushed before ZONE in flushIndexEntryUnlocked)
+        // ZONE end should be after GTID cmd bytes (GTID flushed before ZONE in flushUnlocked)
         Assert.assertTrue(zones.get(0)[0] > 0);
         store.closeWriter();
     }
 
     @Test
     public void testV2FlushIndexEntry_GtidThenZone() throws IOException {
-        // flushIndexEntry 同时 pending GTID + ZONE 时，须先落 GTID entry 再落 ZONE entry
+        // flush 同时 pending GTID + ZONE 时，须先落 GTID entry 再落 ZONE entry
         baseDir = Paths.get(tempDir, "IndexStoreTest-v2FlushIndexEntry").toString();
         cleanDir(baseDir);
 
@@ -1397,7 +1397,7 @@ public class DefaultIndexStoreTest {
         store.write(createPingCommand());
         store.write(createPingCommand());
 
-        writerV2.flushIndexEntry();
+        writerV2.flush();
         List<long[]> zones = writerV2.loadAllZones();
         Assert.assertEquals("ZONE should be flushed", 1, zones.size());
         Assert.assertTrue("GTID should be in index set after flush",

@@ -8,7 +8,13 @@ public interface CommandReader<R> {
 
 	R read(long milliSeconds) throws IOException;
 
-	CommandFile getCurCmdFile();
+	/**
+	 * Start offset of the segment currently being read
+	 * (greatest known segment start {@code <=} reader position).
+	 *
+	 * @return segment start offset, or {@code -1} if unknown / no segment
+	 */
+	long getCurStartOffset();
 
 	void flushed(R cmdContent);
 

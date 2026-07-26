@@ -150,11 +150,14 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 			logger.error("[readCommands][exit]" + listener, th);
 			if (recordWrongStreamConfig.getAsBoolean()) {
 				try {
-					File curFile = cmdReader.getCurCmdFile().getFile();
-					File destFile = new File("/tmp/" + curFile.getName());
-					if (!destFile.exists()) {
-						logger.info("[readCommands][save corrupt file] {}", destFile);
-						Files.copy(curFile, destFile);
+					long curStartOffset = cmdReader.getCurStartOffset();
+					if (curStartOffset >= 0) {
+						File curFile = new File(getCommandBaseDir(), getCommandFileNamePrefix() + curStartOffset);
+						File destFile = new File("/tmp/" + curFile.getName());
+						if (curFile.exists() && !destFile.exists()) {
+							logger.info("[readCommands][save corrupt file] {}", destFile);
+							Files.copy(curFile, destFile);
+						}
 					}
 				} catch (Throwable saveTh) {
 					logger.info("[readCommands][save corrupt file] fail", saveTh);

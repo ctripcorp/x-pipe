@@ -161,8 +161,10 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     /**
      * Rebind writers to the current write segment (already rolled by CmdStore).
-     * Callers must {@link #closeWriter()} before {@code fs.roll} so V1 truncate-then-write
-     * still sees open index channels (spec §3.7.7). {@code close()} below is idempotent.
+     * Callers must {@link #flushWriter()} before {@code fs.roll} so pending index is
+     * persisted on the old segment (V1 truncate-then-write still needs open channels;
+     * spec §3.7.7). Parser state is preserved across rotate — only {@link #closeWriter()}
+     * resets it (protocol switch / store close).
      */
     public synchronized void doSwitchCmdFile() throws IOException {
         GtidSet continueGtidSet = resolveContinueGtidSet();
@@ -308,7 +310,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
             this.indexWriter.saveIndexEntry();
         }
         if (indexWriterV2 != null) {
-            this.indexWriterV2.flushIndexEntry();
+            this.indexWriterV2.flush();
         }
         try (IndexReader indexReader = createIndexReader()) {
             if (indexReader == null) {
@@ -493,7 +495,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         }
         if (indexWriterV2 != null) {
             try {
-                this.indexWriterV2.flushIndexEntry();
+                this.indexWriterV2.flush();
             } catch (IOException e) {
                 logger.error("[locateGtidRange] failed to save index entry", e);
             }
@@ -602,16 +604,21 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     @Override
+    public synchronized void flushWriter() throws IOException {
+        if (this.indexWriter != null) {
+            this.indexWriter.flush();
+        }
+        if (this.indexWriterV2 != null) {
+            this.indexWriterV2.flush();
+        }
+    }
+
+    @Override
     public synchronized void closeWriter() throws IOException {
         if (this.streamCommandReader != null) {
             this.streamCommandReader.resetParser();
         }
-        if (this.indexWriter != null) {
-            this.indexWriter.close();
-        }
-        if (this.indexWriterV2 != null) {
-            this.indexWriterV2.close();
-        }
+        flushWriter();
     }
 
     @Override

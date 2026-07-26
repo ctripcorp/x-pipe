@@ -40,7 +40,13 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	void rotateFileIfNecessary() throws IOException;
 
-	CommandFile findFileForOffset(long offset) throws IOException;
+	/**
+	 * Start offset of the segment that contains {@code offset}
+	 * (greatest known segment start {@code <= offset}).
+	 *
+	 * @return segment start offset, or {@code -1} if no containing segment
+	 */
+	long findStartOffsetForOffset(long offset);
 
 	String simpleDesc();
 

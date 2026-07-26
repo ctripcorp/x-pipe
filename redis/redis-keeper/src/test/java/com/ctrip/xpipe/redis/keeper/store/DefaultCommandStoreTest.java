@@ -11,6 +11,9 @@ import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.google.common.util.concurrent.SettableFuture;
@@ -871,32 +874,40 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		buf.writeBytes("\r\n".getBytes());
 	}
 
-	// 从 CommandStore 中读取指定全局偏移范围的字节
+	// 从 CommandStore 中读取指定全局偏移范围的字节（read-mode AsyncSegmentFile + position）
 	private byte[] readFileRange(CommandStore store, long startOffset, long endOffset) throws IOException {
-		// 先找到包含 startOffset 的文件
-		CommandFile cf = store.findFileForOffset(startOffset);
-		Assert.assertNotNull("No file for offset " + startOffset, cf);
+		AsyncCommandStore asyncStore = (AsyncCommandStore) store;
+		AsyncFileSystem fs = asyncStore.getAsyncFileSystem();
+		int length = (int) (endOffset - startOffset);
 		byte[] data = new byte[0];
+		AsyncSegmentFile readSeg = null;
 		try {
-			File file = cf.getFile();
-			long fileStartOffset = cf.getStartOffset();
-			long localStart = startOffset - fileStartOffset;
-			int length = (int) (endOffset - startOffset);
-
-			data = new byte[length];
-			try (FileInputStream fis = new FileInputStream(file);
-				 FileChannel channel = fis.getChannel()) {
-				channel.position(localStart);
-				ByteBuffer buf = ByteBuffer.allocate(length);
-				int read = channel.read(buf);
-				if (length != read) {
+			readSeg = AsyncFileSystemHelper.await(
+					fs.open(asyncStore.getCommandBaseDir().getAbsolutePath(),
+							asyncStore.getCommandFileNamePrefix(),
+							asyncStore.getCommandIndexPrefixes(),
+							false,
+							asyncStore.getFileSystemReplId().toString()),
+					"open read segment for test");
+			AsyncFileSystemHelper.await(fs.position(readSeg, startOffset),
+					"position read segment to " + startOffset);
+			ByteBuf buf = AsyncFileSystemHelper.await(fs.read(readSeg, length),
+					"read [" + startOffset + "," + endOffset + ")");
+			try {
+				data = new byte[buf.readableBytes()];
+				buf.readBytes(data);
+				if (data.length != length) {
 					failed.addAndGet(1);
 				}
-				buf.flip();
-				buf.get(data);
+			} finally {
+				buf.release();
 			}
-		}catch (Exception e) {
+		} catch (Exception e) {
 			failed.addAndGet(1);
+		} finally {
+			if (readSeg != null) {
+				AsyncFileSystemHelper.await(fs.close(readSeg), "close read segment for test");
+			}
 		}
 		return data;
 	}

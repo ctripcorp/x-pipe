@@ -20,6 +20,18 @@ public interface IndexStore {
     boolean increaseLost(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException;
     Pair<Long, GtidSet> locateTailOfCmd();
     GtidSet getIndexGtidSet();
+
+    /**
+     * Flush pending index/block entries for the current segment before {@code fs.roll}.
+     * Must not reset {@code StreamCommandParser} — incomplete RESP may span the rotate.
+     */
+    void flushWriter() throws IOException;
+
+    /**
+     * Flush writers and reset parser. Use for protocol switch / store close only —
+     * ordinary segment rotate must use {@link #flushWriter()}.
+     */
     void closeWriter() throws IOException;
+
     void resetParserState();
 }

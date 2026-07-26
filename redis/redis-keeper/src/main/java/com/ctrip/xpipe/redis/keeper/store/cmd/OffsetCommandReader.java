@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.cmd;
 
 import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
-import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
@@ -13,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collections;
 
 /**
  * @author lishanglin
@@ -102,12 +100,9 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
     }
 
     @Override
-    public CommandFile getCurCmdFile() {
-        try {
-            return commandStore.findFileForOffset(curPosition);
-        } catch (IOException e) {
-            throw new IllegalStateException("failed to find command file for offset " + curPosition, e);
-        }
+    public long getCurStartOffset() {
+        // TODO: get startOffset from readAsyncSegmentFile
+        return commandStore.findStartOffsetForOffset(curPosition);
     }
 
     @Override
@@ -125,8 +120,7 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     @Override
     public String toString() {
-        CommandFile curCmdFile = getCurCmdFile();
-        return "curFile:" + (curCmdFile == null ? "null" : curCmdFile.getFile());
+        return "curStartOffset:" + getCurStartOffset() + ", curPosition:" + curPosition;
     }
 
 }

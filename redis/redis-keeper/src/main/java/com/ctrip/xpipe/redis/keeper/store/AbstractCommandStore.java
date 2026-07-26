@@ -20,11 +20,9 @@ import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 import io.netty.buffer.ByteBuf;
-import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.slf4j.Logger;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -60,8 +58,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private final int minTimeMilliToGcAfterModified;
 
     private final IntSupplier maxTimeSecondKeeperCmdFileAfterModified;
-
-    private final FilenameFilter cmdFileFilter;
 
     private final ConcurrentMap<CommandReader<?>, Boolean> readers = new ConcurrentHashMap<>();
 
@@ -148,8 +144,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.ckStore = ckStore;
         this.keeperConfig = keeperConfig != null ? keeperConfig
                 : (ckStore != null ? ckStore.getKeeperConfig() : null);
-
-        cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
 
         // T-X1a.2: expand from V1-only (index_/block_) to include V2 (indexv2_/blockv2_).
         // fs.open must register all 4 index prefixes so that segment truncate/delete keeps
@@ -246,18 +240,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         return commandStoreDelay;
     }
 
-    private File[] allCmdFiles() {
-        File []files = baseDir.listFiles(cmdFileFilter);
-        if(files == null){
-            files = new File[0];
-        }
-        return files;
-    }
-
-    private long extractStartOffset(File file) {
-        return Long.parseLong(file.getName().substring(fileNamePrefix.length()));
-    }
-
     @Override
     public void attachRateLimiter(SyncRateLimiter rateLimiter) {
         this.rateLimiterRef.set(rateLimiter);
@@ -337,7 +319,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                 return;
             }
             if (indexStore.needRotate()) {
-                indexStore.closeWriter();
+                indexStore.flushWriter();
                 cmdWriter.doRotate();
                 indexStore.doRotate();
             }
@@ -345,24 +327,23 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     }
 
-    public CommandFile findFileForOffset(long targetStartOffset) {
-        File[] files = baseDir.listFiles(cmdFileFilter);
-        if (files != null) {
-            for (File file : files) {
-                long startOffset = extractStartOffset(file);
-                if (targetStartOffset >= startOffset && (targetStartOffset < startOffset + file.length()
-                        || targetStartOffset < startOffset + maxFileSize)) {
-                    return new CommandFile(file, startOffset);
-                }
-            }
+    @Override
+    public long findStartOffsetForOffset(long offset) {
+        List<Long> segmentOffsets = asyncFileSystem.list(asyncSegmentFile);
+        if (segmentOffsets == null || segmentOffsets.isEmpty()) {
+            return -1L;
         }
-
-        if (files != null) {
-            for (File file : files) {
-                getLogger().info("[findFileForOffset]{}, {}, {}", file.getName(), file.length(), targetStartOffset);
+        long found = -1L;
+        for (Long start : segmentOffsets) {
+            if (start == null) {
+                continue;
             }
+            if (start > offset) {
+                break;
+            }
+            found = start;
         }
-        return null;
+        return found;
     }
 
     @Override
@@ -375,9 +356,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         long lowestReadingOffset = Long.MAX_VALUE;
 
         for (CommandReader<?> reader : readers.keySet()) {
-            File readingFile = reader.getCurCmdFile().getFile();
-            if (readingFile != null) {
-                lowestReadingOffset = Math.min(lowestReadingOffset, extractStartOffset(readingFile));
+            long readingStartOffset = reader.getCurStartOffset();
+            if (readingStartOffset >= 0) {
+                lowestReadingOffset = Math.min(lowestReadingOffset, readingStartOffset);
             }
         }
 
@@ -536,19 +517,13 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     @Override
     public long lowestAvailableOffset() {
-
-        long minCmdOffset = Long.MAX_VALUE; // start from zero
-        File[] files = allCmdFiles();
-
-        if (files == null || files.length == 0) {
-            getLogger().info("[minCmdKeeperOffset][no cmd files][start offset 0]");
-            minCmdOffset = 0L;
-        } else {
-            for (File cmdFile : files) {
-                minCmdOffset = Math.min(extractStartOffset(cmdFile), minCmdOffset);
-            }
+        List<Long> segmentOffsets = asyncFileSystem.list(asyncSegmentFile);
+        if (segmentOffsets == null || segmentOffsets.isEmpty()) {
+            getLogger().info("[lowestAvailableOffset][no cmd segments][start offset 0]");
+            return 0L;
         }
-        return minCmdOffset;
+        // fs.list returns ascending startOffsets (T-FS.15)
+        return segmentOffsets.get(0);
     }
 
     @Override

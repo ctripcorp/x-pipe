@@ -18,7 +18,11 @@ import java.util.Map;
 import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.BLOCK_V2;
 import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX_V2;
 
-public class IndexWriterV2 implements AutoCloseable {
+/**
+ * Pure index write logic — AsyncFile handles are injected by IndexStore and owned by the segment.
+ * No resource close; call {@link #flush()} to persist pending index/block before rotate or switch.
+ */
+public class IndexWriterV2 {
 
     private static final Logger log = LoggerFactory.getLogger(IndexWriterV2.class);
 
@@ -40,7 +44,6 @@ public class IndexWriterV2 implements AutoCloseable {
     private int zoneCmdCount = 0;
     private long cmdBytesSinceLastIndex = 0L;
     private long gtidCmdEndOffset = 0L;
-    private volatile boolean closed;
 
     public IndexWriterV2(GtidSet gtidSet, DefaultIndexStore store) {
         this(gtidSet, store, 8192, 16L * 1024 * 1024, 8192);
@@ -110,18 +113,19 @@ public class IndexWriterV2 implements AutoCloseable {
             cmdBytesSinceLastIndex += totalLen;
             if (zoneCmdCount >= zoneConsecutiveThreshold
                     || cmdBytesSinceLastIndex >= mixedTotalBytesThreshold) {
-                flushIndexEntryUnlocked();
+                flushUnlocked();
             }
         }
     }
 
-    public void flushIndexEntry() throws IOException {
+    /** Persist pending GTID/ZONE index entries; does not close any file handle. */
+    public void flush() throws IOException {
         synchronized (writeLock) {
-            flushIndexEntryUnlocked();
+            flushUnlocked();
         }
     }
 
-    private void flushIndexEntryUnlocked() throws IOException {
+    private void flushUnlocked() throws IOException {
         if (hasPendingGtidEntry()) {
             flushGtidEntryUnlocked();
         }
@@ -170,17 +174,6 @@ public class IndexWriterV2 implements AutoCloseable {
         currentBlock = null;
         currentGtidEntry = null;
         cmdBytesSinceLastIndex = 0L;
-    }
-
-    @Override
-    public void close() throws IOException {
-        if (closed) {
-            return;
-        }
-        closed = true;
-        synchronized (writeLock) {
-            flushIndexEntryUnlocked();
-        }
     }
 
     public GtidSet getGtidSet() {

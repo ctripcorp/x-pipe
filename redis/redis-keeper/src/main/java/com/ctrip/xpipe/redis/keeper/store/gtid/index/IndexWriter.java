@@ -7,13 +7,16 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.store.AsyncCommandStore;
 import io.netty.buffer.ByteBuf;
 
-import java.io.Closeable;
 import java.io.IOException;
 
 import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.BLOCK;
 import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
 
-public class IndexWriter implements Closeable {
+/**
+ * Pure index write logic — AsyncFile handles are injected by IndexStore and owned by the segment.
+ * No resource close; call {@link #flush()} to persist pending index/block before rotate or switch.
+ */
+public class IndexWriter {
 
     private final DefaultIndexStore store;
     private final AsyncCommandStore cmdStore;
@@ -24,7 +27,6 @@ public class IndexWriter implements Closeable {
     private GtidSetWrapper gtidSetWrapper;
     private AsyncFile indexFile;
     private AsyncFile blockFile;
-    private volatile boolean closed;
 
     public IndexWriter(GtidSet gtidSet, DefaultIndexStore store) {
         this.store = store;
@@ -116,7 +118,14 @@ public class IndexWriter implements Closeable {
         currentBlock.append(uuid, gno, commandOffset);
     }
 
-    private void finishBlock() throws IOException {
+    /**
+     * Persist pending index/block and clear in-memory block (block switch / rotate / store close).
+     * Distinct from {@link #saveIndexEntry()} which checkpoints without ending the current block.
+     */
+    public void flush() throws IOException {
+        if (indexEntry == null || currentBlock == null) {
+            return;
+        }
         saveIndexEntry();
         gtidSetWrapper.compensate(indexEntry);
         currentBlock = null;
@@ -130,22 +139,8 @@ public class IndexWriter implements Closeable {
     }
 
     private void changeBlock(String uuid, long gno, int commandOffset) throws IOException {
-        finishBlock();
+        flush();
         createNewBlock(uuid, gno, commandOffset);
-    }
-
-    public void finish() throws IOException {
-        finishBlock();
-    }
-
-    @Override
-    public void close() throws IOException {
-        if (closed) {
-            return;
-        }
-        saveIndexEntry();
-        currentBlock = null;
-        closed = true;
     }
 
     public GtidSet getGtidSet() {
@@ -153,8 +148,9 @@ public class IndexWriter implements Closeable {
         return gtidSetWrapper.getGtidSet();
     }
 
+    /** Checkpoint current index entry to disk without ending the block (reader visibility). */
     public void saveIndexEntry() throws IOException {
-        if (closed || indexEntry == null) {
+        if (indexEntry == null) {
             return;
         }
         indexEntry.saveToDisk(fs, indexFile, currentBlock, blockFile);
