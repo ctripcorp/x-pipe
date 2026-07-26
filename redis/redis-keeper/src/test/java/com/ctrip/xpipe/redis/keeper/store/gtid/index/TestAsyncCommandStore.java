@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
 import com.ctrip.xpipe.redis.keeper.store.AsyncCommandStore;
+import io.netty.buffer.ByteBuf;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,11 +21,12 @@ import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX_
 
 /**
  * Minimal {@link AsyncCommandStore} for index store unit tests.
+ * File layout matches production AsyncSegmentFile: {@code {prefix}{offset}}, {@code indexv2_{prefix}{offset}}.
  */
 public class TestAsyncCommandStore implements AsyncCommandStore {
 
     private final AsyncFileSystem asyncFileSystem;
-    private final AsyncSegmentFile asyncSegmentFile;
+    private AsyncSegmentFile asyncSegmentFile;
     private final File baseDir;
     private final String commandFileNamePrefix;
     private final List<String> commandIndexPrefixes;
@@ -59,6 +61,40 @@ public class TestAsyncCommandStore implements AsyncCommandStore {
     @Override
     public AsyncSegmentFile getAsyncSegmentFile() {
         return asyncSegmentFile;
+    }
+
+    public void replaceSegmentFile(AsyncSegmentFile segmentFile) {
+        this.asyncSegmentFile = segmentFile;
+    }
+
+    public int writeCmd(ByteBuf data) throws IOException {
+        int n = data.readableBytes();
+        if (n == 0) {
+            return 0;
+        }
+        ByteBuf retained = data.retainedSlice();
+        AsyncFileSystemHelper.writeAndAwait(asyncFileSystem, asyncSegmentFile, retained, n, "write test cmd segment");
+        return n;
+    }
+
+    public Map<String, AsyncFile> roll() throws IOException {
+        return AsyncFileSystemHelper.await(asyncFileSystem.roll(asyncSegmentFile), "roll test command segment");
+    }
+
+    public void closeSegment() throws IOException {
+        AsyncFileSystemHelper.await(asyncFileSystem.close(asyncSegmentFile), "close test command segment");
+    }
+
+    public File cmdFile(long segmentStartOffset) {
+        return new File(baseDir, commandFileNamePrefix + segmentStartOffset);
+    }
+
+    public File indexFile(String indexKindPrefix, long segmentStartOffset) {
+        return new File(baseDir, indexKindPrefix + commandFileNamePrefix + segmentStartOffset);
+    }
+
+    public File currentCmdFile() throws IOException {
+        return cmdFile(getCurrentSegmentStartOffset());
     }
 
     @Override
@@ -108,8 +144,9 @@ public class TestAsyncCommandStore implements AsyncCommandStore {
     @Override
     public long currentSegmentSize() throws IOException {
         long start = getCurrentSegmentStartOffset();
-        File cmdFile = new File(baseDir, commandFileNamePrefix + start);
-        return cmdFile.exists() ? cmdFile.length() : 0;
+        return AsyncFileSystemHelper.await(
+                asyncFileSystem.sizeOfSegment(asyncSegmentFile, start),
+                "size test command segment");
     }
 
     @Override

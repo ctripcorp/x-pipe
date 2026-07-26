@@ -337,6 +337,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                 return;
             }
             if (indexStore.needRotate()) {
+                indexStore.closeWriter();
                 cmdWriter.doRotate();
                 indexStore.doRotate();
             }

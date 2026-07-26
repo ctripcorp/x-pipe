@@ -268,7 +268,9 @@ public class IndexEntry {
 
     /** 从 {@link ByteBuffer} 读取 v1 格式条目（Reader 短读路径）。 */
     public static IndexEntry fromBuffer(ByteBuffer buffer) {
-        buffer.flip();
+        if (buffer.remaining() == 0 && buffer.position() > 0) {
+            buffer.flip();
+        }
         if (buffer.remaining() < SEGMENT_LENGTH) {
             return null;
         }

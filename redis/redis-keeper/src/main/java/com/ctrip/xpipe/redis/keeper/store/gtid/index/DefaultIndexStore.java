@@ -159,14 +159,13 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         doSwitchCmdFile();
     }
 
+    /**
+     * Rebind writers to the current write segment (already rolled by CmdStore).
+     * Callers must {@link #closeWriter()} before {@code fs.roll} so V1 truncate-then-write
+     * still sees open index channels (spec §3.7.7). {@code close()} below is idempotent.
+     */
     public synchronized void doSwitchCmdFile() throws IOException {
         GtidSet continueGtidSet = resolveContinueGtidSet();
-        if (indexWriter != null) {
-            indexWriter.close();
-        }
-        if (indexWriterV2 != null) {
-            indexWriterV2.close();
-        }
         openWritersWithHandles(getWriteIndexHandles(keeperConfig.dualWrite()), continueGtidSet);
         this.streamCommandReader.resetOffset();
         logger.info("[switchCmdFile] index_store switch to segment {}", asyncCommandStore.getCurrentSegmentStartOffset());

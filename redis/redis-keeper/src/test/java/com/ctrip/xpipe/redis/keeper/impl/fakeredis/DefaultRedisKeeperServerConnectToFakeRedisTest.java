@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryGapAllowedSync;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import org.junit.Assert;
@@ -45,8 +46,21 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 
 	@Test
 	public void testNewDumpCommandsLost() throws Exception{
-
-		startKeeperServerAndTestReFullSync(1, allCommandsSize);
+		// CommandStore rolls only once before each appendCommands write (not mid-flush),
+		// so one append may grow past maxFileSize. Use longer commands for enough segments,
+		// NumToKeep=0 so GC can drop the oldest completed segment, and disable coalescing
+		// so writes hit disk before the next rotate check → backlogBegin > rdbContiguous
+		// → MISS_CMD_AFTER_RDB → fresh dump.
+		int commandsLen = 4000;
+		fakeRedisServer.setCommandsLength(commandsLen);
+		TestKeeperConfig keeperConfig = (TestKeeperConfig) newTestKeeperConfig(
+				commandFileSize, 0, commandsLen, 1000);
+		keeperConfig.setRdbDumpMinIntervalMilli(0);
+		keeperConfig.setCommandOffsetNotifyCoalescingEnabled(false);
+		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis(keeperConfig);
+		waitConditionUntilTimeOut(
+				() -> redisKeeperServer.getReplicationStore().backlogBeginOffset() > 0, 15000);
+		assertReFullSync(redisKeeperServer);
 	}
 
 	@Test
@@ -56,21 +70,27 @@ public class DefaultRedisKeeperServerConnectToFakeRedisTest extends AbstractFake
 	}
 
 	private void startKeeperServerAndTestReFullSync(int fileToKeep, int maxTransferCommnadsSize) throws Exception {
-
 		RedisKeeperServer redisKeeperServer = startRedisKeeperServerAndConnectToFakeRedis(fileToKeep, maxTransferCommnadsSize, 1000);
-		int keeperPort = redisKeeperServer.getListeningPort();
 		sleep(5000);
+		assertReFullSync(redisKeeperServer);
+	}
+
+	private void assertReFullSync(RedisKeeperServer redisKeeperServer) throws Exception {
+		int keeperPort = redisKeeperServer.getListeningPort();
 		logger.info(remarkableMessage("send psync to redump rdb"));
 
 		int rdbDumpCount1 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
 
 		InMemoryGapAllowedSync gasync = sendInmemoryGAsync("localhost", keeperPort);
-		waitConditionUntilTimeOut(() -> assertSuccess(() -> {
-			Assert.assertEquals(rdbDumpCount1 + 1,
-					((DefaultReplicationStore) redisKeeperServer.getReplicationStore()).getRdbUpdateCount());
-			Assert.assertArrayEquals(fakeRedisServer.getRdbContent(), gasync.getRdb());
-			Assert.assertEquals(fakeRedisServer.currentCommands(), new String(gasync.getCommands()));
-		}));
+		waitConditionUntilTimeOut(() ->
+				((DefaultReplicationStore) redisKeeperServer.getReplicationStore()).getRdbUpdateCount()
+						> rdbDumpCount1, 30000);
+		waitConditionUntilTimeOut(
+				() -> gasync.getCommands().length >= fakeRedisServer.getCommandsLength(), 30000);
+		int rdbDumpCount2 = ((DefaultReplicationStore)redisKeeperServer.getReplicationStore()).getRdbUpdateCount();
+		Assert.assertEquals(rdbDumpCount1 + 1, rdbDumpCount2);
+
+		assertGAsyncResultEquals(gasync);
 	}
 
 

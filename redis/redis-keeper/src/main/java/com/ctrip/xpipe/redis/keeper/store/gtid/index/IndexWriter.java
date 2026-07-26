@@ -143,9 +143,9 @@ public class IndexWriter implements Closeable {
         if (closed) {
             return;
         }
-        closed = true;
         saveIndexEntry();
         currentBlock = null;
+        closed = true;
     }
 
     public GtidSet getGtidSet() {

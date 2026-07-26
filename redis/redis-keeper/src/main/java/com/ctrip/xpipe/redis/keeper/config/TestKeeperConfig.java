@@ -156,9 +156,16 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return commandReaderFlyingThreshold;
 	}
 
+	private boolean commandOffsetNotifyCoalescingEnabled = true;
+
 	@Override
 	public boolean isCommandOffsetNotifyCoalescingEnabled() {
-		return true;
+		return commandOffsetNotifyCoalescingEnabled;
+	}
+
+	public TestKeeperConfig setCommandOffsetNotifyCoalescingEnabled(boolean commandOffsetNotifyCoalescingEnabled) {
+		this.commandOffsetNotifyCoalescingEnabled = commandOffsetNotifyCoalescingEnabled;
+		return this;
 	}
 
 	@Override
