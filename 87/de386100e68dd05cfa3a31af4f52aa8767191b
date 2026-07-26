@@ -1,0 +1,91 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/CommandReader.java
+  s_f956cecff41362::t_a52b43acb8eeb4 11-17
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManagerTest.java
+  s_e3c03ef57fff68::t_7c74dd36027b31 303
+  s_e3c03ef57fff68::t_79830f5d219d12 300-301,304-305,309-312
+  s_e3c03ef57fff68::t_c3dfe73ab6d7e9 302
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriterV2.java
+  s_e4369083a6201f::t_c52ac82708afb6 116,121-122,124,128
+  s_e4369083a6201f::t_e76022a61eaf6a 21-25
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_e4369083a6201f::t_c42ea91ddf93d9 322
+  s_f956cecff41362::t_0c8c55d605a06a 330-334,336-342,344,346,359-361
+  s_f956cecff41362::t_6c0649a5c64c63 520-523,525-526
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/CommandStore.java
+  s_f956cecff41362::t_55c2ac65fe8bc2 43-49
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultCommandStoreTest.java
+  s_f956cecff41362::t_0cf73a7103164e 14-16
+  s_f956cecff41362::t_b8512fa3f53ff2 877,879-881,883,885-899,902-903,905,907-910
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/IndexStore.java
+  s_e4369083a6201f::t_51c02d74f8d4b4 23-33,35
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/OffsetCommandReader.java
+  s_f956cecff41362::t_9d3911a4017c9d 103-105,123
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  s_e4369083a6201f::t_300024acba8448 249,253
+  s_e4369083a6201f::t_a6c8839a419519 1377
+  s_e4369083a6201f::t_2fbbeb978fdf38 1373
+  s_e4369083a6201f::t_a40c17c50e8637 1384
+  s_e4369083a6201f::t_917b0e473eea43 1400
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriter.java
+  s_e4369083a6201f::t_c0071eedc332d3 153
+  s_e4369083a6201f::t_e34f1730332ec7 15-19
+  s_e4369083a6201f::t_4950955d0e4800 121-125,127-128,142,151
+  s_ecf58774172585::t_3ab0326cce9483 126
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  s_e4369083a6201f::t_55eba59f05d55b 311,496
+  s_e4369083a6201f::t_bb9c97b6038206 162-165
+  s_e4369083a6201f::t_f2f3b06726b185 605,611-617,619
+  s_e4369083a6201f::t_209f10051db0c9 607,610
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/meta/TestAbstractMetaStoreTest.java
+  s_a4715a93d03625::t_9334a4b1f8b74e 40,43,47-48,52-58,63,121
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultCommandStore.java
+  s_f956cecff41362::t_048096f62b9ff8 153-160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "87de386100e68dd05cfa3a31af4f52aa8767191b",
+  "prompts": {},
+  "sessions": {
+    "s_a4715a93d03625": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5786d87a-82af-4747-ad56-cb77a5f263fa",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e3c03ef57fff68": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1f6c2ad7-2db8-41e1-af54-4d0744c14142",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e4369083a6201f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3c1d8871-6a46-4cee-994c-7b4539af348a",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_ecf58774172585": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "321a9f09-5d3d-4c9c-8c5b-5f83f682f595",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_f956cecff41362": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4c00cc91-e541-4f5d-8242-d9a60dd5e94f",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
