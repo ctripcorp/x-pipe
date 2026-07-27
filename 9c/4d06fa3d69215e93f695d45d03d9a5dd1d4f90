@@ -1,0 +1,36 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AbstractRedisKeeperTest.java
+  s_9320e6d860791d::t_03ee22f789b450 60-71,74-76,78-88,90
+  s_9320e6d860791d::t_d08749ba8bce49 89
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AsyncRdbReadHandle.java
+  s_31f80a447134d1::t_7b9bbcd15c41bd 1-100
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/AsyncRdbReadHandleTest.java
+  s_31f80a447134d1::t_905f4f553d927f 1-92
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultRdbStore.java
+  s_31f80a447134d1::t_75e89c52ee6f81 331-332,358,404
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AsyncRdbReferenceFileRegion.java
+  s_31f80a447134d1::t_0c755cbca6432b 17-19,24-25,42-45,52-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "9c4d06fa3d69215e93f695d45d03d9a5dd1d4f90",
+  "prompts": {},
+  "sessions": {
+    "s_31f80a447134d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1c121684-3476-4ba4-a575-d213b7b9877e",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_9320e6d860791d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "00c45f59-af0d-4e5a-89eb-6f06a261be28",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
