@@ -147,9 +147,6 @@ public interface AsyncFileSystem {
     default CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length) {
         throw new UnsupportedOperationException();
     }
-    default ByteBuf readSync(AsyncSegmentFile file, long length) {
-        throw new UnsupportedOperationException();
-    }
     // Caller must release() the returned ByteBuf when done.
     default CompletableFuture<ByteBuf> read(AsyncSegmentFile file, long length, long offset) {
         throw new UnsupportedOperationException();

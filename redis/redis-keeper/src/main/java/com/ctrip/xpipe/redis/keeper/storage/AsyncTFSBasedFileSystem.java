@@ -649,24 +649,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
 
     @Override
-    public ByteBuf readSync(AsyncSegmentFile file, long length) {
-        StorageUtil.requireOpen(file);
-        try {
-            SegmentDirState s = entryOrThrow(file).state;
-            if (!ensureSegmentOpenForRead(file, file.position, s)) return Unpooled.buffer(0);
-            long physicalOffset = file.position - file.openedSegmentStartOffset;
-            ByteBuf buf = readFully(file.currentSegmentChannel, length, physicalOffset, 0);
-            long n = buf.readableBytes();
-            file.position += n;
-            maybeSwitchSegment(file, s, n);
-            return buf;
-        } catch (IOException e) {
-            throw StorageUtil.wrapIOException(e);
-        }
-    }
-
-
-    @Override
     public ByteBuf readSync(AsyncSegmentFile file, long length, long offset) {
         StorageUtil.requireOpen(file);
         try {

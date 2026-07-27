@@ -864,12 +864,6 @@ public class TailCacheFileSystemTest {
         }
 
         @Override
-        public ByteBuf readSync(AsyncSegmentFile file, long length) {
-            segReadCount++;
-            return super.readSync(file, length);
-        }
-
-        @Override
         public ByteBuf readSync(AsyncSegmentFile file, long length, long offset) {
             segReadCount++;
             return super.readSync(file, length, offset);

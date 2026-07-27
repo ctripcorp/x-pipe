@@ -497,7 +497,7 @@ public class AsyncTFSBasedFileSystemTest {
         fs.closeSync(segW);
 
         AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null);
-        ByteBuf buf = fs.readSync(segR, 5);
+        ByteBuf buf = fs.readSync(segR, 5, segR.position);
         try {
             byte[] actual = new byte[buf.readableBytes()];
             buf.readBytes(actual);
@@ -521,7 +521,7 @@ public class AsyncTFSBasedFileSystemTest {
 
         // Read across both segments
         AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null);
-        ByteBuf buf1 = fs.readSync(segR, 3);
+        ByteBuf buf1 = fs.readSync(segR, 3, segR.position);
         try {
             byte[] d1 = new byte[3];
             buf1.readBytes(d1);
@@ -530,7 +530,7 @@ public class AsyncTFSBasedFileSystemTest {
             buf1.release();
         }
         // Now reading next 3 bytes should auto-switch to next segment
-        ByteBuf buf2 = fs.readSync(segR, 3);
+        ByteBuf buf2 = fs.readSync(segR, 3, segR.position);
         try {
             byte[] d2 = new byte[3];
             buf2.readBytes(d2);
@@ -728,7 +728,7 @@ public class AsyncTFSBasedFileSystemTest {
 
         AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null);
         fs.positionSync(segR, 4); // position in second segment
-        ByteBuf buf = fs.readSync(segR, 2);
+        ByteBuf buf = fs.readSync(segR, 2, segR.position);
         try {
             byte[] data = new byte[2];
             buf.readBytes(data);
