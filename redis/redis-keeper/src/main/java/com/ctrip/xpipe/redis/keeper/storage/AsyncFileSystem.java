@@ -172,8 +172,8 @@ public interface AsyncFileSystem {
         throw new UnsupportedOperationException();
     }
     List<Long> list(AsyncSegmentFile file);
-    // Returns the start offset of the currently opened segment; if none is open, returns the segment start
-    // at file.position when it equals a segment boundary (e.g. on first open). Returns -1 otherwise.
+    // For writers: returns the start offset of the currently opened (tail) segment.
+    // For readers: returns the segment start offset that contains file.position,
     long getCurrentSegmentStartOffset(AsyncSegmentFile file);
     // Returns index files for the segment at file.position.
     default CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes) {
