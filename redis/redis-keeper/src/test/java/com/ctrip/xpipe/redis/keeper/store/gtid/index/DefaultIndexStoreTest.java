@@ -9,8 +9,8 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
 import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
@@ -145,8 +145,7 @@ public class DefaultIndexStoreTest {
         when(keeperConfig.getIndexMixedTotalBytesThreshold()).thenReturn(16L * 1024 * 1024);
         when(keeperConfig.getBlockSizeThreshold()).thenReturn(BlockEntry.DEFAULT_BLOCK_MAX_SIZE);
 
-        testFs = ContainerResourceManager.createAsyncFileSystem(
-                KeeperConfig.DEFAULT_ASYNC_IO_THREADS, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
+        testFs = AbstractRedisKeeperTest.createTestAsyncFileSystem();
         testCmdStore = createTestCmdStore(CMD_PREFIX);
         bindCommandFileMock();
 

@@ -63,6 +63,13 @@
 		</dependency>
 		<dependency>
 			<groupId>com.ctrip.framework.xpipe.redis</groupId>
+			<artifactId>redis-keeper</artifactId>
+			<type>test-jar</type>
+			<scope>test</scope>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.ctrip.framework.xpipe.redis</groupId>
 			<artifactId>redis-meta</artifactId>
 			<scope>test</scope>
 		</dependency>

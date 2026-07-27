@@ -71,10 +71,19 @@ public class ContainerResourceManager {
 
     public static AsyncFileSystem createAsyncFileSystem(int ioThreads, long fsyncIntervalBytes,
             long fsyncIntervalMillis) {
+        return createAsyncFileSystem(ioThreads, fsyncIntervalBytes, fsyncIntervalMillis,
+                new TailCacheFileSystemConfig());
+    }
+
+    public static AsyncFileSystem createAsyncFileSystem(int ioThreads, long fsyncIntervalBytes,
+            long fsyncIntervalMillis, TailCacheFileSystemConfig cacheConfig) {
+        if (cacheConfig == null) {
+            throw new IllegalArgumentException("cacheConfig must not be null");
+        }
         ExecutorService ioExecutor = Executors.newFixedThreadPool(ioThreads,
                 XpipeThreadFactory.create("keeper-async-io"));
         AsyncTFSBasedFileSystem backing = new AsyncTFSBasedFileSystem(ioExecutor, fsyncIntervalBytes,
                 fsyncIntervalMillis);
-        return new TailCacheFileSystem(backing, new TailCacheFileSystemConfig(), ioExecutor);
+        return new TailCacheFileSystem(backing, cacheConfig, ioExecutor);
     }
 }

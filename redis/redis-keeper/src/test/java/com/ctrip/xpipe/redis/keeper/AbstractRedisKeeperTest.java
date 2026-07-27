@@ -25,6 +25,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager.NoneK
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemConfig;
 import com.ctrip.xpipe.redis.keeper.store.AbstractCommandStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
@@ -58,6 +59,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	}
 
 	// 单测里 AsyncFileSystem 采用 JVM 级共享 + JVM 退出统一 shutdown 的策略。
+	// TailCache 使用 createTestAsyncFileSystem（chunkSize=1KiB）以覆盖多 chunk 路径。
 	//
 	// 背景：生产链路上 FS.shutdown 由 ContainerResourceManager 在所有 keeper server dispose
 	// 完成之后调用；单测里若在 @After 中 shutdown FS，会与「keeper server / RSM 未完全 dispose、
@@ -70,6 +72,25 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	// 的 IO 结果，不会再有 rejected。真正的 keeper server / RSM 泄漏问题独立追踪，与 FS 无关。
 	private static volatile AsyncFileSystem sharedTestAsyncFileSystem;
 
+	/** Smaller than production 1MiB so modest writes exercise multi-chunk TailCache paths. */
+	protected static final long TEST_TAIL_CACHE_CHUNK_SIZE = 1024L;
+
+	public static TailCacheFileSystemConfig testTailCacheConfig() {
+		TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
+		return config.setPerFileCacheLimits(config.getMaxCacheSizePerFileBytes(), config.getMinRetainChunks(),
+				TEST_TAIL_CACHE_CHUNK_SIZE);
+	}
+
+	public static AsyncFileSystem createTestAsyncFileSystem() {
+		return createTestAsyncFileSystem(new TestKeeperConfig());
+	}
+
+	public static AsyncFileSystem createTestAsyncFileSystem(KeeperConfig keeperConfig) {
+		return ContainerResourceManager.createAsyncFileSystem(keeperConfig.getAsyncIoThreads(),
+				keeperConfig.getAsyncFsyncIntervalBytes(), keeperConfig.getAsyncFsyncIntervalMillis(),
+				testTailCacheConfig());
+	}
+
 	protected AsyncFileSystem asyncFileSystem() {
 		AsyncFileSystem fs = sharedTestAsyncFileSystem;
 		if (fs != null) {
@@ -77,8 +98,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		}
 		synchronized (AbstractRedisKeeperTest.class) {
 			if (sharedTestAsyncFileSystem == null) {
-				AsyncFileSystem created = ContainerResourceManager.createAsyncFileSystem(
-						KeeperConfig.DEFAULT_ASYNC_IO_THREADS, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
+				AsyncFileSystem created = createTestAsyncFileSystem();
 				Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 					try {
 						created.shutdown();

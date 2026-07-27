@@ -7,7 +7,6 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
-import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
 import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
@@ -75,8 +74,7 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
     public void saveMetaOpenV2WithAtomicReplace() throws IOException {
         metaStore.close();
         metaStore = null;
-        AsyncFileSystem fileSystem = spy(ContainerResourceManager.createAsyncFileSystem(
-                KeeperConfig.DEFAULT_ASYNC_IO_THREADS, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES));
+        AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
         try {
             DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
             verify(fileSystem, times(1)).open(contains(META_V2_FILE), eq(AbstractStorageFile.OpenMode.READ_WRITE),
@@ -334,8 +332,7 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
     public void testXSyncProtoSaveAndLoad() throws IOException {
         metaStore.close();
         metaStore = null;
-        AsyncFileSystem fileSystem = ContainerResourceManager.createAsyncFileSystem(
-                KeeperConfig.DEFAULT_ASYNC_IO_THREADS, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
+        AsyncFileSystem fileSystem = createTestAsyncFileSystem();
         try {
             MetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
             store.rdbConfirmXsync(replidA, 1, 10000, masterUuidA,

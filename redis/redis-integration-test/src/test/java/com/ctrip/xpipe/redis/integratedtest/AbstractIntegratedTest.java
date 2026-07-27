@@ -15,8 +15,8 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.*;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.*;
-import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
@@ -74,7 +74,7 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 
 	protected AsyncFileSystem createTestAsyncFileSystem() {
 		if (testAsyncFileSystem == null) {
-			testAsyncFileSystem = ContainerResourceManager.createAsyncFileSystem(new TestKeeperConfig());
+			testAsyncFileSystem = AbstractRedisKeeperTest.createTestAsyncFileSystem(new TestKeeperConfig());
 		}
 		return testAsyncFileSystem;
 	}

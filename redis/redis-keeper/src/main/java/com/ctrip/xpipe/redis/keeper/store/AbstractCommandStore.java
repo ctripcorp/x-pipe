@@ -328,25 +328,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
-    public long findStartOffsetForOffset(long offset) {
-        List<Long> segmentOffsets = asyncFileSystem.list(asyncSegmentFile);
-        if (segmentOffsets == null || segmentOffsets.isEmpty()) {
-            return -1L;
-        }
-        long found = -1L;
-        for (Long start : segmentOffsets) {
-            if (start == null) {
-                continue;
-            }
-            if (start > offset) {
-                break;
-            }
-            found = start;
-        }
-        return found;
-    }
-
-    @Override
     public boolean awaitCommandsOffset(long offset, int timeMilli) throws InterruptedException {
         return offsetNotifier.await(offset, timeMilli);
     }
@@ -356,9 +337,10 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         long lowestReadingOffset = Long.MAX_VALUE;
 
         for (CommandReader<?> reader : readers.keySet()) {
-            long readingStartOffset = reader.getCurStartOffset();
-            if (readingStartOffset >= 0) {
-                lowestReadingOffset = Math.min(lowestReadingOffset, readingStartOffset);
+            // Reader owns logical read cursor; transferTo does not advance AsyncSegmentFile.position.
+            long readingOffset = reader.getReadOffset();
+            if (readingOffset >= 0) {
+                lowestReadingOffset = Math.min(lowestReadingOffset, readingOffset);
             }
         }
 

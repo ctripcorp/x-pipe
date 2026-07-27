@@ -67,6 +67,15 @@ public class AsyncReferenceFileRegion implements ReferenceFileRegion {
         return transferred;
     }
 
+    /**
+     * Absolute logical offset already delivered by {@link #transferTo}.
+     * Equals {@code logicalPosition} before any transfer; advances as Netty drains this region.
+     * Used by {@link OffsetCommandReader#getReadOffset()} as the GC lowest-read gate.
+     */
+    public long getCurrentReadOffset() {
+        return logicalPosition + transferred;
+    }
+
     @Override
     public long count() {
         return count;

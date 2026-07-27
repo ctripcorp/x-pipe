@@ -23,8 +23,8 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 	long lowestAvailableOffset();
 	
 	/**
-	 * The lowest offset(start from zero) among all CommandReader.
-	 * Files with lower offsets can be GCed.
+	 * The lowest logical read offset among all CommandReader ({@link CommandReader#getReadOffset()}).
+	 * Files / segments ending before this offset can be GCed.
 	 */
 	long lowestReadingOffset();
 
@@ -39,14 +39,6 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 	void gc();
 
 	void rotateFileIfNecessary() throws IOException;
-
-	/**
-	 * Start offset of the segment that contains {@code offset}
-	 * (greatest known segment start {@code <= offset}).
-	 *
-	 * @return segment start offset, or {@code -1} if no containing segment
-	 */
-	long findStartOffsetForOffset(long offset);
 
 	String simpleDesc();
 

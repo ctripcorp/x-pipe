@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * @author lishanglin
@@ -19,6 +20,10 @@ import java.io.IOException;
  */
 public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<ReferenceFileRegion> {
 
+    /**
+     * Scan cursor: next logical offset to emit as a {@link AsyncReferenceFileRegion}.
+     * Advanced when a region is created, before Netty {@code transferTo} actually reads bytes.
+     */
     private long curPosition;
 
     private long endPositionExcluded;
@@ -32,6 +37,12 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
     private OffsetNotifier offsetNotifier;
 
     private ReplDelayConfig replDelayConfig;
+
+    /**
+     * In-flight regions awaiting Netty flush, in emit order.
+     * GC {@link #getReadOffset()} uses the oldest region's {@link AsyncReferenceFileRegion#getCurrentReadOffset()}.
+     */
+    private final ConcurrentLinkedQueue<AsyncReferenceFileRegion> flyingRegions = new ConcurrentLinkedQueue<>();
 
     private static final Logger logger = LoggerFactory.getLogger(OffsetCommandReader.class);
 
@@ -85,9 +96,10 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
         }
         if (limitBytes < 0 || readableBytes < limitBytes) limitBytes = readableBytes;
 
-        ReferenceFileRegion referenceFileRegion = new AsyncReferenceFileRegion(asyncCommandStore.getAsyncFileSystem(),
-                readAsyncSegmentFile, curPosition, limitBytes);
+        AsyncReferenceFileRegion referenceFileRegion = new AsyncReferenceFileRegion(
+                asyncCommandStore.getAsyncFileSystem(), readAsyncSegmentFile, curPosition, limitBytes);
 
+        flyingRegions.add(referenceFileRegion);
         curPosition += referenceFileRegion.count();
 
         referenceFileRegion.setTotalPos(curPosition);
@@ -100,13 +112,39 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
     }
 
     @Override
+    protected void onFlushed(ReferenceFileRegion cmdContent) {
+        if (cmdContent instanceof AsyncReferenceFileRegion) {
+            flyingRegions.remove(cmdContent);
+        }
+    }
+
+    /**
+     * GC lowest-read gate: offset already delivered by {@code transferTo}, not the scan cursor.
+     * <p>
+     * {@link #curPosition} advances when a region is emitted; actual bytes are read later on the
+     * Netty thread via {@link AsyncReferenceFileRegion#transferTo}. Using curPosition as the gate
+     * would allow GC to delete unread backlog.
+     */
+    @Override
+    public long getReadOffset() {
+        AsyncReferenceFileRegion oldest = flyingRegions.peek();
+        if (oldest != null) {
+            return oldest.getCurrentReadOffset();
+        }
+        return curPosition;
+    }
+
+    @Override
     public long getCurStartOffset() {
-        // TODO: get startOffset from readAsyncSegmentFile
-        return commandStore.findStartOffsetForOffset(curPosition);
+        // transferTo does not update AsyncSegmentFile.position (FS contract, like Linux);
+        // map actual transfer progress to segment start via FS.
+        return asyncCommandStore.getAsyncFileSystem()
+                .getStartOffsetByReadOffset(readAsyncSegmentFile, getReadOffset());
     }
 
     @Override
     public void close() throws IOException {
+        flyingRegions.clear();
         AsyncFileSystemHelper.await(
                 asyncCommandStore.getAsyncFileSystem().close(readAsyncSegmentFile),
                 "close read command segment");
@@ -120,7 +158,7 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     @Override
     public String toString() {
-        return "curStartOffset:" + getCurStartOffset() + ", curPosition:" + curPosition;
+        return "curStartOffset:" + getCurStartOffset() + ", readOffset:" + getReadOffset();
     }
 
 }
