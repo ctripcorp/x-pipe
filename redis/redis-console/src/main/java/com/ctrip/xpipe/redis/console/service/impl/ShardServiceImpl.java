@@ -306,6 +306,9 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		logger.info("[findOrCreateShardIfNotExist] Begin find or create shard: {}", shard);
 		String monitorName = shard.getSetinelMonitorName();
 
+		ClusterTbl clusterTbl = clusterService.find(clusterName);
+		boolean heteroCluster = ClusterType.isSameClusterType(clusterTbl.getClusterType(), ClusterType.HETERO);
+
 		List<ShardTbl> shards = shardDao.queryAllShardsByClusterName(clusterName);
 
 		Set<String> monitorNames = shardDao.queryAllShardMonitorNames();
@@ -321,6 +324,11 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			}
 		}
 
+		if (dcClusterTbls == null && heteroCluster && dupShardTbl == null) {
+			throw new BadRequestException(String.format(
+				"Cluster: %s is hetero, cannot create shard without az group, use createRegionShard", clusterName));
+		}
+
 		ShardTbl shardTbl;
 		if(StringUtil.isEmpty(monitorName)) {
 			shardTbl = generateMonitorNameAndReturnShard(dupShardTbl, monitorNames, clusterName, shard);
@@ -329,14 +337,25 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			shardTbl = compareMonitorNameAndReturnShard(dupShardTbl, monitorNames, clusterName, shard);
 		}
 
-		ClusterTbl clusterTbl = clusterService.find(clusterName);
 		// create dcClusterShard in all dcClusters of cluster if dcClusterTbls is null
         if (dcClusterTbls == null) {
-            dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId()).stream().filter(dcClusterTbl -> {
-                ClusterType azGroupType =
-                    azGroupClusterRepository.selectAzGroupTypeById(dcClusterTbl.getAzGroupClusterId());
-                return azGroupType != ClusterType.SINGLE_DC;
-            }).collect(Collectors.toList());
+			if (heteroCluster) {
+				ShardEntity shardEntity = shardRepository.selectById(shardTbl.getId());
+				Long azGroupClusterId = shardEntity == null ? null : shardEntity.getAzGroupClusterId();
+				if (azGroupClusterId == null || azGroupClusterId <= 0) {
+					throw new BadRequestException(String.format(
+						"Shard: %s in hetero cluster: %s has no az group", shardTbl.getShardName(), clusterName));
+				}
+				// same as createRegionShard: only DCs under this az group
+				dcClusterTbls = dcClusterRepository.selectByAzGroupClusterId(azGroupClusterId).stream()
+					.map(dcCluster -> new DcClusterTbl()
+						.setDcClusterId(dcCluster.getDcClusterId())
+						.setDcId(dcCluster.getDcId())
+						.setAzGroupClusterId(dcCluster.getAzGroupClusterId()))
+					.collect(Collectors.toList());
+			} else {
+				dcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
+			}
         }
 
 		List<DcClusterShardTbl> dcClusterShardTbls = new LinkedList<>();

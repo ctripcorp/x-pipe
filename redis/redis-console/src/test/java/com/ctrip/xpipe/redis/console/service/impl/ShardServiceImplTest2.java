@@ -3,10 +3,17 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
+import com.ctrip.xpipe.redis.console.entity.DcClusterEntity;
+import com.ctrip.xpipe.redis.console.entity.ShardEntity;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.model.DcClusterShardTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
+import com.ctrip.xpipe.redis.console.repository.DcClusterRepository;
+import com.ctrip.xpipe.redis.console.repository.ShardRepository;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -14,14 +21,22 @@ import com.google.common.collect.Sets;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.unidal.dal.jdbc.DalException;
 
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -43,6 +58,18 @@ public class ShardServiceImplTest2 {
     private DcClusterShardService dcClusterShardService;
 
     @Mock
+    private DcClusterService dcClusterService;
+
+    @Mock
+    private ShardRepository shardRepository;
+
+    @Mock
+    private DcClusterRepository dcClusterRepository;
+
+    @Mock
+    private AzGroupClusterRepository azGroupClusterRepository;
+
+    @Mock
     private ConsoleConfig consoleConfig;
 
     @InjectMocks
@@ -51,6 +78,8 @@ public class ShardServiceImplTest2 {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
+        when(clusterService.find(anyString())).thenReturn(
+            new ClusterTbl().setId(1L).setClusterName("cluster-test").setClusterType(ClusterType.ONE_WAY.toString()));
     }
 
     /**==========================================================================
@@ -187,5 +216,140 @@ public class ShardServiceImplTest2 {
 
         shardService.findOrCreateShardIfNotExist(cluster, proto, Lists.newArrayList(new DcClusterTbl()), Maps.newHashMap());
         verify(dcClusterShardService).insertBatch(anyList());
+    }
+
+    @Test
+    public void findOrCreateShardIfNotExist_nullDcClusters_bindOnlySameAzGroup() {
+        String cluster = "test_hetero_probe_beacon";
+        String shardName = "test_hetero_probe_beacon_2_SGP";
+        long shardId = 200237L;
+        long sgpAzGroupId = 2008L;
+
+        ShardTbl existing = new ShardTbl().setId(shardId).setShardName(shardName).setSetinelMonitorName(shardName);
+        ClusterTbl clusterTbl = new ClusterTbl().setId(31364L).setClusterName(cluster)
+            .setClusterType(ClusterType.HETERO.toString());
+
+        when(shardDao.queryAllShardsByClusterName(cluster)).thenReturn(Lists.newArrayList(existing));
+        when(shardDao.queryAllShardMonitorNames()).thenReturn(Sets.newHashSet(shardName));
+        when(clusterService.find(cluster)).thenReturn(clusterTbl);
+        when(shardRepository.selectById(shardId))
+            .thenReturn(new ShardEntity().setId(shardId).setAzGroupClusterId(sgpAzGroupId));
+        when(dcClusterRepository.selectByAzGroupClusterId(sgpAzGroupId)).thenReturn(Lists.newArrayList(
+            new DcClusterEntity().setDcClusterId(52241L).setDcId(3L).setAzGroupClusterId(sgpAzGroupId),
+            new DcClusterEntity().setDcClusterId(52244L).setDcId(4L).setAzGroupClusterId(sgpAzGroupId)
+        ));
+        when(dcClusterShardService.find(anyLong(), eq(shardId))).thenReturn(null);
+        when(consoleConfig.supportSentinelHealthCheck(any(), anyString())).thenReturn(false);
+
+        shardService.findOrCreateShardIfNotExist(cluster, new ShardTbl().setShardName(shardName), null, Maps.newHashMap());
+
+        ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
+        verify(dcClusterShardService).insertBatch(captor.capture());
+        List<DcClusterShardTbl> inserted = (List<DcClusterShardTbl>) captor.getValue();
+        Assert.assertEquals(2, inserted.size());
+        Set<Long> dcClusterIds = inserted.stream().map(DcClusterShardTbl::getDcClusterId).collect(Collectors.toSet());
+        Assert.assertEquals(Sets.newHashSet(52241L, 52244L), dcClusterIds);
+        verify(dcClusterService, never()).findClusterRelated(anyLong());
+        verify(azGroupClusterRepository, never()).selectAzGroupTypeById(anyLong());
+    }
+
+    @Test
+    public void findOrCreateShardIfNotExist_nullDcClusters_nonHeteroBindAllRelatedDcs() {
+        String cluster = "one-way-cluster";
+        String shardName = "one-way-shard";
+        long shardId = 100L;
+
+        ShardTbl existing = new ShardTbl().setId(shardId).setShardName(shardName).setSetinelMonitorName(shardName);
+        ClusterTbl clusterTbl = new ClusterTbl().setId(7L).setClusterName(cluster)
+            .setClusterType(ClusterType.ONE_WAY.toString());
+
+        DcClusterTbl jq = new DcClusterTbl().setDcClusterId(31L).setDcId(1L);
+        DcClusterTbl oy = new DcClusterTbl().setDcClusterId(32L).setDcId(2L);
+
+        when(shardDao.queryAllShardsByClusterName(cluster)).thenReturn(Lists.newArrayList(existing));
+        when(shardDao.queryAllShardMonitorNames()).thenReturn(Sets.newHashSet(shardName));
+        when(clusterService.find(cluster)).thenReturn(clusterTbl);
+        when(dcClusterService.findClusterRelated(7L)).thenReturn(Lists.newArrayList(jq, oy));
+        when(dcClusterShardService.find(anyLong(), eq(shardId))).thenReturn(null);
+        when(consoleConfig.supportSentinelHealthCheck(any(), anyString())).thenReturn(false);
+
+        shardService.findOrCreateShardIfNotExist(cluster, new ShardTbl().setShardName(shardName), null, Maps.newHashMap());
+
+        ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
+        verify(dcClusterShardService).insertBatch(captor.capture());
+        List<DcClusterShardTbl> inserted = (List<DcClusterShardTbl>) captor.getValue();
+        Assert.assertEquals(2, inserted.size());
+        Set<Long> dcClusterIds = inserted.stream().map(DcClusterShardTbl::getDcClusterId).collect(Collectors.toSet());
+        Assert.assertEquals(Sets.newHashSet(31L, 32L), dcClusterIds);
+        verify(dcClusterRepository, never()).selectByAzGroupClusterId(anyLong());
+        verify(shardRepository, never()).selectById(anyLong());
+    }
+
+    @Test(expected = com.ctrip.xpipe.redis.console.exception.BadRequestException.class)
+    public void findOrCreateShardIfNotExist_nullDcClusters_heteroWithoutAzGroupShouldFail() {
+        String cluster = "hetero-cluster";
+        String shardName = "hetero-shard";
+        long shardId = 200L;
+
+        ShardTbl existing = new ShardTbl().setId(shardId).setShardName(shardName).setSetinelMonitorName(shardName);
+        ClusterTbl clusterTbl = new ClusterTbl().setId(8L).setClusterName(cluster)
+            .setClusterType(ClusterType.HETERO.toString());
+
+        when(shardDao.queryAllShardsByClusterName(cluster)).thenReturn(Lists.newArrayList(existing));
+        when(shardDao.queryAllShardMonitorNames()).thenReturn(Sets.newHashSet(shardName));
+        when(clusterService.find(cluster)).thenReturn(clusterTbl);
+        when(shardRepository.selectById(shardId))
+            .thenReturn(new ShardEntity().setId(shardId).setAzGroupClusterId(0L));
+
+        shardService.findOrCreateShardIfNotExist(cluster, new ShardTbl().setShardName(shardName), null, Maps.newHashMap());
+    }
+
+    @Test(expected = com.ctrip.xpipe.redis.console.exception.BadRequestException.class)
+    public void findOrCreateShardIfNotExist_nullDcClusters_heteroCreateNewShardShouldFail() {
+        String cluster = "hetero-cluster";
+        String shardName = "new-shard";
+
+        ClusterTbl clusterTbl = new ClusterTbl().setId(8L).setClusterName(cluster)
+            .setClusterType(ClusterType.HETERO.toString());
+
+        when(shardDao.queryAllShardsByClusterName(cluster)).thenReturn(Lists.newArrayList());
+        when(shardDao.queryAllShardMonitorNames()).thenReturn(Sets.newHashSet());
+        when(clusterService.find(cluster)).thenReturn(clusterTbl);
+
+        shardService.findOrCreateShardIfNotExist(cluster,
+            new ShardTbl().setShardName(shardName).setSetinelMonitorName(shardName), null, Maps.newHashMap());
+    }
+
+    @Test
+    public void findOrCreateShardIfNotExist_nullDcClusters_skipAlreadyBoundSameAzGroup() {
+        String cluster = "test_hetero_probe_beacon";
+        String shardName = "test_hetero_probe_beacon_2_SGP";
+        long shardId = 200237L;
+        long sgpAzGroupId = 2008L;
+
+        ShardTbl existing = new ShardTbl().setId(shardId).setShardName(shardName).setSetinelMonitorName(shardName);
+        ClusterTbl clusterTbl = new ClusterTbl().setId(31364L).setClusterName(cluster)
+            .setClusterType(ClusterType.HETERO.toString());
+
+        when(shardDao.queryAllShardsByClusterName(cluster)).thenReturn(Lists.newArrayList(existing));
+        when(shardDao.queryAllShardMonitorNames()).thenReturn(Sets.newHashSet(shardName));
+        when(clusterService.find(cluster)).thenReturn(clusterTbl);
+        when(shardRepository.selectById(shardId))
+            .thenReturn(new ShardEntity().setId(shardId).setAzGroupClusterId(sgpAzGroupId));
+        when(dcClusterRepository.selectByAzGroupClusterId(sgpAzGroupId)).thenReturn(Lists.newArrayList(
+            new DcClusterEntity().setDcClusterId(52241L).setDcId(3L).setAzGroupClusterId(sgpAzGroupId),
+            new DcClusterEntity().setDcClusterId(52244L).setDcId(4L).setAzGroupClusterId(sgpAzGroupId)
+        ));
+        when(dcClusterShardService.find(52241L, shardId)).thenReturn(new DcClusterShardTbl());
+        when(dcClusterShardService.find(52244L, shardId)).thenReturn(null);
+        when(consoleConfig.supportSentinelHealthCheck(any(), anyString())).thenReturn(false);
+
+        shardService.findOrCreateShardIfNotExist(cluster, new ShardTbl().setShardName(shardName), null, Maps.newHashMap());
+
+        ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
+        verify(dcClusterShardService).insertBatch(captor.capture());
+        List<DcClusterShardTbl> inserted = (List<DcClusterShardTbl>) captor.getValue();
+        Assert.assertEquals(1, inserted.size());
+        Assert.assertEquals(52244L, inserted.get(0).getDcClusterId());
     }
 }

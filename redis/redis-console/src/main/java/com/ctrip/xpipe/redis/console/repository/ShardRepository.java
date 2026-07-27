@@ -27,6 +27,13 @@ public class ShardRepository {
         return shardMapper.selectList(wrapper);
     }
 
+    public ShardEntity selectById(Long id) {
+        if (id == null || id <= 0L) {
+            return null;
+        }
+        return shardMapper.selectById(id);
+    }
+
     public List<Long> selectIdByAzGroupClusterId(Long azGroupClusterId) {
         if (azGroupClusterId == null) {
             return Collections.emptyList();
