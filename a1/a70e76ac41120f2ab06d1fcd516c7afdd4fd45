@@ -1,0 +1,22 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystemTest.java
+  s_d27cbe8ce45d3e::t_7bcc264914e69c 524
+  s_d27cbe8ce45d3e::t_132410b4453a90 533
+  s_d27cbe8ce45d3e::t_337b6e7a6d2b38 500
+  s_d27cbe8ce45d3e::t_6419e35973250d 731
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "a1a70e76ac41120f2ab06d1fcd516c7afdd4fd45",
+  "prompts": {},
+  "sessions": {
+    "s_d27cbe8ce45d3e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01cc2cbc-954e-46f3-a9f4-f2e780376003",
+        "model": "qwen3.7-plus"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
