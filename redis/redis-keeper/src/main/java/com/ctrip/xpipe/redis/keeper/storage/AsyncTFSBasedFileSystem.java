@@ -370,7 +370,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         } finally {
-            releaseFileEntry(file.path, file.canWrite());
+            releaseFileEntry(file.key, file.canWrite());
         }
     }
 

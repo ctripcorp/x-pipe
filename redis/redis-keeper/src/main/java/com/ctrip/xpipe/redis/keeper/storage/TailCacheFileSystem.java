@@ -1606,18 +1606,23 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         StorageUtil.requireWriteMode(file);
         StorageUtil.requireCacheOpen(file);
         final String id = file.getKey();
-        final FileCacheEntry entry = file.getCacheEntry();
         awaitInFlightIo(id);
         flushPending.run();
-        CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
-            fsFsync.run();
-            if (entry != null) {
-                entry.pendingFsyncBytes = file.pendingFsyncBytes;
-            }
-        });
-        registerInFlight(id, ioFuture);
-        return ioFuture;
+
+        final FileCacheEntry entry = file.getCacheEntry();
+        if (entry == null || !entry.isInitialized()) {
+            CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
+                StorageUtil.requireCacheOpen(file);
+                fsFsync.run();
+                if (entry != null) {
+                    entry.pendingFsyncBytes = file.pendingFsyncBytes;
+                }
+            });
+            registerInFlight(id, ioFuture);
+            return ioFuture;
+        }
+
+        return CompletableFuture.completedFuture(null);
     }
 
 
@@ -1887,6 +1892,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     public CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets) {
         StorageUtil.requireWriteMode(file);
         StorageUtil.requireCacheOpen(file);
+        final String id = file.getKey();
+        awaitInFlightIo(id);
         if (startOffsets.isEmpty()) {
             return CompletableFuture.completedFuture(null);
         }
@@ -1914,8 +1921,6 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 }
             }
         }
-        final String id = file.getKey();
-        awaitInFlightIo(id);
         CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
             executeWithEioRetry(file, () -> {
@@ -1949,19 +1954,30 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     public CompletableFuture<Map<String, AsyncFile>> truncate(AsyncSegmentFile file, long offset) {
         StorageUtil.requireWriteMode(file);
         StorageUtil.requireCacheOpen(file);
+        final String id = file.getKey();
+        awaitInFlightIo(id);
+
+        boolean skipDiskTruncate = false;
         if (file.cacheMode != CacheMode.NO_CACHE) {
             SegmentFileCacheEntry entry = file.getCacheEntry();
             synchronized (entry) {
                 if (entry.isInitialized()) {
+                    // If offset is between writtenToFsOffset and cacheEndOffset,
+                    // disk should not truncate
+                    skipDiskTruncate = offset >= entry.writtenToFsOffset && offset < entry.cacheEndOffset;
                     List<Long> offsets = list(file);
                     if (!offsets.isEmpty()) {
                         entry.truncateTo(offset, chunkSize, offsets.get(0));
                     }
+                    if (skipDiskTruncate) {
+                        Map<String, AsyncFile> indexFiles = new HashMap<>();
+                        indexFiles.putAll(file.currentIndexFiles);
+                        return CompletableFuture.completedFuture(indexFiles);
+                    }
                 }
             }
         }
-        final String id = file.getKey();
-        awaitInFlightIo(id);
+
         CompletableFuture<Map<String, AsyncFile>> ioFuture = StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
             Map<String, AsyncFile> result = executeWithEioRetry(file, () -> delegate.truncateSync(file, offset));

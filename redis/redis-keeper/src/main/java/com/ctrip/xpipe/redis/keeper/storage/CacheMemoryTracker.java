@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.storage;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -7,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 final class CacheMemoryTracker {
 
     private final AtomicLong committedBytes = new AtomicLong(0);
+    private final AtomicInteger waiterCount = new AtomicInteger(0);
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition available = lock.newCondition();
 
@@ -33,6 +35,7 @@ final class CacheMemoryTracker {
         if (tryReserve(bytes, limitBytes)) return;
         // slow path: wait with timeout
         long deadline = System.nanoTime() + timeoutMs * 1_000_000L;
+        waiterCount.incrementAndGet();
         lock.lock();
         try {
             while (true) {
@@ -51,6 +54,7 @@ final class CacheMemoryTracker {
             throw ex;
         } finally {
             lock.unlock();
+            waiterCount.decrementAndGet();
         }
     }
 
@@ -58,7 +62,7 @@ final class CacheMemoryTracker {
         if (bytes == 0) return;
         committedBytes.addAndGet(-bytes);
         // signal loss may happen. but it's ok since other release operations will also signal or wait at most timeoutMs.
-        if (lock.hasWaiters(available)) {
+        if (waiterCount.get() > 0) {
             lock.lock();
             try {
                 available.signalAll();

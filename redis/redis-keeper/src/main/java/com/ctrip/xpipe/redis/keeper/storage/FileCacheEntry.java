@@ -158,20 +158,22 @@ class FileCacheEntry {
     }
 
     void appendToChunkedCache(ByteBuf data, long nowNanos, long chunkSize) {
-        long offset = cacheEndOffset;
+        long chunkIdx = cacheEndOffset / chunkSize;
+        int inChunk = (int) (cacheEndOffset % chunkSize);
+        int totalBytes = data.readableBytes();
         while (data.isReadable()) {
-            long chunkIdx = offset / chunkSize;
-            int remaining = (int) (chunkSize - offset % chunkSize);
+            int remaining = (int) (chunkSize - inChunk);
             int len = data.readableBytes();
             boolean chunkFull = len >= remaining;
             if (chunkFull) len = remaining;
             CacheChunk cacheChunk = chunks.get(chunkIdx);
             ByteBuf chunk = cacheChunk.buffer;
-            chunk.writeBytes(data, len);
+            chunk.setBytes(inChunk, data, len);
             cacheChunk.lastAppendNanos = nowNanos;
-            offset += len;
+            chunkIdx++;
+            inChunk = 0;
         }
-        cacheEndOffset = offset;
+        cacheEndOffset += totalBytes;
     }
 
     private java.util.List<ByteBuf> collectChunkSlices(long offset, long end, boolean failOnMissingChunk, long chunkSize) {
