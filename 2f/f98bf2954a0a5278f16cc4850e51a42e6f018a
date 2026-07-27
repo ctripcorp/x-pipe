@@ -1,0 +1,41 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  h_6ceeb547b3b36a 373
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_44a78082da8771::t_a6cb5e304c6405 1617-1619
+  s_44a78082da8771::t_d514ea5dee3cec 1959,1980
+  s_44a78082da8771::t_4139475f5a7294 1611,1613-1616,1620-1625
+  s_44a78082da8771::t_fd12d3f3329e71 1960,1967,1972-1975
+  s_44a78082da8771::t_cbb65e9de497d7 1965
+  h_6ceeb547b3b36a 1612,1895-1896,1957-1958,1966,1976
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/CacheMemoryTracker.java
+  s_44a78082da8771::t_f1883073db9940 3
+  s_44a78082da8771::t_98024864acaaa7 38,57
+  s_44a78082da8771::t_ff6553c179c6b0 65
+  s_44a78082da8771::t_3c8b6c26191622 11
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/FileCacheEntry.java
+  s_44a78082da8771::t_c7e073b55c7a2a 174
+  s_44a78082da8771::t_37917b36978ce4 173
+  s_44a78082da8771::t_b3da7e571e2188 165,171
+  s_44a78082da8771::t_126d98ecd1532d 161-163,176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "2ff98bf2954a0a5278f16cc4850e51a42e6f018a",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_44a78082da8771": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3f2c8496-1b22-497d-a451-d577ffa2c166",
+        "model": "qwen3.7-plus"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
