@@ -458,8 +458,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return written;
     }
 
-    private void maybeSwitchSegment(AsyncSegmentFile file, SegmentDirState s, long bytesRead) {
-        long nextOffset = file.position;
+    private void maybeSwitchSegment(AsyncSegmentFile file, SegmentDirState s, long bytesRead, long offset) {
+        long nextOffset = offset;
         long physicalOffset = nextOffset - file.openedSegmentStartOffset;
         boolean atSegmentBoundary = nextOffset >= file.openedSegmentEndOffset;
         try {
@@ -470,6 +470,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 return;
             }
             // Close first to trigger recalculation of opened range.
+            // openedSegmentEndOffset may be stale if the segment is no longer the last segment after write roll.
             // Prefetch only; next read recovers via ensureSegmentOpenForRead if this fails.
             file.closeCurrent();
             if (!file.switchToSegment(nextOffset, s)) {
@@ -657,8 +658,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             long physicalOffset = offset - file.openedSegmentStartOffset;
             ByteBuf buf = readFully(file.currentSegmentChannel, length, physicalOffset, 0);
             long n = buf.readableBytes();
-            file.position = offset + n;
-            maybeSwitchSegment(file, s, n);
+            maybeSwitchSegment(file, s, n, offset + n);
             return buf;
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
@@ -709,6 +709,15 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             return 0L;
         }
         return s.floorKey(file.position);
+    }
+
+    @Override
+    public long getStartOffsetByReadOffset(AsyncSegmentFile file, long readOffset) {
+        SegmentDirState s = entryOrThrow(file).state;
+        if (s.isEmpty()) {
+            return 0L;
+        }
+        return s.floorKey(readOffset);
     }
 
 
@@ -862,8 +871,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             if (!ensureSegmentOpenForRead(file, offset, s)) return 0L;
             long physicalOffset = offset - file.openedSegmentStartOffset;
             long n = file.currentSegmentChannel.transferTo(physicalOffset, count, target);
-            file.position = offset + n;
-            maybeSwitchSegment(file, s, n);
+            maybeSwitchSegment(file, s, n, offset + n);
             return n;
         } catch (ClosedChannelException e) {
             if (!target.isOpen()) throw new SocketErrorException(e);

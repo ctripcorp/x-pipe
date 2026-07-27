@@ -1803,6 +1803,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     @Override
+    public long getStartOffsetByReadOffset(AsyncSegmentFile file, long readOffset) {
+        return delegate.getStartOffsetByReadOffset(file, readOffset);
+    }
+
+    @Override
     public CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes) {
         StorageUtil.requireCacheOpen(file);
         return StorageUtil.supply(ioExecutor, () -> {

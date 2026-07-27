@@ -519,7 +519,7 @@ public class AsyncTFSBasedFileSystemTest {
         fs.writeSync(segW, bufOf(new byte[]{40, 50, 60}));
         fs.closeSync(segW);
 
-        // Read across both segments
+        // Read across both segments — pread does not update position, caller manages it
         AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null);
         ByteBuf buf1 = fs.readSync(segR, 3, segR.position);
         try {
@@ -529,7 +529,8 @@ public class AsyncTFSBasedFileSystemTest {
         } finally {
             buf1.release();
         }
-        // Now reading next 3 bytes should auto-switch to next segment
+        // Advance position manually, then read next 3 bytes (auto-switch to next segment)
+        segR.position += 3;
         ByteBuf buf2 = fs.readSync(segR, 3, segR.position);
         try {
             byte[] d2 = new byte[3];

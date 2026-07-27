@@ -170,9 +170,14 @@ public interface AsyncFileSystem {
     }
     List<Long> list(AsyncSegmentFile file);
     // For writers: returns the start offset of the currently opened (tail) segment.
-    // For readers: returns the segment start offset that contains file.position,
+    // For readers: returns the segment start offset that contains file.position.
+    // Returns -1 if file.position is before the first segment.
     long getCurrentSegmentStartOffset(AsyncSegmentFile file);
+    // Returns the segment start offset that contains the given logical read offset.
+    // Returns -1 if readOffset is before the first segment.
+    long getStartOffsetByReadOffset(AsyncSegmentFile file, long readOffset);
     // Returns index files for the segment at file.position.
+    // should call position before calling this method if use pread or transferTo which will not update file.position.
     default CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes) {
         throw new UnsupportedOperationException();
     }
