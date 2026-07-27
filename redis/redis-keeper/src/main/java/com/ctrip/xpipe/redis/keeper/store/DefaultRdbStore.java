@@ -328,6 +328,8 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 		AsyncFile readFile = AsyncFileSystemHelper.await(
 				asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.READ, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
+		// Refcounted close: writeAndFlush(FileRegion) is async; must not fs.close until Netty deallocate.
+		AsyncRdbReadHandle readHandle = new AsyncRdbReadHandle(asyncFileSystem, readFile, String.valueOf(file));
 
 		long curPosition = 0;
 		long lastLogTime = System.currentTimeMillis();
@@ -353,8 +355,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 				// emit even when count == 0 so listeners that fail-fast (or finish) are still driven,
 				// mirroring the legacy ReferenceFileChannel read loop.
-				ReferenceFileRegion referenceFileRegion = new AsyncRdbReferenceFileRegion(
-						asyncFileSystem, readFile, curPosition, count);
+				ReferenceFileRegion referenceFileRegion = readHandle.read(curPosition, count);
 				curPosition += count;
 				referenceFileRegion.setTotalPos(curPosition);
 				try {
@@ -400,11 +401,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 					break;
 			}
 		} finally {
-			try {
-				AsyncFileSystemHelper.await(asyncFileSystem.close(readFile), "close rdb read " + file);
-			} catch (IOException e) {
-				getLogger().error("[doReadRdbFile][close]" + file, e);
-			}
+			readHandle.close();
 		}
 	}
 

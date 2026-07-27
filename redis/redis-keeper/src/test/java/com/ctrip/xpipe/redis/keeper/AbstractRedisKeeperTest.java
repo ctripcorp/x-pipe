@@ -34,7 +34,6 @@ import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.channel.ChannelFuture;
-import org.junit.After;
 import org.junit.BeforeClass;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,21 +57,37 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		System.setProperty("DisableLoadProxyAgentJar", "true");
 	}
 
-	private AsyncFileSystem testAsyncFileSystem;
+	// 单测里 AsyncFileSystem 采用 JVM 级共享 + JVM 退出统一 shutdown 的策略。
+	//
+	// 背景：生产链路上 FS.shutdown 由 ContainerResourceManager 在所有 keeper server dispose
+	// 完成之后调用；单测里若在 @After 中 shutdown FS，会与「keeper server / RSM 未完全 dispose、
+	// 其 gc scheduler 仍在跑」赛跑（例如 DefaultRedisKeeperServer.doDispose 前置 ckStore /
+	// leaderElector dispose 抛异常，导致 replicationStoreManager.dispose() 被跳过，gc 线程
+	// 泄漏到后续测试），触发 AsyncTFSBasedFileSystem.exists() 的
+	// CompletableFuture.supplyAsync(..., terminatedExecutor) → RejectedExecutionException。
+	//
+	// 让 FS 与 JVM 同生共死后，遗留 gc 线程再触发时 ioExecutor 仍是 RUNNING，最多打点无害
+	// 的 IO 结果，不会再有 rejected。真正的 keeper server / RSM 泄漏问题独立追踪，与 FS 无关。
+	private static volatile AsyncFileSystem sharedTestAsyncFileSystem;
 
 	protected AsyncFileSystem asyncFileSystem() {
-		if (testAsyncFileSystem == null) {
-			testAsyncFileSystem = ContainerResourceManager.createAsyncFileSystem(
-					KeeperConfig.DEFAULT_ASYNC_IO_THREADS, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
+		AsyncFileSystem fs = sharedTestAsyncFileSystem;
+		if (fs != null) {
+			return fs;
 		}
-		return testAsyncFileSystem;
-	}
-
-	@After
-	public void shutdownTestAsyncFileSystem() {
-		if (testAsyncFileSystem != null) {
-			testAsyncFileSystem.shutdown();
-			testAsyncFileSystem = null;
+		synchronized (AbstractRedisKeeperTest.class) {
+			if (sharedTestAsyncFileSystem == null) {
+				AsyncFileSystem created = ContainerResourceManager.createAsyncFileSystem(
+						KeeperConfig.DEFAULT_ASYNC_IO_THREADS, KeeperConfig.DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
+				Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+					try {
+						created.shutdown();
+					} catch (Throwable ignore) {
+					}
+				}, "keeper-test-async-fs-shutdown"));
+				sharedTestAsyncFileSystem = created;
+			}
+			return sharedTestAsyncFileSystem;
 		}
 	}
 

@@ -14,9 +14,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * RDB 读路径的零拷贝区块：以 {@link AsyncFile} 句柄 + `fs.transferTo` 输出，
  * 实际传输发生在 netty 写出线程（{@code writeAndFlush(FileRegion)}），单次部分传输会循环 retry。
+ * <p>
+ * 持有 {@link AsyncRdbReadHandle} 引用：Netty {@link #deallocate()} 时 release，
+ * 保证异步 transfer 完成前底层 channel 不被关闭。
  * 与 {@link com.ctrip.xpipe.redis.keeper.store.cmd.AsyncReferenceFileRegion}（Cmd segment）对应。
  */
 public class AsyncRdbReferenceFileRegion implements ReferenceFileRegion {
+
+    private final AsyncRdbReadHandle readHandle;
 
     private final AsyncFileSystem asyncFileSystem;
 
@@ -34,17 +39,19 @@ public class AsyncRdbReferenceFileRegion implements ReferenceFileRegion {
 
     private volatile long totalPos;
 
-    public AsyncRdbReferenceFileRegion(AsyncFileSystem asyncFileSystem, AsyncFile asyncFile,
-                                       long filePosition, long count) {
-        this.asyncFileSystem = asyncFileSystem;
-        this.asyncFile = asyncFile;
+    public AsyncRdbReferenceFileRegion(AsyncRdbReadHandle readHandle, long filePosition, long count) {
+        this.readHandle = readHandle;
+        this.asyncFileSystem = readHandle.getAsyncFileSystem();
+        this.asyncFile = readHandle.getAsyncFile();
         this.filePosition = filePosition;
         this.count = count;
     }
 
     @Override
     public void deallocate() {
-        deallocated.compareAndSet(false, true);
+        if (deallocated.compareAndSet(false, true)) {
+            readHandle.release();
+        }
     }
 
     public boolean isDeallocated() {
