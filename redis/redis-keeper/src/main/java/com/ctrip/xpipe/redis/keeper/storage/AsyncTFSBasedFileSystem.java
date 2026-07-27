@@ -719,7 +719,14 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public long getCurrentSegmentStartOffset(AsyncSegmentFile file) {
-        return file.openedSegmentStartOffset;
+        if (file.canWrite()) {
+            return file.openedSegmentStartOffset;
+        }
+        SegmentDirState s = entryOrThrow(file).state;
+        if (s.isEmpty()) {
+            return 0L;
+        }
+        return s.floorKey(file.position);
     }
 
 
