@@ -68,6 +68,8 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
 
     private static final String KEY_CROSS_REGION_TRAFFIC_CONTROL_LIMIT = "proxy.cross.region.traffic.control.limit";
 
+    private static final String ALLOW_CLOSE_CHANNEL = "proxy.allow.close.channel";
+
     public DefaultProxyConfig() {
         CompositeConfig compositeConfig = new CompositeConfig();
         compositeConfig.addConfig(Config.DEFAULT);
@@ -214,5 +216,10 @@ public class DefaultProxyConfig extends AbstractConfigBean implements ProxyConfi
     @Override
     public long getCrossRegionTrafficControlLimit() {
         return getLongProperty(KEY_CROSS_REGION_TRAFFIC_CONTROL_LIMIT, 200 * 1024 * 1024L); // 100MB/s default
+    }
+
+    @Override
+    public boolean allowCloseChannel() {
+        return getBooleanProperty(ALLOW_CLOSE_CHANNEL, true);
     }
 }
