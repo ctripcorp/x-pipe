@@ -1,0 +1,49 @@
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/TestConfig.java
+  s_11b6446428d721::t_e538e939234d56 339-340
+  s_11b6446428d721::t_e361ff515337c7 337-338,341
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/config/impl/CommonConfigBean.java
+  s_11b6446428d721::t_c4cc82547212b8 223
+  s_11b6446428d721::t_7840ce06f1878d 224,227-228
+  s_11b6446428d721::t_be5b9d57ab46ff 225-226
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/AbstractInstanceSessionManager.java
+  s_11b6446428d721::t_1d9b0da484df34 189-195
+  s_11b6446428d721::t_5c6ff545c48c05 81
+  s_11b6446428d721::t_e2fe6782c2022b 75-76,80
+  s_11b6446428d721::t_33ccf369febf0b 82-86
+  s_11b6446428d721::t_e55b0fbbc9ddc5 15
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/config/CheckerConfig.java
+  s_11b6446428d721::t_9893582f379e27 131
+  s_11b6446428d721::t_4fa9302d8a2a51 132
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/config/impl/DefaultConsoleConfig.java
+  s_e603baa020ede3::t_ef561d882d48e9 675-676,678
+  h_2a4fc97c4bee49 677
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.35-trip",
+  "base_commit_sha": "211940b51a8bd822486ebaed08aa52d215b3f8fb",
+  "prompts": {},
+  "humans": {
+    "h_2a4fc97c4bee49": {
+      "author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_11b6446428d721": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08a18e5e-a702-4603-8198-763644e4220d",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": null
+    },
+    "s_e603baa020ede3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "80992d6e-1860-47ec-837c-86cf6029da1f",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": null
+    }
+  }
+}
