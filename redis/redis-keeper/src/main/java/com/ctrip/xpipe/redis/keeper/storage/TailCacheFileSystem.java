@@ -824,24 +824,18 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                     allocated.put(i, chunk);
                 }
             } else {
-                long offset = 0;
+                long chunkIdx = 0;
                 while (fileData.isReadable()) {
-                    long chunkIdx = offset / chunkSize;
-                    int inChunk = (int) (offset % chunkSize);
-                    if (!allocated.containsKey(chunkIdx)) {
-                        ByteBuf chunk;
-                        try {
-                            chunk = StorageAllocator.ALLOC.directBuffer((int) chunkSize);
-                        } catch (Throwable e) {
-                            throw new CacheMemoryReserveException(chunkSize, e);
-                        }
-                        allocated.put(chunkIdx, chunk);
+                    ByteBuf chunk;
+                    try {
+                        chunk = StorageAllocator.ALLOC.directBuffer((int) chunkSize);
+                    } catch (Throwable e) {
+                        throw new CacheMemoryReserveException(chunkSize, e);
                     }
-                    int length = (int) Math.min(chunkSize - inChunk, fileData.readableBytes());
-                    ByteBuf chunk = allocated.get(chunkIdx);
-                    chunk.writerIndex(inChunk);
-                    chunk.writeBytes(fileData, length);
-                    offset += length;
+                    allocated.put(chunkIdx, chunk);
+                    int length = (int) Math.min(chunkSize, fileData.readableBytes());
+                    chunk.setBytes(0, fileData, length);
+                    chunkIdx++;
                 }
                 long dataChunks = (actualSize + chunkSize - 1) / chunkSize;
                 long totalChunks = actualCapacity / chunkSize;
@@ -1341,7 +1335,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             if (delta > 0) memoryTracker.release(delta);
             throw new CacheMemoryReserveException(length, t);
         }
-        newBuffer.writeBytes(data, length);
+        newBuffer.setBytes(0, data, length);
         synchronized (entry) {
             entry.setAtomicChunk(new CacheChunk(newBuffer), 0);
         }
@@ -1538,7 +1532,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                             throw new CacheMemoryReserveException(size, e);
                         }
                         CacheChunk oldChunk = entry.chunks.get(0L);
-                        newChunk.writeBytes(oldChunk.buffer, 0, (int) size);
+                        newChunk.setBytes(0, oldChunk.buffer, 0, (int) size);
                         entry.setAtomicChunk(new CacheChunk(newChunk), Math.min(size, entry.writtenToFsOffset));
                     } else {
                         entry.truncateTo(size, chunkSize);
