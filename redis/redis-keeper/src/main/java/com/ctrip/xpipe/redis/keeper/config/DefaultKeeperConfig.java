@@ -132,7 +132,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	@Override
 	public int getReplicationStoreCommandFileRetainTimeoutMilli() {
-		return getIntProperty(KEY_REPLICATION_STORE_COMMANDFILE_RETAIN_TIMEOUT_MILLI,1800 * 1000);
+		return getIntProperty(KEY_REPLICATION_STORE_COMMANDFILE_RETAIN_TIMEOUT_MILLI,3600 * 1000);
 	}
 
 	@Override
