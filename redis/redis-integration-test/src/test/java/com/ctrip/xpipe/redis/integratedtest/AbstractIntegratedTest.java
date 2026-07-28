@@ -25,6 +25,7 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.impl.UnlimitedSyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.meta.server.job.XSlaveofJob;
 import com.ctrip.xpipe.utils.DefaultLeakyBucket;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.zk.ZkConfig;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
@@ -44,6 +45,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author wenchao.meng
@@ -380,8 +382,49 @@ public abstract class AbstractIntegratedTest extends AbstractRedisTest {
 	protected void sendMesssageToMasterAndTest(int messageCount, RedisMeta redisMaster, List<RedisMeta> slaves){
 
 		sendMessageToMaster(redisMaster, messageCount);
-		sleep(2000);
+		waitSlavesReplOffsetCatchUp(redisMaster, slaves);
 		assertRedisEquals(redisMaster, slaves);
+	}
+
+	/**
+	 * Wait until every slave's {@code master_repl_offset} reaches the master's offset at call time.
+	 * Replaces fixed sleep after writes — AsyncFileSystem ingest can lag beyond 2s.
+	 * Empty {@link RedisMeta#getIp()} falls back to {@code localhost}, same as {@code createJedis}.
+	 */
+	protected void waitSlavesReplOffsetCatchUp(RedisMeta redisMaster, List<RedisMeta> slaves) {
+		final long masterOffset;
+		try {
+			masterOffset = Long.parseLong(infoRedis(redisIp(redisMaster), redisMaster.getPort(),
+					InfoCommand.INFO_TYPE.REPLICATION, "master_repl_offset"));
+		} catch (Exception e) {
+			throw new IllegalStateException("failed to read master_repl_offset from " + redisMaster, e);
+		}
+		try {
+			waitConditionUntilTimeOut(() -> {
+				try {
+					for (RedisMeta slave : slaves) {
+						long slaveOffset = Long.parseLong(infoRedis(redisIp(slave), slave.getPort(),
+								InfoCommand.INFO_TYPE.REPLICATION, "master_repl_offset"));
+						if (slaveOffset < masterOffset) {
+							return false;
+						}
+					}
+					return true;
+				} catch (Exception e) {
+					logger.warn("[waitSlavesReplOffsetCatchUp] info failed, masterOffset={}, slaves={}",
+							masterOffset, slaves, e);
+					return false;
+				}
+			}, 30000, 100);
+		} catch (TimeoutException e) {
+			throw new AssertionError("slaves did not catch up to master_repl_offset=" + masterOffset
+					+ " within 30s, master=" + redisMaster + ", slaves=" + slaves, e);
+		}
+	}
+
+	/** Align with {@code createJedis}: empty IP → localhost (dynamic slaves may omit ip). */
+	private static String redisIp(RedisMeta redis) {
+		return StringUtil.isEmpty(redis.getIp()) ? "localhost" : redis.getIp();
 	}
 
 	protected void sendMessageToMaster(){
