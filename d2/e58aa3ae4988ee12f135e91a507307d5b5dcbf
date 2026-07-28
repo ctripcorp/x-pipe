@@ -1,0 +1,21 @@
+redis/redis-integration-test/src/test/resources/one_keeper.xml
+  s_9cc36b4d00c3f5::t_0be6a3080ffedb 6-7,18-19
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/XRedisPartialTest.java
+  s_9cc36b4d00c3f5::t_83c40f425e74c0 22,33-38,56-63,66,72-79,127-130
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "d2e58aa3ae4988ee12f135e91a507307d5b5dcbf",
+  "prompts": {},
+  "sessions": {
+    "s_9cc36b4d00c3f5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "fa17f525-2445-4d55-b61f-3f375f2e4201",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
