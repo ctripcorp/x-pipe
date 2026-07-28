@@ -349,15 +349,18 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         return continuePoint;
     }
 
+    /** Snapshot — never return the live writer-owned GtidSet (CME under concurrent write + XSYNC wait). */
     @Override
     public synchronized GtidSet getIndexGtidSet() {
+        GtidSet live;
         if (indexWriterV2 != null && keeperConfig.readV2()) {
-            return indexWriterV2.getGtidSet();
+            live = indexWriterV2.getGtidSet();
+        } else if (indexWriter != null) {
+            live = indexWriter.getGtidSet();
+        } else {
+            live = getIndexGtidSetByIndexReader();
         }
-        if (indexWriter != null) {
-            return indexWriter.getGtidSet();
-        }
-        return getIndexGtidSetByIndexReader();
+        return live == null ? new GtidSet(GtidSet.EMPTY_GTIDSET) : live.clone();
     }
 
     @Override

@@ -42,6 +42,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.fail;
@@ -2005,6 +2010,82 @@ public class DefaultIndexStoreTest {
 
         Assert.assertTrue(indexV2File(CMD_PREFIX, lastRollSegmentStart).exists());
         Assert.assertFalse(indexV2File(CMD_PREFIX, oldestSegStart).exists());
+    }
+
+    /**
+     * Regression: dualWrite V1 IndexWriter.flush() clears currentBlock but keeps indexEntry;
+     * locateContinueGtidSet must not NPE on saveIndexEntry after closeWriter (X→P switchToPsync).
+     */
+    @Test
+    public void testLocateContinueGtidSet_AfterCloseWriter_NoNpe() throws Exception {
+        String uuid = "a4f566ef50a85e1119f17f9b746728b48609a2ab";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+        defaultIndexStore.write(createGtidCommand(uuid + ":2", "SET", "k", "v2"));
+        defaultIndexStore.closeWriter();
+
+        Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet(uuid + ":1-2"));
+        Assert.assertNotNull(point);
+        Assert.assertTrue(point.getKey() >= 0 || point.getKey() == -1);
+    }
+
+    /**
+     * Regression: getIndexGtidSet must return a snapshot. Concurrent write+union (same path as
+     * GapAllowSyncHandler.awaitIfRequestExceedsCurrent → DefaultReplicationStore.getGtidSet)
+     * must not throw ConcurrentModificationException.
+     */
+    @Test
+    public void testGetIndexGtidSet_SnapshotSafeUnderConcurrentWrite() throws Exception {
+        String uuid = "b50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+
+        AtomicReference<Throwable> readerError = new AtomicReference<>();
+        CountDownLatch started = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            pool.execute(() -> {
+                started.countDown();
+                try {
+                    for (int i = 2; i <= 200; i++) {
+                        defaultIndexStore.write(createGtidCommand(uuid + ":" + i, "SET", "k" + i, "v" + i));
+                    }
+                } catch (Throwable t) {
+                    readerError.compareAndSet(null, t);
+                }
+            });
+            pool.execute(() -> {
+                try {
+                    started.await(5, TimeUnit.SECONDS);
+                    GtidSet begin = new GtidSet(GtidSet.EMPTY_GTIDSET);
+                    for (int i = 0; i < 500; i++) {
+                        // Mirrors DefaultReplicationStore.getGtidSet: begin.union(index)
+                        begin.union(defaultIndexStore.getIndexGtidSet());
+                    }
+                } catch (Throwable t) {
+                    readerError.compareAndSet(null, t);
+                }
+            });
+            pool.shutdown();
+            Assert.assertTrue(pool.awaitTermination(30, TimeUnit.SECONDS));
+        } finally {
+            if (!pool.isTerminated()) {
+                pool.shutdownNow();
+            }
+        }
+        if (readerError.get() != null) {
+            throw new AssertionError("concurrent getIndexGtidSet failed", readerError.get());
+        }
+        Assert.assertTrue(defaultIndexStore.getIndexGtidSet().contains(uuid, 200));
+    }
+
+    @Test
+    public void testGetIndexGtidSet_ReturnsIndependentSnapshot() throws Exception {
+        String uuid = "c50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+        GtidSet snapshot = defaultIndexStore.getIndexGtidSet();
+        snapshot.add(uuid + ":999");
+        Assert.assertFalse("mutating snapshot must not affect index",
+                defaultIndexStore.getIndexGtidSet().contains(uuid, 999));
+        Assert.assertTrue(defaultIndexStore.getIndexGtidSet().contains(uuid, 1));
     }
 
     // 辅助方法：从文件写入

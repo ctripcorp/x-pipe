@@ -148,9 +148,13 @@ public class IndexWriter {
         return gtidSetWrapper.getGtidSet();
     }
 
-    /** Checkpoint current index entry to disk without ending the block (reader visibility). */
+    /**
+     * Checkpoint current index entry to disk without ending the block (reader visibility).
+     * No-op when there is no pending block — {@link #flush()} already persisted and cleared
+     * {@code currentBlock} while retaining {@code indexEntry} for GtidSet compensate.
+     */
     public void saveIndexEntry() throws IOException {
-        if (indexEntry == null) {
+        if (indexEntry == null || currentBlock == null) {
             return;
         }
         indexEntry.saveToDisk(fs, indexFile, currentBlock, blockFile);
