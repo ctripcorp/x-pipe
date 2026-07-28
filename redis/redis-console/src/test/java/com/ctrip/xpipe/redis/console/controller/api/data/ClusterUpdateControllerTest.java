@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterDeleteEventFactory;
+import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.console.service.impl.ClusterServiceImpl;
 import com.ctrip.xpipe.redis.console.service.impl.ShardServiceImpl;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -21,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
+import org.unidal.dal.jdbc.DalException;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -340,7 +342,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
     }
 
     @Test
-    public void testExchangeRegion() {
+    public void testExchangeRegion() throws DalException, ResourceNotFoundException {
         this.createCluster(null, null, null, null);
         ShardTbl shard = shardService.createShard("cluster-name", new ShardTbl().setShardName("shard1"), new HashMap<>());
         clusterController.upgradeAzGroup("cluster-name");
@@ -357,7 +359,7 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
     }
 
     @Test
-    public void testExchangeRegion2() {
+    public void testExchangeRegion2() throws DalException, ResourceNotFoundException {
         this.createCluster(null, "SINGLE_DC", Arrays.asList("jq", "fra"), null);
         clusterService.unbindDc("cluster-name", "jq");
         ShardTbl shard = shardService.createShard("cluster-name", new ShardTbl().setShardName("shard2"), new HashMap<>());

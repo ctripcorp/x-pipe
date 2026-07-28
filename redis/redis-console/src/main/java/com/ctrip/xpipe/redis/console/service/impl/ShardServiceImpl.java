@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ShardDao;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
@@ -26,11 +28,14 @@ import com.ctrip.xpipe.redis.console.repository.DcClusterRepository;
 import com.ctrip.xpipe.redis.console.repository.ShardRepository;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
+import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.google.common.collect.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -43,6 +48,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.console.service.impl.ClusterServiceImpl.CLUSTER_DEFAULT_TAG;
+import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 @Service
@@ -98,6 +104,14 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	private AzGroupClusterRepository azGroupClusterRepository;
 	@Autowired
 	private DcClusterRepository dcClusterRepository;
+
+	@Autowired
+	@Lazy
+	private RedisService redisService;
+
+	@Autowired
+	@Lazy
+	private KeeperAdvancedService keeperAdvancedService;
 
 	@Resource(name = GLOBAL_EXECUTOR)
 	private ExecutorService executors;
@@ -241,7 +255,13 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	}
 
 	@Override
-	public void createRegionShard(String clusterName, String regionName, String shardName) {
+	public void createRegionShard(String clusterName, String regionName, String shardName) throws DalException, ResourceNotFoundException {
+		createRegionShard(clusterName, regionName, shardName, null);
+	}
+
+	@Override
+	public void createRegionShard(String clusterName, String regionName, String shardName,
+								  List<RedisCreateInfo> redisCreateInfos) throws DalException, ResourceNotFoundException {
 		ClusterTbl cluster = clusterDao.findClusterByClusterName(clusterName);
 		if (cluster == null) {
 			throw new BadRequestException(String.format("Cluster: %s not exist", clusterName));
@@ -297,6 +317,100 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		if (!dcClusterShardList.isEmpty()) {
 			dcClusterShardService.insertBatch(dcClusterShardList);
 		}
+
+		if (redisCreateInfos != null && !redisCreateInfos.isEmpty()) {
+			validateRedisCreateInfo(redisCreateInfos);
+			addRedises(cluster, shardName, redisCreateInfos);
+			addKeepers(cluster, shardName, redisCreateInfos);
+		}
+	}
+
+	@Override
+	public void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos) {
+		Set<String> dcIds = Sets.newHashSetWithExpectedSize(redisCreateInfos.size());
+		for (RedisCreateInfo createInfo : redisCreateInfos) {
+			if (!dcIds.add(createInfo.getDcId())) {
+				throw new IllegalArgumentException(
+					String.format("dc: %s appears more than two times", createInfo.getDcId()));
+			}
+		}
+	}
+
+	@Override
+	public void addRedises(ClusterTbl clusterTbl, String shardName, List<RedisCreateInfo> redisCreateInfos) throws DalException, ResourceNotFoundException {
+		for (RedisCreateInfo redisCreateInfo : redisCreateInfos) {
+			String dcId = DC_TRANSFORM_DIRECTION.OUTER_TO_INNER.transform(redisCreateInfo.getDcId());
+			redisService.insertRedises(dcId, clusterTbl.getClusterName(), shardName, redisCreateInfo.getAddrToAzName());
+		}
+	}
+
+	@Override
+	public void addKeepers(ClusterTbl clusterTbl, String shardName, List<RedisCreateInfo> redisCreateInfos) throws DalException, ResourceNotFoundException {
+		if (!ClusterType.lookup(clusterTbl.getClusterType()).supportKeeper()) {
+			return;
+		}
+
+		Map<String, DcClusterTbl> dcName2DcClusterTbl = new HashMap<>();
+		Map<String, AzGroupClusterEntity> az2AzGroupClusterMap = new HashMap<>();
+
+		List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(clusterTbl.getId());
+		for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+			AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+			for (String az : azGroup.getAzs()) {
+				az2AzGroupClusterMap.put(az.toUpperCase(), azGroupCluster);
+			}
+		}
+
+		for (RedisCreateInfo redisCreateInfo : redisCreateInfos) {
+			String dcId = DC_TRANSFORM_DIRECTION.OUTER_TO_INNER.transform(redisCreateInfo.getDcId());
+			String clusterName = clusterTbl.getClusterName();
+			DcClusterTbl dcClusterTbl = dcName2DcClusterTbl.computeIfAbsent(dcId.toUpperCase(),
+				ignore -> dcClusterService.find(dcId, clusterName));
+			if (dcClusterTbl == null) {
+				throw new BadRequestException(
+					String.format("dc %s not exist in cluster %s", redisCreateInfo.getDcId(), clusterName));
+			}
+
+			AzGroupClusterEntity azGroupCluster = az2AzGroupClusterMap.get(dcId.toUpperCase());
+			if (azGroupCluster == null
+				|| !ClusterType.isSameClusterType(azGroupCluster.getAzGroupClusterType(), ClusterType.SINGLE_DC)) {
+				doAddKeepers(dcId, clusterName, shardName, dcId);
+			}
+		}
+	}
+
+	@Override
+	public int doAddKeepers(String dcId, String clusterName, String shardName, String keeperDcId) throws DalException, ResourceNotFoundException {
+		List<RedisTbl> keepers = null;
+		try {
+			keepers = redisService.findKeepersByDcClusterShard(dcId, clusterName, shardName);
+		} catch (ResourceNotFoundException e) {
+			logger.info("[addKeepers] no keepers on shard {}: {}", clusterName, shardName);
+		}
+
+		if (keepers != null && !keepers.isEmpty()) {
+			if (keepers.size() > 2) {
+				throw new IllegalStateException("Keeper numbers should not be greater than 2");
+			} else if (keepers.size() == 1) {
+				try {
+					redisService.deleteKeepers(dcId, clusterName, shardName);
+				} catch (ResourceNotFoundException ignore) {
+				}
+			} else {
+				return 0;
+			}
+		}
+
+		List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepers(keeperDcId,
+			KEEPER_PORT_DEFAULT, (ip, port) -> true, clusterName);
+
+		logger.info("[addKeepers]{},{},{},{}, {}", dcId, clusterName, shardName, bestKeepers, keeperDcId);
+		try {
+			return redisService.insertKeepers(dcId, clusterName, shardName, bestKeepers);
+		} catch (ResourceNotFoundException e) {
+			logger.warn("[addKeepers] {}", e);
+		}
+		return 0;
 	}
 
 	@Override
