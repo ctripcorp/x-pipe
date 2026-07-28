@@ -321,7 +321,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	@Override
 	public boolean readV2() {
-		return getBooleanProperty(KEY_INDEX_READ_V2, true);
+		return getBooleanProperty(KEY_INDEX_READ_V2, false);
 	}
 
 	@Override
