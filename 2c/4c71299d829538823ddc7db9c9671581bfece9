@@ -1,0 +1,41 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriterV2.java
+  s_a1758cc73dbd0d::t_f69e3f92f8cf2b 278
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AsyncCommandStore.java
+  s_a1758cc73dbd0d::t_da577197b473c4 56-57,59
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReaderV2.java
+  s_a1758cc73dbd0d::t_3782746960de2a 9,16
+  s_a1758cc73dbd0d::t_5c6fc9267d9344 65-70
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystemTest.java
+  s_a1758cc73dbd0d::t_8144a16620f64a 586-588,590,593
+  s_a1758cc73dbd0d::t_70653f3d5dfcf3 650,670
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystemTest.java
+  s_a1758cc73dbd0d::t_88f31fe44d8cf2 879,881
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_a1758cc73dbd0d::t_a4980a898a20d2 406,422-423,428,431-433
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReader.java
+  s_a1758cc73dbd0d::t_92e9cf33e39075 100-107
+  s_a1758cc73dbd0d::t_7f8f4816c6451b 20
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/TestAsyncCommandStore.java
+  s_a1758cc73dbd0d::t_baa83aef249ddc 80-81,103,106-108,132
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  s_a1758cc73dbd0d::t_070dae8f4118b1 110
+  s_a1758cc73dbd0d::t_83f183dcca2c8b 145
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  s_a1758cc73dbd0d::t_cd7a22c6b36e6e 287
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "2c4c71299d829538823ddc7db9c9671581bfece9",
+  "prompts": {},
+  "sessions": {
+    "s_a1758cc73dbd0d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0c6ec80b-b530-47c8-b1fb-476b6c59208e",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
