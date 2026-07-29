@@ -79,6 +79,7 @@ import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.*;
 import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.*;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupportCrossRegionTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderCrossRegionAzGroupTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderHeteroMigrationTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
@@ -231,8 +232,11 @@ import org.junit.runners.Suite.SuiteClasses;
         XPipeHandlerMethodCommandTest.class,
 
         MigrationPreCheckCmdTest.class,
+        MigrationPreCheckCmdHeteroTest.class,
         MigrationFetchProcessingEventCmdTest.class,
         MigrationChooseTargetDcCmdTest.class,
+        MigrationChooseTargetDcCmdHeteroTest.class,
+        HeteroMigrationSupportCrossRegionTest.class,
         MigrationBuildEventCmdTest.class,
         MigrationDoExecuteCmdTest.class,
         MultiClusterMigrationTest.class,

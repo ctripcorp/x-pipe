@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.console.service.meta.impl;
 
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -31,13 +33,21 @@ public class BeaconMetaServiceImplHeteroTest {
         config = Mockito.mock(ConsoleCommonConfig.class);
         Mockito.when(config.getBeaconSupportZones()).thenReturn(Collections.emptySet());
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(dualOneWayMeta());
+        stubCrossRegionAgainst(dualOneWayMeta());
+        beaconMetaService = new BeaconMetaServiceImpl(metaCache, config);
+    }
+
+    private void stubCrossRegionAgainst(XpipeMeta xpipeMeta) {
         Mockito.when(metaCache.isCrossRegion(Mockito.anyString(), Mockito.anyString())).thenAnswer(invocation -> {
             String activeDc = invocation.getArgument(0, String.class);
             String dc = invocation.getArgument(1, String.class);
-            XpipeMeta xpipeMeta = dualOneWayMeta();
-            return !xpipeMeta.getDcs().get(activeDc).getZone().equals(xpipeMeta.getDcs().get(dc).getZone());
+            DcMeta activeMeta = xpipeMeta.getDcs().get(activeDc);
+            DcMeta otherMeta = xpipeMeta.getDcs().get(dc);
+            if (activeMeta == null || otherMeta == null) {
+                return true;
+            }
+            return !activeMeta.getZone().equals(otherMeta.getZone());
         });
-        beaconMetaService = new BeaconMetaServiceImpl(metaCache, config);
     }
 
     @Test
@@ -68,31 +78,74 @@ public class BeaconMetaServiceImplHeteroTest {
         Assert.assertTrue(beaconMetaService.buildDrBeaconGroups("hetero-dual-oneway", "jq").isEmpty());
     }
 
+    @Test
+    public void crossRegionOneWayDrShouldExcludeCrossRegionBackup() {
+        XpipeMeta crossRegionMeta = crossRegionOneWayMeta();
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(crossRegionMeta);
+        stubCrossRegionAgainst(crossRegionMeta);
+
+        Set<MonitorGroupMeta> groups = beaconMetaService.buildDrBeaconGroups("hetero-cross-region", "jq");
+        Assert.assertFalse(groups.isEmpty());
+        Assert.assertTrue(groups.stream().allMatch(group ->
+                "jq".equals(group.getIdc()) || "oy".equals(group.getIdc())));
+        Assert.assertFalse(groups.stream().anyMatch(group -> "fra".equals(group.getIdc())));
+    }
+
+    @Test
+    public void crossRegionOneWaySentinelShouldOnlyInterestActiveDc() {
+        XpipeMeta crossRegionMeta = crossRegionOneWayMeta();
+        ClusterMeta jqCluster = crossRegionMeta.getDcs().get("jq").getClusters().get("hetero-cross-region");
+        ClusterType effective = BeaconSentinelMetaUtil.resolveEffectiveClusterType(jqCluster);
+        Assert.assertEquals(ClusterType.ONE_WAY, effective);
+
+        Assert.assertTrue(BeaconSentinelMetaUtil.isSentinelInterestedDc(jqCluster, effective, "jq"));
+        Assert.assertFalse(BeaconSentinelMetaUtil.isSentinelInterestedDc(jqCluster, effective, "oy"));
+        Assert.assertFalse(BeaconSentinelMetaUtil.isSentinelInterestedDc(jqCluster, effective, "fra"));
+
+        Assert.assertTrue(BeaconSentinelMetaUtil.isBeaconCandidate(
+                crossRegionMeta.getDcs().get("jq"), "hetero-cross-region", BeaconRouteType.DR, config));
+        Assert.assertFalse(BeaconSentinelMetaUtil.isBeaconCandidate(
+                crossRegionMeta.getDcs().get("fra"), "hetero-cross-region", BeaconRouteType.DR, config));
+    }
+
+    private XpipeMeta crossRegionOneWayMeta() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta jq = new DcMeta("jq").setZone("SHA");
+        DcMeta oy = new DcMeta("oy").setZone("SHA");
+        DcMeta fra = new DcMeta("fra").setZone("FRA");
+
+        ClusterMeta cross = heteroOneWayCluster("hetero-cross-region", "jq", "oy,fra");
+        jq.addCluster(copyCluster(cross));
+        oy.addCluster(copyCluster(cross));
+        fra.addCluster(copyCluster(cross));
+        return xpipeMeta.addDc(jq).addDc(oy).addDc(fra);
+    }
+
     private XpipeMeta dualOneWayMeta() {
         XpipeMeta xpipeMeta = new XpipeMeta();
         DcMeta jq = new DcMeta("jq").setZone("SHA");
         DcMeta oy = new DcMeta("oy").setZone("SHA");
         DcMeta fra = new DcMeta("fra").setZone("FRA");
 
-        ClusterMeta shaCluster = heteroOneWayCluster("jq", "oy");
+        ClusterMeta shaCluster = heteroOneWayCluster("hetero-dual-oneway", "jq", "oy");
         jq.addCluster(copyCluster(shaCluster));
         oy.addCluster(copyCluster(shaCluster));
 
-        ClusterMeta fraCluster = heteroOneWayCluster("fra", "");
+        ClusterMeta fraCluster = heteroOneWayCluster("hetero-dual-oneway", "fra", "");
         fra.addCluster(copyCluster(fraCluster));
 
         return xpipeMeta.addDc(jq).addDc(oy).addDc(fra);
     }
 
-    private ClusterMeta heteroOneWayCluster(String activeDc, String backupDcs) {
-        ClusterMeta clusterMeta = new ClusterMeta("hetero-dual-oneway");
+    private ClusterMeta heteroOneWayCluster(String clusterName, String activeDc, String backupDcs) {
+        ClusterMeta clusterMeta = new ClusterMeta(clusterName);
         clusterMeta.setType(ClusterType.HETERO.toString());
         clusterMeta.setAzGroupType(ClusterType.ONE_WAY.toString());
         clusterMeta.setActiveDc(activeDc);
         clusterMeta.setBackupDcs(backupDcs);
-        clusterMeta.addShard(buildShard("hetero-dual-oneway_" + activeDc + "_1", activeDc));
-        if ("jq".equals(activeDc)) {
-            clusterMeta.addShard(buildShard("hetero-dual-oneway_oy_1", "oy"));
+        clusterMeta.addShard(buildShard(clusterName + "_" + activeDc + "_1", activeDc));
+        if ("jq".equals(activeDc) && backupDcs != null && backupDcs.contains("oy")) {
+            clusterMeta.addShard(buildShard(clusterName + "_oy_1", "oy"));
         }
         return clusterMeta;
     }
