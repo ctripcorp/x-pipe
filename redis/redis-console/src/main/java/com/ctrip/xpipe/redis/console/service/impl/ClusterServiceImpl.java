@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
+import com.ctrip.xpipe.redis.console.cache.RegionCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.InstanceInfo;
@@ -162,6 +163,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private DcCache dcCache;
+
+	@Autowired
+	private RegionCache regionCache;
 
 	@Autowired
 	private DcClusterRepository dcClusterRepository;
@@ -421,7 +425,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
             return null;
         }
         return AzGroupDTO.builder()
-                .region(azGroup.getRegion())
+                .region(heteroMigrationSupport.activeRegion(azGroupCluster))
                 .clusterType(azGroupCluster.getAzGroupClusterType())
                 .activeAz(dcIdNameMap.get(azGroupCluster.getActiveAzId()))
                 .azs(azGroup.getAzsAsList())
@@ -476,14 +480,14 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
                 }
             }
             if (dcs.isEmpty()) {
-                logger.warn("[findClusterDcGroups]clusterName={}, azGroupClusterId={}, region={} no bound dcs",
-                        clusterName, azGroupCluster.getId(), azGroup.getRegion());
+                logger.warn("[findClusterDcGroups]clusterName={}, azGroupClusterId={}, activeRegion={} no bound dcs",
+                        clusterName, azGroupCluster.getId(), heteroMigrationSupport.activeRegion(azGroupCluster));
                 continue;
             }
             result.add(new ClusterDcGroupModel()
                     .setAzGroupId(azGroup.getId())
                     .setAzGroupClusterId(azGroupCluster.getId())
-                    .setRegion(azGroup.getRegion())
+                    .setRegion(heteroMigrationSupport.activeRegion(azGroupCluster))
                     .setAzGroupClusterType(azGroupCluster.getAzGroupClusterType())
                     .setActiveAzId(azGroupCluster.getActiveAzId())
                     .setDcs(dcs));
@@ -692,15 +696,22 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				azIdMap.put(az, dcTbl.getId());
 			}
 
-			AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
+            AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
 			azGroupCluster.setClusterId(clusterTbl.getId());
 
             String region = azGroupDTO.getRegion();
             AzGroupModel azGroup = azGroupCache.getAzGroupByAzs(azs);
-			if (azGroup == null || !Objects.equals(azGroup.getRegion(), region)) {
+			if (azGroup == null) {
                 throw new BadRequestException(
                     String.format("Region: %s doesn't contain such azs: %s", region, azs));
 			}
+            String activeAzForRegionCheck = azGroupDTO.getActiveAz();
+            if (!Strings.isNullOrEmpty(region) && !Strings.isNullOrEmpty(activeAzForRegionCheck)
+                    && !region.equalsIgnoreCase(regionCache.regionOf(activeAzForRegionCheck))) {
+                throw new BadRequestException(
+                    String.format("Region: %s doesn't match active az region: %s (az=%s)",
+                        region, regionCache.regionOf(activeAzForRegionCheck), activeAzForRegionCheck));
+            }
 			azGroupCluster.setAzGroupId(azGroup.getId());
 
 			ClusterType clusterType = ClusterType.lookup(azGroupDTO.getClusterType());
@@ -1002,10 +1013,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
     }
 
 	private AzGroupClusterEntity getByRegion(String region, List<AzGroupClusterEntity> azGroupClusterEntities) {
-		return azGroupClusterEntities.stream().filter(azGroupClusterEntity -> {
-			AzGroupModel azGroupModel = azGroupCache.getAzGroupById(azGroupClusterEntity.getAzGroupId());
-			return azGroupModel.getRegion().equalsIgnoreCase(region);
-		}).findFirst().orElse(null);
+		return heteroMigrationSupport.findByActiveRegion(azGroupClusterEntities, region);
 	}
 
 	@Override
@@ -1212,7 +1220,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         }
         for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
             AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
-            if (Objects.equals(azGroup.getRegion(), regionName)) {
+            if (regionName.equalsIgnoreCase(heteroMigrationSupport.activeRegion(azGroupCluster))) {
                 // 更改az group name
                 List<String> azs = azGroup.getAzsAsList();
                 azs.add(azName);
@@ -1346,8 +1354,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
             AzGroupModel newAzGroup = azGroupCache.getAzGroupByAzs(azs);
             if (newAzGroup == null) {
 				throw new BadRequestException(
-					String.format("Cannot unbind az: %s from Region: %s, rest azs not a region",
-						azName, azGroup.getRegion()));
+					String.format("Cannot unbind az: %s from azGroup: %s, rest azs not a valid az group",
+						azName, azGroup.getName()));
             }
             AzGroupClusterEntity azGroupCluster =
                 azGroupClusterRepository.selectByClusterIdAndAzGroupId(cluster.getId(), azGroup.getId());
@@ -1543,14 +1551,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if (CollectionUtils.isEmpty(azGroupClusters)) {
 			throw new BadRequestException(String.format("Cluster: %s not in AzGroup mode", clusterName));
 		}
-		AzGroupClusterEntity azGroupCluster = null;
-		for (AzGroupClusterEntity entity : azGroupClusters) {
-			AzGroupModel azGroup = azGroupCache.getAzGroupById(entity.getAzGroupId());
-			if (Objects.equals(azGroup.getRegion(), regionName)) {
-				azGroupCluster = entity;
-				break;
-			}
-		}
+		AzGroupClusterEntity azGroupCluster = heteroMigrationSupport.findByActiveRegion(azGroupClusters, regionName);
 		if (azGroupCluster == null) {
 			throw new BadRequestException(
 				String.format("Cluster: %s doesn't have Region: %s", clusterName, regionName));

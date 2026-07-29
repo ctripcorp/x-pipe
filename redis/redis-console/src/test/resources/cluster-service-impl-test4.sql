@@ -6,7 +6,7 @@ insert into AZ_TBL (id, dc_id, az_name, active, description) values (3, 3, 'C', 
 
 insert into DC_TBL (id,zone_id,dc_name,dc_active,dc_description,dc_last_modified_time) values (4,1,'rb',1,'DC:rb','0000000000000000');
 
-insert into AZ_GROUP_TBL (id,name,region) values(5,'LOCAL_RB','SHA');
+insert into AZ_GROUP_TBL (id,name) values(5,'LOCAL_RB');
 insert into AZ_GROUP_MAPPING_TBL (id, az_id, az_group_id) values (6,4,5);
 -- 增加 appliercontainer
 -- jq

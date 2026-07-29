@@ -362,7 +362,8 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
 
     @Test
     public void testExchangeRegion2() throws DalException, ResourceNotFoundException {
-        this.createCluster(null, "SINGLE_DC", Arrays.asList("jq", "fra"), null);
+        // activeAz = first dc (fra); unbind backup jq so remaining AzGroup is LOCAL_FRA with activeRegion=FRA
+        this.createCluster(null, "SINGLE_DC", Arrays.asList("fra", "jq"), null);
         clusterService.unbindDc("cluster-name", "jq");
         ShardTbl shard = shardService.createShard("cluster-name", new ShardTbl().setShardName("shard2"), new HashMap<>());
         clusterController.upgradeAzGroup("cluster-name");
@@ -377,6 +378,20 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
 
         ShardTbl heteroShard = shardService.findAllShardNamesByClusterName("hetero-cluster").get(0);
         Assert.assertEquals(shard.getShardName(), heteroShard.getShardName());
+    }
+
+    @Test
+    public void testUnbindActiveAzInMultiAzGroup() {
+        this.createCluster(null, null, null, null);
+        clusterController.upgradeAzGroup("cluster-name");
+
+        RetMessage ret = clusterController.unbindDc("cluster-name", "jq");
+        Assert.assertEquals(RetMessage.FAIL_STATE, ret.getState());
+
+        ClusterCreateInfo cluster = clusterController.getCluster("cluster-name");
+        Assert.assertEquals(1, cluster.getRegions().size());
+        Assert.assertEquals(Arrays.asList("jq", "oy"), cluster.getRegions().get(0).getAzs());
+        Assert.assertEquals("jq", cluster.getRegions().get(0).getActiveAz());
     }
 
     @Test
