@@ -77,8 +77,8 @@ public class TestAsyncCommandStore implements AsyncCommandStore {
         return n;
     }
 
-    public Map<String, AsyncFile> roll() throws IOException {
-        return AsyncFileSystemHelper.await(asyncFileSystem.roll(asyncSegmentFile), "roll test command segment");
+    public void roll() throws IOException {
+        AsyncFileSystemHelper.await(asyncFileSystem.roll(asyncSegmentFile), "roll test command segment");
     }
 
     public void closeSegment() throws IOException {
@@ -100,9 +100,12 @@ public class TestAsyncCommandStore implements AsyncCommandStore {
     @Override
     public Map<String, AsyncFile> truncateCmdSegment(long cmdSegmentOffset) throws IOException {
         long globalOffset = getCurrentSegmentStartOffset() + cmdSegmentOffset;
-        return AsyncFileSystemHelper.await(
+        AsyncFileSystemHelper.await(
                 asyncFileSystem.truncate(asyncSegmentFile, globalOffset),
                 "truncate test command segment");
+        return AsyncFileSystemHelper.await(
+                asyncFileSystem.getCurrentIndexFiles(asyncSegmentFile),
+                "get test index files after truncate").getValue();
     }
 
     @Override
@@ -126,7 +129,7 @@ public class TestAsyncCommandStore implements AsyncCommandStore {
         List<String> prefixes = Arrays.asList(indexPrefix, blockPrefix);
         Map<String, AsyncFile> indexMap = AsyncFileSystemHelper.await(
                 asyncFileSystem.getCurrentIndexFiles(asyncSegmentFile, prefixes),
-                "get test index files for truncate");
+                "get test index files for truncate").getValue();
         truncateIndexFileIfPresent(indexMap, indexPrefix, indexSize);
         truncateIndexFileIfPresent(indexMap, blockPrefix, blockSize);
         return indexMap;

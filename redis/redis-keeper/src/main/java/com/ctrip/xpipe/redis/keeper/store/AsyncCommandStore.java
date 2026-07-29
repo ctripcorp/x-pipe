@@ -53,9 +53,10 @@ public interface AsyncCommandStore {
      * and {@code StreamCommandReader}); it is converted to the global logical offset expected by
      * {@code fs.truncate(writeSeg, ...)} internally. Companion index files are <b>not</b> modified by
      * this call — callers must follow up with {@link #truncateIndex} when rolling back a partially-indexed
-     * transaction.
+     * transaction. FS {@code truncate(seg)} returns void; this method re-fetches write index handles via
+     * {@code getCurrentIndexFiles} after truncate.
      *
-     * @return the index handles returned by {@code fs.truncate(writeSeg, globalOffset)} for the resulting segment.
+     * @return write index handles for the resulting segment ({@code getCurrentIndexFiles} after truncate).
      */
     Map<String, AsyncFile> truncateCmdSegment(long cmdSegmentOffset) throws IOException;
 

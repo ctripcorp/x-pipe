@@ -284,7 +284,7 @@ public class DefaultIndexStoreTest {
     private AsyncFile currentIndexHandle(String indexPrefix) throws IOException {
         return AsyncFileSystemHelper.await(
                 testFs.getCurrentIndexFiles(testCmdStore.getWriteSegmentFile(), List.of(indexPrefix)),
-                "get current index handle " + indexPrefix).get(indexPrefix);
+                "get current index handle " + indexPrefix).getValue().get(indexPrefix);
     }
 
     private File indexV2File(String cmdPrefix, long segmentStart) {

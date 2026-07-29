@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class IndexReader implements Closeable {
 
@@ -96,7 +97,14 @@ public class IndexReader implements Closeable {
     public void init() throws IOException {
         indexItemList = new ArrayList<>();
         AsyncFileSystemHelper.await(fs.position(readSeg, segmentStartOffset), "position read segment");
-        var handles = AsyncFileSystemHelper.await(fs.getCurrentIndexFiles(readSeg, indexPrefixes), "get index files");
+        Pair<Long, Map<String, AsyncFile>> indexFiles = AsyncFileSystemHelper.await(
+                fs.getCurrentIndexFiles(readSeg, indexPrefixes), "get index files");
+        // Authoritative segment start from FS — must match the opened index handles (not the
+        // write-side tip that may have advanced past this reader's segment during rotate).
+        if (indexFiles.getKey() != null && indexFiles.getKey() >= 0) {
+            segmentStartOffset = indexFiles.getKey();
+        }
+        Map<String, AsyncFile> handles = indexFiles.getValue();
         indexFile = handles.get(getIndexKey());
         blockFile = handles.get(getBlockKey());
 

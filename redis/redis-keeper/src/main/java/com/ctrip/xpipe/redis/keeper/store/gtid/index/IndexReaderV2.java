@@ -6,12 +6,14 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
+import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class IndexReaderV2 extends IndexReader {
 
@@ -60,7 +62,12 @@ public class IndexReaderV2 extends IndexReader {
     public void init() throws IOException {
         indexItemList = new ArrayList<>();
         AsyncFileSystemHelper.await(fs.position(readSeg, segmentStartOffset), "position read segment v2");
-        var handles = AsyncFileSystemHelper.await(fs.getCurrentIndexFiles(readSeg, indexPrefixes), "get index v2 files");
+        Pair<Long, Map<String, AsyncFile>> indexFiles = AsyncFileSystemHelper.await(
+                fs.getCurrentIndexFiles(readSeg, indexPrefixes), "get index v2 files");
+        if (indexFiles.getKey() != null && indexFiles.getKey() >= 0) {
+            segmentStartOffset = indexFiles.getKey();
+        }
+        Map<String, AsyncFile> handles = indexFiles.getValue();
         indexFile = handles.get(getIndexKey());
         blockFile = handles.get(getBlockKey());
 

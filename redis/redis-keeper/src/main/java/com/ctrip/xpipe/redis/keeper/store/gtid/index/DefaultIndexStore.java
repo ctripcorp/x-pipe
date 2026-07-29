@@ -107,7 +107,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
             long segStart = asyncCommandStore.getCurrentSegmentStartOffset();
             AsyncFileSystemHelper.await(fs.position(recoverSeg, segStart), "position recover segment");
             Map<String, AsyncFile> readHandles = AsyncFileSystemHelper.await(
-                    fs.getCurrentIndexFiles(recoverSeg, prefixes), "get read index handles for recover");
+                    fs.getCurrentIndexFiles(recoverSeg, prefixes), "get read index handles for recover").getValue();
 
             GtidSet v2HeaderGtidSet = headerGtidSet;
             if (keeperConfig.dualWrite()) {
@@ -144,7 +144,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         List<String> prefixes = writerIndexPrefixes(dualWrite);
         return AsyncFileSystemHelper.await(
                 fs.getCurrentIndexFiles(asyncCommandStore.getWriteSegmentFile(), prefixes),
-                "get write index handles");
+                "get write index handles").getValue();
     }
 
     private List<String> writerIndexPrefixes(boolean dualWrite) {

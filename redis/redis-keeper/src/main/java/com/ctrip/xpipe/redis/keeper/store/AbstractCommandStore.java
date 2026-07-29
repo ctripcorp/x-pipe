@@ -403,7 +403,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         List<String> prefixes = Arrays.asList(indexPrefix, blockPrefix);
         Map<String, AsyncFile> handles = AsyncFileSystemHelper.await(
                 asyncFileSystem.getCurrentIndexFiles(asyncSegmentFile, prefixes),
-                "getCurrentIndexFiles for truncateIndex " + indexPrefix + "/" + blockPrefix);
+                "getCurrentIndexFiles for truncateIndex " + indexPrefix + "/" + blockPrefix).getValue();
         AsyncFile indexFile = handles.get(indexPrefix);
         AsyncFile blockFile = handles.get(blockPrefix);
         if (indexFile == null || blockFile == null) {
@@ -419,13 +419,18 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     /**
      * Cmd-only tail truncate for the write segment (spec §3.7.3). Companion index/block file contents
      * are NOT modified by FS truncate — callers roll their own {@link #truncateIndex} follow-up.
+     * After truncate, re-fetches write index handles via {@code getCurrentIndexFiles} (FS truncate
+     * itself returns void as of commit 6c82c2c).
      */
     @Override
     public Map<String, AsyncFile> truncateCmdSegment(long cmdSegmentOffset) throws IOException {
         long globalOffset = getCurrentSegmentStartOffset() + cmdSegmentOffset;
-        return AsyncFileSystemHelper.await(
+        AsyncFileSystemHelper.await(
                 asyncFileSystem.truncate(asyncSegmentFile, globalOffset),
                 "truncate cmd segment to " + globalOffset);
+        return AsyncFileSystemHelper.await(
+                asyncFileSystem.getCurrentIndexFiles(asyncSegmentFile),
+                "getCurrentIndexFiles after truncateCmdSegment " + globalOffset).getValue();
     }
 
     @Override

@@ -275,7 +275,7 @@ public class IndexWriterV2 {
             long segStart = cmdStore.getCurrentSegmentStartOffset();
             AsyncFileSystemHelper.await(fs.position(readSeg, segStart), "position read segment for loadAllZones");
             Map<String, AsyncFile> readHandles = AsyncFileSystemHelper.await(
-                    fs.getCurrentIndexFiles(readSeg, prefixes), "get read index handles for loadAllZones");
+                    fs.getCurrentIndexFiles(readSeg, prefixes), "get read index handles for loadAllZones").getValue();
             AsyncFile readIndexV2 = readHandles.get(INDEX_V2 + cmdPrefix);
             return scanZones(readIndexV2);
         } finally {
