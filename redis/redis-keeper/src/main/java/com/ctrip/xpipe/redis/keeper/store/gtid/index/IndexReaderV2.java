@@ -61,12 +61,14 @@ public class IndexReaderV2 extends IndexReader {
     @Override
     public void init() throws IOException {
         indexItemList = new ArrayList<>();
+        log.info("[IndexReader.init] before segmentStartOffset={}", segmentStartOffset);
         AsyncFileSystemHelper.await(fs.position(readSeg, segmentStartOffset), "position read segment v2");
         Pair<Long, Map<String, AsyncFile>> indexFiles = AsyncFileSystemHelper.await(
                 fs.getCurrentIndexFiles(readSeg, indexPrefixes), "get index v2 files");
         if (indexFiles.getKey() != null && indexFiles.getKey() >= 0) {
             segmentStartOffset = indexFiles.getKey();
         }
+        log.info("[IndexReader.init] after segmentStartOffset={}", segmentStartOffset);
         Map<String, AsyncFile> handles = indexFiles.getValue();
         indexFile = handles.get(getIndexKey());
         blockFile = handles.get(getBlockKey());

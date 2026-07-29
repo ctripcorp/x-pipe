@@ -196,6 +196,17 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         this.switchCmdFile(commandWriterCallback.getCommandWriter());
     }
 
+    /**
+     * Same IndexStore monitor as locate: flush → cmd roll → rebind writers.
+     * Closes the half-rotate window where tip index is empty and seek cannot changeToPre.
+     */
+    @Override
+    public synchronized void rotateWithCmdRoll(IOSupplier<?> cmdRoll) throws IOException {
+        flushWriter();
+        cmdRoll.get();
+        doSwitchCmdFile();
+    }
+
     @Override
     public boolean needRotate() {
         if (streamCommandReader != null && streamCommandReader.isTransactionActive()) {
@@ -344,8 +355,8 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
             logger.info("[locateGtidSetWithFallbackToEnd] not found next, return tail of cmd, request:{}", request);
             continuePoint = locateTailOfCmd();
         }
-        logger.info("backlog gtid set: {}, request gtid set {}, continue gtid set {}", getIndexGtidSet(),
-                request, continuePoint.getValue());
+        logger.info("[locateGtidSetWithFallbackToEnd] backlogOffset={}, backlog gtid set: {}, request gtid set {}, continue gtid set {}",
+                continuePoint.getKey(), getIndexGtidSet(), request, continuePoint.getValue());
         return continuePoint;
     }
 

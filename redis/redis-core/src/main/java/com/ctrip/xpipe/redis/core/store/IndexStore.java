@@ -14,6 +14,15 @@ public interface IndexStore {
     void doRotate() throws IOException;
     boolean needRotate();
     void openWriter(CommandWriter cmdWriter) throws IOException;
+
+    /**
+     * Atomically rotate cmd segment + index writers under the IndexStore monitor.
+     * Order: {@link #flushWriter()} → {@code cmdRoll} (typically {@code CommandWriter#doRotate}/fs.roll)
+     * → rebind index writers to the new segment. Callers must not split cmd roll and index
+     * rebind outside this lock — concurrent locate may otherwise see tip empty index and
+     * fall back to {@code locateTailOfCmd} (skip old-segment GTIDs).
+     */
+    void rotateWithCmdRoll(IOSupplier<?> cmdRoll) throws IOException;
     List<Pair<Long,  Long>> locateGtidRange(String uuid, long begGno, long endGno) throws IOException;
     Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws IOException;
     Pair<Long, GtidSet> locateGtidSetWithFallbackToEnd(GtidSet request) throws IOException;

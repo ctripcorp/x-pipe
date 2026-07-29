@@ -21,7 +21,7 @@ import java.util.Map;
 
 public class IndexReader implements Closeable {
 
-    private static final Logger log = LoggerFactory.getLogger(IndexReader.class);
+    protected static final Logger log = LoggerFactory.getLogger(IndexReader.class);
 
     protected final AsyncFileSystem fs;
     protected final String baseDir;
@@ -96,6 +96,7 @@ public class IndexReader implements Closeable {
 
     public void init() throws IOException {
         indexItemList = new ArrayList<>();
+        log.info("[IndexReader.init] before segmentStartOffset={}", segmentStartOffset);
         AsyncFileSystemHelper.await(fs.position(readSeg, segmentStartOffset), "position read segment");
         Pair<Long, Map<String, AsyncFile>> indexFiles = AsyncFileSystemHelper.await(
                 fs.getCurrentIndexFiles(readSeg, indexPrefixes), "get index files");
@@ -104,6 +105,7 @@ public class IndexReader implements Closeable {
         if (indexFiles.getKey() != null && indexFiles.getKey() >= 0) {
             segmentStartOffset = indexFiles.getKey();
         }
+        log.info("[IndexReader.init] after segmentStartOffset={}", segmentStartOffset);
         Map<String, AsyncFile> handles = indexFiles.getValue();
         indexFile = handles.get(getIndexKey());
         blockFile = handles.get(getBlockKey());

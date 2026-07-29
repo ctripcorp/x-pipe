@@ -319,9 +319,11 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                 return;
             }
             if (indexStore.needRotate()) {
-                indexStore.flushWriter();
-                cmdWriter.doRotate();
-                indexStore.doRotate();
+                // Atomic under IndexStore monitor: flush → cmd roll → doSwitchCmdFile (spec §3.7.7 P0-1)
+                indexStore.rotateWithCmdRoll(() -> {
+                    cmdWriter.doRotate();
+                    return null;
+                });
             }
         }
 

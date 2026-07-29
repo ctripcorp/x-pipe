@@ -250,14 +250,15 @@ public class DefaultIndexStoreTest {
 
     /**
      * Roll the current write segment (same prefix) and notify IndexStore —
-     * mirrors production rotate: flushWriter → roll → doSwitchCmdFile (spec §3.7.7).
+     * mirrors production rotate via {@link DefaultIndexStore#rotateWithCmdRoll} (spec §3.7.7).
      */
     private void switchCmdSegment(String ignoredLegacyName) throws Exception {
         lastRollSegmentStart = testCmdStore.getCurrentSegmentStartOffset() + testCmdStore.currentSegmentSize();
-        defaultIndexStore.flushWriter();
-        testCmdStore.roll();
+        defaultIndexStore.rotateWithCmdRoll(() -> {
+            testCmdStore.roll();
+            return null;
+        });
         segmentWritten = 0L;
-        defaultIndexStore.doSwitchCmdFile();
     }
 
     /** Normalize a legacy flat filename / test name to an AsyncSegmentFile prefix ending with '_'. */
@@ -2086,6 +2087,79 @@ public class DefaultIndexStoreTest {
         Assert.assertFalse("mutating snapshot must not affect index",
                 defaultIndexStore.getIndexGtidSet().contains(uuid, 999));
         Assert.assertTrue(defaultIndexStore.getIndexGtidSet().contains(uuid, 1));
+    }
+
+    /**
+     * P0-1: locate must not observe half-rotate (cmd rolled, index not yet rebound).
+     * rotateWithCmdRoll holds the IndexStore monitor across flush → cmdRoll → doSwitchCmdFile.
+     */
+    @Test
+    public void testRotateWithCmdRoll_BlocksLocateUntilFinished() throws Exception {
+        String uuid = "d50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+        defaultIndexStore.write(createGtidCommand(uuid + ":2", "SET", "k", "v2"));
+
+        CountDownLatch rollEntered = new CountDownLatch(1);
+        CountDownLatch allowRollFinish = new CountDownLatch(1);
+        CountDownLatch locateFinished = new CountDownLatch(1);
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        AtomicReference<Pair<Long, GtidSet>> locateResult = new AtomicReference<>();
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            pool.execute(() -> {
+                try {
+                    lastRollSegmentStart = testCmdStore.getCurrentSegmentStartOffset()
+                            + testCmdStore.currentSegmentSize();
+                    defaultIndexStore.rotateWithCmdRoll(() -> {
+                        rollEntered.countDown();
+                        try {
+                            Assert.assertTrue(allowRollFinish.await(10, TimeUnit.SECONDS));
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new IOException("interrupted waiting for roll finish", e);
+                        }
+                        testCmdStore.roll();
+                        return null;
+                    });
+                    segmentWritten = 0L;
+                } catch (Throwable t) {
+                    error.compareAndSet(null, t);
+                }
+            });
+
+            Assert.assertTrue(rollEntered.await(10, TimeUnit.SECONDS));
+
+            pool.execute(() -> {
+                try {
+                    // Must block on IndexStore monitor until rotateWithCmdRoll finishes
+                    locateResult.set(defaultIndexStore.locateGtidSetWithFallbackToEnd(
+                            new GtidSet(uuid + ":1")));
+                } catch (Throwable t) {
+                    error.compareAndSet(null, t);
+                } finally {
+                    locateFinished.countDown();
+                }
+            });
+
+            // While cmdRoll is paused mid-rotate, locate must not have completed yet
+            Assert.assertFalse("locate must wait for rotateWithCmdRoll monitor",
+                    locateFinished.await(300, TimeUnit.MILLISECONDS));
+
+            allowRollFinish.countDown();
+            Assert.assertTrue(locateFinished.await(10, TimeUnit.SECONDS));
+        } finally {
+            allowRollFinish.countDown();
+            pool.shutdownNow();
+            Assert.assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS));
+        }
+
+        if (error.get() != null) {
+            throw new AssertionError("rotate/locate concurrent failed", error.get());
+        }
+        Assert.assertNotNull(locateResult.get());
+        Assert.assertTrue("locate after atomic rotate must find continue point, not -1/tail-only miss",
+                locateResult.get().getKey() >= 0);
     }
 
     // 辅助方法：从文件写入
