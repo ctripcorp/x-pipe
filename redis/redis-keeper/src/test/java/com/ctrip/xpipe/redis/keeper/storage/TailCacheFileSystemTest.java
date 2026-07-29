@@ -876,9 +876,9 @@ public class TailCacheFileSystemTest {
         }
 
         @Override
-        public Map<String, AsyncFile> rollSync(AsyncSegmentFile file) {
+        public void rollSync(AsyncSegmentFile file) {
             segRollCount++;
-            return super.rollSync(file);
+            super.rollSync(file);
         }
 
         @Override

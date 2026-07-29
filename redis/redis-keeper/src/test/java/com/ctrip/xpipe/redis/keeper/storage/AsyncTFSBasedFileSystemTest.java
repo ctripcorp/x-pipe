@@ -583,14 +583,12 @@ public class AsyncTFSBasedFileSystemTest {
         Files.createDirectories(Paths.get(dir));
         AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null);
         // First roll creates segment at offset 0
-        Map<String, AsyncFile> result1 = fs.rollSync(seg);
-        assertFalse(result1.isEmpty());
-        // Second roll with empty segment returns current index files without creating new segment
+        fs.rollSync(seg);
+        // Second roll with empty segment is a no-op (no new segment created)
         List<Long> offsetsBefore = fs.list(seg);
-        Map<String, AsyncFile> result2 = fs.rollSync(seg);
+        fs.rollSync(seg);
         List<Long> offsetsAfter = fs.list(seg);
         assertEquals(offsetsBefore, offsetsAfter);
-        assertFalse(result2.isEmpty());
         fs.closeSync(seg);
     }
 
@@ -647,7 +645,7 @@ public class AsyncTFSBasedFileSystemTest {
         fs.rollSync(seg);
         fs.writeSync(seg, bufOf(new byte[20]));
         // Truncate at offset -100 (before first segment at 0) -> resets everything
-        Map<String, AsyncFile> result = fs.truncateSync(seg, -100);
+        fs.truncateSync(seg, -100);
         // Should create a new empty segment at offset -100
         List<Long> offsets = fs.list(seg);
         assertEquals(1, offsets.size());
@@ -667,7 +665,7 @@ public class AsyncTFSBasedFileSystemTest {
         fs.rollSync(seg);
         fs.writeSync(seg, bufOf(new byte[20]));
         // Truncate at offset 100 (after end at 30) -> resets everything
-        Map<String, AsyncFile> result = fs.truncateSync(seg, 100);
+        fs.truncateSync(seg, 100);
         List<Long> offsets = fs.list(seg);
         assertEquals(1, offsets.size());
         assertEquals(Long.valueOf(100), offsets.get(0));
