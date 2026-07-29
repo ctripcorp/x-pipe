@@ -1,0 +1,41 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/IndexStore.java
+  s_e760e5665713b3::t_3aa29ece20f9cf 17-25
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_e760e5665713b3::t_421d3385884d35 322-326
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReaderV2.java
+  s_ce618b0b07e2cd::t_2af54bc0b8d8a3 64,71
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReader.java
+  s_ce618b0b07e2cd::t_36e8d6308e8485 24
+  s_ce618b0b07e2cd::t_798093ea99ff3e 99,108
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  s_e760e5665713b3::t_129644a41b600e 2005-2010
+  s_e760e5665713b3::t_fb04c2fcfc1eef 1981-2004,2011-2053
+  s_e760e5665713b3::t_c2920b78c0798c 253,257-260
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  s_ce618b0b07e2cd::t_a957f4a761fa84 356-357
+  s_e760e5665713b3::t_7529edabf2594a 197-207
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "5091e6142695712041173ed34686401d7e83c39b",
+  "prompts": {},
+  "sessions": {
+    "s_ce618b0b07e2cd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ff0bddc4-e838-4f97-b1d0-36a86606740f",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e760e5665713b3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "722d2da8-8e85-42c7-b562-04937868cf44",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
