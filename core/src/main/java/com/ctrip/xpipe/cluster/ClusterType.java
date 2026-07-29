@@ -68,6 +68,23 @@ public enum ClusterType {
         return lookup(azGroupType).supportMigration();
     }
 
+    /**
+     * Whether the cluster behaves as single-active ONE_WAY (incl. HETERO with azGroupType=ONE_WAY).
+     * Console full Meta keeps type=HETERO with azGroupType; Checker flatten uses type=azGroupType.
+     */
+    public static boolean isOneWayEffective(String type, String azGroupType) {
+        if (StringUtil.isEmpty(type)) {
+            return false;
+        }
+        if (isSameClusterType(type, ONE_WAY)) {
+            return true;
+        }
+        if (isSameClusterType(type, HETERO)) {
+            return !StringUtil.isEmpty(azGroupType) && isSameClusterType(azGroupType, ONE_WAY);
+        }
+        return false;
+    }
+
     public boolean supportHealthCheck() {
         return this.supportHealthCheck;
     }
