@@ -642,6 +642,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         try {
             file.position = offset;
             SegmentDirState s = entryOrThrow(file).state;
+            if (file.openedSegmentEndOffset == Long.MAX_VALUE
+                    && !s.isEmpty()
+                    && file.openedSegmentStartOffset != s.lastOffset) {
+                file.closeCurrent();
+            }
             file.switchToSegment(offset, s);
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
@@ -684,11 +689,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
 
     @Override
-    public Map<String, AsyncFile> rollSync(AsyncSegmentFile file) {
+    public void rollSync(AsyncSegmentFile file) {
         StorageUtil.requireOpen(file);
         try {
             FileEntry entry = entryOrThrow(file);
-            return file.roll(entry);
+            file.roll(entry);
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         }
@@ -722,7 +727,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
 
     @Override
-    public Map<String, AsyncFile> getCurrentIndexFilesSync(AsyncSegmentFile file, List<String> indexPrefixes) {
+    public Pair<Long, Map<String, AsyncFile>> getCurrentIndexFilesSync(AsyncSegmentFile file, List<String> indexPrefixes) {
         StorageUtil.requireOpen(file);
         try {
             FileEntry entry = entryOrThrow(file);
@@ -731,11 +736,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 if (file.canWrite()) {
                     file.roll(entry);
                 } else {
-                    return new HashMap<String, AsyncFile>();
+                    return Pair.from(0L, new HashMap<String, AsyncFile>());
                 }
             } else if (!file.canWrite()) {
                 if (!file.switchToSegment(file.position, s)) {
-                    return new HashMap<String, AsyncFile>();
+                    return Pair.from(0L, new HashMap<String, AsyncFile>());
                 }
             }
             return file.getCurrentIndexFiles(indexPrefixes);
@@ -746,7 +751,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
 
     @Override
-    public Map<String, AsyncFile> getCurrentIndexFilesSync(AsyncSegmentFile file) {
+    public Pair<Long, Map<String, AsyncFile>> getCurrentIndexFilesSync(AsyncSegmentFile file) {
         return getCurrentIndexFilesSync(file, file.indexPrefixes);
     }
 
@@ -815,13 +820,12 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
 
     @Override
-    public Map<String, AsyncFile> truncateSync(AsyncSegmentFile file, long offset) {
+    public void truncateSync(AsyncSegmentFile file, long offset) {
         StorageUtil.requireOpen(file);
         try {
             FileEntry entry = entryOrThrow(file);
-            Map<String, AsyncFile> result = file.truncate(offset, entry);
+            file.truncate(offset, entry);
             fsyncInternal(file);
-            return result;
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         }

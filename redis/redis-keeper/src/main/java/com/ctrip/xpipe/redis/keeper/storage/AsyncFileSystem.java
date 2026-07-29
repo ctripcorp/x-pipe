@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import io.netty.buffer.ByteBuf;
 
+import com.ctrip.xpipe.tuple.Pair;
+
 // currently only support append only mode and atomic replace mode.
 // All read/write operations attempt to read/write as much as possible until EOF, I/O error, or completion.
 // also support synchronous operations. add on need
@@ -162,10 +164,10 @@ public interface AsyncFileSystem {
     }
     // If the FS op fails, the caller must retry.
     // Only available in write mode.
-    default CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file) {
+    default CompletableFuture<Void> roll(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
     }
-    default Map<String, AsyncFile> rollSync(AsyncSegmentFile file) {
+    default void rollSync(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
     }
     List<Long> list(AsyncSegmentFile file);
@@ -178,16 +180,16 @@ public interface AsyncFileSystem {
     long getStartOffsetByReadOffset(AsyncSegmentFile file, long readOffset);
     // Returns index files for the segment at file.position.
     // should call position before calling this method if use pread or transferTo which will not update file.position.
-    default CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes) {
+    default CompletableFuture<Pair<Long, Map<String, AsyncFile>>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes) {
         throw new UnsupportedOperationException();
     }
-    default Map<String, AsyncFile> getCurrentIndexFilesSync(AsyncSegmentFile file, List<String> indexPrefixes) {
+    default Pair<Long, Map<String, AsyncFile>> getCurrentIndexFilesSync(AsyncSegmentFile file, List<String> indexPrefixes) {
         throw new UnsupportedOperationException();
     }
-    default CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file) {
+    default CompletableFuture<Pair<Long, Map<String, AsyncFile>>> getCurrentIndexFiles(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
     }
-    default Map<String, AsyncFile> getCurrentIndexFilesSync(AsyncSegmentFile file) {
+    default Pair<Long, Map<String, AsyncFile>> getCurrentIndexFilesSync(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
     }
     default CompletableFuture<Long> size(AsyncSegmentFile file) {
@@ -219,16 +221,16 @@ public interface AsyncFileSystem {
     // If the FS op fails, the caller must retry.
     // Only available in write mode.
     CompletableFuture<Void> delete(AsyncSegmentFile file);
-    // Truncate at logical offset, returning the index files of the resulting segment.
+    // Truncate at logical offset.
     // If offset is in [minOffset, maxOffset + lastSegmentSize], truncate the containing segment and delete those to its right;
     // otherwise delete everything and create a new empty segment starting at offset.
     // Index file contents are NOT truncated; the caller must adjust them.
     // If the FS op fails, the caller must retry.
     // Only available in write mode.
-    default CompletableFuture<Map<String, AsyncFile>> truncate(AsyncSegmentFile file, long offset) {
+    default CompletableFuture<Void> truncate(AsyncSegmentFile file, long offset) {
         throw new UnsupportedOperationException();
     }
-    default Map<String, AsyncFile> truncateSync(AsyncSegmentFile file, long offset) {
+    default void truncateSync(AsyncSegmentFile file, long offset) {
         throw new UnsupportedOperationException();
     }
     // If the FS op fails, the caller must retry.

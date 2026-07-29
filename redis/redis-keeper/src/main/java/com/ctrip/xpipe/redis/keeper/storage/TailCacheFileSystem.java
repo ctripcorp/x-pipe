@@ -1754,9 +1754,13 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 final String id = file.getKey();
                 awaitInFlightIo(id);
                 if (delegate.list(file).isEmpty()) {
-                    CompletableFuture<Map<String, AsyncFile>> ioFuture = StorageUtil.supply(ioExecutor, () -> {
+                    CompletableFuture<Void> ioFuture = StorageUtil.supply(ioExecutor, () -> {
                         StorageUtil.requireCacheOpen(file);
-                        return executeWithEioRetry(file, () -> delegate.rollSync(file));
+                        executeWithEioRetry(file, () -> {
+                            delegate.rollSync(file);
+                            return null;
+                        });
+                        return null;
                     });
                     registerInFlight(id, ioFuture);
                     awaitInFlightIo(id);
@@ -1777,15 +1781,19 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
 
     @Override
-    public CompletableFuture<Map<String, AsyncFile>> roll(AsyncSegmentFile file) {
+    public CompletableFuture<Void> roll(AsyncSegmentFile file) {
         StorageUtil.requireWriteMode(file);
         StorageUtil.requireCacheOpen(file);
         final String id = file.getKey();
         awaitInFlightIo(id);
         segmentFlushPendingWriteAndAwait(file, false);
-        CompletableFuture<Map<String, AsyncFile>> ioFuture = StorageUtil.supply(ioExecutor, () -> {
+        CompletableFuture<Void> ioFuture = StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
-            return executeWithEioRetry(file, () -> delegate.rollSync(file));
+            executeWithEioRetry(file, () -> {
+                delegate.rollSync(file);
+                return null;
+            });
+            return null;
         });
         registerInFlight(id, ioFuture);
         return ioFuture;
@@ -1808,7 +1816,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes) {
+    public CompletableFuture<Pair<Long, Map<String, AsyncFile>>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes) {
         StorageUtil.requireCacheOpen(file);
         return StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
@@ -1818,7 +1826,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
 
     @Override
-    public CompletableFuture<Map<String, AsyncFile>> getCurrentIndexFiles(AsyncSegmentFile file) {
+    public CompletableFuture<Pair<Long, Map<String, AsyncFile>>> getCurrentIndexFiles(AsyncSegmentFile file) {
         return getCurrentIndexFiles(file, file.indexPrefixes);
     }
 
@@ -1950,7 +1958,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public CompletableFuture<Map<String, AsyncFile>> truncate(AsyncSegmentFile file, long offset) {
+    public CompletableFuture<Void> truncate(AsyncSegmentFile file, long offset) {
         StorageUtil.requireWriteMode(file);
         StorageUtil.requireCacheOpen(file);
         final String id = file.getKey();
@@ -1969,21 +1977,22 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                         entry.truncateTo(offset, chunkSize, offsets.get(0));
                     }
                     if (skipDiskTruncate) {
-                        Map<String, AsyncFile> indexFiles = new HashMap<>();
-                        indexFiles.putAll(file.currentIndexFiles);
-                        return CompletableFuture.completedFuture(indexFiles);
+                        return CompletableFuture.completedFuture(null);
                     }
                 }
             }
         }
 
-        CompletableFuture<Map<String, AsyncFile>> ioFuture = StorageUtil.supply(ioExecutor, () -> {
+        CompletableFuture<Void> ioFuture = StorageUtil.supply(ioExecutor, () -> {
             StorageUtil.requireCacheOpen(file);
-            Map<String, AsyncFile> result = executeWithEioRetry(file, () -> delegate.truncateSync(file, offset));
+            executeWithEioRetry(file, () -> {
+                delegate.truncateSync(file, offset);
+                return null;
+            });
             if (file.getCacheEntry() != null) {
                 file.getCacheEntry().pendingFsyncBytes = file.pendingFsyncBytes;
             }
-            return result;
+            return null;
         });
         registerInFlight(id, ioFuture);
         return ioFuture;
