@@ -159,6 +159,7 @@ import org.junit.runners.Suite.SuiteClasses;
         KeeperUpdateControllerTest.class,
         AzServiceImplTest.class,
         ClusterUpdateControllerTest.class,
+        ClusterUpdateControllerCrossRegionAzGroupTest.class,
         ShardUpdateControllerTest.class,
         MetaUpdateTest4.class,
 

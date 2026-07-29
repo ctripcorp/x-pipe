@@ -106,7 +106,19 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
         ClusterCreateInfo cluster = clusterController.getCluster("cluster-name");
         assertClusterEquals(cluster, "ONE_WAY");
         Assert.assertEquals(Arrays.asList("jq", "oy", "fra"), cluster.getDcs());
-        Assert.assertEquals(regions, cluster.getRegions());
+        Assert.assertEquals(2, cluster.getRegions().size());
+
+        RegionInfo sha = cluster.getRegions().stream().filter(r -> "SHA".equals(r.getRegion())).findFirst().get();
+        Assert.assertEquals("ONE_WAY", sha.getClusterType());
+        Assert.assertEquals("jq", sha.getActiveAz());
+        Assert.assertEquals(Arrays.asList("jq", "oy"), sha.getAzs());
+        Assert.assertEquals(Collections.singletonList("SHA"), sha.getRegions());
+
+        RegionInfo fra = cluster.getRegions().stream().filter(r -> "FRA".equals(r.getRegion())).findFirst().get();
+        Assert.assertEquals("SINGLE_DC", fra.getClusterType());
+        Assert.assertEquals("fra", fra.getActiveAz());
+        Assert.assertEquals(Collections.singletonList("fra"), fra.getAzs());
+        Assert.assertEquals(Collections.singletonList("FRA"), fra.getRegions());
     }
 
     private void assertClusterEquals(ClusterCreateInfo cluster, String expectType) {

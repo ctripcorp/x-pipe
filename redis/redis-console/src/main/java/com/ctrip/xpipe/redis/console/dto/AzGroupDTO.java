@@ -10,15 +10,21 @@ public class AzGroupDTO {
     private String clusterType;
     private String activeAz;
     private List<String> azs;
+    private List<String> regions;
 
     public AzGroupDTO() {
     }
 
     public AzGroupDTO(String region, String clusterType, String activeAz, List<String> azs) {
+        this(region, clusterType, activeAz, azs, null);
+    }
+
+    public AzGroupDTO(String region, String clusterType, String activeAz, List<String> azs, List<String> regions) {
         this.region = region;
         this.clusterType = clusterType;
         this.activeAz = activeAz;
         this.azs = azs;
+        this.regions = regions;
     }
 
     public AzGroupDTO(RegionInfo regionInfo) {
@@ -26,6 +32,7 @@ public class AzGroupDTO {
         this.clusterType = regionInfo.getClusterType();
         this.activeAz = regionInfo.getActiveAz();
         this.azs = regionInfo.getAzs();
+        this.regions = regionInfo.getRegions();
     }
 
     public String getRegion() {
@@ -60,6 +67,14 @@ public class AzGroupDTO {
         this.azs = azs;
     }
 
+    public List<String> getRegions() {
+        return regions;
+    }
+
+    public void setRegions(List<String> regions) {
+        this.regions = regions;
+    }
+
     public static AzGroupDTO.Builder builder() {
         return new AzGroupDTO.Builder();
     }
@@ -69,6 +84,7 @@ public class AzGroupDTO {
         private String clusterType;
         private String activeAz;
         private List<String> azs;
+        private List<String> regions;
 
         public Builder() {
         }
@@ -93,8 +109,13 @@ public class AzGroupDTO {
             return this;
         }
 
+        public Builder regions(List<String> val) {
+            regions = val;
+            return this;
+        }
+
         public AzGroupDTO build() {
-            return new AzGroupDTO(this.region, this.clusterType, this.activeAz, this.azs);
+            return new AzGroupDTO(this.region, this.clusterType, this.activeAz, this.azs, this.regions);
         }
     }
 }

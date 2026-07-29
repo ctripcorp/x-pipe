@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.cache.RegionCache;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
+import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.AzGroupModel;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
@@ -58,6 +59,7 @@ public class HeteroMigrationSupport {
 
     /**
      * Unique regions of all azs in an AzGroup definition.
+     * Fail-closed: any az without Region mapping throws BadRequestException (D5).
      */
     public Set<String> containedRegions(AzGroupModel azGroup) {
         if (azGroup == null || CollectionUtils.isEmpty(azGroup.getAzs())) {
@@ -66,9 +68,11 @@ public class HeteroMigrationSupport {
         Set<String> regions = new LinkedHashSet<>();
         for (String az : azGroup.getAzsAsList()) {
             String region = regionCache.regionOf(az);
-            if (!StringUtils.isEmpty(region)) {
-                regions.add(region);
+            if (StringUtils.isEmpty(region)) {
+                throw new BadRequestException(String.format(
+                        "az: %s has no region mapping", az));
             }
+            regions.add(region);
         }
         return regions;
     }
