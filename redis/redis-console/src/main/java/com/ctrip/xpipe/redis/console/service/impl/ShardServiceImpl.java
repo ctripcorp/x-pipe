@@ -447,17 +447,22 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		// create dcClusterShard in all dcClusters of cluster if dcClusterTbls is null
 		if (dcClusterTbls == null) {
 			List<DcClusterTbl> allDcClusterTbls = dcClusterService.findClusterRelated(clusterTbl.getId());
-			Set<Long> oneWayAzGroupClusterIds = new HashSet<>();
+			Set<Long> nonSingleDcAzGroupClusterIds = new HashSet<>();
 			List<DcClusterTbl> filtered = new ArrayList<>();
 			for (DcClusterTbl dcClusterTbl : allDcClusterTbls) {
-				ClusterType azGroupType =
-					azGroupClusterRepository.selectAzGroupTypeById(dcClusterTbl.getAzGroupClusterId());
-				if (azGroupType != ClusterType.SINGLE_DC) {
-					oneWayAzGroupClusterIds.add(dcClusterTbl.getAzGroupClusterId());
+				Long azGroupClusterId = dcClusterTbl.getAzGroupClusterId();
+				if (!nonSingleDcAzGroupClusterIds.contains(azGroupClusterId)) {
+					ClusterType azGroupType =
+						azGroupClusterRepository.selectAzGroupTypeById(azGroupClusterId);
+					if (azGroupType != ClusterType.SINGLE_DC) {
+						nonSingleDcAzGroupClusterIds.add(azGroupClusterId);
+					}
+				}
+				if (nonSingleDcAzGroupClusterIds.contains(azGroupClusterId)) {
 					filtered.add(dcClusterTbl);
 				}
 			}
-			if (oneWayAzGroupClusterIds.size() > 1) {
+			if (nonSingleDcAzGroupClusterIds.size() > 1) {
 				throw new BadRequestException(
 					String.format("Cluster %s has multiple ONE_WAY azGroups, use createRegionShard instead", clusterName));
 			}
