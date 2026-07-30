@@ -1,0 +1,60 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_1c0d12ae3cc688::t_e1118f250add52 25-26,28,34,48-49,62-64,66,69-70,117,128,274-275,277,279-286,288,290-297,299,301-304,307-325,327-340,342-355,357-358,363-367,369-373,451,495,579,581,583-585
+  s_9b69acaeca7481::t_19515998966091 29
+  s_9b69acaeca7481::t_23c9bf288b2348 30
+  s_1c0d12ae3cc688::t_cc9dec93461d3b 31,33
+  s_bfeb69c7003a4a::t_f3d7a42a6ebf9c 36,383
+  s_e6849488ec65b0::t_566932fe96f200 305-306
+  s_277e16fb8fe4f1::t_a3124492c0b03f 405
+  s_1c0d12ae3cc688::t_ca0ea00e8b36d7 452,454-455
+  s_9b69acaeca7481::t_40336fb4b143eb 496,504-507,509,511,513,515-516
+  s_9b69acaeca7481::t_804e59ba24da50 588
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "c143790e48917a578726233af40410b3a62070bb",
+  "prompts": {},
+  "sessions": {
+    "s_1c0d12ae3cc688": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba664ae6-efc5-445a-80dd-275a7540d3e0",
+        "model": "arn:aws:bedrock:us-east-1:133197901387:application-inference-profile/r3vgzaso9r25"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_277e16fb8fe4f1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a834ea39-d868-41ee-a5fd-279e71a96f53",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_9b69acaeca7481": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1723e1d-cf72-440a-b4e9-6c67058800c5",
+        "model": "arn:aws:bedrock:us-east-1:133197901387:application-inference-profile/r3vgzaso9r25"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_bfeb69c7003a4a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41275034-db8d-46a4-bd97-e043975ef62c",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_e6849488ec65b0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "99170675-a06a-446a-b5bf-719e1768f2b1",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
