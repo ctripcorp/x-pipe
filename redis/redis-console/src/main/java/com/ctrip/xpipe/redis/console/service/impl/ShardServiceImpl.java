@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
@@ -261,7 +262,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 	@Override
 	public void createRegionShard(String clusterName, String regionName, String shardName,
-								  List<RedisCreateInfo> redisCreateInfos) throws DalException, ResourceNotFoundException {
+							  List<RedisCreateInfo> redisCreateInfos) throws DalException, ResourceNotFoundException {
 		ClusterTbl cluster = clusterDao.findClusterByClusterName(clusterName);
 		if (cluster == null) {
 			throw new BadRequestException(String.format("Cluster: %s not exist", clusterName));
@@ -269,99 +270,102 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		if (shardName == null || !shardName.equals(shardName.trim())) {
 			throw new BadRequestException("Monitor name should be exact same with shard name");
 		}
-		List<ShardEntity> existShards = shardRepository.selectByClusterId(cluster.getId());
-		ShardEntity existingShard = null;
-		for (ShardEntity existShard : existShards) {
-			if (existShard.getShardName().trim().equalsIgnoreCase(shardName.trim())) {
-				existingShard = existShard;
-			} else if (existShard.getSetinelMonitorName().trim().equalsIgnoreCase(shardName.trim())) {
-				throw new BadRequestException(String.format("Monitor name: %s already exist", shardName));
-			}
-		}
-		List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(cluster.getId());
-		if (CollectionUtils.isEmpty(azGroupClusters)) {
-			throw new BadRequestException(
-				String.format("Cluster: %s in DC mode, cannot create region shard", clusterName));
+
+		AzGroupClusterEntity targetAzGroupCluster = azGroupClusterRepository.selectByClusterIdAndRegion(cluster.getId(), regionName);
+		if (targetAzGroupCluster == null) {
+			throw new BadRequestException(String.format("targetAzGroupCluster not found in Region: %s, cluster %s", regionName, clusterName));
 		}
 
-		List<DcClusterEntity> dcClusters = dcClusterRepository.selectByClusterId(cluster.getId());
-		Map<Long, List<DcClusterEntity>> azGroupClusterId2DcClustersMap = dcClusters.stream()
-			.collect(Collectors.groupingBy(DcClusterEntity::getAzGroupClusterId));
+		doCreateRegionShard(cluster, targetAzGroupCluster, shardName, regionName, redisCreateInfos);
 
-			List<DcClusterShardTbl> dcClusterShardList = new ArrayList<>();
-			Set<String> regionDcNames = new HashSet<>();
-			for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
-				AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
-				if (azGroup.getRegion().equalsIgnoreCase(regionName)) {
-					ShardEntity shard;
-					if (existingShard != null) {
-						if (existingShard.getAzGroupClusterId() != azGroupCluster.getId()) {
-							throw new BadRequestException(
-								String.format("Shard %s already exist in another region", shardName));
-						}
-						shard = existingShard;
-					} else {
-						shard = new ShardEntity()
-							.setShardName(shardName)
-							.setClusterId(cluster.getId())
-							.setAzGroupClusterId(azGroupCluster.getId())
-							.setSetinelMonitorName(shardName);
-						shardRepository.insert(shard);
-					}
-					String azGroupType = StringUtil.isEmpty(azGroupCluster.getAzGroupClusterType()) ?
-						cluster.getClusterType() : azGroupCluster.getAzGroupClusterType();
-					Map<Long, SentinelGroupModel> sentinelModelMap =
-						sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(azGroupType), CLUSTER_DEFAULT_TAG);
-
-					List<DcClusterEntity> regionDcClusters = azGroupClusterId2DcClustersMap.get(azGroupCluster.getId());
-					if (regionDcClusters != null) {
-						for (DcClusterEntity dcCluster : regionDcClusters) {
-							regionDcNames.add(dcService.getDcName(dcCluster.getDcId()).toUpperCase());
-							DcClusterShardTbl exits = dcClusterShardService.find(dcCluster.getDcClusterId(), shard.getId());
-							if (exits != null) continue;
-							DcClusterTbl dcClusterTbl = new DcClusterTbl();
-							dcClusterTbl.setDcClusterId(dcCluster.getDcClusterId());
-							dcClusterTbl.setDcId(dcCluster.getDcId());
-							DcClusterShardTbl dcClusterShardTbl =
-								generateDcClusterShardTbl(cluster, dcClusterTbl, shard.getId(), sentinelModelMap);
-							dcClusterShardList.add(dcClusterShardTbl);
-						}
-					}
-				}
-			}
-			if (!dcClusterShardList.isEmpty()) {
-				dcClusterShardService.insertBatch(dcClusterShardList);
-			}
-
-			if (redisCreateInfos != null && !redisCreateInfos.isEmpty()) {
-				validateRedisCreateInfo(redisCreateInfos, regionDcNames);
-				addRedises(cluster, shardName, redisCreateInfos);
-				addKeepers(cluster, shardName, redisCreateInfos);
-			}
+		if (redisCreateInfos != null && !redisCreateInfos.isEmpty()) {
+			addRedises(cluster, shardName, redisCreateInfos);
+			addKeepers(cluster, shardName, redisCreateInfos);
+		}
 	}
 
-		@Override
-		public void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos) {
-			validateRedisCreateInfo(redisCreateInfos, null);
+	@DalTransaction
+	public void doCreateRegionShard(ClusterTbl cluster, AzGroupClusterEntity targetAzGroupCluster,
+									  String shardName, String regionName,
+									  List<RedisCreateInfo> redisCreateInfos) {
+		List<DcClusterEntity> azGroupDcClusters = dcClusterRepository.selectByAzGroupClusterId(targetAzGroupCluster.getId());
+
+		if (redisCreateInfos != null && !redisCreateInfos.isEmpty()) {
+			validateRedisCreateInfo(redisCreateInfos, azGroupDcClusters);
 		}
 
-		@Override
-		public void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos, Set<String> regionDcNames) {
-			Set<String> dcIds = Sets.newHashSetWithExpectedSize(redisCreateInfos.size());
-			for (RedisCreateInfo createInfo : redisCreateInfos) {
-				if (!dcIds.add(createInfo.getDcId())) {
-					throw new IllegalArgumentException(
-						String.format("dc: %s appears more than two times", createInfo.getDcId()));
-				}
-				if (regionDcNames != null) {
-					String dcId = DC_TRANSFORM_DIRECTION.OUTER_TO_INNER.transform(createInfo.getDcId());
-					if (!regionDcNames.contains(dcId.toUpperCase())) {
-						throw new BadRequestException(
-							String.format("dc %s not belong to target region", createInfo.getDcId()));
-					}
-				}
+		ShardEntity existingShard = null;
+		for (ShardEntity shard : shardRepository.selectByAzGroupClusterId(targetAzGroupCluster.getId())) {
+			if (shard.getShardName().trim().equalsIgnoreCase(shardName.trim())) {
+				existingShard = shard;
+			} else if (shard.getSetinelMonitorName().trim().equalsIgnoreCase(shardName.trim())) {
+				throw new BadRequestException(String.format("Monitor name: %s already exist in region %s", shardName, regionName));
 			}
 		}
+
+		ShardEntity shard;
+		if (existingShard != null) {
+			shard = existingShard;
+		} else {
+			shard = new ShardEntity()
+				.setShardName(shardName)
+				.setClusterId(cluster.getId())
+				.setAzGroupClusterId(targetAzGroupCluster.getId())
+				.setSetinelMonitorName(shardName);
+			shardRepository.insert(shard);
+		}
+
+		String azGroupType = StringUtil.isEmpty(targetAzGroupCluster.getAzGroupClusterType()) ?
+			cluster.getClusterType() : targetAzGroupCluster.getAzGroupClusterType();
+		Map<Long, SentinelGroupModel> sentinelModelMap =
+			sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(azGroupType), CLUSTER_DEFAULT_TAG);
+
+		List<DcClusterShardTbl> dcClusterShardList = new ArrayList<>();
+		for (DcClusterEntity dcCluster : azGroupDcClusters) {
+			DcClusterShardTbl existingDcClusterShard = dcClusterShardService.find(dcCluster.getDcClusterId(), shard.getId());
+			if (existingShard != null && existingDcClusterShard == null) {
+				throw new BadRequestException(String.format("existingShard: %s with no existingDcClusterShard", existingShard.getShardName()));
+			} else if (existingShard == null && existingDcClusterShard != null) {
+				throw new BadRequestException(String.format("existingDcClusterShard: %s with no existingShard", existingDcClusterShard.getId()));
+			}
+
+			DcClusterTbl dcClusterTbl = new DcClusterTbl();
+			dcClusterTbl.setDcClusterId(dcCluster.getDcClusterId());
+			dcClusterTbl.setDcId(dcCluster.getDcId());
+			DcClusterShardTbl dcClusterShardTbl =
+				generateDcClusterShardTbl(cluster, dcClusterTbl, shard.getId(), sentinelModelMap);
+			dcClusterShardList.add(dcClusterShardTbl);
+		}
+		if (!dcClusterShardList.isEmpty()) {
+			dcClusterShardService.insertBatch(dcClusterShardList);
+		}
+	}
+
+    public void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos) {
+        validateRedisCreateInfo(redisCreateInfos, null);
+    }
+
+	@Override
+	public void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos, List<DcClusterEntity> azGroupDcClusters) {
+        Set<String> azGroupDcNames = Sets.newHashSet();
+        Set<String> dcIds = Sets.newHashSetWithExpectedSize(redisCreateInfos.size());
+        for (DcClusterEntity dcCluster : azGroupDcClusters) {
+            azGroupDcNames.add(dcService.getDcName(dcCluster.getDcId()).toUpperCase());
+        }
+
+		for (RedisCreateInfo createInfo : redisCreateInfos) {
+			String dcId = DC_TRANSFORM_DIRECTION.OUTER_TO_INNER.transform(createInfo.getDcId());
+			if (azGroupDcClusters!= null && !azGroupDcNames.contains(dcId.toUpperCase())) {
+				throw new BadRequestException(
+					String.format("dc %s not belong to target region", createInfo.getDcId()));
+			}
+            if (!dcIds.add(createInfo.getDcId())) {
+                throw new IllegalArgumentException(
+                        String.format("dc: %s appears more than two times", createInfo.getDcId()));
+            }
+
+		}
+	}
 
 	@Override
 	public void addRedises(ClusterTbl clusterTbl, String shardName, List<RedisCreateInfo> redisCreateInfos) throws DalException, ResourceNotFoundException {

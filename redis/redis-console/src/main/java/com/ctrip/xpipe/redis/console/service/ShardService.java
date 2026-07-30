@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.console.service;
 
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
+import com.ctrip.xpipe.redis.console.entity.DcClusterEntity;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
@@ -34,7 +35,7 @@ public interface ShardService {
 
 	void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos);
 
-	void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos, Set<String> regionDcNames);
+	void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos, List<DcClusterEntity> azGroupDcClusters);
 
 	void addRedises(ClusterTbl clusterTbl, String shardName, List<RedisCreateInfo> redisCreateInfos) throws DalException, ResourceNotFoundException;
 
