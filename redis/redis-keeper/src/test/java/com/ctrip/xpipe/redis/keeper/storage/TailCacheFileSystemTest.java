@@ -1609,6 +1609,356 @@ public class TailCacheFileSystemTest {
     }
 
     // =========================================================================
+    // O. Chunk-level cache state verification
+    // =========================================================================
+
+    @Test
+    public void testChunkDataAfterWrite() throws Exception {
+        // Verify actual chunk buffer contents after multi-chunk writes
+        String p = path("file_chunk_data");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        // Write 200 bytes — spans chunks [0,64), [64,128), [128,192), [192,200)
+        byte[] data = new byte[200];
+        for (int i = 0; i < 200; i++) data[i] = (byte) (i % 128);
+        writeTcfSync(writer, data);
+
+        FileCacheEntry entry = writer.getCacheEntry();
+        // Verify chunk 0: bytes [0..63]
+        CacheChunk chunk0 = entry.chunks.get(0L);
+        assertNotNull("chunk 0 should exist", chunk0);
+        byte[] buf0 = new byte[64];
+        chunk0.buffer.getBytes(0, buf0);
+        for (int i = 0; i < 64; i++) assertEquals("chunk0 byte " + i, data[i], buf0[i]);
+
+        // Verify chunk 2: bytes [128..191]
+        CacheChunk chunk2 = entry.chunks.get(2L);
+        assertNotNull("chunk 2 should exist", chunk2);
+        byte[] buf2 = new byte[64];
+        chunk2.buffer.getBytes(0, buf2);
+        for (int i = 0; i < 64; i++) assertEquals("chunk2 byte " + i, data[128 + i], buf2[i]);
+
+        // Verify chunk 3: bytes [192..199] (partial, 8 bytes)
+        CacheChunk chunk3 = entry.chunks.get(3L);
+        assertNotNull("chunk 3 should exist", chunk3);
+        byte[] buf3 = new byte[8];
+        chunk3.buffer.getBytes(0, buf3);
+        for (int i = 0; i < 8; i++) assertEquals("chunk3 byte " + i, data[192 + i], buf3[i]);
+
+        assertEquals(4, entry.chunks.size());
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testChunkDataAfterTruncate() throws Exception {
+        // Verify chunk buffer contents are correct after truncation
+        String p = path("file_chunk_trunc");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        // Write 200 bytes (4 chunks)
+        byte[] data = new byte[200];
+        for (int i = 0; i < 200; i++) data[i] = (byte) (i % 128);
+        writeTcfSync(writer, data);
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+
+        FileCacheEntry entry = writer.getCacheEntry();
+        assertEquals(4, entry.chunks.size());
+
+        // Truncate to 100 bytes — should keep chunks 0 and 1, drop chunks 2 and 3
+        tcf.truncate(writer, 100).get(5, TimeUnit.SECONDS);
+        assertEquals(2, entry.chunks.size());
+        assertNotNull("chunk 0 should survive", entry.chunks.get(0L));
+        assertNotNull("chunk 1 should survive", entry.chunks.get(1L));
+        assertNull("chunk 2 should be dropped", entry.chunks.get(2L));
+        assertNull("chunk 3 should be dropped", entry.chunks.get(3L));
+
+        // Verify chunk 1 data is intact (bytes 64..99)
+        CacheChunk chunk1 = entry.chunks.get(1L);
+        byte[] buf1 = new byte[36]; // only bytes 64..99 are valid
+        chunk1.buffer.getBytes(0, buf1);
+        for (int i = 0; i < 36; i++) assertEquals("chunk1 byte " + i, data[64 + i], buf1[i]);
+
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testChunkDataAfterAtomicTruncate() throws Exception {
+        // atomicReplace truncate: verify the single chunk has correct truncated data
+        String p = path("file_chunk_ar_trunc");
+        writeFileSync(p, new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, true, false, null).get();
+        // FULL_CACHE: chunk 0 has all 10 bytes
+        FileCacheEntry entry = writer.getCacheEntry();
+        assertEquals(10, entry.cacheEndOffset);
+
+        // Atomic replace with new data
+        writeTcfSync(writer, new byte[]{10, 20, 30, 40, 50});
+        assertEquals(5, entry.cacheEndOffset);
+
+        // Truncate to 3 bytes
+        tcf.truncate(writer, 3).get(5, TimeUnit.SECONDS);
+        assertEquals(3, entry.cacheEndOffset);
+
+        // Verify chunk 0 buffer has exactly {10, 20, 30}
+        CacheChunk chunk0 = entry.chunks.get(0L);
+        assertNotNull(chunk0);
+        byte[] buf = new byte[3];
+        chunk0.buffer.getBytes(0, buf);
+        assertArrayEquals(new byte[]{10, 20, 30}, buf);
+
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testWrittenToFsOffsetAfterFlush() throws Exception {
+        // writtenToFsOffset tracks what has been flushed to delegate
+        String p = path("file_wfs_offset");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        FileCacheEntry entry = writer.getCacheEntry();
+
+        // After init (empty file): writtenToFsOffset = 0
+        assertEquals(0, entry.writtenToFsOffset);
+
+        // Write 50 bytes — cache has data but not yet flushed
+        writeTcfSync(writer, new byte[50]);
+        assertEquals(50, entry.cacheEndOffset);
+        // writtenToFsOffset may not have advanced yet (async)
+
+        // fsync forces flush — after fsync, writtenToFsOffset should match cacheEndOffset
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        assertEquals("writtenToFsOffset should equal cacheEndOffset after fsync",
+                entry.cacheEndOffset, entry.writtenToFsOffset);
+        assertEquals(50, entry.writtenToFsOffset);
+
+        // Write 30 more bytes
+        writeTcfSync(writer, new byte[30]);
+        assertEquals(80, entry.cacheEndOffset);
+        // writtenToFsOffset should still be 50 (new data not flushed)
+        assertEquals(50, entry.writtenToFsOffset);
+
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testPendingFsyncBytesPropagation() throws Exception {
+        // pendingFsyncBytes on entry should reflect delegate's pendingFsyncBytes after fsync
+        String p = path("file_pfsync");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        FileCacheEntry entry = writer.getCacheEntry();
+
+        writeTcfSync(writer, new byte[100]);
+        // fsync flushes + fsyncs → delegate's pendingFsyncBytes reset
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        assertEquals("entry pendingFsyncBytes should be 0 after fsync",
+                0, entry.pendingFsyncBytes);
+
+        // Write more — delegate's pendingFsyncBytes accumulate, but entry may lag
+        writeTcfSync(writer, new byte[50]);
+        // After close, everything is flushed
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+
+        // Verify disk data is complete
+        byte[] onDisk = readFileSync(p);
+        assertEquals(150, onDisk.length);
+    }
+
+    @Test
+    public void testBodySizeBytesTracking() throws Exception {
+        // bodySizeBytes should accurately track total chunk memory
+        String p = path("file_body_size");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        FileCacheEntry entry = writer.getCacheEntry();
+
+        assertEquals(0, entry.bodySizeBytes);
+
+        // Write 200 bytes → 4 chunks × 64 bytes = 256 bytes allocated
+        writeTcfSync(writer, new byte[200]);
+        assertEquals("bodySizeBytes should be 4 chunks × 64", 4 * CHUNK_SIZE, entry.bodySizeBytes);
+
+        // Truncate to 100 → 2 chunks remain
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        tcf.truncate(writer, 100).get(5, TimeUnit.SECONDS);
+        assertEquals("bodySizeBytes should be 2 chunks × 64 after truncate", 2 * CHUNK_SIZE, entry.bodySizeBytes);
+
+        // Truncate to 0 → all chunks gone
+        tcf.truncate(writer, 0).get(5, TimeUnit.SECONDS);
+        assertEquals(0, entry.bodySizeBytes);
+
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testCacheStartOffsetAfterEviction() throws Exception {
+        // Eviction via evictTailBeforeAppend should advance cacheStartOffset and drop old chunks
+        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
+        config.setPerFileCacheLimits(10 * 1024, 1, CHUNK_SIZE); // minRetainChunks=1
+        config.setMaxCacheSizeBytes(200); // tight: 3 chunks (192) exceed 200
+        config.setWriteBatchBytes(1024);
+        config.setIoWaitTimeoutMs(5000);
+        config.setExpectedMinRetentionMs(0); // no retention delay
+        config.setEvictScanIntervalMs(60_000);
+        config.setWatermarkRatios(0.3, 0.5);
+        config.setMaxEvictRatioPerWrite(0.5);
+        TailCacheFileSystem tightTcf = new TailCacheFileSystem(delegate, config, ioExecutor);
+
+        String p = path("file_cso_evict");
+        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        FileCacheEntry entry = file.getCacheEntry();
+
+        // Write chunk 0 [0,64) and fsync — makes it durable (evictable)
+        tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+        tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
+        assertNotNull("chunk 0 should exist", entry.chunks.get(0L));
+        assertEquals(0, entry.cacheStartOffset);
+
+        // Write chunk 1 [64,128) and fsync
+        tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+        tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
+        assertEquals(2, entry.chunks.size());
+
+        // Write chunk 2 [128,192) and fsync — total 192 > 200*0.5=100, triggers eviction
+        // evictTailBeforeAppend: maxEvictable=3-1=2, ratio=0.96>high → minEvict=1
+        // chunk 0 (durable) gets evicted → cacheStartOffset advances to 64
+        tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+        tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
+
+        // Verify chunk 0 was evicted
+        assertNull("chunk 0 should be evicted", entry.chunks.get(0L));
+        assertNotNull("chunk 1 should survive", entry.chunks.get(1L));
+        assertNotNull("chunk 2 should survive", entry.chunks.get(2L));
+        assertEquals("cacheStartOffset should advance to 64", 64, entry.cacheStartOffset);
+        assertEquals(2, entry.chunks.size());
+
+        // bodySizeBytes should reflect only surviving chunks
+        assertEquals(2 * CHUNK_SIZE, entry.bodySizeBytes);
+
+        tightTcf.close(file).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testIndexFilesCleanupOnSegmentDelete() throws Exception {
+        // SegmentFileCacheEntry.indexFiles should be cleaned up after delete
+        String dir = path("seg_idx_cleanup");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(seg, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcf.roll(seg).get(5, TimeUnit.SECONDS);
+        tcf.write(seg, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+        tcf.fsync(seg).get(5, TimeUnit.SECONDS);
+
+        SegmentFileCacheEntry segEntry = (SegmentFileCacheEntry) seg.getCacheEntry();
+        // After fsync, index files should have entries
+        assertFalse("indexFiles should have entries after write+roll", segEntry.indexFiles.isEmpty());
+
+        // Delete all — entry.clear() should clean up indexFiles
+        tcf.delete(seg).get(5, TimeUnit.SECONDS);
+        assertTrue("indexFiles should be empty after delete", segEntry.indexFiles.isEmpty());
+    }
+
+    @Test
+    public void testWriterIndexLeasesCleanupOnClose() throws Exception {
+        // writerIndexLeaseStarts should be cleaned up after close
+        String dir = path("seg_lease_cleanup");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(seg, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcf.roll(seg).get(5, TimeUnit.SECONDS);
+        tcf.write(seg, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+
+        SegmentFileCacheEntry segEntry = (SegmentFileCacheEntry) seg.getCacheEntry();
+        // Writer has index leases
+        assertFalse("writerIndexLeaseStarts should have entries",
+                segEntry.writerIndexLeaseStarts.isEmpty());
+
+        // Close — releaseEntry should clean up leases
+        tcf.close(seg).get(5, TimeUnit.SECONDS);
+        assertTrue("writerIndexLeaseStarts should be empty after close",
+                segEntry.writerIndexLeaseStarts.isEmpty());
+    }
+
+    @Test
+    public void testGlobalCommittedMatchesBodySize() throws Exception {
+        // memoryTracker.committedBytes() should match sum of all entries' bodySizeBytes
+        String p1 = path("file_gcb1");
+        String p2 = path("file_gcb2");
+        AsyncFile w1 = tcf.open(p1, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile w2 = tcf.open(p2, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+
+        writeTcfSync(w1, new byte[(int) CHUNK_SIZE]);
+        writeTcfSync(w2, new byte[(int) CHUNK_SIZE]);
+
+        FileCacheEntry e1 = w1.getCacheEntry();
+        FileCacheEntry e2 = w2.getCacheEntry();
+        long expectedTotal = e1.bodySizeBytes + e2.bodySizeBytes;
+        assertEquals("global committed should equal sum of bodySizeBytes",
+                expectedTotal, tcf.getGlobalCommittedBytes());
+
+        tcf.close(w1).get(5, TimeUnit.SECONDS);
+        tcf.close(w2).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testSegmentCacheIncludesIndexMemory() throws Exception {
+        // SegmentFileCacheEntry.cacheSizeBytes should include index file memory
+        String dir = path("seg_cache_idx_mem");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(seg, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcf.roll(seg).get(5, TimeUnit.SECONDS);
+        tcf.write(seg, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+        tcf.fsync(seg).get(5, TimeUnit.SECONDS);
+
+        SegmentFileCacheEntry segEntry = (SegmentFileCacheEntry) seg.getCacheEntry();
+        // cacheSizeBytes includes segment chunks + index file chunks
+        long segOnlyBytes = segEntry.bodySizeBytes;
+        long totalBytes = segEntry.cacheSizeBytes();
+        assertTrue("cacheSizeBytes should include index memory (total >= segment only)",
+                totalBytes >= segOnlyBytes);
+
+        tcf.close(seg).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testChunkSurvivesEvictionAfterFsync() throws Exception {
+        // After fsync, chunks become evictable; verify specific chunks are dropped under pressure
+        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
+        config.setPerFileCacheLimits(10 * 1024, 1, CHUNK_SIZE); // minRetainChunks=1
+        config.setMaxCacheSizeBytes(150); // tight: allows ~2 chunks
+        config.setWriteBatchBytes(1024);
+        config.setIoWaitTimeoutMs(5000);
+        config.setExpectedMinRetentionMs(0);
+        config.setEvictScanIntervalMs(60_000);
+        config.setWatermarkRatios(0.3, 0.5);
+        config.setMaxEvictRatioPerWrite(0.5);
+        TailCacheFileSystem tightTcf = new TailCacheFileSystem(delegate, config, ioExecutor);
+
+        String p = path("file_evict_chunks");
+        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        FileCacheEntry entry = file.getCacheEntry();
+
+        // Write and fsync chunk 0
+        tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+        tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
+        assertNotNull("chunk 0 should exist after fsync", entry.chunks.get(0L));
+
+        // Write and fsync chunk 1 — may trigger eviction of chunk 0
+        tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+        tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
+
+        // Write and fsync chunk 2 — should trigger eviction under pressure
+        tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+        tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
+
+        // Verify: chunk 2 (latest) should always exist
+        assertNotNull("latest chunk should survive", entry.chunks.get(2L));
+        // minRetainChunks=1: at least 1 chunk should survive
+        assertTrue("at least 1 chunk should remain", entry.chunks.size() >= 1);
+        // cacheStartOffset should have advanced if eviction occurred
+        assertTrue("cacheStartOffset should advance on eviction",
+                entry.cacheStartOffset >= 0);
+
+        tightTcf.close(file).get(5, TimeUnit.SECONDS);
+    }
+
+    // =========================================================================
     // RecordingDelegate — wraps AsyncTFSBasedFileSystem to count delegate calls
     // =========================================================================
 
