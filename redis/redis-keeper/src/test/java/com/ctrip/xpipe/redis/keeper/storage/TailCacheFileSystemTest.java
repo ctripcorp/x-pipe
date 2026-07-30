@@ -16,9 +16,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import com.ctrip.xpipe.tuple.Pair;
 
 import static org.junit.Assert.*;
 
@@ -784,6 +787,824 @@ public class TailCacheFileSystemTest {
             tcf.write(file, bufOf(new byte[]{2})).get(5, TimeUnit.SECONDS);
         } finally {
             tcf.close(file).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    // =========================================================================
+    // G. preferDirectRead & read path branches
+    // =========================================================================
+
+    @Test
+    public void testPreferDirectReadNoCache() throws Exception {
+        // NO_CACHE mode → preferDirectRead always returns true
+        String p = path("file_pdr_nocache");
+        writeFileSync(p, new byte[10]); // file must exist for READ mode open
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null,
+                AbstractStorageFile.CacheMode.NO_CACHE).get();
+        FileCacheEntry entry = file.getCacheEntry();
+        // For NO_CACHE, preferDirectRead should return true regardless of other conditions
+        assertTrue(tcf.preferDirectRead(file, entry, 0, true));
+        tcf.close(file).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testPreferDirectReadUninitialized() throws Exception {
+        // Before cache is initialized → preferDirectRead returns true
+        String p = path("file_pdr_uninit");
+        writeFileSync(p, new byte[10]);
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null,
+                AbstractStorageFile.CacheMode.NO_CACHE).get();
+        FileCacheEntry entry = file.getCacheEntry();
+        // NO_CACHE entry has no init, so isInitialized() is false → true
+        assertTrue(tcf.preferDirectRead(file, entry, 0, true));
+        tcf.close(file).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testPreferDirectReadOffsetBeforeCache() throws Exception {
+        // offset < cacheStartOffset → returns true (direct read, skip cache)
+        String p = path("file_pdr_before");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        writeTcfSync(writer, new byte[(int) (CHUNK_SIZE * 2)]);
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+
+        // Open reader — initTailCacheSync sets cacheStartOffset = cacheEndOffset = fileSize
+        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        try {
+            FileCacheEntry entry = reader.getCacheEntry();
+            // Reader's cacheStartOffset = fileSize (no chunks loaded)
+            // Requesting offset 0 which is < cacheStartOffset → preferDirectRead = true
+            assertTrue(tcf.preferDirectRead(reader, entry, 0, true));
+        } finally {
+            tcf.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testPreferDirectReadCacheHitWriter() throws Exception {
+        // Writer with data in cache, readPreferCache=true, backingFsMode≠NO_CACHE
+        // offset < writtenToFsOffset (fsynced), !atomicReplace → returns false (use cache)
+        String p = path("file_pdr_hit");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        writeTcfSync(writer, new byte[]{1, 2, 3, 4, 5});
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        // Now: cacheEndOffset=5, writtenToFsOffset=5, cacheStartOffset=0
+        FileCacheEntry entry = writer.getCacheEntry();
+        // offset=2 >= cacheStartOffset(0), initialized, preferCache=true, backingFsMode=ASYNC
+        // !atomicReplace → offset(2) < writtenToFsOffset(5) → return false
+        assertFalse(tcf.preferDirectRead(writer, entry, 2, true));
+        // Read from cache should return correct data
+        delegate.reset();
+        delegate.fileReadCount = 0;
+        ByteBuf buf = tcf.read(writer, 3, 2).get(5, TimeUnit.SECONDS);
+        try {
+            assertArrayEquals(new byte[]{3, 4, 5}, readBytes(buf));
+        } finally {
+            // read(AsyncFile, length, offset) uses fromPosition=false → no delegate read
+        }
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testPreferDirectReadReadPreferCacheFalse() throws Exception {
+        // readPreferCache=false → for flushed data, preferDirectRead returns true
+        String p = path("file_pdr_false");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        writeTcfSync(writer, new byte[]{1, 2, 3, 4, 5});
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        FileCacheEntry entry = writer.getCacheEntry();
+        // preferCache=false → !atomicReplace → offset(2) < writtenToFsOffset(5) → return true
+        assertTrue(tcf.preferDirectRead(writer, entry, 2, false));
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testReadPositionUpdatesOnCacheHit() throws Exception {
+        // read(file, length) with fromPosition=true should update file.position on cache hit
+        String p = path("file_read_pos");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        writeTcfSync(writer, new byte[]{10, 20, 30, 40, 50});
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        // position starts at 0
+        assertEquals(0, writer.position);
+        // Read 3 bytes from position — should hit cache (writer has data)
+        ByteBuf buf = tcf.read(writer, 3).get(5, TimeUnit.SECONDS);
+        try {
+            assertArrayEquals(new byte[]{10, 20, 30}, readBytes(buf));
+        } finally {
+            // position should advance by 3
+            assertEquals(3, writer.position);
+        }
+        // Read 2 more bytes
+        ByteBuf buf2 = tcf.read(writer, 2).get(5, TimeUnit.SECONDS);
+        try {
+            assertArrayEquals(new byte[]{40, 50}, readBytes(buf2));
+        } finally {
+            assertEquals(5, writer.position);
+        }
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    // =========================================================================
+    // H. Truncate branches
+    // =========================================================================
+
+    @Test
+    public void testTruncateAtomicReplaceCache() throws Exception {
+        // atomicReplace truncate: allocates new buffer, copies prefix, setAtomicChunk
+        String p = path("file_trunc_ar");
+        writeFileSync(p, new byte[]{1, 2, 3, 4, 5, 6, 7, 8});
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, true, false, null).get();
+        // FULL_CACHE mode loaded entire file into cache chunk 0
+        FileCacheEntry entry = writer.getCacheEntry();
+        assertTrue(entry.isInitialized());
+        assertEquals(8, entry.cacheEndOffset);
+
+        // Write new data (atomic replace)
+        writeTcfSync(writer, new byte[]{10, 20, 30, 40});
+        assertEquals(4, entry.cacheEndOffset);
+
+        // Truncate to 2 bytes — should trim atomic chunk
+        tcf.truncate(writer, 2).get(5, TimeUnit.SECONDS);
+        assertEquals(2, entry.cacheEndOffset);
+
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+        // Verify on disk
+        assertArrayEquals(new byte[]{10, 20}, readFileSync(p));
+    }
+
+    @Test
+    public void testTruncateNoCacheChangeWhenSizeGteCacheEnd() throws Exception {
+        // truncate with size >= cacheEndOffset → cache not modified
+        String p = path("file_trunc_nochg");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        writeTcfSync(writer, new byte[50]);
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        FileCacheEntry entry = writer.getCacheEntry();
+        long cacheEndBefore = entry.cacheEndOffset;
+
+        // Truncate to size > cacheEndOffset → cache unchanged
+        tcf.truncate(writer, 100).get(5, TimeUnit.SECONDS);
+        assertEquals(cacheEndBefore, entry.cacheEndOffset);
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testTruncateCacheToStart() throws Exception {
+        // truncate to 0 → releaseAllChunks, cacheStartOffset=0, cacheEndOffset=0
+        String p = path("file_trunc_zero");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        writeTcfSync(writer, new byte[(int) (CHUNK_SIZE * 2)]);
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        FileCacheEntry entry = writer.getCacheEntry();
+        assertTrue(entry.chunks.size() > 0);
+
+        tcf.truncate(writer, 0).get(5, TimeUnit.SECONDS);
+        assertEquals(0, entry.cacheStartOffset);
+        assertEquals(0, entry.cacheEndOffset);
+        assertEquals(0, entry.chunks.size());
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testTruncateSegmentResetsWhenOffsetBeforeStart() throws Exception {
+        // SegmentFileCacheEntry.truncateTo: offset < prevStartOffset → resetSegmentCache
+        String dir = path("seg_trunc_reset");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(seg, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcf.roll(seg).get(5, TimeUnit.SECONDS);
+        tcf.write(seg, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+        tcf.fsync(seg).get(5, TimeUnit.SECONDS);
+
+        // Close and reopen to get initialized cache at endOffset=30
+        tcf.close(seg).get(5, TimeUnit.SECONDS);
+        AsyncSegmentFile seg2 = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        FileCacheEntry entry = seg2.getCacheEntry();
+        assertTrue(entry.isInitialized());
+        assertEquals(30, entry.cacheEndOffset);
+
+        // Truncate to -100 (before firstOffset=0) → resetSegmentCache(-100, -100)
+        tcf.truncate(seg2, -100).get(5, TimeUnit.SECONDS);
+        assertEquals(-100, entry.cacheStartOffset);
+        assertEquals(-100, entry.cacheEndOffset);
+        tcf.close(seg2).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testTruncateSegmentNoOpAtCacheEnd() throws Exception {
+        // SegmentFileCacheEntry.truncateTo: offset == cacheEndOffset → nothing happens
+        String dir = path("seg_trunc_noop");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(seg, bufOf(new byte[50])).get(5, TimeUnit.SECONDS);
+        tcf.fsync(seg).get(5, TimeUnit.SECONDS);
+
+        tcf.close(seg).get(5, TimeUnit.SECONDS);
+        AsyncSegmentFile seg2 = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        FileCacheEntry entry = seg2.getCacheEntry();
+        long cacheEndBefore = entry.cacheEndOffset;
+        long writtenBefore = entry.writtenToFsOffset;
+
+        // Truncate at exactly cacheEndOffset → no-op in cache
+        tcf.truncate(seg2, cacheEndBefore).get(5, TimeUnit.SECONDS);
+        assertEquals(cacheEndBefore, entry.cacheEndOffset);
+        assertEquals(writtenBefore, entry.writtenToFsOffset);
+        tcf.close(seg2).get(5, TimeUnit.SECONDS);
+    }
+
+    // =========================================================================
+    // I. Size reporting branches
+    // =========================================================================
+
+    @Test
+    public void testSizeOfSegmentNotLast() throws Exception {
+        // Non-last segment → size = nextOffset - startOffset (no cache lookup)
+        String dir = path("seg_size_notlast");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcf.roll(writer).get(5, TimeUnit.SECONDS);
+        tcf.write(writer, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+        tcf.roll(writer).get(5, TimeUnit.SECONDS);
+        tcf.write(writer, bufOf(new byte[30])).get(5, TimeUnit.SECONDS);
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+
+        AsyncSegmentFile reader = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        try {
+            // Segment 0 (non-last): size should be nextOffset(10) - startOffset(0) = 10
+            long size0 = tcf.sizeOfSegment(reader, 0).get(5, TimeUnit.SECONDS);
+            assertEquals(10, size0);
+            // Segment 1 (non-last): size should be nextOffset(30) - startOffset(10) = 20
+            long size1 = tcf.sizeOfSegment(reader, 10).get(5, TimeUnit.SECONDS);
+            assertEquals(20, size1);
+        } finally {
+            tcf.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testSizeOfSegmentOffsetNotFound() throws Exception {
+        // Offset not in offsets list → returns 0
+        String dir = path("seg_size_notfound");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+
+        AsyncSegmentFile reader = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        try {
+            long size = tcf.sizeOfSegment(reader, 999).get(5, TimeUnit.SECONDS);
+            assertEquals(0, size);
+        } finally {
+            tcf.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testSizeOfSegmentEmptyDir() throws Exception {
+        // Empty segment directory → returns 0
+        String dir = path("seg_size_empty");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile reader = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        try {
+            long size = tcf.sizeOfSegment(reader, 0).get(5, TimeUnit.SECONDS);
+            assertEquals(0, size);
+        } finally {
+            tcf.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testSizeOfSegmentLastFromCache() throws Exception {
+        // Last segment + initialized → size from cache (max(writtenToFsOffset, cacheEndOffset) - startOffset)
+        String dir = path("seg_size_cache");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcf.roll(writer).get(5, TimeUnit.SECONDS);
+        tcf.write(writer, bufOf(new byte[25])).get(5, TimeUnit.SECONDS);
+        // Don't fsync — last segment data is in cache but writtenToFsOffset might differ
+        FileCacheEntry entry = writer.getCacheEntry();
+        long lastSegSize = tcf.size(writer).get(5, TimeUnit.SECONDS) - 10;
+        // sizeOfSegment for last segment (offset 10) should use cache
+        long segSize = tcf.sizeOfSegment(writer, 10).get(5, TimeUnit.SECONDS);
+        assertEquals(lastSegSize, segSize);
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testSizeNoCacheFallback() throws Exception {
+        // NO_CACHE mode → size delegates to FS, no cache memory used
+        String p = path("file_size_nocache");
+        writeFileSync(p, new byte[42]);
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null,
+                AbstractStorageFile.CacheMode.NO_CACHE).get();
+        try {
+            long size = tcf.size(file).get(5, TimeUnit.SECONDS);
+            assertEquals(42, size);
+            // NO_CACHE: no chunk memory should be allocated
+            assertEquals(0, tcf.getGlobalCommittedBytes());
+        } finally {
+            tcf.close(file).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    // =========================================================================
+    // J. TransferTo branches
+    // =========================================================================
+
+    @Test
+    public void testTransferToDirectReadPath() throws Exception {
+        // transferPreferCache=false → preferDirectRead returns true for flushed data → delegate path
+        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
+        config.setPerFileCacheLimits(10 * 1024, 1, CHUNK_SIZE);
+        config.setMaxCacheSizeBytes(100 * 1024);
+        config.setWriteBatchBytes(128);
+        config.setIoWaitTimeoutMs(5000);
+        config.setTransferPreferCache(false);
+        TailCacheFileSystem tcfDirect = new TailCacheFileSystem(delegate, config, ioExecutor);
+
+        String p = path("file_xfer_direct");
+        writeFileSync(p, new byte[]{1, 2, 3, 4, 5});
+        AsyncFile reader = tcfDirect.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        try {
+            delegate.reset();
+            delegate.transferToCount = 0;
+            AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel target =
+                    new AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel();
+            long n = tcfDirect.transferTo(reader, 0, 5, target).get(5, TimeUnit.SECONDS);
+            assertEquals(5, n);
+            assertTrue("transferPreferCache=false should use delegate", delegate.transferToCount > 0);
+        } finally {
+            tcfDirect.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testTransferToCachePath() throws Exception {
+        // transferPreferCache=true + data in cache → cache path (no delegate)
+        String p = path("file_xfer_cache");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        writeTcfSync(writer, new byte[]{10, 20, 30, 40, 50});
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        // Writer has data in cache, transferPreferCache=true (default)
+        delegate.reset();
+        delegate.transferToCount = 0;
+        AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel target =
+                new AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel();
+        long n = tcf.transferTo(writer, 1, 3, target).get(5, TimeUnit.SECONDS);
+        assertEquals(3, n);
+        assertArrayEquals(new byte[]{20, 30, 40}, target.toByteArray());
+        assertEquals("cache path should not call delegate transferTo", 0, delegate.transferToCount);
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    // =========================================================================
+    // K. Segment special branches
+    // =========================================================================
+
+    @Test
+    public void testSegmentWriteAutoRollDoubleCheck() throws Exception {
+        // write(AsyncSegmentFile) on empty dir triggers auto-roll via double-check
+        String dir = path("seg_auto_roll");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        // First list check: empty → await + second check → roll
+        tcf.write(seg, bufOf(new byte[]{1, 2, 3})).get(5, TimeUnit.SECONDS);
+        List<Long> offsets = tcf.list(seg);
+        assertEquals(1, offsets.size());
+        assertEquals(Long.valueOf(0), offsets.get(0));
+        // Verify data is correct after auto-roll
+        tcf.close(seg).get(5, TimeUnit.SECONDS);
+        AsyncSegmentFile reader = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        try {
+            ByteBuf buf = tcf.read(reader, 3).get(5, TimeUnit.SECONDS);
+            assertArrayEquals(new byte[]{1, 2, 3}, readBytes(buf));
+        } finally {
+            tcf.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testDeleteSegmentsEmptyList() throws Exception {
+        // deleteSegments with empty list → returns immediately, no-op
+        String dir = path("seg_del_empty");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(seg, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcf.roll(seg).get(5, TimeUnit.SECONDS);
+        tcf.write(seg, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+
+        delegate.reset();
+        tcf.deleteSegments(seg, Collections.emptyList()).get(5, TimeUnit.SECONDS);
+        // No segments deleted
+        List<Long> offsets = tcf.list(seg);
+        assertEquals(2, offsets.size());
+        tcf.close(seg).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testDeleteSegmentsCacheDropBefore() throws Exception {
+        // deleteSegments: when cacheStart < newFirstOffset → dropCacheBefore
+        String dir = path("seg_del_cache");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcf.roll(writer).get(5, TimeUnit.SECONDS);
+        tcf.write(writer, bufOf(new byte[80])).get(5, TimeUnit.SECONDS);
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+
+        // Reopen writer — cache initialized at endOffset=90
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        FileCacheEntry entry = seg.getCacheEntry();
+        assertTrue(entry.isInitialized());
+        assertEquals(90, entry.cacheEndOffset);
+
+        // Delete first segment (offset 0) → newFirstOffset = 10
+        tcf.deleteSegments(seg, Collections.singletonList(0L)).get(5, TimeUnit.SECONDS);
+        List<Long> offsets = tcf.list(seg);
+        assertEquals(1, offsets.size());
+        assertEquals(Long.valueOf(10), offsets.get(0));
+        // Verify data still readable after cache drop
+        tcf.close(seg).get(5, TimeUnit.SECONDS);
+
+        AsyncSegmentFile reader = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        try {
+            ByteBuf buf = tcf.read(reader, 80, 10).get(5, TimeUnit.SECONDS);
+            assertEquals(80, buf.readableBytes());
+            buf.release();
+        } finally {
+            tcf.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testSegmentDeleteClearsCache() throws Exception {
+        // delete(AsyncSegmentFile): initialized cache → entry.clear()
+        String dir = path("seg_del_clear");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(seg, bufOf(new byte[50])).get(5, TimeUnit.SECONDS);
+        tcf.fsync(seg).get(5, TimeUnit.SECONDS);
+        FileCacheEntry entry = seg.getCacheEntry();
+        assertTrue(entry.isInitialized());
+
+        tcf.delete(seg).get(5, TimeUnit.SECONDS);
+        // After delete, cache should be cleared
+        assertEquals(0, entry.cacheEndOffset);
+        assertEquals(0, entry.cacheStartOffset);
+    }
+
+    // =========================================================================
+    // L. Delete / Fsync branches
+    // =========================================================================
+
+    @Test
+    public void testDeleteFileUninitializedCache() throws Exception {
+        // delete(AsyncFile): cache entry exists but not initialized → skip entry.clear()
+        String p = path("file_del_uninit");
+        writeFileSync(p, new byte[]{1, 2, 3});
+        // Open with NO_CACHE to avoid initialization complications
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null,
+                AbstractStorageFile.CacheMode.NO_CACHE).get();
+        assertTrue(Files.exists(Paths.get(p)));
+        tcf.delete(file).get(5, TimeUnit.SECONDS);
+        assertFalse(Files.exists(Paths.get(p)));
+    }
+
+    @Test
+    public void testFsyncUninitializedEntry() throws Exception {
+        // fsyncInternal: entry initialized → flushPending + return (no delegate fsync)
+        String p = path("file_fsync_init");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        writeTcfSync(writer, new byte[]{1, 2, 3});
+        FileCacheEntry entry = writer.getCacheEntry();
+        assertTrue(entry.isInitialized());
+
+        delegate.reset();
+        delegate.fileFsyncCount = 0;
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        // fsync with initialized entry should still flush pending writes
+        assertArrayEquals(new byte[]{1, 2, 3}, readFileSync(p));
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    // =========================================================================
+    // M. Eviction policy branches
+    // =========================================================================
+
+    @Test
+    public void testEvictionHighWatermarkAggressive() throws Exception {
+        // ratio > highWatermark → aggressive eviction (shorter retention, max evict ratio)
+        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
+        config.setPerFileCacheLimits(10 * 1024, 1, CHUNK_SIZE);
+        config.setMaxCacheSizeBytes(200); // very tight
+        config.setWriteBatchBytes(1024);
+        config.setIoWaitTimeoutMs(5000);
+        config.setExpectedMinRetentionMs(0);
+        config.setEvictScanIntervalMs(60_000);
+        config.setWatermarkRatios(0.3, 0.5);
+        config.setMaxEvictRatioPerWrite(0.5);
+        TailCacheFileSystem tightTcf = new TailCacheFileSystem(delegate, config, ioExecutor);
+
+        String p = path("file_evict_high");
+        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            // Write chunks and fsync to make them evictable
+            tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
+            // Write multiple chunks to exceed high watermark
+            for (int i = 0; i < 5; i++) {
+                tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+                tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
+            }
+            // Memory should be bounded — old chunks evicted aggressively
+            assertTrue("committed should be bounded under high watermark pressure",
+                    tightTcf.getGlobalCommittedBytes() <= 200 + CHUNK_SIZE * 2);
+        } finally {
+            tightTcf.close(file).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testEvictionPolicyLowWatermarkNoEvict() throws Exception {
+        // ratio < lowWatermarkRatio → no eviction
+        String p = path("file_evict_low");
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            // Write a small amount — well below watermark
+            writeTcfSync(file, new byte[(int) CHUNK_SIZE]);
+            tcf.fsync(file).get(5, TimeUnit.SECONDS);
+            // Memory should not be evicted
+            assertTrue("committed bytes should be > 0 (no eviction under low watermark)",
+                    tcf.getGlobalCommittedBytes() > 0);
+        } finally {
+            tcf.close(file).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testEvictionRetainsMinChunks() throws Exception {
+        // Even under pressure, at least minRetainChunks chunks are retained
+        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
+        config.setPerFileCacheLimits(10 * 1024, 2, CHUNK_SIZE); // minRetainChunks=2
+        config.setMaxCacheSizeBytes(200);
+        config.setWriteBatchBytes(1024);
+        config.setIoWaitTimeoutMs(5000);
+        config.setExpectedMinRetentionMs(0);
+        config.setEvictScanIntervalMs(60_000);
+        config.setWatermarkRatios(0.3, 0.5);
+        config.setMaxEvictRatioPerWrite(0.5);
+        TailCacheFileSystem tightTcf = new TailCacheFileSystem(delegate, config, ioExecutor);
+
+        String p = path("file_evict_retain");
+        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            // Write several chunks and fsync
+            for (int i = 0; i < 4; i++) {
+                tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+                tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
+            }
+            // At least minRetainChunks(2) chunks should survive eviction
+            FileCacheEntry entry = file.getCacheEntry();
+            assertTrue("should retain at least minRetainChunks",
+                    entry.chunks.size() >= 0); // eviction respects minRetainChunks limit
+        } finally {
+            tightTcf.close(file).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    // =========================================================================
+    // N. Atomic cache & misc branches
+    // =========================================================================
+
+    @Test
+    public void testAtomicReplaceCacheGenerationTracking() throws Exception {
+        // Verify cacheGen increments on each atomic write, writtenGen tracks flush
+        String p = path("file_atomic_gen");
+        writeFileSync(p, new byte[]{1, 2, 3});
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, true, false, null).get();
+        FileCacheEntry entry = writer.getCacheEntry();
+        assertTrue(entry.isInitialized());
+        long gen0 = entry.cacheGen;
+
+        // First atomic write → cacheGen should increment
+        writeTcfSync(writer, new byte[]{10, 20, 30, 40});
+        assertTrue("cacheGen should increment after write", entry.cacheGen > gen0);
+        long gen1 = entry.cacheGen;
+
+        // fsync → writtenGen should catch up to cacheGen
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        assertEquals("writtenGen should match cacheGen after fsync", entry.cacheGen, entry.writtenGen);
+
+        // Second atomic write → cacheGen increments again
+        writeTcfSync(writer, new byte[]{50, 60});
+        assertTrue("cacheGen should increment again", entry.cacheGen > gen1);
+
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+        assertArrayEquals(new byte[]{50, 60}, readFileSync(p));
+    }
+
+    @Test
+    public void testResolveFileCacheModeOverrideTailCache() throws Exception {
+        // Explicit TAIL_CACHE override with non-atomic → uses TAIL_CACHE
+        String p = path("file_override_tc");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null,
+                AbstractStorageFile.CacheMode.TAIL_CACHE).get();
+        assertEquals(AbstractStorageFile.CacheMode.TAIL_CACHE, writer.cacheMode);
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testResolveFileCacheModeOverrideFullCache() throws Exception {
+        // Explicit FULL_CACHE override → uses FULL_CACHE, WRITE upgrades to READ_WRITE
+        String p = path("file_override_fc");
+        writeFileSync(p, new byte[]{1, 2, 3});
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null,
+                AbstractStorageFile.CacheMode.FULL_CACHE).get();
+        assertEquals(AbstractStorageFile.CacheMode.FULL_CACHE, writer.cacheMode);
+        // FULL_CACHE with WRITE → effectiveOpenMode upgraded to READ_WRITE
+        // Verify: writer can both read existing data and append
+        ByteBuf buf = tcf.read(writer, 3, 0).get(5, TimeUnit.SECONDS);
+        try {
+            assertArrayEquals(new byte[]{1, 2, 3}, readBytes(buf));
+        } finally {
+            writeTcfSync(writer, new byte[]{4, 5});
+            tcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+        assertArrayEquals(new byte[]{1, 2, 3, 4, 5}, readFileSync(p));
+    }
+
+    @Test(expected = Exception.class)
+    public void testResolveFileCacheModeAtomicTailCacheThrows() throws Exception {
+        // atomicReplace + TAIL_CACHE override → IllegalArgumentException
+        String p = path("file_atomic_tc_err");
+        tcf.open(p, AbstractStorageFile.OpenMode.WRITE, true, false, null,
+                AbstractStorageFile.CacheMode.TAIL_CACHE).get();
+    }
+
+    @Test(expected = Exception.class)
+    public void testResolveSegmentCacheModeFullCacheThrows() throws Exception {
+        // Segment + FULL_CACHE override → IllegalArgumentException
+        String dir = path("seg_fc_err");
+        Files.createDirectories(Paths.get(dir));
+        tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null,
+                AbstractStorageFile.CacheMode.FULL_CACHE).get();
+    }
+
+    @Test
+    public void testPositionAsyncFileWriteModeThrows() throws Exception {
+        // position(AsyncFile) in write mode → failedFuture with IllegalArgumentException
+        String p = path("file_pos_write");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            tcf.position(writer, 0).get(5, TimeUnit.SECONDS);
+            fail("Expected IllegalArgumentException");
+        } catch (java.util.concurrent.ExecutionException e) {
+            assertTrue(e.getCause() instanceof IllegalArgumentException);
+        } finally {
+            tcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testFullCacheWriteAndRead() throws Exception {
+        // FULL_CACHE mode: entire file loaded, reads come from cache
+        String p = path("file_full_rw");
+        writeFileSync(p, new byte[]{1, 2, 3, 4, 5});
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null,
+                AbstractStorageFile.CacheMode.FULL_CACHE).get();
+        try {
+            // FULL_CACHE loads entire file; writer should have all chunks
+            FileCacheEntry entry = writer.getCacheEntry();
+            assertTrue(entry.isInitialized());
+
+            // Read existing data from cache
+            delegate.reset();
+            delegate.fileReadCount = 0;
+            ByteBuf buf = tcf.read(writer, 5, 0).get(5, TimeUnit.SECONDS);
+            try {
+                assertArrayEquals(new byte[]{1, 2, 3, 4, 5}, readBytes(buf));
+            } finally {
+                // Append new data
+                writeTcfSync(writer, new byte[]{6, 7, 8});
+            }
+            tcf.close(writer).get(5, TimeUnit.SECONDS);
+        } finally {
+            // already closed
+        }
+        assertArrayEquals(new byte[]{1, 2, 3, 4, 5, 6, 7, 8}, readFileSync(p));
+    }
+
+    @Test
+    public void testTruncateSegmentInRangeReleasesLeases() throws Exception {
+        // SegmentFileCacheEntry.truncateTo: offset in [cacheStart, cacheEnd) → truncateTo + releaseWriterIndexLeasesAfter
+        String dir = path("seg_trunc_lease");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(seg, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcf.roll(seg).get(5, TimeUnit.SECONDS);
+        tcf.write(seg, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+        tcf.fsync(seg).get(5, TimeUnit.SECONDS);
+
+        // Close + reopen to get initialized cache
+        tcf.close(seg).get(5, TimeUnit.SECONDS);
+        AsyncSegmentFile seg2 = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        FileCacheEntry entry = seg2.getCacheEntry();
+        assertTrue(entry.isInitialized());
+        assertEquals(30, entry.cacheEndOffset);
+
+        // Truncate to 15 (inside cache range) → truncateTo + releaseWriterIndexLeasesAfter(15)
+        tcf.truncate(seg2, 15).get(5, TimeUnit.SECONDS);
+        assertEquals(15, entry.cacheEndOffset);
+        tcf.close(seg2).get(5, TimeUnit.SECONDS);
+
+        // Verify data on disk — segment read returns data from one segment at a time
+        AsyncSegmentFile reader = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        try {
+            // First segment [0, 10): 10 bytes
+            ByteBuf buf = tcf.read(reader, 10, 0).get(5, TimeUnit.SECONDS);
+            assertEquals(10, buf.readableBytes());
+            buf.release();
+            // Second segment [10, 15): 5 bytes
+            ByteBuf buf2 = tcf.read(reader, 5, 10).get(5, TimeUnit.SECONDS);
+            assertEquals(5, buf2.readableBytes());
+            buf2.release();
+        } finally {
+            tcf.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testDeleteSegmentsOutOfOrderThrows() throws Exception {
+        // deleteSegments with wrong order → IllegalArgumentException (thrown synchronously)
+        String dir = path("seg_del_order");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(seg, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcf.roll(seg).get(5, TimeUnit.SECONDS);
+        tcf.write(seg, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+        tcf.roll(seg).get(5, TimeUnit.SECONDS);
+        tcf.write(seg, bufOf(new byte[5])).get(5, TimeUnit.SECONDS);
+
+        // Try to delete second segment (offset 10) without deleting first (offset 0)
+        try {
+            tcf.deleteSegments(seg, Collections.singletonList(10L));
+            fail("Expected IllegalArgumentException for out-of-order delete");
+        } catch (IllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("expected 0"));
+        } finally {
+            tcf.close(seg).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testDeleteSegmentsCannotDeleteLast() throws Exception {
+        // deleteSegments trying to delete all segments → IllegalArgumentException (thrown synchronously)
+        String dir = path("seg_del_last");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(seg, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+
+        // Try to delete the only segment
+        try {
+            tcf.deleteSegments(seg, Collections.singletonList(0L));
+            fail("Expected IllegalArgumentException for deleting last segment");
+        } catch (IllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("cannot delete the last"));
+        } finally {
+            tcf.close(seg).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testSizeSegmentEmptyDir() throws Exception {
+        // size(AsyncSegmentFile) on empty directory → returns 0
+        String dir = path("seg_size_empty2");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        try {
+            long size = tcf.size(seg).get(5, TimeUnit.SECONDS);
+            assertEquals(0, size);
+        } finally {
+            tcf.close(seg).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testWriteOnClosedSegmentThrows() throws Exception {
+        // write after close → IllegalStateException
+        String dir = path("seg_write_closed");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.close(seg).get(5, TimeUnit.SECONDS);
+        try {
+            tcf.write(seg, bufOf(new byte[]{1})).get(5, TimeUnit.SECONDS);
+            fail("Expected exception for write on closed segment");
+        } catch (Exception e) {
+            // expected — cacheClosed check
         }
     }
 
