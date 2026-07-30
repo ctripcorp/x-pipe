@@ -34,7 +34,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.APPLIER_PORT_DEFAULT;
-import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
 
 /**
  * @author wenchao.meng
@@ -71,9 +70,6 @@ public class MetaUpdate extends AbstractConsoleController {
 
     @Autowired
     protected ApplierService applierService;
-
-    @Autowired
-    protected KeeperAdvancedService keeperAdvancedService;
 
     @Autowired
     private MetaServerConsoleServiceManagerWrapper metaServerConsoleServiceManagerWrapper;
@@ -334,7 +330,7 @@ public class MetaUpdate extends AbstractConsoleController {
             throw new CheckFailException("Cluster could not be found");
         }
 
-        validateRedisCreateInfo(redisCreateInfos);
+        shardService.validateRedisCreateInfo(redisCreateInfos);
 
         ShardTbl proto = new ShardTbl()
                 .setSetinelMonitorName(monitorName)
@@ -342,89 +338,8 @@ public class MetaUpdate extends AbstractConsoleController {
         ShardTbl shardTbl = shardService.findOrCreateShardIfNotExist(clusterName, proto, dcClusterTbls, sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(clusterTbl.getClusterType()), clusterTbl.getTag()));
 
         // Fill in redis, keeper
-        for(RedisCreateInfo redisCreateInfo : redisCreateInfos) {
-            String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
-            redisService.insertRedises(dcId, clusterName, shardName, redisCreateInfo.getAddrToAzName());
-        }
-        addKeepers(clusterTbl, shardTbl, redisCreateInfos);
-    }
-
-    protected void addKeepers(ClusterTbl clusterTbl, ShardTbl shardTbl, List<RedisCreateInfo> redisCreateInfos) throws Exception {
-        if (ClusterType.lookup(clusterTbl.getClusterType()).supportKeeper()) {
-            Map<String, DcClusterTbl> dcName2DcClusterTbl = new HashMap<>();
-            Map<String, AzGroupClusterEntity> az2AzGroupClusterMap = new HashMap<>();
-
-            List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(clusterTbl.getId());
-            for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
-                AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
-                for (String az : azGroup.getAzs()) {
-                    az2AzGroupClusterMap.put(az.toUpperCase(), azGroupCluster);
-                }
-            }
-
-            for (RedisCreateInfo redisCreateInfo : redisCreateInfos) {
-                String dcId = outerDcToInnerDc(redisCreateInfo.getDcId());
-                String clusterName = clusterTbl.getClusterName();
-                DcClusterTbl dcClusterTbl = dcName2DcClusterTbl.computeIfAbsent(dcId.toUpperCase(), ignore-> dcClusterService.find(dcId, clusterName));
-                if (dcClusterTbl == null) {
-                    throw new CheckFailException(String.format("dc %s not exist in cluster %s", redisCreateInfo.getDcId(), clusterName));
-                }
-
-                AzGroupClusterEntity azGroupCluster = az2AzGroupClusterMap.get(dcId.toUpperCase());
-                if (azGroupCluster == null
-                    || !ClusterType.isSameClusterType(azGroupCluster.getAzGroupClusterType(), ClusterType.SINGLE_DC)) {
-                    doAddKeepers(dcId, clusterName, shardTbl, dcId);
-                }
-            }
-        }
-    }
-
-    @VisibleForTesting
-    protected int doAddKeepers(String dcId, String clusterId, ShardTbl shardTbl, String keeperDcId) throws DalException {
-
-        List<RedisTbl> keepers = null;
-        try {
-            keepers = redisService.findKeepersByDcClusterShard(dcId, clusterId, shardTbl.getShardName());
-        } catch (ResourceNotFoundException e) {
-            logger.info("[addKeepers] no keepers on shard {}: {}", clusterId, shardTbl.getShardName());
-        }
-
-        if(keepers != null && !keepers.isEmpty()) {
-            if (keepers.size() > 2) {
-                throw new IllegalStateException("Keeper numbers should not be greater than 2");
-            } else if (keepers.size() == 1) {
-                try {
-                    redisService.deleteKeepers(dcId, clusterId, shardTbl.getShardName());
-                } catch (ResourceNotFoundException ignore) {
-                    // should not catch this, as we already findRedisHealthCheckInstance keepers
-                }
-            } else {
-                // if size == 2, do nothing
-                return 0;
-            }
-        }
-
-        List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepers(keeperDcId,
-                KEEPER_PORT_DEFAULT, (ip, port) -> true, clusterId);
-
-        logger.info("[addKeepers]{},{},{},{}, {}", dcId, clusterId, shardTbl.getShardName(), bestKeepers, keeperDcId);
-        try {
-            return redisService.insertKeepers(dcId, clusterId, shardTbl.getShardName(), bestKeepers);
-        } catch (ResourceNotFoundException e) {
-            logger.warn("[addKeepers] {}", e);
-        }
-        return 0;
-    }
-
-    @VisibleForTesting
-    protected void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos) {
-        Set<String> dcIds = Sets.newHashSetWithExpectedSize(redisCreateInfos.size());
-        for(RedisCreateInfo createInfo : redisCreateInfos) {
-            if(!dcIds.add(createInfo.getDcId())) {
-                throw new IllegalArgumentException(String.format("dc: %s appears more than two times",
-                        createInfo.getDcId()));
-            }
-        }
+        shardService.addRedises(clusterTbl, shardName, redisCreateInfos);
+        shardService.addKeepers(clusterTbl, shardName, redisCreateInfos);
     }
 
     @VisibleForTesting
@@ -500,7 +415,7 @@ public class MetaUpdate extends AbstractConsoleController {
                     }
                     if (clusterType.supportKeeper() && azGroupCluster != null && ClusterType.isSameClusterType(
                         azGroupCluster.getAzGroupClusterType(), ClusterType.SINGLE_DC)) {
-                        doAddKeepers(replDirectionInfoModel.getSrcDcName(), clusterTbl.getClusterName(), shardTbl, replDirectionInfoModel.getFromDcName());
+                        shardService.doAddKeepers(replDirectionInfoModel.getSrcDcName(), clusterTbl.getClusterName(), shardTbl.getShardName(), replDirectionInfoModel.getFromDcName());
                     }
                 }
             }

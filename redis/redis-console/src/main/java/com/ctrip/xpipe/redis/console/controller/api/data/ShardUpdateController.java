@@ -53,9 +53,9 @@ public class ShardUpdateController extends AbstractController {
 
     @PostMapping(value = "/shards/" + CLUSTER_NAME_PATH_VARIABLE + "/regions/" + REGION_NAME_PATH_VARIABLE + "/{shardName}")
     public RetMessage createRegionShard(@PathVariable String clusterName, @PathVariable String regionName,
-        @PathVariable String shardName) {
+        @PathVariable String shardName, @RequestBody(required = false) List<RedisCreateInfo> redisCreateInfos) {
         try {
-            shardService.createRegionShard(clusterName, regionName, shardName);
+            shardService.createRegionShard(clusterName, regionName, shardName, redisCreateInfos);
         } catch (Exception e) {
             logger.error("[CreateRegionShard]Add Shard {} Failed", shardName, e);
             return RetMessage.createFailMessage(e.getMessage());

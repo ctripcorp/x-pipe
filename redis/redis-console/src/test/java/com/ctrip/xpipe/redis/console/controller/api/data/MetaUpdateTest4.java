@@ -290,16 +290,17 @@ public class MetaUpdateTest4 {
             .thenReturn(replDirectionTbl);
 
         ShardTbl shardTbl = mock(ShardTbl.class);
+        when(shardTbl.getShardName()).thenReturn(shardName1);
         when(shardService.findAllShardByDcCluster(dcId1, clusterId)).thenReturn(Lists.newArrayList(shardTbl));
 
         ShardTbl toDcShardTbl = mock(ShardTbl.class);
         when(shardService.findAllShardByDcCluster(dcId2, clusterId)).thenReturn(Lists.newArrayList(toDcShardTbl));
 
         doAnswer(invocationOnMock -> null).when(metaUpdate).addAppliers(anyString(), anyString(), any(), anyLong());
-        doAnswer(invocationOnMock -> null).when(metaUpdate).doAddKeepers(anyString(), anyString(), any(), anyString());
+        doReturn(0).when(shardService).doAddKeepers(anyString(), anyString(), anyString(), anyString());
 
         metaUpdate.doCreateReplDirections(clusterTbl, Lists.newArrayList(replDirectionInfoModel));
-        verify(metaUpdate).doAddKeepers(dc1, clusterName, shardTbl, "fra");
+        verify(shardService).doAddKeepers(dc1, clusterName, shardName1, "fra");
         verify(metaUpdate).addAppliers(dc2, clusterName, shardTbl, 4L);
     }
 }

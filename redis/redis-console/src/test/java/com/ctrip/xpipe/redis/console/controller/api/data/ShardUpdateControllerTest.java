@@ -346,7 +346,7 @@ public class ShardUpdateControllerTest extends AbstractConsoleIntegrationTest {
     public void testCreateRegionShard() {
         createCluster2();
 
-        RetMessage ret = shardUpdateController.createRegionShard("cluster2", "SHA", "shard1");
+        RetMessage ret = shardUpdateController.createRegionShard("cluster2", "SHA", "shard1", null);
         Assert.assertEquals(RetMessage.SUCCESS_STATE, ret.getState());
 
         ShardTbl shard = shardService.find("cluster2", "shard1");

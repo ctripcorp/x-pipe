@@ -105,6 +105,7 @@ import org.junit.runners.Suite.SuiteClasses;
         KeeperContainerCheckerServiceImplTest.class,
         ShardServiceImplTest.class,
         ShardServiceImplTest2.class,
+        ShardServiceImplTest3.class,
         ShardServiceTest2.class,
         SentinelServiceImplTest.class,
         ClusterMetaServiceImplTest.class,
@@ -155,7 +156,6 @@ import org.junit.runners.Suite.SuiteClasses;
         KeeperUpdateControllerTest.class,
         AzServiceImplTest.class,
         ClusterUpdateControllerTest.class,
-        MetaUpdateTest2.class,
         ShardUpdateControllerTest.class,
         MetaUpdateTest4.class,
 

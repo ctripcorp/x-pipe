@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.console.model.DcClusterTbl;
 import com.ctrip.xpipe.redis.console.model.SentinelGroupModel;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.model.consoleportal.ShardListModel;
+import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import org.unidal.dal.jdbc.DalException;
 
 import java.util.List;
 import java.util.Map;
@@ -25,6 +27,16 @@ public interface ShardService {
     List<ShardTbl> findAllShardByDcCluster(long dcId, long clusterId);
 	void deleteShardSentinels(List<ShardTbl> shards, ClusterTbl clusterTbl);
 
-	void createRegionShard(String clusterName, String regionName, String shardName);
+	void createRegionShard(String clusterName, String regionName, String shardName) throws DalException, ResourceNotFoundException;
+
+	void createRegionShard(String clusterName, String regionName, String shardName, List<RedisCreateInfo> redisCreateInfos) throws DalException, ResourceNotFoundException;
+
+	void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos);
+
+	void addRedises(ClusterTbl clusterTbl, String shardName, List<RedisCreateInfo> redisCreateInfos) throws DalException, ResourceNotFoundException;
+
+	void addKeepers(ClusterTbl clusterTbl, String shardName, List<RedisCreateInfo> redisCreateInfos) throws DalException, ResourceNotFoundException;
+
+	int doAddKeepers(String dcId, String clusterName, String shardName, String keeperDcId) throws DalException, ResourceNotFoundException;
 
 }
