@@ -2090,11 +2090,11 @@ public class DefaultIndexStoreTest {
     }
 
     /**
-     * P0-1: locate must not observe half-rotate (cmd rolled, index not yet rebound).
-     * rotateWithCmdRoll holds the IndexStore monitor across flush → cmdRoll → doSwitchCmdFile.
+     * X1h: publishLocateSnapshot (flush + IndexReader.init) shares the IndexStore monitor
+     * with rotateWithCmdRoll. Only seek is lock-free — see {@link #testLocateSnapshot_SlowSeekDoesNotBlockWrite}.
      */
     @Test
-    public void testRotateWithCmdRoll_BlocksLocateUntilFinished() throws Exception {
+    public void testRotateWithCmdRoll_BlocksLocateSnapshotUntilFinished() throws Exception {
         String uuid = "d50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
         defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
         defaultIndexStore.write(createGtidCommand(uuid + ":2", "SET", "k", "v2"));
@@ -2132,7 +2132,7 @@ public class DefaultIndexStoreTest {
 
             pool.execute(() -> {
                 try {
-                    // Must block on IndexStore monitor until rotateWithCmdRoll finishes
+                    // publishLocateSnapshot must wait for rotateWithCmdRoll to leave the monitor
                     locateResult.set(defaultIndexStore.locateGtidSetWithFallbackToEnd(
                             new GtidSet(uuid + ":1")));
                 } catch (Throwable t) {
@@ -2142,8 +2142,7 @@ public class DefaultIndexStoreTest {
                 }
             });
 
-            // While cmdRoll is paused mid-rotate, locate must not have completed yet
-            Assert.assertFalse("locate must wait for rotateWithCmdRoll monitor",
+            Assert.assertFalse("locate snapshot must wait for rotateWithCmdRoll monitor",
                     locateFinished.await(300, TimeUnit.MILLISECONDS));
 
             allowRollFinish.countDown();
@@ -2160,6 +2159,212 @@ public class DefaultIndexStoreTest {
         Assert.assertNotNull(locateResult.get());
         Assert.assertTrue("locate after atomic rotate must find continue point, not -1/tail-only miss",
                 locateResult.get().getKey() >= 0);
+    }
+
+    /** X1h ④: after init (lock released), slow seek must not hold the monitor — concurrent write can finish. */
+    @Test
+    public void testLocateSnapshot_SlowSeekDoesNotBlockWrite() throws Exception {
+        String uuid = "e50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+
+        CountDownLatch seekEntered = new CountDownLatch(1);
+        CountDownLatch allowSeekFinish = new CountDownLatch(1);
+        CountDownLatch writeFinished = new CountDownLatch(1);
+        CountDownLatch locateFinished = new CountDownLatch(1);
+        AtomicReference<Throwable> error = new AtomicReference<>();
+
+        defaultIndexStore.afterLocateSnapshotHook = () -> {
+            seekEntered.countDown();
+            try {
+                Assert.assertTrue(allowSeekFinish.await(10, TimeUnit.SECONDS));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        };
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            pool.execute(() -> {
+                try {
+                    defaultIndexStore.locateContinueGtidSet(new GtidSet(uuid + ":1"));
+                } catch (Throwable t) {
+                    error.compareAndSet(null, t);
+                } finally {
+                    locateFinished.countDown();
+                }
+            });
+
+            Assert.assertTrue(seekEntered.await(10, TimeUnit.SECONDS));
+
+            pool.execute(() -> {
+                try {
+                    defaultIndexStore.write(createGtidCommand(uuid + ":2", "SET", "k", "v2"));
+                } catch (Throwable t) {
+                    error.compareAndSet(null, t);
+                } finally {
+                    writeFinished.countDown();
+                }
+            });
+
+            Assert.assertTrue("write must complete while seek is still in progress (lock-free seek)",
+                    writeFinished.await(2, TimeUnit.SECONDS));
+            allowSeekFinish.countDown();
+            Assert.assertTrue(locateFinished.await(10, TimeUnit.SECONDS));
+        } finally {
+            allowSeekFinish.countDown();
+            defaultIndexStore.afterLocateSnapshotHook = null;
+            pool.shutdownNow();
+            Assert.assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS));
+        }
+
+        if (error.get() != null) {
+            throw new AssertionError("slow-seek / write concurrent failed", error.get());
+        }
+        Assert.assertTrue(defaultIndexStore.getIndexGtidSet().contains(uuid, 2));
+    }
+
+    /** X1h ①: snapshot then concurrent rotate — locate still hits historical offset or uses frozen Fallback. */
+    @Test
+    public void testLocateSnapshot_ThenConcurrentRotate_StillCorrectOrFallback() throws Exception {
+        String uuid = "f50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+        defaultIndexStore.write(createGtidCommand(uuid + ":2", "SET", "k", "v2"));
+        long snapTail = totalWritten;
+        GtidSet snapGtid = defaultIndexStore.getIndexGtidSet();
+
+        CountDownLatch seekEntered = new CountDownLatch(1);
+        CountDownLatch allowSeekFinish = new CountDownLatch(1);
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        AtomicReference<Pair<Long, GtidSet>> locateResult = new AtomicReference<>();
+
+        defaultIndexStore.afterLocateSnapshotHook = () -> {
+            seekEntered.countDown();
+            try {
+                Assert.assertTrue(allowSeekFinish.await(10, TimeUnit.SECONDS));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        };
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            pool.execute(() -> {
+                try {
+                    // ahead of tip → seek miss → snapshot Fallback
+                    locateResult.set(defaultIndexStore.locateGtidSetWithFallbackToEnd(
+                            new GtidSet(uuid + ":1-999")));
+                } catch (Throwable t) {
+                    error.compareAndSet(null, t);
+                }
+            });
+
+            Assert.assertTrue(seekEntered.await(10, TimeUnit.SECONDS));
+
+            pool.execute(() -> {
+                try {
+                    lastRollSegmentStart = testCmdStore.getCurrentSegmentStartOffset()
+                            + testCmdStore.currentSegmentSize();
+                    defaultIndexStore.rotateWithCmdRoll(() -> {
+                        testCmdStore.roll();
+                        return null;
+                    });
+                    segmentWritten = 0L;
+                    defaultIndexStore.write(createGtidCommand(uuid + ":3", "SET", "k", "v3"));
+                } catch (Throwable t) {
+                    error.compareAndSet(null, t);
+                }
+            });
+
+            // give rotate+append a chance while seek is paused
+            Thread.sleep(200);
+            allowSeekFinish.countDown();
+            pool.shutdown();
+            Assert.assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS));
+        } finally {
+            allowSeekFinish.countDown();
+            defaultIndexStore.afterLocateSnapshotHook = null;
+            pool.shutdownNow();
+        }
+
+        if (error.get() != null) {
+            throw new AssertionError("snapshot+rotate concurrent failed", error.get());
+        }
+        Assert.assertNotNull(locateResult.get());
+        Assert.assertEquals("Fallback must use snapshot tail offset, not live tip after rotate",
+                snapTail, locateResult.get().getKey().longValue());
+        Assert.assertEquals(snapGtid.toString(), locateResult.get().getValue().toString());
+    }
+
+    /** X1h ②: tip append after snapshot; miss uses snapshot tail, not new tip. */
+    @Test
+    public void testLocateSnapshot_TipAppendThenMissUsesSnapshotTail() throws Exception {
+        String uuid = "a60c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+        long snapTail = totalWritten;
+        GtidSet snapGtid = defaultIndexStore.getIndexGtidSet();
+
+        CountDownLatch seekEntered = new CountDownLatch(1);
+        CountDownLatch allowSeekFinish = new CountDownLatch(1);
+        AtomicReference<Pair<Long, GtidSet>> locateResult = new AtomicReference<>();
+
+        defaultIndexStore.afterLocateSnapshotHook = () -> {
+            seekEntered.countDown();
+            try {
+                Assert.assertTrue(allowSeekFinish.await(10, TimeUnit.SECONDS));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        };
+
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        try {
+            pool.execute(() -> {
+                try {
+                    locateResult.set(defaultIndexStore.locateGtidSetWithFallbackToEnd(
+                            new GtidSet(uuid + ":1-999")));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            Assert.assertTrue(seekEntered.await(10, TimeUnit.SECONDS));
+
+            defaultIndexStore.write(createGtidCommand(uuid + ":2", "SET", "k", "v2"));
+            Assert.assertTrue(totalWritten > snapTail);
+
+            allowSeekFinish.countDown();
+            pool.shutdown();
+            Assert.assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS));
+        } finally {
+            allowSeekFinish.countDown();
+            defaultIndexStore.afterLocateSnapshotHook = null;
+            pool.shutdownNow();
+        }
+
+        Assert.assertEquals(snapTail, locateResult.get().getKey().longValue());
+        Assert.assertEquals(snapGtid.toString(), locateResult.get().getValue().toString());
+        Assert.assertFalse("snapshot Fallback must not include gtid written after snapshot",
+                locateResult.get().getValue().contains(uuid, 2));
+    }
+
+    /** X1h ③: hit historical gtid on an older segment after a rotate. */
+    @Test
+    public void testLocateSnapshot_HitOldSegmentOffset() throws Exception {
+        String uuid = "b60c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+        defaultIndexStore.write(createGtidCommand(uuid + ":2", "SET", "k", "v2"));
+        Pair<Long, GtidSet> beforeRotate = defaultIndexStore.locateContinueGtidSet(new GtidSet(uuid + ":1"));
+        Assert.assertTrue(beforeRotate.getKey() >= 0);
+
+        switchCmdSegment(CMD_PREFIX);
+        defaultIndexStore.write(createGtidCommand(uuid + ":3", "SET", "k", "v3"));
+
+        Pair<Long, GtidSet> afterRotate = defaultIndexStore.locateContinueGtidSet(new GtidSet(uuid + ":1"));
+        Assert.assertEquals("continue offset for gtid:1 must remain on old segment",
+                beforeRotate.getKey(), afterRotate.getKey());
+        Assert.assertTrue(afterRotate.getValue().contains(uuid, 1));
     }
 
     // 辅助方法：从文件写入

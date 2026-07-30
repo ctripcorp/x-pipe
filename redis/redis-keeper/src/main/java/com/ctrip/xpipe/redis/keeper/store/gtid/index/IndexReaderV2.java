@@ -70,9 +70,15 @@ public class IndexReaderV2 extends IndexReader {
         }
         log.info("[IndexReader.init] after segmentStartOffset={}", segmentStartOffset);
         Map<String, AsyncFile> handles = indexFiles.getValue();
-        indexFile = handles.get(getIndexKey());
-        blockFile = handles.get(getBlockKey());
+        indexFile = handles == null ? null : handles.get(getIndexKey());
+        blockFile = handles == null ? null : handles.get(getBlockKey());
 
+        // Read-mode getCurrentIndexFiles omits missing companions (empty store / PSYNC-only).
+        if (indexFile == null) {
+            log.warn("[IndexReader] index v2 file missing at segment {}", segmentStartOffset);
+            startGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
+            return;
+        }
         long size = AsyncFileSystemHelper.await(fs.size(indexFile), "size index v2 file");
         if (size == 0) {
             startGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
@@ -99,11 +105,6 @@ public class IndexReaderV2 extends IndexReader {
             }
             pos += getSegmentLength();
         }
-    }
-
-    public static IndexReader getLastIndexReader(AsyncFileSystem fs, String baseDir, String cmdPrefix, ReplId tenant)
-            throws IOException {
-        return getFloorIndexReader(fs, baseDir, cmdPrefix, tenant, -1, AbstractIndex.INDEX_V2 + cmdPrefix);
     }
 
     public static IndexReader getFirstIndexReader(AsyncFileSystem fs, String baseDir, String cmdPrefix, ReplId tenant)

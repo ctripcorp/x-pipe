@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,6 +59,41 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     private final CKStore ckStore;
     private final KeeperConfig keeperConfig;
     private long cmdStoreStartOffset;
+
+    /**
+     * Test hook: runs after {@link #publishLocateSnapshot()} (reader already init'd) releases the monitor
+     * and before lock-free {@code seek}. Production leaves this null.
+     */
+    volatile Runnable afterLocateSnapshotHook;
+
+    /**
+     * Point-in-time tip published under the IndexStore monitor (spec §3.7.10).
+     * {@link #reader} is already {@code init}'d under the same lock as rotate; only {@code seek} runs lock-free.
+     * {@code -1} Fallback uses frozen tail, not live {@link #locateTailOfCmd()}.
+     */
+    static final class LocateSnapshot implements Closeable {
+        final IndexReader reader;
+        final long tipSegmentStart;
+        final long tailBacklogOffset;
+        final GtidSet tailGtidSet;
+        final long cmdStoreStartOffset;
+
+        LocateSnapshot(IndexReader reader, long tipSegmentStart, long tailBacklogOffset,
+                       GtidSet tailGtidSet, long cmdStoreStartOffset) {
+            this.reader = reader;
+            this.tipSegmentStart = tipSegmentStart;
+            this.tailBacklogOffset = tailBacklogOffset;
+            this.tailGtidSet = tailGtidSet;
+            this.cmdStoreStartOffset = cmdStoreStartOffset;
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (reader != null) {
+                reader.close();
+            }
+        }
+    }
 
     public DefaultIndexStore(KeeperConfig keeperConfig, CKStore ckStore, AsyncCommandStore asyncCommandStore,
                              String baseDir, RedisOpParser redisOpParser,
@@ -315,49 +351,78 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         }
     }
 
+    /**
+     * Short critical section (spec §3.7.10): flush → create+init tip IndexReader → sample Fallback tail.
+     * Mutual exclusion with {@link #rotateWithCmdRoll} ensures init never opens a half-rotate tip
+     * (empty header → miss → wrong Fallback). Caller must {@link LocateSnapshot#close()}.
+     */
+    synchronized LocateSnapshot publishLocateSnapshot() throws IOException {
+        flushWriter();
+        long tipHint = asyncCommandStore.getCurrentSegmentStartOffset();
+        long tailBacklogOffset = commandWriterCallback.getCommandWriter().totalLength();
+        GtidSet tailGtidSet = getIndexGtidSet();
+        long cmdStart = getCmdStoreStartOffset();
+
+        IndexReader reader = createIndexReader(tipHint);
+        long tipSegmentStart = tipHint;
+        if (reader != null) {
+            reader.setCmdStoreStartOffset(cmdStart);
+            try {
+                reader.init();
+                tipSegmentStart = reader.getStartOffset();
+            } catch (IOException e) {
+                reader.close();
+                throw e;
+            }
+        }
+        return new LocateSnapshot(reader, tipSegmentStart, tailBacklogOffset, tailGtidSet, cmdStart);
+    }
+
     @Override
     public Pair<Long, GtidSet> locateContinueGtidSet(GtidSet request) throws IOException {
-        if (keeperConfig.dualWrite() && indexWriter != null) {
-            this.indexWriter.saveIndexEntry();
-        }
-        if (indexWriterV2 != null) {
-            this.indexWriterV2.flush();
-        }
-        try (IndexReader indexReader = createIndexReader()) {
-            if (indexReader == null) {
-                logger.info("[locateContinueGtidSet] index reader is null");
-                return new Pair<>(-1L, new GtidSet(GtidSet.EMPTY_GTIDSET));
-            }
-            indexReader.setCmdStoreStartOffset(cmdStoreStartOffset);
-            indexReader.init();
-            return indexReader.seek(request);
+        LocateSnapshot snap = publishLocateSnapshot();
+        try {
+            return seekContinueWithSnapshot(request, snap);
+        } finally {
+            snap.close();
         }
     }
 
-    private IndexReader createIndexReader() throws IOException {
+    private Pair<Long, GtidSet> seekContinueWithSnapshot(GtidSet request, LocateSnapshot snap) throws IOException {
+        Runnable hook = afterLocateSnapshotHook;
+        if (hook != null) {
+            hook.run();
+        }
+        if (snap.reader == null) {
+            logger.info("[locateContinueGtidSet] index reader is null");
+            return new Pair<>(-1L, new GtidSet(GtidSet.EMPTY_GTIDSET));
+        }
+        return snap.reader.seek(request);
+    }
+
+    private IndexReader createIndexReader(long tipSegmentStart) throws IOException {
         String prefix = asyncCommandStore.getCommandFileNamePrefix();
-        long segmentStart = asyncCommandStore.getCurrentSegmentStartOffset();
-        if (indexWriterV2 != null && keeperConfig.readV2()) {
-            return new IndexReaderV2(fs, baseDir, prefix, segmentStart, replId);
+        if (keeperConfig.readV2()) {
+            return new IndexReaderV2(fs, baseDir, prefix, tipSegmentStart, replId);
         }
-        if (indexWriter != null) {
-            return new IndexReader(fs, baseDir, prefix, segmentStart, replId);
-        }
-        return keeperConfig.readV2()
-                ? IndexReaderV2.getLastIndexReader(fs, baseDir, prefix, replId)
-                : IndexReader.getLastIndexReader(fs, baseDir, prefix, replId);
+        return new IndexReader(fs, baseDir, prefix, tipSegmentStart, replId);
     }
 
     @Override
-    public synchronized Pair<Long, GtidSet> locateGtidSetWithFallbackToEnd(GtidSet request) throws IOException {
-        Pair<Long, GtidSet> continuePoint = locateContinueGtidSet(request);
-        if (continuePoint.getKey() == -1) {
-            logger.info("[locateGtidSetWithFallbackToEnd] not found next, return tail of cmd, request:{}", request);
-            continuePoint = locateTailOfCmd();
+    public Pair<Long, GtidSet> locateGtidSetWithFallbackToEnd(GtidSet request) throws IOException {
+        LocateSnapshot snap = publishLocateSnapshot();
+        try {
+            Pair<Long, GtidSet> continuePoint = seekContinueWithSnapshot(request, snap);
+            if (continuePoint.getKey() == -1) {
+                logger.info("[locateGtidSetWithFallbackToEnd] not found next, return snapshot tail, request:{}", request);
+                continuePoint = new Pair<>(snap.tailBacklogOffset, snap.tailGtidSet);
+            }
+            logger.info("[locateGtidSetWithFallbackToEnd] backlogOffset={}, backlog gtid set: {}, request gtid set {}, continue gtid set {}",
+                    continuePoint.getKey(), getIndexGtidSet(), request, continuePoint.getValue());
+            return continuePoint;
+        } finally {
+            snap.close();
         }
-        logger.info("[locateGtidSetWithFallbackToEnd] backlogOffset={}, backlog gtid set: {}, request gtid set {}, continue gtid set {}",
-                continuePoint.getKey(), getIndexGtidSet(), request, continuePoint.getValue());
-        return continuePoint;
     }
 
     /** Snapshot — never return the live writer-owned GtidSet (CME under concurrent write + XSYNC wait). */
@@ -681,13 +746,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     private GtidSet tryGetIndexGtidSet() throws IOException {
-        String prefix = asyncCommandStore.getCommandFileNamePrefix();
-        IndexReader indexReader = keeperConfig.readV2()
-                ? IndexReaderV2.getLastIndexReader(fs, baseDir, prefix, replId)
-                : IndexReader.getLastIndexReader(fs, baseDir, prefix, replId);
-        if (indexReader == null) {
-            return new GtidSet(GtidSet.EMPTY_GTIDSET);
-        }
+        IndexReader indexReader = createIndexReader(asyncCommandStore.getCurrentSegmentStartOffset());
         try {
             indexReader.init();
             return indexReader.getAllGtidSet();
