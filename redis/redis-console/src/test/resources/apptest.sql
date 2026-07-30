@@ -194,6 +194,15 @@ insert into SENTINEL_TBL (sentinel_id, dc_id, sentinel_group_id, sentinel_ip, se
 insert into KEEPERCONTAINER_TBL(keepercontainer_id, keepercontainer_dc, keepercontainer_ip, keepercontainer_port, keepercontainer_active, keepercontainer_org_id) values (20, 4, '127.0.1.20', 7083, 1, 0);
 insert into KEEPERCONTAINER_TBL(keepercontainer_id, keepercontainer_dc, keepercontainer_ip, keepercontainer_port, keepercontainer_active, keepercontainer_org_id) values (21, 4, '127.0.1.21', 7084, 1, 0);
 
+-- SGP Region + SGP-ALI DC (for AppTest cross-region ONE_WAY bind API manual test)
+insert into ZONE_TBL (id, zone_name) values (3, 'SGP');
+insert into DC_TBL (id, zone_id, dc_name, dc_active, dc_description, dc_last_modified_time) values (5, 3, 'SGP-ALI', 1, 'DC:SGP-ALI', '0000000000000000');
+-- Cross-region AzGroup: SHA (jq/oy) + SGP (SGP-ALI)
+insert into AZ_GROUP_TBL (id, name) values (5, 'CROSS_SHA_SGP');
+insert into AZ_GROUP_MAPPING_TBL (id, az_id, az_group_id) values (7, 1, 5);
+insert into AZ_GROUP_MAPPING_TBL (id, az_id, az_group_id) values (8, 2, 5);
+insert into AZ_GROUP_MAPPING_TBL (id, az_id, az_group_id) values (9, 5, 5);
+
 
 insert into APPLIERCONTAINER_TBL(appliercontainer_id, appliercontainer_dc, appliercontainer_az, appliercontainer_ip, appliercontainer_port, appliercontainer_active, appliercontainer_org) values(1,3,1,'127.0.0.1','8080',1,0);
 insert into APPLIERCONTAINER_TBL(appliercontainer_id, appliercontainer_dc, appliercontainer_az, appliercontainer_ip, appliercontainer_port, appliercontainer_active, appliercontainer_org) values(2,3,1,'127.0.0.2','8080',1,0);
