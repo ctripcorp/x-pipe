@@ -270,11 +270,11 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			throw new BadRequestException("Monitor name should be exact same with shard name");
 		}
 		List<ShardEntity> existShards = shardRepository.selectByClusterId(cluster.getId());
+		ShardEntity existingShard = null;
 		for (ShardEntity existShard : existShards) {
 			if (existShard.getShardName().trim().equalsIgnoreCase(shardName.trim())) {
-				throw new BadRequestException(String.format("Shard: %s already exist", shardName));
-			}
-			if (existShard.getSetinelMonitorName().trim().equalsIgnoreCase(shardName.trim())) {
+				existingShard = existShard;
+			} else if (existShard.getSetinelMonitorName().trim().equalsIgnoreCase(shardName.trim())) {
 				throw new BadRequestException(String.format("Monitor name: %s already exist", shardName));
 			}
 		}
@@ -292,12 +292,17 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
 			AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
 			if (azGroup.getRegion().equalsIgnoreCase(regionName)) {
-				ShardEntity shard = new ShardEntity()
-					.setShardName(shardName)
-					.setClusterId(cluster.getId())
-					.setAzGroupClusterId(azGroupCluster.getId())
-					.setSetinelMonitorName(shardName);
-				shardRepository.insert(shard);
+				ShardEntity shard;
+				if (existingShard != null) {
+					shard = existingShard;
+				} else {
+					shard = new ShardEntity()
+						.setShardName(shardName)
+						.setClusterId(cluster.getId())
+						.setAzGroupClusterId(azGroupCluster.getId())
+						.setSetinelMonitorName(shardName);
+					shardRepository.insert(shard);
+				}
 				String azGroupType = StringUtil.isEmpty(azGroupCluster.getAzGroupClusterType()) ?
 					cluster.getClusterType() : azGroupCluster.getAzGroupClusterType();
 				Map<Long, SentinelGroupModel> sentinelModelMap =
@@ -305,6 +310,8 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 
 				List<DcClusterEntity> regionDcClusters = azGroupClusterId2DcClustersMap.get(azGroupCluster.getId());
 				for (DcClusterEntity dcCluster : regionDcClusters) {
+					DcClusterShardTbl exits = dcClusterShardService.find(dcCluster.getDcClusterId(), shard.getId());
+					if (exits != null) continue;
 					DcClusterTbl dcClusterTbl = new DcClusterTbl();
 					dcClusterTbl.setDcClusterId(dcCluster.getDcClusterId());
 					dcClusterTbl.setDcId(dcCluster.getDcId());
@@ -312,6 +319,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 						generateDcClusterShardTbl(cluster, dcClusterTbl, shard.getId(), sentinelModelMap);
 					dcClusterShardList.add(dcClusterShardTbl);
 				}
+
 			}
 		}
 		if (!dcClusterShardList.isEmpty()) {
