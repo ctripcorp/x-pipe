@@ -288,61 +288,80 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		Map<Long, List<DcClusterEntity>> azGroupClusterId2DcClustersMap = dcClusters.stream()
 			.collect(Collectors.groupingBy(DcClusterEntity::getAzGroupClusterId));
 
-		List<DcClusterShardTbl> dcClusterShardList = new ArrayList<>();
-		for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
-			AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
-			if (azGroup.getRegion().equalsIgnoreCase(regionName)) {
-				ShardEntity shard;
-				if (existingShard != null) {
-					shard = existingShard;
-				} else {
-					shard = new ShardEntity()
-						.setShardName(shardName)
-						.setClusterId(cluster.getId())
-						.setAzGroupClusterId(azGroupCluster.getId())
-						.setSetinelMonitorName(shardName);
-					shardRepository.insert(shard);
-				}
-				String azGroupType = StringUtil.isEmpty(azGroupCluster.getAzGroupClusterType()) ?
-					cluster.getClusterType() : azGroupCluster.getAzGroupClusterType();
-				Map<Long, SentinelGroupModel> sentinelModelMap =
-					sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(azGroupType), CLUSTER_DEFAULT_TAG);
+			List<DcClusterShardTbl> dcClusterShardList = new ArrayList<>();
+			Set<String> regionDcNames = new HashSet<>();
+			for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+				AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+				if (azGroup.getRegion().equalsIgnoreCase(regionName)) {
+					ShardEntity shard;
+					if (existingShard != null) {
+						if (existingShard.getAzGroupClusterId() != azGroupCluster.getId()) {
+							throw new BadRequestException(
+								String.format("Shard %s already exist in another region", shardName));
+						}
+						shard = existingShard;
+					} else {
+						shard = new ShardEntity()
+							.setShardName(shardName)
+							.setClusterId(cluster.getId())
+							.setAzGroupClusterId(azGroupCluster.getId())
+							.setSetinelMonitorName(shardName);
+						shardRepository.insert(shard);
+					}
+					String azGroupType = StringUtil.isEmpty(azGroupCluster.getAzGroupClusterType()) ?
+						cluster.getClusterType() : azGroupCluster.getAzGroupClusterType();
+					Map<Long, SentinelGroupModel> sentinelModelMap =
+						sentinelBalanceService.selectMultiDcSentinels(ClusterType.lookup(azGroupType), CLUSTER_DEFAULT_TAG);
 
-				List<DcClusterEntity> regionDcClusters = azGroupClusterId2DcClustersMap.get(azGroupCluster.getId());
-				for (DcClusterEntity dcCluster : regionDcClusters) {
-					DcClusterShardTbl exits = dcClusterShardService.find(dcCluster.getDcClusterId(), shard.getId());
-					if (exits != null) continue;
-					DcClusterTbl dcClusterTbl = new DcClusterTbl();
-					dcClusterTbl.setDcClusterId(dcCluster.getDcClusterId());
-					dcClusterTbl.setDcId(dcCluster.getDcId());
-					DcClusterShardTbl dcClusterShardTbl =
-						generateDcClusterShardTbl(cluster, dcClusterTbl, shard.getId(), sentinelModelMap);
-					dcClusterShardList.add(dcClusterShardTbl);
+					List<DcClusterEntity> regionDcClusters = azGroupClusterId2DcClustersMap.get(azGroupCluster.getId());
+					if (regionDcClusters != null) {
+						for (DcClusterEntity dcCluster : regionDcClusters) {
+							regionDcNames.add(dcService.getDcName(dcCluster.getDcId()).toUpperCase());
+							DcClusterShardTbl exits = dcClusterShardService.find(dcCluster.getDcClusterId(), shard.getId());
+							if (exits != null) continue;
+							DcClusterTbl dcClusterTbl = new DcClusterTbl();
+							dcClusterTbl.setDcClusterId(dcCluster.getDcClusterId());
+							dcClusterTbl.setDcId(dcCluster.getDcId());
+							DcClusterShardTbl dcClusterShardTbl =
+								generateDcClusterShardTbl(cluster, dcClusterTbl, shard.getId(), sentinelModelMap);
+							dcClusterShardList.add(dcClusterShardTbl);
+						}
+					}
 				}
-
 			}
-		}
-		if (!dcClusterShardList.isEmpty()) {
-			dcClusterShardService.insertBatch(dcClusterShardList);
-		}
+			if (!dcClusterShardList.isEmpty()) {
+				dcClusterShardService.insertBatch(dcClusterShardList);
+			}
 
-		if (redisCreateInfos != null && !redisCreateInfos.isEmpty()) {
-			validateRedisCreateInfo(redisCreateInfos);
-			addRedises(cluster, shardName, redisCreateInfos);
-			addKeepers(cluster, shardName, redisCreateInfos);
-		}
+			if (redisCreateInfos != null && !redisCreateInfos.isEmpty()) {
+				validateRedisCreateInfo(redisCreateInfos, regionDcNames);
+				addRedises(cluster, shardName, redisCreateInfos);
+				addKeepers(cluster, shardName, redisCreateInfos);
+			}
 	}
 
-	@Override
-	public void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos) {
-		Set<String> dcIds = Sets.newHashSetWithExpectedSize(redisCreateInfos.size());
-		for (RedisCreateInfo createInfo : redisCreateInfos) {
-			if (!dcIds.add(createInfo.getDcId())) {
-				throw new IllegalArgumentException(
-					String.format("dc: %s appears more than two times", createInfo.getDcId()));
+		@Override
+		public void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos) {
+			validateRedisCreateInfo(redisCreateInfos, null);
+		}
+
+		@Override
+		public void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos, Set<String> regionDcNames) {
+			Set<String> dcIds = Sets.newHashSetWithExpectedSize(redisCreateInfos.size());
+			for (RedisCreateInfo createInfo : redisCreateInfos) {
+				if (!dcIds.add(createInfo.getDcId())) {
+					throw new IllegalArgumentException(
+						String.format("dc: %s appears more than two times", createInfo.getDcId()));
+				}
+				if (regionDcNames != null) {
+					String dcId = DC_TRANSFORM_DIRECTION.OUTER_TO_INNER.transform(createInfo.getDcId());
+					if (!regionDcNames.contains(dcId.toUpperCase())) {
+						throw new BadRequestException(
+							String.format("dc %s not belong to target region", createInfo.getDcId()));
+					}
+				}
 			}
 		}
-	}
 
 	@Override
 	public void addRedises(ClusterTbl clusterTbl, String shardName, List<RedisCreateInfo> redisCreateInfos) throws DalException, ResourceNotFoundException {

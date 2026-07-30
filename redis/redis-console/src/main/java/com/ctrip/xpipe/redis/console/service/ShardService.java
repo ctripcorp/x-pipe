@@ -11,6 +11,7 @@ import org.unidal.dal.jdbc.DalException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface ShardService {
 	ShardTbl find(long shardId);
@@ -32,6 +33,8 @@ public interface ShardService {
 	void createRegionShard(String clusterName, String regionName, String shardName, List<RedisCreateInfo> redisCreateInfos) throws DalException, ResourceNotFoundException;
 
 	void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos);
+
+	void validateRedisCreateInfo(List<RedisCreateInfo> redisCreateInfos, Set<String> regionDcNames);
 
 	void addRedises(ClusterTbl clusterTbl, String shardName, List<RedisCreateInfo> redisCreateInfos) throws DalException, ResourceNotFoundException;
 

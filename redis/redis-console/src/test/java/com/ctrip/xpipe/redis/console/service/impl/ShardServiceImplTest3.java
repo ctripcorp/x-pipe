@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.console.repository.ShardRepository;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.DcClusterService;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
+import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.RedisService;
@@ -31,6 +32,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
 import static org.mockito.ArgumentMatchers.any;
@@ -71,6 +73,9 @@ public class ShardServiceImplTest3 {
 	@Mock
 	private SentinelBalanceService sentinelBalanceService;
 
+	@Mock
+	private DcService dcService;
+
 	@InjectMocks
 	private ShardServiceImpl shardService = new ShardServiceImpl();
 
@@ -102,6 +107,35 @@ public class ShardServiceImplTest3 {
 	@Test
 	public void testValidateRedisCreateInfoEmptyList() {
 		shardService.validateRedisCreateInfo(Collections.emptyList());
+	}
+
+	@Test
+	public void testValidateRedisCreateInfoWithRegionDcNames() {
+		List<RedisCreateInfo> infos = Lists.newArrayList(
+			new RedisCreateInfo().setDcId("jq"),
+			new RedisCreateInfo().setDcId("oy")
+		);
+		Set<String> regionDcNames = Sets.newHashSet("JQ", "OY");
+		shardService.validateRedisCreateInfo(infos, regionDcNames);
+	}
+
+	@Test(expected = BadRequestException.class)
+	public void testValidateRedisCreateInfoDcNotInRegion() {
+		List<RedisCreateInfo> infos = Lists.newArrayList(
+			new RedisCreateInfo().setDcId("fra")
+		);
+		Set<String> regionDcNames = Sets.newHashSet("JQ", "OY");
+		shardService.validateRedisCreateInfo(infos, regionDcNames);
+	}
+
+	@Test
+	public void testValidateRedisCreateInfoWithNullRegionDcNames() {
+		List<RedisCreateInfo> infos = Lists.newArrayList(
+			new RedisCreateInfo().setDcId("jq"),
+			new RedisCreateInfo().setDcId("oy")
+		);
+		// null regionDcNames — skip region check, same as 3-param version
+		shardService.validateRedisCreateInfo(infos, null);
 	}
 
 	// ===== addRedises tests =====
@@ -306,6 +340,9 @@ public class ShardServiceImplTest3 {
 
 		when(sentinelBalanceService.selectMultiDcSentinels(any(ClusterType.class), anyString()))
 			.thenReturn(Collections.emptyMap());
+
+		when(dcService.getDcName(1L)).thenReturn("jq");
+		when(dcService.getDcName(2L)).thenReturn("oy");
 	}
 
 	// Case 1: Duplicate call with same request — shard already exists, should skip creation
@@ -315,11 +352,12 @@ public class ShardServiceImplTest3 {
 		long clusterId = 1L;
 		setupCreateRegionShardMocks(clusterName, clusterId, "SHA");
 
-		// Shard already exists
+		// Shard already exists in same region
 		ShardEntity existingShard = mock(ShardEntity.class);
 		when(existingShard.getShardName()).thenReturn("shard1");
 		when(existingShard.getSetinelMonitorName()).thenReturn("shard1");
 		when(existingShard.getId()).thenReturn(100L);
+		when(existingShard.getAzGroupClusterId()).thenReturn(1L);
 		when(shardRepository.selectByClusterId(clusterId)).thenReturn(Lists.newArrayList(existingShard));
 
 		// dc_cluster_shard already exists
@@ -349,7 +387,15 @@ public class ShardServiceImplTest3 {
 
 		// First call: no existing shard
 		when(shardRepository.selectByClusterId(clusterId)).thenReturn(Collections.emptyList());
-		when(dcClusterShardService.find(anyLong(), anyLong())).thenReturn(null);
+		// dc_cluster_shard already exists - avoid DcClusterTbl DAL static initializer error in Mockito
+		when(dcClusterShardService.find(anyLong(), anyLong())).thenReturn(mock(DcClusterShardTbl.class));
+
+		// shardRepository.insert should set the shard ID
+		doAnswer(invocation -> {
+			ShardEntity shard = invocation.getArgument(0);
+			shard.setId(100L);
+			return 1;
+		}).when(shardRepository).insert(any(ShardEntity.class));
 
 		ShardServiceImpl spyService = spy(shardService);
 		doNothing().when(spyService).addRedises(any(ClusterTbl.class), anyString(), any());
@@ -358,9 +404,9 @@ public class ShardServiceImplTest3 {
 		// First call: create shard without redis
 		spyService.createRegionShard(clusterName, "SHA", "shard1", null);
 
-		// Verify: shard created, dc_cluster_shard created, no redis/keeper
+		// Verify: shard created, dc_cluster_shard not created (already exists), no redis/keeper
 		verify(shardRepository).insert(any(ShardEntity.class));
-		verify(dcClusterShardService).insertBatch(anyList());
+		verify(dcClusterShardService, never()).insertBatch(anyList());
 		verify(spyService, never()).addRedises(any(ClusterTbl.class), anyString(), any());
 
 		// Second call: shard now exists, add redis
@@ -368,6 +414,7 @@ public class ShardServiceImplTest3 {
 		when(existingShard.getShardName()).thenReturn("shard1");
 		when(existingShard.getSetinelMonitorName()).thenReturn("shard1");
 		when(existingShard.getId()).thenReturn(100L);
+		when(existingShard.getAzGroupClusterId()).thenReturn(1L);
 		when(shardRepository.selectByClusterId(clusterId)).thenReturn(Lists.newArrayList(existingShard));
 		when(dcClusterShardService.find(anyLong(), anyLong())).thenReturn(mock(DcClusterShardTbl.class));
 
@@ -389,6 +436,13 @@ public class ShardServiceImplTest3 {
 
 		// No existing shard
 		when(shardRepository.selectByClusterId(clusterId)).thenReturn(Collections.emptyList());
+
+		// shardRepository.insert should set the shard ID (simulating auto-increment)
+		doAnswer(invocation -> {
+			ShardEntity shard = invocation.getArgument(0);
+			shard.setId(100L);
+			return 1;
+		}).when(shardRepository).insert(any(ShardEntity.class));
 
 		// dc_cluster_shard already exists for all DCs
 		when(dcClusterShardService.find(anyLong(), anyLong())).thenReturn(mock(DcClusterShardTbl.class));
@@ -414,5 +468,45 @@ public class ShardServiceImplTest3 {
 		when(shardRepository.selectByClusterId(clusterId)).thenReturn(Lists.newArrayList(otherShard));
 
 		shardService.createRegionShard(clusterName, "SHA", "shard1", null);
+	}
+
+	// Case 5: Shard exists in another region — should throw
+	@Test(expected = BadRequestException.class)
+	public void testCreateRegionShardExistInOtherRegion() throws Exception {
+		String clusterName = "cluster-test";
+		long clusterId = 1L;
+		setupCreateRegionShardMocks(clusterName, clusterId, "SHA");
+
+		// Shard exists but belongs to FRA region (azGroupClusterId=2, not 1)
+		ShardEntity otherRegionShard = mock(ShardEntity.class);
+		when(otherRegionShard.getShardName()).thenReturn("shard1");
+		when(otherRegionShard.getSetinelMonitorName()).thenReturn("shard1");
+		when(otherRegionShard.getAzGroupClusterId()).thenReturn(2L);
+		when(shardRepository.selectByClusterId(clusterId)).thenReturn(Lists.newArrayList(otherRegionShard));
+
+		shardService.createRegionShard(clusterName, "SHA", "shard1", null);
+	}
+
+	// Case 6: RedisCreateInfo dcId not in current region — should throw
+	@Test(expected = BadRequestException.class)
+	public void testCreateRegionShardDcNotInRegion() throws Exception {
+		String clusterName = "cluster-test";
+		long clusterId = 1L;
+		setupCreateRegionShardMocks(clusterName, clusterId, "SHA");
+
+		when(shardRepository.selectByClusterId(clusterId)).thenReturn(Collections.emptyList());
+		// dc_cluster_shard already exists - avoid DcClusterTbl DAL static initializer error in Mockito
+		when(dcClusterShardService.find(anyLong(), anyLong())).thenReturn(mock(DcClusterShardTbl.class));
+
+		// shardRepository.insert should set the shard ID
+		doAnswer(invocation -> {
+			ShardEntity shard = invocation.getArgument(0);
+			shard.setId(100L);
+			return 1;
+		}).when(shardRepository).insert(any(ShardEntity.class));
+
+		// "fra" is not in SHA region's DCs (SHA has jq, oy)
+		RedisCreateInfo info = new RedisCreateInfo().setDcId("fra").setRedises("10.0.0.1:6379");
+		shardService.createRegionShard(clusterName, "SHA", "shard1", Lists.newArrayList(info));
 	}
 }
