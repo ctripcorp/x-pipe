@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.api.migration.DC_TRANSFORM_DIRECTION;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -271,9 +272,20 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 			throw new BadRequestException("Monitor name should be exact same with shard name");
 		}
 
-		AzGroupClusterEntity targetAzGroupCluster = azGroupClusterRepository.selectByClusterIdAndRegion(cluster.getId(), regionName);
+		List<AzGroupClusterEntity> azGroupClusters = azGroupClusterRepository.selectByClusterId(cluster.getId());
+		if (CollectionUtils.isEmpty(azGroupClusters)) {
+			throw new BadRequestException(String.format("Cluster: %s in DC mode, cannot create region shard", clusterName));
+		}
+		AzGroupClusterEntity targetAzGroupCluster = null;
+		for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
+			AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
+			if (azGroup.getRegion().equalsIgnoreCase(regionName)) {
+				targetAzGroupCluster = azGroupCluster;
+				break;
+			}
+		}
 		if (targetAzGroupCluster == null) {
-			throw new BadRequestException(String.format("targetAzGroupCluster not found in Region: %s, cluster %s", regionName, clusterName));
+			throw new BadRequestException(String.format("Region: %s not found in cluster %s", regionName, clusterName));
 		}
 
 		doCreateRegionShard(cluster, targetAzGroupCluster, shardName, regionName, redisCreateInfos);
@@ -324,9 +336,13 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		for (DcClusterEntity dcCluster : azGroupDcClusters) {
 			DcClusterShardTbl existingDcClusterShard = dcClusterShardService.find(dcCluster.getDcClusterId(), shard.getId());
 			if (existingShard != null && existingDcClusterShard == null) {
-				throw new BadRequestException(String.format("existingShard: %s with no existingDcClusterShard", existingShard.getShardName()));
+                String msg = "existingShard with no existingDcClusterShard: " + existingShard.getShardName();
+                CatEventMonitor.DEFAULT.logAlertEvent(msg);
+				throw new BadRequestException(msg);
 			} else if (existingShard == null && existingDcClusterShard != null) {
-				throw new BadRequestException(String.format("existingDcClusterShard: %s with no existingShard", existingDcClusterShard.getId()));
+                String msg = "existingDcClusterShard with no existingShard: " + existingDcClusterShard.getShardId();
+                CatEventMonitor.DEFAULT.logAlertEvent(msg);
+				throw new BadRequestException(msg);
 			}
 
 			DcClusterTbl dcClusterTbl = new DcClusterTbl();

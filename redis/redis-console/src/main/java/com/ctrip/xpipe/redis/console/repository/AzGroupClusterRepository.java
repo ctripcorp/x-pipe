@@ -5,9 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
-import com.ctrip.xpipe.redis.console.entity.AzGroupEntity;
 import com.ctrip.xpipe.redis.console.mapper.AzGroupClusterMapper;
-import com.ctrip.xpipe.redis.console.mapper.AzGroupMapper;
 import com.ctrip.xpipe.redis.console.model.AzGroupModel;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
@@ -17,7 +15,6 @@ import javax.annotation.Resource;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Repository
 public class AzGroupClusterRepository {
@@ -26,8 +23,6 @@ public class AzGroupClusterRepository {
     private AzGroupCache azGroupCache;
     @Resource
     private AzGroupClusterMapper azGroupClusterMapper;
-    @Resource
-    private AzGroupMapper azGroupMapper;
 
     public long countByClusterId(Long clusterId) {
         if (clusterId == null) {
@@ -61,25 +56,6 @@ public class AzGroupClusterRepository {
         }
         String azGroupType = azGroupCluster.getAzGroupClusterType();
         return StringUtils.isEmpty(azGroupType) ? null : ClusterType.lookup(azGroupType);
-    }
-
-    public AzGroupClusterEntity selectByClusterIdAndRegion(Long clusterId, String region) {
-        if (clusterId == null || region == null) {
-            return null;
-        }
-        // step1: query az_group_tbl by region to get az_group_ids
-        QueryWrapper<AzGroupEntity> azGroupWrapper = new QueryWrapper<>();
-        azGroupWrapper.eq(AzGroupEntity.REGION, region);
-        List<AzGroupEntity> azGroups = azGroupMapper.selectList(azGroupWrapper);
-        if (CollectionUtils.isEmpty(azGroups)) {
-            return null;
-        }
-        // step2: query az_group_cluster_tbl by cluster_id + az_group_id IN (...)
-        List<Long> azGroupIds = azGroups.stream().map(AzGroupEntity::getId).collect(Collectors.toList());
-        QueryWrapper<AzGroupClusterEntity> wrapper = new QueryWrapper<>();
-        wrapper.eq(AzGroupClusterEntity.CLUSTER_ID, clusterId)
-               .in(AzGroupClusterEntity.AZ_GROUP_ID, azGroupIds);
-        return azGroupClusterMapper.selectOne(wrapper);
     }
 
     public List<AzGroupClusterEntity> selectByClusterId(Long clusterId) {

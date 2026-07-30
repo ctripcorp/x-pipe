@@ -332,7 +332,11 @@ public class ShardServiceImplTest3 {
 		when(azGroupCluster.getId()).thenReturn(1L);
 		when(azGroupCluster.getAzGroupId()).thenReturn(10L);
 		when(azGroupCluster.getAzGroupClusterType()).thenReturn(ClusterType.ONE_WAY.toString());
-		when(azGroupClusterRepository.selectByClusterIdAndRegion(clusterId, regionName)).thenReturn(azGroupCluster);
+		when(azGroupClusterRepository.selectByClusterId(clusterId)).thenReturn(Lists.newArrayList(azGroupCluster));
+
+		AzGroupModel azGroup = mock(AzGroupModel.class);
+		when(azGroup.getRegion()).thenReturn(regionName);
+		when(azGroupCache.getAzGroupById(10L)).thenReturn(azGroup);
 
 		DcClusterEntity dcCluster1 = mock(DcClusterEntity.class);
 		when(dcCluster1.getDcClusterId()).thenReturn(100L);
@@ -491,7 +495,7 @@ public class ShardServiceImplTest3 {
 		setupCreateRegionShardMocks("SHA");
 
 		// "FRA" region does not exist in this cluster (setup only has SHA region)
-		when(azGroupClusterRepository.selectByClusterIdAndRegion(clusterId, "FRA")).thenReturn(null);
+		// azGroupCache.getAzGroupById(10L) returns azGroup with region="SHA", so "FRA" won't match
 		shardService.createRegionShard("cluster-test", "FRA", "shard1", null);
 	}
 }
