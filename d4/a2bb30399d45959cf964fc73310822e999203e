@@ -1,0 +1,27 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/ShardServiceImpl.java
+  s_f8d3bae99b1e09::t_847f7e36146d25 354-357,359-360
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/ShardServiceImplTest3.java
+  s_f8d3bae99b1e09::t_89a9ab2b13dedf 113,118-124,132-135,139,144,318,320-325,327,329,331,335,343,352,355,361,371,384,387,401,412,416,426,428,438,447,452,454,457-460,462-463,471-482,485-495
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/repository/AzGroupClusterRepository.java
+  s_f8d3bae99b1e09::t_be374de3fccdb3 8,10,20
+  s_f8d3bae99b1e09::t_a9ef6a119cebc3 67,69,83-84
+  s_f8d3bae99b1e09::t_9803e9fd9d99b1 71-74,76-81
+  s_f8d3bae99b1e09::t_d3db3e3f604b93 70
+  s_f8d3bae99b1e09::t_fdaa3e53da0f13 29-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "d4a2bb30399d45959cf964fc73310822e999203e",
+  "prompts": {},
+  "sessions": {
+    "s_f8d3bae99b1e09": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb7b92d5-5612-46ca-93f2-4563bb8cf38c",
+        "model": "glm-5.1"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}
