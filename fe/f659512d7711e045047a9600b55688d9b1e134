@@ -1,0 +1,20 @@
+redis/redis-console/src/test/resources/apptest.sql
+  s_5df018cc016313::t_52c66a63997670 197-199,205
+  s_5df018cc016313::t_681fd53f1173aa 200-204
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "fef659512d7711e045047a9600b55688d9b1e134",
+  "prompts": {},
+  "sessions": {
+    "s_5df018cc016313": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6c6bb604-6bf2-41b6-9ffe-584e7c5abd65",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
