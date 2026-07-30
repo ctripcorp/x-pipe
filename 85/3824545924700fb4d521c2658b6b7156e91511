@@ -1,0 +1,23 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystemTest.java
+  s_c8535c31ef5654::t_34d9fdb0527b1e 648
+  s_c8535c31ef5654::t_33c4296e84ce48 668
+  s_c8535c31ef5654::t_3e5ba94168068e 586-587,589
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystemTest.java
+  s_c8535c31ef5654::t_0658d31c9d9ff7 879,881
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "853824545924700fb4d521c2658b6b7156e91511",
+  "prompts": {},
+  "sessions": {
+    "s_c8535c31ef5654": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4c0dca7a-9230-4bad-99b7-0cf9412d63ff",
+        "model": "qwen3.7-plus"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}

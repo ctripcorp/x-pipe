@@ -1,0 +1,21 @@
+core/src/main/java/com/ctrip/xpipe/netty/commands/NettyKeyedPoolClientFactory.java
+  s_300c4c2079d8b8::t_ef3121c88df9bd 28
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/RedisSession.java
+  s_300c4c2079d8b8::t_35a929f6049235 52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "1794b9c4772e6fbd648da648bde960a2f8dd9c06",
+  "prompts": {},
+  "sessions": {
+    "s_300c4c2079d8b8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b142aa62-5e75-41b7-985b-1859ba2c003e",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  }
+}
