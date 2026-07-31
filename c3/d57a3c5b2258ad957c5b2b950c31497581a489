@@ -1,0 +1,91 @@
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/AllTests.java
+  s_174c3aeac3ce00::t_df6373934eee82 7
+  s_976b945d43ca3b::t_faabaf675e550a 82
+  s_976b945d43ca3b::t_278423f09aa242 210
+  s_174c3aeac3ce00::t_155fa6d68bb79b 284-285
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/cache/impl/RegionCacheImpl.java
+  s_174c3aeac3ce00::t_5f6f87bf401e89 1-106
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/cache/impl/AzGroupCacheImplTest.java
+  s_976b945d43ca3b::t_71f584692fd251 44-45
+  s_976b945d43ca3b::t_87013ff4a2c3ab 71
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/cache/impl/AzGroupCacheImpl.java
+  s_976b945d43ca3b::t_c19442703998b8 96
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/entity/AzGroupEntity.java
+  s_976b945d43ca3b::t_b7ab3b6c18c345 13,77
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/migration/support/HeteroMigrationSupport.java
+  s_174c3aeac3ce00::t_f1ca8ab538586f 6
+  s_976b945d43ca3b::t_79971782ba5e16 24,41,43,49,51-55,57-67,71-105,171-173,183,185,187,189-190
+  s_174c3aeac3ce00::t_49fa40d0af4e69 42,56,68
+  s_174c3aeac3ce00::t_e648b20e52c96d 50
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/controller/api/data/MetaUpdateTest4.java
+  s_976b945d43ca3b::t_840577308615c9 276
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/vo/DcMetaBuilderCrossRegionAzGroupTest.java
+  s_976b945d43ca3b::t_fad08f764a16ea 1-23,25-81,85-153,177-194
+  s_976b945d43ca3b::t_2f82f33fe8699b 24
+  s_976b945d43ca3b::t_275f0d6283c99e 82-84
+  s_976b945d43ca3b::t_773cea139e2c76 154,156-158,160-176
+  s_976b945d43ca3b::t_a6ff87f151dda4 155
+  s_976b945d43ca3b::t_5f58f9c0442a9f 159
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/cache/impl/RegionCacheImplTest.java
+  s_174c3aeac3ce00::t_e219c0cfc3464a 1-88
+redis/redis-console/src/test/resources/cluster-service-impl-test4.sql
+  s_976b945d43ca3b::t_2a283c22b7fabd 9
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/cache/RegionCache.java
+  s_174c3aeac3ce00::t_c64e505bd1d1fb 1-24
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/ClusterServiceImpl.java
+  s_174c3aeac3ce00::t_c19d84d4fca149 12
+  s_174c3aeac3ce00::t_3d4edc59185b33 168-169
+  s_976b945d43ca3b::t_93df3ddac02e8b 428
+  s_976b945d43ca3b::t_25bbc6ae1e9fa4 483-484,490
+  s_976b945d43ca3b::t_50474312323967 699,704
+  s_976b945d43ca3b::t_13d20ef151f606 1016
+  s_976b945d43ca3b::t_5eb23a0eebeac1 1223
+  s_976b945d43ca3b::t_f9ff4cd221ac59 1357-1358
+  s_976b945d43ca3b::t_da1beeae9316ab 1554
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/ShardServiceImpl.java
+  s_976b945d43ca3b::t_88e8a6bc647ff9 36
+  s_976b945d43ca3b::t_a48029407dabc9 113-114
+redis/redis-console/src/main/resources/sql/h2/xpipedemodbinitdata.sql
+  s_976b945d43ca3b::t_79ffbe93cfd6b8 4-7
+redis/redis-console/src/test/resources/hetero-cross-region-az-group-test.sql
+  s_976b945d43ca3b::t_0a9a818f571567 1-63
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/controller/api/data/ClusterUpdateControllerTest.java
+  s_8293b91e543964::t_d48fdde282bba5 365-366,383-394
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/checker/DefaultConsoleDcCheckerServiceTest.java
+  s_976b945d43ca3b::t_716ef9f92f2707 143,251
+  s_976b945d43ca3b::t_e41481175db2dc 187
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/model/AzGroupModel.java
+  s_976b945d43ca3b::t_e2116cf6f10f6f 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "c3d57a3c5b2258ad957c5b2b950c31497581a489",
+  "prompts": {},
+  "sessions": {
+    "s_174c3aeac3ce00": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "50cbd161-1700-4628-8c2d-2c19bd2b10ad",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_8293b91e543964": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "87e3256e-31eb-4a73-8b30-ee7832c0ef6a",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_976b945d43ca3b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "779906a9-b99c-44c4-bf54-86b56f81499a",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

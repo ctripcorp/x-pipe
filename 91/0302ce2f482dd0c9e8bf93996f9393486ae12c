@@ -1,0 +1,31 @@
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/meta/impl/BeaconMetaServiceImplHeteroTest.java
+  s_62b394aaf9f56c::t_176e6e4c7853b2 44-49
+  s_62b394aaf9f56c::t_123aa6854f365d 130,134,140-141,146-148
+  s_62b394aaf9f56c::t_d5886adddbefe1 81-123
+  s_62b394aaf9f56c::t_1576390d2a1a51 5-6,36-40
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/AllTests.java
+  s_62b394aaf9f56c::t_7fcf774cfa3aa2 235,238-239
+  s_62b394aaf9f56c::t_fef31c4bc1fe2d 82
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/migration/support/HeteroMigrationSupportCrossRegionTest.java
+  s_62b394aaf9f56c::t_c241a2154fcdb1 67-69
+  s_62b394aaf9f56c::t_5552f505522002 1-39,41-66,70-114
+  s_62b394aaf9f56c::t_4f2c5348a82d5e 40
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/migration/cmd/beacon/MigrationChooseTargetDcCmdHeteroTest.java
+  s_62b394aaf9f56c::t_e8ae50c23601ed 78-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "910302ce2f482dd0c9e8bf93996f9393486ae12c",
+  "prompts": {},
+  "sessions": {
+    "s_62b394aaf9f56c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "60ff62f3-40da-4d0e-9a62-0e01c0c336ae",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
