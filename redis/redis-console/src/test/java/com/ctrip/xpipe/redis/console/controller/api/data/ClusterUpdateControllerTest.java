@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.notifier.cluster.ClusterDeleteEventFactory;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.impl.ClusterServiceImpl;
 import com.ctrip.xpipe.redis.console.service.impl.ShardServiceImpl;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -348,7 +349,8 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
         clusterController.upgradeAzGroup("cluster-name");
 
         this.createCluster("hetero-cluster", "HETERO", Arrays.asList("jq", "oy", "fra"), Arrays.asList(region1, region2));
-        shardService.createRegionShard("hetero-cluster", "SHA", "hetero-shard1");
+        ShardService.RegionShardContext context = shardService.validateRegionCluster("hetero-cluster", "SHA");
+        shardService.createRegionShard(context, "hetero-shard1", null);
 
         ClusterRegionExchangeInfo info = new ClusterRegionExchangeInfo(1L, "cluster-name", 2L, "hetero-cluster", "SHA");
         RetMessage ret = clusterController.exchangeClusterRegion(info);
@@ -366,7 +368,8 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
         clusterController.upgradeAzGroup("cluster-name");
 
         this.createCluster("hetero-cluster", "HETERO", Arrays.asList("jq", "oy", "fra"), Arrays.asList(region1, region2));
-        shardService.createRegionShard("hetero-cluster", "FRA", "hetero-shard2");
+        ShardService.RegionShardContext context = shardService.validateRegionCluster("hetero-cluster", "FRA");
+        shardService.createRegionShard(context, "hetero-shard2", null);
 
         ClusterRegionExchangeInfo info = new ClusterRegionExchangeInfo(1L, "cluster-name", 2L, "hetero-cluster", "FRA");
         RetMessage ret = clusterController.exchangeClusterRegion(info);
