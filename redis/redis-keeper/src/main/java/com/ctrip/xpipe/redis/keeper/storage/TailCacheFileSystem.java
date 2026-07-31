@@ -1173,7 +1173,12 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         } else {
             long pending = entry.cacheEndOffset - entry.writtenToFsOffset;
             if (pending == writeSize) {
-                writeBuf = data;
+                if (pending >= writeBatchBytes) {
+                    writeBuf = data;
+                } else {
+                    data.release();
+                    writeBuf = Unpooled.buffer(0);
+                }
             } else {
                 writeBuf = buildWriteBufAfterInFlight(entry);
                 data.release();
