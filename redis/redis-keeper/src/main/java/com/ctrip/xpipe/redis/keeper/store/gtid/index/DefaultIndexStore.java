@@ -104,7 +104,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     public synchronized void doSwitchCmdFile(String cmdFileName) throws IOException {
-        GtidSet continueGtidSet = (indexWriterV2 != null) ? indexWriterV2.getGtidSet() : indexWriter.getGtidSet();
+        GtidSet continueGtidSet = (indexWriterV2 != null && keeperConfig.readV2()) ? indexWriterV2.getGtidSet() : indexWriter.getGtidSet();
         if (indexWriter != null) indexWriter.close();
         if (indexWriterV2 != null) indexWriterV2.close();
         if (keeperConfig.dualWrite()) {
@@ -580,6 +580,9 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     public IndexWriterV2 getIndexWriterV2() {
         return indexWriterV2;
+    }
+    public IndexWriter getIndexWriterV1() {
+        return indexWriter;
     }
 
     private void disableWriterCmd() {

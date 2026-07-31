@@ -1291,6 +1291,91 @@ public class DefaultIndexStoreTest {
         store.closeWriter();
     }
 
+
+    @Test
+    public void testDoSwitchCmdFile_V1FullHistoryPreservedWhenV2LateJoin() throws Exception {
+        // 复现生产事故：老版本只写 V1，V1 累积长历史；灰度发布进入双写后 V2 首次创建，起点为空。
+        // cmd 轮转触发 DefaultIndexStore#doSwitchCmdFile 第 107 行：
+        //   continueGtidSet = indexWriterV2.getGtidSet();   // ← 用 V2 残缺集覆盖了 V1 完整集
+        // 新一轮 V1 writer 以此起头，V1 完整历史被抹平。
+        // 现网 readV2=false，读走 V1；切完 cmd 后 slave xsync 拿到的 keeperCont 只剩尾段 → full sync。
+        baseDir = Paths.get(tempDir, "IndexStoreTest-dualWriteLateJoinSwitch").toString();
+        File dir = new File(baseDir);
+        if (dir.exists()) {
+            for (File f : dir.listFiles()) f.delete();
+        } else {
+            dir.mkdirs();
+        }
+
+        String cmdName = "cmd_dual_write_late_join_0";
+        File cmdFile = new File(baseDir, cmdName);
+        String uuid = "abababababababababababababababababababab";
+
+        // ---------------- 阶段 1：模拟老版本 V1 单跑 ----------------
+        // 用 dualWrite=true 开双写来产生 V1 文件，写完后删掉 V2 文件，模拟"V2 灰度前的磁盘状态"
+        DefaultIndexStore phase1Store = createStoreWithFlags(cmdFile, cmdName, true, false);
+        for (int i = 1; i <= 1000; i++) {
+            phase1Store.write(createGtidCommand(uuid + ":" + i, "SET", "k" + i, "v" + i));
+        }
+        Assert.assertEquals("phase1 V1 should accumulate full history",
+                new GtidSet(uuid + ":1-1000"), phase1Store.getIndexGtidSet());
+        phase1Store.closeWriter();
+
+        Assert.assertTrue("V1 index file must exist after phase1",
+                new File(baseDir, AbstractIndex.INDEX + cmdName).exists());
+        // 删掉 V2 磁盘产物，让阶段 2 里 V2 变成"首次创建、起点为空"
+        Assert.assertTrue(new File(baseDir, AbstractIndex.INDEX_V2 + cmdName).delete());
+        Assert.assertTrue(new File(baseDir, AbstractIndex.BLOCK_V2 + cmdName).delete());
+
+        // ---------------- 阶段 2：灰度发布，进入双写 ----------------
+        // V1 从磁盘 recover 出完整 1-1000；V2 首次创建，起点为空 gtidSet
+        KeeperConfig config = mock(KeeperConfig.class);
+        when(config.dualWrite()).thenReturn(true);
+        when(config.readV2()).thenReturn(false);
+        when(config.getIndexZoneConsecutiveThreshold()).thenReturn(TEST_ZONE_CONSECUTIVE_THRESHOLD);
+        when(config.getIndexMixedTotalBytesThreshold()).thenReturn(16L * 1024 * 1024);
+        DefaultIndexStore dualStore = createStoreWithKeeperConfig(cmdFile, cmdName, config);
+        defaultIndexStore = dualStore; // 让 @After 能正确 close
+
+        Assert.assertTrue("V2 index file should be re-created after entering dual write",
+                new File(baseDir, AbstractIndex.INDEX_V2 + cmdName).exists());
+        Assert.assertEquals("V1 should recover full history from disk",
+                new GtidSet(uuid + ":1-1000"),
+                dualStore.getIndexWriterV1().getGtidSet());
+        Assert.assertEquals("V2 starts empty (freshly created)",
+                new GtidSet(""),
+                dualStore.getIndexWriterV2().getGtidSet());
+
+        // 再写少量命令，让 V1/V2 不对称：V1=1-1050, V2=1001-1050
+        for (int i = 1001; i <= 1050; i++) {
+            dualStore.write(createGtidCommand(uuid + ":" + i, "SET", "k" + i, "v" + i));
+        }
+        Assert.assertEquals("V1 covers full history",
+                new GtidSet(uuid + ":1-1050"),
+                dualStore.getIndexWriterV1().getGtidSet());
+        Assert.assertEquals("V2 only covers commands after it joined",
+                new GtidSet(uuid + ":1001-1050"),
+                dualStore.getIndexWriterV2().getGtidSet());
+        Assert.assertEquals("readV2=false must read V1 (full history) before switch",
+                new GtidSet(uuid + ":1-1050"),
+                dualStore.getIndexGtidSet());
+
+        // ---------------- 阶段 3：触发 cmd 文件切换 ----------------
+        String newCmdName = "cmd_dual_write_late_join_1";
+        when(config.readV2()).thenReturn(true);
+
+        dualStore.doSwitchCmdFile(newCmdName);
+
+        // 关键断言：切换后 readV2=true V1读到的是 1001-1050，V1实际应该是1-1050
+        // 若 doSwitchCmdFile 用 indexWriterV2.getGtidSet()(=1001-1050) 覆盖了 V1，此断言会为 1001-1050
+        Assert.assertEquals(
+                "V1 writer itself must retain full history across cmd file switch",
+                new GtidSet(uuid + ":1001-1050"),
+                dualStore.getIndexWriterV1().getGtidSet());
+
+        dualStore.closeWriter();
+    }
+
     /**
      * 创建一个启用双写 + v2 读取的 DefaultIndexStore，
      * 并 hook commandWriterCallback 将命令字节写入指定 cmdFile。
@@ -1429,6 +1514,34 @@ public class DefaultIndexStoreTest {
         when(keeperConfig.getIndexZoneConsecutiveThreshold()).thenReturn(zoneThreshold);
         when(keeperConfig.getIndexMixedTotalBytesThreshold()).thenReturn(mixedBytesThreshold);
         when(keeperConfig.getBlockSizeThreshold()).thenReturn(blockSizeThreshold);
+
+        RedisOpParserManager mgr = new DefaultRedisOpParserManager();
+        RedisOpParserFactory.getInstance().registerParsers(mgr);
+        RedisOpParser opParser = new GeneralRedisOpParser(mgr);
+        DefaultIndexStore store = new DefaultIndexStore(keeperConfig, ckStore, baseDir, opParser,
+                commandWriterCallback, gtidCmdFilter, cmdName);
+        store.openWriter(writer);
+        return store;
+    }
+
+    private DefaultIndexStore createStoreWithKeeperConfig(File cmdFile, String cmdName,KeeperConfig keeperConfig)
+            throws IOException {
+        when(commandFile.getFile()).thenReturn(cmdFile);
+        when(commandFileContext.getCommandFile()).thenReturn(commandFile);
+        when(writer.getFileContext()).thenReturn(commandFileContext);
+        when(commandWriterCallback.writeCommand(any(ByteBuf.class))).thenAnswer(inv -> {
+            ByteBuf b = inv.getArgument(0);
+            int n = b.readableBytes();
+            try (java.io.FileOutputStream fos = new java.io.FileOutputStream(cmdFile, true)) {
+                byte[] tmp = new byte[n];
+                b.getBytes(b.readerIndex(), tmp);
+                fos.write(tmp);
+            }
+            return n;
+        });
+
+        CKStore ckStore = mock(CKStore.class);
+        when(ckStore.getKeeperConfig()).thenReturn(keeperConfig);
 
         RedisOpParserManager mgr = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(mgr);
