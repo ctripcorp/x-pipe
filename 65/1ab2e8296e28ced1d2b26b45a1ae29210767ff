@@ -1,0 +1,74 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/ShardServiceImpl.java
+  s_588db50b8ce501::t_08d1df5641e924 289-290,303,334,364,367-368
+  s_03b949b183838b::t_0ab5511a158024 294,298-299,311-312,324-325
+  s_588db50b8ce501::t_c78d432eef247b 296
+  s_588db50b8ce501::t_b7cffc5fdd5834 297
+  s_588db50b8ce501::t_74d2f789a5a416 317
+  s_f8d3bae99b1e09::t_ed2a6c1ae90b4a 337-338,341-342,345-351
+  s_588db50b8ce501::t_c59c7c021a4e3d 300
+  s_f8d3bae99b1e09::t_1e1925c7c9682f 42
+  s_588db50b8ce501::t_06d9d5ec94697f 267
+  s_588db50b8ce501::t_2f5764edcd62ba 293
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/ShardUpdateController.java
+  s_588db50b8ce501::t_0a31f74a16ba88 11
+  s_588db50b8ce501::t_ffb51d51b161d7 56
+  s_588db50b8ce501::t_6ebce1018a52f1 34,36-37,59-60,69
+  s_588db50b8ce501::t_bbbe8efc34cc29 38
+  s_588db50b8ce501::t_b9a7e7a296044c 35
+  s_03b949b183838b::t_ba4ff6b298be32 61-62
+  s_588db50b8ce501::t_d9f83d091fb2b1 7,32-33,58,89-91
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/controller/api/data/ClusterUpdateControllerTest.java
+  s_588db50b8ce501::t_6c65b96ef35e6e 353
+  s_588db50b8ce501::t_fa502235136226 14
+  s_588db50b8ce501::t_45dd1c92077deb 372
+  s_588db50b8ce501::t_ca632c94e3f19b 352,371
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/ShardServiceImplTest3.java
+  s_588db50b8ce501::t_2a273a6481260d 381,405,419,441,458,479,491,509-511,514-515,517,519-520,530
+  s_f8d3bae99b1e09::t_26366b26ef4794 5,78,123-128,139-141,358-363,395,408,410,421,427,438,444,475,535
+  s_588db50b8ce501::t_16c138a5c1329b 504,506-507,521-528,531,533
+  s_588db50b8ce501::t_c7707c91330979 366,380,388,404,418,425,440,447,457,461,478,483,490,494,500,505,508,529
+  s_588db50b8ce501::t_b18efefe0cc3fe 512-513
+  s_588db50b8ce501::t_ef9d12351392f4 503
+  s_588db50b8ce501::t_8dcaef82b0e1c3 21
+  s_588db50b8ce501::t_18843c1553364b 516,518,532
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/ShardService.java
+  s_f8d3bae99b1e09::t_c9ec338118a6fb 12
+  s_588db50b8ce501::t_245bc790d0d2e3 24,27,30,59
+  s_588db50b8ce501::t_8b5d0e500c2cc1 38
+  s_588db50b8ce501::t_cafdf5aa893ccb 41
+  s_588db50b8ce501::t_5024507b61e439 42
+  s_588db50b8ce501::t_bc11997fec1dde 4,20-23,25-26,28-29,31-34,36-37,39-40
+  s_588db50b8ce501::t_4758f6a3b43705 35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "651ab2e8296e28ced1d2b26b45a1ae29210767ff",
+  "prompts": {},
+  "sessions": {
+    "s_03b949b183838b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "aafb7cc8-4dcc-4939-893f-3c60cf1075a0",
+        "model": "glm-5.1"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    },
+    "s_588db50b8ce501": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "11dbc7f2-7780-4128-96c3-dff425024669",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    },
+    "s_f8d3bae99b1e09": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb7b92d5-5612-46ca-93f2-4563bb8cf38c",
+        "model": "glm-5.1"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}
