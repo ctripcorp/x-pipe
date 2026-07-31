@@ -79,6 +79,9 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             currentSegmentChannel = null;
             throw e;
         }
+        if (openMode != OpenMode.READ) {
+            pendingFsyncBytes = 0;
+        }
     }
 
     @Override

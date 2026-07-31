@@ -54,5 +54,8 @@ public class AsyncFile extends AbstractStorageFile {
         }
         channel.close();
         openCurrentChannel();
+        if (openMode != OpenMode.READ) {
+            pendingFsyncBytes = 0;
+        }
     }
 }
