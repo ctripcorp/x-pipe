@@ -1,0 +1,24 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/protocal/cmd/AbstractGapAllowedSync.java
+  s_0ad610d83d8f97::t_77f8589b8612ee 236
+core/src/main/java/com/ctrip/xpipe/netty/ByteBufUtils.java
+  s_0ad610d83d8f97::t_17929ac3e9c5c6 143,145-148,150,157,167-191
+  s_0ad610d83d8f97::t_0ced4179dd9b65 25
+core/src/test/java/com/ctrip/xpipe/netty/ByteBufUtilsTest.java
+  s_0ad610d83d8f97::t_82cc24171867b5 67,72-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "1ac0e445e140c93bffc6b439b8a5babe4689654b",
+  "prompts": {},
+  "sessions": {
+    "s_0ad610d83d8f97": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0a554d47-e956-4813-8fa7-6c6858fcc57e",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
