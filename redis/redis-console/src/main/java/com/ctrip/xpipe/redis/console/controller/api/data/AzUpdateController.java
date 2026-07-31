@@ -1,10 +1,8 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
-import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.AzCreateInfo;
-import com.ctrip.xpipe.redis.console.model.AzGroupModel;
 import com.ctrip.xpipe.redis.console.service.AzService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -23,9 +21,6 @@ public class AzUpdateController extends AbstractConsoleController {
 
     @Autowired
     private AzService azService;
-
-    @Autowired
-    private AzGroupCache azGroupCache;
 
     @RequestMapping(value = "/az", method = RequestMethod.POST)
     public RetMessage addAavilableZone(@RequestBody AzCreateInfo createInfo) {
@@ -83,11 +78,5 @@ public class AzUpdateController extends AbstractConsoleController {
             return Collections.emptyList();
         }
     }
-
-    @RequestMapping(value = "/azGroup/all", method = RequestMethod.GET)
-    public List<AzGroupModel> allAvailableZones() {
-        return azGroupCache.getAllAzGroup();
-    }
-
 
 }

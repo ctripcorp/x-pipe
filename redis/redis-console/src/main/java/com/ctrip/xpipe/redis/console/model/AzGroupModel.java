@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -44,6 +46,7 @@ public class AzGroupModel {
         this.azs = azs;
     }
 
+    @JsonIgnore
     public List<String> getAzsAsList() {
         return new ArrayList<>(azs);
     }

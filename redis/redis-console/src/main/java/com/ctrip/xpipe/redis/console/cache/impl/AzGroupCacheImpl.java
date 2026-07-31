@@ -155,4 +155,9 @@ public class AzGroupCacheImpl implements AzGroupCache {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public void reload() {
+        loadAzGroupCache();
+    }
+
 }

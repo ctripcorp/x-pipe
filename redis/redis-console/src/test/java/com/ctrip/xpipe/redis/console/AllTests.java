@@ -158,6 +158,7 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisInstanceInfoTest.class,
         KeeperUpdateControllerTest.class,
         AzServiceImplTest.class,
+        AzGroupUpdateControllerTest.class,
         ClusterUpdateControllerTest.class,
         ClusterUpdateControllerCrossRegionAzGroupTest.class,
         ShardUpdateControllerTest.class,
