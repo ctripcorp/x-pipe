@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,12 +17,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import com.ctrip.xpipe.tuple.Pair;
 
 import static org.junit.Assert.*;
 
@@ -860,8 +859,8 @@ public class TailCacheFileSystemTest {
         ByteBuf buf = tcf.read(writer, 3, 2).get(5, TimeUnit.SECONDS);
         try {
             assertArrayEquals(new byte[]{3, 4, 5}, readBytes(buf));
+            assertEquals("cache read should not call delegate", 0, delegate.fileReadCount);
         } finally {
-            // read(AsyncFile, length, offset) uses fromPosition=false → no delegate read
         }
         tcf.close(writer).get(5, TimeUnit.SECONDS);
     }
@@ -1956,6 +1955,118 @@ public class TailCacheFileSystemTest {
                 entry.cacheStartOffset >= 0);
 
         tightTcf.close(file).get(5, TimeUnit.SECONDS);
+    }
+
+    // =========================================================================
+    // P. EIO recovery
+    // =========================================================================
+
+    /**
+     * EIO-capable delegate. When eioMode is enabled, writeSync throws EIOException.
+     * writeLatch counts down after every writeSync (success or failure) so tests can
+     * deterministically wait for async IO completion without Thread.sleep.
+     * fsyncIntervalBytes/fsyncIntervalMillis are set large so writeAndFlush never
+     * auto-calls FileChannel.force() — data reaches page cache via writeSync but
+     * is only persisted by explicit fsyncSync (triggered by tcf.fsync()).
+     */
+    static class EioDelegate extends AsyncTFSBasedFileSystem {
+        volatile boolean eioMode = false;
+        volatile CountDownLatch writeLatch = new CountDownLatch(0);
+
+        EioDelegate(ExecutorService ioExecutor) {
+            super(ioExecutor, Long.MAX_VALUE / 2, Long.MAX_VALUE / 2_000_000L);
+        }
+
+        void resetLatch(int count) {
+            writeLatch = new CountDownLatch(count);
+        }
+
+        @Override
+        public long writeSync(AsyncFile file, ByteBuf data) {
+            try {
+                if (eioMode) {
+                    throw new EIOException(new IOException("Input/output error"));
+                }
+                return super.writeSync(file, data);
+            } finally {
+                writeLatch.countDown();
+            }
+        }
+    }
+
+    @Test
+    public void testEioRecoveryWithPartialWriteAndCachePreservation() throws Exception {
+        // Simulates: data reaches page cache via writeSync → lower-level fs EIO causes
+        // partial data rollback → resetWrittenToFsOffset rolls back offset → cache preserved
+        // → subsequent fsync re-flushes from cache and recovers.
+        //
+        // writeBatchBytes=1: every write triggers delegate.writeSync → data reaches page cache.
+        // truncate(8): simulates partial write — offsets 0-7 survive, 8-9 lost.
+        // write(C) with EIO: writeSync fails → resetWrittenToFsOffset via sizeSync → offset rolls back.
+        // C's data still enters cache (initCacheAndAppend before writeSync).
+        // fsync recovery: re-flushes B+C from cache (offsets 8-14).
+
+        EioDelegate eioDelegate = new EioDelegate(ioExecutor);
+        TailCacheFileSystem eioTcf = new TailCacheFileSystem(eioDelegate,
+                new TailCacheFileSystemConfig()
+                        .setPerFileCacheLimits(10 * 1024, 1, CHUNK_SIZE)
+                        .setMaxCacheSizeBytes(100 * 1024)
+                        .setWriteBatchBytes(1) // every write goes to delegate (page cache)
+                        .setIoWaitTimeoutMs(5000)
+                        .setExpectedMinRetentionMs(0)
+                        .setEvictScanIntervalMs(60_000)
+                        .setWatermarkRatios(0.5, 0.8)
+                        .setMaxEvictRatioPerWrite(0.5),
+                ioExecutor);
+
+        String p = path("file_eio_recovery");
+        AsyncFile writer = eioTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        FileCacheEntry entry = writer.getCacheEntry();
+
+        // Step 1: Write A={1,2,3,4,5} — writeSync → page cache
+        eioDelegate.resetLatch(1);
+        eioTcf.write(writer, bufOf(new byte[]{1, 2, 3, 4, 5})).get();
+        eioDelegate.writeLatch.await();
+
+        // Step 2: fsync — force page cache to disk, A durable
+        eioTcf.fsync(writer).get();
+        assertEquals(5, entry.cacheEndOffset);
+        assertEquals(5, entry.writtenToFsOffset);
+
+        // Step 3: Write B={6,7,8,9,10} — writeSync → page cache, NOT forced
+        eioDelegate.resetLatch(1);
+        eioTcf.write(writer, bufOf(new byte[]{6, 7, 8, 9, 10})).get();
+        eioDelegate.writeLatch.await();
+        assertEquals(10, entry.cacheEndOffset);
+        assertEquals(10, entry.writtenToFsOffset);
+
+        // Step 4: Truncate real file to 8 — simulates partial write (offsets 8,9 lost)
+        try (FileChannel ch = FileChannel.open(Paths.get(p),
+                java.nio.file.StandardOpenOption.WRITE)) {
+            ch.truncate(8);
+        }
+
+        // Step 5: Write C={11,12,13,14,15} with EIO enabled
+        // writeSync(C) → EIOException → executeWithEioRetry: reopen + resetWrittenToFsOffset
+        // sizeSync returns 8 (truncate'd size) → writtenToFsOffset = 8
+        // C's data still enters cache (initCacheAndAppend runs before writeSync)
+        eioDelegate.resetLatch(1);
+        eioDelegate.eioMode = true;
+        eioTcf.write(writer, bufOf(new byte[]{11, 12, 13, 14, 15})).get();
+        eioDelegate.writeLatch.await();
+        assertEquals("cache preserved after EIO", 15, entry.cacheEndOffset);
+        assertNotNull("chunk survives EIO", entry.chunks.get(0L));
+
+        // Step 6: Recovery — fsync re-flushes from cache (offsets 8-14 = {9,10,11,12,13,14,15})
+        eioDelegate.eioMode = false;
+        eioTcf.fsync(writer).get();
+
+        // Verify: all 15 bytes on disk with correct content
+        byte[] onDisk = readFileSync(p);
+        assertArrayEquals("disk should have {1..15} after recovery",
+                new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}, onDisk);
+
+        eioTcf.close(writer).get();
     }
 
     // =========================================================================
