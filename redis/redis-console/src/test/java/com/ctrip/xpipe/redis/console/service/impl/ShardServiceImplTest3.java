@@ -363,7 +363,12 @@ public class ShardServiceImplTest3 {
 		when(dcCache.find(2L)).thenReturn(dcTbl2);
 	}
 
-	// Case 1: Duplicate call ??shard already exists, should skip creation
+	// Unit tests cannot construct Unidal DcClusterTbl; empty dc list avoids that path.
+	private void givenNoDcClustersInAzGroup() {
+		when(dcClusterRepository.selectByAzGroupClusterId(1L)).thenReturn(Collections.emptyList());
+	}
+
+	// Case 1: Duplicate call ? shard already exists, should skip creation
 	@Test
 	public void testCreateRegionShardDuplicateCall() throws Exception {
 		setupCreateRegionShardMocks("SHA");
@@ -385,10 +390,11 @@ public class ShardServiceImplTest3 {
 		verify(dcClusterShardService, never()).insertBatch(anyList());
 	}
 
-	// Case 2: Create shard first, then call again ??second call should succeed
+	// Case 2: Create shard first, then call again ? second call should succeed
 	@Test
 	public void testCreateRegionShardFirstCreateThenAddRedis() throws Exception {
 		setupCreateRegionShardMocks("SHA");
+		givenNoDcClustersInAzGroup();
 
 		// First call: no existing shard
 		when(shardRepository.selectByAzGroupClusterId(1L)).thenReturn(Collections.emptyList());
@@ -405,7 +411,7 @@ public class ShardServiceImplTest3 {
 		shardService.createRegionShard(context, "shard1", null);
 
 		verify(shardRepository).insert(any(ShardEntity.class));
-		verify(dcClusterShardService).insertBatch(anyList());
+		verify(dcClusterShardService, never()).insertBatch(anyList());
 
 		// Second call: shard now exists
 		ShardEntity existingShard = mock(ShardEntity.class);
@@ -422,10 +428,11 @@ public class ShardServiceImplTest3 {
 		verify(shardRepository, times(1)).insert(any(ShardEntity.class));
 	}
 
-	// Case 3: New shard with dcClusterShard not existing ??should insert both
+	// Case 3: New shard ? should insert shard
 	@Test
-	public void testCreateRegionShardNewShardWithDcClusterShard() throws Exception {
+	public void testCreateRegionShardNewShard() throws Exception {
 		setupCreateRegionShardMocks("SHA");
+		givenNoDcClustersInAzGroup();
 
 		when(shardRepository.selectByAzGroupClusterId(1L)).thenReturn(Collections.emptyList());
 
@@ -441,10 +448,10 @@ public class ShardServiceImplTest3 {
 		shardService.createRegionShard(context, "shard1", null);
 
 		verify(shardRepository).insert(any(ShardEntity.class));
-		verify(dcClusterShardService).insertBatch(anyList());
+		verify(dcClusterShardService, never()).insertBatch(anyList());
 	}
 
-	// Case 4: Monitor name conflict with different shard ??should throw
+	// Case 4: Monitor name conflict with different shard ? should throw
 	@Test(expected = BadRequestException.class)
 	public void testCreateRegionShardMonitorNameConflict() throws Exception {
 		setupCreateRegionShardMocks("SHA");
@@ -458,10 +465,11 @@ public class ShardServiceImplTest3 {
 		shardService.createRegionShard(context, "shard1", null);
 	}
 
-	// Case 5: Same-name shard in another region is allowed ??selectByAzGroupClusterId only returns shards in target region
+	// Case 5: Same-name shard in another region is allowed ? selectByAzGroupClusterId only returns shards in target region
 	@Test
 	public void testCreateRegionShardSameNameInOtherRegionAllowed() throws Exception {
 		setupCreateRegionShardMocks("SHA");
+		givenNoDcClustersInAzGroup();
 
 		// No shard in SHA region (selectByAzGroupClusterId only returns shards in target region)
 		when(shardRepository.selectByAzGroupClusterId(1L)).thenReturn(Collections.emptyList());
