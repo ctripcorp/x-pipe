@@ -1,0 +1,38 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystemTest.java
+  s_19833fff7d0474::t_6d96756ff19164 11
+  s_f2c09fbe914b81::t_3bd57aa2cfd1ca 1965,1973,2025,2061
+  s_f2c09fbe914b81::t_608d5679a6a28d 1997,2002,2008-2010
+  s_19833fff7d0474::t_c7d04339c112bf 1968-1970,1998-2001,2003-2007,2014,2026,2031,2033-2036,2040-2046,2049-2052,2054,2057-2058,2060,2064,2066-2067
+  s_19833fff7d0474::t_0c53358ed73f4a 2027,2037,2053
+  s_19833fff7d0474::t_3faeee288372a0 1966-1967,1974,1980-1983,1986-1992
+  s_19833fff7d0474::t_c41bb46f40c841 20
+  s_19833fff7d0474::t_baf2ba2ccd8f91 862
+  s_19833fff7d0474::t_051230cd07f1ef 2028-2029,2032,2038-2039,2055-2056,2062,2069
+  s_f2c09fbe914b81::t_cc7a8b3cd972ae 2059
+  s_f2c09fbe914b81::t_7dc5b58a415353 1961-1964,1971-1972,1977-1979,1984-1985,1993-1996,2011-2013,2015-2024,2030,2047-2048,2063,2065,2068,2070-2071
+  s_f2c09fbe914b81::t_23fa7d8390d958 1975-1976
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "de72ca0beb06cce88e7ecc60ee3f1e3e083beb2f",
+  "prompts": {},
+  "sessions": {
+    "s_19833fff7d0474": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0ec8b90d-9461-46f2-bd99-a4ad5c0d87c7",
+        "model": "qwen3.7-plus"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_f2c09fbe914b81": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78adcb2b-66af-49bf-9cf5-942a43187dd5",
+        "model": "qwen3.7-plus"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
