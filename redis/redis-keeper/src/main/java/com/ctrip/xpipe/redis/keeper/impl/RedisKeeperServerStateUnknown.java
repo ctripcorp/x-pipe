@@ -29,6 +29,12 @@ public class RedisKeeperServerStateUnknown extends AbstractRedisKeeperServerStat
 	}
 
 	@Override
+	public void becomePrepare(Endpoint masterAddress) {
+		logger.info("[becomePrepare][unknown->prepare] {}", this);
+		doBecomePrepare(masterAddress);
+	}
+
+	@Override
 	public void becomeActive(Endpoint masterAddress) {
 		
 		logger.info("[becomeActive][unknown->active] {}", this);

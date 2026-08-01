@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper;
 
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
@@ -86,6 +87,12 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	void promoteSlave(String ip, int port) throws RedisSlavePromotionException;
 
 	void closeSlaves(String reason);
+
+	/**
+	 * Orchestrate PREPARE transition (lease release + setState).
+	 * Ra: switch state only; Rb expands to full release chain (spec §3.8).
+	 */
+	void doBecomePrepare(Endpoint masterAddress);
 	
 	public static enum PROMOTION_STATE{
 		

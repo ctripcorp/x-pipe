@@ -159,6 +159,14 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		reconnectMaster();
 	}
 
+	/**
+	 * Active/Backup/Unknown/Pre* → PREPARE. Lease release expanded in Phase Rb (T-R.4).
+	 */
+	protected void doBecomePrepare(Endpoint masterAddress) {
+		logger.info("[doBecomePrepare]{}", this);
+		redisKeeperServer.doBecomePrepare(masterAddress);
+	}
+
 	@Override
 	public boolean handleSlaveOf() {
 		return false;

@@ -734,6 +734,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		closeSlavesExcept(reason, null);
 	}
 
+	/**
+	 * Ra: switch to PREPARE only (no reconnect).
+	 * Rb (T-R.4): stopAndDisposeMaster → closeSlaves → pause GC → flush → releaseCurrentStore → setState.
+	 */
+	@Override
+	public synchronized void doBecomePrepare(Endpoint masterAddress) {
+		logger.info("[doBecomePrepare]replId={}, master={}", replId, masterAddress);
+		setRedisKeeperServerState(new RedisKeeperServerStatePrepare(this, masterAddress));
+	}
+
 	private void closeSlavesExcept(String reason, RedisSlave slave) {
 		for (RedisSlave redisSlave : slaves()) {
 			if (redisSlave.equals(slave)) continue;
