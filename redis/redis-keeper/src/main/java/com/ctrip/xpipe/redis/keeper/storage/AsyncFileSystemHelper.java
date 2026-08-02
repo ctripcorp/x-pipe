@@ -1,20 +1,26 @@
 package com.ctrip.xpipe.redis.keeper.storage;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public final class AsyncFileSystemHelper {
+
+    public static final String EVENT_TYPE = "AsyncFileSystemCall";
+
+    /** Helper-side cases (not thrown by AsyncFileSystem itself). */
+    public static final String CASE_TIMEOUT = "Timeout";
+    public static final String CASE_INTERRUPTED = "Interrupted";
+    public static final String CASE_SHORT_WRITE = "ShortWrite";
+    public static final String CASE_SHORT_READ = "ShortRead";
 
     public static final long DEFAULT_IO_TIMEOUT_MILLIS = 1000L;
 
@@ -62,19 +68,38 @@ public final class AsyncFileSystemHelper {
             return future.get(timeout, unit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            logCase(CASE_INTERRUPTED);
             throw new IOException("interrupted while waiting async file IO: " + operation, e);
         } catch (TimeoutException e) {
+            logCase(CASE_TIMEOUT);
             throw new IOException("timeout waiting async file IO: " + operation, e);
         } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            if (cause instanceof StorageIOException && cause.getCause() instanceof IOException) {
-                throw (IOException) cause.getCause();
+            // FS / IO-pool failure completed the future exceptionally.
+            // RejectedExecutionException (queue full) lands here via failedFuture, not as a direct throw from get().
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            logFsException(cause);
+            throw toIoException(operation, cause);
+        } catch (Throwable t) {
+            // Safety net for anything get() throws outside the three above (e.g. CancellationException).
+            logFsException(t);
+            if (t instanceof Error) {
+                throw (Error) t;
             }
-            if (cause instanceof IOException) {
-                throw (IOException) cause;
-            }
-            throw new IOException("async file IO failed: " + operation, cause);
+            throw new IOException("unexpected async file IO failure: " + operation, t);
         }
+    }
+
+    private static IOException toIoException(String operation, Throwable cause) throws Error {
+        if (cause instanceof Error) {
+            throw (Error) cause;
+        }
+        if (cause instanceof StorageIOException && cause.getCause() instanceof IOException) {
+            return (IOException) cause.getCause();
+        }
+        if (cause instanceof IOException) {
+            return (IOException) cause;
+        }
+        return new IOException("async file IO failed: " + operation, cause);
     }
 
     public static void writeAllBytes(AsyncFileSystem fs, AsyncFile file, byte[] data, String operation)
@@ -85,6 +110,7 @@ public final class AsyncFileSystemHelper {
             CompletableFuture<Long> future = fs.write(file, buf);
             long written = await(future, operation);
             if (written != data.length) {
+                logCase(CASE_SHORT_WRITE);
                 throw new IOException("short async write, expected " + data.length + " but wrote " + written
                         + ": " + operation);
             }
@@ -98,6 +124,7 @@ public final class AsyncFileSystemHelper {
         ByteBuf buf = await(fs.read(file, size, offset), operation);
         try {
             if (buf.readableBytes() != size) {
+                logCase(CASE_SHORT_READ);
                 throw new IOException("failed to read full async file: " + operation
                         + ", expected " + size + " but got " + buf.readableBytes());
             }
@@ -125,6 +152,7 @@ public final class AsyncFileSystemHelper {
         CompletableFuture<Long> future = fs.write(file, data);
         long flushed = await(future, operation);
         if (flushed != expectedLength) {
+            logCase(CASE_SHORT_WRITE);
             throw new IOException("short async write, expected " + expectedLength + " but flushed " + flushed
                     + ": " + operation);
         }
@@ -136,9 +164,18 @@ public final class AsyncFileSystemHelper {
         CompletableFuture<Long> future = fs.write(file, data);
         long flushed = await(future, operation);
         if (flushed != expectedLength) {
+            logCase(CASE_SHORT_WRITE);
             throw new IOException("short async write, expected " + expectedLength + " but flushed " + flushed
                     + ": " + operation);
         }
         return flushed;
+    }
+
+    private static void logFsException(Throwable t) {
+        EventMonitor.DEFAULT.logEvent(EVENT_TYPE, t.getClass().getSimpleName());
+    }
+
+    private static void logCase(String caseName) {
+        EventMonitor.DEFAULT.logEvent(EVENT_TYPE, caseName);
     }
 }
