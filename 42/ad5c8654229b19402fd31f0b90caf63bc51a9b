@@ -1,0 +1,31 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperConfig.java
+  s_bc115ab4ec1d5a::t_0658f990cecbda 25-30,35-36
+  s_bc115ab4ec1d5a::t_d6778fbb4c5584 153-157
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  s_bc115ab4ec1d5a::t_79b64478497f21 456-460
+redis/package/redis-keeper-package/src/main/scripts/startup.sh
+  s_bc115ab4ec1d5a::t_9f0ab403790cf7 155,158-161,174-175
+  s_bc115ab4ec1d5a::t_74b6a3bb854ce7 30,32-49,52-54
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java
+  s_bc115ab4ec1d5a::t_189ba9c20c042b 11
+  s_bc115ab4ec1d5a::t_d657dcc114f6fa 361-374
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/ContainerResourceManager.java
+  s_bc115ab4ec1d5a::t_86d6acb8cd60ee 68-69,71,89-90
+  s_bc115ab4ec1d5a::t_0be3bd373b1746 10-11,26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "42ad5c8654229b19402fd31f0b90caf63bc51a9b",
+  "prompts": {},
+  "sessions": {
+    "s_bc115ab4ec1d5a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a6af905a-3376-4abf-b4da-ccc43bd51e85",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
