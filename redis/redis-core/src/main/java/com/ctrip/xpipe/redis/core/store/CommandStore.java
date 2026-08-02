@@ -69,4 +69,10 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 	void resetStateForContinue();
 
 	void flushSlidingWindow() throws IOException;
+
+	/**
+	 * Flush pending cmd bytes (sliding window) and index writers if present.
+	 * Explicit durability API — do not abuse {@link #totalLength()} / backlog helpers for this.
+	 */
+	void flushPendingData() throws IOException;
 }

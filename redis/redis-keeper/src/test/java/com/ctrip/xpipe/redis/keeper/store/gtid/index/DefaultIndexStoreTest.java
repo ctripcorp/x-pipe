@@ -1941,6 +1941,8 @@ public class DefaultIndexStoreTest {
         }
         writeGtidRangeCommand(uuid, 16, 25);
         writeStore.closeWriter();
+        // FileInputStream bypasses TailCache — fsync so disk length covers locate offset.
+        flushCmdSegment(testCmdStore);
 
         String cmdPrefix = toCmdPrefix(cmdName);
         Assert.assertTrue("v2 index should exist from dual write",
@@ -1955,7 +1957,9 @@ public class DefaultIndexStoreTest {
 
         Pair<Long, GtidSet> point = readStore.locateContinueGtidSet(new GtidSet(uuid + ":1-10"));
         Assert.assertNotNull(point);
+        Assert.assertTrue("locate should hit continue offset, not miss", point.getKey() >= 0);
         RedisOp op11 = IndexTestTool.readBytebufAfter(testCmdStore.currentCmdFile().getPath(), point.getKey());
+        Assert.assertNotNull("cmd at locate offset not readable on disk (missing fsync?)", op11);
         Assert.assertEquals(uuid + ":11", op11.getOpGtid());
 
         readStore.closeWriter();
@@ -1977,11 +1981,13 @@ public class DefaultIndexStoreTest {
         defaultIndexStore = store;
 
         writeGtidRangeCommand(uuid, 622000, 622009);
+        flushCmdSegment(testCmdStore);
 
         Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(
                 new GtidSet("bca392ffb0fa8415cbf6a88bb7937f323c7367ac:1-2," + uuid + ":622000-622001"));
         Assert.assertEquals(uuid + ":622000-622001", point.getValue().toString());
         RedisOp nextOp = IndexTestTool.readBytebufAfter(testCmdStore.currentCmdFile().getPath(), point.getKey());
+        Assert.assertNotNull("cmd at locate offset not readable on disk (missing fsync?)", nextOp);
         Assert.assertEquals(uuid + ":622002", nextOp.getOpGtid());
     }
 
@@ -2027,6 +2033,31 @@ public class DefaultIndexStoreTest {
         Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet(uuid + ":1-2"));
         Assert.assertNotNull(point);
         Assert.assertTrue(point.getKey() >= 0 || point.getKey() == -1);
+    }
+
+    /**
+     * Terminal {@link IndexStore#close()} marks AbstractStore closed — reopen / write rejected;
+     * {@link IndexStore#closeWriter()} alone does not.
+     */
+    @Test
+    public void testClose_RejectsOpenWriter() throws Exception {
+        defaultIndexStore.closeWriter();
+        defaultIndexStore.openWriter(writer);
+
+        defaultIndexStore.close();
+        Assert.assertTrue(defaultIndexStore.isClosed());
+        try {
+            defaultIndexStore.openWriter(writer);
+            Assert.fail("openWriter after close should fail");
+        } catch (IllegalStateException e) {
+            Assert.assertTrue(e.getMessage().contains("closed"));
+        }
+        try {
+            defaultIndexStore.write(createGtidCommand("deadbeef:1", "SET", "k", "v"));
+            Assert.fail("write after close should fail");
+        } catch (IllegalStateException e) {
+            Assert.assertTrue(e.getMessage().contains("closed"));
+        }
     }
 
     /**

@@ -390,6 +390,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
+	public void flushPendingData() {
+		// no cmd / index pending
+	}
+
+	@Override
 	public MetaStore getMetaStore() {
 		return metaStore;
 	}

@@ -65,10 +65,13 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		LifecycleHelper.startIfPossible(replicationStoreManager);
 		replicationStoreManager.createIfNotExist();
 		LifecycleHelper.stopIfPossible(replicationStoreManager);
-		replicationStoreManager.createIfNotExist();
+		try {
+			replicationStoreManager.createIfNotExist();
+			Assert.fail("createIfNotExist should refuse after stop (PREPARE lease)");
+		} catch (Exception e) {
+			logger.warn(e.getMessage());
+		}
 		LifecycleHelper.disposeIfPossible(replicationStoreManager);
-
-		replicationStoreManager.createIfNotExist();
 
 		logger.info("calling after dispose");
 		try{
@@ -92,6 +95,9 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 
 		LifecycleHelper.initializeIfPossible(replicationStoreManager1);
 		LifecycleHelper.initializeIfPossible(replicationStoreManager2);
+		// Phase Rb: gc() requires LifecycleState.isStarted(); schedule also moved to doStart.
+		LifecycleHelper.startIfPossible(replicationStoreManager1);
+		LifecycleHelper.startIfPossible(replicationStoreManager2);
 
 		final AtomicReference<DefaultReplicationStore> store = new AtomicReference<DefaultReplicationStore>(null);
 
@@ -214,6 +220,8 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		final DefaultReplicationStoreManager mgr = (DefaultReplicationStoreManager) createReplicationStoreManager();
 
 		LifecycleHelper.initializeIfPossible(mgr);
+		// Phase Rb: gc() requires LifecycleState.isStarted().
+		LifecycleHelper.startIfPossible(mgr);
 
 		for (int i = 0; i < 10; i++) {
 

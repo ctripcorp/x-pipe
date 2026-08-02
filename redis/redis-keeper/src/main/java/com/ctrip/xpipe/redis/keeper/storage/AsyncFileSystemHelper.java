@@ -16,14 +16,50 @@ import java.util.concurrent.TimeoutException;
 
 public final class AsyncFileSystemHelper {
 
-    private static final long DEFAULT_IO_TIMEOUT_SECONDS = 1;
+    public static final long DEFAULT_IO_TIMEOUT_MILLIS = 1000L;
+
+    /**
+     * Per-await budget for PREPARE lease release (Metaserver {@code TFS_STEP_TIMEOUT_MILLI=1000}).
+     */
+    public static final long PREPARE_IO_TIMEOUT_MILLIS = 250L;
+
+    private static final ThreadLocal<Long> IO_TIMEOUT_MILLIS = new ThreadLocal<>();
+
+    @FunctionalInterface
+    public interface IoRunnable {
+        void run() throws IOException;
+    }
 
     private AsyncFileSystemHelper() {
     }
 
-    public static <T> T await(CompletableFuture<T> future, String operation) throws IOException {
+    /**
+     * Run {@code action} with a tighter per-{@link #await} timeout on the current thread.
+     */
+    public static void runWithIoTimeout(long timeoutMillis, IoRunnable action) throws IOException {
+        Long previous = IO_TIMEOUT_MILLIS.get();
+        IO_TIMEOUT_MILLIS.set(timeoutMillis);
         try {
-            return future.get(DEFAULT_IO_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            action.run();
+        } finally {
+            if (previous == null) {
+                IO_TIMEOUT_MILLIS.remove();
+            } else {
+                IO_TIMEOUT_MILLIS.set(previous);
+            }
+        }
+    }
+
+    public static <T> T await(CompletableFuture<T> future, String operation) throws IOException {
+        Long override = IO_TIMEOUT_MILLIS.get();
+        long timeoutMillis = override != null ? override : DEFAULT_IO_TIMEOUT_MILLIS;
+        return await(future, operation, timeoutMillis, TimeUnit.MILLISECONDS);
+    }
+
+    public static <T> T await(CompletableFuture<T> future, String operation, long timeout, TimeUnit unit)
+            throws IOException {
+        try {
+            return future.get(timeout, unit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("interrupted while waiting async file IO: " + operation, e);

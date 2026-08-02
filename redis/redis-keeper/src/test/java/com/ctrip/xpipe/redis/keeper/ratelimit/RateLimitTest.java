@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultReplicationStoreStats;
 import com.ctrip.xpipe.redis.keeper.spring.TestWithoutZkProfile;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.spring.AbstractProfile;
@@ -138,9 +139,12 @@ public class RateLimitTest extends AbstractFakeRedisTest {
     public void testBackupDcActiveKeeper_RestartAsActive_ShouldNotLimit() throws TimeoutException {
 
         redisKeeperServer2.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("localhost", fakeRedisServer.getPort()));
-        waitConditionUntilTimeOut(() -> {
-            return fakeRedisServer.getPsyncCount() >= (1);
-        });
+        waitRedisKeeperServerConnected(redisKeeperServer2);
+
+        // Stats clock is set when keeper starts in @Before; under AsyncFS that may already exceed
+        // replDownSafeIntervalMilli before this case runs. Refresh to keep "just restarted" semantics.
+        ((DefaultReplicationStoreStats) redisKeeperServer1.getKeeperMonitor().getReplicationStoreStats())
+                .setLastReplDownTime(System.currentTimeMillis() - OsUtils.APPROXIMATE__RESTART_TIME_MILLI);
 
         redisKeeperServer1.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", redisKeeperServer2.getListeningPort()));
         waitRedisKeeperServerConnected(redisKeeperServer1);

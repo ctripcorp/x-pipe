@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
@@ -112,7 +113,13 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         scheduled = Executors.newScheduledThreadPool(1,
                 KeeperReplIdAwareThreadFactory.create(replId.toString(), "gc-" + replId.toString()));
+    }
 
+    /**
+     * Start Manager GC. PREPARE → ACTIVE/BACKUP (Phase Rc) re-enters via {@code start()} again.
+     */
+    @Override
+    protected void doStart() throws Exception {
         gcFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 
             @Override
@@ -122,29 +129,79 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         }, keeperConfig.getReplicationStoreGcIntervalSeconds(), keeperConfig.getReplicationStoreGcIntervalSeconds(), TimeUnit.SECONDS);
     }
 
+    /**
+     * PREPARE / Server stop: cancel GC → best-effort flush → close store handles (not destroy).
+     */
     @Override
-    protected void doDispose() throws Exception {
-        closeCurrentStore();
-        gcFuture.cancel(true);
-        scheduled.shutdownNow();
+    protected void doStop() throws Exception {
+        cancelGcFuture();
+        flushStoreBestEffort();
+        releaseCurrentStore();
     }
 
-    private void closeCurrentStore() {
+    @Override
+    protected void doDispose() throws Exception {
+        cancelGcFuture();
+        try {
+            releaseCurrentStore();
+        } catch (IOException e) {
+            logger.info("[doDispose][releaseCurrentStore]", e);
+        }
+        if (scheduled != null) {
+            scheduled.shutdownNow();
+        }
+    }
 
-        logger.info("[closeCurrentStore]{}", this);
-        ReplicationStore replicationStore = currentStore.get();
-        if (replicationStore != null) {
-            try {
-                replicationStore.close();
-                currentStore.set(null);
-            } catch (IOException e) {
-                logger.info("[close]" + replicationStore, e);
+    private void cancelGcFuture() {
+        if (gcFuture != null) {
+            gcFuture.cancel(true);
+            gcFuture = null;
+        }
+    }
+
+    /**
+     * Best-effort cmd sliding-window / index flush before close. Failures are WARN-only
+     * (lease release preferred over perfect durability; ForceCloseDir as fallback).
+     */
+    private void flushStoreBestEffort() {
+        try {
+            ReplicationStore store = currentStore.get();
+            if (store == null) {
+                return;
             }
+            store.flushPendingData();
+        } catch (Exception e) {
+            logger.warn("[doStop][flush best-effort failed]{}", this, e);
+        }
+    }
+
+    @Override
+    public synchronized void releaseCurrentStore() throws IOException {
+        logger.info("[releaseCurrentStore]{}", this);
+        ReplicationStore replicationStore = currentStore.get();
+        if (replicationStore == null) {
+            return;
+        }
+        try {
+            replicationStore.close();
+        } finally {
+            // Always drop the lease reference so PREPARE cannot reopen via getCurrent.
+            currentStore.set(null);
         }
     }
 
     @Override
     public synchronized ReplicationStore createIfNotExist() throws IOException {
+
+        // After stop/dispose: refuse reopen. Initialized-but-never-started still allowed
+        // (isPositivelyStopped distinguishes Stoppable.PHASE_NAME_END from Initializable.PHASE_NAME_END).
+        if (getLifecycleState().isPositivelyStopped()) {
+            ReplicationStore existing = currentStore.get();
+            if (existing != null && existing.checkOk()) {
+                return existing;
+            }
+            throw new IOException("replication store manager stopped, refuse createIfNotExist: " + this);
+        }
 
         ReplicationStore currentReplicationStore = null;
 
@@ -167,6 +224,9 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         if (!getLifecycleState().isInitialized()) {
             throw new ReplicationStoreManagerStateException("can not create", toString(), getLifecycleState().getPhaseName());
         }
+        if (getLifecycleState().isPositivelyStopped()) {
+            throw new IOException("replication store manager stopped, refuse create: " + this);
+        }
 
         keeperMonitor.getReplicationStoreStats().increateReplicationStoreCreateCount();
 
@@ -180,7 +240,11 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         ReplicationStore replicationStore = createReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, syncRateManager);
 
-        closeCurrentStore();
+        try {
+            releaseCurrentStore();
+        } catch (IOException e) {
+            logger.info("[create][release previous store]", e);
+        }
 
         currentStore.set(replicationStore);
 
@@ -280,6 +344,10 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     public synchronized ReplicationStore getCurrent() throws IOException {
 
         if (currentStore.get() == null) {
+            if (getLifecycleState().isPositivelyStopped()) {
+                logger.info("[getCurrent][stopped][skip reopen]{}", this);
+                return null;
+            }
             Properties meta = currentMeta();
             if (meta != null) {
                 if (meta.getProperty(LATEST_STORE_DIR) != null) {
@@ -309,6 +377,11 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     protected synchronized void gc() throws IOException {
 
         logger.debug("[gc]{}", this);
+
+        if (!getLifecycleState().isStarted()) {
+            logger.info("[gc][not started][skip]{}", this);
+            return;
+        }
 
         gcCount.incrementAndGet();
         Properties meta = currentMeta(true);

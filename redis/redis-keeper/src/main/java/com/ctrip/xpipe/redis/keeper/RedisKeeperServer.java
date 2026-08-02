@@ -89,8 +89,10 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	void closeSlaves(String reason);
 
 	/**
-	 * Orchestrate PREPARE transition (lease release + setState).
-	 * Ra: switch state only; Rb expands to full release chain (spec §3.8).
+	 * Orchestrate PREPARE transition: stop write → setState PREPARE (reject new slave) →
+	 * closeSlaves → {@code replicationStoreManager.stop()} (cancel GC / flush / close handles)
+	 * (spec §3.8).
+	 * Failures must propagate so Handler returns Redis ERROR (ForceCloseDir).
 	 */
 	void doBecomePrepare(Endpoint masterAddress);
 	

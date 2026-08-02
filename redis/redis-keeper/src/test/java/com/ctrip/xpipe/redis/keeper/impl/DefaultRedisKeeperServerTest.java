@@ -63,8 +63,14 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.start();
 		redisKeeperServer.getReplicationStore();
 
+		// Server.stop → Manager.stop: releaseCurrentStore + isPositivelyStopped refuse reopen
 		redisKeeperServer.stop();
-		redisKeeperServer.getReplicationStore();
+		try {
+			redisKeeperServer.getReplicationStore();
+			Assert.fail();
+		} catch (Exception e) {
+			logger.info("after stop", e);
+		}
 
 		redisKeeperServer.dispose();
 

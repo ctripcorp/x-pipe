@@ -44,6 +44,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
@@ -458,7 +459,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.leaderElector.stop();
 		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		stopServer();
-		replicationStoreManager.stop();
+		// PREPARE may already have stopped the manager; do not require canStop.
+		LifecycleHelper.stopIfPossible(replicationStoreManager);
 		super.doStop();
 	}
 
@@ -643,6 +645,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 			throw new RedisKeeperServerStateException(toString(), getLifecycleState().getPhaseName());
 		}
+		if (redisKeeperServerState != null && KeeperState.PREPARE == redisKeeperServerState.keeperState()) {
+			throw new RedisKeeperServerStateException(toString(), "PREPARE");
+		}
 		
 		try {
 			ReplicationStore replicationStore = replicationStoreManager.createIfNotExist(); 
@@ -735,13 +740,43 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	/**
-	 * Ra: switch to PREPARE only (no reconnect).
-	 * Rb (T-R.4): stopAndDisposeMaster → closeSlaves → pause GC → flush → releaseCurrentStore → setState.
+	 * PREPARE lease release (spec §3.8 / T-R.4):
+	 * stopAndDisposeMaster → setState PREPARE (reject new slave sync) → closeSlaves →
+	 * {@code replicationStoreManager.stop()} (cancel GC → best-effort flush → releaseCurrentStore).
+	 * Exceptions propagate to {@link com.ctrip.xpipe.redis.keeper.handler.keeper.KeeperCommandHandler}
+	 * as Redis ERROR (Metaserver ForceCloseDir).
 	 */
 	@Override
 	public synchronized void doBecomePrepare(Endpoint masterAddress) {
-		logger.info("[doBecomePrepare]replId={}, master={}", replId, masterAddress);
-		setRedisKeeperServerState(new RedisKeeperServerStatePrepare(this, masterAddress));
+		logger.info("[doBecomePrepare]{}", masterAddress);
+		try {
+			// Stop write first, then flip state so new PSYNC/XSYNC is rejected before we tear down
+			// existing slaves / store (avoids serving sync while closing).
+			stopAndDisposeMaster();
+			setRedisKeeperServerState(new RedisKeeperServerStatePrepare(this, masterAddress));
+			AsyncFileSystemHelper.runWithIoTimeout(AsyncFileSystemHelper.PREPARE_IO_TIMEOUT_MILLIS, () -> {
+				closeSlaves("prepare");
+				try {
+					if (replicationStoreManager.getLifecycleState().canStop()) {
+						replicationStoreManager.stop();
+					} else {
+						// Already stopped (or never started): still drop lease reference.
+						replicationStoreManager.releaseCurrentStore();
+					}
+				} catch (IOException e) {
+					throw e;
+				} catch (Exception e) {
+					throw new IOException("stop replicationStoreManager failed", e);
+				}
+			});
+			logger.info("[doBecomePrepare][done]");
+		} catch (Exception e) {
+			logger.error("[doBecomePrepare]", e);
+			if (e instanceof RuntimeException) {
+				throw (RuntimeException) e;
+			}
+			throw new XpipeRuntimeException("[doBecomePrepare] lease release failed", e);
+		}
 	}
 
 	private void closeSlavesExcept(String reason, RedisSlave slave) {

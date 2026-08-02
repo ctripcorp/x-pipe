@@ -199,6 +199,15 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
+    public void flushPendingData() throws IOException {
+        makeSureOpen();
+        flushSlidingWindow();
+        if (indexStore != null) {
+            indexStore.flushWriter();
+        }
+    }
+
+    @Override
     public void flushSlidingWindow() throws IOException{
         if(timerSlidingWindow != null){
             timerSlidingWindow.flushAll();
@@ -371,7 +380,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
             cmdWriter.close();
             if(indexStore != null) {
-                indexStore.closeWriter();
+                // Terminal close (AbstractStore); index AsyncFile released with segment below.
+                indexStore.close();
             }
             AsyncFileSystemHelper.await(asyncFileSystem.close(asyncSegmentFile), "close command segment " + fileNamePrefix);
         }else{

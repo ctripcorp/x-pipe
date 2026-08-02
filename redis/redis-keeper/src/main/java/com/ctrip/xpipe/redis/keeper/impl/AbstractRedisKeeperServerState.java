@@ -160,7 +160,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	}
 
 	/**
-	 * Active/Backup/Unknown/Pre* → PREPARE. Lease release expanded in Phase Rb (T-R.4).
+	 * Active/Backup/Unknown/Pre* → PREPARE (lease release orchestrated by RedisKeeperServer).
 	 */
 	protected void doBecomePrepare(Endpoint masterAddress) {
 		logger.info("[doBecomePrepare]{}", this);

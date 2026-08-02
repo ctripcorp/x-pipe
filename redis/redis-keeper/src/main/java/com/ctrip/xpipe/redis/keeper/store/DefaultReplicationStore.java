@@ -640,6 +640,14 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
+	public void flushPendingData() throws IOException {
+		makeSureOpen();
+		if (cmdStore != null) {
+			cmdStore.flushPendingData();
+		}
+	}
+
+	@Override
 	public MetaStore getMetaStore() {
 		return metaStore;
 	}
@@ -918,21 +926,57 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		if (cmpAndSetClosed()) {
 			getLogger().info("[close]{}", this);
-			RdbStore rdbStore = rdbStoreRef.get();
-			if (rdbStore != null) {
-				rdbStore.close();
+			IOException firstError = null;
+			firstError = closeQuietly(rdbStoreRef.get(), "rdb", firstError);
+			firstError = closeQuietly(rordbStoreRef.get(), "rordb", firstError);
+			for (RdbStore previous : previousRdbStores.keySet()) {
+				firstError = closeQuietly(previous, "previousRdb", firstError);
 			}
+			previousRdbStores.clear();
 
 			if (cmdStore != null) {
-				cmdStore.close();
+				try {
+					cmdStore.close();
+				} catch (IOException e) {
+					getLogger().error("[close][cmdStore]" + cmdStore, e);
+					if (firstError == null) {
+						firstError = e;
+					}
+				}
 			}
 
 			if (metaStore != null) {
-				metaStore.close();
+				try {
+					metaStore.close();
+				} catch (IOException e) {
+					getLogger().error("[close][metaStore]" + metaStore, e);
+					if (firstError == null) {
+						firstError = e;
+					}
+				}
+			}
+			if (firstError != null) {
+				throw firstError;
 			}
 		}else{
 			getLogger().warn("[close][already closed!]{}", this);
 		}
+	}
+
+	private IOException closeQuietly(RdbStore rdbStore, String tag, IOException firstError) {
+		if (rdbStore == null) {
+			return firstError;
+		}
+		try {
+			rdbStore.close();
+		} catch (IOException e) {
+			getLogger().error("[close][" + tag + "]" + rdbStore, e);
+			return firstError != null ? firstError : e;
+		} catch (Exception e) {
+			getLogger().error("[close][" + tag + "]" + rdbStore, e);
+			return firstError != null ? firstError : new IOException("close " + tag + " failed", e);
+		}
+		return firstError;
 	}
 
 	@Override

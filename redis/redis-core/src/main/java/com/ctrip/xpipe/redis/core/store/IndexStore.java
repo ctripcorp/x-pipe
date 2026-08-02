@@ -5,10 +5,11 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 
-public interface IndexStore {
+public interface IndexStore extends Closeable {
 
     void write(ByteBuf byteBuf) throws IOException;
     void doRotate() throws IOException;
@@ -37,10 +38,20 @@ public interface IndexStore {
     void flushWriter() throws IOException;
 
     /**
-     * Flush writers and reset parser. Use for protocol switch / store close only —
-     * ordinary segment rotate must use {@link #flushWriter()}.
+     * Flush writers and reset parser. Use for protocol switch only
+     * ({@code switchToXSync} / {@code switchToPsync}) — does <em>not</em> mark IndexStore closed;
+     * ordinary segment rotate must use {@link #flushWriter()}; store teardown must use {@link #close()}.
      */
     void closeWriter() throws IOException;
+
+    /**
+     * Terminal close: {@link #closeWriter()} + drop writer references + mark closed.
+     * After close, {@link #openWriter} and write paths must fail.
+     * Does <em>not</em> {@code fs.close} index {@code AsyncFile} handles — those are owned by the
+     * write-mode segment and released when CmdStore closes the segment.
+     */
+    @Override
+    void close() throws IOException;
 
     void resetParserState();
 }

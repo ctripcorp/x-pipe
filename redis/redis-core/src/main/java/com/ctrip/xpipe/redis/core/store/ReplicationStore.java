@@ -77,6 +77,13 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	long backlogEndOffset();
 
+	/**
+	 * Flush pending cmd / index data that may still sit in memory (e.g. sliding window,
+	 * unflushed index entries). Prefer this over relying on {@link #backlogEndOffset()}
+	 * side effects when the intent is durability before close / PREPARE.
+	 */
+	void flushPendingData() throws IOException;
+
 	GtidSet getEndGtidSet();
 
 	long lastReplDataUpdatedAt();

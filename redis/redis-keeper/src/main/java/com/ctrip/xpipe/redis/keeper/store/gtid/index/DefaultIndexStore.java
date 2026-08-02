@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
+import com.ctrip.xpipe.redis.keeper.store.AbstractStore;
 import com.ctrip.xpipe.redis.keeper.store.AsyncCommandStore;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.tuple.Pair;
@@ -38,7 +39,7 @@ import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.BLOCK_
 import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
 import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX_V2;
 
-public class DefaultIndexStore implements IndexStore, StreamTransactionListener {
+public class DefaultIndexStore extends AbstractStore implements IndexStore, StreamTransactionListener {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultIndexStore.class);
 
@@ -130,6 +131,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     @Override
     public void openWriter(CommandWriter cmdWriter) throws IOException {
+        makeSureOpen();
         this.streamCommandReader = new StreamCommandReader(this, cmdWriter.fileLength());
         openWritersWithHandles(getWriteIndexHandles(keeperConfig.dualWrite()), startGtidSet);
     }
@@ -200,9 +202,10 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
      * Callers must {@link #flushWriter()} before {@code fs.roll} so pending index is
      * persisted on the old segment (V1 truncate-then-write still needs open channels;
      * spec §3.7.7). Parser state is preserved across rotate — only {@link #closeWriter()}
-     * resets it (protocol switch / store close).
+     * resets it (protocol switch); store teardown uses {@link #close()}.
      */
     public synchronized void doSwitchCmdFile() throws IOException {
+        makeSureOpen();
         GtidSet continueGtidSet = resolveContinueGtidSet();
         openWritersWithHandles(getWriteIndexHandles(keeperConfig.dualWrite()), continueGtidSet);
         this.streamCommandReader.resetOffset();
@@ -221,6 +224,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     @Override
     public synchronized void write(ByteBuf byteBuf) throws IOException {
+        makeSureOpen();
         if (indexWriterV2 == null && indexWriter == null) {
             throw new IllegalStateException("index writer not open");
         }
@@ -229,6 +233,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     @Override
     public synchronized void doRotate() throws IOException {
+        makeSureOpen();
         this.switchCmdFile(commandWriterCallback.getCommandWriter());
     }
 
@@ -238,6 +243,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
      */
     @Override
     public synchronized void rotateWithCmdRoll(IOSupplier<?> cmdRoll) throws IOException {
+        makeSureOpen();
         flushWriter();
         cmdRoll.get();
         doSwitchCmdFile();
@@ -684,6 +690,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     @Override
     public synchronized void flushWriter() throws IOException {
+        makeSureOpen();
         if (this.indexWriter != null) {
             this.indexWriter.flush();
         }
@@ -694,14 +701,44 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     @Override
     public synchronized void closeWriter() throws IOException {
+        // Protocol switch: flush + reset parser; IndexStore remains open for locate / reopen.
         if (this.streamCommandReader != null) {
             this.streamCommandReader.resetParser();
         }
         flushWriter();
     }
 
+    /**
+     * Terminal close for store teardown. Index {@code AsyncFile} handles are segment-owned
+     * (spec §3.7.1); this only flushes, drops local refs, and marks closed.
+     */
+    @Override
+    public synchronized void close() throws IOException {
+        if (!cmpAndSetClosed()) {
+            logger.info("[close][already closed]{}", this);
+            return;
+        }
+        logger.info("[close]{}", this);
+        try {
+            if (this.streamCommandReader != null) {
+                this.streamCommandReader.resetParser();
+            }
+            if (this.indexWriter != null) {
+                this.indexWriter.flush();
+            }
+            if (this.indexWriterV2 != null) {
+                this.indexWriterV2.flush();
+            }
+        } finally {
+            this.indexWriter = null;
+            this.indexWriterV2 = null;
+            this.streamCommandReader = null;
+        }
+    }
+
     @Override
     public void resetParserState() {
+        makeSureOpen();
         if (streamCommandReader != null) {
             streamCommandReader.resetParser();
         }
