@@ -153,17 +153,33 @@ changeAndMakeLogDir $FULL_DIR $LOG_DIR
 changePort $FULL_DIR/../$SERVICE_NAME.conf $SERVER_PORT
 
 #get total memory — heap 30%/cap 10G, direct 45%/cap 16G (TailCache is off-heap)
+# overrides: PT (IDC=PTJQ|PTOY, mem>100G) → heap 30G / direct 48G; ROLE=REDIS → keep Keeper small
 ENV=`getEnv`
 echo "current env:"$ENV
 USED_MEM=`getSafeXmx`
 XMN=`getSafeXmn $USED_MEM`
 MAX_DIRECT=`getSafeMaxDirect`
+
+IDC=`getIdc`
+total=`getTotalMem`
+echo "current idc:"$IDC", totalMem:"$total"g"
+if ([ "$IDC" = "PTJQ" ] || [ "$IDC" = "PTOY" ]) && [ "$total" -gt 100 ]; then
+    USED_MEM=30
+    XMN=`getSafeXmn $USED_MEM`
+    MAX_DIRECT=48
+fi
+
 if [ $ENV != "PRO" ] && [ $ENV != "FWS" ] && [ $ENV != "FAT" ]; then
     changeConfigLogFile $FULL_DIR log4j2-uat.xml
 
     ROLE=`getRole`
     if [ $ROLE = "REDIS" ]
     then
+        # 本机以 Redis 为主：Keeper 仅占少量内存，避免与 Redis 争抢
+        USED_MEM=2
+        XMN=`getSafeXmn $USED_MEM`
+        MAX_DIRECT=1
+
         DIR=`dirname $0`
         CURRENT_SCRIPT_PATH="$DIR/../current/scripts"
 
