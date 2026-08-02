@@ -1,0 +1,125 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_1c0d12ae3cc688::t_e1118f250add52 25-26,28,34,36,44-45,48-49,285-286,294,307-308,316-335,342,345-350,358,361-366,368-369,373-376,378-382,392,397-398,410,412,414-416,466,537,589,591,593-595,600,602,604-606
+  s_9b69acaeca7481::t_19515998966091 29
+  s_9b69acaeca7481::t_23c9bf288b2348 30
+  s_1c0d12ae3cc688::t_cc9dec93461d3b 31,33
+  s_245b07b4ee1e0d::t_6566c3c2af97ef 50
+  s_94d0b7161f4d19::t_6bad7044328011 52
+  s_245b07b4ee1e0d::t_ec5953725b60c3 55
+  s_245b07b4ee1e0d::t_ed1bad81fd2338 68,71
+  s_245b07b4ee1e0d::t_11bd5ce07a1b19 105,110,112
+  s_94d0b7161f4d19::t_7c989de53f5a51 136-138
+  s_94d0b7161f4d19::t_08967143f091e0 231-233
+  s_d72a750777a3bf::t_3568896ccdef5b 247
+  s_e6849488ec65b0::t_566932fe96f200 296-297
+  s_a1c5f3e201986d::t_a3845fcc32d28a 305,314,495,541
+  s_277e16fb8fe4f1::t_a3124492c0b03f 402
+  s_9b69acaeca7481::t_804e59ba24da50 419,598,607,609
+  s_1c0d12ae3cc688::t_ca0ea00e8b36d7 467,469-470
+  s_9b69acaeca7481::t_40336fb4b143eb 538,543-546,548,550,552,554-555
+  h_6ceeb547b3b36a 16,19
+  s_9b69acaeca7481::t_dd1b17007b9265 473,483
+  s_a1c5f3e201986d::t_60a39e42065043 515,108,239,243,268,405,453,505,529,573,612,626,409,425,662,670,672,482
+  s_9a86742925da6d::t_5872f77d7e46c1 528
+  s_9a86742925da6d::t_67be1329ea6021 549
+  s_9a86742925da6d::t_530db61b528ad4 560
+  s_9a86742925da6d::t_4d673acba97d24 582
+  s_33e1548cabe933::t_8d4bb23ab0914a 540
+  s_33e1548cabe933::t_d24d8153ce2aad 420
+  s_a1c5f3e201986d::t_54bcfd8361f624 423,655,659,481
+  s_a1c5f3e201986d::t_67599ebf309e74 664
+  s_a1c5f3e201986d::t_434ba5fe0ab7d0 477,479-480
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "2f4b417e856560887dc7c309eb6b876cba3ec81e",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_1c0d12ae3cc688": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba664ae6-efc5-445a-80dd-275a7540d3e0",
+        "model": "arn:aws:bedrock:us-east-1:133197901387:application-inference-profile/r3vgzaso9r25"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_245b07b4ee1e0d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0f837fe8-3931-4a26-8f82-dfc963918e11",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_277e16fb8fe4f1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a834ea39-d868-41ee-a5fd-279e71a96f53",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_33e1548cabe933": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1acc106-38c0-43bf-9b27-b2749ccdc176",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_94d0b7161f4d19": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9a566c97-67cf-4efb-a831-333a415e0dc7",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_9a86742925da6d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5a3e8830-8b93-4eee-92ac-46ebae155cb0",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_9b69acaeca7481": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1723e1d-cf72-440a-b4e9-6c67058800c5",
+        "model": "arn:aws:bedrock:us-east-1:133197901387:application-inference-profile/r3vgzaso9r25"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_a1c5f3e201986d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8958bf39-148c-40af-a433-3380dfce7611",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_d72a750777a3bf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f5b2648b-448f-4026-84ab-aa89fa96d91a",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_e6849488ec65b0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "99170675-a06a-446a-b5bf-719e1768f2b1",
+        "model": "arn:aws:bedrock:eu-central-1:133197901387:application-inference-profile/6fy9m3ca6aa5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
