@@ -82,6 +82,42 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		}
 	}
 
+	/**
+	 * T-R.11⑤: after Manager.stop() (PREPARE), {@code gc()} must skip list/rmdir and not reopen store.
+	 */
+	@Test
+	public void testGcSkippedWhenStoppedAfterPrepare() throws Exception {
+		// Dedicated FS so verify(never) does not race with shared test FS.
+		AsyncFileSystem fs = spy(createTestAsyncFileSystem());
+		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
+				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()),
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+		try {
+			LifecycleHelper.initializeIfPossible(manager);
+			LifecycleHelper.startIfPossible(manager);
+			ReplicationStore store = manager.createIfNotExist();
+			File storeDir = new File(store.toString().substring("ReplicationStore:".length()));
+			Assert.assertTrue(storeDir.isDirectory());
+
+			LifecycleHelper.stopIfPossible(manager);
+			Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
+			Assert.assertNull(manager.getCurrent());
+
+			clearInvocations(fs);
+			manager.gc();
+			verify(fs, never()).list(anyString());
+			verify(fs, never()).rmdir(anyString(), anyBoolean());
+			Assert.assertNull(manager.getCurrent());
+			Assert.assertTrue(storeDir.isDirectory());
+		} finally {
+			LifecycleHelper.disposeIfPossible(manager);
+			try {
+				fs.shutdown();
+			} catch (Throwable ignore) {
+			}
+		}
+	}
+
 
 	@Test
 	public void testMultiManagerGc() throws Exception {
