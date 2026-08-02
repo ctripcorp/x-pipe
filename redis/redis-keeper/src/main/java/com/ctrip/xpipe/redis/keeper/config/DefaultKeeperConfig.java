@@ -8,6 +8,7 @@ import com.ctrip.xpipe.config.DefaultFileConfig;
 import com.ctrip.xpipe.config.DefaultPropertyConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
+import io.netty.util.internal.PlatformDependent;
 
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP_CROSSREGION;
@@ -356,5 +357,19 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getAsyncIoThreads() {
 		return getIntProperty(KEY_ASYNC_IO_THREADS, DEFAULT_ASYNC_IO_THREADS);
+	}
+
+	@Override
+	public long getAsyncTailCacheMaxSizeBytes() {
+		return getLongProperty(KEY_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES, defaultAsyncTailCacheMaxSizeBytes());
+	}
+
+	static long defaultAsyncTailCacheMaxSizeBytes() {
+		long maxDirect = PlatformDependent.maxDirectMemory();
+		if (maxDirect <= 0) {
+			return DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR;
+		}
+		long sized = (long) (maxDirect * DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_RATIO);
+		return Math.max(DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR, sized);
 	}
 }

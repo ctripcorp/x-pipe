@@ -453,4 +453,9 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	public int getAsyncIoThreads() {
 		return DEFAULT_ASYNC_IO_THREADS;
 	}
+
+	@Override
+	public long getAsyncTailCacheMaxSizeBytes() {
+		return DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR;
+	}
 }

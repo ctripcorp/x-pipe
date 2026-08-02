@@ -22,10 +22,18 @@ public interface KeeperConfig extends CoreConfig{
 	String KEY_ASYNC_FSYNC_INTERVAL_BYTES = "keeper.async.fsync.interval.bytes";
 	String KEY_ASYNC_FSYNC_INTERVAL_MILLIS = "keeper.async.fsync.interval.millis";
 	String KEY_ASYNC_IO_THREADS = "keeper.async.io.threads";
+	/**
+	 * TailCache global memory cap (Direct ByteBuf). When unset, defaults to
+	 * {@link #DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_RATIO} of JVM MaxDirectMemory
+	 * (see startup.sh: MaxDirectMemorySize = 45% machine mem, cap 16G).
+	 */
+	String KEY_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES = "keeper.async.tail.cache.max.size.bytes";
 
 	long DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES = 1024L * 1024L;
 	long DEFAULT_ASYNC_FSYNC_INTERVAL_MILLIS = 1000L;
 	int DEFAULT_ASYNC_IO_THREADS = Runtime.getRuntime().availableProcessors() * 8;
+	double DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_RATIO = 0.8d;
+	long DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR = 256L * 1024 * 1024;
 
 
 	int getMetaServerConnectTimeout();
@@ -142,4 +150,9 @@ public interface KeeperConfig extends CoreConfig{
 	long getAsyncFsyncIntervalMillis();
 
 	int getAsyncIoThreads();
+
+	/**
+	 * Max bytes for TailCacheFileSystem local cache (off-heap Direct buffers).
+	 */
+	long getAsyncTailCacheMaxSizeBytes();
 }
