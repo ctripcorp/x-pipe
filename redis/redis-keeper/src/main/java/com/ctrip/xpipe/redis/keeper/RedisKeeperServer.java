@@ -95,6 +95,14 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	 * Failures must propagate so Handler returns Redis ERROR (ForceCloseDir).
 	 */
 	void doBecomePrepare(Endpoint masterAddress);
+
+	/**
+	 * PREPARE → ACTIVE/BACKUP re-entry (spec §3.8.3 / T-R.9):
+	 * {@code Manager.start()} → {@code createIfNotExist()} (reopen {@code latest.store.dir}) →
+	 * setState → {@code initReplicationStore} → {@code reconnectMaster}.
+	 * Must <b>not</b> call {@code create()} when latest store dir already exists.
+	 */
+	void doReenterFromPrepare(Endpoint masterAddress, boolean becomeActive);
 	
 	public static enum PROMOTION_STATE{
 		

@@ -11,8 +11,8 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer.PROMOTION_STATE;
 import java.io.IOException;
 
 /**
- * PREPARE: store lease released (or releasing); no master reconnect / no PSYNC serve.
- * Re-enter ACTIVE/BACKUP in Phase Rc (T-R.9).
+ * PREPARE: store lease released; no master reconnect / no PSYNC serve.
+ * Re-enter ACTIVE/BACKUP via {@link RedisKeeperServer#doReenterFromPrepare} (T-R.9).
  *
  * @see com.ctrip.xpipe.redis.core.meta.KeeperState#PREPARE
  */
@@ -34,14 +34,14 @@ public class RedisKeeperServerStatePrepare extends AbstractRedisKeeperServerStat
 
 	@Override
 	public void becomeActive(Endpoint masterAddress) {
-		// Phase Rc (T-R.9): reopen latest.store.dir then Active
-		throw new UnsupportedOperationException("PREPARE -> ACTIVE not yet implemented (Phase Rc)");
+		logger.info("[becomeActive][prepare->active]{}", masterAddress);
+		redisKeeperServer.doReenterFromPrepare(masterAddress, true);
 	}
 
 	@Override
 	public void becomeBackup(Endpoint masterAddress) {
-		// Phase Rc (T-R.9): reopen latest.store.dir then Backup
-		throw new UnsupportedOperationException("PREPARE -> BACKUP not yet implemented (Phase Rc)");
+		logger.info("[becomeBackup][prepare->backup]{}", masterAddress);
+		redisKeeperServer.doReenterFromPrepare(masterAddress, false);
 	}
 
 	@Override

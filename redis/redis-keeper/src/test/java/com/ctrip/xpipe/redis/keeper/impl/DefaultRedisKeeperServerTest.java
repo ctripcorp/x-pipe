@@ -1,10 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -80,6 +83,78 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 			Assert.fail();
 		}catch (Exception e){
 			logger.info("{}", e);
+		}
+	}
+
+	/**
+	 * T-R.10: ACTIVE↔BACKUP must not {@code Manager.stop()}/{@code releaseCurrentStore}
+	 * (m1 §4.5: target BACKUP skips PREPARE Step1).
+	 */
+	@Test
+	public void testActiveToBackupDoesNotReleaseStore() throws Exception {
+		DefaultRedisKeeperServer redisKeeperServer = (DefaultRedisKeeperServer) createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			redisKeeperServer.setRedisKeeperServerState(
+					new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 0)));
+			ReplicationStore storeBefore = redisKeeperServer.getReplicationStore();
+			Assert.assertTrue(storeBefore.checkOk());
+
+			ReplicationStoreManager manager = spy(redisKeeperServer.getReplicationStoreManager());
+			redisKeeperServer.setReplicationStoreManager(manager);
+
+			redisKeeperServer.getRedisKeeperServerState()
+					.becomeBackup(new DefaultEndPoint("127.0.0.1", randomPort()));
+
+			Assert.assertTrue(redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateBackup);
+			Assert.assertTrue(manager.getLifecycleState().isStarted());
+			ReplicationStore storeAfter = redisKeeperServer.getReplicationStore();
+			Assert.assertTrue(storeAfter.checkOk());
+			Assert.assertSame(storeBefore, storeAfter);
+			verify(manager, never()).stop();
+			verify(manager, never()).releaseCurrentStore();
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	/**
+	 * T-R.9 smoke: PREPARE → ACTIVE reopens the same {@code latest.store.dir}.
+	 */
+	@Test
+	public void testPrepareToActiveReopensLatestStoreDir() throws Exception {
+		DefaultRedisKeeperServer redisKeeperServer = (DefaultRedisKeeperServer) createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			Endpoint master = new DefaultEndPoint("127.0.0.1", 0);
+			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, master));
+			ReplicationStore storeBefore = redisKeeperServer.getReplicationStore();
+			String latestStoreId = storeBefore.toString();
+			Assert.assertTrue(storeBefore.checkOk());
+
+			redisKeeperServer.getRedisKeeperServerState().becomePrepare(master);
+			Assert.assertEquals(KeeperState.PREPARE, redisKeeperServer.getRedisKeeperServerState().keeperState());
+			Assert.assertTrue(redisKeeperServer.getReplicationStoreManager().getLifecycleState().isPositivelyStopped());
+			try {
+				redisKeeperServer.getReplicationStore();
+				Assert.fail("PREPARE must refuse getReplicationStore");
+			} catch (Exception expected) {
+				logger.info("prepare gate ok", expected);
+			}
+
+			redisKeeperServer.getRedisKeeperServerState()
+					.becomeActive(new DefaultEndPoint("127.0.0.1", randomPort()));
+			Assert.assertEquals(KeeperState.ACTIVE, redisKeeperServer.getRedisKeeperServerState().keeperState());
+			Assert.assertTrue(redisKeeperServer.getReplicationStoreManager().getLifecycleState().isStarted());
+			ReplicationStore storeAfter = redisKeeperServer.getReplicationStore();
+			Assert.assertTrue(storeAfter.checkOk());
+			Assert.assertEquals(latestStoreId, storeAfter.toString());
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
 		}
 	}
 

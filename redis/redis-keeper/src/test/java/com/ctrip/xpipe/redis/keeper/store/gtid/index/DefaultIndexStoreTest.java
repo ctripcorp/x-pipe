@@ -235,11 +235,41 @@ public class DefaultIndexStoreTest {
 
     /**
      * Flush write-mode cmd segment so disk catches up with TailCache ASYNC writes.
-     * Recover/truncate paths use disk length; prod crash-restart only sees flushed bytes.
+     * Segment fsync does <b>not</b> include index companions ({@link AsyncFileSystem#fsync(AsyncSegmentFile)}).
      */
     private void flushCmdSegment(TestAsyncCommandStore cmdStore) throws IOException {
         AsyncFileSystemHelper.await(testFs.fsync(cmdStore.getWriteSegmentFile()),
                 "fsync cmd segment before recover");
+    }
+
+    /**
+     * Fsync index/block companions on the current write segment.
+     * Required before any {@link FileChannel}/{@link DefaultControllableFile} assert — those bypass TailCache.
+     */
+    private void flushIndexFiles(List<String> indexPrefixes) throws IOException {
+        if (testCmdStore == null || indexPrefixes == null || indexPrefixes.isEmpty()) {
+            return;
+        }
+        var handles = AsyncFileSystemHelper.await(
+                testFs.getCurrentIndexFiles(testCmdStore.getWriteSegmentFile(), indexPrefixes),
+                "get index handles for fsync").getValue();
+        for (String prefix : indexPrefixes) {
+            AsyncFile handle = handles.get(prefix);
+            if (handle != null) {
+                AsyncFileSystemHelper.await(testFs.fsync(handle), "fsync index " + prefix);
+            }
+        }
+    }
+
+    /** Fsync cmd segment + all V1/V2 index companions before disk-bypass asserts. */
+    private void flushCmdAndIndexForDiskAssert() throws IOException {
+        flushCmdSegment(testCmdStore);
+        String cmdPrefix = testCmdStore.getCommandFileNamePrefix();
+        flushIndexFiles(Arrays.asList(
+                AbstractIndex.INDEX + cmdPrefix,
+                AbstractIndex.BLOCK + cmdPrefix,
+                AbstractIndex.INDEX_V2 + cmdPrefix,
+                AbstractIndex.BLOCK_V2 + cmdPrefix));
     }
 
     private AsyncFile openTestAsyncFile(File file, boolean write) throws IOException {
@@ -537,9 +567,13 @@ public class DefaultIndexStoreTest {
         Assert.assertEquals(gtidSet.toString(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633744-633750");
 
         defaultIndexStore.closeWriter();
+        // ControllableFile truncates on-disk bytes; index lives in TailCache until fsync.
+        flushCmdAndIndexForDiskAssert();
         File indexFilePath = indexV1File(CMD_PREFIX, 0);
         DefaultControllableFile file = new DefaultControllableFile(indexFilePath);
-        file.setLength((int) file.size() - 10);
+        int size = (int) file.size();
+        Assert.assertTrue("v1 index should be on disk after fsync, size=" + size, size > 10);
+        file.setLength(size - 10);
 
         RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
@@ -633,7 +667,10 @@ public class DefaultIndexStoreTest {
         Assert.assertEquals(point.getKey(), point2.getKey());
 
         point = defaultIndexStore.locateContinueGtidSet(new GtidSet("f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:1-" + 633746));
+        // readBytebufAfter uses FileChannel (bypasses TailCache).
+        flushCmdSegment(testCmdStore);
         RedisOp redisOp = IndexTestTool.readBytebufAfter(testCmdStore.currentCmdFile().getPath(), point.getKey());
+        Assert.assertNotNull("cmd at locate offset not readable on disk (missing fsync?)", redisOp);
         Assert.assertEquals(redisOp.getOpGtid(), "f9c9211ae82b9c4a4ea40eecd91d5d180c9c99f0:633747");
     }
 
@@ -1144,19 +1181,21 @@ public class DefaultIndexStoreTest {
         Assert.assertTrue("v2 index file should exist", indexV2File(cmdPrefix, 0).exists());
         Assert.assertTrue("v2 block file should exist", blockV2File(cmdPrefix, 0).exists());
 
+        // readBytebufAfter uses FileChannel (bypasses TailCache).
+        flushCmdSegment(testCmdStore);
         File cmdFile = testCmdStore.currentCmdFile();
         Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(
                 new GtidSet(uuid + ":1-5"));
         Assert.assertNotNull(point);
         RedisOp op6 = IndexTestTool.readBytebufAfter(cmdFile.getPath(), point.getKey());
-        Assert.assertNotNull(op6);
+        Assert.assertNotNull("cmd at locate offset not readable on disk (missing fsync?)", op6);
         Assert.assertEquals(uuid + ":6", op6.getOpGtid());
 
         point = defaultIndexStore.locateContinueGtidSet(
                 new GtidSet(uuid + ":1-8"));
         Assert.assertNotNull(point);
         RedisOp op9 = IndexTestTool.readBytebufAfter(cmdFile.getPath(), point.getKey());
-        Assert.assertNotNull(op9);
+        Assert.assertNotNull("cmd at locate offset not readable on disk (missing fsync?)", op9);
         Assert.assertEquals(uuid + ":9", op9.getOpGtid());
 
         List<long[]> zones = defaultIndexStore.getIndexWriterV2().loadAllZones();
@@ -1719,6 +1758,12 @@ public class DefaultIndexStoreTest {
     private List<IndexEntry> readV2GtidEntries(String baseDirPath, String cmdName) throws IOException {
         List<IndexEntry> gtidEntries = new ArrayList<>();
         String cmdPrefix = toCmdPrefix(cmdName);
+        // ControllableFile below bypasses TailCache — fsync index/block companions first.
+        if (testCmdStore != null && new File(baseDirPath).equals(testCmdStore.getCommandBaseDir())) {
+            flushIndexFiles(Arrays.asList(
+                    AbstractIndex.INDEX_V2 + cmdPrefix,
+                    AbstractIndex.BLOCK_V2 + cmdPrefix));
+        }
         File indexV2 = new File(baseDirPath, AbstractIndex.INDEX_V2 + cmdPrefix + "0");
         AsyncFile asyncFile = openTestAsyncFile(indexV2, false);
         long headerEnd;
@@ -1745,6 +1790,11 @@ public class DefaultIndexStoreTest {
 
     private List<IndexEntryType> readIndexEntryTypes(String baseDirPath, String cmdName) throws IOException {
         String cmdPrefix = toCmdPrefix(cmdName);
+        if (testCmdStore != null && new File(baseDirPath).equals(testCmdStore.getCommandBaseDir())) {
+            flushIndexFiles(Arrays.asList(
+                    AbstractIndex.INDEX_V2 + cmdPrefix,
+                    AbstractIndex.BLOCK_V2 + cmdPrefix));
+        }
         File indexV2 = new File(baseDirPath, AbstractIndex.INDEX_V2 + cmdPrefix + "0");
         List<IndexEntryType> types = new java.util.ArrayList<>();
         AsyncFile asyncFile = openTestAsyncFile(indexV2, false);

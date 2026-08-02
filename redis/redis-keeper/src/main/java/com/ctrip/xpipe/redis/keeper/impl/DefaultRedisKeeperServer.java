@@ -779,6 +779,35 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 	}
 
+	/**
+	 * PREPARE → ACTIVE/BACKUP (spec §3.8.3 / T-R.9).
+	 * Restart Manager (GC) → reopen {@code latest.store.dir} → flip state → write meta → reconnect.
+	 * State is set before {@link #initReplicationStore} so meta role matches the target.
+	 */
+	@Override
+	public synchronized void doReenterFromPrepare(Endpoint masterAddress, boolean becomeActive) {
+		logger.info("[doReenterFromPrepare][active={}]{}", becomeActive, masterAddress);
+		try {
+			LifecycleHelper.startIfPossible(replicationStoreManager);
+			// Prefer getCurrent → latest.store.dir; create() only when no latest exists.
+			ReplicationStore store = replicationStoreManager.createIfNotExist();
+			if (becomeActive) {
+				setRedisKeeperServerState(new RedisKeeperServerStateActive(this, masterAddress));
+			} else {
+				setRedisKeeperServerState(new RedisKeeperServerStateBackup(this, masterAddress));
+			}
+			initReplicationStore(store);
+			reconnectMaster();
+			logger.info("[doReenterFromPrepare][done]");
+		} catch (Exception e) {
+			logger.error("[doReenterFromPrepare]", e);
+			if (e instanceof RuntimeException) {
+				throw (RuntimeException) e;
+			}
+			throw new XpipeRuntimeException("[doReenterFromPrepare] reopen store failed", e);
+		}
+	}
+
 	private void closeSlavesExcept(String reason, RedisSlave slave) {
 		for (RedisSlave redisSlave : slaves()) {
 			if (redisSlave.equals(slave)) continue;
