@@ -184,6 +184,13 @@ public class CurrentMeta implements Releasable {
 		return currentShardMeta.getPreviousActiveKeeper();
 	}
 
+	public List<KeeperMeta> getPreviousSurviveKeepers(Long clusterDbId, Long shardDbId) {
+		checkClusterSupportKeeper(clusterDbId);
+
+		CurrentShardKeeperMeta currentShardMeta = currentShardKeeperMetaOrThrowException(clusterDbId, shardDbId);
+		return currentShardMeta.getPreviousSurviveKeepers();
+	}
+
 	public List<ApplierMeta> getSurviveAppliers(Long clusterDbId, Long shardDbId) {
 		checkClusterSupportApplier(clusterDbId);
 

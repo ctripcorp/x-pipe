@@ -47,7 +47,7 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
             KeeperMeta keeperMeta = invocation.getArgument(0);
             KeeperContainerMeta keeperContainerMeta = new KeeperContainerMeta();
             keeperContainerMeta.setId(keeperMeta.getKeeperContainerId());
-            if (keeperMeta.getKeeperContainerId() == 2L) {
+            if (keeperMeta.getKeeperContainerId() >= 2L) {
                 keeperContainerMeta.setDiskType("tfs");
                 keeperContainerMeta.setTfsFsId("fs-42");
             } else {
@@ -188,6 +188,112 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
         Assert.assertEquals(newTfs.getPort() + ":ACTIVE", callOrder.get(2));
     }
 
+    @Test
+    public void testBmActiveTfsBackupSwapReleasesOldSlotBeforeNewBackup() throws Exception {
+        callOrder.clear();
+        KeeperMeta bm = keeper("127.0.0.1", 7051, 1L, true).setPriority(1);
+        KeeperMeta oldBackupTfs = keeper("127.0.0.1", 7052, 2L, false).setPriority(2);
+        KeeperMeta newBackupTfs = keeper("127.0.0.1", 7053, 3L, false).setPriority(1);
+
+        List<KeeperMeta> previousSurvive = new LinkedList<>();
+        previousSurvive.add(bm);
+        previousSurvive.add(oldBackupTfs);
+        previousSurvive.add(newBackupTfs);
+
+        KeeperMeta oldBackupAfter = keeper("127.0.0.1", 7052, 2L, false).setPriority(1);
+        KeeperMeta newBackupAfter = keeper("127.0.0.1", 7053, 3L, false).setPriority(2);
+        List<KeeperMeta> keepers = new LinkedList<>();
+        keepers.add(bm);
+        keepers.add(oldBackupAfter);
+        keepers.add(newBackupAfter);
+
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(bm, keepers, dcMetaCache);
+        Assert.assertEquals(KeeperState.PREPARE, roles.get(oldBackupAfter));
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(newBackupAfter));
+
+        startKeeperServer(bm.getPort());
+        startKeeperServer(oldBackupAfter.getPort());
+        startKeeperServer(newBackupAfter.getPort());
+
+        TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, keepers, bm,
+                previousSurvive, new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
+                dcMetaCache, config, scheduled, executors, roles, null);
+        job.execute().get(5000, TimeUnit.MILLISECONDS);
+
+        Assert.assertEquals(oldBackupAfter.getPort() + ":PREPARE", callOrder.get(0));
+        Assert.assertEquals(bm.getPort() + ":ACTIVE", callOrder.get(1));
+        Assert.assertTrue(callOrder.contains(newBackupAfter.getPort() + ":BACKUP"));
+        Assert.assertEquals(3, callOrder.size());
+    }
+
+    @Test
+    public void testBmToTfsPromoteReleasesOldBackupBeforeNewActive() throws Exception {
+        callOrder.clear();
+        KeeperMeta bm = keeper("127.0.0.1", 7061, 1L, true).setPriority(1);
+        KeeperMeta oldBackupTfs = keeper("127.0.0.1", 7062, 2L, false).setPriority(1);
+        KeeperMeta promoteTfs = keeper("127.0.0.1", 7063, 3L, false).setPriority(0);
+
+        List<KeeperMeta> previousSurvive = new LinkedList<>();
+        previousSurvive.add(bm);
+        previousSurvive.add(oldBackupTfs);
+        previousSurvive.add(promoteTfs);
+
+        KeeperMeta bmAfter = keeper("127.0.0.1", 7061, 1L, false).setPriority(0);
+        KeeperMeta oldBackupAfter = keeper("127.0.0.1", 7062, 2L, false).setPriority(0);
+        KeeperMeta newActiveTfs = keeper("127.0.0.1", 7063, 3L, true).setPriority(2);
+        List<KeeperMeta> keepers = new LinkedList<>();
+        keepers.add(bmAfter);
+        keepers.add(oldBackupAfter);
+        keepers.add(newActiveTfs);
+
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(newActiveTfs, keepers, dcMetaCache);
+        Assert.assertEquals(KeeperState.PREPARE, roles.get(oldBackupAfter));
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(bmAfter));
+        Assert.assertEquals(KeeperState.ACTIVE, roles.get(newActiveTfs));
+
+        startKeeperServer(bmAfter.getPort());
+        startKeeperServer(oldBackupAfter.getPort());
+        startKeeperServer(newActiveTfs.getPort());
+
+        TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, keepers, bm,
+                previousSurvive, new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
+                dcMetaCache, config, scheduled, executors, roles, null);
+        job.execute().get(5000, TimeUnit.MILLISECONDS);
+
+        Assert.assertEquals(oldBackupAfter.getPort() + ":PREPARE", callOrder.get(0));
+        Assert.assertEquals(newActiveTfs.getPort() + ":ACTIVE", callOrder.get(1));
+        Assert.assertTrue(callOrder.contains(bmAfter.getPort() + ":BACKUP"));
+        Assert.assertEquals(3, callOrder.size());
+    }
+
+    @Test
+    public void testTfsActiveToBmWithPreviousSurviveSkipsPrepareWhenTargetBackup() throws Exception {
+        callOrder.clear();
+        KeeperMeta oldTfs = keeper("127.0.0.1", 7071, 2L, true);
+        KeeperMeta newBm = keeper("127.0.0.1", 7072, 1L, false);
+        List<KeeperMeta> previousSurvive = new LinkedList<>();
+        previousSurvive.add(oldTfs);
+        previousSurvive.add(newBm);
+
+        List<KeeperMeta> keepers = new LinkedList<>();
+        keepers.add(oldTfs);
+        keepers.add(newBm);
+
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(newBm, keepers, dcMetaCache);
+        startKeeperServer(oldTfs.getPort());
+        startKeeperServer(newBm.getPort());
+
+        TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, keepers, oldTfs,
+                previousSurvive, new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
+                dcMetaCache, config, scheduled, executors, roles, null);
+        job.execute().get(5000, TimeUnit.MILLISECONDS);
+
+        Assert.assertEquals(2, callOrder.size());
+        Assert.assertEquals(newBm.getPort() + ":ACTIVE", callOrder.get(0));
+        Assert.assertEquals(oldTfs.getPort() + ":BACKUP", callOrder.get(1));
+        Assert.assertFalse(callOrder.stream().anyMatch(entry -> entry.endsWith(":PREPARE")));
+    }
+
     private void startKeeperServer(int port) throws Exception {
         startKeeperServer(port, false);
     }
@@ -233,3 +339,4 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
         return keeperMeta;
     }
 }
+
