@@ -79,11 +79,13 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     public void openWriter(CommandWriter cmdWriter) throws IOException {
         this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
         this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size());
+        GtidSet v2GtidSet = this.startGtidSet;
         if(keeperConfig.dualWrite()) {
-            this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
+            this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet.clone(), this);
             this.indexWriter.init();
+            v2GtidSet = this.indexWriter.getGtidSet();
         }
-        this.indexWriterV2 = new IndexWriterV2(baseDir, currentCmdFileName, startGtidSet, this,
+        this.indexWriterV2 = new IndexWriterV2(baseDir, currentCmdFileName, v2GtidSet.clone(), this,
                 keeperConfig.getIndexZoneConsecutiveThreshold(),
                 keeperConfig.getIndexMixedTotalBytesThreshold(),
                 keeperConfig.getBlockSizeThreshold());
@@ -104,7 +106,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     }
 
     public synchronized void doSwitchCmdFile(String cmdFileName) throws IOException {
-        GtidSet continueGtidSet = (indexWriterV2 != null) ? indexWriterV2.getGtidSet() : indexWriter.getGtidSet();
+        GtidSet continueGtidSet = (indexWriterV2 != null && keeperConfig.readV2()) ? indexWriterV2.getGtidSet() : indexWriter.getGtidSet();
         if (indexWriter != null) indexWriter.close();
         if (indexWriterV2 != null) indexWriterV2.close();
         if (keeperConfig.dualWrite()) {
@@ -580,6 +582,9 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
 
     public IndexWriterV2 getIndexWriterV2() {
         return indexWriterV2;
+    }
+    public IndexWriter getIndexWriterV1() {
+        return indexWriter;
     }
 
     private void disableWriterCmd() {
