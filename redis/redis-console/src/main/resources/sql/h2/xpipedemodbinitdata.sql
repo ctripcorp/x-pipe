@@ -1,10 +1,10 @@
 insert into ZONE_TBL (id,zone_name) values(1,'SHA');
 insert into ZONE_TBL (id,zone_name) values(2,'FRA');
 
-insert into AZ_GROUP_TBL (id,name,region) values(1,'LOCAL_SHA','SHA');
-insert into AZ_GROUP_TBL (id,name,region) values(2,'LOCAL_FRA','FRA');
-insert into AZ_GROUP_TBL (id,name,region) values(3,'LOCAL_JQ','SHA');
-insert into AZ_GROUP_TBL (id,name,region) values(4,'LOCAL_OY','SHA');
+insert into AZ_GROUP_TBL (id,name) values(1,'LOCAL_SHA');
+insert into AZ_GROUP_TBL (id,name) values(2,'LOCAL_FRA');
+insert into AZ_GROUP_TBL (id,name) values(3,'LOCAL_JQ');
+insert into AZ_GROUP_TBL (id,name) values(4,'LOCAL_OY');
 
 insert into DC_TBL (id,zone_id,dc_name,dc_active,dc_description,dc_last_modified_time) values (1,1,'jq',1,'DC:jq','0000000000000000');
 insert into DC_TBL (id,zone_id,dc_name,dc_active,dc_description,dc_last_modified_time) values (2,1,'oy',1,'DC:oy','0000000000000000');

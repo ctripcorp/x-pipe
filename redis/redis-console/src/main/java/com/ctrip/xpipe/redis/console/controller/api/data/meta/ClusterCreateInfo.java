@@ -74,6 +74,7 @@ public class ClusterCreateInfo extends AbstractCreateInfo{
                     }
                 }
                 regionInfo.setAzs(azs);
+                regionInfo.setRegions(azGroup.getRegions());
                 return regionInfo;
             }).collect(Collectors.toList());
         }

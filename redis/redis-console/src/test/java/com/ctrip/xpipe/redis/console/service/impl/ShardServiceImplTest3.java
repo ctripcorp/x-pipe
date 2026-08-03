@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.ShardService;
 import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Assert;
@@ -76,6 +77,9 @@ public class ShardServiceImplTest3 {
 
 	@Mock
 	private DcCache dcCache;
+
+	@Mock
+	private HeteroMigrationSupport heteroMigrationSupport;
 
 	@InjectMocks
 	private ShardServiceImpl shardService = new ShardServiceImpl();
@@ -339,9 +343,9 @@ public class ShardServiceImplTest3 {
 		when(azGroupCluster.getAzGroupId()).thenReturn(10L);
 		when(azGroupCluster.getAzGroupClusterType()).thenReturn(ClusterType.ONE_WAY.toString());
 		when(azGroupClusterRepository.selectByClusterId(clusterId)).thenReturn(Lists.newArrayList(azGroupCluster));
+		when(heteroMigrationSupport.activeRegion(azGroupCluster)).thenReturn(regionName);
 
 		AzGroupModel azGroup = mock(AzGroupModel.class);
-		when(azGroup.getRegion()).thenReturn(regionName);
 		when(azGroupCache.getAzGroupById(10L)).thenReturn(azGroup);
 
 		DcClusterEntity dcCluster1 = mock(DcClusterEntity.class);

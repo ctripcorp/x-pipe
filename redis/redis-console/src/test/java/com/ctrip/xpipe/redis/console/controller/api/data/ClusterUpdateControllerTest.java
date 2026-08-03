@@ -106,7 +106,19 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
         ClusterCreateInfo cluster = clusterController.getCluster("cluster-name");
         assertClusterEquals(cluster, "ONE_WAY");
         Assert.assertEquals(Arrays.asList("jq", "oy", "fra"), cluster.getDcs());
-        Assert.assertEquals(regions, cluster.getRegions());
+        Assert.assertEquals(2, cluster.getRegions().size());
+
+        RegionInfo sha = cluster.getRegions().stream().filter(r -> "SHA".equals(r.getRegion())).findFirst().get();
+        Assert.assertEquals("ONE_WAY", sha.getClusterType());
+        Assert.assertEquals("jq", sha.getActiveAz());
+        Assert.assertEquals(Arrays.asList("jq", "oy"), sha.getAzs());
+        Assert.assertEquals(Collections.singletonList("SHA"), sha.getRegions());
+
+        RegionInfo fra = cluster.getRegions().stream().filter(r -> "FRA".equals(r.getRegion())).findFirst().get();
+        Assert.assertEquals("SINGLE_DC", fra.getClusterType());
+        Assert.assertEquals("fra", fra.getActiveAz());
+        Assert.assertEquals(Collections.singletonList("fra"), fra.getAzs());
+        Assert.assertEquals(Collections.singletonList("FRA"), fra.getRegions());
     }
 
     private void assertClusterEquals(ClusterCreateInfo cluster, String expectType) {
@@ -362,7 +374,8 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
 
     @Test
     public void testExchangeRegion2() throws DalException, ResourceNotFoundException {
-        this.createCluster(null, "SINGLE_DC", Arrays.asList("jq", "fra"), null);
+        // activeAz = first dc (fra); unbind backup jq so remaining AzGroup is LOCAL_FRA with activeRegion=FRA
+        this.createCluster(null, "SINGLE_DC", Arrays.asList("fra", "jq"), null);
         clusterService.unbindDc("cluster-name", "jq");
         ShardTbl shard = shardService.createShard("cluster-name", new ShardTbl().setShardName("shard2"), new HashMap<>());
         clusterController.upgradeAzGroup("cluster-name");
@@ -377,6 +390,20 @@ public class ClusterUpdateControllerTest extends AbstractConsoleIntegrationTest 
 
         ShardTbl heteroShard = shardService.findAllShardNamesByClusterName("hetero-cluster").get(0);
         Assert.assertEquals(shard.getShardName(), heteroShard.getShardName());
+    }
+
+    @Test
+    public void testUnbindActiveAzInMultiAzGroup() {
+        this.createCluster(null, null, null, null);
+        clusterController.upgradeAzGroup("cluster-name");
+
+        RetMessage ret = clusterController.unbindDc("cluster-name", "jq");
+        Assert.assertEquals(RetMessage.FAIL_STATE, ret.getState());
+
+        ClusterCreateInfo cluster = clusterController.getCluster("cluster-name");
+        Assert.assertEquals(1, cluster.getRegions().size());
+        Assert.assertEquals(Arrays.asList("jq", "oy"), cluster.getRegions().get(0).getAzs());
+        Assert.assertEquals("jq", cluster.getRegions().get(0).getActiveAz());
     }
 
     @Test

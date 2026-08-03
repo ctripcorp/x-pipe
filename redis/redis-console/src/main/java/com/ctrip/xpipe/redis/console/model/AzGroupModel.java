@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -10,15 +12,13 @@ public class AzGroupModel {
 
     private Long id;
     private String name;
-    private String region;
     private Set<String> azs;
 
     public AzGroupModel() {}
 
-    public AzGroupModel(Long id, String name, String region, Collection<String> azs) {
+    public AzGroupModel(Long id, String name, Collection<String> azs) {
         this.id = id;
         this.name = name;
-        this.region = region;
         this.azs = new HashSet<>(azs);
     }
 
@@ -38,14 +38,6 @@ public class AzGroupModel {
         this.name = name;
     }
 
-    public String getRegion() {
-        return region;
-    }
-
-    public void setRegion(String region) {
-        this.region = region;
-    }
-
     public Set<String> getAzs() {
         return azs;
     }
@@ -54,6 +46,7 @@ public class AzGroupModel {
         this.azs = azs;
     }
 
+    @JsonIgnore
     public List<String> getAzsAsList() {
         return new ArrayList<>(azs);
     }

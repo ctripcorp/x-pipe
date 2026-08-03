@@ -33,6 +33,7 @@ import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.util.SentinelUtil;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -109,6 +110,8 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 	private AzGroupClusterRepository azGroupClusterRepository;
 	@Autowired
 	private DcClusterRepository dcClusterRepository;
+	@Autowired
+	private HeteroMigrationSupport heteroMigrationSupport;
 
 	@Autowired
 	@Lazy
@@ -276,8 +279,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		}
 		AzGroupClusterEntity targetAzGroupCluster = null;
 		for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
-			AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
-			if (azGroup.getRegion().equalsIgnoreCase(regionName)) {
+			if (regionName.equalsIgnoreCase(heteroMigrationSupport.activeRegion(azGroupCluster))) {
 				targetAzGroupCluster = azGroupCluster;
 				break;
 			}

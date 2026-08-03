@@ -93,7 +93,7 @@ public class AzGroupCacheImpl implements AzGroupCache {
                     if (azIds != null) {
                         List<String> azs = azIds.stream().map(azIdNameMap::get).collect(Collectors.toList());
 
-                        AzGroupModel azGroupModel = new AzGroupModel(entity.getId(), entity.getName(), entity.getRegion(), azs);
+                        AzGroupModel azGroupModel = new AzGroupModel(entity.getId(), entity.getName(), azs);
                         azGroupModels.add(azGroupModel);
                     }
                 }
@@ -153,6 +153,11 @@ public class AzGroupCacheImpl implements AzGroupCache {
         return this.azGroupModels.stream()
                 .filter(model -> model.containsAz(az))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void reload() {
+        loadAzGroupCache();
     }
 
 }

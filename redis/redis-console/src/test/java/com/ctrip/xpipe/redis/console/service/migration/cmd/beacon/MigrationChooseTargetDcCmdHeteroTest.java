@@ -75,6 +75,16 @@ public class MigrationChooseTargetDcCmdHeteroTest extends AbstractConsoleTest {
     }
 
     @Test
+    public void heteroForcedTargetShouldAllowCrossRegionSameAzGroup() throws Throwable {
+        when(heteroMigrationSupport.isSameAzGroup(14L, "jq", "fra")).thenReturn(true);
+
+        CommandFuture future = chooseTargetDcCmd.execute();
+        waitConditionUntilTimeOut(() -> future.isDone());
+        Assert.assertTrue(future.isSuccess());
+        Assert.assertEquals(fraDc, migrationRequest.getTargetDcTbl());
+    }
+
+    @Test
     public void heteroAvailableDcsShouldFilterByAzGroup() throws Throwable {
         migrationRequest.setIsForced(false);
         migrationRequest.setAvailableDcs(Sets.newHashSet("oy", "fra"));

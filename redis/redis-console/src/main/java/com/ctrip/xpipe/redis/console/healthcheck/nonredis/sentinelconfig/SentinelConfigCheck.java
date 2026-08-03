@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -72,10 +73,12 @@ public class SentinelConfigCheck extends AbstractCrossDcIntervalAction {
     }
 
     protected boolean isDcClusterShardSafe(DcMeta dcMeta, ClusterMeta cluster, ShardMeta shard) {
-        if (ClusterType.lookup(cluster.getType()).equals(ClusterType.ONE_WAY)) {
-            // sentinel is unnecessary for single active cluster in cross-region dc
-            String activeDc = metaCache.getActiveDc(cluster.getId());
-            if (metaCache.isCrossRegion(activeDc, dcMeta.getId())) return true;
+        if (ClusterType.isOneWayEffective(cluster.getType(), cluster.getAzGroupType())) {
+            // sentinel is unnecessary for single-active ONE_WAY (incl. HETERO azGroupType) in cross-region dc
+            String activeDc = cluster.getActiveDc();
+            if (!StringUtil.isEmpty(activeDc) && metaCache.isCrossRegion(activeDc, dcMeta.getId())) {
+                return true;
+            }
         }
 
         return null != shard.getSentinelId() && !shard.getSentinelId().equals(0L);

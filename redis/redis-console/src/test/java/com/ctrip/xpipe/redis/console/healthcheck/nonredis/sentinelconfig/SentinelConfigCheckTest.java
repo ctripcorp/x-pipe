@@ -159,6 +159,30 @@ public class SentinelConfigCheckTest {
         }
     }
 
+    @Test
+    public void testHeteroOneWayCrossRegionIsSafeWithoutSentinel() {
+        when(consoleConfig.supportSentinelHealthCheck(any(), any())).thenReturn(true);
+        ClusterMeta heteroOneWay = mockHeteroClusterMeta("hetero-cross", ClusterType.HETERO.name(),
+                ClusterType.ONE_WAY.name(), "jq");
+        DcMeta fraDc = new DcMeta().setId("fra");
+        fraDc.addCluster(heteroOneWay);
+
+        Assert.assertTrue(sentinelConfigCheck.isDcClusterShardSafe(fraDc, heteroOneWay,
+                heteroOneWay.getShards().get("shard1")));
+        Mockito.verify(metaCache, never()).getActiveDc(Mockito.anyString());
+    }
+
+    @Test
+    public void testHeteroSingleDcCrossRegionStillRequiresSentinel() {
+        ClusterMeta heteroSingle = mockHeteroClusterMeta("hetero-single", ClusterType.HETERO.name(),
+                ClusterType.SINGLE_DC.name(), "jq");
+        DcMeta fraDc = new DcMeta().setId("fra");
+        fraDc.addCluster(heteroSingle);
+
+        Assert.assertFalse(sentinelConfigCheck.isDcClusterShardSafe(fraDc, heteroSingle,
+                heteroSingle.getShards().get("shard1")));
+    }
+
     private ClusterMeta mockHeteroClusterMeta(String name, String type, String azGroupType, String activeDc) {
 
         ClusterMeta cluster = new ClusterMeta().setId(name).setType(type).addShard(mockShardMeta("shard1")).addShard(mockShardMeta("shard2"));
@@ -215,6 +239,7 @@ public class SentinelConfigCheckTest {
         ClusterMeta clusterMeta = new ClusterMeta();
         clusterMeta.setId(cluster);
         clusterMeta.setType(mockClusterType.toString());
+        clusterMeta.setActiveDc(activeDcMap.get(cluster));
 
         for (String shard: mockShards) {
             clusterMeta.addShard(mockShardMeta(shard));

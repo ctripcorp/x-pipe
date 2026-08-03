@@ -140,7 +140,7 @@ public class DefaultConsoleDcCheckerServiceTest {
         Mockito.when(azGroupClusterRepository.selectByClusterId(CLUSTER_DB_ID))
                 .thenReturn(Collections.singletonList(azGroupCluster));
 
-        AzGroupModel azGroup = new AzGroupModel(1L, "az-group", "region", new HashSet<>(Arrays.asList(DC, ACTIVE_DC)));
+        AzGroupModel azGroup = new AzGroupModel(1L, "az-group", new HashSet<>(Arrays.asList(DC, ACTIVE_DC)));
         Mockito.when(azGroupCache.getAzGroupById(1L)).thenReturn(azGroup);
 
         Mockito.when(metaCache.isCrossRegion(DC, ACTIVE_DC)).thenReturn(false);
@@ -184,7 +184,7 @@ public class DefaultConsoleDcCheckerServiceTest {
                 .thenReturn(Collections.singletonList(azGroupCluster));
 
         // AZ group does NOT contain the queried DC
-        AzGroupModel azGroup = new AzGroupModel(1L, "az-group", "region", new HashSet<>(Arrays.asList("other-dc1", "other-dc2")));
+        AzGroupModel azGroup = new AzGroupModel(1L, "az-group", new HashSet<>(Arrays.asList("other-dc1", "other-dc2")));
         Mockito.when(azGroupCache.getAzGroupById(1L)).thenReturn(azGroup);
 
         Mockito.when(metaCache.isCrossRegion(DC, ACTIVE_DC)).thenReturn(false);
@@ -248,7 +248,7 @@ public class DefaultConsoleDcCheckerServiceTest {
         AzGroupClusterEntity azGroupCluster = buildAzGroupCluster(1L, ClusterType.ONE_WAY.toString(), ACTIVE_DC_ID);
         Mockito.when(azGroupClusterRepository.selectByClusterId(CLUSTER_DB_ID))
                 .thenReturn(Collections.singletonList(azGroupCluster));
-        AzGroupModel azGroup = new AzGroupModel(1L, "az-group", "region", new HashSet<>(Arrays.asList(DC, ACTIVE_DC)));
+        AzGroupModel azGroup = new AzGroupModel(1L, "az-group", new HashSet<>(Arrays.asList(DC, ACTIVE_DC)));
         Mockito.when(azGroupCache.getAzGroupById(1L)).thenReturn(azGroup);
 
         List<RedisMeta> redisMetas = Collections.singletonList(buildRedisMeta(IP, PORT));

@@ -41,8 +41,8 @@ public class AzGroupCacheImplTest {
     // az_group id=9 (SGP) 有 mapping，az_group id=10 (SGP-NOR) 也有 mapping
     @Test
     public void testGetAzGroupById_returnCorrectGroup() {
-        AzGroupEntity group9 = new AzGroupEntity().setId(9L).setName("SGP").setRegion("SGP");
-        AzGroupEntity group10 = new AzGroupEntity().setId(10L).setName("SGP-NOR").setRegion("SGP");
+        AzGroupEntity group9 = new AzGroupEntity().setId(9L).setName("SGP");
+        AzGroupEntity group10 = new AzGroupEntity().setId(10L).setName("SGP-NOR");
 
         Map<Long, List<Long>> mappings = new HashMap<>();
         mappings.put(9L, Arrays.asList(17L, 20L));
@@ -68,7 +68,7 @@ public class AzGroupCacheImplTest {
     // az_group 在 mapping 表中没有记录时，不应该 NPE，也不应该加载进缓存
     @Test
     public void testLoadCache_azGroupWithoutMapping_doesNotThrow() {
-        AzGroupEntity groupNoMapping = new AzGroupEntity().setId(9L).setName("SGP").setRegion("SGP");
+        AzGroupEntity groupNoMapping = new AzGroupEntity().setId(9L).setName("SGP");
 
         when(azGroupRepository.selectAll()).thenReturn(Collections.singletonList(groupNoMapping));
         when(azGroupMappingRepository.getAzGroupAzsMap()).thenReturn(Collections.emptyMap());

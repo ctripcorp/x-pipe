@@ -4,6 +4,7 @@ package com.ctrip.xpipe.redis.console;
 import com.ctrip.xpipe.redis.console.alert.EmailSentCounterTest;
 import com.ctrip.xpipe.redis.console.beacon.DefaultMonitorManagerTest;
 import com.ctrip.xpipe.redis.console.cache.impl.AzGroupCacheImplTest;
+import com.ctrip.xpipe.redis.console.cache.impl.RegionCacheImplTest;
 import com.ctrip.xpipe.redis.console.checker.DefaultCheckerManagerTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
@@ -78,6 +79,8 @@ import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.service.meta.impl.*;
 import com.ctrip.xpipe.redis.console.service.migration.cmd.beacon.*;
 import com.ctrip.xpipe.redis.console.service.migration.impl.*;
+import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupportCrossRegionTest;
+import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderCrossRegionAzGroupTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderHeteroMigrationTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
 import com.ctrip.xpipe.redis.console.spring.XPipeHandlerMethodCommandTest;
@@ -155,7 +158,9 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisInstanceInfoTest.class,
         KeeperUpdateControllerTest.class,
         AzServiceImplTest.class,
+        AzGroupUpdateControllerTest.class,
         ClusterUpdateControllerTest.class,
+        ClusterUpdateControllerCrossRegionAzGroupTest.class,
         ShardUpdateControllerTest.class,
         MetaUpdateTest4.class,
 
@@ -205,6 +210,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DBVariablesCheckTest.class,
         DcMetaBuilderTest.class,
         DcMetaBuilderHeteroMigrationTest.class,
+        DcMetaBuilderCrossRegionAzGroupTest.class,
         ClusterMetaServiceImplHeteroMigrationTest.class,
         DcClusterServiceImplTest.class,
         CrossMasterDelayServiceTest.class,
@@ -228,8 +234,11 @@ import org.junit.runners.Suite.SuiteClasses;
         XPipeHandlerMethodCommandTest.class,
 
         MigrationPreCheckCmdTest.class,
+        MigrationPreCheckCmdHeteroTest.class,
         MigrationFetchProcessingEventCmdTest.class,
         MigrationChooseTargetDcCmdTest.class,
+        MigrationChooseTargetDcCmdHeteroTest.class,
+        HeteroMigrationSupportCrossRegionTest.class,
         MigrationBuildEventCmdTest.class,
         MigrationDoExecuteCmdTest.class,
         MultiClusterMigrationTest.class,
@@ -259,7 +268,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DcClusterServiceWithoutDBTest.class,
         EmailSentCounterTest.class,
 
-       ClusterTypeUpdateEventListenerTest.class,
+        ClusterTypeUpdateEventListenerTest.class,
 
         DefaultKeeperContainerMigrationServiceTest.class,
         AutoMigrateOverloadKeeperContainerActionTest.class,
@@ -278,7 +287,8 @@ import org.junit.runners.Suite.SuiteClasses;
         NetworkStabilityInspectorTest.class,
         NetworkStabilityHolderTest.class,
 
-        AzGroupCacheImplTest.class
+        AzGroupCacheImplTest.class,
+        RegionCacheImplTest.class
 })
 public class AllTests {
 

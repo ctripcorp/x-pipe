@@ -256,7 +256,11 @@ public class SentinelGroupServiceImpl extends AbstractConsoleService<SentinelGro
 
                 Map<String, ClusterMeta> clusters = dcMeta.getClusters();
                 clusters.forEach((clusterName, clusterMeta) -> {
-                    if (!(ClusterType.lookup(clusterMeta.getType()).equals(ClusterType.ONE_WAY) && metaCache.isCrossRegion(dcName, clusterMeta.getActiveDc()))) {
+                    // Skip cross-region ONE_WAY shards (incl. HETERO + azGroupType=ONE_WAY) when counting usage
+                    String activeDc = clusterMeta.getActiveDc();
+                    if (!(ClusterType.isOneWayEffective(clusterMeta.getType(), clusterMeta.getAzGroupType())
+                            && !StringUtil.isEmpty(activeDc)
+                            && metaCache.isCrossRegion(dcName, activeDc))) {
                         clusterMeta.getShards().values().forEach(shardMeta -> {
                             if (groupMap.containsKey(shardMeta.getSentinelId())) {
                                 Set<Long> shardSet = sentinelShardMap.computeIfAbsent(shardMeta.getSentinelId(), k -> new HashSet<>());

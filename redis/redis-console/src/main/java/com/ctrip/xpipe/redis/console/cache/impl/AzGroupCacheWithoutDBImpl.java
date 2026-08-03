@@ -76,4 +76,9 @@ public class AzGroupCacheWithoutDBImpl implements AzGroupCache {
         this.azGroupModels = consolePortalService.getAllAzGroups();
         this.idAzGroupMap = this.azGroupModels.stream().collect(Collectors.toMap(AzGroupModel::getId, Function.identity()));
     }
+
+    @Override
+    public void reload() {
+        loadAzGroupCache();
+    }
 }

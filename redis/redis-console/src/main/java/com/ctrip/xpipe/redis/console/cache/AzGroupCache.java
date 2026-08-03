@@ -14,4 +14,6 @@ public interface AzGroupCache {
 
     List<AzGroupModel> getAzGroupsByAz(String az);
 
+    void reload();
+
 }

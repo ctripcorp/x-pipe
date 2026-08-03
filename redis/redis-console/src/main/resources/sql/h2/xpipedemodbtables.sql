@@ -15,7 +15,6 @@ drop table if exists AZ_GROUP_TBL;
 CREATE TABLE `AZ_GROUP_TBL` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `name` varchar(20) NOT NULL DEFAULT '' COMMENT 'az group name',
-  `region` varchar(20) NOT NULL DEFAULT '' COMMENT 'az group region',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'create time',
   `DataChange_LastTime` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT 'last modify time',
   `deleted` tinyint(1) unsigned NOT NULL DEFAULT '0' COMMENT 'logic delete',

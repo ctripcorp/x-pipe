@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.cache.AzGroupCache;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
+import com.ctrip.xpipe.redis.console.cache.RegionCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.InstanceInfo;
@@ -162,6 +163,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 	@Autowired
 	private DcCache dcCache;
+
+	@Autowired
+	private RegionCache regionCache;
 
 	@Autowired
 	private DcClusterRepository dcClusterRepository;
@@ -421,10 +425,11 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
             return null;
         }
         return AzGroupDTO.builder()
-                .region(azGroup.getRegion())
+                .region(heteroMigrationSupport.activeRegion(azGroupCluster))
                 .clusterType(azGroupCluster.getAzGroupClusterType())
                 .activeAz(dcIdNameMap.get(azGroupCluster.getActiveAzId()))
                 .azs(azGroup.getAzsAsList())
+                .regions(new ArrayList<>(heteroMigrationSupport.containedRegions(azGroup)))
                 .build();
     }
 
@@ -476,14 +481,14 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
                 }
             }
             if (dcs.isEmpty()) {
-                logger.warn("[findClusterDcGroups]clusterName={}, azGroupClusterId={}, region={} no bound dcs",
-                        clusterName, azGroupCluster.getId(), azGroup.getRegion());
+                logger.warn("[findClusterDcGroups]clusterName={}, azGroupClusterId={}, activeRegion={} no bound dcs",
+                        clusterName, azGroupCluster.getId(), heteroMigrationSupport.activeRegion(azGroupCluster));
                 continue;
             }
             result.add(new ClusterDcGroupModel()
                     .setAzGroupId(azGroup.getId())
                     .setAzGroupClusterId(azGroupCluster.getId())
-                    .setRegion(azGroup.getRegion())
+                    .setRegion(heteroMigrationSupport.activeRegion(azGroupCluster))
                     .setAzGroupClusterType(azGroupCluster.getAzGroupClusterType())
                     .setActiveAzId(azGroupCluster.getActiveAzId())
                     .setDcs(dcs));
@@ -681,6 +686,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		ClusterTbl clusterTbl = createCluster(clusterCreateDTO);
 
 		List<AzGroupDTO> azGroups = clusterCreateDTO.getAzGroups();
+		Set<String> claimedRegions = new HashSet<>();
 		for (AzGroupDTO azGroupDTO : azGroups) {
 			List<String> azs = azGroupDTO.getAzs();
 			Map<String, Long> azIdMap = new HashMap<>();
@@ -692,24 +698,39 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				azIdMap.put(az, dcTbl.getId());
 			}
 
-			AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
+            AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
 			azGroupCluster.setClusterId(clusterTbl.getId());
 
             String region = azGroupDTO.getRegion();
             AzGroupModel azGroup = azGroupCache.getAzGroupByAzs(azs);
-			if (azGroup == null || !Objects.equals(azGroup.getRegion(), region)) {
+			if (azGroup == null) {
                 throw new BadRequestException(
-                    String.format("Region: %s doesn't contain such azs: %s", region, azs));
+                    String.format("No AzGroup contains such azs: %s", azs));
 			}
-			azGroupCluster.setAzGroupId(azGroup.getId());
-
 			ClusterType clusterType = ClusterType.lookup(azGroupDTO.getClusterType());
+			String activeAz = azGroupDTO.getActiveAz();
+			if (!clusterType.supportMultiActiveDC()) {
+				if (Strings.isNullOrEmpty(region)) {
+					throw new BadRequestException("region is empty");
+				}
+				if (Strings.isNullOrEmpty(activeAz)) {
+					throw new BadRequestException(String.format("active az is empty for region: %s", region));
+				}
+				String activeAzRegion = regionCache.regionOf(activeAz);
+				if (!region.equalsIgnoreCase(activeAzRegion)) {
+					throw new BadRequestException(
+						String.format("Region: %s doesn't match active az region: %s (az=%s)",
+							region, activeAzRegion, activeAz));
+				}
+			}
+			ensureContainedRegionsNotClaimed(clusterTbl.getClusterName(),
+					heteroMigrationSupport.containedRegions(azGroup), claimedRegions);
+			azGroupCluster.setAzGroupId(azGroup.getId());
 			azGroupCluster.setAzGroupClusterType(clusterType.toString());
 
 			if (clusterType.supportMultiActiveDC()) {
 				azGroupCluster.setActiveAzId(XPipeConsoleConstant.NO_ACTIVE_AZ_TAG);
 			} else {
-				String activeAz = azGroupDTO.getActiveAz();
 				if (!azIdMap.containsKey(activeAz)) {
 					throw new BadRequestException(String.format("active az - %s not in azs - %s", activeAz, azs));
 				}
@@ -723,6 +744,36 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				dcCluster.setDcId(azIdMap.get(az));
 				dcCluster.setAzGroupClusterId(azGroupCluster.getId());
 				dcClusterRepository.insert(dcCluster);
+			}
+			logger.info("[createMultiGroupCluster]clusterName={}, azGroupId={}, azGroupClusterId={}, activeRegion={}, azs={}, activeAz={}",
+					clusterTbl.getClusterName(), azGroup.getId(), azGroupCluster.getId(), region, azs, activeAz);
+		}
+	}
+
+	/**
+	 * D5: one cluster may cover each region in at most one AzGroupCluster's containedRegions.
+	 * Fail-closed when regions are empty (RegionCache mapping missing would otherwise skip D5).
+	 */
+	private void ensureContainedRegionsNotClaimed(String clusterName, Collection<String> regions,
+			Set<String> claimedRegions) {
+		if (regions == null || regions.isEmpty()) {
+			logger.warn("[ensureContainedRegionsNotClaimed]clusterName={}, containedRegions empty", clusterName);
+			throw new BadRequestException(String.format(
+					"cluster: %s AzGroup containedRegions is empty", clusterName));
+		}
+		for (String region : regions) {
+			if (Strings.isNullOrEmpty(region)) {
+				logger.warn("[ensureContainedRegionsNotClaimed]clusterName={}, blank region in containedRegions",
+						clusterName);
+				throw new BadRequestException(String.format(
+						"cluster: %s AzGroup containedRegions has empty region", clusterName));
+			}
+			String key = region.toUpperCase();
+			if (!claimedRegions.add(key)) {
+				logger.warn("[ensureContainedRegionsNotClaimed]clusterName={}, region={} already covered",
+						clusterName, region);
+				throw new BadRequestException(String.format(
+						"cluster: %s already has AzGroupCluster covering region: %s", clusterName, region));
 			}
 		}
 	}
@@ -968,6 +1019,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         }
 
 
+		boolean regionsUpdated = false;
 		if (clusterUpdateDTO.getRegions() != null && !clusterUpdateDTO.getRegions().isEmpty()) {
 			List<AzGroupClusterEntity> azGroupClustersToUpdate = new ArrayList<>();
 			List<AzGroupClusterEntity> currentAzGroupClusters = azGroupClusterRepository.selectByClusterId(clusterTbl.getId());
@@ -983,29 +1035,41 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 
 				AzGroupClusterEntity future = new AzGroupClusterEntity().setId(current.getId());
 				if (region.getClusterType() != null) future.setAzGroupClusterType(region.getClusterType().toUpperCase());
-				if (region.getActiveAz() != null) future.setActiveAzId(checkDc(region.getActiveAz()).getId());
+				String nextActiveAz = region.getActiveAz();
+				if (nextActiveAz != null) {
+					AzGroupModel azGroup = azGroupCache.getAzGroupById(current.getAzGroupId());
+					if (azGroup == null || !azGroup.containsAz(nextActiveAz)) {
+						List<String> azs = azGroup == null ? Collections.emptyList() : azGroup.getAzsAsList();
+						throw new BadRequestException(String.format(
+								"active az - %s not in azs - %s", nextActiveAz, azs));
+					}
+					future.setActiveAzId(checkDc(nextActiveAz).getId());
+					String nextActiveRegion = regionCache.regionOf(nextActiveAz);
+					logger.info("[updateCluster]clusterName={}, azGroupId={}, azGroupClusterId={}, activeRegion={}, locateRegion={}, azs={}, activeAz={}",
+							clusterName, current.getAzGroupId(), current.getId(), nextActiveRegion,
+							region.getRegion(), azGroup.getAzsAsList(), nextActiveAz);
+				}
 
 				azGroupClustersToUpdate.add(future);
 			}
 
 			if (!azGroupClustersToUpdate.isEmpty()) {
 				azGroupClusterRepository.batchUpdate(azGroupClustersToUpdate);
+				regionsUpdated = true;
 			}
 		}
 
         if (needUpdate) {
             clusterDao.updateCluster(clusterTbl);
-            return RetMessage.SUCCESS;
-        } else {
-            return String.format("No field changes for cluster: %s", clusterName);
         }
+		if (needUpdate || regionsUpdated) {
+			return RetMessage.SUCCESS;
+		}
+		return String.format("No field changes for cluster: %s", clusterName);
     }
 
 	private AzGroupClusterEntity getByRegion(String region, List<AzGroupClusterEntity> azGroupClusterEntities) {
-		return azGroupClusterEntities.stream().filter(azGroupClusterEntity -> {
-			AzGroupModel azGroupModel = azGroupCache.getAzGroupById(azGroupClusterEntity.getAzGroupId());
-			return azGroupModel.getRegion().equalsIgnoreCase(region);
-		}).findFirst().orElse(null);
+		return heteroMigrationSupport.findByActiveRegion(azGroupClusterEntities, region);
 	}
 
 	@Override
@@ -1212,16 +1276,26 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         }
         for (AzGroupClusterEntity azGroupCluster : azGroupClusters) {
             AzGroupModel azGroup = azGroupCache.getAzGroupById(azGroupCluster.getAzGroupId());
-            if (Objects.equals(azGroup.getRegion(), regionName)) {
+            if (regionName.equalsIgnoreCase(heteroMigrationSupport.activeRegion(azGroupCluster))) {
                 // 更改az group name
                 List<String> azs = azGroup.getAzsAsList();
                 azs.add(azName);
                 AzGroupModel newAzGroup = azGroupCache.getAzGroupByAzs(azs);
                 if (newAzGroup == null) {
-                    throw new BadRequestException("No Region contains such azs: " + azName);
+                    throw new BadRequestException("No AzGroup contains such azs: " + azs);
                 }
+				Set<String> claimedRegions = new HashSet<>();
+				for (AzGroupClusterEntity other : azGroupClusters) {
+					if (Objects.equals(other.getId(), azGroupCluster.getId())) {
+						continue;
+					}
+					ensureContainedRegionsNotClaimed(clusterName,
+							heteroMigrationSupport.containedRegions(other), claimedRegions);
+				}
+				ensureContainedRegionsNotClaimed(clusterName,
+						heteroMigrationSupport.containedRegions(newAzGroup), claimedRegions);
 
-                // 更新az group cluster中对应的az group id
+                // 更新az group cluster中对应的 az group id
                 azGroupClusterRepository.updateAzGroupId(azGroupCluster.getId(), newAzGroup.getId());
                 // 新增dc cluster
                 DcClusterEntity dcCluster = new DcClusterEntity();
@@ -1248,17 +1322,32 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				if (!CollectionUtils.isEmpty(dcClusterShards)) {
 					dcClusterShardService.insertBatch(dcClusterShards);
 				}
+				logger.info("[bindRegionAz]clusterName={}, azGroupId={}, azGroupClusterId={}, activeRegion={}, azs={}, activeAz={}, boundAz={}",
+						clusterName, newAzGroup.getId(), azGroupCluster.getId(), regionName,
+						newAzGroup.getAzsAsList(), dcService.dcNameMap().get(azGroupCluster.getActiveAzId()), azName);
 
                 return;
             }
         }
         // 不存在对应Region，新建
-        AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
-        azGroupCluster.setClusterId(cluster.getId());
+        String azActiveRegion = regionCache.regionOf(azName);
+        if (!regionName.equalsIgnoreCase(azActiveRegion)) {
+            throw new BadRequestException(String.format(
+                    "Region: %s doesn't match az region: %s (az=%s)", regionName, azActiveRegion, azName));
+        }
         AzGroupModel azGroup = azGroupCache.getAzGroupByAzs(Collections.singletonList(azName));
 		if (azGroup == null) {
-			throw new BadRequestException("No Region contains such azs: " + azName);
+			throw new BadRequestException("No AzGroup contains such azs: " + azName);
 		}
+		Set<String> claimedRegions = new HashSet<>();
+		for (AzGroupClusterEntity existing : azGroupClusters) {
+			ensureContainedRegionsNotClaimed(clusterName,
+					heteroMigrationSupport.containedRegions(existing), claimedRegions);
+		}
+		ensureContainedRegionsNotClaimed(clusterName,
+				heteroMigrationSupport.containedRegions(azGroup), claimedRegions);
+        AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
+        azGroupCluster.setClusterId(cluster.getId());
         azGroupCluster.setAzGroupId(azGroup.getId());
         Long dcId = dcService.find(azName).getId();
         azGroupCluster.setActiveAzId(dcId);
@@ -1270,6 +1359,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         dcCluster.setDcId(dcId);
         dcCluster.setAzGroupClusterId(azGroupCluster.getId());
         dcClusterRepository.insert(dcCluster);
+		logger.info("[bindRegionAz]clusterName={}, azGroupId={}, azGroupClusterId={}, activeRegion={}, azs={}, activeAz={}",
+				clusterName, azGroup.getId(), azGroupCluster.getId(), regionName, azGroup.getAzsAsList(), azName);
     }
 
     @Override
@@ -1334,28 +1425,42 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
         List<String> azs = azGroup.getAzsAsList();
         String azName = az.getDcName();
         azs.remove(azName);
+        AzGroupClusterEntity azGroupCluster =
+            azGroupClusterRepository.selectByClusterIdAndAzGroupId(cluster.getId(), azGroup.getId());
+        if (azGroupCluster == null) {
+            throw new BadRequestException(String.format(
+                    "cluster: %s has no AzGroupCluster for azGroup: %s",
+                    cluster.getClusterName(), azGroup.getName()));
+        }
+        String activeAzName = dcService.dcNameMap().get(azGroupCluster.getActiveAzId());
         if (azs.isEmpty()) {
             azGroupClusterRepository.deleteByClusterIdAndAzGroupId(cluster.getId(), azGroup.getId());
             List<ShardTbl> toDeleteShards = shardService.findAllShardByDcCluster(az.getId(), cluster.getId());
             try {
                 shardDao.deleteShardsBatch(toDeleteShards);
             } catch (DalException e) {
-                throw new ServerException(e.getMessage());
+                logger.error("[unbindRegionAz]clusterName={}, azGroupId={}, azGroupClusterId={}, deleteShards failed",
+                        cluster.getClusterName(), azGroup.getId(), azGroupCluster.getId(), e);
+                throw new ServerException(e.getMessage(), e);
             }
+			logger.info("[unbindRegionAz]clusterName={}, azGroupId={}, azGroupClusterId={}, activeRegion={}, azs={}, activeAz={}, unboundAz={}, deletedGroup=true",
+					cluster.getClusterName(), azGroup.getId(), azGroupCluster.getId(),
+					heteroMigrationSupport.activeRegion(azGroupCluster), Collections.emptyList(), activeAzName, azName);
         } else {
             AzGroupModel newAzGroup = azGroupCache.getAzGroupByAzs(azs);
             if (newAzGroup == null) {
 				throw new BadRequestException(
-					String.format("Cannot unbind az: %s from Region: %s, rest azs not a region",
-						azName, azGroup.getRegion()));
+					String.format("Cannot unbind az: %s from azGroup: %s, rest azs not a valid az group",
+						azName, azGroup.getName()));
             }
-            AzGroupClusterEntity azGroupCluster =
-                azGroupClusterRepository.selectByClusterIdAndAzGroupId(cluster.getId(), azGroup.getId());
             if (azGroupCluster.getActiveAzId() == az.getId()) {
                 throw new BadRequestException("not allow unbind active az");
             }
 
             azGroupClusterRepository.updateAzGroupId(azGroupCluster.getId(), newAzGroup.getId());
+			logger.info("[unbindRegionAz]clusterName={}, azGroupId={}, azGroupClusterId={}, activeRegion={}, azs={}, activeAz={}, unboundAz={}",
+					cluster.getClusterName(), newAzGroup.getId(), azGroupCluster.getId(),
+					heteroMigrationSupport.activeRegion(azGroupCluster), newAzGroup.getAzsAsList(), activeAzName, azName);
         }
 
         queryHandler.handleQuery(() -> clusterDao.unbindDc(cluster, az));
@@ -1512,13 +1617,25 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 	@Transactional
 	public void exchangeRegion(Long formerClusterId, String formerClusterName, Long latterClusterId,
 		String latterClusterName, String regionName) {
-		logger.info("[exchangeRegion]{} - {}:{} <-> {}:{}", regionName, formerClusterName, formerClusterId,
-			latterClusterName, latterClusterId);
-
 		AzGroupClusterEntity formerAzGroupCluster =
 			this.checkExchangeClusterRegion(formerClusterId, formerClusterName, regionName);
 		AzGroupClusterEntity latterAzGroupCluster =
 			this.checkExchangeClusterRegion(latterClusterId, latterClusterName, regionName);
+
+		AzGroupModel formerAzGroup = azGroupCache.getAzGroupById(formerAzGroupCluster.getAzGroupId());
+		AzGroupModel latterAzGroup = azGroupCache.getAzGroupById(latterAzGroupCluster.getAzGroupId());
+		Map<Long, String> dcNameMap = dcService.dcNameMap();
+		logger.info("[exchangeRegion]region={}, formerClusterName={}, formerClusterId={}, formerAzGroupId={}, "
+						+ "formerAzGroupClusterId={}, formerAzs={}, formerActiveAz={}, latterClusterName={}, "
+						+ "latterClusterId={}, latterAzGroupId={}, latterAzGroupClusterId={}, latterAzs={}, latterActiveAz={}",
+				regionName, formerClusterName, formerClusterId, formerAzGroupCluster.getAzGroupId(),
+				formerAzGroupCluster.getId(),
+				formerAzGroup == null ? Collections.emptyList() : formerAzGroup.getAzsAsList(),
+				dcNameMap.get(formerAzGroupCluster.getActiveAzId()),
+				latterClusterName, latterClusterId, latterAzGroupCluster.getAzGroupId(),
+				latterAzGroupCluster.getId(),
+				latterAzGroup == null ? Collections.emptyList() : latterAzGroup.getAzsAsList(),
+				dcNameMap.get(latterAzGroupCluster.getActiveAzId()));
 
 		Long formerAzGroupClusterId = formerAzGroupCluster.getId();
 		Long latterAzGroupClusterId = latterAzGroupCluster.getId();
@@ -1543,14 +1660,7 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		if (CollectionUtils.isEmpty(azGroupClusters)) {
 			throw new BadRequestException(String.format("Cluster: %s not in AzGroup mode", clusterName));
 		}
-		AzGroupClusterEntity azGroupCluster = null;
-		for (AzGroupClusterEntity entity : azGroupClusters) {
-			AzGroupModel azGroup = azGroupCache.getAzGroupById(entity.getAzGroupId());
-			if (Objects.equals(azGroup.getRegion(), regionName)) {
-				azGroupCluster = entity;
-				break;
-			}
-		}
+		AzGroupClusterEntity azGroupCluster = heteroMigrationSupport.findByActiveRegion(azGroupClusters, regionName);
 		if (azGroupCluster == null) {
 			throw new BadRequestException(
 				String.format("Cluster: %s doesn't have Region: %s", clusterName, regionName));

@@ -10,7 +10,7 @@ import java.util.Date;
 
 /**
  * <p>
- * 多个az组合的group，需在region之内
+ * 多个 az 组合的 group（不再与 Region 绑定；Region 由 active_az / azs 推导）
  * </p>
  *
  * @author mybatis-generator
@@ -32,12 +32,6 @@ public class AzGroupEntity extends BaseEntity {
      */
     @TableField("name")
     private String name;
-
-    /**
-     * az group所属region
-     */
-    @TableField("region")
-    private String region;
 
     /**
      * 创建时间
@@ -63,15 +57,6 @@ public class AzGroupEntity extends BaseEntity {
         return this;
     }
 
-    public String getRegion() {
-        return region;
-    }
-
-    public AzGroupEntity setRegion(String region) {
-        this.region = region;
-        return this;
-    }
-
     public Date getCreateTime() {
         return createTime;
     }
@@ -85,13 +70,11 @@ public class AzGroupEntity extends BaseEntity {
 
     public static final String NAME = "name";
 
-    public static final String REGION = "region";
-
     public static final String CREATE_TIME = "create_time";
 
     @Override
     public String toString() {
-        return "AzGroupEntity{" + "id = " + id + ", name = " + name + ", region = " + region + ", createTime = "
+        return "AzGroupEntity{" + "id = " + id + ", name = " + name + ", createTime = "
             + createTime + "}";
     }
 }

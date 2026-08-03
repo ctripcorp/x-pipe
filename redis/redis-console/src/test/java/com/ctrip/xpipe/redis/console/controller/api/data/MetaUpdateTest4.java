@@ -273,7 +273,7 @@ public class MetaUpdateTest4 {
         AzGroupClusterEntity azGroupCluster = new AzGroupClusterEntity();
         azGroupCluster.setAzGroupId(2L);
         azGroupCluster.setAzGroupClusterType("SINGLE_DC");
-        AzGroupModel azGroupModel = new AzGroupModel(2L, "LOCAL_FRA", "FRA", Lists.newArrayList("fra"));
+        AzGroupModel azGroupModel = new AzGroupModel(2L, "LOCAL_FRA", Lists.newArrayList("fra"));
         when(azGroupCache.getAzGroupById(2L)).thenReturn(azGroupModel);
         when(azGroupClusterRepository.selectByClusterId(clusterId)).thenReturn(Collections.singletonList(azGroupCluster));
 
