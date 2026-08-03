@@ -83,7 +83,7 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         if(keeperConfig.dualWrite()) {
             this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
             this.indexWriter.init();
-            v2GtidSet = this.indexWriter.getGtidSet();
+            v2GtidSet = this.indexWriter.getGtidSet().clone();
         }
         this.indexWriterV2 = new IndexWriterV2(baseDir, currentCmdFileName, v2GtidSet, this,
                 keeperConfig.getIndexZoneConsecutiveThreshold(),
