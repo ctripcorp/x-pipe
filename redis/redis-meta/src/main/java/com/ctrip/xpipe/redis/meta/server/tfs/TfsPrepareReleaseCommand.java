@@ -80,7 +80,7 @@ public class TfsPrepareReleaseCommand extends AbstractCommand<Void> {
                     future().setSuccess(null);
                     return;
                 }
-                getLogger().warn("[prepareRelease][prepare fail, force close dir]cluster_{},shard_{},{}",
+                getLogger().error("[prepareRelease][prepare fail, force close dir]cluster_{},shard_{},{}",
                         shardContext.getClusterDbId(), shardContext.getShardDbId(), oldTfsActive, commandFuture.cause());
                 createForceCloseDirCommand().execute().addListener(new CommandFutureListener<Void>() {
                     @Override

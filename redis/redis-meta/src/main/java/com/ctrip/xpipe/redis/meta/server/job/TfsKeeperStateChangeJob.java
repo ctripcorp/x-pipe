@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetStateCommand;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperRoleAssigner;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.tfs.TfsCommandConstants;
 import com.ctrip.xpipe.redis.meta.server.tfs.TfsGateway;
@@ -27,6 +28,7 @@ import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,7 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
     private final TfsShardContext shardContext;
     private final List<KeeperMeta> keepers;
     private final KeeperMeta previousActiveKeeper;
+    private final List<KeeperMeta> previousSurviveKeepers;
     private final Pair<String, Integer> activeKeeperMaster;
     private final RouteMeta routeForActiveKeeper;
     private final SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool;
@@ -64,7 +67,7 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
                                    ScheduledExecutorService scheduled,
                                    Executor executor,
                                    Map<KeeperMeta, KeeperState> keeperRoles) {
-        this(clusterDbId, shardDbId, keepers, previousActiveKeeper, activeKeeperMaster, routeForActiveKeeper,
+        this(clusterDbId, shardDbId, keepers, previousActiveKeeper, null, activeKeeperMaster, routeForActiveKeeper,
                 clientPool, dcMetaCache, metaServerConfig, scheduled, executor, keeperRoles, null);
     }
 
@@ -79,9 +82,27 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
                                    Executor executor,
                                    Map<KeeperMeta, KeeperState> keeperRoles,
                                    TfsGateway tfsGateway) {
+        this(clusterDbId, shardDbId, keepers, previousActiveKeeper, null, activeKeeperMaster, routeForActiveKeeper,
+                clientPool, dcMetaCache, metaServerConfig, scheduled, executor, keeperRoles, tfsGateway);
+    }
+
+    public TfsKeeperStateChangeJob(Long clusterDbId, Long shardDbId, List<KeeperMeta> keepers,
+                                   KeeperMeta previousActiveKeeper,
+                                   List<KeeperMeta> previousSurviveKeepers,
+                                   Pair<String, Integer> activeKeeperMaster,
+                                   RouteMeta routeForActiveKeeper,
+                                   SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool,
+                                   DcMetaCache dcMetaCache,
+                                   MetaServerConfig metaServerConfig,
+                                   ScheduledExecutorService scheduled,
+                                   Executor executor,
+                                   Map<KeeperMeta, KeeperState> keeperRoles,
+                                   TfsGateway tfsGateway) {
         this.shardContext = new TfsShardContext(clusterDbId, shardDbId);
         this.keepers = new LinkedList<>(keepers);
         this.previousActiveKeeper = previousActiveKeeper;
+        this.previousSurviveKeepers = previousSurviveKeepers == null
+                ? null : Collections.unmodifiableList(new LinkedList<>(previousSurviveKeepers));
         this.activeKeeperMaster = activeKeeperMaster;
         this.routeForActiveKeeper = routeForActiveKeeper;
         this.clientPool = clientPool;
@@ -115,8 +136,10 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
 
         SequenceCommandChain chain = new SequenceCommandChain(false);
 
-        KeeperMeta oldTfsForPrepare = resolveOldTfsActiveForPrepare(newActive);
+        KeeperMeta oldTfsForPrepare = resolveOldTfsSlotForPrepare();
         if (oldTfsForPrepare != null) {
+            getLogger().info("[tfsKeeperStateChange][prepare release old slot]cluster_{},shard_{},oldSlot={}",
+                    shardContext.getClusterDbId(), shardContext.getShardDbId(), oldTfsForPrepare);
             chain.add(new TfsPrepareReleaseCommand(shardContext, oldTfsForPrepare, newActive, clientPool, dcMetaCache,
                     metaServerConfig, scheduled, executor, tfsGateway));
         }
@@ -165,17 +188,78 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
         return null;
     }
 
-    private KeeperMeta resolveOldTfsActiveForPrepare(KeeperMeta newActive) {
-        if (previousActiveKeeper == null || MetaUtils.same(previousActiveKeeper, newActive)) {
+    /**
+     * Previous TFS slot holder (ACTIVE/BACKUP) whose target role is PREPARE must release lease first.
+     * Uses previous survive + roles when available; falls back to previousActive only.
+     */
+    private KeeperMeta resolveOldTfsSlotForPrepare() {
+        KeeperMeta previousSlotHolder = resolvePreviousTfsSlotHolder();
+        if (previousSlotHolder == null) {
+            return null;
+        }
+        KeeperMeta currentKeeper = findKeeper(previousSlotHolder);
+        if (currentKeeper == null) {
+            return null;
+        }
+        if (KeeperState.PREPARE != resolveKeeperState(currentKeeper)) {
+            return null;
+        }
+        return currentKeeper;
+    }
+
+    private KeeperMeta resolvePreviousTfsSlotHolder() {
+        if (previousSurviveKeepers != null && !previousSurviveKeepers.isEmpty()) {
+            KeeperMeta previousActive = previousActiveKeeper != null
+                    ? previousActiveKeeper : findActiveKeeper(previousSurviveKeepers);
+            if (previousActive == null) {
+                return null;
+            }
+            Map<KeeperMeta, KeeperState> previousRoles =
+                    KeeperRoleAssigner.assignRoles(previousActive, previousSurviveKeepers, dcMetaCache);
+            return findTfsSlotHolder(previousRoles);
+        }
+        // Fallback: previousActive was the only known slot candidate (legacy path / unit tests).
+        if (previousActiveKeeper == null) {
             return null;
         }
         if (!TfsKeeperUtils.isTfsKeeper(previousActiveKeeper, dcMetaCache)) {
             return null;
         }
-        if (KeeperState.PREPARE != resolveKeeperState(previousActiveKeeper)) {
+        return previousActiveKeeper;
+    }
+
+    private KeeperMeta findTfsSlotHolder(Map<KeeperMeta, KeeperState> roles) {
+        if (roles == null) {
             return null;
         }
-        return previousActiveKeeper;
+        for (Map.Entry<KeeperMeta, KeeperState> entry : roles.entrySet()) {
+            KeeperState state = entry.getValue();
+            if (state != KeeperState.ACTIVE && state != KeeperState.BACKUP) {
+                continue;
+            }
+            if (TfsKeeperUtils.isTfsKeeper(entry.getKey(), dcMetaCache)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
+    private KeeperMeta findActiveKeeper(List<KeeperMeta> keeperList) {
+        for (KeeperMeta keeperMeta : keeperList) {
+            if (keeperMeta.isActive()) {
+                return keeperMeta;
+            }
+        }
+        return null;
+    }
+
+    private KeeperMeta findKeeper(KeeperMeta target) {
+        for (KeeperMeta keeperMeta : keepers) {
+            if (MetaUtils.same(keeperMeta, target)) {
+                return keeperMeta;
+            }
+        }
+        return null;
     }
 
     private Command<?> createKeeperSetStateCommand(KeeperMeta keeper, Pair<String, Integer> masterAddress) {

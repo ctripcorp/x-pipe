@@ -112,6 +112,8 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 		surviveKeepers.add(activeKeeper);
 		currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers, activeKeeper);
 		Assert.assertNull(currentMeta.getPreviousActiveKeeper(clusterDbId, shardDbId));
+		Assert.assertTrue(currentMeta.getPreviousSurviveKeepers(clusterDbId, shardDbId) == null
+				|| currentMeta.getPreviousSurviveKeepers(clusterDbId, shardDbId).isEmpty());
 
 		KeeperMeta newActive = new KeeperMeta().setSurvive(true).setIp("127.0.0.2").setPort(6002).setActive(true);
 		List<KeeperMeta> updatedKeepers = new ArrayList<>();
@@ -119,9 +121,14 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 		updatedKeepers.add(newActive);
 		currentMeta.setSurviveKeepers(clusterDbId, shardDbId, updatedKeepers, newActive);
 		Assert.assertEquals(activeKeeper.getPort(), currentMeta.getPreviousActiveKeeper(clusterDbId, shardDbId).getPort());
+		Assert.assertEquals(2, currentMeta.getPreviousSurviveKeepers(clusterDbId, shardDbId).size());
+		Assert.assertEquals(Integer.valueOf(6001),
+				currentMeta.getPreviousSurviveKeepers(clusterDbId, shardDbId).stream()
+						.filter(KeeperMeta::isActive).findFirst().get().getPort());
 
 		currentMeta.setSurviveKeepers(clusterDbId, shardDbId, new ArrayList<>(), activeKeeper);
 		Assert.assertNull(currentMeta.getPreviousActiveKeeper(clusterDbId, shardDbId));
+		Assert.assertNull(currentMeta.getPreviousSurviveKeepers(clusterDbId, shardDbId));
 	}
 
 	@Test

@@ -188,8 +188,9 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 
 		if (TfsKeeperUtils.shardHasTfsKeeper(keepers, dcMetaCache)) {
 			KeeperMeta previousActive = currentMetaManager.getPreviousActiveKeeper(clusterDbId, shardDbId);
-			return new TfsKeeperStateChangeJob(clusterDbId, shardDbId, keepers, previousActive, master, routeMeta,
-					clientPool, dcMetaCache, metaServerConfig, scheduled, executors, keeperRoles);
+			List<KeeperMeta> previousSurvive = currentMetaManager.getPreviousSurviveKeepers(clusterDbId, shardDbId);
+			return new TfsKeeperStateChangeJob(clusterDbId, shardDbId, keepers, previousActive, previousSurvive, master,
+					routeMeta, clientPool, dcMetaCache, metaServerConfig, scheduled, executors, keeperRoles, null);
 		}
 		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, KeeperStateChangeJob.DEFAULT_DELAY_BASE_MILLI,
 				KeeperStateChangeJob.DEFAULT_RETRY_TIMES, scheduled, executors, keeperRoles);
