@@ -65,14 +65,18 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 
 	public static final String KEY_KEEPER_ELECT_STRATEGY = "keeper.elect.strategy";
 
-	public static final String KEY_TFS_GATEWAY_ENDPOINT = "metaserver.tfs.gateway.endpoint";
+	public static final String KEY_TFS_GATEWAY_HOST = "metaserver.tfs.gateway.host";
+
+	public static final String KEY_TFS_GATEWAY_APP_ID = "metaserver.tfs.gateway.app.id";
 
 	public static final String KEY_TFS_DIR_PATH_TEMPLATE = "metaserver.tfs.dir_path.template";
 
-	public static final String DEFAULT_TFS_GATEWAY_ENDPOINT = "mock://tfs-gateway";
+	public static final String DEFAULT_TFS_GATEWAY_HOST = "mock://tfs-gateway";
+
+	public static final long DEFAULT_TFS_GATEWAY_APP_ID = 0L;
 
 	public static final String DEFAULT_TFS_DIR_PATH_TEMPLATE =
-			"/opt/data/100004376/rsd/replication_store_{keeper_port}";
+			"/opt/data/100004376/rsd/replication_store_{keeper_port}/repl_{repl_id}";
 
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 
@@ -237,8 +241,13 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	}
 
 	@Override
-	public String getTfsGatewayEndpoint() {
-		return getProperty(KEY_TFS_GATEWAY_ENDPOINT, DEFAULT_TFS_GATEWAY_ENDPOINT);
+	public String getTfsGatewayHost() {
+		return getProperty(KEY_TFS_GATEWAY_HOST, DEFAULT_TFS_GATEWAY_HOST);
+	}
+
+	@Override
+	public long getTfsGatewayAppId() {
+		return getLongProperty(KEY_TFS_GATEWAY_APP_ID, DEFAULT_TFS_GATEWAY_APP_ID);
 	}
 
 	@Override

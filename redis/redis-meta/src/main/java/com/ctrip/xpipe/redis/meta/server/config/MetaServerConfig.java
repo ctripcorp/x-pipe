@@ -56,7 +56,15 @@ public interface MetaServerConfig extends CoreConfig {
 
 	KeeperElectStrategy getKeeperElectStrategy();
 
-	String getTfsGatewayEndpoint();
+	/**
+	 * TFS Gateway Host（含 scheme，无 path）。QConfig: {@code metaserver.tfs.gateway.host}。
+	 */
+	String getTfsGatewayHost();
+
+	/**
+	 * TFS Gateway appId，拼入 ForceCloseDir URL path。默认 0。
+	 */
+	long getTfsGatewayAppId();
 
 	String getTfsDirPathTemplate();
 
