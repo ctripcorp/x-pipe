@@ -37,6 +37,12 @@ public class UnitTestServerConfig implements MetaServerConfig{
 
 	private KeeperElectStrategy keeperElectStrategy = KeeperElectStrategy.AUTO;
 
+	private String tfsGatewayHost = DefaultMetaServerConfig.DEFAULT_TFS_GATEWAY_HOST;
+
+	private long tfsGatewayAppId = DefaultMetaServerConfig.DEFAULT_TFS_GATEWAY_APP_ID;
+
+	private String tfsDirPathTemplate = DefaultMetaServerConfig.DEFAULT_TFS_DIR_PATH_TEMPLATE;
+
 	private final Set<ConfigKeyListener> listeners = new HashSet<>();
 	
 	public UnitTestServerConfig(){
@@ -197,13 +203,33 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	}
 
 	@Override
-	public String getTfsGatewayEndpoint() {
-		return DefaultMetaServerConfig.DEFAULT_TFS_GATEWAY_ENDPOINT;
+	public String getTfsGatewayHost() {
+		return tfsGatewayHost;
+	}
+
+	@Override
+	public long getTfsGatewayAppId() {
+		return tfsGatewayAppId;
 	}
 
 	@Override
 	public String getTfsDirPathTemplate() {
-		return DefaultMetaServerConfig.DEFAULT_TFS_DIR_PATH_TEMPLATE;
+		return tfsDirPathTemplate;
+	}
+
+	public UnitTestServerConfig setTfsGatewayHost(String tfsGatewayHost) {
+		this.tfsGatewayHost = tfsGatewayHost;
+		return this;
+	}
+
+	public UnitTestServerConfig setTfsGatewayAppId(long tfsGatewayAppId) {
+		this.tfsGatewayAppId = tfsGatewayAppId;
+		return this;
+	}
+
+	public UnitTestServerConfig setTfsDirPathTemplate(String tfsDirPathTemplate) {
+		this.tfsDirPathTemplate = tfsDirPathTemplate;
+		return this;
 	}
 
 	public UnitTestServerConfig setKeeperElectStrategy(KeeperElectStrategy keeperElectStrategy) {

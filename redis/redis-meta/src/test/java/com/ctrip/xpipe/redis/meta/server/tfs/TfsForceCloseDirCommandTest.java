@@ -14,6 +14,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -34,27 +35,32 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
     }
 
     @Test
-    public void testForceCloseDirSuccess() throws Exception {
+    public void testForceCloseDirSuccessPassesPodIpAndDirPath() throws Exception {
         AtomicBoolean called = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath) -> {
+        AtomicReference<String> capturedPodIp = new AtomicReference<>();
+        AtomicReference<String> capturedDirPath = new AtomicReference<>();
+        TfsGateway gateway = (fsId, dirPath, podIp) -> {
             called.set(true);
             Assert.assertEquals("fs-42", fsId);
-            Assert.assertEquals("/opt/data/100004376/rsd/replication_store_6380", dirPath);
+            capturedDirPath.set(dirPath);
+            capturedPodIp.set(podIp);
         };
-        KeeperMeta keeperMeta = keeper(6380, 1L);
+        KeeperMeta keeperMeta = keeper(6380, 1L, "10.0.0.8");
         mockKeeperContainer(1L, "fs-42");
 
         new TfsForceCloseDirCommand(shardContext, keeperMeta, dcMetaCache, config, scheduled, executors, gateway).execute()
                 .get(2000, TimeUnit.MILLISECONDS);
 
         Assert.assertTrue(called.get());
+        Assert.assertEquals("10.0.0.8", capturedPodIp.get());
+        Assert.assertEquals("/opt/data/100004376/rsd/replication_store_6380/repl_1", capturedDirPath.get());
     }
 
     @Test
     public void testEmptyFsIdStillSuccess() throws Exception {
         AtomicBoolean called = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath) -> called.set(true);
-        KeeperMeta keeperMeta = keeper(6380, 1L);
+        TfsGateway gateway = (fsId, dirPath, podIp) -> called.set(true);
+        KeeperMeta keeperMeta = keeper(6380, 1L, "10.0.0.8");
         mockKeeperContainer(1L, null);
 
         new TfsForceCloseDirCommand(shardContext, keeperMeta, dcMetaCache, config, scheduled, executors, gateway).execute()
@@ -64,11 +70,38 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
     }
 
     @Test
+    public void testEmptyPodIpStillSuccess() throws Exception {
+        AtomicBoolean called = new AtomicBoolean(false);
+        TfsGateway gateway = (fsId, dirPath, podIp) -> called.set(true);
+        KeeperMeta keeperMeta = keeper(6380, 1L, null);
+        mockKeeperContainer(1L, "fs-42");
+
+        new TfsForceCloseDirCommand(shardContext, keeperMeta, dcMetaCache, config, scheduled, executors, gateway).execute()
+                .get(2000, TimeUnit.MILLISECONDS);
+
+        Assert.assertFalse(called.get());
+    }
+
+    @Test
+    public void testRealModeInvalidAppIdStillSuccess() throws Exception {
+        AtomicBoolean called = new AtomicBoolean(false);
+        TfsGateway gateway = (fsId, dirPath, podIp) -> called.set(true);
+        config.setTfsGatewayHost("http://tstore-gateway.ctripcorp.com").setTfsGatewayAppId(0L);
+        KeeperMeta keeperMeta = keeper(6380, 1L, "10.0.0.8");
+        mockKeeperContainer(1L, "fs-42");
+
+        new TfsForceCloseDirCommand(shardContext, keeperMeta, dcMetaCache, config, scheduled, executors, gateway).execute()
+                .get(2000, TimeUnit.MILLISECONDS);
+
+        Assert.assertFalse(called.get());
+    }
+
+    @Test
     public void testGatewayFailureStillSuccess() throws Exception {
-        TfsGateway gateway = (fsId, dirPath) -> {
+        TfsGateway gateway = (fsId, dirPath, podIp) -> {
             throw new RuntimeException("gateway down");
         };
-        KeeperMeta keeperMeta = keeper(6380, 1L);
+        KeeperMeta keeperMeta = keeper(6380, 1L, "10.0.0.8");
         mockKeeperContainer(1L, "fs-42");
 
         var future = new TfsForceCloseDirCommand(shardContext, keeperMeta, dcMetaCache, config, scheduled, executors, gateway).execute();
@@ -79,11 +112,11 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
     @Test
     public void testGatewayTimeoutStillSuccess() throws Exception {
         AtomicBoolean called = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath) -> {
+        TfsGateway gateway = (fsId, dirPath, podIp) -> {
             called.set(true);
             Thread.sleep(TfsCommandConstants.TFS_STEP_TIMEOUT_MILLI * 3L);
         };
-        KeeperMeta keeperMeta = keeper(6380, 1L);
+        KeeperMeta keeperMeta = keeper(6380, 1L, "10.0.0.8");
         mockKeeperContainer(1L, "fs-42");
 
         long start = System.currentTimeMillis();
@@ -99,15 +132,10 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
     @Test
     public void testEmptyDirPathStillSuccess() throws Exception {
         AtomicBoolean called = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath) -> called.set(true);
-        KeeperMeta keeperMeta = keeper(6380, 1L);
+        TfsGateway gateway = (fsId, dirPath, podIp) -> called.set(true);
+        KeeperMeta keeperMeta = keeper(6380, 1L, "10.0.0.8");
         mockKeeperContainer(1L, "fs-42");
-        config = new UnitTestServerConfig() {
-            @Override
-            public String getTfsDirPathTemplate() {
-                return null;
-            }
-        };
+        config.setTfsDirPathTemplate(null);
 
         new TfsForceCloseDirCommand(shardContext, keeperMeta, dcMetaCache, config, scheduled, executors, gateway).execute()
                 .get(2000, TimeUnit.MILLISECONDS);
@@ -115,10 +143,10 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
         Assert.assertFalse(called.get());
     }
 
-    private KeeperMeta keeper(int port, long keeperContainerId) {
+    private KeeperMeta keeper(int port, long keeperContainerId, String ip) {
         KeeperMeta keeperMeta = new KeeperMeta();
         keeperMeta.setPort(port);
-        keeperMeta.setIp("127.0.0.1");
+        keeperMeta.setIp(ip);
         keeperMeta.setKeeperContainerId(keeperContainerId);
         return keeperMeta;
     }

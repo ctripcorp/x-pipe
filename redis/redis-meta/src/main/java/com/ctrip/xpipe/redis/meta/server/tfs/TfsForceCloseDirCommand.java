@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * ForceCloseDir for old TFS active keeper. Gateway failure or empty fs_id does not fail the chain.
+ * ForceCloseDir for old TFS slot keeper. Gateway failure / empty params / invalid appId do not fail the chain.
  */
 public class TfsForceCloseDirCommand extends AbstractCommand<Void> {
 
@@ -35,7 +35,7 @@ public class TfsForceCloseDirCommand extends AbstractCommand<Void> {
                                    MetaServerConfig metaServerConfig, ScheduledExecutorService scheduled,
                                    Executor executor) {
         this(shardContext, keeperMeta, dcMetaCache, metaServerConfig, scheduled, executor,
-                TfsGatewayFactory.create(metaServerConfig.getTfsGatewayEndpoint()));
+                TfsGatewayFactory.create(metaServerConfig));
     }
 
     public TfsForceCloseDirCommand(TfsShardContext shardContext, KeeperMeta keeperMeta, DcMetaCache dcMetaCache,
@@ -59,15 +59,29 @@ public class TfsForceCloseDirCommand extends AbstractCommand<Void> {
     protected void doExecute() throws Exception {
         KeeperContainerMeta keeperContainer = dcMetaCache.getKeeperContainer(keeperMeta);
         String fsId = keeperContainer != null ? keeperContainer.getTfsFsId() : null;
-        String dirPath = TfsDirPathResolver.resolve(metaServerConfig.getTfsDirPathTemplate(), keeperMeta.getPort());
+        long replId = shardContext.getShardDbId() != null ? shardContext.getShardDbId() : 0L;
+        String dirPath = TfsDirPathResolver.resolve(metaServerConfig.getTfsDirPathTemplate(), keeperMeta.getPort(),
+                replId);
+        String podIp = keeperMeta.getIp();
 
         if (StringUtil.isEmpty(fsId)) {
-            logError("empty fs_id", keeperMeta, dirPath, null);
+            logError("empty fs_id", keeperMeta, dirPath, podIp, null);
             future().setSuccess(null);
             return;
         }
         if (StringUtil.isEmpty(dirPath)) {
-            logError("empty dir_path", keeperMeta, dirPath, null);
+            logError("empty dir_path", keeperMeta, dirPath, podIp, null);
+            future().setSuccess(null);
+            return;
+        }
+        if (StringUtil.isEmpty(podIp)) {
+            logError("empty pod_ip", keeperMeta, dirPath, podIp, null);
+            future().setSuccess(null);
+            return;
+        }
+        if (!TfsGatewayFactory.isMockHost(metaServerConfig.getTfsGatewayHost())
+                && metaServerConfig.getTfsGatewayAppId() <= 0) {
+            logError("invalid appId", keeperMeta, dirPath, podIp, null);
             future().setSuccess(null);
             return;
         }
@@ -82,7 +96,7 @@ public class TfsForceCloseDirCommand extends AbstractCommand<Void> {
                     if (worker != null) {
                         worker.interrupt();
                     }
-                    logError("timeout", keeperMeta, dirPath, null);
+                    logError("timeout", keeperMeta, dirPath, podIp, null);
                     future().setSuccess(null);
                 }
             }
@@ -96,7 +110,7 @@ public class TfsForceCloseDirCommand extends AbstractCommand<Void> {
                     return;
                 }
                 try {
-                    tfsGateway.forceCloseDir(fsId, dirPath);
+                    tfsGateway.forceCloseDir(fsId, dirPath, podIp);
                     if (completed.compareAndSet(false, true)) {
                         timeoutFuture.cancel(false);
                         future().setSuccess(null);
@@ -104,7 +118,7 @@ public class TfsForceCloseDirCommand extends AbstractCommand<Void> {
                 } catch (Exception e) {
                     if (completed.compareAndSet(false, true)) {
                         timeoutFuture.cancel(false);
-                        logError("gateway fail", keeperMeta, dirPath, e);
+                        logError("gateway fail", keeperMeta, dirPath, podIp, e);
                         future().setSuccess(null);
                     }
                 }
@@ -112,13 +126,14 @@ public class TfsForceCloseDirCommand extends AbstractCommand<Void> {
         });
     }
 
-    private void logError(String reason, KeeperMeta keeper, String dirPath, Throwable e) {
+    private void logError(String reason, KeeperMeta keeper, String dirPath, String podIp, Throwable e) {
         if (e != null) {
-            getLogger().error("[forceCloseDir][{}]cluster_{},shard_{},keeper={}, dirPath={}", reason,
-                    shardContext.getClusterDbId(), shardContext.getShardDbId(), keeper, dirPath, e);
+            getLogger().error("[forceCloseDir][{}]cluster_{},shard_{},keeper={}, dirPath={}, podIp={}", reason,
+                    shardContext.getClusterDbId(), shardContext.getShardDbId(), keeper, dirPath, podIp, e);
         } else {
-            getLogger().error("[forceCloseDir][{}]cluster_{},shard_{},keeper={}, dirPath={}", reason,
-                    shardContext.getClusterDbId(), shardContext.getShardDbId(), keeper, dirPath);
+            getLogger().error("[forceCloseDir][{}]cluster_{},shard_{},keeper={}, dirPath={}, podIp={}, host={}, appId={}",
+                    reason, shardContext.getClusterDbId(), shardContext.getShardDbId(), keeper, dirPath, podIp,
+                    metaServerConfig.getTfsGatewayHost(), metaServerConfig.getTfsGatewayAppId());
         }
         CatEventMonitor.DEFAULT.logEvent(TFS_FORCE_CLOSE_DIR_TYPE, reason);
     }
