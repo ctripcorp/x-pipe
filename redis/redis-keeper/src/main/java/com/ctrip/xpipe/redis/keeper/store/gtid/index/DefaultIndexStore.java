@@ -79,11 +79,13 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
     public void openWriter(CommandWriter cmdWriter) throws IOException {
         this.currentCmdFileName = cmdWriter.getFileContext().getCommandFile().getFile().getName();
         this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size());
+        GtidSet v2GtidSet = this.startGtidSet;
         if(keeperConfig.dualWrite()) {
             this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
             this.indexWriter.init();
+            v2GtidSet = this.indexWriter.getGtidSet();
         }
-        this.indexWriterV2 = new IndexWriterV2(baseDir, currentCmdFileName, startGtidSet, this,
+        this.indexWriterV2 = new IndexWriterV2(baseDir, currentCmdFileName, v2GtidSet, this,
                 keeperConfig.getIndexZoneConsecutiveThreshold(),
                 keeperConfig.getIndexMixedTotalBytesThreshold(),
                 keeperConfig.getBlockSizeThreshold());

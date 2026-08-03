@@ -1328,7 +1328,7 @@ public class DefaultIndexStoreTest {
         Assert.assertTrue(new File(baseDir, AbstractIndex.BLOCK_V2 + cmdName).delete());
 
         // ---------------- 阶段 2：灰度发布，进入双写 ----------------
-        // V1 从磁盘 recover 出完整 1-1000；V2 首次创建，起点为空 gtidSet
+        // V1 从磁盘 recover 出完整 1-1000；V2 首次创建 继承 V1 gtidSet
         KeeperConfig config = mock(KeeperConfig.class);
         when(config.dualWrite()).thenReturn(true);
         when(config.readV2()).thenReturn(false);
@@ -1342,19 +1342,19 @@ public class DefaultIndexStoreTest {
         Assert.assertEquals("V1 should recover full history from disk",
                 new GtidSet(uuid + ":1-1000"),
                 dualStore.getIndexWriterV1().getGtidSet());
-        Assert.assertEquals("V2 starts empty (freshly created)",
-                new GtidSet(""),
+        Assert.assertEquals("V2 starts use v1 (freshly created)",
+                new GtidSet(uuid + ":1-1000"),
                 dualStore.getIndexWriterV2().getGtidSet());
 
-        // 再写少量命令，让 V1/V2 不对称：V1=1-1050, V2=1001-1050
+        // 再写少量命令 V1/V2 依然对称：V1=1-1050, V2=1-1050
         for (int i = 1001; i <= 1050; i++) {
             dualStore.write(createGtidCommand(uuid + ":" + i, "SET", "k" + i, "v" + i));
         }
         Assert.assertEquals("V1 covers full history",
                 new GtidSet(uuid + ":1-1050"),
                 dualStore.getIndexWriterV1().getGtidSet());
-        Assert.assertEquals("V2 only covers commands after it joined",
-                new GtidSet(uuid + ":1001-1050"),
+        Assert.assertEquals("V2 also covers full history after it joined",
+                new GtidSet(uuid + ":1-1050"),
                 dualStore.getIndexWriterV2().getGtidSet());
         Assert.assertEquals("readV2=false must read V1 (full history) before switch",
                 new GtidSet(uuid + ":1-1050"),
@@ -1366,12 +1366,16 @@ public class DefaultIndexStoreTest {
 
         dualStore.doSwitchCmdFile(newCmdName);
 
-        // 关键断言：切换后 readV2=true V1读到的是 1001-1050，V1实际应该是1-1050
-        // 若 doSwitchCmdFile 用 indexWriterV2.getGtidSet()(=1001-1050) 覆盖了 V1，此断言会为 1001-1050
+        // 关键断言：切换后 readV2=true V1读到的依然是 1-1050
+        // 若 doSwitchCmdFile 用 indexWriterV2.getGtidSet()(=1-1050) 覆盖了 V1，此断言会为 1-1050
         Assert.assertEquals(
                 "V1 writer itself must retain full history across cmd file switch",
-                new GtidSet(uuid + ":1001-1050"),
+                new GtidSet(uuid + ":1-1050"),
                 dualStore.getIndexWriterV1().getGtidSet());
+        Assert.assertEquals(
+                "readV2=true must read V2 (full history) after switch",
+                new GtidSet(uuid + ":1-1050"),
+                dualStore.getIndexGtidSet());
 
         dualStore.closeWriter();
     }
