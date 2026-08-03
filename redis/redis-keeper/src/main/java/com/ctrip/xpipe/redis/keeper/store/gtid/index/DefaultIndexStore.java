@@ -81,11 +81,11 @@ public class DefaultIndexStore implements IndexStore, StreamTransactionListener 
         this.streamCommandReader = new StreamCommandReader(this, cmdWriter.getFileContext().getChannel().size());
         GtidSet v2GtidSet = this.startGtidSet;
         if(keeperConfig.dualWrite()) {
-            this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet, this);
+            this.indexWriter = new IndexWriter(baseDir, currentCmdFileName, startGtidSet.clone(), this);
             this.indexWriter.init();
-            v2GtidSet = this.indexWriter.getGtidSet().clone();
+            v2GtidSet = this.indexWriter.getGtidSet();
         }
-        this.indexWriterV2 = new IndexWriterV2(baseDir, currentCmdFileName, v2GtidSet, this,
+        this.indexWriterV2 = new IndexWriterV2(baseDir, currentCmdFileName, v2GtidSet.clone(), this,
                 keeperConfig.getIndexZoneConsecutiveThreshold(),
                 keeperConfig.getIndexMixedTotalBytesThreshold(),
                 keeperConfig.getBlockSizeThreshold());
