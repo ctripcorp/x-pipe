@@ -710,7 +710,8 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
 
     /**
      * Terminal close for store teardown. Index {@code AsyncFile} handles are segment-owned
-     * (spec §3.7.1); this only flushes, drops local refs, and marks closed.
+     * (spec §3.7.1); this only best-effort flushes, drops local refs, and marks closed.
+     * Flush failure must not abort close so {@code CmdStore} can still {@code fs.close(seg)}.
      */
     @Override
     public synchronized void close() throws IOException {
@@ -723,16 +724,28 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
             if (this.streamCommandReader != null) {
                 this.streamCommandReader.resetParser();
             }
-            if (this.indexWriter != null) {
-                this.indexWriter.flush();
-            }
-            if (this.indexWriterV2 != null) {
-                this.indexWriterV2.flush();
-            }
+            flushWriterBestEffortOnClose();
         } finally {
             this.indexWriter = null;
             this.indexWriterV2 = null;
             this.streamCommandReader = null;
+        }
+    }
+
+    private void flushWriterBestEffortOnClose() {
+        if (this.indexWriter != null) {
+            try {
+                this.indexWriter.flush();
+            } catch (Throwable t) {
+                logger.error("[close][flush indexWriter failed]{}", this, t);
+            }
+        }
+        if (this.indexWriterV2 != null) {
+            try {
+                this.indexWriterV2.flush();
+            } catch (Throwable t) {
+                logger.error("[close][flush indexWriterV2 failed]{}", this, t);
+            }
         }
     }
 

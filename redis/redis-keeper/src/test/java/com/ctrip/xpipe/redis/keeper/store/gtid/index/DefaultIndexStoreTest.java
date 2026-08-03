@@ -52,6 +52,7 @@ import java.util.stream.IntStream;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -180,9 +181,11 @@ public class DefaultIndexStoreTest {
     }
 
     private void bindCommandFileMock() {
+        // Null-safe: Mockito invokes getFile() while re-stubbing, and late-join tests may have
+        // released testCmdStore (null) before createTestCmdStore reopens the write segment.
         when(commandFile.getFile()).thenAnswer(inv -> {
             try {
-                return testCmdStore.currentCmdFile();
+                return testCmdStore == null ? null : testCmdStore.currentCmdFile();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -231,6 +234,8 @@ public class DefaultIndexStoreTest {
         } catch (Exception ignore) {
         }
         openedSegments.remove(seg);
+        // Drop reuse so next createTestCmdStore re-opens from disk (CREATE missing companions).
+        testCmdStore = null;
     }
 
     /**
@@ -1479,9 +1484,15 @@ public class DefaultIndexStoreTest {
         Assert.assertEquals("phase1 V1 should accumulate full history",
                 new GtidSet(uuid + ":1-1000"), phase1Store.getIndexGtidSet());
         phase1Store.closeWriter();
+        // File.exists / File.delete bypass TailCache — fsync companions first.
+        flushCmdAndIndexForDiskAssert();
 
         Assert.assertTrue("V1 index file must exist after phase1",
                 indexV1File(cmdPrefix, 0).exists());
+        // Release write-mode segment before deleting V2. createTestCmdStore reuses an open
+        // segment; deleting companions out-of-band leaves stale handles on unlinked inodes,
+        // so phase2 would not CREATE indexv2_/blockv2_ on disk (production late-join = reopen).
+        closeCmdStoreForPrefix(cmdPrefix);
         // 删掉 V2 磁盘产物，让阶段 2 里 V2 变成"首次创建、起点为空"
         Assert.assertTrue(indexV2File(cmdPrefix, 0).delete());
         Assert.assertTrue(blockV2File(cmdPrefix, 0).delete());
@@ -1635,6 +1646,8 @@ public class DefaultIndexStoreTest {
     private DefaultIndexStore createStoreWithKeeperConfig(File ignoredCmdFile, String cmdName,
                                                           KeeperConfig keeperConfig) throws IOException {
         String cmdPrefix = toCmdPrefix(cmdName);
+        // Reopen segment first when testCmdStore was released (e.g. late-join File.delete V2).
+        TestAsyncCommandStore cmdStore = createTestCmdStore(cmdPrefix);
         bindWriteCommandToFs();
         bindCommandFileMock();
         when(commandFileContext.getCommandFile()).thenReturn(commandFile);
@@ -1647,7 +1660,6 @@ public class DefaultIndexStoreTest {
         RedisOpParserManager mgr = new DefaultRedisOpParserManager();
         RedisOpParserFactory.getInstance().registerParsers(mgr);
         RedisOpParser opParser = new GeneralRedisOpParser(mgr);
-        TestAsyncCommandStore cmdStore = createTestCmdStore(cmdPrefix);
         DefaultIndexStore store = new DefaultIndexStore(keeperConfig, ckStore, cmdStore, baseDir, opParser,
                 commandWriterCallback, gtidCmdFilter);
         store.openWriter(writer);
@@ -2105,6 +2117,29 @@ public class DefaultIndexStoreTest {
         try {
             defaultIndexStore.write(createGtidCommand("deadbeef:1", "SET", "k", "v"));
             Assert.fail("write after close should fail");
+        } catch (IllegalStateException e) {
+            Assert.assertTrue(e.getMessage().contains("closed"));
+        }
+    }
+
+    /**
+     * Terminal close must finish (clear refs / mark closed) even if best-effort flush fails,
+     * so CmdStore can still {@code fs.close(seg)}.
+     */
+    @Test
+    public void testClose_FlushFailureDoesNotAbortClose() throws Exception {
+        defaultIndexStore.closeWriter();
+        defaultIndexStore.openWriter(writer);
+
+        IndexWriterV2 failingWriter = mock(IndexWriterV2.class);
+        doThrow(new IOException("flush boom")).when(failingWriter).flush();
+        setField(defaultIndexStore, "indexWriterV2", failingWriter);
+
+        defaultIndexStore.close();
+        Assert.assertTrue(defaultIndexStore.isClosed());
+        try {
+            defaultIndexStore.openWriter(writer);
+            Assert.fail("openWriter after close should fail");
         } catch (IllegalStateException e) {
             Assert.assertTrue(e.getMessage().contains("closed"));
         }
