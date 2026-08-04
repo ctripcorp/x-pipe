@@ -276,7 +276,7 @@ CREATE TABLE `LOGICAL_BU_TBL` (
   `tfs_fs_id` varchar(128) NOT NULL DEFAULT '',
   `active` tinyint(1) NOT NULL DEFAULT 1,
   `description` varchar(1024) NOT NULL DEFAULT '',
-  `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
+  `DataChange_LastTime` datetime default CURRENT_TIMESTAMP,
   `deleted` tinyint(1) NOT NULL DEFAULT 0
 );
 
@@ -284,7 +284,7 @@ CREATE TABLE `LOGICAL_BU_ORG_TBL` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT primary key,
   `logical_bu_id` bigint(20) unsigned NOT NULL DEFAULT 0,
   `cms_org_id` bigint(20) unsigned NOT NULL DEFAULT 0,
-  `DataChange_LastTime` timestamp default CURRENT_TIMESTAMP,
+  `DataChange_LastTime` datetime default CURRENT_TIMESTAMP,
   `deleted` tinyint(1) NOT NULL DEFAULT 0,
   `deleted_at` int not null default 0,
   UNIQUE KEY `uk_logical_bu_org` (`logical_bu_id`,`cms_org_id`,`deleted_at`)

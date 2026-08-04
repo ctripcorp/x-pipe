@@ -288,7 +288,7 @@ CREATE TABLE `LOGICAL_BU_TBL` (
   `tfs_fs_id` varchar(128) NOT NULL DEFAULT '' COMMENT 'tfs fs id for ForceCloseDir',
   `active` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'accept new cluster binding',
   `description` varchar(1024) NOT NULL DEFAULT '' COMMENT 'description',
-  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
+  `DataChange_LastTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   PRIMARY KEY (`id`),
   KEY `DataChange_LastTime` (`DataChange_LastTime`)
@@ -298,7 +298,7 @@ CREATE TABLE `LOGICAL_BU_ORG_TBL` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT 'primary key',
   `logical_bu_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference logical bu id',
   `cms_org_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'reference cms org id',
-  `DataChange_LastTime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
+  `DataChange_LastTime` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'last modified time',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'deleted or not',
   `deleted_at` int(11) NOT NULL DEFAULT '0' COMMENT 'deleted time',
   PRIMARY KEY (`id`),
