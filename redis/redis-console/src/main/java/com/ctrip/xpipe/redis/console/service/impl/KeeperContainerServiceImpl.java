@@ -67,6 +67,9 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   @Autowired
   private ConsoleConfig consoleConfig;
 
+  @Autowired
+  private LogicalBuService logicalBuService;
+
   private RestOperations restTemplate;
 
 
@@ -779,6 +782,11 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
   private void validateAndSetLogicalBu(KeepercontainerTbl proto, String diskType, Long logicalBuId) {
     long buId = logicalBuId == null ? 0L : logicalBuId;
+    if (buId > 0) {
+      logicalBuService.findById(buId);
+    } else {
+      buId = 0L;
+    }
     proto.setLogicalBuId(buId);
   }
 

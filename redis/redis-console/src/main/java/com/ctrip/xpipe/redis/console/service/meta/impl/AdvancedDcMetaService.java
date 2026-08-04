@@ -95,6 +95,10 @@ public class AdvancedDcMetaService implements DcMetaService {
 
     @Autowired
     @Lazy
+    private LogicalBuService logicalBuService;
+
+    @Autowired
+    @Lazy
     private AppliercontainerMetaService appliercontainerMetaService;
 
     @Autowired
@@ -348,8 +352,10 @@ public class AdvancedDcMetaService implements DcMetaService {
         protected void doExecute() throws Exception {
             try {
                 List<KeepercontainerTbl> keepercontainers = keeperContainerService.findAllByDcName(dcMeta.getId());
+                Map<Long, String> logicalBuTfsFsIdById = loadLogicalBuTfsFsIdMap();
                 keepercontainers.forEach(keeperContainer -> dcMeta.addKeeperContainer(
-                        keepercontainerMetaService.encodeKeepercontainerMeta(keeperContainer, dcMeta)));
+                        keepercontainerMetaService.encodeKeepercontainerMeta(keeperContainer, dcMeta,
+                                logicalBuTfsFsIdById)));
                 future().setSuccess();
             } catch (Throwable th) {
                 future().setFailure(th);
@@ -365,6 +371,18 @@ public class AdvancedDcMetaService implements DcMetaService {
         public String getName() {
             return this.getClass().getSimpleName();
         }
+    }
+
+    private Map<Long, String> loadLogicalBuTfsFsIdMap() {
+        List<LogicalBuModel> all = logicalBuService.findAll();
+        if (CollectionUtils.isEmpty(all)) {
+            return Collections.emptyMap();
+        }
+        Map<Long, String> map = Maps.newHashMapWithExpectedSize(all.size());
+        for (LogicalBuModel logicalBu : all) {
+            map.put(logicalBu.getId(), logicalBu.getTfsFsId());
+        }
+        return map;
     }
 
     class GetAllApplierContainerCommand extends AbstractCommand<Void> {

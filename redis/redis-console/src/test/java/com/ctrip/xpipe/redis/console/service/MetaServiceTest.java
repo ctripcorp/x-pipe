@@ -13,7 +13,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MetaServiceTest extends AbstractConsoleTest{
@@ -50,7 +55,36 @@ public class MetaServiceTest extends AbstractConsoleTest{
 		
 		KeepercontainerTbl keepercontainerTbl = new KeepercontainerTbl().setKeepercontainerId(1).setKeepercontainerIp("1").setKeepercontainerPort(1);
 		
-		assertEquals(expect,new KeepercontainerMetaServiceImpl().encodeKeepercontainerMeta(keepercontainerTbl, null));
+		assertEquals(expect, new KeepercontainerMetaServiceImpl().encodeKeepercontainerMeta(
+				keepercontainerTbl, null, Collections.emptyMap()));
+	}
+
+	@Test
+	public void testKeepercontainerMetaServiceFillsTfsFsIdFromPreloadedMap() {
+		KeepercontainerTbl keepercontainerTbl = new KeepercontainerTbl()
+				.setKeepercontainerId(1).setKeepercontainerIp("1").setKeepercontainerPort(1)
+				.setLogicalBuId(42L);
+		Map<Long, String> logicalBuTfsFsIdById = new HashMap<>();
+		logicalBuTfsFsIdById.put(42L, "fs-42");
+
+		KeeperContainerMeta meta = new KeepercontainerMetaServiceImpl()
+				.encodeKeepercontainerMeta(keepercontainerTbl, null, logicalBuTfsFsIdById);
+
+		assertEquals(42L, meta.getLogicalBuId().longValue());
+		assertEquals("fs-42", meta.getTfsFsId());
+	}
+
+	@Test
+	public void testKeepercontainerMetaServiceSkipsTfsFsIdWhenMapMissing() {
+		KeepercontainerTbl keepercontainerTbl = new KeepercontainerTbl()
+				.setKeepercontainerId(1).setKeepercontainerIp("1").setKeepercontainerPort(1)
+				.setLogicalBuId(42L);
+
+		KeeperContainerMeta meta = new KeepercontainerMetaServiceImpl()
+				.encodeKeepercontainerMeta(keepercontainerTbl, null, Collections.emptyMap());
+
+		assertEquals(42L, meta.getLogicalBuId().longValue());
+		assertNull(meta.getTfsFsId());
 	}
 	
 	@Test
