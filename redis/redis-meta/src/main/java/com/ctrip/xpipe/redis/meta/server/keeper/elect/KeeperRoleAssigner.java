@@ -42,6 +42,18 @@ public final class KeeperRoleAssigner {
         return roles;
     }
 
+    /**
+     * Null-safe wrapper for callers that must fall back when Active/survive is missing
+     * (e.g. AlignChecker correct, DR {@code makeKeepersOk}).
+     */
+    public static Map<KeeperMeta, KeeperState> assignRolesOrNull(KeeperMeta activeKeeper, List<KeeperMeta> keepers,
+                                                                 DcMetaCache dcMetaCache) {
+        if (activeKeeper == null || keepers == null || keepers.isEmpty()) {
+            return null;
+        }
+        return assignRoles(activeKeeper, keepers, dcMetaCache);
+    }
+
     private static KeeperMeta selectTfsSlotKeeper(KeeperMeta activeKeeper, List<KeeperMeta> keepers,
                                                   DcMetaCache dcMetaCache) {
         KeeperMeta best = null;

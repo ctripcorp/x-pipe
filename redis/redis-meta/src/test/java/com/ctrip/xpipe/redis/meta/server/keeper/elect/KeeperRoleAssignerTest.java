@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -90,6 +91,29 @@ public class KeeperRoleAssignerTest {
         Assert.assertEquals(KeeperState.ACTIVE, roles.get(bm));
         Assert.assertEquals(KeeperState.BACKUP, roles.get(defaultPriorityTfs));
         Assert.assertEquals(KeeperState.PREPARE, roles.get(zeroPriorityTfs));
+    }
+
+    @Test
+    public void testAssignRolesOrNullWhenActiveOrKeepersMissing() {
+        KeeperMeta bm = keeper(6000, 1L, 1);
+        bm.setActive(true);
+        Assert.assertNull(KeeperRoleAssigner.assignRolesOrNull(null, Arrays.asList(bm), dcMetaCache));
+        Assert.assertNull(KeeperRoleAssigner.assignRolesOrNull(bm, null, dcMetaCache));
+        Assert.assertNull(KeeperRoleAssigner.assignRolesOrNull(bm, Collections.emptyList(), dcMetaCache));
+    }
+
+    @Test
+    public void testAssignRolesOrNullDelegatesWhenActivePresent() {
+        KeeperMeta bm = keeper(6000, 1L, 1);
+        KeeperMeta highTfs = keeper(6001, 2L, 5);
+        KeeperMeta lowTfs = keeper(6002, 3L, 1);
+        bm.setActive(true);
+
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRolesOrNull(
+                bm, Arrays.asList(bm, highTfs, lowTfs), dcMetaCache);
+        Assert.assertEquals(KeeperState.ACTIVE, roles.get(bm));
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(highTfs));
+        Assert.assertEquals(KeeperState.PREPARE, roles.get(lowTfs));
     }
 
     private KeeperMeta keeper(int port, long keeperContainerId, Integer priority) {
