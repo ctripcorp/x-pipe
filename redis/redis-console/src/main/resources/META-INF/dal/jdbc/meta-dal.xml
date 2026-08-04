@@ -1179,6 +1179,7 @@
 				<member name="master"/>
 				<member name="redis-master"/>
 				<member name="keepercontainer-id"/>
+				<member name="keeper-priority"/>
 				<member name="az-id"/>
 				<member name="create-time"/>
 			</readset>

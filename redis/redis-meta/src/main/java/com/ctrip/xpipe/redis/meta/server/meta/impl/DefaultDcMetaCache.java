@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.core.meta.impl.DefaultDcMetaManager;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperPriorityUtils;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.*;
@@ -89,6 +90,7 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 			try {
 				logger.info("[loadMetaManager][load from console]");
 				DcMeta dcMeta = loadMetaFromConsole();
+				KeeperPriorityUtils.normalizeDcMeta(dcMeta);
 				dcMetaManager = DefaultDcMetaManager.buildFromDcMeta(dcMeta);
 			} catch (ResourceAccessException e) {
 				logger.error("[loadMetaManager][consoleService]" + e.getMessage());
@@ -101,6 +103,9 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 			String fileName = System.getProperty(MEMORY_META_SERVER_DAO_KEY, "memory_meta_server_dao_file.xml");
 			logger.info("[loadMetaManager][load from file]{}", fileName);
 			dcMetaManager = DefaultDcMetaManager.buildFromFile(currentDc, fileName);
+			if (dcMetaManager != null) {
+				KeeperPriorityUtils.normalizeDcMeta(dcMetaManager.getDcMeta());
+			}
 		}
 
 		logger.info("[loadMetaManager]{}", dcMetaManager);
@@ -155,6 +160,8 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 			logger.info("[run][skip change dc meta]" + META_MODIFY_JUST_NOW_TEMPLATE, metaModifyTime.get(), metaLoadTime);
 			return;
 		}
+
+		KeeperPriorityUtils.normalizeDcMeta(future);
 
 		DcMetaComparator dcMetaComparator = new DcMetaComparator(current, future);
 		dcMetaComparator.setShardMigrateSupport();
@@ -331,6 +338,8 @@ public class DefaultDcMetaCache extends AbstractLifecycleObservable implements D
 	public void clusterModified(ClusterMeta clusterMeta) {
 
 		EventMonitor.DEFAULT.logEvent(META_CHANGE_TYPE, String.format("mod:%s", clusterMeta.getId()));
+
+		KeeperPriorityUtils.normalizeClusterMeta(clusterMeta);
 
 		ReentrantLock lock = lockMap.computeIfAbsent(clusterMeta.getDbId(), key -> new ReentrantLock());
 
