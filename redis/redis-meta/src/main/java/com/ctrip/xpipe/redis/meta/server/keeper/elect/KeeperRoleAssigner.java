@@ -69,6 +69,7 @@ public final class KeeperRoleAssigner {
 
     private static int keeperPriority(KeeperMeta keeperMeta) {
         Integer priority = keeperMeta.getPriority();
-        return priority == null ? 0 : priority;
+        // Meta load (D28) already normalizes; null should not appear on assign path.
+        return priority != null ? priority : 0;
     }
 }

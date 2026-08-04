@@ -5,7 +5,9 @@ import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.redis.console.model.AzTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.model.RedisTblEntity;
 import com.ctrip.xpipe.redis.console.service.RedisService;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import org.junit.Assert;
@@ -124,6 +126,42 @@ public class RedisMetaServiceImplTest extends AbstractTest {
         RedisMeta redisMeta = redisMetaService.getRedisMeta(new ShardMeta(), redisTbl);
 
         Assert.assertNull(redisMeta.getCreateTime());
+    }
+
+    @Test
+    public void getKeeperMetaCopiesKeeperPriorityAndNeverNull() {
+        RedisTbl redisTbl = new RedisTbl()
+                .setRunId("keeper-run-id")
+                .setRedisIp("10.0.0.1")
+                .setRedisPort(6380)
+                .setKeeperActive(true)
+                .setKeepercontainerId(11L)
+                .setKeeperPriority(1);
+
+        KeeperMeta keeperMeta = redisMetaService.getKeeperMeta(shardMeta, redisTbl);
+
+        Assert.assertNotNull(keeperMeta.getPriority());
+        Assert.assertEquals(Integer.valueOf(1), keeperMeta.getPriority());
+        Assert.assertEquals(Long.valueOf(11L), keeperMeta.getKeeperContainerId());
+    }
+
+    @Test
+    public void getKeeperMetaPreservesExplicitZero() {
+        RedisTbl redisTbl = new RedisTbl()
+                .setRunId("keeper-run-id")
+                .setRedisIp("10.0.0.1")
+                .setRedisPort(6380)
+                .setKeeperPriority(0);
+
+        KeeperMeta keeperMeta = redisMetaService.getKeeperMeta(shardMeta, redisTbl);
+
+        Assert.assertEquals(Integer.valueOf(0), keeperMeta.getPriority());
+    }
+
+    @Test
+    public void redisMetaInfoReadsetContainsKeeperPriority() {
+        Assert.assertTrue("D29: REDIS_META_INFO must include keeper-priority",
+                RedisTblEntity.READSET_REDIS_META_INFO.getFields().contains(RedisTblEntity.KEEPER_PRIORITY));
     }
 
 }

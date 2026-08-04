@@ -76,7 +76,23 @@ public class KeeperRoleAssignerTest {
         Assert.assertEquals(KeeperState.PREPARE, roles.get(lowTfs));
     }
 
-    private KeeperMeta keeper(int port, long keeperContainerId, int priority) {
+    @Test
+    public void testNormalizedDefaultPriorityTfsGetsSlotOverExplicitZero() {
+        // After Meta-load normalize, missing priority is already 1 (not null).
+        KeeperMeta bm = keeper(6000, 1L, 1);
+        KeeperMeta defaultPriorityTfs = keeper(6001, 2L, KeeperPriorityUtils.DEFAULT_PRIORITY);
+        KeeperMeta zeroPriorityTfs = keeper(6002, 3L, 0);
+        bm.setActive(true);
+
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(bm,
+                Arrays.asList(bm, defaultPriorityTfs, zeroPriorityTfs), dcMetaCache);
+
+        Assert.assertEquals(KeeperState.ACTIVE, roles.get(bm));
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(defaultPriorityTfs));
+        Assert.assertEquals(KeeperState.PREPARE, roles.get(zeroPriorityTfs));
+    }
+
+    private KeeperMeta keeper(int port, long keeperContainerId, Integer priority) {
         KeeperMeta keeperMeta = new KeeperMeta();
         keeperMeta.setIp("127.0.0.1");
         keeperMeta.setPort(port);
