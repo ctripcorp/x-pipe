@@ -457,10 +457,10 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
                                                   + keeperContainerInfoModel.getAddr().getHost() + " already exists");
     }
 
-//    if (!checkIpAndPort(keeperContainerInfoModel.getAddr().getHost(), keeperContainerInfoModel.getAddr().getPort())) {
-//      throw new IllegalArgumentException(String.format("Keeper container with ip:%s, port:%d is unhealthy",
-//              keeperContainerInfoModel.getAddr().getHost(), keeperContainerInfoModel.getAddr().getPort()));
-//    }
+    if (!checkIpAndPort(keeperContainerInfoModel.getAddr().getHost(), keeperContainerInfoModel.getAddr().getPort())) {
+      throw new IllegalArgumentException(String.format("Keeper container with ip:%s, port:%d is unhealthy",
+              keeperContainerInfoModel.getAddr().getHost(), keeperContainerInfoModel.getAddr().getPort()));
+    }
 
     DcTbl dcTbl = dcService.find(keeperContainerInfoModel.getDcName());
     if(dcTbl == null) {
