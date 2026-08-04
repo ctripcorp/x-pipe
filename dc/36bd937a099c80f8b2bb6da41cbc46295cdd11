@@ -1,0 +1,44 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/meta/impl/KeepercontainerMetaServiceImpl.java
+  s_52af9d3e1e8ae3::t_28f1721e22b10d 10-11,21-22,36-41
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/KeeperContainerServiceImpl.java
+  s_52af9d3e1e8ae3::t_b848df384c0671 70-72
+  s_52af9d3e1e8ae3::t_71c41bd123d656 785-789
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/LogicalBuServiceImplResolveTest.java
+  s_52af9d3e1e8ae3::t_7b559ca59b0ff5 82-87,89,93-107,109-115,117
+  s_52af9d3e1e8ae3::t_31db1c5c2f2b6d 88,90-92,116
+  s_52af9d3e1e8ae3::t_9832a0178cb80f 108
+  s_52af9d3e1e8ae3::t_0272a2269281d3 6,13,19
+  s_52af9d3e1e8ae3::t_188408ad1b42dd 23,25
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/meta/impl/AdvancedDcMetaService.java
+  s_52af9d3e1e8ae3::t_5b8c81e3ff25f2 355,357-358,376-385
+  s_52af9d3e1e8ae3::t_0f0bd667bba3b2 98-99
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/LogicalBuServiceImpl.java
+  s_52af9d3e1e8ae3::t_9363c185e272c7 5,16,22
+  s_52af9d3e1e8ae3::t_0cd25a092e2623 77-78,99-100
+  s_52af9d3e1e8ae3::t_b8873c4a2fd857 186,191,196,198-208
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/meta/KeepercontainerMetaService.java
+  s_52af9d3e1e8ae3::t_74b91df0b6c5e1 7-8,15-19
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/MetaServiceTest.java
+  s_52af9d3e1e8ae3::t_5103ed5582b2ad 58-87
+  s_52af9d3e1e8ae3::t_44f681cec7b92f 16-19,21
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/KeeperContainerServiceImplLogicalBuTest.java
+  s_52af9d3e1e8ae3::t_8a3b60edcca9f7 3,5-6,11,15-18,25-27,34,39,44-52,61-70
+redis/redis-console/src/main/resources/META-INF/dal/jdbc/meta-dal.xml
+  s_52af9d3e1e8ae3::t_749c85a0e5b6db 3652-3659
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "dc36bd937a099c80f8b2bb6da41cbc46295cdd11",
+  "prompts": {},
+  "sessions": {
+    "s_52af9d3e1e8ae3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "88017821-050a-42c9-acdc-f52bfc68e3d6",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
