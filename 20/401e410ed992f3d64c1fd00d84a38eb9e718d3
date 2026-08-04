@@ -1,0 +1,25 @@
+redis/redis-console/src/main/resources/sql/h2/xpipedemodbtables.sql
+  s_c7861fc809e9be::t_30582c1a9f1d3a 279,287
+redis/redis-console/src/main/resources/sql/mysql/xpipedemodbtables.sql
+  s_c7861fc809e9be::t_dd99868918f838 334,344
+redis/redis-console/src/main/resources/sql/mysql/logical_bu_datachange_datetime.sql
+  s_c7861fc809e9be::t_d8182f4ecf545e 1-10
+redis/dockerPackage/xpipe-console/sql/xpipedemodbtables.sql
+  s_c7861fc809e9be::t_7e36b26f132777 291,301
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "20401e410ed992f3d64c1fd00d84a38eb9e718d3",
+  "prompts": {},
+  "sessions": {
+    "s_c7861fc809e9be": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7a99c225-afa8-4b68-adb8-f84287d1d524",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
