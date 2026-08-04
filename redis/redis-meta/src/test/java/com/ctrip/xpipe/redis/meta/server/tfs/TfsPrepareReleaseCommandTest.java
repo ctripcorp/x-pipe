@@ -56,7 +56,10 @@ public class TfsPrepareReleaseCommandTest extends AbstractMetaServerTest {
         });
 
         AtomicBoolean forceCloseCalled = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath, podIp) -> forceCloseCalled.set(true);
+        TfsGateway gateway = (fsId, dirPath, podIp) -> {
+            forceCloseCalled.set(true);
+            return true;
+        };
 
         new TfsPrepareReleaseCommand(shardContext, oldTfs, newActive, getXpipeNettyClientKeyedObjectPool(), dcMetaCache, config,
                 scheduled, executors, gateway).execute()
@@ -78,7 +81,10 @@ public class TfsPrepareReleaseCommandTest extends AbstractMetaServerTest {
         });
 
         AtomicBoolean forceCloseCalled = new AtomicBoolean(false);
-        TfsGateway gateway = (fsId, dirPath, podIp) -> forceCloseCalled.set(true);
+        TfsGateway gateway = (fsId, dirPath, podIp) -> {
+            forceCloseCalled.set(true);
+            return true;
+        };
 
         new TfsPrepareReleaseCommand(shardContext, oldTfs, newActive, getXpipeNettyClientKeyedObjectPool(), dcMetaCache, config,
                 scheduled, executors, gateway).execute()

@@ -27,41 +27,19 @@ public class TfsGatewayFactoryTest {
     }
 
     @Test
-    public void testRealHostReturnsUnimplementedPlaceholder() {
+    public void testRealHostReturnsHttpGateway() {
         UnitTestServerConfig config = new UnitTestServerConfig()
                 .setTfsGatewayHost("http://real-tfs-gateway")
                 .setTfsGatewayAppId(100004376L);
         TfsGateway gateway = TfsGatewayFactory.create(config);
-        Assert.assertTrue(gateway instanceof TfsGatewayFactory.UnimplementedTfsGateway);
-        TfsGatewayFactory.UnimplementedTfsGateway unimplemented =
-                (TfsGatewayFactory.UnimplementedTfsGateway) gateway;
-        Assert.assertSame(config, unimplemented.getConfig());
-        try {
-            gateway.forceCloseDir("fs-1", "/path", "10.0.0.1");
-            Assert.fail("expected UnsupportedOperationException");
-        } catch (UnsupportedOperationException expected) {
-            Assert.assertTrue(expected.getMessage().contains("http://real-tfs-gateway"));
-            Assert.assertTrue(expected.getMessage().contains("100004376"));
-        } catch (Exception e) {
-            Assert.fail("unexpected exception: " + e);
-        }
+        Assert.assertTrue(gateway instanceof HttpTfsGateway);
+        Assert.assertSame(config, ((HttpTfsGateway) gateway).getConfig());
     }
 
     @Test
-    public void testUnimplementedReadsLatestHostFromConfig() {
-        UnitTestServerConfig config = new UnitTestServerConfig()
-                .setTfsGatewayHost("http://host-a")
-                .setTfsGatewayAppId(1L);
-        TfsGateway gateway = TfsGatewayFactory.create(config);
-        config.setTfsGatewayHost("http://host-b").setTfsGatewayAppId(2L);
-        try {
-            gateway.forceCloseDir("fs-1", "/path", "10.0.0.1");
-            Assert.fail("expected UnsupportedOperationException");
-        } catch (UnsupportedOperationException expected) {
-            Assert.assertTrue(expected.getMessage().contains("http://host-b"));
-            Assert.assertTrue(expected.getMessage().contains("appId=2"));
-        } catch (Exception e) {
-            Assert.fail("unexpected exception: " + e);
-        }
+    public void testRealHostStringCreatesHttpGateway() {
+        TfsGateway gateway = TfsGatewayFactory.create("http://real-tfs-gateway");
+        Assert.assertTrue(gateway instanceof HttpTfsGateway);
+        Assert.assertNull(((HttpTfsGateway) gateway).getConfig());
     }
 }
