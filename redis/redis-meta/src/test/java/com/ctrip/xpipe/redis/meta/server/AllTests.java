@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServerRefreshPeerMaster
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServersTest;
 import com.ctrip.xpipe.redis.meta.server.job.ApplierStateChangeJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJobTest;
+import com.ctrip.xpipe.redis.meta.server.job.KeeperMasterProcessJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.TfsKeeperStateChangeJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJobTest;
@@ -106,6 +107,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultKeeperStateControllerTest.class,
 	DefaultApplierStateControllerTest.class,
 	KeeperStateChangeJobTest.class,
+	KeeperMasterProcessJobTest.class,
 	TfsKeeperStateChangeJobTest.class,
 	ApplierStateChangeJobTest.class,
 	DefaultKeeperStateChangeHandlerTest.class,
@@ -134,6 +136,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultMasterChooserManagerTest.class,
 	ClusterShardCachedNewMasterChooserTest.class,
 	BecomePrimaryActionTest.class,
+	AbstractChangePrimaryDcActionMakeKeepersOkTest.class,
 	DefaultKeeperContainerServiceTest.class,
 	DefaultApplierContainerServiceTest.class,
 	ConsoleServiceImplTest.class,

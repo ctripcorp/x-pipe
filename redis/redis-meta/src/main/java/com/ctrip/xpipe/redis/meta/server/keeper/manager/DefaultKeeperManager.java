@@ -444,8 +444,13 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			if(!isCurrentMetaKeeperMasterMatch(clusterDbId, shardDbId)) {
 				return;
 			}
+			// D30: without RoleAssigner roles, KeeperStateChangeJob null-fallback would force all non-active to BACKUP.
 			KeeperMasterProcessJob job = createKeeperMasterProcessJob(clusterDbId, shardDbId, survivedKeepers,
 					currentMetaManager.getKeeperMaster(clusterDbId, shardDbId));
+			if (job == null) {
+				logger.error("[doCorrect][skip setstate]no active/roles, cluster_{}, shard_{}", clusterDbId, shardDbId);
+				return;
+			}
 			job.future().addListener(new CommandFutureListener<Void>() {
 				@Override
 				public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
@@ -540,9 +545,18 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		return new KeeperIndexChangeJob(keepers, indexState, clientPool, scheduled, executors);
 	}
 
-	private KeeperMasterProcessJob createKeeperMasterProcessJob(Long clusterDbId, Long shardDbId,
+	/**
+	 * @return null when RoleAssigner cannot produce roles (no active/survive); caller must skip setstate.
+	 */
+	@VisibleForTesting
+	protected KeeperMasterProcessJob createKeeperMasterProcessJob(Long clusterDbId, Long shardDbId,
 															List<KeeperMeta> keepers,
 															Pair<String, Integer> master) {
+
+		Map<KeeperMeta, KeeperState> keeperRoles = resolveKeeperRoles(clusterDbId, shardDbId, keepers);
+		if (keeperRoles == null) {
+			return null;
+		}
 
 		String dstDcId;
 		if (metaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
@@ -552,18 +566,14 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dstDcId, clusterDbId);
 
-		Map<KeeperMeta, KeeperState> keeperRoles = resolveKeeperRoles(clusterDbId, shardDbId, keepers);
 		return new KeeperMasterProcessJob(clusterDbId, shardDbId, keepers, routeMeta, metaCache, master,
 				clientPool, scheduled, executors, keeperRoles);
 	}
 
 	@VisibleForTesting
 	protected Map<KeeperMeta, KeeperState> resolveKeeperRoles(Long clusterDbId, Long shardDbId, List<KeeperMeta> keepers) {
-		KeeperMeta activeKeeper = currentMetaManager.getKeeperActive(clusterDbId, shardDbId);
-		if (activeKeeper == null || keepers == null || keepers.isEmpty()) {
-			return null;
-		}
-		return KeeperRoleAssigner.assignRoles(activeKeeper, keepers, metaCache);
+		return KeeperRoleAssigner.assignRolesOrNull(
+				currentMetaManager.getKeeperActive(clusterDbId, shardDbId), keepers, metaCache);
 	}
 
 	protected abstract class AbstractKeeperInfoChecker {
@@ -646,16 +656,17 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 
 		/**
-		 * UNKNOWN means RoleAssigner could not decide (e.g. no survive); leave keeper state unchanged.
+		 * Leave keeper unchanged when RoleAssigner cannot decide (UNKNOWN) or there is no active
+		 * (cannot compare master without NPE / false correct).
 		 */
 		@Override
 		protected boolean shouldStop() {
-			return expectedState == KeeperState.UNKNOWN;
+			return expectedState == KeeperState.UNKNOWN || activeKeeper == null;
 		}
 
 		@Override
 		protected boolean isValid() {
-			if (expectedState == KeeperState.UNKNOWN) {
+			if (expectedState == KeeperState.UNKNOWN || activeKeeper == null) {
 				return true;
 			}
 			return super.isValid();
@@ -668,12 +679,12 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		@Override
 		protected String getMasterHost() {
-			return activeKeeper.getIp();
+			return activeKeeper != null ? activeKeeper.getIp() : null;
 		}
 
 		@Override
 		protected int getMasterPort() {
-			return activeKeeper.getPort();
+			return activeKeeper != null ? activeKeeper.getPort() : -1;
 		}
 
 

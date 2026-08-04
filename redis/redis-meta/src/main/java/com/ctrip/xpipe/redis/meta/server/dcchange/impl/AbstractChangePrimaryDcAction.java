@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.meta.server.dcchange.impl;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PRIMARY_DC_CHANGE_RESULT;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerConsoleService.PrimaryDcChangeMessage;
 import com.ctrip.xpipe.redis.core.protocal.pojo.MasterInfo;
@@ -10,6 +11,7 @@ import com.ctrip.xpipe.redis.meta.server.dcchange.ChangePrimaryDcAction;
 import com.ctrip.xpipe.redis.meta.server.dcchange.ExecutionLog;
 import com.ctrip.xpipe.redis.meta.server.dcchange.SentinelManager;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperRoleAssigner;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
@@ -17,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
 /**
@@ -100,19 +103,33 @@ public abstract class AbstractChangePrimaryDcAction implements ChangePrimaryDcAc
 
 		List<KeeperMeta> keepers = currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId);
 		executionLog.info("[makeKeepersOk]" + keepers);
-		
+
+		// D31: pass RoleAssigner roles so non-slot TFS stays PREPARE (not forced BACKUP).
+		Map<KeeperMeta, KeeperState> keeperRoles = KeeperRoleAssigner.assignRolesOrNull(
+				currentMetaManager.getKeeperActive(clusterDbId, shardDbId), keepers, dcMetaCache);
+		if (keeperRoles == null) {
+			logger.error("[makeKeepersOk][skip setstate]no active/roles, cluster_{}, shard_{}, keepers={}",
+					clusterDbId, shardDbId, keepers);
+			executionLog.info("[makeKeepersOk][skip setstate]no active/roles");
+			currentMetaManager.setKeeperMaster(clusterDbId, shardDbId, newMaster.getKey(), newMaster.getValue());
+			return;
+		}
 		KeeperStateChangeJob job = new KeeperStateChangeJob(keepers,
 				new Pair<String, Integer>(newMaster.getKey(), newMaster.getValue()),
 				currentMetaManager.getClusterRouteByDcId(currentMetaManager.getClusterMeta(clusterDbId).getActiveDc(), clusterDbId),
-				keyedObjectPool, 1000, 1, scheduled, executors);
+				keyedObjectPool, KeeperStateChangeJob.DEFAULT_DELAY_BASE_MILLI, 1, scheduled, executors, keeperRoles);
 		try {
 			currentMetaManager.setKeeperMaster(clusterDbId, shardDbId, newMaster.getKey(), newMaster.getValue());
 			// 必须先改 meta, 再修改 keepr, 不然可能被 KeeperStateAlignChecker reset 回去。
 			job.execute().get(waitTimeoutSeconds/2, TimeUnit.SECONDS);
 			logger.debug("[doRun][set]cluster_{}, shard_{}, {}", clusterDbId, shardDbId, newMaster);
 			executionLog.info("[makeKeepersOk]success");
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
-			logger.error("[makeKeepersOk]" + e.getMessage());
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			logger.error("[makeKeepersOk]cluster_{}, shard_{}", clusterDbId, shardDbId, e);
+			executionLog.info("[makeKeepersOk][fail]" + e.getMessage());
+		} catch (ExecutionException | TimeoutException e) {
+			logger.error("[makeKeepersOk]cluster_{}, shard_{}", clusterDbId, shardDbId, e);
 			executionLog.info("[makeKeepersOk][fail]" + e.getMessage());
 		}
 	}

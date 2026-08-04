@@ -250,6 +250,33 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
     }
 
     @Test
+    public void testBackupCheckerWithoutActiveLeavesKeeperUnchanged() {
+        InfoResultExtractor extractor = mock(InfoResultExtractor.class);
+        when(extractor.extract("state")).thenReturn("BACKUP");
+        when(extractor.extract("master_host")).thenReturn("127.0.0.1");
+        when(extractor.extract("master_port")).thenReturn("6379");
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(null);
+
+        DefaultKeeperManager.BackupKeeperInfoChecker checker =
+                manager.new BackupKeeperInfoChecker(extractor, clusterDbId, shardDbId, KeeperState.BACKUP);
+        Assert.assertTrue(checker.shouldStop());
+        Assert.assertTrue(checker.isValid());
+    }
+
+    @Test
+    public void testCreateKeeperMasterProcessJobNullWithoutActiveSkipsSetstate() {
+        KeeperMeta bm = keeperForDisk(6100, 1L, 1, false);
+        KeeperMeta tfs1 = keeperForDisk(6101, 2L, 5, false);
+        KeeperMeta tfs2 = keeperForDisk(6102, 3L, 1, false);
+        List<KeeperMeta> survive = Arrays.asList(bm, tfs1, tfs2);
+
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(null);
+        Assert.assertNull(manager.resolveKeeperRoles(clusterDbId, shardDbId, survive));
+        Assert.assertNull(manager.createKeeperMasterProcessJob(clusterDbId, shardDbId, survive,
+                new Pair<>("127.0.0.1", 6379)));
+    }
+
+    @Test
     public void integrateTestPrepareKeeperNoCorrect() throws Exception {
         AtomicInteger infoCount = new AtomicInteger(0);
         AtomicInteger keeperCommandCounter = new AtomicInteger(0);
