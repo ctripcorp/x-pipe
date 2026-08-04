@@ -21,6 +21,7 @@ import javax.annotation.PostConstruct;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -84,6 +85,8 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
         proto.setActive(model.isActive());
         proto.setDescription(model.getDescription() == null ? "" : model.getDescription());
         proto.setDeleted(false);
+        // Unidal INSERT always binds DataChange_LastTime; datetime rejects explicit NULL (D27)
+        proto.setDataChangeLastTime(new Date());
 
         queryHandler.handleInsert(new DalQuery<Integer>() {
             @Override
@@ -184,6 +187,7 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
             return;
         }
         List<LogicalBuOrgTbl> toInsert = new ArrayList<>();
+        Date now = new Date();
         for (Long cmsOrgId : cmsOrgIds) {
             if (cmsOrgId == null || cmsOrgId <= 0) {
                 continue;
@@ -193,6 +197,8 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
             orgTbl.setCmsOrgId(cmsOrgId);
             orgTbl.setDeleted(false);
             orgTbl.setDeletedAt(0);
+            // Unidal INSERT always binds DataChange_LastTime; datetime rejects explicit NULL (D27)
+            orgTbl.setDataChangeLastTime(now);
             toInsert.add(orgTbl);
         }
         if (toInsert.isEmpty()) {

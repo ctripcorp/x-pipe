@@ -1,8 +1,10 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
+import com.ctrip.xpipe.redis.console.model.LogicalBuModel;
 import com.ctrip.xpipe.redis.console.model.LogicalBuOrgTbl;
 import com.ctrip.xpipe.redis.console.model.LogicalBuOrgTblDao;
 import com.ctrip.xpipe.redis.console.model.LogicalBuTbl;
+import com.ctrip.xpipe.redis.console.model.LogicalBuTblDao;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.query.DalQueryHandler;
 import com.google.common.collect.Lists;
@@ -21,6 +23,7 @@ import org.unidal.dal.jdbc.DalException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -102,6 +105,47 @@ public class LogicalBuServiceImplResolveTest {
         Assert.assertEquals(7L, inserted[0].getLogicalBuId());
         Assert.assertEquals(11L, inserted[0].getCmsOrgId());
         Assert.assertEquals(22L, inserted[1].getCmsOrgId());
+        Assert.assertNotNull(inserted[0].getDataChangeLastTime());
+        Assert.assertNotNull(inserted[1].getDataChangeLastTime());
+    }
+
+    @Test
+    public void testCreateSetsDataChangeLastTime() throws DalException {
+        LogicalBuTblDao buDao = mock(LogicalBuTblDao.class);
+        LogicalBuTbl proto = new LogicalBuTbl();
+        when(buDao.createLocal()).thenReturn(proto);
+        when(buDao.insert(any(LogicalBuTbl.class))).thenAnswer(invocation -> {
+            LogicalBuTbl inserted = invocation.getArgument(0);
+            inserted.setId(99L);
+            return 1;
+        });
+        doAnswer(invocation -> {
+            DalQuery<?> query = invocation.getArgument(0);
+            return query.doQuery();
+        }).when(queryHandler).handleInsert(any());
+        LogicalBuOrgTblDao orgDao = mock(LogicalBuOrgTblDao.class);
+        when(orgDao.createLocal()).thenReturn(new LogicalBuOrgTbl());
+        ReflectionTestUtils.setField(logicalBuService, "dao", buDao);
+        ReflectionTestUtils.setField(logicalBuService, "logicalBuOrgTblDao", orgDao);
+
+        LogicalBuModel created = new LogicalBuModel();
+        created.setId(99L);
+        created.setName("TFS_UAT_1");
+        created.setTfsFsId("1");
+        created.setActive(true);
+        doReturn(created).when(logicalBuService).findById(99L);
+
+        LogicalBuModel model = new LogicalBuModel();
+        model.setName("TFS_UAT_1");
+        model.setTfsFsId("1");
+        model.setActive(true);
+        model.setDescription("desc");
+
+        logicalBuService.create(model);
+
+        ArgumentCaptor<LogicalBuTbl> captor = ArgumentCaptor.forClass(LogicalBuTbl.class);
+        verify(buDao).insert(captor.capture());
+        Assert.assertNotNull(captor.getValue().getDataChangeLastTime());
     }
 
     @Test
