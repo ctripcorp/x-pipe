@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
+import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
 import com.ctrip.xpipe.redis.console.model.*;
@@ -12,11 +13,13 @@ import com.ctrip.xpipe.utils.StringUtil;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -71,6 +74,8 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
     }
 
     @Override
+    @Transactional
+    @DalTransaction
     public LogicalBuModel create(LogicalBuModel model) {
         validateModel(model, true);
         LogicalBuTbl proto = dao.createLocal();
@@ -91,6 +96,8 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
     }
 
     @Override
+    @Transactional
+    @DalTransaction
     public LogicalBuModel update(long id, LogicalBuModel model) {
         validateModel(model, false);
         LogicalBuTbl existing = queryHandler.handleQuery(new DalQuery<LogicalBuTbl>() {
@@ -176,23 +183,29 @@ public class LogicalBuServiceImpl extends AbstractConsoleService<LogicalBuTblDao
         if (cmsOrgIds == null || cmsOrgIds.isEmpty()) {
             return;
         }
-        LogicalBuOrgTblDao orgDao = logicalBuOrgTblDao;
+        List<LogicalBuOrgTbl> toInsert = new ArrayList<>();
         for (Long cmsOrgId : cmsOrgIds) {
             if (cmsOrgId == null || cmsOrgId <= 0) {
                 continue;
             }
-            LogicalBuOrgTbl orgTbl = orgDao.createLocal();
+            LogicalBuOrgTbl orgTbl = logicalBuOrgTblDao.createLocal();
             orgTbl.setLogicalBuId(logicalBuId);
             orgTbl.setCmsOrgId(cmsOrgId);
             orgTbl.setDeleted(false);
             orgTbl.setDeletedAt(0);
-            queryHandler.handleInsert(new DalQuery<Integer>() {
-                @Override
-                public Integer doQuery() throws DalException {
-                    return orgDao.insert(orgTbl);
-                }
-            });
+            toInsert.add(orgTbl);
         }
+        if (toInsert.isEmpty()) {
+            return;
+        }
+        LogicalBuOrgTbl[] protos = toInsert.toArray(new LogicalBuOrgTbl[0]);
+        queryHandler.handleInsert(new DalQuery<Integer>() {
+            @Override
+            public Integer doQuery() throws DalException {
+                int[] results = logicalBuOrgTblDao.insertBatch(protos);
+                return results == null ? 0 : results.length;
+            }
+        });
     }
 
     private void softDeleteOrgMappings(long logicalBuId) {
