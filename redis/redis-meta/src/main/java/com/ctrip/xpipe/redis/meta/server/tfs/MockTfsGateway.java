@@ -11,7 +11,8 @@ public class MockTfsGateway implements TfsGateway {
     private static final Logger logger = LoggerFactory.getLogger(MockTfsGateway.class);
 
     @Override
-    public void forceCloseDir(String fsId, String dirPath, String podIp) {
-        logger.info("[MockTfsGateway][forceCloseDir]fsId={}, dirPath={}, podIp={}", fsId, dirPath, podIp);
+    public boolean forceCloseDir(String fsId, String dirPath, String podIp) {
+        logger.info("[MockTfsGateway][forceCloseDir]fsId={}, dirPath={}, podIp={}, success=true", fsId, dirPath, podIp);
+        return true;
     }
 }

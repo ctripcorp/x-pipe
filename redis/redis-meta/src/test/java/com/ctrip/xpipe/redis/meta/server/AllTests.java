@@ -52,6 +52,7 @@ import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoEditorTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoTest;
 import com.ctrip.xpipe.redis.meta.server.service.console.ConsoleServiceImplTest;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfigTfsTest;
+import com.ctrip.xpipe.redis.meta.server.tfs.HttpTfsGatewayTest;
 import com.ctrip.xpipe.redis.meta.server.tfs.TfsDirPathResolverTest;
 import com.ctrip.xpipe.redis.meta.server.tfs.TfsForceCloseDirCommandTest;
 import com.ctrip.xpipe.redis.meta.server.tfs.TfsGatewayFactoryTest;
@@ -140,6 +141,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	TfsDirPathResolverTest.class,
 	TfsForceCloseDirCommandTest.class,
 	TfsGatewayFactoryTest.class,
+	HttpTfsGatewayTest.class,
 	TfsPrepareReleaseCommandTest.class,
 	DefaultMetaServerConfigTfsTest.class
 })
