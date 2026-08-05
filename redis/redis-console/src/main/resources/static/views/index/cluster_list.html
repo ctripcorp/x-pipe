@@ -66,14 +66,14 @@
                         <span class="dc-multi-picker" style="position:relative;width:160px;margin-right:10px;"
                               ng-click="$event.stopPropagation()">
                             <button type="button" class="btn btn-default btn-sm" ng-click="cond._dcOpen=!cond._dcOpen" ng-disabled="!cond.region"
-                                    style="width:160px;height:30px;padding:0 10px;display:inline-flex;align-items:center;justify-content:space-between;">
+                                    style="box-sizing:border-box;width:160px;height:30px;padding:0 10px;display:inline-flex;align-items:center;justify-content:space-between;background-color:#fff !important;background-image:none !important;color:#333 !important;border:1px solid #ccc !important;box-shadow:none !important;outline:none !important;">
                                 <span>
                                     <span ng-if="cond.dcIds && cond.dcIds.length">已选 {{cond.dcIds.length}} 个 DC</span>
                                 </span>
                                 <span class="caret"></span>
                             </button>
                             <div ng-if="cond._dcOpen" class="panel panel-default"
-                                 style="position:absolute;z-index:1000;top:32px;left:0;min-width:180px;max-height:220px;overflow:auto;padding:6px 10px;box-shadow:0 4px 12px rgba(0,0,0,.15);background:#fff;">
+                                 style="position:absolute;z-index:1000;top:32px;left:0;width:160px;max-height:220px;overflow:auto;padding:6px 10px;box-shadow:0 4px 12px rgba(0,0,0,.15);background:#fff;box-sizing:border-box;">
                                 <label ng-repeat="opt in cond._dcOptions track by opt.id"
                                        style="display:block;font-weight:normal;margin:2px 0;cursor:pointer;">
                                     <input type="checkbox" ng-checked="isConditionDcChecked(cond, opt.id)"

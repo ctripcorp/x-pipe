@@ -359,28 +359,46 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         return $scope.sourceClusters.filter(c => c.isChecked);
     }
 
+    function getClusterFromDcCandidates(cluster) {
+        if (isHeteroCluster(cluster)) {
+            var ids = cluster.heteroActiveDcIds || [];
+            var summary = cluster.heteroActiveDcSummary || '';
+            var parts = summary.split(' / ');
+            var candidates = [];
+            for (var i = 0; i < ids.length; ++i) {
+                var seg = parts[i] || '';
+                var type = seg.split(':')[0];
+                var ct = type ? ClusterType.lookup(type) : null;
+                if (ct && ct.supportMigration) {
+                    var dcName = $scope.dcs[ids[i]];
+                    if (dcName) candidates.push(dcName);
+                }
+            }
+            return candidates;
+        }
+        var single = $scope.dcs[cluster.activedcId];
+        return single ? [single] : [];
+    }
+
     function migrateSelectedClusters() {
         let selected = $scope.getSelectedClusters();
         if (selected.length === 0) {
             toastr.warning('请先勾选要迁移的集群');
             return;
         }
-        let fromDcSet = {};
-        selected.forEach(function(cluster) {
-            fromDcSet[getClusterFromDc(cluster)] = true;
-        });
-        let fromDcKeys = Object.keys(fromDcSet).filter(function(key) {
-            return key !== '';
-        });
-        if (fromDcKeys.length !== 1) {
-            if (fromDcKeys.length > 1) {
-                toastr.error('所选集群源机房不一致，请按相同源机房筛选后重试');
-            } else {
-                toastr.error('无法确定所选集群源机房，请刷新后重试');
-            }
+        var candidatesPerCluster = selected.map(getClusterFromDcCandidates);
+        if (candidatesPerCluster.some(function (arr) { return arr.length === 0; })) {
+            toastr.error('无法确定所选集群源机房，请刷新后重试');
             return;
         }
-        $state.go('migration_index', { clusters: selected, fromDc: fromDcKeys[0] });
+        var intersection = candidatesPerCluster.reduce(function (acc, cur) {
+            return acc.filter(function (dc) { return cur.indexOf(dc) !== -1; });
+        }, candidatesPerCluster[0].slice());
+        if (intersection.length === 0) {
+            toastr.error('所选集群没有共同的源机房，请分批迁移');
+            return;
+        }
+        $state.go('migration_index', { clusters: selected, fromDc: intersection[0] });
     }
 
     function clearData() {
