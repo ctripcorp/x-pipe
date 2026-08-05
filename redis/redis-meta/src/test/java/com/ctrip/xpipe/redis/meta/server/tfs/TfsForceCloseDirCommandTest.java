@@ -54,7 +54,7 @@ public class TfsForceCloseDirCommandTest extends AbstractMetaServerTest {
 
         Assert.assertTrue(called.get());
         Assert.assertEquals("10.0.0.8", capturedPodIp.get());
-        Assert.assertEquals("/opt/data/100004376/rsd/replication_store_6380/repl_1", capturedDirPath.get());
+        Assert.assertEquals("/opt/data/100004376/rsd/repl_1", capturedDirPath.get());
     }
 
     @Test

@@ -8,6 +8,7 @@ package com.ctrip.xpipe.redis.keeper.config;
 public class TestKeeperContainerConfig implements KeeperContainerConfig{
 	
 	private String replicationStoreDir;
+	private String mode = MODE_NORMAL;
 	private String metaServerUrl = System.getProperty("metaServerUrl", "http://localhost:9747");
 	
 	public TestKeeperContainerConfig(String replicationStoreDir) {
@@ -17,6 +18,16 @@ public class TestKeeperContainerConfig implements KeeperContainerConfig{
 	@Override
 	public String getReplicationStoreDir() {
 		return replicationStoreDir;
+	}
+
+	@Override
+	public String getMode() {
+		return mode;
+	}
+
+	@Override
+	public boolean isTfsMode() {
+		return MODE_TFS.equalsIgnoreCase(mode);
 	}
 
 	@Override
@@ -40,5 +51,9 @@ public class TestKeeperContainerConfig implements KeeperContainerConfig{
 	
 	public void setReplicationStoreDir(String replicationStoreDir) {
 		this.replicationStoreDir = replicationStoreDir;
+	}
+
+	public void setMode(String mode) {
+		this.mode = mode;
 	}
 }

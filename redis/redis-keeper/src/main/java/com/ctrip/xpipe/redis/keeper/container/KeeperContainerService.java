@@ -359,6 +359,9 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
     private File getReplicationStoreDir(KeeperMeta keeperMeta) {
         String baseDir = keeperContainerConfig.getReplicationStoreDir();
         baseDir = StringUtils.trimTrailingCharacter(baseDir, '/');
+        if (keeperContainerConfig.isTfsMode()) {
+            return new File(baseDir);
+        }
         return new File(String.format("%s/replication_store_%s", baseDir, keeperMeta.getPort()));
     }
 

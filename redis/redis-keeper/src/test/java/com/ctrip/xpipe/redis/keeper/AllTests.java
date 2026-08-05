@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper;
 
 import com.ctrip.xpipe.redis.keeper.applier.AllApplierTests;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfigTest;
+import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperContainerConfigTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManagerTest;
 import com.ctrip.xpipe.redis.keeper.handler.applier.ApplierCommandHandlerTest;
@@ -62,6 +63,7 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisMasterNewRdbDumperTest.class,
         StateBackupDeadlockTest.class,
         KeeperContainerServiceTest.class,
+        DefaultKeeperContainerConfigTest.class,
         DefaultReplicationStoreManagerTest.class,
         DefaultRedisKeeperServerTest.class,
         DefaultReplicationStoreTest.class,
