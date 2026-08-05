@@ -1,0 +1,66 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/repository/AzGroupRepository.java
+  s_478e1a3dc15394::t_18504c30fa5a45 17-23,66,68-69,72-75,78-79,81-82,86
+  s_478e1a3dc15394::t_aa68f2292e4e0a 10-11,24-25,67,83-85,87-93
+  s_2b87d80adf54cb::t_cbd240baf7b14a 7,40-43,45-50,60-65,70-71,76-77,80
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/cache/AzGroupCache.java
+  s_2b87d80adf54cb::t_86c6158218a662 17-18
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/AllTests.java
+  s_2b87d80adf54cb::t_1babc24d42368d 161
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/cache/impl/AzGroupCacheImpl.java
+  s_2b87d80adf54cb::t_afc10369545506 158-162
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/AzGroupServiceImpl.java
+  s_2b87d80adf54cb::t_5505a5daea571b 1-99,103-106,108-115
+  s_2b87d80adf54cb::t_280f95c2675c21 100-102,107
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/ShardServiceImplTest3.java
+  s_66bff0b97feeea::t_3e89bdbd7a9e2d 24
+  s_66bff0b97feeea::t_2b4b578fc02ebe 346
+  s_66bff0b97feeea::t_8ff5fdee1d7f9e 81-83
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/meta/AzGroupCreateInfo.java
+  s_2b87d80adf54cb::t_27f5d7e920cfc0 1-53
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/controller/api/data/AzGroupUpdateControllerTest.java
+  s_2b87d80adf54cb::t_4794e29e81fca1 1-138
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/repository/AzGroupMappingRepository.java
+  s_2b87d80adf54cb::t_2418d77e9bb727 28,31
+  s_2b87d80adf54cb::t_526d98e3d21b2e 29-30,37
+  s_2b87d80adf54cb::t_3dc30862b33dd4 7,27,32-36,38-47
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/model/AzGroupModel.java
+  s_478e1a3dc15394::t_2dfeff6234556d 3-4,49
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/AzGroupUpdateController.java
+  s_2b87d80adf54cb::t_8333d5d97767c4 1-55
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/AzGroupService.java
+  s_2b87d80adf54cb::t_6710c0a91bbab3 1-15
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/cache/impl/AzGroupCacheWithoutDBImpl.java
+  s_2b87d80adf54cb::t_434ca21318f678 79-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "a01fdeed79578e9ee18f0727b8a8b90d43f884a7",
+  "prompts": {},
+  "sessions": {
+    "s_2b87d80adf54cb": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e9445a53-3639-4ad7-8cf4-40b1d0066d1a",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_478e1a3dc15394": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "09227c17-e542-4cf7-8830-57074067bfe2",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_66bff0b97feeea": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ae04fc85-94fe-430b-a07c-79f9aa9c4d04",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

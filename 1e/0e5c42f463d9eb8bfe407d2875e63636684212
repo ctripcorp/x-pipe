@@ -1,0 +1,39 @@
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/meta/CurrentMeta.java
+  s_1feda8eb740353::t_078dd1f23356aa 187-193
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/meta/impl/DefaultCurrentMetaManager.java
+  s_1feda8eb740353::t_8156f6b2edbe27 455-458
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/job/TfsKeeperStateChangeJobTest.java
+  s_1feda8eb740353::t_d565cd2f559f11 50
+  s_1feda8eb740353::t_9db73eceec4d53 342
+  s_1feda8eb740353::t_ff00d47ab4b27f 191-296
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/DefaultKeeperStateChangeHandler.java
+  s_1feda8eb740353::t_e6ee0216cb3438 191-193
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsPrepareReleaseCommand.java
+  s_1feda8eb740353::t_b8cb37a0ba02bd 83
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/meta/CurrentMetaManager.java
+  s_1feda8eb740353::t_3b39cc2b2d4cde 50-51
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/meta/impl/CurrentShardKeeperMeta.java
+  s_1feda8eb740353::t_5e4e613d17735b 94-99
+  s_1feda8eb740353::t_25ff216390f495 56,65
+  s_1feda8eb740353::t_d382374c32a626 21
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/meta/CurrentMetaTest.java
+  s_1feda8eb740353::t_3dad3b62184c86 115-116,124-127,131
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/job/TfsKeeperStateChangeJob.java
+  s_1feda8eb740353::t_e3da681cf3f07a 20,31,48,70,85-100,104-105,139,141-142,191-197,200-204,207-225,231-262
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "1e0e5c42f463d9eb8bfe407d2875e63636684212",
+  "prompts": {},
+  "sessions": {
+    "s_1feda8eb740353": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3e3b9ae4-f70b-44fe-a85d-50873568a596",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

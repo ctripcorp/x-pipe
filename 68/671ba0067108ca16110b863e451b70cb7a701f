@@ -1,0 +1,40 @@
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsDirPathResolverTest.java
+  s_05387142ca836e::t_956fa6b053c902 3,10-18
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_05387142ca836e::t_c3501050beb3c2 66
+  s_05387142ca836e::t_da65a3935e2234 5
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperContainerConfig.java
+  s_05387142ca836e::t_bd4d12dac4921b 7-10,14-19
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/config/DefaultMetaServerConfig.java
+  s_05387142ca836e::t_ff313e995d23c2 79
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperContainerConfig.java
+  s_05387142ca836e::t_019c144b2c1f77 4-5,13-15,17,33-52
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/container/KeeperContainerServiceTest.java
+  s_05387142ca836e::t_e15923991425c5 26,30-31
+  s_05387142ca836e::t_4d9f5415a1fb83 86
+  s_05387142ca836e::t_33a192cdd873e6 139-163
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperContainerConfigTest.java
+  s_05387142ca836e::t_c0d542e2e3220d 1-51
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperContainerConfig.java
+  s_05387142ca836e::t_2e882cf31ee5a6 11,23-32,55-57
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/config/DefaultMetaServerConfigTfsTest.java
+  s_05387142ca836e::t_d3dc2c4a06a137 14,16
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/KeeperContainerService.java
+  s_05387142ca836e::t_31c74a0dd77e2d 362-364
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "68671ba0067108ca16110b863e451b70cb7a701f",
+  "prompts": {},
+  "sessions": {
+    "s_05387142ca836e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c493e91c-d4fe-4ff7-9cd9-7635531c6b87",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

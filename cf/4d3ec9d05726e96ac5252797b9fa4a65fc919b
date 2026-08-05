@@ -1,0 +1,29 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelper.java
+  s_5901fdb19696d1::t_142bc041fcfb6f 33-35,37,40-41,50
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java
+  s_72e722568641b0::t_5e258c0558cc80 84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "cf4d3ec9d05726e96ac5252797b9fa4a65fc919b",
+  "prompts": {},
+  "sessions": {
+    "s_5901fdb19696d1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0e048c1c-3696-4c24-a24c-ba16d98796ea",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_72e722568641b0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b61f0c2e-782f-46d9-94bd-96fb2043f621",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

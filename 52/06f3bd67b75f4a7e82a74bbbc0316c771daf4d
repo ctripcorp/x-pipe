@@ -1,0 +1,19 @@
+redis/package/redis-keeper-package/src/main/scripts/startup.sh
+  s_2b9b17068f00f6::t_3e0d841c479292 156,162-171,178-182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "5206f3bd67b75f4a7e82a74bbbc0316c771daf4d",
+  "prompts": {},
+  "sessions": {
+    "s_2b9b17068f00f6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8c410f14-6529-4d96-827c-25fe79c7ccba",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/job/TfsKeeperStateChangeJobTest.java
+  s_e3786497b76ceb::t_e0d49b9293be59 112,136,146,212,214,244-245,256,269,279-349
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/DefaultKeeperStateChangeHandler.java
+  s_e3786497b76ceb::t_df3e3c31e675fd 191
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/job/TfsKeeperStateChangeJob.java
+  s_e3786497b76ceb::t_c7c8adcb6b4a72 39,67,118-127,141,175,177-180,183-184,186,188,191,194,197
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "0925593504967b565cea88752db4379396499038",
+  "prompts": {},
+  "sessions": {
+    "s_e3786497b76ceb": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6704cbff-5bf3-49a1-b886-9d722b6e27e5",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

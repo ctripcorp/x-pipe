@@ -1,0 +1,22 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelper.java
+  s_4ac85dada28c2d::t_20b09ae1345fa2 81,83,92,97,100-102
+  s_4ac85dada28c2d::t_f485cd210c7891 3,17-18,173,175-177
+  s_4ac85dada28c2d::t_25ebb4947230ca 19-24,82,113,127,155,167,174,178-179
+  s_4ac85dada28c2d::t_eede3ae191b35c 71,74,77-80,84-86,88-91,93-94,96,98-99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "46432abfb3ed5bed3f433d5e210a245a2a09aa03",
+  "prompts": {},
+  "sessions": {
+    "s_4ac85dada28c2d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f9075891-b47b-4e33-b740-2e8a7aa39565",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

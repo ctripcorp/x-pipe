@@ -1,0 +1,48 @@
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/manager/DefaultKeeperManager.java
+  s_09b64d4e568f0f::t_50919422c18c8d 504-509,512,515-517,520-525,555-558,562-566
+  s_09b64d4e568f0f::t_d8805556996da1 560-561
+  s_09b64d4e568f0f::t_5819d300bc2874 513-514
+  s_09b64d4e568f0f::t_b9db2ed6e2b649 23,35
+  s_c5a86963b9c76c::t_4e5a4e23f9b848 18
+  s_09b64d4e568f0f::t_5c8dd7519eac3f 635-636,638-642,645,666
+  s_c5a86963b9c76c::t_91a96aeef31438 510-511,518,526-535
+  s_c5a86963b9c76c::t_00b11d7469a8f9 648-661
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/job/KeeperMasterProcessJobTest.java
+  s_09b64d4e568f0f::t_59c23f82c1ff3f 3,7,10,12,26,28,30
+  s_09b64d4e568f0f::t_befcdb5ce6b5e6 120-189
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/job/KeeperMasterProcessJob.java
+  s_09b64d4e568f0f::t_35908f2c532ab1 11,17,35,46-58,68,80-82
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/manager/DefaultKeeperManagerTest.java
+  s_09b64d4e568f0f::t_5d205a15900e58 164-216,253-342
+  s_c5a86963b9c76c::t_e4ca397131e99c 217-252
+  s_c5a86963b9c76c::t_ee6b985f8b1bb2 30
+  s_09b64d4e568f0f::t_8eb28a4039f6b3 10,31-32
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/job/KeeperStateChangeJobTest.java
+  s_09b64d4e568f0f::t_9a2e206d489725 176-271
+  s_09b64d4e568f0f::t_caf5ba7ffcde55 51-55,69-76
+  s_09b64d4e568f0f::t_744851c3fc8df4 4,7,9-10,21-22,25,30,33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "411663e6fe3487a328d287551a3514b6b5c1c12b",
+  "prompts": {},
+  "sessions": {
+    "s_09b64d4e568f0f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a88be674-a249-4ac0-895d-81fb4f19bf2e",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_c5a86963b9c76c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e9c072a0-d1c9-479b-9634-f989df4f074e",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

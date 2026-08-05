@@ -1,0 +1,53 @@
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsGateway.java
+  s_13d20876f26753::t_f45cc7394c5ece 4-5,9
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsPrepareReleaseCommandTest.java
+  s_13d20876f26753::t_4ab12a24d61525 81
+  s_13d20876f26753::t_2dee85edfc2a08 59
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsForceCloseDirCommand.java
+  s_13d20876f26753::t_7b54283f04532b 20,38,62-65,68,73-84,99,113,121,129,131-132,134-136
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/config/DefaultMetaServerConfigTfsTest.java
+  s_13d20876f26753::t_51c3d3f50523d0 1-17
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsGatewayFactory.java
+  s_13d20876f26753::t_7b6985734bdd40 3,8,11-12,20,22,27-28,31-33,35-36,38-55,58-61,63-64,66-73,77-85
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/job/TfsKeeperStateChangeJobTest.java
+  s_13d20876f26753::t_7b7f5dcb71d23f 174
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/config/MetaServerConfig.java
+  s_13d20876f26753::t_042d5d44887bbb 59,61-67
+  s_13d20876f26753::t_6a3d4999c56c1c 60
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/config/UnitTestServerConfig.java
+  s_13d20876f26753::t_39e9c935f0c85c 40-45
+  s_13d20876f26753::t_edacc0218a8114 206-212,217-232
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/MockTfsGateway.java
+  s_13d20876f26753::t_9d7e86d0d28973 14-15
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/AllTests.java
+  s_13d20876f26753::t_20ff8e6f5858bc 54
+  s_13d20876f26753::t_11410f6ac6dcf7 143-144
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsDirPathResolver.java
+  s_13d20876f26753::t_32dbbe156c0ad7 10-11,15-19,23-25
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/config/DefaultMetaServerConfig.java
+  s_13d20876f26753::t_8c9c5104f0f679 244,246-250
+  s_13d20876f26753::t_72dc5456abe898 68-70,74-76,79
+  s_13d20876f26753::t_d0241ff624f5cd 245
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsForceCloseDirCommandTest.java
+  s_13d20876f26753::t_7a5c6ff4f53d86 17,38,40-42,45-46,48,55-56,62-63,72-98,101,104,115,119,135-136,138,146,149
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsDirPathResolverTest.java
+  s_13d20876f26753::t_73fa5d4c2a373f 9-12,17
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsGatewayFactoryTest.java
+  s_13d20876f26753::t_f9de45256ab2ab 3,10,12-13,17-23,25,30-56,58,61-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "e414ce06fbb5e3e80c36e706264784b9c14b9221",
+  "prompts": {},
+  "sessions": {
+    "s_13d20876f26753": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1cb34ccb-fb95-4da1-b7e5-0a3e60bdcbdd",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

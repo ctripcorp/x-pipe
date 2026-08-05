@@ -1,0 +1,9 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/OffsetCommandWriter.java
+  ai_agent 204
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "c7935ab2a8dd87115d47efa3a0ac9b3811101902",
+  "prompts": {}
+}

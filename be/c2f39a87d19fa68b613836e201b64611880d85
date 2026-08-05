@@ -1,0 +1,58 @@
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/StrategyAwareKeeperActiveElectAlgorithmTest.java
+  s_367091a3bca486::t_aa0652e12959c4 111,114-118,120-122,125-133
+  s_b353cdd93cc3fd::t_c575832aaae8a6 112-113,119,123-124
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/meta/impl/DefaultDcMetaCache.java
+  s_b353cdd93cc3fd::t_570fa1bab6c743 93,106-108
+  s_b353cdd93cc3fd::t_37fadf31d17fb4 164-165
+  s_b353cdd93cc3fd::t_ade2ae5dc95b65 342-343
+  s_b353cdd93cc3fd::t_f72ba23fddbc45 19
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/StrategyAwareKeeperActiveElectAlgorithm.java
+  s_b353cdd93cc3fd::t_bb0c5d262cf662 81-82
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperMetaEnricher.java
+  s_367091a3bca486::t_c60edd5567b26f 3,8-9,21-22,36-40
+  s_b353cdd93cc3fd::t_1aabc001614457 16-17,35
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/meta/impl/RedisMetaServiceImplTest.java
+  s_367091a3bca486::t_794496fafff218 8,10
+  s_367091a3bca486::t_086f471838d6dc 131-166
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperRoleAssigner.java
+  s_b353cdd93cc3fd::t_b9b68f3bebc066 72-73
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/meta/impl/RedisMetaServiceImpl.java
+  s_b353cdd93cc3fd::t_4527cceac0d82c 87
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperRoleAssignerTest.java
+  s_b353cdd93cc3fd::t_f34913c4d55a1c 80-81,83,88,91
+  s_367091a3bca486::t_8008321a416bb6 79,82,84-87,89-90,92-95
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperPriorityUtilsTest.java
+  s_b353cdd93cc3fd::t_dd9c7db144375e 1-81
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperMetaEnricherTest.java
+  s_b353cdd93cc3fd::t_98eb51f5be6fc6 36,38
+  s_367091a3bca486::t_35e8d090b55c19 1-35,37,39-80
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperPriorityUtils.java
+  s_367091a3bca486::t_357f603deafeb3 1-3,6,8-9,11,15,19-23,25-28,51-53,55,87-88
+  s_b353cdd93cc3fd::t_d8fde274e2bb12 4-5,7,10,12-14,16-18,24,29-50,54,56-86
+redis/redis-console/src/main/resources/META-INF/dal/jdbc/meta-dal.xml
+  s_367091a3bca486::t_a519084712333b 1182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "bec2f39a87d19fa68b613836e201b64611880d85",
+  "prompts": {},
+  "sessions": {
+    "s_367091a3bca486": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a514e973-9488-4f84-aeb0-c648c017cdfd",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_b353cdd93cc3fd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "213aa845-54e6-46cd-bece-ea5c22f3ed68",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

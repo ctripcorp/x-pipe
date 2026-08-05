@@ -1,0 +1,64 @@
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/dcchange/impl/AbstractChangePrimaryDcAction.java
+  s_d949253b229f6f::t_f0b49e41c47f51 6,14,22
+  s_d949253b229f6f::t_06020728cd3c61 106-107
+  s_d949253b229f6f::t_b3dfdf642c2859 108-109
+  s_c0b5117166b653::t_e3290359a105a6 110-116,120,127-132
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/manager/DefaultKeeperManager.java
+  s_c0b5117166b653::t_f753f69ea06bdf 447,450-453
+  s_c0b5117166b653::t_982906de33cf8d 548-552,556-560
+  s_d949253b229f6f::t_acd07c4331c1df 575-576
+  s_635b7ae942c845::t_b6b67b9884e48a 659-660,664,669,682,687
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/dchange/impl/AbstractChangePrimaryDcActionMakeKeepersOkTest.java
+  s_d949253b229f6f::t_4d51d1bb557fd0 71
+  s_d949253b229f6f::t_ff4ff794aace53 116
+  s_d949253b229f6f::t_6603f02965f807 3,29-30,200-201
+  s_d949253b229f6f::t_3a6d7c7629e28e 1-2,4-28,31-32,34-60,62-70,72-88,90-115,117-128,157-199,202-235
+  s_d949253b229f6f::t_6d19ff9ac7cce8 61
+  s_d949253b229f6f::t_20f03d43f81f48 89
+  s_d949253b229f6f::t_ceb87d90d877ba 33
+  s_c0b5117166b653::t_07b9deb3132e32 129-156
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/manager/DefaultKeeperManagerTest.java
+  s_c0b5117166b653::t_089f9cb82f3c87 267-278
+  s_635b7ae942c845::t_b6ad725139ee3f 253-266
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/AllTests.java
+  s_635b7ae942c845::t_b51fc34660cad1 23
+  s_d949253b229f6f::t_41e960eef7bb65 139
+  s_635b7ae942c845::t_e4d7b76085e537 110
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperRoleAssignerTest.java
+  s_d949253b229f6f::t_bb9cdb51644d22 96-118
+  s_d949253b229f6f::t_43ff5e9ef73951 15
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperRoleAssigner.java
+  s_d949253b229f6f::t_853f93ef8292d0 45-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "a9990b18a808225e49abc92874d51223e3a488fe",
+  "prompts": {},
+  "sessions": {
+    "s_635b7ae942c845": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1702d3ba-a4e8-4c8f-a8e7-18e4fcd2a8ba",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_c0b5117166b653": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "43622fc3-372f-438a-ba47-479f3bb215ce",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_d949253b229f6f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2c3a39eb-342a-4fa6-8fdb-03b830f1b440",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

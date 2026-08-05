@@ -1,0 +1,19 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/ShardServiceImpl.java
+  s_f8d3bae99b1e09::t_f8f6dc09393c0b 450,453-461,465
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "a9156337acec8bf74c7415fb03c0053b40ed43c9",
+  "prompts": {},
+  "sessions": {
+    "s_f8d3bae99b1e09": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb7b92d5-5612-46ca-93f2-4563bb8cf38c",
+        "model": "glm-5.1"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}

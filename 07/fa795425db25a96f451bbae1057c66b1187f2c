@@ -1,0 +1,106 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/StreamCommandReader.java
+  s_24e70e2dbdc5ae::t_4742dfd783e07f 191,194,205,207
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriterV2.java
+  s_5f8ce3a8bded5c::t_a54ebc7e3bfbe5 54
+  s_5f8ce3a8bded5c::t_e094cd39e21d58 63,65-66
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/AbstractIndex.java
+  s_b4d68ccf316e20::t_a4d979eb11d0c0 41-42,45-46,69-70,96,99-100,121
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReaderV2.java
+  s_b4d68ccf316e20::t_2849f4a112852d 24
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  h_00df85a0850dc5 16,34,42-44,63-64,87,89-90,92,109-115,117,175,240-241,243,245,260-263,266,283-285,449-461,467-468,471-472,487-492,503-505,507,614-615,639,653-654,686-688,690
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  h_00df85a0850dc5 12-13,76,83-84,122-123,126-128,166-169,193,434,437,446,499,502,510,575-579,582,888-941,943-993,995-997,1001-1004,1006-1009,1011,1018-1019,1021,1024,1026,1028-1030,1032,1037-1053,1055-1080,1084-1088,1108-1111,1113-1115,1118-1131,1134-1145,1147-1159
+  s_7fb5cb9a4af716::t_7efefc73acdefb 144
+  s_40e19e8e587b7b::t_c899478f2411b7 994
+  s_1900c3b2d8adb6::t_47cfbadb2effdf 1081
+  s_4edcb32cd6d675::t_cde8d299e54321 1082-1083
+  s_4edcb32cd6d675::t_dab0f257678aa1 1089-1107,1116-1117
+  s_b3f5ea55d529a9::t_b56df0104ddbb3 1132-1133
+  s_aaf608fc4fbc65::t_e3e3fbf2f56aea 1146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "07fa795425db25a96f451bbae1057c66b1187f2c",
+  "prompts": {},
+  "humans": {
+    "h_00df85a0850dc5": {
+      "author": "TB <b.tian@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_1900c3b2d8adb6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0556d691-573c-41e3-8ff6-412c61bd0b89",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_24e70e2dbdc5ae": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "de6148cc-8c5e-4772-992f-ebc3021c34a2",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_40e19e8e587b7b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "dc6b859a-0392-4a95-ac41-eebc69193a8e",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_4edcb32cd6d675": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "402af618-2b01-4f65-b66a-164d01ce4226",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_5f8ce3a8bded5c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d99dede0-8de0-44b5-a53a-5a3c7bd5a63d",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_7fb5cb9a4af716": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1b31f885-1cc0-4658-b770-9f8f94dfd915",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_aaf608fc4fbc65": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "736892ba-4909-449c-a3a4-74846eb9238d",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_b3f5ea55d529a9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "20e72465-8166-474c-81fe-4d116a648af5",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_b4d68ccf316e20": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "193dea39-93ab-4109-85b4-e4dca9988089",
+        "model": "composer-2.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

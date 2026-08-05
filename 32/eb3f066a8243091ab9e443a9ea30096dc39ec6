@@ -1,0 +1,38 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/RedisKeeperServerState.java
+  s_bd723f6a9ec38f::t_7f5a882f7f8b12 21-26
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/RedisKeeperServerStateActive.java
+  s_bd723f6a9ec38f::t_aa3f084aab1a6e 41-45
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/RedisKeeperServer.java
+  s_bd723f6a9ec38f::t_07887f755cffe1 5
+  s_bd723f6a9ec38f::t_e666e6a562faf7 90-95
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/RedisKeeperServerStatePreActive.java
+  s_bd723f6a9ec38f::t_ffc14465a82ae6 40-44
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/RedisKeeperServerStateBackup.java
+  s_bd723f6a9ec38f::t_ca9b5605907069 43-47
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/RedisKeeperServerStateUnknown.java
+  s_bd723f6a9ec38f::t_72444579b6f587 32-36
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_bd723f6a9ec38f::t_65b700073c7b00 737-746
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/RedisKeeperServerStatePrepare.java
+  s_bd723f6a9ec38f::t_9fbf250c4d0102 1-66
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/AbstractRedisKeeperServerState.java
+  s_bd723f6a9ec38f::t_efa612a23fd32a 162-169
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/RedisKeeperServerStatePreBackup.java
+  s_bd723f6a9ec38f::t_8cdc718d4f1ce4 37-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "32eb3f066a8243091ab9e443a9ea30096dc39ec6",
+  "prompts": {},
+  "sessions": {
+    "s_bd723f6a9ec38f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "29d2ae58-a887-44c7-ae96-063551ea0e8a",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
