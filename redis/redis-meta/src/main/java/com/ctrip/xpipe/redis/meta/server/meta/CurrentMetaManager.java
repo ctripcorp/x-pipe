@@ -47,8 +47,6 @@ public interface CurrentMetaManager extends Observable {
 
 	KeeperMeta getPreviousActiveKeeper(Long clusterDbId, Long shardDbId);
 
-	List<KeeperMeta> getPreviousSurviveKeepers(Long clusterDbId, Long shardDbId);
-
 	List<ApplierMeta> getSurviveAppliers(Long clusterDbId, Long shardDbId);
 
 	List<RedisMeta> getRedises(Long clusterDbId, Long shardDbId);
