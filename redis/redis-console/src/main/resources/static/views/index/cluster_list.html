@@ -34,6 +34,77 @@
             </div>
         </header>
 
+        <div class="panel-body">
+            <div class="row" style="margin-bottom:8px;">
+                <div class="col-md-6">
+                    <strong>Region 组合筛选</strong>
+                </div>
+                <div class="col-md-6 text-right">
+                    <span class="text-muted" style="font-size:12px;">
+                        当前筛选结果:<strong>{{filteredClusters.length || 0}}</strong> 条 / 共 {{sourceClusters.length || 0}} 条
+                    </span>
+                </div>
+            </div>
+            <div class="row" ng-if="azGroupConditions.length">
+                <div class="col-md-12">
+                    <div style="display:flex;font-size:12px;color:#666;margin-bottom:4px;padding-left:2px;">
+                        <div style="width:170px;">Region</div>
+                        <div style="width:170px;">DCs</div>
+                        <div style="width:170px;">activeDC</div>
+                        <div style="width:170px;">ClusterType</div>
+                        <div style="width:32px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div ng-repeat="cond in azGroupConditions" style="display:flex;align-items:center;margin-bottom:6px;">
+                        <select class="input-sm" ng-model="cond.region" ng-change="onConditionRegionChange(cond)"
+                                ng-options="opt.id as opt.title for opt in regionFilterData"
+                                title="Region"
+                                style="width:160px;height:30px;margin-right:10px;"></select>
+                        <span class="dc-multi-picker" style="position:relative;width:160px;margin-right:10px;"
+                              ng-click="$event.stopPropagation()">
+                            <button type="button" class="btn btn-default btn-sm" ng-click="cond._dcOpen=!cond._dcOpen" ng-disabled="!cond.region"
+                                    style="width:160px;height:30px;padding:0 10px;display:inline-flex;align-items:center;justify-content:space-between;">
+                                <span>
+                                    <span ng-if="cond.dcIds && cond.dcIds.length">已选 {{cond.dcIds.length}} 个 DC</span>
+                                </span>
+                                <span class="caret"></span>
+                            </button>
+                            <div ng-if="cond._dcOpen" class="panel panel-default"
+                                 style="position:absolute;z-index:1000;top:32px;left:0;min-width:180px;max-height:220px;overflow:auto;padding:6px 10px;box-shadow:0 4px 12px rgba(0,0,0,.15);background:#fff;">
+                                <label ng-repeat="opt in cond._dcOptions track by opt.id"
+                                       style="display:block;font-weight:normal;margin:2px 0;cursor:pointer;">
+                                    <input type="checkbox" ng-checked="isConditionDcChecked(cond, opt.id)"
+                                           ng-click="toggleConditionDc(cond, opt.id)"
+                                           style="margin-right:6px;">{{opt.title}}
+                                </label>
+                            </div>
+                        </span>
+                        <select class="input-sm" ng-model="cond.activeDcId"
+                                ng-disabled="!cond.region"
+                                title="选中 Region 后可选,严格匹配主机房"
+                                style="width:160px;height:30px;margin-right:10px;">
+                            <option value=""></option>
+                            <option ng-repeat="opt in cond._dcOptions track by opt.id" value="{{opt.id}}">{{opt.title}}</option>
+                        </select>
+                        <select class="input-sm" ng-model="cond.clusterType"
+                                ng-options="opt.id as opt.title for opt in azGroupTypeOptions"
+                                title="该 Region 下的集群类型"
+                                style="width:160px;height:30px;margin-right:10px;"></select>
+                        <button type="button" class="btn btn-default btn-sm" ng-click="removeAzGroupCondition($index)"
+                                title="删除该条件" style="width:32px;height:30px;padding:2px 0;line-height:1;">×</button>
+                    </div>
+                    <div>
+                        <a class="btn btn-default btn-xs" ng-click="addAzGroupCondition()">+ 添加条件</a>
+                        <a class="btn btn-default btn-xs" ng-if="azGroupConditions.length" ng-click="clearAzGroupConditions()">清空</a>
+                        <a class="btn btn-info btn-xs" ng-click="applyAzGroupConditions()">应用筛选</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover" ng-table-columns-binding="cols">
             <tr ng-repeat-start="cluster in $data">
                 <td>

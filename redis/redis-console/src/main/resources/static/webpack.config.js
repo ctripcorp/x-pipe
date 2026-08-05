@@ -14,9 +14,12 @@ module.exports = {
         test: /\.coffee$/,
         use: 'coffee-loader'
       },
-      { 
-        test: /ng-table\/.*\.html$/, 
-        use: ['ngtemplate-loader?requireAngular&relativeTo=/src/browser/&prefix=ng-table/', 'html-loader'] 
+      {
+        test: /ng-table[\\/].*\.html$/,
+        use: [
+          'ngtemplate-loader?requireAngular&relativeTo=/src/browser/&prefix=ng-table/',
+          { loader: 'html-loader', options: { esModule: false } }
+        ]
       },
       {
         test: /\.(jpg|png|gif)$/,
