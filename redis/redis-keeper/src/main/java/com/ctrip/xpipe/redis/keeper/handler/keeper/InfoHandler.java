@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.server.Server;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
 import com.ctrip.xpipe.redis.core.protocal.protocal.CommandBulkStringParser;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
@@ -236,6 +238,10 @@ public class InfoHandler extends AbstractCommandHandler {
 
 		@Override
 		public String getInfo(RedisKeeperServer redisKeeperServer) {
+			if (isPrepare(redisKeeperServer)) {
+				return getPrepareInfo(redisKeeperServer);
+			}
+
 			StringBuilder sb = new StringBuilder();
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
 			long slaveReplOffset = replicationStore.getCurReplStageReplOff();
@@ -315,6 +321,39 @@ public class InfoHandler extends AbstractCommandHandler {
 			return sb.toString();
 		}
 
+		/**
+		 * D34: PREPARE has released Store lease — return minimal INFO without touching Store.
+		 */
+		private String getPrepareInfo(RedisKeeperServer redisKeeperServer) {
+			StringBuilder sb = new StringBuilder();
+			sb.append(getHeader());
+			sb.append("role:" + Server.SERVER_ROLE.SLAVE + RedisProtocol.CRLF);
+			sb.append(RedisProtocol.KEEPER_ROLE_PREFIX + ":" + redisKeeperServer.role() + RedisProtocol.CRLF);
+			sb.append("state:" + KeeperState.PREPARE + RedisProtocol.CRLF);
+
+			RedisMaster redisMaster = redisKeeperServer.getRedisMaster();
+			Endpoint master = redisMaster != null ? redisMaster.masterEndPoint()
+					: redisKeeperServer.getRedisKeeperServerState().getMaster();
+			if (master != null) {
+				sb.append("master_host:" + master.getHost() + RedisProtocol.CRLF);
+				sb.append("master_port:" + master.getPort() + RedisProtocol.CRLF);
+				// Must not masquerade as up/connected while lease is released
+			}
+
+			sb.append("slave_repl_offset:0" + RedisProtocol.CRLF);
+			sb.append("slave_priority:0" + RedisProtocol.CRLF);
+			sb.append("connected_slaves:0" + RedisProtocol.CRLF);
+			sb.append("master_replid:" + ReplicationStoreMeta.EMPTY_REPL_ID + RedisProtocol.CRLF);
+			sb.append("master_replid2:" + ReplicationStoreMeta.EMPTY_REPL_ID + RedisProtocol.CRLF);
+			sb.append("master_repl_offset:0" + RedisProtocol.CRLF);
+			sb.append("second_repl_offset:" + ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET + RedisProtocol.CRLF);
+			sb.append("repl_backlog_active:0" + RedisProtocol.CRLF);
+			sb.append("repl_backlog_first_byte_offset:0" + RedisProtocol.CRLF);
+			sb.append("repl_backlog_size:0" + RedisProtocol.CRLF);
+			sb.append("repl_backlog_histlen:0" + RedisProtocol.CRLF);
+			return sb.toString();
+		}
+
 		@Override
 		public String name() {
 			return "Replication";
@@ -326,10 +365,19 @@ public class InfoHandler extends AbstractCommandHandler {
 		@Override
 		public String getInfo(RedisKeeperServer keeperServer) {
 			StringBuilder sb = new StringBuilder();
+			sb.append(getHeader());
+			if (isPrepare(keeperServer)) {
+				// D34: INFO ALL must not fail because GTID section touches Store
+				sb.append("gtid_master_uuid:" + RedisProtocol.CRLF);
+				sb.append("gtid_executed:" + RedisProtocol.CRLF);
+				sb.append("gtid_lost:" + RedisProtocol.CRLF);
+				sb.append("cur_repl:" + RedisProtocol.CRLF);
+				sb.append("prev_repl:" + RedisProtocol.CRLF);
+				return sb.toString();
+			}
 			ReplStage curStage = keeperServer.getReplicationStore().getMetaStore().getCurrentReplStage();
 			ReplStage preStage = keeperServer.getReplicationStore().getMetaStore().getPreReplStage();
 			Pair<GtidSet, GtidSet> gtidSetPair = keeperServer.getReplicationStore().getGtidSet();
-			sb.append(getHeader());
 			sb.append("gtid_master_uuid:" + curStage.getMasterUuid() + RedisProtocol.CRLF);
 			sb.append("gtid_executed:" + gtidSetPair.getKey() + RedisProtocol.CRLF);
 			sb.append("gtid_lost:" + gtidSetPair.getValue() + RedisProtocol.CRLF);
@@ -342,6 +390,11 @@ public class InfoHandler extends AbstractCommandHandler {
 		public String name() {
 			return "Gtid";
 		}
+	}
+
+	private static boolean isPrepare(RedisKeeperServer keeperServer) {
+		RedisKeeperServerState state = keeperServer.getRedisKeeperServerState();
+		return state != null && KeeperState.PREPARE == state.keeperState();
 	}
 
 	@Override

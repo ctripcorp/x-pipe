@@ -6,15 +6,22 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
+import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.InfoHandler;
 import com.ctrip.xpipe.redis.keeper.handler.keeper.KeeperCommandHandler;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.RoleCommandHandler;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
+import io.netty.buffer.Unpooled;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -205,6 +212,55 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 	}
 
 	/**
+	 * D34 / T-17.4: after SETSTATE PREPARE, ROLE / INFO REPLICATION / INFO ALL succeed with state=PREPARE;
+	 * getReplicationStore gate remains closed.
+	 */
+	@Test
+	public void testPrepareObservationCommandsCompatible() throws Exception {
+		DefaultRedisKeeperServer redisKeeperServer = (DefaultRedisKeeperServer) createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			Endpoint master = new DefaultEndPoint("127.0.0.1", 0);
+			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, master));
+			Assert.assertTrue(redisKeeperServer.getReplicationStore().checkOk());
+
+			String setResp = invokeKeeperCommand(redisKeeperServer, "setstate", "PREPARE", "10.0.0.1", "6380");
+			Assert.assertEquals("+" + RedisProtocol.OK + "\r\n", setResp);
+			Assert.assertEquals(KeeperState.PREPARE, redisKeeperServer.getRedisKeeperServerState().keeperState());
+
+			try {
+				redisKeeperServer.getReplicationStore();
+				Assert.fail("PREPARE must refuse getReplicationStore");
+			} catch (Exception expected) {
+				logger.info("prepare gate ok", expected);
+			}
+
+			EmbeddedChannel roleChannel = new EmbeddedChannel();
+			new RoleCommandHandler().handle(new String[0], new DefaultRedisClient(roleChannel, redisKeeperServer));
+			ByteBuf roleBuf = roleChannel.readOutbound();
+			Assert.assertNotNull(roleBuf);
+			String roleRaw = ByteBufUtils.readToString(roleBuf.duplicate());
+			roleBuf.release();
+			Assert.assertFalse(roleRaw.startsWith("-"));
+			SlaveRole slaveRole = new SlaveRole(new ArrayParser().read(Unpooled.wrappedBuffer(roleRaw.getBytes())).getPayload());
+			Assert.assertEquals(MASTER_STATE.REDIS_REPL_NONE, slaveRole.getMasterState());
+			Assert.assertEquals(-1L, slaveRole.getMasterOffset());
+
+			String replicationInfo = invokeInfoCommand(redisKeeperServer, "replication");
+			Assert.assertTrue(replicationInfo.contains("state:" + KeeperState.PREPARE));
+			Assert.assertEquals(KeeperState.PREPARE.name(), new InfoResultExtractor(replicationInfo).getKeeperState());
+
+			String allInfo = invokeInfoCommand(redisKeeperServer, "all");
+			Assert.assertTrue(allInfo.contains("state:" + KeeperState.PREPARE));
+			Assert.assertFalse(allInfo.startsWith("-"));
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	/**
 	 * T-R.11③: PREPARE is idempotent — second SETSTATE PREPARE still OK.
 	 */
 	@Test
@@ -346,6 +402,24 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		ByteBuf buf = (ByteBuf) outbound;
 		try {
 			return ByteBufUtils.readToString(buf.duplicate());
+		} finally {
+			buf.release();
+		}
+	}
+
+	private String invokeInfoCommand(RedisKeeperServer server, String section) throws Exception {
+		EmbeddedChannel channel = new EmbeddedChannel();
+		new InfoHandler().handle(new String[]{section}, new DefaultRedisClient(channel, server));
+		Object outbound = channel.readOutbound();
+		Assert.assertNotNull(outbound);
+		Assert.assertTrue(outbound instanceof ByteBuf);
+		ByteBuf buf = (ByteBuf) outbound;
+		try {
+			String raw = ByteBufUtils.readToString(buf.duplicate());
+			Assert.assertFalse("INFO must not return Redis ERROR: " + raw, raw.startsWith("-"));
+			Assert.assertTrue(raw.startsWith("$"));
+			int idx = raw.indexOf("\r\n");
+			return raw.substring(idx + 2, raw.length() - 2);
 		} finally {
 			buf.release();
 		}

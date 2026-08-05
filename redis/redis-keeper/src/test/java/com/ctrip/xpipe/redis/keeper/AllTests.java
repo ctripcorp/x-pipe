@@ -74,6 +74,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultCommandStoreTest.class,
         DefaultRedisSlaveTest.class,
         RoleCommandHandlerTest.class,
+        PrepareObservationHandlerTest.class,
         DefaultKeeperConfigTest.class,
         FakeRedisExceptionTest.class,
         FakeRedisRdbDumperTest.class,
