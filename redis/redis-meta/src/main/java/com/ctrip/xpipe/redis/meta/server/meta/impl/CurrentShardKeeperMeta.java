@@ -18,7 +18,6 @@ public class CurrentShardKeeperMeta extends AbstractCurrentShardInstanceMeta {
     private List<KeeperMeta> surviveKeepers = new LinkedList<>();
     // Written only from elector thread via setSurviveKeepers; read on same thread before async state-change job.
     private KeeperMeta previousActiveKeeper;
-    private List<KeeperMeta> previousSurviveKeepers;
     private Pair<String, Integer> keeperMaster;
 
     public CurrentShardKeeperMeta(@JsonProperty("clusterDbId") Long clusterDbId, @JsonProperty("shardDbId") Long shardDbId) {
@@ -53,7 +52,6 @@ public class CurrentShardKeeperMeta extends AbstractCurrentShardInstanceMeta {
                         "active not in all survivors " + activeKeeper + ", all:" + this.surviveKeepers);
             }
             previousActiveKeeper = getActiveKeeper();
-            previousSurviveKeepers = MetaCloneFacade.INSTANCE.cloneList(this.surviveKeepers);
             this.surviveKeepers = MetaCloneFacade.INSTANCE.cloneList(surviveKeepers);
             logger.info("[setSurviveKeepers]cluster_{},shard_{},{}, {}", clusterDbId, shardDbId, surviveKeepers, activeKeeper);
             doSetActive(activeKeeper);
@@ -62,7 +60,6 @@ public class CurrentShardKeeperMeta extends AbstractCurrentShardInstanceMeta {
                     surviveKeepers, activeKeeper);
             this.surviveKeepers.clear();
             previousActiveKeeper = null;
-            previousSurviveKeepers = null;
         }
     }
 
@@ -89,12 +86,6 @@ public class CurrentShardKeeperMeta extends AbstractCurrentShardInstanceMeta {
     @JsonIgnore
     public KeeperMeta getPreviousActiveKeeper() {
         return previousActiveKeeper == null ? null : MetaCloneFacade.INSTANCE.clone(previousActiveKeeper);
-    }
-
-    @JsonIgnore
-    @SuppressWarnings("unchecked")
-    public List<KeeperMeta> getPreviousSurviveKeepers() {
-        return previousSurviveKeepers == null ? null : MetaCloneFacade.INSTANCE.cloneList(previousSurviveKeepers);
     }
 
     private boolean checkIn(List<KeeperMeta> surviveKeepers, KeeperMeta activeKeeper) {

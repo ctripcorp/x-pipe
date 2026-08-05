@@ -452,11 +452,6 @@ public class DefaultCurrentMetaManager extends AbstractLifecycleObservable imple
 	}
 
 	@Override
-	public List<KeeperMeta> getPreviousSurviveKeepers(Long clusterDbId, Long shardDbId) {
-		return currentMeta.getPreviousSurviveKeepers(clusterDbId, shardDbId);
-	}
-
-	@Override
 	public List<ApplierMeta> getSurviveAppliers(Long clusterDbId, Long shardDbId) {
 	    return currentMeta.getSurviveAppliers(clusterDbId, shardDbId);
 	}
