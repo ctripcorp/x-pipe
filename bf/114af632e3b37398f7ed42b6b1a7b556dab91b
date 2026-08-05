@@ -1,0 +1,36 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/handler/keeper/RoleCommandHandler.java
+  s_19aa6d45d4db56::t_5f6043d9abd65b 5,11,32-34,36-37,39-41,43,48-56
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/handler/keeper/RoleCommandHandlerTest.java
+  s_19aa6d45d4db56::t_6c1bd6eaef9e72 6,13,54-56,80,84,90-97,116-141
+  s_19aa6d45d4db56::t_5f410186025196 72,74-77
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/handler/keeper/PrepareObservationHandlerTest.java
+  s_19aa6d45d4db56::t_efa2d45a73f818 1-58,62,66-67,69-86,88-102,104-119,121-127,129-140
+  s_19aa6d45d4db56::t_057976358cea90 59-61
+  s_19aa6d45d4db56::t_87b7d36180014c 68,87,103,120,128
+  s_19aa6d45d4db56::t_e92622e943a45a 63-65
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerTest.java
+  s_19aa6d45d4db56::t_66e3b4e5ace74c 9,11-13,20,22,24
+  s_19aa6d45d4db56::t_7228e24add9e05 215-262
+  s_19aa6d45d4db56::t_4bd032b3267874 410-427
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_19aa6d45d4db56::t_ac042100b3adc9 77
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/handler/keeper/InfoHandler.java
+  s_19aa6d45d4db56::t_c7dee40b840249 3,6
+  s_19aa6d45d4db56::t_b29753749fe4dd 241-244,324-356,368-377,395-397
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "bf114af632e3b37398f7ed42b6b1a7b556dab91b",
+  "prompts": {},
+  "sessions": {
+    "s_19aa6d45d4db56": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "85802849-b07f-461a-8a15-4106d1ba6996",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
