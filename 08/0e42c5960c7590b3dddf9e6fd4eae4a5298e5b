@@ -1,0 +1,75 @@
+redis/redis-console/src/main/resources/static/scripts/controllers/ClusterListCtl.ts
+  s_90fd8e908cacdb::t_8d4f332dfd3385 68
+  s_90fd8e908cacdb::t_9da0ccecc82d0d 470-472,500-504,509-510,542-545,556,590-592,630-640
+  s_90fd8e908cacdb::t_a7515e099acc30 505-508,513-521,525-526,532-538,553,557-589
+  s_90fd8e908cacdb::t_29cb665b8e7ba8 541
+  s_90fd8e908cacdb::t_aed7cdc6dc93bc 626-629
+  s_90fd8e908cacdb::t_5dc00d56d4f9af 138-140
+  s_90fd8e908cacdb::t_c9979d18b5d3f1 175-176
+  s_90fd8e908cacdb::t_9d44a2e3fc57ba 178
+  s_90fd8e908cacdb::t_e9465d15f83937 650-665
+  s_90fd8e908cacdb::t_eee6d1aa7abd9d 511-512,522,527,539-540,646
+  s_90fd8e908cacdb::t_ac2fac4a44348c 593-594,600-616
+  s_90fd8e908cacdb::t_2ab2c7f3e01666 595-599,624-625
+  s_90fd8e908cacdb::t_1f75addb8c5da8 51
+  s_90fd8e908cacdb::t_1e8ab9544aff38 52-54,56
+  s_90fd8e908cacdb::t_d105092ddd288a 75
+  s_90fd8e908cacdb::t_876fc3f5702556 76
+  s_90fd8e908cacdb::t_d87f2ee7384927 55
+  s_90fd8e908cacdb::t_0935d2cc684cfc 57-67
+  s_90fd8e908cacdb::t_0b5fac4399e7d0 69-74
+  s_90fd8e908cacdb::t_268b52bdc8b59e 101-102,112-113,115
+  s_90fd8e908cacdb::t_f06303235d1a4b 528-531,546-552,554-555
+  s_90fd8e908cacdb::t_eb6dac85384124 617-623
+  s_90fd8e908cacdb::t_aef03194777905 641,644
+  s_90fd8e908cacdb::t_ea2ae0fa8ac085 642-643
+  s_90fd8e908cacdb::t_5d327aa5bbefcc 523-524,645
+  s_90fd8e908cacdb::t_7b8e4ee6bc01ed 6,9
+  s_90fd8e908cacdb::t_246b4820906f37 129-137,141-174,177,179-180
+redis/redis-console/src/main/resources/static/scripts/services/AzGroupService.ts
+  s_90fd8e908cacdb::t_1689b58969c87d 1-27
+redis/redis-console/src/main/resources/static/webpack.config.js
+  s_90fd8e908cacdb::t_5346e6decf1dee 18
+  s_90fd8e908cacdb::t_441402850d0fcd 17,19-22
+redis/redis-console/src/main/resources/static/scripts/services/ZoneService.ts
+  s_90fd8e908cacdb::t_81faedf1203ba1 1-27
+redis/redis-console/src/main/resources/static/webpack.config.dev.js
+  s_90fd8e908cacdb::t_3ec5256fe763ed 17,19-22
+  s_90fd8e908cacdb::t_7e4e9b47df0cdd 18
+redis/redis-console/src/main/resources/static/views/index/cluster_list.html
+  s_90fd8e908cacdb::t_ecc2be9646ed1c 74,78-79
+  s_90fd8e908cacdb::t_7b29a1d67fd89f 77
+  s_90fd8e908cacdb::t_e3c92d3df059bf 50-51,55-56,61,90-91,96
+  s_90fd8e908cacdb::t_65d20fb27de2fd 76
+  s_90fd8e908cacdb::t_d17eab32387135 48-49,57-58,64,87,94
+  s_90fd8e908cacdb::t_6c2621e0c4a2e2 80-81
+  s_90fd8e908cacdb::t_129fc26570c6da 89
+  s_90fd8e908cacdb::t_23606458771d26 37-47,59-60,63,92-93,98-107
+  s_90fd8e908cacdb::t_884007161b82d4 67-68
+  s_90fd8e908cacdb::t_f166bf5e124a39 75,82-84
+  s_90fd8e908cacdb::t_bab262c7031abe 65-66,88,95,97
+  s_90fd8e908cacdb::t_efbef02e6fd5a7 62,85-86
+  s_90fd8e908cacdb::t_026c0b224e4572 52-54
+  s_90fd8e908cacdb::t_8f8cd771c104e1 69-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "080e42c5960c7590b3dddf9e6fd4eae4a5298e5b",
+  "prompts": {},
+  "humans": {
+    "h_2a4fc97c4bee49": {
+      "author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_90fd8e908cacdb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "49c4f32c-be74-4167-bddd-c3f4f46bb3c1",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  }
+}
