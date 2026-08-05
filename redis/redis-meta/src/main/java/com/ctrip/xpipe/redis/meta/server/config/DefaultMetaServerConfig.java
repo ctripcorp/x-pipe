@@ -76,7 +76,7 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public static final long DEFAULT_TFS_GATEWAY_APP_ID = 0L;
 
 	public static final String DEFAULT_TFS_DIR_PATH_TEMPLATE =
-			"/opt/data/100004376/rsd/replication_store_{keeper_port}/repl_{repl_id}";
+			"/opt/data/100004376/rsd/repl_{repl_id}";
 
 	private String defaultConsoleAddress = System.getProperty("consoleAddress", "http://localhost:8080");
 
