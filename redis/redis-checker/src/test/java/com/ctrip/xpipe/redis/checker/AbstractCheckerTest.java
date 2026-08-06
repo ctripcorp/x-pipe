@@ -8,7 +8,10 @@ import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.impl.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
@@ -97,7 +100,7 @@ public class AbstractCheckerTest extends AbstractRedisTest {
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
         instance.setInstanceInfo(info);
         instance.setEndpoint(new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort()));
-        instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig(), buildDcRelationsService()));
+        instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig(), buildRelationsService()));
         instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, getXpipeNettyClientKeyedObjectPool(), buildCheckerConfig()));
         return instance;
     }
@@ -116,7 +119,7 @@ public class AbstractCheckerTest extends AbstractRedisTest {
 
         ClusterInstanceInfo info = new DefaultClusterInstanceInfo("cluster", activeDc,
                 clusterType, 1, "20201030");
-        HealthCheckConfig config = new DefaultHealthCheckConfig(buildCheckerConfig(), buildDcRelationsService());
+        HealthCheckConfig config = new DefaultHealthCheckConfig(buildCheckerConfig(), buildRelationsService());
 
         instance.setInstanceInfo(info).setHealthCheckConfig(config);
 
@@ -127,8 +130,8 @@ public class AbstractCheckerTest extends AbstractRedisTest {
         return new TestConfig();
     }
 
-    protected DcRelationsService buildDcRelationsService() {
-        return new TestDcRelationsService();
+    protected RelationsService buildRelationsService() {
+        return new TestRelationsService();
     }
 
 }

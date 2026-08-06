@@ -1,24 +1,25 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
 import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.api.retry.RetryTemplate;
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
-import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.annotation.DalTransaction;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.MigrationProgress;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.entity.ClusterEntity;
 import com.ctrip.xpipe.redis.console.entity.MigrationBiClusterEntity;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
@@ -29,17 +30,16 @@ import com.ctrip.xpipe.redis.console.migration.MigrationResources;
 import com.ctrip.xpipe.redis.console.migration.manager.MigrationEventManager;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.console.migration.model.MigrationEvent;
-import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.console.migration.status.MigrationStatus;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.repository.ClusterRepository;
 import com.ctrip.xpipe.redis.console.repository.MigrationBiClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
-import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
 import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -57,8 +57,8 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.rmi.ServerException;
 import java.util.*;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -111,7 +111,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     private ConsoleConfig config;
 
     @Autowired
-    private DcRelationsService dcRelationsService;
+    private RelationsService relationsService;
 
     @Autowired(required = false)
     private BeaconManager beaconManager;
@@ -728,7 +728,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             if (availableDcs.isEmpty())
                 throw new ToIdcNotFoundException(String.format("fromIdc:%s, toIdc empty, no available dcs found from related dcs: %s", fromIdc, clusterRelatedDcToString(clusterRelatedDc)));
 
-            toIdc = dcRelationsService.getClusterTargetDcByPriority(cluster.getId(), cluster.getClusterName(), fromIdc, Lists.newArrayList(availableDcs.keySet()));
+            toIdc = relationsService.getClusterTargetDcByPriority(cluster.getId(), cluster.getClusterName(), fromIdc, Lists.newArrayList(availableDcs.keySet()));
             if (StringUtil.isEmpty(toIdc)) {
                 logger.error("[findToDc][{}]fromIdc:{}, can not find target dc from available dcs: {}", cluster.getClusterName(), fromIdc, availableDcs);
                 throw new ToIdcNotFoundException(String.format("fromIdc:%s, toIdc empty, can not find target dc %s", fromIdc, clusterRelatedDcToString(clusterRelatedDc)));
@@ -1071,8 +1071,8 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @VisibleForTesting
-    void setDcRelationsService(DcRelationsService dcRelationsService) {
-        this.dcRelationsService = dcRelationsService;
+    void setRelationsService(RelationsService relationsService) {
+        this.relationsService = relationsService;
     }
 
     @VisibleForTesting

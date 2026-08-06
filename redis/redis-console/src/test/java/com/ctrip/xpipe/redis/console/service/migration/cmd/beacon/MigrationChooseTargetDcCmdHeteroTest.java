@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.service.migration.cmd.beacon;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
@@ -31,7 +31,7 @@ public class MigrationChooseTargetDcCmdHeteroTest extends AbstractConsoleTest {
     @Mock
     private DcClusterService dcClusterService;
     @Mock
-    private DcRelationsService dcRelationsService;
+    private RelationsService relationsService;
     @Mock
     private HeteroMigrationSupport heteroMigrationSupport;
 
@@ -46,7 +46,7 @@ public class MigrationChooseTargetDcCmdHeteroTest extends AbstractConsoleTest {
     public void setUp() {
         migrationRequest = new BeaconMigrationRequest();
         chooseTargetDcCmd = new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService,
-                dcRelationsService, heteroMigrationSupport);
+                relationsService, heteroMigrationSupport);
 
         clusterTbl = new ClusterTbl().setId(14L).setClusterName("hetero-dual-oneway")
                 .setClusterType(ClusterType.HETERO.name());
@@ -90,7 +90,7 @@ public class MigrationChooseTargetDcCmdHeteroTest extends AbstractConsoleTest {
         migrationRequest.setAvailableDcs(Sets.newHashSet("oy", "fra"));
         when(heteroMigrationSupport.filterDcsInSameAzGroup(shaOneWayAzGroup, migrationRequest.getAvailableDcs()))
                 .thenReturn(Sets.newHashSet("oy"));
-        when(dcRelationsService.getClusterTargetDcByPriority(14L, "hetero-dual-oneway", "jq",
+        when(relationsService.getClusterTargetDcByPriority(14L, "hetero-dual-oneway", "jq",
                 java.util.Collections.singletonList("oy"))).thenReturn("oy");
         DcTbl oyDc = new DcTbl().setId(2L).setDcName("oy");
         when(dcCache.find("oy")).thenReturn(oyDc);

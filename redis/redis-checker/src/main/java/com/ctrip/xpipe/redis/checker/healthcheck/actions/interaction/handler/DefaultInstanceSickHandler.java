@@ -1,24 +1,17 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceSick;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import com.google.common.collect.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
@@ -32,6 +25,9 @@ public class DefaultInstanceSickHandler extends AbstractHealthEventHandler<Insta
 
     @Autowired
     private CheckerConfig checkerConfig;
+
+    @Autowired
+    private RelationsService relationsService;
 
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
@@ -48,8 +44,8 @@ public class DefaultInstanceSickHandler extends AbstractHealthEventHandler<Insta
 
     boolean shouldMarkdownDcClusterSickInstances(InstanceSick instanceSick) {
         RedisInstanceInfo info = instanceSick.getInstance().getCheckInfo();
-        if (info.isCrossRegion()) {
-            logger.info("[markdown][{} is cross region, do not call client service ]{}", info, instanceSick);
+        if (!relationsService.isReachableRegion(currentDcId, info.getDcId())) {
+            logger.info("[markdown][{} is cross region and not reachable, do not call client service ]{}", info, instanceSick);
             return false;
         }
         if (instanceSick.getInstance().getHealthCheckConfig().getDelayConfig(info.getClusterId(), currentDcId, info.getDcId()).getClusterLevelHealthyDelayMilli() < 0) {
@@ -57,6 +53,12 @@ public class DefaultInstanceSickHandler extends AbstractHealthEventHandler<Insta
             return false;
         }
         return true;
+    }
+
+    @VisibleForTesting
+    public DefaultInstanceSickHandler setRelationsService(RelationsService relationsService) {
+        this.relationsService = relationsService;
+        return this;
     }
 
     @Override

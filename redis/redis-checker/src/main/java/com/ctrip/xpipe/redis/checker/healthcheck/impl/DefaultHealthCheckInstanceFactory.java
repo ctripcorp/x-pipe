@@ -6,7 +6,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
@@ -46,7 +46,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     private CheckerConfig checkerConfig;
 
-    private DcRelationsService dcRelationsService;
+    private RelationsService relationsService;
 
     private HealthCheckEndpointFactory endpointFactory;
 
@@ -68,9 +68,9 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
                                              RedisSessionManager redisSessionManager,
                                              List<RedisHealthCheckActionFactory<?>> factories,
                                              List<ClusterHealthCheckActionFactory<?>> clusterHealthCheckFactories,
-                                             GroupCheckerLeaderElector clusterServer, MetaCache metaCache, DcRelationsService dcRelationsService) {
+                                             GroupCheckerLeaderElector clusterServer, MetaCache metaCache, RelationsService relationsService) {
         this.checkerConfig = checkerConfig;
-        this.dcRelationsService = dcRelationsService;
+        this.relationsService = relationsService;
         this.endpointFactory = endpointFactory;
         this.redisSessionManager = redisSessionManager;
         this.clusterServer = clusterServer;
@@ -84,8 +84,8 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
                                              RedisSessionManager redisSessionManager,
                                              List<RedisHealthCheckActionFactory<?>> factories,
                                              List<ClusterHealthCheckActionFactory<?>> clusterHealthCheckFactories,
-                                             MetaCache metaCache, DcRelationsService dcRelationsService) {
-        this(checkerConfig, endpointFactory, redisSessionManager, factories, clusterHealthCheckFactories, null, metaCache, dcRelationsService);
+                                             MetaCache metaCache, RelationsService relationsService) {
+        this(checkerConfig, endpointFactory, redisSessionManager, factories, clusterHealthCheckFactories, null, metaCache, relationsService);
     }
 
     @Override
@@ -107,7 +107,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
         RedisInstanceInfo info = createRedisInstanceInfo(redisMeta);
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redisMeta);
-        HealthCheckConfig config = new CompositeHealthCheckConfig(info, checkerConfig, dcRelationsService, metaCache.isCrossRegion(currentDcId, info.getDcId()));
+        HealthCheckConfig config = new CompositeHealthCheckConfig(info, checkerConfig, relationsService, metaCache.isCrossRegion(currentDcId, info.getDcId()));
 
         instance.setEndpoint(endpoint)
                 .setSession(redisSessionManager.findOrCreateSession(endpoint))
@@ -162,7 +162,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
         ClusterInstanceInfo info = getClusterInstanceInfo(clusterMeta, clusterType);
-        HealthCheckConfig config = new DefaultHealthCheckConfig(checkerConfig, dcRelationsService);
+        HealthCheckConfig config = new DefaultHealthCheckConfig(checkerConfig, relationsService);
 
         instance.setInstanceInfo(info).setHealthCheckConfig(config);
         initActions(instance);
@@ -188,7 +188,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
 
         RedisInstanceInfo info = createRedisInstanceInfo(redis);
-        HealthCheckConfig config = new CompositeHealthCheckConfig(info, checkerConfig, dcRelationsService, metaCache.isCrossRegion(currentDcId, info.getDcId()));
+        HealthCheckConfig config = new CompositeHealthCheckConfig(info, checkerConfig, relationsService, metaCache.isCrossRegion(currentDcId, info.getDcId()));
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redis);
 
         instance.setEndpoint(endpoint)

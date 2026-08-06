@@ -6,13 +6,13 @@ import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.*;
@@ -21,7 +21,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -64,6 +63,9 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
     @Mock
     private CheckerConfig checkerConfig;
+
+    @Mock
+    private RelationsService relationsService;
 
     @Mock
     private StabilityHolder siteStability;
@@ -154,6 +156,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
         when(checkerConfig.getQuorum()).thenReturn(0);
         when(metaCache.inBackupDc(any())).thenReturn(true);
+        when(relationsService.isReachableRegion(any(), any())).thenReturn(true);
         future.setSuccess(true);
         when(defaultDelayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.HEALTHY);
         when(defaultDelayPingActionCollector.getState(instance.getCheckInfo().getHostPort())).thenReturn(HEALTH_STATE.DOWN);
@@ -170,7 +173,8 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         sickHandler.handle(event);
         verify(outerClientAggregator, times(2)).markInstance(any());
 
-        //do not markdown cross region instance
+        //do not markdown cross region instance (region not reachable)
+        when(relationsService.isReachableRegion(any(), any())).thenReturn(false);
         DefaultRedisInstanceInfo instanceInfo= (DefaultRedisInstanceInfo) instance.getCheckInfo();
         instanceInfo.setCrossRegion(true);
         upHandler.handle(event);
@@ -180,6 +184,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
         //do not markdown instance which dcs distance is -1
         instanceInfo.setCrossRegion(false);
+        when(relationsService.isReachableRegion(any(), any())).thenReturn(true);
         HealthCheckConfig config = instance.getHealthCheckConfig();
         when(config.getDelayConfig(any(), any(), any())).thenReturn(
                 new DelayConfig("test", "test", "test")

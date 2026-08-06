@@ -279,7 +279,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         RouteInfoControllerTest.class,
         RedisControllerTest.class,
-        DcRelationsServiceTest.class,
+        RelationsServiceTest.class,
         DefaultMigrationProcessReporterTest.class,
         ShardModelServiceTest.class,
         KeeperContainerUsedInfoMsgCollectorTest.class,

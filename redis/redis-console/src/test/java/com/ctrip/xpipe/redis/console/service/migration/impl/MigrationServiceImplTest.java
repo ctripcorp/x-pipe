@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.exception.DalUpdateException;
@@ -43,8 +43,8 @@ public class MigrationServiceImplTest extends AbstractMigrationTest{
 
     @Test
     public void testFindToDc() throws ToIdcNotFoundException {
-        DcRelationsService dcRelationsService = Mockito.mock(DcRelationsService.class);
-        migrationService.setDcRelationsService(dcRelationsService);
+        RelationsService relationsService = Mockito.mock(RelationsService.class);
+        migrationService.setRelationsService(relationsService);
         List<DcTbl> relatedDcs = new LinkedList<>();
 
         try{
@@ -63,7 +63,7 @@ public class MigrationServiceImplTest extends AbstractMigrationTest{
         relatedDcs.add(new DcTbl().setDcName("dc2"));
         relatedDcs.add(new DcTbl().setDcName("dc3"));
 
-        when(dcRelationsService.getClusterTargetDcByPriority(anyLong(),anyString(),anyString(),anyList())).thenReturn("dc2");
+        when(relationsService.getClusterTargetDcByPriority(anyLong(),anyString(),anyString(),anyList())).thenReturn("dc2");
         Assert.assertEquals("dc2", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", null, relatedDcs).getDcName());
         Assert.assertEquals("dc2", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", "dc2", relatedDcs).getDcName());
         Assert.assertEquals("dc3", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", "dc3", relatedDcs).getDcName());
@@ -84,15 +84,15 @@ public class MigrationServiceImplTest extends AbstractMigrationTest{
 
     @Test
     public void testTargetDc() throws ToIdcNotFoundException {
-        DcRelationsService dcRelationsService = Mockito.mock(DcRelationsService.class);
-        migrationService.setDcRelationsService(dcRelationsService);
+        RelationsService relationsService = Mockito.mock(RelationsService.class);
+        migrationService.setRelationsService(relationsService);
         List<DcTbl> relatedDcs = new LinkedList<>();
         DcTbl dcTbl1 = new DcTbl().setZoneId(1).setDcName("dc1");
         relatedDcs.add(dcTbl1);
         relatedDcs.add(new DcTbl().setZoneId(2).setDcName("dc2"));
         relatedDcs.add(new DcTbl().setZoneId(2).setDcName("dc3"));
 
-        when(dcRelationsService.getClusterTargetDcByPriority(anyLong(), anyString(), anyString(), anyList())).thenReturn("dc2");
+        when(relationsService.getClusterTargetDcByPriority(anyLong(), anyString(), anyString(), anyList())).thenReturn("dc2");
         try{
             Assert.assertEquals("dc2", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", null, relatedDcs).getDcName());
             Assert.fail();
@@ -102,7 +102,7 @@ public class MigrationServiceImplTest extends AbstractMigrationTest{
         dcTbl1.setZoneId(2);
         Assert.assertEquals("dc2", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", null, relatedDcs).getDcName());
 
-        when(dcRelationsService.getClusterTargetDcByPriority(anyLong(), anyString(), anyString(), anyList())).thenReturn(null);
+        when(relationsService.getClusterTargetDcByPriority(anyLong(), anyString(), anyString(), anyList())).thenReturn(null);
         try{
             Assert.assertEquals("dc2", migrationService.findToDc(new ClusterTbl().setClusterName("test").setId(1L),"dc1", null, relatedDcs).getDcName());
             Assert.fail();

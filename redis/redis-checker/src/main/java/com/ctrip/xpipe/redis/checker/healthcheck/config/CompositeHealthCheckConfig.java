@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
@@ -19,13 +19,13 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
 
     private HealthCheckConfig config;
 
-    public CompositeHealthCheckConfig(RedisInstanceInfo instanceInfo, CheckerConfig checkerConfig, DcRelationsService dcRelationsService, boolean isCrossRegion) {
+    public CompositeHealthCheckConfig(RedisInstanceInfo instanceInfo, CheckerConfig checkerConfig, RelationsService relationsService, boolean isCrossRegion) {
         logger.info("[CompositeHealthCheckConfig] {}", instanceInfo);
         if(isCrossRegion) {
-            config = new ProxyEnabledHealthCheckConfig(checkerConfig, dcRelationsService);
+            config = new ProxyEnabledHealthCheckConfig(checkerConfig, relationsService);
             logger.info("[CompositeHealthCheckConfig][proxied] ping down time: {}", config.pingDownAfterMilli());
         } else {
-            config = new DefaultHealthCheckConfig(checkerConfig, dcRelationsService);
+            config = new DefaultHealthCheckConfig(checkerConfig, relationsService);
         }
         logger.info("[CompositeHealthCheckConfig][{}] [config: {}]", instanceInfo, config.getClass().getSimpleName());
     }
