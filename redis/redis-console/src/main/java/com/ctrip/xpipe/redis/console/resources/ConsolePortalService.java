@@ -157,6 +157,14 @@ public class ConsolePortalService extends AbstractService {
         return resp.getBody();
     }
 
+    public List<LogicalBuModel> getAllLogicalBus() {
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
+                AbstractConsoleController.API_PREFIX + "/logical-bus/all").build();
+        ResponseEntity<List<LogicalBuModel>> resp = exchange(comp.toUri(), HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<LogicalBuModel>>(){}, "getAllLogicalBus");
+        return resp.getBody();
+    }
+
     public List<RedisCheckRuleCreateInfo> getAllRedisCheckRuleInfos() {
         UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
                 AbstractConsoleController.API_PREFIX + "/redisCheck/all").build();
