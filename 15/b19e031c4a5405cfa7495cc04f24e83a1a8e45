@@ -1,0 +1,44 @@
+redis/redis-console/src/main/resources/static/scripts/controllers/ActiveDcMigrationIndexCtl.ts
+  s_90fd8e908cacdb::t_e03515e2111b16 214,216-219,221-223,238,244,248-252,256-257,260-262,265-273,279-280,282,299-301,306-308
+  s_90fd8e908cacdb::t_73bc98dcda9b38 215,220
+  s_90fd8e908cacdb::t_9eb06f60ed0225 275-278,281,283-298
+  s_90fd8e908cacdb::t_b58276dd4d5279 47,50,55
+  s_90fd8e908cacdb::t_23b9b2b5794fdd 20
+  s_90fd8e908cacdb::t_988da3b5e889d8 18-19,23
+  s_90fd8e908cacdb::t_b890f2fa248417 264
+  s_90fd8e908cacdb::t_505dbe75fd8f9e 224-225
+  s_90fd8e908cacdb::t_8976d0a2f0f139 245-247,253-255,258-259,263,274,302-305
+  s_90fd8e908cacdb::t_73b883bc36d993 24-30
+  s_90fd8e908cacdb::t_a245781c7b5c7d 123-125
+redis/redis-console/src/main/resources/static/scripts/controllers/ClusterListCtl.ts
+  s_90fd8e908cacdb::t_ba4dd2a1358739 362-382,389-398,401
+redis/redis-console/src/main/resources/static/views/index/migration_index.html
+  s_90fd8e908cacdb::t_0b05d38c07ab0e 74
+  s_90fd8e908cacdb::t_405f27bc1b8b1c 62-63,67-69,71-73,75,77-81,84-87
+  s_90fd8e908cacdb::t_ab9a0a41eebd0c 64
+  s_90fd8e908cacdb::t_a3d0fb37f9a5fc 65-66,70,76,82-83
+redis/redis-console/src/main/resources/static/views/index/cluster_list.html
+  s_90fd8e908cacdb::t_1fb1ad88f293b1 69
+  s_90fd8e908cacdb::t_e8651241891bfa 76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "15b19e031c4a5405cfa7495cc04f24e83a1a8e45",
+  "prompts": {},
+  "humans": {
+    "h_2a4fc97c4bee49": {
+      "author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_90fd8e908cacdb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "49c4f32c-be74-4167-bddd-c3f4f46bb3c1",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  }
+}
