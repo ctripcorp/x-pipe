@@ -1,19 +1,10 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.redis.checker.RelationsService;
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.InstanceSick;
-import com.ctrip.xpipe.utils.VisibleForTesting;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.Resource;
-import java.util.concurrent.ScheduledExecutorService;
-
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 /**
  * @author chen.zhu
@@ -22,15 +13,6 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECU
  */
 @Component
 public class DefaultInstanceSickHandler extends AbstractHealthEventHandler<InstanceSick> implements InstanceSickHandler {
-
-    @Autowired
-    private CheckerConfig checkerConfig;
-
-    @Autowired
-    private RelationsService relationsService;
-
-    @Resource(name = SCHEDULED_EXECUTOR)
-    private ScheduledExecutorService scheduled;
 
     protected static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
@@ -55,20 +37,9 @@ public class DefaultInstanceSickHandler extends AbstractHealthEventHandler<Insta
         return true;
     }
 
-    @VisibleForTesting
-    public DefaultInstanceSickHandler setRelationsService(RelationsService relationsService) {
-        this.relationsService = relationsService;
-        return this;
-    }
-
     @Override
     protected void doMarkDown(final AbstractInstanceEvent event) {
         doRealMarkDown(event);
     }
 
-    @VisibleForTesting
-    public DefaultInstanceSickHandler setScheduled(ScheduledExecutorService scheduled) {
-        this.scheduled = scheduled;
-        return this;
-    }
 }

@@ -28,7 +28,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Random;
-import java.util.concurrent.Executors;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -98,7 +97,7 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
         when(siteStability.isSiteStable()).thenReturn(true);
         when(defaultDelayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.DOWN);
-        ((DefaultInstanceSickHandler) sickHandler).setScheduled(Executors.newScheduledThreadPool(1));
+        when(relationsService.isReachableRegion(any(), any())).thenReturn(true);
     }
 
     @Test
