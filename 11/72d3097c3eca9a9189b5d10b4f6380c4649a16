@@ -1,0 +1,19 @@
+network/az/remote_cron/apply_iptables_redis.sh
+  s_c3f82b0c9c7100::t_a07d9116d37089 3-4,22-23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "1172d3097c3eca9a9189b5d10b4f6380c4649a16",
+  "prompts": {},
+  "sessions": {
+    "s_c3f82b0c9c7100": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "286a6f23-fe13-451c-9269-362a0e9d64ff",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}

@@ -1,0 +1,49 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelper.java
+  s_5f8e81d7464b78::t_a186ca3ccc38d0 75-76,78-81
+  s_5f8e81d7464b78::t_009ef30b011094 66,71,82-83,87-91,93-102,110
+  s_5f8e81d7464b78::t_2a4357a8cb4383 6-7,19-20,28-29,72-74,77,84-86,92,129-168
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_5f8e81d7464b78::t_7f8d5ddf74de3c 156
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/OffsetCommandReader.java
+  s_5f8e81d7464b78::t_b25a86b11f019a 64
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  s_5f8e81d7464b78::t_92e8dca4ee4203 565
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/AsyncRdbReadHandleTest.java
+  s_5f8e81d7464b78::t_49cc53e150b265 36,84
+  s_5f8e81d7464b78::t_8260647a44af0f 25,79
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java
+  s_5f8e81d7464b78::t_12c7711ac79af6 116
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelperTest.java
+  s_5f8e81d7464b78::t_e86bedc130c0dd 37-38,69-70
+  s_5f8e81d7464b78::t_678f141def0efb 1-36,39-68,71-77
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultCommandStoreTest.java
+  s_5f8e81d7464b78::t_cb94395508ef81 885
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultRdbStore.java
+  s_5f8e81d7464b78::t_0eaa07a6a9097d 329
+  s_5f8e81d7464b78::t_98d437be8c07ee 459,464
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java
+  s_5f8e81d7464b78::t_262b51e52d91e8 282
+  s_5f8e81d7464b78::t_3845dfe0b16e4a 307
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReader.java
+  s_5f8e81d7464b78::t_9ed34558daf43c 317
+  s_5f8e81d7464b78::t_b6176981719caf 58
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  s_5f8e81d7464b78::t_c8aa9cf67c2447 212
+  s_5f8e81d7464b78::t_4b6a7cbbfaaada 281
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "ecff7d8d2dc813f5af3db5ab4063b18339b9f165",
+  "prompts": {},
+  "sessions": {
+    "s_5f8e81d7464b78": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "22bc8ee9-7a37-4a72-82bf-5d68791106e1",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

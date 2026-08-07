@@ -1,0 +1,30 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/LogicalBuServiceWithoutDB.java
+  s_07ff9260d4dcf5::t_05972a3dcf98d8 12-13,17,29-30,38-43,51-62,64,118-131
+  s_07ff9260d4dcf5::t_5ae27e25fdbe15 1-11,14-16,18-28,31-37,44-50,63,65-117,132-133
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/data/LogicalBuApiController.java
+  s_07ff9260d4dcf5::t_fc0277cedc054c 1-24
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/AllTests.java
+  s_07ff9260d4dcf5::t_287e09eaa9dd25 112
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/LogicalBuServiceWithoutDBTest.java
+  s_07ff9260d4dcf5::t_bf64354d3d9511 14,36,52,57-79
+  s_07ff9260d4dcf5::t_02e6eab6691d4c 113-116
+  s_07ff9260d4dcf5::t_fc1d326eaf7bc7 1-13,15-35,37-51,53-56,80-112,117-127
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/ConsolePortalService.java
+  s_07ff9260d4dcf5::t_d1d06e52b8bbf6 160-167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "6681334681c427e2fad27e78fefdadd5a733c23b",
+  "prompts": {},
+  "sessions": {
+    "s_07ff9260d4dcf5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3343d77f-4879-42bd-9703-406fad26b3ab",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

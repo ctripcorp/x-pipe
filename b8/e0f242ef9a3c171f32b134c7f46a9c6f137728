@@ -1,0 +1,31 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java
+  s_e01e297023415a::t_080f1dd7fa1c54 206
+  s_e01e297023415a::t_ad7dd2680684da 367-368
+  s_e01e297023415a::t_6ddf927d387f23 196
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManagerTest.java
+  s_e01e297023415a::t_9e6fc43ebb1514 88-175
+  s_e01e297023415a::t_ec1609ea4efdb2 86-87
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/protocal/cmd/DefaultGapAllowedSyncTest.java
+  s_e01e297023415a::t_467ac0d0027df5 3,17,20
+  s_e01e297023415a::t_dec5bfc8c5a6aa 39-54
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/protocal/cmd/DefaultGapAllowedSync.java
+  s_e01e297023415a::t_f34065fbb4f854 51-53,55-57
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStore.java
+  s_e01e297023415a::t_327369fedd50bc 893
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "b8e0f242ef9a3c171f32b134c7f46a9c6f137728",
+  "prompts": {},
+  "sessions": {
+    "s_e01e297023415a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f238f127-f96d-4cd8-98b3-bf59171da6fd",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
