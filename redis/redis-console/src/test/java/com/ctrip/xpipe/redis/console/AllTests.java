@@ -111,6 +111,7 @@ import org.junit.runners.Suite.SuiteClasses;
         LogicalBuServiceImplResolveTest.class,
         LogicalBuServiceWithoutDBTest.class,
         DefaultKeeperAdvancedServiceGetNewKeepersTest.class,
+        DefaultKeeperAdvancedServiceFindBestKeepersTest.class,
         KeeperContainerCheckerServiceImplTest.class,
         ShardServiceImplTest.class,
         ShardServiceImplTest2.class,

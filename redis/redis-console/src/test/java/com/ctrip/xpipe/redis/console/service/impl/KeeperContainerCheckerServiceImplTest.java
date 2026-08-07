@@ -56,7 +56,9 @@ public class KeeperContainerCheckerServiceImplTest extends AbstractServiceImplTe
     @Test
     public void testFindBestKeeperContainer(){
         List<KeepercontainerTbl> kcs = keeperContainerService.findBestKeeperContainersByDcCluster("fra", "cluster6");
-        Assert.assertEquals(2, kcs.size());
+        // pool only (no AZ diversify): 4 active KCs in fra org0
+        Assert.assertEquals(4, kcs.size());
+        Assert.assertEquals(2, keeperContainerService.filterKeeperContainersByAz(kcs, "fra").size());
     }
 
     @Test
@@ -66,7 +68,8 @@ public class KeeperContainerCheckerServiceImplTest extends AbstractServiceImplTe
         logger.info("{}", cluster1);
         clusterDao.updateCluster(cluster1);
         List<KeepercontainerTbl> kcs = keeperContainerService.findBestKeeperContainersByDcCluster("fra", "cluster1");
-        Assert.assertEquals(2, kcs.size());
+        Assert.assertEquals(4, kcs.size());
+        Assert.assertEquals(2, keeperContainerService.filterKeeperContainersByAz(kcs, "fra").size());
     }
 
     @Test
@@ -389,11 +392,16 @@ public class KeeperContainerCheckerServiceImplTest extends AbstractServiceImplTe
 
     @Test
     public void testFindKeeperContainerInSingleAz() {
+        // oy: only one active AZ → AZ filter leaves pool unchanged; pool itself has >2
         List<KeepercontainerTbl> bestKeeperContainersByDcCluster = keeperContainerService.findBestKeeperContainersByDcCluster("oy", "cluster2");
-        Assert.assertEquals(true, bestKeeperContainersByDcCluster.size() > 2);
+        Assert.assertTrue(bestKeeperContainersByDcCluster.size() > 2);
+        Assert.assertEquals(bestKeeperContainersByDcCluster.size(),
+                keeperContainerService.filterKeeperContainersByAz(bestKeeperContainersByDcCluster, "oy").size());
 
+        // fra: multi AZ → pool has 4, diversify keeps 1 per active AZ
         bestKeeperContainersByDcCluster = keeperContainerService.findBestKeeperContainersByDcCluster("fra", "cluster6");
-        Assert.assertEquals(2, bestKeeperContainersByDcCluster.size());
+        Assert.assertEquals(4, bestKeeperContainersByDcCluster.size());
+        Assert.assertEquals(2, keeperContainerService.filterKeeperContainersByAz(bestKeeperContainersByDcCluster, "fra").size());
     }
 
 }
