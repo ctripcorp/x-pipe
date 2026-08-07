@@ -9,6 +9,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.OutClientInstanceHealthHolder;
@@ -19,7 +20,6 @@ import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
-import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
@@ -48,6 +48,8 @@ public class InstanceCrossRegionHealthStatusConsistenceInspector extends Abstrac
 
     private MetaCache metaCache;
 
+    private RelationsService relationsService;
+
     private GroupCheckerLeaderElector leaderElector;
 
     private DynamicDelayPeriodTask task;
@@ -65,13 +67,14 @@ public class InstanceCrossRegionHealthStatusConsistenceInspector extends Abstrac
                                                                InstanceStatusAdjuster instanceStatusAdjuster,
                                                                @Nullable GroupCheckerLeaderElector groupCheckerLeaderElector,
                                                                StabilityHolder stabilityHolder, CheckerConfig checkerConfig,
-                                                               MetaCache metaCache) {
+                                                               MetaCache metaCache, RelationsService relationsService) {
         this.collector = instanceHealthStatusCollector;
         this.adjuster = instanceStatusAdjuster;
         this.leaderElector = groupCheckerLeaderElector;
         this.siteStability = stabilityHolder;
         this.config = checkerConfig;
         this.metaCache = metaCache;
+        this.relationsService = relationsService;
     }
 
     protected void inspectCurrentDc() {
@@ -134,7 +137,7 @@ public class InstanceCrossRegionHealthStatusConsistenceInspector extends Abstrac
             for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
                 try {
                     if (!ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)) continue;
-                    if (!metaCache.isCrossRegion(dcMeta.getId(), clusterMeta.getActiveDc())) continue;
+                    if (relationsService.isReachableRegion(dcMeta.getId(), clusterMeta.getActiveDc())) continue;
 
                     Set<HostPort> interestedInstances = MapUtils.getOrCreate(interestedCurrentDcClusterInstances, clusterMeta.getId(), HashSet::new);
                     for (ShardMeta shardMeta: clusterMeta.getShards().values()) {

@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.OutClientInstanceHealthHolder;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.UpDownInstances;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.compensator.data.XPipeInstanceHealthHolder;
@@ -53,6 +53,9 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
     private MetaCache metaCache;
 
     @Mock
+    private RelationsService relationsService;
+
+    @Mock
     private GroupCheckerLeaderElector leaderElector;
 
     @Mock
@@ -75,11 +78,12 @@ public class InstanceHealthStatusConsistenceInspectorTest extends AbstractRedisT
 
     @Before
     public void setupInstanceHealthStatusConsistenceCheckerTest() throws Exception {
-        inspector = new InstanceHealthStatusConsistenceInspector(collector, adjuster, leaderElector, siteStability, config, metaCache, delayPingActionCollector, healthCheckInstanceManager);
+        inspector = new InstanceHealthStatusConsistenceInspector(collector, adjuster, leaderElector, siteStability, config, metaCache, relationsService, delayPingActionCollector, healthCheckInstanceManager);
         Mockito.when(leaderElector.amILeader()).thenReturn(true);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
         Mockito.when(metaCache.findClusterShard(any())).thenReturn(Pair.of(cluster, shard));
         Mockito.when(metaCache.findMaster(cluster, shard)).thenReturn(master);
+        Mockito.when(relationsService.isReachableRegion(anyString(), anyString())).thenReturn(true);
         Mockito.when(collector.collect()).thenReturn(Pair.of(xpipeInstanceHealthHolder, outClientInstanceHealthHolder));
         Mockito.when(config.getPingDownAfterMilli()).thenReturn(10000);
         Mockito.when(config.getRedisReplicationHealthCheckInterval()).thenReturn(2000);
