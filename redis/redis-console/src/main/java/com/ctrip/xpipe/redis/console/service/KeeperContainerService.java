@@ -18,8 +18,16 @@ public interface KeeperContainerService {
 	List<KeepercontainerTbl> findAllByDcName(String dcName);
 	List<KeepercontainerTbl> findAllActiveByDcName(String dcName);
 	List<KeepercontainerTbl> findKeeperCount(String dcName);
+	/**
+	 * Candidate keeper containers for a dc/cluster: pool (BU/org) → tag (with degrade) → count ascending.
+	 * Does <b>not</b> filter by disk type or diversify by AZ; callers apply those as needed.
+	 */
 	List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName);
-	List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName, boolean skipAzFilter);
+	/**
+	 * Multi-AZ diversify: keep at most one keeper container per active AZ (input order preserved for first-wins).
+	 * When the DC has ≤1 active AZ, returns the input list unchanged.
+	 */
+	List<KeepercontainerTbl> filterKeeperContainersByAz(List<KeepercontainerTbl> keeperContainers, String dcName);
 	List<KeepercontainerTbl> getKeeperContainerByAz(Long azId);
 
 	List<Set<Long>> divideKeeperContainers(int partsCount);

@@ -135,15 +135,12 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
   @Override
   public List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName) {
-    return findBestKeeperContainersByDcCluster(dcName, clusterName, false);
-  }
-
-  @Override
-  public List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName, boolean skipAzFilter) {
     /*
      * 1. BU has its own keepercontainer(kc), then find all and see if it satisfied the requirement
      * 2. Cluster don't have a BU, find default one
      * 3. BU don't have its own kc, find in the normal kc pool(org id is 0L)
+     *
+     * DiskType / AZ diversify are left to callers (UI wants all media; auto-select applies both outside).
      */
     long clusterOrgId;
     String clusterTag;
@@ -179,11 +176,13 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
               dcName, clusterName, clusterTag);
       allDcOrgTagKeeperContainers = findBestKeeperContainersByOrg(poolKeeperContainers, dcOrgTagKeeperContainersInUsed, dcName, clusterOrgId);
     }
-    if (!skipAzFilter) {
-      allDcOrgTagKeeperContainers = filterKeeperFromSameAvailableZone(allDcOrgTagKeeperContainers, dcName);
-    }
     logger.info("find keeper containers: {}", allDcOrgTagKeeperContainers);
     return allDcOrgTagKeeperContainers;
+  }
+
+  @Override
+  public List<KeepercontainerTbl> filterKeeperContainersByAz(List<KeepercontainerTbl> keeperContainers, String dcName) {
+    return filterKeeperFromSameAvailableZone(keeperContainers, dcName);
   }
 
   private List<KeepercontainerTbl> findBestKeeperContainersByOrg(List<KeepercontainerTbl> poolKeeperContainers, List<KeepercontainerTbl> dcOrgTagKeeperContainersInUsed, String dcName, long clusterOrgId) {

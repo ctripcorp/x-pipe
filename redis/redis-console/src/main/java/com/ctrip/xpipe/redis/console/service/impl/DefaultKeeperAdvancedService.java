@@ -64,8 +64,10 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
 
     List<KeeperBasicInfo> result = new LinkedList<>();
 
+    // D36: disk-type before AZ; pool query itself does neither.
     List<KeepercontainerTbl> keepercontainerTbls =
         filterByDiskType(keeperContainerService.findBestKeeperContainersByDcCluster(dcName, clusterName));
+    keepercontainerTbls = keeperContainerService.filterKeeperContainersByAz(keepercontainerTbls, dcName);
     if (keepercontainerTbls.size() < returnCount) {
       throw new IllegalStateException(
           "Organization keepers size:" + keepercontainerTbls.size() + ", but we need:" + returnCount);
