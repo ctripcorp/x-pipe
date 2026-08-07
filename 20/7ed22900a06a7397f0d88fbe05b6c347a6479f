@@ -1,0 +1,25 @@
+redis/redis-console/src/main/resources/static/scripts/controllers/ClusterListCtl.ts
+  s_90fd8e908cacdb::t_3861626d936e29 517-519,521-525,529
+  s_90fd8e908cacdb::t_8cc5c2b3b0d45f 6,9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "207ed22900a06a7397f0d88fbe05b6c347a6479f",
+  "prompts": {},
+  "humans": {
+    "h_2a4fc97c4bee49": {
+      "author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_90fd8e908cacdb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "49c4f32c-be74-4167-bddd-c3f4f46bb3c1",
+        "model": "arn:aws:bedrock:us-west-2:133197901387:application-inference-profile/ypvzpmevzxdl"
+      },
+      "human_author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  }
+}
