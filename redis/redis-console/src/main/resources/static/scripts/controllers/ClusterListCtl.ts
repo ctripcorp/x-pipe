@@ -3,10 +3,10 @@ angular
     .controller('ClusterListCtl', ClusterListCtl);
 
 ClusterListCtl.$inject = ['$rootScope', '$scope', '$window', '$stateParams', '$state', 'AppUtil',
-    'toastr', 'ClusterService', 'MigrationService', 'DcService', 'AzGroupService', 'ZoneService', 'NgTableParams', 'ngTableEventsChannel', 'ClusterType', 'HealthCheckService'];
+    'toastr', 'ClusterService', 'MigrationService', 'DcService', 'ZoneService', 'NgTableParams', 'ngTableEventsChannel', 'ClusterType', 'HealthCheckService'];
 
 function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUtil,
-                        toastr, ClusterService, MigrationService, DcService, AzGroupService, ZoneService, NgTableParams, ngTableEventsChannel, ClusterType, HealthCheckService) {
+                        toastr, ClusterService, MigrationService, DcService, ZoneService, NgTableParams, ngTableEventsChannel, ClusterType, HealthCheckService) {
     const SUCCESS_STATE = 0;
     $rootScope.currentNav = '1-2';
     $scope.dcs = {};
@@ -48,12 +48,10 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     $scope.showDetails = false;
     $scope.showClusterDetails = showClusterDetails;
 
-    $scope.azGroups = [];
     $scope.zonesById = {};
     $scope.dcZoneName = {};
     $scope.regionDcIds = {};
     $scope.regionFilterData = [];
-    $scope.azGroupRegions = {};
     $scope.azGroupTypeOptions = (function () {
         var all = ClusterType.selectData().filter(function (opt) { return opt.id !== 'hetero'; });
         var deprecated = {bi_direction: 1, cross_dc: 1};
@@ -135,12 +133,6 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
             rebuildRegionData();
         });
 
-    AzGroupService.getAllAzGroups()
-        .then(function (result) {
-            $scope.azGroups = result || [];
-            rebuildRegionData();
-        });
-
     function rebuildRegionData() {
         if (!dcs.length || Object.keys($scope.zonesById).length === 0) return;
         $scope.dcZoneName = {};
@@ -157,25 +149,6 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         $scope.regionFilterData = [{id: '', title: ''}];
         for (var k = 0; k < regionKeys.length; ++k) {
             $scope.regionFilterData.push({id: regionKeys[k], title: regionKeys[k]});
-        }
-        $scope.azGroupRegions = {};
-        if ($scope.azGroups) {
-            for (var g = 0; g < $scope.azGroups.length; ++g) {
-                var group = $scope.azGroups[g];
-                var regionSet = {};
-                if (group.azs) {
-                    for (var a = 0; a < group.azs.length; ++a) {
-                        for (var dcId in $scope.dcs) {
-                            if ($scope.dcs[dcId] === group.azs[a]) {
-                                var rn = $scope.dcZoneName[dcId];
-                                if (rn) regionSet[rn] = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-                $scope.azGroupRegions[group.id] = regionSet;
-            }
         }
     }
 
@@ -538,21 +511,22 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         var hasDc = wantDcIds.length > 0;
         var hasActive = !!wantActiveDcId;
         if (isHeteroCluster(cluster)) {
-            var ids = cluster.heteroAzGroupIds || [];
             var types = cluster.heteroAzGroupTypes || [];
             var actives = cluster.heteroActiveDcIds || [];
             var dcCsvs = cluster.heteroAzGroupDcIdsCsv || [];
-            for (var i = 0; i < ids.length; ++i) {
+            var n = Math.max(types.length, actives.length, dcCsvs.length);
+            for (var i = 0; i < n; ++i) {
+                var dcIds = parseCsvIds(dcCsvs[i]);
                 if (hasRegion) {
-                    var regions = $scope.azGroupRegions[ids[i]] || {};
-                    if (!regions[region]) continue;
+                    var hitRegion = false;
+                    for (var d = 0; d < dcIds.length; ++d) {
+                        if ($scope.dcZoneName[dcIds[d]] === region) { hitRegion = true; break; }
+                    }
+                    if (!hitRegion) continue;
                 }
                 if (hasType && !(types[i] && types[i].toLowerCase() === typeValue)) continue;
                 if (hasActive && actives[i] != wantActiveDcId) continue;
-                if (hasDc) {
-                    var dcIds = parseCsvIds(dcCsvs[i]);
-                    if (!anyIdMatch(dcIds, wantDcIds)) continue;
-                }
+                if (hasDc && !anyIdMatch(dcIds, wantDcIds)) continue;
                 return true;
             }
             return false;

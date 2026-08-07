@@ -919,7 +919,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 			List<String> summaryParts = new ArrayList<>();
 			List<Long> activeDcIds = new ArrayList<>();
-			List<Long> azGroupIds = new ArrayList<>();
 			List<String> azGroupTypes = new ArrayList<>();
 			List<String> azGroupDcIdsCsv = new ArrayList<>();
 			String defaultFromDc = null;
@@ -938,7 +937,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				}
 				summaryParts.add(azGroupCluster.getAzGroupClusterType() + ":" + activeDcName);
 				activeDcIds.add(activeAzId);
-				azGroupIds.add(azGroupCluster.getAzGroupId());
 				azGroupTypes.add(azGroupCluster.getAzGroupClusterType());
 				List<Long> dcIds = azGroupClusterIdToDcIds.getOrDefault(azGroupCluster.getId(), Collections.emptyList());
 				azGroupDcIdsCsv.add(dcIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
@@ -949,7 +947,6 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			cluster.setHeteroActiveDcSummary(String.join(" / ", summaryParts));
 			cluster.setHeteroActiveDcIds(activeDcIds);
 			cluster.setHeteroDefaultFromDc(defaultFromDc);
-			cluster.setHeteroAzGroupIds(azGroupIds);
 			cluster.setHeteroAzGroupTypes(azGroupTypes);
 			cluster.setHeteroAzGroupDcIdsCsv(azGroupDcIdsCsv);
 		}
