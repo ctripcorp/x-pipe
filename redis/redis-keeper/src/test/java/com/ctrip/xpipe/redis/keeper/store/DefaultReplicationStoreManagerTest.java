@@ -10,12 +10,11 @@ import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
-import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
-import java.util.concurrent.atomic.AtomicBoolean;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
-import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
@@ -25,6 +24,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
@@ -84,10 +84,6 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			logger.warn(e.getMessage());
 		}
 	}
-
-	/**
-	 * T-R.11⑤: after Manager.stop() (PREPARE), {@code gc()} must skip list/rmdir and not reopen store.
-	 */
 
 	/**
 	 * T-S.2 / T-S.3: closed store → checkOk false; createIfNotExist → create() self-heals
@@ -288,6 +284,9 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		}
 	}
 
+	/**
+	 * T-R.11⑤: after Manager.stop() (PREPARE), {@code gc()} must skip list/rmdir and not reopen store.
+	 */
 	@Test
 	public void testGcSkippedWhenStoppedAfterPrepare() throws Exception {
 		// Dedicated FS so verify(never) does not race with shared test FS.
@@ -322,69 +321,66 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 	}
 
 
+	/**
+	 * Concurrent create + gc on the owning Manager. One Manager per baseDir (production + T-S.5
+	 * long-lived meta WRITE); a second Manager on the same path would contend the meta slot.
+	 */
 	@Test
 	public void testMultiManagerGc() throws Exception {
-		
-		String keeperRunid = RunidGenerator.DEFAULT.generateRunid();
 
-		final DefaultReplicationStoreManager replicationStoreManager1 = (DefaultReplicationStoreManager) createReplicationStoreManager(keeperRunid, 
-				keeperConfig);
-		final DefaultReplicationStoreManager replicationStoreManager2 = (DefaultReplicationStoreManager) createReplicationStoreManager(keeperRunid,
-				keeperConfig);
+		final DefaultReplicationStoreManager manager = (DefaultReplicationStoreManager) createReplicationStoreManager(
+				RunidGenerator.DEFAULT.generateRunid(), keeperConfig);
 
-		LifecycleHelper.initializeIfPossible(replicationStoreManager1);
-		LifecycleHelper.initializeIfPossible(replicationStoreManager2);
-		// Phase Rb: gc() requires LifecycleState.isStarted(); schedule also moved to doStart.
-		LifecycleHelper.startIfPossible(replicationStoreManager1);
-		LifecycleHelper.startIfPossible(replicationStoreManager2);
+		LifecycleHelper.initializeIfPossible(manager);
+		LifecycleHelper.startIfPossible(manager);
 
 		final AtomicReference<DefaultReplicationStore> store = new AtomicReference<DefaultReplicationStore>(null);
 
-		for(int i = 0; i < 10; i++){
-			
+		for (int i = 0; i < 10; i++) {
+
 			logger.info("[testMultiManagerGc]{}", i);
-			
+
 			final CountDownLatch latch = new CountDownLatch(2);
-			
+
 			executors.execute(new Runnable() {
-				
-				@Override
-				public void run() {
-					
-					try {
-						store.set((DefaultReplicationStore) replicationStoreManager1.create());
-					} catch (IOException e) {
-						logger.error("[run]" + replicationStoreManager1, e);
-					}finally{
-						latch.countDown();
-					}
-				}
-			});
-			executors.execute(new Runnable() {
-				
+
 				@Override
 				public void run() {
 
 					try {
-						replicationStoreManager2.gc();
+						store.set((DefaultReplicationStore) manager.create());
 					} catch (IOException e) {
-						logger.error("[run]" + replicationStoreManager2, e);
-					}finally{
+						logger.error("[run]" + manager, e);
+					} finally {
 						latch.countDown();
 					}
 				}
 			});
-			
+			executors.execute(new Runnable() {
+
+				@Override
+				public void run() {
+
+					try {
+						manager.gc();
+					} catch (IOException e) {
+						logger.error("[run]" + manager, e);
+					} finally {
+						latch.countDown();
+					}
+				}
+			});
+
 			latch.await();
 			Assert.assertNotNull(store.get());
 			Assert.assertTrue(store.get().getBaseDir().exists());
 		}
-		
+
 		sleep(minTimeMilliToGcAfterCreate + 1000);
 		logger.info("[testMultiManagerGc][lastgc]");
-		replicationStoreManager1.gc();
-		File baseDir = replicationStoreManager1.getBaseDir();
-		File []files = baseDir.listFiles();
+		manager.gc();
+		File baseDir = manager.getBaseDir();
+		File[] files = baseDir.listFiles();
 		Assert.assertEquals(2, files.length);
 	}
 	
@@ -442,12 +438,131 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 
 		try {
 			LifecycleHelper.initializeIfPossible(replicationStoreManager);
+			LifecycleHelper.startIfPossible(replicationStoreManager);
+			replicationStoreManager.create();
 			replicationStoreManager.create();
 
 			verify(fileSystem, atLeastOnce()).mkdir(contains(getReplId().toString()), eq(true));
-			verify(fileSystem, atLeastOnce()).open(contains("store_manager_meta.properties"), eq(AbstractStorageFile.OpenMode.WRITE), eq(true), eq(true), eq(getReplId().toString()));
+			// T-S.5: READ_WRITE long-lived handle — two creates → open at most once before stop.
+			verify(fileSystem, times(1)).open(contains("store_manager_meta.properties"),
+					eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(true), eq(true), eq(getReplId().toString()));
 		} finally {
+			LifecycleHelper.stopIfPossible(replicationStoreManager);
 			LifecycleHelper.disposeIfPossible(replicationStoreManager);
+			fileSystem.shutdown();
+		}
+	}
+
+	/**
+	 * Sc: doStop swallows releaseCurrentStore failure (keep Lifecycle STOPPED) and still closes
+	 * manager-meta in finally — avoid STARTED+torn-down rollback from AbstractLifecycle.stop.
+	 */
+	@Test
+	public void testDoStopClosesManagerMetaWhenReleaseFails() throws Exception {
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		DefaultReplicationStoreManager real = new DefaultReplicationStoreManager(
+				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
+				mock(SyncRateManager.class), createRedisOpParser(), null, fileSystem);
+		LifecycleHelper.initializeIfPossible(real);
+		LifecycleHelper.startIfPossible(real);
+		real.create();
+		verify(fileSystem, times(1)).open(contains("store_manager_meta.properties"),
+				eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(true), eq(true), eq(getReplId().toString()));
+
+		DefaultReplicationStoreManager manager = spy(real);
+		doThrow(new IOException("injected releaseCurrentStore fail")).when(manager).releaseCurrentStore();
+		clearInvocations(fileSystem);
+		LifecycleHelper.stopIfPossible(manager);
+		Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
+		// releaseCurrentStore is stubbed: the only close in doStop finally is manager-meta.
+		verify(fileSystem, atLeastOnce()).close(any(AsyncFile.class));
+		try {
+			LifecycleHelper.disposeIfPossible(manager);
+		} catch (Throwable ignore) {
+		}
+		try {
+			fileSystem.shutdown();
+		} catch (Throwable ignore) {
+		}
+	}
+
+	/**
+	 * Sc review fix: destroy permanently refuses manager-meta reopen (even if lifecycle still started).
+	 */
+	@Test
+	public void testDestroyRefusesManagerMetaReopen() throws Exception {
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
+				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
+				mock(SyncRateManager.class), createRedisOpParser(), null, fileSystem);
+		try {
+			LifecycleHelper.initializeIfPossible(manager);
+			LifecycleHelper.startIfPossible(manager);
+			manager.create();
+			manager.destroy();
+			Assert.assertTrue(manager.getLifecycleState().isStarted());
+
+			clearInvocations(fileSystem);
+			try {
+				manager.create();
+				Assert.fail("create must refuse manager meta after destroy");
+			} catch (IOException e) {
+				Assert.assertTrue(e.getMessage().contains("destroyed"));
+				logger.info("[testDestroyRefusesManagerMetaReopen] expected: {}", e.getMessage());
+			}
+			verify(fileSystem, never()).open(contains("store_manager_meta.properties"),
+					any(AbstractStorageFile.OpenMode.class), anyBoolean(), anyBoolean(), any());
+		} finally {
+			try {
+				LifecycleHelper.stopIfPossible(manager);
+			} catch (Throwable ignore) {
+			}
+			try {
+				LifecycleHelper.disposeIfPossible(manager);
+			} catch (Throwable ignore) {
+			}
+			try {
+				fileSystem.shutdown();
+			} catch (Throwable ignore) {
+			}
+		}
+	}
+
+	/**
+	 * T-S.5: stop closes manager-meta handle and refuses reopen; start again may lazy-open once.
+	 */
+	@Test
+	public void testManagerMetaClosedOnStopAndReopensAfterStart() throws Exception {
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
+				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
+				mock(SyncRateManager.class), createRedisOpParser(), null, fileSystem);
+		try {
+			LifecycleHelper.initializeIfPossible(manager);
+			LifecycleHelper.startIfPossible(manager);
+			manager.create();
+			verify(fileSystem, times(1)).open(contains("store_manager_meta.properties"),
+					eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(true), eq(true), eq(getReplId().toString()));
+
+			LifecycleHelper.stopIfPossible(manager);
+			Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
+			clearInvocations(fileSystem);
+			try {
+				manager.create();
+				Assert.fail("create must refuse after stop");
+			} catch (IOException e) {
+				logger.info("[testManagerMetaClosedOnStopAndReopensAfterStart] expected: {}", e.getMessage());
+			}
+			verify(fileSystem, never()).open(contains("store_manager_meta.properties"),
+					any(AbstractStorageFile.OpenMode.class), anyBoolean(), anyBoolean(), any());
+
+			LifecycleHelper.startIfPossible(manager);
+			manager.create();
+			verify(fileSystem, times(1)).open(contains("store_manager_meta.properties"),
+					eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(true), eq(true), eq(getReplId().toString()));
+		} finally {
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
 			fileSystem.shutdown();
 		}
 	}

@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
@@ -79,6 +78,15 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private final ScheduledExecutorService commandNotifyScheduler;
 
+    /** Long-lived handle for {@link #META_FILE}; lazy open, closed on stop/dispose (Phase S / T-S.5). */
+    private AsyncFile managerMetaAsyncFile;
+
+    /**
+     * Permanent gate after {@link #destroy()}: unlike stop (lazy reopen on start), destroy must never
+     * reopen manager-meta (avoids open between close and rmdir, or after baseDir gone).
+     */
+    private boolean managerMetaDestroyed;
+
     public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
                                           SyncRateManager syncRateManager, RedisOpParser redisOpParser,
@@ -130,13 +138,25 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     }
 
     /**
-     * PREPARE / Server stop: cancel GC → best-effort flush → close store handles (not destroy).
+     * PREPARE / Server stop: cancel GC → best-effort flush → close store handles (not destroy)
+     * → close manager-meta long-lived handle (reopen lazily after start).
+     * <p>
+     * {@code releaseCurrentStore} failures are swallowed (align {@link #doDispose}): prefer reaching
+     * Lifecycle STOPPED over propagating — {@link com.ctrip.xpipe.lifecycle.AbstractLifecycle#stop}
+     * rollback would leave STARTED with GC/store/meta already torn down. Manager-meta close is in
+     * {@code finally}. TODO: surface unclosed FS handles to ForceCloseDir when close semantics are clear.
      */
     @Override
     protected void doStop() throws Exception {
         cancelGcFuture();
         flushStoreBestEffort();
-        releaseCurrentStore();
+        try {
+            releaseCurrentStore();
+        } catch (Exception e) {
+            logger.info("[doStop][releaseCurrentStore]", e);
+        } finally {
+            closeManagerMetaFile();
+        }
     }
 
     @Override
@@ -144,8 +164,10 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         cancelGcFuture();
         try {
             releaseCurrentStore();
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.info("[doDispose][releaseCurrentStore]", e);
+        } finally {
+            closeManagerMetaFile();
         }
         if (scheduled != null) {
             scheduled.shutdownNow();
@@ -202,6 +224,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             }
             throw new IOException("replication store manager stopped, refuse createIfNotExist: " + this);
         }
+
         // !checkOk → getCurrent returns null → create(); create() releases previous via releaseCurrentStore.
         ReplicationStore currentReplicationStore = null;
 
@@ -271,12 +294,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private void recordLatestStore(String storeDir) throws IOException {
         Properties meta = currentMeta();
-        if (meta == null) {
-            meta = new Properties();
-        }
-
         meta.setProperty(LATEST_STORE_DIR, storeDir);
-
         saveMeta(meta);
     }
 
@@ -289,16 +307,9 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         meta.store(out, null);
         byte[] data = out.toByteArray();
 
-        AsyncFile asyncFile = AsyncFileSystemHelper.await(
-                asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.WRITE, true, true, replId.toString()),
-                "open manager meta for write " + metaFile.getAbsolutePath());
-        try {
-            AsyncFileSystemHelper.writeAllBytes(asyncFileSystem, asyncFile, data,
-                    "write manager meta " + metaFile.getAbsolutePath());
-        } finally {
-            AsyncFileSystemHelper.await(asyncFileSystem.close(asyncFile),
-                    "close manager meta " + metaFile.getAbsolutePath());
-        }
+        AsyncFile asyncFile = getOrOpenManagerMetaFile();
+        AsyncFileSystemHelper.writeAllBytes(asyncFileSystem, asyncFile, data,
+                "write manager meta " + metaFile.getAbsolutePath());
 
         logger.info("[saveMeta][before]{}", currentMeta.get());
         currentMeta.set(meta);
@@ -306,36 +317,71 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     }
 
     /**
-     * @return
+     * @return never null; empty {@link Properties} when file absent / size 0
      * @throws IOException
      */
     private Properties loadMeta() throws IOException {
-
-        if (AsyncFileSystemHelper.await(asyncFileSystem.exists(metaFile.getAbsolutePath()),
-                "check manager meta exists " + metaFile.getAbsolutePath())) {
-            Properties meta = new Properties();
-            AsyncFile asyncFile = AsyncFileSystemHelper.await(
-                    asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.READ, false, true, replId.toString()),
-                    "open manager meta for read " + metaFile.getAbsolutePath());
-            try {
-                long size = AsyncFileSystemHelper.await(asyncFileSystem.size(asyncFile),
-                        "stat manager meta " + metaFile.getAbsolutePath());
-                if (size > Integer.MAX_VALUE) {
-                    throw new IOException("async file too large: " + metaFile.getAbsolutePath());
-                }
-                byte[] data = AsyncFileSystemHelper.readAllBytes(asyncFileSystem, asyncFile, size, 0,
-                        "read manager meta " + metaFile.getAbsolutePath());
-                try (InputStream in = new ByteArrayInputStream(data)) {
-                    meta.load(in);
-                }
-            } finally {
-                AsyncFileSystemHelper.await(asyncFileSystem.close(asyncFile),
-                        "close manager meta " + metaFile.getAbsolutePath());
-            }
-            return meta;
+        AsyncFile asyncFile = getOrOpenManagerMetaFile();
+        long size = AsyncFileSystemHelper.await(asyncFileSystem.size(asyncFile),
+                "stat manager meta " + metaFile.getAbsolutePath());
+        if (size > Integer.MAX_VALUE) {
+            throw new IOException("async file too large: " + metaFile.getAbsolutePath());
         }
+        if (size == 0) {
+            return new Properties();
+        }
+        Properties meta = new Properties();
+        byte[] data = AsyncFileSystemHelper.readAllBytes(asyncFileSystem, asyncFile, size, 0,
+                "read manager meta " + metaFile.getAbsolutePath());
+        try (InputStream in = new ByteArrayInputStream(data)) {
+            meta.load(in);
+        }
+        return meta;
+    }
 
-        return null;
+    /**
+     * Sole entry for manager-meta handle. Synchronized + lifecycle / destroy gate: refuse open/use while
+     * stopping or after stop/dispose (handle closed in {@link #closeManagerMetaFile()}), and after
+     * {@link #destroy()} (permanent). After {@code start()} again (not destroyed), first save/load reopens lazily.
+     */
+    private synchronized AsyncFile getOrOpenManagerMetaFile() throws IOException {
+        if (managerMetaDestroyed) {
+            throw new IOException("replication store manager destroyed, refuse manager meta: " + this);
+        }
+        if (getLifecycleState().isStopping() || getLifecycleState().isPositivelyStopped()) {
+            throw new IOException("replication store manager stopped, refuse manager meta: " + this);
+        }
+        if (managerMetaAsyncFile != null) {
+            return managerMetaAsyncFile;
+        }
+        // Parent dir may not exist before first create(); open(CREATE) needs it.
+        AsyncFileSystemHelper.await(asyncFileSystem.mkdir(baseDir.getAbsolutePath(), true),
+                "mkdir manager baseDir for meta " + baseDir.getAbsolutePath());
+        AsyncFile asyncFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
+                asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.READ_WRITE, true, true,
+                        replId.toString()),
+                "open manager meta " + metaFile.getAbsolutePath());
+        managerMetaAsyncFile = asyncFile;
+        return managerMetaAsyncFile;
+    }
+
+    /**
+     * Idempotent close of manager-meta handle. Decoupled from {@link #releaseCurrentStore()};
+     * called from stop/dispose/destroy. Must not reopen until lifecycle leaves stopped
+     * ({@link #getOrOpenManagerMetaFile()} gated).
+     */
+    private synchronized void closeManagerMetaFile() {
+        if (managerMetaAsyncFile == null) {
+            return;
+        }
+        AsyncFile toClose = managerMetaAsyncFile;
+        managerMetaAsyncFile = null;
+        try {
+            AsyncFileSystemHelper.await(asyncFileSystem.close(toClose),
+                    "close manager meta " + metaFile.getAbsolutePath());
+        } catch (Exception e) {
+            logger.warn("[closeManagerMetaFile]{}", this, e);
+        }
     }
 
     private Properties currentMeta() throws IOException {
@@ -440,8 +486,11 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     }
 
     @Override
-    public void destroy() throws Exception {
+    public synchronized void destroy() throws Exception {
         logger.info("[destroy]{}", this);
+        // Permanent refuse reopen before close/rmdir so create/getCurrent/gc cannot race a new open.
+        managerMetaDestroyed = true;
+        closeManagerMetaFile();
         AsyncFileSystemHelper.await(
                 asyncFileSystem.rmdir(this.baseDir.getAbsolutePath(), true),
                 "rmdir replication store manager baseDir " + baseDir);
