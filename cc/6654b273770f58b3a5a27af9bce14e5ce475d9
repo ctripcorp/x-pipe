@@ -1,0 +1,9 @@
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/protocal/cmd/PartialOnlyPsyncTest.java
+  ai_agent 7,18,117-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "cc6654b273770f58b3a5a27af9bce14e5ce475d9",
+  "prompts": {}
+}
