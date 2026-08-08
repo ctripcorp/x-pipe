@@ -882,7 +882,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		byte[] data = new byte[0];
 		AsyncSegmentFile readSeg = null;
 		try {
-			readSeg = AsyncFileSystemHelper.await(
+			readSeg = AsyncFileSystemHelper.awaitOpen(fs,
 					fs.open(asyncStore.getCommandBaseDir().getAbsolutePath(),
 							asyncStore.getCommandFileNamePrefix(),
 							asyncStore.getCommandIndexPrefixes(),

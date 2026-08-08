@@ -25,6 +25,7 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationL
 import com.ctrip.xpipe.redis.keeper.ratelimit.RateLimitTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.FixSyncRateManagerTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.ProgressiveSyncRateLimiterTest;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystemTest;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
@@ -119,6 +120,7 @@ import org.junit.runners.Suite.SuiteClasses;
         GapAllowXSyncHandlerTest.class,
         GtidxHandlerTest.class,
 
+        AsyncFileSystemHelperTest.class,
         AsyncTFSBasedFileSystemTest.class,
         TailCacheFileSystemTest.class,
 

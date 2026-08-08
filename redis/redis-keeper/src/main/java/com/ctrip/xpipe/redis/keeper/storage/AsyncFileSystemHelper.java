@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.keeper.storage;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -14,6 +16,8 @@ import java.util.concurrent.TimeoutException;
 
 public final class AsyncFileSystemHelper {
 
+    private static final Logger logger = LoggerFactory.getLogger(AsyncFileSystemHelper.class);
+
     public static final String EVENT_TYPE = "AsyncFileSystemCall";
 
     /** Helper-side cases (not thrown by AsyncFileSystem itself). */
@@ -21,6 +25,8 @@ public final class AsyncFileSystemHelper {
     public static final String CASE_INTERRUPTED = "Interrupted";
     public static final String CASE_SHORT_WRITE = "ShortWrite";
     public static final String CASE_SHORT_READ = "ShortRead";
+    public static final String CASE_ABANDON_CLOSE = "AbandonClose";
+    public static final String CASE_ABANDON_CLOSE_FAIL = "AbandonCloseFail";
 
     public static final long DEFAULT_IO_TIMEOUT_MILLIS = 1000L;
 
@@ -57,13 +63,43 @@ public final class AsyncFileSystemHelper {
     }
 
     public static <T> T await(CompletableFuture<T> future, String operation) throws IOException {
-        Long override = IO_TIMEOUT_MILLIS.get();
-        long timeoutMillis = override != null ? override : DEFAULT_IO_TIMEOUT_MILLIS;
-        return await(future, operation, timeoutMillis, TimeUnit.MILLISECONDS);
+        return await(future, operation, currentTimeoutMillis(), TimeUnit.MILLISECONDS);
     }
 
     public static <T> T await(CompletableFuture<T> future, String operation, long timeout, TimeUnit unit)
             throws IOException {
+        return doAwait(future, operation, timeout, unit, () -> future.cancel(false));
+    }
+
+    /**
+     * Await an {@code open} future. On timeout, abandon: a late successful open is best-effort
+     * {@code fs.close}'d so the handle is never handed to the caller (avoids sticky
+     * {@code writer already open}). Timeout still surfaces as {@link IOException}.
+     * <p>
+     * Does <b>not</b> {@code cancel} the open future: {@link CompletableFuture#cancel} on a
+     * {@code supplyAsync} future discards the result while the IO task may still finish and hold
+     * the write slot — then abandon cannot reclaim the handle.
+     * <p>
+     * Timeout budget follows {@link #await} / {@link #runWithIoTimeout}.
+     */
+    public static <T extends AbstractStorageFile> T awaitOpen(AsyncFileSystem fs, CompletableFuture<T> future,
+                                                              String operation) throws IOException {
+        return doAwait(future, operation, currentTimeoutMillis(), TimeUnit.MILLISECONDS,
+                () -> abandonOpen(fs, future, operation));
+    }
+
+    private static long currentTimeoutMillis() {
+        Long override = IO_TIMEOUT_MILLIS.get();
+        return override != null ? override : DEFAULT_IO_TIMEOUT_MILLIS;
+    }
+
+    @FunctionalInterface
+    private interface OnTimeout {
+        void accept();
+    }
+
+    private static <T> T doAwait(CompletableFuture<T> future, String operation, long timeout, TimeUnit unit,
+                                 OnTimeout onTimeout) throws IOException {
         try {
             return future.get(timeout, unit);
         } catch (InterruptedException e) {
@@ -71,6 +107,7 @@ public final class AsyncFileSystemHelper {
             logCase(CASE_INTERRUPTED);
             throw new IOException("interrupted while waiting async file IO: " + operation, e);
         } catch (TimeoutException e) {
+            onTimeout.accept();
             logCase(CASE_TIMEOUT);
             throw new IOException("timeout waiting async file IO: " + operation, e);
         } catch (ExecutionException e) {
@@ -87,6 +124,48 @@ public final class AsyncFileSystemHelper {
             }
             throw new IOException("unexpected async file IO failure: " + operation, t);
         }
+    }
+
+    private static <T extends AbstractStorageFile> void abandonOpen(AsyncFileSystem fs, CompletableFuture<T> future,
+                                                                    String operation) {
+        future.whenComplete((file, err) -> {
+            if (err != null) {
+                logger.info("[awaitOpen][abandon][late-fail] {}", operation, err);
+                return;
+            }
+            if (file == null) {
+                return;
+            }
+            closeAbandoned(fs, file, operation);
+        });
+    }
+
+    private static void closeAbandoned(AsyncFileSystem fs, AbstractStorageFile file, String operation) {
+        CompletableFuture<Void> closeFuture;
+        try {
+            if (file instanceof AsyncFile) {
+                closeFuture = fs.close((AsyncFile) file);
+            } else if (file instanceof AsyncSegmentFile) {
+                closeFuture = fs.close((AsyncSegmentFile) file);
+            } else {
+                logCase(CASE_ABANDON_CLOSE_FAIL);
+                logger.error("[awaitOpen][abandon][unknown-type] {} {}", operation, file.getClass().getName());
+                return;
+            }
+        } catch (Throwable t) {
+            logCase(CASE_ABANDON_CLOSE_FAIL);
+            logger.error("[awaitOpen][abandon][close-fail] {}", operation, t);
+            return;
+        }
+        closeFuture.whenComplete((ignored, closeErr) -> {
+            if (closeErr != null) {
+                logCase(CASE_ABANDON_CLOSE_FAIL);
+                logger.error("[awaitOpen][abandon][close-fail] {}", operation, closeErr);
+            } else {
+                logCase(CASE_ABANDON_CLOSE);
+                logger.info("[awaitOpen][abandon][closed] {}", operation);
+            }
+        });
     }
 
     private static IOException toIoException(String operation, Throwable cause) throws Error {

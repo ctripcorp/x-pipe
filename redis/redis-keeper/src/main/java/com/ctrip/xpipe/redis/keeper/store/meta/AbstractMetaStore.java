@@ -113,7 +113,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 			return;
 		}
 		File file = metaV2File();
-		AsyncFile asyncFile = AsyncFileSystemHelper.await(
+		AsyncFile asyncFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
 				asyncFileSystem.open(file.getAbsolutePath(), AbstractStorageFile.OpenMode.READ_WRITE, true, true,
 						fileSystemReplId.toString()),
 				"open meta file " + file.getAbsolutePath());

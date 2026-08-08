@@ -209,7 +209,7 @@ public class DefaultIndexStoreTest {
                 AbstractIndex.BLOCK + cmdPrefix,
                 AbstractIndex.INDEX_V2 + cmdPrefix,
                 AbstractIndex.BLOCK_V2 + cmdPrefix);
-        AsyncSegmentFile seg = AsyncFileSystemHelper.await(
+        AsyncSegmentFile seg = AsyncFileSystemHelper.awaitOpen(testFs,
                 testFs.open(baseDir, cmdPrefix, prefixes, true, "test-repl-0"),
                 "open test command segment");
         openedSegments.add(seg);
@@ -278,7 +278,7 @@ public class DefaultIndexStoreTest {
     }
 
     private AsyncFile openTestAsyncFile(File file, boolean write) throws IOException {
-        return AsyncFileSystemHelper.await(
+        return AsyncFileSystemHelper.awaitOpen(testFs,
                 testFs.open(file.getAbsolutePath(), write ? AbstractStorageFile.OpenMode.WRITE : AbstractStorageFile.OpenMode.READ, false, true, "test-repl-0"),
                 "open test async file " + file.getName());
     }

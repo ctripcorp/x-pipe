@@ -326,7 +326,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	protected void doReadRdbFile(RdbFileListener rdbFileListener) throws IOException {
 
-		AsyncFile readFile = AsyncFileSystemHelper.await(
+		AsyncFile readFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
 				asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.READ, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
 		// Refcounted close: writeAndFlush(FileRegion) is async; must not fs.close until Netty deallocate.
 		AsyncRdbReadHandle readHandle = new AsyncRdbReadHandle(asyncFileSystem, readFile, String.valueOf(file));
@@ -456,12 +456,12 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	private AsyncFile openWriteHandle() throws IOException {
-		return AsyncFileSystemHelper.await(
+		return AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
 				asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.WRITE, false, true, fileSystemReplId.toString()), "open rdb for write " + file);
 	}
 
 	private AsyncFile openReadHandle() throws IOException {
-		return AsyncFileSystemHelper.await(
+		return AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
 				asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.READ, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
 	}
 

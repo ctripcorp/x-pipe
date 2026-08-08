@@ -55,7 +55,7 @@ public class IndexReader implements Closeable {
         this.segmentStartOffset = segmentStartOffset;
         this.tenant = tenant;
         this.indexPrefixes = indexPrefixes;
-        this.readSeg = AsyncFileSystemHelper.await(
+        this.readSeg = AsyncFileSystemHelper.awaitOpen(fs,
                 fs.open(baseDir, cmdPrefix, indexPrefixes, false, tenant.toString()),
                 "open read segment for index");
     }
@@ -314,7 +314,7 @@ public class IndexReader implements Closeable {
 
     protected static AsyncSegmentFile openTempReadSeg(AsyncFileSystem fs, String baseDir, String cmdPrefix,
                                                       ReplId tenant, List<String> prefixes) throws IOException {
-        return AsyncFileSystemHelper.await(
+        return AsyncFileSystemHelper.awaitOpen(fs,
                 fs.open(baseDir, cmdPrefix, prefixes, false, tenant.toString()),
                 "open temp read segment");
     }

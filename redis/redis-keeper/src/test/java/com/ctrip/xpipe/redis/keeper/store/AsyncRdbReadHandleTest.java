@@ -22,7 +22,7 @@ public class AsyncRdbReadHandleTest extends AbstractRedisKeeperTest {
     public void closeDefersUntilRegionDeallocated() throws Exception {
         AsyncFileSystem fs = asyncFileSystem();
         File path = new File(getTestFileDir(), getTestName() + ".rdb");
-        AsyncFile writeFile = AsyncFileSystemHelper.await(
+        AsyncFile writeFile = AsyncFileSystemHelper.awaitOpen(fs,
                 fs.open(path.getAbsolutePath(), AbstractStorageFile.OpenMode.WRITE, false, true, getReplId().toString()),
                 "open write");
         try {
@@ -33,7 +33,7 @@ public class AsyncRdbReadHandleTest extends AbstractRedisKeeperTest {
             AsyncFileSystemHelper.await(fs.close(writeFile), "close write");
         }
 
-        AsyncFile readFile = AsyncFileSystemHelper.await(
+        AsyncFile readFile = AsyncFileSystemHelper.awaitOpen(fs,
                 fs.open(path.getAbsolutePath(), AbstractStorageFile.OpenMode.READ, false, true, getReplId().toString()),
                 "open read");
         AsyncRdbReadHandle handle = new AsyncRdbReadHandle(fs, readFile, path.getAbsolutePath());
@@ -76,12 +76,12 @@ public class AsyncRdbReadHandleTest extends AbstractRedisKeeperTest {
     public void closeWithNoRegionClosesImmediately() throws Exception {
         AsyncFileSystem fs = asyncFileSystem();
         File path = new File(getTestFileDir(), getTestName() + "-empty.rdb");
-        AsyncFile writeFile = AsyncFileSystemHelper.await(
+        AsyncFile writeFile = AsyncFileSystemHelper.awaitOpen(fs,
                 fs.open(path.getAbsolutePath(), AbstractStorageFile.OpenMode.WRITE, false, true, getReplId().toString()),
                 "open write");
         AsyncFileSystemHelper.await(fs.close(writeFile), "close write");
 
-        AsyncFile readFile = AsyncFileSystemHelper.await(
+        AsyncFile readFile = AsyncFileSystemHelper.awaitOpen(fs,
                 fs.open(path.getAbsolutePath(), AbstractStorageFile.OpenMode.READ, false, true, getReplId().toString()),
                 "open read");
         AsyncRdbReadHandle handle = new AsyncRdbReadHandle(fs, readFile, path.getAbsolutePath());

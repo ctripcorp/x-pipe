@@ -153,7 +153,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                 BLOCK + fileNamePrefix,
                 INDEX_V2 + fileNamePrefix,
                 BLOCK_V2 + fileNamePrefix);
-        this.asyncSegmentFile = AsyncFileSystemHelper.await(
+        this.asyncSegmentFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
                 asyncFileSystem.open(baseDir.getAbsolutePath(), fileNamePrefix, commandIndexPrefixes, true, fileSystemReplId.toString()),
                 "open command segment " + fileNamePrefix);
         // invalid 文件列表见 T-FS.2；FS initFromFiles 内部已 warn，Store 待 FS 暴露 invalidFiles() 后再补日志

@@ -562,7 +562,7 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
     }
 
     AsyncSegmentFile openReadSegment(List<String> indexPrefixes) throws IOException {
-        return AsyncFileSystemHelper.await(
+        return AsyncFileSystemHelper.awaitOpen(fs,
                 fs.open(baseDir, asyncCommandStore.getCommandFileNamePrefix(), indexPrefixes, false,
                         replId.toString()),
                 "open read segment for index rebuild");
