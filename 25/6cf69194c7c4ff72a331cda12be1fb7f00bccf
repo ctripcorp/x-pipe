@@ -1,0 +1,11 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java
+  ai_agent 81-89,141-147,153-159,167,169-170,227,310-312,320,324-340,342-352,354-366,368-384,489,491-493
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManagerTest.java
+  ai_agent 13,17,27,287-289,324-327,331-332,334-335,339-340,342,344,346,349,351,353-354,360,365,367-368,373,378,381-383,441-442,446-448,450,455-565
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "256cf69194c7c4ff72a331cda12be1fb7f00bccf",
+  "prompts": {}
+}
