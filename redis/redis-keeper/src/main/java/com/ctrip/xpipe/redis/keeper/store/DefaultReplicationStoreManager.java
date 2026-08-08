@@ -193,7 +193,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     @Override
     public synchronized ReplicationStore createIfNotExist() throws IOException {
 
-        // After stop/dispose: refuse reopen. Initialized-but-never-started still allowed
+        // After stop/dispose: refuse reopen / self-heal. Initialized-but-never-started still allowed
         // (isPositivelyStopped distinguishes Stoppable.PHASE_NAME_END from Initializable.PHASE_NAME_END).
         if (getLifecycleState().isPositivelyStopped()) {
             ReplicationStore existing = currentStore.get();
@@ -202,7 +202,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             }
             throw new IOException("replication store manager stopped, refuse createIfNotExist: " + this);
         }
-
+        // !checkOk → getCurrent returns null → create(); create() releases previous via releaseCurrentStore.
         ReplicationStore currentReplicationStore = null;
 
         try {
@@ -236,9 +236,20 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         logger.info("[create]{}", storeBaseDir);
 
-        recrodLatestStore(storeBaseDir.getName());
-
+        // Construct before publishing latest: avoid latest.store.dir pointing at an empty UUID dir
+        // when createReplicationStore fails (GC could then reclaim the still-serving old store).
         ReplicationStore replicationStore = createReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, syncRateManager);
+        try {
+            recordLatestStore(storeBaseDir.getName());
+        } catch (IOException e) {
+            // Meta not published — close the unpublished store; keep old lease / latest unchanged.
+            try {
+                replicationStore.close();
+            } catch (Exception closeErr) {
+                logger.warn("[create][close unpublished store after meta fail]{}", storeBaseDir, closeErr);
+            }
+            throw e;
+        }
 
         try {
             releaseCurrentStore();
@@ -258,7 +269,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                 syncRateManager, commandNotifyScheduler, asyncFileSystem, replId);
     }
 
-    private void recrodLatestStore(String storeDir) throws IOException {
+    private void recordLatestStore(String storeDir) throws IOException {
         Properties meta = currentMeta();
         if (meta == null) {
             meta = new Properties();
@@ -363,6 +374,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         ReplicationStore replicationStore = currentStore.get();
         if (replicationStore != null && !replicationStore.checkOk()) {
+            // Escape hatch only: do not clear currentStore here. Lease release must go through
+            // releaseCurrentStore() (e.g. create() / Manager.stop); checkOk may mean more than closed later.
             logger.info("[getCurrent][store not ok, return null]{}", replicationStore);
             return null;
         }

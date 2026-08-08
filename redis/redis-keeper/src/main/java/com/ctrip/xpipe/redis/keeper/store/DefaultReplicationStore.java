@@ -890,7 +890,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public boolean checkOk() {
-		return true;
+		return !isClosed();
 	}
 
 	@Override

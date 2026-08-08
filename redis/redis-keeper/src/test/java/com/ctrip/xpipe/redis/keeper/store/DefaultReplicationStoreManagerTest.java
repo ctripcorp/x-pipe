@@ -13,6 +13,9 @@ import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import java.util.concurrent.atomic.AtomicBoolean;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
@@ -85,6 +88,206 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 	/**
 	 * T-R.11⑤: after Manager.stop() (PREPARE), {@code gc()} must skip list/rmdir and not reopen store.
 	 */
+
+	/**
+	 * T-S.2 / T-S.3: closed store → checkOk false; createIfNotExist → create() self-heals
+	 * (releaseCurrentStore inside create clears the previous lease).
+	 */
+	@Test
+	public void testCreateIfNotExistHealsClosedStore() throws Exception {
+		DefaultReplicationStoreManager manager = (DefaultReplicationStoreManager) createReplicationStoreManager(keeperConfig);
+		LifecycleHelper.initializeIfPossible(manager);
+		LifecycleHelper.startIfPossible(manager);
+		try {
+			ReplicationStore store = manager.createIfNotExist();
+			Assert.assertTrue(store.checkOk());
+			store.close();
+			Assert.assertFalse(store.checkOk());
+
+			ReplicationStore healed = manager.createIfNotExist();
+			Assert.assertNotNull(healed);
+			Assert.assertNotSame(store, healed);
+			Assert.assertTrue(healed.checkOk());
+			Assert.assertSame(healed, manager.getCurrent());
+		} finally {
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
+		}
+	}
+
+	/**
+	 * T-S.3 gate: after Manager.stop (PREPARE), bad/closed store must not self-heal via createIfNotExist.
+	 */
+	@Test
+	public void testCreateIfNotExistRefusesHealWhenStopped() throws Exception {
+		DefaultReplicationStoreManager manager = (DefaultReplicationStoreManager) createReplicationStoreManager(keeperConfig);
+		LifecycleHelper.initializeIfPossible(manager);
+		LifecycleHelper.startIfPossible(manager);
+		try {
+			ReplicationStore store = manager.createIfNotExist();
+			store.close();
+			LifecycleHelper.stopIfPossible(manager);
+			Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
+			try {
+				manager.createIfNotExist();
+				Assert.fail("createIfNotExist must refuse after stop even when store is closed");
+			} catch (IOException e) {
+				logger.info("[testCreateIfNotExistRefusesHealWhenStopped] expected: {}", e.getMessage());
+			}
+			Assert.assertNull(manager.getCurrent());
+		} finally {
+			LifecycleHelper.disposeIfPossible(manager);
+		}
+	}
+
+	/**
+	 * §3.9.2 / Manager.create: saveMeta failure after construct keeps old store open and latest unchanged.
+	 * Unpublished new store is closed. After T-S.5, inject write fail on long-lived meta handle.
+	 */
+	@Test
+	public void testCreateFailureKeepsOldStoreOpen() throws Exception {
+		AsyncFileSystem fs = spy(createTestAsyncFileSystem());
+		File managerBase = new File(getTestFileDir());
+		ReplId replId = getReplId();
+		String keeperRunid = randomKeeperRunid();
+		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
+				keeperConfig, replId, keeperRunid, managerBase,
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+		LifecycleHelper.initializeIfPossible(manager);
+		LifecycleHelper.startIfPossible(manager);
+		try {
+			ReplicationStore oldStore = manager.create();
+			Assert.assertTrue(oldStore.checkOk());
+			Assert.assertSame(oldStore, manager.getCurrent());
+			File oldStoreDir = storeBaseDir(oldStore);
+
+			// After方案 B, construct writes meta.v2.json before manager meta — fail only manager-meta path.
+			AtomicBoolean failManagerMetaWrite = new AtomicBoolean(false);
+			doAnswer(invocation -> {
+				if (failManagerMetaWrite.get()) {
+					AsyncFile file = invocation.getArgument(0);
+					if (isManagerMetaFile(file)) {
+						return java.util.concurrent.CompletableFuture.failedFuture(
+								new IOException("injected saveMeta write fail"));
+					}
+				}
+				return invocation.callRealMethod();
+			}).when(fs).write(any(AsyncFile.class), any(ByteBuf.class));
+
+			failManagerMetaWrite.set(true);
+			try {
+				manager.create();
+				Assert.fail("create should fail when saveMeta write fails");
+			} catch (IOException e) {
+				logger.info("[testCreateFailureKeepsOldStoreOpen] expected: {}", e.getMessage());
+			} finally {
+				failManagerMetaWrite.set(false);
+			}
+
+			Assert.assertSame(oldStore, manager.getCurrent());
+			Assert.assertTrue(oldStore.checkOk());
+
+			// latest.store.dir must still recover the old store after manager recycle.
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
+			DefaultReplicationStoreManager recovered = new DefaultReplicationStoreManager(
+					keeperConfig, replId, keeperRunid, managerBase,
+					createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+			LifecycleHelper.initializeIfPossible(recovered);
+			try {
+				Assert.assertEquals(oldStoreDir, storeBaseDir(recovered.getCurrent()));
+			} finally {
+				LifecycleHelper.disposeIfPossible(recovered);
+			}
+		} finally {
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
+			try {
+				fs.shutdown();
+			} catch (Throwable ignore) {
+			}
+		}
+	}
+
+	/**
+	 * §3.9.2 方案 B: construct fails before recordLatestStore → latest unchanged, old store still open.
+	 */
+	@Test
+	public void testCreateConstructFailureKeepsLatestOnOldStore() throws Exception {
+		AsyncFileSystem fs = createTestAsyncFileSystem();
+		File managerBase = new File(getTestFileDir());
+		ReplId replId = getReplId();
+		String keeperRunid = randomKeeperRunid();
+		AtomicBoolean failConstruct = new AtomicBoolean(false);
+		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
+				keeperConfig, replId, keeperRunid, managerBase,
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs) {
+			@Override
+			protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig,
+					String keeperRunid, KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
+				if (failConstruct.get()) {
+					throw new IOException("injected construct fail");
+				}
+				return super.createReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, syncRateManager);
+			}
+		};
+		LifecycleHelper.initializeIfPossible(manager);
+		LifecycleHelper.startIfPossible(manager);
+		try {
+			ReplicationStore oldStore = manager.create();
+			File oldStoreDir = storeBaseDir(oldStore);
+			Assert.assertSame(oldStore, manager.getCurrent());
+
+			failConstruct.set(true);
+			try {
+				manager.create();
+				Assert.fail("create should fail when construct fails");
+			} catch (IOException e) {
+				logger.info("[testCreateConstructFailureKeepsLatestOnOldStore] expected: {}", e.getMessage());
+			} finally {
+				failConstruct.set(false);
+			}
+
+			Assert.assertSame(oldStore, manager.getCurrent());
+			Assert.assertTrue(oldStore.checkOk());
+
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
+			DefaultReplicationStoreManager recovered = new DefaultReplicationStoreManager(
+					keeperConfig, replId, keeperRunid, managerBase,
+					createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+			LifecycleHelper.initializeIfPossible(recovered);
+			try {
+				Assert.assertEquals(oldStoreDir, storeBaseDir(recovered.getCurrent()));
+			} finally {
+				LifecycleHelper.disposeIfPossible(recovered);
+			}
+		} finally {
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
+			try {
+				fs.shutdown();
+			} catch (Throwable ignore) {
+			}
+		}
+	}
+
+	private static File storeBaseDir(ReplicationStore store) {
+		return new File(store.toString().substring("ReplicationStore:".length()));
+	}
+
+	/** Manager meta path is package-private on {@link AsyncFile}; test scopes write-fail injection. */
+	private static boolean isManagerMetaFile(AsyncFile file) {
+		try {
+			java.lang.reflect.Field pathField = AsyncFile.class.getDeclaredField("path");
+			pathField.setAccessible(true);
+			String path = (String) pathField.get(file);
+			return path != null && path.endsWith("store_manager_meta.properties");
+		} catch (ReflectiveOperationException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
 	@Test
 	public void testGcSkippedWhenStoppedAfterPrepare() throws Exception {
 		// Dedicated FS so verify(never) does not race with shared test FS.

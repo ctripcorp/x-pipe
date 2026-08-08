@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.core.protocal.cmd;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
@@ -13,9 +14,10 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultGapAllowedSyncTest extends AbstractRedisTest{
@@ -32,6 +34,22 @@ public class DefaultGapAllowedSyncTest extends AbstractRedisTest{
 	public void beforeDefaultPsyncTest() throws Exception{
 		when(replicationStoreManager.createIfNotExist()).thenReturn(replicationStore);
 		defaultGAsync = new DefaultGapAllowedSync(null, null, replicationStoreManager, scheduled);
+	}
+
+	/**
+	 * T-S.1: ACTIVE full-sync replace must not bypass-close the old store when Manager.create fails.
+	 */
+	@Test
+	public void testFullSyncReplaceDoesNotCloseOldStoreWhenCreateFails() throws Exception {
+		when(replicationStoreManager.create()).thenThrow(new IOException("injected create fail"));
+		try {
+			defaultGAsync.doWhenFullSyncToNonFreshReplicationStore("new-repl-id");
+			Assert.fail("expected create failure");
+		} catch (XpipeRuntimeException e) {
+			Assert.assertTrue(e.getCause() instanceof IOException);
+		}
+		verify(replicationStore, never()).close();
+		verify(replicationStoreManager, times(1)).create();
 	}
 
 	@Test
