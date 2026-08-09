@@ -1,0 +1,42 @@
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/KeeperMultiDcChangePrimaryXsync.java
+  s_61deab5fc35022::t_5f30485081f939 335-336
+  s_61deab5fc35022::t_43128f6acf5a5c 80-81
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/KeeperXsyncV2IndexTest.java
+  s_29494213d9c56c::t_b2e52f361ad576 108-109,112,123
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/KeeperMultiDcChangePrimary.java
+  s_61deab5fc35022::t_d5706433d7eed1 69-70
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/AbstractKeeperIntegrated.java
+  s_731f0344fe8f81::t_321b132c433177 167-176,178-194,196,198
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "ebf92e9a2a78581aee0a4b632277c557f5077312",
+  "prompts": {},
+  "sessions": {
+    "s_29494213d9c56c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b6b02f18-a8e6-4458-a697-5a08644f09de",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_61deab5fc35022": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1a3c1e16-3454-4055-9836-cfbfc8f1d9f3",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_731f0344fe8f81": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c0dd8ce2-e513-4df3-9a35-04b7d9a08653",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
