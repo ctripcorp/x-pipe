@@ -11,6 +11,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -27,6 +28,10 @@ public final class AsyncFileSystemHelper {
     public static final String CASE_SHORT_READ = "ShortRead";
     public static final String CASE_ABANDON_CLOSE = "AbandonClose";
     public static final String CASE_ABANDON_CLOSE_FAIL = "AbandonCloseFail";
+    public static final String CASE_CLOSE_NOT_EXECUTED = "CloseNotExecuted";
+    public static final String CASE_CLOSE_TIMEOUT = "CloseTimeout";
+    public static final String CASE_CLOSE_REJECTED = "CloseRejected";
+    public static final String CASE_CLOSE_FAIL = "CloseFail";
 
     public static final long DEFAULT_IO_TIMEOUT_MILLIS = 1000L;
 
@@ -72,9 +77,9 @@ public final class AsyncFileSystemHelper {
     }
 
     /**
-     * Await an {@code open} future. On timeout, abandon: a late successful open is best-effort
-     * {@code fs.close}'d so the handle is never handed to the caller (avoids sticky
-     * {@code writer already open}). Timeout still surfaces as {@link IOException}.
+     * Await an {@code open} future. On timeout <b>or interrupt</b>, abandon: a late successful open
+     * is best-effort {@link #closeReadHandle}'d (no await) so the handle is never handed to the caller
+     * (avoids sticky {@code writer already open}). Timeout/interrupt still surfaces as {@link IOException}.
      * <p>
      * Does <b>not</b> {@code cancel} the open future: {@link CompletableFuture#cancel} on a
      * {@code supplyAsync} future discards the result while the IO task may still finish and hold
@@ -86,6 +91,36 @@ public final class AsyncFileSystemHelper {
                                                               String operation) throws IOException {
         return doAwait(future, operation, currentTimeoutMillis(), TimeUnit.MILLISECONDS,
                 () -> abandonOpen(fs, future, operation));
+    }
+
+    /**
+     * Best-effort close for <b>write</b> handles (spec §3.9.4b).
+     * <ul>
+     *   <li>{@link OperationNotExecutedException} (sync, before future): retry close once; still fail → skip</li>
+     *   <li>Returned future: await with the same IO timeout as {@link #await}; on timeout do <b>not</b>
+     *       cancel — hang {@code whenComplete} to log late failure</li>
+     *   <li>Future completed with {@link RejectedExecutionException}: retry close once / skip</li>
+     * </ul>
+     * Never throws to caller (lease / Lifecycle preferred over perfect close).
+     */
+    public static void closeHandle(AsyncFileSystem fs, AbstractStorageFile file, String operation) {
+        if (fs == null || file == null) {
+            return;
+        }
+        CompletableFuture<Void> closeFuture = invokeCloseWithOneRetry(fs, file, operation);
+        if (closeFuture == null) {
+            return;
+        }
+        awaitCloseFuture(fs, file, closeFuture, operation, true);
+    }
+
+    /**
+     * Best-effort close for <b>read</b> handles and abandon late-close (spec §3.9.4b).
+     * Invokes close (with one {@link OperationNotExecutedException} retry) then observes the future
+     * via {@code whenComplete} — <b>does not await</b>. Never throws.
+     */
+    public static void closeReadHandle(AsyncFileSystem fs, AbstractStorageFile file, String operation) {
+        closeWithoutAwait(fs, file, operation, CloseObserveMode.READ);
     }
 
     private static long currentTimeoutMillis() {
@@ -103,6 +138,8 @@ public final class AsyncFileSystemHelper {
         try {
             return future.get(timeout, unit);
         } catch (InterruptedException e) {
+            // Same reclaim path as TimeoutException (Important #2 / T-S.8): awaitOpen→abandon; await→cancel.
+            onTimeout.accept();
             Thread.currentThread().interrupt();
             logCase(CASE_INTERRUPTED);
             throw new IOException("interrupted while waiting async file IO: " + operation, e);
@@ -128,7 +165,9 @@ public final class AsyncFileSystemHelper {
 
     private static <T extends AbstractStorageFile> void abandonOpen(AsyncFileSystem fs, CompletableFuture<T> future,
                                                                     String operation) {
-        future.whenComplete((file, err) -> {
+        // whenCompleteAsync: hop off the open-completing thread (often the IO pool) before invoking close,
+        // which may sync-flush on the caller; never await close on that path.
+        future.whenCompleteAsync((file, err) -> {
             if (err != null) {
                 logger.info("[awaitOpen][abandon][late-fail] {}", operation, err);
                 return;
@@ -136,36 +175,155 @@ public final class AsyncFileSystemHelper {
             if (file == null) {
                 return;
             }
-            closeAbandoned(fs, file, operation);
+            closeWithoutAwait(fs, file, operation, CloseObserveMode.ABANDON);
         });
     }
 
-    private static void closeAbandoned(AsyncFileSystem fs, AbstractStorageFile file, String operation) {
-        CompletableFuture<Void> closeFuture;
-        try {
-            if (file instanceof AsyncFile) {
-                closeFuture = fs.close((AsyncFile) file);
-            } else if (file instanceof AsyncSegmentFile) {
-                closeFuture = fs.close((AsyncSegmentFile) file);
-            } else {
-                logCase(CASE_ABANDON_CLOSE_FAIL);
-                logger.error("[awaitOpen][abandon][unknown-type] {} {}", operation, file.getClass().getName());
-                return;
-            }
-        } catch (Throwable t) {
-            logCase(CASE_ABANDON_CLOSE_FAIL);
-            logger.error("[awaitOpen][abandon][close-fail] {}", operation, t);
+    private enum CloseObserveMode {
+        READ,
+        ABANDON
+    }
+
+    private static void closeWithoutAwait(AsyncFileSystem fs, AbstractStorageFile file, String operation,
+                                          CloseObserveMode mode) {
+        if (fs == null || file == null) {
             return;
         }
-        closeFuture.whenComplete((ignored, closeErr) -> {
-            if (closeErr != null) {
+        CompletableFuture<Void> closeFuture = invokeCloseWithOneRetry(fs, file, operation);
+        if (closeFuture == null) {
+            if (mode == CloseObserveMode.ABANDON) {
                 logCase(CASE_ABANDON_CLOSE_FAIL);
-                logger.error("[awaitOpen][abandon][close-fail] {}", operation, closeErr);
+                logger.warn("[awaitOpen][abandon][close-skip] {}", operation);
+            }
+            return;
+        }
+        observeCloseFuture(fs, file, closeFuture, operation, mode, true);
+    }
+
+    private static void observeCloseFuture(AsyncFileSystem fs, AbstractStorageFile file,
+                                           CompletableFuture<Void> closeFuture, String operation,
+                                           CloseObserveMode mode, boolean allowRejectedRetry) {
+        closeFuture.whenComplete((ignored, err) -> {
+            if (err == null) {
+                if (mode == CloseObserveMode.ABANDON) {
+                    logCase(CASE_ABANDON_CLOSE);
+                    logger.info("[awaitOpen][abandon][closed] {}", operation);
+                } else {
+                    logger.debug("[closeReadHandle][closed] {}", operation);
+                }
+                return;
+            }
+            if (allowRejectedRetry && isRejectedExecution(err)) {
+                logCase(CASE_CLOSE_REJECTED);
+                logger.warn("[closeReadHandle][rejected][retry] {}", operation, err);
+                CompletableFuture<Void> retryFuture = invokeCloseWithOneRetry(fs, file, operation);
+                if (retryFuture == null) {
+                    if (mode == CloseObserveMode.ABANDON) {
+                        logCase(CASE_ABANDON_CLOSE_FAIL);
+                        logger.warn("[awaitOpen][abandon][close-skip] {}", operation);
+                    }
+                    return;
+                }
+                observeCloseFuture(fs, file, retryFuture, operation, mode, false);
+                return;
+            }
+            if (mode == CloseObserveMode.ABANDON) {
+                logCase(CASE_ABANDON_CLOSE_FAIL);
+                logger.error("[awaitOpen][abandon][close-fail] {}", operation, err);
             } else {
-                logCase(CASE_ABANDON_CLOSE);
-                logger.info("[awaitOpen][abandon][closed] {}", operation);
+                logCase(CASE_CLOSE_FAIL);
+                logger.error("[closeReadHandle][fail] {}", operation, err);
             }
         });
+    }
+
+    private static CompletableFuture<Void> invokeCloseWithOneRetry(AsyncFileSystem fs, AbstractStorageFile file,
+                                                                   String operation) {
+        try {
+            return doFsClose(fs, file);
+        } catch (OperationNotExecutedException first) {
+            logger.warn("[closeHandle][not-executed][retry] {}", operation, first);
+            try {
+                return doFsClose(fs, file);
+            } catch (OperationNotExecutedException second) {
+                logCase(CASE_CLOSE_NOT_EXECUTED);
+                logger.warn("[closeHandle][not-executed][skip] {}", operation, second);
+                return null;
+            } catch (Throwable t) {
+                logCase(CASE_CLOSE_FAIL);
+                logger.error("[closeHandle][retry-fail] {}", operation, t);
+                return null;
+            }
+        } catch (Throwable t) {
+            logCase(CASE_CLOSE_FAIL);
+            logger.error("[closeHandle][sync-fail] {}", operation, t);
+            return null;
+        }
+    }
+
+    private static CompletableFuture<Void> doFsClose(AsyncFileSystem fs, AbstractStorageFile file) {
+        if (file instanceof AsyncFile) {
+            return fs.close((AsyncFile) file);
+        }
+        if (file instanceof AsyncSegmentFile) {
+            return fs.close((AsyncSegmentFile) file);
+        }
+        throw new IllegalArgumentException("unsupported storage file type: " + file.getClass().getName());
+    }
+
+    private static void awaitCloseFuture(AsyncFileSystem fs, AbstractStorageFile file,
+                                         CompletableFuture<Void> closeFuture, String operation,
+                                         boolean allowRejectedRetry) {
+        try {
+            closeFuture.get(currentTimeoutMillis(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            logCase(CASE_CLOSE_TIMEOUT);
+            logger.warn("[closeHandle][timeout] {}", operation);
+            // Do not cancel: TailCache may still release the write slot when the task runs.
+            closeFuture.whenComplete((ignored, err) -> {
+                if (err != null) {
+                    logCase(CASE_CLOSE_FAIL);
+                    logger.error("[closeHandle][late-fail] {}", operation, err);
+                }
+            });
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logCase(CASE_INTERRUPTED);
+            logger.warn("[closeHandle][interrupted] {}", operation);
+            closeFuture.whenComplete((ignored, err) -> {
+                if (err != null) {
+                    logCase(CASE_CLOSE_FAIL);
+                    logger.error("[closeHandle][late-fail] {}", operation, err);
+                }
+            });
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            if (allowRejectedRetry && isRejectedExecution(cause)) {
+                logCase(CASE_CLOSE_REJECTED);
+                logger.warn("[closeHandle][rejected][retry] {}", operation, cause);
+                CompletableFuture<Void> retryFuture = invokeCloseWithOneRetry(fs, file, operation);
+                if (retryFuture != null) {
+                    // Second await: no further RejectedExecution retry (avoid loops).
+                    awaitCloseFuture(fs, file, retryFuture, operation, false);
+                }
+                return;
+            }
+            logCase(CASE_CLOSE_FAIL);
+            logger.error("[closeHandle][fail] {}", operation, cause);
+        } catch (Throwable t) {
+            logCase(CASE_CLOSE_FAIL);
+            logger.error("[closeHandle][unexpected] {}", operation, t);
+        }
+    }
+
+    private static boolean isRejectedExecution(Throwable t) {
+        while (t != null) {
+            if (t instanceof RejectedExecutionException) {
+                return true;
+            }
+            t = t.getCause();
+        }
+        return false;
     }
 
     private static IOException toIoException(String operation, Throwable cause) throws Error {

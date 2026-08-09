@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -72,12 +71,8 @@ public class AsyncRdbReadHandle implements Closeable {
         if (!fileClosed.compareAndSet(false, true)) {
             return;
         }
-        try {
-            logger.info("[tryCloseFile][doClose]{}", tag);
-            AsyncFileSystemHelper.await(asyncFileSystem.close(asyncFile), "close rdb read " + tag);
-        } catch (IOException e) {
-            logger.error("[tryCloseFile]" + tag, e);
-        }
+        logger.info("[tryCloseFile][doClose]{}", tag);
+        AsyncFileSystemHelper.closeReadHandle(asyncFileSystem, asyncFile, "close rdb read " + tag);
     }
 
     boolean isMarkedClosed() {

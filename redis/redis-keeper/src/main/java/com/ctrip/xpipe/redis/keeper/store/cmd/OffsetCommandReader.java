@@ -145,8 +145,7 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
     @Override
     public void close() throws IOException {
         flyingRegions.clear();
-        AsyncFileSystemHelper.await(
-                asyncCommandStore.getAsyncFileSystem().close(readAsyncSegmentFile),
+        AsyncFileSystemHelper.closeReadHandle(asyncCommandStore.getAsyncFileSystem(), readAsyncSegmentFile,
                 "close read command segment");
         commandStore.removeReader(this);
     }

@@ -534,11 +534,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 			AsyncFile h = writeAsyncFile;
 			if (h != null) {
 				writeAsyncFile = null;
-				try {
-					AsyncFileSystemHelper.await(asyncFileSystem.close(h), "close rdb write " + file);
-				} catch (IOException e) {
-					getLogger().error("[closeWriteHandle]" + this, e);
-				}
+				AsyncFileSystemHelper.closeHandle(asyncFileSystem, h, "close rdb write " + file);
 			}
 		}
 	}
@@ -548,11 +544,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 			AsyncFile h = readAsyncFile;
 			if (h != null) {
 				readAsyncFile = null;
-				try {
-					AsyncFileSystemHelper.await(asyncFileSystem.close(h), "close rdb read " + file);
-				} catch (IOException e) {
-					getLogger().error("[closeReadHandle]" + this, e);
-				}
+				AsyncFileSystemHelper.closeReadHandle(asyncFileSystem, h, "close rdb read " + file);
 			}
 		}
 	}

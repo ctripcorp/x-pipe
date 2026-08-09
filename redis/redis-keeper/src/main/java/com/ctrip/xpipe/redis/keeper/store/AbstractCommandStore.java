@@ -383,7 +383,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                 // Terminal close (AbstractStore); index AsyncFile released with segment below.
                 indexStore.close();
             }
-            AsyncFileSystemHelper.await(asyncFileSystem.close(asyncSegmentFile), "close command segment " + fileNamePrefix);
+            AsyncFileSystemHelper.closeHandle(asyncFileSystem, asyncSegmentFile, "close command segment " + fileNamePrefix);
         }else{
             getLogger().warn("[close][already closed]{}", this);
         }

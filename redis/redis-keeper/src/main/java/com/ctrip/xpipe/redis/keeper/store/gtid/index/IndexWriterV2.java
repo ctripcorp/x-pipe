@@ -279,7 +279,7 @@ public class IndexWriterV2 {
             AsyncFile readIndexV2 = readHandles.get(INDEX_V2 + cmdPrefix);
             return scanZones(readIndexV2);
         } finally {
-            AsyncFileSystemHelper.await(fs.close(readSeg), "close read segment for loadAllZones");
+            AsyncFileSystemHelper.closeReadHandle(fs, readSeg, "close read segment for loadAllZones");
         }
     }
 

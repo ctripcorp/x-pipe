@@ -165,7 +165,7 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
                 indexWriterV2.recoverIndex(readIndexV2, readHandles.get(BLOCK_V2 + prefix));
             }
         } finally {
-            AsyncFileSystemHelper.await(fs.close(recoverSeg), "close recover segment");
+            AsyncFileSystemHelper.closeReadHandle(fs, recoverSeg, "close recover segment");
         }
 
         if (keeperConfig.dualWrite()) {
@@ -523,7 +523,7 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
             }
         } finally {
             enableWriterCmd();
-            AsyncFileSystemHelper.await(fs.close(readSeg), "close read segment for rebuild");
+            AsyncFileSystemHelper.closeReadHandle(fs, readSeg, "close read segment for rebuild");
         }
     }
 

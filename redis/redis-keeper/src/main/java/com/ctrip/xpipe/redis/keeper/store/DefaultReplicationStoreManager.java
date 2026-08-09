@@ -153,7 +153,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         try {
             releaseCurrentStore();
         } catch (Exception e) {
-            logger.info("[doStop][releaseCurrentStore]", e);
+            logger.warn("[doStop][releaseCurrentStore]", e);
         } finally {
             closeManagerMetaFile();
         }
@@ -165,7 +165,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         try {
             releaseCurrentStore();
         } catch (Exception e) {
-            logger.info("[doDispose][releaseCurrentStore]", e);
+            logger.warn("[doDispose][releaseCurrentStore]", e);
         } finally {
             closeManagerMetaFile();
         }
@@ -215,9 +215,9 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     @Override
     public synchronized ReplicationStore createIfNotExist() throws IOException {
 
-        // After stop/dispose: refuse reopen / self-heal. Initialized-but-never-started still allowed
+        // STOPPING / stop / dispose: refuse reopen / self-heal. Initialized-but-never-started still allowed
         // (isPositivelyStopped distinguishes Stoppable.PHASE_NAME_END from Initializable.PHASE_NAME_END).
-        if (getLifecycleState().isPositivelyStopped()) {
+        if (refuseOpenOrCreate()) {
             ReplicationStore existing = currentStore.get();
             if (existing != null && existing.checkOk()) {
                 return existing;
@@ -225,15 +225,9 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             throw new IOException("replication store manager stopped, refuse createIfNotExist: " + this);
         }
 
-        // !checkOk → getCurrent returns null → create(); create() releases previous via releaseCurrentStore.
-        ReplicationStore currentReplicationStore = null;
-
-        try {
-            currentReplicationStore = getCurrent();
-        } catch (Exception e) {
-            logger.error("[createIfNotExist]" + baseDir, e);
-        }
-
+        // Heal only when getCurrent() == null (no store / !checkOk). IO / unexpected failures must propagate
+        // — never swallow then create() a new UUID (Important #3 / T-S.13).
+        ReplicationStore currentReplicationStore = getCurrent();
         if (currentReplicationStore == null) {
             logger.info("[createIfNotExist]{}", baseDir);
             currentReplicationStore = create();
@@ -247,7 +241,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         if (!getLifecycleState().isInitialized()) {
             throw new ReplicationStoreManagerStateException("can not create", toString(), getLifecycleState().getPhaseName());
         }
-        if (getLifecycleState().isPositivelyStopped()) {
+        if (refuseOpenOrCreate()) {
             throw new IOException("replication store manager stopped, refuse create: " + this);
         }
 
@@ -264,14 +258,18 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         ReplicationStore replicationStore = createReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, syncRateManager);
         try {
             recordLatestStore(storeBaseDir.getName());
-        } catch (IOException e) {
+        } catch (Exception e) {
             // Meta not published — close the unpublished store; keep old lease / latest unchanged.
+            // Catch Exception: FS may throw sync RuntimeException beyond IOException (T-S.14).
             try {
                 replicationStore.close();
             } catch (Exception closeErr) {
                 logger.warn("[create][close unpublished store after meta fail]{}", storeBaseDir, closeErr);
             }
-            throw e;
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            }
+            throw new IOException("record latest store failed: " + storeBaseDir, e);
         }
 
         try {
@@ -284,6 +282,11 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         notifyObservers(new NodeAdded<ReplicationStore>(replicationStore));
         return currentStore.get();
+    }
+
+    /** STOPPING window or after stop/dispose — refuse reopen / create / self-heal (T-S.12). */
+    private boolean refuseOpenOrCreate() {
+        return getLifecycleState().isStopping() || getLifecycleState().isPositivelyStopped();
     }
 
     protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid,
@@ -376,12 +379,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         }
         AsyncFile toClose = managerMetaAsyncFile;
         managerMetaAsyncFile = null;
-        try {
-            AsyncFileSystemHelper.await(asyncFileSystem.close(toClose),
-                    "close manager meta " + metaFile.getAbsolutePath());
-        } catch (Exception e) {
-            logger.warn("[closeManagerMetaFile]{}", this, e);
-        }
+        AsyncFileSystemHelper.closeHandle(asyncFileSystem, toClose,
+                "close manager meta " + metaFile.getAbsolutePath());
     }
 
     private Properties currentMeta() throws IOException {
@@ -401,8 +400,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     public synchronized ReplicationStore getCurrent() throws IOException {
 
         if (currentStore.get() == null) {
-            if (getLifecycleState().isPositivelyStopped()) {
-                logger.info("[getCurrent][stopped][skip reopen]{}", this);
+            if (refuseOpenOrCreate()) {
+                logger.info("[getCurrent][stopping/stopped][skip reopen]{}", this);
                 return null;
             }
             Properties meta = currentMeta();

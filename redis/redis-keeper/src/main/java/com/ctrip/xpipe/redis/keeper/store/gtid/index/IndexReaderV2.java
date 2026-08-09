@@ -118,7 +118,7 @@ public class IndexReaderV2 extends IndexReader {
             }
             return new IndexReaderV2(fs, baseDir, cmdPrefix, offsets.get(0), tenant);
         } finally {
-            AsyncFileSystemHelper.await(fs.close(tempSeg), "close temp read segment v2");
+            AsyncFileSystemHelper.closeReadHandle(fs, tempSeg, "close temp read segment v2");
         }
     }
 }

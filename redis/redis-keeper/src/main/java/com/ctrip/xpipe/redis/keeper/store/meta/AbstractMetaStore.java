@@ -132,7 +132,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 			}
 			closed = true;
 			if (metaAsyncFile != null) {
-				AsyncFileSystemHelper.await(asyncFileSystem.close(metaAsyncFile),
+				AsyncFileSystemHelper.closeHandle(asyncFileSystem, metaAsyncFile,
 						"close meta file " + metaV2File().getAbsolutePath());
 				metaAsyncFile = null;
 			}

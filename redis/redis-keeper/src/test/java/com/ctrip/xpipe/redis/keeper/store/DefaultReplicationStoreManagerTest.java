@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
@@ -133,6 +134,126 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			Assert.assertNull(manager.getCurrent());
 		} finally {
 			LifecycleHelper.disposeIfPossible(manager);
+		}
+	}
+
+	/**
+	 * T-S.12: STOPPING window must refuse reopen / create / self-heal (same gate as positively stopped).
+	 */
+	@Test
+	public void testStoppingRefusesReopenCreateAndHeal() throws Exception {
+		DefaultReplicationStoreManager manager = (DefaultReplicationStoreManager) createReplicationStoreManager(keeperConfig);
+		LifecycleHelper.initializeIfPossible(manager);
+		LifecycleHelper.startIfPossible(manager);
+		try {
+			manager.create();
+			manager.releaseCurrentStore();
+			// While still STARTED, getCurrent would reopen latest — enter STOPPING first.
+			manager.getLifecycleState().setPhaseName(Stoppable.PHASE_NAME_BEGIN);
+			Assert.assertTrue(manager.getLifecycleState().isStopping());
+
+			Assert.assertNull("getCurrent must not reopen during STOPPING", manager.getCurrent());
+			try {
+				manager.create();
+				Assert.fail("create must refuse during STOPPING");
+			} catch (IOException e) {
+				logger.info("[testStoppingRefusesReopenCreateAndHeal][create] expected: {}", e.getMessage());
+			}
+			try {
+				manager.createIfNotExist();
+				Assert.fail("createIfNotExist must refuse during STOPPING when no ok store");
+			} catch (IOException e) {
+				logger.info("[testStoppingRefusesReopenCreateAndHeal][createIfNotExist] expected: {}", e.getMessage());
+			}
+		} finally {
+			manager.getLifecycleState().setPhaseName(Stoppable.PHASE_NAME_END);
+			try {
+				LifecycleHelper.disposeIfPossible(manager);
+			} catch (Throwable ignore) {
+			}
+		}
+	}
+
+	/**
+	 * T-S.13: getCurrent IO failure must propagate; createIfNotExist must not swallow then create() a new UUID.
+	 */
+	@Test
+	public void testCreateIfNotExistDoesNotHealWhenGetCurrentThrows() throws Exception {
+		AsyncFileSystem fs = spy(createTestAsyncFileSystem());
+		DefaultReplicationStoreManager real = new DefaultReplicationStoreManager(
+				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()),
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+		LifecycleHelper.initializeIfPossible(real);
+		LifecycleHelper.startIfPossible(real);
+		DefaultReplicationStoreManager manager = spy(real);
+		try {
+			ReplicationStore oldStore = manager.create();
+			File oldStoreDir = storeBaseDir(oldStore);
+			clearInvocations(manager);
+			doThrow(new IOException("injected getCurrent fail")).when(manager).getCurrent();
+			try {
+				manager.createIfNotExist();
+				Assert.fail("createIfNotExist must propagate getCurrent failure");
+			} catch (IOException e) {
+				Assert.assertTrue(e.getMessage().contains("injected getCurrent fail"));
+			}
+			verify(manager, never()).create();
+
+			doCallRealMethod().when(manager).getCurrent();
+			Assert.assertSame(oldStore, manager.getCurrent());
+			Assert.assertEquals(oldStoreDir, storeBaseDir(manager.getCurrent()));
+		} finally {
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
+			fs.shutdown();
+		}
+	}
+
+	/**
+	 * T-S.14: recordLatestStore sync RuntimeException still closes unpublished store; latest stays on old.
+	 */
+	@Test
+	public void testCreateMetaRuntimeFailureClosesUnpublishedStore() throws Exception {
+		AsyncFileSystem fs = spy(createTestAsyncFileSystem());
+		File managerBase = new File(getTestFileDir());
+		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
+				keeperConfig, getReplId(), randomKeeperRunid(), managerBase,
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+		LifecycleHelper.initializeIfPossible(manager);
+		LifecycleHelper.startIfPossible(manager);
+		try {
+			ReplicationStore oldStore = manager.create();
+			File oldStoreDir = storeBaseDir(oldStore);
+
+			AtomicBoolean failManagerMetaWrite = new AtomicBoolean(false);
+			doAnswer(invocation -> {
+				if (failManagerMetaWrite.get()) {
+					AsyncFile file = invocation.getArgument(0);
+					if (isManagerMetaFile(file)) {
+						throw new IllegalStateException("injected meta write runtime");
+					}
+				}
+				return invocation.callRealMethod();
+			}).when(fs).write(any(AsyncFile.class), any(ByteBuf.class));
+
+			failManagerMetaWrite.set(true);
+			try {
+				manager.create();
+				Assert.fail("create should fail when meta write throws RuntimeException");
+			} catch (IOException e) {
+				Assert.assertTrue(e.getCause() instanceof IllegalStateException);
+				logger.info("[testCreateMetaRuntimeFailureClosesUnpublishedStore] expected: {}", e.getMessage());
+			} finally {
+				failManagerMetaWrite.set(false);
+			}
+
+			Assert.assertSame(oldStore, manager.getCurrent());
+			Assert.assertTrue(oldStore.checkOk());
+			Assert.assertEquals(oldStoreDir, storeBaseDir(manager.getCurrent()));
+		} finally {
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
+			fs.shutdown();
 		}
 	}
 
