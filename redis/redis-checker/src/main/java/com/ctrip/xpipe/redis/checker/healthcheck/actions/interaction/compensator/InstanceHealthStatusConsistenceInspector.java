@@ -9,7 +9,6 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
-import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
@@ -57,8 +56,6 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
 
     protected MetaCache metaCache;
 
-    protected RelationsService relationsService;
-
     protected GroupCheckerLeaderElector leaderElector;
 
     private DynamicDelayPeriodTask task;
@@ -80,7 +77,7 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
                                                     InstanceStatusAdjuster instanceStatusAdjuster,
                                                     @Nullable GroupCheckerLeaderElector groupCheckerLeaderElector,
                                                     StabilityHolder stabilityHolder, CheckerConfig checkerConfig,
-                                                    MetaCache metaCache, RelationsService relationsService,
+                                                    MetaCache metaCache,
                                                     DefaultDelayPingActionCollector delayPingActionCollector,
                                                     HealthCheckInstanceManager healthCheckInstanceManager) {
         this.collector = instanceHealthStatusCollector;
@@ -89,7 +86,6 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
         this.siteStability = stabilityHolder;
         this.config = checkerConfig;
         this.metaCache = metaCache;
-        this.relationsService = relationsService;
         this.defaultDelayPingActionCollector = delayPingActionCollector;
         this.healthCheckInstanceManager = healthCheckInstanceManager;
     }
@@ -159,7 +155,6 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
             for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
                 try {
                     if (!ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)) continue;
-                    if (clusterMeta.getActiveDc() != null && !relationsService.isReachableRegion(dcMeta.getId(), clusterMeta.getActiveDc())) continue;
                     if (!clusterMeta.getActiveDc().equalsIgnoreCase(currentDc)) continue;
 
                     Set<HostPort> interestedInstances = MapUtils.getOrCreate(interestedClusterInstances, clusterMeta.getId(), HashSet::new);
