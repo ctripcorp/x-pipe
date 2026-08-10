@@ -1,0 +1,23 @@
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/KeeperContainerServiceImplAzFilterTest.java
+  s_8be0cc53cc3885::t_f60f7515c482bc 1-88
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/KeeperContainerServiceImpl.java
+  s_8be0cc53cc3885::t_52f79214828ffe 280,282,285-290,295-298
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/AllTests.java
+  s_8be0cc53cc3885::t_3507138d6adc98 110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "e38cfa1413dafbcc8195671a504bfd682716059e",
+  "prompts": {},
+  "sessions": {
+    "s_8be0cc53cc3885": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c5590af2-b31f-4e61-acb5-aa54a9fe9c61",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
