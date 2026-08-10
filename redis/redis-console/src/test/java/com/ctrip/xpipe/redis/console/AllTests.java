@@ -107,6 +107,7 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisServiceImplTest.class,
         RedisServiceImplValidateKeepersTest.class,
         KeeperContainerServiceImplPoolTest.class,
+        KeeperContainerServiceImplAzFilterTest.class,
         KeeperContainerServiceImplLogicalBuTest.class,
         LogicalBuServiceImplResolveTest.class,
         LogicalBuServiceWithoutDBTest.class,

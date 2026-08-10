@@ -277,16 +277,25 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
         availableZoneMap.put(availableZone.getId(), availableZone);
       });
 
+      // D37: skip unknown/0 azId with WARN; if none valid, degrade to no AZ filter.
       List<KeepercontainerTbl> result = new ArrayList<>();
+      boolean hasValidAz = false;
       for (KeepercontainerTbl keepercontainerTbl : keepercontainerTbls) {
         long azId = keepercontainerTbl.getAzId();
-        if (!availableZoneMap.containsKey(azId))
-          throw new XpipeRuntimeException(String.format("This keepercontainer %s:%d has unknown available zone id %d "
-                  ,keepercontainerTbl.getKeepercontainerIp(), keepercontainerTbl.getKeepercontainerPort(), azId));
-
+        if (!availableZoneMap.containsKey(azId)) {
+          logger.warn("[filterKeeperFromSameAvailableZone] skip keepercontainer {}:{} unknown available zone id {}",
+                  keepercontainerTbl.getKeepercontainerIp(), keepercontainerTbl.getKeepercontainerPort(), azId);
+          continue;
+        }
+        hasValidAz = true;
         if (availableZoneMap.get(azId).isActive() && usedAvailableZones.add(azId)) {
           result.add(keepercontainerTbl);
         }
+      }
+      if (!hasValidAz) {
+        logger.warn("[filterKeeperFromSameAvailableZone] no keepercontainer with valid azId in dc={}, degrade to skip AZ filter, size={}",
+                dcName, keepercontainerTbls.size());
+        return keepercontainerTbls;
       }
       return result;
     }
