@@ -97,8 +97,9 @@ public class AsyncRdbReferenceFileRegion implements ReferenceFileRegion {
 
         long wrote = 0;
         while (remaining > 0) {
-            long transferredOnce = AsyncFileSystemHelper.await(
-                    asyncFileSystem.transferTo(asyncFile, filePosition + position + wrote, remaining, target),
+            final long transferredSoFar = wrote;
+            final long remainingBytes = remaining;
+            long transferredOnce = AsyncFileSystemHelper.await(() -> asyncFileSystem.transferTo(asyncFile, filePosition + position + transferredSoFar, remainingBytes, target),
                     "transfer rdb " + filePosition);
             if (transferredOnce <= 0) {
                 break;

@@ -143,9 +143,8 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
         AsyncSegmentFile recoverSeg = openReadSegment(prefixes);
         try {
             long segStart = asyncCommandStore.getCurrentSegmentStartOffset();
-            AsyncFileSystemHelper.await(fs.position(recoverSeg, segStart), "position recover segment");
-            Map<String, AsyncFile> readHandles = AsyncFileSystemHelper.await(
-                    fs.getCurrentIndexFiles(recoverSeg, prefixes), "get read index handles for recover").getValue();
+            AsyncFileSystemHelper.await(() -> fs.position(recoverSeg, segStart), "position recover segment");
+            Map<String, AsyncFile> readHandles = AsyncFileSystemHelper.await(() -> fs.getCurrentIndexFiles(recoverSeg, prefixes), "get read index handles for recover").getValue();
 
             GtidSet v2HeaderGtidSet = headerGtidSet;
             if (keeperConfig.dualWrite()) {
@@ -175,13 +174,12 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
     }
 
     private boolean indexFileNeedsRecover(AsyncFile readIndexFile) throws IOException {
-        return AsyncFileSystemHelper.await(fs.size(readIndexFile), "size index for recover check") > 0;
+        return AsyncFileSystemHelper.await(() -> fs.size(readIndexFile), "size index for recover check") > 0;
     }
 
     private Map<String, AsyncFile> getWriteIndexHandles(boolean dualWrite) throws IOException {
         List<String> prefixes = writerIndexPrefixes(dualWrite);
-        return AsyncFileSystemHelper.await(
-                fs.getCurrentIndexFiles(asyncCommandStore.getWriteSegmentFile(), prefixes),
+        return AsyncFileSystemHelper.await(() -> fs.getCurrentIndexFiles(asyncCommandStore.getWriteSegmentFile(), prefixes),
                 "get write index handles").getValue();
     }
 
@@ -473,13 +471,13 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
         AsyncSegmentFile readSeg = openReadSegment(Collections.emptyList());
         try {
             long globalOffset = asyncCommandStore.getCurrentSegmentStartOffset() + cmdFileOffset;
-            AsyncFileSystemHelper.await(fs.position(readSeg, globalOffset), "position read segment for rebuild");
+            AsyncFileSystemHelper.await(() -> fs.position(readSeg, globalOffset), "position read segment for rebuild");
             logger.info("[buildIndexFromCmdFile] segmentOffset {} globalOffset {}", cmdFileOffset, globalOffset);
 
             int cmdCount = 0;
             while (true) {
                 int chunkLen = asyncCommandStore.getAsyncWriteMaxBytes();
-                ByteBuf byteBuf = AsyncFileSystemHelper.await(fs.read(readSeg, chunkLen), "read cmd for rebuild");
+                ByteBuf byteBuf = AsyncFileSystemHelper.await(() -> fs.read(readSeg, chunkLen), "read cmd for rebuild");
                 if (byteBuf == null || !byteBuf.isReadable()) {
                     if (byteBuf != null) {
                         byteBuf.release();
@@ -562,8 +560,7 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
     }
 
     AsyncSegmentFile openReadSegment(List<String> indexPrefixes) throws IOException {
-        return AsyncFileSystemHelper.awaitOpen(fs,
-                fs.open(baseDir, asyncCommandStore.getCommandFileNamePrefix(), indexPrefixes, false,
+        return AsyncFileSystemHelper.awaitOpen(fs, () -> fs.open(baseDir, asyncCommandStore.getCommandFileNamePrefix(), indexPrefixes, false,
                         replId.toString()),
                 "open read segment for index rebuild");
     }
@@ -678,8 +675,7 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
 
     private Long getSegmentEndBacklogOffset(long segmentStart) {
         try {
-            long size = AsyncFileSystemHelper.await(
-                    fs.sizeOfSegment(asyncCommandStore.getWriteSegmentFile(), segmentStart),
+            long size = AsyncFileSystemHelper.await(() -> fs.sizeOfSegment(asyncCommandStore.getWriteSegmentFile(), segmentStart),
                     "size cmd segment for end offset");
             return segmentStart + size;
         } catch (IOException e) {

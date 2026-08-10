@@ -291,7 +291,7 @@ public class IndexEntry {
             AsyncFileSystemHelper.writeAndAwait(fs, blockFile, blockBuf, blockBuf.readableBytes(),
                     "write block entry");
         }
-        this.blockEndOffset = AsyncFileSystemHelper.await(fs.size(blockFile), "size block file");
+        this.blockEndOffset = AsyncFileSystemHelper.await(() -> fs.size(blockFile), "size block file");
         this.size = blockEntry.getSize();
     }
 
@@ -321,9 +321,9 @@ public class IndexEntry {
             throws IOException {
         syncDataFromBlockEntry(blockEntry, fs, blockFile);
         if (position > 0) {
-            AsyncFileSystemHelper.await(fs.truncate(indexFile, position), "truncate index v1");
+            AsyncFileSystemHelper.await(() -> fs.truncate(indexFile, position), "truncate index v1");
         } else {
-            position = AsyncFileSystemHelper.await(fs.size(indexFile), "size index v1");
+            position = AsyncFileSystemHelper.await(() -> fs.size(indexFile), "size index v1");
         }
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(SEGMENT_LENGTH);
         try {

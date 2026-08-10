@@ -153,8 +153,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                 BLOCK + fileNamePrefix,
                 INDEX_V2 + fileNamePrefix,
                 BLOCK_V2 + fileNamePrefix);
-        this.asyncSegmentFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
-                asyncFileSystem.open(baseDir.getAbsolutePath(), fileNamePrefix, commandIndexPrefixes, true, fileSystemReplId.toString()),
+        this.asyncSegmentFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(baseDir.getAbsolutePath(), fileNamePrefix, commandIndexPrefixes, true, fileSystemReplId.toString()),
                 "open command segment " + fileNamePrefix);
         // invalid 文件列表见 T-FS.2；FS initFromFiles 内部已 warn，Store 待 FS 暴露 invalidFiles() 后再补日志
 
@@ -413,17 +412,16 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     public Map<String, AsyncFile> truncateIndex(String indexPrefix, String blockPrefix,
                                                 long indexSize, long blockSize) throws IOException {
         List<String> prefixes = Arrays.asList(indexPrefix, blockPrefix);
-        Map<String, AsyncFile> handles = AsyncFileSystemHelper.await(
-                asyncFileSystem.getCurrentIndexFiles(asyncSegmentFile, prefixes),
+        Map<String, AsyncFile> handles = AsyncFileSystemHelper.await(() -> asyncFileSystem.getCurrentIndexFiles(asyncSegmentFile, prefixes),
                 "getCurrentIndexFiles for truncateIndex " + indexPrefix + "/" + blockPrefix).getValue();
         AsyncFile indexFile = handles.get(indexPrefix);
         AsyncFile blockFile = handles.get(blockPrefix);
         if (indexFile == null || blockFile == null) {
             throw new IOException("[truncateIndex] missing index/block handle for " + indexPrefix + "/" + blockPrefix);
         }
-        AsyncFileSystemHelper.await(asyncFileSystem.truncate(indexFile, indexSize),
+        AsyncFileSystemHelper.await(() -> asyncFileSystem.truncate(indexFile, indexSize),
                 "truncate " + indexPrefix + " to " + indexSize);
-        AsyncFileSystemHelper.await(asyncFileSystem.truncate(blockFile, blockSize),
+        AsyncFileSystemHelper.await(() -> asyncFileSystem.truncate(blockFile, blockSize),
                 "truncate " + blockPrefix + " to " + blockSize);
         return handles;
     }
@@ -437,11 +435,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     @Override
     public Map<String, AsyncFile> truncateCmdSegment(long cmdSegmentOffset) throws IOException {
         long globalOffset = getCurrentSegmentStartOffset() + cmdSegmentOffset;
-        AsyncFileSystemHelper.await(
-                asyncFileSystem.truncate(asyncSegmentFile, globalOffset),
+        AsyncFileSystemHelper.await(() -> asyncFileSystem.truncate(asyncSegmentFile, globalOffset),
                 "truncate cmd segment to " + globalOffset);
-        return AsyncFileSystemHelper.await(
-                asyncFileSystem.getCurrentIndexFiles(asyncSegmentFile),
+        return AsyncFileSystemHelper.await(() -> asyncFileSystem.getCurrentIndexFiles(asyncSegmentFile),
                 "getCurrentIndexFiles after truncateCmdSegment " + globalOffset).getValue();
     }
 
@@ -493,7 +489,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         getLogger().info("[destroy]{}", this);
         close();
-        AsyncFileSystemHelper.await(asyncFileSystem.delete(asyncSegmentFile),
+        AsyncFileSystemHelper.await(() -> asyncFileSystem.delete(asyncSegmentFile),
                 "destroy command segment " + fileNamePrefix);
     }
 
@@ -602,11 +598,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                 long size;
                 long lastModified;
                 try {
-                    size = AsyncFileSystemHelper.await(
-                            asyncFileSystem.sizeOfSegment(asyncSegmentFile, startOffset),
+                    size = AsyncFileSystemHelper.await(() -> asyncFileSystem.sizeOfSegment(asyncSegmentFile, startOffset),
                             "size of segment " + fileNamePrefix + startOffset);
-                    lastModified = AsyncFileSystemHelper.await(
-                            asyncFileSystem.lastModifiedOfSegment(asyncSegmentFile, startOffset),
+                    lastModified = AsyncFileSystemHelper.await(() -> asyncFileSystem.lastModifiedOfSegment(asyncSegmentFile, startOffset),
                             "last modified of segment " + fileNamePrefix + startOffset);
                 } catch (IOException e) {
                     getLogger().error("[gc][stat segment {}]", startOffset, e);
@@ -624,7 +618,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             }
             getLogger().info("[gc][delete segments] {}", toDelete);
             try {
-                AsyncFileSystemHelper.await(asyncFileSystem.deleteSegments(asyncSegmentFile, toDelete),
+                AsyncFileSystemHelper.await(() -> asyncFileSystem.deleteSegments(asyncSegmentFile, toDelete),
                         "delete segments " + toDelete);
             } catch (IOException e) {
                 getLogger().error("[gc][deleteSegments {}]", toDelete, e);
@@ -733,7 +727,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (indexStore != null) {
             indexStore.closeWriter();
         }
-        AsyncFileSystemHelper.await(asyncFileSystem.roll(asyncSegmentFile), "roll on switchToXSync");
+        AsyncFileSystemHelper.await(() -> asyncFileSystem.roll(asyncSegmentFile), "roll on switchToXSync");
         long newCmdStoreStartOffset = getCurrentSegmentStartOffset();
         getLogger().info("[switchToXSync] new cmdStoreStartOffset={}", newCmdStoreStartOffset);
         indexStore = createIndexStore(newCmdStoreStartOffset);

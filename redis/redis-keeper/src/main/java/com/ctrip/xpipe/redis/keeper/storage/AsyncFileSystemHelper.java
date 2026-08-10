@@ -32,6 +32,9 @@ public final class AsyncFileSystemHelper {
     public static final String CASE_CLOSE_TIMEOUT = "CloseTimeout";
     public static final String CASE_CLOSE_REJECTED = "CloseRejected";
     public static final String CASE_CLOSE_FAIL = "CloseFail";
+    /** Phase H1: OperationNotExecutedException retried once at await entry. */
+    public static final String CASE_NOT_EXECUTED_RETRY = "NotExecutedRetry";
+    public static final String CASE_NOT_EXECUTED = "NotExecuted";
 
     public static final long DEFAULT_IO_TIMEOUT_MILLIS = 1000L;
 
@@ -45,6 +48,15 @@ public final class AsyncFileSystemHelper {
     @FunctionalInterface
     public interface IoRunnable {
         void run() throws IOException;
+    }
+
+    /**
+     * FS call that returns a future. Used so {@link #await(FsCall, String)} can re-invoke on
+     * {@link OperationNotExecutedException} (often thrown synchronously before a future exists).
+     */
+    @FunctionalInterface
+    public interface FsCall<T> {
+        CompletableFuture<T> call();
     }
 
     private AsyncFileSystemHelper() {
@@ -67,8 +79,32 @@ public final class AsyncFileSystemHelper {
         }
     }
 
+    /**
+     * Invoke FS op and await. On {@link OperationNotExecutedException} (sync from FS, or as cause of
+     * a failed future), <b>retry the op once</b>; still failing → rethrow ONE as-is (Phase H1 / AC-H).
+     * Prefer this overload over {@link #await(CompletableFuture, String)} so sync ONE can be retried.
+     */
+    public static <T> T await(FsCall<T> call, String operation) throws IOException {
+        try {
+            return awaitFuture(call.call(), operation);
+        } catch (OperationNotExecutedException first) {
+            logger.warn("[await][not-executed][retry] {}", operation, first);
+            logCase(CASE_NOT_EXECUTED_RETRY);
+            try {
+                return awaitFuture(call.call(), operation);
+            } catch (OperationNotExecutedException second) {
+                logCase(CASE_NOT_EXECUTED);
+                throw second;
+            }
+        }
+    }
+
+    /**
+     * Await an already-started future (no re-invoke). Prefer {@link #await(FsCall, String)} when the
+     * FS call may throw {@link OperationNotExecutedException} synchronously.
+     */
     public static <T> T await(CompletableFuture<T> future, String operation) throws IOException {
-        return await(future, operation, currentTimeoutMillis(), TimeUnit.MILLISECONDS);
+        return awaitFuture(future, operation);
     }
 
     public static <T> T await(CompletableFuture<T> future, String operation, long timeout, TimeUnit unit)
@@ -81,6 +117,8 @@ public final class AsyncFileSystemHelper {
      * is best-effort {@link #closeReadHandle}'d (no await) so the handle is never handed to the caller
      * (avoids sticky {@code writer already open}). Timeout/interrupt still surfaces as {@link IOException}.
      * <p>
+     * On {@link OperationNotExecutedException}, retries open once (same as {@link #await(FsCall, String)}).
+     * <p>
      * Does <b>not</b> {@code cancel} the open future: {@link CompletableFuture#cancel} on a
      * {@code supplyAsync} future discards the result while the IO task may still finish and hold
      * the write slot — then abandon cannot reclaim the handle.
@@ -89,8 +127,28 @@ public final class AsyncFileSystemHelper {
      */
     public static <T extends AbstractStorageFile> T awaitOpen(AsyncFileSystem fs, CompletableFuture<T> future,
                                                               String operation) throws IOException {
+        // Already-started future: cannot re-invoke; ONE sync would have escaped before this call.
         return doAwait(future, operation, currentTimeoutMillis(), TimeUnit.MILLISECONDS,
                 () -> abandonOpen(fs, future, operation));
+    }
+
+    /**
+     * Open via supplier so sync {@link OperationNotExecutedException} can be retried once.
+     */
+    public static <T extends AbstractStorageFile> T awaitOpen(AsyncFileSystem fs, FsCall<T> openCall,
+                                                              String operation) throws IOException {
+        try {
+            return awaitOpen(fs, openCall.call(), operation);
+        } catch (OperationNotExecutedException first) {
+            logger.warn("[awaitOpen][not-executed][retry] {}", operation, first);
+            logCase(CASE_NOT_EXECUTED_RETRY);
+            try {
+                return awaitOpen(fs, openCall.call(), operation);
+            } catch (OperationNotExecutedException second) {
+                logCase(CASE_NOT_EXECUTED);
+                throw second;
+            }
+        }
     }
 
     /**
@@ -133,6 +191,11 @@ public final class AsyncFileSystemHelper {
         void accept();
     }
 
+    private static <T> T awaitFuture(CompletableFuture<T> future, String operation) throws IOException {
+        return doAwait(future, operation, currentTimeoutMillis(), TimeUnit.MILLISECONDS,
+                () -> future.cancel(false));
+    }
+
     private static <T> T doAwait(CompletableFuture<T> future, String operation, long timeout, TimeUnit unit,
                                  OnTimeout onTimeout) throws IOException {
         try {
@@ -151,8 +214,16 @@ public final class AsyncFileSystemHelper {
             // FS / IO-pool failure completed the future exceptionally.
             // RejectedExecutionException (queue full) lands here via failedFuture, not as a direct throw from get().
             Throwable cause = e.getCause() != null ? e.getCause() : e;
+            OperationNotExecutedException one = findOperationNotExecuted(cause);
+            if (one != null) {
+                // Surface as-is so {@link #await(FsCall, String)} can retry / callers see ONE.
+                logFsException(one);
+                throw one;
+            }
             logFsException(cause);
             throw toIoException(operation, cause);
+        } catch (OperationNotExecutedException e) {
+            throw e;
         } catch (Throwable t) {
             // Safety net for anything get() throws outside the three above (e.g. CancellationException).
             logFsException(t);
@@ -161,6 +232,16 @@ public final class AsyncFileSystemHelper {
             }
             throw new IOException("unexpected async file IO failure: " + operation, t);
         }
+    }
+
+    private static OperationNotExecutedException findOperationNotExecuted(Throwable t) {
+        while (t != null) {
+            if (t instanceof OperationNotExecutedException) {
+                return (OperationNotExecutedException) t;
+            }
+            t = t.getCause();
+        }
+        return null;
     }
 
     private static <T extends AbstractStorageFile> void abandonOpen(AsyncFileSystem fs, CompletableFuture<T> future,
@@ -341,24 +422,35 @@ public final class AsyncFileSystemHelper {
 
     public static void writeAllBytes(AsyncFileSystem fs, AsyncFile file, byte[] data, String operation)
             throws IOException {
-        ByteBuf buf = Unpooled.wrappedBuffer(data);
-        buf.retain();
-        try {
-            CompletableFuture<Long> future = fs.write(file, buf);
-            long written = await(future, operation);
-            if (written != data.length) {
-                logCase(CASE_SHORT_WRITE);
-                throw new IOException("short async write, expected " + data.length + " but wrote " + written
-                        + ": " + operation);
+        // Recreate ByteBuf each attempt: TailCache releases the buffer when throwing ONE.
+        for (int attempt = 0; attempt < 2; attempt++) {
+            ByteBuf buf = Unpooled.wrappedBuffer(data);
+            buf.retain();
+            try {
+                long written = awaitFuture(fs.write(file, buf), operation);
+                if (written != data.length) {
+                    logCase(CASE_SHORT_WRITE);
+                    throw new IOException("short async write, expected " + data.length + " but wrote " + written
+                            + ": " + operation);
+                }
+                return;
+            } catch (OperationNotExecutedException e) {
+                if (attempt == 0) {
+                    logger.warn("[writeAllBytes][not-executed][retry] {}", operation, e);
+                    logCase(CASE_NOT_EXECUTED_RETRY);
+                    continue;
+                }
+                logCase(CASE_NOT_EXECUTED);
+                throw e;
+            } finally {
+                buf.release();
             }
-        } finally {
-            buf.release();
         }
     }
 
     public static byte[] readAllBytes(AsyncFileSystem fs, AsyncFile file, long size, long offset, String operation)
             throws IOException {
-        ByteBuf buf = await(fs.read(file, size, offset), operation);
+        ByteBuf buf = await(() -> fs.read(file, size, offset), operation);
         try {
             if (buf.readableBytes() != size) {
                 logCase(CASE_SHORT_READ);
@@ -386,26 +478,54 @@ public final class AsyncFileSystemHelper {
 
     public static long writeAndAwait(AsyncFileSystem fs, AsyncSegmentFile file, ByteBuf data, int expectedLength,
                                      String operation) throws IOException {
-        CompletableFuture<Long> future = fs.write(file, data);
-        long flushed = await(future, operation);
-        if (flushed != expectedLength) {
-            logCase(CASE_SHORT_WRITE);
-            throw new IOException("short async write, expected " + expectedLength + " but flushed " + flushed
-                    + ": " + operation);
-        }
-        return flushed;
+        return writeAndAwaitInternal(data, expectedLength, operation,
+                buf -> fs.write(file, buf));
     }
 
     public static long writeAndAwait(AsyncFileSystem fs, AsyncFile file, ByteBuf data, int expectedLength,
                                      String operation) throws IOException {
-        CompletableFuture<Long> future = fs.write(file, data);
-        long flushed = await(future, operation);
-        if (flushed != expectedLength) {
-            logCase(CASE_SHORT_WRITE);
-            throw new IOException("short async write, expected " + expectedLength + " but flushed " + flushed
-                    + ": " + operation);
+        return writeAndAwaitInternal(data, expectedLength, operation,
+                buf -> fs.write(file, buf));
+    }
+
+    /**
+     * Write with ONE retry. Extra {@code retain} so TailCache {@code release} on ONE leaves the buffer usable.
+     */
+    private static long writeAndAwaitInternal(ByteBuf data, int expectedLength, String operation,
+                                              FsCallFromBuf writeCall) throws IOException {
+        for (int attempt = 0; attempt < 2; attempt++) {
+            data.retain();
+            try {
+                long flushed = awaitFuture(writeCall.call(data), operation);
+                if (flushed != expectedLength) {
+                    logCase(CASE_SHORT_WRITE);
+                    throw new IOException("short async write, expected " + expectedLength + " but flushed " + flushed
+                            + ": " + operation);
+                }
+                // Success: FS owns/releases the write ref; drop our guard retain.
+                data.release();
+                return flushed;
+            } catch (OperationNotExecutedException e) {
+                // FS released one ref on ONE; our retain keeps the buffer alive for retry / exit.
+                if (attempt == 0) {
+                    logger.warn("[writeAndAwait][not-executed][retry] {}", operation, e);
+                    logCase(CASE_NOT_EXECUTED_RETRY);
+                    continue;
+                }
+                data.release();
+                logCase(CASE_NOT_EXECUTED);
+                throw e;
+            } catch (IOException | RuntimeException | Error e) {
+                data.release();
+                throw e;
+            }
         }
-        return flushed;
+        throw new IllegalStateException("unreachable writeAndAwait retry loop: " + operation);
+    }
+
+    @FunctionalInterface
+    private interface FsCallFromBuf {
+        CompletableFuture<Long> call(ByteBuf data);
     }
 
     private static void logFsException(Throwable t) {

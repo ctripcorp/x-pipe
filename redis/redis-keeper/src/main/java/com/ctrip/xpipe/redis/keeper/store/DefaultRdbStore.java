@@ -78,11 +78,11 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		this.fileSystemReplId = Objects.requireNonNull(fileSystemReplId, "fileSystemReplId");
 		this.asyncWriteMaxBytes = Objects.requireNonNull(asyncWriteMaxBytes, "asyncWriteMaxBytes");
 
-		if (!AsyncFileSystemHelper.await(asyncFileSystem.exists(path()), "exists rdb " + file)) {
+		if (!AsyncFileSystemHelper.await(() -> asyncFileSystem.exists(path()), "exists rdb " + file)) {
 			this.writeAsyncFile = openWriteHandle();
 		} else {
 			this.readAsyncFile = openReadHandle();
-			long len = AsyncFileSystemHelper.await(asyncFileSystem.size(readAsyncFile), "size rdb " + file);
+			long len = AsyncFileSystemHelper.await(() -> asyncFileSystem.size(readAsyncFile), "size rdb " + file);
 			if (len > 0) {
 				checkAndSetRdbState();
 			} else {
@@ -181,9 +181,9 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		getLogger().info("[truncateEndRdb]{}, {}", this, reduceLen);
 		
 		synchronized (truncateLock) {
-			long size = AsyncFileSystemHelper.await(asyncFileSystem.size(writeAsyncFile), "size rdb " + file);
+			long size = AsyncFileSystemHelper.await(() -> asyncFileSystem.size(writeAsyncFile), "size rdb " + file);
 			getLogger().info("[truncateEndRdb]{}, size {}->{}", this, size, size - reduceLen);
-			AsyncFileSystemHelper.await(asyncFileSystem.truncate(writeAsyncFile, size - reduceLen), "truncate rdb " + file);
+			AsyncFileSystemHelper.await(() -> asyncFileSystem.truncate(writeAsyncFile, size - reduceLen), "truncate rdb " + file);
 			endRdb();
 		}
 	}
@@ -199,7 +199,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		try{
 			if (writeAsyncFile != null) {
 				try {
-					AsyncFileSystemHelper.await(asyncFileSystem.fsync(writeAsyncFile), "fsync rdb " + file);
+					AsyncFileSystemHelper.await(() -> asyncFileSystem.fsync(writeAsyncFile), "fsync rdb " + file);
 				} catch (IOException e) {
 					getLogger().error("[endRdb][fsync]" + this, e);
 				}
@@ -326,8 +326,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	protected void doReadRdbFile(RdbFileListener rdbFileListener) throws IOException {
 
-		AsyncFile readFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
-				asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.READ, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
+		AsyncFile readFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.READ, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
 		// Refcounted close: writeAndFlush(FileRegion) is async; must not fs.close until Netty deallocate.
 		AsyncRdbReadHandle readHandle = new AsyncRdbReadHandle(asyncFileSystem, readFile, String.valueOf(file));
 
@@ -386,7 +385,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 			switch (status.get()) {
 				case Success:
-					if (AsyncFileSystemHelper.await(asyncFileSystem.exists(path()), "exists rdb " + file)) {
+					if (AsyncFileSystemHelper.await(() -> asyncFileSystem.exists(path()), "exists rdb " + file)) {
 						rdbFileListener.onFileData(null);
 					} else {
 						rdbFileListener.exception((new Exception("rdb file not exists now " + file)));
@@ -411,12 +410,12 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		if (status.get() == Status.Writing && eofType instanceof EofMarkType) {
 			long realSize;
 			synchronized (truncateLock) {//truncate may make size wrong
-				realSize = AsyncFileSystemHelper.await(asyncFileSystem.size(readFile), "size rdb read " + file);
+				realSize = AsyncFileSystemHelper.await(() -> asyncFileSystem.size(readFile), "size rdb read " + file);
 			}
 			long ret = realSize - ((EofMarkType) eofType).getTag().length();
 			return ret < 0 ? 0 : ret;
 		}
-		return AsyncFileSystemHelper.await(asyncFileSystem.size(readFile), "size rdb read " + file);
+		return AsyncFileSystemHelper.await(() -> asyncFileSystem.size(readFile), "size rdb read " + file);
 	}
 
 	private long fileSize() throws IOException {
@@ -424,7 +423,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		if (h == null) {
 			return 0L;
 		}
-		return AsyncFileSystemHelper.await(asyncFileSystem.size(h), "size rdb " + file);
+		return AsyncFileSystemHelper.await(() -> asyncFileSystem.size(h), "size rdb " + file);
 	}
 
 	private long getRdbFileLastModifiedViaFs() throws IOException {
@@ -432,7 +431,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		if (h == null) {
 			return 0L;
 		}
-		return AsyncFileSystemHelper.await(asyncFileSystem.lastModified(h), "lastModified rdb " + file);
+		return AsyncFileSystemHelper.await(() -> asyncFileSystem.lastModified(h), "lastModified rdb " + file);
 	}
 
 	// prefer live write handle while dumping; otherwise reuse cached/lazy read handle (no per-call open/close)
@@ -447,7 +446,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 			if (h != null) {
 				return h;
 			}
-			if (!AsyncFileSystemHelper.await(asyncFileSystem.exists(path()), "exists rdb " + file)) {
+			if (!AsyncFileSystemHelper.await(() -> asyncFileSystem.exists(path()), "exists rdb " + file)) {
 				return null;
 			}
 			readAsyncFile = openReadHandle();
@@ -456,13 +455,11 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	private AsyncFile openWriteHandle() throws IOException {
-		return AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
-				asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.WRITE, false, true, fileSystemReplId.toString()), "open rdb for write " + file);
+		return AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.WRITE, false, true, fileSystemReplId.toString()), "open rdb for write " + file);
 	}
 
 	private AsyncFile openReadHandle() throws IOException {
-		return AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
-				asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.READ, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
+		return AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.READ, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
 	}
 
 	private String path() {
@@ -499,7 +496,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		}
 		if (cur == Status.Success) {
 			try {
-				return AsyncFileSystemHelper.await(asyncFileSystem.exists(path()), "exists rdb " + file);
+				return AsyncFileSystemHelper.await(() -> asyncFileSystem.exists(path()), "exists rdb " + file);
 			} catch (IOException e) {
 				getLogger().error("[checkOk]" + this, e);
 				return false;
@@ -513,7 +510,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 		getLogger().info("[destroy][delete file]{}", file);
 		close();
-		AsyncFileSystemHelper.await(asyncFileSystem.delete(file.getAbsolutePath()),
+		AsyncFileSystemHelper.await(() -> asyncFileSystem.delete(file.getAbsolutePath()),
 				"delete rdb file " + file);
 	}
 

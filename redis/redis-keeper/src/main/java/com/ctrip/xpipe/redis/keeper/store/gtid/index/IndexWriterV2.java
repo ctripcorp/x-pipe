@@ -70,7 +70,7 @@ public class IndexWriterV2 {
         if (indexV2File == null) {
             return;
         }
-        if (AsyncFileSystemHelper.await(fs.size(indexV2File), "size index v2") == 0) {
+        if (AsyncFileSystemHelper.await(() -> fs.size(indexV2File), "size index v2") == 0) {
             gtidSetWrapper.saveGtidSetV2(fs, indexV2File);
         }
     }
@@ -160,7 +160,7 @@ public class IndexWriterV2 {
 
     private void createNewBlock(String uuid, long gno, int cmdOffset) throws IOException {
         this.currentBlock = new BlockEntry(uuid, gno, cmdOffset, blockSizeThreshold);
-        long blockStart = AsyncFileSystemHelper.await(fs.size(blockV2File), "size block v2");
+        long blockStart = AsyncFileSystemHelper.await(() -> fs.size(blockV2File), "size block v2");
         this.currentGtidEntry = new IndexEntry(uuid, gno, cmdOffset, blockStart);
     }
 
@@ -199,8 +199,8 @@ public class IndexWriterV2 {
             return;
         }
 
-        long indexSize = AsyncFileSystemHelper.await(fs.size(indexV2File), "size index v2");
-        long blockSize = AsyncFileSystemHelper.await(fs.size(blockV2File), "size block v2");
+        long indexSize = AsyncFileSystemHelper.await(() -> fs.size(indexV2File), "size index v2");
+        long blockSize = AsyncFileSystemHelper.await(() -> fs.size(blockV2File), "size block v2");
         long cmdSize = cmdStore.currentSegmentSize();
 
         GtidSetWrapper.V2Header header = GtidSetWrapper.readV2Header(fs, indexV2File);
@@ -212,7 +212,8 @@ public class IndexWriterV2 {
 
         long pos = headerEnd;
         while (indexSize - pos >= IndexEntry.SEGMENT_LENGTH_V2) {
-            ByteBuf buf = AsyncFileSystemHelper.await(fs.read(indexV2File, IndexEntry.SEGMENT_LENGTH_V2, pos),
+            final long readPos = pos;
+            ByteBuf buf = AsyncFileSystemHelper.await(() -> fs.read(indexV2File, IndexEntry.SEGMENT_LENGTH_V2, readPos),
                     "read index v2 entry");
             IndexEntry indexEntry;
             try {
@@ -262,8 +263,8 @@ public class IndexWriterV2 {
     }
 
     private void resetReadPosition(AsyncFile indexFile, AsyncFile blockFile) throws IOException {
-        AsyncFileSystemHelper.await(fs.position(indexFile, 0), "position index v2 to start for recover");
-        AsyncFileSystemHelper.await(fs.position(blockFile, 0), "position block v2 to start for recover");
+        AsyncFileSystemHelper.await(() -> fs.position(indexFile, 0), "position index v2 to start for recover");
+        AsyncFileSystemHelper.await(() -> fs.position(blockFile, 0), "position block v2 to start for recover");
     }
 
     /** Test helper: load ZONE intervals from index file via a short-life read-mode segment. */
@@ -273,9 +274,8 @@ public class IndexWriterV2 {
         AsyncSegmentFile readSeg = store.openReadSegment(prefixes);
         try {
             long segStart = cmdStore.getCurrentSegmentStartOffset();
-            AsyncFileSystemHelper.await(fs.position(readSeg, segStart), "position read segment for loadAllZones");
-            Map<String, AsyncFile> readHandles = AsyncFileSystemHelper.await(
-                    fs.getCurrentIndexFiles(readSeg, prefixes), "get read index handles for loadAllZones").getValue();
+            AsyncFileSystemHelper.await(() -> fs.position(readSeg, segStart), "position read segment for loadAllZones");
+            Map<String, AsyncFile> readHandles = AsyncFileSystemHelper.await(() -> fs.getCurrentIndexFiles(readSeg, prefixes), "get read index handles for loadAllZones").getValue();
             AsyncFile readIndexV2 = readHandles.get(INDEX_V2 + cmdPrefix);
             return scanZones(readIndexV2);
         } finally {
@@ -286,11 +286,12 @@ public class IndexWriterV2 {
     private List<long[]> scanZones(AsyncFile readIndexV2) throws IOException {
         List<long[]> zones = new ArrayList<>();
         long headerEnd = GtidSetWrapper.headerSize(fs, readIndexV2);
-        long indexSize = AsyncFileSystemHelper.await(fs.size(readIndexV2), "size index v2");
+        long indexSize = AsyncFileSystemHelper.await(() -> fs.size(readIndexV2), "size index v2");
         long cmdSize = cmdStore.currentSegmentSize();
         long pos = headerEnd;
         while (indexSize - pos >= IndexEntry.SEGMENT_LENGTH_V2) {
-            ByteBuf buf = AsyncFileSystemHelper.await(fs.read(readIndexV2, IndexEntry.SEGMENT_LENGTH_V2, pos),
+            final long readPos = pos;
+            ByteBuf buf = AsyncFileSystemHelper.await(() -> fs.read(readIndexV2, IndexEntry.SEGMENT_LENGTH_V2, readPos),
                     "read zone entry");
             try {
                 IndexEntry indexEntry = IndexEntry.fromBufferV2(buf);

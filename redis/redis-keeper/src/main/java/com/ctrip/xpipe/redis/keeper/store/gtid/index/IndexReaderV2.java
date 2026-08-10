@@ -62,9 +62,8 @@ public class IndexReaderV2 extends IndexReader {
     public void init() throws IOException {
         indexItemList = new ArrayList<>();
         log.info("[IndexReader.init] before segmentStartOffset={}", segmentStartOffset);
-        AsyncFileSystemHelper.await(fs.position(readSeg, segmentStartOffset), "position read segment v2");
-        Pair<Long, Map<String, AsyncFile>> indexFiles = AsyncFileSystemHelper.await(
-                fs.getCurrentIndexFiles(readSeg, indexPrefixes), "get index v2 files");
+        AsyncFileSystemHelper.await(() -> fs.position(readSeg, segmentStartOffset), "position read segment v2");
+        Pair<Long, Map<String, AsyncFile>> indexFiles = AsyncFileSystemHelper.await(() -> fs.getCurrentIndexFiles(readSeg, indexPrefixes), "get index v2 files");
         if (indexFiles.getKey() != null && indexFiles.getKey() >= 0) {
             segmentStartOffset = indexFiles.getKey();
         }
@@ -79,7 +78,7 @@ public class IndexReaderV2 extends IndexReader {
             startGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
             return;
         }
-        long size = AsyncFileSystemHelper.await(fs.size(indexFile), "size index v2 file");
+        long size = AsyncFileSystemHelper.await(() -> fs.size(indexFile), "size index v2 file");
         if (size == 0) {
             startGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
             return;
@@ -91,7 +90,8 @@ public class IndexReaderV2 extends IndexReader {
         startGtidSet = readStartGtidSet();
         long pos = headerEndPosition();
         while (size - pos >= getSegmentLength()) {
-            ByteBuf buf = AsyncFileSystemHelper.await(fs.read(indexFile, getSegmentLength(), pos), "read index v2 entry");
+            final long readPos = pos;
+            ByteBuf buf = AsyncFileSystemHelper.await(() -> fs.read(indexFile, getSegmentLength(), readPos), "read index v2 entry");
             try {
                 IndexEntry item = decodeEntry(buf.nioBuffer());
                 if (item == null) {

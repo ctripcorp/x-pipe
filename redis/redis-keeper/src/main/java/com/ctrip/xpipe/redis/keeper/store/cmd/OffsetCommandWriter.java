@@ -119,7 +119,7 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
     @Override
     public void doRotate() throws IOException {
         logger.info("Rotate command segment at offset {}", totalLength());
-        AsyncFileSystemHelper.await(asyncFileSystem().roll(asyncSegmentFile()), "roll command segment");
+        AsyncFileSystemHelper.await(() -> asyncFileSystem().roll(asyncSegmentFile()), "roll command segment");
     }
 
     @Override
@@ -144,7 +144,7 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
     @Override
     public long getFileLastModified() {
         try {
-            return AsyncFileSystemHelper.await(asyncFileSystem().lastModified(asyncSegmentFile()),
+            return AsyncFileSystemHelper.await(() -> asyncFileSystem().lastModified(asyncSegmentFile()),
                     "lastModified command segment");
         } catch (IOException e) {
             throw new IllegalStateException("failed to query command segment lastModified", e);
@@ -197,12 +197,10 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
 
     private long segmentSizeAt(long startOffset) throws IOException {
         if (0 == startOffset) {
-            return AsyncFileSystemHelper.await(
-                    asyncFileSystem().size(asyncSegmentFile()),
+            return AsyncFileSystemHelper.await(() -> asyncFileSystem().size(asyncSegmentFile()),
                     "sizeOfSegment");
         }
-        return AsyncFileSystemHelper.await(
-                asyncFileSystem().sizeOfSegment(asyncSegmentFile(), startOffset),
+        return AsyncFileSystemHelper.await(() -> asyncFileSystem().sizeOfSegment(asyncSegmentFile(), startOffset),
                 "sizeOfSegment start " + startOffset);
     }
 

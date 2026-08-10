@@ -45,14 +45,14 @@ public class IndexWriter {
         if (indexFile == null) {
             return;
         }
-        if (AsyncFileSystemHelper.await(fs.size(indexFile), "size index v1") == 0) {
+        if (AsyncFileSystemHelper.await(() -> fs.size(indexFile), "size index v1") == 0) {
             gtidSetWrapper.saveGtidSet(fs, indexFile);
         }
     }
 
     void recoverIndex(AsyncFile indexFile, AsyncFile blockFile) throws IOException {
-        AsyncFileSystemHelper.await(fs.position(indexFile, 0), "position index v1 to start for recover");
-        AsyncFileSystemHelper.await(fs.position(blockFile, 0), "position block v1 to start for recover");
+        AsyncFileSystemHelper.await(() -> fs.position(indexFile, 0), "position index v1 to start for recover");
+        AsyncFileSystemHelper.await(() -> fs.position(blockFile, 0), "position block v1 to start for recover");
 
         String cmdPrefix = cmdStore.getCommandFileNamePrefix();
         if (!GtidSetWrapper.isV1HeaderComplete(fs, indexFile)) {
@@ -62,7 +62,7 @@ public class IndexWriter {
             return;
         }
         long cmdSize = cmdStore.currentSegmentSize();
-        long blockSize = AsyncFileSystemHelper.await(fs.size(blockFile), "size block v1");
+        long blockSize = AsyncFileSystemHelper.await(() -> fs.size(blockFile), "size block v1");
         long headerEnd = readV1HeaderEnd(indexFile);
 
         this.indexEntry = gtidSetWrapper.recover(fs, indexFile);
@@ -83,7 +83,7 @@ public class IndexWriter {
     }
 
     private long readV1HeaderEnd(AsyncFile indexFile) throws IOException {
-        ByteBuf lenBuf = AsyncFileSystemHelper.await(fs.read(indexFile, Long.BYTES, 0), "read v1 header len");
+        ByteBuf lenBuf = AsyncFileSystemHelper.await(() -> fs.read(indexFile, Long.BYTES, 0), "read v1 header len");
         try {
             return Long.BYTES + lenBuf.readLong();
         } finally {
@@ -96,7 +96,7 @@ public class IndexWriter {
         if (preIndex < headerEnd) {
             return null;
         }
-        ByteBuf buf = AsyncFileSystemHelper.await(fs.read(indexFile, IndexEntry.SEGMENT_LENGTH, preIndex),
+        ByteBuf buf = AsyncFileSystemHelper.await(() -> fs.read(indexFile, IndexEntry.SEGMENT_LENGTH, preIndex),
                 "read previous index entry");
         try {
             IndexEntry result = IndexEntry.fromBuffer(buf);
@@ -133,7 +133,7 @@ public class IndexWriter {
 
     private void createNewBlock(String uuid, long gno, int commandOffset) throws IOException {
         this.currentBlock = new BlockEntry(uuid, gno, commandOffset);
-        long blockStart = AsyncFileSystemHelper.await(fs.size(blockFile), "size block v1");
+        long blockStart = AsyncFileSystemHelper.await(() -> fs.size(blockFile), "size block v1");
         this.indexEntry = new IndexEntry(uuid, gno, commandOffset, blockStart);
         saveIndexEntry();
     }

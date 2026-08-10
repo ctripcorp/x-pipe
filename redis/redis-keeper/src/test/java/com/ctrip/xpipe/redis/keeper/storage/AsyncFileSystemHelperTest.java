@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Phase S / T-S.4 + Se T-S.8 / T-S.11 / T-S.17–S.19: awaitOpen abandon + write/read close split.
+ * Phase H1 / T-H1.4: OperationNotExecutedException retry once at await entry.
  */
 public class AsyncFileSystemHelperTest extends AbstractTest {
 
@@ -234,5 +235,118 @@ public class AsyncFileSystemHelperTest extends AbstractTest {
         AsyncFileSystemHelper.closeReadHandle(fs, file, "read close retry");
         Assert.assertEquals(2, closeCalls.get());
         verify(fs, times(2)).close(file);
+    }
+
+    @Test
+    public void awaitRetriesOnceOnSyncOperationNotExecutedThenSucceeds() throws Exception {
+        AtomicInteger calls = new AtomicInteger();
+        long result = AsyncFileSystemHelper.await(() -> {
+            if (calls.getAndIncrement() == 0) {
+                throw new OperationNotExecutedException("meta.v2.json");
+            }
+            return CompletableFuture.completedFuture(42L);
+        }, "size meta");
+        Assert.assertEquals(42L, result);
+        Assert.assertEquals(2, calls.get());
+    }
+
+    @Test
+    public void awaitThrowsAfterTwoSyncOperationNotExecuted() {
+        AtomicInteger calls = new AtomicInteger();
+        try {
+            AsyncFileSystemHelper.await(() -> {
+                calls.incrementAndGet();
+                throw new OperationNotExecutedException("meta.v2.json");
+            }, "write meta");
+            Assert.fail("expected OperationNotExecutedException");
+        } catch (OperationNotExecutedException e) {
+            Assert.assertTrue(e.getMessage().contains("meta.v2.json"));
+        } catch (IOException e) {
+            Assert.fail("ONE must be rethrown as-is, not wrapped: " + e);
+        }
+        Assert.assertEquals(2, calls.get());
+    }
+
+    @Test
+    public void awaitRetriesOnceWhenFutureCompletesWithOperationNotExecuted() throws Exception {
+        AtomicInteger calls = new AtomicInteger();
+        long result = AsyncFileSystemHelper.await(() -> {
+            if (calls.getAndIncrement() == 0) {
+                CompletableFuture<Long> failed = new CompletableFuture<>();
+                failed.completeExceptionally(new OperationNotExecutedException("inflight"));
+                return failed;
+            }
+            return CompletableFuture.completedFuture(7L);
+        }, "fsync segment");
+        Assert.assertEquals(7L, result);
+        Assert.assertEquals(2, calls.get());
+    }
+
+    @Test
+    public void writeAllBytesRetriesOnceOnOperationNotExecuted() throws Exception {
+        AsyncFileSystem fs = mock(AsyncFileSystem.class);
+        AsyncFile file = mock(AsyncFile.class);
+        byte[] payload = new byte[]{1, 2, 3};
+        AtomicInteger writes = new AtomicInteger();
+        when(fs.write(any(AsyncFile.class), any(io.netty.buffer.ByteBuf.class))).thenAnswer(invocation -> {
+            io.netty.buffer.ByteBuf buf = invocation.getArgument(1);
+            if (writes.getAndIncrement() == 0) {
+                buf.release();
+                throw new OperationNotExecutedException("meta.v2.json");
+            }
+            long n = buf.readableBytes();
+            buf.release();
+            return CompletableFuture.completedFuture(n);
+        });
+
+        AsyncFileSystemHelper.writeAllBytes(fs, file, payload, "write meta");
+        Assert.assertEquals(2, writes.get());
+        verify(fs, times(2)).write(any(AsyncFile.class), any(io.netty.buffer.ByteBuf.class));
+    }
+
+    @Test
+    public void writeAndAwaitSegmentRetriesOnceOnOperationNotExecuted() throws Exception {
+        AsyncFileSystem fs = mock(AsyncFileSystem.class);
+        AsyncSegmentFile segment = mock(AsyncSegmentFile.class);
+        io.netty.buffer.ByteBuf chunk = io.netty.buffer.Unpooled.wrappedBuffer(new byte[]{9, 8, 7, 6});
+        AtomicInteger writes = new AtomicInteger();
+        when(fs.write(any(AsyncSegmentFile.class), any(io.netty.buffer.ByteBuf.class))).thenAnswer(invocation -> {
+            io.netty.buffer.ByteBuf buf = invocation.getArgument(1);
+            if (writes.getAndIncrement() == 0) {
+                buf.release();
+                throw new OperationNotExecutedException("cmd segment");
+            }
+            long n = buf.readableBytes();
+            buf.release();
+            return CompletableFuture.completedFuture(n);
+        });
+
+        long flushed = AsyncFileSystemHelper.writeAndAwait(fs, segment, chunk, 4, "write command segment");
+        Assert.assertEquals(4L, flushed);
+        Assert.assertEquals(2, writes.get());
+        Assert.assertEquals("guard retain released after success", 0, chunk.refCnt());
+    }
+
+    @Test
+    public void writeAndAwaitThrowsAfterTwoOperationNotExecuted() {
+        AsyncFileSystem fs = mock(AsyncFileSystem.class);
+        AsyncFile file = mock(AsyncFile.class);
+        io.netty.buffer.ByteBuf data = io.netty.buffer.Unpooled.wrappedBuffer(new byte[]{1});
+        when(fs.write(any(AsyncFile.class), any(io.netty.buffer.ByteBuf.class))).thenAnswer(invocation -> {
+            io.netty.buffer.ByteBuf buf = invocation.getArgument(1);
+            buf.release();
+            throw new OperationNotExecutedException("rdb");
+        });
+
+        try {
+            AsyncFileSystemHelper.writeAndAwait(fs, file, data, 1, "write rdb");
+            Assert.fail("expected OperationNotExecutedException");
+        } catch (OperationNotExecutedException e) {
+            Assert.assertTrue(e.getMessage().contains("rdb"));
+        } catch (IOException e) {
+            Assert.fail("ONE must be rethrown as-is: " + e);
+        }
+        verify(fs, times(2)).write(any(AsyncFile.class), any(io.netty.buffer.ByteBuf.class));
+        Assert.assertEquals(0, data.refCnt());
     }
 }

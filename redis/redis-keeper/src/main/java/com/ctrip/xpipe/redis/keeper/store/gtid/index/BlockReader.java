@@ -27,7 +27,7 @@ public class BlockReader implements AutoCloseable {
     public static long seek(AsyncFileSystem fs, AsyncFile blockFile, long startOffset, long endOffset, int arrayIndex)
             throws IOException {
         long size = endOffset - startOffset;
-        ByteBuf buffer = AsyncFileSystemHelper.await(fs.read(blockFile, size, startOffset), "read block file");
+        ByteBuf buffer = AsyncFileSystemHelper.await(() -> fs.read(blockFile, size, startOffset), "read block file");
         try {
             return VarInt.decodeArray(buffer.nioBuffer(), arrayIndex);
         } finally {

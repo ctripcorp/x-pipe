@@ -85,7 +85,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 
 	protected ReplicationStoreMeta loadMetaFromFileV2(File file) throws IOException {
 		AsyncFile asyncFile = getOrOpenMetaFile();
-		long size = AsyncFileSystemHelper.await(asyncFileSystem.size(asyncFile),
+		long size = AsyncFileSystemHelper.await(() -> asyncFileSystem.size(asyncFile),
 				"stat meta " + file.getAbsolutePath());
 		if (size > Integer.MAX_VALUE) {
 			throw new IOException("async file too large: " + file.getAbsolutePath());
@@ -113,8 +113,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 			return;
 		}
 		File file = metaV2File();
-		AsyncFile asyncFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
-				asyncFileSystem.open(file.getAbsolutePath(), AbstractStorageFile.OpenMode.READ_WRITE, true, true,
+		AsyncFile asyncFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(file.getAbsolutePath(), AbstractStorageFile.OpenMode.READ_WRITE, true, true,
 						fileSystemReplId.toString()),
 				"open meta file " + file.getAbsolutePath());
 		metaAsyncFile = asyncFile;
@@ -144,8 +143,8 @@ public abstract class AbstractMetaStore implements MetaStore{
 		close();
 		File metaFile = metaV2File();
 		String path = metaFile.getAbsolutePath();
-		if (AsyncFileSystemHelper.await(asyncFileSystem.exists(path), "check meta exists for destroy " + path)) {
-			AsyncFileSystemHelper.await(asyncFileSystem.delete(path), "delete meta file " + path);
+		if (AsyncFileSystemHelper.await(() -> asyncFileSystem.exists(path), "check meta exists for destroy " + path)) {
+			AsyncFileSystemHelper.await(() -> asyncFileSystem.delete(path), "delete meta file " + path);
 		}
 	}
 
@@ -192,7 +191,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 			File metaV2File = new File(baseDir, META_V2_FILE);
 			ReplicationStoreMeta meta;
 			File source;
-			if (AsyncFileSystemHelper.await(asyncFileSystem.exists(metaV2File.getAbsolutePath()),
+			if (AsyncFileSystemHelper.await(() -> asyncFileSystem.exists(metaV2File.getAbsolutePath()),
 					"check meta exists " + metaV2File.getAbsolutePath())) {
 				meta = loadMetaFromFileV2(metaV2File);
 				source = metaV2File;

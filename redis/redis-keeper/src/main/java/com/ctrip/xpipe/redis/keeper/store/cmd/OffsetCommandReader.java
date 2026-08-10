@@ -61,8 +61,7 @@ public class OffsetCommandReader extends AbstractFlyingThresholdCommandReader<Re
 
     private AsyncSegmentFile openReadAsyncSegmentFile() throws IOException {
         AsyncFileSystem asyncFileSystem = asyncCommandStore.getAsyncFileSystem();
-        AsyncSegmentFile file = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
-                asyncFileSystem.open(
+        AsyncSegmentFile file = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(
                         asyncCommandStore.getCommandBaseDir().getAbsolutePath(),
                         asyncCommandStore.getCommandFileNamePrefix(),
                         asyncCommandStore.getCommandIndexPrefixes(),

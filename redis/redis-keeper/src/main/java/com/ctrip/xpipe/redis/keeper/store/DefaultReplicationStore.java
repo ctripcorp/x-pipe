@@ -312,7 +312,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 			getLogger().info("[removeUnusedRdbFile] {}", rdbFile);
 			try {
-				AsyncFileSystemHelper.await(asyncFileSystem.delete(rdbFile.getAbsolutePath()),
+				AsyncFileSystemHelper.await(() -> asyncFileSystem.delete(rdbFile.getAbsolutePath()),
 						"delete unused rdb " + rdbFile);
 			} catch (IOException e) {
 				getLogger().error("[removeUnusedRdbFile][{}]", rdbFile, e);
@@ -683,7 +683,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	private List<String> rdbFilesOnFS() {
 		List<String> entries;
 		try {
-			entries = AsyncFileSystemHelper.await(asyncFileSystem.list(baseDir.getAbsolutePath()),
+			entries = AsyncFileSystemHelper.await(() -> asyncFileSystem.list(baseDir.getAbsolutePath()),
 					"list rdb files in " + baseDir);
 		} catch (IOException e) {
 			getLogger().error("[rdbFilesOnFS][{}]", baseDir, e);
@@ -779,11 +779,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	protected boolean rdbFileExists(File rdb) throws IOException {
-		return AsyncFileSystemHelper.await(asyncFileSystem.exists(rdb.getAbsolutePath()), "exists rdb " + rdb);
+		return AsyncFileSystemHelper.await(() -> asyncFileSystem.exists(rdb.getAbsolutePath()), "exists rdb " + rdb);
 	}
 
 	protected void ensureBaseDir() throws IOException {
-		AsyncFileSystemHelper.await(asyncFileSystem.mkdir(baseDir.getAbsolutePath(), true), "mkdir " + baseDir);
+		AsyncFileSystemHelper.await(() -> asyncFileSystem.mkdir(baseDir.getAbsolutePath(), true), "mkdir " + baseDir);
 	}
 
 	@Override
@@ -1006,7 +1006,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				getLogger().error("[destroy][metaStore]" + metaStore, e);
 			}
 		}
-		AsyncFileSystemHelper.await(asyncFileSystem.rmdir(baseDir.getAbsolutePath(), true),
+		AsyncFileSystemHelper.await(() -> asyncFileSystem.rmdir(baseDir.getAbsolutePath(), true),
 				"rmdir replication store " + baseDir);
 	}
 

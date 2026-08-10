@@ -55,8 +55,7 @@ public class IndexReader implements Closeable {
         this.segmentStartOffset = segmentStartOffset;
         this.tenant = tenant;
         this.indexPrefixes = indexPrefixes;
-        this.readSeg = AsyncFileSystemHelper.awaitOpen(fs,
-                fs.open(baseDir, cmdPrefix, indexPrefixes, false, tenant.toString()),
+        this.readSeg = AsyncFileSystemHelper.awaitOpen(fs, () -> fs.open(baseDir, cmdPrefix, indexPrefixes, false, tenant.toString()),
                 "open read segment for index");
     }
 
@@ -77,7 +76,7 @@ public class IndexReader implements Closeable {
     }
 
     protected long headerEndPosition() throws IOException {
-        ByteBuf lenBuf = AsyncFileSystemHelper.await(fs.read(indexFile, Long.BYTES, 0), "read v1 header length");
+        ByteBuf lenBuf = AsyncFileSystemHelper.await(() -> fs.read(indexFile, Long.BYTES, 0), "read v1 header length");
         try {
             long gtidLength = lenBuf.readLong();
             return Long.BYTES + gtidLength;
@@ -97,9 +96,8 @@ public class IndexReader implements Closeable {
     public void init() throws IOException {
         indexItemList = new ArrayList<>();
         log.info("[IndexReader.init] before segmentStartOffset={}", segmentStartOffset);
-        AsyncFileSystemHelper.await(fs.position(readSeg, segmentStartOffset), "position read segment");
-        Pair<Long, Map<String, AsyncFile>> indexFiles = AsyncFileSystemHelper.await(
-                fs.getCurrentIndexFiles(readSeg, indexPrefixes), "get index files");
+        AsyncFileSystemHelper.await(() -> fs.position(readSeg, segmentStartOffset), "position read segment");
+        Pair<Long, Map<String, AsyncFile>> indexFiles = AsyncFileSystemHelper.await(() -> fs.getCurrentIndexFiles(readSeg, indexPrefixes), "get index files");
         // Authoritative segment start from FS — must match the opened index handles (not the
         // write-side tip that may have advanced past this reader's segment during rotate).
         if (indexFiles.getKey() != null && indexFiles.getKey() >= 0) {
@@ -116,7 +114,7 @@ public class IndexReader implements Closeable {
             startGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
             return;
         }
-        long size = AsyncFileSystemHelper.await(fs.size(indexFile), "size index file");
+        long size = AsyncFileSystemHelper.await(() -> fs.size(indexFile), "size index file");
         if (size == 0) {
             log.warn("[IndexReader] file length is 0");
             startGtidSet = new GtidSet(GtidSet.EMPTY_GTIDSET);
@@ -130,7 +128,8 @@ public class IndexReader implements Closeable {
         startGtidSet = readStartGtidSet();
         long pos = headerEndPosition();
         while (size - pos >= getSegmentLength()) {
-            ByteBuf buf = AsyncFileSystemHelper.await(fs.read(indexFile, getSegmentLength(), pos), "read index entry");
+            final long readPos = pos;
+            ByteBuf buf = AsyncFileSystemHelper.await(() -> fs.read(indexFile, getSegmentLength(), readPos), "read index entry");
             try {
                 IndexEntry item = decodeEntry(buf.nioBuffer());
                 if (item == null) {
@@ -314,8 +313,7 @@ public class IndexReader implements Closeable {
 
     protected static AsyncSegmentFile openTempReadSeg(AsyncFileSystem fs, String baseDir, String cmdPrefix,
                                                       ReplId tenant, List<String> prefixes) throws IOException {
-        return AsyncFileSystemHelper.awaitOpen(fs,
-                fs.open(baseDir, cmdPrefix, prefixes, false, tenant.toString()),
+        return AsyncFileSystemHelper.awaitOpen(fs, () -> fs.open(baseDir, cmdPrefix, prefixes, false, tenant.toString()),
                 "open temp read segment");
     }
 
