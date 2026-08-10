@@ -1,0 +1,43 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReaderV2.java
+  s_4031c88d2da665::t_186c39be10be0a 93-94
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelperTest.java
+  s_654e402fd0250c::t_2b1338810bb4f4 22
+  s_654e402fd0250c::t_39df8497d482f1 239-351
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelper.java
+  s_654e402fd0250c::t_b3d5e9dc9ec512 35-37,53-61,82-105,107,120-121,130,135-153,194-198,217-222,225-226,237-246,425-446,453,481-482,487-521,523-528
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/GtidSetWrapper.java
+  s_4031c88d2da665::t_f7bc897fc1a756 199-200
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReader.java
+  s_4031c88d2da665::t_229adb625d6dcf 131-132
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/AsyncReferenceFileRegion.java
+  s_4031c88d2da665::t_1f5744ed7bf4e9 93-95
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AsyncRdbReferenceFileRegion.java
+  s_4031c88d2da665::t_25bcfca7de8a8a 100-102
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriterV2.java
+  s_4031c88d2da665::t_686a9d6e6b1b2a 215-216
+  s_4031c88d2da665::t_e7c727383b5256 293-294
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "6f2ac218102d0c92dd4c24680e2d19f13d932809",
+  "prompts": {},
+  "sessions": {
+    "s_4031c88d2da665": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "32a7116b-35bf-462b-9ead-6ab4fad1e437",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_654e402fd0250c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "addcf917-6c02-43c2-91b2-88a6b01fbf01",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
