@@ -17,6 +17,7 @@ import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.apache.commons.io.filefilter.PrefixFileFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,10 +111,12 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     private KeeperConfig keeperConfig;
 
     private TimerSlidingWindow timerSlidingWindow;
+
+    private NioEventLoopGroup masterEventLoopGroup;
     
     public abstract Logger getLogger();
 
-    public AbstractCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+    public AbstractCommandStore(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup ,KeeperConfig keeperConfig, File file, int maxFileSize, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                                 int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep,
                                 long commandReaderFlyingThreshold,
                                 BooleanSupplier commandOffsetNotifyCoalescingEnabled,
@@ -136,8 +139,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.redisOpParser = redisOpParser;
         this.gtidCmdFilter = gtidCmdFilter;
         this.ckStore = ckStore;
-        this.keeperConfig = keeperConfig != null ? keeperConfig
-                : (ckStore != null ? ckStore.getKeeperConfig() : null);
+        this.masterEventLoopGroup = masterEventLoopGroup;
+        this.keeperConfig = keeperConfig;
 
         cmdFileFilter = new PrefixFileFilter(fileNamePrefix);
         idxFileFilter = new PrefixFileFilter(INDEX_FILE_PREFIX + fileNamePrefix);
@@ -200,8 +203,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             if(buildIndex) {
                 indexStore.openWriter(cmdWriter);
             }
-            if(ckStore != null) {
-                this.timerSlidingWindow = new TimerSlidingWindow(ckStore.getKeeperConfig(), cmdWriter, commandStoreDelay, offsetNotifier, ckStore.getMasterEventLoop());
+            if(this.masterEventLoopGroup != null) {
+                this.timerSlidingWindow = new TimerSlidingWindow(keeperConfig, cmdWriter, commandStoreDelay, offsetNotifier, masterEventLoopGroup);
             }
         }
     }

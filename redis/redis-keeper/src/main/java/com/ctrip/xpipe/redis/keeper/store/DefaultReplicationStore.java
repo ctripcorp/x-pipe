@@ -20,6 +20,7 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Triple;
@@ -82,18 +83,14 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected CKStore ckStore;
 
+	protected NioEventLoopGroup masterEventLoopGroup;
+
 	protected ScheduledExecutorService commandNotifyScheduler;
 
-	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
-								   CommandReaderWriterFactory cmdReaderWriterFactory,
-								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp) throws IOException {
-		this(ckStore, baseDir, config, keeperRunid, cmdReaderWriterFactory, keeperMonitor, syncRateManager, redisOp, null);
-	}
-
-	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
-								   CommandReaderWriterFactory cmdReaderWriterFactory,
-								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
-								   ScheduledExecutorService commandNotifyScheduler) throws IOException {
+	public DefaultReplicationStore(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, File baseDir, KeeperConfig config, String keeperRunid,
+	                               CommandReaderWriterFactory cmdReaderWriterFactory,
+	                               KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
+	                               ScheduledExecutorService commandNotifyScheduler) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
 		this.commandsRetainTimeoutMilli = config::getReplicationStoreCommandFileRetainTimeoutMilli;
@@ -103,6 +100,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		this.syncRateManager = syncRateManager;
 		this.redisOpParser = redisOp;
 		this.ckStore = ckStore;
+		this.masterEventLoopGroup = masterEventLoopGroup;
 		this.commandNotifyScheduler = commandNotifyScheduler;
 
 		this.metaStore = new DefaultMetaStore(baseDir, keeperRunid);
@@ -134,7 +132,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	protected DefaultReplicationStore(File baseDir, KeeperConfig config,String keeperRunid,
 									  KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp
 	) throws IOException {
-		this(null,baseDir, config,keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp, null);
+		this(null,null,baseDir, config,keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp, null);
 	}
 
 
@@ -526,7 +524,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
 											  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
 											  KeeperMonitor keeperMonitor, GtidCmdFilter gtidCmdFilter) throws IOException {
-		DefaultCommandStore cmdStore = new DefaultCommandStore(this.ckStore, config, new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
+		DefaultCommandStore cmdStore = new DefaultCommandStore(this.ckStore, this.masterEventLoopGroup ,config, new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
 				config::getRecordWrongStream,
 				config::getReplicationStoreCommandFileKeepTimeSeconds,
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(),

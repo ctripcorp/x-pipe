@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetCommandReaderWriterFactory;
 import com.ctrip.xpipe.tuple.Pair;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,20 +35,20 @@ public class GtidReplicationStore extends DefaultReplicationStore {
     public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager,
                                 ScheduledExecutorService commandNotifyScheduler) throws IOException {
-        super(null,baseDir, config, keeperRunid,
+        super(null,null,baseDir, config, keeperRunid,
                 new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
                 keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler);
     }
 
     public GtidReplicationStore(CKStore ckStore,File baseDir, KeeperConfig config,String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager) throws IOException {
-        this(ckStore, baseDir, config, keeperRunid, keeperMonitor, redisOpParser, syncRateManager, null);
+        this(ckStore,null, baseDir, config, keeperRunid, keeperMonitor, redisOpParser, syncRateManager, null);
     }
 
-    public GtidReplicationStore(CKStore ckStore,File baseDir, KeeperConfig config,String keeperRunid,
+    public GtidReplicationStore(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager,
                                 ScheduledExecutorService commandNotifyScheduler) throws IOException {
-        super(ckStore,baseDir, config,keeperRunid,
+        super(ckStore,masterEventLoopGroup,baseDir, config,keeperRunid,
                 new GtidSetCommandReaderWriterFactory(redisOpParser, config.getCommandIndexBytesInterval()),
                 keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler);
     }
@@ -99,7 +100,7 @@ public class GtidReplicationStore extends DefaultReplicationStore {
             buildIndex = false;
         }
         logger.info("[createCommandStore], replRdbGtidSet={}, buildIndex={}", replRdbGtidSet, buildIndex);
-        GtidCommandStore cmdStore = new GtidCommandStore(this.ckStore, config, new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
+        GtidCommandStore cmdStore = new GtidCommandStore(this.ckStore, this.masterEventLoopGroup, config, new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
                 config::getRecordWrongStream,
                 config::getReplicationStoreCommandFileKeepTimeSeconds,
                 config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
