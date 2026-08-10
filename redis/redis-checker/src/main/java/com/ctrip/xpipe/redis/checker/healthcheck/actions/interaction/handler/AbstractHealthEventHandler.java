@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
@@ -27,9 +26,6 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
 
     @Autowired
     protected MetaCache metaCache;
-
-    @Autowired
-    protected RelationsService relationsService;
 
     @Autowired
     protected AlertManager alertManager;
@@ -65,8 +61,8 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
             logger.warn("[onEvent][site down, skip] {}", event);
             return;
         }
-        RedisInstanceInfo info = event.getInstance().getCheckInfo();
-        if (relationsService.isReachableRegion(info.getActiveDc(), info.getDcId()) && !masterUp(event)) {
+
+        if (!masterUp(event)) {
             logger.info("[onEvent][master down, do not call client service]{}", event);
             return;
         }

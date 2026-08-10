@@ -26,7 +26,7 @@ public class DefaultInstanceSickHandler extends AbstractHealthEventHandler<Insta
 
     boolean shouldMarkdownDcClusterSickInstances(InstanceSick instanceSick) {
         RedisInstanceInfo info = instanceSick.getInstance().getCheckInfo();
-        if (!relationsService.isReachableRegion(currentDcId, info.getDcId())) {
+        if (!instanceSick.needAdjust()) {
             logger.info("[markdown][{} is cross region and not reachable, do not call client service ]{}", info, instanceSick);
             return false;
         }

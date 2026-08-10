@@ -29,6 +29,8 @@ public interface RedisInstanceInfo extends CheckInfo {
 
     boolean isCrossRegion();
 
+    boolean isReachable();
+
     void isCrossRegion(boolean crossRegion);
 
     Long getShardDbId();

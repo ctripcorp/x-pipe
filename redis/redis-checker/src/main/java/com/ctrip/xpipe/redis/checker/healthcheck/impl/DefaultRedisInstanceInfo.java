@@ -10,10 +10,10 @@ import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Maps;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Date;
 
 /**
  * @author chen.zhu
@@ -31,6 +31,8 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
     private boolean isMaster;
 
     private boolean crossRegion;
+
+    private boolean isReachable;
 
     private Long shardDbId;
 
@@ -124,6 +126,11 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
         return this;
     }
 
+    public DefaultRedisInstanceInfo setReachable(boolean isReachable) {
+        this.isReachable = isReachable;
+        return this;
+    }
+
     public void setDcId(String dcId) {
         this.dcId = dcId;
     }
@@ -162,5 +169,10 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
     @Override
     public void isCrossRegion(boolean crossRegion) {
         this.crossRegion = crossRegion;
+    }
+
+    @Override
+    public boolean isReachable() {
+        return isReachable;
     }
 }

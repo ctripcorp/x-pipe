@@ -6,7 +6,6 @@ import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.concurrent.FinalStateSetterManager;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -64,9 +63,6 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
     private CheckerConfig checkerConfig;
 
     @Mock
-    private RelationsService relationsService;
-
-    @Mock
     private StabilityHolder siteStability;
 
     @Mock
@@ -97,7 +93,6 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
         when(siteStability.isSiteStable()).thenReturn(true);
         when(defaultDelayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.DOWN);
-        when(relationsService.isReachableRegion(any(), any())).thenReturn(true);
     }
 
     @Test
@@ -155,7 +150,6 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
         when(checkerConfig.getQuorum()).thenReturn(0);
         when(metaCache.inBackupDc(any())).thenReturn(true);
-        when(relationsService.isReachableRegion(any(), any())).thenReturn(true);
         future.setSuccess(true);
         when(defaultDelayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.HEALTHY);
         when(defaultDelayPingActionCollector.getState(instance.getCheckInfo().getHostPort())).thenReturn(HEALTH_STATE.DOWN);
@@ -173,17 +167,15 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         verify(outerClientAggregator, times(2)).markInstance(any());
 
         //do not markdown cross region instance (region not reachable)
-        when(relationsService.isReachableRegion(any(), any())).thenReturn(false);
-        DefaultRedisInstanceInfo instanceInfo= (DefaultRedisInstanceInfo) instance.getCheckInfo();
-        instanceInfo.setCrossRegion(true);
+        ((InstanceSick) event).setNeedAdjust(false);
         upHandler.handle(event);
         downHandler.handle(event);
         sickHandler.handle(event);
         verify(outerClientAggregator, times(2)).markInstance(any());
 
         //do not markdown instance which dcs distance is -1
+        DefaultRedisInstanceInfo instanceInfo= (DefaultRedisInstanceInfo) instance.getCheckInfo();
         instanceInfo.setCrossRegion(false);
-        when(relationsService.isReachableRegion(any(), any())).thenReturn(true);
         HealthCheckConfig config = instance.getHealthCheckConfig();
         when(config.getDelayConfig(any(), any(), any())).thenReturn(
                 new DelayConfig("test", "test", "test")
