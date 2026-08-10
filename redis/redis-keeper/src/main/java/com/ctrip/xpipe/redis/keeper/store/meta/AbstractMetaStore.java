@@ -175,8 +175,9 @@ public abstract class AbstractMetaStore implements MetaStore{
 	protected final void saveMeta(ReplicationStoreMeta newMeta) throws IOException {
 		synchronized (metaRef) {
 			logger.info("[Metasaved]\nold:{}\nnew:{}", metaRef.get(), newMeta);
+			// Phase H2.0: disk first, then memory — write failure must leave metaRef unchanged
+			saveMetaToFileV2(new File(baseDir, META_V2_FILE), newMeta);
 			metaRef.set(newMeta);
-			saveMetaToFileV2(new File(baseDir, META_V2_FILE), metaRef.get());
 		}
 	}
 

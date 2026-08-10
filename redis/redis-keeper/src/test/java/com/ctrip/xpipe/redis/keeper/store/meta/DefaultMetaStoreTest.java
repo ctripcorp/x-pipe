@@ -8,9 +8,10 @@ import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.replication.UnexpectedReplIdException;
 import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
-import com.ctrip.xpipe.utils.FileUtils;
+import io.netty.buffer.ByteBuf;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -20,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V2_FILE;
 import static com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
@@ -83,6 +85,54 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
             verify(fileSystem, times(1)).open(contains(META_V2_FILE), eq(AbstractStorageFile.OpenMode.READ_WRITE),
                     eq(true), eq(true), eq(getReplId().toString()));
             store.close();
+        } finally {
+            fileSystem.shutdown();
+        }
+    }
+
+    /**
+     * T-H2.0: saveMeta must commit disk before metaRef.set; write failure leaves memory unchanged.
+     */
+    @Test
+    public void saveMetaWriteFailureKeepsOldMetaInMemory() throws Exception {
+        metaStore.close();
+        metaStore = null;
+        AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+        AtomicBoolean failWrite = new AtomicBoolean(false);
+        doAnswer(invocation -> {
+            if (failWrite.get()) {
+                ByteBuf buf = invocation.getArgument(1);
+                if (buf != null && buf.refCnt() > 0) {
+                    buf.release();
+                }
+                return java.util.concurrent.CompletableFuture.failedFuture(
+                        new IOException("injected saveMeta write fail"));
+            }
+            return invocation.callRealMethod();
+        }).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+        try {
+            DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
+            try {
+                store.setRdbFileSize(1024);
+                Assert.assertEquals(1024L, store.dupReplicationStoreMeta().getRdbFileSize());
+
+                failWrite.set(true);
+                try {
+                    store.setRdbFileSize(2048);
+                    Assert.fail("expected IOException when meta write fails");
+                } catch (IOException expected) {
+                    Assert.assertTrue(expected.getMessage().contains("injected saveMeta write fail")
+                            || (expected.getCause() != null
+                            && expected.getCause().getMessage() != null
+                            && expected.getCause().getMessage().contains("injected saveMeta write fail")));
+                } finally {
+                    failWrite.set(false);
+                }
+
+                Assert.assertEquals(1024L, store.dupReplicationStoreMeta().getRdbFileSize());
+            } finally {
+                store.close();
+            }
         } finally {
             fileSystem.shutdown();
         }
