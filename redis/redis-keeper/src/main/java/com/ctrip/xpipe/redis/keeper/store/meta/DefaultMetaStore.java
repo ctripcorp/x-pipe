@@ -4,6 +4,7 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 import java.io.File;
@@ -16,8 +17,8 @@ import java.util.Objects;
  * Dec 4, 2016
  */
 public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter {
-	public DefaultMetaStore(File baseDir, String keeperRunid) {
-		super(baseDir, keeperRunid);
+	public DefaultMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId) {
+		super(baseDir, keeperRunid, asyncFileSystem, fileSystemReplId);
 	}
 
 	@Override

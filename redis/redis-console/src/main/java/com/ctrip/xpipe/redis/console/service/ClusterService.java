@@ -50,6 +50,8 @@ public interface ClusterService {
 	String updateCluster(ClusterUpdateDTO clusterUpdateDTO);
 	void updateCluster(String clusterName, ClusterModel cluster);
 
+	void updateLogicalBu(String clusterName, long logicalBuId);
+
 	void updateActivedcId(long id, long activeDcId);
 	void updateStatusById(long id, ClusterStatus clusterStatus, long migrationEventId);
 	void deleteCluster(String clusterName);

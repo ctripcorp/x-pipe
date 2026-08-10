@@ -156,9 +156,16 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return commandReaderFlyingThreshold;
 	}
 
+	private boolean commandOffsetNotifyCoalescingEnabled = true;
+
 	@Override
 	public boolean isCommandOffsetNotifyCoalescingEnabled() {
-		return true;
+		return commandOffsetNotifyCoalescingEnabled;
+	}
+
+	public TestKeeperConfig setCommandOffsetNotifyCoalescingEnabled(boolean commandOffsetNotifyCoalescingEnabled) {
+		this.commandOffsetNotifyCoalescingEnabled = commandOffsetNotifyCoalescingEnabled;
+		return this;
 	}
 
 	@Override
@@ -425,5 +432,30 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public int getBlockSizeThreshold() {
 		return blockSizeThreshold;
+	}
+
+	@Override
+	public int getAsyncWriteMaxBytes() {
+		return 65536;
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalBytes() {
+		return DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES;
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalMillis() {
+		return DEFAULT_ASYNC_FSYNC_INTERVAL_MILLIS;
+	}
+
+	@Override
+	public int getAsyncIoThreads() {
+		return DEFAULT_ASYNC_IO_THREADS;
+	}
+
+	@Override
+	public long getAsyncTailCacheMaxSizeBytes() {
+		return DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR;
 	}
 }

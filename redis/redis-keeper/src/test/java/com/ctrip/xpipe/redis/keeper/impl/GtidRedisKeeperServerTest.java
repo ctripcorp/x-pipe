@@ -62,7 +62,8 @@ public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements 
         KeeperMeta keeperMeta = createKeeperMeta();
         DefaultRedisKeeperServer keeperServer = new DefaultRedisKeeperServer(getReplId().id(), keeperMeta, keeperConfig,
                 getReplicationStoreManagerBaseDir(keeperMeta), getRegistry().getComponent(LeaderElectorManager.class),
-                createkeepersMonitorManager(), getResourceManager(), Mockito.mock(SyncRateManager.class), parser, new ReplDelayConfigCache(new TestKeeperCommonConfig(), new TestKeeperConfig()));
+                createkeepersMonitorManager(), getResourceManager(), Mockito.mock(SyncRateManager.class), parser,
+                asyncFileSystem(), new ReplDelayConfigCache(new TestKeeperCommonConfig(), new TestKeeperConfig()));
         keeperServer.initialize();
         keeperServer.start();
 

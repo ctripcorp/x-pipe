@@ -96,13 +96,35 @@ public class ShardModelServiceTest {
 
     @Test
     public void testSwitchActiveKeeper() {
-        shardModelService.switchActiveKeeper("ip1","ip2",shardModel);
+        Assert.assertFalse(shardModelService.switchActiveKeeper("ip1", "ip2", shardModel));
         List<RedisTbl> keepers = new ArrayList<>();
         keepers.add(new RedisTbl().setRedisIp("ip1").setRedisPort(6380));
         keepers.add(new RedisTbl().setRedisIp("ip2").setRedisPort(6381));
         shardModel.setKeepers(keepers);
-        Assert.assertFalse(shardModelService.switchActiveKeeper("ip1","ip3",shardModel));
-        Assert.assertTrue(shardModelService.switchActiveKeeper("ip1","ip2",shardModel));
+        Assert.assertFalse(shardModelService.switchActiveKeeper("ip1", "ip3", shardModel));
+        Assert.assertTrue(shardModelService.switchActiveKeeper("ip1", "ip2", shardModel));
+    }
+
+    @Test
+    public void testSwitchActiveKeeperWithThreeKeepers() {
+        List<RedisTbl> keepers = new ArrayList<>();
+        keepers.add(new RedisTbl().setRedisIp("ip1").setRedisPort(6380));
+        keepers.add(new RedisTbl().setRedisIp("ip2").setRedisPort(6381));
+        keepers.add(new RedisTbl().setRedisIp("ip3").setRedisPort(6382));
+        shardModel.setKeepers(keepers);
+        Assert.assertTrue(shardModelService.switchActiveKeeper("ip1", "ip2", shardModel));
+        Assert.assertFalse(shardModelService.switchActiveKeeper("ip1", "ip4", shardModel));
+    }
+
+    @Test
+    public void testDoMigrateKeepersWithThreeKeepers() throws Exception {
+        List<RedisTbl> keepers = new ArrayList<>();
+        keepers.add(new RedisTbl().setRedisIp("ip1").setRedisPort(6380));
+        keepers.add(new RedisTbl().setRedisIp("ip2").setRedisPort(6381));
+        keepers.add(new RedisTbl().setRedisIp("ip3").setRedisPort(6382));
+        Boolean result = org.springframework.test.util.ReflectionTestUtils.invokeMethod(
+                shardModelService, "doMigrateKeepers", dcName, clusterName, shardModel, keepers);
+        Assert.assertTrue(result);
     }
 
 }

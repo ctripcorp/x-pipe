@@ -19,6 +19,7 @@ import java.io.File;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author wenchao.meng
@@ -28,6 +29,12 @@ import java.lang.reflect.Proxy;
 public class XRedisPartialTest extends AbstractKeeperIntegratedSingleDc {
 
     private static final String versionCheckContinueMin = "1.0.1";
+
+    /**
+     * Armed only for the intentional reconnect in the test body.
+     * Setup may issue multiple early PSYNCs (keeper RDB not ready yet); those must not burn the refuse.
+     */
+    private final AtomicBoolean refusePsyncOnce = new AtomicBoolean(false);
 
     @Override
     protected String getXpipeMetaConfigFile() {
@@ -46,16 +53,30 @@ public class XRedisPartialTest extends AbstractKeeperIntegratedSingleDc {
 
 
         RedisKeeperServer redisKeeperServer = getRedisKeeperServer(activeKeeper);
-        int backlogActiveCount = getBackLogActiveCount(slaveMeta);
-        Assert.assertEquals(1, backlogActiveCount);
+        waitConditionUntilTimeOut(() -> {
+            try {
+                return getBackLogActiveCount(slaveMeta) == 1;
+            } catch (Exception e) {
+                return false;
+            }
+        }, 15000);
+        Assert.assertEquals(1, getBackLogActiveCount(slaveMeta));
 
         Jedis slaveJedis = createJedis(slaveMeta);
+        refusePsyncOnce.set(true);
         String slaveof = slaveJedis.slaveof("127.0.0.1", randomPort());
         sleep(1100);
         slaveJedis.slaveof("127.0.0.1", activeKeeper.getPort());
         sleep(1100);
 
-        backlogActiveCount = getBackLogActiveCount(slaveMeta);
+        waitConditionUntilTimeOut(() -> {
+            try {
+                return getBackLogActiveCount(slaveMeta) == 1;
+            } catch (Exception e) {
+                return false;
+            }
+        }, 15000);
+        int backlogActiveCount = getBackLogActiveCount(slaveMeta);
         logger.info("[getBackLogActiveCount]{}", backlogActiveCount);
         Assert.assertEquals(1, backlogActiveCount);
 
@@ -93,9 +114,7 @@ public class XRedisPartialTest extends AbstractKeeperIntegratedSingleDc {
                                                         SyncRateManager syncRateManager) {
 
         return new DefaultRedisKeeperServer(keeperMeta.parent().getDbId(), keeperMeta, keeperConfig, baseDir, leaderElectorManager,
-                keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser()) {
-
-            private int count = 0;
+                keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser(), createTestAsyncFileSystem()) {
 
             @Override
             public RedisKeeperServerState getRedisKeeperServerState() {
@@ -105,15 +124,10 @@ public class XRedisPartialTest extends AbstractKeeperIntegratedSingleDc {
 
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                        if (method.getName().equals("psync")) {
-                            count++;
-                            logger.info("[psync][count]{}, {}", args, count);
-                            if (count == 2) {
-                                RedisClient redisClient = (RedisClient) args[0];
-                                logger.info("[psync][close client]{}, {}", count, redisClient);
-                                redisClient.close();
-                            }
-
+                        if (method.getName().equals("psync") && refusePsyncOnce.compareAndSet(true, false)) {
+                            RedisClient redisClient = (RedisClient) args[0];
+                            logger.info("[psync][refuse once]{}", redisClient);
+                            redisClient.close();
                         }
 
                         return method.invoke(redisKeeperServerState, args);

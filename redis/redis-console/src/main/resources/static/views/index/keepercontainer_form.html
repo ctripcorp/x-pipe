@@ -106,6 +106,18 @@
                 </div>
 
                 <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> 逻辑 BU </label>
+                    <div class="col-sm-6">
+                        <select
+                                ng-model="keepercontainer.logicalBuId"
+                                style="width:330px;"
+                                ng-options="bu.id as bu.name for bu in logicalBusWithNone"
+                        >
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label class="col-sm-4 control-label no-padding-right"> Tag </label>
                     <div class="col-sm-6">
                         <textarea rows="1" style="width: 330px;"

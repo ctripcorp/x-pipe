@@ -390,6 +390,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
+	public void flushPendingData() {
+		// no cmd / index pending
+	}
+
+	@Override
 	public MetaStore getMetaStore() {
 		return metaStore;
 	}
@@ -425,17 +430,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public GtidSet getBeginGtidSet() throws IOException {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public GtidSet getEndGtidSet() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean supportGtidSet() {
 		throw new UnsupportedOperationException();
 	}
 
@@ -452,11 +447,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	@Override
 	public boolean checkOk() {
 		return dumpedRdbStore.checkOk();
-	}
-
-	@Override
-	public long beginOffsetWhenCreated() {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override

@@ -233,6 +233,11 @@ public class ClusterServiceWithoutDB implements ClusterService {
     }
 
     @Override
+    public void updateLogicalBu(String clusterName, long logicalBuId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void updateActivedcId(long id, long activeDcId) {
         throw new UnsupportedOperationException();
     }

@@ -16,6 +16,12 @@ public interface EofType {
 	boolean putOnLineOnAck();
 	
 	boolean fileOk(File file);
+
+	/**
+	 * Length-based variant of {@link #fileOk(File)} so callers backed by an async file system
+	 * can validate the rdb without directly stat-ing the {@link File}.
+	 */
+	boolean fileOk(long fileLength);
 	
 	String getTag();
 

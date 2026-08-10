@@ -13,7 +13,7 @@ insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,set
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (18,11,9,4,1);
 insert into DC_CLUSTER_SHARD_TBL (dc_cluster_shard_id,dc_cluster_id,shard_id,setinel_id,dc_cluster_shard_phase) values (19,12,9,4,1);
 
-insert into CLUSTER_TBL (id, cluster_name, activedc_id, cluster_description, cluster_org_id, cluster_type, cluster_designated_route_ids, cluster_last_modified_time) values(1, 'cluster1', 1, 'cluster1 desc', 1, 'ONE_WAY', '1,2', 20170426180546610);
+insert into CLUSTER_TBL (id, cluster_name, activedc_id, cluster_description, cluster_org_id, cluster_type, cluster_designated_route_ids, cluster_last_modified_time, logical_bu_id) values(1, 'cluster1', 1, 'cluster1 desc', 1, 'ONE_WAY', '1,2', 20170426180546610,42);
 
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (1,1,1,1,0);
 insert into DC_CLUSTER_TBL (dc_cluster_id,dc_id,cluster_id,dc_cluster_phase,metaserver_id) values (2,2,1,1,0);
@@ -318,3 +318,26 @@ insert into migration_bi_cluster_tbl (id,cluster_id,operation_time,operator,stat
 -- az test data: cluster1 shard1 in jq DC (dc_cluster_shard_id=1): redis nodes get az_id=4(jq-az1), keeper nodes get az_id=5(jq-az2)
 update REDIS_TBL set az_id=4 where id in (3,4);
 update REDIS_TBL set az_id=5 where id in (1,2);
+-- keeper-tfs-m1: AppTest TFS/BM disk type + logical BU + JQ KC seed (see spec §4.6.5)
+insert into config_tbl (`key`, sub_key, `value`, `desc`) values ('keeper.container.standard', 'DEFAULT-inputFlow', '16', 'DEFAULT keeper container input flow standard (MB/s)');
+insert into config_tbl (`key`, sub_key, `value`, `desc`) values ('keeper.container.standard', 'DEFAULT-peerData', '16', 'DEFAULT keeper container peer data standard (MB/s)');
+insert into config_tbl (`key`, sub_key, `value`, `desc`) values ('keeper.container.standard', 'TFS_1-inputFlow', '16', 'TFS_1 keeper container input flow standard (MB/s)');
+insert into config_tbl (`key`, sub_key, `value`, `desc`) values ('keeper.container.standard', 'TFS_1-peerData', '16', 'TFS_1 keeper container peer data standard (MB/s)');
+
+insert into LOGICAL_BU_TBL (id, name, tfs_fs_id, active, description) values (42, 'test-bu-42', 'tfs-fs-42', 1, 'AppTest logical BU for cluster1 / TFS KC');
+insert into LOGICAL_BU_ORG_TBL (logical_bu_id, cms_org_id) values (42, 1);
+
+-- JQ: 6 BM (DEFAULT) + 6 TFS (TFS_1), all bound to test-bu-42
+-- ids 100-111: avoid clash with fra-ali KC 20/21 (and demo 1-6 / apptesttest 7-11,17-19)
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,keepercontainer_org_id,keepercontainer_disk_type,logical_bu_id) values (100,1,'127.0.10.1',8080,1,1,'DEFAULT',42);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,keepercontainer_org_id,keepercontainer_disk_type,logical_bu_id) values (101,1,'127.0.10.2',8080,1,1,'DEFAULT',42);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,keepercontainer_org_id,keepercontainer_disk_type,logical_bu_id) values (102,1,'127.0.10.3',8080,1,1,'DEFAULT',42);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,keepercontainer_org_id,keepercontainer_disk_type,logical_bu_id) values (103,1,'127.0.10.4',8080,1,1,'DEFAULT',42);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,keepercontainer_org_id,keepercontainer_disk_type,logical_bu_id) values (104,1,'127.0.10.5',8080,1,1,'DEFAULT',42);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,keepercontainer_org_id,keepercontainer_disk_type,logical_bu_id) values (105,1,'127.0.10.6',8080,1,1,'DEFAULT',42);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,keepercontainer_org_id,keepercontainer_disk_type,logical_bu_id) values (106,1,'127.0.10.7',8080,1,1,'TFS_1',42);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,keepercontainer_org_id,keepercontainer_disk_type,logical_bu_id) values (107,1,'127.0.10.8',8080,1,1,'TFS_1',42);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,keepercontainer_org_id,keepercontainer_disk_type,logical_bu_id) values (108,1,'127.0.10.9',8080,1,1,'TFS_1',42);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,keepercontainer_org_id,keepercontainer_disk_type,logical_bu_id) values (109,1,'127.0.10.10',8080,1,1,'TFS_1',42);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,keepercontainer_org_id,keepercontainer_disk_type,logical_bu_id) values (110,1,'127.0.10.11',8080,1,1,'TFS_1',42);
+insert into KEEPERCONTAINER_TBL(keepercontainer_id,keepercontainer_dc,keepercontainer_ip,keepercontainer_port,keepercontainer_active,keepercontainer_org_id,keepercontainer_disk_type,logical_bu_id) values (111,1,'127.0.10.12',8080,1,1,'TFS_1',42);

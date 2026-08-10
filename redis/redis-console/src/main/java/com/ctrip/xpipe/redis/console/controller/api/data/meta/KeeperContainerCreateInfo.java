@@ -30,6 +30,8 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
 
     private String diskType;
 
+    private Long logicalBuId;
+
 
     public boolean isActive() {
         return active;
@@ -107,6 +109,7 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
                 ", active=" + active +
                 ", azName='" + azName + '\'' +
                 ", diskType='" + diskType + '\'' +
+                ", logicalBuId=" + logicalBuId +
                 '}';
     }
 
@@ -134,6 +137,15 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
 
     public KeeperContainerCreateInfo setDiskType(String diskType) {
         this.diskType = diskType;
+        return this;
+    }
+
+    public Long getLogicalBuId() {
+        return logicalBuId;
+    }
+
+    public KeeperContainerCreateInfo setLogicalBuId(Long logicalBuId) {
+        this.logicalBuId = logicalBuId;
         return this;
     }
 }

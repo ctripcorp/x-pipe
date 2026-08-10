@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper;
 
 import com.ctrip.xpipe.redis.keeper.applier.AllApplierTests;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfigTest;
+import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperContainerConfigTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManagerTest;
 import com.ctrip.xpipe.redis.keeper.handler.applier.ApplierCommandHandlerTest;
@@ -24,10 +25,12 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationL
 import com.ctrip.xpipe.redis.keeper.ratelimit.RateLimitTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.FixSyncRateManagerTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.ProgressiveSyncRateLimiterTest;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperTest;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystemTest;
+import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTransactionBatchTest;
-import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetStreamCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindowTest;
@@ -61,16 +64,18 @@ import org.junit.runners.Suite.SuiteClasses;
         RedisMasterNewRdbDumperTest.class,
         StateBackupDeadlockTest.class,
         KeeperContainerServiceTest.class,
+        DefaultKeeperContainerConfigTest.class,
         DefaultReplicationStoreManagerTest.class,
         DefaultRedisKeeperServerTest.class,
         DefaultReplicationStoreTest.class,
         GapAllowedReplicationStoreTest.class,
         DefaultRdbStoreTest.class,
-//
+
         DefaultRdbStoreEofMarkTest.class,
         DefaultCommandStoreTest.class,
         DefaultRedisSlaveTest.class,
         RoleCommandHandlerTest.class,
+        PrepareObservationHandlerTest.class,
         DefaultKeeperConfigTest.class,
         FakeRedisExceptionTest.class,
         FakeRedisRdbDumperTest.class,
@@ -96,12 +101,10 @@ import org.junit.runners.Suite.SuiteClasses;
         PsyncForKeeperTest.class,
         PsyncKeeperServerStateObserverTest.class,
 
-        GtidSetStreamCommandReaderTest.class,
         GtidCommandSearcherTest.class,
 
         DefaultIndexStoreTest.class,
         StreamCommandReaderTest.class,
-
         CKStoreTest.class,
         CKStoreTransactionBatchTest.class,
         TimerSlidingWindowTest.class,
@@ -116,6 +119,10 @@ import org.junit.runners.Suite.SuiteClasses;
         GapAllowSyncHandlerTest.class,
         GapAllowXSyncHandlerTest.class,
         GtidxHandlerTest.class,
+
+        AsyncFileSystemHelperTest.class,
+        AsyncTFSBasedFileSystemTest.class,
+        TailCacheFileSystemTest.class,
 
         XsyncForKeeperAndKeeperTest.class,
         XsyncForKeeperSlaveTest.class,

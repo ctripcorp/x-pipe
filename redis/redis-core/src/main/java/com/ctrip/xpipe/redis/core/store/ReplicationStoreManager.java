@@ -31,4 +31,11 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 
 	ReplId getReplId();
 
+	/**
+	 * Close current store and clear the in-memory reference only (PREPARE lease release).
+	 * Does <b>not</b> destroy files or change {@code latest.store.dir}.
+	 * Invoked by {@code doStop} / {@code doDispose}.
+	 */
+	void releaseCurrentStore() throws IOException;
+
 }

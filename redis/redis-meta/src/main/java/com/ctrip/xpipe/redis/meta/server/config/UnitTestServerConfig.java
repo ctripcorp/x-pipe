@@ -5,10 +5,12 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.config.ConfigKeyListener;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperElectStrategy;
 import com.ctrip.xpipe.zk.ZkConfig;
 import com.google.common.collect.Maps;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,6 +34,16 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	private int waitforOffsetMilli = 1000;
 
 	private int waitForMetaSyncDelayMilli = 0;
+
+	private KeeperElectStrategy keeperElectStrategy = KeeperElectStrategy.AUTO;
+
+	private String tfsGatewayHost = DefaultMetaServerConfig.DEFAULT_TFS_GATEWAY_HOST;
+
+	private long tfsGatewayAppId = DefaultMetaServerConfig.DEFAULT_TFS_GATEWAY_APP_ID;
+
+	private String tfsDirPathTemplate = DefaultMetaServerConfig.DEFAULT_TFS_DIR_PATH_TEMPLATE;
+
+	private final Set<ConfigKeyListener> listeners = new HashSet<>();
 	
 	public UnitTestServerConfig(){
 		
@@ -186,12 +198,58 @@ public class UnitTestServerConfig implements MetaServerConfig{
 	}
 
 	@Override
+	public KeeperElectStrategy getKeeperElectStrategy() {
+		return keeperElectStrategy;
+	}
+
+	@Override
+	public String getTfsGatewayHost() {
+		return tfsGatewayHost;
+	}
+
+	@Override
+	public long getTfsGatewayAppId() {
+		return tfsGatewayAppId;
+	}
+
+	@Override
+	public String getTfsDirPathTemplate() {
+		return tfsDirPathTemplate;
+	}
+
+	public UnitTestServerConfig setTfsGatewayHost(String tfsGatewayHost) {
+		this.tfsGatewayHost = tfsGatewayHost;
+		return this;
+	}
+
+	public UnitTestServerConfig setTfsGatewayAppId(long tfsGatewayAppId) {
+		this.tfsGatewayAppId = tfsGatewayAppId;
+		return this;
+	}
+
+	public UnitTestServerConfig setTfsDirPathTemplate(String tfsDirPathTemplate) {
+		this.tfsDirPathTemplate = tfsDirPathTemplate;
+		return this;
+	}
+
+	public UnitTestServerConfig setKeeperElectStrategy(KeeperElectStrategy keeperElectStrategy) {
+		this.keeperElectStrategy = keeperElectStrategy;
+		return this;
+	}
+
+	@Override
 	public void addListener(ConfigKeyListener listener) {
-		// do nothing
+		listeners.add(listener);
 	}
 
 	@Override
 	public void removeListener(ConfigKeyListener listener) {
+		listeners.remove(listener);
+	}
 
+	public void onChange(String key, String oldValue, String newValue) {
+		for (ConfigKeyListener listener : listeners) {
+			listener.onChange(key, newValue);
+		}
 	}
 }

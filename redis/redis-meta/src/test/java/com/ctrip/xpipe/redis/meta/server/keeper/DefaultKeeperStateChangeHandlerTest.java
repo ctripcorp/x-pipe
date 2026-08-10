@@ -4,10 +4,12 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
@@ -21,6 +23,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -65,6 +68,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 	private AtomicInteger calledCount = new AtomicInteger();
 	private AtomicInteger redisCall = new AtomicInteger();
 	private AtomicInteger applierCall = new AtomicInteger();
+	private final List<String> keeperCallOrder = Collections.synchronizedList(new ArrayList<>());
 
 	@Before
 	public void beforeDefaultKeeperStateChangeHandlerTest() throws Exception{
@@ -76,6 +80,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		handler.setScheduled(scheduled);
 		handler.setExecutors(executors);
 		handler.setMultiDcService(multiDcService);
+		handler.setMetaServerConfig(new UnitTestServerConfig());
 
 		clusterId = getClusterId();
 		shardId = getShardId();
@@ -97,6 +102,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 			@Override
 			public String apply(String s) {
 				int current = calledCount.incrementAndGet();
+				recordKeeperSetState(keepers.get(0).getPort(), s);
 				logger.info("keeper0, callCount:{}, msg:{}", current, s);
 				sleep(setStateTimeMilli);
 				return "+OK\r\n";
@@ -108,6 +114,7 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 			@Override
 			public String apply(String s) {
 				int current = calledCount.incrementAndGet();
+				recordKeeperSetState(keepers.get(1).getPort(), s);
 				logger.info("keeper1, callCount:{}, msg:{}", current, s);
 				return "+OK\r\n";
 			}
@@ -211,5 +218,53 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 	@After
 	public void adterDefaultKeeperStateChangeHandlerTest(){
 		
+	}
+
+	@Test
+	public void testTfsShardUsesTfsSwitchJob() throws Exception {
+		setStateTimeMilli = 50;
+		keeperCallOrder.clear();
+		KeeperMeta oldTfs = keepers.get(0).setKeeperContainerId(2L).setActive(false);
+		KeeperMeta newBm = MetaCloneFacade.INSTANCE.clone(keepers.get(1)).setKeeperContainerId(1L).setActive(true);
+		List<KeeperMeta> surviveKeepers = Lists.newArrayList(oldTfs, newBm);
+
+		when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(surviveKeepers);
+		when(currentMetaManager.getPreviousActiveKeeper(clusterDbId, shardDbId)).thenReturn(oldTfs);
+		when(dcMetaCache.getKeeperContainer(any(KeeperMeta.class))).thenAnswer(invocation -> {
+			KeeperMeta keeperMeta = invocation.getArgument(0);
+			KeeperContainerMeta keeperContainerMeta = new KeeperContainerMeta();
+			keeperContainerMeta.setDiskType(keeperMeta.getKeeperContainerId() == 2L ? "tfs" : "DEFAULT");
+			return keeperContainerMeta;
+		});
+
+		handler.keeperActiveElected(clusterDbId, shardDbId, newBm);
+		waitConditionUntilTimeOut(() -> keeperCallOrder.size() >= 2);
+		Assert.assertEquals(2, keeperCallOrder.size());
+		Assert.assertEquals(newBm.getPort() + ":ACTIVE", keeperCallOrder.get(0));
+		Assert.assertEquals(oldTfs.getPort() + ":BACKUP", keeperCallOrder.get(1));
+		Assert.assertFalse(keeperCallOrder.stream().anyMatch(entry -> entry.endsWith(":PREPARE")));
+	}
+
+	private void recordKeeperSetState(int port, String request) {
+		String state = parseKeeperSetState(request);
+		if (state != null) {
+			keeperCallOrder.add(port + ":" + state);
+		}
+	}
+
+	private String parseKeeperSetState(String request) {
+		if (request == null) {
+			return null;
+		}
+		if (request.contains("setstate PREPARE")) {
+			return "PREPARE";
+		}
+		if (request.contains("setstate ACTIVE")) {
+			return "ACTIVE";
+		}
+		if (request.contains("setstate BACKUP")) {
+			return "BACKUP";
+		}
+		return null;
 	}
 }

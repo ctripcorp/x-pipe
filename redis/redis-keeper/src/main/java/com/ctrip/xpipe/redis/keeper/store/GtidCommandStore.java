@@ -1,20 +1,16 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.gtid.GtidSet;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 
@@ -26,101 +22,22 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
 
     private static final Logger logger = LoggerFactory.getLogger(GtidCommandStore.class);
 
-    public GtidCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-                            int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
-                            CommandReaderWriterFactory cmdReaderWriterFactory,
-                            KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter, boolean buildIndex) throws IOException {
-        this(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified,
-                minTimeMilliToGcAfterModified, fileNumToKeep, commandReaderFlyingThreshold, () -> true,
-                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex);
-    }
-
-
-    public GtidCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+    public GtidCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize,
+                            BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                             int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
                             BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
-                            KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter, boolean buildIndex) throws IOException {
-        super(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
-                commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
-                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex);
+                            KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter, boolean buildIndex,
+                            long cmdStoreStartOffset, AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes,
+                            ReplId fileSystemReplId) throws IOException {
+        super(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified,
+                minTimeMilliToGcAfterModified, fileNumToKeep, commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
+                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex, cmdStoreStartOffset,
+                asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
     }
 
     @Override
     public Logger getLogger() {
         return logger;
-    }
-
-    private CommandReader<RedisOp> beginRead(GtidSetReplicationProgress replicationProgress) throws IOException {
-
-        makeSureOpen();
-
-        CommandReader<RedisOp> reader = cmdReaderWriterFactory.createCmdReader(replicationProgress, this,
-                offsetNotifier, commandReaderFlyingThreshold);
-        addReader(reader);
-        return reader;
-    }
-
-    @Override
-    public void addCommandsListener(ReplicationProgress<?> progress, CommandsListener listener) throws IOException {
-
-        if (!(progress instanceof GtidSetReplicationProgress)) {
-            super.addCommandsListener(progress, listener);
-            return;
-        }
-
-        makeSureOpen();
-        logger.info("[addCommandsListener][begin] from gtidset {}, {}", progress, listener);
-
-
-        CommandReader<RedisOp> cmdReader = null;
-
-        try {
-            cmdReader = beginRead((GtidSetReplicationProgress) progress);
-        } finally {
-            // ensure beforeCommand() is always called
-            listener.beforeCommand();
-        }
-
-        logger.info("[addCommandsListener] from {}, {}", progress, cmdReader);
-
-        try {
-            while (listener.isOpen() && !Thread.currentThread().isInterrupted()) {
-
-                final RedisOp redisOp = cmdReader.read(1000);
-
-                if (null == redisOp) continue;
-
-                logger.debug("[addCommandsListener] {}", redisOp);
-
-                // TODO: monitor send delay
-                ChannelFuture future = listener.onCommand(cmdReader.getCurCmdFile(), cmdReader.position(), redisOp);
-
-                if(future != null){
-                    CommandReader<RedisOp> finalCmdReader = cmdReader;
-                    future.addListener(new ChannelFutureListener() {
-                        @Override
-                        public void operationComplete(ChannelFuture future) throws Exception {
-                            finalCmdReader.flushed(redisOp);
-                        }
-                    });
-                }
-            }
-        } catch (Throwable th) {
-            logger.error("[readCommands][exit]" + listener, th);
-        } finally {
-            cmdReader.close();
-        }
-        logger.info("[addCommandsListener][end] from {}, {}", progress, listener);
-    }
-
-    @Override
-    public void setBaseIndex(String baseGtidSet, long localOffset) {
-        //when fullSync or when keeperSync, rdbGtidSet come up later;
-        //but when keeperRestart, rdbGtidSet come up immediately from meta.json
-
-        logger.info("[setBaseIndex]{}-{}",localOffset, baseGtidSet);
-        this.baseGtidSet = new GtidSet(baseGtidSet);
-        this.baseStartOffset = localOffset;
     }
 
 }

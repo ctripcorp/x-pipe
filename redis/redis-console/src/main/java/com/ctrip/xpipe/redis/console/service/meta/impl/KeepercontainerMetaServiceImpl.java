@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 /**
  * @author shyin
  *
@@ -16,7 +18,8 @@ import org.springframework.stereotype.Service;
 public class KeepercontainerMetaServiceImpl extends AbstractMetaService implements KeepercontainerMetaService {
 
 	@Override
-	public KeeperContainerMeta encodeKeepercontainerMeta(KeepercontainerTbl keepercontainer, DcMeta dcMeta) {
+	public KeeperContainerMeta encodeKeepercontainerMeta(KeepercontainerTbl keepercontainer, DcMeta dcMeta,
+														 Map<Long, String> logicalBuTfsFsIdById) {
 		KeeperContainerMeta keeperContainerMeta = new KeeperContainerMeta();
 		
 		if(null != keepercontainer) {
@@ -28,6 +31,15 @@ public class KeepercontainerMetaServiceImpl extends AbstractMetaService implemen
 			keeperContainerMeta.setParent(dcMeta);
 			if(keepercontainer.getAzId() != 0)
 				keeperContainerMeta.setAzId(keepercontainer.getAzId());
+			if (keepercontainer.getLogicalBuId() > 0) {
+				keeperContainerMeta.setLogicalBuId(keepercontainer.getLogicalBuId());
+				if (logicalBuTfsFsIdById != null) {
+					String tfsFsId = logicalBuTfsFsIdById.get(keepercontainer.getLogicalBuId());
+					if (tfsFsId != null) {
+						keeperContainerMeta.setTfsFsId(tfsFsId);
+					}
+				}
+			}
 		}
 		
 		return keeperContainerMeta;

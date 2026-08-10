@@ -3,15 +3,18 @@ angular
     .controller('ClusterListCtl', ClusterListCtl);
 
 ClusterListCtl.$inject = ['$rootScope', '$scope', '$window', '$stateParams', '$state', 'AppUtil',
-    'toastr', 'ClusterService', 'MigrationService', 'DcService', 'NgTableParams', 'ngTableEventsChannel', 'ClusterType', 'HealthCheckService'];
+    'toastr', 'ClusterService', 'MigrationService', 'DcService', 'LogicalBuService', 'NgTableParams', 'ngTableEventsChannel', 'ClusterType', 'HealthCheckService'];
 
 function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUtil,
-                        toastr, ClusterService, MigrationService, DcService, NgTableParams, ngTableEventsChannel, ClusterType, HealthCheckService) {
+                        toastr, ClusterService, MigrationService, DcService, LogicalBuService, NgTableParams, ngTableEventsChannel, ClusterType, HealthCheckService) {
     const SUCCESS_STATE = 0;
+    const UNBOUND_LOGICAL_BU_LABEL = '未绑定';
     $rootScope.currentNav = '1-2';
     $scope.dcs = {};
     $scope.dcsFilterData = [];
     $scope.organizationNames = [];
+    $scope.logicalBuNameMap = {0: UNBOUND_LOGICAL_BU_LABEL};
+    $scope.logicalBuFilterData = [{id: UNBOUND_LOGICAL_BU_LABEL, title: UNBOUND_LOGICAL_BU_LABEL}];
     $scope.clusterId = $stateParams.clusterId;
     $scope.clusterName = $stateParams.clusterName;
     $scope.containerId = $stateParams.keepercontainer;
@@ -51,25 +54,8 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     $scope.displayedClusters = [];
     $scope.filteredClusters = [];
     $scope.sourceClusters = [];
-    if($scope.clusterName) {
-    	ClusterService.load_cluster($scope.clusterName)
-        .then(function (data) {
-            loadTable([data]);
-            $scope.showAll = true;
-        });
-    } else if ($scope.dcName) {
-        if ($scope.type === "activeDC") {
-            showClustersByActiveDcAndType($scope.dcName, $scope.clusterType)
-        } else if ($scope.type === "bindDC") {
-            showClustersBindDcAndType($scope.dcName, $scope.clusterType);
-        }
-    }
-    else if ($scope.containerId) {
-        showClustersByContainer($scope.containerId)
-    }
-    else {
-        showClusters("showAll");
-    }
+
+    initClusterList();
 
     DcService.loadAllDcs()
     	.then(function(data) {
@@ -309,70 +295,117 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     function showClusters(type) {
         clearData();
         if (type === "showUnhealthy") {
-            showUnhealthyClusters();
+            return showUnhealthyClusters();
         } else if (type === "showErrorMigrating") {
-            showErrorMigratingClusters();
+            return showErrorMigratingClusters();
         } else if (type === 'showMigrating') {
-            showMigratingClusters();
+            return showMigratingClusters();
         } else {
             if ($scope.dcName){
                 if ($scope.type === "activeDC"){
-                    showClustersByActiveDc($scope.dcName);
+                    return showClustersByActiveDc($scope.dcName);
                 }else if ($scope.type === "bindDC"){
-                    showClustersBindDc($scope.dcName);
+                    return showClustersBindDc($scope.dcName);
                 }
             }
             else if ($scope.containerId) {
-                showClustersByContainer($scope.containerId)
+                return showClustersByContainer($scope.containerId)
             }
             else {
-                showAllClusters();
+                return showAllClusters();
             }
         }
     }
 
     function showUnhealthyClusters() {
-        ClusterService.getUnhealthyClusters().then(loadTable).then(() => { $scope.showUnhealthy = true; });
+        return ClusterService.getUnhealthyClusters().then(loadTable).then(() => { $scope.showUnhealthy = true; });
     }
 
     function showErrorMigratingClusters() {
-        ClusterService.getErrorMigratingClusters().then(loadTable).then(() => { $scope.showErrorMigrating = true; });
+        return ClusterService.getErrorMigratingClusters().then(loadTable).then(() => { $scope.showErrorMigrating = true; });
     }
 
     function showMigratingClusters() {
-        ClusterService.getMigratingClusters().then(loadTable).then(() => { $scope.showMigrating = true; });
+        return ClusterService.getMigratingClusters().then(loadTable).then(() => { $scope.showMigrating = true; });
     }
 
     function showAllClusters() {
-        ClusterService.findAllClusters().then(loadTable).then(() => { $scope.showAll = true; });
+        return ClusterService.findAllClusters().then(loadTable).then(() => { $scope.showAll = true; });
     }
 
     function showClustersBindDc(dcName) {
-        ClusterService.findClustersByDcNameBind(dcName).then(loadTable).then(() => { $scope.showAll = true; });
+        return ClusterService.findClustersByDcNameBind(dcName).then(loadTable).then(() => { $scope.showAll = true; });
     }
 
     function showClustersBindDcAndType(dcName, clusterType) {
-        ClusterService.findClustersByDcNameBindAndType(dcName, clusterType).then(loadTable).then(() => {
+        return ClusterService.findClustersByDcNameBindAndType(dcName, clusterType).then(loadTable).then(() => {
             $scope.showAll = true;
         });
     }
 
     function showClustersByActiveDc(dcName) {
-        ClusterService.findClustersByDcName(dcName).then(loadTable).then(() => { $scope.showAll = true; });
+        return ClusterService.findClustersByDcName(dcName).then(loadTable).then(() => { $scope.showAll = true; });
     }
 
     function showClustersByActiveDcAndType(dcName, clusterType) {
-        ClusterService.findClustersByDcNameAndType(dcName, clusterType).then(loadTable).then(() => {
+        return ClusterService.findClustersByDcNameAndType(dcName, clusterType).then(loadTable).then(() => {
             $scope.showAll = true;
         });
     }
 
     function showClustersByContainer(containerId) {
-        ClusterService.findAllByKeeperContainer(containerId).then(loadTable).then(() => { $scope.showAll = true; });
+        return ClusterService.findAllByKeeperContainer(containerId).then(loadTable).then(() => { $scope.showAll = true; });
+    }
+
+    function initLogicalBuMap(result) {
+        (result || []).forEach(function (bu) {
+            $scope.logicalBuNameMap[bu.id] = bu.name;
+            $scope.logicalBuFilterData.push({
+                id: bu.name,
+                title: bu.name
+            });
+        });
+    }
+
+    function initClusterList() {
+        LogicalBuService.findAll()
+            .then(function (result) {
+                initLogicalBuMap(result);
+            }, function (result) {
+                toastr.error(AppUtil.errorMsg(result), '加载逻辑 BU 失败');
+            })
+            .then(function () {
+                if ($scope.clusterName) {
+                    return ClusterService.load_cluster($scope.clusterName)
+                        .then(function (data) {
+                            loadTable([data]);
+                            $scope.showAll = true;
+                        });
+                }
+                if ($scope.dcName) {
+                    if ($scope.type === "activeDC") {
+                        return showClustersByActiveDcAndType($scope.dcName, $scope.clusterType);
+                    }
+                    if ($scope.type === "bindDC") {
+                        return showClustersBindDcAndType($scope.dcName, $scope.clusterType);
+                    }
+                }
+                if ($scope.containerId) {
+                    return showClustersByContainer($scope.containerId);
+                }
+                return showClusters("showAll");
+            });
+    }
+
+    function enrichClusters(data) {
+        return data.map(function (cluster) {
+            cluster.logicalBuName = $scope.logicalBuNameMap[cluster.logicalBuId || 0] || UNBOUND_LOGICAL_BU_LABEL;
+            return cluster;
+        });
     }
 
     function loadTable(data) {
-        $scope.sourceClusters = data;
+        $scope.sourceClusters = enrichClusters(data);
         $scope.tableParams = new NgTableParams({
             page : 1,
             count : 10

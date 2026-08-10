@@ -11,9 +11,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Matchers.isA;
@@ -50,14 +49,19 @@ public class MigrationPartialSuccessStateTest extends AbstractMigrationStateTest
 
     @Test
     public void testSingleThreadProcess() throws Exception {
-        // single-thread executor with CallerRunsPolicy will run serially eventually
-        when(migrationCluster.getMigrationExecutor()).thenReturn(new ThreadPoolExecutor(1, 1,
-                0L, TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<>(1), new ThreadPoolExecutor.CallerRunsPolicy()));
+        // single worker thread + unbounded queue: tasks run serially on one pool thread.
+        // CallerRunsPolicy with a tiny queue is NOT single-threaded — submitter may run tasks concurrently.
+        ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+        when(migrationCluster.getMigrationExecutor()).thenReturn(singleThreadExecutor);
         partialSuccessState = new MigrationPartialSuccessState(migrationCluster);
 
         int failCnt = 4;
         shardResult(failCnt);
+        // failed shards are retrying: step not terminated yet, so refresh() won't treat them as final failure
+        for (MigrationShard migrationShard : migrationCluster.getMigrationShards()) {
+            ShardMigrationResult result = migrationShard.getShardMigrationResult();
+            when(result.stepTerminated(ShardMigrationStep.MIGRATE_NEW_PRIMARY_DC)).thenReturn(false);
+        }
         AtomicInteger retryCnt = new AtomicInteger(0);
 
         for (MigrationShard migrationShard : migrationCluster.getMigrationShards()) {
@@ -91,6 +95,7 @@ public class MigrationPartialSuccessStateTest extends AbstractMigrationStateTest
         waitConditionUntilTimeOut(() -> retryCnt.get() >= failCnt);
         verify(migrationCluster, Mockito.timeout(3000).times(1)).updateStat(isA(MigrationPublishState.class));
         verify(migrationCluster, Mockito.timeout(3000).times(1)).process();
+        singleThreadExecutor.shutdown();
     }
 
     @Test

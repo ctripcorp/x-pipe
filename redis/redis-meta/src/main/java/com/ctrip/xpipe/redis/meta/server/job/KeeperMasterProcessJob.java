@@ -8,11 +8,13 @@ import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.KeeperMasterCheckNotAsExpectedException;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -30,6 +32,7 @@ public class KeeperMasterProcessJob extends AbstractCommand<Void> implements Req
 	private Executor executors;
 	private List<KeeperMeta> keepers;
 	private RouteMeta routeForActiveKeeper;
+	private Map<KeeperMeta, KeeperState> keeperRoles;
 
 
 	public KeeperMasterProcessJob(Long clusterId,
@@ -40,6 +43,19 @@ public class KeeperMasterProcessJob extends AbstractCommand<Void> implements Req
                                   Pair<String, Integer> activeKeeperMaster,
                                   SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool,
 								  ScheduledExecutorService scheduled, Executor executors){
+		this(clusterId, shardId, keepers, routeForActiveKeeper, dcMetaCache, activeKeeperMaster,
+				clientPool, scheduled, executors, null);
+	}
+
+	public KeeperMasterProcessJob(Long clusterId,
+                                  Long shardId,
+								  List<KeeperMeta> keepers,
+								  RouteMeta routeForActiveKeeper,
+                                  DcMetaCache dcMetaCache,
+                                  Pair<String, Integer> activeKeeperMaster,
+                                  SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool,
+								  ScheduledExecutorService scheduled, Executor executors,
+								  Map<KeeperMeta, KeeperState> keeperRoles){
 		this.clusterDbId = clusterId;
 		this.shardDbId = shardId;
 		this.keepers = keepers;
@@ -49,6 +65,7 @@ public class KeeperMasterProcessJob extends AbstractCommand<Void> implements Req
 		this.clientPool = clientPool;
 		this.scheduled = scheduled;
 		this.executors = executors;
+		this.keeperRoles = keeperRoles;
 	}
 
 	@Override
@@ -60,7 +77,9 @@ public class KeeperMasterProcessJob extends AbstractCommand<Void> implements Req
 	protected void doExecute() throws CommandExecutionException {
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 		KeeperMasterCheckJob checkJob = new KeeperMasterCheckJob(clusterDbId, shardDbId, dcMetaCache, activeKeeperMaster, clientPool, executors, scheduled);
-		KeeperStateChangeJob changeJob = new KeeperStateChangeJob(keepers, activeKeeperMaster, routeForActiveKeeper, clientPool, scheduled, executors);
+		KeeperStateChangeJob changeJob = new KeeperStateChangeJob(keepers, activeKeeperMaster, routeForActiveKeeper,
+				clientPool, KeeperStateChangeJob.DEFAULT_DELAY_BASE_MILLI, KeeperStateChangeJob.DEFAULT_RETRY_TIMES,
+				scheduled, executors, keeperRoles);
 
 		chain.add(checkJob);
 		chain.add(changeJob);

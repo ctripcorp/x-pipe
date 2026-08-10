@@ -20,7 +20,9 @@ import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServerRefreshPeerMaster
 import com.ctrip.xpipe.redis.meta.server.impl.DefaultMetaServersTest;
 import com.ctrip.xpipe.redis.meta.server.job.ApplierStateChangeJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJobTest;
+import com.ctrip.xpipe.redis.meta.server.job.KeeperMasterProcessJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJobTest;
+import com.ctrip.xpipe.redis.meta.server.job.TfsKeeperStateChangeJobTest;
 import com.ctrip.xpipe.redis.meta.server.job.PeerMasterAdjustJobTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.DefaultKeeperStateChangeHandlerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.DefaultApplierStateChangeHandlerTest;
@@ -33,7 +35,10 @@ import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainer
 import com.ctrip.xpipe.redis.meta.server.keeper.container.DefaultKeeperContainerServiceTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperActiveElectAlgorithmManagerTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.DefaultKeeperElectorManagerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperRoleAssignerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperElectReElectServiceTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.MultiPathKeeperElectorManagerTest;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.StrategyAwareKeeperActiveElectAlgorithmTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.UserDefinedPriorityKeeperActiveElectAlgorithmTest;
 import com.ctrip.xpipe.redis.meta.server.keeper.keepermaster.impl.*;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManagerTest;
@@ -47,6 +52,12 @@ import com.ctrip.xpipe.redis.meta.server.meta.impl.DefaultDcMetaCacheTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoEditorTest;
 import com.ctrip.xpipe.redis.meta.server.rest.ForwardInfoTest;
 import com.ctrip.xpipe.redis.meta.server.service.console.ConsoleServiceImplTest;
+import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfigTfsTest;
+import com.ctrip.xpipe.redis.meta.server.tfs.HttpTfsGatewayTest;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsDirPathResolverTest;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsForceCloseDirCommandTest;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsGatewayFactoryTest;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsPrepareReleaseCommandTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -77,6 +88,9 @@ import org.junit.runners.Suite.SuiteClasses;
 	CurrentMetaTest.class, 
 	UserDefinedPriorityKeeperActiveElectAlgorithmTest.class,
 	DefaultKeeperActiveElectAlgorithmManagerTest.class,
+	StrategyAwareKeeperActiveElectAlgorithmTest.class,
+	KeeperRoleAssignerTest.class,
+	KeeperElectReElectServiceTest.class,
 	DefaultKeeperElectorManagerTest.class,
 	DefaultApplierElectorManagerTest.class,
 	MultiPathKeeperElectorManagerTest.class,
@@ -93,6 +107,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultKeeperStateControllerTest.class,
 	DefaultApplierStateControllerTest.class,
 	KeeperStateChangeJobTest.class,
+	KeeperMasterProcessJobTest.class,
+	TfsKeeperStateChangeJobTest.class,
 	ApplierStateChangeJobTest.class,
 	DefaultKeeperStateChangeHandlerTest.class,
 	DefaultApplierStateChangeHandlerTest.class,
@@ -120,10 +136,17 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefaultMasterChooserManagerTest.class,
 	ClusterShardCachedNewMasterChooserTest.class,
 	BecomePrimaryActionTest.class,
+	AbstractChangePrimaryDcActionMakeKeepersOkTest.class,
 	DefaultKeeperContainerServiceTest.class,
 	DefaultApplierContainerServiceTest.class,
 	ConsoleServiceImplTest.class,
-	DefaultRedisGtidCollectorTest.class
+	DefaultRedisGtidCollectorTest.class,
+	TfsDirPathResolverTest.class,
+	TfsForceCloseDirCommandTest.class,
+	TfsGatewayFactoryTest.class,
+	HttpTfsGatewayTest.class,
+	TfsPrepareReleaseCommandTest.class,
+	DefaultMetaServerConfigTfsTest.class
 })
 public class AllTests {
 

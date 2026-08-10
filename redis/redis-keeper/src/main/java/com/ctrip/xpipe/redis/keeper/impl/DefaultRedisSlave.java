@@ -5,7 +5,7 @@ import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.api.server.PARTIAL_STATE;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.CAPA;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
@@ -219,14 +219,14 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public ChannelFuture writeFile(DefaultReferenceFileRegion referenceFileRegion) {
+	public ChannelFuture writeFile(ReferenceFileRegion referenceFileRegion) {
 		if (null != fsyncRateLimiter && referenceFileRegion.count() > 0) {
 			fsyncRateLimiter.acquire((int)Math.min(Integer.MAX_VALUE, referenceFileRegion.count()));
 		}
 		return doWriteFile(referenceFileRegion);
 	}
 
-	private ChannelFuture doWriteFile(DefaultReferenceFileRegion referenceFileRegion) {
+	private ChannelFuture doWriteFile(ReferenceFileRegion referenceFileRegion) {
 
 		closeState.makeSureNotClosed();
 
@@ -395,7 +395,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	@Override
-	public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
+	public ChannelFuture onCommand(Object cmd) {
 		closeState.makeSureOpen();
 		getLogger().debug("[onCommand]{}, {}", this, cmd);
 

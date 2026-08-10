@@ -119,4 +119,19 @@ public interface MetaStore {
 	UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoXsync(String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, String rdbReplId, String rdbMasterUuid, GtidSet rdbGtidExecuted, GtidSet rdbGtidLost, long backlogBeginOffset, long backlogEndOffset, long indexedOffsetBacklog, GtidSet indexedGtidSet) throws IOException;
 
 	GtidCmdFilter generateGtidCmdFilter();
+
+	/**
+	 * Release async file handles held by this MetaStore.
+	 * Default no-op for implementations that do not hold resources.
+	 */
+	default void close() throws IOException {
+	}
+
+	/**
+	 * Close handles and delete persisted meta files.
+	 * Default implementation only releases handles.
+	 */
+	default void destroy() throws Exception {
+		close();
+	}
 }

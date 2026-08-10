@@ -85,6 +85,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
     @Override
     protected void doDispose() throws Exception {
         this.searcherExecutor.shutdown();
+        containerResourceManager.shutdownAsyncFileSystem();
     }
 
     @Override
@@ -127,7 +128,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
                     File baseDir = getReplicationStoreDir(keeperMeta);
                     RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperTransMeta.getReplId(), keeperMeta,
                             keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager,
-                            redisOpParser, replDelayConfigCache);
+                            redisOpParser, containerResourceManager.getAsyncFileSystem(), replDelayConfigCache);
 
                     try {
                         register(redisKeeperServer);
@@ -341,7 +342,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
 
         RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(replId, keeper, keeperConfig,
                 baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager,
-                redisOpParser, replDelayConfigCache);
+                redisOpParser, containerResourceManager.getAsyncFileSystem(), replDelayConfigCache);
 
         register(redisKeeperServer);
         return redisKeeperServer;
@@ -358,6 +359,9 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
     private File getReplicationStoreDir(KeeperMeta keeperMeta) {
         String baseDir = keeperContainerConfig.getReplicationStoreDir();
         baseDir = StringUtils.trimTrailingCharacter(baseDir, '/');
+        if (keeperContainerConfig.isTfsMode()) {
+            return new File(baseDir);
+        }
         return new File(String.format("%s/replication_store_%s", baseDir, keeperMeta.getPort()));
     }
 

@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.health.HealthState;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import org.junit.Before;
@@ -22,9 +23,12 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.File;
 import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 /**
@@ -79,9 +83,11 @@ public class KeeperContainerServiceTest extends AbstractTest {
         someKeeperTransMeta.setKeeperMeta(someKeeperMeta);
 
         when(keeperContainerConfig.getReplicationStoreDir()).thenReturn(System.getProperty("user.dir"));
+        when(keeperContainerConfig.isTfsMode()).thenReturn(false);
         when(keeperContainerConfig.keeperLeaderResetMinInterval()).thenReturn(10);
         when(containerResourceManager.isPortFree(anyInt())).thenReturn(true);
         when(containerResourceManager.applyPort(anyInt())).thenReturn(true);
+        when(containerResourceManager.getAsyncFileSystem()).thenReturn(mock(AsyncFileSystem.class));
 
         ReflectionTestUtils.setField(ComponentRegistryHolder.class, "componentRegistry", componentRegistry);
     }
@@ -127,6 +133,32 @@ public class KeeperContainerServiceTest extends AbstractTest {
         }
 
         assertEquals(someException, cause);
+    }
+
+    @Test
+    public void testReplicationStoreDirNormalModeContainsPortLayer() {
+        when(keeperContainerConfig.isTfsMode()).thenReturn(false);
+        String storeDir = System.getProperty("user.dir") + "/rsd/";
+        when(keeperContainerConfig.getReplicationStoreDir()).thenReturn(storeDir);
+
+        File baseDir = ReflectionTestUtils.invokeMethod(keeperContainerService, "getReplicationStoreDir", someKeeperMeta);
+        String fullStorePath = new File(baseDir, someReplId.toString()).getPath();
+
+        assertTrue(fullStorePath.contains("replication_store_" + somePort + File.separator + "repl_"));
+        assertTrue(fullStorePath.endsWith(someReplId.toString()));
+    }
+
+    @Test
+    public void testReplicationStoreDirTfsModeDropsPortLayer() {
+        when(keeperContainerConfig.isTfsMode()).thenReturn(true);
+        String storeDir = System.getProperty("user.dir") + "/rsd/";
+        when(keeperContainerConfig.getReplicationStoreDir()).thenReturn(storeDir);
+
+        File baseDir = ReflectionTestUtils.invokeMethod(keeperContainerService, "getReplicationStoreDir", someKeeperMeta);
+        String fullStorePath = new File(baseDir, someReplId.toString()).getPath();
+
+        assertFalse(fullStorePath.contains("replication_store_"));
+        assertEquals(new File(storeDir.trim().replaceAll("/+$", ""), someReplId.toString()).getPath(), fullStorePath);
     }
 
     @Test

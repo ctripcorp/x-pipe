@@ -5,6 +5,7 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
@@ -16,6 +17,7 @@ import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MathUtil;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -236,6 +238,13 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             RedisTbl keeper = createRedisTbl(new Pair<>(keeperBasicInfo.getHost(), keeperBasicInfo.getPort()), XPipeConsoleConstant.ROLE_KEEPER);
             keeper.setKeepercontainerId(keeperBasicInfo.getKeeperContainerId());
             keeper.setDcClusterShardId(dcClusterShardTbl.getDcClusterShardId());
+            KeepercontainerTbl keepercontainer = keeperContainerService.find(keeperBasicInfo.getKeeperContainerId());
+            if (keepercontainer != null) {
+                int priority = KeeperDiskTypeUtils.isTfs(keepercontainer.getKeepercontainerDiskType())
+                        ? consoleConfig.getKeeperDefaultPriorityTfs()
+                        : consoleConfig.getKeeperDefaultPriorityBm();
+                keeper.setKeeperPriority(priority);
+            }
             insertKeepers.add(keeper);
         });
 
@@ -518,7 +527,31 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         List<RedisTbl> left = (List<RedisTbl>) setOperator.intersection(RedisTbl.class, origin, target,
                 redisComparator);
 
+        mergeKeeperPriority(left, target);
+
         updateRedises(toCreate, toDelete, left);
+    }
+
+    private void mergeKeeperPriority(List<RedisTbl> left, List<RedisTbl> target) {
+        if (left == null || left.isEmpty() || target == null) {
+            return;
+        }
+        Map<Long, RedisTbl> targetById = new HashMap<>();
+        for (RedisTbl redis : target) {
+            Long id = redis.getId();
+            if (id != null && id > 0) {
+                targetById.put(id, redis);
+            }
+        }
+        for (RedisTbl redis : left) {
+            if (!XPipeConsoleConstant.ROLE_KEEPER.equals(redis.getRedisRole())) {
+                continue;
+            }
+            RedisTbl updated = targetById.get(redis.getId());
+            if (updated != null) {
+                redis.setKeeperPriority(updated.getKeeperPriority());
+            }
+        }
     }
 
     private void updateRedises(final List<RedisTbl> toCreate, final List<RedisTbl> toDelete, final List<RedisTbl> left) {
@@ -553,6 +586,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             } else {
                 proto.setRedisRole(defaultRole);
             }
+            if (XPipeConsoleConstant.ROLE_KEEPER.equals(proto.getRedisRole())) {
+                proto.setKeeperPriority(redis.getKeeperPriority());
+            }
             if (null != dcClusterShard) {
                 proto.setDcClusterShardId(dcClusterShard.getDcClusterShardId());
             }
@@ -575,31 +611,42 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
 
     // Use protected for Unit Test available
     protected void validateKeepers(List<RedisTbl> keepers) {
-        if (2 != keepers.size()) {
-            if (0 == keepers.size()) {
-                return;
-            }
-            throw new BadRequestException("Keepers' size must be 0 or 2");
+        if (keepers == null || keepers.isEmpty()) {
+            return;
+        }
+        int count = keepers.size();
+        if (count < 2) {
+            throw new BadRequestException("Keepers' size must be 0 or at least 2");
         }
 
-        if (keepers.get(0).getKeepercontainerId() == keepers.get(1).getKeepercontainerId()) {
-            throw new BadRequestException("Keepers should be assigned to different keepercontainer" + keepers);
-        }
-
-        List<RedisTbl> originalKeepers = RedisDao.findWithRole(findAllByDcClusterShard(keepers.get(0).getDcClusterShardId()), XPipeConsoleConstant.ROLE_KEEPER);
-        Set<Long> keepercontainerAvialableZones = new HashSet<>();
-        for (int cnt = 0; cnt != 2; ++cnt) {
-            final RedisTbl keeper = keepers.get(cnt);
+        Map<Boolean, Long> mediumCount = new HashMap<>();
+        Set<Long> usedKeeperContainers = new HashSet<>();
+        for (RedisTbl keeper : keepers) {
             KeepercontainerTbl keepercontainer = keeperContainerService.find(keeper.getKeepercontainerId());
             if (null == keepercontainer) {
                 throw new BadRequestException("Cannot find related keepercontainer");
             }
+            boolean isTfs = KeeperDiskTypeUtils.isTfs(keepercontainer.getKeepercontainerDiskType());
+            mediumCount.merge(isTfs, 1L, Long::sum);
+            if (!usedKeeperContainers.add(keeper.getKeepercontainerId())) {
+                throw new BadRequestException("Keepers should be assigned to different keepercontainer" + keepers);
+            }
+        }
+        for (Long mediumKeeperCount : mediumCount.values()) {
+            if (mediumKeeperCount > 2) {
+                throw new BadRequestException("At most 2 keepers per disk medium");
+            }
+        }
+
+        List<RedisTbl> originalKeepers = RedisDao.findWithRole(findAllByDcClusterShard(keepers.get(0).getDcClusterShardId()), XPipeConsoleConstant.ROLE_KEEPER);
+        Set<Long> keepercontainerAvialableZones = new HashSet<>();
+        for (RedisTbl keeper : keepers) {
+            KeepercontainerTbl keepercontainer = keeperContainerService.find(keeper.getKeepercontainerId());
             if (!keeper.getRedisIp().equals(keepercontainer.getKeepercontainerIp())) {
                 throw new BadRequestException("Keeper's ip should be equal to keepercontainer's ip");
             }
             if(keepercontainer.getAzId() != 0 && !keepercontainerAvialableZones.add(keepercontainer.getAzId())) {
-                logger.error("Keepers {}:{} and {}:{} are in the same available zone {}", keepers.get(0).getRedisIp(), keepers.get(0).getRedisPort(),
-                        keepers.get(1).getRedisIp(), keepers.get(1).getRedisPort(), keepercontainer.getAzId());
+                logger.error("Keepers in the same available zone {}", keepercontainer.getAzId());
             }
 
             // port check

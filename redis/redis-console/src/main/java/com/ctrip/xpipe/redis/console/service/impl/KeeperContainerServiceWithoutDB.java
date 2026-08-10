@@ -108,7 +108,7 @@ public class KeeperContainerServiceWithoutDB implements KeeperContainerService {
     }
 
     @Override
-    public List<KeepercontainerTbl> findBestKeeperContainersByDcCluster(String dcName, String clusterName, boolean skipAzFilter) {
+    public List<KeepercontainerTbl> filterKeeperContainersByAz(List<KeepercontainerTbl> keeperContainers, String dcName) {
         throw new UnsupportedOperationException();
     }
 
