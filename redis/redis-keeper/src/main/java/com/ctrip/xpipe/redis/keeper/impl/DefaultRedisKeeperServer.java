@@ -196,10 +196,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		ckStore = new CKStore(this.replId,this.redisOpParser,String.format("%s:%d",currentKeeperMeta.getIp(),currentKeeperMeta.getPort()),keeperConfig);
 	}
 
-	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
+	protected ReplicationStoreManager createReplicationStoreManager(CKStore ckStore,NioEventLoopGroup masterEventLoopGroup, KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
 																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor,
 																	ScheduledExecutorService scheduled) {
-		return new DefaultReplicationStoreManager.ClusterAndShardCompatible(this.ckStore,keeperConfig, replId, currentKeeperMeta.getId(),
+		return new DefaultReplicationStoreManager.ClusterAndShardCompatible(ckStore,masterEventLoopGroup,keeperConfig, replId, currentKeeperMeta.getId(),
 				baseDir, keeperMonitor, redisOpParser, syncRateManager, scheduled).setDeprecatedClusterAndShard(clusterId, shardId);
 	}
 
@@ -247,17 +247,18 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		clientExecutors = Executors.newSingleThreadExecutor(KeeperReplIdAwareThreadFactory.create(replId, "RedisClient-" + threadPoolName));
 		scheduled = Executors.newScheduledThreadPool(DEFAULT_SCHEDULED_CORE_POOL_SIZE , KeeperReplIdAwareThreadFactory.create(replId, "sch-" + threadPoolName));
 
-		replicationStoreManager = createReplicationStoreManager(keeperConfig, clusterId, shardId, replId,
-				currentKeeperMeta, baseDir, keeperMonitor, scheduled);
-		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
-		replicationStoreManager.initialize();
 		bossGroup = new NioEventLoopGroup(DEFAULT_BOSS_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "boss-" + threadPoolName));
 		workerGroup = new NioEventLoopGroup(DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, KeeperReplIdAwareThreadFactory.create(replId, "work-" + threadPoolName));
 		masterEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "master-" + threadPoolName));
 		rdbOnlyEventLoopGroup = new NioEventLoopGroup(DEFAULT_RDB_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "rdbOnly-" + threadPoolName));
 		masterConfigEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_CONFIG_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "masterConfig-" + threadPoolName));
 
-		this.ckStore.setMasterEventLoop(masterEventLoopGroup);
+		replicationStoreManager = createReplicationStoreManager(ckStore,masterEventLoopGroup,keeperConfig, clusterId, shardId, replId,
+				currentKeeperMeta, baseDir, keeperMonitor, scheduled);
+		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
+		replicationStoreManager.initialize();
+
+
 		try {
 			ckStore.start();
 		} catch (Throwable th) {

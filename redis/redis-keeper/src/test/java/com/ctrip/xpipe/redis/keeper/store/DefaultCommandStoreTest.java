@@ -674,10 +674,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		Mockito.when(gtidCmdFilter.gtidSetContains(anyString(), anyLong())).thenReturn(false);
 		TestKeeperConfig keeperConfig = createRotationTestKeeperConfig(flush);
 		Mockito.when(ckStore.getKeeperConfig()).thenReturn(keeperConfig);
-		Mockito.when(ckStore.getMasterEventLoop()).thenReturn(nioEventLoopGroup);
 
 		commandTemplate = new File(getTestFileDir(), getTestName()+"_");
-		commandStore = new DefaultCommandStore(ckStore, keeperConfig,
+		commandStore = new DefaultCommandStore(ckStore,nioEventLoopGroup, keeperConfig,
 				commandTemplate, smallMaxFileSize,() -> false, () -> 3600, 0, () -> 20,
 				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,  // 启用滑动窗口
 				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter,true

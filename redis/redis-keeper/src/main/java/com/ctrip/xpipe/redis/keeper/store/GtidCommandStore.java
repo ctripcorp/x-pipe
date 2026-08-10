@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,21 +27,11 @@ public class GtidCommandStore extends DefaultCommandStore implements CommandStor
 
     private static final Logger logger = LoggerFactory.getLogger(GtidCommandStore.class);
 
-    public GtidCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-                            int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
-                            CommandReaderWriterFactory cmdReaderWriterFactory,
-                            KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter, boolean buildIndex) throws IOException {
-        this(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified,
-                minTimeMilliToGcAfterModified, fileNumToKeep, commandReaderFlyingThreshold, () -> true,
-                cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex);
-    }
-
-
-    public GtidCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+    public GtidCommandStore(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, KeeperConfig keeperConfig, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
                             int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
                             BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
                             KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter cmdFilter, boolean buildIndex) throws IOException {
-        super(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+        super(ckStore, masterEventLoopGroup,keeperConfig, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
                 commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
                 cmdReaderWriterFactory, keeperMonitor, redisOpParser, cmdFilter, buildIndex);
     }

@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.MoreExecutors;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,12 +73,10 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private CKStore ckStore;
 
+    private NioEventLoopGroup masterEventLoopGroup;
+
     private final ScheduledExecutorService commandNotifyScheduler;
 
-    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
-                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) {
-        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, null, null);
-    }
 
     public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
@@ -100,18 +99,13 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         this.commandNotifyScheduler = commandNotifyScheduler;
     }
 
-    public DefaultReplicationStoreManager(CKStore ckStore, KeeperConfig keeperConfig, ReplId replId,
-                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
-                                          SyncRateManager syncRateManager, RedisOpParser redisOpParser) {
-        this(ckStore, keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, null);
-    }
-
-    public DefaultReplicationStoreManager(CKStore ckStore, KeeperConfig keeperConfig, ReplId replId,
+    public DefaultReplicationStoreManager(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
                                           SyncRateManager syncRateManager, RedisOpParser redisOpParser,
                                           ScheduledExecutorService commandNotifyScheduler) {
         this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler);
         this.ckStore = ckStore;
+        this.masterEventLoopGroup = masterEventLoopGroup;
     }
 
     @Override
@@ -199,7 +193,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid,
                                                       KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
-        return new GtidReplicationStore(this.ckStore,storeBaseDir,keeperConfig,keeperRunid, keeperMonitor, redisOpParser,
+        return new GtidReplicationStore(this.ckStore,this.masterEventLoopGroup,storeBaseDir,keeperConfig,keeperRunid, keeperMonitor, redisOpParser,
                 syncRateManager, commandNotifyScheduler);
     }
 
@@ -356,16 +350,10 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         private ShardId deprecatedShardId;
 
-        public ClusterAndShardCompatible(CKStore ckStore,KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
-                                         File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
-                                         SyncRateManager syncRateManager) {
-            this(ckStore, keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, redisOpParser, syncRateManager, null);
-        }
-
-        public ClusterAndShardCompatible(CKStore ckStore,KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
+        public ClusterAndShardCompatible(CKStore ckStore,NioEventLoopGroup masterEventLoopGroup, KeeperConfig keeperConfig, ReplId replId, String keeperRunid,
                                          File baseDir, KeeperMonitor keeperMonitor, RedisOpParser redisOpParser,
                                          SyncRateManager syncRateManager, ScheduledExecutorService commandNotifyScheduler) {
-            super(ckStore,keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler);
+            super(ckStore,masterEventLoopGroup,keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler);
             this.keeperBaseDir = baseDir;
             this.replId = replId;
         }

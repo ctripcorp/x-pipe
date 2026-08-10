@@ -11,6 +11,7 @@ import com.ctrip.xpipe.utils.CloseState;
 import com.google.common.io.Files;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,22 +41,12 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 				() -> true, cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, keeperConfig);
 	}
 
-	public DefaultCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
-							   CommandReaderWriterFactory cmdReaderWriterFactory,
-							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex
+	public DefaultCommandStore(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, KeeperConfig keeperConfig, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+	                           int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
+	                           BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
+	                           KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex
 	) throws IOException {
-		this(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified,
-				fileNumToKeep, commandReaderFlyingThreshold, () -> true,
-				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex);
-	}
-
-	public DefaultCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file, int maxFileSize, BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
-							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
-							   BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
-							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex
-	) throws IOException {
-		super(ckStore, keeperConfig, file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+		super(ckStore, masterEventLoopGroup, keeperConfig, file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
 				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
 				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex);
 		this.recordWrongStreamConfig = recordWrongStreamConfig;
@@ -75,7 +66,7 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 							   BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
 							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter,
 							   KeeperConfig keeperConfig) throws IOException {
-		super(null, keeperConfig, file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+		super(null,null, keeperConfig, file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
 				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
 				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, true);
 	}
