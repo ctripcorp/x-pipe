@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
+import com.ctrip.xpipe.api.observer.Event;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.junit.After;
@@ -39,6 +41,8 @@ public class TimerSlidingWindowTest {
     private OffsetNotifier offsetNotifier;
     @Mock
     private NioEventLoopGroup eventLoopGroup;
+    @Mock
+    private EventLoop eventLoop;
 
     private TimerSlidingWindow window;
     // 通过数组控制 mock 的 getRate() 返回值
@@ -67,7 +71,9 @@ public class TimerSlidingWindowTest {
 
         scheduledTasks.clear();
         scheduledFutures.clear();
-        when(eventLoopGroup.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
+        when(eventLoop.inEventLoop()).thenReturn(true);
+        when(eventLoopGroup.next()).thenReturn(eventLoop);
+        when(eventLoop.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
                 .thenAnswer(inv -> {
                     Runnable task = inv.getArgument(0);
                     scheduledTasks.add(task);
