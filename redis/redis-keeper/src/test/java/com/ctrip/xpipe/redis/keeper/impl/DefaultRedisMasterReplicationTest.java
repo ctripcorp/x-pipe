@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
-import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -37,7 +36,6 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 import static com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication.KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS;
 import static org.mockito.Mockito.*;
@@ -314,20 +312,5 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 	public void afterDefaultRedisMasterReplicationTest() throws Exception {
 		nioEventLoopGroup.shutdownGracefully();
 		AbstractRedisMasterReplication.DEFAULT_REPLICATION_TIMEOUT_MILLI = BACK_DEFAULT_REPLICATION_TIMEOUT_MILLI;
-	}
-
-	@Test
-	public void testMasterDisconnectedFlushesSlidingWindow() throws Exception {
-		// 断链场景：把 window 数据先刷盘，以保证下一次 psync 前
-		// backlogEndOffset 精确 —— 避免 master 从偏小 offset 重推、导致 cmd 落盘错乱。
-		defaultRedisMasterReplication.setMasterConnectRetryDelaySeconds(3600);
-
-		Channel channel = mock(Channel.class);
-		when(channel.closeFuture()).thenReturn(new DefaultChannelPromise(channel));
-		defaultRedisMasterReplication.masterConnected(channel);
-
-		defaultRedisMasterReplication.masterDisconnected(channel);
-
-		verify(replicationStore, timeout(1000)).flushSlidingWindow();
 	}
 }

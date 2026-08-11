@@ -491,7 +491,6 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
         RdbStore.Type rdbType = auxMap.containsKey(RdbConstant.REDIS_RDB_AUX_KEY_RORDB) ? RdbStore.Type.RORDB : RdbStore.Type.NORMAL;
         logger.info("[readAuxEnd][rdb] {}", rdbType);
         rdbStore.updateRdbType(rdbType);
-        getRedisMaster().getCurrentReplicationStore().flushSlidingWindow();
         doRdbTypeConfirm(rdbStore);
 
         if (null != rdbDumper.get()) {

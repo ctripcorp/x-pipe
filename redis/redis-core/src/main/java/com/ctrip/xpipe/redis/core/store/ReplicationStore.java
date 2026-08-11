@@ -32,6 +32,7 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException;
 	boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
 	long getCurReplStageReplOff();
+	long getCurReplStageReplOffWithFlush();
 	boolean increaseLost(GtidSet lost) throws IOException;
 
 	/**
@@ -76,6 +77,8 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	long backlogBeginOffset();
 
 	long backlogEndOffset();
+
+	long backlogEndOffsetWithFlush();
 
 	GtidSet getBeginGtidSet() throws IOException;
 

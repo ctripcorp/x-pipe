@@ -320,6 +320,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
+	public long getCurReplStageReplOffWithFlush() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public Pair<GtidSet, GtidSet> getGtidSet() {
 		throw new UnsupportedOperationException();
 	}
@@ -386,6 +391,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public long backlogEndOffset() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public long backlogEndOffsetWithFlush() {
 		throw new UnsupportedOperationException();
 	}
 
