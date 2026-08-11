@@ -91,7 +91,6 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
         super.masterDisconnected(channel);
         getRedisMaster().setMasterState(MASTER_STATE.REDIS_REPL_NONE);
 
-        getRedisMaster().getCurrentReplicationStore().flushSlidingWindow();
         long interval = System.currentTimeMillis() - connectedTime;
         long scheduleTime = masterConnectRetryDelaySeconds * 1000 - interval;
         if (scheduleTime < 0) {

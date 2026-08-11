@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
@@ -385,6 +386,91 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		ReflectionTestUtils.setField(store, "cmdStore", spyCmdStore);
 
 		store.flushSlidingWindow();
+	}
+
+	@Test
+	public void testBacklogEndOffsetWithFlushReturnsDefaultWhenCmdStoreNull() throws IOException {
+		// 未 confirm rdb → cmdStore 为 null，backlogEndOffsetWithFlush 应返回 DEFAULT_END_OFFSET，不抛 NPE
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(),
+				createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
+		Assert.assertNull(ReflectionTestUtils.getField(store, "cmdStore"));
+
+		long len = store.backlogEndOffsetWithFlush();
+		assertEquals(com.ctrip.xpipe.redis.core.store.ReplicationStoreMetaCommon.DEFAULT_END_OFFSET, len);
+	}
+
+	@Test
+	public void testBacklogEndOffsetWithFlushInvokesFlushBeforeRead() throws IOException {
+		// backlogEndOffsetWithFlush 必须在读 cmdStore.totalLength 之前触发 flushSlidingWindow，
+		// 用 InOrder 校验顺序 —— 这是防止 psync 重连时读到偏小 offset 的关键保障。
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(),
+				createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
+		store.getMetaStore().becomeActive();
+		beginRdb(store, 1);
+
+		CommandStore realCmdStore = (CommandStore) ReflectionTestUtils.getField(store, "cmdStore");
+		CommandStore spyCmdStore = Mockito.spy(realCmdStore);
+		Mockito.doAnswer(inv -> { /* nothing */ return null; }).when(spyCmdStore).flushSlidingWindow();
+		Mockito.when(spyCmdStore.totalLength()).thenReturn(9527L);
+		ReflectionTestUtils.setField(store, "cmdStore", spyCmdStore);
+
+		long len = store.backlogEndOffsetWithFlush();
+
+		assertEquals(9527L, len);
+		org.mockito.InOrder inOrder = Mockito.inOrder(spyCmdStore);
+		inOrder.verify(spyCmdStore).flushSlidingWindow();
+		inOrder.verify(spyCmdStore).totalLength();
+	}
+
+	@Test(expected = XpipeRuntimeException.class)
+	public void testBacklogEndOffsetWithFlushPropagatesFlushException() throws IOException {
+		// flushSlidingWindow 失败 → backlogEndOffsetWithFlush 必须上抛 RuntimeException，
+		// 而不是静默返回近似值，从而让上层 psync/rdb 元信息落地路径感知失败并重试。
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(),
+				createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
+		store.getMetaStore().becomeActive();
+		beginRdb(store, 1);
+
+		CommandStore realCmdStore = (CommandStore) ReflectionTestUtils.getField(store, "cmdStore");
+		CommandStore spyCmdStore = Mockito.spy(realCmdStore);
+		Mockito.doThrow(new IOException("io failed")).when(spyCmdStore).flushSlidingWindow();
+		ReflectionTestUtils.setField(store, "cmdStore", spyCmdStore);
+
+		store.backlogEndOffsetWithFlush();
+	}
+
+	@Test
+	public void testPsyncContinueFromTriggersBacklogEndOffsetWithFlush() throws IOException {
+		// psyncContinueFrom 是 psync 断线重连、新建 cmd stage 的元信息落地路径，
+		// 必须走 backlogEndOffsetWithFlush 让 metaStore 记录的分界点精确 —— 否则 psync 重推会错位。
+		store = Mockito.spy(new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(),
+				createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser));
+		store.getMetaStore().becomeActive();
+		beginRdb(store, 1);
+
+		Mockito.clearInvocations(store);
+		store.psyncContinueFrom("new-repl-id", 100);
+
+		Mockito.verify(store, Mockito.atLeastOnce()).backlogEndOffsetWithFlush();
+	}
+
+	@Test
+	public void testConfirmRdbGapAllowedTriggersBacklogEndOffsetWithFlush() throws IOException {
+		// confirmRdbGapAllowed 内部 rdbNextByte 依赖 backlogEndOffsetWithFlush 提供精确落盘偏移；
+		// 若走近似值，rdb 快照点会遗漏 pending 字节，恢复后回放丢命令。
+		store = Mockito.spy(new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(),
+				createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser));
+		store.getMetaStore().becomeActive();
+
+		int dataLen = 100;
+		RdbStore rdbStore = store.prepareRdb(randomKeeperRunid(), -1, new LenEofType(dataLen));
+		rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+		rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+
+		Mockito.clearInvocations(store);
+		store.confirmRdbGapAllowed(rdbStore);
+
+		Mockito.verify(store, Mockito.atLeastOnce()).backlogEndOffsetWithFlush();
 	}
 
 }

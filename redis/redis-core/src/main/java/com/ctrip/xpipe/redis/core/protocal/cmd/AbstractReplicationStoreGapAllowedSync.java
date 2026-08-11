@@ -46,7 +46,7 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 		if (proto != ReplStage.ReplProto.XSYNC) {
 			PsyncRequest psync = new PsyncRequest();
 			psync.setReplId(currentReplicationStore.getMetaStore().getCurReplStageReplId());
-			psync.setReplOff(currentReplicationStore.getCurReplStageReplOff() + 1);
+			psync.setReplOff(currentReplicationStore.getCurReplStageReplOffWithFlush() + 1);
 			return psync;
 		} else {
 			XsyncRequest xsync = new XsyncRequest();

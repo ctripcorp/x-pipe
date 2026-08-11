@@ -11,9 +11,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.Replconf;
 import com.ctrip.xpipe.redis.core.protocal.error.RedisError;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.redis.core.proxy.parser.DefaultProxyConnectProtocolParser;
-import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
-import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
@@ -25,13 +23,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.KEY_PROXYED_REDIS_COMMAND_TIME_OUT_MILLI;
 import static com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication.KEY_MASTER_CONNECT_RETRY_DELAY_SECONDS;
@@ -154,26 +148,5 @@ public class AbstractRedisMasterReplicationTest extends AbstractRedisKeeperTest 
             }
         });
         replconf.future().await();
-    }
-
-    @Test
-    public void testReadAuxEndFlushesSlidingWindowBeforeConfirm() throws Exception {
-        // 首次 rdb 完成 → readAuxEnd 内需要在 confirmRdb 之前把可能存在的 window 数据刷盘，
-        // 保证 rdbNextByte（confirmRdbGapAllowed 里 backlogEndOffset()） 反映精确 offset。
-        when(redisKeeperServer.getKeeperConfig()).thenReturn(new com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig());
-        AbstractRedisMasterReplication replication = spy(new DefaultRedisMasterReplication(redisMaster, redisKeeperServer,
-                nioEventLoopGroup, scheduled, mock(KeeperResourceManager.class)));
-        // 拦截真正的 confirm 分支，避免走真实 rdb / store 逻辑
-        doNothing().when(replication).doRdbTypeConfirm(any(RdbStore.class));
-
-        RdbStore rdbStore = mock(RdbStore.class);
-        Map<String, String> auxMap = new HashMap<>();
-
-        replication.readAuxEnd(rdbStore, auxMap);
-
-        // 校验 flushSlidingWindow 在 doRdbTypeConfirm 之前调用
-        InOrder inOrder = inOrder(replicationStore, replication);
-        inOrder.verify(replicationStore).flushSlidingWindow();
-        inOrder.verify(replication).doRdbTypeConfirm(rdbStore);
     }
 }
