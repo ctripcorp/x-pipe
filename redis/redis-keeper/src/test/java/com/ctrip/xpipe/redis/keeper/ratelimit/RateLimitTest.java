@@ -96,6 +96,11 @@ public class RateLimitTest extends AbstractFakeRedisTest {
 
         redisKeeperServer2.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", fakeRedisServer.getPort()));
 
+        // Same AsyncFS timing as RestartAsActive: @Before lastReplDownTime may already exceed
+        // replDownSafeIntervalMilli before keeper1's first PSYNC to keeper2.
+        ((DefaultReplicationStoreStats) redisKeeperServer1.getKeeperMonitor().getReplicationStoreStats())
+                .setLastReplDownTime(System.currentTimeMillis() - OsUtils.APPROXIMATE__RESTART_TIME_MILLI);
+
         redisKeeperServer1.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", redisKeeperServer2.getListeningPort()));
         waitRedisKeeperServerConnected(redisKeeperServer2);
         waitRedisKeeperServerConnected(redisKeeperServer1);

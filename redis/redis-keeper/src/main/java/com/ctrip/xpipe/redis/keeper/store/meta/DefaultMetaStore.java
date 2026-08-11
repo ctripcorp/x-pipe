@@ -358,9 +358,10 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 	}
 
 	@Override
-	public ReplicationStoreMeta psyncContinue(String newReplId, long backlogOff) throws IOException {
+	public Pair<ReplicationStoreMeta, ReplicationStoreMeta> preparePsyncContinue(String newReplId, long backlogOff) {
 		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			ReplicationStoreMeta expected = metaRef.get();
+			ReplicationStoreMeta metaDup = new ReplicationStoreMeta(expected);
 
 			ReplStage curReplStage = metaDup.getCurReplStage();
 			if (curReplStage.getProto() != ReplStage.ReplProto.PSYNC) {
@@ -368,10 +369,9 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 			}
 
 			String currentReplId = curReplStage.getReplId();
-
-			if(ObjectUtils.equals(currentReplId, newReplId)){
+			if (ObjectUtils.equals(currentReplId, newReplId)) {
 				logger.info("[shiftReplicationId][repidEqual]{}", newReplId);
-				return metaDup;
+				return null;
 			}
 
 			// backlogOff - curReplStage.beginOffsetBacklog == secondReplidOffset - replStage.beginOffsetRepl
@@ -381,15 +381,27 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 			curReplStage.setSecondReplIdOffset(secondReplidOffset);
 			curReplStage.updateReplId(newReplId);
 
-			saveMeta(metaDup);
-			return metaDup;
+			return Pair.from(expected, metaDup);
 		}
 	}
 
 	@Override
-	public ReplicationStoreMeta switchToPsync(String replId, long beginReplOffset, long backlogOff) throws IOException {
+	public ReplicationStoreMeta psyncContinue(String newReplId, long backlogOff) throws IOException {
 		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = preparePsyncContinue(newReplId, backlogOff);
+			if (prepared == null) {
+				return dupReplicationStoreMeta();
+			}
+			saveMeta(prepared.getValue());
+			return prepared.getValue();
+		}
+	}
+
+	@Override
+	public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareSwitchToPsync(String replId, long beginReplOffset, long backlogOff) {
+		synchronized (metaRef) {
+			ReplicationStoreMeta expected = metaRef.get();
+			ReplicationStoreMeta metaDup = new ReplicationStoreMeta(expected);
 
 			ReplStage curReplStage = metaDup.getCurReplStage();
 			if (curReplStage.getProto() != ReplStage.ReplProto.XSYNC) {
@@ -402,8 +414,17 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 			metaDup.setPrevReplStage(curReplStage);
 			metaDup.setCurReplStage(newReplStage);
 
-			saveMeta(metaDup);
-			return metaDup;
+			return Pair.from(expected, metaDup);
+		}
+	}
+
+	@Override
+	public ReplicationStoreMeta switchToPsync(String replId, long beginReplOffset, long backlogOff) throws IOException {
+		synchronized (metaRef) {
+			Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
+					prepareSwitchToPsync(replId, beginReplOffset, backlogOff);
+			saveMeta(prepared.getValue());
+			return prepared.getValue();
 		}
 	}
 

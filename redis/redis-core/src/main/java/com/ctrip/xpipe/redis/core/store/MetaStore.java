@@ -136,7 +136,21 @@ public interface MetaStore {
 
 	ReplicationStoreMeta psyncContinue(String newReplId, long backlogOff) throws IOException;
 
+	/**
+	 * Build psyncContinue meta without persisting. Used by Cmd-first protocol update (Phase H2.B2).
+	 *
+	 * @return Pair(expectedCurrent, preparedFuture), or {@code null} when newReplId equals current (no-op)
+	 */
+	Pair<ReplicationStoreMeta, ReplicationStoreMeta> preparePsyncContinue(String newReplId, long backlogOff);
+
 	ReplicationStoreMeta switchToPsync(String replId, long beginReplOffset, long backlogOff) throws IOException;
+
+	/**
+	 * Build switchToPsync meta without persisting. Used by Cmd-first protocol switch (Phase H2.B2).
+	 *
+	 * @return Pair(expectedCurrent, preparedFuture); see {@link #prepareRdbConfirm}.
+	 */
+	Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareSwitchToPsync(String replId, long beginReplOffset, long backlogOff);
 
 	ReplicationStoreMeta rdbConfirmXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException;
 

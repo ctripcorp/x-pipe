@@ -215,7 +215,17 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> preparePsyncContinue(String newReplId, long backlogOff) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta switchToPsync(String replId, long replOff, long backlogOff) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareSwitchToPsync(String replId, long beginReplOffset, long backlogOff) {
 				throw new UnsupportedOperationException();
 			}
 

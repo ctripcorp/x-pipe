@@ -587,6 +587,158 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 	}
 
 	/**
+	 * T-H2.B2: psyncContinue meta fail after Cmd switchToPsync → replId/Index back to before call.
+	 */
+	@Test
+	public void psyncContinueMetaWriteFailureKeepsOldReplId() throws Exception {
+		store.close();
+		store = null;
+
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected psyncContinue meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		File caseDir = new File(baseDir, "h2b2-psync-continue-meta-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		try {
+			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+
+			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
+			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+			rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			store.confirmRdbGapAllowed(rdbStore);
+
+			Object oldCmdStore = ReflectionTestUtils.getField(store, "cmdStore");
+			ReplicationStoreMeta oldMeta = store.getMetaStore().dupReplicationStoreMeta();
+			String oldPrefix = oldMeta.getCmdFilePrefix();
+			Boolean buildIndexBefore = (Boolean) ReflectionTestUtils.getField(oldCmdStore, "buildIndex");
+			Assert.assertFalse(Boolean.TRUE.equals(buildIndexBefore));
+			Assert.assertEquals(ReplStage.ReplProto.PSYNC, oldMeta.getCurReplStage().getProto());
+			Assert.assertEquals(replidA, oldMeta.getCurReplStage().getReplId());
+
+			failMetaWrite.set(true);
+			try {
+				store.psyncContinue(replidB);
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected psyncContinue meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected psyncContinue meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+
+			Assert.assertSame(oldCmdStore, ReflectionTestUtils.getField(store, "cmdStore"));
+			Boolean buildIndexAfter = (Boolean) ReflectionTestUtils.getField(oldCmdStore, "buildIndex");
+			Assert.assertFalse(Boolean.TRUE.equals(buildIndexAfter));
+			ReplicationStoreMeta meta = store.getMetaStore().dupReplicationStoreMeta();
+			Assert.assertEquals(oldPrefix, meta.getCmdFilePrefix());
+			Assert.assertEquals(ReplStage.ReplProto.PSYNC, meta.getCurReplStage().getProto());
+			Assert.assertEquals(replidA, meta.getCurReplStage().getReplId());
+			// failed continue must not promote old replId into replId2
+			Assert.assertEquals(oldMeta.getCurReplStage().getReplId2(), meta.getCurReplStage().getReplId2());
+			Assert.assertNotEquals(replidA, meta.getCurReplStage().getReplId2());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	/**
+	 * T-H2.B2: switchToPSync meta fail after Cmd closed Index → proto/Index back to XSYNC.
+	 */
+	@Test
+	public void switchToPSyncMetaWriteFailureKeepsXsyncIndex() throws Exception {
+		store.close();
+		store = null;
+
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected switchToPSync meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		File caseDir = new File(baseDir, "h2b2-switch-psync-meta-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		try {
+			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+
+			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.XSYNC,
+					new GtidSet(GtidSet.EMPTY_GTIDSET), masterUuidA);
+			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+			rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			store.confirmRdbGapAllowed(rdbStore);
+
+			Object oldCmdStore = ReflectionTestUtils.getField(store, "cmdStore");
+			ReplicationStoreMeta oldMeta = store.getMetaStore().dupReplicationStoreMeta();
+			String oldPrefix = oldMeta.getCmdFilePrefix();
+			Boolean buildIndexBefore = (Boolean) ReflectionTestUtils.getField(oldCmdStore, "buildIndex");
+			Assert.assertTrue(Boolean.TRUE.equals(buildIndexBefore));
+			Assert.assertEquals(ReplStage.ReplProto.XSYNC, oldMeta.getCurReplStage().getProto());
+			Assert.assertEquals(replidA, oldMeta.getCurReplStage().getReplId());
+
+			failMetaWrite.set(true);
+			try {
+				store.switchToPSync(replidB, 20000);
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected switchToPSync meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected switchToPSync meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+
+			Assert.assertSame(oldCmdStore, ReflectionTestUtils.getField(store, "cmdStore"));
+			Boolean buildIndexAfter = (Boolean) ReflectionTestUtils.getField(oldCmdStore, "buildIndex");
+			Assert.assertTrue(Boolean.TRUE.equals(buildIndexAfter));
+			ReplicationStoreMeta meta = store.getMetaStore().dupReplicationStoreMeta();
+			Assert.assertEquals(oldPrefix, meta.getCmdFilePrefix());
+			Assert.assertEquals(ReplStage.ReplProto.XSYNC, meta.getCurReplStage().getProto());
+			Assert.assertEquals(replidA, meta.getCurReplStage().getReplId());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	/**
 	 * T-H2.A3: switchToXSync (Index) fails → close new cmd; meta/old cmd untouched.
 	 */
 	@Test

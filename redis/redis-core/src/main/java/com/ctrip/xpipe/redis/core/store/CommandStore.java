@@ -62,6 +62,13 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	void switchToPsync(String replId, long offset) throws IOException;
 
+	/**
+	 * Undo {@link #switchToPsync} for H2.B2 {@code switchToPSync} meta-commit rollback:
+	 * reopen Index writers on current tip without {@code fs.roll}, restore {@code buildIndex=true}.
+	 * Not used by {@code psyncContinue} (already PSYNC / Index write path idle).
+	 */
+	void restoreXsyncIndex() throws IOException;
+
 	int onlyAppendCommand(ByteBuf byteBuf) throws IOException;
 
 	boolean increaseLostNotInCmdStore(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException ;

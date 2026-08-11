@@ -205,18 +205,59 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public void psyncContinue(String newReplId) throws IOException {
+		makeSureOpen();
 		getLogger().info("[psyncContinue] newReplId:{}", newReplId);
 		if (newReplId == null) return;
 		long backlogEnd = backlogEndOffset();
-		metaStore.psyncContinue(newReplId, backlogEnd);
-		cmdStore.switchToPsync(newReplId, backlogEnd);
+
+		// T-H2.B2: already PSYNC — prepare → Cmd switchToPsync (no-op) → saveMeta(CAS); no Index restore
+		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = metaStore.preparePsyncContinue(newReplId, backlogEnd);
+		if (prepared == null) {
+			return;
+		}
+		try {
+			cmdStore.switchToPsync(newReplId, backlogEnd);
+			if (!metaStore.saveMeta(prepared.getKey(), prepared.getValue())) {
+				throw new IOException("psyncContinue meta CAS fail, concurrent meta update, replId=" + newReplId);
+			}
+		} catch (Throwable t) {
+			if (t instanceof IOException) {
+				throw (IOException) t;
+			}
+			if (t instanceof RuntimeException) {
+				throw (RuntimeException) t;
+			}
+			throw new XpipeRuntimeException("psyncContinue commit fail, replId=" + newReplId, t);
+		}
 	}
 
 	@Override
 	public void switchToPSync(String replId, long replOff) throws IOException {
+		makeSureOpen();
 		getLogger().info("[switchToPSync] replId:{}, replOff:{}", replId, replOff);
-		metaStore.switchToPsync(replId, replOff+1, backlogEndOffset());
-		cmdStore.switchToPsync(replId, replOff);
+
+		// T-H2.B2: XSYNC→PSYNC — prepare → Cmd switchToPsync (close Index) → saveMeta(CAS); meta fail → restore
+		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
+				metaStore.prepareSwitchToPsync(replId, replOff + 1, backlogEndOffset());
+		try {
+			cmdStore.switchToPsync(replId, replOff);
+			if (!metaStore.saveMeta(prepared.getKey(), prepared.getValue())) {
+				throw new IOException("switchToPSync meta CAS fail, concurrent meta update, replId=" + replId);
+			}
+		} catch (Throwable t) {
+			try {
+				cmdStore.restoreXsyncIndex();
+			} catch (Throwable rollbackError) {
+				getLogger().warn("[switchToPSync][rollback] restore XSYNC Index fail, replId={}", replId, rollbackError);
+			}
+			if (t instanceof IOException) {
+				throw (IOException) t;
+			}
+			if (t instanceof RuntimeException) {
+				throw (RuntimeException) t;
+			}
+			throw new XpipeRuntimeException("switchToPSync commit fail, replId=" + replId, t);
+		}
 	}
 
 	@Override

@@ -746,6 +746,20 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
+    public synchronized void restoreXsyncIndex() throws IOException {
+        if (buildIndex) {
+            return;
+        }
+        if (indexStore == null) {
+            throw new IllegalStateException("restoreXsyncIndex requires existing IndexStore");
+        }
+        // Rebind writers on current tip (no roll); undoes switchToPsync closeWriter
+        indexStore.openWriter(cmdWriter);
+        buildIndex = true;
+        getLogger().info("[restoreXsyncIndex] buildIndex restored without roll");
+    }
+
+    @Override
     public boolean increaseLostNotInCmdStore(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException {
         return indexStore.increaseLost(lost, supplier);
     }
