@@ -405,6 +405,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
+	public void flushSlidingWindow() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public FULLSYNC_FAIL_CAUSE fullSyncIfPossible(FullSyncListener fullSyncListener) throws IOException {
 		throw new UnsupportedOperationException();
 	}
