@@ -230,13 +230,10 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		GtidSet gtidEmpty = new GtidSet(GtidSet.EMPTY_GTIDSET);
 		GtidSet gtidExecuted = gtidCont.subtract(gtidLost);
-		ReplicationStoreMeta newMeta =  metaStore.xsyncContinueFrom(replId,replOff+1, backlogEndOffset(),
-				masterUuid,gtidLost,gtidExecuted,cmdFilePrefix);
-
-		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
-				metaStore.generateGtidCmdFilter());
-
-		cmdStore.switchToXSync(gtidEmpty);
+		// T-H2.A3: prepare → createCmd → switchToXSync → saveMeta(CAS); no RDB storeRef
+		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = metaStore.prepareXsyncContinueFrom(
+				replId, replOff + 1, backlogEndOffset(), masterUuid, gtidLost, gtidExecuted, cmdFilePrefix);
+		this.cmdStore = commitContinueNewCmdThenMeta(replId, -1L, true, gtidEmpty, prepared.getKey(), prepared.getValue());
 	}
 
 	@Override
@@ -434,6 +431,64 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 	}
 
+	/**
+	 * H2.A2/A3: create CmdStore (+ protocol switch) first, then CAS-persist meta; no RDB storeRef.
+	 * On failure: close the new cmd only — leave {@link #cmdStore} at the pre-call reference;
+	 * if meta was already saved, CAS-rewrite the previous meta.
+	 *
+	 * @return the new CommandStore after successful meta CAS (caller assigns {@link #cmdStore})
+	 */
+	private CommandStore commitContinueNewCmdThenMeta(String replId, long psyncOffset, boolean xsync, GtidSet xsyncGtid,
+													  ReplicationStoreMeta expectedOld, ReplicationStoreMeta newMeta) throws IOException {
+		CommandStore newCmdStore = null;
+		boolean metaSaved = false;
+		String op = xsync ? "xsyncContinueFrom" : "continueFrom";
+		try {
+			newCmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
+					metaStore.generateGtidCmdFilter());
+			if (xsync) {
+				newCmdStore.switchToXSync(xsyncGtid);
+			} else {
+				newCmdStore.switchToPsync(replId, psyncOffset);
+			}
+
+			if (!metaStore.saveMeta(expectedOld, newMeta)) {
+				throw new IOException(op + " meta CAS fail, concurrent meta update, replId=" + replId);
+			}
+			metaSaved = true;
+
+			CommandStore committed = newCmdStore;
+			newCmdStore = null;
+			return committed;
+		} catch (Throwable t) {
+			if (newCmdStore != null) {
+				try {
+					newCmdStore.close();
+				} catch (Throwable closeError) {
+					getLogger().warn("[{}][rollback] close new cmdStore fail, replId={}", op, replId, closeError);
+				}
+			}
+			if (metaSaved) {
+				try {
+					if (!metaStore.saveMeta(newMeta, expectedOld)) {
+						getLogger().error("[{}][rollback] rewrite old meta CAS fail, replId={}, expectedOld={}, current={}",
+								op, replId, expectedOld, metaStore.dupReplicationStoreMeta());
+					}
+				} catch (Throwable rewriteError) {
+					getLogger().error("[{}][rollback] rewrite old meta fail, replId={}, oldMeta={}",
+							op, replId, expectedOld, rewriteError);
+				}
+			}
+			if (t instanceof IOException) {
+				throw (IOException) t;
+			}
+			if (t instanceof RuntimeException) {
+				throw (RuntimeException) t;
+			}
+			throw new XpipeRuntimeException(op + " commit fail, replId=" + replId, t);
+		}
+	}
+
 	@Override
 	public UPDATE_RDB_RESULT checkReplIdAndUpdateRdbGapAllowed(RdbStore rdbStore) throws IOException {
 		makeSureOpen();
@@ -540,11 +595,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		ensureBaseDir();
 
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
-		ReplicationStoreMeta newMeta = metaStore.continueFromOffset(replId, continueOffset, cmdFilePrefix);
-
-		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
-				metaStore.generateGtidCmdFilter());
-		cmdStore.switchToPsync(replId, continueOffset);
+		// T-H2.A2: prepare → createCmd(+switchToPsync) → saveMeta(CAS); no RDB storeRef
+		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
+				metaStore.prepareContinueFromOffset(replId, continueOffset, cmdFilePrefix);
+		this.cmdStore = commitContinueNewCmdThenMeta(replId, continueOffset, false, null,
+				prepared.getKey(), prepared.getValue());
 	}
 
 	@Override
@@ -555,11 +610,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		ensureBaseDir();
 
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
-		ReplicationStoreMeta newMeta = metaStore.psyncContinueFrom(replId, replOff, backlogEndOffset(), cmdFilePrefix);
-
-		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
-				metaStore.generateGtidCmdFilter());
-		cmdStore.switchToPsync(replId, replOff);
+		// T-H2.A2: prepare → createCmd(+switchToPsync) → saveMeta(CAS); no RDB storeRef
+		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
+				metaStore.preparePsyncContinueFrom(replId, replOff, backlogEndOffset(), cmdFilePrefix);
+		this.cmdStore = commitContinueNewCmdThenMeta(replId, replOff, false, null,
+				prepared.getKey(), prepared.getValue());
 	}
 
 	protected long resolveCmdStoreStartOffset(ReplicationStoreMeta replMeta) {

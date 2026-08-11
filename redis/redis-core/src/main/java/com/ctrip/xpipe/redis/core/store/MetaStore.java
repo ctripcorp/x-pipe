@@ -86,6 +86,13 @@ public interface MetaStore {
 
 	ReplicationStoreMeta continueFromOffset(String replId, long beginOffset, String cmdFilePrefix) throws IOException;
 
+	/**
+	 * Build continueFromOffset meta without persisting. Used by Cmd-first continue (Phase H2.A2).
+	 *
+	 * @return Pair(expectedCurrent, preparedFuture); see {@link #prepareRdbConfirm}.
+	 */
+	Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareContinueFromOffset(String replId, long beginOffset, String cmdFilePrefix);
+
 	void setRdbFileSize(long rdbFileSize) throws IOException;
 
 	void setRordbFileSize(long rordbFileSize) throws IOException;
@@ -120,6 +127,13 @@ public interface MetaStore {
 
 	ReplicationStoreMeta psyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String cmdFilePrefix) throws IOException;
 
+	/**
+	 * Build psyncContinueFrom meta without persisting. Used by Cmd-first continue (Phase H2.A2).
+	 *
+	 * @return Pair(expectedCurrent, preparedFuture); see {@link #prepareRdbConfirm}.
+	 */
+	Pair<ReplicationStoreMeta, ReplicationStoreMeta> preparePsyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String cmdFilePrefix);
+
 	ReplicationStoreMeta psyncContinue(String newReplId, long backlogOff) throws IOException;
 
 	ReplicationStoreMeta switchToPsync(String replId, long beginReplOffset, long backlogOff) throws IOException;
@@ -134,6 +148,13 @@ public interface MetaStore {
 	Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareRdbConfirmXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix);
 
 	ReplicationStoreMeta xsyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String cmdFilePrefix) throws IOException;
+
+	/**
+	 * Build xsyncContinueFrom meta without persisting. Used by Cmd-first continue (Phase H2.A3).
+	 *
+	 * @return Pair(expectedCurrent, preparedFuture); see {@link #prepareRdbConfirm}.
+	 */
+	Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareXsyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String cmdFilePrefix);
 
 	boolean increaseLost(GtidSet lost) throws IOException;
 

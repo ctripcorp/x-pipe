@@ -166,6 +166,121 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	}
 
 	/**
+	 * T-H2.A2: continueFromOffset createCmd ok + meta save fail → new cmd closed/not exposed; prefix unchanged.
+	 */
+	@Test
+	public void continueFromOffsetMetaWriteFailureDoesNotExposeNewCmd() throws Exception {
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected continueFromOffset meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		try {
+			store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					Mockito.mock(SyncRateManager.class), redisOpParser, fileSystem, getReplId());
+			store.getMetaStore().becomeActive();
+
+			String replId = randomKeeperRunid();
+			failMetaWrite.set(true);
+			try {
+				store.continueFromOffset(replId, 1L);
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected continueFromOffset meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected continueFromOffset meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+
+			Assert.assertNull(ReflectionTestUtils.getField(store, "cmdStore"));
+			Assert.assertNull(store.getMetaStore().dupReplicationStoreMeta().getCmdFilePrefix());
+			Assert.assertTrue(store.isFresh());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	/**
+	 * T-H2.A2: psyncContinueFrom createCmd ok + meta save fail → new cmd not exposed; prior cmd/prefix kept.
+	 */
+	@Test
+	public void psyncContinueFromMetaWriteFailureKeepsOldCmd() throws Exception {
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected psyncContinueFrom meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		try {
+			store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					Mockito.mock(SyncRateManager.class), redisOpParser, fileSystem, getReplId());
+			store.getMetaStore().becomeActive();
+
+			RdbStore rdbStore = beginRdb(store, 100);
+			rdbStore.writeRdb(Unpooled.wrappedBuffer(randomString(100).getBytes()));
+			rdbStore.endRdb();
+
+			Object oldCmdStore = ReflectionTestUtils.getField(store, "cmdStore");
+			String oldPrefix = store.getMetaStore().dupReplicationStoreMeta().getCmdFilePrefix();
+			Assert.assertNotNull(oldCmdStore);
+			Assert.assertNotNull(oldPrefix);
+
+			failMetaWrite.set(true);
+			try {
+				store.psyncContinueFrom("repl_continue", 1L);
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected psyncContinueFrom meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected psyncContinueFrom meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+
+			Assert.assertSame(oldCmdStore, ReflectionTestUtils.getField(store, "cmdStore"));
+			Assert.assertEquals(oldPrefix, store.getMetaStore().dupReplicationStoreMeta().getCmdFilePrefix());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	/**
 	 * T-H2.A1: confirmRdb createCommandStore failure → meta not committed, no rdb ref.
 	 */
 	@Test

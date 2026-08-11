@@ -149,6 +149,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareContinueFromOffset(String replId, long beginOffset, String cmdFilePrefix) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta checkReplIdAndUpdateRdbInfo(String rdbFile, EofType eofType, long masterOffset, String expectedReplId)
 					throws IOException {
 				throw new UnsupportedOperationException();
@@ -200,6 +205,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> preparePsyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String cmdFilePrefix) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta psyncContinue(String newReplId, long backlogOff) throws IOException {
 				throw new UnsupportedOperationException();
 			}
@@ -223,6 +233,12 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 			@Override
 			public ReplicationStoreMeta xsyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String cmdFilePrefix) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareXsyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String masterUuid,
+															   GtidSet gtidLost, GtidSet gtidExecuted, String cmdFilePrefix) {
 				throw new UnsupportedOperationException();
 			}
 
