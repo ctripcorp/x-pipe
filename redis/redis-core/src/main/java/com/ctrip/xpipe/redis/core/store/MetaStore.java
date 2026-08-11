@@ -164,6 +164,14 @@ public interface MetaStore {
 
 	boolean xsyncContinue(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidCont, GtidSet gtidIndexed) throws IOException;
 
+	/**
+	 * Build switchToXsync meta without persisting. Used by Cmd-first protocol switch (Phase H2.B1).
+	 *
+	 * @return Pair(expectedCurrent, preparedFuture); see {@link #prepareRdbConfirm}.
+	 */
+	Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareSwitchToXsync(String replId, long beginReplOffset, long backlogOff,
+																		  String masterUuid, GtidSet gtidCont, GtidSet gtidLost);
+
 	ReplicationStoreMeta switchToXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException;
 
 	UPDATE_RDB_RESULT checkReplIdAndUpdateRdbInfoPsync(String rdbFile, RdbStore.Type type, EofType eofType, long rdbOffset, String rdbReplId, long backlogBeginOffset, long backlogEndOffset) throws IOException;

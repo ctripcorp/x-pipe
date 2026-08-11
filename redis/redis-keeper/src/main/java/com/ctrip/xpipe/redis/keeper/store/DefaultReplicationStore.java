@@ -238,9 +238,37 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
-		getLogger().info("[switchToXSync] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}, gtidLost:{}", replId, replOff, masterUuid, gtidCont, gtidLost);
-		metaStore.switchToXsync(replId, replOff + 1, backlogEndOffset(), masterUuid, gtidCont, gtidLost);
-		cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
+		makeSureOpen();
+		getLogger().info("[switchToXSync] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}, gtidLost:{}",
+				replId, replOff, masterUuid, gtidCont, gtidLost);
+
+		// T-H2.B1: prepare → Cmd switchToXSync (Index) → saveMeta(CAS); meta fail → roll Index back to PSYNC
+		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = metaStore.prepareSwitchToXsync(
+				replId, replOff + 1, backlogEndOffset(), masterUuid, gtidCont, gtidLost);
+		boolean cmdSwitched = false;
+		try {
+			cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
+			cmdSwitched = true;
+			if (!metaStore.saveMeta(prepared.getKey(), prepared.getValue())) {
+				throw new IOException("switchToXSync meta CAS fail, concurrent meta update, replId=" + replId);
+			}
+		} catch (Throwable t) {
+			if (cmdSwitched) {
+				try {
+					// close newly opened Index / restore buildIndex=false (PSYNC); rolled segment kept
+					cmdStore.switchToPsync(prepared.getKey().getCurReplStage().getReplId(), replOff);
+				} catch (Throwable rollbackError) {
+					getLogger().warn("[switchToXSync][rollback] restore PSYNC Index fail, replId={}", replId, rollbackError);
+				}
+			}
+			if (t instanceof IOException) {
+				throw (IOException) t;
+			}
+			if (t instanceof RuntimeException) {
+				throw (RuntimeException) t;
+			}
+			throw new XpipeRuntimeException("switchToXSync commit fail, replId=" + replId, t);
+		}
 	}
 
 	@Override

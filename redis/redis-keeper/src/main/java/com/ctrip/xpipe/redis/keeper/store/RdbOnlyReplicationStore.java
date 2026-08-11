@@ -248,6 +248,12 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareSwitchToXsync(String replId, long beginReplOffset, long backlogOff,
+																						 String masterUuid, GtidSet gtidCont, GtidSet gtidLost) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta switchToXsync(String replId, long replOff, long backlogOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
 				throw new UnsupportedOperationException();
 			}

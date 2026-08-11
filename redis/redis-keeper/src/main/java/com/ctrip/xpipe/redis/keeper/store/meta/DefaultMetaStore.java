@@ -601,10 +601,11 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 	}
 
 	@Override
-	public ReplicationStoreMeta switchToXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid,
-											  GtidSet gtidCont, GtidSet gtidLost) throws IOException {
+	public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareSwitchToXsync(String replId, long beginReplOffset, long backlogOff,
+																				 String masterUuid, GtidSet gtidCont, GtidSet gtidLost) {
 		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			ReplicationStoreMeta expected = metaRef.get();
+			ReplicationStoreMeta metaDup = new ReplicationStoreMeta(expected);
 
 			ReplStage curReplStage = metaDup.getCurReplStage();
 			if (curReplStage.getProto() != ReplStage.ReplProto.PSYNC) {
@@ -617,8 +618,18 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 			metaDup.setPrevReplStage(curReplStage);
 			metaDup.setCurReplStage(newReplStage);
 
-			saveMeta(metaDup);
-			return metaDup;
+			return Pair.from(expected, metaDup);
+		}
+	}
+
+	@Override
+	public ReplicationStoreMeta switchToXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid,
+											  GtidSet gtidCont, GtidSet gtidLost) throws IOException {
+		synchronized (metaRef) {
+			Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
+					prepareSwitchToXsync(replId, beginReplOffset, backlogOff, masterUuid, gtidCont, gtidLost);
+			saveMeta(prepared.getValue());
+			return prepared.getValue();
 		}
 	}
 
