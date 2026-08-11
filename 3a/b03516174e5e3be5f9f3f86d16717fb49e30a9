@@ -1,0 +1,74 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java
+  s_beeb2c0a61171f::t_970dd91f180d34 175-178
+  s_beeb2c0a61171f::t_71fc421f151323 188-203
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStore.java
+  s_beeb2c0a61171f::t_5af9919c7a6f11 347-351,364,367,371,376-377,381,383,386-387,399-401,413,418-421,423-424,433
+  s_31af70e41c900a::t_43300ad4c6e74f 378-380,382,384-385,388-398,402-412,414-417,422,425-432
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreTest.java
+  s_31af70e41c900a::t_0efca77ee1b2c8 79-80,82-93,96-98,100-129
+  s_beeb2c0a61171f::t_c459415696bb93 133-163,165-168
+  s_beeb2c0a61171f::t_6a564cb3729d07 164
+  s_31af70e41c900a::t_c45b530b659a22 17,46-48
+  s_31af70e41c900a::t_c3e92c17134199 22-23,44
+  s_31af70e41c900a::t_d127955a637683 74-78,81,94-95,99,130-132,169-200
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/RdbOnlyReplicationStore.java
+  s_31af70e41c900a::t_e82dcc85f1be29 193-196
+  s_beeb2c0a61171f::t_de647dd21affc7 48
+  s_31af70e41c900a::t_e03a89c0c37732 49-53,55-57
+  s_beeb2c0a61171f::t_2b805e14dc1a75 54
+  s_beeb2c0a61171f::t_917e2746efd8ac 192
+  s_beeb2c0a61171f::t_0d4953f6c782b0 218
+  s_31af70e41c900a::t_be96303b411046 219-223
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/DefaultMetaStore.java
+  s_beeb2c0a61171f::t_433d864b33bab7 280,283-284,307,315-318
+  s_beeb2c0a61171f::t_8a42a3b0e5c39e 124,127-128,150,158-161
+  s_beeb2c0a61171f::t_928b8ffc33fa8b 8
+  s_31af70e41c900a::t_0a8159dc442534 394-395,422-423,425-429
+  s_31af70e41c900a::t_63a5e81d9d1f14 125,152,154-157
+  s_31af70e41c900a::t_ab67dc55ec59cc 281,308-309,311-314
+  s_beeb2c0a61171f::t_bc5128f17d9569 393,397-398,421,430-434
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/GapAllowedReplicationStoreTest.java
+  s_31af70e41c900a::t_38363ab45838f7 13-14,17,25,30-31,33-35
+  s_31af70e41c900a::t_be7406f88c78e2 16,19,32
+  s_31af70e41c900a::t_9fb50e195f788e 268-272,278,288-289,291,294,302,317,323,338-344,352-383
+  s_31af70e41c900a::t_4ffbad1560b6ff 273-275,292-293,295,345-351
+  s_31af70e41c900a::t_b220a8b109f7fc 276-277,279-287,290,296-301,303-316,318-322,324-337
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/MetaStore.java
+  s_beeb2c0a61171f::t_1c7a30e2f029a7 6
+  s_31af70e41c900a::t_4e15789ac84f4a 129-130,133,135
+  s_beeb2c0a61171f::t_d67180d2cc4eaf 69-72,74,77-78,80-81
+  s_beeb2c0a61171f::t_0833da5499a3f2 131-132,134
+  s_beeb2c0a61171f::t_0abba92b8c90e4 116-117,119
+  s_31af70e41c900a::t_dd05c703b7dfcb 67-68,73,75-76,82
+  s_beeb2c0a61171f::t_5bd887c4ea463d 79
+  s_31af70e41c900a::t_7b59ad1b525329 114-115,118,120
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/meta/DefaultMetaStoreTest.java
+  s_beeb2c0a61171f::t_441181f7b573b8 95-117
+  s_beeb2c0a61171f::t_78f1a4dde3ea04 14
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/GtidReplicationStore.java
+  s_31af70e41c900a::t_65cc3c4d9d8da4 112-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "3ab03516174e5e3be5f9f3f86d16717fb49e30a9",
+  "prompts": {},
+  "sessions": {
+    "s_31af70e41c900a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b5fdce55-b018-4cbf-8d51-bbaddf339c19",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_beeb2c0a61171f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f4c10ab7-1571-4a7c-aafc-441685af4cfc",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
