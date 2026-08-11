@@ -185,6 +185,23 @@ public class DefaultRedisMasterReplication extends AbstractRedisMasterReplicatio
         disconnectWithMaster();
     }
 
+    /**
+     * T-H2.F1: {@code dumpFail} then close/fail {@link #currentPsync}
+     * ({@code setFailure} → listener {@link #psyncFail}); unexpected missing future → disconnect兜底.
+     */
+    @Override
+    protected void confirmFail(Throwable th) {
+        super.confirmFail(th);
+        tryCloseCurrentPsync();
+        Psync psync = currentPsync.get();
+        if (null != psync && !psync.future().isDone()) {
+            psync.future().setFailure(th);
+        } else {
+            logger.warn("[confirmFail][no active psync future] disconnectWithMaster", th);
+            disconnectWithMaster();
+        }
+    }
+
     @Override
     protected Psync createPsync() {
 

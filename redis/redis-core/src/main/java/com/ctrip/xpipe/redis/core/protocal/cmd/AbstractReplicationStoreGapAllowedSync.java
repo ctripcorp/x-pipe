@@ -103,7 +103,9 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 			currentReplicationStore.psyncContinueFrom(replId, beginOffset);
 			super.doOnKeeperContinue(replId, beginOffset);
 		} catch (IOException e) {
+			// T-H2.F1: do not swallow — fail psync → dumpFail/disconnect; avoid READING_COMMANDS + appendCommands on broken store
 			getLogger().error("[doOnKeeperContinue]" + replId + ":" + beginOffset, e);
+			throw e;
 		}
 	}
 

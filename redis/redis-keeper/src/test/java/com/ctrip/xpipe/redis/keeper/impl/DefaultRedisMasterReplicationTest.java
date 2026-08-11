@@ -2,12 +2,17 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 
 import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
+import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.RdbDumper;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
@@ -32,6 +37,8 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
@@ -151,6 +158,56 @@ public class DefaultRedisMasterReplicationTest extends AbstractRedisKeeperTest {
 		defaultRedisMasterReplication.start();
 
 		waitConditionUntilTimeOut(() -> connectingCount.get() >= 2, 10000);
+	}
+
+	/**
+	 * T-H2.F1 main path: confirm throws → confirmFail → dumpFail + close/fail currentPsync
+	 * → listener psyncFail(disconnect); late endWriteRdb must not enter CONNECTED.
+	 */
+	@Test
+	public void testConfirmFailDoesNotEnterConnected() throws Exception {
+		RdbStore rdbStore = mock(RdbStore.class);
+		when(rdbStore.isGapAllowed()).thenReturn(true);
+		doThrow(new IOException("confirm meta write fail")).when(replicationStore).confirmRdbGapAllowed(rdbStore);
+
+		RdbDumper dumper = mock(RdbDumper.class);
+		defaultRedisMasterReplication.setRdbDumper(dumper);
+
+		Channel channel = mock(Channel.class);
+		when(channel.isOpen()).thenReturn(true);
+		defaultRedisMasterReplication.masterChannel = channel;
+
+		// main path needs an in-flight currentPsync (else branch is unexpected兜底 only)
+		Psync psync = mock(Psync.class);
+		CommandFuture<Object> psyncFuture = new DefaultCommandFuture<>();
+		when(psync.future()).thenReturn(psyncFuture);
+		psyncFuture.addListener(commandFuture -> {
+			if (!commandFuture.isSuccess()) {
+				defaultRedisMasterReplication.psyncFail(commandFuture.cause());
+			}
+		});
+		setCurrentPsync(defaultRedisMasterReplication, psync);
+
+		defaultRedisMasterReplication.readAuxEnd(rdbStore, Collections.emptyMap());
+
+		verify(psync).close();
+		Assert.assertTrue(psyncFuture.isDone());
+		Assert.assertFalse(psyncFuture.isSuccess());
+		verify(channel, atLeastOnce()).close();
+		verify(dumper).dumpFail(any(Throwable.class));
+		verify(redisMaster, never()).setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
+		Assert.assertNull(defaultRedisMasterReplication.getRdbDumper());
+
+		defaultRedisMasterReplication.endWriteRdb();
+		verify(dumper, never()).dumpFinished();
+		verify(redisMaster, never()).setMasterState(MASTER_STATE.REDIS_REPL_CONNECTED);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static void setCurrentPsync(DefaultRedisMasterReplication replication, Psync psync) throws Exception {
+		Field field = DefaultRedisMasterReplication.class.getDeclaredField("currentPsync");
+		field.setAccessible(true);
+		((AtomicReference<Psync>) field.get(replication)).set(psync);
 	}
 
 	@Test

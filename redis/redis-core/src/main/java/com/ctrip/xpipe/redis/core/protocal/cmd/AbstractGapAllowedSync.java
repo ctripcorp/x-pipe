@@ -213,6 +213,12 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
 
                     RedisClientProtocol<InOutPayload> payload = rdbReader.read(byteBuf);
                     if (payload != null) {
+                        // dumpFail/close may happen mid-RDB (e.g. confirm in readAuxEnd); do not drive endWriteRdb / READING_COMMANDS
+                        if (!closeState.isOpen()) {
+                            getLogger().info("[doReceiveResponse][rdb done after psync closed] skip endReadRdb, {}",
+                                    ChannelUtil.getDesc(channel));
+                            break;
+                        }
                         syncState = PSYNC_STATE.READING_COMMANDS;
                         if (!saveCommands) {
                             future().setSuccess();
