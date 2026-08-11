@@ -979,6 +979,17 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		cmdStore.resetStateForContinue();
 	}
 
+	@Override
+	public void flushSlidingWindow() {
+		if(cmdStore != null) {
+            try {
+                cmdStore.flushSlidingWindow();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+	}
+
 	protected Logger getLogger() {
 		return logger;
 	}

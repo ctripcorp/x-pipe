@@ -343,4 +343,48 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertFalse(coalescingEnabled.getAsBoolean());
 	}
 
+	@Test
+	public void testFlushSlidingWindowWhenCmdStoreNull() throws IOException {
+		// 未 confirm rdb → cmdStore 尚未初始化，flushSlidingWindow 应静默 no-op
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(),
+				createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
+		Assert.assertNull(ReflectionTestUtils.getField(store, "cmdStore"));
+
+		store.flushSlidingWindow();
+	}
+
+	@Test
+	public void testFlushSlidingWindowDelegatesToCmdStore() throws IOException {
+		// cmdStore 存在时，flushSlidingWindow 应转发到 cmdStore.flushSlidingWindow
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(),
+				createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
+		store.getMetaStore().becomeActive();
+		beginRdb(store, 1);
+
+		CommandStore realCmdStore = (CommandStore) ReflectionTestUtils.getField(store, "cmdStore");
+		Assert.assertNotNull(realCmdStore);
+		CommandStore spyCmdStore = Mockito.spy(realCmdStore);
+		ReflectionTestUtils.setField(store, "cmdStore", spyCmdStore);
+
+		store.flushSlidingWindow();
+
+		Mockito.verify(spyCmdStore).flushSlidingWindow();
+	}
+
+	@Test(expected = RuntimeException.class)
+	public void testFlushSlidingWindowWrapsIOException() throws IOException {
+		// cmdStore.flushSlidingWindow 抛 IOException → wrap 成 RuntimeException 上抛
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(),
+				createkeeperMonitor(), Mockito.mock(SyncRateManager.class), redisOpParser);
+		store.getMetaStore().becomeActive();
+		beginRdb(store, 1);
+
+		CommandStore realCmdStore = (CommandStore) ReflectionTestUtils.getField(store, "cmdStore");
+		CommandStore spyCmdStore = Mockito.spy(realCmdStore);
+		Mockito.doThrow(new IOException("simulated flush fail")).when(spyCmdStore).flushSlidingWindow();
+		ReflectionTestUtils.setField(store, "cmdStore", spyCmdStore);
+
+		store.flushSlidingWindow();
+	}
+
 }

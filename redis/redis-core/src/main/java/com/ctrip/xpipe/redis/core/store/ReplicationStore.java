@@ -97,4 +97,6 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	void resetStateForContinue();
 
+	void flushSlidingWindow();
+
 }
