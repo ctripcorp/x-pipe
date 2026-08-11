@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.*;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -271,7 +272,8 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
 
     protected void notify(AbstractInstanceEvent event) {
         if (event instanceof InstanceSick) {
-            needAdjust.set(instance.getCheckInfo().isReachable());
+            RedisInstanceInfo checkInfo = instance.getCheckInfo();
+            needAdjust.set(instance.getHealthCheckConfig().isReachable(checkInfo.getActiveDc(), checkInfo.getDcId()));
             ((InstanceSick) event).setNeedAdjust(needAdjust.get());
         } else {
             needAdjust.set(true);

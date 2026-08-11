@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
+import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,5 +89,13 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     @Override
     public DelayConfig getDelayConfig(String clusterName, String fromDc, String toDc) {
         return config.getDelayConfig(clusterName, fromDc, toDc);
+    }
+
+    @Override
+    public boolean isReachable(String srcDc, String dstDc) {
+        if (Strings.isNullOrEmpty(srcDc) || Strings.isNullOrEmpty(dstDc))
+            return false;
+
+        return config.isReachable(srcDc, dstDc);
     }
 }

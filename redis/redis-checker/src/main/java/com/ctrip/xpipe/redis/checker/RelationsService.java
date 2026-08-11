@@ -13,7 +13,7 @@ public interface RelationsService {
 
     Integer getClusterDcsDelay(String clusterName, String fromDc, String toDc);
 
-    boolean isReachableRegion(String dc1, String dc2);
+    boolean isReachableRegion(String srcDc, String dstDc);
 
     Integer getRegionDelay(String fromDc, String toDc);
 

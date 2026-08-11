@@ -4,7 +4,6 @@ import com.ctrip.xpipe.endpoint.ClusterShardHostPort;
 import com.ctrip.xpipe.endpoint.HostPort;
 
 import java.util.Date;
-import java.util.Map;
 
 /**
  * @author chen.zhu
@@ -29,13 +28,9 @@ public interface RedisInstanceInfo extends CheckInfo {
 
     boolean isCrossRegion();
 
-    boolean isReachable();
-
     void isCrossRegion(boolean crossRegion);
 
     Long getShardDbId();
-
-    Map<Long, String> getActiveDcAllShardIds();
 
     Date getCreateTime();
 

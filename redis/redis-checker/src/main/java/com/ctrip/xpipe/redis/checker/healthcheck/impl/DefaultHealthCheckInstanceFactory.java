@@ -146,12 +146,9 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         }
         if (clusterType.supportSingleActiveDC()) {
             info.setCrossRegion(metaCache.isCrossRegion(info.getActiveDc(), info.getDcId()));
-            info.setReachable(relationsService.isReachableRegion(info.getActiveDc(), info.getDcId()));
             info.setShardDbId(redisMeta.parent().getDbId());
-            info.setActiveDcShardIds(metaCache.dcShardIds(info.getClusterId(), info.getActiveDc()));
         } else if (clusterType.supportMultiActiveDC()) {
             info.setCrossRegion(metaCache.isCrossRegion(currentDcId, info.getDcId()));
-            info.setReachable(relationsService.isReachableRegion(currentDcId, info.getDcId()));
         }
         info.setStatus(clusterMeta.getStatus());
 

@@ -8,12 +8,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRul
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.Maps;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author chen.zhu
@@ -32,11 +29,7 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
 
     private boolean crossRegion;
 
-    private boolean isReachable;
-
     private Long shardDbId;
-
-    private Map<Long, String> activeDcShardIds = new HashMap<>();
 
     private Date createTime;
 
@@ -106,11 +99,6 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
     }
 
     @Override
-    public Map<Long, String> getActiveDcAllShardIds() {
-        return Maps.newHashMap(this.activeDcShardIds);
-    }
-
-    @Override
     public Date getCreateTime() {
         return createTime;
     }
@@ -123,11 +111,6 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
 
     public DefaultRedisInstanceInfo setCrossRegion(boolean crossRegion) {
         this.crossRegion = crossRegion;
-        return this;
-    }
-
-    public DefaultRedisInstanceInfo setReachable(boolean isReachable) {
-        this.isReachable = isReachable;
         return this;
     }
 
@@ -156,10 +139,6 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
         this.shardDbId = shardDbId;
     }
 
-    public void setActiveDcShardIds(Map<Long, String> shardIds) {
-        this.activeDcShardIds = shardIds;
-    }
-
     public void setCreateTime(Date createTime) {
         this.createTime = createTime;
     }
@@ -171,8 +150,4 @@ public class DefaultRedisInstanceInfo extends AbstractCheckInfo implements Redis
         this.crossRegion = crossRegion;
     }
 
-    @Override
-    public boolean isReachable() {
-        return isReachable;
-    }
 }

@@ -26,7 +26,7 @@ public class TestRelationsService implements RelationsService {
     }
 
     @Override
-    public boolean isReachableRegion(String dc1, String dc2) {
+    public boolean isReachableRegion(String srcDc, String dstDc) {
         return true;
     }
 

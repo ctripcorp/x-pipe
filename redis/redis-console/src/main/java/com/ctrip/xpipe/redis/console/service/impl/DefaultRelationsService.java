@@ -189,9 +189,9 @@ public class DefaultRelationsService implements RelationsService {
     }
 
     @Override
-    public boolean isReachableRegion(String dc1, String dc2) {
-        String zone1 = metaCache.getDcZone(dc1);
-        String zone2 = metaCache.getDcZone(dc2);
+    public boolean isReachableRegion(String srcDc, String dstDc) {
+        String zone1 = metaCache.getDcZone(srcDc);
+        String zone2 = metaCache.getDcZone(dstDc);
         if (zone1 == null || zone2 == null) {
             return false;
         }

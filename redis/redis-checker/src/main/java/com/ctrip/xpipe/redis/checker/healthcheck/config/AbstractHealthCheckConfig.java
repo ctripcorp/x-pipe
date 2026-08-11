@@ -77,6 +77,11 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public boolean isReachable(String srcDc, String dstDc) {
+        return relationsService.isReachableRegion(srcDc, dstDc);
+    }
+
+    @Override
     public DelayConfig getDelayConfig(String clusterName, String fromDc, String toDc) {
         DelayConfig config = new DelayConfig(clusterName, fromDc, toDc);
         config.setDcLevelHealthyDelayMilli(getHealthyDelayMilli());
