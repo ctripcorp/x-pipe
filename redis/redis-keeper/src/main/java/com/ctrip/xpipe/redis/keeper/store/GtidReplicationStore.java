@@ -109,6 +109,11 @@ public class GtidReplicationStore extends DefaultReplicationStore {
             cmdStore.initialize();
         } catch (Exception e) {
             logger.info("[createCommandStore] init fail", e);
+            try {
+                cmdStore.close();
+            } catch (Exception closeError) {
+                logger.warn("[createCommandStore] close after init fail", closeError);
+            }
             throw new XpipeRuntimeException("cmdStore init fail", e);
         }
         return cmdStore;

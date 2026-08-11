@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.store;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
+import com.ctrip.xpipe.tuple.Pair;
 
 import java.io.IOException;
 
@@ -63,6 +64,22 @@ public interface MetaStore {
 
 	ReplicationStoreMeta rdbConfirm(String replId, long beginOffset, String gtidSet, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException;
 
+	/**
+	 * Build rdbConfirm meta without persisting. Used by Cmd-first confirm (Phase H2.A1).
+	 *
+	 * @return Pair(expectedCurrent, preparedFuture). {@code expectedCurrent} is the live
+	 *         {@code metaRef} identity for subsequent {@link #saveMeta(ReplicationStoreMeta, ReplicationStoreMeta)} CAS;
+	 *         {@code preparedFuture} is a mutable dup to persist after Cmd is ready.
+	 */
+	Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareRdbConfirm(String replId, long beginOffset, String gtidSet, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix);
+
+	/**
+	 * CAS persist: succeed only if the in-memory meta identity still equals {@code expectedOld}.
+	 * Disk first, then memory. On mismatch returns {@code false} without writing.
+	 * Unconditional overwrite is not part of this interface (internal to MetaStore impl only).
+	 */
+	boolean saveMeta(ReplicationStoreMeta expectedOld, ReplicationStoreMeta newMeta) throws IOException;
+
 	ReplicationStoreMeta rdbBegun(String replId, long beginOffset, String rdbFile, EofType eofType, String cmdFilePrefix) throws IOException;
 
 	boolean attachRdbGtidSet(String rdbFile, String gtidSet) throws IOException;
@@ -94,6 +111,13 @@ public interface MetaStore {
 
 	ReplicationStoreMeta rdbConfirmPsync(String replId, long beginReplOffset, long backlogOff, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException;
 
+	/**
+	 * Build rdbConfirmPsync meta without persisting. Used by Cmd-first confirm (Phase H2.A1).
+	 *
+	 * @return Pair(expectedCurrent, preparedFuture); see {@link #prepareRdbConfirm}.
+	 */
+	Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareRdbConfirmPsync(String replId, long beginReplOffset, long backlogOff, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix);
+
 	ReplicationStoreMeta psyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String cmdFilePrefix) throws IOException;
 
 	ReplicationStoreMeta psyncContinue(String newReplId, long backlogOff) throws IOException;
@@ -101,6 +125,13 @@ public interface MetaStore {
 	ReplicationStoreMeta switchToPsync(String replId, long beginReplOffset, long backlogOff) throws IOException;
 
 	ReplicationStoreMeta rdbConfirmXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException;
+
+	/**
+	 * Build rdbConfirmXsync meta without persisting. Used by Cmd-first confirm (Phase H2.A1).
+	 *
+	 * @return Pair(expectedCurrent, preparedFuture); see {@link #prepareRdbConfirm}.
+	 */
+	Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareRdbConfirmXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix);
 
 	ReplicationStoreMeta xsyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String cmdFilePrefix) throws IOException;
 

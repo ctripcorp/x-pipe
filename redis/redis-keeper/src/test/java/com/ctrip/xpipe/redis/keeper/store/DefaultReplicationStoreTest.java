@@ -14,10 +14,13 @@ import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.SERVER_TYPE;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import org.junit.Ignore;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -38,7 +41,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.stream.IntStream;
 
+import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V2_FILE;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 
 public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 
@@ -62,6 +69,133 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 		rdbStore.updateRdbType(RdbStore.Type.NORMAL);
 		replicationStore.confirmRdb(rdbStore);
 		return rdbStore;
+	}
+
+	/**
+	 * T-H2.A1: confirmRdb meta save failure → no cmd / no rdb ref, I1, still fresh.
+	 */
+	@Test
+	public void confirmRdbMetaWriteFailureKeepsI1() throws Exception {
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected confirmRdb meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		try {
+			store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					Mockito.mock(SyncRateManager.class), redisOpParser, fileSystem, getReplId());
+			store.getMetaStore().becomeActive();
+
+			RdbStore rdbStore = store.prepareRdb(randomKeeperRunid(), -1, new LenEofType(100));
+			rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+
+			failMetaWrite.set(true);
+			try {
+				store.confirmRdb(rdbStore);
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected confirmRdb meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected confirmRdb meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+
+			Assert.assertNull(store.getRdbStore());
+			Assert.assertNull(ReflectionTestUtils.getField(store, "cmdStore"));
+			Assert.assertNull(store.getMetaStore().dupReplicationStoreMeta().getCmdFilePrefix());
+			Assert.assertTrue(store.isFresh());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	/**
+	 * T-H2.A1: concurrent meta update between prepare and save → CAS fail, I1, concurrent update kept.
+	 */
+	@Test
+	public void confirmRdbMetaCasFailureKeepsI1() throws Exception {
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+				Mockito.mock(SyncRateManager.class), redisOpParser, asyncFileSystem(), getReplId()) {
+			@Override
+			protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
+													  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
+													  KeeperMonitor keeperMonitor, GtidCmdFilter gtidCmdFilter) throws IOException {
+				getMetaStore().setRdbFileSize(9999);
+				return super.createCommandStore(baseDir, replMeta, cmdFileSize, config, cmdReaderWriterFactory,
+						keeperMonitor, gtidCmdFilter);
+			}
+		};
+		store.getMetaStore().becomeActive();
+
+		RdbStore rdbStore = store.prepareRdb(randomKeeperRunid(), -1, new LenEofType(100));
+		rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+		rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+
+		try {
+			store.confirmRdb(rdbStore);
+			Assert.fail("expected IOException when meta CAS fails");
+		} catch (IOException expected) {
+			Assert.assertTrue(expected.getMessage().contains("meta CAS fail"));
+		}
+
+		Assert.assertNull(store.getRdbStore());
+		Assert.assertNull(ReflectionTestUtils.getField(store, "cmdStore"));
+		Assert.assertNull(store.getMetaStore().dupReplicationStoreMeta().getCmdFilePrefix());
+		Assert.assertEquals(9999L, store.getMetaStore().dupReplicationStoreMeta().getRdbFileSize());
+		Assert.assertTrue(store.isFresh());
+	}
+
+	/**
+	 * T-H2.A1: confirmRdb createCommandStore failure → meta not committed, no rdb ref.
+	 */
+	@Test
+	public void confirmRdbCreateCmdFailureKeepsI1() throws Exception {
+		store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+				Mockito.mock(SyncRateManager.class), redisOpParser, asyncFileSystem(), getReplId()) {
+			@Override
+			protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
+													  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
+													  KeeperMonitor keeperMonitor, GtidCmdFilter gtidCmdFilter) throws IOException {
+				throw new IOException("injected createCommandStore fail");
+			}
+		};
+		store.getMetaStore().becomeActive();
+
+		RdbStore rdbStore = store.prepareRdb(randomKeeperRunid(), -1, new LenEofType(100));
+		rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+		rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+
+		try {
+			store.confirmRdb(rdbStore);
+			Assert.fail("expected IOException when createCommandStore fails");
+		} catch (IOException expected) {
+			Assert.assertTrue(expected.getMessage().contains("injected createCommandStore fail"));
+		}
+
+		Assert.assertNull(store.getRdbStore());
+		Assert.assertNull(ReflectionTestUtils.getField(store, "cmdStore"));
+		Assert.assertNull(store.getMetaStore().dupReplicationStoreMeta().getCmdFilePrefix());
+		Assert.assertTrue(store.isFresh());
 	}
 
 	@Test

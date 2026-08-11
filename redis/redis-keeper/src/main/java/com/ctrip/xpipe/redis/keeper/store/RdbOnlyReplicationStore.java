@@ -45,6 +45,17 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareRdbConfirm(String replId, long beginOffset, String gtidSet, String rdbFile,
+														 RdbStore.Type type, EofType eofType, String cmdFilePrefix) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public boolean saveMeta(ReplicationStoreMeta expectedOld, ReplicationStoreMeta newMeta) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta checkReplIdAndUpdateRdbInfo(String rdbFile, RdbStore.Type type, EofType eofType,
 																	long rdbOffset, String gtidSet, String expectedReplId) throws IOException {
 				throw new UnsupportedOperationException();
@@ -178,6 +189,12 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareRdbConfirmPsync(String replId, long beginReplOffset, long backlogOff, String rdbFile,
+															  RdbStore.Type type, EofType eofType, String cmdFilePrefix) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta psyncContinueFrom(String replId, long beginOffset, long backlogOff, String cmdFilePrefix) throws IOException {
 				throw new UnsupportedOperationException();
 			}
@@ -194,6 +211,13 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 			@Override
 			public ReplicationStoreMeta rdbConfirmXsync(String replId, long replOff, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile, RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareRdbConfirmXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid,
+															  GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile, RdbStore.Type type,
+															  EofType eofType, String cmdFilePrefix) {
 				throw new UnsupportedOperationException();
 			}
 

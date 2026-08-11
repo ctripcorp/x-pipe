@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 import org.junit.After;
 import org.junit.Assert;
@@ -88,6 +89,30 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
         } finally {
             fileSystem.shutdown();
         }
+    }
+
+    /**
+     * T-H2.A1: saveMeta(expected, new) CAS fails when metaRef identity changed after prepare.
+     */
+    @Test
+    public void saveMetaCasFailsWhenMetaRefChanged() throws Exception {
+        metaStore.setRdbFileSize(1024);
+        Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = metaStore.prepareRdbConfirm(
+                replidA, 1, GtidSet.EMPTY_GTIDSET, rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
+
+        // concurrent unconditional update replaces metaRef identity
+        metaStore.setRdbFileSize(2048);
+        Assert.assertEquals(2048L, metaStore.dupReplicationStoreMeta().getRdbFileSize());
+
+        Assert.assertFalse(metaStore.saveMeta(prepared.getKey(), prepared.getValue()));
+        Assert.assertEquals(2048L, metaStore.dupReplicationStoreMeta().getRdbFileSize());
+        Assert.assertNull(metaStore.dupReplicationStoreMeta().getCmdFilePrefix());
+
+        // success path: prepare again against current identity
+        Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared2 = metaStore.prepareRdbConfirm(
+                replidA, 1, GtidSet.EMPTY_GTIDSET, rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
+        Assert.assertTrue(metaStore.saveMeta(prepared2.getKey(), prepared2.getValue()));
+        Assert.assertEquals(cmdPrefix, metaStore.dupReplicationStoreMeta().getCmdFilePrefix());
     }
 
     /**

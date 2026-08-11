@@ -344,19 +344,11 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		AtomicReference<RdbStore> storeRef = RdbStore.Type.NORMAL.equals(rdbStore.getRdbType()) ? rdbStoreRef : rordbStoreRef;
 
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
-		ReplicationStoreMeta newMeta = metaStore.rdbConfirm(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1,
-				rdbStore.getGtidSet(), rdbStore.getRdbFile().getName(), rdbStore.getRdbType(), rdbStore.getEofType(), cmdFilePrefix);
-
-		rdbStore.addListener(createRdbStoreListener(rdbStore));
-		storeRef.set(rdbStore);
-		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
-				metaStore.generateGtidCmdFilter());
-
-		if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
-			cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
-		} else {
-			cmdStore.switchToPsync(rdbStore.getReplId(), rdbStore.getRdbOffset());
-		}
+		// T-H2.A1: prepare meta → createCmd(+switch) → saveMeta(CAS) → storeRef
+		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = metaStore.prepareRdbConfirm(
+				rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, rdbStore.getGtidSet(),
+				rdbStore.getRdbFile().getName(), rdbStore.getRdbType(), rdbStore.getEofType(), cmdFilePrefix);
+		commitNewCmdThenMeta(rdbStore, storeRef, prepared.getKey(), prepared.getValue());
 	}
 
 	public void confirmRdbGapAllowed(RdbStore rdbStore) throws IOException {
@@ -369,28 +361,76 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
 
-		ReplicationStoreMeta newMeta;
-
+		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared;
 		long rdbNextByte = backlogEndOffset();
 		if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
-			newMeta = metaStore.rdbConfirmXsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, rdbNextByte,
+			prepared = metaStore.prepareRdbConfirmXsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, rdbNextByte,
 					rdbStore.getMasterUuid(), new GtidSet(rdbStore.getGtidLost()), new GtidSet(rdbStore.getGtidSet()),
 					rdbStore.getRdbFile().getName(), rdbStore.getRdbType(), rdbStore.getEofType(), cmdFilePrefix);
-
 		} else {
-			newMeta = metaStore.rdbConfirmPsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, rdbNextByte,
+			prepared = metaStore.prepareRdbConfirmPsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, rdbNextByte,
 					rdbStore.getRdbFile().getName(), rdbStore.getRdbType(), rdbStore.getEofType(), cmdFilePrefix);
 		}
 		rdbStore.setContiguousBacklogOffset(rdbNextByte);
 
-		rdbStore.addListener(createRdbStoreListener(rdbStore));
-		storeRef.set(rdbStore);
-		cmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
-				metaStore.generateGtidCmdFilter());
-		if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
-			cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
-		} else {
-			cmdStore.switchToPsync(rdbStore.getReplId(), rdbStore.getRdbOffset());
+		// T-H2.A1: prepare meta → createCmd(+switch) → saveMeta(CAS) → storeRef
+		commitNewCmdThenMeta(rdbStore, storeRef, prepared.getKey(), prepared.getValue());
+	}
+
+	/**
+	 * H2.A1: create CmdStore first, then CAS-persist meta, then publish RDB ref.
+	 * On any failure: close the new cmd (do not assign {@link #cmdStore}), do not leave storeRef mounted;
+	 * if meta was already saved, CAS-rewrite the previous meta.
+	 */
+	private void commitNewCmdThenMeta(RdbStore rdbStore, AtomicReference<RdbStore> storeRef,
+									  ReplicationStoreMeta expectedOld, ReplicationStoreMeta newMeta) throws IOException {
+		String replId = rdbStore.getReplId();
+		CommandStore newCmdStore = null;
+		boolean metaSaved = false;
+		try {
+			newCmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
+					metaStore.generateGtidCmdFilter());
+			if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
+				newCmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
+			} else {
+				newCmdStore.switchToPsync(rdbStore.getReplId(), rdbStore.getRdbOffset());
+			}
+
+			if (!metaStore.saveMeta(expectedOld, newMeta)) {
+				throw new IOException("confirmRdb meta CAS fail, concurrent meta update, replId=" + replId);
+			}
+			metaSaved = true;
+
+			rdbStore.addListener(createRdbStoreListener(rdbStore));
+			storeRef.set(rdbStore);
+			this.cmdStore = newCmdStore;
+			newCmdStore = null;
+		} catch (Throwable t) {
+			if (newCmdStore != null) {
+				try {
+					newCmdStore.close();
+				} catch (Throwable closeError) {
+					getLogger().warn("[confirmRdb][rollback] close new cmdStore fail, replId={}", replId, closeError);
+				}
+			}
+			if (metaSaved) {
+				try {
+					if (!metaStore.saveMeta(newMeta, expectedOld)) {
+						getLogger().error("[confirmRdb][rollback] rewrite old meta CAS fail, replId={}, expectedOld={}, current={}",
+								replId, expectedOld, metaStore.dupReplicationStoreMeta());
+					}
+				} catch (Throwable rewriteError) {
+					getLogger().error("[confirmRdb][rollback] rewrite old meta fail, replId={}, oldMeta={}",
+							replId, expectedOld, rewriteError);
+				}
+			}
+			if (t instanceof IOException) {
+				throw (IOException) t;
+			}
+			if (t instanceof RuntimeException) {
+				throw (RuntimeException) t;
+			}
+			throw new XpipeRuntimeException("confirmRdb commit fail, replId=" + replId, t);
 		}
 	}
 
