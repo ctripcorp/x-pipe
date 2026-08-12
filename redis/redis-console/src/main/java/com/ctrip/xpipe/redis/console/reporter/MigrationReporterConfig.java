@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.ctrip.xpipe.api.config.ConfigProvider.COMMON_CONFIG;
+import static com.ctrip.xpipe.api.config.ConfigProvider.DATA_CENTER_CONFIG_NAME;
 
 @Configuration
 public class MigrationReporterConfig extends AbstractConfigBean {
@@ -28,7 +28,7 @@ public class MigrationReporterConfig extends AbstractConfigBean {
     private static final String KEY_MIGRATION_RESULT_REPORT_INTERVAL_MILLI = "migration.result.report.interval.milli";
 
     public MigrationReporterConfig() {
-        super(ConfigProvider.DEFAULT.getOrCreateConfig(COMMON_CONFIG));
+        super(ConfigProvider.DEFAULT.getOrCreateConfig(DATA_CENTER_CONFIG_NAME));
     }
 
     public String getKeyMigrationResultReportToken() {

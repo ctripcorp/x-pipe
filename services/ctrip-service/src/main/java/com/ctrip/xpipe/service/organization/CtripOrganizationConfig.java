@@ -5,7 +5,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.utils.EncryptUtils;
 
-import static com.ctrip.xpipe.api.config.ConfigProvider.COMMON_CONFIG;
+import static com.ctrip.xpipe.api.config.ConfigProvider.DATA_CENTER_CONFIG_NAME;
 
 
 /**
@@ -19,7 +19,7 @@ public class CtripOrganizationConfig extends AbstractConfigBean {
     public static final String KEY_CMS_ORGANIZATION_URL = "cms.organization.url";
 
     public CtripOrganizationConfig() {
-        super(ConfigProvider.DEFAULT.getOrCreateConfig(COMMON_CONFIG));
+        super(ConfigProvider.DEFAULT.getOrCreateConfig(DATA_CENTER_CONFIG_NAME));
     }
 
     public String getCmsAccessToken() {
