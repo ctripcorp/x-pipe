@@ -905,6 +905,10 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 		Map<Long, String> dcIdNameMap = dcService.dcNameMap();
 		Map<Long, List<AzGroupClusterEntity>> displayAzGroupMap =
 				heteroMigrationSupport.listDisplayAzGroupClustersSorted(heteroClusterIds);
+		Map<Long, List<Long>> azGroupClusterIdToDcIds = dcClusterRepository.selectByClusterIds(heteroClusterIds).stream()
+				.filter(e -> e.getAzGroupClusterId() != null && e.getAzGroupClusterId() > 0)
+				.collect(Collectors.groupingBy(DcClusterEntity::getAzGroupClusterId,
+						Collectors.mapping(DcClusterEntity::getDcId, Collectors.toList())));
 		for (ClusterTbl cluster : clusters) {
 			if (!heteroMigrationSupport.isHeteroCluster(cluster) || cluster.getHeteroActiveDcSummary() != null) {
 				continue;
@@ -915,6 +919,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			}
 			List<String> summaryParts = new ArrayList<>();
 			List<Long> activeDcIds = new ArrayList<>();
+			List<String> azGroupTypes = new ArrayList<>();
+			List<String> azGroupDcIdsCsv = new ArrayList<>();
 			String defaultFromDc = null;
 			for (AzGroupClusterEntity azGroupCluster : displayAzGroups) {
 				Long activeAzId = azGroupCluster.getActiveAzId();
@@ -931,6 +937,9 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 				}
 				summaryParts.add(azGroupCluster.getAzGroupClusterType() + ":" + activeDcName);
 				activeDcIds.add(activeAzId);
+				azGroupTypes.add(azGroupCluster.getAzGroupClusterType());
+				List<Long> dcIds = azGroupClusterIdToDcIds.getOrDefault(azGroupCluster.getId(), Collections.emptyList());
+				azGroupDcIdsCsv.add(dcIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
 			}
 			if (summaryParts.isEmpty()) {
 				continue;
@@ -938,6 +947,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			cluster.setHeteroActiveDcSummary(String.join(" / ", summaryParts));
 			cluster.setHeteroActiveDcIds(activeDcIds);
 			cluster.setHeteroDefaultFromDc(defaultFromDc);
+			cluster.setHeteroAzGroupTypes(azGroupTypes);
+			cluster.setHeteroAzGroupDcIdsCsv(azGroupDcIdsCsv);
 		}
 	}
 

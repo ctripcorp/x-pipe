@@ -3,10 +3,10 @@ angular
     .controller('ClusterListCtl', ClusterListCtl);
 
 ClusterListCtl.$inject = ['$rootScope', '$scope', '$window', '$stateParams', '$state', 'AppUtil',
-    'toastr', 'ClusterService', 'MigrationService', 'DcService', 'NgTableParams', 'ngTableEventsChannel', 'ClusterType', 'HealthCheckService'];
+    'toastr', 'ClusterService', 'MigrationService', 'DcService', 'ZoneService', 'NgTableParams', 'ngTableEventsChannel', 'ClusterType', 'HealthCheckService'];
 
 function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUtil,
-                        toastr, ClusterService, MigrationService, DcService, NgTableParams, ngTableEventsChannel, ClusterType, HealthCheckService) {
+                        toastr, ClusterService, MigrationService, DcService, ZoneService, NgTableParams, ngTableEventsChannel, ClusterType, HealthCheckService) {
     const SUCCESS_STATE = 0;
     $rootScope.currentNav = '1-2';
     $scope.dcs = {};
@@ -48,6 +48,31 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     $scope.showDetails = false;
     $scope.showClusterDetails = showClusterDetails;
 
+    $scope.zonesById = {};
+    $scope.dcZoneName = {};
+    $scope.regionDcIds = {};
+    $scope.regionFilterData = [];
+    $scope.azGroupTypeOptions = (function () {
+        var all = ClusterType.selectData().filter(function (opt) { return opt.id !== 'hetero'; });
+        var deprecated = {bi_direction: 1, cross_dc: 1};
+        var normal = [];
+        var tail = [];
+        for (var i = 0; i < all.length; ++i) {
+            if (deprecated[all[i].id]) tail.push(all[i]);
+            else normal.push(all[i]);
+        }
+        return normal.concat(tail);
+    })();
+    $scope.azGroupConditions = [];
+    $scope.addAzGroupCondition = addAzGroupCondition;
+    $scope.removeAzGroupCondition = removeAzGroupCondition;
+    $scope.clearAzGroupConditions = clearAzGroupConditions;
+    $scope.applyAzGroupConditions = applyAzGroupConditions;
+    $scope.dcOptionsForRegion = dcOptionsForRegion;
+    $scope.onConditionRegionChange = onConditionRegionChange;
+    $scope.toggleConditionDc = toggleConditionDc;
+    $scope.isConditionDcChecked = isConditionDcChecked;
+
     $scope.displayedClusters = [];
     $scope.filteredClusters = [];
     $scope.sourceClusters = [];
@@ -71,6 +96,8 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         showClusters("showAll");
     }
 
+    var dcs = [];
+    var dcById = {};
     DcService.loadAllDcs()
     	.then(function(data) {
     		for(var i = 0 ; i < data.length; ++i) {
@@ -80,7 +107,10 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
                     "id": dc.id,
                     "title": dc.dcName
                 });
+                dcs.push(dc);
+                dcById[dc.id] = dc;
     		}
+            rebuildRegionData();
     	});
 
     ClusterService.getOrganizations()
@@ -93,6 +123,34 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
                 });
             }
         });
+
+    ZoneService.findAllZones()
+        .then(function (zones) {
+            zones = zones || [];
+            for (var i = 0; i < zones.length; ++i) {
+                $scope.zonesById[zones[i].id] = zones[i].zoneName;
+            }
+            rebuildRegionData();
+        });
+
+    function rebuildRegionData() {
+        if (!dcs.length || Object.keys($scope.zonesById).length === 0) return;
+        $scope.dcZoneName = {};
+        $scope.regionDcIds = {};
+        for (var i = 0; i < dcs.length; ++i) {
+            var dc = dcs[i];
+            var zoneName = $scope.zonesById[dc.zoneId];
+            if (!zoneName) continue;
+            $scope.dcZoneName[dc.id] = zoneName;
+            if (!$scope.regionDcIds[zoneName]) $scope.regionDcIds[zoneName] = [];
+            $scope.regionDcIds[zoneName].push(dc.id);
+        }
+        var regionKeys = Object.keys($scope.regionDcIds).sort();
+        $scope.regionFilterData = [{id: '', title: ''}];
+        for (var k = 0; k < regionKeys.length; ++k) {
+            $scope.regionFilterData.push({id: regionKeys[k], title: regionKeys[k]});
+        }
+    }
 
     ngTableEventsChannel.onAfterDataFiltered(function (params, filtered) {
         const index = params.page() - 1;
@@ -274,28 +332,46 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         return $scope.sourceClusters.filter(c => c.isChecked);
     }
 
+    function getClusterFromDcCandidates(cluster) {
+        if (isHeteroCluster(cluster)) {
+            var ids = cluster.heteroActiveDcIds || [];
+            var summary = cluster.heteroActiveDcSummary || '';
+            var parts = summary.split(' / ');
+            var candidates = [];
+            for (var i = 0; i < ids.length; ++i) {
+                var seg = parts[i] || '';
+                var type = seg.split(':')[0];
+                var ct = type ? ClusterType.lookup(type) : null;
+                if (ct && ct.supportMigration) {
+                    var dcName = $scope.dcs[ids[i]];
+                    if (dcName) candidates.push(dcName);
+                }
+            }
+            return candidates;
+        }
+        var single = $scope.dcs[cluster.activedcId];
+        return single ? [single] : [];
+    }
+
     function migrateSelectedClusters() {
         let selected = $scope.getSelectedClusters();
         if (selected.length === 0) {
             toastr.warning('请先勾选要迁移的集群');
             return;
         }
-        let fromDcSet = {};
-        selected.forEach(function(cluster) {
-            fromDcSet[getClusterFromDc(cluster)] = true;
-        });
-        let fromDcKeys = Object.keys(fromDcSet).filter(function(key) {
-            return key !== '';
-        });
-        if (fromDcKeys.length !== 1) {
-            if (fromDcKeys.length > 1) {
-                toastr.error('所选集群源机房不一致，请按相同源机房筛选后重试');
-            } else {
-                toastr.error('无法确定所选集群源机房，请刷新后重试');
-            }
+        var candidatesPerCluster = selected.map(getClusterFromDcCandidates);
+        if (candidatesPerCluster.some(function (arr) { return arr.length === 0; })) {
+            toastr.error('无法确定所选集群源机房，请刷新后重试');
             return;
         }
-        $state.go('migration_index', { clusters: selected, fromDc: fromDcKeys[0] });
+        var intersection = candidatesPerCluster.reduce(function (acc, cur) {
+            return acc.filter(function (dc) { return cur.indexOf(dc) !== -1; });
+        }, candidatesPerCluster[0].slice());
+        if (intersection.length === 0) {
+            toastr.error('所选集群没有共同的源机房，请分批迁移');
+            return;
+        }
+        $state.go('migration_index', { clusters: selected, fromDc: intersection[0] });
     }
 
     function clearData() {
@@ -382,6 +458,9 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
             filterOptions: {
                 filterFn: function(rows, filter) {
                     return rows.filter(function(row) {
+                        if (!matchesAzGroupConditions(row)) {
+                            return false;
+                        }
                         return Object.keys(filter).every(function(key) {
                             var filterValue = filter[key];
                             if (filterValue === undefined || filterValue === null || filterValue === '') {
@@ -409,7 +488,171 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
         });
     }
 
+    function matchesAzGroupConditions(cluster) {
+        var conds = $scope.azGroupConditions || [];
+        if (!conds.length) return true;
+        for (var i = 0; i < conds.length; ++i) {
+            var c = conds[i];
+            if (!c) continue;
+            var isEmpty = !c.region && !c.clusterType && (!c.dcIds || !c.dcIds.length) && !c.activeDcId;
+            if (isEmpty) continue;
+            if (!matchesOneAzGroupCondition(cluster, c)) return false;
+        }
+        return true;
+    }
+
+    function matchesOneAzGroupCondition(cluster, cond) {
+        var region = cond.region;
+        var typeValue = cond.clusterType;
+        var wantDcIds = cond.dcIds || [];
+        var wantActiveDcId = cond.activeDcId;
+        var hasRegion = !!region;
+        var hasType = !!typeValue;
+        var hasDc = wantDcIds.length > 0;
+        var hasActive = !!wantActiveDcId;
+        if (isHeteroCluster(cluster)) {
+            var types = cluster.heteroAzGroupTypes || [];
+            var actives = cluster.heteroActiveDcIds || [];
+            var dcCsvs = cluster.heteroAzGroupDcIdsCsv || [];
+            var n = Math.max(types.length, actives.length, dcCsvs.length);
+            for (var i = 0; i < n; ++i) {
+                var dcIds = parseCsvIds(dcCsvs[i]);
+                if (hasRegion) {
+                    var hitRegion = false;
+                    for (var d = 0; d < dcIds.length; ++d) {
+                        if ($scope.dcZoneName[dcIds[d]] === region) { hitRegion = true; break; }
+                    }
+                    if (!hitRegion) continue;
+                }
+                if (hasType && !(types[i] && types[i].toLowerCase() === typeValue)) continue;
+                if (hasActive && actives[i] != wantActiveDcId) continue;
+                if (hasDc && !anyIdMatch(dcIds, wantDcIds)) continue;
+                return true;
+            }
+            return false;
+        }
+        if (hasType) {
+            var ct = ClusterType.lookup(cluster.clusterType);
+            if (!ct || ct.value !== typeValue) return false;
+        }
+        var boundDcIds = collectClusterBindDcIds(cluster);
+        if (hasRegion) {
+            var regionHit = false;
+            for (var b = 0; b < boundDcIds.length; ++b) {
+                if ($scope.dcZoneName[boundDcIds[b]] === region) { regionHit = true; break; }
+            }
+            if (!regionHit) return false;
+        }
+        if (hasActive && cluster.activedcId != wantActiveDcId) return false;
+        if (hasDc && !anyIdMatch(boundDcIds, wantDcIds)) return false;
+        return true;
+    }
+
+    function parseCsvIds(csv) {
+        if (!csv) return [];
+        var parts = csv.split(',');
+        var out = [];
+        for (var i = 0; i < parts.length; ++i) {
+            var s = parts[i].trim();
+            if (s) out.push(Number(s));
+        }
+        return out;
+    }
+
+    function anyIdMatch(haystack, needles) {
+        for (var i = 0; i < needles.length; ++i) {
+            for (var j = 0; j < haystack.length; ++j) {
+                if (haystack[j] == needles[i]) return true;
+            }
+        }
+        return false;
+    }
+
+    function collectClusterBindDcIds(cluster) {
+        var ids = [];
+        if (cluster.dcClusterInfo && cluster.dcClusterInfo.length) {
+            for (var j = 0; j < cluster.dcClusterInfo.length; ++j) {
+                ids.push(cluster.dcClusterInfo[j].dcId);
+            }
+        }
+        if (cluster.activedcId && ids.indexOf(cluster.activedcId) === -1) {
+            ids.push(cluster.activedcId);
+        }
+        return ids;
+    }
+
+    function addAzGroupCondition() {
+        var cond = {region: '', dcIds: [], activeDcId: '', clusterType: '', _dcOpen: false, _dcOptions: []};
+        $scope.azGroupConditions.push(cond);
+    }
+
+    function onConditionRegionChange(cond) {
+        cond.dcIds = [];
+        cond.activeDcId = '';
+        cond._dcOptions = computeDcOptionsForRegion(cond.region);
+    }
+
+    function computeDcOptionsForRegion(region) {
+        if (!region || !$scope.regionDcIds[region]) return [];
+        var ids = $scope.regionDcIds[region];
+        var opts = [];
+        for (var i = 0; i < ids.length; ++i) {
+            var name = $scope.dcs[ids[i]];
+            if (name) opts.push({id: ids[i], title: name});
+        }
+        opts.sort(function (a, b) { return a.title < b.title ? -1 : (a.title > b.title ? 1 : 0); });
+        return opts;
+    }
+
+    function dcOptionsForRegion(region) {
+        return computeDcOptionsForRegion(region);
+    }
+
+    function toggleConditionDc(cond, dcId) {
+        if (!cond.dcIds) cond.dcIds = [];
+        var idx = cond.dcIds.indexOf(dcId);
+        if (idx === -1) cond.dcIds.push(dcId);
+        else cond.dcIds.splice(idx, 1);
+    }
+
+    function isConditionDcChecked(cond, dcId) {
+        return cond && cond.dcIds && cond.dcIds.indexOf(dcId) !== -1;
+    }
+
+    function removeAzGroupCondition(index) {
+        $scope.azGroupConditions.splice(index, 1);
+        applyAzGroupConditions();
+    }
+
+    function clearAzGroupConditions() {
+        $scope.azGroupConditions = [];
+        applyAzGroupConditions();
+    }
+
+    function applyAzGroupConditions() {
+        if (!$scope.tableParams) return;
+        var filtered = ($scope.sourceClusters || []).filter(matchesAzGroupConditions);
+        $scope.tableParams.settings({dataset: filtered});
+        $scope.tableParams.page(1);
+    }
+
     function showClusterDetails() {
         $scope.showDetails = !$scope.showDetails;
     }
+
+    (function bindOutsideClickToCloseDcPickers() {
+        $(document).on('click.azGroupDcPicker', function () {
+            var changed = false;
+            for (var i = 0; i < $scope.azGroupConditions.length; ++i) {
+                if ($scope.azGroupConditions[i]._dcOpen) {
+                    $scope.azGroupConditions[i]._dcOpen = false;
+                    changed = true;
+                }
+            }
+            if (changed) $scope.$apply();
+        });
+        $scope.$on('$destroy', function () {
+            $(document).off('click.azGroupDcPicker');
+        });
+    })();
 }
