@@ -253,8 +253,10 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
         logger.info("[create]{}", storeBaseDir);
 
-        // Construct before publishing latest: avoid latest.store.dir pointing at an empty UUID dir
-        // when createReplicationStore fails (GC could then reclaim the still-serving old store).
+        // T-H2.E1 (方案 B): construct before publishing latest — store construction / createCommandStore
+        // failure throws here before recordLatestStore / releaseCurrentStore / currentStore.set, so the old
+        // store stays open, latest.store.dir keeps the old value, and getCurrent() still returns the old store.
+        // The orphaned empty UUID dir is reclaimed by Manager gc (name != LATEST_STORE_DIR).
         ReplicationStore replicationStore = createReplicationStore(storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, syncRateManager);
         try {
             recordLatestStore(storeBaseDir.getName());

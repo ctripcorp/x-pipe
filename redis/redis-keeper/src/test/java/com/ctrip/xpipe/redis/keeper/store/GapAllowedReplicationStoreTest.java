@@ -789,6 +789,80 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertEquals(replidA, meta.getCurReplStage().getReplId());
 	}
 
+	/**
+	 * T-H2.D1: checkReplIdAndUpdateRdbGapAllowed meta write fail → storeRef keeps old RDB, meta rdb fields unchanged.
+	 */
+	@Test
+	public void checkReplIdAndUpdateRdbGapAllowedMetaWriteFailureKeepsOldRdb() throws Exception {
+		store.close();
+		store = null;
+
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected updateRdb meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		File caseDir = new File(baseDir, "h2d1-update-rdb-meta-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		try {
+			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+
+			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, masterUuidA);
+			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+			rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			store.confirmRdbGapAllowed(rdbStore);
+			store.appendCommands(Unpooled.wrappedBuffer(generateVanillaCommands(1000)));
+
+			RdbStore oldRdbStore = store.getRdbStore();
+			ReplicationStoreMeta oldMeta = store.getMetaStore().dupReplicationStoreMeta();
+			String oldRdbFile = oldMeta.getRdbFile();
+			Assert.assertNotNull(oldRdbStore);
+			Assert.assertNotNull(oldRdbFile);
+
+			DumpedRdbStore dumpedRdbStore = prepareNewRdbPsync();
+			dumpedRdbStore.setRdbOffset(10500);
+
+			failMetaWrite.set(true);
+			try {
+				store.checkReplIdAndUpdateRdbGapAllowed(dumpedRdbStore);
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected updateRdb meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected updateRdb meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+			dumpedRdbStore.close();
+
+			// storeRef must still point to the old RDB; meta rdb file unchanged.
+			Assert.assertSame(oldRdbStore, store.getRdbStore());
+			ReplicationStoreMeta meta = store.getMetaStore().dupReplicationStoreMeta();
+			Assert.assertEquals(oldRdbFile, meta.getRdbFile());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
 	private static void assertConfirmRollbackClean(GtidReplicationStore store) {
 		Assert.assertNull(store.getRdbStore());
 		Assert.assertNull(ReflectionTestUtils.getField(store, "cmdStore"));

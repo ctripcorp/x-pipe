@@ -617,6 +617,9 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 			rdbStore.addListener(createRdbStoreListener(rdbStore));
 
+			// T-H2.D1: meta persisted first (disk-first via T-H2.0); only after that do we switch storeRef.
+			// meta write failure throws above → storeRef keeps the old RDB. The steps between the meta save
+			// and storeRef.set are non-throwing (in-memory setter/listener/atomic set), so meta-success ⟺ ref-switched.
 			getLogger().info("[checkReplIdAndUpdateRdbGapAllowed] new file:{}, type:{} eofType:{}, rdbOffset:{}", dumpedRdbFile, rdbType, eofType, rdbOffset);
 			RdbStore oldRdbStore = storeRef.get();
 			storeRef.set(rdbStore);
@@ -649,6 +652,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 			rdbStore.addListener(createRdbStoreListener(rdbStore));
 
+			// T-H2.D1: meta persisted first (disk-first via T-H2.0); only after that do we switch storeRef.
+			// meta write failure throws above → storeRef keeps the old RDB.
 			getLogger().info("[checkReplIdAndUpdateRdb] new file:{}, type:{} eofType:{}, rdbOffset:{}", dumpedRdbFile, rdbType, eofType, rdbOffset);
 			RdbStore oldRdbStore = storeRef.get();
 			storeRef.set(rdbStore);

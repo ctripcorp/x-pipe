@@ -166,6 +166,74 @@ public class DefaultReplicationStoreTest extends AbstractRedisKeeperTest{
 	}
 
 	/**
+	 * T-H2.D1: checkReplIdAndUpdateRdb meta write fail → storeRef keeps old RDB, meta rdb file unchanged.
+	 */
+	@Test
+	public void checkReplIdAndUpdateRdbMetaWriteFailureKeepsOldRdb() throws Exception {
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected updateRdb meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		try {
+			store = new DefaultReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					Mockito.mock(SyncRateManager.class), redisOpParser, fileSystem, getReplId());
+			store.getMetaStore().becomeActive();
+
+			String replId = randomKeeperRunid();
+			RdbStore rdb1 = store.prepareRdb(replId, -1, new LenEofType(100));
+			rdb1.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			rdb1.updateRdbType(RdbStore.Type.NORMAL);
+			store.confirmRdb(rdb1);
+
+			RdbStore oldRdbStore = store.getRdbStore();
+			String oldRdbFile = store.getMetaStore().dupReplicationStoreMeta().getRdbFile();
+			Assert.assertNotNull(oldRdbStore);
+			Assert.assertNotNull(oldRdbFile);
+
+			RdbStore rdb2 = store.prepareRdb(replId, 100, new LenEofType(100));
+			rdb2.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			rdb2.updateRdbType(RdbStore.Type.NORMAL);
+
+			failMetaWrite.set(true);
+			try {
+				store.checkReplIdAndUpdateRdb(rdb2);
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected updateRdb meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected updateRdb meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+
+			// storeRef must still point to the old RDB; meta rdb file unchanged.
+			Assert.assertSame(oldRdbStore, store.getRdbStore());
+			Assert.assertEquals(oldRdbFile, store.getMetaStore().dupReplicationStoreMeta().getRdbFile());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	/**
 	 * T-H2.A2: continueFromOffset createCmd ok + meta save fail → new cmd closed/not exposed; prefix unchanged.
 	 */
 	@Test

@@ -230,6 +230,11 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 				if (failManagerMetaWrite.get()) {
 					AsyncFile file = invocation.getArgument(0);
 					if (isManagerMetaFile(file)) {
+						// Match writeAllBytes retain: fail path must drop the FS-owned ref
+						ByteBuf buf = invocation.getArgument(1);
+						if (buf != null && buf.refCnt() > 0) {
+							buf.release();
+						}
 						throw new IllegalStateException("injected meta write runtime");
 					}
 				}
@@ -284,6 +289,11 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 				if (failManagerMetaWrite.get()) {
 					AsyncFile file = invocation.getArgument(0);
 					if (isManagerMetaFile(file)) {
+						// Match writeAllBytes retain: fail path must drop the FS-owned ref
+						ByteBuf buf = invocation.getArgument(1);
+						if (buf != null && buf.refCnt() > 0) {
+							buf.release();
+						}
 						return java.util.concurrent.CompletableFuture.failedFuture(
 								new IOException("injected saveMeta write fail"));
 					}

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.meta;
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofMarkType;
@@ -155,6 +156,108 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
                 }
 
                 Assert.assertEquals(1024L, store.dupReplicationStoreMeta().getRdbFileSize());
+            } finally {
+                store.close();
+            }
+        } finally {
+            fileSystem.shutdown();
+        }
+    }
+
+    /**
+     * T-H2.C1: Meta-only path setMasterAddress relies on T-H2.0 (disk-first save);
+     * write failure must leave the in-memory master address unchanged.
+     */
+    @Test
+    public void setMasterAddressWriteFailureKeepsOldMasterInMemory() throws Exception {
+        metaStore.close();
+        metaStore = null;
+        AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+        AtomicBoolean failWrite = new AtomicBoolean(false);
+        doAnswer(invocation -> {
+            if (failWrite.get()) {
+                ByteBuf buf = invocation.getArgument(1);
+                if (buf != null && buf.refCnt() > 0) {
+                    buf.release();
+                }
+                return java.util.concurrent.CompletableFuture.failedFuture(
+                        new IOException("injected setMasterAddress write fail"));
+            }
+            return invocation.callRealMethod();
+        }).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+        try {
+            DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
+            try {
+                DefaultEndPoint masterA = new DefaultEndPoint("127.0.0.1", 6379);
+                store.setMasterAddress(masterA);
+                Assert.assertEquals(masterA, store.getMasterAddress());
+
+                failWrite.set(true);
+                DefaultEndPoint masterB = new DefaultEndPoint("127.0.0.2", 6380);
+                try {
+                    store.setMasterAddress(masterB);
+                    Assert.fail("expected IOException when meta write fails");
+                } catch (IOException expected) {
+                    Assert.assertTrue(expected.getMessage().contains("injected setMasterAddress write fail")
+                            || (expected.getCause() != null
+                            && expected.getCause().getMessage() != null
+                            && expected.getCause().getMessage().contains("injected setMasterAddress write fail")));
+                } finally {
+                    failWrite.set(false);
+                }
+
+                Assert.assertEquals(masterA, store.getMasterAddress());
+            } finally {
+                store.close();
+            }
+        } finally {
+            fileSystem.shutdown();
+        }
+    }
+
+    /**
+     * T-H2.C1: Meta-only path increaseLost relies on T-H2.0 (disk-first save);
+     * write failure must leave the in-memory gtidLost unchanged.
+     */
+    @Test
+    public void increaseLostWriteFailureKeepsOldGtidLostInMemory() throws Exception {
+        metaStore.close();
+        metaStore = null;
+        AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+        AtomicBoolean failWrite = new AtomicBoolean(false);
+        doAnswer(invocation -> {
+            if (failWrite.get()) {
+                ByteBuf buf = invocation.getArgument(1);
+                if (buf != null && buf.refCnt() > 0) {
+                    buf.release();
+                }
+                return java.util.concurrent.CompletableFuture.failedFuture(
+                        new IOException("injected increaseLost write fail"));
+            }
+            return invocation.callRealMethod();
+        }).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+        try {
+            DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
+            try {
+                store.rdbConfirmXsync(replidA, 1, 10000, masterUuidA, new GtidSet(GtidSet.EMPTY_GTIDSET),
+                        new GtidSet(GtidSet.EMPTY_GTIDSET), rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
+                GtidSet lostBefore = store.getCurrentReplStage().getGtidLost();
+                Assert.assertEquals(new GtidSet(GtidSet.EMPTY_GTIDSET), lostBefore);
+
+                failWrite.set(true);
+                try {
+                    store.increaseLost(new GtidSet(masterUuidB + ":1-10"));
+                    Assert.fail("expected IOException when meta write fails");
+                } catch (IOException expected) {
+                    Assert.assertTrue(expected.getMessage().contains("injected increaseLost write fail")
+                            || (expected.getCause() != null
+                            && expected.getCause().getMessage() != null
+                            && expected.getCause().getMessage().contains("injected increaseLost write fail")));
+                } finally {
+                    failWrite.set(false);
+                }
+
+                Assert.assertEquals(new GtidSet(GtidSet.EMPTY_GTIDSET), store.getCurrentReplStage().getGtidLost());
             } finally {
                 store.close();
             }
