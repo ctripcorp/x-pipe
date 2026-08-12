@@ -238,13 +238,56 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
     /**
      * Same IndexStore monitor as locate: flush → cmd roll → rebind writers.
      * Closes the half-rotate window where tip index is empty and seek cannot changeToPre.
+     * <p>
+     * T-H2.G1 / I2: after {@code cmdRoll} succeeds, FS has advanced the write tip and closed
+     * old index handles. If {@link #doSwitchCmdFile()} fails, retry it once (still holding
+     * Writer refs so {@link #resolveContinueGtidSet()} works); on final failure unbind and
+     * rethrow (no swallow).
      */
     @Override
     public synchronized void rotateWithCmdRoll(IOSupplier<?> cmdRoll) throws IOException {
         makeSureOpen();
         flushWriter();
         cmdRoll.get();
-        doSwitchCmdFile();
+        try {
+            doSwitchCmdFile();
+        } catch (Exception first) {
+            // cmd tip already advanced; retry switch once before clearing closed Writer refs
+            logger.warn("[rotateWithCmdRoll][switch failed after cmdRoll, retry doSwitchCmdFile once]{} replId={} segment={}",
+                    this, replId, asyncCommandStore.getCurrentSegmentStartOffset(), first);
+            try {
+                doSwitchCmdFile();
+                logger.info("[rotateWithCmdRoll][retry doSwitchCmdFile ok]{} replId={} segment={}",
+                        this, replId, asyncCommandStore.getCurrentSegmentStartOffset());
+            } catch (Exception retry) {
+                unbindIndexWritersAfterRotateFailure();
+                logger.error("[rotateWithCmdRoll][retry doSwitchCmdFile failed, writers unbound]{} replId={} segment={}",
+                        this, replId, asyncCommandStore.getCurrentSegmentStartOffset(), retry);
+                rethrowRotateFailure(retry, first);
+            }
+        }
+    }
+
+    /**
+     * Drop Writer refs that may hold {@link AsyncFile} handles already closed by {@code fs.roll}.
+     * Must not flush — flush would hit {@code ClosedChannelException} (T-H2.G1 / I2).
+     */
+    private void unbindIndexWritersAfterRotateFailure() {
+        this.indexWriter = null;
+        this.indexWriterV2 = null;
+    }
+
+    private static void rethrowRotateFailure(Exception failure, Exception first) throws IOException {
+        if (first != null && first != failure) {
+            failure.addSuppressed(first);
+        }
+        if (failure instanceof IOException) {
+            throw (IOException) failure;
+        }
+        if (failure instanceof RuntimeException) {
+            throw (RuntimeException) failure;
+        }
+        throw new IOException(failure);
     }
 
     @Override

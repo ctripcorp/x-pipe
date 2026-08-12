@@ -328,6 +328,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
             }
             if (indexStore.needRotate()) {
                 // Atomic under IndexStore monitor: flush → cmd roll → doSwitchCmdFile (spec §3.7.7 P0-1)
+                // T-H2.G1 / I2: rotateWithCmdRoll failure path rebinds tip or unbinds closed Writers
                 indexStore.rotateWithCmdRoll(() -> {
                     cmdWriter.doRotate();
                     return null;

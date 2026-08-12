@@ -46,6 +46,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
@@ -1707,6 +1708,12 @@ public class DefaultIndexStoreTest {
         field.set(target, value);
     }
 
+    private static Object getField(Object target, String fieldName) throws Exception {
+        Field field = DefaultIndexStore.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return field.get(target);
+    }
+
     private static class GtidIndexSnapshot {
         final String uuid;
         final long startGno;
@@ -2095,6 +2102,82 @@ public class DefaultIndexStoreTest {
         Pair<Long, GtidSet> point = defaultIndexStore.locateContinueGtidSet(new GtidSet(uuid + ":1-2"));
         Assert.assertNotNull(point);
         Assert.assertTrue(point.getKey() >= 0 || point.getKey() == -1);
+    }
+
+    /**
+     * T-H2.G1 / I2: after cmdRoll, doSwitchCmdFile fails then retry also fails → Writers unbound;
+     * flushWriter must not ClosedChannel; write fails cleanly; error propagates.
+     */
+    @Test
+    public void testRotateWithCmdRoll_SwitchFailUnbindsClosedWriters() throws Exception {
+        String uuid = "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+
+        DefaultIndexStore store = spy(defaultIndexStore);
+        AtomicInteger remainingFails = new AtomicInteger(2);
+        doAnswer(inv -> {
+            if (remainingFails.getAndDecrement() > 0) {
+                throw new java.nio.file.NoSuchFileException("cmd_*_0");
+            }
+            return inv.callRealMethod();
+        }).when(store).openReadSegment(anyList());
+
+        try {
+            store.rotateWithCmdRoll(() -> {
+                lastRollSegmentStart = testCmdStore.getCurrentSegmentStartOffset() + testCmdStore.currentSegmentSize();
+                testCmdStore.roll();
+                segmentWritten = 0L;
+                return null;
+            });
+            Assert.fail("expected IOException after doSwitchCmdFile + retry both fail");
+        } catch (IOException e) {
+            Assert.assertTrue(e.getMessage().contains("cmd_*_0"));
+        }
+
+        Assert.assertNull("indexWriter must be unbound after final switch failure", getField(store, "indexWriter"));
+        Assert.assertNull("indexWriterV2 must be unbound after final switch failure", getField(store, "indexWriterV2"));
+
+        store.flushWriter();
+
+        try {
+            store.write(createGtidCommand(uuid + ":2", "SET", "k", "v2"));
+            Assert.fail("write with unbound writers should fail");
+        } catch (IllegalStateException e) {
+            Assert.assertTrue(e.getMessage().contains("index writer not open"));
+        }
+    }
+
+    /**
+     * T-H2.G1: first doSwitchCmdFile fails, retry doSwitchCmdFile succeeds → tip index writable / non-empty header.
+     */
+    @Test
+    public void testRotateWithCmdRoll_SwitchFailThenRebindSucceeds() throws Exception {
+        String uuid = "b50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+
+        DefaultIndexStore store = spy(defaultIndexStore);
+        AtomicInteger remainingFails = new AtomicInteger(1);
+        doAnswer(inv -> {
+            if (remainingFails.getAndDecrement() > 0) {
+                throw new java.nio.file.NoSuchFileException("cmd_*_0");
+            }
+            return inv.callRealMethod();
+        }).when(store).openReadSegment(anyList());
+
+        store.rotateWithCmdRoll(() -> {
+            lastRollSegmentStart = testCmdStore.getCurrentSegmentStartOffset() + testCmdStore.currentSegmentSize();
+            testCmdStore.roll();
+            segmentWritten = 0L;
+            return null;
+        });
+
+        Assert.assertNotNull(getField(store, "indexWriterV2"));
+        AsyncFile tipIndexV2 = currentIndexHandle(AbstractIndex.INDEX_V2 + CMD_PREFIX);
+        Assert.assertTrue("tip index header should be written after retry doSwitchCmdFile",
+                AsyncFileSystemHelper.await(() -> testFs.size(tipIndexV2), "size tip index v2") > 0);
+
+        store.write(createGtidCommand(uuid + ":2", "SET", "k", "v2"));
+        store.flushWriter();
     }
 
     /**
