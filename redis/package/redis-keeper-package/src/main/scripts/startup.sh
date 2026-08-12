@@ -108,18 +108,19 @@ function getRole(){
 }
 function tryRemoveJarLog() {
     logdir=$1
-    appname=$2
-    find "$logdir" -type f -name "$appname_*.log" -delete
+    logname=$2
+    find "$logdir" -type f -name "${logname}-????-??-??-*.log" -delete
 }
 
 #VARS
 FULL_DIR=`getCurrentRealPath`
 SERVICE_NAME=redis-keeper
+LOG_NAME=keepercontainer
 SERVER_PORT=`getPortFromPathOrDefault $FULL_DIR 8080`
 JMX_PORT=` expr $SERVER_PORT + 10000 `
 IP=`ifconfig | grep "inet.10" | awk '{print $2}; NR == 1 {exit}'`
 LOG_DIR=/opt/logs/100004376
-`tryRemoveJarLog ${LOG_DIR} ${SERVICE_NAME}`
+`tryRemoveJarLog ${LOG_DIR} ${LOG_NAME}`
 
 if [ ! $SERVER_PORT -eq 8080 ];then
     LOG_DIR=${LOG_DIR}_$SERVER_PORT
