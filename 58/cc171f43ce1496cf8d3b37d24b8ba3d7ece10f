@@ -1,0 +1,31 @@
+services/ctrip-service/src/main/java/com/ctrip/xpipe/service/fireman/XPipeFiremanDependency.java
+  s_7cd358409436c5::t_d41f72193b844e 46
+  s_7cd358409436c5::t_8fae93a3466c9f 19
+  s_7cd358409436c5::t_f272935699eb1a 18
+services/ctrip-service/src/main/java/com/ctrip/xpipe/service/fireman/XPipeNodesProvider.java
+  s_7cd358409436c5::t_a3502d2ff8a960 31
+  s_7cd358409436c5::t_d8fcb5b27e62e5 32-34
+services/ctrip-service/src/main/java/com/ctrip/xpipe/service/fireman/FiremanConfig.java
+  s_7cd358409436c5::t_816eb95bc94b9e 3,8,18-19,28-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "58cc171f43ce1496cf8d3b37d24b8ba3d7ece10f",
+  "prompts": {},
+  "humans": {
+    "h_2a4fc97c4bee49": {
+      "author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_7cd358409436c5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8263bd00-aadb-4f55-9bc3-16e3c5168880",
+        "model": "arn:aws:bedrock:us-west-2:466494951737:application-inference-profile/rf6www9ej5dq"
+      },
+      "human_author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  }
+}
