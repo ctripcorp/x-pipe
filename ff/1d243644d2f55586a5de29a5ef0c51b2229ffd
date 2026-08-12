@@ -1,0 +1,28 @@
+services/ctrip-service/src/main/java/com/ctrip/xpipe/service/organization/CtripOrganizationConfig.java
+  s_7cd358409436c5::t_60801ab289deac 22
+  s_7cd358409436c5::t_014e963f15ed32 8
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/reporter/MigrationReporterConfig.java
+  s_7cd358409436c5::t_58ce9d1f9154e3 14
+  s_7cd358409436c5::t_bbc4b67c725fb1 31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "ff1d243644d2f55586a5de29a5ef0c51b2229ffd",
+  "prompts": {},
+  "humans": {
+    "h_2a4fc97c4bee49": {
+      "author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  },
+  "sessions": {
+    "s_7cd358409436c5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8263bd00-aadb-4f55-9bc3-16e3c5168880",
+        "model": "arn:aws:bedrock:us-west-2:466494951737:application-inference-profile/rf6www9ej5dq"
+      },
+      "human_author": "0G-C <218736830+0G-C@users.noreply.github.com>"
+    }
+  }
+}
