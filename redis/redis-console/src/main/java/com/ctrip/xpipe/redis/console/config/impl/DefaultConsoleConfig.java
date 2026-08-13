@@ -672,6 +672,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public int getSessionRemoveUnusedDelayMillis() {
+        return commonConfigBean.getSessionRemoveUnusedDelayMillis();
+    }
+
+    @Override
     public long getCheckIsolateInterval() {
         return consoleConfigBean.getIsolateCheckIntervalMilli();
     }
