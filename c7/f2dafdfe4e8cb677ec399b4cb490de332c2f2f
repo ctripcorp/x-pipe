@@ -1,0 +1,26 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisMasterReplicationTest.java
+  s_8c04506f928c25::t_0daf2d19376256 318-332
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreTest.java
+  s_8c04506f928c25::t_4a908b60602d0f 346-389
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/AbstractRedisMasterReplicationTest.java
+  s_8c04506f928c25::t_ae52b1e9609b53 158-178
+  s_8c04506f928c25::t_eba4e8d4bfd943 14,16,28,33-34
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultCommandStoreTest.java
+  s_8c04506f928c25::t_9e4952eb3c1980 678-679
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.39-trip",
+  "base_commit_sha": "c7f2dafdfe4e8cb677ec399b4cb490de332c2f2f",
+  "prompts": {},
+  "sessions": {
+    "s_8c04506f928c25": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5a661a97-cf48-4a6d-8502-7d795595db42",
+        "model": "arn:aws:bedrock:us-west-2:466494951737:application-inference-profile/rf6www9ej5dq"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
