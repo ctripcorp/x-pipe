@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.service.migration.cmd.beacon;
 
-import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
@@ -26,19 +25,19 @@ public class MigrationChooseTargetDcCmd extends AbstractMigrationCmd<DcTbl> {
 
     private DcClusterService dcClusterService;
 
-    private DcRelationsService dcRelationsService;
+    private RelationsService relationsService;
 
     private HeteroMigrationSupport heteroMigrationSupport;
 
     private static final Logger logger = LoggerFactory.getLogger(MigrationChooseTargetDcCmd.class);
 
     public MigrationChooseTargetDcCmd(BeaconMigrationRequest migrationRequest, DcCache dcCache,
-                                      DcClusterService dcClusterService, DcRelationsService dcRelationsService,
+                                      DcClusterService dcClusterService, RelationsService relationsService,
                                       HeteroMigrationSupport heteroMigrationSupport) {
         super(migrationRequest);
         this.dcCache = dcCache;
         this.dcClusterService = dcClusterService;
-        this.dcRelationsService = dcRelationsService;
+        this.relationsService = relationsService;
         this.heteroMigrationSupport = heteroMigrationSupport;
     }
 
@@ -101,7 +100,7 @@ public class MigrationChooseTargetDcCmd extends AbstractMigrationCmd<DcTbl> {
                 return;
             }
 
-            String targetDcName = dcRelationsService.getClusterTargetDcByPriority(cluster.getId(), clusterName, sourcedDc.getDcName(), Lists.newArrayList(availableDcs));
+            String targetDcName = relationsService.getClusterTargetDcByPriority(cluster.getId(), clusterName, sourcedDc.getDcName(), Lists.newArrayList(availableDcs));
             if (targetDcName == null) {
                 logger.info("[doExecute][{}] refused to migrate from {} to {}", clusterName, sourcedDc.getDcName(), availableDcs);
                 future().setFailure(new NoAvailableDcException(clusterName));

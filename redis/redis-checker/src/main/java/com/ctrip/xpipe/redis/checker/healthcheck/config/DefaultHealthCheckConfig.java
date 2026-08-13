@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 
 /**
@@ -9,7 +9,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
  * Aug 30, 2018
  */
 public class DefaultHealthCheckConfig extends AbstractHealthCheckConfig {
-    public DefaultHealthCheckConfig(CheckerConfig checkerConfig, DcRelationsService dcRelationsService) {
-        super(checkerConfig, dcRelationsService);
+    public DefaultHealthCheckConfig(CheckerConfig checkerConfig, RelationsService relationsService) {
+        super(checkerConfig, relationsService);
     }
 }

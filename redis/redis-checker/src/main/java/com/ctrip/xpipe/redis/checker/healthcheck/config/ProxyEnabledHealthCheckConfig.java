@@ -1,6 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 
 /**
@@ -10,8 +10,8 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
  */
 public class ProxyEnabledHealthCheckConfig extends AbstractHealthCheckConfig {
 
-    public ProxyEnabledHealthCheckConfig(CheckerConfig checkerConfig, DcRelationsService dcRelationsService) {
-        super(checkerConfig, dcRelationsService);
+    public ProxyEnabledHealthCheckConfig(CheckerConfig checkerConfig, RelationsService relationsService) {
+        super(checkerConfig, relationsService);
     }
 
     @Override

@@ -81,6 +81,8 @@ public interface MetaCache {
 
     boolean isCrossRegion(String activeDc, String backupDc);
 
+    String getDcZone(String dc);
+
     boolean isCurrentDc(String dc);
 
     boolean isDcInRegion(String dc, String zone);

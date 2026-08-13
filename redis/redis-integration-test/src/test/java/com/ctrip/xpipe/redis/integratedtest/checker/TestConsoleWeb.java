@@ -33,9 +33,9 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean.KEY_CLUSTER_SHARD_FOR_MIGRATE_SYS_CHECK;
-import static com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition.SERVER_MODE.CONSOLE;
 
 public class TestConsoleWeb extends AbstractXpipeServerMultiDcTest {
+
     @Before
     public void start() throws Exception {
         startDb();    
@@ -79,7 +79,7 @@ public class TestConsoleWeb extends AbstractXpipeServerMultiDcTest {
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
         instance.setInstanceInfo(info);
         instance.setEndpoint(new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort()));
-        instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig(), buildDcRelationsService()));
+        instance.setHealthCheckConfig(new DefaultHealthCheckConfig(buildCheckerConfig(), buildRelationsService()));
         instance.setSession(new RedisSession(instance.getEndpoint(), scheduled, pool, buildCheckerConfig()));
         service.updateRedisRole( consoleUrl, instance, Server.SERVER_ROLE.MASTER);
 

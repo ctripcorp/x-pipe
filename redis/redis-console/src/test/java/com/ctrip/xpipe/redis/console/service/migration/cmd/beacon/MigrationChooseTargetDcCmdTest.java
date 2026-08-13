@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.migration.cmd.beacon;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
@@ -46,7 +46,7 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
     private DcClusterService dcClusterService;
 
     @Mock
-    private DcRelationsService dcRelationsService;
+    private RelationsService relationsService;
 
     @Mock
     private HeteroMigrationSupport heteroMigrationSupport;
@@ -68,7 +68,7 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
     @Before
     public void setup() {
         migrationRequest = new BeaconMigrationRequest();
-        chooseTargetDcCmd = new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, dcRelationsService, heteroMigrationSupport);
+        chooseTargetDcCmd = new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, relationsService, heteroMigrationSupport);
         migrationClusterTbl = new MigrationClusterTbl();
         clusterTbl = new ClusterTbl().setClusterName("cluster1").setId(1).setClusterType("ONE_WAY");
         dc0 = new DcTbl().setDcName("dc0").setId(1);
@@ -111,7 +111,7 @@ public class MigrationChooseTargetDcCmdTest extends AbstractConsoleTest {
     @Test
     public void chooseAvailableDc() throws Throwable {
         migrationRequest.setAvailableDcs(Collections.singleton(dc1.getDcName()));
-        when(dcRelationsService.getClusterTargetDcByPriority(1,"cluster1",migrationRequest.getSourceDcTbl().getDcName(), Lists.newArrayList(migrationRequest.getAvailableDcs()))).thenReturn(dc1.getDcName());
+        when(relationsService.getClusterTargetDcByPriority(1,"cluster1",migrationRequest.getSourceDcTbl().getDcName(), Lists.newArrayList(migrationRequest.getAvailableDcs()))).thenReturn(dc1.getDcName());
         CommandFuture future = chooseTargetDcCmd.execute();
         waitConditionUntilTimeOut(() -> future.isDone());
         Assert.assertTrue(future.isSuccess());

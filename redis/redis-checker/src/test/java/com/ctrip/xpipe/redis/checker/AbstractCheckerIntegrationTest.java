@@ -5,7 +5,6 @@ import com.ctrip.xpipe.api.migration.OuterClientService;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyKeyedPoolClientFactory;
-import com.ctrip.xpipe.redis.core.client.NettyRedisPoolClientFactory;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
@@ -14,7 +13,11 @@ import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.DefaultPingService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
-import com.ctrip.xpipe.redis.checker.impl.*;
+import com.ctrip.xpipe.redis.checker.impl.CheckerClusterHealthManager;
+import com.ctrip.xpipe.redis.checker.impl.CheckerRedisInfoManager;
+import com.ctrip.xpipe.redis.checker.impl.DefaultRemoteCheckerManager;
+import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
+import com.ctrip.xpipe.redis.core.client.NettyRedisPoolClientFactory;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
@@ -228,8 +231,8 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         }
 
         @Bean
-        public DcRelationsService dcRelationsService(){
-            return new TestDcRelationsService();
+        public RelationsService relationsService(){
+            return new TestRelationsService();
         }
 
     }

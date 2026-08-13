@@ -333,6 +333,12 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
+    public String getDcZone(String dc) {
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        return xpipeMetaManager.getDcZone(dc);
+    }
+
+    @Override
     public boolean isCurrentDc(String dc) {
         return currentDc.equalsIgnoreCase(dc);
     }

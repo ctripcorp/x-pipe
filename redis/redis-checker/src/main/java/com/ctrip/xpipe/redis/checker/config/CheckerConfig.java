@@ -108,7 +108,7 @@ public interface CheckerConfig {
 
     long subscribeTimeoutMilli();
 
-    String getDcsRelations();
+    String getRelations();
 
     int maxRemovedDcsCnt();
 

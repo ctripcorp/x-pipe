@@ -4,14 +4,14 @@ import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
 import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.model.*;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,20 +29,24 @@ import java.util.stream.Collectors;
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 
-public class DefaultDcRelationsService implements DcRelationsService {
+public class DefaultRelationsService implements RelationsService {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
     private ConsoleConfig config;
 
+    @Autowired
+    private MetaCache metaCache;
+
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled ;
 
     private final AtomicInteger delayPerDistance = new AtomicInteger(2000);
-    private final AtomicReference<String> dcsRelationsConfig = new AtomicReference<>();
-    private final AtomicReference<Map<Set<String>, Integer>> dcsDistance = new AtomicReference<>();
-    private final AtomicReference<Map<String, Map<Set<String>, Integer>>> clusterDcsDistance = new AtomicReference<>();
+    private final AtomicReference<String> relationsConfig = new AtomicReference<>();
+    private final AtomicReference<Map<Pair<String, String>, Integer>> dcsDistance = new AtomicReference<>();
+    private final AtomicReference<Map<String, Map<Pair<String, String>, Integer>>> clusterDcsDistance = new AtomicReference<>();
+    private final AtomicReference<Map<Pair<String, String>, Integer>> regionDistance = new AtomicReference<>();
     private final AtomicReference<DcsPriority> dcLevelPriority = new AtomicReference<>();
     private final AtomicReference<Map<String, DcsPriority>> clusterLevelDcPriority = new AtomicReference<>();
 
@@ -50,20 +54,13 @@ public class DefaultDcRelationsService implements DcRelationsService {
 
     @PostConstruct
     public void start() throws Exception {
+        refresh();
         scheduled.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
-                try {
-                    refresh();
-                } catch (Throwable th) {
-                    try {
-                        logger.error("refresh dc priority failed", th);
-                    } catch (Throwable innerTh) {
-                        //ignore
-                    }
-                }
+                refresh();
             }
-        }, 0, 60, TimeUnit.SECONDS);
+        }, 60, 60, TimeUnit.SECONDS);
     }
 
     List<String> getTargetDcsByPriority(String clusterName, String downDc, List<String> availableDcs) {
@@ -166,14 +163,12 @@ public class DefaultDcRelationsService implements DcRelationsService {
 
     @Override
     public Integer getClusterDcsDelay(String clusterName, String fromDc, String toDc) {
-        Map<String, Map<Set<String>, Integer>> clusterDcsDistanceMap = clusterDcsDistance.get();
+        Map<String, Map<Pair<String, String>, Integer>> clusterDcsDistanceMap = clusterDcsDistance.get();
         if (clusterDcsDistanceMap != null) {
-            Map<Set<String>, Integer> dcsDistanceMap = clusterDcsDistanceMap.get(clusterName.toLowerCase());
-            if (dcsDistanceMap != null) {
-                Integer distance = dcsDistanceMap.get(Sets.newHashSet(fromDc.toUpperCase(), toDc.toUpperCase()));
-                if (distance != null) {
-                    return delayPerDistance.get() * distance;
-                }
+            Map<Pair<String, String>, Integer> dcsDistanceMap = clusterDcsDistanceMap.get(clusterName.toLowerCase());
+            Integer distance = getDirectionalDistance(dcsDistanceMap, fromDc, toDc);
+            if (distance != null) {
+                return delayPerDistance.get() * distance;
             }
         }
         return null;
@@ -181,12 +176,42 @@ public class DefaultDcRelationsService implements DcRelationsService {
 
     @Override
     public Integer getDcsDelay(String fromDc, String toDc) {
-        Map<Set<String>, Integer> dcsDistanceMap = dcsDistance.get();
-        if (dcsDistanceMap != null) {
-            Integer distance = dcsDistanceMap.get(Sets.newHashSet(fromDc.toUpperCase(), toDc.toUpperCase()));
-            if (distance != null) {
-                return delayPerDistance.get() * distance;
-            }
+        Integer distance = getDirectionalDistance(dcsDistance.get(), fromDc, toDc);
+        if (distance != null) {
+            return delayPerDistance.get() * distance;
+        }
+        return null;
+    }
+
+    private Integer getDirectionalDistance(Map<Pair<String, String>, Integer> distanceMap, String fromDc, String toDc) {
+        if (distanceMap == null) return null;
+        return distanceMap.get(new Pair<>(fromDc.toUpperCase(), toDc.toUpperCase()));
+    }
+
+    @Override
+    public boolean isReachableRegion(String srcDc, String dstDc) {
+        String zone1 = metaCache.getDcZone(srcDc);
+        String zone2 = metaCache.getDcZone(dstDc);
+        if (zone1 == null || zone2 == null) {
+            return false;
+        }
+        if (zone1.equalsIgnoreCase(zone2)) {
+            return true;
+        }
+        Integer distance = getRegionDistance(zone1, zone2);
+        return distance != null && distance != -1;
+    }
+
+    @Override
+    public Integer getRegionDelay(String fromDc, String toDc) {
+        String zone1 = metaCache.getDcZone(fromDc);
+        String zone2 = metaCache.getDcZone(toDc);
+        if (zone1 == null || zone2 == null || zone1.equalsIgnoreCase(zone2)) {
+            return null;
+        }
+        Integer distance = getRegionDistance(zone1, zone2);
+        if (distance != null && distance > 0) {
+            return delayPerDistance.get() * distance;
         }
         return null;
     }
@@ -239,87 +264,114 @@ public class DefaultDcRelationsService implements DcRelationsService {
         dcPriorityMap.put(fromDc, dcPriority);
     }
 
-    void refresh() throws Exception {
+    void refresh() {
         TransactionMonitor transaction = TransactionMonitor.DEFAULT;
 
-        transaction.logTransaction("dc.relations", "refresh", new Task() {
-            @Override
-            public void go() throws Exception {
-                String remoteDcsRelationsConfig = config.getDcsRelations();
-                if (dcsRelationsConfig.get() == null || !remoteDcsRelationsConfig.equalsIgnoreCase(dcsRelationsConfig.get())) {
-                    DcsRelations dcsRelations = JsonCodec.INSTANCE.decode(remoteDcsRelationsConfig, DcsRelations.class);
-                    dcsRelationsConfig.set(remoteDcsRelationsConfig);
-                    delayPerDistance.set(dcsRelations.getDelayPerDistance());
-                    dcsDistance.set(buildDcsDistance(dcsRelations.getDcLevel()));
-                    clusterDcsDistance.set(buildClusterDcsDistance(dcsRelations.getClusterLevel()));
-                    clusterLevelDcPriority.set(buildClusterLevelDcPriority(dcsRelations.getClusterLevel()));
-                    dcLevelPriority.set(buildDcLevelPriority(dcsRelations.getDcLevel()));
-                    dcLevelTargetDcsCache.clear();
+        try {
+            transaction.logTransaction("dc.relations", "refresh", new Task() {
+                @Override
+                public void go() throws Exception {
+                    String remoteRelationsConfig = config.getRelations();
+                    if (relationsConfig.get() == null || !remoteRelationsConfig.equalsIgnoreCase(relationsConfig.get())) {
+                        Relations relations = JsonCodec.INSTANCE.decode(remoteRelationsConfig, Relations.class);
+                        relationsConfig.set(remoteRelationsConfig);
+                        delayPerDistance.set(relations.getDelayPerDistance());
+                        dcsDistance.set(buildDcsDistance(relations.getDcLevel()));
+                        clusterDcsDistance.set(buildClusterDcsDistance(relations.getClusterLevel()));
+                        regionDistance.set(buildRegionDistance(relations.getRegionLevel()));
+                        clusterLevelDcPriority.set(buildClusterLevelDcPriority(relations.getClusterLevel()));
+                        dcLevelPriority.set(buildDcLevelPriority(relations.getDcLevel()));
+                        dcLevelTargetDcsCache.clear();
+                    }
                 }
-            }
 
-            @Override
-            public Map<String, Object> getData() {
-                Map<String, Object> transactionData = new HashMap<>();
-                transactionData.put("delayPerDistance", delayPerDistance.get());
-                transactionData.put("dcsDistance", dcsDistance.get());
-                transactionData.put("clusterDcsDistance", clusterDcsDistance.get());
-                transactionData.put("clusterLevelDcPriority", clusterLevelDcPriority.get());
-                transactionData.put("dcLevelPriority", dcLevelPriority.get());
-                return transactionData;
-            }
-        });
+                @Override
+                public Map<String, Object> getData() {
+                    Map<String, Object> transactionData = new HashMap<>();
+                    transactionData.put("delayPerDistance", delayPerDistance.get());
+                    transactionData.put("dcsDistance", dcsDistance.get());
+                    transactionData.put("clusterDcsDistance", clusterDcsDistance.get());
+                    transactionData.put("regionDistance", regionDistance.get());
+                    transactionData.put("clusterLevelDcPriority", clusterLevelDcPriority.get());
+                    transactionData.put("dcLevelPriority", dcLevelPriority.get());
+                    return transactionData;
+                }
+            });
+        } catch (Throwable th) {
+            logger.error("refresh dc priority failed", th);
+        }
 
     }
 
-    private Map<Set<String>, Integer> buildDcsDistance(List<DcRelation> dcRelations) {
-        if (dcRelations == null) return null;
-        Map<Set<String>, Integer> dcsDistanceMap = new HashMap<>();
-        dcRelations.forEach(dcDistance -> {
-            Set<String> dcSet = Sets.newHashSet(dcDistance.getDcs().toUpperCase().split("\\s*,\\s*"));
-            dcsDistanceMap.put(dcSet, dcDistance.getDistance());
-        });
-        return dcsDistanceMap;
+    private Map<Pair<String, String>, Integer> buildDcsDistance(List<Relation> relations) {
+        return buildDirectionalDistance(relations);
     }
 
-    private Map<String, Map<Set<String>, Integer>> buildClusterDcsDistance(List<ClusterDcRelations> relations) {
+    private Map<String, Map<Pair<String, String>, Integer>> buildClusterDcsDistance(List<ClusterRelations> relations) {
         if (relations == null) return null;
-        Map<String, Map<Set<String>, Integer>> clusterDcsDistance = new HashMap<>();
-        relations.forEach(clusterDcRelations -> {
-            Map<Set<String>, Integer> dcsDistanceMap = buildDcsDistance(clusterDcRelations.getRelations());
-            clusterDcsDistance.put(clusterDcRelations.getClusterName().toLowerCase(), dcsDistanceMap);
+        Map<String, Map<Pair<String, String>, Integer>> clusterDcsDistance = new HashMap<>();
+        relations.forEach(clusterRelations -> {
+            Map<Pair<String, String>, Integer> dcsDistanceMap = buildDirectionalDistance(clusterRelations.getRelations());
+            clusterDcsDistance.put(clusterRelations.getClusterName().toLowerCase(), dcsDistanceMap);
         });
         return clusterDcsDistance;
     }
 
-    private Map<String, DcsPriority> buildClusterLevelDcPriority(List<ClusterDcRelations> clusterLevel) {
+    private Map<Pair<String, String>, Integer> buildRegionDistance(List<Relation> regionLevel) {
+        return buildDirectionalDistance(regionLevel);
+    }
+
+    private Map<Pair<String, String>, Integer> buildDirectionalDistance(List<Relation> relations) {
+        if (relations == null) return null;
+        Map<Pair<String, String>, Integer> distanceMap = new HashMap<>();
+        relations.forEach(relation -> {
+            String src = relation.getSrc().toUpperCase();
+            String dst = relation.getDst().toUpperCase();
+            distanceMap.put(new Pair<>(src, dst), relation.getDistance());
+            if (relation.isBiDirection()) {
+                distanceMap.put(new Pair<>(dst, src), relation.getDistance());
+            }
+        });
+        return distanceMap;
+    }
+
+    private Map<String, DcsPriority> buildClusterLevelDcPriority(List<ClusterRelations> clusterLevel) {
         if (clusterLevel == null) return null;
 
         Map<String, DcsPriority> clusterLevelDcPriority = new HashMap<>();
-        for (ClusterDcRelations clusterDcRelations : clusterLevel) {
-            String clusterName = clusterDcRelations.getClusterName();
-            List<DcRelation> dcRelations = clusterDcRelations.getRelations();
+        for (ClusterRelations clusterRelations : clusterLevel) {
+            String clusterName = clusterRelations.getClusterName();
+            List<Relation> relations = clusterRelations.getRelations();
 
-            DcsPriority dcsPriority = buildDcLevelPriority(dcRelations);
+            DcsPriority dcsPriority = buildDcLevelPriority(relations);
             clusterLevelDcPriority.put(clusterName.toLowerCase(), dcsPriority);
         }
         return clusterLevelDcPriority;
     }
 
-    private DcsPriority buildDcLevelPriority(List<DcRelation> dcRelations) {
-        if (dcRelations == null) return null;
+    private DcsPriority buildDcLevelPriority(List<Relation> relations) {
+        if (relations == null) return null;
 
         Map<String, DcPriority> dcPriorityMap = new HashMap<>();
-        for (DcRelation dcRelation : dcRelations) {
-            String dcsStr = dcRelation.getDcs();
-            int distance = dcRelation.getDistance();
+        for (Relation relation : relations) {
+            String src = relation.getSrc().toUpperCase();
+            String dst = relation.getDst().toUpperCase();
+            int distance = relation.getDistance();
 
-            String[] dcs = dcsStr.split("\\s*,\\s*");
-            buildDcPriority(dcPriorityMap, dcs[0].toUpperCase(), dcs[1].toUpperCase(), distance);
-            buildDcPriority(dcPriorityMap, dcs[1].toUpperCase(), dcs[0].toUpperCase(), distance);
+            buildDcPriority(dcPriorityMap, src, dst, distance);
+            if (relation.isBiDirection()) {
+                buildDcPriority(dcPriorityMap, dst, src, distance);
+            }
         }
 
         return new DcsPriority().setDcPriorityMap(dcPriorityMap);
+    }
+
+    @VisibleForTesting
+    Integer getRegionDistance(String fromRegion, String toRegion) {
+        Map<Pair<String, String>, Integer> regionDistanceMap = regionDistance.get();
+        if (regionDistanceMap == null) return null;
+        return regionDistanceMap.get(new Pair<>(fromRegion.toUpperCase(), toRegion.toUpperCase()));
     }
 
     @VisibleForTesting
@@ -338,12 +390,12 @@ public class DefaultDcRelationsService implements DcRelationsService {
     }
 
     @VisibleForTesting
-    Map<Set<String>, Integer> getDcsDistance() {
+    Map<Pair<String, String>, Integer> getDcsDistance() {
         return dcsDistance.get();
     }
 
     @VisibleForTesting
-    Map<String, Map<Set<String>, Integer>> getClusterDcsDistance() {
+    Map<String, Map<Pair<String, String>, Integer>> getClusterDcsDistance() {
         return clusterDcsDistance.get();
     }
 }

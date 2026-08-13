@@ -434,8 +434,8 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
-    public String getDcsRelations() {
-        return commonConfigBean.getDcsRelations();
+    public String getRelations() {
+        return commonConfigBean.getRelations();
     }
 
     @Override

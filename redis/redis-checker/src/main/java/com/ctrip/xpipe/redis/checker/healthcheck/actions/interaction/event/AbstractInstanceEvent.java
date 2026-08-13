@@ -14,6 +14,8 @@ public class AbstractInstanceEvent {
 
     protected HealthStatus currentStatus;
 
+    protected boolean needAdjust = true;
+
     public AbstractInstanceEvent(RedisHealthCheckInstance instance) {
         this.instance = instance;
     }
@@ -24,6 +26,10 @@ public class AbstractInstanceEvent {
 
     public HealthStatus getCurrentStatus() {
         return currentStatus;
+    }
+
+    public boolean needAdjust() {
+        return needAdjust;
     }
 
     @Override

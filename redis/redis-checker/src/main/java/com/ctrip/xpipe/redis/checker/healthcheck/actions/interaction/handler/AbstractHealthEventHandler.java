@@ -61,7 +61,9 @@ public abstract class AbstractHealthEventHandler<T extends AbstractInstanceEvent
             logger.warn("[onEvent][site down, skip] {}", event);
             return;
         }
-        if(!event.getInstance().getCheckInfo().isCrossRegion() && !masterUp(event)) {
+
+        // master instance not checked in cross region checker
+        if (!metaCache.isCrossRegion(event.getInstance().getCheckInfo().getActiveDc(), currentDcId) && !masterUp(event)) {
             logger.info("[onEvent][master down, do not call client service]{}", event);
             return;
         }

@@ -36,6 +36,8 @@ public class XPipeInstanceHealthHolder {
         int downCnt = 0;
 
         for (HealthStatusDesc status: statusList) {
+            if (!status.needAdjust()) continue;
+
             if (status.getState().shouldNotifyMarkup()) upCnt++;
             else if (status.getState().shouldNotifyMarkDown()) downCnt++;
         }

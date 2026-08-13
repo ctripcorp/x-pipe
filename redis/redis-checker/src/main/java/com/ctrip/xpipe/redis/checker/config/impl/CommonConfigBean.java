@@ -47,7 +47,7 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     private static final String KEY_OUTER_CLIENT_TOKEN = "console.outer.client.token";
 
-    private static final String KEY_DCS_RELATIONS = "dcs.relations";
+    private static final String KEY_REGIONS_RELATIONS = "regions.relations";
 
     public static final String KEY_REDIS_ALERT_SENDER_EMAIL = "redis.alert.sender.email";
 
@@ -159,8 +159,8 @@ public class CommonConfigBean extends AbstractConfigBean {
         return getProperty(KEY_OUTER_CLIENT_TOKEN, "");
     }
 
-    public String getDcsRelations() {
-        return getProperty(KEY_DCS_RELATIONS, "{}");
+    public String getRelations() {
+        return getProperty(KEY_REGIONS_RELATIONS, "{}");
     }
 
     public String getRedisAlertSenderEmail() {

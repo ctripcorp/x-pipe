@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.*;
@@ -21,7 +20,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -29,7 +27,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Random;
-import java.util.concurrent.Executors;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
@@ -96,7 +93,6 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
 
         when(siteStability.isSiteStable()).thenReturn(true);
         when(defaultDelayPingActionCollector.getState(any())).thenReturn(HEALTH_STATE.DOWN);
-        ((DefaultInstanceSickHandler) sickHandler).setScheduled(Executors.newScheduledThreadPool(1));
     }
 
     @Test
@@ -170,15 +166,15 @@ public class TestAbstractHealthEventHandlerTest extends AbstractRedisTest {
         sickHandler.handle(event);
         verify(outerClientAggregator, times(2)).markInstance(any());
 
-        //do not markdown cross region instance
-        DefaultRedisInstanceInfo instanceInfo= (DefaultRedisInstanceInfo) instance.getCheckInfo();
-        instanceInfo.setCrossRegion(true);
+        //do not markdown cross region instance (region not reachable)
+        ((InstanceSick) event).setNeedAdjust(false);
         upHandler.handle(event);
         downHandler.handle(event);
         sickHandler.handle(event);
         verify(outerClientAggregator, times(2)).markInstance(any());
 
         //do not markdown instance which dcs distance is -1
+        DefaultRedisInstanceInfo instanceInfo= (DefaultRedisInstanceInfo) instance.getCheckInfo();
         instanceInfo.setCrossRegion(false);
         HealthCheckConfig config = instance.getHealthCheckConfig();
         when(config.getDelayConfig(any(), any(), any())).thenReturn(

@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.config;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 
@@ -14,11 +14,11 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
 
     protected CheckerConfig checkerConfig;
 
-    protected DcRelationsService dcRelationsService;
+    protected RelationsService relationsService;
 
-    public AbstractHealthCheckConfig(CheckerConfig checkerConfig, DcRelationsService dcRelationsService) {
+    public AbstractHealthCheckConfig(CheckerConfig checkerConfig, RelationsService relationsService) {
         this.checkerConfig = checkerConfig;
-        this.dcRelationsService = dcRelationsService;
+        this.relationsService = relationsService;
     }
 
     @Override
@@ -77,6 +77,11 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public boolean isReachable(String srcDc, String dstDc) {
+        return relationsService.isReachableRegion(srcDc, dstDc);
+    }
+
+    @Override
     public DelayConfig getDelayConfig(String clusterName, String fromDc, String toDc) {
         DelayConfig config = new DelayConfig(clusterName, fromDc, toDc);
         config.setDcLevelHealthyDelayMilli(getHealthyDelayMilli());
@@ -84,7 +89,15 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
         config.setClusterLevelHealthyDelayMilli(getHealthyDelayMilli());
         config.setClusterLevelDelayDownAfterMilli(downAfterCheckNums() * getHealthyDelayMilli());
 
-        Integer dcsDelay = dcRelationsService.getDcsDelay(fromDc, toDc);
+        Integer regionDelay = relationsService.getRegionDelay(fromDc, toDc);
+        if (regionDelay != null) {
+            config.setDcLevelHealthyDelayMilli(regionDelay);
+            config.setDcLevelDelayDownAfterMilli(downAfterCheckNums() * regionDelay);
+            config.setClusterLevelHealthyDelayMilli(regionDelay);
+            config.setClusterLevelDelayDownAfterMilli(downAfterCheckNums() * regionDelay);
+        }
+
+        Integer dcsDelay = relationsService.getDcsDelay(fromDc, toDc);
         if (dcsDelay != null) {
             config.setDcLevelHealthyDelayMilli(dcsDelay);
             config.setDcLevelDelayDownAfterMilli(downAfterCheckNums() * dcsDelay);
@@ -92,7 +105,7 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
             config.setClusterLevelDelayDownAfterMilli(downAfterCheckNums() * dcsDelay);
         }
 
-        Integer clusterDcsDelay = dcRelationsService.getClusterDcsDelay(clusterName, fromDc, toDc);
+        Integer clusterDcsDelay = relationsService.getClusterDcsDelay(clusterName, fromDc, toDc);
         if (clusterDcsDelay != null) {
             config.setClusterLevelHealthyDelayMilli(clusterDcsDelay);
             config.setClusterLevelDelayDownAfterMilli(downAfterCheckNums() * clusterDcsDelay);

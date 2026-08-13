@@ -1,7 +1,8 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
+import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.migration.MigrationSystemAvailableChecker;
@@ -10,7 +11,6 @@ import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.DcService;
-import com.ctrip.xpipe.redis.console.cache.DcCache;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ClusterActiveDcNotRequest;
 import com.ctrip.xpipe.redis.console.service.migration.exception.ToIdcNotFoundException;
 import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
@@ -26,7 +26,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -48,7 +49,7 @@ public class MigrationServiceImplTryMigrateHeteroTest {
     @Mock
     private MigrationClusterDao migrationClusterDao;
     @Mock
-    private DcRelationsService dcRelationsService;
+    private RelationsService relationsService;
 
     private MigrationServiceImpl migrationService;
 
@@ -69,7 +70,7 @@ public class MigrationServiceImplTryMigrateHeteroTest {
                 .setConfigService(configService)
                 .setMigrationClusterDao(migrationClusterDao);
         migrationService.setChecker(checker);
-        migrationService.setDcRelationsService(dcRelationsService);
+        migrationService.setRelationsService(relationsService);
 
         lenient().when(checker.getResult()).thenReturn(MigrationSystemAvailableChecker.MigrationSystemAvailability.createAvailableResponse());
         lenient().when(configService.ignoreMigrationSystemAvailability()).thenReturn(false);

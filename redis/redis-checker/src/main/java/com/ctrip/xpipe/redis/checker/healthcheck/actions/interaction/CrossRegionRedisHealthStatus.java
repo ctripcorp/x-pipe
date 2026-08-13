@@ -46,7 +46,7 @@ public class CrossRegionRedisHealthStatus extends HealthStatus {
         }
         if (!preState.equals(HEALTH_STATE.DOWN)) {
             logger.info("[setLoading] {}", this);
-            notifyObservers(new InstanceLoading(instance));
+            notify(new InstanceLoading(instance));
         }
     }
 
@@ -69,7 +69,7 @@ public class CrossRegionRedisHealthStatus extends HealthStatus {
                 logStateChange(preState, state.get());
             }
             logger.info("[setUp] {}", this);
-            notifyObservers(new InstanceUp(instance));
+            notify(new InstanceUp(instance));
         }
     }
 
@@ -93,7 +93,7 @@ public class CrossRegionRedisHealthStatus extends HealthStatus {
         }
         if (!preState.equals(HEALTH_STATE.DOWN)) {
             logger.info("[setDown] {}", this);
-            notifyObservers(new InstanceDown(instance));
+            notify(new InstanceDown(instance));
         }
     }
 

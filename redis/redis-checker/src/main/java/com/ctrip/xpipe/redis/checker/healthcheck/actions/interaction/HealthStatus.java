@@ -6,6 +6,7 @@ import com.ctrip.xpipe.api.lifecycle.Stoppable;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.observer.AbstractObservable;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.*;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -128,7 +130,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
         if(state.get().shouldNotifyMarkDown() && preState.isToDownNotify()) {
             logger.info("[setLoading] {}", this);
-            notifyObservers(new InstanceLoading(instance));
+            notify(new InstanceLoading(instance));
         }
     }
 
@@ -209,7 +211,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
         if(state.compareAndSet(preState, preState.afterDelayHalfFail())) {
             logStateChange(preState, state.get());
-            notifyObservers(new InstanceLongDelay(instance));
+            notify(new InstanceLongDelay(instance));
         }
     }
 
@@ -223,7 +225,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
         if(state.get().shouldNotifyMarkDown() && preState.isToDownNotify()){
             logger.info("[setSick]{}", this);
-            notifyObservers(new InstanceSick(instance));
+            notify(new InstanceSick(instance));
         }
     }
 
@@ -247,7 +249,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
         if(state.get().shouldNotifyMarkDown() && preState.isToDownNotify()) {
             logger.info("[setDown] {}", this);
-            notifyObservers(new InstanceDown(instance));
+            notify(new InstanceDown(instance));
         }
     }
 
@@ -255,7 +257,7 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         logStateChange(pre, cur);
         if(cur.shouldNotifyMarkup() && pre.isToUpNotify()) {
             logger.info("[markUpIfNecessary]{} {}->{}", this, pre, cur);
-            notifyObservers(new InstanceUp(instance));
+            notify(new InstanceUp(instance));
         }
     }
 
@@ -264,6 +266,23 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
             return;
         }
         logger.debug("[state-change][{}] {} -> {}", this, pre, cur);
+    }
+
+    private AtomicBoolean needAdjust = new AtomicBoolean(true);
+
+    protected void notify(AbstractInstanceEvent event) {
+        if (event instanceof InstanceSick) {
+            RedisInstanceInfo checkInfo = instance.getCheckInfo();
+            needAdjust.set(instance.getHealthCheckConfig().isReachable(checkInfo.getActiveDc(), checkInfo.getDcId()));
+            ((InstanceSick) event).setNeedAdjust(needAdjust.get());
+        } else {
+            needAdjust.set(true);
+        }
+        notifyObservers(event);
+    }
+
+    public boolean needAdjust() {
+        return needAdjust.get();
     }
 
     @Override
