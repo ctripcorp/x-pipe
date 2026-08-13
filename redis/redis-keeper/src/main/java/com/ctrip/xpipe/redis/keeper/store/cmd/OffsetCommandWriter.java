@@ -63,7 +63,7 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
 
         int wrote = 0;
         while (byteBuf.isReadable()) {
-            int chunkLength = nextChunkLength(byteBuf.readableBytes(), currentSegmentSize());
+            int chunkLength = nextChunkLength(byteBuf.readableBytes());
             ByteBuf chunk = byteBuf.readRetainedSlice(chunkLength);
 
             long expectedEndOffset = totalLength() + chunkLength - 1;
@@ -91,13 +91,8 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
         return wrote;
     }
 
-    private int nextChunkLength(int readableBytes, long currentFileLength) {
-        int maxWriteBytes = asyncCommandStore.getAsyncWriteMaxBytes();
-        long fileRemaining = maxFileSize - currentFileLength;
-        if (fileRemaining <= 0) {
-            return Math.min(readableBytes, maxWriteBytes);
-        }
-        return (int) Math.min(Math.min(readableBytes, maxWriteBytes), fileRemaining);
+    private int nextChunkLength(int readableBytes) {
+        return Math.min(readableBytes, asyncCommandStore.getAsyncWriteMaxBytes());
     }
 
     private void notifyOffset(long offset) {
