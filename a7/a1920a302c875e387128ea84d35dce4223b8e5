@@ -1,0 +1,21 @@
+.cursorrules
+  s_6868a6e0b69ce7::t_258f8afa1f15bd 49
+  s_6868a6e0b69ce7::t_48ddc8e6098648 50
+  s_6868a6e0b69ce7::t_73eebfb99a4f33 53-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.40-trip",
+  "base_commit_sha": "a7a1920a302c875e387128ea84d35dce4223b8e5",
+  "prompts": {},
+  "sessions": {
+    "s_6868a6e0b69ce7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "45a2ef39-8f36-4169-9e31-6429ab59722e",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
