@@ -48,7 +48,7 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
     $scope.logicalBus = [];
     $scope.logicalBusWithUnbound = [{id: 0, name: '未绑定'}];
     $scope.logicalBuNameMap = {0: '未绑定'};
-    $scope.selectedLogicalBuId = 0;
+    $scope.cluster = {};
     $scope.originalLogicalBuId = 0;
     $scope.logicalBuDisplayName = '未绑定';
 
@@ -151,8 +151,8 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
         ClusterService.load_cluster(clusterName)
             .then(function (result) {
                 $scope.cluster = result;
-                $scope.selectedLogicalBuId = result.logicalBuId || 0;
-                $scope.originalLogicalBuId = $scope.selectedLogicalBuId;
+                $scope.cluster.logicalBuId = result.logicalBuId || 0;
+                $scope.originalLogicalBuId = $scope.cluster.logicalBuId;
                 refreshLogicalBuDisplay();
                 var clusterType = ClusterType.lookup(result.clusterType)
                 $scope.clusterTypeName = clusterType.name
@@ -233,7 +233,7 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
     function refreshLogicalBuDisplay() {
         var buId = $scope.cluster && $scope.cluster.logicalBuId != null
             ? $scope.cluster.logicalBuId
-            : ($scope.selectedLogicalBuId || 0);
+            : 0;
         $scope.logicalBuDisplayName = $scope.logicalBuNameMap[buId] || '未绑定';
     }
 
@@ -291,9 +291,10 @@ function ClusterFromCtl($rootScope, $scope, $stateParams, $window, toastr, AppUt
             }
 
             var updatePromise = ClusterService.updateCluster($scope.cluster.clusterName, $scope.cluster, $scope.dcClusterModels, $scope.replDirections);
-            if ($scope.selectedLogicalBuId !== $scope.originalLogicalBuId) {
+            var selectedLogicalBuId = $scope.cluster.logicalBuId || 0;
+            if (selectedLogicalBuId != $scope.originalLogicalBuId) {
                 updatePromise = updatePromise.then(function () {
-                    return ClusterService.updateLogicalBu($scope.cluster.clusterName, $scope.selectedLogicalBuId);
+                    return ClusterService.updateLogicalBu($scope.cluster.clusterName, selectedLogicalBuId);
                 });
             }
             updatePromise
