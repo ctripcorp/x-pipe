@@ -1,0 +1,24 @@
+redis/redis-console/src/main/resources/static/views/index/cluster_form.html
+  s_f595870da23b8f::t_6e355fc8f8e356 108
+redis/redis-console/src/main/resources/static/scripts/controllers/ClusterFormCtl.ts
+  s_f595870da23b8f::t_2d463d38a4f01a 236
+  s_f595870da23b8f::t_ee02cebcb6039b 51
+  s_f595870da23b8f::t_5cd041f642dede 154-155
+  s_f595870da23b8f::t_a017558f27a2e8 294-295,297
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.40-trip",
+  "base_commit_sha": "fb474c605901d83fda9be66865292977d7a50f4b",
+  "prompts": {},
+  "sessions": {
+    "s_f595870da23b8f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c28904f8-001c-4e2e-ac63-22ac98f8765c",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
