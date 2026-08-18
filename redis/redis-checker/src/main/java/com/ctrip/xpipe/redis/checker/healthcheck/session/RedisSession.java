@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -32,7 +31,7 @@ import java.util.function.Supplier;
  *         <p>
  *         Dec 1, 2016 2:28:43 PM
  */
-public class RedisSession implements java.io.Closeable {
+public class RedisSession {
 
     private static Logger logger = LoggerFactory.getLogger(RedisSession.class);
 
@@ -41,8 +40,6 @@ public class RedisSession implements java.io.Closeable {
     private int waitResultSeconds = 2;
 
     private Endpoint endpoint;
-
-    private AtomicBoolean isClosed = new AtomicBoolean(false);
 
     private ConcurrentMap<Set<String>, PubSubConnectionWrapper> subscribConns = new ConcurrentHashMap<>();
 
@@ -70,7 +67,7 @@ public class RedisSession implements java.io.Closeable {
     }
 
     public void check() {
-        makeSureOpen();
+
         for (Map.Entry<Set<String>, PubSubConnectionWrapper> entry : subscribConns.entrySet()) {
 
             Set<String> channel = entry.getKey();
@@ -97,7 +94,7 @@ public class RedisSession implements java.io.Closeable {
     }
 
     public synchronized void closeSubscribedChannel(String... channel) {
-        makeSureOpen();
+
         PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.get(Sets.newHashSet(channel));
         if (pubSubConnectionWrapper != null) {
             logger.debug("[closeSubscribedChannel]{}, {}", endpoint, channel);
@@ -107,22 +104,18 @@ public class RedisSession implements java.io.Closeable {
     }
 
     public synchronized void subscribeIfAbsent(SubscribeCallback callback, String... channel) {
-        makeSureOpen();
         subscribeIfAbsent(callback, () -> new SubscribeCommand(clientPool, scheduled, commandTimeOut, channel), channel);
     }
 
     public synchronized void crdtsubscribeIfAbsent(SubscribeCallback callback, String... channel) {
-        makeSureOpen();
         subscribeIfAbsent(callback, () -> new CRDTSubscribeCommand(clientPool, scheduled, commandTimeOut, channel), channel);
     }
 
     public synchronized void psubscribeIfAbsent(SubscribeCallback callback, String... channel) {
-        makeSureOpen();
         subscribeIfAbsent(callback, () -> new PsubscribeCommand(clientPool, scheduled, commandTimeOut, channel), channel);
     }
 
     private synchronized void subscribeIfAbsent(SubscribeCallback callback, Supplier<Subscribe> subCommandSupplier, String... channel) {
-        makeSureOpen();
         PubSubConnectionWrapper pubSubConnectionWrapper = subscribConns.get(Sets.newHashSet(channel));
         if (pubSubConnectionWrapper == null || pubSubConnectionWrapper.shouldCreateNewSession()) {
             if(pubSubConnectionWrapper != null) {
@@ -145,7 +138,6 @@ public class RedisSession implements java.io.Closeable {
     }
 
     public synchronized void publish(String channel, String message) {
-        makeSureOpen();
         PublishCommand pubCommand = new PublishCommand(clientPool, scheduled, commandTimeOut, channel, message);
         silentCommand(pubCommand);
 
@@ -160,7 +152,6 @@ public class RedisSession implements java.io.Closeable {
     }
 
     public synchronized void crdtpublish(String channel, String message) {
-        makeSureOpen();
         CRDTPublishCommand pubCommand = new CRDTPublishCommand(clientPool, scheduled, commandTimeOut, channel, message);
         silentCommand(pubCommand);
 
@@ -175,7 +166,6 @@ public class RedisSession implements java.io.Closeable {
     }
 
     public CommandFuture<String> ping(final PingCallback callback) {
-        makeSureOpen();
         // if connect has been established
         PingCommand pingCommand = new PingCommand(clientPool, scheduled, commandTimeOut);
         silentCommand(pingCommand);
@@ -194,7 +184,6 @@ public class RedisSession implements java.io.Closeable {
     }
 
     public CommandFuture<Role> role(RollCallback callback) {
-        makeSureOpen();
         RoleCommand command = new RoleCommand(clientPool, commandTimeOut, false, scheduled);
         silentCommand(command);
         command.execute().addListener(new CommandFutureListener<Role>() {
@@ -211,7 +200,6 @@ public class RedisSession implements java.io.Closeable {
     }
 
     public void configRewrite(BiConsumer<String, Throwable> consumer) {
-        makeSureOpen();
         ConfigRewrite command = new ConfigRewrite(clientPool, scheduled, commandTimeOut);
         silentCommand(command);
         command.execute().addListener(new CommandFutureListener<String>() {
@@ -228,7 +216,7 @@ public class RedisSession implements java.io.Closeable {
     }
 
     public String roleSync() throws InterruptedException, ExecutionException, TimeoutException {
-        makeSureOpen();
+
         RoleCommand command = new RoleCommand(clientPool, waitResultSeconds * 1000, true, scheduled);
         silentCommand(command);
         return command.execute().get().getServerRole().name();
@@ -252,25 +240,23 @@ public class RedisSession implements java.io.Closeable {
     }
 
     public CommandFuture<Long> expireSize(Callbackable<Long> callback) {
-        makeSureOpen();
         ExpireSizeCommand command = new ExpireSizeCommand(clientPool, scheduled, commandTimeOut);
         return addHookAndExecute(command, callback);
     }
 
     public CommandFuture<Long> tombstoneSize(Callbackable<Long> callback) {
-        makeSureOpen();
         TombstoneSizeCommand command = new TombstoneSizeCommand(clientPool, scheduled, commandTimeOut);
         return addHookAndExecute(command, callback);
     }
 
     public CommandFuture<String> info(final String infoSection, Callbackable<String> callback) {
-        makeSureOpen();
+
         InfoCommand command = new InfoCommand(clientPool, infoSection, scheduled, commandTimeOut);
         return addHookAndExecute(command, callback);
     }
 
     public CommandFuture<String> crdtInfo(final String infoSection, Callbackable<String> callback) {
-        makeSureOpen();
+
         InfoCommand command = new CRDTInfoCommand(clientPool, infoSection, scheduled, commandTimeOut);
         return addHookAndExecute(command, callback);
     }
@@ -298,7 +284,6 @@ public class RedisSession implements java.io.Closeable {
     }
 
     public void isDiskLessSync(Callbackable<Boolean> callback) {
-        makeSureOpen();
         ConfigGetCommand.ConfigGetDisklessSync command = new ConfigGetCommand.ConfigGetDisklessSync(clientPool, scheduled, commandTimeOut);
         silentCommand(command);
         command.execute().addListener(new CommandFutureListener<Boolean>() {
@@ -315,7 +300,6 @@ public class RedisSession implements java.io.Closeable {
     }
 
     public void ConfigGet(Callbackable<String> callback, String args) {
-        makeSureOpen();
         ConfigGetCommand.ConfigGetAnyCommand command = new ConfigGetCommand.ConfigGetAnyCommand(clientPool, scheduled, args);
         silentCommand(command);
 
@@ -332,7 +316,6 @@ public class RedisSession implements java.io.Closeable {
     }
 
     public void CRDTConfigGet(Callbackable<String> callback, String args) {
-        makeSureOpen();
         CRDTConfigGetCommand command = new CRDTConfigGetCommand(clientPool, scheduled, args);
         silentCommand(command);
 
@@ -351,14 +334,12 @@ public class RedisSession implements java.io.Closeable {
 
     public InfoResultExtractor syncInfo(InfoCommand.INFO_TYPE infoType)
             throws InterruptedException, ExecutionException, TimeoutException {
-        makeSureOpen();
         InfoCommand infoCommand = new InfoCommand(clientPool, infoType, scheduled);
         String info = infoCommand.execute().get(2000, TimeUnit.MILLISECONDS);
         return new InfoResultExtractor(info);
     }
 
     public InfoResultExtractor syncCRDTInfo(InfoCommand.INFO_TYPE infoType) throws InterruptedException, ExecutionException, TimeoutException {
-        makeSureOpen();
         CRDTInfoCommand command = new CRDTInfoCommand(clientPool, infoType, scheduled);
         String info = command.execute().get(2000, TimeUnit.MILLISECONDS);
         return new InfoResultExtractor(info);
@@ -366,7 +347,6 @@ public class RedisSession implements java.io.Closeable {
 
 
     public CommandFuture<RedisInfo> getRedisReplInfo() {
-        makeSureOpen();
         InfoReplicationCommand command = new InfoReplicationCommand(clientPool, scheduled, commandTimeOut);
         silentCommand(command);
         return command.execute();
@@ -476,48 +456,17 @@ public class RedisSession implements java.io.Closeable {
         }
     }
 
-    @Override
-    public void close() {
-        if (!cmpAndSetClosed()) {
-            logger.info("[close][{}] already closed, skip", endpoint);
-            return;
-        }
-        synchronized (this) {
-            for(PubSubConnectionWrapper connectionWrapper : subscribConns.values()) {
-                try {
-                    connectionWrapper.closeAndClean();
-                } catch (Exception ignore) {}
-            }
+    public void closeConnection() {
+        for(PubSubConnectionWrapper connectionWrapper : subscribConns.values()) {
+            try {
+                connectionWrapper.closeAndClean();
+            } catch (Exception ignore) {}
         }
         try {
             clientPool.clear();
         } catch (Throwable th) {
-            logger.info("[close][{}] fail", endpoint, th);
+            logger.info("[closeConnection][{}] fail", endpoint, th);
         }
-    }
-
-    /**
-     * @deprecated use {@link #close()} instead
-     */
-    @Deprecated
-    public void closeConnection() {
-        close();
-    }
-
-
-    private boolean cmpAndSetClosed() {
-        return isClosed.compareAndSet(false, true);
-    }
-
-
-    private void makeSureOpen() {
-        if (isClosed.get()) {
-            throw new IllegalStateException("[RedisSession][closed] " + endpoint);
-        }
-    }
-
-    public boolean isClosed() {
-        return isClosed.get();
     }
 
     public RedisSession setKeyedNettyClientPool(XpipeNettyClientKeyedObjectPool keyedNettyClientPool) {

@@ -57,7 +57,7 @@ public class RemoveUnusedRedisTest extends AbstractConsoleDbTest {
     @Before
     public void beforeRemoveUnusedRedisTest() throws Exception {
         MockitoAnnotations.initMocks(this);
-        manager.setConfig(checkerConfig);
+        DefaultRedisSessionManager.checkUnusedRedisDelaySeconds = 2;
 
         // random port to avoid port conflict
         port = randomPort();

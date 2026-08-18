@@ -128,6 +128,4 @@ public interface CheckerConfig {
 
     boolean shouldComputeExtraInHash();
 
-    int getSessionRemoveUnusedDelayMillis();
-
 }
