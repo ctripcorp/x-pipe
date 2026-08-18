@@ -227,6 +227,24 @@
 			</configuration>
 		</component>
 		<component>
+			<role>org.unidal.dal.jdbc.mapping.TableProvider</role>
+			<role-hint>logical-bu-tbl</role-hint>
+			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
+			<configuration>
+				<physical-table-name>LOGICAL_BU_TBL</physical-table-name>
+				<data-source-name>fxxpipe</data-source-name>
+			</configuration>
+		</component>
+		<component>
+			<role>org.unidal.dal.jdbc.mapping.TableProvider</role>
+			<role-hint>logical-bu-org-tbl</role-hint>
+			<implementation>org.unidal.dal.jdbc.mapping.SimpleTableProvider</implementation>
+			<configuration>
+				<physical-table-name>LOGICAL_BU_ORG_TBL</physical-table-name>
+				<data-source-name>fxxpipe</data-source-name>
+			</configuration>
+		</component>
+		<component>
 			<role>com.ctrip.xpipe.redis.console.model.ClusterTblDao</role>
 			<implementation>com.ctrip.xpipe.redis.console.model.ClusterTblDao</implementation>
 			<requirements>
@@ -445,6 +463,24 @@
 		<component>
 			<role>com.ctrip.xpipe.redis.console.model.SentinelTblDao</role>
 			<implementation>com.ctrip.xpipe.redis.console.model.SentinelTblDao</implementation>
+			<requirements>
+				<requirement>
+					<role>org.unidal.dal.jdbc.QueryEngine</role>
+				</requirement>
+			</requirements>
+		</component>
+		<component>
+			<role>com.ctrip.xpipe.redis.console.model.LogicalBuTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.LogicalBuTblDao</implementation>
+			<requirements>
+				<requirement>
+					<role>org.unidal.dal.jdbc.QueryEngine</role>
+				</requirement>
+			</requirements>
+		</component>
+		<component>
+			<role>com.ctrip.xpipe.redis.console.model.LogicalBuOrgTblDao</role>
+			<implementation>com.ctrip.xpipe.redis.console.model.LogicalBuOrgTblDao</implementation>
 			<requirements>
 				<requirement>
 					<role>org.unidal.dal.jdbc.QueryEngine</role>

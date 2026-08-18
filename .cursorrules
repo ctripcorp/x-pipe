@@ -46,8 +46,10 @@ AI 协作规范位于 **`xpipe-copilot/`** git submodule（权限独立于 x-pip
 
 **编码协作：** 任务开始前确认 rules/ 已加载；领域逻辑按需读 `knowledge/`；变更遵循 `changes/` 流程。详细说明见 `xpipe-copilot/README.md`。
 
+**路径约定：** `.cursor/` 不能进主仓库 git。Agent 访问 rules / knowledge / changes / agents 时，搜索根固定为 `xpipe-copilot/`，见 `xpipe-copilot/rules/copilot-paths.mdc`。
+
 **启动流程（强制，每条新对话第一条回复前执行）：**
 
-1. **rules/** — 确认 `.cursor/rules/*.mdc` 已注入；缺失时读取 `xpipe-copilot/rules/`
-2. **changes/** — 检查 `.cursor/changes/` 进行中变更（排除 `templates/`）
+1. **rules/** — 确认 `xpipe-copilot/rules/*.mdc`（`alwaysApply: true`）已注入；缺失时读取该目录
+2. **changes/** — 检查 `xpipe-copilot/changes/` 进行中变更（排除 `templates/`）
 3. **报告状态** — 回复开头说明变更状态并展示命令菜单

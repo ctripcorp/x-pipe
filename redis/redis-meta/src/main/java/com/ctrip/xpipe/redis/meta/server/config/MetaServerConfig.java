@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.config;
 
 import com.ctrip.xpipe.redis.core.config.CoreConfig;
 import com.ctrip.xpipe.redis.core.meta.DcInfo;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperElectStrategy;
 
 import java.util.Map;
 import java.util.Set;
@@ -52,5 +53,19 @@ public interface MetaServerConfig extends CoreConfig {
 	String getChooseRouteStrategyType();
 
 	int getConsoleNotifycationTaskQueueSize();
+
+	KeeperElectStrategy getKeeperElectStrategy();
+
+	/**
+	 * TFS Gateway Host（含 scheme，无 path）。QConfig: {@code metaserver.tfs.gateway.host}。
+	 */
+	String getTfsGatewayHost();
+
+	/**
+	 * TFS Gateway appId，拼入 ForceCloseDir URL path。默认 0。
+	 */
+	long getTfsGatewayAppId();
+
+	String getTfsDirPathTemplate();
 
 }

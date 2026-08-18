@@ -316,13 +316,15 @@ public class ShardServiceImplTest3 {
 		verify(keeperAdvancedService, never()).findBestKeepers(anyString(), any(int.class), any(), anyString());
 	}
 
-	@Test(expected = IllegalStateException.class)
+	@Test
 	public void testDoAddKeepersWithMoreThanTwoExistingKeepers() throws Exception {
 		String dc = "jq", cluster = "cluster-test", shard = "shard1";
 		when(redisService.findKeepersByDcClusterShard(dc, cluster, shard))
 			.thenReturn(Lists.newArrayList(mock(RedisTbl.class), mock(RedisTbl.class), mock(RedisTbl.class)));
 
-		shardService.doAddKeepers(dc, cluster, shard, dc);
+		int result = shardService.doAddKeepers(dc, cluster, shard, dc);
+		Assert.assertEquals(0, result);
+		verify(keeperAdvancedService, never()).findBestKeepers(anyString(), any(int.class), any(), anyString());
 	}
 
 	// ===== createRegionShard tests =====

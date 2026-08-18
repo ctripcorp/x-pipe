@@ -672,11 +672,6 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
-    public int getSessionRemoveUnusedDelayMillis() {
-        return commonConfigBean.getSessionRemoveUnusedDelayMillis();
-    }
-
-    @Override
     public long getCheckIsolateInterval() {
         return consoleConfigBean.getIsolateCheckIntervalMilli();
     }
@@ -684,6 +679,26 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     @Override
     public long getRegionDcsRefreshIntervalMilli() {
         return consoleConfigBean.getRegionDcsRefreshIntervalMilli();
+    }
+
+    @Override
+    public boolean isKeeperPoolDegradeToOrg() {
+        return consoleConfigBean.isKeeperPoolDegradeToOrg();
+    }
+
+    @Override
+    public String getKeeperAutoSelectDiskType() {
+        return consoleConfigBean.getKeeperAutoSelectDiskType();
+    }
+
+    @Override
+    public int getKeeperDefaultPriorityBm() {
+        return consoleConfigBean.getKeeperDefaultPriorityBm();
+    }
+
+    @Override
+    public int getKeeperDefaultPriorityTfs() {
+        return consoleConfigBean.getKeeperDefaultPriorityTfs();
     }
 
     @Override

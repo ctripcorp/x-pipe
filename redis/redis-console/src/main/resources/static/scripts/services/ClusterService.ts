@@ -48,6 +48,10 @@ function ClusterService($resource, $q) {
             method: 'PUT',
             url: '/console/clusters/:clusterName'
         },
+        update_logical_bu: {
+            method: 'PUT',
+            url: '/console/clusters/:clusterName/logical-bu'
+        },
         delete_cluster: {
             method: 'DELETE',
             url: '/console/clusters/:clusterName'
@@ -571,6 +575,20 @@ function ClusterService($resource, $q) {
         return d.promise;
     }
 
+    function updateLogicalBu(clusterName, logicalBuId) {
+        var d = $q.defer();
+        resource.update_logical_bu({
+                clusterName: clusterName,
+                logicalBuId: logicalBuId
+            }, {},
+            function (result) {
+                d.resolve(result);
+            }, function (result) {
+                d.reject(result);
+            });
+        return d.promise;
+    }
+
     return {
         load_cluster: loadCluster,
         findClusterDCs: findClusterDCs,
@@ -581,6 +599,7 @@ function ClusterService($resource, $q) {
         findClustersByActiveDcName: findClustersByActiveDcName,
         createCluster: createCluster,
         updateCluster: updateCluster,
+        updateLogicalBu: updateLogicalBu,
         deleteCluster: deleteCluster,
         resetClusterStatus: resetClusterStatus,
         findClusterBatch : findClusterBatch,

@@ -133,8 +133,14 @@
                             </td>
                             <td ng-bind="keeper.redisPort">
                             </td>
-                            <td></td>
-                            <td></td>
+                            <td ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way' || clusterType == 'hetero'">
+                                {{keeperMediumLabel(keeper)}} priority={{keeper.keeperPriority}}
+                            </td>
+                            <td ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way' || clusterType == 'hetero'"></td>
+                            <td ng-if="clusterType == 'bi_direction'" class="hickwall_td"></td>
+                            <td ng-if="clusterType == 'bi_direction'" class="hickwall_td"></td>
+                            <td ng-if="clusterType == 'bi_direction'" class="hickwall_td"></td>
+                            <td ng-if="clusterType == 'bi_direction'" class="hickwall_td"></td>
                         </tr>
                         <tr ng-show="showCrossMasterHealthStatus && false === shard.healthy && shard.showCrossMasters" ng-repeat="redis in shard.crossMasters">
                             <td>
@@ -220,8 +226,10 @@
                             </td>
                             <td ng-bind="keeper.redisPort">
                             </td>
-                            <td></td>
-                            <td></td>
+                            <td ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way'">
+                                {{keeperMediumLabel(keeper)}} priority={{keeper.keeperPriority}}
+                            </td>
+                            <td ng-if="clusterType == 'bi_direction'|| clusterType == 'one_way'"></td>
                         </tr>
                         </tbody>
                     </table>

@@ -15,10 +15,12 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
 import com.ctrip.xpipe.redis.core.meta.KeeperIndexState;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
+import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
@@ -30,6 +32,7 @@ import com.ctrip.xpipe.redis.meta.server.job.KeeperMasterProcessJob;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperRoleAssigner;
 import com.ctrip.xpipe.redis.meta.server.keeper.impl.AbstractCurrentMetaObserver;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
@@ -441,8 +444,13 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 			if(!isCurrentMetaKeeperMasterMatch(clusterDbId, shardDbId)) {
 				return;
 			}
+			// D30: without RoleAssigner roles, KeeperStateChangeJob null-fallback would force all non-active to BACKUP.
 			KeeperMasterProcessJob job = createKeeperMasterProcessJob(clusterDbId, shardDbId, survivedKeepers,
 					currentMetaManager.getKeeperMaster(clusterDbId, shardDbId));
+			if (job == null) {
+				logger.error("[doCorrect][skip setstate]no active/roles, cluster_{}, shard_{}", clusterDbId, shardDbId);
+				return;
+			}
 			job.future().addListener(new CommandFutureListener<Void>() {
 				@Override
 				public void operationComplete(CommandFuture<Void> commandFuture) throws Exception {
@@ -497,9 +505,39 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 															  InfoResultExtractor extractor) {
 		if(keeper.isActive()) {
 			return new ActiveKeeperInfoChecker(extractor, clusterDbId, shardDbId);
-		} else {
-			return new BackupKeeperInfoChecker(extractor, clusterDbId, shardDbId);
 		}
+		KeeperState expectedState = resolveExpectedNonActiveState(keeper, clusterDbId, shardDbId);
+		return new BackupKeeperInfoChecker(extractor, clusterDbId, shardDbId, expectedState);
+	}
+
+	/**
+	 * D30: non-active expectation is BACKUP or PREPARE from {@link KeeperRoleAssigner}, not always BACKUP.
+	 * Without active/survive, RoleAssigner cannot pick the single TFS disk slot — BM falls back to BACKUP;
+	 * TFS falls back to UNKNOWN (leave as-is). Never assume BACKUP for all TFS (would contend for lease).
+	 */
+	@VisibleForTesting
+	protected KeeperState resolveExpectedNonActiveState(KeeperMeta keeper, Long clusterDbId, Long shardDbId) {
+		KeeperMeta activeKeeper = currentMetaManager.getKeeperActive(clusterDbId, shardDbId);
+		List<KeeperMeta> surviveKeepers = currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId);
+		if (activeKeeper == null || surviveKeepers == null || surviveKeepers.isEmpty()) {
+			return fallbackExpectedNonActiveState(keeper);
+		}
+		Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(activeKeeper, surviveKeepers, metaCache);
+		for (Map.Entry<KeeperMeta, KeeperState> entry : roles.entrySet()) {
+			if (MetaUtils.same(entry.getKey(), keeper)) {
+				return entry.getValue();
+			}
+		}
+		return fallbackExpectedNonActiveState(keeper);
+	}
+
+	private KeeperState fallbackExpectedNonActiveState(KeeperMeta keeper) {
+		return isKeeperTfs(keeper) ? KeeperState.UNKNOWN : KeeperState.BACKUP;
+	}
+
+	private boolean isKeeperTfs(KeeperMeta keeper) {
+		KeeperContainerMeta container = metaCache.getKeeperContainer(keeper);
+		return KeeperDiskTypeUtils.isTfs(container != null ? container.getDiskType() : null);
 	}
 
 	private KeeperIndexChangeJob createKeeperIndexChangeJob(List<KeeperMeta> keepers) {
@@ -507,9 +545,18 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		return new KeeperIndexChangeJob(keepers, indexState, clientPool, scheduled, executors);
 	}
 
-	private KeeperMasterProcessJob createKeeperMasterProcessJob(Long clusterDbId, Long shardDbId,
+	/**
+	 * @return null when RoleAssigner cannot produce roles (no active/survive); caller must skip setstate.
+	 */
+	@VisibleForTesting
+	protected KeeperMasterProcessJob createKeeperMasterProcessJob(Long clusterDbId, Long shardDbId,
 															List<KeeperMeta> keepers,
 															Pair<String, Integer> master) {
+
+		Map<KeeperMeta, KeeperState> keeperRoles = resolveKeeperRoles(clusterDbId, shardDbId, keepers);
+		if (keeperRoles == null) {
+			return null;
+		}
 
 		String dstDcId;
 		if (metaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
@@ -519,7 +566,14 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dstDcId, clusterDbId);
 
-		return new KeeperMasterProcessJob(clusterDbId, shardDbId, keepers, routeMeta, metaCache, master, clientPool, scheduled, executors);
+		return new KeeperMasterProcessJob(clusterDbId, shardDbId, keepers, routeMeta, metaCache, master,
+				clientPool, scheduled, executors, keeperRoles);
+	}
+
+	@VisibleForTesting
+	protected Map<KeeperMeta, KeeperState> resolveKeeperRoles(Long clusterDbId, Long shardDbId, List<KeeperMeta> keepers) {
+		return KeeperRoleAssigner.assignRolesOrNull(
+				currentMetaManager.getKeeperActive(clusterDbId, shardDbId), keepers, metaCache);
 	}
 
 	protected abstract class AbstractKeeperInfoChecker {
@@ -588,24 +642,49 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 		private KeeperMeta activeKeeper;
 
+		private final KeeperState expectedState;
+
 		public BackupKeeperInfoChecker(InfoResultExtractor extractor, Long clusterDbId, Long shardDbId) {
+			this(extractor, clusterDbId, shardDbId, KeeperState.BACKUP);
+		}
+
+		public BackupKeeperInfoChecker(InfoResultExtractor extractor, Long clusterDbId, Long shardDbId,
+									   KeeperState expectedState) {
 			super(extractor, clusterDbId, shardDbId);
 			activeKeeper = currentMetaManager.getKeeperActive(clusterDbId, shardDbId);
+			this.expectedState = expectedState != null ? expectedState : KeeperState.BACKUP;
+		}
+
+		/**
+		 * Leave keeper unchanged when RoleAssigner cannot decide (UNKNOWN) or there is no active
+		 * (cannot compare master without NPE / false correct).
+		 */
+		@Override
+		protected boolean shouldStop() {
+			return expectedState == KeeperState.UNKNOWN || activeKeeper == null;
+		}
+
+		@Override
+		protected boolean isValid() {
+			if (expectedState == KeeperState.UNKNOWN || activeKeeper == null) {
+				return true;
+			}
+			return super.isValid();
 		}
 
 		@Override
 		protected boolean isKeeperStateOk() {
-			return KeeperState.BACKUP.name().equals(extractor.extract(STATE));
+			return expectedState.name().equals(extractor.extract(STATE));
 		}
 
 		@Override
 		protected String getMasterHost() {
-			return activeKeeper.getIp();
+			return activeKeeper != null ? activeKeeper.getIp() : null;
 		}
 
 		@Override
 		protected int getMasterPort() {
-			return activeKeeper.getPort();
+			return activeKeeper != null ? activeKeeper.getPort() : -1;
 		}
 
 

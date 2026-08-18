@@ -333,9 +333,4 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     public boolean shouldComputeExtraInHash() {
         return false;
     }
-
-    @Override
-    public int getSessionRemoveUnusedDelayMillis() {
-        return 3600000;
-    }
 }

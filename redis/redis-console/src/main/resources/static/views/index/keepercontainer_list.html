@@ -9,7 +9,7 @@
 
                 <div class="col-md-6 text-right">
                     <a type="button" class="btn btn-info btn-xs" href="/#/keepercontainer_usedinfo">KeeperContainerUsedInfo</a>
-                    <a type="button" class="btn btn-info btn-xs" href="/#/keepercontainer_form?id=&type=create">AddKeeperContainer</a>
+                    <a type="button" class="btn btn-info btn-xs" ui-sref="keepercontainer_form({id: '', type: 'create'})">添加KeeperContainer</a>
                 </div>
             </div>
         </header>
@@ -22,6 +22,7 @@
                 <td data-title="'org'" filter="{ orgName: 'text'}" sortable="'orgName'">{{info.orgName}}</td>
                 <td data-title="'active'" filter="{ active: 'text'}">{{info.active}}</td>
                 <td data-title="'diskType'" filter="{ diskType: 'text'}">{{info.diskType}}</td>
+                <td data-title="'logical BU'" filter="{ logicalBuName: 'text'}" sortable="'logicalBuName'">{{info.logicalBuName}}</td>
                 <td data-title="'az'" filter="{ azName: 'text'}" sortable="'azName'">{{info.azName}}</td>
                 <td data-title="'tag'" filter="{ tag: 'text'}" sortable="'tag'">{{info.tag}}</td>
                 <td data-title="'keeper'" sortable="'keeperCount'">{{info.keeperCount}}</td>

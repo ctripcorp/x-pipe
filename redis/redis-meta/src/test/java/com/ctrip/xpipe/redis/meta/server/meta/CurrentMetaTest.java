@@ -104,6 +104,43 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 	}
 
 	@Test
+	public void testPreviousActiveKeeper() {
+		List<KeeperMeta> surviveKeepers = new ArrayList<>();
+		KeeperMeta keeperMeta1 = new KeeperMeta().setSurvive(true).setIp("127.0.0.1").setPort(6000);
+		KeeperMeta activeKeeper = new KeeperMeta().setSurvive(true).setIp("127.0.0.1").setPort(6001).setActive(true);
+		surviveKeepers.add(keeperMeta1);
+		surviveKeepers.add(activeKeeper);
+		currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers, activeKeeper);
+		Assert.assertNull(currentMeta.getPreviousActiveKeeper(clusterDbId, shardDbId));
+
+		KeeperMeta newActive = new KeeperMeta().setSurvive(true).setIp("127.0.0.2").setPort(6002).setActive(true);
+		List<KeeperMeta> updatedKeepers = new ArrayList<>();
+		updatedKeepers.add(keeperMeta1);
+		updatedKeepers.add(newActive);
+		currentMeta.setSurviveKeepers(clusterDbId, shardDbId, updatedKeepers, newActive);
+		Assert.assertEquals(activeKeeper.getPort(), currentMeta.getPreviousActiveKeeper(clusterDbId, shardDbId).getPort());
+
+		currentMeta.setSurviveKeepers(clusterDbId, shardDbId, new ArrayList<>(), activeKeeper);
+		Assert.assertNull(currentMeta.getPreviousActiveKeeper(clusterDbId, shardDbId));
+	}
+
+	@Test
+	public void testSetSurviveKeepersPriorityChange() {
+		List<KeeperMeta> surviveKeepers = new ArrayList<>();
+		KeeperMeta keeperMeta1 = new KeeperMeta().setSurvive(true).setIp("127.0.0.1").setPort(6000).setPriority(1);
+		KeeperMeta activeKeeper = new KeeperMeta().setSurvive(true).setIp("127.0.0.1").setPort(6001).setActive(true).setPriority(1);
+		surviveKeepers.add(keeperMeta1);
+		surviveKeepers.add(activeKeeper);
+		Assert.assertTrue(currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers, activeKeeper));
+
+		List<KeeperMeta> updatedKeepers = new ArrayList<>();
+		updatedKeepers.add(keeperMeta1.setPriority(5));
+		updatedKeepers.add(activeKeeper);
+		Assert.assertTrue(currentMeta.setSurviveKeepers(clusterDbId, shardDbId, updatedKeepers, activeKeeper));
+		Assert.assertEquals(Integer.valueOf(5), currentMeta.getSurviveKeepers(clusterDbId, shardDbId).get(0).getPriority());
+	}
+
+	@Test
 	public void testAddResourceConcurrently() throws Exception {
 		int concurrentSize = 1000;
 		AtomicInteger releaseCount = new AtomicInteger(0);
@@ -227,25 +264,6 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 		Assert.assertEquals(allKeepers.size(), currentMeta.getSurviveKeepers(clusterDbId, shardDbId).size());
 		active.setActive(true);
 		Assert.assertEquals(active, currentMeta.getKeeperActive(clusterDbId, shardDbId));
-
-		//set keeper active
-
-		KeeperMeta keeperMeta = getDcKeepers(getDc(), clusterId, shardId).get(1);
-		boolean result = currentMeta.setKeeperActive(clusterDbId, shardDbId, keeperMeta);
-		Assert.assertTrue(result);
-		keeperMeta.setActive(true);
-		Assert.assertEquals(keeperMeta, currentMeta.getKeeperActive(clusterDbId, shardDbId));
-		Assert.assertFalse(currentMeta.setKeeperActive(clusterDbId, shardDbId, keeperMeta));
-
-		//set keeper active not exist
-		keeperMeta.setIp(randomString(10));
-		try {
-			currentMeta.setKeeperActive(clusterDbId, shardDbId, keeperMeta);
-			Assert.fail();
-		} catch (Exception e) {
-
-		}
-
 
 		Assert.assertEquals(new Pair<String, Integer>("127.0.0.1", 6379), currentMeta.getKeeperMaster(clusterDbId, shardDbId));
 		Pair<String, Integer> keeperMaster = new Pair<String, Integer>("localhost", randomPort());

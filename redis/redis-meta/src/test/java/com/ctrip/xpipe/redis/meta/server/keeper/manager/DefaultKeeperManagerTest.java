@@ -7,6 +7,7 @@ import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
@@ -26,6 +27,9 @@ import com.google.common.collect.Lists;
 import org.junit.*;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -155,6 +159,212 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
         when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(keeperActive);
         DefaultKeeperManager.BackupKeeperInfoChecker checker = spy(manager.new BackupKeeperInfoChecker(extractor, clusterDbId, shardDbId));
         Assert.assertFalse(checker.isValid());
+    }
+
+    @Test
+    public void testPrepareKeeperCheckerValid() {
+        KeeperMeta keeperActive = new KeeperMeta().setActive(true).setIp("localhost").setPort(randomInt());
+        InfoResultExtractor extractor = mock(InfoResultExtractor.class);
+        when(extractor.extract("state")).thenReturn("PREPARE");
+        when(extractor.extract("master_host")).thenReturn(keeperActive.getIp());
+        when(extractor.extract("master_port")).thenReturn(String.valueOf(keeperActive.getPort()));
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(keeperActive);
+        DefaultKeeperManager.BackupKeeperInfoChecker checker =
+                manager.new BackupKeeperInfoChecker(extractor, clusterDbId, shardDbId, KeeperState.PREPARE);
+        Assert.assertTrue(checker.isValid());
+    }
+
+    @Test
+    public void testPrepareKeeperCheckerRejectsBackup() {
+        KeeperMeta keeperActive = new KeeperMeta().setActive(true).setIp("localhost").setPort(randomInt());
+        InfoResultExtractor extractor = mock(InfoResultExtractor.class);
+        when(extractor.extract("state")).thenReturn("BACKUP");
+        when(extractor.extract("master_host")).thenReturn(keeperActive.getIp());
+        when(extractor.extract("master_port")).thenReturn(String.valueOf(keeperActive.getPort()));
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(keeperActive);
+        DefaultKeeperManager.BackupKeeperInfoChecker checker =
+                manager.new BackupKeeperInfoChecker(extractor, clusterDbId, shardDbId, KeeperState.PREPARE);
+        Assert.assertFalse(checker.isValid());
+    }
+
+    @Test
+    public void testResolveExpectedNonActiveStatePrepareForBmActiveTwoTfs() {
+        KeeperMeta bm = keeperForDisk(6000, 1L, 1, true);
+        KeeperMeta highTfs = keeperForDisk(6001, 2L, 5, false);
+        KeeperMeta lowTfs = keeperForDisk(6002, 3L, 1, false);
+        List<KeeperMeta> survive = Arrays.asList(bm, highTfs, lowTfs);
+
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(bm);
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(survive);
+        when(dcMetaCache.getKeeperContainer(any(KeeperMeta.class))).thenAnswer(invocation -> {
+            KeeperMeta keeperMeta = invocation.getArgument(0);
+            KeeperContainerMeta containerMeta = new KeeperContainerMeta();
+            containerMeta.setId(keeperMeta.getKeeperContainerId());
+            containerMeta.setDiskType(keeperMeta.getKeeperContainerId() >= 2L ? "tfs-1" : "DEFAULT");
+            return containerMeta;
+        });
+
+        Assert.assertEquals(KeeperState.BACKUP, manager.resolveExpectedNonActiveState(highTfs, clusterDbId, shardDbId));
+        Assert.assertEquals(KeeperState.PREPARE, manager.resolveExpectedNonActiveState(lowTfs, clusterDbId, shardDbId));
+
+        Map<KeeperMeta, KeeperState> roles = manager.resolveKeeperRoles(clusterDbId, shardDbId, survive);
+        Assert.assertEquals(KeeperState.ACTIVE, roles.get(bm));
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(highTfs));
+        Assert.assertEquals(KeeperState.PREPARE, roles.get(lowTfs));
+    }
+
+    @Test
+    public void testResolveExpectedNonActiveStateWithoutSurviveBmBackupTfsUnknown() {
+        KeeperMeta bm = keeperForDisk(6000, 1L, 1, false);
+        KeeperMeta tfs1 = keeperForDisk(6001, 2L, 5, false);
+        KeeperMeta tfs2 = keeperForDisk(6002, 3L, 1, false);
+
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(null);
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Collections.emptyList());
+        when(dcMetaCache.getKeeperContainer(any(KeeperMeta.class))).thenAnswer(invocation -> {
+            KeeperMeta keeperMeta = invocation.getArgument(0);
+            KeeperContainerMeta containerMeta = new KeeperContainerMeta();
+            containerMeta.setId(keeperMeta.getKeeperContainerId());
+            containerMeta.setDiskType(keeperMeta.getKeeperContainerId() >= 2L ? "tfs-1" : "DEFAULT");
+            return containerMeta;
+        });
+
+        Assert.assertEquals(KeeperState.BACKUP, manager.resolveExpectedNonActiveState(bm, clusterDbId, shardDbId));
+        Assert.assertEquals(KeeperState.UNKNOWN, manager.resolveExpectedNonActiveState(tfs1, clusterDbId, shardDbId));
+        Assert.assertEquals(KeeperState.UNKNOWN, manager.resolveExpectedNonActiveState(tfs2, clusterDbId, shardDbId));
+    }
+
+    @Test
+    public void testUnknownExpectedStateLeavesKeeperUnchanged() {
+        KeeperMeta keeperActive = new KeeperMeta().setActive(true).setIp("localhost").setPort(randomInt());
+        InfoResultExtractor extractor = mock(InfoResultExtractor.class);
+        when(extractor.extract("state")).thenReturn("PREPARE");
+        when(extractor.extract("master_host")).thenReturn(keeperActive.getIp());
+        when(extractor.extract("master_port")).thenReturn(String.valueOf(keeperActive.getPort()));
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(keeperActive);
+
+        DefaultKeeperManager.BackupKeeperInfoChecker checker =
+                manager.new BackupKeeperInfoChecker(extractor, clusterDbId, shardDbId, KeeperState.UNKNOWN);
+        Assert.assertTrue(checker.shouldStop());
+        Assert.assertTrue(checker.isValid());
+    }
+
+    @Test
+    public void testBackupCheckerWithoutActiveLeavesKeeperUnchanged() {
+        InfoResultExtractor extractor = mock(InfoResultExtractor.class);
+        when(extractor.extract("state")).thenReturn("BACKUP");
+        when(extractor.extract("master_host")).thenReturn("127.0.0.1");
+        when(extractor.extract("master_port")).thenReturn("6379");
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(null);
+
+        DefaultKeeperManager.BackupKeeperInfoChecker checker =
+                manager.new BackupKeeperInfoChecker(extractor, clusterDbId, shardDbId, KeeperState.BACKUP);
+        Assert.assertTrue(checker.shouldStop());
+        Assert.assertTrue(checker.isValid());
+    }
+
+    @Test
+    public void testCreateKeeperMasterProcessJobNullWithoutActiveSkipsSetstate() {
+        KeeperMeta bm = keeperForDisk(6100, 1L, 1, false);
+        KeeperMeta tfs1 = keeperForDisk(6101, 2L, 5, false);
+        KeeperMeta tfs2 = keeperForDisk(6102, 3L, 1, false);
+        List<KeeperMeta> survive = Arrays.asList(bm, tfs1, tfs2);
+
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(null);
+        Assert.assertNull(manager.resolveKeeperRoles(clusterDbId, shardDbId, survive));
+        Assert.assertNull(manager.createKeeperMasterProcessJob(clusterDbId, shardDbId, survive,
+                new Pair<>("127.0.0.1", 6379)));
+    }
+
+    @Test
+    public void integrateTestPrepareKeeperNoCorrect() throws Exception {
+        AtomicInteger infoCount = new AtomicInteger(0);
+        AtomicInteger keeperCommandCounter = new AtomicInteger(0);
+        int masterPort = randomInt();
+
+        KeeperMeta bm = keeperForDisk(0, 1L, 1, true);
+        KeeperMeta highTfs = keeperForDisk(0, 2L, 5, false);
+        KeeperMeta lowTfs = keeperForDisk(0, 3L, 1, false);
+
+        Server activeKeeper = startServer(new AbstractIoActionFactory() {
+            @Override
+            protected byte[] getToWrite(Object readResult) {
+                String input = (String) readResult;
+                if (input.trim().toLowerCase().startsWith("info")) {
+                    infoCount.incrementAndGet();
+                    return ("+state:ACTIVE\nmaster_host:localhost\nmaster_port:" + masterPort + "\r\n").getBytes();
+                } else if (input.trim().toLowerCase().startsWith("keeper")) {
+                    keeperCommandCounter.incrementAndGet();
+                    return "+OK\r\n".getBytes();
+                }
+                return new byte[0];
+            }
+        });
+        bm.setIp("localhost").setPort(activeKeeper.getPort());
+
+        Server backupTfs = startServer(new AbstractIoActionFactory() {
+            @Override
+            protected byte[] getToWrite(Object readResult) {
+                String input = (String) readResult;
+                if (input.trim().equalsIgnoreCase("info replication")) {
+                    infoCount.incrementAndGet();
+                    return ("+state:BACKUP\nmaster_host:localhost\nmaster_port:" + activeKeeper.getPort() + "\r\n").getBytes();
+                } else if (input.trim().toLowerCase().startsWith("keeper")) {
+                    keeperCommandCounter.incrementAndGet();
+                    return "+OK\r\n".getBytes();
+                }
+                return new byte[0];
+            }
+        });
+        highTfs.setIp("localhost").setPort(backupTfs.getPort());
+
+        Server prepareTfs = startServer(new AbstractIoActionFactory() {
+            @Override
+            protected byte[] getToWrite(Object readResult) {
+                String input = (String) readResult;
+                if (input.trim().equalsIgnoreCase("info replication")) {
+                    infoCount.incrementAndGet();
+                    return ("+state:PREPARE\nmaster_host:localhost\nmaster_port:" + activeKeeper.getPort() + "\r\n").getBytes();
+                } else if (input.trim().toLowerCase().startsWith("keeper")) {
+                    keeperCommandCounter.incrementAndGet();
+                    return "+OK\r\n".getBytes();
+                }
+                return new byte[0];
+            }
+        });
+        lowTfs.setIp("localhost").setPort(prepareTfs.getPort());
+
+        List<KeeperMeta> survive = Arrays.asList(bm, highTfs, lowTfs);
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(bm);
+        when(currentMetaManager.getKeeperMaster(clusterDbId, shardDbId)).thenReturn(new Pair<>("localhost", masterPort));
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(survive);
+        when(dcMetaCache.getKeeperContainer(any(KeeperMeta.class))).thenAnswer(invocation -> {
+            KeeperMeta keeperMeta = invocation.getArgument(0);
+            KeeperContainerMeta containerMeta = new KeeperContainerMeta();
+            containerMeta.setId(keeperMeta.getKeeperContainerId());
+            containerMeta.setDiskType(keeperMeta.getKeeperContainerId() >= 2L ? "tfs-1" : "DEFAULT");
+            return containerMeta;
+        });
+
+        DefaultKeeperManager.KeeperStateAlignChecker checker = manager.new KeeperStateAlignChecker();
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), new ShardMeta().setId(shardId).setDbId(shardDbId));
+        sleep(1500);
+        Assert.assertEquals(3, infoCount.get());
+        Assert.assertEquals(0, keeperCommandCounter.get());
+
+        activeKeeper.stop();
+        backupTfs.stop();
+        prepareTfs.stop();
+    }
+
+    private KeeperMeta keeperForDisk(int port, long keeperContainerId, Integer priority, boolean active) {
+        KeeperMeta keeperMeta = new KeeperMeta();
+        keeperMeta.setIp("127.0.0.1");
+        keeperMeta.setPort(port);
+        keeperMeta.setKeeperContainerId(keeperContainerId);
+        keeperMeta.setPriority(priority);
+        keeperMeta.setActive(active);
+        return keeperMeta;
     }
 
 
