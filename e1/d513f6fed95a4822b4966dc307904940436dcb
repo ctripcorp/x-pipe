@@ -1,0 +1,79 @@
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsKeeperUtils.java
+  s_64477cbccc3107::t_876633cd5ec30f 6,8-9,11,19-20,25-38,42-44,52-54,56-70,89-93
+  s_b593918f917e57::t_86af78c22f068e 55,71-88
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/AllTests.java
+  s_64477cbccc3107::t_d421a1ed74b647 150
+  s_64477cbccc3107::t_102c88fc0dbb7e 61
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperRoleAssignerTest.java
+  s_64477cbccc3107::t_cfdfa7deaf2f35 119-139
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/job/TfsKeeperStateChangeJobTest.java
+  s_b593918f917e57::t_d2e06bd97c7d97 419-439,441-450
+  s_64477cbccc3107::t_3244cb64a1fa73 23
+  s_64477cbccc3107::t_04c8489f09ea2d 355-375,377-409,411-418
+  s_39a414ad25fec9::t_63ae29cb06e107 185-186
+  s_64477cbccc3107::t_006e6c02b9ad62 12
+  s_39a414ad25fec9::t_00f8667a6ddb43 376,410,440
+  s_39a414ad25fec9::t_bd84985821c969 218,249,273,307,346
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsKeeperUtilsTest.java
+  s_64477cbccc3107::t_3f3e6d0bfe61e4 1-67,96-103
+  s_b593918f917e57::t_0b86fc168dad79 68-95
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/job/TfsKeeperStateChangeJob.java
+  s_64477cbccc3107::t_aa1ac531ba582a 187,191
+  s_b593918f917e57::t_adc75ca7ae2ccd 262
+  s_b593918f917e57::t_a1fa1105ee3608 45
+  s_64477cbccc3107::t_a14483b708cce1 46
+  s_b593918f917e57::t_5672a70464d404 60,70,74-78,90-91
+  s_39a414ad25fec9::t_65c079d7941d0f 56
+  s_39a414ad25fec9::t_438c298458e2f9 29
+  s_64477cbccc3107::t_405c80acd2254c 88
+  s_b593918f917e57::t_bcd9b7bf3ec687 121
+  s_b593918f917e57::t_8df4fc093a7440 149
+  s_b593918f917e57::t_9df9051eb52e7b 178
+  s_39a414ad25fec9::t_715e86a2e65b90 57,71,101-104
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsPrepareReleaseCommand.java
+  s_64477cbccc3107::t_56452ed5019f29 80-82
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/DefaultKeeperStateChangeHandler.java
+  s_64477cbccc3107::t_537193f988549e 193,195
+  s_64477cbccc3107::t_a3d7fb26ea7fbd 187,189
+  s_b593918f917e57::t_e3c8146b82a409 184
+  s_b593918f917e57::t_dff33d17fcee00 175,185-186,188,190,197,200
+  s_39a414ad25fec9::t_7c15f755d395da 198
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperRoleAssigner.java
+  s_64477cbccc3107::t_626328a016cdab 7
+  s_64477cbccc3107::t_0f9e519046ac3c 77
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/DefaultKeeperStateChangeHandlerTest.java
+  s_64477cbccc3107::t_e5b3ce5e328ca3 248-285
+  s_b593918f917e57::t_a4474f150a4e30 286-295
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.40-trip",
+  "base_commit_sha": "e1d513f6fed95a4822b4966dc307904940436dcb",
+  "prompts": {},
+  "sessions": {
+    "s_39a414ad25fec9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9acbe99e-f07f-4599-9cf6-fe2316e75d76",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_64477cbccc3107": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e147991a-1330-452c-a2ac-a53990670445",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_b593918f917e57": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f5d88ee9-1e19-4e7b-8d40-da914ea09dc1",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
