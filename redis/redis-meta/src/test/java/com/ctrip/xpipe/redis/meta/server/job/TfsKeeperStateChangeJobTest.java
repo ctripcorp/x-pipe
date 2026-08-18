@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperRoleAssigner;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.tfs.TfsCommandConstants;
 import com.ctrip.xpipe.redis.meta.server.tfs.TfsGateway;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsKeeperUtils;
 import com.ctrip.xpipe.simpleserver.AbstractIoActionFactory;
 import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
@@ -19,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -180,7 +182,8 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
 
         TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, keepers, oldTfs,
                 new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
-                dcMetaCache, config, scheduled, executors, roles, gateway);
+                dcMetaCache, config, scheduled, executors, roles);
+        job.setTfsGateway(gateway);
         job.execute().get(TfsCommandConstants.TFS_STEP_TIMEOUT_MILLI * 5L, TimeUnit.MILLISECONDS);
 
         Assert.assertTrue(forceCloseCalled.get());
@@ -212,7 +215,7 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
         // No previousSurvive: release decided solely by target PREPARE (D32).
         TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, keepers, bm,
                 new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
-                dcMetaCache, config, scheduled, executors, roles, null);
+                dcMetaCache, config, scheduled, executors, roles);
         job.execute().get(5000, TimeUnit.MILLISECONDS);
 
         Assert.assertEquals(oldBackupAfter.getPort() + ":PREPARE", callOrder.get(0));
@@ -243,7 +246,7 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
 
         TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, keepers, null,
                 new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
-                dcMetaCache, config, scheduled, executors, roles, null);
+                dcMetaCache, config, scheduled, executors, roles);
         job.execute().get(5000, TimeUnit.MILLISECONDS);
 
         Assert.assertEquals(oldBackupAfter.getPort() + ":PREPARE", callOrder.get(0));
@@ -267,7 +270,7 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
 
         TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, keepers, oldTfs,
                 new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
-                dcMetaCache, config, scheduled, executors, roles, null);
+                dcMetaCache, config, scheduled, executors, roles);
         job.execute().get(5000, TimeUnit.MILLISECONDS);
 
         Assert.assertEquals(2, callOrder.size());
@@ -301,7 +304,7 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
 
         TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, keepers, null,
                 new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
-                dcMetaCache, config, scheduled, executors, roles, null);
+                dcMetaCache, config, scheduled, executors, roles);
         job.execute().get(5000, TimeUnit.MILLISECONDS);
 
         int prepare1Index = callOrder.indexOf(prepareTfs1.getPort() + ":PREPARE");
@@ -340,13 +343,109 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
 
         TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, keepers, null,
                 new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
-                dcMetaCache, config, scheduled, executors, roles, null);
+                dcMetaCache, config, scheduled, executors, roles);
         job.execute().get(5000, TimeUnit.MILLISECONDS);
 
         Assert.assertEquals(prepareTfs.getPort() + ":PREPARE", callOrder.get(0));
         Assert.assertEquals(bm.getPort() + ":ACTIVE", callOrder.get(1));
         Assert.assertTrue(callOrder.contains(slotTfs.getPort() + ":BACKUP"));
         Assert.assertEquals(3, callOrder.size());
+    }
+
+    @Test
+    public void testMetaOnlyOldSlotHolderReceivesPrepareNotStep3() throws Exception {
+        callOrder.clear();
+        KeeperMeta bm = keeper("127.0.0.1", 7201, 1L, true).setPriority(1);
+        KeeperMeta slotTfs = keeper("127.0.0.1", 7202, 3L, false).setPriority(2);
+        KeeperMeta metaOnlyOldSlot = keeper("127.0.0.1", 7203, 2L, false).setPriority(1);
+        List<KeeperMeta> survive = new LinkedList<>();
+        survive.add(bm);
+        survive.add(slotTfs);
+        List<KeeperMeta> union = TfsKeeperUtils.mergeByIpPort(survive, Arrays.asList(bm, slotTfs, metaOnlyOldSlot));
+
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(bm, union, dcMetaCache);
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(slotTfs));
+        Assert.assertEquals(KeeperState.PREPARE, roles.get(metaOnlyOldSlot));
+
+        startKeeperServer(bm.getPort());
+        startKeeperServer(slotTfs.getPort());
+        startKeeperServer(metaOnlyOldSlot.getPort());
+
+        TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, survive, null,
+                new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
+                dcMetaCache, config, scheduled, executors, roles, union);
+        job.execute().get(5000, TimeUnit.MILLISECONDS);
+
+        Assert.assertEquals(metaOnlyOldSlot.getPort() + ":PREPARE", callOrder.get(0));
+        Assert.assertEquals(bm.getPort() + ":ACTIVE", callOrder.get(1));
+        Assert.assertTrue(callOrder.contains(slotTfs.getPort() + ":BACKUP"));
+        Assert.assertFalse(callOrder.contains(metaOnlyOldSlot.getPort() + ":BACKUP"));
+        Assert.assertFalse(callOrder.contains(metaOnlyOldSlot.getPort() + ":ACTIVE"));
+        Assert.assertEquals(3, callOrder.size());
+    }
+
+    @Test
+    public void testSurviveOnlyWildTfsStillPrepared() throws Exception {
+        callOrder.clear();
+        KeeperMeta bm = keeper("127.0.0.1", 7211, 1L, true).setPriority(1);
+        KeeperMeta wildTfs = keeper("127.0.0.1", 7212, 2L, false).setPriority(1);
+        KeeperMeta slotTfs = keeper("127.0.0.1", 7213, 3L, false).setPriority(2);
+        List<KeeperMeta> survive = new LinkedList<>();
+        survive.add(bm);
+        survive.add(wildTfs);
+        survive.add(slotTfs);
+        List<KeeperMeta> meta = Arrays.asList(bm, slotTfs);
+        List<KeeperMeta> union = TfsKeeperUtils.mergeByIpPort(survive, meta);
+
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(bm, union, dcMetaCache);
+        Assert.assertEquals(KeeperState.PREPARE, roles.get(wildTfs));
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(slotTfs));
+
+        startKeeperServer(bm.getPort());
+        startKeeperServer(wildTfs.getPort());
+        startKeeperServer(slotTfs.getPort());
+
+        TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, survive, null,
+                new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
+                dcMetaCache, config, scheduled, executors, roles, union);
+        job.execute().get(5000, TimeUnit.MILLISECONDS);
+
+        Assert.assertEquals(wildTfs.getPort() + ":PREPARE", callOrder.get(0));
+        Assert.assertEquals(bm.getPort() + ":ACTIVE", callOrder.get(1));
+        Assert.assertTrue(callOrder.contains(slotTfs.getPort() + ":BACKUP"));
+        Assert.assertEquals(3, callOrder.size());
+    }
+
+    @Test
+    public void testHighPriorityMetaOnlyGetsBackupNotPrepare() throws Exception {
+        callOrder.clear();
+        KeeperMeta bm = keeper("127.0.0.1", 7221, 1L, true).setPriority(1);
+        KeeperMeta surviveTfs = keeper("127.0.0.1", 7222, 2L, false).setPriority(1);
+        KeeperMeta metaOnlyHigh = keeper("127.0.0.1", 7223, 3L, false).setPriority(5);
+        List<KeeperMeta> survive = new LinkedList<>();
+        survive.add(bm);
+        survive.add(surviveTfs);
+        List<KeeperMeta> union = TfsKeeperUtils.mergeByIpPort(survive, Arrays.asList(bm, surviveTfs, metaOnlyHigh));
+
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(bm, union, dcMetaCache);
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(metaOnlyHigh));
+        Assert.assertEquals(KeeperState.PREPARE, roles.get(surviveTfs));
+
+        startKeeperServer(bm.getPort());
+        startKeeperServer(surviveTfs.getPort());
+        startKeeperServer(metaOnlyHigh.getPort());
+
+        TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, survive, null,
+                new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
+                dcMetaCache, config, scheduled, executors, roles, union);
+        job.execute().get(5000, TimeUnit.MILLISECONDS);
+
+        Assert.assertEquals(surviveTfs.getPort() + ":PREPARE", callOrder.get(0));
+        Assert.assertEquals(bm.getPort() + ":ACTIVE", callOrder.get(1));
+        Assert.assertFalse(callOrder.contains(metaOnlyHigh.getPort() + ":PREPARE"));
+        Assert.assertFalse(callOrder.contains(metaOnlyHigh.getPort() + ":BACKUP"));
+        Assert.assertFalse(callOrder.contains(metaOnlyHigh.getPort() + ":ACTIVE"));
+        Assert.assertEquals(2, callOrder.size());
     }
 
     private void startKeeperServer(int port) throws Exception {

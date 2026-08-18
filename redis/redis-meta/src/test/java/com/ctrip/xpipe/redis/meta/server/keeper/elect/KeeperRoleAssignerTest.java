@@ -116,6 +116,27 @@ public class KeeperRoleAssignerTest {
         Assert.assertEquals(KeeperState.PREPARE, roles.get(lowTfs));
     }
 
+    @Test
+    public void testMissingKeeperContainerTreatedAsNonTfs() {
+        KeeperMeta bm = keeper(6000, 1L, 1);
+        KeeperMeta unknown = keeper(6001, 99L, 1);
+        bm.setActive(true);
+        when(dcMetaCache.getKeeperContainer(any(KeeperMeta.class))).thenAnswer(invocation -> {
+            KeeperMeta keeperMeta = invocation.getArgument(0);
+            if (keeperMeta.getKeeperContainerId() == 99L) {
+                throw new IllegalArgumentException("[getKeeperContainer][unfound keepercontainer]");
+            }
+            KeeperContainerMeta keeperContainerMeta = new KeeperContainerMeta();
+            keeperContainerMeta.setId(keeperMeta.getKeeperContainerId());
+            keeperContainerMeta.setDiskType("DEFAULT");
+            return keeperContainerMeta;
+        });
+
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(bm, Arrays.asList(bm, unknown), dcMetaCache);
+        Assert.assertEquals(KeeperState.ACTIVE, roles.get(bm));
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(unknown));
+    }
+
     private KeeperMeta keeper(int port, long keeperContainerId, Integer priority) {
         KeeperMeta keeperMeta = new KeeperMeta();
         keeperMeta.setIp("127.0.0.1");

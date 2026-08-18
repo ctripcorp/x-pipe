@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.elect;
 
-import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsKeeperUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -75,8 +74,7 @@ public final class KeeperRoleAssigner {
     }
 
     private static boolean isKeeperTfs(KeeperMeta keeperMeta, DcMetaCache dcMetaCache) {
-        KeeperContainerMeta keeperContainer = dcMetaCache.getKeeperContainer(keeperMeta);
-        return KeeperDiskTypeUtils.isTfs(keeperContainer != null ? keeperContainer.getDiskType() : null);
+        return TfsKeeperUtils.isTfsKeeper(keeperMeta, dcMetaCache);
     }
 
     private static int keeperPriority(KeeperMeta keeperMeta) {

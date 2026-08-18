@@ -58,6 +58,7 @@ import com.ctrip.xpipe.redis.meta.server.tfs.TfsDirPathResolverTest;
 import com.ctrip.xpipe.redis.meta.server.tfs.TfsForceCloseDirCommandTest;
 import com.ctrip.xpipe.redis.meta.server.tfs.TfsGatewayFactoryTest;
 import com.ctrip.xpipe.redis.meta.server.tfs.TfsPrepareReleaseCommandTest;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsKeeperUtilsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
@@ -146,6 +147,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	TfsGatewayFactoryTest.class,
 	HttpTfsGatewayTest.class,
 	TfsPrepareReleaseCommandTest.class,
+	TfsKeeperUtilsTest.class,
 	DefaultMetaServerConfigTfsTest.class
 })
 public class AllTests {
