@@ -1,0 +1,25 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  h_6ceeb547b3b36a 727
+  s_85f17d80f3c778::t_5e7da76b7aa866 722-726,728-729
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.38-trip",
+  "base_commit_sha": "e021d7cb8f83158b5da3f0b2d91523003da9b8ff",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_85f17d80f3c778": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "542caa75-2ab5-4008-af54-e9272bc71696",
+        "model": "qwen3.7-plus"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
