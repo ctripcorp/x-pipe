@@ -1,0 +1,23 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/RedisSession.java
+  s_a057777592858b::t_5472d1965da8c3 34,70,97,219,253,259,459-463,468
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/AbstractInstanceSessionManager.java
+  s_a057777592858b::t_5472d1965da8c3 67,71,74-80,82,84,89,93,97-103,110,115-124,126-128,130,132-145,159
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/health/RemoveUnusedRedisTest.java
+  s_a057777592858b::t_5472d1965da8c3 60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.40-trip",
+  "base_commit_sha": "d43d6d386d63712d0a3c40d18899b04d0fbc66c1",
+  "prompts": {},
+  "sessions": {
+    "s_a057777592858b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bba870b4-dcb2-4064-8b7f-5cb2c98e6018",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
