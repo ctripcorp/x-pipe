@@ -27,9 +27,13 @@ public class DefaultConsoleCheckerService extends AbstractService implements Con
         allRedisInfosUrl = String.format("%s/api/health/redis/info/all", this.address);
     }
 
-    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllLocalRedisInfos() {
+    @Override
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllLocalRedisInfos(String section) {
         try {
-            return restTemplate.getForObject(allRedisInfosUrl, InfoActionContext.ResultMap.class);
+            String url = (section == null || section.isEmpty())
+                    ? allRedisInfosUrl
+                    : allRedisInfosUrl + "?section=" + java.net.URLEncoder.encode(section, "UTF-8");
+            return restTemplate.getForObject(url, InfoActionContext.ResultMap.class);
         } catch (Throwable t) {
             return Collections.emptyMap();
         }

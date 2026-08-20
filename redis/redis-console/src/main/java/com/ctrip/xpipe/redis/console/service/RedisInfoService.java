@@ -12,8 +12,8 @@ import java.util.Map;
  */
 public interface RedisInfoService {
 
-    Map<HostPort, ActionContextRetMessage<Map<String, String>>> getLocalAllInfosRetMessage();
+    Map<HostPort, ActionContextRetMessage<Map<String, String>>> getLocalAllInfosRetMessage(String section);
 
 
-    Map<HostPort, ActionContextRetMessage<Map<String, String>>> getGlobalAllInfosRetMessage();
+    Map<HostPort, ActionContextRetMessage<Map<String, String>>> getGlobalAllInfosRetMessage(String section);
 }
