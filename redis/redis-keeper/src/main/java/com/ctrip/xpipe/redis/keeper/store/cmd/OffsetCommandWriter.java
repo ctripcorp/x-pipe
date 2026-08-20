@@ -71,7 +71,7 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
                 AsyncFileSystemHelper.writeAndAwait(asyncFileSystem(), asyncSegmentFile(), chunk, chunkLength,
                         "write command segment offset " + expectedEndOffset);
             } catch (IOException e) {
-                onAsyncWriteFailure(expectedEndOffset, e);
+                logger.error("[asyncWrite][fail][offset={}]", expectedEndOffset, e);
                 throw e;
             }
             wrote += chunkLength;
@@ -100,10 +100,6 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
         if (notifier != null) {
             notifier.offsetIncreased(offset);
         }
-    }
-
-    protected void onAsyncWriteFailure(long offset, IOException e) {
-        logger.error("[asyncWrite][fail][offset={}][fallback pending]", offset, e);
     }
 
     @Override
