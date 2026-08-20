@@ -315,6 +315,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException {
 		getLogger().info("[xsyncContinue] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}", replId, replOff, masterUuid, gtidCont);
+		// T-H3.CP3: rebind before getIndexGtidSet — unbound writers would read empty tip header
+		cmdStore.rebindIndexWritersIfUnbound();
 		return metaStore.xsyncContinue(replId,replOff+1, backlogEndOffset(),masterUuid,gtidCont,cmdStore.getIndexGtidSet());
 	}
 

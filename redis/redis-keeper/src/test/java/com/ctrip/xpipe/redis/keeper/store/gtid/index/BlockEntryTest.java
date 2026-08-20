@@ -94,6 +94,30 @@ public class BlockEntryTest {
     }
 
     @Test
+    public void testCopyPendingAndClearPendingKeepMetadata() throws Exception {
+        try (BlockEntry entry = new BlockEntry(UUID, 0, 100)) {
+            entry.append(UUID, 1, 110);
+            int pending = entry.getPendingBytes();
+            int sizeBefore = entry.getSize();
+            int cmdOffsetBefore = entry.getCmdOffset();
+
+            ByteBuf copied = entry.copyPending();
+            try {
+                assertEquals(pending, copied.readableBytes());
+                assertEquals(1, copied.refCnt());
+                assertEquals(pending, entry.getPendingBytes());
+                entry.clearPending();
+                assertEquals("copy is independent of live cache", pending, copied.readableBytes());
+            } finally {
+                copied.release();
+            }
+            assertEquals(0, entry.getPendingBytes());
+            assertEquals(sizeBefore, entry.getSize());
+            assertEquals(cmdOffsetBefore, entry.getCmdOffset());
+        }
+    }
+
+    @Test
     public void testRecoverRecomputesStateFromVarIntStream() throws Exception {
         try (BlockEntry source = new BlockEntry(UUID, 10, 1000)) {
             source.append(UUID, 11, 1050);

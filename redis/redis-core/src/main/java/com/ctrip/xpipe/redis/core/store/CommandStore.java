@@ -69,6 +69,12 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 	 */
 	void restoreXsyncIndex() throws IOException;
 
+	/**
+	 * XSYNC reconnect ({@code xsyncContinue}): if Index is enabled and writers were unbound
+	 * after rotate failure, rebind to the current tip. Already bound → no-op (T-H3.CP3).
+	 */
+	void rebindIndexWritersIfUnbound() throws IOException;
+
 	int onlyAppendCommand(ByteBuf byteBuf) throws IOException;
 
 	boolean increaseLostNotInCmdStore(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException ;

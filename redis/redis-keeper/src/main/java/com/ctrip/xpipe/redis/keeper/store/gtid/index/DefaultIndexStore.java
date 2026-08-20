@@ -54,6 +54,12 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
 
     private final RedisOpParser opParser;
     private GtidSet startGtidSet;
+    /**
+     * Snapshot of continue GtidSet taken immediately before rotate-failure unbind (T-H3.CP-R.1).
+     * {@link #resolveContinueGtidSet()} uses this when writers are null; never falls back to
+     * {@link #startGtidSet} (empty constructor value).
+     */
+    private GtidSet continueGtidSetSnapshot;
     private final CommandWriterCallback commandWriterCallback;
     private final GtidCmdFilter gtidCmdFilter;
     private boolean writerCmdEnabled;
@@ -217,7 +223,26 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
         if (indexWriter != null) {
             return indexWriter.getGtidSet();
         }
-        return startGtidSet;
+        if (continueGtidSetSnapshot != null) {
+            return continueGtidSetSnapshot;
+        }
+        throw new IllegalStateException(
+                "index writers unbound and continueGtidSet snapshot missing; refuse startGtidSet");
+    }
+
+    /**
+     * After rotate-failure unbind: bind writers to the current tip using the snapshot continueGtidSet.
+     * Already bound → no-op. Failures propagate (T-H3.CP3).
+     */
+    @Override
+    public synchronized void rebindWritersToCurrentTipIfUnbound() throws IOException {
+        makeSureOpen();
+        if (indexWriterV2 != null || indexWriter != null) {
+            return;
+        }
+        logger.info("[rebindWritersToCurrentTipIfUnbound] writers unbound, rebind current tip, replId={} segment={}",
+                replId, asyncCommandStore.getCurrentSegmentStartOffset());
+        doSwitchCmdFile();
     }
 
     @Override
@@ -273,6 +298,10 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
      * Must not flush — flush would hit {@code ClosedChannelException} (T-H2.G1 / I2).
      */
     private void unbindIndexWritersAfterRotateFailure() {
+        GtidSet live = resolveContinueGtidSet();
+        this.continueGtidSetSnapshot = live.clone();
+        logger.info("[unbindIndexWritersAfterRotateFailure] snapshot continueGtidSet={} replId={}",
+                continueGtidSetSnapshot, replId);
         this.indexWriter = null;
         this.indexWriterV2 = null;
     }

@@ -2181,6 +2181,64 @@ public class DefaultIndexStoreTest {
     }
 
     /**
+     * T-H3.CP-R.1: rotate dual-fail unbind then {@link DefaultIndexStore#doSwitchCmdFile}
+     * writes tip header = accumulated GtidSet (not EMPTY); {@link DefaultIndexStore#flushWriter}
+     * must not ClosedChannel.
+     */
+    @Test
+    public void testDoSwitchCmdFile_AfterRotateUnbind_UsesSnapshotContinueGtidSet() throws Exception {
+        String uuid = "c50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+        defaultIndexStore.write(createGtidCommand(uuid + ":2", "SET", "k", "v2"));
+        GtidSet expected = defaultIndexStore.getIndexGtidSet();
+        Assert.assertEquals(new GtidSet(uuid + ":1-2"), expected);
+
+        DefaultIndexStore store = spy(defaultIndexStore);
+        AtomicInteger remainingFails = new AtomicInteger(2);
+        doAnswer(inv -> {
+            if (remainingFails.getAndDecrement() > 0) {
+                throw new java.nio.file.NoSuchFileException("cmd_*_0");
+            }
+            return inv.callRealMethod();
+        }).when(store).openReadSegment(anyList());
+
+        try {
+            store.rotateWithCmdRoll(() -> {
+                lastRollSegmentStart = testCmdStore.getCurrentSegmentStartOffset() + testCmdStore.currentSegmentSize();
+                testCmdStore.roll();
+                segmentWritten = 0L;
+                return null;
+            });
+            Assert.fail("expected IOException after doSwitchCmdFile + retry both fail");
+        } catch (IOException e) {
+            Assert.assertTrue(e.getMessage().contains("cmd_*_0"));
+        }
+
+        Assert.assertNull(getField(store, "indexWriter"));
+        Assert.assertNull(getField(store, "indexWriterV2"));
+        store.flushWriter();
+
+        store.doSwitchCmdFile();
+        Assert.assertNotNull(getField(store, "indexWriterV2"));
+        AsyncFile tipIndexV2 = currentIndexHandle(AbstractIndex.INDEX_V2 + CMD_PREFIX);
+        GtidSet header = GtidSetWrapper.readGtidSetV2(testFs, tipIndexV2);
+        Assert.assertFalse("tip header must not be EMPTY", header.isEmpty());
+        Assert.assertEquals(expected, header);
+        store.flushWriter();
+    }
+
+    /**
+     * T-H3.CP3: writers already bound → {@link DefaultIndexStore#rebindWritersToCurrentTipIfUnbound} no-op.
+     */
+    @Test
+    public void testRebindWritersToCurrentTipIfUnbound_SkipWhenAlreadyBound() throws Exception {
+        DefaultIndexStore store = spy(defaultIndexStore);
+        Assert.assertNotNull(getField(store, "indexWriterV2"));
+        store.rebindWritersToCurrentTipIfUnbound();
+        verify(store, never()).doSwitchCmdFile();
+    }
+
+    /**
      * Terminal {@link IndexStore#close()} marks AbstractStore closed — reopen / write rejected;
      * {@link IndexStore#closeWriter()} alone does not.
      */

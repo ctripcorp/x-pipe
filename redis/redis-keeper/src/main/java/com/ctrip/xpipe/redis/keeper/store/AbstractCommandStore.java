@@ -761,6 +761,14 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
+    public void rebindIndexWritersIfUnbound() throws IOException {
+        if (!buildIndex || indexStore == null) {
+            return;
+        }
+        indexStore.rebindWritersToCurrentTipIfUnbound();
+    }
+
+    @Override
     public boolean increaseLostNotInCmdStore(GtidSet lost, IOSupplier<Boolean> supplier) throws IOException {
         return indexStore.increaseLost(lost, supplier);
     }

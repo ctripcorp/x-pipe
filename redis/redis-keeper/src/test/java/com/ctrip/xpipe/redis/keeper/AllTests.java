@@ -32,6 +32,7 @@ import com.ctrip.xpipe.redis.keeper.store.*;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTransactionBatchTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStoreTest;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.IndexEntryTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindowTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreTest;
@@ -104,6 +105,7 @@ import org.junit.runners.Suite.SuiteClasses;
         GtidCommandSearcherTest.class,
 
         DefaultIndexStoreTest.class,
+        IndexEntryTest.class,
         StreamCommandReaderTest.class,
         CKStoreTest.class,
         CKStoreTransactionBatchTest.class,

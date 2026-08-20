@@ -9,13 +9,14 @@ import io.netty.buffer.ByteBufAllocator;
  *
  * <p>Holds one GTID block's VarInt-encoded cmd-offset deltas plus its (uuid,startGno,currentGno,cmdOffset,size)
  * metadata. Owns no file/channel handle: IndexStore composes on-disk position via
- * {@code fs.size(blockFile) + BlockEntry#getPendingBytes()} and flushes bytes via {@code fs.write(blockFile, drainToByteBuf())}.
+ * {@code fs.size(blockFile) + BlockEntry#getPendingBytes()} and flushes bytes via
+ * {@link #copyPending()} + {@code fs.write} + {@link #clearPending()} (write success then clear).
  * V1 and V2 index writers share this type.</p>
  *
  * <p>Uses a Netty {@link ByteBuf} internally so that (a) the buffer auto-grows past the pre-sized capacity
  * — {@code blockMaxSize} bounds gno count, but each VarInt delta is variable-length up to 5 bytes, so a
- * strict byte cap would risk overflow before {@link #isBlockFull()} fires — and (b) {@link #drainToByteBuf()}
- * can hand the buffer straight to {@code fs.write(...)} without a byte-array copy.</p>
+ * strict byte cap would risk overflow before {@link #isBlockFull()} fires — and (b) pending bytes can be
+ * retained for {@code fs.write} without draining first (D7 / T-H3.CP-I.1).</p>
  */
 public class BlockEntry implements AutoCloseable {
 
@@ -96,6 +97,26 @@ public class BlockEntry implements AutoCloseable {
     }
 
     /**
+     * Independent copy of pending VarInt bytes for {@code writeAndAwait} (D7 / T-H3.CP-I.1).
+     * Caller owns the returned buffer ({@code refCnt=1}); Helper/FS {@code release} it.
+     * Do not {@link #drainToByteBuf()} or {@code retain} the live cache — TailCache may
+     * keep {@code writeBuf=data} for async flush. After a successful write, {@link #clearPending()}.
+     */
+    public ByteBuf copyPending() {
+        ensureOpen();
+        return blockCache.copy();
+    }
+
+    /**
+     * Drop pending VarInt bytes after a successful block write. Metadata (uuid/gno/cmdOffset/size)
+     * is kept for incremental flushes.
+     */
+    public void clearPending() {
+        ensureOpen();
+        blockCache.clear();
+    }
+
+    /**
      * Hand the accumulated VarInt bytes to the caller — zero-copy ownership transfer; caller must
      * {@link ByteBuf#release()} after {@code fs.write(...)} completes. Internal buffer is swapped for a
      * fresh one. (uuid,gno,cmdOffset,size) metadata is preserved for subsequent incremental flushes.
@@ -133,7 +154,7 @@ public class BlockEntry implements AutoCloseable {
         return size;
     }
 
-    /** VarInt bytes in {@link #blockCache} not yet handed to caller via {@link #drainToByteBuf()}. */
+    /** VarInt bytes in {@link #blockCache} not yet flushed (cleared only after a successful write). */
     public int getPendingBytes() {
         return blockCache.readableBytes();
     }

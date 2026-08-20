@@ -15,6 +15,10 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStore;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.GtidSetWrapper;
 import com.ctrip.xpipe.tuple.Pair;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -27,12 +31,16 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V2_FILE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 
@@ -870,6 +878,119 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertNull(meta.getCmdFilePrefix());
 		// I1: cmdFilePrefix == null ⟺ cmdStore == null
 		Assert.assertTrue((meta.getCmdFilePrefix() == null) == (ReflectionTestUtils.getField(store, "cmdStore") == null));
+	}
+
+	private void prepareXsyncStoreWithGtidCommands(int cmdCount) throws IOException {
+		RdbStore rdbStore = store.prepareRdb(replidA, 0, new LenEofType(100), ReplStage.ReplProto.XSYNC,
+				new GtidSet(GtidSet.EMPTY_GTIDSET), masterUuidA);
+		rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+		rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+		store.confirmRdbGapAllowed(rdbStore);
+		store.appendCommands(Unpooled.wrappedBuffer(generateGtidCommands(masterUuidA, 1, cmdCount)));
+	}
+
+	private DefaultIndexStore spyIndexStoreAndReplace() {
+		DefaultIndexStore real = (DefaultIndexStore) ReflectionTestUtils.getField(store.cmdStore, "indexStore");
+		DefaultIndexStore spyIndex = spy(real);
+		ReflectionTestUtils.setField(store.cmdStore, "indexStore", spyIndex);
+		return spyIndex;
+	}
+
+	private void failDoSwitchCmdFileTimes(DefaultIndexStore spyIndex, int times) throws IOException {
+		AtomicInteger remainingFails = new AtomicInteger(times);
+		doAnswer(inv -> {
+			if (remainingFails.getAndDecrement() > 0) {
+				throw new IOException("injected switch fail");
+			}
+			return inv.callRealMethod();
+		}).when(spyIndex).doSwitchCmdFile();
+	}
+
+	private void rotateUnbind(DefaultIndexStore spyIndex) throws IOException {
+		AbstractCommandStore cmdStore = (AbstractCommandStore) store.cmdStore;
+		CommandWriter cmdWriter = cmdStore.getCommandWriter();
+		try {
+			spyIndex.rotateWithCmdRoll(() -> {
+				cmdWriter.doRotate();
+				return null;
+			});
+			Assert.fail("expected IOException after doSwitchCmdFile + retry both fail");
+		} catch (IOException e) {
+			Assert.assertTrue(e.getMessage().contains("injected switch fail"));
+		}
+	}
+
+	private GtidSet readTipIndexHeader() throws IOException {
+		AbstractCommandStore cmdStore = (AbstractCommandStore) store.cmdStore;
+		String prefix = cmdStore.getCommandFileNamePrefix();
+		String indexPrefix = AbstractIndex.INDEX + prefix;
+		AsyncFile tipIndex = AsyncFileSystemHelper.await(
+				cmdStore.getAsyncFileSystem().getCurrentIndexFiles(cmdStore.getWriteSegmentFile(), List.of(indexPrefix)),
+				"get tip index v1").getValue().get(indexPrefix);
+		return GtidSetWrapper.readGtidSet(cmdStore.getAsyncFileSystem(), tipIndex);
+	}
+
+	/**
+	 * T-H3.CP3: rotate dual-fail unbind then {@code xsyncContinue} rebinds writers;
+	 * tip header = accumulated GtidSet, not EMPTY.
+	 */
+	@Test
+	public void xsyncContinue_AfterRotateUnbind_RebindsWritersWithSnapshotHeader() throws Exception {
+		prepareXsyncStoreWithGtidCommands(10);
+		GtidSet expected = store.cmdStore.getIndexGtidSet();
+		Assert.assertEquals(new GtidSet(masterUuidA + ":1-10"), expected);
+
+		DefaultIndexStore spyIndex = spyIndexStoreAndReplace();
+		failDoSwitchCmdFileTimes(spyIndex, 2);
+		rotateUnbind(spyIndex);
+		Assert.assertNull(ReflectionTestUtils.getField(spyIndex, "indexWriter"));
+		Assert.assertNull(ReflectionTestUtils.getField(spyIndex, "indexWriterV2"));
+
+		store.xsyncContinue(replidA, store.getCurReplStageReplOff(), masterUuidA, expected);
+
+		Assert.assertNotNull(ReflectionTestUtils.getField(spyIndex, "indexWriter"));
+		Assert.assertNotNull(ReflectionTestUtils.getField(spyIndex, "indexWriterV2"));
+		GtidSet header = readTipIndexHeader();
+		Assert.assertFalse("tip header must not be EMPTY", header.isEmpty());
+		Assert.assertEquals(expected, header);
+	}
+
+	/**
+	 * T-H3.CP3: rebind IO failure on {@code xsyncContinue} is thrown.
+	 */
+	@Test
+	public void xsyncContinue_RebindIoFailurePropagates() throws Exception {
+		prepareXsyncStoreWithGtidCommands(4);
+		GtidSet gtidCont = store.cmdStore.getIndexGtidSet();
+
+		DefaultIndexStore spyIndex = spyIndexStoreAndReplace();
+		failDoSwitchCmdFileTimes(spyIndex, 3);
+		rotateUnbind(spyIndex);
+
+		try {
+			store.xsyncContinue(replidA, store.getCurReplStageReplOff(), masterUuidA, gtidCont);
+			Assert.fail("expected IOException from rebind");
+		} catch (IOException e) {
+			Assert.assertTrue(e.getMessage().contains("injected switch fail"));
+		}
+		Assert.assertNull(ReflectionTestUtils.getField(spyIndex, "indexWriter"));
+		Assert.assertNull(ReflectionTestUtils.getField(spyIndex, "indexWriterV2"));
+	}
+
+	/**
+	 * T-H3.CP3: writers already bound → {@code xsyncContinue} does not reopen.
+	 */
+	@Test
+	public void xsyncContinue_WritersAlreadyBound_DoesNotReopen() throws Exception {
+		prepareXsyncStoreWithGtidCommands(3);
+		GtidSet gtidCont = store.cmdStore.getIndexGtidSet();
+		DefaultIndexStore spyIndex = spyIndexStoreAndReplace();
+		Assert.assertNotNull(ReflectionTestUtils.getField(spyIndex, "indexWriterV2"));
+
+		store.xsyncContinue(replidA, store.getCurReplStageReplOff(), masterUuidA, gtidCont);
+
+		verify(spyIndex, never()).doSwitchCmdFile();
+		Assert.assertNotNull(ReflectionTestUtils.getField(spyIndex, "indexWriterV2"));
 	}
 
 }

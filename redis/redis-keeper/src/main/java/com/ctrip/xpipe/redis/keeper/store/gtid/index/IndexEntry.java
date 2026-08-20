@@ -283,13 +283,20 @@ public class IndexEntry {
         }
     }
 
+    /**
+     * Flush pending block bytes then refresh {@link #blockEndOffset} / {@link #size}.
+     * Write success then clear pending (T-H3.CP-I.1): copy for {@code writeAndAwait} so Helper/FS
+     * {@code release} and TailCache {@code writeBuf=data} never share the live cache. A sync throw
+     * leaves bytes retryable. If write already succeeded and {@code fs.size} fails, pending is already
+     * empty — re-entry skips write and only fills {@code blockEndOffset}.
+     */
     public void syncDataFromBlockEntry(BlockEntry blockEntry, AsyncFileSystem fs, AsyncFile blockFile)
             throws IOException {
-        ByteBuf blockBuf = blockEntry.drainToByteBuf();
-        if (blockBuf != null && blockBuf.isReadable()) {
-            // AsyncFileSystem.write releases the buffer; caller must not release again.
-            AsyncFileSystemHelper.writeAndAwait(fs, blockFile, blockBuf, blockBuf.readableBytes(),
-                    "write block entry");
+        int pending = blockEntry.getPendingBytes();
+        if (pending > 0) {
+            ByteBuf pendingBuf = blockEntry.copyPending();
+            AsyncFileSystemHelper.writeAndAwait(fs, blockFile, pendingBuf, pending, "write block entry");
+            blockEntry.clearPending();
         }
         this.blockEndOffset = AsyncFileSystemHelper.await(() -> fs.size(blockFile), "size block file");
         this.size = blockEntry.getSize();

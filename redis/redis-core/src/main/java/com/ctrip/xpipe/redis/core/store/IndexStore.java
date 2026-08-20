@@ -17,6 +17,12 @@ public interface IndexStore extends Closeable {
     void openWriter(CommandWriter cmdWriter) throws IOException;
 
     /**
+     * After rotate-failure unbind: if writers are null, rebind to the current tip using the
+     * snapshot continueGtidSet. Already bound → no-op. Failures propagate (T-H3.CP3).
+     */
+    void rebindWritersToCurrentTipIfUnbound() throws IOException;
+
+    /**
      * Atomically rotate cmd segment + index writers under the IndexStore monitor.
      * Order: {@link #flushWriter()} → {@code cmdRoll} (typically {@code CommandWriter#doRotate}/fs.roll)
      * → rebind index writers to the new segment. Callers must not split cmd roll and index
