@@ -39,6 +39,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisConfigCh
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.diskless.DiskLessReplCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContextTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.RedisMsgCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.CrdtInfoReplicationActionFactoryTest;
@@ -77,8 +78,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.Cur
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.OneWaySentinelHelloCheckControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.DefaultSentinelMonitorsCheckTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconConsistencyCheckActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.SentinelBeaconConsistencyCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.DefaultBeaconMetaControllerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.SentinelBeaconConsistencyCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.SentinelBeaconMigrationControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfigTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.factory.DefaultHealthCheckEndpointFactoryTest;
@@ -215,7 +216,9 @@ import org.junit.runners.Suite;
         DefaultDelayPingActionCollectorTest.class,
         DefaultAggregatorPullServiceTest.class,
         RedisMsgCollectorTest.class,
-        RedisMsgReporterTest.class
+        RedisMsgReporterTest.class,
+
+        InfoActionContextTest.class
 
 })
 public class AllTests {
