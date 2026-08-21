@@ -124,8 +124,6 @@ public interface CheckerConfig {
 
     boolean getShouldDoAfterNettyClientConnected();
 
-    boolean checkBeaconLastModifyTime();
-
     boolean shouldComputeExtraInHash();
 
 }

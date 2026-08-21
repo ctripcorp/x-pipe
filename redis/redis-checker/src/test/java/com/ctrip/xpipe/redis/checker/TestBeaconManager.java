@@ -14,20 +14,20 @@ import java.util.Map;
 public class TestBeaconManager implements BeaconManager {
 
     @Override
-    public void registerCluster(String clusterId, String dc, ClusterType clusterType, int orgId, String lastModifyTime,
+    public void registerCluster(String clusterId, String dc, ClusterType clusterType, int orgId,
                                 BeaconRouteType routeType, Map<String, HostPort> shardMasters) {
 
     }
 
     @Override
-    public void updateCluster(String clusterId, String dc, ClusterType clusterType, int orgId, String lastModifyTime,
+    public void updateCluster(String clusterId, String dc, ClusterType clusterType, int orgId,
                               BeaconRouteType routeType) {
 
     }
 
     @Override
     public BeaconCheckStatus checkClusterHash(String clusterId, String dc, ClusterType clusterType, int orgId,
-                                              String lastModifyTime, BeaconRouteType routeType) {
+                                              BeaconRouteType routeType) {
         return BeaconCheckStatus.UNKNOWN;
     }
 

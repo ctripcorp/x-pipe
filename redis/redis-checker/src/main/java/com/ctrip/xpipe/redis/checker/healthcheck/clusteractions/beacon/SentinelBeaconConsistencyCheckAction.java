@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon;
 
 import com.ctrip.xpipe.redis.checker.BeaconManager;
-import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
-import com.ctrip.xpipe.redis.checker.healthcheck.CheckInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -17,8 +17,9 @@ public class SentinelBeaconConsistencyCheckAction extends BeaconConsistencyCheck
     private static final int SENTINEL_BEACON_CHECK_INTERVAL_MILLI = 15 * 1000;
 
     public SentinelBeaconConsistencyCheckAction(ScheduledExecutorService scheduled, ClusterHealthCheckInstance instance,
-                                                ExecutorService executors, BeaconManager beaconManager) {
-        super(scheduled, instance, executors, beaconManager);
+                                                ExecutorService executors, BeaconManager beaconManager,
+                                                StabilityHolder stabilityHolder) {
+        super(scheduled, instance, executors, beaconManager, stabilityHolder);
     }
 
     @Override

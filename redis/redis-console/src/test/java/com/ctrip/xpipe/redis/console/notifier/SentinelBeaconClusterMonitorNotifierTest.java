@@ -2,9 +2,9 @@ package com.ctrip.xpipe.redis.console.notifier;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
-import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -62,9 +62,9 @@ public class SentinelBeaconClusterMonitorNotifierTest {
 
     @Test
     public void notifyClusterUpdateShouldRegisterSentinelBeacon() {
-        notifier.notifyClusterUpdate(CLUSTER, DC, 1L, "20200101103030001");
+        notifier.notifyClusterUpdate(CLUSTER, DC, 1L);
 
-        Mockito.verify(beaconManager).registerCluster(CLUSTER, DC, ClusterType.SINGLE_DC, 1, "20200101103030001",
+        Mockito.verify(beaconManager).registerCluster(CLUSTER, DC, ClusterType.SINGLE_DC, 1,
                 BeaconRouteType.SENTINEL);
     }
 
