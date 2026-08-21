@@ -50,6 +50,8 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 			return psync;
 		} else {
 			XsyncRequest xsync = new XsyncRequest();
+			// T-H3.CP1.2: do not catch getGtidSet — fail getRequest → setFailure → psyncFail reconnect.
+			// Never PSYNC ? -1 / empty GTID because of File IO.
 			Pair<GtidSet, GtidSet> gtidSets = currentReplicationStore.getGtidSet();
 			GtidSet gtidSet = gtidSets.getKey().union(gtidSets.getValue());
 			GtidSet lost = gtidSets.getValue();

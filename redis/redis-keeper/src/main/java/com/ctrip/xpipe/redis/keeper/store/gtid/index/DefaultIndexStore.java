@@ -501,7 +501,11 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
         }
     }
 
-    /** Snapshot — never return the live writer-owned GtidSet (CME under concurrent write + XSYNC wait). */
+    /**
+     * Snapshot — never return the live writer-owned GtidSet (CME under concurrent write + XSYNC wait).
+     * T-H3.CP1.1: writers unbound with {@link #continueGtidSetSnapshot} → use snapshot;
+     * do not read the rolled empty/partial tip IndexReader (reconnect XSYNC is before CP3 rebind).
+     */
     @Override
     public synchronized GtidSet getIndexGtidSet() {
         GtidSet live;
@@ -509,6 +513,8 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
             live = indexWriterV2.getGtidSet();
         } else if (indexWriter != null) {
             live = indexWriter.getGtidSet();
+        } else if (continueGtidSetSnapshot != null) {
+            live = continueGtidSetSnapshot;
         } else {
             live = getIndexGtidSetByIndexReader();
         }

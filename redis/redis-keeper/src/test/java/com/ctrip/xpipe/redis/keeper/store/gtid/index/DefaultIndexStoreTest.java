@@ -2228,6 +2228,69 @@ public class DefaultIndexStoreTest {
     }
 
     /**
+     * T-H3.CP1.1: after rotate-unbind, {@link DefaultIndexStore#getIndexGtidSet} uses
+     * {@code continueGtidSetSnapshot}; must not read the rolled empty/partial tip IndexReader.
+     */
+    @Test
+    public void testGetIndexGtidSet_AfterRotateUnbind_UsesSnapshotNotTipReader() throws Exception {
+        String uuid = "d50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+        defaultIndexStore.write(createGtidCommand(uuid + ":2", "SET", "k", "v2"));
+        GtidSet expected = defaultIndexStore.getIndexGtidSet();
+        Assert.assertEquals(new GtidSet(uuid + ":1-2"), expected);
+
+        DefaultIndexStore store = spy(defaultIndexStore);
+        AtomicInteger remainingFails = new AtomicInteger(2);
+        doAnswer(inv -> {
+            if (remainingFails.getAndDecrement() > 0) {
+                throw new java.nio.file.NoSuchFileException("cmd_*_0");
+            }
+            return inv.callRealMethod();
+        }).when(store).openReadSegment(anyList());
+
+        try {
+            store.rotateWithCmdRoll(() -> {
+                lastRollSegmentStart = testCmdStore.getCurrentSegmentStartOffset() + testCmdStore.currentSegmentSize();
+                testCmdStore.roll();
+                segmentWritten = 0L;
+                return null;
+            });
+            Assert.fail("expected IOException after doSwitchCmdFile + retry both fail");
+        } catch (IOException e) {
+            Assert.assertTrue(e.getMessage().contains("cmd_*_0"));
+        }
+
+        Assert.assertNull(getField(store, "indexWriter"));
+        Assert.assertNull(getField(store, "indexWriterV2"));
+        Assert.assertNotNull(getField(store, "continueGtidSetSnapshot"));
+
+        GtidSet afterUnbind = store.getIndexGtidSet();
+        Assert.assertEquals("unbound writers must use snapshot, not empty tip IndexReader", expected, afterUnbind);
+
+        afterUnbind.add(uuid + ":999");
+        Assert.assertFalse("mutating returned set must not affect snapshot",
+                store.getIndexGtidSet().contains(uuid, 999));
+        Assert.assertEquals(expected, store.getIndexGtidSet());
+    }
+
+    /**
+     * T-H3.CP1.1: writers empty and no snapshot (recover before openWriter) still uses IndexReader.
+     */
+    @Test
+    public void testGetIndexGtidSet_WritersEmptyNoSnapshot_UsesIndexReader() throws Exception {
+        String uuid = "e50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+        defaultIndexStore.flushWriter();
+        GtidSet expected = defaultIndexStore.getIndexGtidSet();
+
+        setField(defaultIndexStore, "indexWriter", null);
+        setField(defaultIndexStore, "indexWriterV2", null);
+        Assert.assertNull(getField(defaultIndexStore, "continueGtidSetSnapshot"));
+
+        Assert.assertEquals(expected, defaultIndexStore.getIndexGtidSet());
+    }
+
+    /**
      * T-H3.CP3: writers already bound → {@link DefaultIndexStore#rebindWritersToCurrentTipIfUnbound} no-op.
      */
     @Test

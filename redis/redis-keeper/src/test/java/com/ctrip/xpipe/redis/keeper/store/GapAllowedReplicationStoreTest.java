@@ -931,6 +931,26 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 	}
 
 	/**
+	 * T-H3.CP1.1: reconnect {@code getGtidSet} (before CP3 {@code xsyncContinue} rebind)
+	 * uses continueGtidSetSnapshot, not the rolled empty tip IndexReader.
+	 */
+	@Test
+	public void getGtidSet_AfterRotateUnbind_UsesSnapshotNotEmptyTip() throws Exception {
+		prepareXsyncStoreWithGtidCommands(6);
+		Pair<GtidSet, GtidSet> expected = store.getGtidSet();
+
+		DefaultIndexStore spyIndex = spyIndexStoreAndReplace();
+		failDoSwitchCmdFileTimes(spyIndex, 2);
+		rotateUnbind(spyIndex);
+		Assert.assertNull(ReflectionTestUtils.getField(spyIndex, "indexWriter"));
+		Assert.assertNull(ReflectionTestUtils.getField(spyIndex, "indexWriterV2"));
+
+		Pair<GtidSet, GtidSet> afterUnbind = store.getGtidSet();
+		Assert.assertEquals(expected.getKey(), afterUnbind.getKey());
+		Assert.assertEquals(expected.getValue(), afterUnbind.getValue());
+	}
+
+	/**
 	 * T-H3.CP3: rotate dual-fail unbind then {@code xsyncContinue} rebinds writers;
 	 * tip header = accumulated GtidSet, not EMPTY.
 	 */

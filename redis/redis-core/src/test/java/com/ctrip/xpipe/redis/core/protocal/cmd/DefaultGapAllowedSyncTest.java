@@ -195,4 +195,24 @@ public class DefaultGapAllowedSyncTest extends AbstractRedisTest{
 		verify(replicationStore, never()).appendCommands(any());
 	}
 
+	/**
+	 * T-H3.CP1.2: getGtidSet fail while assembling reconnect XSYNC must not become PSYNC ? -1
+	 * or empty GTID. getRequest throws → AbstractCommand.setFailure → psyncFail reconnect.
+	 */
+	@Test
+	public void testGetReplicationStoreSyncRequestGtidFailDoesNotSendFullSync() throws Exception {
+		ReplStage xsyncStage = mock(ReplStage.class);
+		when(xsyncStage.getProto()).thenReturn(ReplStage.ReplProto.XSYNC);
+		when(metaStore.getCurrentReplStage()).thenReturn(xsyncStage);
+		when(replicationStore.getGtidSet()).thenThrow(new XpipeRuntimeException("index reader error"));
+
+		try {
+			defaultGAsync.getRequest();
+			Assert.fail("expected getGtidSet failure to propagate");
+		} catch (XpipeRuntimeException e) {
+			Assert.assertTrue(e.getMessage().contains("index reader error"));
+		}
+		verify(replicationStoreManager, never()).create();
+	}
+
 }
