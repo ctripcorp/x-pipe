@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntSupplier;
@@ -59,6 +60,8 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	private AtomicReference<SyncRateLimiter> rateLimiterRef = new AtomicReference<>();
 
+	private final AtomicBoolean initialized = new AtomicBoolean(false);
+
 	protected final AsyncFileSystem asyncFileSystem;
 
 	protected final ReplId fileSystemReplId;
@@ -77,7 +80,12 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
 		this.fileSystemReplId = Objects.requireNonNull(fileSystemReplId, "fileSystemReplId");
 		this.asyncWriteMaxBytes = Objects.requireNonNull(asyncWriteMaxBytes, "asyncWriteMaxBytes");
+	}
 
+	public void initialize() throws IOException {
+		if (!initialized.compareAndSet(false, true)) {
+			return;
+		}
 		if (!AsyncFileSystemHelper.await(() -> asyncFileSystem.exists(path()), "exists rdb " + file)) {
 			this.writeAsyncFile = openWriteHandle();
 		} else {
@@ -89,6 +97,14 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 				closeReadHandleQuietly();
 				this.writeAsyncFile = openWriteHandle();
 			}
+		}
+	}
+
+	@Override
+	public void makeSureOpen() {
+		super.makeSureOpen();
+		if (!initialized.get()) {
+			throw new IllegalStateException("[makeSureOpen][uninitialized]" + this);
 		}
 	}
 

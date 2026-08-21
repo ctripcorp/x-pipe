@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
@@ -174,7 +175,9 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 			inOutPayloadReplicationStore.setRdbStore(rdbStore);
 			super.beginReadRdb(eofType);
 		} catch (IOException e) {
+			// T-H3.CP6.5: do not swallow — fail psync → setFailure → dumpFail disconnect
 			getLogger().error("[beginReadRdb]" + syncReply.getReplId() + "," + syncReply.getReplOff(), e);
+			throw new RedisRuntimeException("[beginReadRdb]", e);
 		}
 	}
 	

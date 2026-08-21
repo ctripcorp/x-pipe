@@ -30,6 +30,7 @@ public class DefaultRdbStoreEofMarkTest extends AbstractRedisKeeperTest {
 		
 		rdbFile = new File(String.format("%s/%s.rdb", getTestFileDir(), getTestName()));
 		rdbStore = new DefaultRdbStore(rdbFile, "replid", 0, new EofMarkType(eofMark), asyncFileSystem(), () -> 65536, getReplId());
+		rdbStore.initialize();
 	}
 
 	

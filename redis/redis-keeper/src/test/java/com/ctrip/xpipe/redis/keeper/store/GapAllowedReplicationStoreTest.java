@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V2_FILE;
 import static org.mockito.ArgumentMatchers.any;
@@ -1014,6 +1016,69 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 
 		verify(spyIndex, never()).doSwitchCmdFile();
 		Assert.assertNotNull(ReflectionTestUtils.getField(spyIndex, "indexWriterV2"));
+	}
+
+	/**
+	 * T-H3.CP6.4: DRS construct — createCommandStore fail closes already created meta / rdb.
+	 */
+	@Test
+	public void constructCreateCommandStoreFailClosesCreatedMetaAndRdb() throws Exception {
+		store.close();
+		store = null;
+
+		File caseDir = new File(baseDir, "h3j-construct-cmd-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		String keeperRunid = randomKeeperRunid();
+		GtidReplicationStore seed = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), keeperRunid,
+				createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem(), getReplId());
+		RdbStore seedRdb = seed.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
+		seedRdb.updateRdbType(RdbStore.Type.NORMAL);
+		seedRdb.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+		seed.confirmRdbGapAllowed(seedRdb);
+		seed.close();
+
+		AtomicReference<MetaStore> createdMeta = new AtomicReference<>();
+		AtomicReference<RdbStore> createdRdb = new AtomicReference<>();
+		try {
+			new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem(), getReplId()) {
+				@Override
+				protected MetaStore createMetaStore(File baseDir, String keeperRunid) throws IOException {
+					MetaStore created = super.createMetaStore(baseDir, keeperRunid);
+					createdMeta.set(created);
+					return created;
+				}
+
+				@Override
+				protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType,
+												  ReplStage.ReplProto replProto, GtidSet gtidLost, String masterUuid)
+						throws IOException {
+					RdbStore created = super.createRdbStore(rdb, replId, rdbOffset, eofType, replProto, gtidLost, masterUuid);
+					createdRdb.set(created);
+					return created;
+				}
+
+				@Override
+				protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
+														  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
+														  KeeperMonitor keeperMonitor, GtidCmdFilter filter) throws IOException {
+					throw new IOException("injected createCommandStore fail");
+				}
+			};
+			Assert.fail("expected construct fail when createCommandStore throws");
+		} catch (IOException expected) {
+			Assert.assertTrue(expected.getMessage().contains("injected createCommandStore fail"));
+		}
+
+		Assert.assertNotNull(createdMeta.get());
+		try {
+			createdMeta.get().loadMeta();
+			Assert.fail("expected meta closed after construct fail");
+		} catch (IOException e) {
+			Assert.assertTrue(e.getMessage().contains("MetaStore closed"));
+		}
+		Assert.assertNotNull(createdRdb.get());
+		Assert.assertTrue(((AbstractStore) createdRdb.get()).isClosed());
 	}
 
 }

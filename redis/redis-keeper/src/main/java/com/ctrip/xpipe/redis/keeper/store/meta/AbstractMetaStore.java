@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -45,17 +46,21 @@ public abstract class AbstractMetaStore implements MetaStore{
 
 	private boolean closed;
 
+	private final AtomicBoolean initialized = new AtomicBoolean(false);
+
 	public AbstractMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId) {
 		this.baseDir = baseDir;
 		this.keeperRunid = keeperRunid;
 		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
 		this.fileSystemReplId = Objects.requireNonNull(fileSystemReplId, "fileSystemReplId");
-		try {
-			loadMeta();
-			checkOrSaveKeeperRunid(keeperRunid);
-		} catch (IOException e) {
-			throw new IllegalStateException("load meta:" + baseDir, e);
+	}
+
+	public void initialize() throws IOException {
+		if (!initialized.compareAndSet(false, true)) {
+			return;
 		}
+		loadMeta();
+		checkOrSaveKeeperRunid(keeperRunid);
 	}
 	
 	private final void checkOrSaveKeeperRunid(String keeperRunid) throws IOException {

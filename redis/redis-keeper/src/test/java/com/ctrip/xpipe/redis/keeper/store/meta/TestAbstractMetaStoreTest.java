@@ -40,7 +40,9 @@ public class TestAbstractMetaStoreTest extends AbstractRedisKeeperTest {
         closeMetaStore();
         Files.createDirectories(Paths.get(TMP_META_STORE_DIR));
         new File(TMP_META_V2_JSON_FILE).delete();
-        metaStore = new DefaultMetaStore(new File("/tmp/xpipe/test"), KEEPER_RUN_ID, asyncFileSystem(), getReplId());
+        DefaultMetaStore opened = new DefaultMetaStore(new File("/tmp/xpipe/test"), KEEPER_RUN_ID, asyncFileSystem(), getReplId());
+        opened.initialize();
+        metaStore = opened;
     }
 
     @After
@@ -61,8 +63,9 @@ public class TestAbstractMetaStoreTest extends AbstractRedisKeeperTest {
         ReplicationStoreMeta meta = deserializeFromStringV2(readFileAsString(PERSIST_META_JSON_FILE));
         metaStore.saveMetaToFileV2(new File(TMP_META_V2_JSON_FILE), meta);
         closeMetaStore();
-        metaStore = new DefaultMetaStore(new File("/tmp/xpipe/test"), KEEPER_RUN_ID, asyncFileSystem(), getReplId());
-        metaStore.loadMeta();
+        DefaultMetaStore reopened = new DefaultMetaStore(new File("/tmp/xpipe/test"), KEEPER_RUN_ID, asyncFileSystem(), getReplId());
+        reopened.initialize();
+        metaStore = reopened;
         logger.info("[result] {}", readFileAsString(TMP_META_V2_JSON_FILE));
         Assert.assertEquals(meta, metaStore.getMeta());
     }

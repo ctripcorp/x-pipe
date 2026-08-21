@@ -215,4 +215,42 @@ public class DefaultGapAllowedSyncTest extends AbstractRedisTest{
 		verify(replicationStoreManager, never()).create();
 	}
 
+	/**
+	 * T-H3.CP6.5: beginReadRdb must not swallow prepareRdb IOException.
+	 * Fail → setFailure / dumpFail disconnect; must not keep reading RDB or append commands.
+	 */
+	@Test
+	public void testPrepareRdbIoFailFailsFutureAndStopsReading() throws Exception {
+		when(replicationStore.isFresh()).thenReturn(true);
+		when(metaStore.getCurrentReplStage()).thenReturn(null);
+		doThrow(new IOException("injected prepareRdb fail"))
+				.when(replicationStore).prepareRdb(anyString(), anyLong(), any(), any(), nullable(GtidSet.class), nullable(String.class));
+
+		String request = defaultGAsync.getRequest().toString(Charset.defaultCharset());
+		Assert.assertEquals("PSYNC ? -1\r\n", request);
+
+		ByteBufReceiver.RECEIVER_RESULT fullResult = defaultGAsync.receive(null,
+				Unpooled.wrappedBuffer(("+" + GapAllowedSync.FULL_SYNC + " " + REPL_ID + " 1000\r\n").getBytes()));
+		Assert.assertEquals(ByteBufReceiver.RECEIVER_RESULT.CONTINUE, fullResult);
+		Assert.assertFalse(defaultGAsync.future().isDone());
+
+		ByteBufReceiver.RECEIVER_RESULT rdbHeader = defaultGAsync.receive(null,
+				Unpooled.wrappedBuffer("$6\r\n".getBytes()));
+		Assert.assertEquals(ByteBufReceiver.RECEIVER_RESULT.FAIL, rdbHeader);
+		Assert.assertTrue(defaultGAsync.future().isDone());
+		Assert.assertFalse(defaultGAsync.future().isSuccess());
+		Assert.assertTrue(defaultGAsync.future().cause() instanceof RedisRuntimeException);
+		Assert.assertTrue(defaultGAsync.future().cause().getCause() instanceof IOException);
+		Assert.assertTrue(defaultGAsync.future().cause().getCause().getMessage().contains("injected prepareRdb fail"));
+
+		verify(replicationStore, times(1)).prepareRdb(anyString(), anyLong(), any(), any(), nullable(GtidSet.class), nullable(String.class));
+		verify(replicationStore, never()).appendCommands(any());
+		verify(replicationStoreManager, never()).create();
+
+		ByteBufReceiver.RECEIVER_RESULT afterFail = defaultGAsync.receive(null,
+				Unpooled.wrappedBuffer("SET FOO BAR\r\n".getBytes()));
+		Assert.assertEquals(ByteBufReceiver.RECEIVER_RESULT.ALREADY_FINISH, afterFail);
+		verify(replicationStore, never()).appendCommands(any());
+	}
+
 }

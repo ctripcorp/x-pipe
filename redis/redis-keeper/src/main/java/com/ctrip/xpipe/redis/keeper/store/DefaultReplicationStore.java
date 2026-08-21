@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Triple;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -102,24 +103,29 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		this.fileSystemReplId = Objects.requireNonNull(fileSystemReplId, "fileSystemReplId");
 		this.asyncWriteMaxBytes = config::getAsyncWriteMaxBytes;
 
-		this.metaStore = new DefaultMetaStore(baseDir, keeperRunid, asyncFileSystem, fileSystemReplId);
+		try {
+			this.metaStore = createMetaStore(baseDir, keeperRunid);
 
-		ReplicationStoreMeta meta = metaStore.dupReplicationStoreMeta();
+			ReplicationStoreMeta meta = metaStore.dupReplicationStoreMeta();
 
-		Pair<RdbStore,RdbStore> rdbStores = recoverRdbStores(baseDir, meta);
-		if (rdbStores.getKey() != null) {
-			this.rdbStoreRef.set(rdbStores.getKey());
+			Pair<RdbStore,RdbStore> rdbStores = recoverRdbStores(baseDir, meta);
+			if (rdbStores.getKey() != null) {
+				this.rdbStoreRef.set(rdbStores.getKey());
+			}
+			if (rdbStores.getValue() != null) {
+				this.rordbStoreRef.set(rdbStores.getValue());
+			}
+
+			if (null != meta && null != meta.getCmdFilePrefix()) {
+				cmdStore = createCommandStore(baseDir, meta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
+						metaStore.generateGtidCmdFilter());
+			}
+
+			removeUnusedRdbFiles();
+		} catch (Throwable t) {
+			closeCreatedStoresOnConstructFail();
+			throw wrapInitFail(t, "replication store construct fail");
 		}
-		if (rdbStores.getValue() != null) {
-			this.rordbStoreRef.set(rdbStores.getValue());
-		}
-
-		if (null != meta && null != meta.getCmdFilePrefix()) {
-			cmdStore = createCommandStore(baseDir, meta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
-					metaStore.generateGtidCmdFilter());
-		}
-
-		removeUnusedRdbFiles();
 	}
 
 	protected DefaultReplicationStore(File baseDir, KeeperConfig config,String keeperRunid,
@@ -133,24 +139,30 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	protected Pair<RdbStore,RdbStore> recoverRdbStores(File baseDir, ReplicationStoreMeta meta) throws IOException{
 		RdbStore rdbStore = null, rordbStore = null;
 
-		if (meta != null && meta.getRdbFile() != null) {
-			File rdb = new File(baseDir, meta.getRdbFile());
-			if (rdbFileExists(rdb)) {
-				rdbStore = createRdbStore(rdb, meta.getReplId(), 0, initRdbEofType(meta)); //TODO recover masterUuid, gtidLost, replProto...
-				rdbStore.updateRdbType(RdbStore.Type.NORMAL);
-				rdbStore.updateRdbGtidSet(null != meta.getRdbGtidSet() ? meta.getRdbGtidSet() : GtidSet.EMPTY_GTIDSET);
+		try {
+			if (meta != null && meta.getRdbFile() != null) {
+				File rdb = new File(baseDir, meta.getRdbFile());
+				if (rdbFileExists(rdb)) {
+					rdbStore = createRdbStore(rdb, meta.getReplId(), 0, initRdbEofType(meta)); //TODO recover masterUuid, gtidLost, replProto...
+					rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+					rdbStore.updateRdbGtidSet(null != meta.getRdbGtidSet() ? meta.getRdbGtidSet() : GtidSet.EMPTY_GTIDSET);
+				}
 			}
-		}
 
-		if (meta != null && meta.getRordbFile() != null) {
-			File rordb = new File(baseDir, meta.getRordbFile());
-			if (rdbFileExists(rordb)) {
-				rordbStore = createRdbStore(rordb, meta.getReplId(), 0, initRordbEofType(meta)); //TODO recover masterUuid, gtidLost, replProto...
-				rordbStore.updateRdbType(RdbStore.Type.RORDB);
-				rordbStore.updateRdbGtidSet(null != meta.getRordbGtidSet() ? meta.getRordbGtidSet() : GtidSet.EMPTY_GTIDSET);
+			if (meta != null && meta.getRordbFile() != null) {
+				File rordb = new File(baseDir, meta.getRordbFile());
+				if (rdbFileExists(rordb)) {
+					rordbStore = createRdbStore(rordb, meta.getReplId(), 0, initRordbEofType(meta)); //TODO recover masterUuid, gtidLost, replProto...
+					rordbStore.updateRdbType(RdbStore.Type.RORDB);
+					rordbStore.updateRdbGtidSet(null != meta.getRordbGtidSet() ? meta.getRordbGtidSet() : GtidSet.EMPTY_GTIDSET);
+				}
 			}
+			return new Pair<>(rdbStore,rordbStore);
+		} catch (Throwable t) {
+			closeAfterInitFail(rdbStore, "recover rdb");
+			closeAfterInitFail(rordbStore, "recover rordb");
+			throw wrapInitFail(t, "recover rdb fail");
 		}
-		return new Pair<>(rdbStore,rordbStore);
 	}
 
 	protected XSyncContinue buildXSyncContinue(Pair<Long, GtidSet> continuePoint) {
@@ -695,6 +707,70 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				prepared.getKey(), prepared.getValue());
 	}
 
+	protected MetaStore createMetaStore(File baseDir, String keeperRunid) throws IOException {
+		DefaultMetaStore store = new DefaultMetaStore(baseDir, keeperRunid, asyncFileSystem, fileSystemReplId);
+		try {
+			store.initialize();
+		} catch (Throwable t) {
+			closeAfterInitFail(store, "createMetaStore");
+			throw wrapInitFail(t, "metaStore init fail");
+		}
+		return store;
+	}
+
+	protected void initializeCommandStore(CommandStore cmdStore) throws IOException {
+		try {
+			cmdStore.initialize();
+		} catch (Throwable t) {
+			logger.info("[createCommandStore] init fail", t);
+			closeAfterInitFail(cmdStore, "createCommandStore");
+			if (t instanceof Error) {
+				throw (Error) t;
+			}
+			throw new XpipeRuntimeException("cmdStore init fail", t);
+		}
+	}
+
+	protected void initializeRdbStore(DefaultRdbStore rdbStore) throws IOException {
+		try {
+			rdbStore.initialize();
+		} catch (Throwable t) {
+			closeAfterInitFail(rdbStore, "createRdbStore");
+			throw wrapInitFail(t, "rdbStore init fail");
+		}
+	}
+
+	private void closeCreatedStoresOnConstructFail() {
+		closeAfterInitFail(cmdStore, "construct cmd");
+		closeAfterInitFail(rdbStoreRef.get(), "construct rdb");
+		closeAfterInitFail(rordbStoreRef.get(), "construct rordb");
+		closeAfterInitFail(metaStore, "construct meta");
+	}
+
+	protected void closeAfterInitFail(Closeable closeable, String op) {
+		if (closeable == null) {
+			return;
+		}
+		try {
+			closeable.close();
+		} catch (Throwable t) {
+			logger.warn("[{}] close after init fail", op, t);
+		}
+	}
+
+	protected static IOException wrapInitFail(Throwable t, String wrapMessage) {
+		if (t instanceof IOException) {
+			return (IOException) t;
+		}
+		if (t instanceof RuntimeException) {
+			throw (RuntimeException) t;
+		}
+		if (t instanceof Error) {
+			throw (Error) t;
+		}
+		return new IOException(wrapMessage, t);
+	}
+
 	protected long resolveCmdStoreStartOffset(ReplicationStoreMeta replMeta) {
 		ReplStage stage = replMeta != null ? replMeta.getCurReplStage() : null;
 		if (stage != null && stage.getProto() == ReplStage.ReplProto.XSYNC) {
@@ -717,14 +793,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 				resolveCmdStoreStartOffset(replMeta), asyncFileSystem, config::getAsyncWriteMaxBytes, fileSystemReplId
 		);
 		cmdStore.attachRateLimiter(syncRateManager.generatePsyncRateLimiter());
-		try {
-			cmdStore.initialize();
-		} catch (Exception e) {
-			logger.info("[createCommandStore] init fail", e);
-			cmdStore.close();
-			throw new XpipeRuntimeException("cmdStore init fail", e);
-		}
-
+		initializeCommandStore(cmdStore);
 		return cmdStore;
 	}
 
@@ -735,7 +804,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	//TODO remove rdbOffset
 	protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType) throws IOException {
-		RdbStore rdbStore = new DefaultRdbStore(rdb, replId, rdbOffset, eofType, asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
+		DefaultRdbStore rdbStore = new DefaultRdbStore(rdb, replId, rdbOffset, eofType, asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
+		initializeRdbStore(rdbStore);
 		rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
 		return rdbStore;
 	}
@@ -753,7 +823,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	public DumpedRdbStore prepareNewRdb() throws IOException {
 		makeSureOpen();
 
-		DumpedRdbStore rdbStore = new DefaultDumpedRdbStore(new File(baseDir, newRdbFileName()), asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
+		DefaultDumpedRdbStore rdbStore = new DefaultDumpedRdbStore(new File(baseDir, newRdbFileName()), asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
+		initializeRdbStore(rdbStore);
 		rdbStore.attachRateLimiter(syncRateManager.generateFsyncRateLimiter());
 		return rdbStore;
 	}

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.tuple.Pair;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
@@ -12,7 +13,7 @@ import java.io.IOException;
  *
  * Jul 26, 2016 11:21:27 AM
  */
-public interface MetaStore {
+public interface MetaStore extends Closeable {
 
 	public static final String META_V1_FILE = "meta.json";
 

@@ -103,7 +103,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     protected final AsyncFileSystem asyncFileSystem;
 
-    protected final AsyncSegmentFile asyncSegmentFile;
+    protected AsyncSegmentFile asyncSegmentFile;
 
     private final List<String> commandIndexPrefixes;
 
@@ -153,9 +153,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                 BLOCK + fileNamePrefix,
                 INDEX_V2 + fileNamePrefix,
                 BLOCK_V2 + fileNamePrefix);
-        this.asyncSegmentFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(baseDir.getAbsolutePath(), fileNamePrefix, commandIndexPrefixes, true, fileSystemReplId.toString()),
-                "open command segment " + fileNamePrefix);
-        // invalid 文件列表见 T-FS.2；FS initFromFiles 内部已 warn，Store 待 FS 暴露 invalidFiles() 后再补日志
 
         cmdWriter = cmdReaderWriterFactory.createCmdWriter(this, this.maxFileSize, delayTraceLogger);
         this.buildIndex = buildIndex;
@@ -217,6 +214,10 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     @Override
     public void initialize() throws IOException {
         if (initialized.compareAndSet(false, true)) {
+            this.asyncSegmentFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(baseDir.getAbsolutePath(), fileNamePrefix, commandIndexPrefixes, true, fileSystemReplId.toString()),
+                    "open command segment " + fileNamePrefix);
+            // invalid 文件列表见 T-FS.2；FS initFromFiles 内部已 warn，Store 待 FS 暴露 invalidFiles() 后再补日志
+
             cmdWriter.initialize();
             offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
             if (cmdWriter instanceof OffsetNotifyingCommandWriter) {

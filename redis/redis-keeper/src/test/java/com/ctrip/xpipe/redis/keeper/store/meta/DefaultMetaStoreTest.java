@@ -63,7 +63,14 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
         if (AsyncFileSystemHelper.await(fs.exists(metaPath), "check meta exists before test")) {
             AsyncFileSystemHelper.await(fs.delete(metaPath), "delete meta before test " + metaPath);
         }
-        metaStore = new DefaultMetaStore(new File(baseDir), keeperRunId, fs, getReplId());
+        DefaultMetaStore opened = newInitializedMetaStore(fs);
+        metaStore = opened;
+    }
+
+    private DefaultMetaStore newInitializedMetaStore(AsyncFileSystem fs) throws IOException {
+        DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, fs, getReplId());
+        store.initialize();
+        return store;
     }
 
     @After
@@ -80,7 +87,7 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
         metaStore = null;
         AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
         try {
-            DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
+            DefaultMetaStore store = newInitializedMetaStore(fileSystem);
             verify(fileSystem, times(1)).open(contains(META_V2_FILE), eq(AbstractStorageFile.OpenMode.READ_WRITE),
                     eq(true), eq(true), eq(getReplId().toString()));
             store.setRdbFileSize(1024);
@@ -137,7 +144,7 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
             return invocation.callRealMethod();
         }).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
         try {
-            DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
+            DefaultMetaStore store = newInitializedMetaStore(fileSystem);
             try {
                 store.setRdbFileSize(1024);
                 Assert.assertEquals(1024L, store.dupReplicationStoreMeta().getRdbFileSize());
@@ -186,7 +193,7 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
             return invocation.callRealMethod();
         }).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
         try {
-            DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
+            DefaultMetaStore store = newInitializedMetaStore(fileSystem);
             try {
                 DefaultEndPoint masterA = new DefaultEndPoint("127.0.0.1", 6379);
                 store.setMasterAddress(masterA);
@@ -237,7 +244,7 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
             return invocation.callRealMethod();
         }).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
         try {
-            DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
+            DefaultMetaStore store = newInitializedMetaStore(fileSystem);
             try {
                 store.rdbConfirmXsync(replidA, 1, 10000, masterUuidA, new GtidSet(GtidSet.EMPTY_GTIDSET),
                         new GtidSet(GtidSet.EMPTY_GTIDSET), rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
@@ -269,7 +276,7 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
     @Test
     public void destroyClosesAndDeletesMetaFile() throws Exception {
         metaStore.close();
-        DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem(), getReplId());
+        DefaultMetaStore store = newInitializedMetaStore(asyncFileSystem());
         File metaFile = new File(baseDir, META_V2_FILE);
         Assert.assertTrue(metaFile.exists());
         store.destroy();
@@ -291,7 +298,7 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
     @Test
     public void closeRejectsFurtherSave() throws IOException {
         metaStore.close();
-        DefaultMetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem(), getReplId());
+        DefaultMetaStore store = newInitializedMetaStore(asyncFileSystem());
         store.close();
         try {
             store.setRdbFileSize(1024);
@@ -317,7 +324,7 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
     @Test (expected = UnexpectedReplIdException.class)
     public void fixPsync0MakeSureReplIdsAreSame() throws IOException {
         metaStore.close();
-        DefaultMetaStore spyStore = spy(new DefaultMetaStore(new File(baseDir), keeperRunId, asyncFileSystem(), getReplId()));
+        DefaultMetaStore spyStore = spy(newInitializedMetaStore(asyncFileSystem()));
         try {
             spyStore.becomeActive();
 
@@ -512,13 +519,13 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
         metaStore = null;
         AsyncFileSystem fileSystem = createTestAsyncFileSystem();
         try {
-            MetaStore store = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
+            MetaStore store = newInitializedMetaStore(fileSystem);
             store.rdbConfirmXsync(replidA, 1, 10000, masterUuidA,
                     new GtidSet(GtidSet.EMPTY_GTIDSET), new GtidSet(GtidSet.EMPTY_GTIDSET),
                     rdbFileA, RdbStore.Type.NORMAL, new LenEofType(100), cmdPrefix);
             ReplStage expectedStage = store.getCurrentReplStage();
             store.close();
-            MetaStore reloadedStore = new DefaultMetaStore(new File(baseDir), keeperRunId, fileSystem, getReplId());
+            MetaStore reloadedStore = newInitializedMetaStore(fileSystem);
             try {
                 Assert.assertEquals(expectedStage, reloadedStore.getCurrentReplStage());
             } finally {
