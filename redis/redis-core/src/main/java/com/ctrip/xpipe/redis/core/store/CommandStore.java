@@ -64,8 +64,9 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	/**
 	 * Undo {@link #switchToPsync} for H2.B2 {@code switchToPSync} meta-commit rollback:
-	 * reopen Index writers on current tip without {@code fs.roll}, restore {@code buildIndex=true}.
-	 * Not used by {@code psyncContinue} (already PSYNC / Index write path idle).
+	 * restore {@code buildIndex=true} only. Must not {@code openWriter} — {@code closeWriter}
+	 * does not unbind writers (true unbind is CP-R / CP3). Not used by {@code psyncContinue}
+	 * (already PSYNC / Index write path idle).
 	 */
 	void restoreXsyncIndex() throws IOException;
 

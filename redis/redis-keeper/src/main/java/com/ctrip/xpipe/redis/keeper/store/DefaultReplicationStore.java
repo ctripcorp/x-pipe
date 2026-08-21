@@ -236,7 +236,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		makeSureOpen();
 		getLogger().info("[switchToPSync] replId:{}, replOff:{}", replId, replOff);
 
-		// T-H2.B2: XSYNC→PSYNC — prepare → Cmd switchToPsync (close Index) → saveMeta(CAS); meta fail → restore
+		// T-H2.B2 / T-H3.CP4: XSYNC→PSYNC — prepare → Cmd switchToPsync (close Index) → saveMeta(CAS);
+		// meta fail → restoreXsyncIndex (buildIndex only, no openWriter)
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
 				metaStore.prepareSwitchToPsync(replId, replOff + 1, backlogEndOffset());
 		try {

@@ -754,10 +754,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (indexStore == null) {
             throw new IllegalStateException("restoreXsyncIndex requires existing IndexStore");
         }
-        // Rebind writers on current tip (no roll); undoes switchToPsync closeWriter
-        indexStore.openWriter(cmdWriter);
+        // closeWriter does not unbind; openWriter would recover from startGtidSet (T-H3.CP4.1)
         buildIndex = true;
-        getLogger().info("[restoreXsyncIndex] buildIndex restored without roll");
+        getLogger().info("[restoreXsyncIndex] buildIndex restored without openWriter");
     }
 
     @Override

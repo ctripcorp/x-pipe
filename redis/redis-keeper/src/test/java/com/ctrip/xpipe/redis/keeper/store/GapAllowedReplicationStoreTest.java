@@ -672,7 +672,8 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 	}
 
 	/**
-	 * T-H2.B2: switchToPSync meta fail after Cmd closed Index → proto/Index back to XSYNC.
+	 * T-H3.CP4.2 / T-H2.B2: switchToPSync meta fail after Cmd closed Index → proto/Index back to XSYNC;
+	 * restore only flips {@code buildIndex}, must not {@code openWriter}.
 	 */
 	@Test
 	public void switchToPSyncMetaWriteFailureKeepsXsyncIndex() throws Exception {
@@ -715,6 +716,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 			Assert.assertEquals(ReplStage.ReplProto.XSYNC, oldMeta.getCurReplStage().getProto());
 			Assert.assertEquals(replidA, oldMeta.getCurReplStage().getReplId());
 
+			DefaultIndexStore spyIndex = spyIndexStoreAndReplace();
 			failMetaWrite.set(true);
 			try {
 				store.switchToPSync(replidB, 20000);
@@ -730,6 +732,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 			Assert.assertSame(oldCmdStore, ReflectionTestUtils.getField(store, "cmdStore"));
 			Boolean buildIndexAfter = (Boolean) ReflectionTestUtils.getField(oldCmdStore, "buildIndex");
 			Assert.assertTrue(Boolean.TRUE.equals(buildIndexAfter));
+			verify(spyIndex, never()).openWriter(any());
 			ReplicationStoreMeta meta = store.getMetaStore().dupReplicationStoreMeta();
 			Assert.assertEquals(oldPrefix, meta.getCmdFilePrefix());
 			Assert.assertEquals(ReplStage.ReplProto.XSYNC, meta.getCurReplStage().getProto());
