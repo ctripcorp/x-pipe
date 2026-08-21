@@ -953,7 +953,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             }
 
             beaconManager.registerCluster(clusterName, targetDc, clusterType, orgId,
-                    String.valueOf(System.currentTimeMillis()), BeaconRouteType.SENTINEL, shardMasters);
+                    BeaconRouteType.SENTINEL, shardMasters);
             return RetMessage.createSuccessMessage("sentinel beacon registered");
         } catch (Throwable th) {
             logger.warn("[migrateSentinelBeacon][{}][{}][{}] fail", clusterName, targetDc, preMigrate, th);

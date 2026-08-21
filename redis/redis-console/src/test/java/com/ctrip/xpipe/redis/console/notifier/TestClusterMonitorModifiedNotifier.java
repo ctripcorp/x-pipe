@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 public class TestClusterMonitorModifiedNotifier implements ClusterMonitorModifiedNotifier {
 
     @Override
-    public void notifyClusterUpdate(final String clusterName, long orgId, String lastModifyTime) {
+    public void notifyClusterUpdate(final String clusterName, long orgId) {
 
     }
 
@@ -23,7 +23,7 @@ public class TestClusterMonitorModifiedNotifier implements ClusterMonitorModifie
     }
 
     @Override
-    public void notifyClusterUpdate(String clusterName, String dc, long orgId, String lastModifyTime) {
+    public void notifyClusterUpdate(String clusterName, String dc, long orgId) {
 
     }
 
