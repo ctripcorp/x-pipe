@@ -111,6 +111,12 @@ public class CollectRedisInfoTest extends AbstractXPipeClusterTest {
         Assert.assertEquals("master", localPayload.get("role"));
         Assert.assertFalse(localPayload.containsKey("redis_version"));
 
+        // 压缩响应必须下发原始长度,客户端据此分配解压 buffer(见 LZ4DecompressionInterceptor)
+        List<String> originalLength = localResp.getHeaders().get("Original-Length");
+        Assert.assertNotNull(originalLength);
+        Assert.assertFalse(originalLength.isEmpty());
+        Assert.assertTrue(Integer.parseInt(originalLength.get(0)) > 0);
+
         // checker /all 不压缩:即便发 Accept-Encoding: lz4,响应也无 Content-Encoding: lz4(checker 端点保持 Map)
         ResponseEntity<InfoActionContext.ResultMap> allResp = lz4RestTemplate.exchange(
                 "http://127.0.0.1:8080/api/health/redis/info/all", HttpMethod.GET, lz4Entity,
