@@ -2,10 +2,15 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.netty.commands.ByteBufReceiver;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.core.protocal.GapAllowedSync;
+import com.ctrip.xpipe.redis.core.store.MetaStore;
+import com.ctrip.xpipe.redis.core.store.ReplStage;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
+import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,9 +35,15 @@ public class DefaultGapAllowedSyncTest extends AbstractRedisTest{
 	@Mock
 	private ReplicationStore replicationStore;
 
+	@Mock
+	private MetaStore metaStore;
+
+	private static final String REPL_ID = "0123456789012345678901234567890123456789";
+
 	@Before
 	public void beforeDefaultPsyncTest() throws Exception{
 		when(replicationStoreManager.createIfNotExist()).thenReturn(replicationStore);
+		when(replicationStore.getMetaStore()).thenReturn(metaStore);
 		defaultGAsync = new DefaultGapAllowedSync(null, null, replicationStoreManager, scheduled);
 	}
 
@@ -112,6 +123,76 @@ public class DefaultGapAllowedSyncTest extends AbstractRedisTest{
 		Assert.assertEquals(reply.getReplId(), "0123456789012345678901234567890123456789");
 		Assert.assertEquals(reply.getReplOff(), 1234);
 		Assert.assertEquals(((AbstractGapAllowedSync.XContinueReply) reply).getGtidCont(), new GtidSet("A:1,B:2"));
+	}
+
+	/**
+	 * T-H3.CP8-proto: READING_COMMANDS must not swallow appendCommands IOException.
+	 * Write fail → future failure; subsequent payload must not keep appending (not stay CONNECTED).
+	 */
+	@Test
+	public void testAppendCommandsIoFailFailsFutureAndStopsReading() throws Exception {
+		ReplStage psyncStage = mock(ReplStage.class);
+		when(psyncStage.getProto()).thenReturn(ReplStage.ReplProto.PSYNC);
+		when(metaStore.getCurrentReplStage()).thenReturn(psyncStage);
+		when(metaStore.getCurReplStageReplId()).thenReturn(REPL_ID);
+		when(replicationStore.getCurReplStageReplOff()).thenReturn(1000L);
+		doThrow(new IOException("injected append fail")).when(replicationStore).appendCommands(any());
+
+		defaultGAsync.getRequest();
+
+		ByteBufReceiver.RECEIVER_RESULT continueResult = defaultGAsync.receive(null,
+				Unpooled.wrappedBuffer("+CONTINUE\r\n".getBytes()));
+		Assert.assertEquals(ByteBufReceiver.RECEIVER_RESULT.CONTINUE, continueResult);
+		Assert.assertFalse(defaultGAsync.future().isDone());
+
+		ByteBufReceiver.RECEIVER_RESULT appendResult = defaultGAsync.receive(null,
+				Unpooled.wrappedBuffer("SET FOO BAR\r\n".getBytes()));
+		Assert.assertEquals(ByteBufReceiver.RECEIVER_RESULT.FAIL, appendResult);
+		Assert.assertTrue(defaultGAsync.future().isDone());
+		Assert.assertFalse(defaultGAsync.future().isSuccess());
+		Assert.assertTrue(defaultGAsync.future().cause() instanceof IOException);
+		Assert.assertTrue(defaultGAsync.future().cause().getMessage().contains("injected append fail"));
+		verify(replicationStore, times(1)).appendCommands(any());
+
+		ByteBufReceiver.RECEIVER_RESULT afterFail = defaultGAsync.receive(null,
+				Unpooled.wrappedBuffer("SET A B\r\n".getBytes()));
+		Assert.assertEquals(ByteBufReceiver.RECEIVER_RESULT.ALREADY_FINISH, afterFail);
+		verify(replicationStore, times(1)).appendCommands(any());
+		verify(replicationStoreManager, never()).create();
+	}
+
+	/**
+	 * T-H3.CP5b: xsyncContinueFrom IO fail (after Helper retry) → setFailure disconnect.
+	 * Must not send another PSYNC ? -1 on this command; must not retry commitContinueNewCmdThenMeta.
+	 */
+	@Test
+	public void testXsyncContinueFromIoFailDisconnectsWithoutFullSync() throws Exception {
+		when(metaStore.getCurrentReplStage()).thenReturn(null);
+		when(replicationStore.isFresh()).thenReturn(true);
+		doThrow(new IOException("injected xsyncContinueFrom fail"))
+				.when(replicationStore).xsyncContinueFrom(anyString(), anyLong(), anyString(), any(), nullable(GtidSet.class));
+
+		String request = defaultGAsync.getRequest().toString(Charset.defaultCharset());
+		Assert.assertEquals("PSYNC ? -1\r\n", request);
+
+		String xcontinue = "+" + GapAllowedSync.XPARTIAL_SYNC + " REPLID " + REPL_ID
+				+ " REPLOFF 1234 GTID.SET A:1-10 MASTER.UUID A\r\n";
+		ByteBufReceiver.RECEIVER_RESULT result = defaultGAsync.receive(null, Unpooled.wrappedBuffer(xcontinue.getBytes()));
+		Assert.assertEquals(ByteBufReceiver.RECEIVER_RESULT.FAIL, result);
+		Assert.assertTrue(defaultGAsync.future().isDone());
+		Assert.assertFalse(defaultGAsync.future().isSuccess());
+		Assert.assertTrue(defaultGAsync.future().cause() instanceof IOException);
+		Assert.assertTrue(defaultGAsync.future().cause().getMessage().contains("injected xsyncContinueFrom fail"));
+
+		verify(replicationStore, times(1)).xsyncContinueFrom(anyString(), anyLong(), anyString(), any(), nullable(GtidSet.class));
+		verify(replicationStore, never()).switchToXSync(anyString(), anyLong(), anyString(), any(), nullable(GtidSet.class));
+		verify(replicationStore, never()).appendCommands(any());
+		verify(replicationStoreManager, never()).create();
+
+		ByteBufReceiver.RECEIVER_RESULT afterFail = defaultGAsync.receive(null,
+				Unpooled.wrappedBuffer("SET FOO BAR\r\n".getBytes()));
+		Assert.assertEquals(ByteBufReceiver.RECEIVER_RESULT.ALREADY_FINISH, afterFail);
+		verify(replicationStore, never()).appendCommands(any());
 	}
 
 }

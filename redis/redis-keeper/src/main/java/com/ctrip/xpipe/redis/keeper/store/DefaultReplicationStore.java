@@ -272,6 +272,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		GtidSet gtidEmpty = new GtidSet(GtidSet.EMPTY_GTIDSET);
 		GtidSet gtidExecuted = gtidCont.subtract(gtidLost);
 		// T-H2.A3: prepare → createCmd → switchToXSync → saveMeta(CAS); no RDB storeRef
+		// T-H3.CP5b: Helper already retried leaf IO; do not retry commitContinueNewCmdThenMeta here
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = metaStore.prepareXsyncContinueFrom(
 				replId, replOff + 1, backlogEndOffset(), masterUuid, gtidLost, gtidExecuted, cmdFilePrefix);
 		this.cmdStore = commitContinueNewCmdThenMeta(replId, -1L, true, gtidEmpty, prepared.getKey(), prepared.getValue());

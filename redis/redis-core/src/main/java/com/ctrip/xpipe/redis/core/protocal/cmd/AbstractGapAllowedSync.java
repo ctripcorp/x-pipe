@@ -238,7 +238,9 @@ public abstract class AbstractGapAllowedSync extends AbstractRedisCommand<Object
                             try {
                                 appendCommands(byteBuf);
                             } catch (IOException e) {
+                                // T-H3.CP8-proto: do not swallow — fail psync → setFailure → psyncFail disconnect
                                 getLogger().error("[doHandleResponse][write commands error]" + this, e);
+                                throw e;
                             }
                         }
                     }
