@@ -6,8 +6,10 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpType;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpMultiKVs;
 import com.ctrip.xpipe.tuple.Pair;
+import org.checkerframework.checker.units.qual.A;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -16,6 +18,12 @@ import java.util.List;
  * 2022/6/8 15:27
  */
 public class RedisOpMultiKeysParser extends AbstractRedisOpParser implements RedisOpParser {
+
+    private static final byte[] MIN_BYTES = "MIN".getBytes();
+    private static final byte[] MIN_BYTES_LOWER = "min".getBytes();
+
+    private static final byte[] MAX_BYTES = "MAX".getBytes();
+    private static final byte[] MAX_BYTES_LOWER = "max".getBytes();
 
     private RedisOpType redisOpType;
     private Integer keyStartIndex;
@@ -37,7 +45,17 @@ public class RedisOpMultiKeysParser extends AbstractRedisOpParser implements Red
         List<Pair<RedisKey, byte[]>> kvs = new ArrayList<>();
 
         int i = keyStartIndex;
-        while (i < args.length) {
+        int argLen = args.length;
+        if(keyStartIndex>1){
+            int numKeys;
+            try {
+                numKeys = Integer.parseInt(new String(args[keyStartIndex-1]));
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid numkeys for " + redisOpType);
+            }
+            argLen = i+numKeys;
+        }
+        while (i < argLen) {
             RedisKey key = new RedisKey(args[i++]);
             kvs.add(kvNum == 1 ? Pair.of(key, null) : Pair.of(key, args[i++]));
         }

@@ -90,7 +90,8 @@ public interface RdbParseContext {
         HASH_ZIPLIST(RdbConstant.REDIS_RDB_TYPE_HASH_ZIPLIST, false, RdbHashZipListParser::new),
         LIST_QUICKLIST(RdbConstant.REDIS_RDB_TYPE_LIST_QUICKLIST, false, RdbQuickListParser::new),
         STREAM_LISTPACKS(RdbConstant.REDIS_RDB_TYPE_STREAM_LISTPACKS, false, RdbStreamListpacksParser::new),
-//        BITMAP(RdbConstant.REDIS_RDB_TYPE_BITMAP, false, RdbBitmapParser::new),
+        BITMAP(RdbConstant.REDIS_RDB_TYPE_BITMAP, false, RdbBitmapParser::new),
+        BITMAP_9(9,RdbConstant.REDIS_RDB_TYPE_BITMAP_9, false, RdbBitmapParser::new),
         CRDT(RdbConstant.REDIS_RDB_TYPE_CRDT, false, DefaultRdbCrdtParser::new),
         //        MODULE_AUX(RdbConstant.REDIS_RDB_OP_CODE_MODULE_AUX),
         IDLE(RdbConstant.REDIS_RDB_OP_CODE_IDLE, true, RdbIdleParser::new),
@@ -132,6 +133,7 @@ public interface RdbParseContext {
         STREAM_LISTPACKS_3(RdbConstant.REDIS_RDB_TYPE_STREAM_LISTPACKS_3, false, RdbStreamListpacks3Parser::new),
         STREAM_LISTPACKS_4(RdbConstant.REDIS_RDB_TYPE_STREAM_LISTPACKS_4, false, RdbStreamListpacks4Parser::new);
 
+        private int version;
         private short code;
 
         private boolean rdbOp;
@@ -139,8 +141,14 @@ public interface RdbParseContext {
         private Function<RdbParseContext, RdbParser> parserConstructor;
 
         private static final Map<Short, RdbType> types = new HashMap<>();
+        private static final Map<Integer,Map<Short, RdbType>> versionTypes = new HashMap<>();
 
         RdbType(short code, boolean rdbOp, Function<RdbParseContext, RdbParser> parserConstructor) {
+            this(0,code,rdbOp,parserConstructor);
+        }
+
+        RdbType(int version,short code, boolean rdbOp, Function<RdbParseContext, RdbParser> parserConstructor) {
+            this.version = version;
             this.code = code;
             this.rdbOp = rdbOp;
             this.parserConstructor = parserConstructor;
@@ -163,12 +171,26 @@ public interface RdbParseContext {
 
         static {
             for (RdbType rdbType : values()) {
-                types.put(rdbType.code, rdbType);
+                if(rdbType.version != 0) {
+                    Map<Short, RdbType> versionMap = versionTypes.computeIfAbsent(rdbType.version, (version) -> new HashMap<>());
+                    versionMap.put(rdbType.code, rdbType);
+                }else {
+                    types.put(rdbType.code, rdbType);
+                }
             }
         }
 
         public static RdbType findByCode(short code) {
             return types.get(code);
+        }
+
+        public static RdbType findByCode(int version,short code) {
+            Map<Short,RdbType> versionMap = versionTypes.getOrDefault(version,types);
+            RdbType rdbType = versionMap.get(code);
+            if(rdbType == null){
+                return findByCode(code);
+            }
+            return rdbType;
         }
 
     }
