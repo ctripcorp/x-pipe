@@ -44,6 +44,9 @@ public class TimerSlidingWindow implements AutoCloseable {
     /** 串行化 window 聚合/刷盘，避免 delayFlush 与 backlogEndOffset 等路径并发消费同一 CompositeByteBuf */
     private final Object windowLock = new Object();
 
+    /** Set under windowLock. After close returns, write / delayFlush must not hit commandWriter. */
+    private boolean closed;
+
 
     public TimerSlidingWindow(KeeperConfig keeperConfig, CommandWriter commandWriter,
                               CommandStoreDelay commandStoreDelay, OffsetNotifier offsetNotifier,
@@ -68,12 +71,20 @@ public class TimerSlidingWindow implements AutoCloseable {
         rateEstimator.update(dataSize);
         double avgRate = rateEstimator.getRate();  // 单位：bytes/s
         if (avgRate <= keeperConfig.getCmdBatchLowRateBps()) {
-            flushBuffer();
-            flushSingleBuffer(data);
-            return dataSize;
+            synchronized (windowLock) {
+                if (!ensureWritableLocked()) {
+                    return 0;
+                }
+                flushRemainingLocked();
+                flushSingleBuffer(data);
+                return dataSize;
+            }
         }
 
         synchronized (windowLock) {
+            if (!ensureWritableLocked()) {
+                return 0;
+            }
             int windowSize = window.readableBytes();
             boolean wasEmpty = windowSize == 0;
 
@@ -81,7 +92,7 @@ public class TimerSlidingWindow implements AutoCloseable {
             windowSize += dataSize;
 
             if (shouldFlushWindow(wasEmpty, now, windowSize)) {
-                flushBuffer();
+                flushRemainingLocked();
                 return windowSize;
             }
 
@@ -97,11 +108,25 @@ public class TimerSlidingWindow implements AutoCloseable {
 
     /** 未刷盘字节快照；调用方不得假定与后续操作原子一致 */
     public int bufferSize(){
-        return window.readableBytes();
+        CompositeByteBuf current = window;
+        return current == null ? 0 : current.readableBytes();
     }
 
+    /**
+     * T-H3.CP6.3 / spec §3.3.6: mark closed → cancel pending delayFlush → release window.
+     * Does not flush remaining bytes — caller flushes first. Same mutex as write / delayFlush:
+     * in-flight delayFlush finishes or sees closed and no-ops; after return, no more commandWriter hits.
+     */
     @Override
     public void close() throws IOException {
+        synchronized (windowLock) {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            cancelDelayFlush();
+            releaseWindowLocked();
+        }
     }
 
     // ==================== 内部实现 ====================
@@ -139,38 +164,75 @@ public class TimerSlidingWindow implements AutoCloseable {
     /** 将聚合窗口中的数据批量写入磁盘（唯一刷盘入口） */
     private void flushBuffer() throws IOException {
         synchronized (windowLock) {
-            int windowSize = window.readableBytes();
-            if (windowSize == 0) {
-                cancelDelayFlush();
+            if (closed) {
                 return;
             }
+            flushRemainingLocked();
+        }
+    }
 
-            commandStoreDelay.beginWrite();
+    /** Caller holds {@link #windowLock}. */
+    private void flushRemainingLocked() throws IOException {
+        if (window == null) {
+            cancelDelayFlush();
+            return;
+        }
+        int windowSize = window.readableBytes();
+        if (windowSize == 0) {
+            cancelDelayFlush();
+            return;
+        }
 
-            int wrote = commandWriter.write(window);
-            if (wrote != windowSize) {
-                logger.warn("[flushBuffer] window size {}.write size {}", windowSize, wrote);
-            }
-            long offset = commandWriter.totalLength() - 1;
-            commandStoreDelay.endWrite(offset);
-            if (!(commandWriter instanceof OffsetNotifyingCommandWriter)) {
-                offsetNotifier.offsetIncreased(offset);
-            }
+        commandStoreDelay.beginWrite();
 
-            try {
-                window.release();
-            } catch (Throwable t) {
-                logger.warn("[release] failed to release window buffer", t);
-            } finally {
-                window = ByteBufAllocator.DEFAULT.compositeBuffer(1024);
-            }
+        int wrote = commandWriter.write(window);
+        if (wrote != windowSize) {
+            logger.warn("[flushBuffer] window size {}.write size {}", windowSize, wrote);
+        }
+        long offset = commandWriter.totalLength() - 1;
+        commandStoreDelay.endWrite(offset);
+        if (!(commandWriter instanceof OffsetNotifyingCommandWriter)) {
+            offsetNotifier.offsetIncreased(offset);
+        }
+
+        try {
+            window.release();
+        } catch (Throwable t) {
+            logger.warn("[release] failed to release window buffer", t);
+        } finally {
+            window = ByteBufAllocator.DEFAULT.compositeBuffer(1024);
             cancelDelayFlush();
         }
     }
 
+    /** Caller holds {@link #windowLock}. */
+    private void releaseWindowLocked() {
+        CompositeByteBuf buf = window;
+        window = null;
+        if (buf == null) {
+            return;
+        }
+        try {
+            if (buf.refCnt() > 0) {
+                buf.release();
+            }
+        } catch (Throwable t) {
+            logger.warn("[close][release window failed]", t);
+        }
+    }
+
+    /** Caller holds {@link #windowLock}. Already closed → log and skip, do not throw. */
+    private boolean ensureWritableLocked() {
+        if (closed) {
+            logger.info("[write][closed]");
+            return false;
+        }
+        return true;
+    }
+
     /** 窗口有数据且尚无 pending 定时刷盘时，安排一次兜底刷盘 */
     private void scheduleDelayFlushIfAbsent() {
-        if (window.readableBytes() == 0) {
+        if (closed || window == null || window.readableBytes() == 0) {
             return;
         }
         ScheduledFuture<?> future = delayFlushFuture;

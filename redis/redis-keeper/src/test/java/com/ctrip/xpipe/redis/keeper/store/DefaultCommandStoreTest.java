@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindow;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -701,6 +702,61 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	@Test
 	public void testIndexOffsetCorrectnessWithRotationAndNoFlush() throws Exception {
 		writeCmdWithRotation(false);
+	}
+
+	/**
+	 * T-H3.CP6.3: window / cmdWriter / indexStore close failures must not skip
+	 * {@code closeHandle(asyncSegmentFile)}.
+	 */
+	@Test
+	public void closeStillClosesSegmentWhenPriorStepsFail() throws Exception {
+		AsyncFileSystem spyFs = Mockito.spy(asyncFileSystem());
+		openCommandStore(new DefaultCommandStore(null, getKeeperConfig(), commandTemplate, maxFileSize,
+				() -> false, () -> 3600, 0, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true, 0L,
+				spyFs, () -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId()));
+
+		AsyncSegmentFile segment = commandStore.getAsyncSegmentFile();
+		Assert.assertNotNull(segment);
+
+		TimerSlidingWindow realWindow = (TimerSlidingWindow) ReflectionTestUtils.getField(commandStore, "timerSlidingWindow");
+		IndexStore realIndex = (IndexStore) ReflectionTestUtils.getField(commandStore, "indexStore");
+		CommandWriter realWriter = commandStore.getCommandWriter();
+
+		TimerSlidingWindow failingWindow = Mockito.mock(TimerSlidingWindow.class);
+		IndexStore failingIndex = Mockito.mock(IndexStore.class);
+		CommandWriter failingWriter = Mockito.mock(CommandWriter.class);
+		Mockito.doThrow(new IOException("window boom")).when(failingWindow).close();
+		Mockito.doThrow(new IOException("index boom")).when(failingIndex).close();
+		Mockito.doThrow(new IOException("writer boom")).when(failingWriter).close();
+
+		ReflectionTestUtils.setField(commandStore, "timerSlidingWindow", failingWindow);
+		ReflectionTestUtils.setField(commandStore, "cmdWriter", failingWriter);
+		ReflectionTestUtils.setField(commandStore, "indexStore", failingIndex);
+
+		try {
+			commandStore.close();
+			Mockito.verify(failingWindow).close();
+			Mockito.verify(failingWriter).close();
+			Mockito.verify(failingIndex).close();
+			Mockito.verify(spyFs, Mockito.atLeastOnce()).close(segment);
+		} finally {
+			closeQuietly(realWindow);
+			closeQuietly(realIndex);
+			closeQuietly(realWriter);
+			commandStore = null;
+		}
+	}
+
+	private void closeQuietly(AutoCloseable closeable) {
+		if (closeable == null) {
+			return;
+		}
+		try {
+			closeable.close();
+		} catch (Exception e) {
+			System.out.println("[closeQuietly] cleanup " + closeable + ": " + e);
+		}
 	}
 
 	private void writeCmdWithRotation(boolean flush) throws Exception {

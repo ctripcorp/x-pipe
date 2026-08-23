@@ -337,4 +337,123 @@ public class TimerSlidingWindowTest {
 
         data.release();
     }
+
+    @Test
+    public void testCloseCancelsScheduleWithoutFlush() throws Exception {
+        setRate(1_000_000.0);
+        ByteBuf data = Unpooled.wrappedBuffer(new byte[100]);
+        window.write(data);
+        assertEquals(1, scheduledTasks.size());
+        verify(commandWriter, never()).write(any(ByteBuf.class));
+
+        clearInvocations(commandWriter, commandStoreDelay, offsetNotifier);
+        writeSizes.clear();
+
+        window.close();
+
+        verify(commandWriter, never()).write(any(ByteBuf.class));
+        verify(scheduledFutures.get(0)).cancel(false);
+        assertEquals(0, window.bufferSize());
+
+        clearInvocations(commandWriter);
+        scheduledTasks.get(0).run();
+        verify(commandWriter, never()).write(any(ByteBuf.class));
+
+        data.release();
+    }
+
+    @Test
+    public void testCallerFlushThenCloseDoesNotWriteAgain() throws Exception {
+        setRate(1_000_000.0);
+        ByteBuf data = Unpooled.wrappedBuffer(new byte[100]);
+        window.write(data);
+
+        window.flushAll();
+        verify(commandWriter).write(any(ByteBuf.class));
+
+        clearInvocations(commandWriter);
+        window.close();
+        verify(commandWriter, never()).write(any(ByteBuf.class));
+
+        data.release();
+    }
+
+    @Test
+    public void testWriteAfterCloseSkipsWithoutHittingWriter() throws Exception {
+        window.close();
+        window.close();
+
+        ByteBuf data = Unpooled.wrappedBuffer(new byte[10]);
+        int wrote = window.write(data);
+        data.release();
+
+        assertEquals(0, wrote);
+        verify(commandWriter, never()).write(any(ByteBuf.class));
+    }
+
+    @Test
+    public void testLowRateWriteAfterCloseSkipsWithoutHittingWriter() throws Exception {
+        window.close();
+        setRate(100.0);
+
+        ByteBuf data = Unpooled.wrappedBuffer(new byte[10]);
+        int wrote = window.write(data);
+        data.release();
+
+        assertEquals(0, wrote);
+        verify(commandWriter, never()).write(any(ByteBuf.class));
+    }
+
+    @Test
+    public void testConcurrentDelayFlushAndClose() throws Exception {
+        setRate(1_000_000.0);
+        ByteBuf data = Unpooled.wrappedBuffer(new byte[200]);
+        window.write(data);
+        assertEquals(1, scheduledTasks.size());
+        assertEquals(200, window.bufferSize());
+
+        clearInvocations(commandWriter, commandStoreDelay, offsetNotifier);
+        writeSizes.clear();
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(2);
+        AtomicReference<Throwable> error = new AtomicReference<>();
+
+        Thread delayFlushThread = new Thread(() -> {
+            try {
+                startLatch.await(5, TimeUnit.SECONDS);
+                scheduledTasks.get(0).run();
+            } catch (Throwable t) {
+                error.compareAndSet(null, t);
+            } finally {
+                doneLatch.countDown();
+            }
+        }, "delay-flush");
+
+        Thread closeThread = new Thread(() -> {
+            try {
+                startLatch.await(5, TimeUnit.SECONDS);
+                window.close();
+            } catch (Throwable t) {
+                error.compareAndSet(null, t);
+            } finally {
+                doneLatch.countDown();
+            }
+        }, "close");
+
+        delayFlushThread.start();
+        closeThread.start();
+        startLatch.countDown();
+        assertTrue("delayFlush + close should finish", doneLatch.await(5, TimeUnit.SECONDS));
+
+        assertNull("concurrent delayFlush and close should not fail: " + error.get(), error.get());
+        verify(commandWriter, atMost(1)).write(any(ByteBuf.class));
+        assertEquals(0, window.bufferSize());
+
+        clearInvocations(commandWriter);
+        scheduledTasks.get(0).run();
+        verify(commandWriter, never()).write(any(ByteBuf.class));
+
+        data.release();
+    }
 }

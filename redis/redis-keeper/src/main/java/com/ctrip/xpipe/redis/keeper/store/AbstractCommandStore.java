@@ -369,24 +369,35 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         this.readers.remove(reader);
     }
 
+    /**
+     * T-H3.CP6.3 / spec §3.3.6: stepwise best-effort. Any step failure must not skip later
+     * steps; must always {@code closeHandle(asyncSegmentFile)}.
+     */
     @Override
     public void close() throws IOException {
-
-        if(cmpAndSetClosed()){
-            getLogger().info("[close]{}", this);
-
-            if(timerSlidingWindow != null) {
-                timerSlidingWindow.close();
-            }
-
-            cmdWriter.close();
-            if(indexStore != null) {
-                // Terminal close (AbstractStore); index AsyncFile released with segment below.
-                indexStore.close();
-            }
-            AsyncFileSystemHelper.closeHandle(asyncFileSystem, asyncSegmentFile, "close command segment " + fileNamePrefix);
-        }else{
+        if (!cmpAndSetClosed()) {
             getLogger().warn("[close][already closed]{}", this);
+            return;
+        }
+        getLogger().info("[close]{}", this);
+        try {
+            closeQuietly(timerSlidingWindow, "timerSlidingWindow");
+            closeQuietly(cmdWriter, "cmdWriter");
+            // Terminal close (AbstractStore); index AsyncFile released with segment below.
+            closeQuietly(indexStore, "indexStore");
+        } finally {
+            AsyncFileSystemHelper.closeHandle(asyncFileSystem, asyncSegmentFile, "close command segment " + fileNamePrefix);
+        }
+    }
+
+    private void closeQuietly(AutoCloseable closeable, String name) {
+        if (closeable == null) {
+            return;
+        }
+        try {
+            closeable.close();
+        } catch (Throwable t) {
+            getLogger().error("[close][{} failed]{}", name, this, t);
         }
     }
 
