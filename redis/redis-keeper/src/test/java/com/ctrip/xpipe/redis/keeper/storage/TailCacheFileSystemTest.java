@@ -5,6 +5,8 @@ import io.netty.buffer.Unpooled;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 
 public class TailCacheFileSystemTest {
+
+    private static final Logger logger = LoggerFactory.getLogger(TailCacheFileSystemTest.class);
 
     private static final long CHUNK_SIZE = 64;
 
@@ -588,6 +592,111 @@ public class TailCacheFileSystemTest {
             assertArrayEquals(new byte[]{20, 30, 40}, target.toByteArray());
         } finally {
             tcf.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * Reader opened on the live tail ({@code openedEnd=MAX}), then writer rolls and
+     * appends a new segment. Distinguishes A (writer size stuck) vs B (reader
+     * {@code transferTo} returns 0 at the roll boundary).
+     */
+    @Test
+    public void testPreopenedReaderTransferToAfterWriterRoll() throws Exception {
+        String dir = path("seg_preopened_roll");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(writer, bufOf(new byte[64])).get(5, TimeUnit.SECONDS);
+
+        AsyncSegmentFile reader = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel first =
+                new AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel();
+        assertEquals(64, (long) tcf.transferTo(reader, 0, 64, first).get(5, TimeUnit.SECONDS));
+        assertEquals(0, reader.openedSegmentStartOffset);
+        assertEquals(Long.MAX_VALUE, reader.openedSegmentEndOffset);
+
+        tcf.roll(writer).get(5, TimeUnit.SECONDS);
+        tcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+
+        long writerStart = tcf.getCurrentSegmentStartOffset(writer);
+        long writerLastSize = tcf.sizeOfSegment(writer, writerStart).get(5, TimeUnit.SECONDS);
+        long writerTotal = tcf.size(writer).get(5, TimeUnit.SECONDS);
+        logger.info("[A] writerStart={} lastSize={} total={} list={}",
+                writerStart, writerLastSize, writerTotal, tcf.list(writer));
+
+        AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel second =
+                new AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel();
+        long n = tcf.transferTo(reader, 64, 200, second).get(5, TimeUnit.SECONDS);
+        logger.info("[B] transferTo(64,200)={} readerOpened=[{}, {})",
+                n, reader.openedSegmentStartOffset, reader.openedSegmentEndOffset);
+
+        try {
+            assertEquals("A: writer start after roll", 64L, writerStart);
+            assertEquals("A: sizeOfSegment of new start should see 200B tail", 200L, writerLastSize);
+            assertEquals("A: size() should include both segments", 264L, writerTotal);
+            assertEquals("B: preopened reader transferTo at roll boundary", 200L, n);
+            assertEquals(200, second.toByteArray().length);
+        } finally {
+            tcf.close(reader).get(5, TimeUnit.SECONDS);
+            tcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * Same as {@link #testPreopenedReaderTransferToAfterWriterRoll} but force the
+     * disk {@code transferTo} path ({@code transferPreferCache=false}). This is B:
+     * reader handle stays on {@code [oldStart, MAX)} after writer roll.
+     */
+    @Test
+    public void testPreopenedReaderDiskTransferToAfterWriterRoll() throws Exception {
+        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
+        config.setPerFileCacheLimits(10 * 1024, 1, CHUNK_SIZE);
+        config.setMaxCacheSizeBytes(100 * 1024);
+        config.setWriteBatchBytes(128);
+        config.setIoWaitTimeoutMs(5000);
+        config.setExpectedMinRetentionMs(0);
+        config.setEvictScanIntervalMs(60_000);
+        config.setWatermarkRatios(0.5, 0.8);
+        config.setMaxEvictRatioPerWrite(0.5);
+        config.setTransferPreferCache(false);
+        TailCacheFileSystem tcfDisk = new TailCacheFileSystem(delegate, config, ioExecutor);
+
+        String dir = path("seg_preopened_roll_disk");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcfDisk.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcfDisk.write(writer, bufOf(new byte[64])).get(5, TimeUnit.SECONDS);
+        tcfDisk.fsync(writer).get(5, TimeUnit.SECONDS);
+
+        AsyncSegmentFile reader = tcfDisk.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel first =
+                new AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel();
+        assertEquals(64, (long) tcfDisk.transferTo(reader, 0, 64, first).get(5, TimeUnit.SECONDS));
+        assertEquals(Long.MAX_VALUE, reader.openedSegmentEndOffset);
+
+        tcfDisk.roll(writer).get(5, TimeUnit.SECONDS);
+        tcfDisk.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+        tcfDisk.fsync(writer).get(5, TimeUnit.SECONDS);
+
+        AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel second =
+                new AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel();
+        long firstCall = tcfDisk.transferTo(reader, 64, 200, second).get(5, TimeUnit.SECONDS);
+        logger.info("[B-disk] first transferTo(64,200)={} readerOpened=[{}, {})",
+                firstCall, reader.openedSegmentStartOffset, reader.openedSegmentEndOffset);
+        // First disk transferTo hits the old tail file and returns 0; maybeSwitchSegment
+        // then rebinds to [newStart, MAX). A second call must see the new segment.
+        assertEquals("B-disk first call is 0 at the sealed old tail", 0L, firstCall);
+        assertEquals(64L, reader.openedSegmentStartOffset);
+        assertEquals(Long.MAX_VALUE, reader.openedSegmentEndOffset);
+
+        long secondCall = tcfDisk.transferTo(reader, 64, 200, second).get(5, TimeUnit.SECONDS);
+        logger.info("[B-disk] second transferTo(64,200)={} readerOpened=[{}, {})",
+                secondCall, reader.openedSegmentStartOffset, reader.openedSegmentEndOffset);
+
+        try {
+            assertEquals("B-disk: retry after maybeSwitchSegment must read the new segment", 200L, secondCall);
+        } finally {
+            tcfDisk.close(reader).get(5, TimeUnit.SECONDS);
+            tcfDisk.close(writer).get(5, TimeUnit.SECONDS);
+            tcfDisk.shutdown();
         }
     }
 

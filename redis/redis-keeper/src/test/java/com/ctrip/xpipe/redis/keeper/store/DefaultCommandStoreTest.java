@@ -15,8 +15,11 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
+import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReader;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindow;
+import com.ctrip.xpipe.utils.OffsetNotifier;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -308,6 +311,131 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			Assert.assertEquals(expected.toString(), sb.toString());
 		}
 
+	}
+
+	/**
+	 * Reproduce KeeperSingleDcSlaveof#testSlaveof stall: reader already on tail
+	 * ({@code openedEnd=MAX}), then writer rolls and appends a new segment.
+	 * Distinguishes A ({@code totalLength} stuck) vs B ({@code transferTo} returns 0).
+	 */
+	@Test
+	public void testPreopenedTailReaderSeesDataAfterRotate() throws Exception {
+		initCommandStore();
+		ReflectionTestUtils.setField(commandStore, "buildIndex", false);
+
+		byte[] oldSeg = new byte[2000];
+		Arrays.fill(oldSeg, (byte) 'A');
+		commandStore.appendCommands(Unpooled.wrappedBuffer(oldSeg));
+		commandStore.flushSlidingWindow();
+		Assert.assertEquals(2000L, commandStore.totalLength());
+
+		OffsetNotifier notifier = (OffsetNotifier) ReflectionTestUtils.getField(commandStore, "offsetNotifier");
+		OffsetCommandReader reader = (OffsetCommandReader) commandReaderWriterFactory.createCmdReader(
+				new OffsetReplicationProgress(0), commandStore, notifier, new ReplDelayConfig() {},
+				DEFAULT_COMMAND_READER_FLYING_THRESHOLD);
+		commandStore.addReader(reader);
+
+		ByteArrayOutputStream drained = new ByteArrayOutputStream();
+		WritableByteChannel drainCh = allBytesChannel(drained);
+		long got = drainReader(reader, drainCh, 2000);
+		Assert.assertEquals("reader should catch up to old tail before rotate", 2000L, got);
+
+		AsyncSegmentFile readHandle = (AsyncSegmentFile) ReflectionTestUtils.getField(reader, "readAsyncSegmentFile");
+		long openedStartBefore = (Long) ReflectionTestUtils.getField(readHandle, "openedSegmentStartOffset");
+		long openedEndBefore = (Long) ReflectionTestUtils.getField(readHandle, "openedSegmentEndOffset");
+		logger.info("[pre-rotate] reader opened=[{}, {}) totalLength={}",
+				openedStartBefore, openedEndBefore, commandStore.totalLength());
+
+		commandStore.rotateFileIfNecessary();
+
+		AsyncFileSystem fs = commandStore.getAsyncFileSystem();
+		AsyncSegmentFile writerHandle = commandStore.getAsyncSegmentFile();
+		long writerStartAfterRotate = fs.getCurrentSegmentStartOffset(writerHandle);
+		long writerSegSizeAfterRotate = fs.sizeOfSegment(writerHandle, writerStartAfterRotate).get(5, TimeUnit.SECONDS);
+		logger.info("[post-rotate] writerStart={} writerSegSize={} totalLength={} list={}",
+				writerStartAfterRotate, writerSegSizeAfterRotate, commandStore.totalLength(), fs.list(writerHandle));
+
+		byte[] newTail = new byte[8000];
+		Arrays.fill(newTail, (byte) 'B');
+		commandStore.appendCommands(Unpooled.wrappedBuffer(newTail));
+		commandStore.flushSlidingWindow();
+
+		long writerStart = fs.getCurrentSegmentStartOffset(writerHandle);
+		long writerSegSize = fs.sizeOfSegment(writerHandle, writerStart).get(5, TimeUnit.SECONDS);
+		long totalAfter = commandStore.totalLength();
+		logger.info("[post-write] writerStart={} writerSegSize={} totalLength={} list={}",
+				writerStart, writerSegSize, totalAfter, fs.list(writerHandle));
+
+		long openedStartAfter = (Long) ReflectionTestUtils.getField(readHandle, "openedSegmentStartOffset");
+		long openedEndAfter = (Long) ReflectionTestUtils.getField(readHandle, "openedSegmentEndOffset");
+		logger.info("[post-write] reader opened=[{}, {})", openedStartAfter, openedEndAfter);
+
+		boolean hypothesisA = totalAfter <= 2000;
+		ReferenceFileRegion region = reader.read(50);
+		long transferred = 0;
+		if (region != null && region != ReferenceFileRegion.EOF) {
+			transferred = region.transferTo(drainCh, 0);
+			reader.flushed(region);
+		}
+		boolean hypothesisB = !hypothesisA && (region == null || transferred <= 0);
+
+		logger.info("[A/B] totalAfter={} region={} regionCount={} transferred={} A={} B={}",
+				totalAfter, region == null ? "null" : region.getClass().getSimpleName(),
+				region == null || region == ReferenceFileRegion.EOF ? -1 : region.count(),
+				transferred, hypothesisA, hypothesisB);
+
+		try {
+			if (hypothesisA) {
+				Assert.fail("A: totalLength stuck at " + totalAfter + " after writing 8000 bytes past rotate");
+			}
+			if (hypothesisB) {
+				Assert.fail("B: totalLength=" + totalAfter + " but transferTo=" + transferred
+						+ " readerOpened=[" + openedStartAfter + "," + openedEndAfter + ")");
+			}
+			Assert.assertEquals(10000L, totalAfter);
+			Assert.assertTrue("reader should receive new tail after rotate", transferred > 0);
+		} finally {
+			reader.close();
+		}
+	}
+
+	private static WritableByteChannel allBytesChannel(ByteArrayOutputStream out) {
+		return new WritableByteChannel() {
+			private boolean open = true;
+
+			@Override
+			public int write(ByteBuffer src) {
+				int n = src.remaining();
+				byte[] buf = new byte[n];
+				src.get(buf);
+				out.write(buf, 0, n);
+				return n;
+			}
+
+			@Override
+			public boolean isOpen() {
+				return open;
+			}
+
+			@Override
+			public void close() {
+				open = false;
+			}
+		};
+	}
+
+	private static long drainReader(OffsetCommandReader reader, WritableByteChannel ch, long expect)
+			throws IOException {
+		long got = 0;
+		for (int i = 0; i < 64 && got < expect; i++) {
+			ReferenceFileRegion region = reader.read(50);
+			if (region == null || region == ReferenceFileRegion.EOF) {
+				break;
+			}
+			got += region.transferTo(ch, 0);
+			reader.flushed(region);
+		}
+		return got;
 	}
 
 	@Test
