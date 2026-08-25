@@ -68,6 +68,19 @@ public class KeeperElectReElectServiceTest {
         verify(currentMetaManager, never()).setSurviveKeepers(anyLong(), anyLong(), anyList(), any());
     }
 
+    @Test
+    public void testReElectWritesSurviveWhenSelectReturnsNull() {
+        List<KeeperMeta> surviveKeepers = Arrays.asList(activeKeeper, backupKeeper);
+        when(currentMetaManager.getSurviveKeepers(1L, 2L)).thenReturn(surviveKeepers);
+        when(dcMetaCache.getShardKeepers(1L, 2L)).thenReturn(surviveKeepers);
+        when(keeperActiveElectAlgorithmManager.get(1L, 2L)).thenReturn(electAlgorithm);
+        when(electAlgorithm.select(eq(1L), eq(2L), anyList())).thenReturn(null);
+
+        keeperElectReElectService.reElect(1L, 2L);
+
+        verify(currentMetaManager).setSurviveKeepers(eq(1L), eq(2L), anyList(), isNull());
+    }
+
     private KeeperMeta keeper(int port, int priority) {
         KeeperMeta keeperMeta = new KeeperMeta();
         keeperMeta.setIp("127.0.0.1");
