@@ -1,0 +1,31 @@
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/DefaultKeeperElectorManager.java
+  s_701bc8b3e1cf81::t_86d01224b4569c 211
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/StrategyAwareKeeperActiveElectAlgorithmTest.java
+  s_701bc8b3e1cf81::t_01dd228ad201f3 103-111,116,120-121,127,131,137
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperElectReElectService.java
+  s_701bc8b3e1cf81::t_e6377c1a1ce4e9 62
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/DefaultKeeperElectorManagerTest.java
+  s_701bc8b3e1cf81::t_b558fec82c25b0 111-134
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperElectReElectServiceTest.java
+  s_701bc8b3e1cf81::t_40b91f0fefae0b 71-83
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/StrategyAwareKeeperActiveElectAlgorithm.java
+  s_701bc8b3e1cf81::t_e5bdae62c5180d 33-35
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/manager/DefaultKeeperManagerTest.java
+  s_701bc8b3e1cf81::t_448ec174cf9176 100-111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "cf24043f02e30bd29940c2c0f70355c2934bee38",
+  "prompts": {},
+  "sessions": {
+    "s_701bc8b3e1cf81": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9ac37c41-a535-4dee-b06f-ca81a859d26e",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
