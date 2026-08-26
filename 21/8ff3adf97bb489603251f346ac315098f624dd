@@ -1,0 +1,42 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/AbstractRdbDumperTest.java
+  s_97289a069a4a31::t_557d3e7a5c62a1 77-82,84-96
+  s_b4b8788ac44482::t_1a2f7d0fd64393 76,83
+  s_97289a069a4a31::t_8ab1541398cc11 19
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/RedisMasterNewRdbDumper.java
+  s_97289a069a4a31::t_69b9d4dbe1393b 80-85
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/RedisMasterNewRdbDumperTest.java
+  s_97289a069a4a31::t_25cd5e893f85b7 43-58
+  s_97289a069a4a31::t_d6a6a3386bcef3 10-11,14-15
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerTest.java
+  s_97289a069a4a31::t_53acb4c1f05b5f 30
+  s_97289a069a4a31::t_27929523082ae5 639-659,661-666
+  s_97289a069a4a31::t_25ab1975ecc86c 660
+  s_97289a069a4a31::t_0b47148a0fe8fa 19
+  s_97289a069a4a31::t_f1adc49a908f36 41
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_97289a069a4a31::t_299bf334b4dfa9 956,958
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "218ff3adf97bb489603251f346ac315098f624dd",
+  "prompts": {},
+  "sessions": {
+    "s_97289a069a4a31": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d4730b1e-ab7d-4acd-8698-2b6dc1567bd3",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_b4b8788ac44482": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "598ad58c-07c0-4dd8-b379-70d2bdef633d",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
