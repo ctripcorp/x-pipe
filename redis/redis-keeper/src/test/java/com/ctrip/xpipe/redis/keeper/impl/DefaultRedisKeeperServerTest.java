@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.*;
+import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.handler.keeper.InfoHandler;
 import com.ctrip.xpipe.redis.keeper.handler.keeper.KeeperCommandHandler;
@@ -26,6 +27,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -36,6 +38,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.ctrip.xpipe.redis.keeper.SLAVE_STATE.*;
@@ -630,6 +633,35 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		RedisClient client =  redisKeeperServer.clientConnected(channel);
 		RedisSlave slave = client.becomeSlave();
 		return slave;
+	}
+
+	@Test
+	public void dumpExecuteFailClearsRdbDumperSoNextSlaveCanDump() throws Exception {
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
+		redisKeeperServer.initialize();
+
+		RedisMasterNewRdbDumper failingDumper = spy(new RedisMasterNewRdbDumper(
+				mock(RedisMaster.class), redisKeeperServer, false, false,
+				mock(NioEventLoopGroup.class), mock(ScheduledExecutorService.class),
+				mock(KeeperResourceManager.class)));
+		doThrow(new IOException("prepareNewRdb fail")).when(failingDumper).startRdbOnlyReplication();
+
+		redisKeeperServer.setRdbDumper(failingDumper);
+		failingDumper.execute();
+
+		assertNull(redisKeeperServer.rdbDumper());
+		assertTrue(failingDumper.future().isDone());
+		assertFalse(failingDumper.future().isSuccess());
+
+		RdbDumper nextDumper = mock(RdbDumper.class);
+		when(nextDumper.tryRordb()).thenReturn(false);
+		redisKeeperServer.setRdbDumper(nextDumper);
+
+		RedisSlave slave2 = mock(RedisSlave.class);
+		redisKeeperServer.fullSyncToSlave(slave2);
+
+		verify(nextDumper).tryFullSync(slave2);
+		verify(slave2, never()).waitForRdbDumping();
 	}
 
 	@Test

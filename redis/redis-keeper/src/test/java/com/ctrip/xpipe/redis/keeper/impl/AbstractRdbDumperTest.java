@@ -16,6 +16,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -69,6 +70,28 @@ public class AbstractRdbDumperTest extends AbstractFakeRedisTest {
                 }
             }, 2000);
         }
+    }
+
+    @Test
+    public void tryFullSyncAfterDumpFailDoesNotWait() throws Exception {
+        RedisKeeperServer server = spy(keeperServer);
+        doNothing().when(server).fullSyncToSlave(any(RedisSlave.class), anyBoolean());
+
+        AbstractRdbDumper dumper = spy(new TestDumper(server) {
+            @Override
+            protected void doExecute() throws Throwable {
+                dumpFail(new IOException("prepareNewRdb"));
+            }
+        });
+        server.setRdbDumper(dumper, true);
+        dumper.execute();
+
+        RedisSlave slave = mock(RedisSlave.class);
+        dumper.tryFullSync(slave);
+
+        verify(slave, never()).waitForRdbDumping();
+        verify(server).fullSyncToSlave(eq(slave), anyBoolean());
+        assertNull(server.rdbDumper());
     }
 
     @Test
