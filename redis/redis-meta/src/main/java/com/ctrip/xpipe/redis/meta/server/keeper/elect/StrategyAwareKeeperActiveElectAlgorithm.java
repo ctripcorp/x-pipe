@@ -29,8 +29,10 @@ public class StrategyAwareKeeperActiveElectAlgorithm extends AbstractActiveElect
 
         List<KeeperMeta> candidates = filterElectable(toBeSelected);
         if (candidates.isEmpty()) {
-            logger.warn("[select][no keeper with priority>0]cluster_{},shard_{},{}", clusterDbId, shardDbId, toBeSelected);
-            return null;
+            KeeperMeta fallback = toBeSelected.getFirst();
+            logger.warn("[select][no keeper with priority>0, fallback first by zk order]cluster_{},shard_{},fallback={},keepers={}",
+                    clusterDbId, shardDbId, fallback, toBeSelected);
+            return fallback;
         }
 
         if (strategy == KeeperElectStrategy.BM_PREFER) {

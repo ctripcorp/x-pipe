@@ -100,34 +100,41 @@ public class StrategyAwareKeeperActiveElectAlgorithmTest {
     }
 
     @Test
-    public void testNoElectableKeeperReturnsNull() {
+    public void testEmptyListReturnsNull() {
+        StrategyAwareKeeperActiveElectAlgorithm algorithm =
+                new StrategyAwareKeeperActiveElectAlgorithm(KeeperElectStrategy.AUTO, dcMetaCache);
+
+        Assert.assertNull(algorithm.select(1L, 1L, Collections.emptyList()));
+    }
+
+    @Test
+    public void testNoElectableKeeperFallsBackToFirstByZkOrder() {
         KeeperMeta zeroPriority = keeper(6002, 1L, 0);
         StrategyAwareKeeperActiveElectAlgorithm algorithm =
                 new StrategyAwareKeeperActiveElectAlgorithm(KeeperElectStrategy.AUTO, dcMetaCache);
 
-        Assert.assertNull(algorithm.select(1L, 1L, Collections.singletonList(zeroPriority)));
+        Assert.assertEquals(zeroPriority, algorithm.select(1L, 1L, Collections.singletonList(zeroPriority)));
     }
 
     @Test
-    public void testNullPriorityNotElectableWithoutNormalize() {
-        // Elect path trusts Meta-load normalize (D28); raw null is treated as ineligible.
+    public void testNullPriorityNotElectableWithoutNormalizeFallsBackToFirst() {
+        // Elect path trusts Meta-load normalize (D28); raw null is treated as ineligible, then D40 fallback.
         KeeperMeta nullPriority = keeper(6002, 1L, null);
         KeeperMeta explicitZero = keeper(6003, 2L, 0);
         StrategyAwareKeeperActiveElectAlgorithm algorithm =
                 new StrategyAwareKeeperActiveElectAlgorithm(KeeperElectStrategy.AUTO, dcMetaCache);
 
-        Assert.assertNull(algorithm.select(1L, 1L, Arrays.asList(nullPriority, explicitZero)));
+        Assert.assertEquals(nullPriority, algorithm.select(1L, 1L, Arrays.asList(nullPriority, explicitZero)));
     }
 
     @Test
-    public void testAllExplicitZeroReturnsNullAtElectLayer() {
-        // All-zero is rewritten at Meta load; elect still returns null if given raw all-zero.
+    public void testAllExplicitZeroFallsBackToFirstByZkOrder() {
         KeeperMeta zero1 = keeper(6002, 1L, 0);
         KeeperMeta zero2 = keeper(6003, 2L, 0);
         StrategyAwareKeeperActiveElectAlgorithm algorithm =
                 new StrategyAwareKeeperActiveElectAlgorithm(KeeperElectStrategy.AUTO, dcMetaCache);
 
-        Assert.assertNull(algorithm.select(1L, 1L, Arrays.asList(zero1, zero2)));
+        Assert.assertEquals(zero1, algorithm.select(1L, 1L, Arrays.asList(zero1, zero2)));
     }
 
     private KeeperMeta keeper(int port, long keeperContainerId, Integer priority) {
