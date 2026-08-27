@@ -1,11 +1,10 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.LocalDcSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.SingleDcSupport;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractClusterLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
@@ -31,6 +30,8 @@ public class SentinelBeaconConsistencyCheckActionFactory extends AbstractCluster
     @Autowired
     private StabilityHolder stabilityHolder;
 
+    private static final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
+
     @Override
     public SiteLeaderAwareHealthCheckAction create(ClusterHealthCheckInstance instance) {
         SentinelBeaconConsistencyCheckAction action = new SentinelBeaconConsistencyCheckAction(scheduled, instance, executors, beaconManager, stabilityHolder);
@@ -50,6 +51,7 @@ public class SentinelBeaconConsistencyCheckActionFactory extends AbstractCluster
 
     @Override
     public boolean supportInstnace(ClusterHealthCheckInstance instance) {
-        return true;
+        CheckInfo checkInfo = instance.getCheckInfo();
+        return !(checkInfo.getClusterType() == ClusterType.ONE_WAY && !CURRENT_DC.equalsIgnoreCase(checkInfo.getActiveDc()));
     }
 }
