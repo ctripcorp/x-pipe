@@ -35,7 +35,7 @@ public class BeaconRouteController extends AbstractConsoleController {
     @Autowired
     private ClusterService clusterService;
 
-    @Autowired
+    @Autowired(required = false)
     private SentinelBeaconClusterMonitorNotifier sentinelBeaconClusterMonitorNotifier;
 
     @GetMapping("/sentinel/clusters")
@@ -107,6 +107,9 @@ public class BeaconRouteController extends AbstractConsoleController {
         }
 
         long orgId = clusterTbl.getClusterOrgId();
+        if (sentinelBeaconClusterMonitorNotifier == null) {
+            return RetMessage.createFailMessage("sentinel_beacon_notifier_unavailable");
+        }
         sentinelBeaconClusterMonitorNotifier.notifyClusterDelete(clusterTbl.getClusterName(), dc, orgId);
 
         return RetMessage.createSuccessMessage();
