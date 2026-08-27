@@ -6,9 +6,13 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RedisInfoManager;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.*;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.RedisMsgCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultPsubPingActionCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigRuleAction;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.RedisMsgCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.checker.model.RedisMsg;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -104,13 +108,16 @@ public class CheckerHealthController {
     }
 
     @RequestMapping(value = "/health/redis/info/{ip}/{port}", method = RequestMethod.GET)
-    public ActionContextRetMessage<Map<String, String>> getRedisInfo(@PathVariable String ip, @PathVariable int port) {
-        return ActionContextRetMessage.from(redisInfoManager.getInfoByHostPort(new HostPort(ip, port)));
+    public ActionContextRetMessage<Map<String, String>> getRedisInfo(
+            @PathVariable String ip, @PathVariable int port,
+            @RequestParam(value = "section", required = false) String section) {
+        return InfoActionContext.toRetMessage(redisInfoManager.getInfoByHostPort(new HostPort(ip, port)), section);
     }
 
     @RequestMapping(value = "/health/redis/info/all", method = RequestMethod.GET)
-    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllRedisInfo() {
-        return ActionContextRetMessage.map(redisInfoManager.getAllInfos());
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllRedisInfo(
+            @RequestParam(value = "section", required = false) String section) {
+        return InfoActionContext.toRetMessage(redisInfoManager.getAllInfos(), section);
     }
 
     @GetMapping("/health/check/status/all")

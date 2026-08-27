@@ -3,12 +3,12 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RedisInfoManager;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -28,17 +28,12 @@ public class DefaultRedisInfoService implements RedisInfoService {
     public ConsoleServiceManager consoleManager;
 
     @Override
-    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getLocalAllInfosRetMessage() {
-        return ActionContextRetMessage.map(infoManager.getAllInfos());
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getLocalAllInfosRetMessage(String section) {
+        return InfoActionContext.toRetMessage(infoManager.getAllInfos(), section);
     }
 
     @Override
-    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getGlobalAllInfosRetMessage() {
-        return consoleConfig.getConsoleDomains().keySet()
-                .stream().map(consoleManager::getLocalRedisInfosByDc)
-                .reduce((acc, another)->{
-                    acc.putAll(another);
-                    return acc;
-                }).orElseGet(HashMap::new);
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getGlobalAllInfosRetMessage(String section) {
+        return consoleManager.getAllLocalRedisInfos(consoleConfig.getConsoleDomains().keySet(), section);
     }
 }
