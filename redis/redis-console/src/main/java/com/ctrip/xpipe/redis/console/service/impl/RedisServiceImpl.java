@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
@@ -16,8 +15,8 @@ import com.ctrip.xpipe.redis.console.notifier.ClusterMonitorModifiedNotifier;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
-import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.MathUtil;
 import com.ctrip.xpipe.utils.ObjectUtils;
@@ -513,7 +512,7 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             }
         }
 
-        monitorNotifier.notifyClusterUpdate(clusterName, dcName, cluster.getClusterOrgId(), cluster.getClusterLastModifiedTime());
+        monitorNotifier.notifyClusterUpdate(clusterName, dcName, cluster.getClusterOrgId());
     }
 
     private void updateRedises(List<RedisTbl> origin, List<RedisTbl> target) {

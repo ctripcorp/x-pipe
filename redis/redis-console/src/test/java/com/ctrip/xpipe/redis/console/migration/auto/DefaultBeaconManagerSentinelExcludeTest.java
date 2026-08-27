@@ -4,13 +4,12 @@ import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorClusterMeta;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorShardMeta;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconCheckStatus;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -86,7 +85,6 @@ public class DefaultBeaconManagerSentinelExcludeTest extends AbstractConsoleInte
         Mockito.when(monitorManager.get(ORG_ID, CLUSTER, dcMeta.getZone(), BeaconRouteType.SENTINEL))
                 .thenReturn(monitorService);
         Mockito.when(checkerConfig.shouldComputeExtraInHash()).thenReturn(true);
-        mockClusterLastModifyTime(LAST_MODIFY_TIME);
     }
 
     @Test
@@ -112,14 +110,14 @@ public class DefaultBeaconManagerSentinelExcludeTest extends AbstractConsoleInte
     @Test
     public void checkClusterHashShouldBeInconsistentWhenBeaconHasFullShards() throws Exception {
         Set<MonitorShardMeta> fullShards = beaconMetaService.buildSentinelBeaconShards(CLUSTER, DC, Collections.emptyMap());
-        int beaconHash = new MonitorClusterMeta(null, fullShards, Collections.singletonMap("lastModifyTime", LAST_MODIFY_TIME))
+        int beaconHash = new MonitorClusterMeta(null, fullShards, Collections.emptyMap())
                 .generateHashCodeForBeaconCheck(true);
 
         excludeShard("shard1");
         Mockito.when(monitorService.getBeaconClusterHash("xpipe", CLUSTER)).thenReturn(beaconHash);
 
         BeaconCheckStatus status = beaconManager.checkClusterHash(CLUSTER, DC, ClusterType.ONE_WAY, ORG_ID,
-                LAST_MODIFY_TIME, BeaconRouteType.SENTINEL);
+                BeaconRouteType.SENTINEL);
         Assert.assertEquals(BeaconCheckStatus.INCONSISTENCY, status);
     }
 
@@ -130,7 +128,7 @@ public class DefaultBeaconManagerSentinelExcludeTest extends AbstractConsoleInte
                 Collections.emptyMap());
         Assert.assertEquals(1, expectedShards.size());
 
-        beaconManager.registerCluster(CLUSTER, DC, ClusterType.ONE_WAY, ORG_ID, LAST_MODIFY_TIME,
+        beaconManager.registerCluster(CLUSTER, DC, ClusterType.ONE_WAY, ORG_ID,
                 BeaconRouteType.SENTINEL, Collections.emptyMap());
 
         ArgumentCaptor<Set> shardsCaptor = ArgumentCaptor.forClass(Set.class);
@@ -144,12 +142,6 @@ public class DefaultBeaconManagerSentinelExcludeTest extends AbstractConsoleInte
         xpipeMeta.getDcs().get(DC).getClusters().get(CLUSTER).setLastModifiedTime(LAST_MODIFY_TIME);
         xpipeMeta.getDcs().get(DC).getClusters().get(CLUSTER).getShards().get(shardName)
                 .setOperatingUntil(System.currentTimeMillis() + 60_000L);
-        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
-    }
-
-    private void mockClusterLastModifyTime(String lastModifyTime) {
-        XpipeMeta xpipeMeta = MetaCloneFacade.INSTANCE.clone(getXpipeMeta());
-        xpipeMeta.getDcs().get(DC).getClusters().get(CLUSTER).setLastModifiedTime(lastModifyTime);
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
     }
 }

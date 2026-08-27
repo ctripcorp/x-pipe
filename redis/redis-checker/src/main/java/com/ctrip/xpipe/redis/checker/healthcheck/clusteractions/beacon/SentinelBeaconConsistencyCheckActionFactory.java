@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.SingleDcSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractClusterLeaderAwareHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckAction;
+import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -27,9 +28,12 @@ public class SentinelBeaconConsistencyCheckActionFactory extends AbstractCluster
     @Autowired
     private List<SentinelBeaconMetaController> controllers;
 
+    @Autowired
+    private StabilityHolder stabilityHolder;
+
     @Override
     public SiteLeaderAwareHealthCheckAction create(ClusterHealthCheckInstance instance) {
-        SentinelBeaconConsistencyCheckAction action = new SentinelBeaconConsistencyCheckAction(scheduled, instance, executors, beaconManager);
+        SentinelBeaconConsistencyCheckAction action = new SentinelBeaconConsistencyCheckAction(scheduled, instance, executors, beaconManager, stabilityHolder);
         action.addControllers(controllers);
         return action;
     }

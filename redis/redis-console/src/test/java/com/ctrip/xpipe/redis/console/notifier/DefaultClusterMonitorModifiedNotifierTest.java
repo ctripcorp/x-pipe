@@ -28,12 +28,12 @@ public class DefaultClusterMonitorModifiedNotifierTest {
         Mockito.when(drNotifier.needNotify("cluster1", null, 1L)).thenReturn(true);
         Mockito.when(sentinelNotifier.needNotify("cluster1", null, 1L)).thenReturn(false);
 
-        notifier.notifyClusterUpdate("cluster1", 1, "20201030");
+        notifier.notifyClusterUpdate("cluster1", 1);
 
         Mockito.verify(drNotifier, Mockito.timeout(1000))
-                .notifyClusterUpdate("cluster1", null, 1L, "20201030");
+                .notifyClusterUpdate("cluster1", null, 1L);
         Mockito.verify(sentinelNotifier, Mockito.never()).notifyClusterUpdate(Mockito.anyString(), Mockito.any(),
-                Mockito.anyLong(), Mockito.anyString());
+                Mockito.anyLong());
     }
 
     @Test
@@ -51,12 +51,12 @@ public class DefaultClusterMonitorModifiedNotifierTest {
         Mockito.when(drNotifier.needNotify("cluster1", null, 1L)).thenReturn(false);
         Mockito.when(sentinelNotifier.needNotify("cluster1", null, 1L)).thenReturn(true);
 
-        notifier.notifyClusterUpdate("cluster1", 1, "20201030");
+        notifier.notifyClusterUpdate("cluster1", 1);
 
         Mockito.verify(sentinelNotifier, Mockito.timeout(1000))
-                .notifyClusterUpdate("cluster1", null, 1L, "20201030");
+                .notifyClusterUpdate("cluster1", null, 1L);
         Mockito.verify(drNotifier, Mockito.never()).notifyClusterUpdate(Mockito.anyString(), Mockito.any(),
-                Mockito.anyLong(), Mockito.anyString());
+                Mockito.anyLong());
     }
 
     @Test
@@ -64,10 +64,10 @@ public class DefaultClusterMonitorModifiedNotifierTest {
         Mockito.when(drNotifier.needNotify("cluster1", "jq", 1L)).thenReturn(true);
         Mockito.when(sentinelNotifier.needNotify("cluster1", "jq", 1L)).thenReturn(false);
 
-        notifier.notifyClusterUpdate("cluster1", "jq", 1, "20201030");
+        notifier.notifyClusterUpdate("cluster1", "jq", 1);
 
         Mockito.verify(drNotifier, Mockito.timeout(1000))
-                .notifyClusterUpdate("cluster1", "jq", 1L, "20201030");
+                .notifyClusterUpdate("cluster1", "jq", 1L);
     }
 
     @Test
@@ -75,12 +75,12 @@ public class DefaultClusterMonitorModifiedNotifierTest {
         Mockito.when(drNotifier.needNotify("cluster1", null, 1L)).thenReturn(false);
         Mockito.when(sentinelNotifier.needNotify("cluster1", null, 1L)).thenReturn(false);
 
-        notifier.notifyClusterUpdate("cluster1", 1, "20201030");
+        notifier.notifyClusterUpdate("cluster1", 1);
         notifier.notifyClusterDelete("cluster1", 1);
 
         Mockito.verify(drNotifier, Mockito.never()).notifyClusterUpdate(Mockito.anyString(), Mockito.any(),
-                Mockito.anyLong(), Mockito.anyString());
+                Mockito.anyLong());
         Mockito.verify(sentinelNotifier, Mockito.never()).notifyClusterUpdate(Mockito.anyString(), Mockito.any(),
-                Mockito.anyLong(), Mockito.anyString());
+                Mockito.anyLong());
     }
 }

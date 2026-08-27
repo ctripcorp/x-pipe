@@ -7,7 +7,7 @@ public interface BeaconRouteClusterMonitorNotifier {
 
     boolean needNotify(String clusterName, String dc, long orgId);
 
-    void notifyClusterUpdate(String clusterName, String dc, long orgId, String lastModifyTime);
+    void notifyClusterUpdate(String clusterName, String dc, long orgId);
 
     void notifyClusterDelete(String clusterName, String dc, long orgId);
 

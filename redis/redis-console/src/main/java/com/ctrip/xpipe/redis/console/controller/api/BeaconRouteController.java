@@ -4,29 +4,20 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
-import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.controller.api.vo.DRClusterBeaconRouteItem;
-import com.ctrip.xpipe.redis.console.controller.api.vo.RegionBeaconUsage;
-import com.ctrip.xpipe.redis.console.controller.api.vo.RestResponse;
-import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
-import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
+import com.ctrip.xpipe.redis.console.controller.api.vo.*;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.notifier.SentinelBeaconClusterMonitorNotifier;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSystem;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @RestController
 @RequestMapping(AbstractConsoleController.API_PREFIX + "/beacon")
@@ -40,6 +31,12 @@ public class BeaconRouteController extends AbstractConsoleController {
 
     @Autowired(required = false)
     private ConsoleServiceManager consoleServiceManager;
+
+    @Autowired
+    private ClusterService clusterService;
+
+    @Autowired(required = false)
+    private SentinelBeaconClusterMonitorNotifier sentinelBeaconClusterMonitorNotifier;
 
     @GetMapping("/sentinel/clusters")
     public Map<String, Set<String>> getSentinelBeaconClusters(@RequestParam(name = "system", required = false) String system,
@@ -98,6 +95,24 @@ public class BeaconRouteController extends AbstractConsoleController {
         result.put("routeType", selectedRouteType.name());
         result.put("metaHash", metaHash);
         return result;
+    }
+
+    @DeleteMapping("/sentinel/cluster/" + CLUSTER_NAME_PATH_VARIABLE)
+    public RetMessage deleteClusterFromSentinelBeacon(@PathVariable("clusterName") String clusterName,
+                                                      @RequestParam(name = "dc", required = false) String dc) {
+
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        if (clusterTbl == null) {
+            return RetMessage.createFailMessage("cluster_not_found");
+        }
+
+        long orgId = clusterTbl.getClusterOrgId();
+        if (sentinelBeaconClusterMonitorNotifier == null) {
+            return RetMessage.createFailMessage("sentinel_beacon_notifier_unavailable");
+        }
+        sentinelBeaconClusterMonitorNotifier.notifyClusterDelete(clusterTbl.getClusterName(), dc, orgId);
+
+        return RetMessage.createSuccessMessage();
     }
 
     @GetMapping("/sentinel/usage")

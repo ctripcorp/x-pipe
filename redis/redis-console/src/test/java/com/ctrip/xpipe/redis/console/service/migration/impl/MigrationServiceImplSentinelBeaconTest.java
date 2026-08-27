@@ -4,9 +4,9 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
-import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -23,7 +23,6 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -108,7 +107,7 @@ public class MigrationServiceImplSentinelBeaconTest {
 
         assertEquals(RetMessage.SUCCESS_STATE, retMessage.getState());
         verify(beaconManager).registerCluster(eq(CLUSTER), eq(CURRENT_DC), eq(ClusterType.SINGLE_DC), eq(10),
-                anyString(), eq(BeaconRouteType.SENTINEL), eq(shardMasters));
+                eq(BeaconRouteType.SENTINEL), eq(shardMasters));
     }
 
     @Test

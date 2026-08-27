@@ -31,7 +31,6 @@ import com.ctrip.xpipe.redis.console.repository.DcClusterRepository;
 import com.ctrip.xpipe.redis.console.repository.ShardRepository;
 import com.ctrip.xpipe.redis.console.sentinel.SentinelBalanceService;
 import com.ctrip.xpipe.redis.console.service.*;
-import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -40,7 +39,6 @@ import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Sets;
-import org.apache.commons.compress.utils.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -719,8 +717,7 @@ public class ShardServiceImpl extends AbstractConsoleService<ShardTblDao> implem
 		if (consoleConfig.shouldNotifyClusterTypes().contains(clusterType.toString()))
 			notifier.notifyClusterUpdate(clusterName, dcs);
 		for (String dc : dcs) {
-			monitorNotifier.notifyClusterUpdate(clusterName, dc, cluster.getClusterOrgId(),
-					cluster.getClusterLastModifiedTime());
+			monitorNotifier.notifyClusterUpdate(clusterName, dc, cluster.getClusterOrgId());
 		}
 	}
 
