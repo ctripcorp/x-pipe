@@ -28,6 +28,8 @@ public interface RedisSlave extends RedisClient<RedisKeeperServer>, PartialAware
 	
 	Long getAckTime();
 
+	long getGraceStart();
+
 	void beginWriteCommands(ReplicationProgress<?> progress);
 
 	void beginWriteRdb(EofType eofType, ReplicationProgress<?> rdbProgress);

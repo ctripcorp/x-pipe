@@ -94,7 +94,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private static final int DEFAULT_LONG_TIME_ALERT_TASK_MILLI = 1000;
 
 	private static String KEY_SEQ_FSYNC_CHECK_PERIOD_SEC = "SEQ_FSYNC_CHECK_PERIOD_SEC";
-	public static int DEFAULT_FSYNC_CHECK_PERIOD_SEC = Integer.parseInt(System.getProperty(KEY_SEQ_FSYNC_CHECK_PERIOD_SEC, "5"));
+	public static int DEFAULT_FSYNC_CHECK_PERIOD_SEC = Integer.parseInt(System.getProperty(KEY_SEQ_FSYNC_CHECK_PERIOD_SEC, "2"));
 
 	/**
 	 * when keeper is active, it's redis master, else it's another keeper
@@ -119,10 +119,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private final Map<Channel, RedisClient<RedisKeeperServer>>  redisClients = new ConcurrentHashMap<>();
 
-	/**
-	 * redis slaves receiving rdb or loading rdb
-	 */
-	private final Set<RedisSlave> loadingSlaves = new ConcurrentSet<>();
+	private CrossRegionFsyncCoordinator crossRegionFsyncCoordinator;
 
 	ScheduledFuture<?> fsyncSeqScheduledFuture;
 
@@ -271,6 +268,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	 	this.redisKeeperServerState = initKeeperServerState();
 	 	logger.info("[doInitialize]{}", this.redisKeeperServerState.keeperState());
 
+		this.crossRegionFsyncCoordinator = new CrossRegionFsyncCoordinator(
+				keeperConfig::getCrossRegionMaxLoadingSlavesCnt,
+				() -> TimeUnit.SECONDS.toMillis(keeperConfig.getCrossRegionFsyncGraceSeconds()),
+				() -> TimeUnit.SECONDS.toMillis(keeperConfig.getCrossRegionFsyncSettleSeconds()));
+
 	}
 
 	@Override
@@ -395,7 +397,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		fsyncSeqScheduledFuture = this.scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 			@Override
 			protected void doRun() throws Exception {
-				updateLoadingSlaves();
 				continueFsyncSequentially();
 			}
 		}, DEFAULT_FSYNC_CHECK_PERIOD_SEC, DEFAULT_FSYNC_CHECK_PERIOD_SEC, TimeUnit.SECONDS);
@@ -404,17 +405,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@VisibleForTesting
 	protected void continueFsyncSequentially() {
 		if (!getRedisKeeperServerState().keeperState().isActive()) return;
+		if (!crossRegion.get()) return;
+		if (keeperConfig.getCrossRegionMaxLoadingSlavesCnt() < 0) return;
 
-		int maxLoadingSlavesCnt = keeperConfig.getCrossRegionMaxLoadingSlavesCnt();
-		Set<RedisSlave> slaves = slaves();
-		int currentLoadingSlaves = loadingSlaves.size();
-		if (maxLoadingSlavesCnt >= 0 && crossRegion.get() && currentLoadingSlaves >= maxLoadingSlavesCnt) return;
-
-		for (RedisSlave slave: slaves) {
-			if (slave.getSlaveState() == REDIS_REPL_WAIT_SEQ_FSYNC) {
-				continueFsyncToSlave(slave);
-			}
-		}
+		crossRegionFsyncCoordinator.tick(slaves(), this::continueFsyncToSlave);
 	}
 
 	private void continueFsyncToSlave(RedisSlave slave) {
@@ -424,7 +418,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				@Override
 				public void run() {
 					try {
-						fullSyncToSlave(slave);
+						doFullSync(slave, false);
 					} catch (Throwable th) {
 						try {
 							logger.error("[continueFsyncToSlave][run]{}", slave, th);
@@ -449,7 +443,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 		keeperMonitor.stop();
 		clearClients();
-		clearLoadingSlaves();
 		this.leaderElector.stop();
 		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		stopServer();
@@ -763,9 +756,17 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			
 			@Override
 			public void go() throws Exception {
-				
+
 				RedisKeeperServerState previous = DefaultRedisKeeperServer.this.redisKeeperServerState;
 				logger.info("[setRedisKeeperServerState]{}, {}->{}", this, previous, redisKeeperServerState);
+
+				// 降级（ACTIVE → 非 ACTIVE）前关闭所有 slave：停止旧 keeper 上正在进行的全量，
+				// 避免与新 ACTIVE keeper 上的全量同时进行（跨 keeper 双跑），新 keeper 重新按 IP 串行全量
+				if (previous != null && previous.keeperState().isActive()
+						&& !redisKeeperServerState.keeperState().isActive()) {
+					closeSlaves("keeper downgrade");
+				}
+
 				DefaultRedisKeeperServer.this.redisKeeperServerState = redisKeeperServerState;
 				notifyObservers(new KeeperServerStateChanged(previous, redisKeeperServerState));
 			}
@@ -839,11 +840,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 		logger.info("[fullSyncToSlave]{}, {}", redisSlave, rdbDumper.get());
 
-		if (crossRegion.get() && !redisSlave.isKeeper() && !tryFullSyncToSlaveWithOthers(redisSlave)) {
+		if (crossRegion.get() && !redisSlave.isKeeper()
+				&& !crossRegionFsyncCoordinator.onFullSyncRequest(redisSlave)) {
 			redisSlave.waitForSeqFsync();
 			return;
 		}
 
+		doFullSync(redisSlave, freshRdbNeeded);
+	}
+
+	private void doFullSync(final RedisSlave redisSlave, boolean freshRdbNeeded) throws IOException {
 		boolean tryRordb = false; // slave and master all support rordb or not
 		if (redisSlave.capaOf(CAPA.RORDB)) {
 			try {
@@ -886,32 +892,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}else{
 			rdbDumper.get().tryFullSync(redisSlave);
 		}
-	}
-
-	private synchronized boolean tryFullSyncToSlaveWithOthers(RedisSlave redisSlave) {
-		if (loadingSlaves.contains(redisSlave)) return true;
-
-		int maxConcurrentLoadingSlaves = keeperConfig.getCrossRegionMaxLoadingSlavesCnt();
-		if (redisSlave.isColdStart() || maxConcurrentLoadingSlaves < 0 || loadingSlaves.size() < maxConcurrentLoadingSlaves) {
-			loadingSlaves.add(redisSlave);
-			return true;
-		}
-
-		return false;
-	}
-
-	@VisibleForTesting
-	protected synchronized void updateLoadingSlaves() {
-		Set<RedisSlave> filterSlaves = loadingSlaves.stream()
-				.filter(slave -> slave.isKeeper() || !slave.isOpen()
-						|| (slave.getSlaveState() == REDIS_REPL_ONLINE && slave.getAck() != null))
-				.collect(Collectors.toSet());
-
-		filterSlaves.forEach(loadingSlaves::remove);
-	}
-
-	private synchronized void clearLoadingSlaves() {
-		loadingSlaves.clear();
 	}
 
 	private RdbDumper dumpNewRdb(boolean tryRordb) throws CreateRdbDumperException, SetRdbDumperException {
@@ -1200,6 +1180,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		if (keeperRedisMaster instanceof DefaultRedisMaster) {
 			((DefaultRedisMaster) keeperRedisMaster).setEndpointProtocol(protocol);
 		}
+	}
+
+	@VisibleForTesting
+	public void setCrossRegion(boolean crossRegion) {
+		this.crossRegion.set(crossRegion);
 	}
 
 	class KeeperConnectionIdleHandler extends ChannelInboundHandlerAdapter {
