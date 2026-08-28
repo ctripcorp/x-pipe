@@ -55,6 +55,8 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public static final String KEY_SENTINEL_MASTER_CONFIG = "checker.sentinel.master.config";
 
+    public static final String KEY_SHOULD_COLLECT_OUTER_TYPE_INFO = "console.should.collect.outer.types.info";
+
     public static final String KEY_SHOULD_SENTINEL_CHECK_OUTER_TYPES = "console.should.sentinel.check.outer.types";
 
     public static final String KEY_SENTINEL_CHECK_OUTER_CLUSTERS = "console.sentinel.check.outer.clusters";
@@ -226,6 +228,10 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public Set<String> sentinelCheckOuterClientClusters() {
         return getSplitStringSet(getProperty(KEY_SENTINEL_CHECK_OUTER_CLUSTERS, "").toLowerCase());
+    }
+
+    public boolean shouldCollectOuterClientClustersInfo() {
+        return getBooleanProperty(KEY_SHOULD_COLLECT_OUTER_TYPE_INFO, false);
     }
 
     public int getClustersPartIndex() {

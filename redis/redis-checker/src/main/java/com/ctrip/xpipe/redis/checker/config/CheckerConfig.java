@@ -86,6 +86,8 @@ public interface CheckerConfig {
 
     boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName);
 
+    boolean supportCollectInfo(ClusterType clusterType);
+
     default boolean supportSentinelBeacon(long orgId, String clusterName) {
         return false;
     }

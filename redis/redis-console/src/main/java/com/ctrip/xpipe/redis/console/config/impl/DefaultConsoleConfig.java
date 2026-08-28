@@ -387,6 +387,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public boolean supportCollectInfo(ClusterType clusterType) {
+        return clusterType.supportHealthCheck() || checkConfigBean.shouldCollectOuterClientClustersInfo();
+    }
+
+    @Override
     public boolean supportSentinelBeacon(long orgId, String clusterName) {
         Set<Long> grayBus = commonConfigBean.getBeaconSentinelGrayBus();
         if (grayBus.contains(0L) || grayBus.contains(orgId)) {

@@ -72,6 +72,11 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public boolean supportCollectInfo(ClusterType clusterType) {
+        return checkerConfig.supportCollectInfo(clusterType);
+    }
+
+    @Override
     public int getNonCoreCheckIntervalMilli(){
         return checkerConfig.getNonCoreCheckIntervalMilli();
     }
