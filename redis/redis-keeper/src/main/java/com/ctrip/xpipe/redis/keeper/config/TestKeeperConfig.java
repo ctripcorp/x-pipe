@@ -285,6 +285,30 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return maxLoadingSlaves;
 	}
 
+	private int crossRegionFsyncGraceSeconds = 5;
+
+	public TestKeeperConfig setCrossRegionFsyncGraceSeconds(int seconds) {
+		this.crossRegionFsyncGraceSeconds = seconds;
+		return this;
+	}
+
+	@Override
+	public int getCrossRegionFsyncGraceSeconds() {
+		return crossRegionFsyncGraceSeconds;
+	}
+
+	private int crossRegionFsyncSettleSeconds = 2;
+
+	public TestKeeperConfig setCrossRegionFsyncSettleSeconds(int seconds) {
+		this.crossRegionFsyncSettleSeconds = seconds;
+		return this;
+	}
+
+	@Override
+	public int getCrossRegionFsyncSettleSeconds() {
+		return crossRegionFsyncSettleSeconds;
+	}
+
 	@Override
 	public int getApplierReadIdleSeconds() {
 		return 60;

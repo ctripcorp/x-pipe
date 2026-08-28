@@ -54,6 +54,8 @@ public class DefaultRedisSlave implements RedisSlave {
 	private Long replAckTime = System.currentTimeMillis();
 
 	private SLAVE_STATE  slaveState;
+
+	private volatile long graceStart;
 	
 	private PARTIAL_STATE partialState = PARTIAL_STATE.UNKNOWN;
 	
@@ -214,6 +216,9 @@ public class DefaultRedisSlave implements RedisSlave {
 			sendCommandForFullSync();
 		}
 		
+		if (putOnline) {
+			this.graceStart = System.currentTimeMillis();   // 全量完成（putOnline）时刻
+		}
 		this.replAckOff = ackOff;
 		this.replAckTime = System.currentTimeMillis();
 	}
@@ -248,6 +253,11 @@ public class DefaultRedisSlave implements RedisSlave {
 	@Override
 	public Long getAckTime() {
 		return this.replAckTime;
+	}
+
+	@Override
+	public long getGraceStart() {
+		return this.graceStart;
 	}
 
 	protected String buildMarkBeforeFsync(ReplicationProgress<?> rdbProgress) {

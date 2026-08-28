@@ -55,6 +55,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	private static String KEY_KEEPER_IDLE_SECONDS = "keeper.idle.seconds";
 
 	private static String KEY_CROSS_REGION_MAX_FSYNC_SLAVES = "crossregion.replication.loading.slaves.max";
+	private static String KEY_CROSS_REGION_FSYNC_GRACE_SECONDS = "crossregion.replication.fsync.grace.seconds";
+	private static String KEY_CROSS_REGION_FSYNC_SETTLE_SECONDS = "crossregion.replication.fsync.settle.seconds";
 
 	private static String KEY_FSYNC_RATE_LIMIT = "keeper.repl.fsync.rate.limit";
 	private static String KEY_INDEX_DUAL_WRITE = "keeper.index.dual.write";
@@ -230,6 +232,16 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getCrossRegionMaxLoadingSlavesCnt() {
 		return getIntProperty(KEY_CROSS_REGION_MAX_FSYNC_SLAVES, 1);
+	}
+
+	@Override
+	public int getCrossRegionFsyncGraceSeconds() {
+		return getIntProperty(KEY_CROSS_REGION_FSYNC_GRACE_SECONDS, 5);
+	}
+
+	@Override
+	public int getCrossRegionFsyncSettleSeconds() {
+		return getIntProperty(KEY_CROSS_REGION_FSYNC_SETTLE_SECONDS, 2);
 	}
 
 	@Override
