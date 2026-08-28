@@ -2,10 +2,7 @@ package com.ctrip.xpipe.redis.checker.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RedisInfoManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
-import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.RawInfoActionContext;
@@ -19,7 +16,7 @@ import java.util.concurrent.ConcurrentMap;
  * <p>
  * Jun 01, 2021 4:46 PM
  */
-public class CheckerRedisInfoManager implements RedisInfoManager, InfoActionListener, OneWaySupport, BiDirectionSupport {
+public class CheckerRedisInfoManager implements RedisInfoManager, InfoActionListener, OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport {
 
     protected ConcurrentMap<HostPort, InfoActionContext> hostPort2Info = new ConcurrentHashMap<>();
 
