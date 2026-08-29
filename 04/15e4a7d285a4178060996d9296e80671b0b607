@@ -1,0 +1,29 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/compare/store/ReplCompareMetaReader.java
+  s_11332a94fc1267::t_d5692a2da3ea01 52,55-56,63
+  s_11332a94fc1267::t_c762411af45b1e 1-51,53-54,57-62,64-91
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_11332a94fc1267::t_bf62ad91f95b93 4
+  s_11332a94fc1267::t_77e4b5081d6b24 82
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/compare/store/ReplCompareReadonlyMetaTest.java
+  s_11332a94fc1267::t_cf5a97bb598f0d 26
+  s_11332a94fc1267::t_864f306d57ee93 1-25,27-88,90-175
+  s_11332a94fc1267::t_fb0e09ea8f0ab9 89
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/compare/store/ReplCompareStoreManager.java
+  s_11332a94fc1267::t_26ef2cf6b869d8 1-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "0415e4a7d285a4178060996d9296e80671b0b607",
+  "prompts": {},
+  "sessions": {
+    "s_11332a94fc1267": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "27ed204b-9b88-4d32-9e60-88ee8947bb8c",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
