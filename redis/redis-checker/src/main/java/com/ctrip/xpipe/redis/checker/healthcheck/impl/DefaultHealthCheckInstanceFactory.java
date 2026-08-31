@@ -11,7 +11,7 @@ import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionFactory;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubActionFactory;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.CompositeHealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
@@ -183,7 +183,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     }
 
     @Override
-    public RedisHealthCheckInstance getOrCreateRedisInstanceForPsubPingAction(RedisMeta redis) {
+    public RedisHealthCheckInstance getOrCreateRedisInstanceForInfoReplIdAction(RedisMeta redis) {
         DefaultRedisHealthCheckInstance instance = new DefaultRedisHealthCheckInstance();
 
         RedisInstanceInfo info = createRedisInstanceInfo(redis);
@@ -195,17 +195,17 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
                 .setInstanceInfo(info)
                 .setHealthCheckConfig(config);
 
-        initActionsForRedisForPsubPingAction(instance);
+        initActionsForRedisForInfoReplIdAction(instance);
         startCheck(instance);
 
         return instance;
     }
 
-    private void initActionsForRedisForPsubPingAction(DefaultRedisHealthCheckInstance instance) {
+    private void initActionsForRedisForInfoReplIdAction(DefaultRedisHealthCheckInstance instance) {
         List<RedisHealthCheckActionFactory<?>> redisHealthCheckActionFactories = factoriesByClusterType.get(instance.getCheckInfo().getClusterType());
         if (redisHealthCheckActionFactories == null) return;
         for(RedisHealthCheckActionFactory<?> factory : redisHealthCheckActionFactories) {
-            if (factory instanceof PingActionFactory || factory instanceof PsubActionFactory)
+            if (factory instanceof PingActionFactory || factory instanceof InfoReplIdActionFactory)
                 initActions(instance, factory);
         }
     }

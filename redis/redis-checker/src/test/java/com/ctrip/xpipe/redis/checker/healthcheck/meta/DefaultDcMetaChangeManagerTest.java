@@ -440,7 +440,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         clone.getShards().get("shard2").addRedis(new RedisMeta());
         manager.visitModified(new ClusterMetaComparator(clusterMeta, clone));
         verify(instanceManager, never()).getOrCreate(any(RedisMeta.class));
-        verify(instanceManager, never()).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
+        verify(instanceManager, never()).getOrCreateRedisInstanceForInfoReplIdAction(any(RedisMeta.class));
     }
 
     @Test
@@ -453,7 +453,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         // only redis in changed shard reload
         Mockito.verify(instanceManager, times(2)).remove(any(HostPort.class));
         Mockito.verify(instanceManager, times(2)).removeRedisInstanceForPingAction(any(HostPort.class));
-        Mockito.verify(instanceManager, times(2)).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
+        Mockito.verify(instanceManager, times(2)).getOrCreateRedisInstanceForInfoReplIdAction(any(RedisMeta.class));
     }
 
     @Test
@@ -463,7 +463,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         future.findCluster("cluster5").setActiveDc("fra-aws").setBackupDcs("fra-ali");
         manager.compare(future);
 
-        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
+        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForInfoReplIdAction(any(RedisMeta.class));
         Mockito.verify(instanceManager, times(2)).removeRedisInstanceForPingAction(any(HostPort.class));
         Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.4", 8200), new HostPort("127.0.0.4", 8201)), deletedRedised);
     }
@@ -475,7 +475,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         future.findCluster("cluster5").setActiveDc("fra-ali").setBackupDcs("fra-aws");
         manager.compare(future);
 
-        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
+        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForInfoReplIdAction(any(RedisMeta.class));
         Mockito.verify(instanceManager, times(2)).removeRedisInstanceForPingAction(any(HostPort.class));
         Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.3", 8200), new HostPort("127.0.0.3", 8201)), deletedRedised);
     }
@@ -490,7 +490,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         clusterMetaComparator.compare();
         manager.visitModified(clusterMetaComparator);
 
-        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
+        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForInfoReplIdAction(any(RedisMeta.class));
         Mockito.verify(instanceManager, never()).removeRedisInstanceForPingAction(any(HostPort.class));
 
         // current dc is always in dcs
@@ -501,7 +501,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         clusterMetaComparator1.compare();
         manager.visitModified(clusterMetaComparator1);
 
-        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
+        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForInfoReplIdAction(any(RedisMeta.class));
         Mockito.verify(instanceManager, never()).removeRedisInstanceForPingAction(any(HostPort.class));
     }
 
@@ -512,7 +512,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         future.findCluster("cluster5").setDcs("fra-aws, fra-ali");
         manager.compare(future);
 
-        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
+        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForInfoReplIdAction(any(RedisMeta.class));
         Mockito.verify(instanceManager, times(2)).removeRedisInstanceForPingAction(any(HostPort.class)); // delete anyway
     }
 
@@ -523,7 +523,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         future.findCluster("cluster5").setDcs("fra-aws");
         manager.compare(future);
 
-        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
+        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForInfoReplIdAction(any(RedisMeta.class));
         Mockito.verify(instanceManager, times(2)).removeRedisInstanceForPingAction(any(HostPort.class));
         Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.3", 8200), new HostPort("127.0.0.3", 8201)), deletedRedised);
     }
@@ -536,7 +536,7 @@ public class DefaultDcMetaChangeManagerTest extends AbstractRedisTest {
         manager.compare(future);
 
         Mockito.verify(instanceManager, times(2)).removeRedisInstanceForPingAction(any(HostPort.class));
-        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
+        Mockito.verify(instanceManager, never()).getOrCreateRedisInstanceForInfoReplIdAction(any(RedisMeta.class));
     }
 
     @Test

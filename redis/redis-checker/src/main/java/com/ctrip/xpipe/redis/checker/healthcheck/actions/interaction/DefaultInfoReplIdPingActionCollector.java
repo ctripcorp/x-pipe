@@ -1,18 +1,20 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
-import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdActionContext;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdActionListener;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessor;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubPingActionCollector;
-import com.ctrip.xpipe.utils.MapUtils;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,9 +32,9 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 @Component
-public class DefaultPsubPingActionCollector extends AbstractPsubPingActionCollector implements PsubPingActionCollector, HealthStateService, OneWaySupport {
+public class DefaultInfoReplIdPingActionCollector extends AbstractInfoReplIdPingActionCollector implements InfoReplIdPingActionCollector, HealthStateService, OneWaySupport {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultPsubPingActionCollector.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultInfoReplIdPingActionCollector.class);
 
     @Autowired
     private List<HealthEventProcessor> healthEventProcessors;
@@ -129,6 +131,30 @@ public class DefaultPsubPingActionCollector extends AbstractPsubPingActionCollec
     @VisibleForTesting
     public HealthStatus getHealthStatus4Test(RedisHealthCheckInstance instance) {
         return getHealthStatus(instance);
+    }
+
+    @Override
+    public InfoReplIdActionListener createInfoReplIdActionListener() {
+        return new InfoReplIdActionListener() {
+            @Override
+            public void onAction(InfoReplIdActionContext context) {
+                CrossRegionRedisHealthStatus hs =
+                        (CrossRegionRedisHealthStatus) getHealthStatus(context.instance());
+                if (hs == null) return;
+
+                if (context.isSuccess()) {
+                    Pair<String, String> replIds = context.getResult();
+                    hs.updateReplIds(replIds.getKey(), replIds.getValue());
+                } else {
+                    hs.updateReplIds(null, null);
+                }
+            }
+
+            @Override
+            public void stopWatch(HealthCheckAction<RedisHealthCheckInstance> action) {
+                removeHealthStatus(action);
+            }
+        };
     }
 
     @Override

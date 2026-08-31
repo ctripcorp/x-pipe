@@ -60,20 +60,60 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
         // 新 active keeper 变为 cross-region（切换触发的 reconnect 会重置 crossRegion，故在切换完成后再置位）
         DefaultRedisKeeperServer newActiveServer = (DefaultRedisKeeperServer) getRedisKeeperServer(backup);
         newActiveServer.setCrossRegion(true);
-
-        // 模拟「增量出问题」：SLAVEOF NO ONE 使 replid 变化 + 写分歧数据，再统一指回新 active keeper
-        for (RedisMeta slave : crossRegionSlaves) {
-            jedisExecCommand(slave.getIp(), slave.getPort(), "SLAVEOF", "NO", "ONE");
-            jedisExecCommand(slave.getIp(), slave.getPort(), "SET", "diverge_" + slave.getPort(), "1");
-        }
-        for (RedisMeta slave : crossRegionSlaves) {
-            setRedisMaster(slave, new HostPort(backup.getIp(), backup.getPort()));
-        }
+        for (int round = 0; round < 2; round++) {
+            // 模拟「增量出问题」：SLAVEOF NO ONE 使 replid 变化 + 写分歧数据，再统一指回新 active keeper
+            for (RedisMeta slave : crossRegionSlaves) {
+                jedisExecCommand(slave.getIp(), slave.getPort(), "SLAVEOF", "NO", "ONE");
+                jedisExecCommand(slave.getIp(), slave.getPort(), "SET", "diverge_" + slave.getPort(), "1");
+            }
+            for (RedisMeta slave : crossRegionSlaves) {
+                setRedisMaster(slave, new HostPort(backup.getIp(), backup.getPort()));
+            }
 
         // 采样验证：全量串行（同一时刻最多 1 个 loading）且按 ip:port 升序
         List<RedisMeta> fullSyncOrder = sampleFullSyncOrder(newActiveServer, crossRegionSlaves);
         Assert.assertEquals("all cross-region slaves should do full sync", CROSS_REGION_SLAVE_COUNT, fullSyncOrder.size());
         assertAscendingByIpPort(fullSyncOrder);
+        }
+
+        // 全量完成后数据与 master 一致（分歧数据被 RDB 覆盖清除）
+        assertRedisEquals(redisMaster, crossRegionSlaves);
+    }
+
+    /**
+     * 验证「拉入」：不切换 keeper，直接让 cross-region keeper 的多个 slave 全量同步，
+     * 同一时刻最多 maxLoadingSlaves 个 loading，且按 ip:port 字典序依次放行。
+     */
+    @Test
+    public void testCrossRegionSlavesPullInSerialFsyncByIpOrder() throws Exception {
+        KeeperMeta active = getKeeperActive();
+        List<RedisMeta> crossRegionSlaves = getRedisSlaves();
+        Assert.assertEquals(CROSS_REGION_SLAVE_COUNT, crossRegionSlaves.size());
+        waitAllSlavesOnline(crossRegionSlaves);
+
+        // 先写入一批数据，让 slave 走增量并数据一致
+        sendMessageToMaster(redisMaster, 2000);
+        sleep(2000);
+
+        // 直接标记 active keeper 为 cross-region（不切换 keeper，直接测「拉入」）
+        DefaultRedisKeeperServer activeServer = (DefaultRedisKeeperServer) getRedisKeeperServer(active);
+        activeServer.setCrossRegion(true);
+
+        for (int round = 0; round < 2; round++) {
+            // 模拟「增量不可继续」：SLAVEOF NO ONE 使 replid 变化 + 写分歧数据，再统一指回 active keeper
+            for (RedisMeta slave : crossRegionSlaves) {
+                jedisExecCommand(slave.getIp(), slave.getPort(), "SLAVEOF", "NO", "ONE");
+                jedisExecCommand(slave.getIp(), slave.getPort(), "SET", "diverge_" + slave.getPort(), "1");
+            }
+            for (RedisMeta slave : crossRegionSlaves) {
+                setRedisMaster(slave, new HostPort(active.getIp(), active.getPort()));
+            }
+
+            // 采样验证：全量串行（同一时刻最多 1 个 loading）且按 ip:port 升序
+            List<RedisMeta> fullSyncOrder = sampleFullSyncOrder(activeServer, crossRegionSlaves);
+            Assert.assertEquals("all cross-region slaves should do full sync", CROSS_REGION_SLAVE_COUNT, fullSyncOrder.size());
+            assertAscendingByIpPort(fullSyncOrder);
+        }
 
         // 全量完成后数据与 master 一致（分歧数据被 RDB 覆盖清除）
         assertRedisEquals(redisMaster, crossRegionSlaves);

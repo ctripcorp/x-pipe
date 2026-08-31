@@ -56,11 +56,11 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
-    public RedisHealthCheckInstance getOrCreateRedisInstanceForPsubPingAction(RedisMeta redis) {
+    public RedisHealthCheckInstance getOrCreateRedisInstanceForInfoReplIdAction(RedisMeta redis) {
         try {
             HostPort key = new HostPort(redis.getIp(), redis.getPort());
             return MapUtils.getOrCreate(redisInstanceForPingAction, key,
-                    () -> instanceFactory.getOrCreateRedisInstanceForPsubPingAction(redis));
+                    () -> instanceFactory.getOrCreateRedisInstanceForInfoReplIdAction(redis));
         } catch (Throwable th) {
             logger.error("getOrCreate ping action health check redis instance:{}:{}", redis.getIp(), redis.getPort(), th);
         }
@@ -84,7 +84,7 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
-    public RedisHealthCheckInstance findRedisInstanceForPsubPingAction(HostPort hostPort) {
+    public RedisHealthCheckInstance findRedisInstanceForInfoReplIdPingAction(HostPort hostPort) {
         return redisInstanceForPingAction.get(hostPort);
     }
 
