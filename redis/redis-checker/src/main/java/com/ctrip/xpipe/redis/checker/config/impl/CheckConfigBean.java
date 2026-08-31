@@ -55,7 +55,7 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public static final String KEY_SENTINEL_MASTER_CONFIG = "checker.sentinel.master.config";
 
-    public static final String KEY_SHOULD_COLLECT_OUTER_TYPE_INFO = "console.should.collect.outer.types.info";
+    public static final String KEY_SHOULD_COLLECT_OUTER_TYPE_INFO = "should.collect.outer.types.info";
 
     public static final String KEY_SHOULD_SENTINEL_CHECK_OUTER_TYPES = "console.should.sentinel.check.outer.types";
 
