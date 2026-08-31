@@ -53,7 +53,7 @@ public class DefaultHealthCheckInstanceManagerTest extends AbstractCheckerTest {
     public void setupDefaultHealthCheckInstanceManagerTest() {
         Mockito.when(instanceFactory.create(Mockito.any(RedisMeta.class))).thenReturn(mockCheckInstance);
         Mockito.when(instanceFactory.create(Mockito.any(ClusterMeta.class))).thenReturn(mockClusterInstance);
-        Mockito.when(instanceFactory.getOrCreateRedisInstanceForPsubPingAction(Mockito.any())).thenReturn(mockCheckInstance);
+        Mockito.when(instanceFactory.getOrCreateRedisInstanceForInfoReplIdAction(Mockito.any())).thenReturn(mockCheckInstance);
 
         Mockito.when(checkerConfig.getIgnoredHealthCheckDc()).thenReturn(Collections.emptySet());
 
@@ -87,8 +87,8 @@ public class DefaultHealthCheckInstanceManagerTest extends AbstractCheckerTest {
     @Test
     public void testCrossRegionInstanceMatch() {
         healthChecker.generateHealthCheckInstances();
-        Assert.assertNotNull(healthCheckInstanceManager.findRedisInstanceForPsubPingAction(new HostPort("10.43.49.173", 6379)));
-        Assert.assertNotNull(healthCheckInstanceManager.findRedisInstanceForPsubPingAction(new HostPort("10.56.204.175", 6379)));
+        Assert.assertNotNull(healthCheckInstanceManager.findRedisInstanceForInfoReplIdPingAction(new HostPort("10.43.49.173", 6379)));
+        Assert.assertNotNull(healthCheckInstanceManager.findRedisInstanceForInfoReplIdPingAction(new HostPort("10.56.204.175", 6379)));
         Assert.assertNotNull(healthCheckInstanceManager.findClusterHealthCheckInstance("bbz_qmq_idempotent_fra_default"));
     }
 

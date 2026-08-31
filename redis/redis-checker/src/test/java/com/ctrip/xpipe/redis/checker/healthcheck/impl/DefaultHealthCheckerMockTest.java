@@ -173,7 +173,7 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
 
         checker.generateHealthCheckInstances();
         verify(instanceManager, times(1)).getOrCreate(new ClusterMeta().setId("one_way_cluster"));
-        verify(instanceManager, times(1)).getOrCreateRedisInstanceForPsubPingAction(any(RedisMeta.class));
+        verify(instanceManager, times(1)).getOrCreateRedisInstanceForInfoReplIdAction(any(RedisMeta.class));
 
         jqClusterMeta.setActiveDc("jq");
         checker.generateHealthCheckInstances();

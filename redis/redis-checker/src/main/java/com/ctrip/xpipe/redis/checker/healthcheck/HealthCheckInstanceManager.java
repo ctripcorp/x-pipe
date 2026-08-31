@@ -16,13 +16,13 @@ public interface HealthCheckInstanceManager {
 
     RedisHealthCheckInstance getOrCreate(RedisMeta redis);
 
-    RedisHealthCheckInstance getOrCreateRedisInstanceForPsubPingAction(RedisMeta redis);
+    RedisHealthCheckInstance getOrCreateRedisInstanceForInfoReplIdAction(RedisMeta redis);
 
     ClusterHealthCheckInstance getOrCreate(ClusterMeta cluster);
 
     RedisHealthCheckInstance findRedisHealthCheckInstance(HostPort hostPort);
 
-    RedisHealthCheckInstance findRedisInstanceForPsubPingAction(HostPort hostPort);
+    RedisHealthCheckInstance findRedisInstanceForInfoReplIdPingAction(HostPort hostPort);
 
     ClusterHealthCheckInstance findClusterHealthCheckInstance(String clusterId);
 

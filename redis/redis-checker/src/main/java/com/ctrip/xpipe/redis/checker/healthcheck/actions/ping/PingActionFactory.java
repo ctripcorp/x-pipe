@@ -7,8 +7,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DelayPingActionCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -53,7 +53,7 @@ public class PingActionFactory implements RedisHealthCheckActionFactory<PingActi
     private List<DelayPingActionCollector> delayPingCollectors;
 
     @Autowired
-    private List<PsubPingActionCollector> psubPingActionCollectors;
+    private List<InfoReplIdPingActionCollector> infoReplIdPingActionCollectors;
 
     private Map<ClusterType, List<PingActionController>> controllersByClusterType;
 
@@ -61,7 +61,7 @@ public class PingActionFactory implements RedisHealthCheckActionFactory<PingActi
 
     private Map<ClusterType, List<DelayPingActionCollector>> delayPingCollectorsByClusterType;
 
-    private Map<ClusterType, List<PsubPingActionCollector>> psubPingActionCollectorsByClusterType;
+    private Map<ClusterType, List<InfoReplIdPingActionCollector>> infoReplIdPingActionCollectorsByClusterType;
 
     protected static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
@@ -70,7 +70,7 @@ public class PingActionFactory implements RedisHealthCheckActionFactory<PingActi
         controllersByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(controllers);
         listenerByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(listeners);
         delayPingCollectorsByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(delayPingCollectors);
-        psubPingActionCollectorsByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(psubPingActionCollectors);
+        infoReplIdPingActionCollectorsByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(infoReplIdPingActionCollectors);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class PingActionFactory implements RedisHealthCheckActionFactory<PingActi
                 }
             });
         } else if (activeDc != null && metaCache.isCrossRegion(currentDcId, activeDc)) {
-            psubPingActionCollectorsByClusterType.get(clusterType).forEach(collector -> {
+            infoReplIdPingActionCollectorsByClusterType.get(clusterType).forEach(collector -> {
                 if (collector.supportInstance(instance)) {
                     pingAction.addListener(collector.createPingActionListener());
                     collector.createHealthStatus(instance);

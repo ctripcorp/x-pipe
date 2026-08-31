@@ -48,7 +48,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
     @Autowired
     private DefaultDelayPingActionCollector defaultDelayPingActionCollector;
     @Autowired
-    private DefaultPsubPingActionCollector defaultPsubPingActionCollector;
+    private DefaultInfoReplIdPingActionCollector defaultInfoReplIdPingActionCollector;
 
     private OuterClientService outerClientService = OuterClientService.DEFAULT;
     private static final Logger logger =  LoggerFactory.getLogger(DefaultAggregatorPullService.class);
@@ -132,7 +132,7 @@ public class DefaultAggregatorPullService implements AggregatorPullService{
             if (currentDc.equalsIgnoreCase(activeDc)) {
                 allStatus = defaultDelayPingActionCollector.getAllHealthStatus();
             } else {
-                allStatus = defaultPsubPingActionCollector.getAllHealthStatus();
+                allStatus = defaultInfoReplIdPingActionCollector.getAllHealthStatus();
             }
             List<HostPort> allDcInstances = dcInstances.get(relatedDc).stream().map(redisMeta -> new HostPort(redisMeta.getIp(), redisMeta.getPort())).collect(Collectors.toList());
             if (allInstancesUp(allDcInstances, allStatus))

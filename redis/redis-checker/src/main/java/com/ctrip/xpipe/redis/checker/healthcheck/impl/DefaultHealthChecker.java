@@ -144,7 +144,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
     void generateHealthCheckInstances4CrossRegion(ClusterMeta clusterMeta) {
         for(ShardMeta shard : clusterMeta.getShards().values()) {
             for(RedisMeta redis : shard.getRedises()) {
-                instanceManager.getOrCreateRedisInstanceForPsubPingAction(redis);
+                instanceManager.getOrCreateRedisInstanceForInfoReplIdAction(redis);
             }
         }
         instanceManager.getOrCreate(clusterMeta);

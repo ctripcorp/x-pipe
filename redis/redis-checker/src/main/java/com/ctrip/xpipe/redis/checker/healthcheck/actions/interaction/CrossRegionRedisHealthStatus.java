@@ -11,28 +11,28 @@ import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * UNKNOWN
- *  pingSuccess -> INSTANCEUP + start subAction
+ *  pingSuccess -> INSTANCEUP
  *  pingFail -> DOWN + markDown
- *  subSuccess -> throw exception
  * <p>
  * INSTANCEUP
  *  pingSuccess,do nothing
  *  pingFail -> DOWN + markDown
- *  subSuccess -> HEALTHY + markUp + stop subAction
+ *  replIdMatch -> HEALTHY + markUp
  * <p>
  * HEALTHY
  *  pingSuccess,do nothing
  *  pingFail -> DOWN + markDown
- *  subSuccess -> throw exception
  * <p>
  * DOWN
- *  pingSuccess -> INSTANCEUP + start subAction
+ *  pingSuccess -> INSTANCEUP
  *  pingFail,do nothing
- *  subSuccess -> throw exception
  */
 public class CrossRegionRedisHealthStatus extends HealthStatus {
 
     protected static final Logger logger = LoggerFactory.getLogger(CrossRegionRedisHealthStatus.class);
+
+    private volatile String slaveReplId;
+    private volatile String keeperReplId;
 
     public CrossRegionRedisHealthStatus(RedisHealthCheckInstance instance, ScheduledExecutorService scheduled) {
         super(instance, scheduled);
@@ -61,16 +61,29 @@ public class CrossRegionRedisHealthStatus extends HealthStatus {
         }
     }
 
-    @Override
-    protected void subSuccess() {
-        HEALTH_STATE preState = state.get();
-        if (preState.equals(HEALTH_STATE.INSTANCEUP)) {
-            if(state.compareAndSet(preState, HEALTH_STATE.HEALTHY)) {
-                logStateChange(preState, state.get());
-            }
-            logger.info("[setUp] {}", this);
-            notify(new InstanceUp(instance));
+    /** InfoReplIdAction 的 listener 写回；replId 一致时拉入 */
+    public void updateReplIds(String slaveReplId, String keeperReplId) {
+        this.slaveReplId = slaveReplId;
+        this.keeperReplId = keeperReplId;
+        if (replIdMatch()) {
+            markUp();
         }
+    }
+
+    /** 校验逻辑：只比较 replId 是否相等 */
+    public boolean replIdMatch() {
+        return slaveReplId != null && keeperReplId != null && slaveReplId.equals(keeperReplId);
+    }
+
+    /** 由 replId 一致触发的 mark-up 逻辑 */
+    private void markUp() {
+        HEALTH_STATE preState = state.get();
+        if (!preState.equals(HEALTH_STATE.INSTANCEUP)) return;
+        if (state.compareAndSet(preState, HEALTH_STATE.HEALTHY)) {
+            logStateChange(preState, state.get());
+        }
+        logger.info("[setUp] {}", this);
+        notify(new InstanceUp(instance));
     }
 
     @Override
