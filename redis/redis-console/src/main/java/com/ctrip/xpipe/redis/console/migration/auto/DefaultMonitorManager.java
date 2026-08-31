@@ -232,8 +232,9 @@ public class DefaultMonitorManager implements MonitorManager {
                     ? clusterMeta.getAzGroupType() : clusterMeta.getType());
             BeaconSystem beaconSystem = BeaconSentinelMetaUtil.resolveBeaconSystemByRouteType(clusterType, BeaconRouteType.SENTINEL);
             MonitorService monitorService = get(clusterMeta.getOrgId(), clusterMeta.getId(), dcMeta.getZone(), BeaconRouteType.SENTINEL);
+            boolean managedByBeacon = config.supportSentinelBeacon(clusterMeta.getOrgId(), clusterMeta.getId());
 
-            result.add(new SentinelClusterBeaconRouteItem(beaconSystem, dcMeta, clusterMeta, monitorService));
+            result.add(new SentinelClusterBeaconRouteItem(beaconSystem, dcMeta, clusterMeta, monitorService, managedByBeacon));
         }
 
         return result;
