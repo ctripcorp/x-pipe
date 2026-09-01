@@ -341,6 +341,26 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	}
 
 	@Override
+	public boolean isPrepareStoreWatchEnabled() {
+		return false;
+	}
+
+	@Override
+	public int getPrepareWatchMetaIntervalMilli() {
+		return DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI;
+	}
+
+	@Override
+	public int getPrepareWatchReopenIntervalMilli() {
+		return DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI;
+	}
+
+	@Override
+	public boolean isPubsubParseEnabled() {
+		return false;
+	}
+
+	@Override
 	public boolean stopWriteCk() {
 		return false;
 	}

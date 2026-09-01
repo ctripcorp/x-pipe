@@ -70,6 +70,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	private static String KEY_RECORD_WRONG_STREAM = "keeper.record.wrong.stream";
 
+	public static final String KEY_PREPARE_STORE_WATCH_ENABLED = "keeper.prepare.store.watch.enabled";
+	public static final String KEY_PREPARE_WATCH_META_INTERVAL_MILLI = "keeper.prepare.watch.meta.interval.milli";
+	public static final String KEY_PREPARE_WATCH_REOPEN_INTERVAL_MILLI = "keeper.prepare.watch.reopen.interval.milli";
+	public static final String KEY_PUBSUB_PARSE_ENABLED = "keeper.pubsub.parse.enabled";
+
 	private static String KEY_REDIS_RATE_LIMITE_MIN = "redis.rate.limit.min";
 	private static String KEY_REDIS_RATE_LIMITE_MAX = "redis.rate.limit.max";
 	private static String KEY_REDIS_RATE_LIMITE_CHECK_INTERVAL = "redis.rate.limit.check.interval";
@@ -263,6 +268,26 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public boolean getRecordWrongStream() {
 		return getBooleanProperty(KEY_RECORD_WRONG_STREAM, false);
+	}
+
+	@Override
+	public boolean isPrepareStoreWatchEnabled() {
+		return getBooleanProperty(KEY_PREPARE_STORE_WATCH_ENABLED, false);
+	}
+
+	@Override
+	public int getPrepareWatchMetaIntervalMilli() {
+		return getIntProperty(KEY_PREPARE_WATCH_META_INTERVAL_MILLI, DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI);
+	}
+
+	@Override
+	public int getPrepareWatchReopenIntervalMilli() {
+		return getIntProperty(KEY_PREPARE_WATCH_REOPEN_INTERVAL_MILLI, DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI);
+	}
+
+	@Override
+	public boolean isPubsubParseEnabled() {
+		return getBooleanProperty(KEY_PUBSUB_PARSE_ENABLED, false);
 	}
 
 	@Override

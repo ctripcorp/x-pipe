@@ -35,6 +35,10 @@ public interface KeeperConfig extends CoreConfig{
 	double DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_RATIO = 0.8d;
 	long DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR = 256L * 1024 * 1024;
 
+	int DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI = 5000;
+
+	int DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI = 100;
+
 
 	int getMetaServerConnectTimeout();
 
@@ -112,6 +116,14 @@ public interface KeeperConfig extends CoreConfig{
     int getApplierNettyRecvBufferSize();
 
 	boolean getRecordWrongStream();
+
+	boolean isPrepareStoreWatchEnabled();
+
+	int getPrepareWatchMetaIntervalMilli();
+
+	int getPrepareWatchReopenIntervalMilli();
+
+	boolean isPubsubParseEnabled();
 
 	boolean stopWriteCk();
 
