@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.storage;
 
+import java.io.IOException;
 import java.nio.channels.FileChannel;
 
 public abstract class AbstractStorageFile {
@@ -28,16 +29,24 @@ public abstract class AbstractStorageFile {
 
     volatile long pendingFsyncBytes = 0;
     volatile long lastFsyncNanos = System.nanoTime();
+    volatile long lastModified = 0;
     final OpenMode openMode;
     final boolean atomicReplace;
     volatile CacheMode cacheMode = CacheMode.NO_CACHE;
     volatile Runnable onCacheClose = () -> {};
     volatile boolean cacheClosed = false;
     volatile boolean closed = false;
+    volatile boolean needPrepare = false;
+    volatile IOException noSpaceFailure;
     long position = 0;
 
     FileCacheEntry cacheEntry = null;
     final String key;
+    final String path;
+    final String dirPath;
+
+    // IO key for inFlight serialization.
+    final String ioKey;
 
     FileCacheEntry getCacheEntry() {
         return cacheEntry;
@@ -53,17 +62,31 @@ public abstract class AbstractStorageFile {
 
     abstract FileChannel currentWriteChannel();
 
-    abstract void openCurrentChannel() throws java.io.IOException;
+    abstract long openCurrentChannel() throws IOException;
 
-    abstract void reopenCurrentChannel() throws java.io.IOException;
+    void markNoSpace(IOException failure) {
+        if (noSpaceFailure == null) {
+            noSpaceFailure = failure;
+        }
+    }
+
+    void throwIfNoSpace() {
+        if (noSpaceFailure != null) {
+            throw new StorageIOException(noSpaceFailure);
+        }
+    }
 
     String getKey() {
         return key;
     }
 
-    AbstractStorageFile(OpenMode openMode, boolean atomicReplace, String key) {
+    AbstractStorageFile(OpenMode openMode, boolean atomicReplace, String key, String ioKey,
+            String path, String dirPath) {
         this.openMode = openMode;
         this.atomicReplace = atomicReplace;
         this.key = key;
+        this.ioKey = ioKey;
+        this.path = path;
+        this.dirPath = dirPath;
     }
 }

@@ -29,6 +29,9 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
         }
     }
 
+    // add lease when create new segment or init or it is not added yet for sure.
+    // it is not a problem in some case should bind but not, because it is a best effort to keep index in cache.
+    // memory leak is more serious than not bind.
     void bindWriterIndexLease(long startOffset) {
         synchronized (this) {
             if (!writerIndexLeaseStarts.isEmpty()
@@ -119,11 +122,18 @@ final class SegmentFileCacheEntry extends FileCacheEntry {
     void truncateTo(long offset, long chunkSize, long prevStartOffset) {
         if (offset < prevStartOffset || offset > cacheEndOffset) {
             resetSegmentCache(offset, offset);
-        } else if (offset <= cacheStartOffset) {
-            resetSegmentCache(offset, Math.min(offset, writtenToFsOffset));
+            localReadableFromOffset = 0;
         } else if (offset < cacheEndOffset) {
-            super.truncateTo(offset, chunkSize);
-            releaseWriterIndexLeasesAfter(offset);
+            if (offset < localReadableFromOffset) {
+                localReadableFromOffset = 0;
+                fsInconsistent = true;
+            }
+            if (offset <= cacheStartOffset) {
+                resetSegmentCache(offset, Math.min(offset, writtenToFsOffset));
+            } else {
+                super.truncateTo(offset, chunkSize);
+                releaseWriterIndexLeasesAfter(offset);
+            }
         }
         // offset == cacheEndOffset: nothing to do
     }

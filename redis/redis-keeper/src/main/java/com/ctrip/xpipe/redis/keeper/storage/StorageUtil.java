@@ -2,17 +2,41 @@ package com.ctrip.xpipe.redis.keeper.storage;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.WritableByteChannel;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 
 import io.netty.buffer.ByteBuf;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class StorageUtil {
+
+    private static final Logger logger = LoggerFactory.getLogger(StorageUtil.class);
+
+    // Close detached channels, logging failures. Never throws.
+    static void closeChannels(List<FileChannel> channels) {
+        if (channels == null || channels.isEmpty()) {
+            return;
+        }
+        for (FileChannel ch : channels) {
+            if (ch == null) {
+                continue;
+            }
+            try {
+                ch.close();
+            } catch (IOException e) {
+                logger.error("failed to close channel", e);
+            }
+        }
+    }
 
     static <T> CompletableFuture<T> supply(ExecutorService executor, java.util.function.Supplier<T> task) {
         try {
@@ -56,34 +80,49 @@ class StorageUtil {
 
     static void requireOpen(AbstractStorageFile file) {
         if (file.closed) {
-            throw new IllegalStateException("file is closed: " + file.getKey());
+            throw new IllegalStateException("file is closed: " + file.path);
         }
     }
 
     static void requireCacheOpen(AbstractStorageFile file) {
         if (file.cacheClosed) {
-            throw new IllegalStateException("file cache is closed: " + file.getKey());
+            throw new IllegalStateException("file cache is closed: " + file.path);
         }
     }
 
     static void requireWriteMode(AbstractStorageFile file) {
         if (!file.canWrite()) {
-            throw new IllegalArgumentException("operation requires write mode: " + file.getKey());
+            throw new IllegalArgumentException("operation requires write mode: " + file.path);
         }
     }
 
-    // Translates a checked IOException into a runtime exception that reflects
-    // recovery semantics:
-    //   StaleStateException  - mismatched state (file not found, already exists, channel closed, etc.)
-    //   SocketErrorException - socket-level errors (broken pipe, connection reset, closed channel on target)
-    //   EIOException         - Input/output error (EIO); on some filesystems like TFS this is transient and recoverable
-    //   StorageIOException   - other transient IO failures
+    // Translates a checked IOException into a runtime exception that reflects recovery semantics:
+    //   StaleStateException      - mismatched filesystem state; plain retry cannot repair it
+    //   SocketErrorException     - socket-level errors (broken pipe, reset, closed transfer target)
+    //   EIOException             - Input/output error (EIO); the current file channel must be replaced
+    //   StorageIOException       - other IO failures, including closed persistent channels and ENOSPC
     //   IllegalArgumentException - invalid arguments (e.g. path is not a directory)
     static RuntimeException wrapIOException(IOException e) {
+        return wrapIOException(e, null);
+    }
+
+    static boolean isNoSpace(IOException e) {
+        String message = e.getMessage();
+        return message != null && message.contains("No space left on device");
+    }
+
+    // target is supplied only by transferTo: ClosedChannelException does not identify which side
+    // closed, so distinguish a closed socket target from a closed persistent file channel here.
+    static RuntimeException wrapIOException(IOException e, WritableByteChannel target) {
+        if (e instanceof ClosedChannelException) {
+            if (target != null && !target.isOpen()) {
+                return new SocketErrorException(e);
+            }
+            return new StorageIOException(e);
+        }
         if (e instanceof NoSuchFileException
                 || e instanceof FileAlreadyExistsException
-                || e instanceof DirectoryNotEmptyException
-                || e instanceof ClosedChannelException) {
+                || e instanceof DirectoryNotEmptyException) {
             return new StaleStateException(e);
         }
         if (e instanceof NotDirectoryException) {

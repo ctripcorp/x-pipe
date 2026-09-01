@@ -19,10 +19,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import com.ctrip.xpipe.tuple.Pair;
 
 import static org.junit.Assert.*;
 
@@ -271,23 +272,30 @@ public class TailCacheFileSystemTest {
     }
 
     @Test
-    public void testWriteExceedsPerFileLimit() throws Exception {
+    public void testWriteExceedsPerFileLimitKeepsFailing() throws Exception {
         String p = path("file6");
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        // atomicReplace uses FULL_CACHE; payload larger than maxCacheSizePerFileBytes (10KB)
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, true, false, null).get();
         try {
-            // Write more than maxCacheSizePerFileBytes (10KB)
             byte[] bigData = new byte[11 * 1024];
             Arrays.fill(bigData, (byte) 42);
-            writeTcfSync(file, bigData);
-
-            // Should still work via no-cache fallback
-            tcf.close(file).get(5, TimeUnit.SECONDS);
-            byte[] onDisk = readFileSync(p);
-            assertEquals(11 * 1024, onDisk.length);
-            assertEquals(42, onDisk[0]);
-            assertEquals(42, onDisk[onDisk.length - 1]);
+            try {
+                writeTcfSync(file, bigData);
+                fail("expected CacheFileTooLargeException");
+            } catch (Exception e) {
+                assertTrue(e.getCause() instanceof CacheFileTooLargeException
+                        || e instanceof CacheFileTooLargeException);
+            }
+            // No sticky no-cache fallback: the same oversized write keeps failing
+            try {
+                writeTcfSync(file, bigData);
+                fail("expected CacheFileTooLargeException on retry");
+            } catch (Exception e) {
+                assertTrue(e.getCause() instanceof CacheFileTooLargeException
+                        || e instanceof CacheFileTooLargeException);
+            }
         } finally {
-            // file already closed
+            tcf.close(file).get(5, TimeUnit.SECONDS);
         }
     }
 
@@ -937,38 +945,40 @@ public class TailCacheFileSystemTest {
     }
 
     // =========================================================================
-    // G. preferDirectRead & read path branches
+    // G. preferCacheRead & read path branches
     // =========================================================================
 
     @Test
-    public void testPreferDirectReadNoCache() throws Exception {
-        // NO_CACHE mode → preferDirectRead always returns true
+    public void testPreferCacheReadNoCache() throws Exception {
+        // NO_CACHE → not in cache; local readable → (false, true)
         String p = path("file_pdr_nocache");
         writeFileSync(p, new byte[10]); // file must exist for READ mode open
         AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null,
                 AbstractStorageFile.CacheMode.NO_CACHE).get();
         FileCacheEntry entry = file.getCacheEntry();
-        // For NO_CACHE, preferDirectRead should return true regardless of other conditions
-        assertTrue(tcf.preferDirectRead(file, entry, 0, true));
+        Pair<Boolean, Boolean> d = tcf.preferCacheRead(file, entry, 0, true, tcf.getBackingFsMode());
+        assertFalse(d.getKey());
+        assertTrue(d.getValue());
         tcf.close(file).get(5, TimeUnit.SECONDS);
     }
 
     @Test
-    public void testPreferDirectReadUninitialized() throws Exception {
-        // Before cache is initialized → preferDirectRead returns true
+    public void testPreferCacheReadUninitialized() throws Exception {
+        // Before cache is initialized → not in cache → (false, true)
         String p = path("file_pdr_uninit");
         writeFileSync(p, new byte[10]);
         AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null,
                 AbstractStorageFile.CacheMode.NO_CACHE).get();
         FileCacheEntry entry = file.getCacheEntry();
-        // NO_CACHE entry has no init, so isInitialized() is false → true
-        assertTrue(tcf.preferDirectRead(file, entry, 0, true));
+        Pair<Boolean, Boolean> d = tcf.preferCacheRead(file, entry, 0, true, tcf.getBackingFsMode());
+        assertFalse(d.getKey());
+        assertTrue(d.getValue());
         tcf.close(file).get(5, TimeUnit.SECONDS);
     }
 
     @Test
-    public void testPreferDirectReadOffsetBeforeCache() throws Exception {
-        // offset < cacheStartOffset → returns true (direct read, skip cache)
+    public void testPreferCacheReadOffsetBeforeCache() throws Exception {
+        // offset < cacheStartOffset → not in cache → (false, true)
         String p = path("file_pdr_before");
         AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
         writeTcfSync(writer, new byte[(int) (CHUNK_SIZE * 2)]);
@@ -980,26 +990,27 @@ public class TailCacheFileSystemTest {
         try {
             FileCacheEntry entry = reader.getCacheEntry();
             // Reader's cacheStartOffset = fileSize (no chunks loaded)
-            // Requesting offset 0 which is < cacheStartOffset → preferDirectRead = true
-            assertTrue(tcf.preferDirectRead(reader, entry, 0, true));
+            // Requesting offset 0 which is < cacheStartOffset
+            Pair<Boolean, Boolean> d = tcf.preferCacheRead(reader, entry, 0, true, tcf.getBackingFsMode());
+            assertFalse(d.getKey());
+            assertTrue(d.getValue());
         } finally {
             tcf.close(reader).get(5, TimeUnit.SECONDS);
         }
     }
 
     @Test
-    public void testPreferDirectReadCacheHitWriter() throws Exception {
-        // Writer with data in cache, readPreferCache=true, backingFsMode≠NO_CACHE
-        // offset < writtenToFsOffset (fsynced), !atomicReplace → returns false (use cache)
+    public void testPreferCacheReadCacheHitWriter() throws Exception {
+        // Writer with data in cache, preferCache=true → (true, true); read hits cache
         String p = path("file_pdr_hit");
         AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
         writeTcfSync(writer, new byte[]{1, 2, 3, 4, 5});
         tcf.fsync(writer).get(5, TimeUnit.SECONDS);
         // Now: cacheEndOffset=5, writtenToFsOffset=5, cacheStartOffset=0
         FileCacheEntry entry = writer.getCacheEntry();
-        // offset=2 >= cacheStartOffset(0), initialized, preferCache=true, backingFsMode=ASYNC
-        // !atomicReplace → offset(2) < writtenToFsOffset(5) → return false
-        assertFalse(tcf.preferDirectRead(writer, entry, 2, true));
+        Pair<Boolean, Boolean> d = tcf.preferCacheRead(writer, entry, 2, true, tcf.getBackingFsMode());
+        assertTrue(d.getKey());
+        assertTrue(d.getValue());
         // Read from cache should return correct data
         delegate.reset();
         delegate.fileReadCount = 0;
@@ -1013,15 +1024,54 @@ public class TailCacheFileSystemTest {
     }
 
     @Test
-    public void testPreferDirectReadReadPreferCacheFalse() throws Exception {
-        // readPreferCache=false → for flushed data, preferDirectRead returns true
+    public void testPreferCacheReadPreferCacheFalse() throws Exception {
+        // preferCache=false → for flushed data, preferCache=false canDegrade=true
         String p = path("file_pdr_false");
         AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
         writeTcfSync(writer, new byte[]{1, 2, 3, 4, 5});
         tcf.fsync(writer).get(5, TimeUnit.SECONDS);
         FileCacheEntry entry = writer.getCacheEntry();
-        // preferCache=false → !atomicReplace → offset(2) < writtenToFsOffset(5) → return true
-        assertTrue(tcf.preferDirectRead(writer, entry, 2, false));
+        // preferCache=false → offset(2) < writtenToFsOffset(5) → preferCache=false, canDegrade=true
+        Pair<Boolean, Boolean> d = tcf.preferCacheRead(writer, entry, 2, false, tcf.getBackingFsMode());
+        assertFalse(d.getKey());
+        assertTrue(d.getValue());
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testPreferCacheReadLocalReadableFromOffset() throws Exception {
+        String p = path("file_pdr_local_from");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        writeTcfSync(writer, new byte[]{1, 2, 3, 4, 5});
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        FileCacheEntry entry = writer.getCacheEntry();
+        entry.fsInconsistent = false;
+        entry.localReadableFromOffset = 3;
+
+        // In cache, offset before localReadableFromOffset → prefer cache, cannot degrade
+        Pair<Boolean, Boolean> inCacheBlocked = tcf.preferCacheRead(writer, entry, 2, true, tcf.getBackingFsMode());
+        assertTrue(inCacheBlocked.getKey());
+        assertFalse(inCacheBlocked.getValue());
+
+        // In cache, offset at/after localReadableFromOffset → normal (preferCache=true → cache, can degrade)
+        Pair<Boolean, Boolean> inCacheOk = tcf.preferCacheRead(writer, entry, 3, true, tcf.getBackingFsMode());
+        assertTrue(inCacheOk.getKey());
+        assertTrue(inCacheOk.getValue());
+
+        // Not in cache (offset before cacheStart): move cache window up, then offset 0 is out of cache
+        entry.cacheStartOffset = 4;
+        try {
+            tcf.preferCacheRead(writer, entry, 0, true, tcf.getBackingFsMode());
+            fail("expected CannotReadPositionInNoFsException");
+        } catch (CannotReadPositionInNoFsException expected) {
+            // offset 0 < localReadableFromOffset 3 and not in cache
+        }
+
+        // Not in cache (3 < cacheStart) but locally readable (3 >= localReadableFromOffset)
+        Pair<Boolean, Boolean> diskOk = tcf.preferCacheRead(writer, entry, 3, false, tcf.getBackingFsMode());
+        assertFalse(diskOk.getKey());
+        assertTrue(diskOk.getValue());
+
         tcf.close(writer).get(5, TimeUnit.SECONDS);
     }
 
@@ -1160,6 +1210,38 @@ public class TailCacheFileSystemTest {
         tcf.close(seg2).get(5, TimeUnit.SECONDS);
     }
 
+    @Test
+    public void testTruncateSegmentAtOrBeforeCacheStartUpdatesLocalReadable() {
+        SegmentFileCacheEntry entry = new SegmentFileCacheEntry(new CacheMemoryTracker());
+        entry.cacheStartOffset = 80;
+        entry.cacheEndOffset = 200;
+        entry.writtenToFsOffset = 120;
+        entry.localReadableFromOffset = 100;
+
+        synchronized (entry) {
+            entry.truncateTo(70, CHUNK_SIZE, 0);
+        }
+
+        assertEquals(0, entry.localReadableFromOffset);
+        assertTrue(entry.fsInconsistent);
+    }
+
+    @Test
+    public void testTruncateSegmentOutsideCachedEndsClearsLocalReadable() {
+        SegmentFileCacheEntry entry = new SegmentFileCacheEntry(new CacheMemoryTracker());
+        entry.cacheStartOffset = 80;
+        entry.cacheEndOffset = 200;
+        entry.writtenToFsOffset = 120;
+        entry.localReadableFromOffset = 100;
+
+        synchronized (entry) {
+            entry.truncateTo(250, CHUNK_SIZE, 0);
+        }
+
+        assertEquals(0, entry.localReadableFromOffset);
+        assertFalse(entry.fsInconsistent);
+    }
+
     // =========================================================================
     // I. Size reporting branches
     // =========================================================================
@@ -1263,7 +1345,7 @@ public class TailCacheFileSystemTest {
 
     @Test
     public void testTransferToDirectReadPath() throws Exception {
-        // transferPreferCache=false → preferDirectRead returns true for flushed data → delegate path
+        // transferPreferCache=false → preferCacheRead returns (false, true) for flushed data → delegate path
         TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
         config.setPerFileCacheLimits(10 * 1024, 1, CHUNK_SIZE);
         config.setMaxCacheSizeBytes(100 * 1024);
@@ -1684,9 +1766,8 @@ public class TailCacheFileSystemTest {
     }
 
     @Test
-    public void testDeleteSegmentsOutOfOrderThrows() throws Exception {
-        // deleteSegments with wrong order → IllegalArgumentException (thrown synchronously)
-        String dir = path("seg_del_order");
+    public void testDeleteSegmentsUsesLastDeletedOffset() throws Exception {
+        String dir = path("seg_del_last_offset");
         Files.createDirectories(Paths.get(dir));
         AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
         tcf.write(seg, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
@@ -1695,15 +1776,13 @@ public class TailCacheFileSystemTest {
         tcf.roll(seg).get(5, TimeUnit.SECONDS);
         tcf.write(seg, bufOf(new byte[5])).get(5, TimeUnit.SECONDS);
 
-        // Try to delete second segment (offset 10) without deleting first (offset 0)
-        try {
-            tcf.deleteSegments(seg, Collections.singletonList(10L));
-            fail("Expected IllegalArgumentException for out-of-order delete");
-        } catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("expected 0"));
-        } finally {
-            tcf.close(seg).get(5, TimeUnit.SECONDS);
-        }
+        // The last user-provided offset determines the inclusive deletion boundary.
+        tcf.deleteSegments(seg, Collections.singletonList(10L)).get(5, TimeUnit.SECONDS);
+        assertEquals(Collections.singletonList(30L), tcf.list(seg));
+        assertFalse(Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
+        assertFalse(Files.exists(Paths.get(dir, SEG_PREFIX + "10")));
+        assertTrue(Files.exists(Paths.get(dir, SEG_PREFIX + "30")));
+        tcf.close(seg).get(5, TimeUnit.SECONDS);
     }
 
     @Test
@@ -2255,9 +2334,9 @@ public class TailCacheFileSystemTest {
         }
 
         @Override
-        public void closeSync(AsyncFile file) {
+        public List<FileChannel> closeSync(AsyncFile file) {
             fileCloseCount++;
-            super.closeSync(file);
+            return super.closeSync(file);
         }
 
         @Override
@@ -2290,9 +2369,10 @@ public class TailCacheFileSystemTest {
         }
 
         @Override
-        public void rollSync(AsyncSegmentFile file) {
+        public void rollSync(AsyncSegmentFile file, long currentSegmentSize,
+                boolean noFs, List<FileChannel> pending) {
             segRollCount++;
-            super.rollSync(file);
+            super.rollSync(file, currentSegmentSize, noFs, pending);
         }
 
         @Override

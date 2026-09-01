@@ -35,8 +35,10 @@ public class TailCacheFileSystemConfig {
     // When file size <= preloadChunkThreshold * chunkSize, use aligned reads for zero-copy cache population.
     // Otherwise read the whole file in one shot and copy into chunks.
     private int preloadChunkThreshold = 1;
-    // Max wait for IO.
     private long ioWaitTimeoutMs = 1000;
+    // Max wait for backing-FS restore; restore can be much slower than normal IO.
+    // if the restore is timeout, all step will be executed again on the next call.
+    private long restoreWaitTimeoutMs = 20_000;
     private long writeBatchBytes = 1 * 1024 * 1024;
     private int maxWriteChunkThreshold = 32;
     private int eioRetryMaxAttempts = 1;
@@ -99,7 +101,13 @@ public class TailCacheFileSystemConfig {
     }
 
     public static void validateIoWaitTimeoutMs(long ioWaitTimeoutMs) {
-        if (ioWaitTimeoutMs < 0) throw new IllegalArgumentException("ioWaitTimeoutMs must be non-negative");
+        if (ioWaitTimeoutMs <= 0) throw new IllegalArgumentException("ioWaitTimeoutMs must be positive");
+    }
+
+    public static void validateRestoreWaitTimeoutMs(long restoreWaitTimeoutMs) {
+        if (restoreWaitTimeoutMs < 0) {
+            throw new IllegalArgumentException("restoreWaitTimeoutMs must be non-negative");
+        }
     }
 
     public static void validateWriteBatchBytes(long writeBatchBytes) {
@@ -265,6 +273,16 @@ public class TailCacheFileSystemConfig {
     public TailCacheFileSystemConfig setIoWaitTimeoutMs(long ioWaitTimeoutMs) {
         validateIoWaitTimeoutMs(ioWaitTimeoutMs);
         this.ioWaitTimeoutMs = ioWaitTimeoutMs;
+        return this;
+    }
+
+    public long getRestoreWaitTimeoutMs() {
+        return restoreWaitTimeoutMs;
+    }
+
+    public TailCacheFileSystemConfig setRestoreWaitTimeoutMs(long restoreWaitTimeoutMs) {
+        validateRestoreWaitTimeoutMs(restoreWaitTimeoutMs);
+        this.restoreWaitTimeoutMs = restoreWaitTimeoutMs;
         return this;
     }
 

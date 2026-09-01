@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.storage;
 
+import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +24,9 @@ public interface AsyncFileSystem {
     default CompletableFuture<AsyncFile> open(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant) {
         throw new UnsupportedOperationException();
     }
-    // Open the file synchronously.
-    default AsyncFile openSync(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant) {
+    // Open the file synchronously. noFs=true skips backing IO and marks needPrepare.
+    default AsyncFile openSync(String path, String key, String ioKey, AbstractStorageFile.OpenMode openMode,
+            boolean atomicReplace, boolean lenient, String tenant, boolean noFs) {
         throw new UnsupportedOperationException();
     }
     CompletableFuture<Boolean> isFile(AsyncFile file);
@@ -76,7 +78,12 @@ public interface AsyncFileSystem {
     default long sizeSync(AsyncFile file) {
         throw new UnsupportedOperationException();
     }
-    CompletableFuture<Boolean> mkdir(String path, boolean recursive);
+    default CompletableFuture<Boolean> mkdir(String path, boolean recursive) {
+        throw new UnsupportedOperationException();
+    }
+    default boolean mkdirSync(String path, boolean recursive) {
+        throw new UnsupportedOperationException();
+    }
     CompletableFuture<Boolean> rmdir(String path, boolean recursive);
     // Only available in write mode.
     // Cache is shrunk before the backing FS truncate. If the FS truncate fails, the caller must retry
@@ -91,7 +98,8 @@ public interface AsyncFileSystem {
     default CompletableFuture<Void> close(AsyncFile file) {
         throw new UnsupportedOperationException();
     }
-    default void closeSync(AsyncFile file) {
+    // Detaches channels without closing them and returns the list for the caller to close
+    default List<FileChannel> closeSync(AsyncFile file) {
         throw new UnsupportedOperationException();
     }
     // Only available in write mode.
@@ -134,7 +142,9 @@ public interface AsyncFileSystem {
     default CompletableFuture<AsyncSegmentFile> open(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant) {
         throw new UnsupportedOperationException();
     }
-    default AsyncSegmentFile openSync(String path, String prefix, List<String> indexPrefixes, boolean write, String tenant) {
+    // Open the segment file synchronously. noFs skips backing IO and marks needPrepare.
+    default AsyncSegmentFile openSync(String path, String prefix, String key, String ioKey,
+            List<String> indexPrefixes, boolean write, String tenant, boolean noFs) {
         throw new UnsupportedOperationException();
     }
     // If the FS op fails, the caller must retry.
@@ -142,7 +152,8 @@ public interface AsyncFileSystem {
     default CompletableFuture<Void> position(AsyncSegmentFile file, long offset) {
         throw new UnsupportedOperationException();
     }
-    default void positionSync(AsyncSegmentFile file, long offset) {
+    // updates position and the opened segment range. Returns detached channels for the caller to close.
+    default List<FileChannel> positionSync(AsyncSegmentFile file, long offset) {
         throw new UnsupportedOperationException();
     }
     // Caller must release() the returned ByteBuf when done.
@@ -167,29 +178,34 @@ public interface AsyncFileSystem {
     default CompletableFuture<Void> roll(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
     }
-    default void rollSync(AsyncSegmentFile file) {
+    default List<Long> list(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
     }
-    List<Long> list(AsyncSegmentFile file);
     // For writers: returns the start offset of the currently opened (tail) segment.
     // For readers: returns the segment start offset that contains file.position.
+    // should call position before calling this method if use pread or transferTo which will not update file.position.
     // Returns -1 if file.position is before the first segment.
     long getCurrentSegmentStartOffset(AsyncSegmentFile file);
     // Returns the segment start offset that contains the given logical read offset.
     // Returns -1 if readOffset is before the first segment.
     long getStartOffsetByReadOffset(AsyncSegmentFile file, long readOffset);
-    // Returns index files for the segment at file.position.
+    // Returns index files for the segment at file.position for reader or current segment for writer.
     // should call position before calling this method if use pread or transferTo which will not update file.position.
+    // The returned index files share state with the given segment file and belong to the same concurrency
+    // unit despite being distinct AsyncFile objects, so they cannot be written independently.
+    // In write mode this method itself mutates that state (it may create missing index files), so the call
+    // must sit inside the same serialized region as the writes it prepares.
     default CompletableFuture<Pair<Long, Map<String, AsyncFile>>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes) {
         throw new UnsupportedOperationException();
     }
-    default Pair<Long, Map<String, AsyncFile>> getCurrentIndexFilesSync(AsyncSegmentFile file, List<String> indexPrefixes) {
+    default Pair<Long, Map<String, AsyncIndexFile>> getCurrentIndexFilesSync(AsyncSegmentFile file, List<String> indexPrefixes,
+            boolean noFs) {
         throw new UnsupportedOperationException();
+    }
+    default Pair<Long, Map<String, AsyncIndexFile>> getCurrentIndexFilesSync(AsyncSegmentFile file, boolean noFs) {
+        return getCurrentIndexFilesSync(file, file.indexPrefixes, noFs);
     }
     default CompletableFuture<Pair<Long, Map<String, AsyncFile>>> getCurrentIndexFiles(AsyncSegmentFile file) {
-        throw new UnsupportedOperationException();
-    }
-    default Pair<Long, Map<String, AsyncFile>> getCurrentIndexFilesSync(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
     }
     default CompletableFuture<Long> size(AsyncSegmentFile file) {
@@ -213,31 +229,29 @@ public interface AsyncFileSystem {
     default CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets) {
         throw new UnsupportedOperationException();
     }
-    default void deleteSegmentsSync(AsyncSegmentFile file, List<Long> startOffsets) {
-        throw new UnsupportedOperationException();
-    }
     // Delete all known segment and index files. Caller must close() all open file objects (including this one) to release resources.
     // shall not call any other operations on the file after this call. otherwise it will cause inconsistent state or orphaned files.
     // If the FS op fails, the caller must retry.
     // Only available in write mode.
-    CompletableFuture<Void> delete(AsyncSegmentFile file);
+    default CompletableFuture<Void> delete(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
     // Truncate at logical offset.
-    // If offset is in [minOffset, maxOffset + lastSegmentSize], truncate the containing segment and delete those to its right;
+    // If offset is in [minOffset, endOffset], truncate the containing segment and delete those to its right;
     // otherwise delete everything and create a new empty segment starting at offset.
+    // endOffset is the exclusive logical end of valid data (may include unflushed cache beyond disk).
     // Index file contents are NOT truncated; the caller must adjust them.
     // If the FS op fails, the caller must retry.
     // Only available in write mode.
     default CompletableFuture<Void> truncate(AsyncSegmentFile file, long offset) {
         throw new UnsupportedOperationException();
     }
-    default void truncateSync(AsyncSegmentFile file, long offset) {
-        throw new UnsupportedOperationException();
-    }
     // If the FS op fails, the caller must retry.
     default CompletableFuture<Void> close(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
     }
-    default void closeSync(AsyncSegmentFile file) {
+    // Same detach semantics as closeSync(AsyncFile).
+    default List<FileChannel> closeSync(AsyncSegmentFile file) {
         throw new UnsupportedOperationException();
     }
     // Only available in write mode.
@@ -256,4 +270,64 @@ public interface AsyncFileSystem {
     default long transferToSync(AsyncSegmentFile file, long offset, long count, WritableByteChannel target) {
         throw new UnsupportedOperationException();
     }
+
+    // Delete segment/index files on disk whose start offset is not in current metadata.
+    default void deleteOrphanSegmentFilesSync(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
+
+    // Open segment at startOffset, truncate to the known-good point, then fill the rest from dataSupplier
+    // Returns false if dataSupplier returns null or IO fails.
+    default boolean rewriteSegmentRangeSync(AsyncSegmentFile file, long startOffset, long written,
+            java.util.function.LongFunction<ByteBuf> dataSupplier) {
+        throw new UnsupportedOperationException();
+    }
+
+    // Returns false if dataSupplier returns null or IO fails.
+    default boolean rewriteIndexRangeSync(AsyncSegmentFile file, String indexPrefix, long segmentStartOffset,
+            long written, java.util.function.LongFunction<ByteBuf> dataSupplier) {
+        throw new UnsupportedOperationException();
+    }
+
+    default SegmentDirState getSegmentDirState(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
+
+    // Returns old channels to close.
+    default List<FileChannel> rollMetadataSync(AsyncSegmentFile file, long currentSegmentSize, boolean noFs) {
+        throw new UnsupportedOperationException();
+    }
+    // Opens new segment + index channels.
+    default void initCurrentChannelsSync(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
+
+    // Returns the offsets of the segments to be deleted.
+    // detached channels go into pending.
+    default long[] truncateSync(AsyncSegmentFile file, long offset, long endOffset, boolean noFs,
+            List<FileChannel> pending) {
+        throw new UnsupportedOperationException();
+    }
+
+    // Truncate only the last segment's channel to a given offset.
+    // Used by restore path to realign the tail segment on disk.
+    default void truncateLastSegmentChannel(AsyncSegmentFile file, long offset) {
+        throw new UnsupportedOperationException();
+    }
+
+    // Returns old channels to close.
+    default List<FileChannel> deleteMetadataSync(AsyncSegmentFile file) {
+        throw new UnsupportedOperationException();
+    }
+
+    default long[] deleteSegmentsMetadataSync(AsyncSegmentFile file, long lastDeletedOffset) {
+        throw new UnsupportedOperationException();
+    }
+
+    default void deleteSegmentsIo(AsyncSegmentFile file, long[] offsets) {
+        throw new UnsupportedOperationException();
+    }
+
+
+
 }

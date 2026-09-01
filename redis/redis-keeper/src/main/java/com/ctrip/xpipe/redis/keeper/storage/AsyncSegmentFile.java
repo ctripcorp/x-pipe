@@ -12,6 +12,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -20,24 +22,30 @@ import java.util.Set;
 
 import com.ctrip.xpipe.tuple.Pair;
 
-import java.util.function.BiConsumer;
-
 public class AsyncSegmentFile extends AbstractStorageFile {
 
     private static final Logger logger = LoggerFactory.getLogger(AsyncSegmentFile.class);
 
-    final String dirPath;
+    static void requireOffsetNotBeforeFirst(SegmentDirState s, long logicalOffset) {
+        if (!s.isEmpty() && logicalOffset < s.firstOffset) {
+            throw new SegmentOffsetBeforeFirstException(
+                    "logical offset " + logicalOffset + " is before first segment offset " + s.firstOffset);
+        }
+    }
+
     final String prefix;
     final List<String> indexPrefixes;
 
     FileChannel currentSegmentChannel;
     Map<String, AsyncIndexFile> currentIndexFiles;
-    private BiConsumer<AsyncFile, Boolean> indexCacheInitializer;
     // Selected segment covers logical range [openedSegmentStartOffset, openedSegmentEndOffset).
     // Empty directory uses [0, Long.MAX_VALUE). Long.MAX_VALUE for end means the selected
     // segment is the tail — end is unbounded (writer may still append).
     long openedSegmentStartOffset;
     long openedSegmentEndOffset;
+    // if true, means there are some segment files to be deleted caused by truncate or delete.
+    // once delete io is completed, the flag will be cleared.
+    volatile boolean mayHaveOrphanFiles;
 
     @Override
     FileChannel currentWriteChannel() {
@@ -45,42 +53,40 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     @Override
-    void openCurrentChannel() throws IOException {
-        if (canWrite()) {
-            currentSegmentChannel = FileChannel.open(segmentPath(openedSegmentStartOffset),
-                    StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-            try {
-                currentSegmentChannel.position(currentSegmentChannel.size());
-            } catch (IOException e) {
-                try {
-                    currentSegmentChannel.close();
-                } catch (IOException closeError) {
-                    logger.error("failed to close segment channel after position failure at offset {}",
-                            openedSegmentStartOffset, closeError);
-                }
-                currentSegmentChannel = null;
-                throw e;
+    long openCurrentChannel() throws IOException {
+        FileChannel oldChannel = currentSegmentChannel;
+        FileChannel newChannel = null;
+        try {
+            long logicalOffset = -1;
+            if (canWrite()) {
+                newChannel = FileChannel.open(segmentPath(openedSegmentStartOffset),
+                        StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+                long physicalSize = newChannel.size();
+                newChannel.position(physicalSize);
+                logicalOffset = openedSegmentStartOffset + physicalSize;
+            } else {
+                newChannel = FileChannel.open(segmentPath(openedSegmentStartOffset),
+                        StandardOpenOption.READ, StandardOpenOption.CREATE);
             }
-        } else {
-            currentSegmentChannel = FileChannel.open(segmentPath(openedSegmentStartOffset),
-                    StandardOpenOption.READ);
+
+            currentSegmentChannel = newChannel;
+            newChannel = null;
+            closeChannelQuietly(oldChannel, "replaced segment channel");
+            return logicalOffset;
+        } finally {
+            closeChannelQuietly(newChannel, "failed segment channel candidate");
         }
     }
 
-    @Override
-    void reopenCurrentChannel() throws IOException {
-        if (currentSegmentChannel == null) {
+    private void closeChannelQuietly(FileChannel channel, String reason) {
+        if (channel == null) {
             return;
         }
-        currentSegmentChannel.close();
         try {
-            openCurrentChannel();
+            channel.close();
         } catch (IOException e) {
-            currentSegmentChannel = null;
-            throw e;
-        }
-        if (openMode != OpenMode.READ) {
-            pendingFsyncBytes = 0;
+            logger.error("failed to close {} for {} at offset {}", reason, path,
+                    openedSegmentStartOffset, e);
         }
     }
 
@@ -89,18 +95,22 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         return (SegmentFileCacheEntry) cacheEntry;
     }
 
-    void setIndexCacheInitializer(BiConsumer<AsyncFile, Boolean> indexCacheInitializer) {
-        this.indexCacheInitializer = indexCacheInitializer;
-    }
-
     void setCacheEntry(SegmentFileCacheEntry entry) {
         this.cacheEntry = entry;
         for (AsyncIndexFile af : currentIndexFiles.values()) {
             if (af.cacheEntry == null) {
-                bindIndexFileCacheEntry(af);
+                tryBindIndexFileCacheEntry(af);
             }
         }
         maybeBindWriterIndexLease();
+    }
+
+    private void tryBindIndexFileCacheEntry(AsyncIndexFile af) {
+        try {
+            bindIndexFileCacheEntry(af);
+        } catch (RuntimeException e) {
+            logger.error("failed to bind index file cache entry for {}, continue without cache", af.path, e);
+        }
     }
 
     private void bindIndexFileCacheEntry(AsyncIndexFile af) {
@@ -112,14 +122,11 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         Pair<Boolean, FileCacheEntry> acquired =
                 segmentEntry.acquireIndexFileCacheEntry(af.startOffset, af.indexPrefix, write);
         af.cacheEntry = acquired.getValue();
+        af.firstOpener = acquired.getKey();
         af.onCacheClose = () -> segmentEntry.releaseIndexFileCacheEntry(
                 af.startOffset, af.indexPrefix, write, af.getCacheEntry());
-        if (indexCacheInitializer != null) {
-            indexCacheInitializer.accept(af, acquired.getKey());
-        }
     }
 
-    // Only after IO succeeded; adds writer lease (+1) when needed. otherwise error may cause memory leak until segment cache is dropped. more worse offset inconsistency.
     private void maybeBindWriterIndexLease() {
         SegmentFileCacheEntry segmentEntry = getCacheEntry();
         if (segmentEntry == null || !canWrite()) {
@@ -128,17 +135,22 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         segmentEntry.bindWriterIndexLease(openedSegmentStartOffset);
     }
 
-    private AsyncIndexFile openIndexFile(String indexPrefix, long startOffset, OpenMode mode) throws IOException {
+    // Single factory for index file metadata: creates the handle, binds its cache entry and
+    // registers it in currentIndexFiles. No IO — channels are opened later by initIndexChannels.
+    private AsyncIndexFile openIndexFile(String indexPrefix, long startOffset, boolean noFs) {
         String fileName = indexPrefix + startOffset;
-        AsyncIndexFile af = new AsyncIndexFile(key, absolutePathOf(fileName), indexPrefix, startOffset, mode);
-        af.openCurrentChannel();
-        bindIndexFileCacheEntry(af);
+        AsyncIndexFile af = new AsyncIndexFile(key, ioKey, absolutePathOf(fileName), indexPrefix, startOffset,
+                canWrite() ? OpenMode.READ_WRITE : OpenMode.READ);
+        af.needPrepare = needPrepare || noFs;
+        tryBindIndexFileCacheEntry(af);
+        currentIndexFiles.put(indexPrefix, af);
         return af;
     }
 
-    AsyncSegmentFile(String dirPath, String prefix, List<String> indexPrefixes, String key, boolean writeMode) {
-        super(writeMode ? OpenMode.WRITE : OpenMode.READ, false, key);
-        this.dirPath = dirPath;
+    AsyncSegmentFile(String dirPath, String prefix, List<String> indexPrefixes, String key, String ioKey,
+            boolean writeMode) {
+        super(writeMode ? OpenMode.WRITE : OpenMode.READ, false, key, ioKey,
+                Paths.get(dirPath, prefix).toString(), dirPath);
         this.prefix = prefix;
         this.indexPrefixes = indexPrefixes;
         this.currentIndexFiles = new HashMap<>();
@@ -225,24 +237,28 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     // Called after initFromFiles has populated the shared state.
-    // Opens resources: for writer, open the tail segment + index files for append;
-    // for reader, seek position to the first segment.
-    void openInitialResources(SegmentDirState s) throws IOException {
+    // Sets up metadata (offsets, index file map, position) only.
+    void openInitialResources(FileEntry entry) {
+        SegmentDirState s = entry.state;
         if (s.isEmpty()) {
+            if (canWrite()) {
+                createNewSegmentMetadata(0, entry, needPrepare);
+            }
             return;
         }
 
         if (canWrite()) {
             openedSegmentStartOffset = s.lastOffset;
             openedSegmentEndOffset = Long.MAX_VALUE;
-            openCurrentChannel();
             for (String indexPrefix : indexPrefixes) {
-                AsyncIndexFile af = openIndexFile(indexPrefix, openedSegmentStartOffset, OpenMode.READ_WRITE);
-                currentIndexFiles.put(indexPrefix, af);
+                openIndexFile(indexPrefix, openedSegmentStartOffset, needPrepare);
             }
         } else {
             position = s.firstOffset;
-            switchToSegment(position, s);
+            // Reader: set offsets for the first segment without opening channel.
+            Pair<Long, Long> range = s.floorKeyAndNext(position);
+            openedSegmentStartOffset = range.getKey();
+            openedSegmentEndOffset = range.getValue();
         }
     }
 
@@ -266,34 +282,26 @@ public class AsyncSegmentFile extends AbstractStorageFile {
 
     // ---- io / state helpers ----
 
-    void closeCurrent() throws IOException {
-        IOException first = null;
-        try {
-            if (currentSegmentChannel != null) currentSegmentChannel.close();
-        } catch (IOException e) {
-            logger.error("failed to close segment channel at offset {}", openedSegmentStartOffset, e);
-            first = e;
-        } finally {
+    // Detach all current channels into pending list, shall not close the channels in this method.
+    List<FileChannel> detachCurrentChannels() {
+        List<FileChannel> pending = new ArrayList<>();
+        if (currentSegmentChannel != null) {
+            pending.add(currentSegmentChannel);
             currentSegmentChannel = null;
         }
         for (AsyncIndexFile af : currentIndexFiles.values()) {
+            af.cacheClosed = true;
+            pending.addAll(af.detachCurrentChannelAndMarkClosed());
             try {
-                af.channel.close();
-            } catch (IOException e) {
-                logger.error("failed to close index channel {}", af.getKey(), e);
-                if (first == null) first = e;
-            } finally {
-                try {
-                    af.onCacheClose.run();
-                } catch (Throwable t) {
-                    logger.error("onCacheClose failed for {}", af.getKey(), t);
-                }
+                af.onCacheClose.run();
+            } catch (Throwable t) {
+                logger.error("onCacheClose failed for {}", af.path, t);
             }
         }
         currentIndexFiles.clear();
         pendingFsyncBytes = 0;
         lastFsyncNanos = System.nanoTime();
-        if (first != null) throw first;
+        return pending;
     }
 
     private void markEmptyOpenedRange() {
@@ -305,78 +313,198 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         return lastOffset + Files.size(segmentPath(lastOffset));
     }
 
-    private void deleteSegmentAndIndex(long offset) throws IOException {
-        Files.deleteIfExists(segmentPath(offset));
-        for (String indexPrefix : indexPrefixes) {
-            Files.deleteIfExists(pathOf(indexPrefix + offset));
+    // Delete on-disk segment/index files whose offset is not in metadata. Metadata unchanged.
+    void deleteOrphanFiles(FileEntry entry) throws IOException {
+        String[] names = new File(dirPath).list();
+        if (names == null) {
+            return;
+        }
+        SegmentDirState s = entry.state;
+        for (String name : names) {
+            String matchedPrefix = null;
+            if (name.startsWith(prefix)) {
+                matchedPrefix = prefix;
+            } else {
+                for (String indexPrefix : indexPrefixes) {
+                    if (name.startsWith(indexPrefix)) {
+                        matchedPrefix = indexPrefix;
+                        break;
+                    }
+                }
+            }
+
+            if (matchedPrefix == null) {
+                continue;
+            }
+
+            try {
+                long offset = Long.parseLong(name.substring(matchedPrefix.length()));
+                if (!s.contains(offset)) {
+                    logger.warn("Deleting orphan file in {}: {}", dirPath, name);
+                    Files.deleteIfExists(Paths.get(dirPath, name));
+                }
+            } catch (NumberFormatException e) {
+                logger.warn("Deleting unrecognized file in {}: {}", dirPath, name);
+                Files.deleteIfExists(Paths.get(dirPath, name));
+            }
+        }
+        mayHaveOrphanFiles = false;
+    }
+
+    // Roll metadata: detach old channels, update state/offsets/indexFiles for the new segment.
+    List<FileChannel> rollMetadata(FileEntry entry, long currentSegmentSize, boolean noFs) {
+        if (entry.state.isEmpty()) {
+            throw new IllegalStateException("cannot roll segment file with empty state: " + path);
+        }
+        if (currentSegmentSize == 0) {
+            return Collections.emptyList();
+        }
+        long newStartOffset = openedSegmentStartOffset + currentSegmentSize;
+        List<FileChannel> oldChannels = detachCurrentChannels();
+        List<FileChannel> created = createNewSegmentMetadata(newStartOffset, entry, noFs);
+        oldChannels.addAll(created);
+        return oldChannels;
+    }
+
+    void initCurrentChannels() throws IOException {
+        // Readers open the segment channel lazily on read; nothing to do here.
+        if (!canWrite()) {
+            return;
+        }
+        if (currentSegmentChannel == null) {
+            try {
+                openCurrentChannel();
+            } catch (IOException e) {
+                // initCurrentChannels is called when open/truncate/roll only.
+                // set channel to null to reopen it when initCurrentChannels is called again.
+                currentSegmentChannel = null;
+                throw e;
+            }
+        }
+        initIndexChannels(currentIndexFiles.values());
+    }
+
+    void initIndexChannels(Collection<? extends AsyncFile> indexFiles) throws IOException {
+        for (AsyncFile af : indexFiles) {
+            if (af.needPrepare) {
+                continue;
+            }
+            if (af.channel == null) {
+                try {
+                    af.openCurrentChannel();
+                } catch (IOException e) {
+                    // similar to initCurrentChannels
+                    af.channel = null;
+                    throw e;
+                }
+            }
         }
     }
 
-    private void createNewSegmentWithIndexes(long startOffset, FileEntry entry) throws IOException {
-        long prevStart = openedSegmentStartOffset;
-        long prevEnd = openedSegmentEndOffset;
+    private List<FileChannel> createNewSegmentMetadata(long startOffset, FileEntry entry, boolean noFs) {
         openedSegmentStartOffset = startOffset;
         openedSegmentEndOffset = Long.MAX_VALUE;
-        try {
-            openCurrentChannel();
+
+        for (String indexPrefix : indexPrefixes) {
+            openIndexFile(indexPrefix, startOffset, noFs);
+        }
+        entry.state = new SegmentDirState(entry.state.copyAppend(startOffset));
+        maybeBindWriterIndexLease();
+        return Collections.emptyList();
+    }
+
+    List<FileChannel> deleteMetadata(FileEntry entry) {
+        List<FileChannel> oldChannels = detachCurrentChannels();
+        markEmptyOpenedRange();
+        if (!entry.state.isEmpty()) {
+            // Set before publishing the new state (see mayHaveOrphanFiles).
+            mayHaveOrphanFiles = true;
+        }
+        entry.state = SegmentDirState.EMPTY;
+        return oldChannels;
+    }
+
+    long[] deleteSegmentsMetadata(long lastDeletedOffset, FileEntry entry) {
+        SegmentDirState cur = entry.state;
+        if (cur.isEmpty() || lastDeletedOffset < cur.firstOffset) {
+            return SegmentDirState.EMPTY.offsets();
+        }
+        if (lastDeletedOffset >= cur.lastOffset) {
+            throw new IllegalArgumentException("deleteSegments cannot delete the last segment at "
+                    + cur.lastOffset + " with lastDeletedOffset " + lastDeletedOffset);
+        }
+
+        int lastDeletedIndex = cur.indexOf(lastDeletedOffset);
+        if (lastDeletedIndex < 0) {
+            throw new IllegalArgumentException("lastDeletedOffset is not a segment start offset: "
+                    + lastDeletedOffset);
+        }
+        int drop = lastDeletedIndex + 1;
+        long[] droppedOffsets = cur.copyShrink(drop);
+        mayHaveOrphanFiles = true;
+        entry.state = new SegmentDirState(cur.copyFrom(drop));
+        return droppedOffsets;
+    }
+
+    void deleteSegmentAndIndexFiles(long[] offsets) throws IOException {
+        for (long offset : offsets) {
+            Files.deleteIfExists(segmentPath(offset));
             for (String indexPrefix : indexPrefixes) {
-                AsyncIndexFile af = openIndexFile(indexPrefix, startOffset, OpenMode.READ_WRITE);
-                currentIndexFiles.put(indexPrefix, af);
+                Files.deleteIfExists(pathOf(indexPrefix + offset));
             }
-            entry.state = new SegmentDirState(entry.state.copyAppend(startOffset));
-            maybeBindWriterIndexLease();
-        } catch (IOException e) {
-            try {
-                closeCurrent();
-            } catch (IOException ignored) {
-            }
-            openedSegmentStartOffset = prevStart;
-            openedSegmentEndOffset = prevEnd;
-            throw e;
         }
     }
 
-    // Returns true when non-empty and logicalOffset >= firstOffset (including past the
-    // current exclusive end — then the last segment is selected). Returns false only for empty.
-    // Left of firstOffset: closes resources, keeps prior range, throws SegmentOffsetBeforeFirstException.
-    boolean switchToSegment(long logicalOffset, SegmentDirState s) throws IOException {
-        if (currentSegmentChannel != null
-                && logicalOffset >= openedSegmentStartOffset
-                && logicalOffset < openedSegmentEndOffset) {
-            return true;
+    void truncateFileAndSync(long offset) throws IOException {
+        long newSegmentSize = offset - openedSegmentStartOffset;
+        currentSegmentChannel.truncate(newSegmentSize);
+        currentSegmentChannel.position(newSegmentSize);
+        currentSegmentChannel.force(true);
+        pendingFsyncBytes = 0;
+        lastFsyncNanos = System.nanoTime();
+    }
+
+    // ---- Reader metadata-only methods ----
+
+    boolean openedSegmentMatchesState(SegmentDirState s, long logicalOffset) {
+        if (s.isEmpty() || logicalOffset < s.firstOffset) {
+            return false;
         }
-        closeCurrent();
+        Pair<Long, Long> expected = s.floorKeyAndNext(logicalOffset);
+        return expected.getKey() == openedSegmentStartOffset
+                && expected.getValue() == openedSegmentEndOffset;
+    }
+
+    // Fast check: is the channel open and offset within the currently opened segment range
+    // true does not mean logicalOffset is always within the opened segment range.
+    boolean isSegmentReady(long logicalOffset) {
+        return currentSegmentChannel != null
+                && logicalOffset >= openedSegmentStartOffset
+                && logicalOffset < openedSegmentEndOffset;
+    }
+
+    // always detach current channels before switch to a new segment.
+    // caller shall check before calling this method.
+    // Returns true when found a segment that actually covers logicalOffset
+    // Returns false when it could not honour logicalOffset:
+    //   - empty state: opened range is marked empty;
+    //   - logicalOffset left of firstOffset: falls back to the first segment.
+    // Detached channels are appended to pending for the caller to close.
+    boolean switchToSegment(long logicalOffset, SegmentDirState s, List<FileChannel> pending) {
+        pending.addAll(detachCurrentChannels());
         if (s.isEmpty()) {
             markEmptyOpenedRange();
             return false;
         }
-        if (logicalOffset < s.firstOffset) {
-            throw new SegmentOffsetBeforeFirstException(
-                    "logical offset " + logicalOffset + " is before first segment offset " + s.firstOffset);
-        }
-        if (logicalOffset >= exclusiveEndOffset(s.lastOffset)) {
-            openedSegmentStartOffset = s.lastOffset;
-            openedSegmentEndOffset = Long.MAX_VALUE;
-            return true;
-        }
         Pair<Long, Long> range = s.floorKeyAndNext(logicalOffset);
-        long segStart = range.getKey();
-        long nextStart = range.getValue();
-        long endOffset = nextStart;
-        if (nextStart != Long.MAX_VALUE) {
-            long actualSize = Files.size(segmentPath(segStart));
-            long expectedSize = nextStart - segStart;
-            if (expectedSize > actualSize) {
-                throw new SegmentFilesNotContinuousException(
-                        "segment files not continuous, segment " + segStart
-                                + " expected size " + expectedSize
-                                + " but actual file size " + actualSize);
-            }
-            endOffset = segStart + actualSize;
+        boolean beforeFirst = range.getKey() < 0;
+        if (beforeFirst) {
+            // Left of the first segment: position on the first segment and report failure.
+            range = s.floorKeyAndNext(s.firstOffset);
         }
-        openedSegmentStartOffset = segStart;
-        openedSegmentEndOffset = endOffset;
-        return true;
+        openedSegmentStartOffset = range.getKey();
+        openedSegmentEndOffset = range.getValue();
+        return !beforeFirst;
     }
 
     void openSegmentChannelForRead() throws IOException {
@@ -386,130 +514,65 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         openCurrentChannel();
     }
 
-    Pair<Long, Map<String, AsyncFile>> getCurrentIndexFiles(List<String> requestedPrefixes) throws IOException {
-        Map<String, AsyncFile> result = new HashMap<>();
+    Pair<Long, Map<String, AsyncIndexFile>> getCurrentIndexFiles(List<String> requestedPrefixes, boolean noFs) {
+        Map<String, AsyncIndexFile> result = new HashMap<>();
         for (String indexPrefix : requestedPrefixes) {
             AsyncIndexFile af = currentIndexFiles.get(indexPrefix);
-            if (af != null) {
-                result.put(indexPrefix, af);
-            } else if (canWrite()) {
-                logger.error("Index channel for prefix {} is null in write mode, segment offset: {}",
-                        indexPrefix, openedSegmentStartOffset);
-                throw new IllegalStateException("Index channel for prefix " + indexPrefix + " is null in write mode");
-            } else {
-                String fileName = indexPrefix + openedSegmentStartOffset;
-                Path p = pathOf(fileName);
-                if (Files.exists(p)) {
-                    af = openIndexFile(indexPrefix, openedSegmentStartOffset, OpenMode.READ);
-                    currentIndexFiles.put(indexPrefix, af);
-                    result.put(indexPrefix, af);
-                }
+            if (af == null) {
+                af = openIndexFile(indexPrefix, openedSegmentStartOffset, noFs);
             }
+            result.put(indexPrefix, af);
         }
         return Pair.from(openedSegmentStartOffset, result);
     }
 
-    void deleteSegments(List<Long> startOffsets, FileEntry entry) throws IOException {
-        SegmentDirState cur = entry.state;
-        int drop = startOffsets.size();
-        for (int i = 0; i < drop; i++) {
-            deleteSegmentAndIndex(cur.get(i));
-        }
-        entry.state = new SegmentDirState(cur.copyFrom(drop));
-    }
-
-    void delete(FileEntry entry) throws IOException {
-        SegmentDirState cur = entry.state;
-        closeCurrent();
-        markEmptyOpenedRange();
-        for (int i = 0; i < cur.size(); i++) {
-            deleteSegmentAndIndex(cur.get(i));
-        }
-        entry.state = SegmentDirState.EMPTY;
-    }
-
-    void truncate(long offset, FileEntry entry) throws IOException {
+    long[] truncate(long offset, FileEntry entry, long endOffset, boolean noFs, List<FileChannel> pending) {
         SegmentDirState s = entry.state;
-        if (!s.isEmpty() && offset >= s.firstOffset && offset <= exclusiveEndOffset(s.lastOffset)) {
-            truncateInRange(offset, entry);
+        if (!s.isEmpty() && offset >= s.firstOffset && offset <= endOffset) {
+            return truncateInRange(offset, entry, noFs, pending);
         } else {
-            reset(offset, entry);
+            return reset(offset, entry, noFs, pending);
         }
     }
 
-    private void truncateInRange(long offset, FileEntry entry) throws IOException {
+    private long[] truncateInRange(long offset, FileEntry entry, boolean noFs, List<FileChannel> pending) {
         SegmentDirState cur = entry.state;
         long targetStart = cur.floorKey(offset);
         boolean reuseCurrent = openedSegmentStartOffset == targetStart;
-        long prevStart = openedSegmentStartOffset;
-        long prevEnd = openedSegmentEndOffset;
         int cut = cur.indexOf(targetStart) + 1;
         long[] nextArr = cur.copyShrink(cut);
 
-        try {
-            if (!reuseCurrent) {
-                closeCurrent();
-                openedSegmentStartOffset = targetStart;
-                openCurrentChannel();
-            }
-            openedSegmentEndOffset = Long.MAX_VALUE;
-
-            long newSegmentSize = offset - targetStart;
-            long oldSegmentSize = currentSegmentChannel.size();
-            currentSegmentChannel.truncate(newSegmentSize);
-            if (newSegmentSize < oldSegmentSize) {
-                pendingFsyncBytes = Math.max(0, pendingFsyncBytes - (oldSegmentSize - newSegmentSize));
-            }
-            currentSegmentChannel.position(newSegmentSize);
-
-            for (String indexPrefix : indexPrefixes) {
-                AsyncIndexFile af = currentIndexFiles.get(indexPrefix);
-                if (af == null) {
-                    af = openIndexFile(indexPrefix, targetStart, OpenMode.READ_WRITE);
-                    currentIndexFiles.put(indexPrefix, af);
-                }
-            }
-
-            for (int i = cut; i < cur.size(); i++) {
-                deleteSegmentAndIndex(cur.get(i));
-            }
-            entry.state = new SegmentDirState(nextArr);
-            maybeBindWriterIndexLease();
-        } catch (IOException e) {
-            if (!reuseCurrent) {
-                try {
-                    closeCurrent();
-                } catch (IOException ignored) {
-                }
-            }
-            openedSegmentStartOffset = prevStart;
-            openedSegmentEndOffset = prevEnd;
-            throw e;
+        if (!reuseCurrent) {
+            pending.addAll(detachCurrentChannels());
+            openedSegmentStartOffset = targetStart;
         }
+        openedSegmentEndOffset = Long.MAX_VALUE;
+
+        for (String indexPrefix : indexPrefixes) {
+            if (currentIndexFiles.get(indexPrefix) == null) {
+                openIndexFile(indexPrefix, targetStart, noFs);
+            }
+        }
+
+        long[] dropped = cur.copyFrom(cut);
+        if (dropped.length > 0) {
+            mayHaveOrphanFiles = true;
+        }
+        entry.state = new SegmentDirState(nextArr);
+        maybeBindWriterIndexLease();
+        return dropped;
     }
 
-    private void reset(long offset, FileEntry entry) throws IOException {
-        closeCurrent();
+    private long[] reset(long offset, FileEntry entry, boolean noFs, List<FileChannel> pending) {
+        pending.addAll(detachCurrentChannels());
         SegmentDirState cur = entry.state;
-        for (int i = 0; i < cur.size(); i++) {
-            deleteSegmentAndIndex(cur.get(i));
+        long[] dropped = cur.offsets();
+        if (dropped.length > 0) {
+            mayHaveOrphanFiles = true;
         }
         entry.state = SegmentDirState.EMPTY;
-        createNewSegmentWithIndexes(offset, entry);
+        createNewSegmentMetadata(offset, entry, noFs);
+        return dropped;
     }
 
-    void roll(FileEntry entry) throws IOException {
-        if (entry.state.isEmpty()) {
-            createNewSegmentWithIndexes(0, entry);
-            return;
-        }
-
-        if (currentSegmentChannel.size() == 0) {
-            return;
-        }
-
-        long newStartOffset = openedSegmentStartOffset + currentSegmentChannel.size();
-        closeCurrent();
-        createNewSegmentWithIndexes(newStartOffset, entry);
-    }
 }
