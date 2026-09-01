@@ -113,8 +113,6 @@ public class DefaultKeeperConfigTest extends AbstractRedisKeeperTest{
 		Assert.assertFalse(keeperConfig.isPubsubParseEnabled());
 		Assert.assertEquals(KeeperConfig.DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI,
 				keeperConfig.getPrepareWatchMetaIntervalMilli());
-		Assert.assertEquals(KeeperConfig.DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI,
-				keeperConfig.getPrepareWatchReopenIntervalMilli());
 	}
 
 	@Test
@@ -124,8 +122,6 @@ public class DefaultKeeperConfigTest extends AbstractRedisKeeperTest{
 		Assert.assertFalse(keeperConfig.isPubsubParseEnabled());
 		Assert.assertEquals(KeeperConfig.DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI,
 				keeperConfig.getPrepareWatchMetaIntervalMilli());
-		Assert.assertEquals(KeeperConfig.DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI,
-				keeperConfig.getPrepareWatchReopenIntervalMilli());
 	}
 
 	@Test

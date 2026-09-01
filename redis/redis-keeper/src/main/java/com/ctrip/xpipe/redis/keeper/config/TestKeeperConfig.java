@@ -351,11 +351,6 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	}
 
 	@Override
-	public int getPrepareWatchReopenIntervalMilli() {
-		return DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI;
-	}
-
-	@Override
 	public boolean isPubsubParseEnabled() {
 		return false;
 	}

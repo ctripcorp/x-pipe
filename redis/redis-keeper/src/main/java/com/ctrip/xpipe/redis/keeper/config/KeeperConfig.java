@@ -37,8 +37,6 @@ public interface KeeperConfig extends CoreConfig{
 
 	int DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI = 5000;
 
-	int DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI = 100;
-
 
 	int getMetaServerConnectTimeout();
 
@@ -120,8 +118,6 @@ public interface KeeperConfig extends CoreConfig{
 	boolean isPrepareStoreWatchEnabled();
 
 	int getPrepareWatchMetaIntervalMilli();
-
-	int getPrepareWatchReopenIntervalMilli();
 
 	boolean isPubsubParseEnabled();
 

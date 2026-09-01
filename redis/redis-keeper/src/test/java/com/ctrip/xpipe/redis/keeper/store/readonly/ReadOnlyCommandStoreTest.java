@@ -140,8 +140,6 @@ public class ReadOnlyCommandStoreTest {
 		store.makeSureOpen();
 
 		Assert.assertEquals(0L, store.getCommandsLastUpdatedAt());
-		store.markCommandsRead();
-		Assert.assertTrue(store.getCommandsLastUpdatedAt() > 0L);
 
 		store.close();
 		try {
@@ -182,9 +180,6 @@ public class ReadOnlyCommandStoreTest {
 		assertUnsupported("increaseLostNotInCmdStore",
 				() -> store.increaseLostNotInCmdStore(empty, () -> true));
 		assertUnsupported("resetStateForContinue", store::resetStateForContinue);
-		// addCommandsListener 真实现留给 T-RR.3，本 Phase 仍抛
-		assertUnsupported("addCommandsListener",
-				() -> store.addCommandsListener(new OffsetReplicationProgress(0), Mockito.mock(CommandsListener.class)));
 	}
 
 	@Test
@@ -216,7 +211,11 @@ public class ReadOnlyCommandStoreTest {
 		store.attachRateLimiter(SyncRateLimiter.UNLIMITED);
 		covered.incrementAndGet();
 		invokeAllUnsupported(store);
-		covered.addAndGet(19);
+		covered.addAndGet(18);
+		CommandsListener idleListener = Mockito.mock(CommandsListener.class);
+		Mockito.when(idleListener.isOpen()).thenReturn(false);
+		store.addCommandsListener(new OffsetReplicationProgress(0), idleListener);
+		covered.incrementAndGet();
 		store.close();
 		covered.incrementAndGet();
 		Assert.assertEquals(32, covered.get());
@@ -271,8 +270,6 @@ public class ReadOnlyCommandStoreTest {
 		assertUnsupported("increaseLostNotInCmdStore",
 				() -> store.increaseLostNotInCmdStore(empty, () -> true));
 		assertUnsupported("resetStateForContinue", store::resetStateForContinue);
-		assertUnsupported("addCommandsListener",
-				() -> store.addCommandsListener(new OffsetReplicationProgress(0), Mockito.mock(CommandsListener.class)));
 	}
 
 	private static void assertUnsupported(String method, ThrowingRunnable action) throws Exception {
