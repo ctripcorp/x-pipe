@@ -35,20 +35,28 @@ public class InfoReplIdAction extends AbstractHealthCheckAction<RedisHealthCheck
             String slaveReplId = slaveInfo.extract(MASTER_REPLID);
             String masterHost = slaveInfo.getKeyKeeperMasterHost();
             int masterPort = slaveInfo.getKeyKeeperMasterPort();
+            logger.info("[doTask][slave] {} slaveReplId={}, master={}:{}",
+                    instance.getCheckInfo().getHostPort(), slaveReplId, masterHost, masterPort);
             if (slaveReplId == null || masterHost == null || masterPort <= 0) {
+                logger.info("[doTask][slave info incomplete] {}", instance.getCheckInfo().getHostPort());
                 notifyListeners(new InfoReplIdActionContext(instance, new IllegalStateException("slave info incomplete")));
                 return;
             }
 
             RedisSession upstream = redisSessionManager.findOrCreateSession(new HostPort(masterHost, masterPort));
             String keeperReplId = upstream.syncInfo(InfoCommand.INFO_TYPE.REPLICATION).extract(MASTER_REPLID);
+            logger.info("[doTask][upstream] {} keeperReplId={}", instance.getCheckInfo().getHostPort(), keeperReplId);
             if (keeperReplId == null) {
+                logger.info("[doTask][keeper info incomplete] {}", instance.getCheckInfo().getHostPort());
                 notifyListeners(new InfoReplIdActionContext(instance, new IllegalStateException("keeper info incomplete")));
                 return;
             }
 
+            logger.info("[doTask][replId match={}] {} slaveReplId={}, keeperReplId={}",
+                    slaveReplId.equals(keeperReplId), instance.getCheckInfo().getHostPort(), slaveReplId, keeperReplId);
             notifyListeners(new InfoReplIdActionContext(instance, new Pair<>(slaveReplId, keeperReplId)));
         } catch (Throwable th) {
+            logger.info("[doTask][fail] {}", instance.getCheckInfo().getHostPort(), th);
             notifyListeners(new InfoReplIdActionContext(instance, th));
         }
     }
