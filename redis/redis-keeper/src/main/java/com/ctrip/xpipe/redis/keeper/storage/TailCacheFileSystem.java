@@ -122,6 +122,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             thread.setDaemon(true);
             return thread;
         });
+        // shall never reject or fd leak
         this.closeExecutor = Executors.newSingleThreadExecutor(r -> {
             Thread thread = new Thread(r, "tail-cache-close");
             thread.setDaemon(true);
@@ -497,9 +498,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return;
         }
         CompletableFuture<Long> flushFuture = StorageUtil.supply(ioExecutor, () -> {
-            if (file.cacheClosed) {
+            if (file.closed) {
                 writeBuf.release();
-                throw new IllegalStateException("file cache is closed: " + path);
+                throw new IllegalStateException("file is closed: " + path);
             }
             long written = 0;
             if (hasWriteData) {
@@ -536,6 +537,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         Throwable flushError = null;
         boolean retryableFailure = false;
+        boolean incomplete = false;
         try {
             flushFuture.get(1, TimeUnit.NANOSECONDS);
         } catch (ExecutionException e) {
@@ -544,12 +546,18 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         } catch (TimeoutException e) {
             flushError = e;
             retryableFailure = true;
+            incomplete = true;
         } catch (Exception e) {
             flushError = e;
         }
 
         // throw no space error to let the caller handle it even failIfStillDirty = false
         file.throwIfNoSpace();
+
+        // throw even if failIfStillDirty = false as this method is also io task barrier.
+        if (incomplete) {
+            throw new OperationNotExecutedException(path, flushError);
+        }
 
         boolean stillDirty = entry.isCacheDirty(file.atomicReplace)
                 || (!file.atomicReplace && entry.isFsyncDirty());
@@ -619,6 +627,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             logger.warn("io action requires channel recovery for {}, retrying replacement up to {} times",
                     file.path, maxAttempts, e);
             for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+                if (file.closed) {
+                    // Nothing to replace: openCurrentChannel would only discard the new channel.
+                    break;
+                }
                 try {
                     long writtenToFsOffset = file.openCurrentChannel();
                     resetWrittenToFsOffsetIfNeeded(file, writtenToFsOffset);
@@ -966,7 +978,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         final boolean needApply = file.canWrite() && entry != null && entry.fsInconsistent;
         String id = file.ioKey;
         CompletableFuture<Long> restoreFuture = StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             prepareFileSync(file);
             if (needApply) {
                 return restoreFsConsistencySync(file);
@@ -1027,7 +1039,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         String id = file.ioKey;
         CompletableFuture<Pair<List<Long>, Map<Long, Map<String, Long>>>> restoreFuture =
                 StorageUtil.supply(ioExecutor, () -> {
-                    StorageUtil.requireCacheOpen(file);
+                    StorageUtil.requireOpen(file);
                     prepareFileSync(file);
                     if (needApply) {
                         return restoreSegmentFsConsistencySync(file);
@@ -1096,7 +1108,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         String id = file.ioKey;
         CompletableFuture<Void> prepareFuture = StorageUtil.run(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             prepareFileSync(file);
         });
         registerInFlight(id, prepareFuture);
@@ -1295,7 +1307,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private <T> T awaitIoCachePrep(AbstractStorageFile file, java.util.function.Supplier<T> task,
             java.util.function.Consumer<T> clean) {
         CompletableFuture<T> future = StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             return task.get();
         });
         try {
@@ -1477,7 +1489,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (!file.canRead()) {
             throw new IllegalArgumentException("position() requires read mode");
         }
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         if (backingFsMode != BackingFsMode.NO_FS) {
             awaitInFlightIo(file.ioKey, file.path, false);
         }
@@ -1508,7 +1520,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private CompletableFuture<ByteBuf> readInternal(AbstractStorageFile file, long length, long offset,
             boolean fromPosition, java.util.function.BooleanSupplier fsPrepare,
             java.util.function.Supplier<ByteBuf> fsRead) {
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         final BackingFsMode fsMode = backingFsMode;
         FileCacheEntry entry = file.getCacheEntry();
         long readOffset = fromPosition ? file.position : offset;
@@ -1544,7 +1556,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
 
         CompletableFuture<ByteBuf> ioFuture = StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             prepareFileSync(file);
             ByteBuf buf = fsRead.get();
             if (fromPosition) {
@@ -1627,9 +1639,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             data.release();
             throw new IllegalArgumentException("operation requires write mode: " + file.path);
         }
-        if (file.cacheClosed) {
+        if (file.closed) {
             data.release();
-            throw new IllegalStateException("file cache is closed: " + file.path);
+            throw new IllegalStateException("file is closed: " + file.path);
         }
         if (file.atomicReplace && data.readableBytes() == 0) {
             data.release();
@@ -1782,9 +1794,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return CompletableFuture.completedFuture(writeSize);
         }
         CompletableFuture<Long> ioFuture = StorageUtil.supply(ioExecutor, () -> {
-            if (file.cacheClosed) {
+            if (file.closed) {
                 writeBuf.release();
-                throw new IllegalStateException("file cache is closed: " + file.path);
+                throw new IllegalStateException("file is closed: " + file.path);
             }
             long written = fsWrite.apply(writeBuf);
             if (useCache) {
@@ -1839,7 +1851,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     private void initCacheAndAwait(AbstractStorageFile file, Runnable init) {
         CompletableFuture<Void> initFuture = StorageUtil.run(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             init.run();
         });
         registerInFlight(file.ioKey, initFuture);
@@ -2041,7 +2053,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Void> delete(AsyncFile file) {
         StorageUtil.requireWriteMode(file);
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         final boolean noFs = backingFsMode == BackingFsMode.NO_FS;
         final String id = file.ioKey;
         FileCacheEntry entry = file.getCacheEntry();
@@ -2068,7 +2080,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return CompletableFuture.completedFuture(null);
         }
         return StorageUtil.run(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             delegate.deleteSync(file.path);
         });
     }
@@ -2083,7 +2095,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> size(AsyncFile file) {
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         final boolean noFs = backingFsMode == BackingFsMode.NO_FS;
         if (file.cacheMode != CacheMode.NO_CACHE) {
             FileCacheEntry entry = file.getCacheEntry();
@@ -2098,7 +2110,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             throw new CannotDetermineInNoFsException("size(" + file.path + ")");
         }
         return StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             return executeWithIoFailureHandling(file, () -> delegate.sizeSync(file));
         });
     }
@@ -2125,7 +2137,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Void> truncate(AsyncFile file, long size) {
         StorageUtil.requireWriteMode(file);
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         final boolean noFs = backingFsMode == BackingFsMode.NO_FS;
         final String id = file.ioKey;
         FileCacheEntry entry = file.getCacheEntry();
@@ -2168,7 +2180,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return CompletableFuture.completedFuture(null);
         }
         CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             executeWithIoFailureHandling(file, () -> {
                 delegate.truncateSync(file, size);
                 return null;
@@ -2200,7 +2212,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private <T extends AbstractStorageFile> CompletableFuture<Void> closeInternal(T file,
             java.util.function.Supplier<List<FileChannel>> fsClose, java.util.function.Consumer<T> flush,
             java.util.function.Supplier<Boolean> restoreBackingFs) {
-        if (file.cacheClosed) {
+        if (file.closed) {
             return CompletableFuture.completedFuture(null);
         }
         boolean noFs = backingFsMode == BackingFsMode.NO_FS;
@@ -2216,6 +2228,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 logger.warn("failed to restore backing FS while closing {}, falling back to NO_FS close", file.path);
                 noFs = true;
             }
+            // restore may have returned false on timeout, leaving its task running
+            // close should wait until io task is completed inf under fs mode.
+            awaitInFlightIo(id, file.path, false);
             if (!noFs) {
                 flush.accept(file);
             }
@@ -2226,24 +2241,15 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 logger.warn("{} may have data loss", file.path);
             }
         }
-        file.cacheClosed = true;
-        if (noFs) {
-            List<FileChannel> channels;
-            try {
-                channels = fsClose.get();
-            } finally {
-                file.onCacheClose.run();
-            }
-            scheduleCloseChannels(file.path, channels);
-            return CompletableFuture.completedFuture(null);
+        
+        List<FileChannel> channels;
+        try {
+            channels = fsClose.get();
+        } finally {
+            file.onCacheClose.run();
         }
-        return StorageUtil.run(ioExecutor, () -> {
-            try {
-                StorageUtil.closeChannels(fsClose.get());
-            } finally {
-                file.onCacheClose.run();
-            }
-        });
+        scheduleCloseChannels(file.path, channels);
+        return CompletableFuture.completedFuture(null);
     }
 
 
@@ -2261,7 +2267,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private CompletableFuture<Void> fsyncInternal(AbstractStorageFile file, Runnable flushPending, Runnable fsFsync,
             java.util.function.Supplier<Boolean> restoreBackingFs) {
         StorageUtil.requireWriteMode(file);
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         final boolean noFs = backingFsMode == BackingFsMode.NO_FS;
         final FileCacheEntry entry = file.getCacheEntry();
         if (noFs) {
@@ -2278,7 +2284,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
         if (entry == null || !entry.isInitialized()) {
             CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
-                StorageUtil.requireCacheOpen(file);
+                StorageUtil.requireOpen(file);
                 fsFsync.run();
                 if (entry != null) {
                     synchronized (entry) {
@@ -2306,7 +2312,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> transferTo(AsyncFile file, long position, long count, WritableByteChannel target) {
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         return transferToInternal(file, position, count, target,
                 () -> true,
                 () -> executeWithIoFailureHandling(file,
@@ -2316,7 +2322,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private CompletableFuture<Long> transferToInternal(AbstractStorageFile file, long offset, long count,
             WritableByteChannel target, java.util.function.BooleanSupplier fsPrepare,
             java.util.function.Supplier<Long> fsTransfer) {
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         final BackingFsMode fsMode = backingFsMode;
         FileCacheEntry entry = file.getCacheEntry();
         Pair<Boolean, Boolean> decision = preferCacheRead(file, entry, offset, transferPreferCache, fsMode);
@@ -2354,7 +2360,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
 
         CompletableFuture<Long> ioFuture = StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             prepareFileSync(file);
             return fsTransfer.get();
         });
@@ -2461,7 +2467,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (!file.canRead()) {
             throw new IllegalArgumentException("position() is not supported in write mode");
         }
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         if (backingFsMode != BackingFsMode.NO_FS) {
             awaitInFlightIo(file.ioKey, file.path, false);
         }
@@ -2542,9 +2548,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             data.release();
             throw new IllegalArgumentException("operation requires write mode: " + file.path);
         }
-        if (file.cacheClosed) {
+        if (file.closed) {
             data.release();
-            throw new IllegalStateException("file cache is closed: " + file.path);
+            throw new IllegalStateException("file is closed: " + file.path);
         }
         try {
             file.throwIfNoSpace();
@@ -2567,7 +2573,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Void> roll(AsyncSegmentFile file) {
         StorageUtil.requireWriteMode(file);
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         final String id = file.ioKey;
         final BackingFsMode fsMode = backingFsMode;
         final boolean noFs = fsMode == BackingFsMode.NO_FS;
@@ -2625,7 +2631,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
         // IO phase (ioExecutor): open new segment + index channels, then init their caches.
         CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             delegate.initCurrentChannelsSync(file);
             initIndexFileCaches(file.currentIndexFiles, false, noCache, false);
         });
@@ -2656,7 +2662,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Pair<Long, Map<String, AsyncFile>>> getCurrentIndexFiles(AsyncSegmentFile file, List<String> indexPrefixes) {
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         final BackingFsMode fsMode = backingFsMode;
         final boolean noFs = fsMode == BackingFsMode.NO_FS;
         final boolean noCache = fsMode == BackingFsMode.NO_CACHE;
@@ -2696,7 +2702,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
 
         CompletableFuture<Pair<Long, Map<String, AsyncFile>>> ioFuture = StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             try {
                 file.initIndexChannels(result.getValue().values());
             } catch (IOException e) {
@@ -2733,7 +2739,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> size(AsyncSegmentFile file) {
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         final boolean noFs = backingFsMode == BackingFsMode.NO_FS;
         if (file.cacheMode != CacheMode.NO_CACHE) {
             SegmentFileCacheEntry entry = file.getCacheEntry();
@@ -2753,7 +2759,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             throw new CannotDetermineInNoFsException("size(" + file.path + ")");
         }
         return StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             return executeWithIoFailureHandling(file, () -> delegate.sizeSync(file));
         });
     }
@@ -2761,7 +2767,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Long> sizeOfSegment(AsyncSegmentFile file, long startOffset) {
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         final boolean noFs = backingFsMode == BackingFsMode.NO_FS;
         if (file.cacheMode != CacheMode.NO_CACHE) {
             SegmentDirState state = delegate.getSegmentDirState(file);
@@ -2788,7 +2794,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                     "sizeOfSegment(" + file.path + ", " + startOffset + ")");
         }
         return StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             return executeWithIoFailureHandling(file, () -> delegate.sizeOfSegmentSync(file, startOffset));
         });
     }
@@ -2831,7 +2837,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Void> deleteSegments(AsyncSegmentFile file, List<Long> startOffsets) {
         StorageUtil.requireWriteMode(file);
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         final String id = file.ioKey;
 
         if (startOffsets.isEmpty()) {
@@ -2915,7 +2921,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
         final long[] toUnlink = droppedOffsets;
         CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             delegate.deleteSegmentsIo(file, toUnlink);
         });
         registerInFlight(id, ioFuture);
@@ -2925,7 +2931,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Void> delete(AsyncSegmentFile file) {
         StorageUtil.requireWriteMode(file);
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         final String id = file.ioKey;
 
         final SegmentFileCacheEntry cacheEntry = file.getCacheEntry();
@@ -2973,7 +2979,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
         final long[] toUnlink = droppedOffsets;
         CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             delegate.deleteSegmentsIo(file, toUnlink);
         });
         registerInFlight(id, ioFuture);
@@ -2983,7 +2989,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     @Override
     public CompletableFuture<Void> truncate(AsyncSegmentFile file, long offset) {
         StorageUtil.requireWriteMode(file);
-        StorageUtil.requireCacheOpen(file);
+        StorageUtil.requireOpen(file);
         final String id = file.ioKey;
         final boolean noFs = backingFsMode == BackingFsMode.NO_FS;
 
@@ -3030,7 +3036,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
 
         CompletableFuture<Void> ioFuture = StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireCacheOpen(file);
+            StorageUtil.requireOpen(file);
             delegate.initCurrentChannelsSync(file);
             executeWithIoFailureHandling(file, () -> {
                 delegate.truncateLastSegmentChannel(file, offset);

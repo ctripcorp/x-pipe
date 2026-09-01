@@ -37,7 +37,7 @@ public class AsyncFile extends AbstractStorageFile {
 
     @Override
     long openCurrentChannel() throws IOException {
-        FileChannel oldChannel = channel;
+        FileChannel oldChannel = null;
         FileChannel newChannel = null;
         try {
             long offset = -1;
@@ -53,20 +53,24 @@ public class AsyncFile extends AbstractStorageFile {
                 newChannel.position(offset);
             }
 
-            channel = newChannel;
-            newChannel = null;
-            closeChannelQuietly(oldChannel, "replaced channel");
+            synchronized (this) {
+                if (closed) {
+                    // Closed while we were opening: the channel we just created must be released.
+                    throw new IllegalStateException("file is closed: " + path);
+                }
+                oldChannel = channel;
+                channel = newChannel;
+                newChannel = null;
+            }
             return offset;
         } finally {
-            closeChannelQuietly(newChannel, "failed channel candidate");
+            closeChannelQuietly(newChannel, "abandoned channel candidate");
+            closeChannelQuietly(oldChannel, "replaced channel");
         }
     }
 
-    List<FileChannel> detachCurrentChannelAndMarkClosed() {
-        if (closed) {
-            return Collections.emptyList();
-        }
-        closed = true;
+    @Override
+    List<FileChannel> detachCurrentChannels() {
         if (channel == null) {
             return Collections.emptyList();
         }

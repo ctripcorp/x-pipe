@@ -54,27 +54,35 @@ public class AsyncSegmentFile extends AbstractStorageFile {
 
     @Override
     long openCurrentChannel() throws IOException {
-        FileChannel oldChannel = currentSegmentChannel;
+        final long startOffset = openedSegmentStartOffset;
+        FileChannel oldChannel = null;
         FileChannel newChannel = null;
         try {
             long logicalOffset = -1;
             if (canWrite()) {
-                newChannel = FileChannel.open(segmentPath(openedSegmentStartOffset),
+                newChannel = FileChannel.open(segmentPath(startOffset),
                         StandardOpenOption.WRITE, StandardOpenOption.CREATE);
                 long physicalSize = newChannel.size();
                 newChannel.position(physicalSize);
-                logicalOffset = openedSegmentStartOffset + physicalSize;
+                logicalOffset = startOffset + physicalSize;
             } else {
-                newChannel = FileChannel.open(segmentPath(openedSegmentStartOffset),
+                newChannel = FileChannel.open(segmentPath(startOffset),
                         StandardOpenOption.READ, StandardOpenOption.CREATE);
             }
 
-            currentSegmentChannel = newChannel;
-            newChannel = null;
-            closeChannelQuietly(oldChannel, "replaced segment channel");
+            synchronized (this) {
+                if (closed) {
+                    // Closed while we were opening: the channel we just created must be released.
+                    throw new IllegalStateException("file is closed: " + path);
+                }
+                oldChannel = currentSegmentChannel;
+                currentSegmentChannel = newChannel;
+                newChannel = null;
+            }
             return logicalOffset;
         } finally {
-            closeChannelQuietly(newChannel, "failed segment channel candidate");
+            closeChannelQuietly(newChannel, "abandoned segment channel candidate");
+            closeChannelQuietly(oldChannel, "replaced segment channel");
         }
     }
 
@@ -283,19 +291,31 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     // ---- io / state helpers ----
 
     // Detach all current channels into pending list, shall not close the channels in this method.
+    @Override
     List<FileChannel> detachCurrentChannels() {
         List<FileChannel> pending = new ArrayList<>();
         if (currentSegmentChannel != null) {
             pending.add(currentSegmentChannel);
             currentSegmentChannel = null;
         }
+
         for (AsyncIndexFile af : currentIndexFiles.values()) {
-            af.cacheClosed = true;
-            pending.addAll(af.detachCurrentChannelAndMarkClosed());
-            try {
-                af.onCacheClose.run();
-            } catch (Throwable t) {
-                logger.error("onCacheClose failed for {}", af.path, t);
+            final boolean firstClose;
+            List<FileChannel> afChannels = Collections.emptyList();
+            synchronized (af) {
+                firstClose = !af.closed;
+                if (firstClose) {
+                    af.closed = true;
+                    afChannels = af.detachCurrentChannels();
+                }
+            }
+            pending.addAll(afChannels);
+            if (firstClose) {
+                try {
+                    af.onCacheClose.run();
+                } catch (Throwable t) {
+                    logger.error("onCacheClose failed for {}", af.path, t);
+                }
             }
         }
         currentIndexFiles.clear();

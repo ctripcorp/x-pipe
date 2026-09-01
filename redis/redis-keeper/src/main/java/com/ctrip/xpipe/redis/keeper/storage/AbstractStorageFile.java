@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.storage;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.util.List;
 
 public abstract class AbstractStorageFile {
 
@@ -34,7 +35,6 @@ public abstract class AbstractStorageFile {
     final boolean atomicReplace;
     volatile CacheMode cacheMode = CacheMode.NO_CACHE;
     volatile Runnable onCacheClose = () -> {};
-    volatile boolean cacheClosed = false;
     volatile boolean closed = false;
     volatile boolean needPrepare = false;
     volatile IOException noSpaceFailure;
@@ -63,6 +63,8 @@ public abstract class AbstractStorageFile {
     abstract FileChannel currentWriteChannel();
 
     abstract long openCurrentChannel() throws IOException;
+
+    abstract List<FileChannel> detachCurrentChannels();
 
     void markNoSpace(IOException failure) {
         if (noSpaceFailure == null) {

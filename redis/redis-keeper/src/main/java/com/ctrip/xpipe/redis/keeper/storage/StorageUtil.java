@@ -84,12 +84,6 @@ class StorageUtil {
         }
     }
 
-    static void requireCacheOpen(AbstractStorageFile file) {
-        if (file.cacheClosed) {
-            throw new IllegalStateException("file cache is closed: " + file.path);
-        }
-    }
-
     static void requireWriteMode(AbstractStorageFile file) {
         if (!file.canWrite()) {
             throw new IllegalArgumentException("operation requires write mode: " + file.path);

@@ -369,17 +369,22 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
     }
 
+    private List<FileChannel> closeSyncInternal(AbstractStorageFile file) {
+        final List<FileChannel> detached;
+        synchronized (file) {
+            if (file.closed) {
+                return Collections.emptyList();
+            }
+            file.closed = true;
+            detached = file.detachCurrentChannels();
+        }
+        releaseFileEntry(file.key, file.canWrite());
+        return detached;
+    }
 
     @Override
     public List<FileChannel> closeSync(AsyncFile file) {
-        if (file.closed) {
-            return Collections.emptyList();
-        }
-        try {
-            return file.detachCurrentChannelAndMarkClosed();
-        } finally {
-            releaseFileEntry(file.key, file.canWrite());
-        }
+        return closeSyncInternal(file);
     }
 
 
@@ -621,15 +626,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     @Override
     public List<FileChannel> closeSync(AsyncSegmentFile file) {
-        if (file.closed) {
-            return Collections.emptyList();
-        }
-        file.closed = true;
-        try {
-            return file.detachCurrentChannels();
-        } finally {
-            releaseFileEntry(file.key, file.canWrite());
-        }
+        return closeSyncInternal(file);
     }
 
     private FileEntry entryOrThrow(AsyncSegmentFile file) {
