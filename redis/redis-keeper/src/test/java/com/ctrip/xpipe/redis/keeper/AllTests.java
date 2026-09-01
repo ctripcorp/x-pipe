@@ -37,6 +37,7 @@ import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindowTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
+import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.searcher.GtidCommandSearcherTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -74,6 +75,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         DefaultRdbStoreEofMarkTest.class,
         DefaultCommandStoreTest.class,
+        ReadOnlyCommandStoreTest.class,
         DefaultRedisSlaveTest.class,
         RoleCommandHandlerTest.class,
         PrepareObservationHandlerTest.class,
