@@ -72,6 +72,11 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public boolean supportCollectInfo(ClusterType clusterType) {
+        return config.supportCollectInfo(clusterType);
+    }
+
+    @Override
     public int getNonCoreCheckIntervalMilli() {
         return config.getNonCoreCheckIntervalMilli();
     }

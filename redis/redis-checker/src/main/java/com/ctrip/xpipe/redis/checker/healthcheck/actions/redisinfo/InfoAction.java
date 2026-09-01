@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.redis.checker.healthcheck.AbstractHealthCheckAction;
+import com.ctrip.xpipe.redis.checker.healthcheck.CheckInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import org.slf4j.Logger;
@@ -21,6 +23,12 @@ public class InfoAction extends AbstractHealthCheckAction<RedisHealthCheckInstan
 
     public InfoAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance, ExecutorService executors) {
         super(scheduled, instance, executors);
+    }
+
+    @Override
+    protected boolean shouldCheck(HealthCheckInstance instance) {
+        CheckInfo checkInfo = instance.getCheckInfo();
+        return instance.getHealthCheckConfig().supportCollectInfo(checkInfo.getClusterType()) && super.shouldCheckInstance(instance);
     }
 
     @Override

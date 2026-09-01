@@ -40,6 +40,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.diskless.Disk
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionFactoryTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.version.VersionCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContextTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.RedisMsgCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redismaster.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisstats.crdtinforeplication.CrdtInfoReplicationActionFactoryTest;
@@ -218,7 +219,8 @@ import org.junit.runners.Suite;
         RedisMsgCollectorTest.class,
         RedisMsgReporterTest.class,
 
-        InfoActionContextTest.class
+        InfoActionContextTest.class,
+        InfoActionTest.class
 
 })
 public class AllTests {

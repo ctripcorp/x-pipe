@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.CheckInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Component;
 public class SentinelBeaconMigrationController implements SentinelBeaconMetaController {
 
     private static final Logger logger = LoggerFactory.getLogger(SentinelBeaconMigrationController.class);
+    private static final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
 
     private final CheckerDbConfig checkerDbConfig;
 
@@ -25,6 +28,9 @@ public class SentinelBeaconMigrationController implements SentinelBeaconMetaCont
     @Override
     public boolean shouldCheck(ClusterHealthCheckInstance instance) {
         CheckInfo checkInfo = instance.getCheckInfo();
+        if (checkInfo.getClusterType() == ClusterType.ONE_WAY && !CURRENT_DC.equalsIgnoreCase(checkInfo.getActiveDc()))
+            return false;
+
         HealthCheckConfig healthCheckConfig = instance.getHealthCheckConfig();
         if (healthCheckConfig == null) {
             logger.debug("[shouldCheck][{}][skip] health check config unavailable", checkInfo.getClusterId());

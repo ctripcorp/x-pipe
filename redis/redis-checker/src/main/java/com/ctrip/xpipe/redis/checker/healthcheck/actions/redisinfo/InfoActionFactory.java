@@ -1,9 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo;
 
-import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckActionFactory;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +18,7 @@ import static com.ctrip.xpipe.redis.checker.resource.Resource.PING_DELAY_INFO_SC
  * Jun 01, 2021 3:33 PM
  */
 @Component
-public class InfoActionFactory implements RedisHealthCheckActionFactory<InfoAction>, OneWaySupport, BiDirectionSupport {
+public class InfoActionFactory implements RedisHealthCheckActionFactory<InfoAction>, OneWaySupport, BiDirectionSupport, SingleDcSupport, LocalDcSupport {
 
     @Resource(name = PING_DELAY_INFO_SCHEDULED)
     private ScheduledExecutorService scheduled;

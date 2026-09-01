@@ -235,6 +235,11 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
+    public boolean supportCollectInfo(ClusterType clusterType) {
+        return false;
+    }
+
+    @Override
     public String sentinelCheckDowngradeStrategy() {
         return "lessThanHalf";
     }
