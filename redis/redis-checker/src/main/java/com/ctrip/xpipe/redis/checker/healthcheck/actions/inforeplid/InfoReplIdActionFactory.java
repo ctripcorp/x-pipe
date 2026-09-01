@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,11 +40,15 @@ public class InfoReplIdActionFactory implements RedisHealthCheckActionFactory<In
 
     private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
 
+    private static final Logger logger = LoggerFactory.getLogger(InfoReplIdActionFactory.class);
+
     @Override
     public InfoReplIdAction create(RedisHealthCheckInstance instance) {
+        logger.info("[create] {}", instance.getCheckInfo().getHostPort());
         InfoReplIdAction action = new InfoReplIdAction(scheduled, instance, executors, redisSessionManager);
         collectors.forEach(c -> {
             if (c.supportInstance(instance)) {
+                logger.info("[create][add listener] {}, collector={}", instance.getCheckInfo().getHostPort(), c.getClass().getSimpleName());
                 action.addListener(c.createInfoReplIdActionListener());
                 c.createHealthStatus(instance);
             }
@@ -53,8 +59,11 @@ public class InfoReplIdActionFactory implements RedisHealthCheckActionFactory<In
     @Override
     public boolean supportInstnace(RedisHealthCheckInstance instance) {
         RedisInstanceInfo info = instance.getCheckInfo();
-        return metaCache.isCrossRegion(currentDcId, info.getActiveDc())
+        boolean support = metaCache.isCrossRegion(currentDcId, info.getActiveDc())
                 && currentDcId.equalsIgnoreCase(info.getDcId());
+        logger.info("[supportInstnace] {}, activeDc={}, dcId={}, support={}",
+                info.getHostPort(), info.getActiveDc(), info.getDcId(), support);
+        return support;
     }
 
 }
