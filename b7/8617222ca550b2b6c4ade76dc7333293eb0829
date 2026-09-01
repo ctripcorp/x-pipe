@@ -1,0 +1,47 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperConfig.java
+  s_64e7dc0e0d780e::t_940e706f26b31c 90-93
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java
+  s_64e7dc0e0d780e::t_949c446f75b319 238-246
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  s_64e7dc0e0d780e::t_dda981ebf2caa2 289-307
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_ad13ae614b1c56::t_66c8a396d0487b 421
+  s_64e7dc0e0d780e::t_f61df083ff30e6 843-844
+  s_64e7dc0e0d780e::t_8f9a79ceb2ae05 122
+  s_64e7dc0e0d780e::t_dc8584aa55d432 271,275,408-409
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/CrossRegionFsyncCoordinator.java
+  s_ad13ae614b1c56::t_fddc78e23dc307 14,17,19,21,23-24,27,35-37,60,63-64,66-67,70,75-77,82-84,90-93,97,123-124,127,133,141
+  s_ad13ae614b1c56::t_07779053a7f8c7 69,72-74
+  s_ad13ae614b1c56::t_92ef38fa24af61 1-13,15-16,18,26,30,33-34,39,43-44,49-51,55,59,61-62,65,78,80-81,88,98,129-130,134-135,143-144
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerTest.java
+  s_ad13ae614b1c56::t_ac32870b41df87 279,285-286,301-302,309-322
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/CrossRegionFsyncCoordinatorTest.java
+  s_ad13ae614b1c56::t_16316ec9d04c7f 11,36,42-50,53,60-63,70-71,82,84-85,89,91-93,97,99-100,116,118-124,128,131-138,142,145-146,150,153-158,162,164-167,171,173-177
+  s_ad13ae614b1c56::t_9db8f77b005f27 159-161,163,168-170,172,178-180,182,186-188,190,202
+  s_ad13ae614b1c56::t_d53a7c95e9ec8d 192-193,196-197,200-201
+  s_64e7dc0e0d780e::t_99773dc497fbf6 1-9,12-25,27-35,37-40,52,54-59,64-69,72-81,83,86-88,90,94-96,98,101-103,107,113-115,117,125-127,130,139-141,143-144,147-149,151-152,203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "b78617222ca550b2b6c4ade76dc7333293eb0829",
+  "prompts": {},
+  "sessions": {
+    "s_64e7dc0e0d780e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c7d546fe-33c8-4ab5-9c18-a5eb25868f10",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": null
+    },
+    "s_ad13ae614b1c56": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3c4a85b5-abc9-4d74-b313-1442ca93f529",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": null
+    }
+  }
+}

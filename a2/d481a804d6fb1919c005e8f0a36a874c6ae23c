@@ -1,0 +1,35 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/TimerSlidingWindowTest.java
+  s_0e90817c4c2805::t_50e710b971d0eb 342,354,366,371-372,374,376,382,387-390,395,400-403,450
+  s_0e90817c4c2805::t_9e8ad7ba028fb1 340-341,343-353,355-365,367-370,373,375,377-381,383-386,391-394,396-399,404-449,451-458
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_0e90817c4c2805::t_10d27467ae7bfb 372-375,378,380-400
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/TimerSlidingWindow.java
+  s_0e90817c4c2805::t_7a3b4996b0f3b7 75-77,85-87
+  s_0e90817c4c2805::t_cfbdcefd9644d2 47-49
+  s_0e90817c4c2805::t_6d16024ea386cc 111-112,115,118-119,122-127,129
+  s_0e90817c4c2805::t_4c0bd9b6125da9 74,78-81,95
+  s_0e90817c4c2805::t_3c12e7909def03 224-225,227-230
+  s_0e90817c4c2805::t_b93b3b14861fec 116-117,128
+  s_0e90817c4c2805::t_cc6f599740ccaf 203
+  s_0e90817c4c2805::t_6f452c97152fb9 167,170-172,174-184,186,188-202,208-223,226,235
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultCommandStoreTest.java
+  s_0e90817c4c2805::t_56c39aca3fcd71 758
+  s_0e90817c4c2805::t_3f54a8ebc9fe8e 707-757,759-761
+  s_0e90817c4c2805::t_1b82e361ed819b 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.40-trip",
+  "base_commit_sha": "a2d481a804d6fb1919c005e8f0a36a874c6ae23c",
+  "prompts": {},
+  "sessions": {
+    "s_0e90817c4c2805": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bed712f7-0a7b-4c5e-a565-678f7c294278",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

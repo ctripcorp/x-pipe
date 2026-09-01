@@ -1,0 +1,28 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  s_1724b33c39121b::t_ccbd8154636dc7 504-508,516-517
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStoreTest.java
+  s_1724b33c39121b::t_26fc4a0aa4528a 2231-2292
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/protocal/cmd/AbstractReplicationStoreGapAllowedSync.java
+  s_1724b33c39121b::t_5b08ff6269fc20 53-54
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/protocal/cmd/DefaultGapAllowedSyncTest.java
+  s_1724b33c39121b::t_2c973c8316c24d 203
+  s_1724b33c39121b::t_f3d065e0b86f85 198-202,204-217
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/GapAllowedReplicationStoreTest.java
+  s_1724b33c39121b::t_8072e62e70164e 934-952
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.40-trip",
+  "base_commit_sha": "c633a7e4ee9c7282c4d2e7003aa0ea501e1da86f",
+  "prompts": {},
+  "sessions": {
+    "s_1724b33c39121b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3138da91-5f92-4059-8a40-c9983b275153",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

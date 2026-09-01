@@ -1,0 +1,26 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/CommandStore.java
+  s_77b68558b5aabd::t_e3a7eaacfc36df 67-69
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_77b68558b5aabd::t_812f871007caeb 757,759
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/GapAllowedReplicationStoreTest.java
+  s_77b68558b5aabd::t_a729154d5b365c 675-676
+  s_77b68558b5aabd::t_02f99750db5d92 719,735
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStore.java
+  s_77b68558b5aabd::t_abd192897fcad6 239-240
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.40-trip",
+  "base_commit_sha": "bada3aaacae108a688569d59968187f1d04e9d7b",
+  "prompts": {},
+  "sessions": {
+    "s_77b68558b5aabd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9569872a-d965-4119-9df9-3c5420f20dd8",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

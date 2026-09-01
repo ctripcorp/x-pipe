@@ -1,0 +1,81 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultRdbStoreTest.java
+  s_37c18bc1336678::t_71c2a4efeb37b5 42
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultRdbStoreEofMarkTest.java
+  s_37c18bc1336678::t_fedecebd65cdd5 33
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStore.java
+  s_37c18bc1336678::t_ac3b9346d4f9c9 127
+  s_37c18bc1336678::t_705ef9ac95f28e 27
+  s_37c18bc1336678::t_52fb6104478343 161
+  s_37c18bc1336678::t_11650e3f9d543c 710-713,715,717-723,726,731-736,738,740-755,758-760,764,772-773
+  s_37c18bc1336678::t_964a46d80d3858 796
+  s_37c18bc1336678::t_be874d0fa968c4 714
+  s_37c18bc1336678::t_6be8afd5791a4f 739
+  s_37c18bc1336678::t_767bbb87c706eb 807-808
+  s_37c18bc1336678::t_46a9a5cbe82f51 106-107,109,111-117,119-122,124,126
+  s_37c18bc1336678::t_7cb060bda06151 164
+  s_37c18bc1336678::t_441669c5c2b563 142-149,152-158,160,162-163
+  s_37c18bc1336678::t_fdccf7e074fc07 826-827
+  s_37c18bc1336678::t_873421b1c26459 737
+  s_37c18bc1336678::t_321276f0a181b4 724-725,727-730
+  s_37c18bc1336678::t_5adb4006f0cbb2 756-757,762,765-770
+  s_37c18bc1336678::t_9f47678ee393b5 716
+  s_37c18bc1336678::t_20528df9af9303 761,763,771
+  s_37c18bc1336678::t_cacf6362f2c3bc 125
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_37c18bc1336678::t_cbdd443f13d8f2 217-220
+  s_37c18bc1336678::t_560dec2d30077b 106
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java
+  s_37c18bc1336678::t_9bfbb15fd58391 23
+  s_37c18bc1336678::t_8f0032902e972e 49-50,56-60,62-63
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/meta/TestAbstractMetaStoreTest.java
+  s_37c18bc1336678::t_8806897f929c4f 66-68
+  s_37c18bc1336678::t_2b146144140a39 43-45
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/protocal/cmd/DefaultGapAllowedSyncTest.java
+  s_37c18bc1336678::t_84b30075ee522a 218-255
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/MetaStore.java
+  s_37c18bc1336678::t_5e1a29b05af8ac 8
+  s_37c18bc1336678::t_5c75e6e93ff4c0 16
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/GtidReplicationStore.java
+  s_37c18bc1336678::t_0875dcfea69a4c 82
+  s_37c18bc1336678::t_a65656d84003ec 51-64,67-79,81,83-84
+  s_37c18bc1336678::t_f30efdb54959ec 112
+  s_37c18bc1336678::t_0e67b1869da413 118-119
+  s_37c18bc1336678::t_5b76cb8e3c829d 137,139
+  s_37c18bc1336678::t_de2b809a6ff6d1 152-153
+  s_37c18bc1336678::t_f9b81f21d22fff 85
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/meta/DefaultMetaStoreTest.java
+  s_37c18bc1336678::t_fcf24239e04eac 522
+  s_37c18bc1336678::t_4b3176e3146e0e 528
+  s_37c18bc1336678::t_784a49522e84fe 66-73
+  s_37c18bc1336678::t_772ea71597d30f 90,147,196,247
+  s_37c18bc1336678::t_b48a6af89e152f 327
+  s_37c18bc1336678::t_5310a81a4bd8a5 279,301
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultRdbStore.java
+  s_37c18bc1336678::t_c026fbc36c4052 83,85-88
+  s_37c18bc1336678::t_7cd23260d7c24f 63-64
+  s_37c18bc1336678::t_0660814d570573 22
+  s_37c18bc1336678::t_7ea026f401d376 104-110
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/GapAllowedReplicationStoreTest.java
+  s_37c18bc1336678::t_4deb19fca16c75 4
+  s_37c18bc1336678::t_14360a5dca7e56 38
+  s_37c18bc1336678::t_6a8eed90a632c5 1021-1083
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/protocal/cmd/AbstractReplicationStoreGapAllowedSync.java
+  s_37c18bc1336678::t_9f75a22ccd939b 6
+  s_37c18bc1336678::t_465adbe06a98d9 178,180
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.40-trip",
+  "base_commit_sha": "36438d30e229f48ad348d0c40da6398c3552aa4e",
+  "prompts": {},
+  "sessions": {
+    "s_37c18bc1336678": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "904e8e1d-93c0-4d70-85c1-c58150cfb22c",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

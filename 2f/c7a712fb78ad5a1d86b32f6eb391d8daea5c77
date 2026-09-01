@@ -1,0 +1,20 @@
+network/az/README.md
+  s_39b1808f8662aa::t_1c8270a6083942 9
+  s_39b1808f8662aa::t_0afabd0576d57e 24-27,77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "2fc7a712fb78ad5a1d86b32f6eb391d8daea5c77",
+  "prompts": {},
+  "sessions": {
+    "s_39b1808f8662aa": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6707fe7a-47e1-4a81-92d7-e7c8d416561f",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}

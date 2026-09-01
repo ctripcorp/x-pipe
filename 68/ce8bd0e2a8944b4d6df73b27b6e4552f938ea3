@@ -1,0 +1,24 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/vo/SentinelClusterBeaconRouteItem.java
+  s_85379fbd726cd7::t_9bba112cee4c07 19,27-28,37
+  s_85379fbd726cd7::t_a1636ce9b53409 106-113
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/auto/DefaultMonitorManager.java
+  s_85379fbd726cd7::t_276f9042cb56b0 235,237
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/beacon/DefaultMonitorManagerTest.java
+  s_85379fbd726cd7::t_ebb3e557fdbff0 224,247-267
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "68ce8bd0e2a8944b4d6df73b27b6e4552f938ea3",
+  "prompts": {},
+  "sessions": {
+    "s_85379fbd726cd7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2c3c2df0-6773-45ee-b593-342a6d74b5e6",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}
