@@ -216,7 +216,7 @@ public class DefaultRedisSlave implements RedisSlave {
 			sendCommandForFullSync();
 		}
 		
-		if (putOnline) {
+		if (putOnline && this.graceStart == 0) {
 			this.graceStart = System.currentTimeMillis();   // 全量完成（putOnline）时刻
 		}
 		this.replAckOff = ackOff;
