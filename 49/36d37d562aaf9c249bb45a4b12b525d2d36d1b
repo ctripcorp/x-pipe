@@ -1,0 +1,30 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/DefaultHealthCheckInstanceFactory.java
+  s_0d1093d11d3910::t_86bf38a9033467 193-196,210-214,216-218,220
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdActionFactory.java
+  s_0d1093d11d3910::t_064df7740996e9 47,51,62,64-66
+  s_0d1093d11d3910::t_57e04b2c34b889 10-11
+  s_0d1093d11d3910::t_63ea1a34910e02 43-44
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/interaction/CrossRegionRedisHealthStatus.java
+  s_0d1093d11d3910::t_5184718a4b28cf 68-71
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdAction.java
+  s_0d1093d11d3910::t_57cdb18ce84d16 38-39,41,48,50,55-56,59
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/DefaultHealthChecker.java
+  s_0d1093d11d3910::t_7cc10b0ee72c94 129-130,133-134,136-139,142-143
+  s_0d1093d11d3910::t_d3d22cd87cdce4 155,158-159
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "4936d37d562aaf9c249bb45a4b12b525d2d36d1b",
+  "prompts": {},
+  "sessions": {
+    "s_0d1093d11d3910": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88e417e4-b5b0-487f-b45f-330c85f659aa",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
