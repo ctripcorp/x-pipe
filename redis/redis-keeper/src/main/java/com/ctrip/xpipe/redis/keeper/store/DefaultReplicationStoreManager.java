@@ -42,6 +42,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private static final String LATEST_STORE_DIR = "latest.store.dir";
 
+    static final String READ_ONLY_STORE_MSG = "read only store";
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final ReplId replId;
@@ -57,6 +59,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     private final AtomicReference<Properties> currentMeta = new AtomicReference<Properties>();
 
     private final AtomicReference<ReplicationStore> currentStore = new AtomicReference<>();
+
+    private volatile boolean readOnly;
 
     private final KeeperConfig keeperConfig;
 
@@ -125,9 +129,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     /**
      * Start Manager GC. PREPARE → ACTIVE/BACKUP (Phase Rc) re-enters via {@code start()} again.
+     * Read-only mode skips GC (D7b).
      */
     @Override
     protected void doStart() throws Exception {
+        if (readOnly) {
+            logger.info("[doStart][readOnly][skip gc]{}", this);
+            return;
+        }
         gcFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
 
             @Override
@@ -215,6 +224,10 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     @Override
     public synchronized ReplicationStore createIfNotExist() throws IOException {
 
+        if (readOnly) {
+            return getCurrent();
+        }
+
         // STOPPING / stop / dispose: refuse reopen / self-heal. Initialized-but-never-started still allowed
         // (isPositivelyStopped distinguishes Stoppable.PHASE_NAME_END from Initializable.PHASE_NAME_END).
         if (refuseOpenOrCreate()) {
@@ -238,6 +251,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     @Override
     public synchronized ReplicationStore create() throws IOException {
 
+        checkNotReadOnly();
         if (!getLifecycleState().isInitialized()) {
             throw new ReplicationStoreManagerStateException("can not create", toString(), getLifecycleState().getPhaseName());
         }
@@ -297,7 +311,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                 syncRateManager, commandNotifyScheduler, asyncFileSystem, replId);
     }
 
-    private void recordLatestStore(String storeDir) throws IOException {
+    void recordLatestStore(String storeDir) throws IOException {
+        checkNotReadOnly();
         Properties meta = currentMeta();
         meta.setProperty(LATEST_STORE_DIR, storeDir);
         saveMeta(meta);
@@ -357,6 +372,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             throw new IOException("replication store manager stopped, refuse manager meta: " + this);
         }
         if (managerMetaAsyncFile != null) {
+            return managerMetaAsyncFile;
+        }
+        if (readOnly) {
+            AsyncFile asyncFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
+                    () -> asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.READ, false, true,
+                            replId.toString()),
+                    "open manager meta " + metaFile.getAbsolutePath());
+            managerMetaAsyncFile = asyncFile;
             return managerMetaAsyncFile;
         }
         // Parent dir may not exist before first create(); open(CREATE) needs it.
@@ -435,6 +458,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     protected synchronized void gc() throws IOException {
 
+        checkNotReadOnly();
         logger.debug("[gc]{}", this);
 
         if (!getLifecycleState().isStarted()) {
@@ -490,6 +514,35 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         closeManagerMetaFile();
         AsyncFileSystemHelper.await(() -> asyncFileSystem.rmdir(this.baseDir.getAbsolutePath(), true),
                 "rmdir replication store manager baseDir " + baseDir);
+    }
+
+    @Override
+    public synchronized void setReadOnly(boolean readOnly) {
+        if (getLifecycleState().isStarted()) {
+            throw new IllegalStateException("setReadOnly only allowed when manager is not started: " + this);
+        }
+        if (currentStore.get() != null) {
+            throw new IllegalStateException("setReadOnly requires currentStore == null: " + this);
+        }
+        this.readOnly = readOnly;
+        currentMeta.set(null);
+        logger.info("[setReadOnly]{} {}", readOnly, this);
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return readOnly;
+    }
+
+    @Override
+    public ReplicationStore getOpenedStore() {
+        return currentStore.get();
+    }
+
+    private void checkNotReadOnly() {
+        if (readOnly) {
+            throw new IllegalStateException(READ_ONLY_STORE_MSG);
+        }
     }
 
     public long getGcCount() {

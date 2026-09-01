@@ -38,4 +38,19 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	 */
 	void releaseCurrentStore() throws IOException;
 
+	/**
+	 * Switch this manager between production and read-only mode.
+	 * Only legal when the manager is <b>not</b> started; otherwise {@link IllegalStateException}.
+	 */
+	void setReadOnly(boolean readOnly);
+
+	boolean isReadOnly();
+
+	/**
+	 * Non-blocking accessor for the already-opened store.
+	 * No lock, no FS call; returns {@code null} if none is open.
+	 * Intended for Redis command threads (D10).
+	 */
+	ReplicationStore getOpenedStore();
+
 }

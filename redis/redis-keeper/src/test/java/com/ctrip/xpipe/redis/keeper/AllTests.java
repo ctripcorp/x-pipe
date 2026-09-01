@@ -69,6 +69,7 @@ import org.junit.runners.Suite.SuiteClasses;
         KeeperContainerServiceTest.class,
         DefaultKeeperContainerConfigTest.class,
         DefaultReplicationStoreManagerTest.class,
+        DefaultReplicationStoreManagerReadOnlyTest.class,
         DefaultRedisKeeperServerTest.class,
         DefaultReplicationStoreTest.class,
         GapAllowedReplicationStoreTest.class,
