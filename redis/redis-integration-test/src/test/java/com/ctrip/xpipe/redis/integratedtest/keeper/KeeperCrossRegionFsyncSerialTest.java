@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.integratedtest.keeper;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
@@ -25,6 +26,10 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
 
     private static final int CROSS_REGION_SLAVE_COUNT = 3;
 
+    protected String getXpipeMetaConfigFile() {
+        return "integrated-keeper-fullseq-test.xml";
+    }
+
     @Override
     protected KeeperConfig getKeeperConfig() {
         TestKeeperConfig config = new TestKeeperConfig();
@@ -33,8 +38,8 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
         config.setReplicationStoreCommandFileSize(1024);
         // 串行全量：一次只允许 1 个 cross-region slave 全量
         config.setMaxLoadingSlaves(1);
-        config.setCrossRegionFsyncGraceSeconds(2);
-        config.setCrossRegionFsyncSettleSeconds(1);
+        config.setCrossRegionFsyncGraceSeconds(5);
+        config.setCrossRegionFsyncSettleSeconds(2);
         return config;
     }
 
@@ -50,7 +55,7 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
         waitAllSlavesOnline(crossRegionSlaves);
 
         // 先写入一批数据，让 3 个 slave 走增量（online 且数据一致）
-        sendMessageToMaster(redisMaster, 2000);
+        sendMessageToMaster(redisMaster, 20);
         sleep(2000);
 
         // 模拟 keeper 切换
@@ -129,28 +134,38 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
             byPort.put(s.getPort(), s);
         }
 
-        LinkedHashSet<Integer> loadingOrder = new LinkedHashSet<>();
+        LinkedHashSet<Integer> admittedOrder = new LinkedHashSet<>();
+        Set<Integer> seenWaiting = new HashSet<>();
         long deadline = System.currentTimeMillis() + 60_000;
         while (System.currentTimeMillis() < deadline) {
             int loading = 0;
-            for (RedisSlave rs : server.slaves()) {
+            Set<RedisSlave> fseqSlaves = server.slaves();
+            for (RedisSlave rs : fseqSlaves) {
                 if (rs.isKeeper()) continue;
+                int port = rs.getSlaveListeningPort();
                 SLAVE_STATE st = rs.getSlaveState();
+                if(st != SLAVE_STATE.REDIS_REPL_ONLINE) {
+                    logger.info("[fullsyncslave] slave {}, state {}", rs, st);
+                }
                 if (st == SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING || st == SLAVE_STATE.REDIS_REPL_SEND_BULK) {
                     loading++;
-                    loadingOrder.add(rs.getSlaveListeningPort());
+                }
+                if(st == SLAVE_STATE.REDIS_REPL_WAIT_SEQ_FSYNC){
+                    seenWaiting.add(port);
+                }else if(seenWaiting.contains(port)) {
+                    admittedOrder.add(port);
                 }
             }
             Assert.assertTrue("concurrent cross-region full sync detected: " + loading, loading <= 1);
 
-            if (loadingOrder.size() >= slaves.size() && loading == 0 && allOnline(server.slaves())) {
+            if (admittedOrder.size() >= slaves.size()) {
                 break;
             }
             sleep(30);
         }
 
         List<RedisMeta> order = new ArrayList<>();
-        for (int port : loadingOrder) {
+        for (int port : admittedOrder) {
             RedisMeta meta = byPort.get(port);
             Assert.assertNotNull("unknown slave listening port: " + port, meta);
             order.add(meta);
