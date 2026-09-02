@@ -2206,13 +2206,19 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         final String id = file.ioKey;
         if (!noFs) {
             awaitInFlightIo(id, file.path, false);
-            if (!restoreBackingFs.get()) {
-                logger.warn("failed to restore backing FS while closing {}, falling back to NO_FS close", file.path);
+            try {
+                if (!restoreBackingFs.get()) {
+                    logger.warn("failed to restore backing FS while closing {}, falling back to NO_FS close",
+                            file.path);
+                    noFs = true;
+                }
+            } catch (Throwable t) {
+                // A timed-out restore may still be running. Retrying the same bounded wait is likely
+                // to time out again and prevent close/reopen, so degrade to NO_FS and continue closing.
+                logger.warn("failed to restore backing FS while closing {}, falling back to NO_FS close",
+                        file.path, t);
                 noFs = true;
             }
-            // restore may have returned false on timeout, leaving its task running
-            // close should wait until io task is completed inf under fs mode.
-            awaitInFlightIo(id, file.path, false);
             if (!noFs) {
                 flush.accept(file);
             }

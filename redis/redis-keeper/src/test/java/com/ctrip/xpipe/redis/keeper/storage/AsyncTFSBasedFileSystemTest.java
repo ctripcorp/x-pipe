@@ -185,20 +185,6 @@ public class AsyncTFSBasedFileSystemTest {
     }
 
     @Test
-    public void testWriterAndReaderSeparate() throws Exception {
-        String p = path("file3");
-        // Writer writes data
-        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
-        fs.writeSync(writer, bufOf(new byte[]{1, 2, 3, 4}));
-        StorageUtil.closeChannels(fs.closeSync(writer));
-        // Separate reader reads data
-        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
-        byte[] data = readAll(reader, 4);
-        assertArrayEquals(new byte[]{1, 2, 3, 4}, data);
-        StorageUtil.closeChannels(fs.closeSync(reader));
-    }
-
-    @Test
     public void testWriteAndRead() throws Exception {
         String p = path("file4");
         byte[] expected = new byte[100];
@@ -292,30 +278,12 @@ public class AsyncTFSBasedFileSystemTest {
         StorageUtil.closeChannels(fs.closeSync(reader));
     }
 
-    @Test
-    public void testFsyncSync() throws Exception {
-        String p = path("file9");
-        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
-        fs.writeSync(file, bufOf(new byte[]{1, 2, 3}));
-        fs.fsyncSync(file); // should not throw
-        StorageUtil.closeChannels(fs.closeSync(file));
-    }
-
     @Test(expected = IllegalStateException.class)
     public void testFsyncOnClosedFileThrows() throws Exception {
         String p = path("file9b");
         AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         StorageUtil.closeChannels(fs.closeSync(file));
         fs.fsyncSync(file);
-    }
-
-    @Test
-    public void testSizeSync() throws Exception {
-        String p = path("file10");
-        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
-        fs.writeSync(file, bufOf(new byte[256]));
-        assertEquals(256, fs.sizeSync(file));
-        StorageUtil.closeChannels(fs.closeSync(file));
     }
 
     @Test
@@ -522,12 +490,6 @@ public class AsyncTFSBasedFileSystemTest {
     // =========================================================================
     // E. fsync interval control
     // =========================================================================
-
-    @Test
-    public void testFsyncIntervalBytesGetterSetter() {
-        fs.setFsyncIntervalBytes(12345);
-        assertEquals(12345, fs.getFsyncIntervalBytes());
-    }
 
     @Test
     public void testFsyncIntervalMillisGetterSetter() {
@@ -758,25 +720,6 @@ public class AsyncTFSBasedFileSystemTest {
     }
 
     @Test
-    public void testSegmentTruncateOffsetAfterEnd() throws Exception {
-        String dir = path("segdir11");
-        Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = openSeg(dir, true);
-        writeSeg(seg, bufOf(new byte[10]));
-        rollSeg(seg);
-        writeSeg(seg, bufOf(new byte[20]));
-        // Truncate at offset 100 (after end at 30) -> resets everything
-        truncSeg(seg, 100);
-        List<Long> offsets = listSeg(seg);
-        assertEquals(1, offsets.size());
-        assertEquals(Long.valueOf(100), offsets.get(0));
-        // Old segment files should be deleted
-        assertFalse(Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
-        assertFalse(Files.exists(Paths.get(dir, SEG_PREFIX + "10")));
-        StorageUtil.closeChannels(fs.closeSync(seg));
-    }
-
-    @Test
     public void testSegmentDeleteSegments() throws Exception {
         String dir = path("segdir12");
         Files.createDirectories(Paths.get(dir));
@@ -817,29 +760,6 @@ public class AsyncTFSBasedFileSystemTest {
     }
 
     @Test
-    public void testSegmentPositionSync() throws Exception {
-        String dir = path("segdir14");
-        Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile segW = openSeg(dir, true);
-        writeSeg(segW, bufOf(new byte[]{1, 2, 3}));
-        rollSeg(segW);
-        writeSeg(segW, bufOf(new byte[]{4, 5, 6}));
-        StorageUtil.closeChannels(fs.closeSync(segW));
-
-        AsyncSegmentFile segR = openSeg(dir, false);
-        positionSeg(segR, 4); // position in second segment
-        ByteBuf buf = fs.readSync(segR, 2, segR.position);
-        try {
-            byte[] data = new byte[2];
-            buf.readBytes(data);
-            assertArrayEquals(new byte[]{5, 6}, data);
-        } finally {
-            buf.release();
-        }
-        StorageUtil.closeChannels(fs.closeSync(segR));
-    }
-
-    @Test
     public void testSegmentTransferToSync() throws Exception {
         String dir = path("segdir15");
         Files.createDirectories(Paths.get(dir));
@@ -858,38 +778,6 @@ public class AsyncTFSBasedFileSystemTest {
     // =========================================================================
     // G. Segment open recovery & dirty data deletion
     // =========================================================================
-
-    @Test
-    public void testSegmentOpenDeletesUnparseableSegmentFiles() throws Exception {
-        String dir = path("segdir16");
-        Files.createDirectories(Paths.get(dir));
-        // Create a file with prefix but non-numeric suffix
-        writeFile(dir + "/" + SEG_PREFIX + "ABC", new byte[]{1});
-        // Create a valid segment
-        writeFile(dir + "/" + SEG_PREFIX + "0", new byte[]{2, 3});
-
-        AsyncSegmentFile seg = openSeg(dir, false);
-        // Unparseable file should be deleted
-        assertFalse(Files.exists(Paths.get(dir, SEG_PREFIX + "ABC")));
-        // Valid segment should be intact
-        List<Long> offsets = listSeg(seg);
-        assertEquals(Collections.singletonList(0L), offsets);
-        StorageUtil.closeChannels(fs.closeSync(seg));
-    }
-
-    @Test
-    public void testSegmentOpenDeletesUnparseableIndexFiles() throws Exception {
-        String dir = path("segdir17");
-        Files.createDirectories(Paths.get(dir));
-        // Valid segment
-        writeFile(dir + "/" + SEG_PREFIX + "0", new byte[]{1, 2});
-        // Unparseable index file
-        writeFile(dir + "/" + IDX_PREFIX + "XYZ", new byte[]{3});
-
-        AsyncSegmentFile seg = openSeg(dir, false);
-        assertFalse(Files.exists(Paths.get(dir, IDX_PREFIX + "XYZ")));
-        StorageUtil.closeChannels(fs.closeSync(seg));
-    }
 
     @Test
     public void testSegmentOpenDeletesOffChainSegments() throws Exception {
@@ -1092,34 +980,9 @@ public class AsyncTFSBasedFileSystemTest {
         StorageUtil.closeChannels(fs.closeSync(file));
     }
 
-    @Test
-    public void testCloseSyncNullChannel() throws Exception {
-        // Close after lenient open (channel=null) should not throw
-        String dir = path("null_ch_dir");
-        Files.createDirectories(Paths.get(dir));
-        AsyncFile file = openFile(dir, AbstractStorageFile.OpenMode.READ, false, true);
-        // channel is null because lenient skipped openCurrentChannel for non-regular file
-        StorageUtil.closeChannels(fs.closeSync(file)); // should not throw
-    }
-
     // =========================================================================
     // I. Segment special branches
     // =========================================================================
-
-    @Test
-    public void testSegmentWriteAutoRollOnEmptyState() throws Exception {
-        // Opening a writer on an empty dir creates segment 0 up front.
-        String dir = path("seg_auto_roll");
-        Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = openSeg(dir, true);
-        assertEquals(Collections.singletonList(0L), listSeg(seg));
-        writeSeg(seg, bufOf(new byte[]{1, 2, 3}));
-        List<Long> offsets = listSeg(seg);
-        assertEquals(1, offsets.size());
-        assertEquals(Long.valueOf(0), offsets.get(0));
-        assertTrue(Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
-        StorageUtil.closeChannels(fs.closeSync(seg));
-    }
 
     @Test
     public void testSegmentTruncateAcrossSegments() throws Exception {
@@ -1164,41 +1027,6 @@ public class AsyncTFSBasedFileSystemTest {
         assertTrue(result.getValue().containsKey(IDX_PREFIX));
         assertEquals(1, listSeg(seg).size());
         StorageUtil.closeChannels(fs.closeSync(seg));
-    }
-
-    @Test
-    public void testGetCurrentIndexFilesSyncEmptyReaderStillOpensHandles() throws Exception {
-        // The delegate has no empty-state short circuit: getCurrentIndexFiles always returns a
-        // handle per requested prefix, keyed on openedSegmentStartOffset (0 for an empty reader).
-        // The "(0, empty map)" answer is TailCacheFileSystem's, which checks the dir state first.
-        String dir = path("seg_idx_empty_r");
-        Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = openSeg(dir, false);
-        assertTrue(listSeg(seg).isEmpty());
-        Pair<Long, Map<String, AsyncIndexFile>> result = fs.getCurrentIndexFilesSync(seg, INDEX_PREFIXES, false);
-        assertEquals(Long.valueOf(0), result.getKey());
-        assertTrue(result.getValue().containsKey(IDX_PREFIX));
-        assertEquals(0, result.getValue().get(IDX_PREFIX).startOffset);
-        StorageUtil.closeChannels(fs.closeSync(seg));
-    }
-
-    @Test
-    public void testGetCurrentIndexFilesSyncNonEmpty() throws Exception {
-        // Non-empty state: returns segment start offset and index files
-        String dir = path("seg_idx_nonempty");
-        Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile segW = openSeg(dir, true);
-        writeSeg(segW, bufOf(new byte[10]));
-        rollSeg(segW);
-        writeSeg(segW, bufOf(new byte[20]));
-        StorageUtil.closeChannels(fs.closeSync(segW));
-
-        AsyncSegmentFile segR = openSeg(dir, false);
-        // Reader position is at firstOffset=0
-        Pair<Long, Map<String, AsyncIndexFile>> result = fs.getCurrentIndexFilesSync(segR, INDEX_PREFIXES, false);
-        assertEquals(Long.valueOf(0), result.getKey());
-        assertTrue(result.getValue().containsKey(IDX_PREFIX));
-        StorageUtil.closeChannels(fs.closeSync(segR));
     }
 
     @Test

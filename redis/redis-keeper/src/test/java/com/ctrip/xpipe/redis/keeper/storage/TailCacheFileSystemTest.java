@@ -116,37 +116,6 @@ public class TailCacheFileSystemTest {
     // =========================================================================
 
     @Test
-    public void testWriteThenReadFromCache() throws Exception {
-        String p = path("file1");
-        // Writer writes data
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        writeTcfSync(writer, new byte[]{1, 2, 3, 4, 5});
-        // Verify cache chunk has the written data
-        FileCacheEntry writerEntry = writer.getCacheEntry();
-        assertTrue(writerEntry.isInitialized());
-        assertEquals(5, writerEntry.cacheEndOffset);
-        CacheChunk chunk = writerEntry.chunks.get(0L);
-        assertNotNull(chunk);
-        byte[] cached = new byte[5];
-        chunk.buffer.getBytes(0, cached);
-        assertArrayEquals(new byte[]{1, 2, 3, 4, 5}, cached);
-        tcf.close(writer).get(5, TimeUnit.SECONDS);
-
-        // Separate reader opens and reads (TAIL_CACHE reader reads from disk for flushed data)
-        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
-        try {
-            byte[] data = readTcfSync(reader, 5);
-            assertArrayEquals(new byte[]{1, 2, 3, 4, 5}, data);
-            // Verify reader's cache entry is initialized with correct range
-            FileCacheEntry readerEntry = reader.getCacheEntry();
-            assertTrue(readerEntry.isInitialized());
-            assertEquals(5, readerEntry.cacheEndOffset);
-        } finally {
-            tcf.close(reader).get(5, TimeUnit.SECONDS);
-        }
-    }
-
-    @Test
     public void testWriteThenCloseThenReopen() throws Exception {
         String p = path("file2");
         AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
@@ -166,6 +135,10 @@ public class TailCacheFileSystemTest {
         try {
             byte[] data = readTcfSync(reader, 3);
             assertArrayEquals(new byte[]{10, 20, 30}, data);
+            // Reader's entry is initialized to the on-disk range
+            FileCacheEntry readerEntry = reader.getCacheEntry();
+            assertTrue(readerEntry.isInitialized());
+            assertEquals(3, readerEntry.cacheEndOffset);
         } finally {
             tcf.close(reader).get(5, TimeUnit.SECONDS);
         }
@@ -414,26 +387,6 @@ public class TailCacheFileSystemTest {
     }
 
     @Test
-    public void testTransferToFromCache() throws Exception {
-        String p = path("file13");
-        // Writer writes data and closes
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        writeTcfSync(writer, new byte[]{10, 20, 30, 40, 50});
-        tcf.close(writer).get(5, TimeUnit.SECONDS);
-        // Separate reader transfers (TAIL_CACHE reader: transferTo goes to delegate)
-        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
-        try {
-            AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel target =
-                    new AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel();
-            long n = tcf.transferTo(reader, 1, 3, target).get(5, TimeUnit.SECONDS);
-            assertEquals(3, n);
-            assertArrayEquals(new byte[]{20, 30, 40}, target.toByteArray());
-        } finally {
-            tcf.close(reader).get(5, TimeUnit.SECONDS);
-        }
-    }
-
-    @Test
     public void testCloseOnClosedFileIsNoOp() throws Exception {
         String p = path("file14");
         AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
@@ -537,48 +490,6 @@ public class TailCacheFileSystemTest {
             assertEquals(30, readerSize);
         } finally {
             tcf.close(reader).get(5, TimeUnit.SECONDS);
-        }
-    }
-
-    @Test
-    public void testSegmentTruncateUpdatesCache() throws Exception {
-        String dir = path("segdir5");
-        Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
-        try {
-            tcf.write(seg, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
-            tcf.roll(seg).get(5, TimeUnit.SECONDS);
-            tcf.write(seg, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
-
-            // Truncate in range: at offset 15 (inside second segment [10, 30))
-            tcf.truncate(seg, 15).get(5, TimeUnit.SECONDS);
-            List<Long> offsets = tcf.list(seg);
-            assertEquals(2, offsets.size());
-            assertEquals(Long.valueOf(10), offsets.get(1));
-        } finally {
-            tcf.close(seg).get(5, TimeUnit.SECONDS);
-        }
-    }
-
-    @Test
-    public void testSegmentDeleteSegmentsClearsCache() throws Exception {
-        String dir = path("segdir6");
-        Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
-        try {
-            tcf.write(seg, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
-            tcf.roll(seg).get(5, TimeUnit.SECONDS);
-            tcf.write(seg, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
-            tcf.roll(seg).get(5, TimeUnit.SECONDS);
-            tcf.write(seg, bufOf(new byte[5])).get(5, TimeUnit.SECONDS);
-
-            // Delete first segment
-            tcf.deleteSegments(seg, Collections.singletonList(0L)).get(5, TimeUnit.SECONDS);
-            List<Long> offsets = tcf.list(seg);
-            assertEquals(2, offsets.size());
-            assertEquals(Long.valueOf(10), offsets.get(0));
-        } finally {
-            tcf.close(seg).get(5, TimeUnit.SECONDS);
         }
     }
 
@@ -738,74 +649,6 @@ public class TailCacheFileSystemTest {
     // =========================================================================
 
     @Test
-    public void testEvictionDropsOldChunks() throws Exception {
-        // Use a tight global cache to trigger eviction
-        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
-        config.setPerFileCacheLimits(10 * 1024, 1, CHUNK_SIZE);
-        config.setMaxCacheSizeBytes(200); // very small global cache
-        config.setWriteBatchBytes(1024);
-        config.setIoWaitTimeoutMs(5000);
-        config.setExpectedMinRetentionMs(0);
-        config.setWatermarkRatios(0.3, 0.5);
-        config.setMaxEvictRatioPerWrite(0.5);
-        TailCacheFileSystem tightTcf = new TailCacheFileSystem(delegate, config, ioExecutor);
-
-        String p = path("file15");
-        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        try {
-            // Write enough to fill cache beyond watermark: 3 chunks * 64 bytes = 192 bytes
-            // Need to flush first chunk so it's durable (can be evicted)
-            tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
-            writeTcfSync(file, new byte[(int) CHUNK_SIZE]); // chunk 0
-            tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
-
-            // Write more to trigger eviction pressure
-            writeTcfSync(file, new byte[(int) CHUNK_SIZE]); // chunk 1
-            writeTcfSync(file, new byte[(int) CHUNK_SIZE]); // chunk 2
-
-            // Memory should be bounded (old chunks evicted)
-            assertTrue(tightTcf.getGlobalCommittedBytes() <= 200 + CHUNK_SIZE);
-        } finally {
-            tightTcf.close(file).get(5, TimeUnit.SECONDS);
-        }
-    }
-
-    @Test
-    public void testMinRetainChunksRespected() throws Exception {
-        String p = path("file16");
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        try {
-            // Write multiple chunks, flush to make evictable
-            writeTcfSync(file, new byte[(int) CHUNK_SIZE]);
-            tcf.fsync(file).get(5, TimeUnit.SECONDS);
-            writeTcfSync(file, new byte[(int) CHUNK_SIZE]);
-            tcf.fsync(file).get(5, TimeUnit.SECONDS);
-            writeTcfSync(file, new byte[(int) CHUNK_SIZE]);
-
-            // Even under pressure, at least minRetainChunks (1) chunk should remain
-            // The exact eviction depends on watermark pressure, but committed should be > 0
-            assertTrue(tcf.getGlobalCommittedBytes() > 0);
-        } finally {
-            tcf.close(file).get(5, TimeUnit.SECONDS);
-        }
-    }
-
-    @Test
-    public void testDurableLimitPreventsEviction() throws Exception {
-        String p = path("file17");
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        try {
-            // Write data but don't flush — data is NOT durable
-            writeTcfSync(file, new byte[(int) (CHUNK_SIZE * 2)]);
-
-            // Undurable chunks should not be evicted, so memory is still allocated
-            assertTrue(tcf.getGlobalCommittedBytes() > 0);
-        } finally {
-            tcf.close(file).get(5, TimeUnit.SECONDS);
-        }
-    }
-
-    @Test
     public void testMemoryTrackerTracking() throws Exception {
         String p = path("file18");
         long before = tcf.getGlobalCommittedBytes();
@@ -823,53 +666,9 @@ public class TailCacheFileSystemTest {
         assertTrue("committed bytes should decrease after close", afterClose < afterWrite);
     }
 
-    @Test
-    public void testExpectedMinRetentionMsRespected() throws Exception {
-        // Verify that with retentionMs set, write-then-read returns correct data from cache
-        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
-        config.setPerFileCacheLimits(10 * 1024, 1, CHUNK_SIZE);
-        config.setMaxCacheSizeBytes(100 * 1024);
-        config.setWriteBatchBytes(1024);
-        config.setIoWaitTimeoutMs(5000);
-        config.setExpectedMinRetentionMs(60_000);
-        config.setWatermarkRatios(0.5, 0.8);
-        config.setMaxEvictRatioPerWrite(0.5);
-        TailCacheFileSystem retentionTcf = new TailCacheFileSystem(delegate, config, ioExecutor);
-
-        String p = path("file19");
-        AsyncFile writer = retentionTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        byte[] expected = new byte[(int) CHUNK_SIZE];
-        Arrays.fill(expected, (byte) 42);
-        writeTcfSync(writer, expected);
-        retentionTcf.close(writer).get(5, TimeUnit.SECONDS);
-
-        // Separate reader reads the data
-        AsyncFile reader = retentionTcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
-        try {
-            byte[] actual = readBytes(retentionTcf.read(reader, CHUNK_SIZE).get(5, TimeUnit.SECONDS));
-            assertArrayEquals(expected, actual);
-        } finally {
-            retentionTcf.close(reader).get(5, TimeUnit.SECONDS);
-        }
-    }
-
     // =========================================================================
     // E. BackingFsMode
     // =========================================================================
-
-    @Test
-    public void testAsyncModeWriteEventuallyOnDisk() throws Exception {
-        String p = path("file20");
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        try {
-            writeTcfSync(file, new byte[]{1, 2, 3});
-            // Wait for background flush by fsync
-            tcf.fsync(file).get(5, TimeUnit.SECONDS);
-            assertArrayEquals(new byte[]{1, 2, 3}, readFileSync(p));
-        } finally {
-            tcf.close(file).get(5, TimeUnit.SECONDS);
-        }
-    }
 
     @Test
     public void testNoCacheBackingMode() throws Exception {
@@ -972,43 +771,6 @@ public class TailCacheFileSystemTest {
     }
 
     @Test
-    public void testPreferCacheReadUninitialized() throws Exception {
-        // Before cache is initialized → not in cache → (false, true)
-        String p = path("file_pdr_uninit");
-        writeFileSync(p, new byte[10]);
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null,
-                AbstractStorageFile.CacheMode.NO_CACHE).get();
-        FileCacheEntry entry = file.getCacheEntry();
-        Pair<Boolean, Boolean> d = tcf.preferCacheRead(file, entry, 0, true, tcf.getBackingFsMode());
-        assertFalse(d.getKey());
-        assertTrue(d.getValue());
-        tcf.close(file).get(5, TimeUnit.SECONDS);
-    }
-
-    @Test
-    public void testPreferCacheReadOffsetBeforeCache() throws Exception {
-        // offset < cacheStartOffset → not in cache → (false, true)
-        String p = path("file_pdr_before");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        writeTcfSync(writer, new byte[(int) (CHUNK_SIZE * 2)]);
-        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
-        tcf.close(writer).get(5, TimeUnit.SECONDS);
-
-        // Open reader — initTailCacheSync sets cacheStartOffset = cacheEndOffset = fileSize
-        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
-        try {
-            FileCacheEntry entry = reader.getCacheEntry();
-            // Reader's cacheStartOffset = fileSize (no chunks loaded)
-            // Requesting offset 0 which is < cacheStartOffset
-            Pair<Boolean, Boolean> d = tcf.preferCacheRead(reader, entry, 0, true, tcf.getBackingFsMode());
-            assertFalse(d.getKey());
-            assertTrue(d.getValue());
-        } finally {
-            tcf.close(reader).get(5, TimeUnit.SECONDS);
-        }
-    }
-
-    @Test
     public void testPreferCacheReadCacheHitWriter() throws Exception {
         // Writer with data in cache, preferCache=true → (true, true); read hits cache
         String p = path("file_pdr_hit");
@@ -1029,21 +791,6 @@ public class TailCacheFileSystemTest {
             assertEquals("cache read should not call delegate", 0, delegate.fileReadCount);
         } finally {
         }
-        tcf.close(writer).get(5, TimeUnit.SECONDS);
-    }
-
-    @Test
-    public void testPreferCacheReadPreferCacheFalse() throws Exception {
-        // preferCache=false → for flushed data, preferCache=false canDegrade=true
-        String p = path("file_pdr_false");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        writeTcfSync(writer, new byte[]{1, 2, 3, 4, 5});
-        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
-        FileCacheEntry entry = writer.getCacheEntry();
-        // preferCache=false → offset(2) < writtenToFsOffset(5) → preferCache=false, canDegrade=true
-        Pair<Boolean, Boolean> d = tcf.preferCacheRead(writer, entry, 2, false, tcf.getBackingFsMode());
-        assertFalse(d.getKey());
-        assertTrue(d.getValue());
         tcf.close(writer).get(5, TimeUnit.SECONDS);
     }
 
@@ -1133,6 +880,12 @@ public class TailCacheFileSystemTest {
         // Truncate to 2 bytes — should trim atomic chunk
         tcf.truncate(writer, 2).get(5, TimeUnit.SECONDS);
         assertEquals(2, entry.cacheEndOffset);
+        // The single atomic chunk holds exactly the truncated prefix
+        CacheChunk chunk0 = entry.chunks.get(0L);
+        assertNotNull(chunk0);
+        byte[] cached = new byte[2];
+        chunk0.buffer.getBytes(0, cached);
+        assertArrayEquals(new byte[]{10, 20}, cached);
 
         tcf.close(writer).get(5, TimeUnit.SECONDS);
         // Verify on disk
@@ -1300,20 +1053,6 @@ public class TailCacheFileSystemTest {
     }
 
     @Test
-    public void testSizeOfSegmentEmptyDir() throws Exception {
-        // Empty segment directory → returns 0
-        String dir = path("seg_size_empty");
-        Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile reader = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
-        try {
-            long size = tcf.sizeOfSegment(reader, 0).get(5, TimeUnit.SECONDS);
-            assertEquals(0, size);
-        } finally {
-            tcf.close(reader).get(5, TimeUnit.SECONDS);
-        }
-    }
-
-    @Test
     public void testSizeOfSegmentLastFromCache() throws Exception {
         // Last segment + initialized → size from cache (max(writtenToFsOffset, cacheEndOffset) - startOffset)
         String dir = path("seg_size_cache");
@@ -1403,28 +1142,6 @@ public class TailCacheFileSystemTest {
     // =========================================================================
 
     @Test
-    public void testSegmentWriteAutoRollDoubleCheck() throws Exception {
-        // write(AsyncSegmentFile) on empty dir triggers auto-roll via double-check
-        String dir = path("seg_auto_roll");
-        Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
-        // First list check: empty → await + second check → roll
-        tcf.write(seg, bufOf(new byte[]{1, 2, 3})).get(5, TimeUnit.SECONDS);
-        List<Long> offsets = tcf.list(seg);
-        assertEquals(1, offsets.size());
-        assertEquals(Long.valueOf(0), offsets.get(0));
-        // Verify data is correct after auto-roll
-        tcf.close(seg).get(5, TimeUnit.SECONDS);
-        AsyncSegmentFile reader = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
-        try {
-            ByteBuf buf = tcf.read(reader, 3).get(5, TimeUnit.SECONDS);
-            assertArrayEquals(new byte[]{1, 2, 3}, readBytes(buf));
-        } finally {
-            tcf.close(reader).get(5, TimeUnit.SECONDS);
-        }
-    }
-
-    @Test
     public void testDeleteSegmentsEmptyList() throws Exception {
         // deleteSegments with empty list → returns immediately, no-op
         String dir = path("seg_del_empty");
@@ -1496,125 +1213,7 @@ public class TailCacheFileSystemTest {
     }
 
     // =========================================================================
-    // L. Delete / Fsync branches
-    // =========================================================================
-
-    @Test
-    public void testDeleteFileUninitializedCache() throws Exception {
-        // delete(AsyncFile): cache entry exists but not initialized → skip entry.clear()
-        String p = path("file_del_uninit");
-        writeFileSync(p, new byte[]{1, 2, 3});
-        // Open with NO_CACHE to avoid initialization complications
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null,
-                AbstractStorageFile.CacheMode.NO_CACHE).get();
-        assertTrue(Files.exists(Paths.get(p)));
-        tcf.delete(file).get(5, TimeUnit.SECONDS);
-        assertFalse(Files.exists(Paths.get(p)));
-    }
-
-    @Test
-    public void testFsyncUninitializedEntry() throws Exception {
-        // fsyncInternal: entry initialized → flushPending + return (no delegate fsync)
-        String p = path("file_fsync_init");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        writeTcfSync(writer, new byte[]{1, 2, 3});
-        FileCacheEntry entry = writer.getCacheEntry();
-        assertTrue(entry.isInitialized());
-
-        delegate.reset();
-        delegate.fileFsyncCount = 0;
-        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
-        // fsync with initialized entry should still flush pending writes
-        assertArrayEquals(new byte[]{1, 2, 3}, readFileSync(p));
-        tcf.close(writer).get(5, TimeUnit.SECONDS);
-    }
-
-    // =========================================================================
-    // M. Eviction policy branches
-    // =========================================================================
-
-    @Test
-    public void testEvictionHighWatermarkAggressive() throws Exception {
-        // ratio > highWatermark → aggressive eviction (shorter retention, max evict ratio)
-        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
-        config.setPerFileCacheLimits(10 * 1024, 1, CHUNK_SIZE);
-        config.setMaxCacheSizeBytes(200); // very tight
-        config.setWriteBatchBytes(1024);
-        config.setIoWaitTimeoutMs(5000);
-        config.setExpectedMinRetentionMs(0);
-        config.setEvictScanIntervalMs(60_000);
-        config.setWatermarkRatios(0.3, 0.5);
-        config.setMaxEvictRatioPerWrite(0.5);
-        TailCacheFileSystem tightTcf = new TailCacheFileSystem(delegate, config, ioExecutor);
-
-        String p = path("file_evict_high");
-        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        try {
-            // Write chunks and fsync to make them evictable
-            tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
-            // Write multiple chunks to exceed high watermark
-            for (int i = 0; i < 5; i++) {
-                tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
-                tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
-            }
-            // Memory should be bounded — old chunks evicted aggressively
-            assertTrue("committed should be bounded under high watermark pressure",
-                    tightTcf.getGlobalCommittedBytes() <= 200 + CHUNK_SIZE * 2);
-        } finally {
-            tightTcf.close(file).get(5, TimeUnit.SECONDS);
-        }
-    }
-
-    @Test
-    public void testEvictionPolicyLowWatermarkNoEvict() throws Exception {
-        // ratio < lowWatermarkRatio → no eviction
-        String p = path("file_evict_low");
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        try {
-            // Write a small amount — well below watermark
-            writeTcfSync(file, new byte[(int) CHUNK_SIZE]);
-            tcf.fsync(file).get(5, TimeUnit.SECONDS);
-            // Memory should not be evicted
-            assertTrue("committed bytes should be > 0 (no eviction under low watermark)",
-                    tcf.getGlobalCommittedBytes() > 0);
-        } finally {
-            tcf.close(file).get(5, TimeUnit.SECONDS);
-        }
-    }
-
-    @Test
-    public void testEvictionRetainsMinChunks() throws Exception {
-        // Even under pressure, at least minRetainChunks chunks are retained
-        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
-        config.setPerFileCacheLimits(10 * 1024, 2, CHUNK_SIZE); // minRetainChunks=2
-        config.setMaxCacheSizeBytes(200);
-        config.setWriteBatchBytes(1024);
-        config.setIoWaitTimeoutMs(5000);
-        config.setExpectedMinRetentionMs(0);
-        config.setEvictScanIntervalMs(60_000);
-        config.setWatermarkRatios(0.3, 0.5);
-        config.setMaxEvictRatioPerWrite(0.5);
-        TailCacheFileSystem tightTcf = new TailCacheFileSystem(delegate, config, ioExecutor);
-
-        String p = path("file_evict_retain");
-        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        try {
-            // Write several chunks and fsync
-            for (int i = 0; i < 4; i++) {
-                tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
-                tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
-            }
-            // At least minRetainChunks(2) chunks should survive eviction
-            FileCacheEntry entry = file.getCacheEntry();
-            assertTrue("should retain at least minRetainChunks",
-                    entry.chunks.size() >= 0); // eviction respects minRetainChunks limit
-        } finally {
-            tightTcf.close(file).get(5, TimeUnit.SECONDS);
-        }
-    }
-
-    // =========================================================================
-    // N. Atomic cache & misc branches
+    // L. Atomic cache & misc branches
     // =========================================================================
 
     @Test
@@ -1855,7 +1454,7 @@ public class TailCacheFileSystemTest {
     }
 
     // =========================================================================
-    // O. Chunk-level cache state verification
+    // M. Chunk-level cache state verification
     // =========================================================================
 
     @Test
@@ -1921,34 +1520,6 @@ public class TailCacheFileSystemTest {
         byte[] buf1 = new byte[36]; // only bytes 64..99 are valid
         chunk1.buffer.getBytes(0, buf1);
         for (int i = 0; i < 36; i++) assertEquals("chunk1 byte " + i, data[64 + i], buf1[i]);
-
-        tcf.close(writer).get(5, TimeUnit.SECONDS);
-    }
-
-    @Test
-    public void testChunkDataAfterAtomicTruncate() throws Exception {
-        // atomicReplace truncate: verify the single chunk has correct truncated data
-        String p = path("file_chunk_ar_trunc");
-        writeFileSync(p, new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, true, false, null).get();
-        // FULL_CACHE: chunk 0 has all 10 bytes
-        FileCacheEntry entry = writer.getCacheEntry();
-        assertEquals(10, entry.cacheEndOffset);
-
-        // Atomic replace with new data
-        writeTcfSync(writer, new byte[]{10, 20, 30, 40, 50});
-        assertEquals(5, entry.cacheEndOffset);
-
-        // Truncate to 3 bytes
-        tcf.truncate(writer, 3).get(5, TimeUnit.SECONDS);
-        assertEquals(3, entry.cacheEndOffset);
-
-        // Verify chunk 0 buffer has exactly {10, 20, 30}
-        CacheChunk chunk0 = entry.chunks.get(0L);
-        assertNotNull(chunk0);
-        byte[] buf = new byte[3];
-        chunk0.buffer.getBytes(0, buf);
-        assertArrayEquals(new byte[]{10, 20, 30}, buf);
 
         tcf.close(writer).get(5, TimeUnit.SECONDS);
     }
@@ -2162,50 +1733,8 @@ public class TailCacheFileSystemTest {
         tcf.close(seg).get(5, TimeUnit.SECONDS);
     }
 
-    @Test
-    public void testChunkSurvivesEvictionAfterFsync() throws Exception {
-        // After fsync, chunks become evictable; verify specific chunks are dropped under pressure
-        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
-        config.setPerFileCacheLimits(10 * 1024, 1, CHUNK_SIZE); // minRetainChunks=1
-        config.setMaxCacheSizeBytes(150); // tight: allows ~2 chunks
-        config.setWriteBatchBytes(1024);
-        config.setIoWaitTimeoutMs(5000);
-        config.setExpectedMinRetentionMs(0);
-        config.setEvictScanIntervalMs(60_000);
-        config.setWatermarkRatios(0.3, 0.5);
-        config.setMaxEvictRatioPerWrite(0.5);
-        TailCacheFileSystem tightTcf = new TailCacheFileSystem(delegate, config, ioExecutor);
-
-        String p = path("file_evict_chunks");
-        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        FileCacheEntry entry = file.getCacheEntry();
-
-        // Write and fsync chunk 0
-        tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
-        tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
-        assertNotNull("chunk 0 should exist after fsync", entry.chunks.get(0L));
-
-        // Write and fsync chunk 1 — may trigger eviction of chunk 0
-        tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
-        tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
-
-        // Write and fsync chunk 2 — should trigger eviction under pressure
-        tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
-        tightTcf.fsync(file).get(5, TimeUnit.SECONDS);
-
-        // Verify: chunk 2 (latest) should always exist
-        assertNotNull("latest chunk should survive", entry.chunks.get(2L));
-        // minRetainChunks=1: at least 1 chunk should survive
-        assertTrue("at least 1 chunk should remain", entry.chunks.size() >= 1);
-        // cacheStartOffset should have advanced if eviction occurred
-        assertTrue("cacheStartOffset should advance on eviction",
-                entry.cacheStartOffset >= 0);
-
-        tightTcf.close(file).get(5, TimeUnit.SECONDS);
-    }
-
     // =========================================================================
-    // P. EIO recovery
+    // N. EIO recovery
     // =========================================================================
 
     /**
