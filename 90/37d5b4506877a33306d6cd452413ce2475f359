@@ -1,0 +1,22 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultKeeperRepl.java
+  s_0d1093d11d3910::t_f7a182ea6449bf 63-67
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/handler/keeper/InfoHandler.java
+  s_0d1093d11d3910::t_d32c8d66e1680e 276
+  s_0d1093d11d3910::t_8abd5f5a8979ad 275
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "9037d5b4506877a33306d6cd452413ce2475f359",
+  "prompts": {},
+  "sessions": {
+    "s_0d1093d11d3910": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88e417e4-b5b0-487f-b45f-330c85f659aa",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
