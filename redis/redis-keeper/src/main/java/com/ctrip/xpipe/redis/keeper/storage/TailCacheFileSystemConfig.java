@@ -105,8 +105,8 @@ public class TailCacheFileSystemConfig {
     }
 
     public static void validateRestoreWaitTimeoutMs(long restoreWaitTimeoutMs) {
-        if (restoreWaitTimeoutMs < 0) {
-            throw new IllegalArgumentException("restoreWaitTimeoutMs must be non-negative");
+        if (restoreWaitTimeoutMs <= 0) {
+            throw new IllegalArgumentException("restoreWaitTimeoutMs must be positive");
         }
     }
 

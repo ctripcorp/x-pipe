@@ -335,10 +335,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
 
     // Delete on-disk segment/index files whose offset is not in metadata. Metadata unchanged.
     void deleteOrphanFiles(FileEntry entry) throws IOException {
-        String[] names = new File(dirPath).list();
-        if (names == null) {
-            return;
-        }
+        List<String> names = StorageUtil.listNamesSync(Paths.get(dirPath));
         SegmentDirState s = entry.state;
         for (String name : names) {
             String matchedPrefix = null;

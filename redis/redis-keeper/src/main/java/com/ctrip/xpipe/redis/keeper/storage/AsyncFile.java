@@ -19,15 +19,17 @@ public class AsyncFile extends AbstractStorageFile {
 
     FileChannel channel;
     final boolean canCloseByUser;
+    final boolean lenient;
 
-    AsyncFile(String path, boolean atomicReplace, OpenMode openMode, String key, String ioKey) {
-        this(path, atomicReplace, openMode, true, key, ioKey);
+    AsyncFile(String path, boolean atomicReplace, OpenMode openMode, String key, String ioKey, boolean lenient) {
+        this(path, atomicReplace, openMode, true, key, ioKey, lenient);
     }
 
     AsyncFile(String path, boolean atomicReplace, OpenMode openMode, boolean canCloseByUser,
-            String key, String ioKey) {
+            String key, String ioKey, boolean lenient) {
         super(openMode, atomicReplace, key, ioKey, path, Paths.get(path).getParent().toString());
         this.canCloseByUser = canCloseByUser;
+        this.lenient = lenient;
     }
 
     @Override

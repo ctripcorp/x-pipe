@@ -436,26 +436,12 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return inFlightIo.containsKey(id);
     }
 
-    private <T> T awaitFuture(CompletableFuture<T> future, String path, boolean throwOnFailure) {
-        try {
-            return future.get(ioWaitTimeoutMs, TimeUnit.MILLISECONDS);
-        } catch (TimeoutException | InterruptedException e) {
-            throw new OperationNotExecutedException(path, e);
-        } catch (ExecutionException e) {
-            if (throwOnFailure) {
-                throw new OperationNotExecutedException(path, e);
-            }
-            logger.warn("prior IO failed for {}, ignoring during wait", path, e);
-            return null;
-        }
-    }
-
     private void awaitInFlightIo(String id, String path, boolean throwOnFailure) {
         CompletableFuture<?> future = inFlightIo.get(id);
         if (future == null) {
             return;
         }
-        awaitFuture(future, path, throwOnFailure);
+        StorageUtil.awaitFuture(future, path, ioWaitTimeoutMs, throwOnFailure);
     }
 
     private void registerInFlight(String id, CompletableFuture<?> op) {
@@ -531,7 +517,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }, writeBuf);
         registerInFlight(id, flushFuture);
         try {
-            awaitFuture(flushFuture, path, false);
+            StorageUtil.awaitFuture(flushFuture, path, ioWaitTimeoutMs, false);
         } catch (Exception e) {
             // do nothing will get again to get the exact exception.
         }
@@ -940,10 +926,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     private <T> T awaitRestoreFuture(String path, CompletableFuture<T> future) {
         try {
-            if (restoreWaitTimeoutMs > 0) {
-                return future.get(restoreWaitTimeoutMs, TimeUnit.MILLISECONDS);
-            }
-            return future.get();
+            return future.get(restoreWaitTimeoutMs, TimeUnit.MILLISECONDS);
         } catch (TimeoutException | InterruptedException e) {
             logger.warn("restore backing FS timed out or interrupted for {}, leaving inconsistent", path, e);
             return null;
@@ -1112,7 +1095,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             prepareFileSync(file);
         });
         registerInFlight(id, prepareFuture);
-        awaitFuture(prepareFuture, file.path, true);
+        StorageUtil.awaitFuture(prepareFuture, file.path, ioWaitTimeoutMs, true);
     }
 
     // ---- AsyncFile ----
@@ -1130,8 +1113,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             // wait on the canonical writer key before delegate opens channels and initializes cache
             awaitInFlightIo(key, path, false);
         }
-        return StorageUtil.supply(ioExecutor,
-                () -> openFileSync(path, key, ioKey, openMode, atomicReplace, lenient, tenant, cacheMode, fsMode));
+        return CompletableFuture.completedFuture(
+                openFileSync(path, key, ioKey, openMode, atomicReplace, lenient, tenant, cacheMode, fsMode));
     }
 
 
@@ -1149,6 +1132,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         AsyncFile file = delegate.openSync(path, key, ioKey, effectiveOpenMode,
                 atomicReplace, lenient, tenant, noFs);
+        delegate.openWithFileEntry(file, noFs, this::registerInFlight, this::scheduleCloseChannels,
+                restoreWaitTimeoutMs, ioWaitTimeoutMs);
         file.cacheMode = cacheMode;
         if (cacheMode != CacheMode.NO_CACHE) {
             boolean write = file.canWrite();
@@ -1162,7 +1147,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 }
             } catch (Throwable t) {
                 logger.error("acquire file cache entry failed for {}, closing file", file.path, t);
-                cleanupOpenFailed(file, () -> StorageUtil.closeChannels(delegate.closeSync(file)));
+                cleanupOpenFailed(file);
                 throw t;
             }
             file.cacheEntry = entry;
@@ -1182,23 +1167,32 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 initFileCache(file, first, fsMode == BackingFsMode.NO_CACHE, noFs);
             } catch (Throwable t) {
                 logger.error("init file cache failed for {}, closing file", file.path, t);
-                cleanupOpenFailed(file, () -> StorageUtil.closeChannels(delegate.closeSync(file)));
+                cleanupOpenFailed(file);
                 throw t;
             }
         }
         return file;
     }
 
-    private void cleanupOpenFailed(AbstractStorageFile file, Runnable closeSync) {
+    private void cleanupOpenFailed(AsyncFile file) {
+        cleanupOpenFailed(file, delegate::closeSync);
+    }
+
+    private void cleanupOpenFailed(AsyncSegmentFile file) {
+        cleanupOpenFailed(file, delegate::closeSync);
+    }
+
+    private <T extends AbstractStorageFile> void cleanupOpenFailed(T file,
+            java.util.function.Function<T, List<FileChannel>> closeSync) {
+        try {
+            scheduleCloseChannels(file.path, closeSync.apply(file));
+        } catch (Throwable t) {
+            logger.error("closeSync failed during open cleanup for {}", file.path, t);
+        }
         try {
             file.onCacheClose.run();
         } catch (Throwable t) {
             logger.error("failed to release cache entry for {}", file.path, t);
-        }
-        try {
-            closeSync.run();
-        } catch (Throwable t) {
-            logger.error("closeSync failed during open cleanup for {}", file.path, t);
         }
     }
 
@@ -1208,8 +1202,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return;
         }
         if (first) {
-            init.run();
-            entry.initDone.countDown();
+            try {
+                init.run();
+            } finally {
+                entry.initDone.countDown();
+            }
         } else {
             try {
                 entry.initDone.await();
@@ -1229,7 +1226,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return;
         }
 
-        long backingEndOffset = awaitIoCachePrep(file, backingEndOffsetSupplier, ignored -> {});
+        long backingEndOffset = awaitIoCachePrep(file, null, ioWaitTimeoutMs,
+                backingEndOffsetSupplier, null);
         synchronized (entry) {
             if (!entry.isInitialized() || entry.fsInconsistent) {
                 return;
@@ -1291,7 +1289,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private void initTailCacheSync(AbstractStorageFile file,
             java.util.function.Supplier<Long> endOffsetSupplier, boolean timeBounded) {
         long endOffset = timeBounded
-                ? awaitIoCachePrep(file, endOffsetSupplier, ignored -> {})
+                ? awaitIoCachePrep(file, null, ioWaitTimeoutMs, endOffsetSupplier, null)
                 : executeWithIoFailureHandling(file, endOffsetSupplier);
         FileCacheEntry entry = file.cacheEntry;
         synchronized (entry) {
@@ -1304,26 +1302,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
     }
 
-    private <T> T awaitIoCachePrep(AbstractStorageFile file, java.util.function.Supplier<T> task,
-            java.util.function.Consumer<T> clean) {
-        CompletableFuture<T> future = StorageUtil.supply(ioExecutor, () -> {
-            StorageUtil.requireOpen(file);
-            return task.get();
-        });
-        try {
-            return awaitFuture(future, file.path, true);
-        } catch (Exception e) {
-            future.whenComplete((value, error) -> {
-                if (error == null) {
-                    try {
-                        clean.accept(value);
-                    } catch (Throwable cleanError) {
-                        logger.warn("clean abandoned IO cache prep result failed for {}", file.path, cleanError);
-                    }
-                }
-            });
-            throw e;
-        }
+    private <T> T awaitIoCachePrep(AbstractStorageFile file, String registerKey, long timeoutMs,
+            java.util.function.Supplier<T> task, java.util.function.Consumer<T> clean) {
+        return StorageUtil.awaitIoCachePrep(ioExecutor, file, registerKey, timeoutMs,
+                this::registerInFlight, task, clean);
     }
 
     private void loadFullFileCache(AsyncFile file, boolean memoryAllocateBlocking,
@@ -1335,7 +1317,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         FileCacheEntry entry = file.cacheEntry;
         try {
             long initialSize = timeBounded
-                    ? awaitIoCachePrep(file, () -> delegate.sizeSync(file), ignored -> {})
+                    ? awaitIoCachePrep(file, null, ioWaitTimeoutMs, () -> delegate.sizeSync(file), null)
                     : executeWithIoFailureHandling(file, () -> delegate.sizeSync(file));
             long initialCapacity = file.atomicReplace
                     ? initialSize
@@ -1351,7 +1333,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             reservedBytes = initialCapacity;
 
             Pair<Boolean, ByteBuf> fullData = timeBounded
-                    ? awaitIoCachePrep(file, () -> readFullData(file, initialSize),
+                    ? awaitIoCachePrep(file, null, ioWaitTimeoutMs, () -> readFullData(file, initialSize),
                             result -> result.getValue().release())
                     : executeWithIoFailureHandling(file, () -> readFullData(file, initialSize));
             boolean aligned = fullData.getKey();
@@ -1855,7 +1837,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             init.run();
         });
         registerInFlight(file.ioKey, initFuture);
-        awaitFuture(initFuture, file.path, true);
+        StorageUtil.awaitFuture(initFuture, file.path, ioWaitTimeoutMs, true);
     }
 
     private void initFullCacheAndAppend(AsyncFile file, FileCacheEntry entry, ByteBuf data,
@@ -2384,8 +2366,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             // wait on the canonical writer key before delegate opens channels and initializes cache
             awaitInFlightIo(key, path, false);
         }
-        return StorageUtil.supply(ioExecutor,
-                () -> openSegmentSync(
+        return CompletableFuture.completedFuture(
+                openSegmentSync(
                         path, prefix, key, ioKey, indexPrefixes, write, tenant, cacheMode, fsMode));
     }
 
@@ -2400,15 +2382,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         AsyncSegmentFile file = delegate.openSync(
                 path, prefix, key, ioKey, indexPrefixes, write, tenant, noFs);
-        try {
-            if (!noFs) {
-                delegate.initCurrentChannelsSync(file);
-            }
-        } catch (Throwable t) {
-            logger.error("init segment channels failed for {}, closing file", file.path, t);
-            cleanupOpenFailed(file, () -> StorageUtil.closeChannels(delegate.closeSync(file)));
-            throw t;
-        }
+        delegate.openWithFileEntry(file, noFs, this::registerInFlight, this::scheduleCloseChannels,
+                restoreWaitTimeoutMs, ioWaitTimeoutMs);
         file.cacheMode = cacheMode;
         boolean first = false;
         if (cacheMode != CacheMode.NO_CACHE) {
@@ -2421,7 +2396,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 }
             } catch (Throwable t) {
                 logger.error("acquire segment cache entry failed for {}, closing file", file.path, t);
-                cleanupOpenFailed(file, () -> StorageUtil.closeChannels(delegate.closeSync(file)));
+                cleanupOpenFailed(file);
                 throw t;
             }
             file.setCacheEntry(entry);
@@ -2450,7 +2425,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
         } catch (Throwable t) {
             logger.error("init segment cache failed for {}, closing file", file.path, t);
-            cleanupOpenFailed(file, () -> StorageUtil.closeChannels(delegate.closeSync(file)));
+            cleanupOpenFailed(file);
             throw t;
         }
         return file;
@@ -2606,8 +2581,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             size = Math.max(0L, cacheEntry.cacheEndOffset - file.openedSegmentStartOffset);
         } else {
             // No cache: get size via IO.
-            size = awaitIoCachePrep(file,
-                    () -> delegate.sizeOfSegmentSync(file, file.openedSegmentStartOffset), ignored -> {});
+            size = awaitIoCachePrep(file, null, ioWaitTimeoutMs,
+                    () -> delegate.sizeOfSegmentSync(file, file.openedSegmentStartOffset), null);
         }
 
         if (noFs) {
@@ -3019,7 +2994,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         file.lastModified = System.currentTimeMillis();
         final long truncateEndOffset = endOffset != null
                 ? endOffset
-                : awaitIoCachePrep(file, () -> segmentExclusiveEndOffset(file), ignored -> {});
+                : awaitIoCachePrep(file, null, ioWaitTimeoutMs,
+                        () -> segmentExclusiveEndOffset(file), null);
 
         // Metadata phase (main thread).
         List<FileChannel> oldChannels = new ArrayList<>();

@@ -9,7 +9,7 @@ import java.util.concurrent.CountDownLatch;
 final class FileEntry {
 
     final CountDownLatch initDone = new CountDownLatch(1);
-    volatile boolean initFailed = false;
+    volatile Throwable initError = null;
 
     volatile SegmentDirState state = SegmentDirState.EMPTY;
 

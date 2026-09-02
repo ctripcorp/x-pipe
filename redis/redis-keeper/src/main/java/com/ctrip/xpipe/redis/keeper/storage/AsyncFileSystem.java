@@ -5,6 +5,7 @@ import java.nio.channels.WritableByteChannel;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import io.netty.buffer.ByteBuf;
 
 import com.ctrip.xpipe.tuple.Pair;
@@ -27,6 +28,12 @@ public interface AsyncFileSystem {
     // Open the file synchronously. noFs=true skips backing IO and marks needPrepare.
     default AsyncFile openSync(String path, String key, String ioKey, AbstractStorageFile.OpenMode openMode,
             boolean atomicReplace, boolean lenient, String tenant, boolean noFs) {
+        throw new UnsupportedOperationException();
+    }
+    default AsyncFile openWithFileEntry(AsyncFile file, boolean noFs,
+            BiConsumer<String, CompletableFuture<?>> register,
+            BiConsumer<String, List<FileChannel>> clean,
+            long recoverTimeoutMs, long ioTimeoutMs) {
         throw new UnsupportedOperationException();
     }
     CompletableFuture<Boolean> isFile(AsyncFile file);
@@ -145,6 +152,12 @@ public interface AsyncFileSystem {
     // Open the segment file synchronously. noFs skips backing IO and marks needPrepare.
     default AsyncSegmentFile openSync(String path, String prefix, String key, String ioKey,
             List<String> indexPrefixes, boolean write, String tenant, boolean noFs) {
+        throw new UnsupportedOperationException();
+    }
+    default AsyncSegmentFile openWithFileEntry(AsyncSegmentFile file, boolean noFs,
+            BiConsumer<String, CompletableFuture<?>> register,
+            BiConsumer<String, List<FileChannel>> clean,
+            long recoverTimeoutMs, long ioTimeoutMs) {
         throw new UnsupportedOperationException();
     }
     // If the FS op fails, the caller must retry.
