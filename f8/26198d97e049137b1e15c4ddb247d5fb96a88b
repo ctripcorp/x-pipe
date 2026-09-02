@@ -1,0 +1,42 @@
+redis/redis-proxy/src/test/java/com/ctrip/xpipe/redis/proxy/session/DefaultBackendSessionTest.java
+  s_c49371a3173010::t_a84d86f8721209 108-112
+redis/redis-proxy/src/test/java/com/ctrip/xpipe/redis/proxy/handler/CompressExecutorsTest.java
+  s_c49371a3173010::t_3f5298ff454338 1-52
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/tunnel/DefaultTunnel.java
+  s_c49371a3173010::t_f6d8e6461e0a77 327-329
+  s_c49371a3173010::t_b74c69cbb6c457 32
+redis/redis-proxy/src/test/java/com/ctrip/xpipe/redis/proxy/config/DefaultProxyConfigTest.java
+  s_c49371a3173010::t_b7966dfee0bc9b 30-39
+redis/redis-proxy/src/test/java/com/ctrip/xpipe/redis/proxy/tunnel/DefaultTunnelTest.java
+  s_c49371a3173010::t_5026e78135a96f 31
+  s_c49371a3173010::t_a35b96b87b3c17 45-46
+  s_c49371a3173010::t_f36d913b36be33 143-162
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/session/DefaultBackendSession.java
+  s_c49371a3173010::t_ae60312c271f0e 31
+  s_c49371a3173010::t_4f64be90e8dcad 185-187
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/config/DefaultProxyConfig.java
+  s_c49371a3173010::t_41e96d9f667442 74-75
+  s_c49371a3173010::t_539b1d8d2034b9 13
+  s_c49371a3173010::t_6562446071d56b 228-232
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/handler/CompressExecutors.java
+  s_c49371a3173010::t_333ea031fb98ce 1-39
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/config/ProxyConfig.java
+  s_c49371a3173010::t_d51c1773922c8c 72-81
+  s_c49371a3173010::t_b3afa902f2702d 6-7,11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "f826198d97e049137b1e15c4ddb247d5fb96a88b",
+  "prompts": {},
+  "sessions": {
+    "s_c49371a3173010": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7b1ac98f-2c0c-4443-ae2c-4e47efd02501",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
