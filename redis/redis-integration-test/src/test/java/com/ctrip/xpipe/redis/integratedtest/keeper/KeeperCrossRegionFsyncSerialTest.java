@@ -26,6 +26,8 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
 
     private static final int CROSS_REGION_SLAVE_COUNT = 3;
 
+    private static final int GRACE_SECONDS = 5;
+
     protected String getXpipeMetaConfigFile() {
         return "integrated-keeper-fullseq-test.xml";
     }
@@ -38,7 +40,7 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
         config.setReplicationStoreCommandFileSize(1024);
         // 串行全量：一次只允许 1 个 cross-region slave 全量
         config.setMaxLoadingSlaves(1);
-        config.setCrossRegionFsyncGraceSeconds(5);
+        config.setCrossRegionFsyncGraceSeconds(GRACE_SECONDS);
         config.setCrossRegionFsyncSettleSeconds(2);
         return config;
     }
@@ -79,6 +81,9 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
         List<RedisMeta> fullSyncOrder = sampleFullSyncOrder(newActiveServer, crossRegionSlaves);
         Assert.assertEquals("all cross-region slaves should do full sync", CROSS_REGION_SLAVE_COUNT, fullSyncOrder.size());
         assertAscendingByIpPort(fullSyncOrder);
+
+        // 等 grace 过期，避免下一轮重连时命中旧租约「续跑」绕过串行
+        sleep(GRACE_SECONDS * 1000 + 1000);
         }
 
         // 全量完成后数据与 master 一致（分歧数据被 RDB 覆盖清除）
@@ -118,6 +123,9 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
             List<RedisMeta> fullSyncOrder = sampleFullSyncOrder(activeServer, crossRegionSlaves);
             Assert.assertEquals("all cross-region slaves should do full sync", CROSS_REGION_SLAVE_COUNT, fullSyncOrder.size());
             assertAscendingByIpPort(fullSyncOrder);
+
+            // 等 grace 过期，避免下一轮重连时命中旧租约「续跑」绕过串行
+            sleep(GRACE_SECONDS * 1000 + 1000);
         }
 
         // 全量完成后数据与 master 一致（分歧数据被 RDB 覆盖清除）
@@ -158,7 +166,7 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
             }
             Assert.assertTrue("concurrent cross-region full sync detected: " + loading, loading <= 1);
 
-            if (admittedOrder.size() >= slaves.size()) {
+            if (admittedOrder.size() >= slaves.size() && loading == 0 && allOnline(server.slaves())) {
                 break;
             }
             sleep(30);
