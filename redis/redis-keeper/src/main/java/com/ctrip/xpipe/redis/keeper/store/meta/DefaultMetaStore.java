@@ -19,7 +19,12 @@ import java.util.Objects;
  */
 public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter {
 	public DefaultMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId) {
-		super(baseDir, keeperRunid, asyncFileSystem, fileSystemReplId);
+		this(baseDir, keeperRunid, asyncFileSystem, fileSystemReplId, false);
+	}
+
+	public DefaultMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId,
+							boolean readOnly) {
+		super(baseDir, keeperRunid, asyncFileSystem, fileSystemReplId, readOnly);
 	}
 
 	@Override

@@ -308,7 +308,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid,
                                                       KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
         return new GtidReplicationStore(this.ckStore,storeBaseDir,keeperConfig,keeperRunid, keeperMonitor, redisOpParser,
-                syncRateManager, commandNotifyScheduler, asyncFileSystem, replId);
+                syncRateManager, commandNotifyScheduler, asyncFileSystem, replId, this.readOnly);
     }
 
     void recordLatestStore(String storeDir) throws IOException {

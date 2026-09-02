@@ -35,6 +35,7 @@ import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.IndexEntryTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindowTest;
+import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreReadOnlyTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStoreTest;
@@ -72,6 +73,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultReplicationStoreManagerReadOnlyTest.class,
         DefaultRedisKeeperServerTest.class,
         DefaultReplicationStoreTest.class,
+        DefaultReplicationStoreReadOnlyTest.class,
         GapAllowedReplicationStoreTest.class,
         DefaultRdbStoreTest.class,
 
@@ -101,6 +103,7 @@ import org.junit.runners.Suite.SuiteClasses;
         LeakyBucketBasedMasterReplicationListenerTest.class,
         DefaultReplicationStoreStatsTest.class,
         DefaultMetaStoreTest.class,
+        DefaultMetaStoreReadOnlyTest.class,
         TestAbstractMetaStoreTest.class,
         PsyncFailReasonTest.class,
         DefaultMasterStatsTest.class,

@@ -48,11 +48,27 @@ public abstract class AbstractMetaStore implements MetaStore{
 
 	private final AtomicBoolean initialized = new AtomicBoolean(false);
 
+	static final String READ_ONLY_STORE_MSG = "read only store";
+
+	protected final boolean readOnly;
+
 	public AbstractMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId) {
+		this(baseDir, keeperRunid, asyncFileSystem, fileSystemReplId, false);
+	}
+
+	public AbstractMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId,
+							 boolean readOnly) {
 		this.baseDir = baseDir;
 		this.keeperRunid = keeperRunid;
 		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
 		this.fileSystemReplId = Objects.requireNonNull(fileSystemReplId, "fileSystemReplId");
+		this.readOnly = readOnly;
+	}
+
+	private void checkNotReadOnly() {
+		if (readOnly) {
+			throw new IllegalStateException(READ_ONLY_STORE_MSG);
+		}
 	}
 
 	public void initialize() throws IOException {
@@ -60,7 +76,9 @@ public abstract class AbstractMetaStore implements MetaStore{
 			return;
 		}
 		loadMeta();
-		checkOrSaveKeeperRunid(keeperRunid);
+		if (!readOnly) {
+			checkOrSaveKeeperRunid(keeperRunid);
+		}
 	}
 	
 	private final void checkOrSaveKeeperRunid(String keeperRunid) throws IOException {
@@ -81,6 +99,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 
 
 	protected void saveMetaToFileV2(File file, ReplicationStoreMeta replicationStoreMeta) throws IOException {
+		checkNotReadOnly();
 		logger.info("[saveMetaToFileV2]{}, {}", file, replicationStoreMeta);
 		byte[] data = Codec.DEFAULT.encode(replicationStoreMeta).getBytes(StandardCharsets.UTF_8);
 		AsyncFile asyncFile = getOrOpenMetaFile();
@@ -118,7 +137,9 @@ public abstract class AbstractMetaStore implements MetaStore{
 			return;
 		}
 		File file = metaV2File();
-		AsyncFile asyncFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(file.getAbsolutePath(), AbstractStorageFile.OpenMode.READ_WRITE, true, true,
+		AbstractStorageFile.OpenMode openMode = readOnly ? AbstractStorageFile.OpenMode.READ : AbstractStorageFile.OpenMode.READ_WRITE;
+		boolean atomicReplace = !readOnly;
+		AsyncFile asyncFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(file.getAbsolutePath(), openMode, atomicReplace, true,
 						fileSystemReplId.toString()),
 				"open meta file " + file.getAbsolutePath());
 		metaAsyncFile = asyncFile;
@@ -182,6 +203,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 	 * External callers must use {@link #saveMeta(ReplicationStoreMeta, ReplicationStoreMeta)} CAS.
 	 */
 	protected final void saveMeta(ReplicationStoreMeta newMeta) throws IOException {
+		checkNotReadOnly();
 		synchronized (metaRef) {
 			logger.info("[Metasaved]\nold:{}\nnew:{}", metaRef.get(), newMeta);
 			// Phase H2.0: disk first, then memory — write failure must leave metaRef unchanged
@@ -192,6 +214,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 
 	@Override
 	public final boolean saveMeta(ReplicationStoreMeta expectedOld, ReplicationStoreMeta newMeta) throws IOException {
+		checkNotReadOnly();
 		synchronized (metaRef) {
 			ReplicationStoreMeta current = metaRef.get();
 			if (current != expectedOld) {
@@ -353,7 +376,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 	
 	@Override
 	public void setMasterAddress(DefaultEndPoint endpoint) throws IOException {
-		
+		checkNotReadOnly();
 		synchronized (metaRef) {
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
 
@@ -373,11 +396,13 @@ public abstract class AbstractMetaStore implements MetaStore{
 
 	@Override
 	public void becomeActive() throws IOException {
+		checkNotReadOnly();
 		setKeeperState(KeeperState.ACTIVE);
 	}
 
 	@Override
 	public void becomeBackup() throws IOException {
+		checkNotReadOnly();
 		setKeeperState(KeeperState.BACKUP);
 	}
 	

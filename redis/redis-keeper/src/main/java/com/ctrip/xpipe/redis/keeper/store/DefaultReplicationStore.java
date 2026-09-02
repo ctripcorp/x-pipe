@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
+import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStore;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
@@ -84,11 +85,24 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected final IntSupplier asyncWriteMaxBytes;
 
+	static final String READ_ONLY_STORE_MSG = "read only store";
+
+	protected final boolean readOnly;
+
 	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
 								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
 								   ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
 								   ReplId fileSystemReplId) throws IOException {
+		this(ckStore, baseDir, config, keeperRunid, cmdReaderWriterFactory, keeperMonitor, syncRateManager, redisOp,
+				commandNotifyScheduler, asyncFileSystem, fileSystemReplId, false);
+	}
+
+	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
+								   CommandReaderWriterFactory cmdReaderWriterFactory,
+								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
+								   ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+								   ReplId fileSystemReplId, boolean readOnly) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
 		this.commandsRetainTimeoutMilli = config::getReplicationStoreCommandFileRetainTimeoutMilli;
@@ -102,26 +116,31 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
 		this.fileSystemReplId = Objects.requireNonNull(fileSystemReplId, "fileSystemReplId");
 		this.asyncWriteMaxBytes = config::getAsyncWriteMaxBytes;
+		this.readOnly = readOnly;
 
 		try {
 			this.metaStore = createMetaStore(baseDir, keeperRunid);
 
 			ReplicationStoreMeta meta = metaStore.dupReplicationStoreMeta();
 
-			Pair<RdbStore,RdbStore> rdbStores = recoverRdbStores(baseDir, meta);
-			if (rdbStores.getKey() != null) {
-				this.rdbStoreRef.set(rdbStores.getKey());
-			}
-			if (rdbStores.getValue() != null) {
-				this.rordbStoreRef.set(rdbStores.getValue());
+			if (!readOnly) {
+				Pair<RdbStore,RdbStore> rdbStores = recoverRdbStores(baseDir, meta);
+				if (rdbStores.getKey() != null) {
+					this.rdbStoreRef.set(rdbStores.getKey());
+				}
+				if (rdbStores.getValue() != null) {
+					this.rordbStoreRef.set(rdbStores.getValue());
+				}
 			}
 
 			if (null != meta && null != meta.getCmdFilePrefix()) {
-				cmdStore = createCommandStore(baseDir, meta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
+				cmdStore = openCommandStore(baseDir, meta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
 						metaStore.generateGtidCmdFilter());
 			}
 
-			removeUnusedRdbFiles();
+			if (!readOnly) {
+				removeUnusedRdbFiles();
+			}
 		} catch (Throwable t) {
 			closeCreatedStoresOnConstructFail();
 			throw wrapInitFail(t, "replication store construct fail");
@@ -132,7 +151,14 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 									  KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
 									  AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId
 	) throws IOException {
-		this(null,baseDir, config,keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp, null, asyncFileSystem, fileSystemReplId);
+		this(baseDir, config, keeperRunid, keeperMonitor, syncRateManager, redisOp, asyncFileSystem, fileSystemReplId, false);
+	}
+
+	protected DefaultReplicationStore(File baseDir, KeeperConfig config,String keeperRunid,
+									  KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
+									  AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId, boolean readOnly
+	) throws IOException {
+		this(null,baseDir, config,keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp, null, asyncFileSystem, fileSystemReplId, readOnly);
 	}
 
 
@@ -215,6 +241,12 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		);
 	}
 
+	protected final void checkNotReadOnly() {
+		if (readOnly) {
+			throw new IllegalStateException(READ_ONLY_STORE_MSG);
+		}
+	}
+
 	@Override
 	public void psyncContinue(String newReplId) throws IOException {
 		makeSureOpen();
@@ -245,6 +277,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public void switchToPSync(String replId, long replOff) throws IOException {
+		checkNotReadOnly();
 		makeSureOpen();
 		getLogger().info("[switchToPSync] replId:{}, replOff:{}", replId, replOff);
 
@@ -293,6 +326,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
+		checkNotReadOnly();
 		makeSureOpen();
 		getLogger().info("[switchToXSync] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}, gtidLost:{}",
 				replId, replOff, masterUuid, gtidCont, gtidLost);
@@ -405,11 +439,13 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
 							   GtidSet gtidLost, String masterUuid) throws IOException {
+		checkNotReadOnly();
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public RdbStore prepareRdb(String replId, long rdbOffset, EofType eofType) throws IOException {
+		checkNotReadOnly();
 		makeSureOpen();
 		ensureBaseDir();
 
@@ -419,6 +455,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	public void confirmRdb(RdbStore rdbStore) throws IOException {
+		checkNotReadOnly();
 		makeSureOpen();
 
 		getLogger().info("[confirmRdb] type:{}, replId:{}, rdbOffset:{}, eof:{}",
@@ -434,6 +471,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	public void confirmRdbGapAllowed(RdbStore rdbStore) throws IOException {
+		checkNotReadOnly();
 		makeSureOpen();
 
 		getLogger().info("[confirmRdbGapAllowed] type:{}, replId:{}, rdbOffset:{}, eof:{}, repl-proto:{}, gtid-executed:{} gtid-lost:{}",
@@ -470,7 +508,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		CommandStore newCmdStore = null;
 		boolean metaSaved = false;
 		try {
-			newCmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
+			newCmdStore = openCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
 					metaStore.generateGtidCmdFilter());
 			if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
 				newCmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
@@ -529,7 +567,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		boolean metaSaved = false;
 		String op = xsync ? "xsyncContinueFrom" : "continueFrom";
 		try {
-			newCmdStore = createCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
+			newCmdStore = openCommandStore(baseDir, newMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor,
 					metaStore.generateGtidCmdFilter());
 			if (xsync) {
 				newCmdStore.switchToXSync(xsyncGtid);
@@ -708,7 +746,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	protected MetaStore createMetaStore(File baseDir, String keeperRunid) throws IOException {
-		DefaultMetaStore store = new DefaultMetaStore(baseDir, keeperRunid, asyncFileSystem, fileSystemReplId);
+		DefaultMetaStore store = new DefaultMetaStore(baseDir, keeperRunid, asyncFileSystem, fileSystemReplId, readOnly);
 		try {
 			store.initialize();
 		} catch (Throwable t) {
@@ -777,6 +815,18 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			return stage.getBegOffsetBacklog();
 		}
 		return 0L;
+	}
+
+	private CommandStore openCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
+												KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
+												KeeperMonitor keeperMonitor, GtidCmdFilter gtidCmdFilter) throws IOException {
+		if (readOnly) {
+			ReadOnlyCommandStore readOnlyStore = new ReadOnlyCommandStore(
+					new File(baseDir, replMeta.getCmdFilePrefix()), asyncFileSystem, fileSystemReplId);
+			initializeCommandStore(readOnlyStore);
+			return readOnlyStore;
+		}
+		return createCommandStore(baseDir, replMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor, gtidCmdFilter);
 	}
 
 	protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
@@ -1110,11 +1160,15 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public boolean isFresh() {
+		if (readOnly) {
+			return metaStore == null || metaStore.getCurrentReplStage() == null;
+		}
 		return metaStore == null || metaStore.isFresh();
 	}
 
 	@Override
 	public int appendCommands(ByteBuf byteBuf) throws IOException {
+		checkNotReadOnly();
 		makeSureOpen();
 		return cmdStore.appendCommands(byteBuf);
 	}
@@ -1225,7 +1279,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public void destroy() throws Exception {
-
+		checkNotReadOnly();
 		getLogger().info("[destroy]{}", this);
 		if (cmdStore != null) {
 			try {
@@ -1298,6 +1352,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public boolean gc() throws IOException {
+		checkNotReadOnly();
 		synchronized (lock) {
 			gcRdbIfNeeded(rdbStoreRef);
 			gcRdbIfNeeded(rordbStoreRef);
