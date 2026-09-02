@@ -2533,9 +2533,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             data.release();
             throw e;
         }
-        final boolean noFs = backingFsMode == BackingFsMode.NO_FS;
+        final BackingFsMode fsMode = backingFsMode;
+        final boolean noFs = fsMode == BackingFsMode.NO_FS;
         // No bootstrap roll needed: a writer's tail segment exists from open onwards.
-        return writeInternal(file, data, backingFsMode,
+        return writeInternal(file, data, fsMode,
                 () -> initCacheAndAppend(file, data, noFs),
                 writeBuf -> executeWithIoFailureHandling(file, () -> delegate.writeSync(file, writeBuf)),
                 () -> executeWithIoFailureHandling(file, () -> {

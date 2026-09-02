@@ -689,18 +689,24 @@ public class TailCacheFileSystemTest {
         long firstCall = tcfDisk.transferTo(reader, 64, 200, second).get(5, TimeUnit.SECONDS);
         logger.info("[B-disk] first transferTo(64,200)={} readerOpened=[{}, {})",
                 firstCall, reader.openedSegmentStartOffset, reader.openedSegmentEndOffset);
-        // First disk transferTo hits the old tail file and returns 0; maybeSwitchSegment
-        // then rebinds to [newStart, MAX). A second call must see the new segment.
+        // First disk transferTo hits the sealed old tail file and returns 0. maybeSwitchSegment
+        // only drops the channel — it does not rebind the opened range, so the reader still
+        // reports the stale [0, MAX).
         assertEquals("B-disk first call is 0 at the sealed old tail", 0L, firstCall);
-        assertEquals(64L, reader.openedSegmentStartOffset);
+        assertEquals(0L, reader.openedSegmentStartOffset);
         assertEquals(Long.MAX_VALUE, reader.openedSegmentEndOffset);
+        assertNull("channel dropped so the next call re-switches", reader.currentSegmentChannel);
 
+        // The rebind happens on the next call: preReadMetadata sees isSegmentReady(64)==false
+        // (channel is null) and switchToSegment moves the range to [64, MAX).
         long secondCall = tcfDisk.transferTo(reader, 64, 200, second).get(5, TimeUnit.SECONDS);
         logger.info("[B-disk] second transferTo(64,200)={} readerOpened=[{}, {})",
                 secondCall, reader.openedSegmentStartOffset, reader.openedSegmentEndOffset);
 
         try {
-            assertEquals("B-disk: retry after maybeSwitchSegment must read the new segment", 200L, secondCall);
+            assertEquals("B-disk: retry after the channel drop must read the new segment", 200L, secondCall);
+            assertEquals(64L, reader.openedSegmentStartOffset);
+            assertEquals(Long.MAX_VALUE, reader.openedSegmentEndOffset);
         } finally {
             tcfDisk.close(reader).get(5, TimeUnit.SECONDS);
             tcfDisk.close(writer).get(5, TimeUnit.SECONDS);
@@ -909,7 +915,10 @@ public class TailCacheFileSystemTest {
             tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
             fail("should have thrown");
         } catch (Exception e) {
-            assertTrue(e.getCause() instanceof IllegalStateException);
+            // open() now runs openFileSync on the calling thread and returns an already
+            // completed future, so the writer-exclusion error surfaces synchronously.
+            assertTrue(e instanceof IllegalStateException
+                    || e.getCause() instanceof IllegalStateException);
         } finally {
             tcf.close(writer1).get(5, TimeUnit.SECONDS);
         }
@@ -1684,14 +1693,15 @@ public class TailCacheFileSystemTest {
 
     @Test
     public void testPositionAsyncFileWriteModeThrows() throws Exception {
-        // position(AsyncFile) in write mode → failedFuture with IllegalArgumentException
+        // The read-mode guard is a caller bug, so position(AsyncFile) throws it synchronously
+        // rather than wrapping it in a failed future.
         String p = path("file_pos_write");
         AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
         try {
-            tcf.position(writer, 0).get(5, TimeUnit.SECONDS);
+            tcf.position(writer, 0);
             fail("Expected IllegalArgumentException");
-        } catch (java.util.concurrent.ExecutionException e) {
-            assertTrue(e.getCause() instanceof IllegalArgumentException);
+        } catch (IllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("requires read mode"));
         } finally {
             tcf.close(writer).get(5, TimeUnit.SECONDS);
         }
@@ -1776,8 +1786,19 @@ public class TailCacheFileSystemTest {
         tcf.roll(seg).get(5, TimeUnit.SECONDS);
         tcf.write(seg, bufOf(new byte[5])).get(5, TimeUnit.SECONDS);
 
-        // The last user-provided offset determines the inclusive deletion boundary.
-        tcf.deleteSegments(seg, Collections.singletonList(10L)).get(5, TimeUnit.SECONDS);
+        // deleteSegments still requires the offsets to start at the first segment; only the
+        // last one is used as the inclusive boundary by the underlying metadata call.
+        try {
+            tcf.deleteSegments(seg, Collections.singletonList(10L));
+            fail("Expected IllegalArgumentException for out-of-order delete");
+        } catch (IllegalArgumentException e) {
+            assertTrue(e.getMessage().contains("expected 0"));
+        }
+        assertEquals(Arrays.asList(0L, 10L, 30L), tcf.list(seg));
+
+        // Passing the full prefix deletes everything up to and including the last offset.
+        tcf.deleteSegments(seg, Arrays.asList(0L, 10L)).get(5, TimeUnit.SECONDS);
+        awaitAll();
         assertEquals(Collections.singletonList(30L), tcf.list(seg));
         assertFalse(Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
         assertFalse(Files.exists(Paths.get(dir, SEG_PREFIX + "10")));
@@ -2369,10 +2390,9 @@ public class TailCacheFileSystemTest {
         }
 
         @Override
-        public void rollSync(AsyncSegmentFile file, long currentSegmentSize,
-                boolean noFs, List<FileChannel> pending) {
+        public List<FileChannel> rollMetadataSync(AsyncSegmentFile file, long currentSegmentSize, boolean noFs) {
             segRollCount++;
-            super.rollSync(file, currentSegmentSize, noFs, pending);
+            return super.rollMetadataSync(file, currentSegmentSize, noFs);
         }
 
         @Override

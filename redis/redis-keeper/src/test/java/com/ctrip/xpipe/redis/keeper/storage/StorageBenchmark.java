@@ -20,6 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 
 /**
  * Benchmark comparing three layers of single-file read/write overhead:
@@ -97,6 +98,28 @@ public class StorageBenchmark {
         return Unpooled.wrappedBuffer(data);
     }
 
+    // openSync only builds the file object; openWithFileEntry registers the FileEntry and opens
+    // the channels (for segments it also runs initCurrentChannelsSync).
+    private static final BiConsumer<String, CompletableFuture<?>> NO_REGISTER = (key, future) -> { };
+    private static final BiConsumer<String, List<FileChannel>> CLOSE_CHANNELS =
+            (path, channels) -> StorageUtil.closeChannels(channels);
+    private static final long RECOVER_TIMEOUT_MS = 20_000;
+    private static final long IO_TIMEOUT_MS = 10_000;
+
+    private AsyncFile openTfsFile(String filePath, AbstractStorageFile.OpenMode openMode) {
+        String key = StorageUtil.asyncFileKey(filePath);
+        AsyncFile file = tfs.openSync(filePath, key, key, openMode, false, false, null, false);
+        return tfs.openWithFileEntry(file, false, NO_REGISTER, CLOSE_CHANNELS,
+                RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
+    }
+
+    private AsyncSegmentFile openTfsSeg(String dirPath, boolean write) {
+        String key = StorageUtil.segmentKey(dirPath, SEG_PREFIX);
+        AsyncSegmentFile seg = tfs.openSync(dirPath, SEG_PREFIX, key, key, INDEX_PREFIXES, write, null, false);
+        return tfs.openWithFileEntry(seg, false, NO_REGISTER, CLOSE_CHANNELS,
+                RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
+    }
+
     private void rollSeg(AsyncSegmentFile seg) throws Exception {
         long size = seg.currentSegmentChannel == null ? 0L : seg.currentSegmentChannel.size();
         StorageUtil.closeChannels(tfs.rollMetadataSync(seg, size, false));
@@ -149,7 +172,7 @@ public class StorageBenchmark {
 
     private double benchAsyncFileWrite_TFS() throws Exception {
         String p = path("bench_af_write_tfs");
-        AsyncFile file = tfs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile file = openTfsFile(p, AbstractStorageFile.OpenMode.WRITE);
         byte[] data = new byte[CHUNK_SIZE];
 
         double mbps = doWrite(TOTAL_ITERATIONS,
@@ -178,7 +201,7 @@ public class StorageBenchmark {
 
     private double benchAsyncFileWrite_TFSOnIoThread() throws Exception {
         String p = path("bench_af_write_tfs_io");
-        AsyncFile file = tfs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile file = openTfsFile(p, AbstractStorageFile.OpenMode.WRITE);
         byte[] data = new byte[CHUNK_SIZE];
 
         for (int i = 0; i < WARMUP_ITERATIONS; i++) {
@@ -282,7 +305,7 @@ public class StorageBenchmark {
             ch.force(true);
         }
 
-        AsyncFile reader = tfs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile reader = openTfsFile(p, AbstractStorageFile.OpenMode.READ);
 
         for (int i = 0; i < WARMUP_ITERATIONS; i++) {
             ByteBuf buf = tfs.readSync(reader, CHUNK_SIZE, (long) i * CHUNK_SIZE, 0);
@@ -351,7 +374,7 @@ public class StorageBenchmark {
             ch.force(true);
         }
 
-        AsyncFile reader = tfs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile reader = openTfsFile(p, AbstractStorageFile.OpenMode.READ);
 
         for (int i = 0; i < WARMUP_ITERATIONS; i++) {
             long offset = (long) i * CHUNK_SIZE;
@@ -434,8 +457,7 @@ public class StorageBenchmark {
     private double benchAsyncSegmentFileWrite_TFS() throws Exception {
         String dir = path("bench_sf_write_tfs");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile file = tfs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
-        rollSeg(file);
+        AsyncSegmentFile file = openTfsSeg(dir, true);
         byte[] data = new byte[CHUNK_SIZE];
 
         double mbps = doWrite(TOTAL_ITERATIONS,
@@ -465,8 +487,7 @@ public class StorageBenchmark {
     private double benchAsyncSegmentFileWrite_TFSOnIoThread() throws Exception {
         String dir = path("bench_sf_write_tfs_io");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile file = tfs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
-        rollSeg(file);
+        AsyncSegmentFile file = openTfsSeg(dir, true);
         byte[] data = new byte[CHUNK_SIZE];
 
         for (int i = 0; i < WARMUP_ITERATIONS; i++) {
@@ -559,14 +580,14 @@ public class StorageBenchmark {
     private double benchAsyncSegmentFileRead_TFS() throws Exception {
         String dir = path("bench_sf_read_tfs");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile writer = tfs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile writer = openTfsSeg(dir, true);
         for (int i = 0; i < TOTAL_ITERATIONS; i++) {
             writeSeg(writer, bufOf(new byte[CHUNK_SIZE]));
         }
         tfs.fsyncSync(writer);
         StorageUtil.closeChannels(tfs.closeSync(writer));
 
-        AsyncSegmentFile reader = tfs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile reader = openTfsSeg(dir, false);
 
         for (int i = 0; i < WARMUP_ITERATIONS; i++) {
             ByteBuf buf = tfs.readSync(reader, CHUNK_SIZE, (long) i * CHUNK_SIZE);
@@ -626,14 +647,14 @@ public class StorageBenchmark {
     private double benchAsyncSegmentFileRead_TFSOnIoThread() throws Exception {
         String dir = path("bench_sf_read_tfs_io");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile writer = tfs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile writer = openTfsSeg(dir, true);
         for (int i = 0; i < TOTAL_ITERATIONS; i++) {
             writeSeg(writer, bufOf(new byte[CHUNK_SIZE]));
         }
         tfs.fsyncSync(writer);
         StorageUtil.closeChannels(tfs.closeSync(writer));
 
-        AsyncSegmentFile reader = tfs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile reader = openTfsSeg(dir, false);
 
         for (int i = 0; i < WARMUP_ITERATIONS; i++) {
             long offset = (long) i * CHUNK_SIZE;

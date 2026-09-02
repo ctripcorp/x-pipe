@@ -20,8 +20,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.BiConsumer;
 
 import com.ctrip.xpipe.tuple.Pair;
 
@@ -59,6 +61,34 @@ public class AsyncTFSBasedFileSystemTest {
 
     private String path(String name) {
         return tempDir.resolve(name).toString();
+    }
+
+    // openSync only builds the file object; openWithFileEntry does the FileEntry bookkeeping,
+    // the atomicReplace/tmp recovery, and the channel opening. TailCacheFileSystem passes its
+    // own registerInFlight/scheduleCloseChannels here; the tests drive the delegate directly,
+    // so there is no in-flight registry to feed and detached channels are closed inline.
+    private static final BiConsumer<String, CompletableFuture<?>> NO_REGISTER = (key, future) -> { };
+    private static final BiConsumer<String, List<FileChannel>> CLOSE_CHANNELS =
+            (path, channels) -> StorageUtil.closeChannels(channels);
+    private static final long RECOVER_TIMEOUT_MS = 20_000;
+    private static final long IO_TIMEOUT_MS = 5_000;
+
+    private AsyncFile openFile(String filePath, AbstractStorageFile.OpenMode openMode,
+            boolean atomicReplace, boolean lenient) {
+        // key must be stable per path: the writer-exclusion and reader-sharing checks in
+        // acquireFileEntry are keyed on it.
+        String key = StorageUtil.asyncFileKey(filePath);
+        AsyncFile file = fs.openSync(filePath, key, key, openMode, atomicReplace, lenient, null, false);
+        return fs.openWithFileEntry(file, false, NO_REGISTER, CLOSE_CHANNELS,
+                RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
+    }
+
+    private AsyncSegmentFile openSeg(String dirPath, boolean write) {
+        String key = StorageUtil.segmentKey(dirPath, SEG_PREFIX);
+        AsyncSegmentFile seg = fs.openSync(dirPath, SEG_PREFIX, key, key, INDEX_PREFIXES, write, null, false);
+        // openWithFileEntry also runs initCurrentChannelsSync, so the tail channel is ready.
+        return fs.openWithFileEntry(seg, false, NO_REGISTER, CLOSE_CHANNELS,
+                RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
     }
 
     private void positionSeg(AsyncSegmentFile seg, long offset) {
@@ -137,7 +167,7 @@ public class AsyncTFSBasedFileSystemTest {
     @Test
     public void testOpenAndCloseWriteMode() throws Exception {
         String p = path("file1");
-        AsyncFile file = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         fs.writeSync(file, bufOf(new byte[]{1, 2, 3}));
         StorageUtil.closeChannels(fs.closeSync(file));
         assertTrue(Files.exists(Paths.get(p)));
@@ -148,7 +178,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testOpenAndCloseReadMode() throws Exception {
         String p = path("file2");
         writeFile(p, new byte[]{10, 20, 30});
-        AsyncFile file = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         byte[] data = readAll(file, 3);
         assertArrayEquals(new byte[]{10, 20, 30}, data);
         StorageUtil.closeChannels(fs.closeSync(file));
@@ -158,11 +188,11 @@ public class AsyncTFSBasedFileSystemTest {
     public void testWriterAndReaderSeparate() throws Exception {
         String p = path("file3");
         // Writer writes data
-        AsyncFile writer = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         fs.writeSync(writer, bufOf(new byte[]{1, 2, 3, 4}));
         StorageUtil.closeChannels(fs.closeSync(writer));
         // Separate reader reads data
-        AsyncFile reader = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         byte[] data = readAll(reader, 4);
         assertArrayEquals(new byte[]{1, 2, 3, 4}, data);
         StorageUtil.closeChannels(fs.closeSync(reader));
@@ -174,11 +204,11 @@ public class AsyncTFSBasedFileSystemTest {
         byte[] expected = new byte[100];
         for (int i = 0; i < expected.length; i++) expected[i] = (byte) (i % 256);
         // Writer writes 100 bytes
-        AsyncFile writer = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         fs.writeSync(writer, bufOf(expected));
         StorageUtil.closeChannels(fs.closeSync(writer));
         // Separate reader reads back
-        AsyncFile reader = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         byte[] actual = readAll(reader, 100);
         assertArrayEquals(expected, actual);
         StorageUtil.closeChannels(fs.closeSync(reader));
@@ -188,7 +218,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testReadWithAlignment() throws Exception {
         String p = path("file5");
         writeFile(p, new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
-        AsyncFile file = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         // alignSize=8, offset=3, length=4 -> aligned range [0, 8)
         ByteBuf buf = fs.readSync(file, 4, 3, 8);
         try {
@@ -211,7 +241,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testPositionAndRead() throws Exception {
         String p = path("file6");
         writeFile(p, new byte[]{10, 20, 30, 40, 50});
-        AsyncFile file = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         // readSync(file, length, offset, alignSize) reads at absolute offset
         ByteBuf buf = fs.readSync(file, 3, 2, 0);
         try {
@@ -238,12 +268,12 @@ public class AsyncTFSBasedFileSystemTest {
     public void testTruncate() throws Exception {
         String p = path("file7");
         // Writer writes 200 bytes then truncates to 100
-        AsyncFile writer = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         fs.writeSync(writer, bufOf(new byte[200]));
         fs.truncateSync(writer, 100);
         StorageUtil.closeChannels(fs.closeSync(writer));
         // Separate reader verifies size
-        AsyncFile reader = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         assertEquals(100, fs.sizeSync(reader));
         StorageUtil.closeChannels(fs.closeSync(reader));
     }
@@ -252,12 +282,12 @@ public class AsyncTFSBasedFileSystemTest {
     public void testTruncateNoOp() throws Exception {
         String p = path("file8");
         // Writer writes 100 bytes then truncates to 200 (no-op)
-        AsyncFile writer = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         fs.writeSync(writer, bufOf(new byte[100]));
         fs.truncateSync(writer, 200); // size >= current size, no-op
         StorageUtil.closeChannels(fs.closeSync(writer));
         // Separate reader verifies size unchanged
-        AsyncFile reader = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         assertEquals(100, fs.sizeSync(reader));
         StorageUtil.closeChannels(fs.closeSync(reader));
     }
@@ -265,7 +295,7 @@ public class AsyncTFSBasedFileSystemTest {
     @Test
     public void testFsyncSync() throws Exception {
         String p = path("file9");
-        AsyncFile file = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         fs.writeSync(file, bufOf(new byte[]{1, 2, 3}));
         fs.fsyncSync(file); // should not throw
         StorageUtil.closeChannels(fs.closeSync(file));
@@ -274,7 +304,7 @@ public class AsyncTFSBasedFileSystemTest {
     @Test(expected = IllegalStateException.class)
     public void testFsyncOnClosedFileThrows() throws Exception {
         String p = path("file9b");
-        AsyncFile file = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         StorageUtil.closeChannels(fs.closeSync(file));
         fs.fsyncSync(file);
     }
@@ -282,7 +312,7 @@ public class AsyncTFSBasedFileSystemTest {
     @Test
     public void testSizeSync() throws Exception {
         String p = path("file10");
-        AsyncFile file = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         fs.writeSync(file, bufOf(new byte[256]));
         assertEquals(256, fs.sizeSync(file));
         StorageUtil.closeChannels(fs.closeSync(file));
@@ -303,7 +333,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testTransferToSync() throws Exception {
         String p = path("file12");
         writeFile(p, new byte[]{10, 20, 30, 40, 50});
-        AsyncFile file = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
         long transferred = fs.transferToSync(file, 1, 3, target);
         assertEquals(3, transferred);
@@ -365,7 +395,7 @@ public class AsyncTFSBasedFileSystemTest {
         assertFalse(fs.exists(p).get());
         writeFile(p, new byte[]{1});
         assertTrue(fs.exists(p).get());
-        assertTrue(fs.isFile(fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false)).get());
+        assertTrue(fs.isFile(openFile(p, AbstractStorageFile.OpenMode.READ, false, false)).get());
         assertFalse(fs.isDirectory(p).get());
         assertTrue(fs.isDirectory(tempDir.toString()).get());
     }
@@ -379,7 +409,7 @@ public class AsyncTFSBasedFileSystemTest {
         String p = path("file14");
         writeFile(p, new byte[]{1, 2, 3});
         // Writer with atomicReplace=true writes new content
-        AsyncFile writer = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, true, false, null, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, true, false);
         fs.writeSync(writer, bufOf(new byte[]{10, 20, 30, 40}));
         StorageUtil.closeChannels(fs.closeSync(writer));
         // Verify on disk
@@ -387,7 +417,7 @@ public class AsyncTFSBasedFileSystemTest {
         // tmp file should be deleted
         assertFalse(Files.exists(Paths.get(tempDir.toString(), "TMP_REP_file14")));
         // Separate reader verifies content
-        AsyncFile reader = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         assertArrayEquals(new byte[]{10, 20, 30, 40}, readAll(reader, 4));
         StorageUtil.closeChannels(fs.closeSync(reader));
     }
@@ -410,14 +440,14 @@ public class AsyncTFSBasedFileSystemTest {
             ch.force(true);
         }
         // Open with atomicReplace=true should recover from tmp, overwriting original file
-        AsyncFile writer = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, true, false, null, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, true, false);
         StorageUtil.closeChannels(fs.closeSync(writer));
         // tmp should be cleaned up
         assertFalse(Files.exists(tmpPath));
         // Verify on disk: file content is the new data, not the old
         assertArrayEquals(newData, Files.readAllBytes(Paths.get(p)));
         // Separate reader reads recovered data
-        AsyncFile reader = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         assertArrayEquals(newData, readAll(reader, newData.length));
         StorageUtil.closeChannels(fs.closeSync(reader));
     }
@@ -439,7 +469,7 @@ public class AsyncTFSBasedFileSystemTest {
             ch.force(true);
         }
         // Open should succeed, corrupt tmp gets deleted, original file untouched
-        AsyncFile writer = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, true, false, null, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, true, false);
         StorageUtil.closeChannels(fs.closeSync(writer));
         // tmp should be deleted
         assertFalse(Files.exists(tmpPath));
@@ -447,7 +477,7 @@ public class AsyncTFSBasedFileSystemTest {
         assertTrue(Files.exists(Paths.get(p)));
         assertArrayEquals(originalData, Files.readAllBytes(Paths.get(p)));
         // Separate reader reads original data (NOT affected by corrupt tmp)
-        AsyncFile reader = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         assertArrayEquals(originalData, readAll(reader, originalData.length));
         StorageUtil.closeChannels(fs.closeSync(reader));
     }
@@ -460,8 +490,8 @@ public class AsyncTFSBasedFileSystemTest {
     public void testMultipleReadersSameFile() throws Exception {
         String p = path("file17");
         writeFile(p, new byte[]{1, 2, 3});
-        AsyncFile reader1 = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
-        AsyncFile reader2 = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile reader1 = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
+        AsyncFile reader2 = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         assertArrayEquals(new byte[]{1, 2, 3}, readAll(reader1, 3));
         assertArrayEquals(new byte[]{1, 2, 3}, readAll(reader2, 3));
         StorageUtil.closeChannels(fs.closeSync(reader1));
@@ -471,9 +501,9 @@ public class AsyncTFSBasedFileSystemTest {
     @Test(expected = IllegalStateException.class)
     public void testDoubleWriterThrows() throws Exception {
         String p = path("file18");
-        AsyncFile writer1 = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile writer1 = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         try {
-            fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+            openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         } finally {
             StorageUtil.closeChannels(fs.closeSync(writer1));
         }
@@ -482,10 +512,10 @@ public class AsyncTFSBasedFileSystemTest {
     @Test
     public void testCloseReleasesEntry() throws Exception {
         String p = path("file19");
-        AsyncFile writer1 = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile writer1 = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         StorageUtil.closeChannels(fs.closeSync(writer1));
         // After close, should be able to open writer again
-        AsyncFile writer2 = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile writer2 = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         StorageUtil.closeChannels(fs.closeSync(writer2));
     }
 
@@ -509,7 +539,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testAutoFsyncByBytes() throws Exception {
         fs.setFsyncIntervalBytes(10);
         String p = path("file20");
-        AsyncFile file = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
 
         // Write less than threshold (5 < 10 bytes) — should NOT trigger fsync
         fs.writeSync(file, bufOf(new byte[5]));
@@ -534,9 +564,12 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentOpenEmptyDirWriteMode() throws Exception {
         String dir = path("segdir1");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
-        List<Long> offsets = listSeg(seg);
-        assertTrue(offsets.isEmpty());
+        AsyncSegmentFile seg = openSeg(dir, true);
+        // openInitialResources creates the tail segment metadata for writers on an empty dir,
+        // and openWithFileEntry then opens its channel, so segment 0 exists both ways.
+        assertEquals(Collections.singletonList(0L), listSeg(seg));
+        assertEquals(0, seg.openedSegmentStartOffset);
+        assertTrue(Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
         StorageUtil.closeChannels(fs.closeSync(seg));
     }
 
@@ -544,12 +577,12 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentWriteAndRead() throws Exception {
         String dir = path("segdir2");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile segW = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segW = openSeg(dir, true);
         byte[] data = new byte[]{1, 2, 3, 4, 5};
         writeSeg(segW, bufOf(data));
         StorageUtil.closeChannels(fs.closeSync(segW));
 
-        AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR = openSeg(dir, false);
         ByteBuf buf = fs.readSync(segR, 5, segR.position);
         try {
             byte[] actual = new byte[buf.readableBytes()];
@@ -562,18 +595,21 @@ public class AsyncTFSBasedFileSystemTest {
     }
 
     @Test
-    public void testSegmentReadAutoSwitch() throws Exception {
+    public void testSegmentReadAcrossSegmentsNeedsReposition() throws Exception {
         String dir = path("segdir3");
         Files.createDirectories(Paths.get(dir));
-        // Write two segments via roll
-        AsyncSegmentFile segW = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        // Write two segments via roll: seg0 = [0, 3), seg3 = [3, 6)
+        AsyncSegmentFile segW = openSeg(dir, true);
         writeSeg(segW, bufOf(new byte[]{10, 20, 30}));
         rollSeg(segW);
         writeSeg(segW, bufOf(new byte[]{40, 50, 60}));
         StorageUtil.closeChannels(fs.closeSync(segW));
 
-        // Read across both segments — pread does not update position, caller manages it
-        AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR = openSeg(dir, false);
+        assertEquals(Arrays.asList(0L, 3L), listSeg(segR));
+        assertEquals(0, segR.openedSegmentStartOffset);
+        assertEquals(3, segR.openedSegmentEndOffset);
+
         ByteBuf buf1 = fs.readSync(segR, 3, segR.position);
         try {
             byte[] d1 = new byte[3];
@@ -582,8 +618,20 @@ public class AsyncTFSBasedFileSystemTest {
         } finally {
             buf1.release();
         }
-        // Advance position manually, then read next 3 bytes (auto-switch to next segment)
-        segR.position += 3;
+        // Crossing the boundary only drops the channel; it does not advance the opened range,
+        // so readSync alone would re-open seg0 and read past its end.
+        assertNull(segR.currentSegmentChannel);
+        assertEquals(0, segR.openedSegmentStartOffset);
+        ByteBuf stale = fs.readSync(segR, 3, 3);
+        try {
+            assertEquals(0, stale.readableBytes());
+        } finally {
+            stale.release();
+        }
+
+        // The caller must reposition: positionSync switches the opened range to seg3.
+        positionSeg(segR, 3);
+        assertEquals(3, segR.openedSegmentStartOffset);
         ByteBuf buf2 = fs.readSync(segR, 3, segR.position);
         try {
             byte[] d2 = new byte[3];
@@ -599,11 +647,11 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentPread() throws Exception {
         String dir = path("segdir4");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile segW = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segW = openSeg(dir, true);
         writeSeg(segW, bufOf(new byte[]{1, 2, 3, 4, 5}));
         StorageUtil.closeChannels(fs.closeSync(segW));
 
-        AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR = openSeg(dir, false);
         // pread at offset 2
         ByteBuf buf = fs.readSync(segR, 3, 2);
         try {
@@ -620,7 +668,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentRoll() throws Exception {
         String dir = path("segdir5");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         writeSeg(seg, bufOf(new byte[]{1, 2, 3}));
         rollSeg(seg);
         List<Long> offsets = listSeg(seg);
@@ -634,7 +682,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentRollEmptyIsNoOp() throws Exception {
         String dir = path("segdir6");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         // First roll creates segment at offset 0
         rollSeg(seg);
         // Second roll with empty segment is a no-op (no new segment created)
@@ -649,7 +697,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentList() throws Exception {
         String dir = path("segdir7");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         writeSeg(seg, bufOf(new byte[10]));
         rollSeg(seg);
         writeSeg(seg, bufOf(new byte[20]));
@@ -664,7 +712,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentSizeSync() throws Exception {
         String dir = path("segdir8");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         writeSeg(seg, bufOf(new byte[10]));
         rollSeg(seg);
         writeSeg(seg, bufOf(new byte[20]));
@@ -676,7 +724,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentTruncateInRange() throws Exception {
         String dir = path("segdir9");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         writeSeg(seg, bufOf(new byte[10]));
         rollSeg(seg);
         writeSeg(seg, bufOf(new byte[20]));
@@ -693,7 +741,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentTruncateOffsetBeforeFirst() throws Exception {
         String dir = path("segdir10");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         writeSeg(seg, bufOf(new byte[10]));
         rollSeg(seg);
         writeSeg(seg, bufOf(new byte[20]));
@@ -713,7 +761,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentTruncateOffsetAfterEnd() throws Exception {
         String dir = path("segdir11");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         writeSeg(seg, bufOf(new byte[10]));
         rollSeg(seg);
         writeSeg(seg, bufOf(new byte[20]));
@@ -732,7 +780,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentDeleteSegments() throws Exception {
         String dir = path("segdir12");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         writeSeg(seg, bufOf(new byte[10]));
         rollSeg(seg);
         writeSeg(seg, bufOf(new byte[20]));
@@ -751,7 +799,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentDeleteAll() throws Exception {
         String dir = path("segdir13");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         writeSeg(seg, bufOf(new byte[10]));
         rollSeg(seg);
         writeSeg(seg, bufOf(new byte[20]));
@@ -772,13 +820,13 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentPositionSync() throws Exception {
         String dir = path("segdir14");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile segW = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segW = openSeg(dir, true);
         writeSeg(segW, bufOf(new byte[]{1, 2, 3}));
         rollSeg(segW);
         writeSeg(segW, bufOf(new byte[]{4, 5, 6}));
         StorageUtil.closeChannels(fs.closeSync(segW));
 
-        AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR = openSeg(dir, false);
         positionSeg(segR, 4); // position in second segment
         ByteBuf buf = fs.readSync(segR, 2, segR.position);
         try {
@@ -795,11 +843,11 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSegmentTransferToSync() throws Exception {
         String dir = path("segdir15");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile segW = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segW = openSeg(dir, true);
         writeSeg(segW, bufOf(new byte[]{10, 20, 30, 40, 50}));
         StorageUtil.closeChannels(fs.closeSync(segW));
 
-        AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR = openSeg(dir, false);
         ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
         long n = fs.transferToSync(segR, 1, 3, target);
         assertEquals(3, n);
@@ -820,7 +868,7 @@ public class AsyncTFSBasedFileSystemTest {
         // Create a valid segment
         writeFile(dir + "/" + SEG_PREFIX + "0", new byte[]{2, 3});
 
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile seg = openSeg(dir, false);
         // Unparseable file should be deleted
         assertFalse(Files.exists(Paths.get(dir, SEG_PREFIX + "ABC")));
         // Valid segment should be intact
@@ -838,7 +886,7 @@ public class AsyncTFSBasedFileSystemTest {
         // Unparseable index file
         writeFile(dir + "/" + IDX_PREFIX + "XYZ", new byte[]{3});
 
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile seg = openSeg(dir, false);
         assertFalse(Files.exists(Paths.get(dir, IDX_PREFIX + "XYZ")));
         StorageUtil.closeChannels(fs.closeSync(seg));
     }
@@ -852,7 +900,7 @@ public class AsyncTFSBasedFileSystemTest {
         // Segment at offset 20, size 5 -> covers [20, 25) -- gap! not contiguous with [0, 10)
         writeFile(dir + "/" + SEG_PREFIX + "20", new byte[5]);
 
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile seg = openSeg(dir, false);
         List<Long> offsets = listSeg(seg);
         // Only the highest segment chain should be kept.
         // Since [20,25) is not contiguous with [0,10), the off-chain one should be deleted.
@@ -878,7 +926,7 @@ public class AsyncTFSBasedFileSystemTest {
         writeFile(dir + "/" + SEG_PREFIX + "0", new byte[20]);
         writeFile(dir + "/" + SEG_PREFIX + "10", new byte[20]);
 
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile seg = openSeg(dir, false);
         List<Long> offsets = listSeg(seg);
         // Only offset 10 remains (offset 0 was overlapping)
         assertEquals(Collections.singletonList(10L), offsets);
@@ -898,7 +946,7 @@ public class AsyncTFSBasedFileSystemTest {
         // Valid index file at offset 0
         writeFile(dir + "/" + IDX_PREFIX + "0", new byte[]{6});
 
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile seg = openSeg(dir, false);
         // Orphan index should be deleted
         assertFalse(Files.exists(Paths.get(dir, IDX_PREFIX + "100")));
         // Valid index should remain
@@ -919,7 +967,7 @@ public class AsyncTFSBasedFileSystemTest {
         writeFile(dir + "/" + SEG_PREFIX + "BADNAME2", new byte[5]);    // unparseable (non-numeric offset)
         writeFile(dir + "/" + IDX_PREFIX + "888", new byte[1]);         // orphan index
 
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         // Valid chain should be preserved
         List<Long> offsets = listSeg(seg);
         assertEquals(Arrays.asList(0L, 10L, 30L), offsets);
@@ -943,7 +991,7 @@ public class AsyncTFSBasedFileSystemTest {
         // lenient=true with a directory path → channel not opened, file object still created
         String dir = path("lenient_dir");
         Files.createDirectories(Paths.get(dir));
-        AsyncFile file = fs.openSync(dir, AbstractStorageFile.OpenMode.READ, false, true, null, false);
+        AsyncFile file = openFile(dir, AbstractStorageFile.OpenMode.READ, false, true);
         assertNotNull(file);
         // readSync should NPE because channel is null (lenient skipped openCurrentChannel)
         try {
@@ -960,7 +1008,7 @@ public class AsyncTFSBasedFileSystemTest {
         // OpenMode.READ_WRITE: file opened for both read and write, positioned at end
         String p = path("rw_file");
         writeFile(p, new byte[]{1, 2, 3, 4, 5});
-        AsyncFile file = fs.openSync(p, AbstractStorageFile.OpenMode.READ_WRITE, false, false, null, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ_WRITE, false, false);
         // channel positioned at end of file (size=5)
         assertEquals(5, fs.sizeSync(file));
         // Write appends after position (end of file)
@@ -980,15 +1028,19 @@ public class AsyncTFSBasedFileSystemTest {
 
     @Test
     public void testAutoFsyncByTimeInterval() throws Exception {
-        // Set byte threshold very high (won't trigger), time threshold very low (1ms)
+        // Byte threshold very high so only the time threshold can trigger the fsync.
         fs.setFsyncIntervalBytes(Long.MAX_VALUE / 2);
-        fs.setFsyncIntervalMillis(1);
+        // lastFsyncNanos starts at file construction time, so a 1ms threshold can already be
+        // exceeded by the first write on a loaded machine. Keep it out of reach until the
+        // pendingFsyncBytes accumulation has been observed.
+        fs.setFsyncIntervalMillis(Long.MAX_VALUE / 2_000_000L);
         String p = path("file_time_fsync");
-        AsyncFile file = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
-        // Write a few bytes — byte threshold not reached
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+        // Write a few bytes — neither threshold reached
         fs.writeSync(file, bufOf(new byte[5]));
         assertEquals(5, file.pendingFsyncBytes);
-        // Sleep past the time threshold
+        // Lower the threshold and sleep past it
+        fs.setFsyncIntervalMillis(1);
         Thread.sleep(50);
         // Write a few more bytes — time threshold exceeded, triggers fsync
         fs.writeSync(file, bufOf(new byte[3]));
@@ -1000,7 +1052,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testTruncateAtomicReplaceNoPositionChange() throws Exception {
         // atomicReplace=true truncate should NOT change channel position
         String p = path("file_trunc_ar");
-        AsyncFile writer = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, true, false, null, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, true, false);
         fs.writeSync(writer, bufOf(new byte[100]));
         // atomicReplaceWrite sets position to 0 then writes, so position=100 after write
         // Truncate to 50 — atomicReplace path skips channel.position(size)
@@ -1017,7 +1069,7 @@ public class AsyncTFSBasedFileSystemTest {
         // truncateSync: pendingFsyncBytes reduction logic (line 351) runs,
         // then fsyncInternal at line 353 resets to 0. Verify end-to-end correctness.
         String p = path("file_trunc_pending");
-        AsyncFile writer = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         fs.writeSync(writer, bufOf(new byte[100]));
         assertEquals(100, writer.pendingFsyncBytes);
         // truncateSync reduces pendingFsyncBytes by (100-30)=70, then fsyncInternal resets to 0
@@ -1033,7 +1085,7 @@ public class AsyncTFSBasedFileSystemTest {
     @Test
     public void testCloseSyncIdempotent() throws Exception {
         String p = path("file_double_close");
-        AsyncFile file = fs.openSync(p, AbstractStorageFile.OpenMode.WRITE, false, false, null, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
         fs.writeSync(file, bufOf(new byte[]{1}));
         StorageUtil.closeChannels(fs.closeSync(file));
         // Second close should be a no-op, not throw
@@ -1045,7 +1097,7 @@ public class AsyncTFSBasedFileSystemTest {
         // Close after lenient open (channel=null) should not throw
         String dir = path("null_ch_dir");
         Files.createDirectories(Paths.get(dir));
-        AsyncFile file = fs.openSync(dir, AbstractStorageFile.OpenMode.READ, false, true, null, false);
+        AsyncFile file = openFile(dir, AbstractStorageFile.OpenMode.READ, false, true);
         // channel is null because lenient skipped openCurrentChannel for non-regular file
         StorageUtil.closeChannels(fs.closeSync(file)); // should not throw
     }
@@ -1059,7 +1111,7 @@ public class AsyncTFSBasedFileSystemTest {
         // Opening a writer on an empty dir creates segment 0 up front.
         String dir = path("seg_auto_roll");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         assertEquals(Collections.singletonList(0L), listSeg(seg));
         writeSeg(seg, bufOf(new byte[]{1, 2, 3}));
         List<Long> offsets = listSeg(seg);
@@ -1074,7 +1126,7 @@ public class AsyncTFSBasedFileSystemTest {
         // Truncate to offset inside a different segment than currently opened by writer
         String dir = path("seg_trunc_cross");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         writeSeg(seg, bufOf(new byte[10])); // segment [0, 10)
         rollSeg(seg);
         writeSeg(seg, bufOf(new byte[10])); // segment [10, 20)
@@ -1105,9 +1157,9 @@ public class AsyncTFSBasedFileSystemTest {
         // Writer's tail segment is created at open, so no roll happens here.
         String dir = path("seg_idx_empty_w");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         assertEquals(Collections.singletonList(0L), listSeg(seg));
-        Pair<Long, Map<String, AsyncIndexFile>> result = fs.getCurrentIndexFilesSync(seg, INDEX_PREFIXES, false, null);
+        Pair<Long, Map<String, AsyncIndexFile>> result = fs.getCurrentIndexFilesSync(seg, INDEX_PREFIXES, false);
         assertEquals(Long.valueOf(0), result.getKey());
         assertTrue(result.getValue().containsKey(IDX_PREFIX));
         assertEquals(1, listSeg(seg).size());
@@ -1115,14 +1167,18 @@ public class AsyncTFSBasedFileSystemTest {
     }
 
     @Test
-    public void testGetCurrentIndexFilesSyncEmptyReaderReturnsEmpty() throws Exception {
-        // Empty state + reader → returns (0, empty map)
+    public void testGetCurrentIndexFilesSyncEmptyReaderStillOpensHandles() throws Exception {
+        // The delegate has no empty-state short circuit: getCurrentIndexFiles always returns a
+        // handle per requested prefix, keyed on openedSegmentStartOffset (0 for an empty reader).
+        // The "(0, empty map)" answer is TailCacheFileSystem's, which checks the dir state first.
         String dir = path("seg_idx_empty_r");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
-        Pair<Long, Map<String, AsyncIndexFile>> result = fs.getCurrentIndexFilesSync(seg, INDEX_PREFIXES, false, null);
+        AsyncSegmentFile seg = openSeg(dir, false);
+        assertTrue(listSeg(seg).isEmpty());
+        Pair<Long, Map<String, AsyncIndexFile>> result = fs.getCurrentIndexFilesSync(seg, INDEX_PREFIXES, false);
         assertEquals(Long.valueOf(0), result.getKey());
-        assertTrue(result.getValue().isEmpty());
+        assertTrue(result.getValue().containsKey(IDX_PREFIX));
+        assertEquals(0, result.getValue().get(IDX_PREFIX).startOffset);
         StorageUtil.closeChannels(fs.closeSync(seg));
     }
 
@@ -1131,15 +1187,15 @@ public class AsyncTFSBasedFileSystemTest {
         // Non-empty state: returns segment start offset and index files
         String dir = path("seg_idx_nonempty");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile segW = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segW = openSeg(dir, true);
         writeSeg(segW, bufOf(new byte[10]));
         rollSeg(segW);
         writeSeg(segW, bufOf(new byte[20]));
         StorageUtil.closeChannels(fs.closeSync(segW));
 
-        AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR = openSeg(dir, false);
         // Reader position is at firstOffset=0
-        Pair<Long, Map<String, AsyncIndexFile>> result = fs.getCurrentIndexFilesSync(segR, INDEX_PREFIXES, false, null);
+        Pair<Long, Map<String, AsyncIndexFile>> result = fs.getCurrentIndexFilesSync(segR, INDEX_PREFIXES, false);
         assertEquals(Long.valueOf(0), result.getKey());
         assertTrue(result.getValue().containsKey(IDX_PREFIX));
         StorageUtil.closeChannels(fs.closeSync(segR));
@@ -1149,7 +1205,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testGetStartOffsetByReadOffset() throws Exception {
         String dir = path("seg_start_off");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile segW = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segW = openSeg(dir, true);
         writeSeg(segW, bufOf(new byte[10]));  // segment [0, 10)
         rollSeg(segW);
         writeSeg(segW, bufOf(new byte[20]));  // segment [10, 30)
@@ -1157,7 +1213,7 @@ public class AsyncTFSBasedFileSystemTest {
         writeSeg(segW, bufOf(new byte[5]));   // segment [30, 35)
         StorageUtil.closeChannels(fs.closeSync(segW));
 
-        AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR = openSeg(dir, false);
         // Offset in first segment
         assertEquals(0, fs.getStartOffsetByReadOffset(segR, 0));
         assertEquals(0, fs.getStartOffsetByReadOffset(segR, 5));
@@ -1176,7 +1232,7 @@ public class AsyncTFSBasedFileSystemTest {
         // Writer always returns the currently opened segment start offset
         String dir = path("seg_cur_off_w");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         // Empty state: openedSegmentStartOffset=0 (markEmptyOpenedRange)
         assertEquals(0, fs.getCurrentSegmentStartOffset(seg));
         writeSeg(seg, bufOf(new byte[10]));
@@ -1195,13 +1251,13 @@ public class AsyncTFSBasedFileSystemTest {
         // Reader uses floorKey(position) to find segment start offset
         String dir = path("seg_cur_off_r");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile segW = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segW = openSeg(dir, true);
         writeSeg(segW, bufOf(new byte[10]));  // [0, 10)
         rollSeg(segW);
         writeSeg(segW, bufOf(new byte[20]));  // [10, 30)
         StorageUtil.closeChannels(fs.closeSync(segW));
 
-        AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR = openSeg(dir, false);
         // Reader position=0 (firstOffset) → segment 0
         assertEquals(0, fs.getCurrentSegmentStartOffset(segR));
         // Move position into second segment
@@ -1221,19 +1277,19 @@ public class AsyncTFSBasedFileSystemTest {
         Files.createDirectories(Paths.get(dir));
 
         // Writer1 creates segments [0,10) and [10,20)
-        AsyncSegmentFile segWriter1 = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segWriter1 = openSeg(dir, true);
         writeSeg(segWriter1, bufOf(new byte[10]));
         rollSeg(segWriter1);
         writeSeg(segWriter1, bufOf(new byte[10]));
         StorageUtil.closeChannels(fs.closeSync(segWriter1));
 
         // Reader opens — shares FileEntry with segWriter1
-        AsyncSegmentFile segReader = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segReader = openSeg(dir, false);
         // openInitialResources: state=[0,10],[10,20], sets position=0, switchToSegment(0,s)
         // → openedSegmentStartOffset=0, openedSegmentEndOffset=10
 
         // Writer2 (same key) adds segment [20,30), updating shared state to [0,10],[10,20],[20,30]
-        AsyncSegmentFile segWriter2 = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segWriter2 = openSeg(dir, true);
         writeSeg(segWriter2, bufOf(new byte[10]));
         StorageUtil.closeChannels(fs.closeSync(segWriter2));
 
@@ -1248,16 +1304,16 @@ public class AsyncTFSBasedFileSystemTest {
         // Fresh scenario: writer opens empty dir (empty state → MAX_VALUE end)
         String dir2 = path("seg_pos_recalc2");
         Files.createDirectories(Paths.get(dir2));
-        AsyncSegmentFile segW3 = fs.openSync(dir2, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segW3 = openSeg(dir2, true);
         // State is empty, openedSegmentEndOffset = Long.MAX_VALUE
         StorageUtil.closeChannels(fs.closeSync(segW3));
 
         // Reader opens — state is empty, markEmptyOpenedRange → MAX_VALUE
-        AsyncSegmentFile segR2 = fs.openSync(dir2, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR2 = openSeg(dir2, false);
         assertEquals(Long.MAX_VALUE, segR2.openedSegmentEndOffset);
 
         // Writer adds segments, updating shared state
-        AsyncSegmentFile segW4 = fs.openSync(dir2, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segW4 = openSeg(dir2, true);
         writeSeg(segW4, bufOf(new byte[10]));
         rollSeg(segW4);
         writeSeg(segW4, bufOf(new byte[10]));
@@ -1290,7 +1346,7 @@ public class AsyncTFSBasedFileSystemTest {
         Files.createDirectories(Paths.get(dir));
 
         // Create 2 segments: [0,10) and [10,20)
-        AsyncSegmentFile segW = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segW = openSeg(dir, true);
         writeSeg(segW, bufOf(new byte[10]));
         rollSeg(segW);
         writeSeg(segW, bufOf(new byte[10]));
@@ -1298,7 +1354,7 @@ public class AsyncTFSBasedFileSystemTest {
 
         // Reader opens — state=[0,10],[10,20], position=0
         // switchToSegment(0) → openedSegmentStartOffset=0, openedSegmentEndOffset=10
-        AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR = openSeg(dir, false);
         assertEquals(0, segR.openedSegmentStartOffset);
         assertEquals(10, segR.openedSegmentEndOffset);
 
@@ -1322,16 +1378,24 @@ public class AsyncTFSBasedFileSystemTest {
     }
 
     @Test
-    public void testReadSyncEmptyStateReturnsEmptyBuffer() throws Exception {
-        // Reader opened on empty segment dir — read returns empty ByteBuf
+    public void testReadSyncEmptyStateThrowsStaleState() throws Exception {
+        // readSync assumes the caller already switched to a segment covering the offset, so it
+        // has no empty-state guard: it opens segmentPath(openedSegmentStartOffset) and the
+        // missing file surfaces as StaleStateException.
+        // The empty-buffer answer belongs to TailCacheFileSystem, whose preReadMetadata gets
+        // false back from switchToSegment on empty state and skips the read entirely.
         String dir = path("seg_read_empty");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
-        ByteBuf buf = fs.readSync(seg, 10, 0);
+        AsyncSegmentFile seg = openSeg(dir, false);
+        assertTrue(listSeg(seg).isEmpty());
+        // positionSync on empty state marks the opened range empty without opening a channel.
+        positionSeg(seg, 0);
+        assertNull(seg.currentSegmentChannel);
         try {
-            assertEquals(0, buf.readableBytes());
-        } finally {
-            buf.release();
+            fs.readSync(seg, 10, 0);
+            fail("Expected StaleStateException for read on empty segment state");
+        } catch (StaleStateException e) {
+            assertTrue(e.getCause() instanceof java.nio.file.NoSuchFileException);
         }
         StorageUtil.closeChannels(fs.closeSync(seg));
     }
@@ -1342,7 +1406,7 @@ public class AsyncTFSBasedFileSystemTest {
         // when they're not in the current cache (cleared by switchToSegment)
         String dir = path("seg_lazy_idx");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile segW = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segW = openSeg(dir, true);
         writeSeg(segW, bufOf(new byte[10])); // segment 0 with idx0
         rollSeg(segW);
         writeSeg(segW, bufOf(new byte[20])); // segment 10 with idx10
@@ -1354,10 +1418,10 @@ public class AsyncTFSBasedFileSystemTest {
 
         // Reader opens — openInitialResources positions at 0, switchToSegment(0)
         // which clears currentIndexFiles
-        AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR = openSeg(dir, false);
         // getCurrentIndexFilesSync → switchToSegment(0) again (clears cache again)
         // → getCurrentIndexFiles finds idx not in cache, opens from disk
-        Pair<Long, Map<String, AsyncIndexFile>> result = fs.getCurrentIndexFilesSync(segR, INDEX_PREFIXES, false, null);
+        Pair<Long, Map<String, AsyncIndexFile>> result = fs.getCurrentIndexFilesSync(segR, INDEX_PREFIXES, false);
         assertEquals(Long.valueOf(0), result.getKey());
         assertTrue(result.getValue().containsKey(IDX_PREFIX));
         // Verify the returned index file is functional
@@ -1374,7 +1438,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testLastModifiedAsyncFile() throws Exception {
         String p = path("file_lm");
         writeFile(p, new byte[]{1, 2, 3});
-        AsyncFile file = fs.openSync(p, AbstractStorageFile.OpenMode.READ, false, false, null, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         long lm = fs.lastModified(file).get();
         assertTrue("lastModified should be positive", lm > 0);
         StorageUtil.closeChannels(fs.closeSync(file));
@@ -1384,7 +1448,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testLastModifiedSegmentEmpty() throws Exception {
         String dir = path("seg_lm_empty");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile seg = openSeg(dir, false);
         long lm = fs.lastModified(seg).get();
         assertEquals(0L, lm);
         StorageUtil.closeChannels(fs.closeSync(seg));
@@ -1394,11 +1458,11 @@ public class AsyncTFSBasedFileSystemTest {
     public void testLastModifiedSegmentNonEmpty() throws Exception {
         String dir = path("seg_lm");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile segW = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile segW = openSeg(dir, true);
         writeSeg(segW, bufOf(new byte[10]));
         StorageUtil.closeChannels(fs.closeSync(segW));
 
-        AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR = openSeg(dir, false);
         long lm = fs.lastModified(segR).get();
         assertTrue("lastModified should be positive for non-empty segment", lm > 0);
         StorageUtil.closeChannels(fs.closeSync(segR));
@@ -1408,12 +1472,12 @@ public class AsyncTFSBasedFileSystemTest {
     public void testLastModifiedOfSegmentMissing() throws Exception {
         String dir = path("seg_lm_miss");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         writeSeg(seg, bufOf(new byte[10]));
         StorageUtil.closeChannels(fs.closeSync(seg));
 
         // Reopen and delete segment file externally
-        AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR = openSeg(dir, false);
         Files.delete(Paths.get(dir, SEG_PREFIX + "0"));
         long lm = fs.lastModifiedOfSegment(segR, 0).get();
         assertEquals(0L, lm);
@@ -1424,11 +1488,11 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSizeOfSegmentSyncExisting() throws Exception {
         String dir = path("seg_size_exist");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, true, null, false);
+        AsyncSegmentFile seg = openSeg(dir, true);
         writeSeg(seg, bufOf(new byte[42]));
         StorageUtil.closeChannels(fs.closeSync(seg));
 
-        AsyncSegmentFile segR = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile segR = openSeg(dir, false);
         assertEquals(42, fs.sizeOfSegmentSync(segR, 0));
         StorageUtil.closeChannels(fs.closeSync(segR));
     }
@@ -1437,7 +1501,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testSizeOfSegmentSyncMissing() throws Exception {
         String dir = path("seg_size_miss");
         Files.createDirectories(Paths.get(dir));
-        AsyncSegmentFile seg = fs.openSync(dir, SEG_PREFIX, INDEX_PREFIXES, false, null, false);
+        AsyncSegmentFile seg = openSeg(dir, false);
         assertEquals(0L, fs.sizeOfSegmentSync(seg, 999));
         StorageUtil.closeChannels(fs.closeSync(seg));
     }
@@ -1463,10 +1527,17 @@ public class AsyncTFSBasedFileSystemTest {
 
     @Test
     public void testListNonDirectory() throws Exception {
+        // list() no longer swallows the IO error into an empty result:
+        // Files.list on a regular file throws NotDirectoryException, which
+        // wrapIOException maps to IllegalArgumentException.
         String p = path("a_file");
         writeFile(p, new byte[]{1});
-        List<String> result = fs.list(p).get();
-        assertTrue("list on file should return empty", result.isEmpty());
+        try {
+            fs.list(p).get();
+            fail("Expected IllegalArgumentException for list on a regular file");
+        } catch (java.util.concurrent.ExecutionException e) {
+            assertTrue(e.getCause() instanceof IllegalArgumentException);
+        }
     }
 
     @Test
