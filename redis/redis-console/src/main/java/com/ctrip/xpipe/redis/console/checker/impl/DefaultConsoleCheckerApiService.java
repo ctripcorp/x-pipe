@@ -4,10 +4,14 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.console.checker.ConsoleCheckerApiService;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DefaultConsoleCheckerApiService extends AbstractService implements ConsoleCheckerApiService {
+
+    private static final Logger logger = LoggerFactory.getLogger(DefaultConsoleCheckerApiService.class);
 
     @Override
     public String getHealthCheckInstance(HostPort checker, String ip, int port) {
@@ -21,12 +25,26 @@ public class DefaultConsoleCheckerApiService extends AbstractService implements 
 
     @Override
     public HEALTH_STATE getHealthStates(HostPort checker, String ip, int port) {
-        return restTemplate.getForObject(getPath(checker, PATH_HEALTH_STATUS), HEALTH_STATE.class, ip, port);
+        try {
+            HEALTH_STATE state = restTemplate.getForObject(getPath(checker, PATH_HEALTH_STATUS), HEALTH_STATE.class, ip, port);
+            logger.info("[getHealthStates] checker={}, {}({})={}", checker, ip, port, state);
+            return state;
+        } catch (Throwable th) {
+            logger.info("[getHealthStates][fail] checker={}, {}({}), cause={}", checker, ip, port, th.getMessage());
+            throw th;
+        }
     }
 
     @Override
     public HEALTH_STATE getCrossRegionHealthStates(HostPort checker, String ip, int port) {
-        return restTemplate.getForObject(getPath(checker, PATH_CROSS_REGION_HEALTH_STATUS), HEALTH_STATE.class, ip, port);
+        try {
+            HEALTH_STATE state = restTemplate.getForObject(getPath(checker, PATH_CROSS_REGION_HEALTH_STATUS), HEALTH_STATE.class, ip, port);
+            logger.info("[getCrossRegionHealthStates] checker={}, {}({})={}", checker, ip, port, state);
+            return state;
+        } catch (Throwable th) {
+            logger.info("[getCrossRegionHealthStates][fail] checker={}, {}({}), cause={}", checker, ip, port, th.getMessage());
+            throw th;
+        }
     }
 
     private String getPath(HostPort key, String path) {

@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STAT
 import com.ctrip.xpipe.redis.console.checker.ConsoleCheckerApiService;
 import com.ctrip.xpipe.redis.console.checker.ConsoleCheckerGroupService;
 import com.ctrip.xpipe.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +20,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
 public class InstanceHealthStatusGetGroupCommand extends AbstractCommand<Map<HostPort, HEALTH_STATE>> {
+
+    private static final Logger logger = LoggerFactory.getLogger(InstanceHealthStatusGetGroupCommand.class);
 
     ConsoleCheckerApiService service;
 
@@ -55,9 +59,13 @@ public class InstanceHealthStatusGetGroupCommand extends AbstractCommand<Map<Hos
         Map<HostPort, HEALTH_STATE> result = new HashMap<>();
         for (Map.Entry<HostPort, CommandFuture<HEALTH_STATE>> entry : futureMap.entrySet() ) {
             try {
-                result.put(entry.getKey(), entry.getValue().get());
+                HEALTH_STATE state = entry.getValue().get();
+                result.put(entry.getKey(), state);
+                logger.info("[getAllHealthStates][result] checker={}, {}({})={}", entry.getKey(), ip, port, state);
             } catch (InterruptedException | ExecutionException e) {
                 result.put(entry.getKey(), HEALTH_STATE.UNKNOWN);
+                logger.info("[getAllHealthStates][unknown] checker={}, {}({}), cause={}",
+                        entry.getKey(), ip, port, e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
             }
         }
         future().setSuccess(result);

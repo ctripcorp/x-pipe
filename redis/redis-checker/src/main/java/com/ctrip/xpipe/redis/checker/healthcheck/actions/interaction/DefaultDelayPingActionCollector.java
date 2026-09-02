@@ -63,6 +63,7 @@ public class DefaultDelayPingActionCollector extends AbstractDelayPingActionColl
         try {
             return allHealthStatus.get(instanceManager.findRedisHealthCheckInstance(hostPort)).getState();
         } catch (Exception e) {
+            logger.info("[getState][unknown] {}:{}", hostPort.getHost(), hostPort.getPort());
             return HEALTH_STATE.UNKNOWN;
         }
     }
