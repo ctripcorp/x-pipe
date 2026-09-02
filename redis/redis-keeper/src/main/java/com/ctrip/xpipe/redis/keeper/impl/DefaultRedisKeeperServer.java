@@ -837,7 +837,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	@Override
 	public void fullSyncToSlave(final RedisSlave redisSlave, boolean freshRdbNeeded) throws IOException {
-		
+
+		if (!redisSlave.isOpen()) {
+			logger.info("[fullSyncToSlave][slave closed, skip]{}", redisSlave);
+			return;
+		}
+
 		logger.info("[fullSyncToSlave]{}, {}", redisSlave, rdbDumper.get());
 
 		if (crossRegion.get() && !redisSlave.isKeeper()

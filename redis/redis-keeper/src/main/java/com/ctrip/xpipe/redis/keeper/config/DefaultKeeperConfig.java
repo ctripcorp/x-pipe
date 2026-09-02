@@ -57,6 +57,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	private static String KEY_CROSS_REGION_MAX_FSYNC_SLAVES = "crossregion.replication.loading.slaves.max";
 	private static String KEY_CROSS_REGION_FSYNC_GRACE_SECONDS = "crossregion.replication.fsync.grace.seconds";
 	private static String KEY_CROSS_REGION_FSYNC_SETTLE_SECONDS = "crossregion.replication.fsync.settle.seconds";
+	private static String KEY_CROSS_REGION_FSYNC_DISCONNECT_TIMEOUT_SECONDS = "crossregion.replication.fsync.disconnect.timeout.seconds";
 
 	private static String KEY_FSYNC_RATE_LIMIT = "keeper.repl.fsync.rate.limit";
 	private static String KEY_INDEX_DUAL_WRITE = "keeper.index.dual.write";

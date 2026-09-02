@@ -16,6 +16,10 @@ public class CrossRegionFsyncCoordinatorTest {
 
     private static final long SETTLE_MILLIS = 2000;
 
+    private static final long GRACE_MILLIS = 5000;
+
+    private static final long DISCONNECT_TIMEOUT_MILLI = 60_000;
+
     private CrossRegionFsyncCoordinator coordinator;
     private AtomicLong clock;
     private List<RedisSlave> released;
@@ -23,7 +27,7 @@ public class CrossRegionFsyncCoordinatorTest {
     @Before
     public void setup() {
         clock = new AtomicLong(0);
-        coordinator = new CrossRegionFsyncCoordinator(() -> 1, () -> 5000L, () -> SETTLE_MILLIS, clock::get);
+        coordinator = new CrossRegionFsyncCoordinator(() -> 1, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, clock::get);
         released = new ArrayList<>();
     }
 
@@ -63,6 +67,13 @@ public class CrossRegionFsyncCoordinatorTest {
         return new HashSet<>(Arrays.asList(slaves));
     }
 
+    /** 过结算窗口后放行（授予租约） */
+    private void release(RedisSlave... slaves) {
+        coordinator.tick(slaveSet(slaves), this::admit);   // 起结算窗口
+        clock.set(SETTLE_MILLIS);
+        coordinator.tick(slaveSet(slaves), this::admit);   // 满窗口，放行
+    }
+
     @Test
     public void testNewSlaveGoesWaiting() {
         RedisSlave a = slave("10.0.0.2", 6379);
@@ -79,10 +90,11 @@ public class CrossRegionFsyncCoordinatorTest {
     }
 
     @Test
-    public void testLoadingReentrantReturnTrue() {
+    public void testReleasedSlaveReentrantReturnTrue() {
         RedisSlave a = slave("10.0.0.2", 6379);
-        loading(a);                                          // 已在全量中（dumper 续跑）
-        assertTrue(coordinator.onFullSyncRequest(a));
+        assertFalse(coordinator.onFullSyncRequest(a));       // 新请求 → defer
+        release(a);                                          // 放行 a（授予租约）
+        assertTrue(coordinator.onFullSyncRequest(a));        // 已获租约，loading retry → 续跑
     }
 
     @Test
@@ -103,7 +115,7 @@ public class CrossRegionFsyncCoordinatorTest {
     @Test
     public void testDynamicMaxLoadingSlavesCnt() {
         AtomicInteger max = new AtomicInteger(-1);
-        CrossRegionFsyncCoordinator c = new CrossRegionFsyncCoordinator(max::get, () -> 5000L, () -> SETTLE_MILLIS, clock::get);
+        CrossRegionFsyncCoordinator c = new CrossRegionFsyncCoordinator(max::get, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, clock::get);
         RedisSlave a = slave("10.0.0.2", 6379);
 
         assertTrue(c.onFullSyncRequest(a));   // max=-1（禁用）→ 直接放行
@@ -119,14 +131,14 @@ public class CrossRegionFsyncCoordinatorTest {
         RedisSlave c = slave("10.0.0.4", 6379);
         coordinator.tick(slaveSet(a, b, c), this::admit);   // 起结算窗口
         clock.set(SETTLE_MILLIS);
-        coordinator.tick(slaveSet(a, b, c), this::admit);   // 满窗口，放行 a（IP 最小）
+        coordinator.tick(slaveSet(a, b, c), this::admit);   // 满窗口，放行 a（ip:port 最小）
         assertEquals(1, released.size());
         assertSame(a, released.get(0));
     }
 
     @Test
     public void testMultipleSlotsAdmitConcurrently() {
-        CrossRegionFsyncCoordinator multi = new CrossRegionFsyncCoordinator(() -> 2, () -> 5000L, () -> SETTLE_MILLIS, clock::get);
+        CrossRegionFsyncCoordinator multi = new CrossRegionFsyncCoordinator(() -> 2, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, clock::get);
         RedisSlave a = slave("10.0.0.2", 6379);
         RedisSlave b = slave("10.0.0.3", 6379);
         RedisSlave c = slave("10.0.0.4", 6379);
@@ -141,40 +153,41 @@ public class CrossRegionFsyncCoordinatorTest {
     @Test
     public void testFullSyncDoneEnterGrace() {
         RedisSlave a = slave("10.0.0.2", 6379);
-        online(a);
-        coordinator.tick(slaveSet(a), this::admit);
+        release(a);                                          // 放行 a（授予租约）
+        online(a);                                           // a 全量完成，进入 ONLINE
         assertEquals(1, coordinator.occupiedCount4Test(slaveSet(a)));   // grace 占名额
     }
 
     @Test
     public void testGraceReleaseAfterExpire() {
         RedisSlave a = slave("10.0.0.2", 6379);
-        online(a);
-        coordinator.tick(slaveSet(a), this::admit);   // grace 起点 0
+        release(a);
+        online(a);                                           // graceStart = SETTLE_MILLIS
         assertEquals(1, coordinator.occupiedCount4Test(slaveSet(a)));
 
-        clock.set(5000);
-        coordinator.tick(slaveSet(a), this::admit);   // 满 5s
+        clock.set(SETTLE_MILLIS + GRACE_MILLIS);             // 满 grace
         assertEquals(0, coordinator.occupiedCount4Test(slaveSet(a)));
     }
 
     @Test
     public void testGraceSameSlaveReenterDefer() {
         RedisSlave a = slave("10.0.0.2", 6379);
-        online(a);
-        coordinator.tick(slaveSet(a), this::admit);   // 进 grace
-
-        assertFalse(coordinator.onFullSyncRequest(a));   // 相同 slave，grace 内 defer，不重复全量
+        release(a);
+        online(a);                                           // 进 grace
+        assertFalse(coordinator.onFullSyncRequest(a));       // grace 内不重复全量，defer
     }
 
     @Test
-    public void testSyncFailReleaseImmediately() {
+    public void testDisconnectKeepsLeaseUntilTimeout() {
         RedisSlave a = slave("10.0.0.2", 6379);
-        loading(a);                                          // 全量中
+        release(a);                                          // 放行 a（占用名额）
         assertEquals(1, coordinator.occupiedCount4Test(slaveSet(a)));
 
-        disconnect(a);                                       // 全量中断链
-        assertEquals(0, coordinator.occupiedCount4Test(slaveSet(a)));   // 立即不再占名额
+        disconnect(a);                                       // 断链：租约保留，不释放
+        assertEquals(1, coordinator.occupiedCount4Test(slaveSet(a)));
+
+        clock.set(SETTLE_MILLIS + DISCONNECT_TIMEOUT_MILLI); // 断链超时
+        assertEquals(0, coordinator.occupiedCount4Test(slaveSet(a)));   // 强制释放
     }
 
     @Test

@@ -91,6 +91,8 @@ public interface KeeperConfig extends CoreConfig{
 
     int getCrossRegionFsyncSettleSeconds();
 
+    int getCrossRegionFsyncDisconnectTimeoutSeconds();
+
     boolean fsyncRateLimit();
 
 	boolean tryRorRdb();
