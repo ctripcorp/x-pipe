@@ -309,6 +309,18 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return crossRegionFsyncSettleSeconds;
 	}
 
+	private int crossRegionFsyncDisconnectTimeoutSeconds = 60;
+
+	public TestKeeperConfig setCrossRegionFsyncDisconnectTimeoutSeconds(int seconds) {
+		this.crossRegionFsyncDisconnectTimeoutSeconds = seconds;
+		return this;
+	}
+
+	@Override
+	public int getCrossRegionFsyncDisconnectTimeoutSeconds() {
+		return crossRegionFsyncDisconnectTimeoutSeconds;
+	}
+
 	@Override
 	public int getApplierReadIdleSeconds() {
 		return 60;

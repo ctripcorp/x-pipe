@@ -27,7 +27,7 @@ public class CrossRegionFsyncCoordinatorTest {
     @Before
     public void setup() {
         clock = new AtomicLong(0);
-        coordinator = new CrossRegionFsyncCoordinator(() -> 1, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, clock::get);
+        coordinator = new CrossRegionFsyncCoordinator(() -> 1, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, () -> DISCONNECT_TIMEOUT_MILLI, clock::get);
         released = new ArrayList<>();
     }
 
@@ -115,7 +115,7 @@ public class CrossRegionFsyncCoordinatorTest {
     @Test
     public void testDynamicMaxLoadingSlavesCnt() {
         AtomicInteger max = new AtomicInteger(-1);
-        CrossRegionFsyncCoordinator c = new CrossRegionFsyncCoordinator(max::get, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, clock::get);
+        CrossRegionFsyncCoordinator c = new CrossRegionFsyncCoordinator(max::get, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, () -> DISCONNECT_TIMEOUT_MILLI, clock::get);
         RedisSlave a = slave("10.0.0.2", 6379);
 
         assertTrue(c.onFullSyncRequest(a));   // max=-1（禁用）→ 直接放行
@@ -138,7 +138,7 @@ public class CrossRegionFsyncCoordinatorTest {
 
     @Test
     public void testMultipleSlotsAdmitConcurrently() {
-        CrossRegionFsyncCoordinator multi = new CrossRegionFsyncCoordinator(() -> 2, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, clock::get);
+        CrossRegionFsyncCoordinator multi = new CrossRegionFsyncCoordinator(() -> 2, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, () -> DISCONNECT_TIMEOUT_MILLI, clock::get);
         RedisSlave a = slave("10.0.0.2", 6379);
         RedisSlave b = slave("10.0.0.3", 6379);
         RedisSlave c = slave("10.0.0.4", 6379);
