@@ -271,7 +271,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.crossRegionFsyncCoordinator = new CrossRegionFsyncCoordinator(
 				keeperConfig::getCrossRegionMaxLoadingSlavesCnt,
 				() -> TimeUnit.SECONDS.toMillis(keeperConfig.getCrossRegionFsyncGraceSeconds()),
-				() -> TimeUnit.SECONDS.toMillis(keeperConfig.getCrossRegionFsyncSettleSeconds()));
+				() -> TimeUnit.SECONDS.toMillis(keeperConfig.getCrossRegionFsyncSettleSeconds()),
+				() -> TimeUnit.SECONDS.toMillis(keeperConfig.getCrossRegionFsyncDisconnectTimeoutSeconds()));
 
 	}
 

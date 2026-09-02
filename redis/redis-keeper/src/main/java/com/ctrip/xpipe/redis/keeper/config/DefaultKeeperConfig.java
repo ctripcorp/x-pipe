@@ -246,6 +246,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	}
 
 	@Override
+	public int getCrossRegionFsyncDisconnectTimeoutSeconds() {
+		return getIntProperty(KEY_CROSS_REGION_FSYNC_DISCONNECT_TIMEOUT_SECONDS, 60);
+	}
+
+	@Override
 	public boolean fsyncRateLimit() {
 		return getBooleanProperty(KEY_FSYNC_RATE_LIMIT, true);
 	}
