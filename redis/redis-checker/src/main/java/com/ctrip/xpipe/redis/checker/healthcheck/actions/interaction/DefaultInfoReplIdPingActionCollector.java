@@ -55,6 +55,7 @@ public class DefaultInfoReplIdPingActionCollector extends AbstractInfoReplIdPing
                 .findFirst().orElse(null);
 
         if (null != key) return allHealthStatus.get(key).getState();
+        logger.info("[getHealthState][unknown] {}:{}", hostPort.getHost(), hostPort.getPort());
         return HEALTH_STATE.UNKNOWN;
     }
 
