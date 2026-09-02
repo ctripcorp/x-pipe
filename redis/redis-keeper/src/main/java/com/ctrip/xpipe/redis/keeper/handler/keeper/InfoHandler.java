@@ -272,8 +272,8 @@ public class InfoHandler extends AbstractCommandHandler {
 
 			long beginOffset = keeperRepl.backlogBeginOffset();
 			MetaStore metaStore = replicationStore.getMetaStore();
-			String replid = metaStore == null? ReplicationStoreMeta.EMPTY_REPL_ID : metaStore.getReplId();
-			String replid2 = metaStore == null? ReplicationStoreMeta.EMPTY_REPL_ID : metaStore.getReplId2();
+			String replid = metaStore == null? ReplicationStoreMeta.EMPTY_REPL_ID : keeperRepl.replId();
+			String replid2 = metaStore == null? ReplicationStoreMeta.EMPTY_REPL_ID : keeperRepl.replId2();
 			long  secondReplIdOffset = (metaStore == null || metaStore.getSecondReplIdOffset() == null) ? ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET : metaStore.getSecondReplIdOffset();
 
 			if(replid == null){
