@@ -38,6 +38,7 @@ import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindowTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreReadOnlyTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcherTest;
 import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.readonly.ReopenOffsetCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.searcher.GtidCommandSearcherTest;
@@ -81,6 +82,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultCommandStoreTest.class,
         ReadOnlyCommandStoreTest.class,
         ReopenOffsetCommandReaderTest.class,
+        PrepareStoreWatcherTest.class,
         DefaultRedisSlaveTest.class,
         RoleCommandHandlerTest.class,
         PrepareObservationHandlerTest.class,

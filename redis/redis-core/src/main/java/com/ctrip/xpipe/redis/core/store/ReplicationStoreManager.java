@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 import com.ctrip.xpipe.api.observer.Observable;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -52,5 +53,17 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	 * Intended for Redis command threads (D10).
 	 */
 	ReplicationStore getOpenedStore();
+
+	/**
+	 * Manager base directory ({@code {keeperBase}/{replId}}). Available after initialize.
+	 */
+	File getBaseDir();
+
+	/**
+	 * Re-read {@code store_manager_meta.properties} from disk (reopen handle, drop cache).
+	 * Returns {@code latest.store.dir} or {@code null}. Does not open or close the current store.
+	 * Used by PrepareStoreWatcher (D8) so occupying-keeper 换店 is visible.
+	 */
+	String reloadLatestStoreDir() throws IOException;
 
 }

@@ -32,6 +32,8 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int blockSizeThreshold = 8192;
 
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
+
+	private int prepareWatchMetaIntervalMilli = DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI;
 	
 	
 	public TestKeeperConfig(){
@@ -347,7 +349,12 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 
 	@Override
 	public int getPrepareWatchMetaIntervalMilli() {
-		return DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI;
+		return prepareWatchMetaIntervalMilli;
+	}
+
+	public TestKeeperConfig setPrepareWatchMetaIntervalMilli(int prepareWatchMetaIntervalMilli) {
+		this.prepareWatchMetaIntervalMilli = prepareWatchMetaIntervalMilli;
+		return this;
 	}
 
 	@Override

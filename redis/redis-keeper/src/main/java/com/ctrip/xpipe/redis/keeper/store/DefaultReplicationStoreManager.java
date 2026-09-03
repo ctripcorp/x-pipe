@@ -539,6 +539,17 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         return currentStore.get();
     }
 
+    @Override
+    public synchronized String reloadLatestStoreDir() throws IOException {
+        closeManagerMetaFile();
+        currentMeta.set(null);
+        Properties meta = currentMeta(true);
+        if (meta == null) {
+            return null;
+        }
+        return meta.getProperty(LATEST_STORE_DIR);
+    }
+
     private void checkNotReadOnly() {
         if (readOnly) {
             throw new IllegalStateException(READ_ONLY_STORE_MSG);
@@ -555,6 +566,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                 currentMeta.get() == null ? "" : currentMeta.get().toString());
     }
 
+    @Override
     public File getBaseDir() {
         return baseDir;
     }

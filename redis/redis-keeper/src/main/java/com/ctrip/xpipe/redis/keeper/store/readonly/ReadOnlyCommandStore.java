@@ -165,11 +165,13 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 		totalLengthSnapshot.accumulateAndGet(observedEnd, Math::max);
 	}
 
+	public boolean hasReaders() {
+		return !readers.isEmpty();
+	}
+
 	/**
-	 * 对外更新接口（D30）：reopen 共享只读句柄并刷新 {@code totalLength} 快照。
-	 * 句柄只由本类访问；Watcher / Reader 调本方法或 {@link #reopenAndObserve()}，禁止直接操作句柄。
-	 * 调用线程：Watcher / Reader 所在线程；禁止 Redis 命令线程（D11）。
-	 * Store 不自建定时器。失败只 WARN，快照保持原值。
+	 * 无 Reader 时由 Watcher 刷新 {@code totalLength}（D30 ③）。有 Reader 时它们自己 {@link #reopenAndObserve()}，不必再调。
+	 * 内部 close+open 共享句柄；失败只 WARN，快照保持原值。禁止 Redis 命令线程（D11）。
 	 */
 	public void observeCurrentEnd() {
 		try {
