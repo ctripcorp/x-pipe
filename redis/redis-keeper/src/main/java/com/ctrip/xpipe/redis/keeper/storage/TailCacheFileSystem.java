@@ -2061,10 +2061,12 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (noFs) {
             return CompletableFuture.completedFuture(null);
         }
-        return StorageUtil.run(ioExecutor, () -> {
+        CompletableFuture<Void> ioFuture = StorageUtil.run(ioExecutor, () -> {
             StorageUtil.requireOpen(file);
             delegate.deleteSync(file.path);
         });
+        registerInFlight(id, ioFuture);
+        return ioFuture;
     }
 
     @Override
@@ -2135,21 +2137,20 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (entry != null) {
             synchronized (entry) {
                 if (entry.isInitialized()) {
-                    if (size >= entry.cacheEndOffset) {
-                        return CompletableFuture.completedFuture(null);
-                    }
-                    if (file.atomicReplace) {
-                        ByteBuf newChunk;
-                        try {
-                            newChunk = StorageAllocator.ALLOC.directBuffer((int) size);
-                        } catch (Throwable e) {
-                            throw new CacheMemoryReserveException(size, e);
+                    if (size < entry.cacheEndOffset) {
+                        if (file.atomicReplace) {
+                            ByteBuf newChunk;
+                            try {
+                                newChunk = StorageAllocator.ALLOC.directBuffer((int) size);
+                            } catch (Throwable e) {
+                                throw new CacheMemoryReserveException(size, e);
+                            }
+                            CacheChunk oldChunk = entry.chunks.get(0L);
+                            newChunk.setBytes(0, oldChunk.buffer, 0, (int) size);
+                            entry.setAtomicChunk(new CacheChunk(newChunk), Math.min(size, entry.writtenToFsOffset));
+                        } else {
+                            entry.truncateTo(size, chunkSize);
                         }
-                        CacheChunk oldChunk = entry.chunks.get(0L);
-                        newChunk.setBytes(0, oldChunk.buffer, 0, (int) size);
-                        entry.setAtomicChunk(new CacheChunk(newChunk), Math.min(size, entry.writtenToFsOffset));
-                    } else {
-                        entry.truncateTo(size, chunkSize);
                     }
                     if (noFs) {
                         entry.fsInconsistent = true;

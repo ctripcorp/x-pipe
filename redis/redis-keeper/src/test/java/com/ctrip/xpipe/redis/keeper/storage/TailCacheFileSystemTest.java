@@ -18,7 +18,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +41,11 @@ public class TailCacheFileSystemTest {
     private TrackingExecutor ioExecutor;
     private RecordingDelegate delegate;
     private TailCacheFileSystem tcf;
+    // Instances created by individual tests; shut down in tearDown.
+    private final List<TailCacheFileSystem> extraFileSystems = new ArrayList<>();
+    // Faulty delegates created by individual tests; released in tearDown so a test that fails
+    // mid-way cannot leave a gate closed and block the shared io executor.
+    private final List<FaultyDelegate> faultyDelegates = new ArrayList<>();
 
     @Before
     public void setUp() throws Exception {
@@ -59,8 +68,57 @@ public class TailCacheFileSystemTest {
 
     @After
     public void tearDown() throws Exception {
+        // Unblock anything still parked on a fault gate before shutting the systems down.
+        for (FaultyDelegate faulty : faultyDelegates) {
+            faulty.release();
+        }
+        faultyDelegates.clear();
+        // Every instance owns a private evictExecutor that keeps rescheduling runEvictScan, so an
+        // instance that is never shut down leaks a scheduled thread past the end of the test.
+        // Shutdown has to happen here rather than inside the test: shutdown() cascades into
+        // delegate.shutdown(), which closes the ioExecutor shared by all instances below.
+        for (TailCacheFileSystem extra : extraFileSystems) {
+            extra.shutdown();
+        }
+        extraFileSystems.clear();
         tcf.shutdown();
         deleteRecursively(tempDir.toFile());
+    }
+
+    // Use instead of `new TailCacheFileSystem(...)` so tearDown shuts the instance down.
+    private TailCacheFileSystem newTcf(TailCacheFileSystemConfig config) {
+        return newTcf(delegate, config);
+    }
+
+    private TailCacheFileSystem newTcf(AsyncFileSystem backingFs, TailCacheFileSystemConfig config) {
+        TailCacheFileSystem created = new TailCacheFileSystem(backingFs, config, ioExecutor);
+        extraFileSystems.add(created);
+        return created;
+    }
+
+    private TailCacheFileSystemConfig baseConfig() {
+        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
+        config.setPerFileCacheLimits(10 * 1024, 1, CHUNK_SIZE);
+        config.setMaxCacheSizeBytes(100 * 1024);
+        config.setWriteBatchBytes(128);
+        config.setIoWaitTimeoutMs(5000);
+        config.setExpectedMinRetentionMs(0);
+        config.setEvictScanIntervalMs(60_000);
+        config.setWatermarkRatios(0.5, 0.8);
+        config.setMaxEvictRatioPerWrite(0.5);
+        return config;
+    }
+
+    private TailCacheFileSystem newNoFsTcf() {
+        return newTcf(baseConfig().setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS));
+    }
+
+    private byte[] bytes(int... values) {
+        byte[] result = new byte[values.length];
+        for (int i = 0; i < values.length; i++) {
+            result[i] = (byte) values[i];
+        }
+        return result;
     }
 
     private static void deleteRecursively(File f) {
@@ -577,7 +635,7 @@ public class TailCacheFileSystemTest {
         config.setWatermarkRatios(0.5, 0.8);
         config.setMaxEvictRatioPerWrite(0.5);
         config.setTransferPreferCache(false);
-        TailCacheFileSystem tcfDisk = new TailCacheFileSystem(delegate, config, ioExecutor);
+        TailCacheFileSystem tcfDisk = newTcf(config);
 
         String dir = path("seg_preopened_roll_disk");
         Files.createDirectories(Paths.get(dir));
@@ -621,7 +679,6 @@ public class TailCacheFileSystemTest {
         } finally {
             tcfDisk.close(reader).get(5, TimeUnit.SECONDS);
             tcfDisk.close(writer).get(5, TimeUnit.SECONDS);
-            tcfDisk.shutdown();
         }
     }
 
@@ -648,6 +705,161 @@ public class TailCacheFileSystemTest {
     // D. Eviction & memory management
     // =========================================================================
 
+    /**
+     * Config for the eviction-policy tests. Eviction is deterministic once three things hold:
+     * writes never auto-flush (writeBatchBytes far above the write size, so writtenToFsOffset only
+     * moves on an explicit fsync), allowDirtyEvict is false (true only under NO_FS/fsInconsistent),
+     * and evictTailBeforeAppend runs *before* the append, so maxEvictable is
+     * (chunksBeforeAppend - minRetainChunks).
+     */
+    private TailCacheFileSystemConfig evictConfig(int minRetainChunks, long maxCacheSizeBytes,
+            long expectedMinRetentionMs) {
+        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
+        config.setPerFileCacheLimits(10 * 1024, minRetainChunks, CHUNK_SIZE);
+        config.setMaxCacheSizeBytes(maxCacheSizeBytes);
+        config.setWriteBatchBytes(1024);
+        config.setIoWaitTimeoutMs(5000);
+        config.setExpectedMinRetentionMs(expectedMinRetentionMs);
+        config.setEvictScanIntervalMs(60_000);
+        config.setWatermarkRatios(0.3, 0.5);
+        config.setMaxEvictRatioPerWrite(0.5);
+        return config;
+    }
+
+    private void writeChunkAndFsync(TailCacheFileSystem fs, AsyncFile file) throws Exception {
+        fs.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+        fs.fsync(file).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testEvictionRetainsMinChunksPlusAppended() throws Exception {
+        // minRetainChunks=2 with retention=0 and every chunk durable: each write evicts exactly
+        // maxEvictable = (size - 2) chunks and then appends 1, so the cache settles at 3 chunks.
+        // Compare with testCacheStartOffsetAfterEviction, which uses minRetainChunks=1 and
+        // settles at 2 — that difference is what pins minRetainChunks down.
+        TailCacheFileSystem tightTcf = newTcf(evictConfig(2, 200, 0));
+        String p = path("file_evict_min_retain");
+        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        FileCacheEntry entry = file.getCacheEntry();
+
+        // Chunks 0..2: maxEvictable is 0/0/0, so nothing is evicted yet.
+        for (int i = 0; i < 3; i++) {
+            writeChunkAndFsync(tightTcf, file);
+        }
+        assertEquals(3, entry.chunks.size());
+        assertEquals(0, entry.cacheStartOffset);
+
+        // Chunk 3: maxEvictable = 3-2 = 1 → evicts chunk 0 only.
+        writeChunkAndFsync(tightTcf, file);
+        assertNull("chunk 0 evicted", entry.chunks.get(0L));
+        assertEquals(3, entry.chunks.size());
+        assertEquals(CHUNK_SIZE, entry.cacheStartOffset);
+
+        // Chunk 4: steady state — evict exactly one, append exactly one.
+        writeChunkAndFsync(tightTcf, file);
+        assertNull("chunk 1 evicted", entry.chunks.get(1L));
+        assertNotNull(entry.chunks.get(2L));
+        assertNotNull(entry.chunks.get(3L));
+        assertNotNull(entry.chunks.get(4L));
+        assertEquals("settles at minRetainChunks + the freshly appended chunk", 3, entry.chunks.size());
+        assertEquals(2 * CHUNK_SIZE, entry.cacheStartOffset);
+        assertEquals(3 * CHUNK_SIZE, entry.bodySizeBytes);
+
+        // Everything evicted was already flushed, so it is still readable from disk.
+        assertEquals(5 * CHUNK_SIZE, readFileSync(p).length);
+        tightTcf.close(file).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testRetentionBlocksEvictionBelowLowWatermark() throws Exception {
+        // ratio < lowWatermark → decideEvictionPolicy returns minEvict=0, so the only thing that
+        // can evict is chunk expiry. With a 60s retention nothing has expired, so no chunk is
+        // dropped even though all of them are durable and maxEvictable > 0.
+        TailCacheFileSystem looseTcf = newTcf(evictConfig(1, 100 * 1024, 60_000));
+        String p = path("file_evict_retention");
+        AsyncFile file = looseTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        FileCacheEntry entry = file.getCacheEntry();
+
+        for (int i = 0; i < 5; i++) {
+            writeChunkAndFsync(looseTcf, file);
+        }
+        assertEquals("retention keeps every chunk", 5, entry.chunks.size());
+        assertEquals(0, entry.cacheStartOffset);
+        assertEquals(5 * CHUNK_SIZE, entry.bodySizeBytes);
+        looseTcf.close(file).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testZeroRetentionEvictsBelowLowWatermark() throws Exception {
+        // Same watermark position as testRetentionBlocksEvictionBelowLowWatermark, retention=0.
+        // Now every durable chunk is immediately expired, so the first while loop evicts up to
+        // maxEvictable on every write and the cache settles at minRetainChunks + 1.
+        TailCacheFileSystem looseTcf = newTcf(evictConfig(1, 100 * 1024, 0));
+        String p = path("file_evict_no_retention");
+        AsyncFile file = looseTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        FileCacheEntry entry = file.getCacheEntry();
+
+        for (int i = 0; i < 5; i++) {
+            writeChunkAndFsync(looseTcf, file);
+        }
+        assertEquals("expired chunks are evicted regardless of watermark", 2, entry.chunks.size());
+        assertNotNull(entry.chunks.get(3L));
+        assertNotNull(entry.chunks.get(4L));
+        assertEquals(3 * CHUNK_SIZE, entry.cacheStartOffset);
+        looseTcf.close(file).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testHighWatermarkEvictsDespiteRetention() throws Exception {
+        // ratio >= highWatermark → minEvict = round(maxEvictable * maxEvictRatioPerWrite), and the
+        // second while loop honours it without consulting chunk expiry. So a 60s retention that
+        // blocks eviction entirely below the low watermark no longer does here.
+        TailCacheFileSystem tightTcf = newTcf(evictConfig(1, 200, 60_000));
+        String p = path("file_evict_high_wm");
+        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        FileCacheEntry entry = file.getCacheEntry();
+
+        // Chunks 0..1: maxEvictable is 0 then 0, nothing evicted.
+        writeChunkAndFsync(tightTcf, file);
+        writeChunkAndFsync(tightTcf, file);
+        assertEquals(2, entry.chunks.size());
+
+        // Chunk 2: committed(128)/200 = 0.64 >= high(0.5) → minEvict = round(1 * 0.5) = 1.
+        // Retention has not expired, so this eviction comes purely from the minEvict loop.
+        writeChunkAndFsync(tightTcf, file);
+        assertNull("high watermark evicts an unexpired chunk", entry.chunks.get(0L));
+        assertEquals(2, entry.chunks.size());
+        assertEquals(CHUNK_SIZE, entry.cacheStartOffset);
+        tightTcf.close(file).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testUndurableChunksAreNotEvicted() throws Exception {
+        // Same tight config as testCacheStartOffsetAfterEviction but without fsync, so
+        // durableFsOffset stays 0 and the first while loop hits durableLimit on chunk 0 and bails.
+        // The minEvict loop is skipped entirely when durableLimit is set, so nothing is dropped.
+        // Kept at 3 chunks (192B) so the reserve stays under maxCacheSizeBytes(200) — a 4th chunk
+        // would block for ioWaitTimeoutMs and fail with CacheMemoryReserveException instead.
+        TailCacheFileSystem tightTcf = newTcf(evictConfig(1, 200, 0));
+        String p = path("file_evict_undurable");
+        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        FileCacheEntry entry = file.getCacheEntry();
+
+        for (int i = 0; i < 3; i++) {
+            tightTcf.write(file, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+        }
+        // Precondition for the branch under test: nothing has reached the backing FS.
+        assertEquals(0, entry.writtenToFsOffset);
+        assertEquals(0, entry.pendingFsyncBytes);
+
+        assertNotNull("undurable chunk 0 must survive", entry.chunks.get(0L));
+        assertEquals(3, entry.chunks.size());
+        assertEquals(0, entry.cacheStartOffset);
+        assertEquals(3 * CHUNK_SIZE, entry.bodySizeBytes);
+        assertFalse("nothing durable, so the cache must not be marked inconsistent", entry.fsInconsistent);
+        tightTcf.close(file).get(5, TimeUnit.SECONDS);
+    }
+
     @Test
     public void testMemoryTrackerTracking() throws Exception {
         String p = path("file18");
@@ -667,8 +879,1137 @@ public class TailCacheFileSystemTest {
     }
 
     // =========================================================================
-    // E. BackingFsMode
+    // E. BackingFsMode.NO_FS — the disk is assumed unreachable (hung), so nothing may touch it.
+    // Local files are only a buffer between upstream and downstream; losing them, or having them
+    // overwritten by a freshly opened writer, is an accepted trade-off for staying available.
     // =========================================================================
+
+    @Test
+    public void testNoFsRejectsNoCacheMode() throws Exception {
+        // Without a cache there is nowhere for data to live under NO_FS, so the combination is
+        // rejected at open time rather than failing later on the first write.
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String p = path("nofs_nocache");
+        try {
+            noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null,
+                    AbstractStorageFile.CacheMode.NO_CACHE);
+            fail("expected IllegalArgumentException for NO_FS + NO_CACHE");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("NO_CACHE"));
+        }
+
+        String dir = path("nofs_nocache_seg");
+        Files.createDirectories(Paths.get(dir));
+        try {
+            noFsTcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null,
+                    AbstractStorageFile.CacheMode.NO_CACHE);
+            fail("expected IllegalArgumentException for NO_FS + NO_CACHE segment");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("NO_CACHE"));
+        }
+    }
+
+    @Test
+    public void testNoFsOpenInitializesCacheAtZeroAndMarksInconsistent() throws Exception {
+        // NO_FS open skips initFromDisk entirely, so the cache cannot be seeded from the file.
+        // initStorageCache instead seeds it at offset 0 and marks it inconsistent up front —
+        // the cache is "initialized" (isInitialized() is true) but empty and known to disagree
+        // with whatever is on disk.
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String p = path("nofs_open_state");
+        writeFileSync(p, new byte[]{9, 9, 9, 9});
+        delegate.reset();
+
+        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            FileCacheEntry entry = writer.getCacheEntry();
+            assertTrue(entry.isInitialized());
+            assertEquals(0, entry.cacheStartOffset);
+            assertEquals(0, entry.cacheEndOffset);
+            assertEquals(0, entry.writtenToFsOffset);
+            assertTrue("NO_FS open marks the cache inconsistent with disk", entry.fsInconsistent);
+            assertTrue("channel is not opened under NO_FS", writer.needPrepare);
+            assertEquals("open must not touch the disk", 0, delegate.fileReadCount);
+            // The existing on-disk content is untouched and invisible.
+            assertArrayEquals(new byte[]{9, 9, 9, 9}, readFileSync(p));
+        } finally {
+            noFsTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsWriteAndReadStayInMemory() throws Exception {
+        // Writes never reach the delegate and never leave the cache.
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String p = path("nofs_write_mem");
+        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            delegate.reset();
+            // Well above writeBatchBytes(128) — under ASYNC this would have triggered a flush.
+            noFsTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            FileCacheEntry entry = writer.getCacheEntry();
+            assertEquals(200, entry.cacheEndOffset);
+            assertEquals("nothing was handed to the delegate", 0, entry.writtenToFsOffset);
+            assertEquals(0, delegate.fileWriteCount);
+            assertFalse("the file must not be created", Files.exists(Paths.get(p)));
+
+            // Readable straight from the cache.
+            byte[] data = readBytes(noFsTcf.read(writer, 200, 0).get(5, TimeUnit.SECONDS));
+            assertEquals(200, data.length);
+            assertEquals(0, delegate.fileReadCount);
+        } finally {
+            noFsTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsFsyncIsNoOp() throws Exception {
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String p = path("nofs_fsync_noop");
+        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            noFsTcf.write(writer, bufOf(new byte[]{1, 2, 3})).get(5, TimeUnit.SECONDS);
+            delegate.reset();
+            noFsTcf.fsync(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            FileCacheEntry entry = writer.getCacheEntry();
+            assertEquals(0, delegate.fileWriteCount);
+            assertEquals(0, delegate.fileFsyncCount);
+            assertEquals("fsync must not advance the flushed offset", 0, entry.writtenToFsOffset);
+            assertEquals(3, entry.cacheEndOffset);
+            assertFalse(Files.exists(Paths.get(p)));
+        } finally {
+            noFsTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsReadBelowCacheStartThrows() throws Exception {
+        // A reader opened under ASYNC has cacheStartOffset == fileSize (tail cache holds no history).
+        // After switching to NO_FS the disk is off limits, so offsets below the cache window become
+        // unreadable rather than silently degrading to a disk read.
+        TailCacheFileSystem tcfSwitch = newTcf(baseConfig());
+        String p = path("nofs_read_below_start");
+        AsyncFile writer = tcfSwitch.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        tcfSwitch.write(writer, bufOf(new byte[]{1, 2, 3, 4, 5})).get(5, TimeUnit.SECONDS);
+        tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+        tcfSwitch.close(writer).get(5, TimeUnit.SECONDS);
+
+        AsyncFile reader = tcfSwitch.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        try {
+            FileCacheEntry entry = reader.getCacheEntry();
+            assertEquals("reader cache window starts at EOF", 5, entry.cacheStartOffset);
+            // Still fine under ASYNC — degrades to the disk.
+            assertArrayEquals(new byte[]{1, 2, 3},
+                    readBytes(tcfSwitch.read(reader, 3, 0).get(5, TimeUnit.SECONDS)));
+
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
+            try {
+                tcfSwitch.read(reader, 3, 0);
+                fail("expected CannotReadPositionInNoFsException");
+            } catch (CannotReadPositionInNoFsException expected) {
+                // offset 0 is below cacheStartOffset and the disk is unreachable
+            }
+            // transferTo takes the same decision path.
+            try {
+                tcfSwitch.transferTo(reader, 0, 3,
+                        new AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel());
+                fail("expected CannotReadPositionInNoFsException");
+            } catch (CannotReadPositionInNoFsException expected) {
+                // same
+            }
+        } finally {
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tcfSwitch.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsReadInsideCacheWindowSucceeds() throws Exception {
+        // Counterpart to the previous test: inside the window preferCacheRead returns
+        // (true, false) — serve from cache, never degrade — so the read still works.
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String p = path("nofs_read_in_window");
+        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            noFsTcf.write(writer, bufOf(new byte[]{1, 2, 3, 4, 5})).get(5, TimeUnit.SECONDS);
+            assertArrayEquals(new byte[]{3, 4, 5},
+                    readBytes(noFsTcf.read(writer, 3, 2).get(5, TimeUnit.SECONDS)));
+
+            // Beyond cacheEndOffset is an empty read, not an error.
+            assertEquals(0, readBytes(noFsTcf.read(writer, 3, 5).get(5, TimeUnit.SECONDS)).length);
+
+            AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel target =
+                    new AsyncTFSBasedFileSystemTest.ByteArrayOutputStreamChannel();
+            assertEquals(3L, (long) noFsTcf.transferTo(writer, 1, 3, target).get(5, TimeUnit.SECONDS));
+            assertArrayEquals(new byte[]{2, 3, 4}, target.toByteArray());
+        } finally {
+            noFsTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsDirtyEvictionDropsDataAndKeepsInconsistent() throws Exception {
+        // The one place NO_FS silently loses data: allowDirtyEvict is (noFs || fsInconsistent), so
+        // under memory pressure evictTailBeforeAppend will drop chunks that were never flushed
+        // instead of refusing to evict. cacheStartOffset moves past them for good.
+        TailCacheFileSystem tightTcf = newTcf(
+                evictConfig(1, 200, 0).setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS));
+        String p = path("nofs_dirty_evict");
+        AsyncFile writer = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            FileCacheEntry entry = writer.getCacheEntry();
+            for (int i = 0; i < 3; i++) {
+                tightTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            }
+            // Nothing is durable (writtenToFsOffset stays 0), yet chunk 0 is gone: under ASYNC the
+            // durableLimit check would have kept it (see testUndurableChunksAreNotEvicted).
+            assertEquals(0, entry.writtenToFsOffset);
+            assertNull("undurable chunk evicted under NO_FS", entry.chunks.get(0L));
+            assertEquals(CHUNK_SIZE, entry.cacheStartOffset);
+            assertTrue(entry.fsInconsistent);
+
+            // The dropped range is now unreachable: no cache, no disk.
+            try {
+                tightTcf.read(writer, 8, 0);
+                fail("expected CannotReadPositionInNoFsException for the evicted range");
+            } catch (CannotReadPositionInNoFsException expected) {
+                // data is gone
+            }
+        } finally {
+            tightTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsDirectoryAndExistenceQueriesThrow() throws Exception {
+        // These cannot be answered without touching the disk, and answering "false" would be a lie
+        // that callers would act on, so they fail loudly instead.
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String p = path("nofs_queries");
+        try {
+            noFsTcf.exists(p);
+            fail("expected CannotDetermineInNoFsException from exists");
+        } catch (CannotDetermineInNoFsException expected) {
+            // expected
+        }
+        try {
+            noFsTcf.isDirectory(p);
+            fail("expected CannotDetermineInNoFsException from isDirectory");
+        } catch (CannotDetermineInNoFsException expected) {
+            // expected
+        }
+        try {
+            noFsTcf.list(p);
+            fail("expected CannotDetermineInNoFsException from list");
+        } catch (CannotDetermineInNoFsException expected) {
+            // expected
+        }
+    }
+
+    @Test
+    public void testNoFsMutationsOnPathsAreSilentlySkipped() throws Exception {
+        // mkdir/rmdir/delete(path) have no cache counterpart, so instead of failing they report
+        // success and do nothing — callers treat them as best-effort housekeeping.
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String dir = path("nofs_mkdir");
+        String p = path("nofs_delete_path");
+        writeFileSync(p, new byte[]{1});
+
+        assertTrue(noFsTcf.mkdir(dir, true).get(5, TimeUnit.SECONDS));
+        assertFalse("mkdir must not create anything", Files.exists(Paths.get(dir)));
+        assertTrue(noFsTcf.rmdir(dir, true).get(5, TimeUnit.SECONDS));
+
+        noFsTcf.delete(p).get(5, TimeUnit.SECONDS);
+        assertTrue("delete(path) must leave the file alone", Files.exists(Paths.get(p)));
+    }
+
+    @Test
+    public void testNoFsSizeReportsLogicalLengthNotReadableRange() throws Exception {
+        // size() answers from the cache, so it keeps working. Note it reports total bytes written,
+        // which after a dirty eviction is *not* the readable range — the readable lower bound is
+        // cacheStartOffset. Callers of a tail cache are expected to know that.
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String p = path("nofs_size");
+        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            noFsTcf.write(writer, bufOf(new byte[70])).get(5, TimeUnit.SECONDS);
+            assertEquals(70, (long) noFsTcf.size(writer).get(5, TimeUnit.SECONDS));
+            // lastModified falls back to the in-memory timestamp instead of stat()ing the file.
+            assertTrue(noFsTcf.lastModified(writer).get(5, TimeUnit.SECONDS) > 0);
+        } finally {
+            noFsTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsCloseDropsUnflushedData() throws Exception {
+        // NO_FS close skips the flush entirely and then releases the cache entry, so a writer's
+        // data is gone once the last holder closes. This is the accepted trade-off.
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String p = path("nofs_close_drop");
+        writeFileSync(p, new byte[]{7, 7});
+        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        noFsTcf.write(writer, bufOf(new byte[]{1, 2, 3})).get(5, TimeUnit.SECONDS);
+        delegate.reset();
+
+        noFsTcf.close(writer).get(5, TimeUnit.SECONDS);
+        awaitAll();
+        assertEquals("close must not flush under NO_FS", 0, delegate.fileWriteCount);
+        assertEquals(0, delegate.fileFsyncCount);
+        assertArrayEquals("the pre-existing file is untouched", new byte[]{7, 7}, readFileSync(p));
+        assertEquals("cache memory released", 0, noFsTcf.getGlobalCommittedBytes());
+    }
+
+    // ---- NO_FS segment metadata ----
+
+    @Test
+    public void testNoFsSegmentOpenIgnoresExistingSegments() throws Exception {
+        // initFromDisk is skipped, so openInitialResources sees an empty state and creates segment 0
+        // from scratch. The writer therefore starts at offset 0 and the existing segments stay
+        // invisible on disk. This is intentional: with a hung disk there is no way to read them, and
+        // overwriting the local buffer is acceptable for a proxy whose source of truth is upstream.
+        String dir = path("nofs_seg_ignore_existing");
+        Files.createDirectories(Paths.get(dir));
+        Files.write(Paths.get(dir, SEG_PREFIX + "0"), new byte[64]);
+        Files.write(Paths.get(dir, SEG_PREFIX + "64"), new byte[64]);
+
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        AsyncSegmentFile writer = noFsTcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        try {
+            assertEquals("state is built from nothing, not from disk",
+                    Collections.singletonList(0L), noFsTcf.list(writer));
+            assertEquals(0, writer.openedSegmentStartOffset);
+            // Both files are still there; NO_FS never unlinks anything.
+            assertTrue(Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
+            assertTrue(Files.exists(Paths.get(dir, SEG_PREFIX + "64")));
+        } finally {
+            noFsTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsSegmentRollAdvancesMetadataOnly() throws Exception {
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String dir = path("nofs_seg_roll");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = noFsTcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        try {
+            noFsTcf.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+            delegate.reset();
+            noFsTcf.roll(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            assertEquals(Arrays.asList(0L, 10L), noFsTcf.list(writer));
+            assertEquals(10, writer.openedSegmentStartOffset);
+            assertTrue(writer.getCacheEntry().fsInconsistent);
+            assertEquals("roll must not write to the delegate", 0, delegate.segWriteCount);
+            assertFalse("no segment file is created", Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
+            assertFalse(Files.exists(Paths.get(dir, SEG_PREFIX + "10")));
+
+            // Data written after the roll still lands in the same cache and is readable.
+            noFsTcf.write(writer, bufOf(new byte[]{4, 5, 6})).get(5, TimeUnit.SECONDS);
+            assertArrayEquals(new byte[]{4, 5, 6},
+                    readBytes(noFsTcf.read(writer, 3, 10).get(5, TimeUnit.SECONDS)));
+        } finally {
+            noFsTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsSegmentTruncateAndDeleteTouchMetadataOnly() throws Exception {
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String dir = path("nofs_seg_trunc_del");
+        Files.createDirectories(Paths.get(dir));
+        // Pre-existing files that NO_FS never sees and never removes.
+        Files.write(Paths.get(dir, SEG_PREFIX + "0"), new byte[8]);
+
+        AsyncSegmentFile writer = noFsTcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        try {
+            noFsTcf.write(writer, bufOf(new byte[30])).get(5, TimeUnit.SECONDS);
+            noFsTcf.roll(writer).get(5, TimeUnit.SECONDS);
+            noFsTcf.write(writer, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+            assertEquals(Arrays.asList(0L, 30L), noFsTcf.list(writer));
+
+            noFsTcf.truncate(writer, 40).get(5, TimeUnit.SECONDS);
+            assertEquals(40, writer.getCacheEntry().cacheEndOffset);
+            assertTrue(writer.getCacheEntry().fsInconsistent);
+
+            // deleteSegments only drops metadata; the on-disk file survives as an orphan for a
+            // later restore to clean up via deleteOrphanSegmentFilesSync.
+            noFsTcf.deleteSegments(writer, Collections.singletonList(0L)).get(5, TimeUnit.SECONDS);
+            awaitAll();
+            assertEquals(Collections.singletonList(30L), noFsTcf.list(writer));
+            assertTrue("orphan file left on disk", Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
+            assertEquals(8, Files.size(Paths.get(dir, SEG_PREFIX + "0")));
+        } finally {
+            noFsTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsSegmentDeleteAllKeepsFilesOnDisk() throws Exception {
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String dir = path("nofs_seg_delete_all");
+        Files.createDirectories(Paths.get(dir));
+        Files.write(Paths.get(dir, SEG_PREFIX + "0"), new byte[16]);
+
+        AsyncSegmentFile writer = noFsTcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        try {
+            noFsTcf.write(writer, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+            delegate.reset();
+            noFsTcf.delete(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            assertTrue(noFsTcf.list(writer).isEmpty());
+            FileCacheEntry entry = writer.getCacheEntry();
+            assertEquals(0, entry.cacheEndOffset);
+            assertTrue(entry.fsInconsistent);
+            assertTrue("delete must not unlink under NO_FS",
+                    Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
+        } finally {
+            noFsTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsSegmentWriterOperationsRequireInitializedCache() throws Exception {
+        // A NO_FS writer whose cache entry is not initialized has nowhere to put anything, so the
+        // metadata-mutating operations refuse rather than corrupt state. Reaching that state needs
+        // the entry to be shared with an already-open handle whose init was skipped, so drive the
+        // check through a NO_CACHE segment writer opened under ASYNC and then switched to NO_FS.
+        TailCacheFileSystem tcfSwitch = newTcf(baseConfig());
+        String dir = path("nofs_seg_no_cache_entry");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcfSwitch.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null,
+                AbstractStorageFile.CacheMode.NO_CACHE).get();
+        try {
+            assertNull("NO_CACHE segment has no cache entry", writer.getCacheEntry());
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
+
+            try {
+                tcfSwitch.roll(writer);
+                fail("expected CannotWriteWithoutCacheInNoFsException from roll");
+            } catch (CannotWriteWithoutCacheInNoFsException expected) {
+                // expected
+            }
+            try {
+                tcfSwitch.truncate(writer, 0);
+                fail("expected CannotWriteWithoutCacheInNoFsException from truncate");
+            } catch (CannotWriteWithoutCacheInNoFsException expected) {
+                // expected
+            }
+            try {
+                tcfSwitch.delete(writer);
+                fail("expected CannotWriteWithoutCacheInNoFsException from delete");
+            } catch (CannotWriteWithoutCacheInNoFsException expected) {
+                // expected
+            }
+            try {
+                tcfSwitch.write(writer, bufOf(new byte[]{1}));
+                fail("expected CannotWriteWithoutCacheInNoFsException from write");
+            } catch (CannotWriteWithoutCacheInNoFsException expected) {
+                // write without a cache has nowhere to buffer
+            }
+        } finally {
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tcfSwitch.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsSegmentSizeAndLastModifiedOfSegment() throws Exception {
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String dir = path("nofs_seg_size");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = noFsTcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        try {
+            noFsTcf.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+            noFsTcf.roll(writer).get(5, TimeUnit.SECONDS);
+            noFsTcf.write(writer, bufOf(new byte[25])).get(5, TimeUnit.SECONDS);
+
+            assertEquals(35, (long) noFsTcf.size(writer).get(5, TimeUnit.SECONDS));
+            // Only the tail segment can be answered from the cache.
+            assertTrue(noFsTcf.lastModifiedOfSegment(writer, 10).get(5, TimeUnit.SECONDS) > 0);
+            try {
+                noFsTcf.lastModifiedOfSegment(writer, 0);
+                fail("expected CannotDetermineInNoFsException for a non-tail segment");
+            } catch (CannotDetermineInNoFsException expected) {
+                // only the tail segment is backed by the cache
+            }
+        } finally {
+            noFsTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsGetCurrentIndexFilesReturnsCachedHandles() throws Exception {
+        // Index handles are still handed out under NO_FS (writers must be able to append index
+        // entries into the cache), but nothing is created on disk.
+        TailCacheFileSystem noFsTcf = newNoFsTcf();
+        String dir = path("nofs_seg_index");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = noFsTcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        try {
+            noFsTcf.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+            Pair<Long, Map<String, AsyncFile>> result =
+                    noFsTcf.getCurrentIndexFiles(writer, INDEX_PREFIXES).get(5, TimeUnit.SECONDS);
+            assertEquals(Long.valueOf(0), result.getKey());
+            AsyncFile idx = result.getValue().get(IDX_PREFIX);
+            assertNotNull(idx);
+            assertTrue("index channel stays unopened under NO_FS", idx.needPrepare);
+            assertFalse(Files.exists(Paths.get(dir, IDX_PREFIX + "0")));
+        } finally {
+            noFsTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    // =========================================================================
+    // E2. Wedged disk under ASYNC — the scenario NO_FS exists for. Every entry point must come back
+    // within its configured budget instead of inheriting the disk's hang.
+    // =========================================================================
+
+    // Generous relative to ioWaitTimeoutMs(200) below, but far below the 30s fault gate: crossing
+    // it means the call actually waited on the disk.
+    private static final long BOUNDED_MS = 3000;
+
+    private TailCacheFileSystemConfig hangConfig() {
+        return baseConfig().setIoWaitTimeoutMs(200).setRestoreWaitTimeoutMs(200);
+    }
+
+    @Test
+    public void testHungDiskWriteReturnsBoundedAndKeepsDataInCache() throws Exception {
+        FaultyDelegate faulty = newFaultyDelegate();
+        TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
+        String p = path("hang_write");
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        FileCacheEntry entry = writer.getCacheEntry();
+
+        // First write exceeds writeBatchBytes(128) so it submits IO, which then wedges.
+        faulty.hangOn(Op.FILE_WRITE);
+        long start = System.nanoTime();
+        for (int i = 0; i < 5; i++) {
+            hangTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+        }
+        long elapsedMs = (System.nanoTime() - start) / 1_000_000L;
+
+        assertTrue("writes must not inherit the disk hang, took " + elapsedMs + "ms",
+                elapsedMs < BOUNDED_MS);
+        assertEquals("all data accepted into the cache", 1000, entry.cacheEndOffset);
+        // Readable from cache while the disk is still wedged.
+        assertEquals(1000, readBytes(hangTcf.read(writer, 1000, 0).get(5, TimeUnit.SECONDS)).length);
+
+        faulty.release();
+    }
+
+    @Test
+    public void testHungDiskReadFromCacheIsNotBlockedByStuckWrite() throws Exception {
+        // The proxy's read path serves downstream consumers; it must not be dragged down by a
+        // wedged flush. preferCacheRead answers from the cache without consulting in-flight IO.
+        FaultyDelegate faulty = newFaultyDelegate();
+        TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
+        String p = path("hang_read");
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+
+        hangTcf.write(writer, bufOf(new byte[]{1, 2, 3, 4, 5})).get(5, TimeUnit.SECONDS);
+        faulty.hangOn(Op.FILE_WRITE);
+        // Push past writeBatchBytes so a flush is in flight and stuck.
+        hangTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+
+        long start = System.nanoTime();
+        byte[] head = readBytes(hangTcf.read(writer, 5, 0).get(5, TimeUnit.SECONDS));
+        long elapsedMs = (System.nanoTime() - start) / 1_000_000L;
+
+        assertArrayEquals(new byte[]{1, 2, 3, 4, 5}, head);
+        assertTrue("cache read must not wait on the stuck flush, took " + elapsedMs + "ms",
+                elapsedMs < BOUNDED_MS);
+
+        faulty.release();
+    }
+
+    @Test
+    public void testHungDiskFsyncFailsBoundedRatherThanHanging() throws Exception {
+        FaultyDelegate faulty = newFaultyDelegate();
+        TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
+        String p = path("hang_fsync");
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+
+        faulty.hangOn(Op.FILE_WRITE);
+        hangTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+
+        // fsync waits on the in-flight flush; awaitFuture turns the timeout into
+        // OperationNotExecutedException, which is the caller's signal to retry.
+        long start = System.nanoTime();
+        try {
+            hangTcf.fsync(writer).get(5, TimeUnit.SECONDS);
+            fail("expected OperationNotExecutedException");
+        } catch (OperationNotExecutedException expected) {
+            // thrown synchronously by awaitInFlightIo
+        }
+        long elapsedMs = (System.nanoTime() - start) / 1_000_000L;
+        assertTrue("fsync must give up within its budget, took " + elapsedMs + "ms",
+                elapsedMs < BOUNDED_MS);
+
+        faulty.release();
+    }
+
+    @Test
+    public void testHungDiskCloseUnderAsyncFailsBounded() throws Exception {
+        // Records today's behaviour: closeInternal calls awaitInFlightIo *outside* its try block,
+        // so a wedged flush makes close throw and the channels are not detached. The way to close
+        // a handle while the disk is wedged is to switch to NO_FS first — see
+        // testHungDiskSwitchToNoFsRestoresAvailability.
+        FaultyDelegate faulty = newFaultyDelegate();
+        TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
+        String p = path("hang_close");
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+
+        faulty.hangOn(Op.FILE_WRITE);
+        hangTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+
+        long start = System.nanoTime();
+        try {
+            hangTcf.close(writer).get(5, TimeUnit.SECONDS);
+            fail("expected OperationNotExecutedException from close on a wedged disk");
+        } catch (OperationNotExecutedException expected) {
+            // bounded failure rather than an unbounded wait
+        }
+        long elapsedMs = (System.nanoTime() - start) / 1_000_000L;
+        assertTrue("close must give up within its budget, took " + elapsedMs + "ms",
+                elapsedMs < BOUNDED_MS);
+        assertFalse("close did not complete, so the handle is still open", writer.closed);
+
+        faulty.release();
+        // Once the disk recovers the same handle can still be closed normally.
+        hangTcf.close(writer).get(5, TimeUnit.SECONDS);
+        assertTrue(writer.closed);
+    }
+
+    @Test
+    public void testHungDiskOpenReturnsBoundedWithUninitializedCache() throws Exception {
+        // open needs sizeSync to seed the tail cache. When that wedges, awaitIoCachePrep times out
+        // and initStorageCache swallows it, so open still returns — with an uninitialized cache.
+        FaultyDelegate faulty = newFaultyDelegate();
+        TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
+        String p = path("hang_open");
+        writeFileSync(p, new byte[]{1, 2, 3});
+
+        faulty.hangOn(Op.FILE_SIZE);
+        long start = System.nanoTime();
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        long elapsedMs = (System.nanoTime() - start) / 1_000_000L;
+
+        assertTrue("open must return within its budget, took " + elapsedMs + "ms",
+                elapsedMs < BOUNDED_MS);
+        FileCacheEntry entry = writer.getCacheEntry();
+        assertFalse("cache could not be seeded from the wedged disk", entry.isInitialized());
+
+        // With no cache to fall back on, NO_FS cannot accept the write either — it says so
+        // explicitly instead of pretending to buffer it.
+        hangTcf.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
+        try {
+            hangTcf.write(writer, bufOf(new byte[]{9}));
+            fail("expected CannotInitCacheInNoFsException");
+        } catch (CannotInitCacheInNoFsException expected) {
+            // the cache was never initialized, so there is nowhere to put the data
+        }
+
+        faulty.release();
+    }
+
+    @Test
+    public void testHungDiskSwitchToNoFsRestoresAvailability() throws Exception {
+        // End-to-end: the disk wedges, ASYNC operations start failing, the operator flips to NO_FS
+        // and the pipeline keeps serving from memory — open, write, read and close all work again.
+        FaultyDelegate faulty = newFaultyDelegate();
+        TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
+        String p = path("hang_switch_nofs");
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+
+        faulty.hangOn(Op.FILE_WRITE);
+        hangTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+        // Confirm we really are in the degraded state before switching.
+        try {
+            hangTcf.fsync(writer).get(5, TimeUnit.SECONDS);
+            fail("expected the wedged disk to break fsync under ASYNC");
+        } catch (OperationNotExecutedException expected) {
+            // expected
+        }
+
+        hangTcf.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
+
+        long start = System.nanoTime();
+        hangTcf.write(writer, bufOf(new byte[]{7, 8, 9})).get(5, TimeUnit.SECONDS);
+        assertEquals(203, writer.getCacheEntry().cacheEndOffset);
+        assertArrayEquals(new byte[]{7, 8, 9},
+                readBytes(hangTcf.read(writer, 3, 200).get(5, TimeUnit.SECONDS)));
+        hangTcf.fsync(writer).get(5, TimeUnit.SECONDS);   // no-op, must not throw
+        hangTcf.close(writer).get(5, TimeUnit.SECONDS);   // skips the flush, so it completes
+        long elapsedMs = (System.nanoTime() - start) / 1_000_000L;
+
+        assertTrue(writer.closed);
+        assertTrue("NO_FS operations must not touch the wedged disk at all, took " + elapsedMs + "ms",
+                elapsedMs < BOUNDED_MS);
+
+        // A fresh writer can be opened and used while the disk is still wedged.
+        AsyncFile reopened = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            hangTcf.write(reopened, bufOf(new byte[]{1, 2})).get(5, TimeUnit.SECONDS);
+            assertArrayEquals(new byte[]{1, 2},
+                    readBytes(hangTcf.read(reopened, 2, 0).get(5, TimeUnit.SECONDS)));
+        } finally {
+            hangTcf.close(reopened).get(5, TimeUnit.SECONDS);
+        }
+
+        faulty.release();
+    }
+
+    // =========================================================================
+    // E3. Switching between ASYNC and NO_FS at runtime (setBackingFsMode is read per call).
+    // Two dirty dimensions are in play: file.needPrepare (no channel / dir may be missing) and
+    // entry.fsInconsistent (disk disagrees with cache). restoreBackingFsAndAwait repairs both, but
+    // only for writers — needApply is (canWrite() && fsInconsistent).
+    // =========================================================================
+
+    @Test
+    public void testAsyncToNoFsWriteOnlyIsBackfilledOnReturn() throws Exception {
+        // A plain write under NO_FS does not set fsInconsistent: it only withholds the flush, so
+        // writtenToFsOffset still marks a truthful boundary. On return to ASYNC the normal
+        // flush path resumes from that boundary and no repair is needed.
+        TailCacheFileSystem tcfSwitch = newTcf(baseConfig());
+        String p = path("switch_write_only");
+        AsyncFile writer = tcfSwitch.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            tcfSwitch.write(writer, bufOf(bytes(1, 2, 3))).get(5, TimeUnit.SECONDS);
+            tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+            FileCacheEntry entry = writer.getCacheEntry();
+            assertEquals(3, entry.writtenToFsOffset);
+
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
+            tcfSwitch.write(writer, bufOf(bytes(4, 5))).get(5, TimeUnit.SECONDS);
+            tcfSwitch.write(writer, bufOf(bytes(6, 7))).get(5, TimeUnit.SECONDS);
+            assertEquals(7, entry.cacheEndOffset);
+            assertEquals("flush boundary stays truthful", 3, entry.writtenToFsOffset);
+            assertFalse("a withheld flush is not an inconsistency", entry.fsInconsistent);
+            assertArrayEquals(bytes(1, 2, 3), readFileSync(p));
+
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            // flushPendingWriteAndAwait collects with maxBytes=Long.MAX_VALUE, so one fsync drains
+            // everything buffered during the outage regardless of writeBatchBytes.
+            tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+            assertEquals(7, entry.writtenToFsOffset);
+            assertArrayEquals(bytes(1, 2, 3, 4, 5, 6, 7), readFileSync(p));
+        } finally {
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tcfSwitch.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testAsyncToNoFsRollIsRepairedOnReturn() throws Exception {
+        // roll moves segment metadata that the disk knows nothing about, so it does set
+        // fsInconsistent. Returning to ASYNC must materialise the rolled segment.
+        TailCacheFileSystem tcfSwitch = newTcf(baseConfig());
+        String dir = path("switch_roll");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcfSwitch.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        try {
+            tcfSwitch.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+            tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
+            tcfSwitch.roll(writer).get(5, TimeUnit.SECONDS);
+            tcfSwitch.write(writer, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+            SegmentFileCacheEntry entry = writer.getCacheEntry();
+            assertTrue(entry.fsInconsistent);
+            assertEquals(Arrays.asList(0L, 10L), tcfSwitch.list(writer));
+            assertFalse(Files.exists(Paths.get(dir, SEG_PREFIX + "10")));
+
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            assertFalse("restore cleared the inconsistency", entry.fsInconsistent);
+            assertEquals("whole range trusted again", 0, entry.localReadableFromOffset);
+            assertEquals(30, entry.writtenToFsOffset);
+            assertEquals(10, Files.size(Paths.get(dir, SEG_PREFIX + "0")));
+            assertEquals(20, Files.size(Paths.get(dir, SEG_PREFIX + "10")));
+        } finally {
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tcfSwitch.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testAsyncToNoFsTruncateRealignsLastSegmentOnReturn() throws Exception {
+        // truncate under NO_FS shrinks the cache while the file on disk keeps its old length.
+        // alignLastSegmentForRestore truncates the tail segment down to the calibrated offset.
+        TailCacheFileSystem tcfSwitch = newTcf(baseConfig());
+        String dir = path("switch_truncate");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcfSwitch.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        try {
+            tcfSwitch.write(writer, bufOf(new byte[30])).get(5, TimeUnit.SECONDS);
+            tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+            assertEquals(30, Files.size(Paths.get(dir, SEG_PREFIX + "0")));
+
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
+            tcfSwitch.truncate(writer, 20).get(5, TimeUnit.SECONDS);
+            SegmentFileCacheEntry entry = writer.getCacheEntry();
+            assertEquals(20, entry.cacheEndOffset);
+            assertTrue(entry.fsInconsistent);
+            assertEquals("disk still holds the pre-truncate length",
+                    30, Files.size(Paths.get(dir, SEG_PREFIX + "0")));
+
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            assertFalse(entry.fsInconsistent);
+            assertEquals(20, entry.writtenToFsOffset);
+            assertEquals("tail segment realigned to the truncated length",
+                    20, Files.size(Paths.get(dir, SEG_PREFIX + "0")));
+        } finally {
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tcfSwitch.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testAsyncToNoFsDeleteSegmentsLeavesOrphansCleanedOnReturn() throws Exception {
+        // deleteSegments under NO_FS drops metadata only, so the files linger. Step 1 of the
+        // restore (deleteOrphanSegmentFilesSync) is what eventually unlinks them.
+        TailCacheFileSystem tcfSwitch = newTcf(baseConfig());
+        String dir = path("switch_delete_segments");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcfSwitch.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        try {
+            tcfSwitch.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+            tcfSwitch.roll(writer).get(5, TimeUnit.SECONDS);
+            tcfSwitch.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+            tcfSwitch.roll(writer).get(5, TimeUnit.SECONDS);
+            tcfSwitch.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+            tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+            assertTrue(Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
+
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
+            tcfSwitch.deleteSegments(writer, Collections.singletonList(0L)).get(5, TimeUnit.SECONDS);
+            assertEquals(Arrays.asList(10L, 20L), tcfSwitch.list(writer));
+            assertTrue("orphan still on disk under NO_FS",
+                    Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
+
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            assertFalse("restore unlinked the orphan", Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
+            assertTrue(Files.exists(Paths.get(dir, SEG_PREFIX + "10")));
+            assertTrue(Files.exists(Paths.get(dir, SEG_PREFIX + "20")));
+            assertFalse(writer.getCacheEntry().fsInconsistent);
+        } finally {
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tcfSwitch.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsOpenedWriterPreparesDirectoryAndChannelOnReturn() throws Exception {
+        // A handle opened while NO_FS was active has needPrepare set and no channel — its directory
+        // may not even exist. prepareFileSync (mkdir + openCurrentChannel) runs on the first
+        // ASYNC operation, before any repair.
+        TailCacheFileSystem tcfSwitch = newTcf(
+                baseConfig().setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS));
+        String dir = path("switch_prepare");
+        String p = Paths.get(dir, "file").toString();
+        assertFalse("directory does not exist yet", Files.exists(Paths.get(dir)));
+
+        AsyncFile writer = tcfSwitch.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            assertTrue(writer.needPrepare);
+            FileCacheEntry entry = writer.getCacheEntry();
+            assertTrue(entry.fsInconsistent);
+
+            tcfSwitch.write(writer, bufOf(bytes(1, 2, 3, 4, 5))).get(5, TimeUnit.SECONDS);
+            assertFalse("still nothing on disk", Files.exists(Paths.get(dir)));
+
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            assertFalse("channel prepared", writer.needPrepare);
+            assertFalse(entry.fsInconsistent);
+            assertTrue(Files.isDirectory(Paths.get(dir)));
+            assertArrayEquals(bytes(1, 2, 3, 4, 5), readFileSync(p));
+        } finally {
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tcfSwitch.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testReaderDoesNotClearInconsistencyOnlyWriterDoes() throws Exception {
+        // needApply requires canWrite(), so a reader sharing the entry cannot repair it. Until the
+        // writer runs a restore the reader stays cache-only, even back under ASYNC.
+        TailCacheFileSystem tcfSwitch = newTcf(baseConfig());
+        String dir = path("switch_reader_repair");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcfSwitch.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        AsyncSegmentFile reader = tcfSwitch.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        try {
+            tcfSwitch.write(writer, bufOf(new byte[30])).get(5, TimeUnit.SECONDS);
+            tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
+            tcfSwitch.truncate(writer, 20).get(5, TimeUnit.SECONDS);
+            SegmentFileCacheEntry shared = writer.getCacheEntry();
+            assertSame("writer and reader share the entry", shared, reader.getCacheEntry());
+            assertTrue(shared.fsInconsistent);
+
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            // Reader-only traffic leaves the flag alone.
+            tcfSwitch.size(reader).get(5, TimeUnit.SECONDS);
+            assertTrue("a reader must not clear fsInconsistent", shared.fsInconsistent);
+
+            // Now let the writer repair it.
+            tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+            assertFalse(shared.fsInconsistent);
+        } finally {
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tcfSwitch.close(reader).get(5, TimeUnit.SECONDS);
+            tcfSwitch.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testRestoreReenablesDiskDegradedReads() throws Exception {
+        // With readPreferCache=false, an already-flushed offset normally goes to disk. While
+        // fsInconsistent is set the same read is pinned to the shared cache, and after the writer
+        // restores the backing FS the reader may use disk again. Use a READ handle because a writer's
+        // segment channel is intentionally write-only.
+        TailCacheFileSystem tcfSwitch = newTcf(baseConfig());
+        tcfSwitch.setReadPreferCache(false);
+        String dir = path("switch_disk_reads");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcfSwitch.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        AsyncSegmentFile reader = tcfSwitch.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        try {
+            tcfSwitch.write(writer, bufOf(new byte[30])).get(5, TimeUnit.SECONDS);
+            tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+            SegmentFileCacheEntry entry = writer.getCacheEntry();
+            assertSame("reader and writer must observe the same consistency state",
+                    entry, reader.getCacheEntry());
+
+            // Baseline: consistent entry, offset below writtenToFsOffset -> disk.
+            delegate.reset();
+            ByteBuf baseline = tcfSwitch.read(reader, 10, 0).get(5, TimeUnit.SECONDS);
+            assertEquals(10, baseline.readableBytes());
+            baseline.release();
+            assertTrue("a consistent entry degrades to disk", delegate.segReadCount > 0);
+
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
+            tcfSwitch.truncate(writer, 20).get(5, TimeUnit.SECONDS);
+            assertTrue(entry.fsInconsistent);
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+
+            // Same read, but the disk is no longer trustworthy: served from cache.
+            delegate.reset();
+            ByteBuf pinned = tcfSwitch.read(reader, 10, 0).get(5, TimeUnit.SECONDS);
+            assertEquals(10, pinned.readableBytes());
+            pinned.release();
+            assertEquals("an inconsistent entry must not read the disk", 0, delegate.segReadCount);
+
+            // Repair through the writer, then the reader is allowed onto disk again.
+            tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+            assertFalse(entry.fsInconsistent);
+            assertEquals(0, entry.localReadableFromOffset);
+
+            delegate.reset();
+            ByteBuf afterRestore = tcfSwitch.read(reader, 10, 0).get(5, TimeUnit.SECONDS);
+            assertEquals(10, afterRestore.readableBytes());
+            afterRestore.release();
+            assertTrue("restore re-enabled disk reads", delegate.segReadCount > 0);
+        } finally {
+            tcfSwitch.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tcfSwitch.close(reader).get(5, TimeUnit.SECONDS);
+            tcfSwitch.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testRestorePartialSuccessMarksLocalReadableBoundary() throws Exception {
+        // When a historical segment can no longer be rebuilt (its bytes were evicted from the
+        // cache), restore stops there and reports the boundary via localReadableFromOffset instead
+        // of failing. fsInconsistent is still cleared — the boundary is the record of the damage.
+        //
+        // Layout built below (chunk=64, minRetain=1, maxCacheSizeBytes=200, retention=0):
+        //   ASYNC  write 64B + fsync      -> state=[0],        written=64, chunks={0}
+        //   NO_FS  roll                   -> state=[0,64]
+        //          write 64B              -> maxEvictable=1-1=0, chunks={0,1}, cacheEnd=128
+        //          roll                   -> state=[0,64,128]
+        //          write 64B              -> maxEvictable=2-1=1, ratio=128/200>=high -> evict chunk0
+        //                                    cacheStart=64,  chunks={1,2}, cacheEnd=192
+        //          write 64B              -> evict chunk1 (allowDirtyEvict=true under NO_FS)
+        //                                    cacheStart=128, chunks={2,3}, cacheEnd=256
+        // Restore then finds written(64) < lastStart(128) and walks back to segment 64, whose
+        // logicalFrom is 64 < cacheStartOffset(128) -> dataSupplier returns null -> stop.
+        TailCacheFileSystem tightTcf = newTcf(
+                evictConfig(1, 200, 0).setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC));
+        String dir = path("switch_partial_restore");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tightTcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        try {
+            SegmentFileCacheEntry entry = writer.getCacheEntry();
+            tightTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            tightTcf.fsync(writer).get(5, TimeUnit.SECONDS);
+            assertEquals(CHUNK_SIZE, entry.writtenToFsOffset);
+
+            tightTcf.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
+            tightTcf.roll(writer).get(5, TimeUnit.SECONDS);
+            tightTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            tightTcf.roll(writer).get(5, TimeUnit.SECONDS);
+            tightTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            tightTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+
+            assertEquals(Arrays.asList(0L, CHUNK_SIZE, 2 * CHUNK_SIZE), tightTcf.list(writer));
+            assertEquals("eviction moved the window past segment 64",
+                    2 * CHUNK_SIZE, entry.cacheStartOffset);
+            assertEquals(CHUNK_SIZE, entry.writtenToFsOffset);
+
+            tightTcf.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tightTcf.fsync(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            assertFalse("partial success still clears the flag", entry.fsInconsistent);
+            assertEquals("boundary records what could not be rebuilt",
+                    2 * CHUNK_SIZE, entry.localReadableFromOffset);
+            // rewriteRangeSync truncates before asking the cache, so the unrepairable segment is
+            // left empty rather than holding bytes nobody vouches for.
+            assertEquals(0, Files.size(Paths.get(dir, SEG_PREFIX + String.valueOf(CHUNK_SIZE))));
+
+            // Below the boundary and outside the cache window there is nothing left to serve.
+            try {
+                tightTcf.read(writer, 8, CHUNK_SIZE + 8);
+                fail("expected CannotReadPositionInNoFsException below localReadableFromOffset");
+            } catch (CannotReadPositionInNoFsException expected) {
+                // the range is gone from both cache and disk
+            }
+            // At and above the boundary the cache still serves.
+            assertEquals(8, readBytes(
+                    tightTcf.read(writer, 8, 2 * CHUNK_SIZE).get(5, TimeUnit.SECONDS)).length);
+        } finally {
+            tightTcf.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            tightTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testRestoreTimeoutFailsRollAndRetryIsIdempotent() throws Exception {
+        // A restore that times out leaves the entry dirty and makes roll report
+        // OperationNotExecutedException. Note the metadata phase already ran, so the caller's
+        // contract is "retry", and the retry must not add a second segment.
+        FaultyDelegate faulty = newFaultyDelegate();
+        TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
+        String dir = path("switch_restore_timeout");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = hangTcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        try {
+            hangTcf.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+            hangTcf.fsync(writer).get(5, TimeUnit.SECONDS);
+
+            hangTcf.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
+            hangTcf.roll(writer).get(5, TimeUnit.SECONDS);
+            hangTcf.write(writer, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+            SegmentFileCacheEntry entry = writer.getCacheEntry();
+            assertTrue(entry.fsInconsistent);
+
+            // Wedge a step the restore must pass through, then go back to ASYNC.
+            faulty.hangOn(Op.ORPHAN_SCAN);
+            hangTcf.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            try {
+                hangTcf.roll(writer);
+                fail("expected OperationNotExecutedException when restore times out");
+            } catch (OperationNotExecutedException expected) {
+                // caller is expected to retry
+            }
+            assertTrue("nothing was applied", entry.fsInconsistent);
+            List<Long> afterFailedRoll = hangTcf.list(writer);
+            assertEquals("the metadata phase runs before the restore",
+                    Arrays.asList(0L, 10L, 30L), afterFailedRoll);
+
+            faulty.release();
+            // Retry: the tail segment is empty now, so rollMetadata is a no-op and only the
+            // restore is redone.
+            hangTcf.roll(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+            assertEquals("retry must not add another segment", afterFailedRoll, hangTcf.list(writer));
+            assertFalse(entry.fsInconsistent);
+        } finally {
+            hangTcf.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            faulty.release();
+            hangTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testRestoreFailureDegradesTailCacheWriteButFailsAtomicReplace() throws Exception {
+        // A tail-cache writer can absorb a failed restore: the bytes stay in the cache and
+        // writtenToFsOffset still describes a real boundary, so write returns normally. An
+        // atomicReplace writer has no partial-flush state to fall back on, so it must fail loudly.
+        FaultyDelegate faulty = newFaultyDelegate();
+        TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig()
+                .setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS));
+        String dir = path("switch_restore_fail");
+        String tailPath = Paths.get(dir, "tail").toString();
+        String atomicPath = Paths.get(dir, "atomic").toString();
+
+        AsyncFile tailWriter = hangTcf.open(tailPath, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile atomicWriter = hangTcf.open(atomicPath, AbstractStorageFile.OpenMode.WRITE, true, false, null).get();
+        try {
+            hangTcf.write(tailWriter, bufOf(bytes(1, 2, 3))).get(5, TimeUnit.SECONDS);
+            FileCacheEntry tailEntry = tailWriter.getCacheEntry();
+            assertTrue(tailEntry.fsInconsistent);
+
+            // Both handles still need prepare, so make mkdir wedge and return to ASYNC.
+            faulty.hangOn(Op.MKDIR);
+            hangTcf.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+
+            long accepted = hangTcf.write(tailWriter, bufOf(bytes(4, 5))).get(5, TimeUnit.SECONDS);
+            assertEquals("tail-cache write is accepted despite the failed restore", 2, accepted);
+            assertEquals(5, tailEntry.cacheEndOffset);
+            assertEquals("nothing reached the disk", 0, tailEntry.writtenToFsOffset);
+            assertTrue(tailEntry.fsInconsistent);
+            assertArrayEquals(bytes(1, 2, 3, 4, 5),
+                    readBytes(hangTcf.read(tailWriter, 5, 0).get(5, TimeUnit.SECONDS)));
+
+            try {
+                hangTcf.write(atomicWriter, bufOf(bytes(9, 9)));
+                fail("expected OperationNotExecutedException for atomicReplace");
+            } catch (OperationNotExecutedException expected) {
+                // no partial-flush semantics to degrade to
+            }
+
+            // Once the disk comes back the buffered tail data is flushed for real.
+            faulty.release();
+            hangTcf.fsync(tailWriter).get(5, TimeUnit.SECONDS);
+            awaitAll();
+            assertFalse(tailEntry.fsInconsistent);
+            assertArrayEquals(bytes(1, 2, 3, 4, 5), readFileSync(tailPath));
+        } finally {
+            faulty.release();
+            hangTcf.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
+            hangTcf.close(tailWriter).get(5, TimeUnit.SECONDS);
+            hangTcf.close(atomicWriter).get(5, TimeUnit.SECONDS);
+        }
+    }
 
     @Test
     public void testNoCacheBackingMode() throws Exception {
@@ -678,7 +2019,7 @@ public class TailCacheFileSystemTest {
         config.setWriteBatchBytes(128);
         config.setIoWaitTimeoutMs(5000);
         config.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_CACHE);
-        TailCacheFileSystem noCacheTcf = new TailCacheFileSystem(delegate, config, ioExecutor);
+        TailCacheFileSystem noCacheTcf = newTcf(config);
 
         String p = path("file21");
         AsyncFile file = noCacheTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
@@ -1100,7 +2441,7 @@ public class TailCacheFileSystemTest {
         config.setWriteBatchBytes(128);
         config.setIoWaitTimeoutMs(5000);
         config.setTransferPreferCache(false);
-        TailCacheFileSystem tcfDirect = new TailCacheFileSystem(delegate, config, ioExecutor);
+        TailCacheFileSystem tcfDirect = newTcf(config);
 
         String p = path("file_xfer_direct");
         writeFileSync(p, new byte[]{1, 2, 3, 4, 5});
@@ -1140,6 +2481,52 @@ public class TailCacheFileSystemTest {
     // =========================================================================
     // K. Segment special branches
     // =========================================================================
+
+    @Test
+    public void testGetCurrentIndexFilesEmptyStateReturnsEmpty() throws Exception {
+        // Empty dir state short-circuits to (0, empty map) before any delegate call. The delegate
+        // itself has no such guard — it would hand back a handle per prefix keyed on offset 0.
+        String dir = path("seg_idx_empty_state");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile reader = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        try {
+            assertTrue(tcf.list(reader).isEmpty());
+            Pair<Long, Map<String, AsyncFile>> result =
+                    tcf.getCurrentIndexFiles(reader, INDEX_PREFIXES).get(5, TimeUnit.SECONDS);
+            assertEquals(Long.valueOf(0), result.getKey());
+            assertTrue("empty state must not open index handles", result.getValue().isEmpty());
+            assertFalse(Files.exists(Paths.get(dir, IDX_PREFIX + "0")));
+        } finally {
+            tcf.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testGetCurrentIndexFilesWriterReturnsTailSegmentHandles() throws Exception {
+        // Non-empty state: the returned offset is the writer's tail segment and the handle map has
+        // one entry per requested prefix.
+        String dir = path("seg_idx_writer_tail");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        try {
+            tcf.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+            tcf.roll(writer).get(5, TimeUnit.SECONDS);
+            tcf.write(writer, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            Pair<Long, Map<String, AsyncFile>> result =
+                    tcf.getCurrentIndexFiles(writer, INDEX_PREFIXES).get(5, TimeUnit.SECONDS);
+            assertEquals("keyed on the tail segment, not the first one",
+                    Long.valueOf(10), result.getKey());
+            assertEquals(tcf.getCurrentSegmentStartOffset(writer), (long) result.getKey());
+            assertEquals(1, result.getValue().size());
+            AsyncFile idx = result.getValue().get(IDX_PREFIX);
+            assertNotNull(idx);
+            assertTrue(Files.exists(Paths.get(dir, IDX_PREFIX + "10")));
+        } finally {
+            tcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
 
     @Test
     public void testDeleteSegmentsEmptyList() throws Exception {
@@ -1614,7 +3001,7 @@ public class TailCacheFileSystemTest {
         config.setEvictScanIntervalMs(60_000);
         config.setWatermarkRatios(0.3, 0.5);
         config.setMaxEvictRatioPerWrite(0.5);
-        TailCacheFileSystem tightTcf = new TailCacheFileSystem(delegate, config, ioExecutor);
+        TailCacheFileSystem tightTcf = newTcf(config);
 
         String p = path("file_cso_evict");
         AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
@@ -1734,7 +3121,189 @@ public class TailCacheFileSystemTest {
     }
 
     // =========================================================================
-    // N. EIO recovery
+    // N. ASYNC write-path failure handling & config validation
+    // =========================================================================
+
+    @Test
+    public void testWriteMergesIntoInFlightFlushWithoutExtraDelegateWrite() throws Exception {
+        // With a flush already in flight, a tail-cache write on a consistent entry is folded into it
+        // (data.release() + return) rather than waiting. The bytes are already in the cache, so the
+        // in-flight write picks them up and nothing is lost — and no second delegate write happens.
+        FaultyDelegate faulty = newFaultyDelegate();
+        TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
+        String p = path("merge_inflight");
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        FileCacheEntry entry = writer.getCacheEntry();
+
+        faulty.hangOn(Op.FILE_WRITE);
+        hangTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+        int writesAfterFirst = faulty.fileWriteCount;
+
+        // These land while the first flush is stuck, so they must merge instead of queueing.
+        long start = System.nanoTime();
+        hangTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+        hangTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+        long elapsedMs = (System.nanoTime() - start) / 1_000_000L;
+
+        assertTrue("merged writes must not wait, took " + elapsedMs + "ms", elapsedMs < BOUNDED_MS);
+        assertEquals("no additional delegate write while one is in flight",
+                writesAfterFirst, faulty.fileWriteCount);
+        assertEquals(600, entry.cacheEndOffset);
+        assertFalse(entry.fsInconsistent);
+
+        faulty.release();
+        hangTcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        awaitAll();
+        assertEquals("everything buffered gets flushed", 600, entry.writtenToFsOffset);
+        assertEquals(600, readFileSync(p).length);
+        hangTcf.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testNoSpaceIsStickyAndCloseStillCompletes() throws Exception {
+        // ENOSPC is latched on the file by executeWithIoFailureHandling, so later operations fail
+        // fast via throwIfNoSpace instead of retrying a write that cannot succeed. close then
+        // deliberately skips the flush (noSpaceBeforeClose -> noFs) so the handle can still be
+        // released.
+        FaultyDelegate faulty = newFaultyDelegate();
+        TailCacheFileSystem enospcTcf = newTcf(faulty, baseConfig());
+        String p = path("enospc");
+        AsyncFile writer = enospcTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+
+        faulty.failOn(new IOException("No space left on device"), Op.FILE_WRITE);
+        // Exceeds writeBatchBytes so the flush is attempted and fails inside the io task.
+        enospcTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+        awaitAll();
+        assertNotNull("ENOSPC latched on the file", writer.noSpaceFailure);
+
+        faulty.release();
+        // Even with the disk healthy again the latch makes further writes fail fast.
+        try {
+            enospcTcf.write(writer, bufOf(new byte[200]));
+            fail("expected the ENOSPC latch to reject further writes");
+        } catch (RuntimeException expected) {
+            assertTrue(StorageUtil.isNoSpace(writer.noSpaceFailure));
+        }
+
+        enospcTcf.close(writer).get(5, TimeUnit.SECONDS);
+        assertTrue("close must still release the handle after ENOSPC", writer.closed);
+    }
+
+    @Test
+    public void testUndurableCacheGrowthFailsReserveInsteadOfLosingData() throws Exception {
+        // Nothing is flushed, so the durableLimit check refuses to evict; the cache therefore hits
+        // maxCacheSizeBytes. reserve waits ioWaitTimeoutMs and then fails the write rather than
+        // silently dropping a chunk.
+        TailCacheFileSystem tightTcf = newTcf(evictConfig(1, 200, 0).setIoWaitTimeoutMs(50));
+        String p = path("reserve_timeout");
+        AsyncFile writer = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        try {
+            FileCacheEntry entry = writer.getCacheEntry();
+            // 3 chunks = 192B fits under 200B.
+            for (int i = 0; i < 3; i++) {
+                tightTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            }
+            assertEquals(3, entry.chunks.size());
+            assertEquals(0, entry.writtenToFsOffset);
+
+            try {
+                tightTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE]));
+                fail("expected CacheMemoryReserveException");
+            } catch (CacheMemoryReserveException expected) {
+                // the write is rejected; the already-cached chunks are untouched
+            }
+            assertEquals("no chunk was sacrificed", 3, entry.chunks.size());
+            assertEquals(3 * CHUNK_SIZE, entry.cacheEndOffset);
+        } finally {
+            tightTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testCloseChannelsFallBackWhenIoExecutorRejects() throws Exception {
+        // scheduleCloseChannels retries on a dedicated close executor when the io executor refuses
+        // the task, so a shut-down io pool cannot leak a channel detached by position().
+        String dir = path("reject_close");
+        Files.createDirectories(Paths.get(dir));
+
+        // Build two segments first; moving a reader from the first to the second will detach its
+        // currently-open FileChannel and hand it to scheduleCloseChannels.
+        AsyncSegmentFile writer = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcf.roll(writer).get(5, TimeUnit.SECONDS);
+        tcf.write(writer, bufOf(new byte[10])).get(5, TimeUnit.SECONDS);
+        tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+        tcf.close(writer).get(5, TimeUnit.SECONDS);
+
+        TrackingExecutor rejectIo = new TrackingExecutor(Executors.newCachedThreadPool());
+        RecordingDelegate rejectingDelegate = new RecordingDelegate(rejectIo);
+        TailCacheFileSystem rejectTcf = new TailCacheFileSystem(rejectingDelegate, baseConfig(), rejectIo);
+        extraFileSystems.add(rejectTcf);
+
+        AsyncSegmentFile reader = rejectTcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, false, null).get();
+        try {
+            // Open the first segment channel while the executor still accepts work.
+            ByteBuf firstByte = rejectTcf.read(reader, 1, 0).get(5, TimeUnit.SECONDS);
+            firstByte.release();
+            FileChannel detached = reader.currentSegmentChannel;
+            assertNotNull(detached);
+            assertTrue(detached.isOpen());
+
+            // position() itself is synchronous after the completed read barrier. Its close task is
+            // rejected by rejectIo and must therefore be resubmitted to the private closeExecutor.
+            rejectIo.shutdown();
+            rejectTcf.position(reader, 10).get(5, TimeUnit.SECONDS);
+
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+            while (detached.isOpen() && System.nanoTime() < deadline) {
+                Thread.sleep(10);
+            }
+            assertFalse("fallback close executor must close the detached channel", detached.isOpen());
+        } finally {
+            rejectTcf.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testConfigValidatesTimeouts() {
+        TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
+        // ioWaitTimeoutMs must be positive: 0 used to be accepted and now is not.
+        try {
+            config.setIoWaitTimeoutMs(0);
+            fail("expected IllegalArgumentException for ioWaitTimeoutMs=0");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("ioWaitTimeoutMs"));
+        }
+        try {
+            config.setIoWaitTimeoutMs(-1);
+            fail("expected IllegalArgumentException for a negative ioWaitTimeoutMs");
+        } catch (IllegalArgumentException expected) {
+            // expected
+        }
+        config.setIoWaitTimeoutMs(1);
+        assertEquals(1, config.getIoWaitTimeoutMs());
+
+        // restoreWaitTimeoutMs is also strictly positive.
+        try {
+            config.setRestoreWaitTimeoutMs(-1);
+            fail("expected IllegalArgumentException for a negative restoreWaitTimeoutMs");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("restoreWaitTimeoutMs"));
+        }
+        try {
+            config.setRestoreWaitTimeoutMs(0);
+            fail("expected IllegalArgumentException for restoreWaitTimeoutMs=0");
+        } catch (IllegalArgumentException expected) {
+            assertTrue(expected.getMessage().contains("restoreWaitTimeoutMs"));
+        }
+        config.setRestoreWaitTimeoutMs(1);
+        assertEquals(1, config.getRestoreWaitTimeoutMs());
+        config.setRestoreWaitTimeoutMs(20_000);
+        assertEquals(20_000, config.getRestoreWaitTimeoutMs());
+    }
+
+    // =========================================================================
+    // O. EIO recovery
     // =========================================================================
 
     /**
@@ -1772,7 +3341,7 @@ public class TailCacheFileSystemTest {
         // fsync recovery: re-flushes B+C from cache (offsets 8-14).
 
         EioDelegate eioDelegate = new EioDelegate(ioExecutor);
-        TailCacheFileSystem eioTcf = new TailCacheFileSystem(eioDelegate,
+        TailCacheFileSystem eioTcf = newTcf(eioDelegate,
                 new TailCacheFileSystemConfig()
                         .setPerFileCacheLimits(10 * 1024, 1, CHUNK_SIZE)
                         .setMaxCacheSizeBytes(100 * 1024)
@@ -1781,8 +3350,7 @@ public class TailCacheFileSystemTest {
                         .setExpectedMinRetentionMs(0)
                         .setEvictScanIntervalMs(60_000)
                         .setWatermarkRatios(0.5, 0.8)
-                        .setMaxEvictRatioPerWrite(0.5),
-                ioExecutor);
+                        .setMaxEvictRatioPerWrite(0.5));
 
         String p = path("file_eio_recovery");
         AsyncFile writer = eioTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
@@ -1829,6 +3397,128 @@ public class TailCacheFileSystemTest {
                 new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}, onDisk);
 
         eioTcf.close(writer).get();
+    }
+
+    // =========================================================================
+    // FaultyDelegate — a RecordingDelegate whose chosen operations can be made to hang forever
+    // (simulating a wedged disk, where IO never returns) or to fail with a given IOException.
+    // =========================================================================
+
+    enum Op { FILE_WRITE, FILE_FSYNC, FILE_SIZE, FILE_TRUNCATE, SEG_WRITE, MKDIR, ORPHAN_SCAN }
+
+    static class FaultyDelegate extends RecordingDelegate {
+        private volatile Set<Op> faulty = Collections.emptySet();
+        private volatile CountDownLatch gate;
+        private volatile IOException failure;
+
+        FaultyDelegate(ExecutorService ioExecutor) {
+            super(ioExecutor);
+        }
+
+        /** The given ops block until {@link #release()}; models a disk that stopped responding. */
+        void hangOn(Op... ops) {
+            gate = new CountDownLatch(1);
+            failure = null;
+            faulty = new HashSet<>(Arrays.asList(ops));
+        }
+
+        void failOn(IOException e, Op... ops) {
+            gate = null;
+            failure = e;
+            faulty = new HashSet<>(Arrays.asList(ops));
+        }
+
+        void release() {
+            CountDownLatch g = gate;
+            faulty = Collections.emptySet();
+            failure = null;
+            gate = null;
+            if (g != null) {
+                g.countDown();
+            }
+        }
+
+        private void fault(Op op) {
+            if (!faulty.contains(op)) {
+                return;
+            }
+            IOException f = failure;
+            if (f != null) {
+                throw StorageUtil.wrapIOException(f);
+            }
+            CountDownLatch g = gate;
+            if (g == null) {
+                return;
+            }
+            try {
+                // Bounded so a forgotten release() fails the test instead of wedging the build.
+                if (!g.await(30, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("faulty gate never released for " + op);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+        }
+
+        // Release the buffer the real writeSync would have released, so an injected failure does
+        // not look like a leak.
+        private void faultWrite(Op op, ByteBuf data) {
+            try {
+                fault(op);
+            } catch (RuntimeException e) {
+                data.release();
+                throw e;
+            }
+        }
+
+        @Override
+        public long writeSync(AsyncFile file, ByteBuf data) {
+            faultWrite(Op.FILE_WRITE, data);
+            return super.writeSync(file, data);
+        }
+
+        @Override
+        public long writeSync(AsyncSegmentFile file, ByteBuf data) {
+            faultWrite(Op.SEG_WRITE, data);
+            return super.writeSync(file, data);
+        }
+
+        @Override
+        public void fsyncSync(AsyncFile file) {
+            fault(Op.FILE_FSYNC);
+            super.fsyncSync(file);
+        }
+
+        @Override
+        public long sizeSync(AsyncFile file) {
+            fault(Op.FILE_SIZE);
+            return super.sizeSync(file);
+        }
+
+        @Override
+        public void truncateSync(AsyncFile file, long size) {
+            fault(Op.FILE_TRUNCATE);
+            super.truncateSync(file, size);
+        }
+
+        @Override
+        public boolean mkdirSync(String path, boolean recursive) {
+            fault(Op.MKDIR);
+            return super.mkdirSync(path, recursive);
+        }
+
+        @Override
+        public void deleteOrphanSegmentFilesSync(AsyncSegmentFile file) {
+            fault(Op.ORPHAN_SCAN);
+            super.deleteOrphanSegmentFilesSync(file);
+        }
+    }
+
+    private FaultyDelegate newFaultyDelegate() {
+        FaultyDelegate created = new FaultyDelegate(ioExecutor);
+        faultyDelegates.add(created);
+        return created;
     }
 
     // =========================================================================
