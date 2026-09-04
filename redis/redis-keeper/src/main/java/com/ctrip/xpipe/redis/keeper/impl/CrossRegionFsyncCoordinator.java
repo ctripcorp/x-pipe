@@ -66,6 +66,12 @@ public class CrossRegionFsyncCoordinator {
         this.clock = clock;
     }
 
+    /** 降级/切换时重置协调器：清空租约与结算窗口，避免残留租约导致续跑绕过串行 */
+    public synchronized void reset() {
+        lease.clear();
+        settleDeadline = -1;
+    }
+
     /**
      * fullSyncToSlave 入口。
      * @return true=继续全量，false=挂起（调用方执行 waitForSeqFsync）
@@ -76,9 +82,9 @@ public class CrossRegionFsyncCoordinator {
         String key = key(slave);
 
         if (lease.containsKey(key)) {
-            // 已获租约：loading 中 retry 或断链重连 → 续跑；grace(ONLINE) 中 → 不重复全量，defer
+            // 已获租约：loading 中 retry 或断链重连 → 直接续跑
             lease.put(key, 0L);
-            return slave.getSlaveState() != REDIS_REPL_ONLINE;
+            return true;
         }
 
         if (slave.isColdStart()) return true;                        // 冷启动直接放行
@@ -95,8 +101,9 @@ public class CrossRegionFsyncCoordinator {
         int  maxLoadingSlavesCnt = maxLoadingSlavesCntSupplier.getAsInt();
         long graceMillis = graceMillisSupplier.getAsLong();
         long settleMillis = settleMillisSupplier.getAsLong();
+        long disconnectTimeoutMillis = disconnectTimeoutMillisSupplier.getAsLong();
 
-        cleanLeases(slaves, now, graceMillis);
+        cleanLeases(slaves, now, graceMillis,disconnectTimeoutMillis);
 
         // 1. 当前等待集合（WAIT_SEQ_FSYNC 且未断链且未获租约）
         Set<RedisSlave> waiting = slaves.stream()
@@ -136,8 +143,7 @@ public class CrossRegionFsyncCoordinator {
         settleDeadline = -1;
     }
 
-    private void cleanLeases(Set<RedisSlave> slaves, long now, long graceMillis) {
-        long disconnectTimeoutMillis = disconnectTimeoutMillisSupplier.getAsLong();
+    private void cleanLeases(Set<RedisSlave> slaves, long now, long graceMillis,long disconnectTimeoutMillis) {
         Map<String, RedisSlave> live = new HashMap<>();
         for (RedisSlave s : slaves) {
             if (s.isKeeper()) continue;
@@ -178,7 +184,7 @@ public class CrossRegionFsyncCoordinator {
 
     @VisibleForTesting
     public synchronized int occupiedCount4Test(Set<RedisSlave> slaves) {
-        cleanLeases(slaves, clock.getAsLong(), graceMillisSupplier.getAsLong());
+        cleanLeases(slaves, clock.getAsLong(), graceMillisSupplier.getAsLong(),disconnectTimeoutMillisSupplier.getAsLong());
         return lease.size();
     }
 
