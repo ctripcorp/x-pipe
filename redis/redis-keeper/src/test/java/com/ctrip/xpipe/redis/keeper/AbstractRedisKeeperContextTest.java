@@ -91,10 +91,15 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 	}
 
 	protected RedisKeeperServer createRedisKeeperServer(KeeperConfig keeperConfig) throws Exception {
+		return createRedisKeeperServer(keeperConfig, false);
+	}
+
+	protected RedisKeeperServer createRedisKeeperServer(KeeperConfig keeperConfig, boolean tfsMode) throws Exception {
 
 		KeeperMeta keeperMeta = createKeeperMeta();
 		ReplId replId = getReplId();
-		return createRedisKeeperServer(replId.id(), keeperMeta, keeperConfig, getReplicationStoreManagerBaseDir(keeperMeta));
+		return createRedisKeeperServer(replId.id(), keeperMeta, keeperConfig, getReplicationStoreManagerBaseDir(keeperMeta),
+				getRegistry().getComponent(LeaderElectorManager.class), tfsMode);
 	}
 	
 	protected RedisKeeperServer createRedisKeeperServer() throws Exception {
@@ -123,9 +128,14 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 
 	protected RedisKeeperServer createRedisKeeperServer(Long replId, KeeperMeta keeper, KeeperConfig keeperConfig,
 			File baseDir, LeaderElectorManager leaderElectorManager) {
+		return createRedisKeeperServer(replId, keeper, keeperConfig, baseDir, leaderElectorManager, false);
+	}
+
+	protected RedisKeeperServer createRedisKeeperServer(Long replId, KeeperMeta keeper, KeeperConfig keeperConfig,
+			File baseDir, LeaderElectorManager leaderElectorManager, boolean tfsMode) {
 		return new DefaultRedisKeeperServer(replId, keeper, keeperConfig, baseDir, leaderElectorManager,
 				createkeepersMonitorManager(), getResourceManager(), Mockito.mock(SyncRateManager.class), createRedisOpParser(),
-				asyncFileSystem(), new ReplDelayConfigCache(new TestKeeperCommonConfig(), new TestKeeperConfig()));
+				asyncFileSystem(), new ReplDelayConfigCache(new TestKeeperCommonConfig(), new TestKeeperConfig()), tfsMode);
 	}
 
 	protected RedisOpParser createRedisOpParser() {

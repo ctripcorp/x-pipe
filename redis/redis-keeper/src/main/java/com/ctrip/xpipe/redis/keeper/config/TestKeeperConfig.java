@@ -34,6 +34,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
 
 	private int prepareWatchMetaIntervalMilli = DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI;
+	private boolean prepareStoreWatchEnabled = false;
 	
 	
 	public TestKeeperConfig(){
@@ -344,7 +345,12 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 
 	@Override
 	public boolean isPrepareStoreWatchEnabled() {
-		return false;
+		return prepareStoreWatchEnabled;
+	}
+
+	public TestKeeperConfig setPrepareStoreWatchEnabled(boolean prepareStoreWatchEnabled) {
+		this.prepareStoreWatchEnabled = prepareStoreWatchEnabled;
+		return this;
 	}
 
 	@Override
