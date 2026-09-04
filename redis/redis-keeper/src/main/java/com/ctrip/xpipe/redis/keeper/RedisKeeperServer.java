@@ -64,6 +64,14 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 		
 	ReplicationStore getReplicationStore();
 
+	/**
+	 * Whether the store manager is in PREPARE read-only watch mode (D12).
+	 * Default false so existing stubs stay closed-gate.
+	 */
+	default boolean isReadOnlyStore() {
+		return false;
+	}
+
 	CKStore getCkStore();
 
 	ReplId getReplId();

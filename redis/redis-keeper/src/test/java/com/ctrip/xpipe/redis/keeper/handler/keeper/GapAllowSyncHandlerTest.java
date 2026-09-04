@@ -2,13 +2,18 @@ package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.store.BacklogOffsetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.ReplStage;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.XSyncContinue;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
+import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
+import com.ctrip.xpipe.redis.keeper.impl.GapAllowRedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
@@ -52,6 +57,12 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     private KeeperRepl keeperRepl;
 
     @Mock
+    private RedisClient<?> redisClient;
+
+    @Mock
+    private GapAllowRedisSlave gapAllowSlave;
+
+    @Mock
     private RedisSlave slave;
 
     @Mock
@@ -59,6 +70,9 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
 
     @Mock
     private ReplicationStore store;
+
+    @Mock
+    private RedisKeeperServerState keeperServerState;
 
     private KeeperStats keeperStats;
 
@@ -69,6 +83,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         Mockito.when(keeperServer.getKeeperMonitor()).thenReturn(keeperMonitor);
         Mockito.when(keeperMonitor.getKeeperStats()).thenReturn(keeperStats);
         Mockito.when(keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb()).thenReturn(1000L);
+        Mockito.doReturn(keeperServer).when(redisClient).getRedisServer();
     }
 
     @Test
@@ -392,6 +407,166 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
         action = handler.anaRequest(syncRequest, keeperServer, slave);
         Assert.assertTrue(action.full);
         Assert.assertTrue(action.fullCause.startsWith("[gap]"));
+    }
+
+    @Test
+    public void testCmdTailSync_psyncStage() throws Exception {
+        ReplStage replStage = new ReplStage("test-repl-id1", 1, 11);
+        Mockito.when(keeperRepl.currentStage()).thenReturn(replStage);
+        Mockito.when(keeperRepl.getEndOffset()).thenReturn(1000L);
+
+        GapAllowSyncHandler.SyncAction action = handler.anaRequest(cmdTailRequest(), keeperServer, slave);
+
+        assertCmdTailContinue(action, "test-repl-id1", 1001, 1011);
+        Mockito.verify(keeperServer, Mockito.never()).locateTailOfCmd();
+
+        handler.runAction(action, keeperServer, slave);
+        assertContinueReply("test-repl-id1", 1001);
+        Mockito.verify(slave).beginWriteCommands(new BacklogOffsetReplicationProgress(1011, -1));
+        Mockito.verify(slave).partialSync();
+        Mockito.verify(keeperServer, Mockito.never()).fullSyncToSlave(any(), anyBoolean());
+    }
+
+    @Test
+    public void testCmdTailSync_xsyncStageStillContinue() throws Exception {
+        ReplStage replStage = new ReplStage("test-repl-id1", 1, 11, "C",
+                new GtidSet("A:1-10"), new GtidSet("B:1-5"));
+        Mockito.when(keeperRepl.currentStage()).thenReturn(replStage);
+        Mockito.when(keeperRepl.getEndOffset()).thenReturn(2000L);
+
+        GapAllowSyncHandler.SyncAction action = handler.anaRequest(cmdTailRequest(), keeperServer, slave);
+
+        assertCmdTailContinue(action, "test-repl-id1", 2001, 2011);
+        Assert.assertNull(action.gtidSet);
+        Mockito.verify(keeperServer, Mockito.never()).locateTailOfCmd();
+
+        handler.runAction(action, keeperServer, slave);
+        assertContinueReply("test-repl-id1", 2001);
+        Mockito.verify(slave).beginWriteCommands(new BacklogOffsetReplicationProgress(2011, -1));
+        Mockito.verify(slave).partialSync();
+        Mockito.verify(keeperServer, Mockito.never()).fullSyncToSlave(any(), anyBoolean());
+    }
+
+    @Test
+    public void testFreshStoreErrorsOnCommandThreadWithoutBecomeSlave() throws Exception {
+        Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
+        Mockito.when(store.isFresh()).thenReturn(true);
+
+        handler.doHandle(new String[]{"?", "-4"}, redisClient);
+
+        Mockito.verify(redisClient).sendMessage(any(ByteBuf.class));
+        Mockito.verify(redisClient, Mockito.never()).becomeGapAllowRedisSlave();
+        Mockito.verify(keeperServerState, Mockito.never()).psync(any(), any());
+    }
+
+    @Test
+    public void testNullStoreTreatedAsFreshOnCommandThread() throws Exception {
+        Mockito.when(keeperServer.getReplicationStore()).thenReturn(null);
+
+        handler.doHandle(new String[]{"?", "-4"}, redisClient);
+
+        Mockito.verify(redisClient).sendMessage(any(ByteBuf.class));
+        Mockito.verify(redisClient, Mockito.never()).becomeGapAllowRedisSlave();
+    }
+
+    @Test
+    public void testNonFreshStoreOpensOnCommandThreadThenPsyncExecutor() throws Exception {
+        Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
+        Mockito.when(store.isFresh()).thenReturn(false);
+        Mockito.when(keeperServer.getRedisKeeperServerState()).thenReturn(keeperServerState);
+        Mockito.when(keeperServerState.psync(redisClient, new String[]{"?", "-4"})).thenReturn(true);
+        Mockito.when(redisClient.becomeGapAllowRedisSlave()).thenReturn(gapAllowSlave);
+        Mockito.doAnswer(invocation -> {
+            ((Runnable) invocation.getArgument(0)).run();
+            return null;
+        }).when(gapAllowSlave).processPsyncSequentially(any(Runnable.class));
+
+        handler.doHandle(new String[]{"?", "-4"}, redisClient);
+
+        Mockito.verify(keeperServer).getReplicationStore();
+        Mockito.verify(store).isFresh();
+        Mockito.verify(gapAllowSlave).processPsyncSequentially(any(Runnable.class));
+    }
+
+    @Test
+    public void testFreshStoreErrorsAndClosesForAllRequestTypes() throws Exception {
+        Mockito.when(keeperRepl.currentStage()).thenReturn(null);
+        Mockito.when(keeperRepl.preStage()).thenReturn(null);
+
+        GapAllowSyncHandler.SyncRequest[] requests = new GapAllowSyncHandler.SyncRequest[] {
+                cmdTailRequest(),
+                GapAllowSyncHandler.SyncRequest.psync("?", Psync.KEEPER_PARTIAL_SYNC_OFFSET),
+                GapAllowSyncHandler.SyncRequest.psync("?", -1),
+                GapAllowSyncHandler.SyncRequest.psync("?", Psync.KEEPER_FRESH_RDB_SYNC_OFFSET),
+                GapAllowSyncHandler.SyncRequest.psync("some-repl", 1)
+        };
+        for (GapAllowSyncHandler.SyncRequest request : requests) {
+            Mockito.clearInvocations(slave, keeperServer);
+            GapAllowSyncHandler.SyncAction action = handler.anaRequest(request, keeperServer, slave);
+            Assert.assertNull(request.toString(), action);
+            Mockito.verify(slave).sendMessage(any(ByteBuf.class));
+            Mockito.verify(slave).close();
+            Mockito.verify(keeperServer, Mockito.never()).locateTailOfCmd();
+            Mockito.verify(keeperServer, Mockito.never()).fullSyncToSlave(any(), anyBoolean());
+        }
+    }
+
+    @Test
+    public void testPrepareRejectsFullRequests() throws Exception {
+        ReplStage replStage = new ReplStage("test-repl-id1", 1, 11);
+        Mockito.when(keeperRepl.currentStage()).thenReturn(replStage);
+        Mockito.when(keeperRepl.backlogBeginOffset()).thenReturn(11L);
+        Mockito.when(keeperRepl.backlogEndOffset()).thenReturn(100L);
+        Mockito.when(keeperServer.getKeeperConfig()).thenReturn(keeperConfig);
+        Mockito.when(keeperServer.getRedisKeeperServerState()).thenReturn(keeperServerState);
+        Mockito.when(keeperServerState.keeperState()).thenReturn(KeeperState.PREPARE);
+
+        GapAllowSyncHandler.SyncRequest[] fullRequests = new GapAllowSyncHandler.SyncRequest[] {
+                GapAllowSyncHandler.SyncRequest.psync("?", -1),
+                GapAllowSyncHandler.SyncRequest.psync("?", Psync.KEEPER_FRESH_RDB_SYNC_OFFSET),
+                GapAllowSyncHandler.SyncRequest.psync("no-such-repl", 1)
+        };
+        for (GapAllowSyncHandler.SyncRequest request : fullRequests) {
+            Mockito.clearInvocations(slave, keeperServer);
+            GapAllowSyncHandler.SyncAction action = handler.anaRequest(request, keeperServer, slave);
+            Assert.assertTrue(request.toString(), action.isFull());
+            handler.runAction(action, keeperServer, slave);
+            Mockito.verify(keeperServer, Mockito.never()).fullSyncToSlave(any(), anyBoolean());
+            ArgumentCaptor<ByteBuf> captor = ArgumentCaptor.forClass(ByteBuf.class);
+            Mockito.verify(slave).sendMessage(captor.capture());
+            Assert.assertTrue(toAscii(captor.getValue()).contains(GapAllowSyncHandler.PREPARE_PARTIAL_ONLY_ERROR));
+            Mockito.verify(slave).close();
+        }
+    }
+
+    private static GapAllowSyncHandler.SyncRequest cmdTailRequest() {
+        return GapAllowSyncHandler.SyncRequest.psync("?", Psync.KEEPER_CMD_TAIL_SYNC_OFFSET);
+    }
+
+    private static void assertCmdTailContinue(GapAllowSyncHandler.SyncAction action, String replId,
+                                              long replOffset, long backlogOffset) {
+        Assert.assertFalse(action.isFull());
+        Assert.assertTrue(action.keeperPartial);
+        Assert.assertEquals(replId, action.replId);
+        Assert.assertEquals(replOffset, action.replOffset);
+        Assert.assertEquals(backlogOffset, action.backlogOffset);
+        Assert.assertEquals(-1, action.backlogEndOffsetExcluded);
+    }
+
+    private void assertContinueReply(String replId, long offset) {
+        ArgumentCaptor<ByteBuf> captor = ArgumentCaptor.forClass(ByteBuf.class);
+        Mockito.verify(slave).sendMessage(captor.capture());
+        String resp = toAscii(captor.getValue());
+        Assert.assertTrue(resp, resp.startsWith("+CONTINUE "));
+        Assert.assertFalse(resp, resp.contains("XCONTINUE"));
+        Assert.assertTrue(resp, resp.contains(replId));
+        Assert.assertTrue(resp, resp.contains(String.valueOf(offset)));
+    }
+
+    private static String toAscii(ByteBuf buf) {
+        byte[] bytes = new byte[buf.readableBytes()];
+        buf.getBytes(buf.readerIndex(), bytes);
+        return new String(bytes);
     }
 
 }

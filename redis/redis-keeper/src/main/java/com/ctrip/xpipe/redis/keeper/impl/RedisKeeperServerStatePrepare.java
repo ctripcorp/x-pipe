@@ -51,6 +51,9 @@ public class RedisKeeperServerStatePrepare extends AbstractRedisKeeperServerStat
 
 	@Override
 	public boolean psync(RedisClient redisClient, String[] args) throws Exception {
+		if (redisKeeperServer.isReadOnlyStore()) {
+			return true;
+		}
 		throw new NoMasterlinkRedisError("keeper state :" + keeperState());
 	}
 

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.error.NoMasterlinkRedisError;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.SimpleStringParser;
@@ -11,6 +12,7 @@ import com.ctrip.xpipe.redis.core.store.XSyncContinue;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.replication.LostGtidsetBacklogConflictException;
@@ -20,6 +22,7 @@ import com.ctrip.xpipe.utils.StringUtil;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static com.ctrip.xpipe.redis.core.protocal.Psync.KEEPER_CMD_TAIL_SYNC_OFFSET;
 import static com.ctrip.xpipe.redis.core.protocal.Psync.PARTIAL_SYNC;
 
 public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
@@ -28,17 +31,20 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
     public static final int CHECK_INTERVAL_MILL = 1000;
 
+    public static final String PREPARE_PARTIAL_ONLY_ERROR = "prepare keeper only serves partial sync";
+
     @Override
     protected void doHandle(final String[] args, final RedisClient<?> redisClient) throws Exception {
         final RedisKeeperServer redisKeeperServer = (RedisKeeperServer) redisClient.getRedisServer();
 
         try {
-            if (redisKeeperServer.rdbDumper() == null && redisKeeperServer.getReplicationStore().isFresh()) {
-                redisClient.sendMessage(new RedisErrorParser(new NoMasterlinkRedisError("Can't SYNC while replicationstore fresh")).format());
+            if (!redisKeeperServer.getRedisKeeperServerState().psync(redisClient, args)) {
                 return;
             }
 
-            if (!redisKeeperServer.getRedisKeeperServerState().psync(redisClient, args)) {
+            ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+            if (replicationStore == null || (redisKeeperServer.rdbDumper() == null && replicationStore.isFresh())) {
+                redisClient.sendMessage(new RedisErrorParser(new NoMasterlinkRedisError("Can't SYNC while replicationstore fresh")).format());
                 return;
             }
         }catch (Throwable tx){
@@ -106,6 +112,8 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
         if (null == preStage && null == curStage) {
             logger.info("[anaRequest][{}] sync stage fresh", slave);
             slave.sendMessage(new RedisErrorParser(new NoMasterlinkRedisError("Can't SYNC while replicationstore fresh")).format());
+            // Already becomeGapAllowRedisSlave(); same-connection PSYNC is "already slave".
+            slave.close();
             return null;
         }
 
@@ -123,6 +131,10 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                             xsyncCont.getBacklogOffset(), null).markKeeperPartial();
                 }
                 return action;
+            } else if (request.offset == KEEPER_CMD_TAIL_SYNC_OFFSET) {
+                logger.info("[anaRequest][{}] req keeper cmd tail", slave);
+                long offset = keeperRepl.getEndOffset() + 1;
+                return SyncAction.Continue(curStage, curStage.getReplId(), offset).markKeeperPartial();
             } else if (request.offset == -3) {
                 logger.info("[anaRequest][{}] req keeper fresh rdb", slave);
                 return SyncAction.full("req fresh rdb fsync", true);
@@ -335,6 +347,12 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
 
     protected void runAction(SyncAction action, RedisKeeperServer keeperServer, RedisSlave slave) throws IOException {
         if (action.isFull()) {
+            if (isPrepare(keeperServer)) {
+                logger.info("[runAction][full][prepare refuse][{}] {}", slave, action.fullCause);
+                slave.sendMessage(new RedisErrorParser(PREPARE_PARTIAL_ONLY_ERROR).format());
+                slave.close();
+                return;
+            }
             logger.info("[runAction][full][{}] {}", slave,action.fullCause);
             slave.markPsyncProcessed();
             keeperServer.fullSyncToSlave(slave, action.freshRdb);
@@ -356,7 +374,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             }
 
             String respStr;
-            if (action.replStage.getProto() == ReplStage.ReplProto.PSYNC) {
+            if (replyContinue(action)) {
                 respStr = String.format("%s %s", PARTIAL_SYNC, action.replId)
                         + (action.protoSwitch ? " "+(action.replOffset - 1): action.keeperPartial ? " "+action.replOffset : "");
             } else {
@@ -371,6 +389,20 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             slave.partialSync();
             keeperServer.getKeeperMonitor().getKeeperStats().increatePartialSync();
         }
+    }
+
+    private static boolean isPrepare(RedisKeeperServer keeperServer) {
+        RedisKeeperServerState state = keeperServer.getRedisKeeperServerState();
+        return state != null && KeeperState.PREPARE == state.keeperState();
+    }
+
+    /**
+     * {@code ? -4} uses {@link SyncAction#Continue} + keeperPartial on either proto.
+     * Reply must stay {@code +CONTINUE} (D31); {@code ? -2} XSYNC still has gtidSet and stays XCONTINUE.
+     */
+    private static boolean replyContinue(SyncAction action) {
+        return action.replStage.getProto() == ReplStage.ReplProto.PSYNC
+                || (action.keeperPartial && action.gtidSet == null);
     }
 
     protected static class SyncAction {

@@ -149,6 +149,31 @@ public abstract class AbstractMetaStore implements MetaStore{
 		return new File(baseDir, META_V2_FILE);
 	}
 
+	/**
+	 * Watcher-only (D8). Close the read handle then {@link #loadMeta()} so the whole
+	 * {@code metaRef} tracks the occupying keeper (FS-M5.4). Getters must not reload.
+	 */
+	public void reloadReadOnlyMeta() {
+		if (!readOnly) {
+			return;
+		}
+		synchronized (metaRef) {
+			if (closed) {
+				return;
+			}
+			try {
+				if (metaAsyncFile != null) {
+					AsyncFileSystemHelper.closeHandle(asyncFileSystem, metaAsyncFile,
+							"reopen read-only meta " + metaV2File().getAbsolutePath());
+					metaAsyncFile = null;
+				}
+				loadMeta();
+			} catch (Throwable th) {
+				logger.warn("[reloadReadOnlyMeta] keep cached meta {}", baseDir, th);
+			}
+		}
+	}
+
 	@Override
 	public void close() throws IOException {
 		synchronized (metaRef) {

@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.handler.keeper.KeeperCommandHandler;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
@@ -22,6 +23,7 @@ import java.io.File;
 
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -116,6 +118,20 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 				Assert.assertNotNull(server.getReplicationStore());
 			}
 			waitConditionUntilTimeOut(() -> countPrepareWatchThreads() == 0);
+		} finally {
+			stopQuietly(server);
+		}
+	}
+
+	@Test
+	public void testFullSyncToSlaveRefusedInPrepare() throws Exception {
+		DefaultRedisKeeperServer server = startActiveServer(watchConfig(true), true);
+		try {
+			becomePrepare(server);
+			RedisSlave slave = mock(RedisSlave.class);
+			server.fullSyncToSlave(slave, false);
+			verify(slave).close();
+			Assert.assertNull(server.rdbDumper());
 		} finally {
 			stopQuietly(server);
 		}

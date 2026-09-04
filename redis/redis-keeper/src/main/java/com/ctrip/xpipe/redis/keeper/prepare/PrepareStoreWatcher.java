@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.prepare;
 
 import com.ctrip.xpipe.redis.core.store.CommandStore;
+import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
+import com.ctrip.xpipe.redis.keeper.store.meta.AbstractMetaStore;
 import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStore;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -23,7 +25,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * PREPARE 只读 Store 的 meta 轮询（D8 / §4.2.3）。单 scheduled 线程，不持 cmd 句柄。
- * 只感知 + 释放：未打开不 {@code getCurrent()}；换店只 {@code releaseCurrentStore()}，打开由请求侧触发。
+ * 只感知 + 释放 + 刷新已打开 Store 的 MetaStore：未打开不 {@code getCurrent()}；
+ * 换店只 {@code releaseCurrentStore()}，打开由请求侧触发。
  */
 public class PrepareStoreWatcher {
 
@@ -128,8 +131,17 @@ public class PrepareStoreWatcher {
 			storeSwitchedCount.incrementAndGet();
 			changeListener.onStoreChanged("latest.store.dir");
 			manager.releaseCurrentStore();
+		} else if (opened != null) {
+			reloadOpenedMeta(opened);
 		}
 		refreshSnapshot();
+	}
+
+	private void reloadOpenedMeta(ReplicationStore opened) {
+		MetaStore metaStore = opened.getMetaStore();
+		if (metaStore instanceof AbstractMetaStore) {
+			((AbstractMetaStore) metaStore).reloadReadOnlyMeta();
+		}
 	}
 
 	private void safePoll() {

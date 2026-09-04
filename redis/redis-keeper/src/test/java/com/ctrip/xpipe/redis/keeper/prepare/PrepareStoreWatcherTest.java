@@ -164,12 +164,50 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 			Assert.assertEquals(REPL_ID, opened.getMetaStore().getCurrentReplStage().getReplId());
 
 			writable.psyncContinue(REPL_ID_B);
+			Assert.assertEquals(REPL_ID, opened.getMetaStore().getCurrentReplStage().getReplId());
 			watcher.pollOnce();
 
 			ReplicationStore still = watching.getOpenedStore();
 			Assert.assertSame(opened, still);
 			Assert.assertEquals(dir, ((DefaultReplicationStore) still).getBaseDir());
+			Assert.assertEquals(REPL_ID_B, still.getMetaStore().getCurrentReplStage().getReplId());
 			Assert.assertEquals(0, changes.size());
+			Assert.assertEquals(0, watcher.getStoreSwitchedCount());
+		} finally {
+			watcher.stop();
+			stopDispose(watching);
+			stopDispose(occupying);
+			fs.shutdown();
+		}
+	}
+
+	@Test
+	public void testReloadsMetaWhenOpenedWhileFresh() throws Exception {
+		AsyncFileSystem fs = createTestAsyncFileSystem();
+		File base = new File(getTestFileDir());
+		String runid = randomKeeperRunid();
+		DefaultReplicationStoreManager occupying = newManager(fs, base, runid);
+		DefaultReplicationStoreManager watching = newManager(fs, base, runid);
+		PrepareStoreWatcher watcher = new PrepareStoreWatcher(watching, keeperConfig,
+				PrepareStoreChangeListener.NOOP);
+		try {
+			LifecycleHelper.initializeIfPossible(occupying);
+			LifecycleHelper.startIfPossible(occupying);
+			DefaultReplicationStore writable = (DefaultReplicationStore) occupying.create();
+
+			LifecycleHelper.initializeIfPossible(watching);
+			watching.setReadOnly(true);
+			LifecycleHelper.startIfPossible(watching);
+			Assert.assertNull(((DefaultReplicationStore) watching.getCurrent()).getMetaStore().getCurrentReplStage());
+
+			watcher.pollOnce();
+			Assert.assertNull(watching.getOpenedStore().getMetaStore().getCurrentReplStage());
+
+			writable.psyncContinueFrom(REPL_ID, 1);
+			Assert.assertNull(watching.getOpenedStore().getMetaStore().getCurrentReplStage());
+
+			watcher.pollOnce();
+			Assert.assertEquals(REPL_ID, watching.getOpenedStore().getMetaStore().getCurrentReplStage().getReplId());
 			Assert.assertEquals(0, watcher.getStoreSwitchedCount());
 		} finally {
 			watcher.stop();

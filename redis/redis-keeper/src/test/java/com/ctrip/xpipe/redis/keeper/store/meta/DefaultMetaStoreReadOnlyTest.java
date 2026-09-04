@@ -90,6 +90,104 @@ public class DefaultMetaStoreReadOnlyTest extends AbstractRedisKeeperTest {
 	}
 
 	@Test
+	public void testGetterDoesNotReloadMeta() throws Exception {
+		File dir = new File(getTestFileDir());
+		String runid = randomKeeperRunid();
+		DefaultMetaStore readOnly = new DefaultMetaStore(dir, runid, asyncFileSystem(), getReplId(), true);
+		readOnly.initialize();
+		try {
+			Assert.assertNull(readOnly.getCurrentReplStage());
+
+			DefaultMetaStore writable = new DefaultMetaStore(dir, runid, asyncFileSystem(), getReplId());
+			writable.initialize();
+			writable.rdbConfirmPsync(REPL_ID, 100, 0, "rdb_x", RdbStore.Type.NORMAL, new LenEofType(10), CMD_PREFIX);
+			writable.close();
+
+			Assert.assertNull(readOnly.getCurrentReplStage());
+			Assert.assertNull(readOnly.getPreReplStage());
+			Assert.assertNull(readOnly.getReplId());
+		} finally {
+			readOnly.close();
+		}
+	}
+
+	@Test
+	public void testReloadReadOnlyMetaRefreshesWholeMetaRef() throws Exception {
+		File dir = new File(getTestFileDir());
+		String runid = randomKeeperRunid();
+		DefaultMetaStore readOnly = new DefaultMetaStore(dir, runid, asyncFileSystem(), getReplId(), true);
+		readOnly.initialize();
+		try {
+			Assert.assertNull(readOnly.dupReplicationStoreMeta().getCurReplStage());
+
+			DefaultMetaStore writable = new DefaultMetaStore(dir, runid, asyncFileSystem(), getReplId());
+			writable.initialize();
+			writable.rdbConfirmPsync(REPL_ID, 100, 0, "rdb_x", RdbStore.Type.NORMAL, new LenEofType(10), CMD_PREFIX);
+			writable.close();
+
+			readOnly.reloadReadOnlyMeta();
+			Assert.assertEquals(REPL_ID, readOnly.getCurrentReplStage().getReplId());
+			Assert.assertEquals(REPL_ID, readOnly.getCurReplStageReplId());
+			Assert.assertEquals(CMD_PREFIX, readOnly.dupReplicationStoreMeta().getCmdFilePrefix());
+		} finally {
+			readOnly.close();
+		}
+	}
+
+	@Test
+	public void testReloadReadOnlyMetaUpdatesAfterCurrentStagePresent() throws Exception {
+		File dir = new File(getTestFileDir());
+		String runid = randomKeeperRunid();
+		DefaultMetaStore writable = new DefaultMetaStore(dir, runid, asyncFileSystem(), getReplId());
+		writable.initialize();
+		writable.rdbConfirmPsync(REPL_ID, 100, 0, "rdb_x", RdbStore.Type.NORMAL, new LenEofType(10), CMD_PREFIX);
+		writable.close();
+
+		DefaultMetaStore readOnly = new DefaultMetaStore(dir, runid, asyncFileSystem(), getReplId(), true);
+		readOnly.initialize();
+		try {
+			Assert.assertEquals(REPL_ID, readOnly.getCurrentReplStage().getReplId());
+
+			writable = new DefaultMetaStore(dir, runid, asyncFileSystem(), getReplId());
+			writable.initialize();
+			writable.shiftReplicationId("000000000000000000000000000000000000000B", 100L);
+			writable.close();
+
+			Assert.assertEquals(REPL_ID, readOnly.getCurrentReplStage().getReplId());
+			readOnly.reloadReadOnlyMeta();
+			Assert.assertEquals("000000000000000000000000000000000000000B", readOnly.getReplId());
+		} finally {
+			readOnly.close();
+		}
+	}
+
+	@Test
+	public void testReadOnlyGettersDoNotReopenWhenCurrentStagePresent() throws Exception {
+		AsyncFileSystem fs = spy(createTestAsyncFileSystem());
+		File dir = new File(getTestFileDir());
+		String runid = randomKeeperRunid();
+		DefaultMetaStore writable = new DefaultMetaStore(dir, runid, fs, getReplId());
+		writable.initialize();
+		writable.rdbConfirmPsync(REPL_ID, 100, 0, "rdb_x", RdbStore.Type.NORMAL, new LenEofType(10), CMD_PREFIX);
+		writable.close();
+		clearInvocations(fs);
+
+		DefaultMetaStore readOnly = new DefaultMetaStore(dir, runid, fs, getReplId(), true);
+		readOnly.initialize();
+		try {
+			clearInvocations(fs);
+			Assert.assertEquals(REPL_ID, readOnly.getCurrentReplStage().getReplId());
+			Assert.assertEquals(REPL_ID, readOnly.getCurrentReplStage().getReplId());
+			Assert.assertEquals(REPL_ID, readOnly.getCurReplStageReplId());
+			verify(fs, never()).open(contains(META_V2_FILE), eq(AbstractStorageFile.OpenMode.READ),
+					eq(false), eq(true), any());
+		} finally {
+			readOnly.close();
+			fs.shutdown();
+		}
+	}
+
+	@Test
 	public void testReadOnlyWriteEntriesThrow() throws Exception {
 		File dir = new File(getTestFileDir());
 		String runid = randomKeeperRunid();

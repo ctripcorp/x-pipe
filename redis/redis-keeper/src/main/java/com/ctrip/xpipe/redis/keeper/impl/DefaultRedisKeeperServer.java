@@ -721,6 +721,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
    }
 
 	@Override
+	public boolean isReadOnlyStore() {
+		return replicationStoreManager != null && replicationStoreManager.isReadOnly();
+	}
+
+	@Override
 	public CKStore getCkStore() {
 		return ckStore;
 	}
@@ -1029,6 +1034,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public void fullSyncToSlave(final RedisSlave redisSlave, boolean freshRdbNeeded) throws IOException {
 		
 		logger.info("[fullSyncToSlave]{}, {}", redisSlave, rdbDumper.get());
+
+		if (redisKeeperServerState != null && KeeperState.PREPARE == redisKeeperServerState.keeperState()) {
+			logger.error("[fullSyncToSlave][prepare] unreachable, refuse {}", redisSlave);
+			redisSlave.close();
+			return;
+		}
 
 		if (crossRegion.get() && !redisSlave.isKeeper() && !tryFullSyncToSlaveWithOthers(redisSlave)) {
 			redisSlave.waitForSeqFsync();
