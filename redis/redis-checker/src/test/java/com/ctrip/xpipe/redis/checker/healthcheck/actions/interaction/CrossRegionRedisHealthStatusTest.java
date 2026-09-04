@@ -52,17 +52,32 @@ public class CrossRegionRedisHealthStatusTest extends AbstractRedisTest {
     public void testReplIdMatch() {
         assertFalse(healthStatus.replIdMatch());        // 初始均为 null
 
-        healthStatus.updateReplIds("a", null);
+        healthStatus.updateReplIds("a", null, null);
         assertFalse(healthStatus.replIdMatch());        // keeper null
 
-        healthStatus.updateReplIds(null, "a");
+        healthStatus.updateReplIds(null, "a", null);
         assertFalse(healthStatus.replIdMatch());        // slave null
 
-        healthStatus.updateReplIds("a", "b");
+        healthStatus.updateReplIds("a", "b", null);
         assertFalse(healthStatus.replIdMatch());        // 不相等
 
-        healthStatus.updateReplIds("a", "a");
+        healthStatus.updateReplIds("a", "a", null);
         assertTrue(healthStatus.replIdMatch());         // 相等
+    }
+
+    @Test
+    public void testReplId2Match() {
+        healthStatus.updateReplIds("a", "b", "a");      // slave 匹配 keeper.replId2（或关系）
+        assertTrue(healthStatus.replIdMatch());
+
+        healthStatus.updateReplIds("a", "b", "b");      // 两者都不匹配
+        assertFalse(healthStatus.replIdMatch());
+
+        healthStatus.updateReplIds("a", "a", "b");      // slave 匹配 keeper.replId（或关系另一支）
+        assertTrue(healthStatus.replIdMatch());
+
+        healthStatus.updateReplIds("a", null, "a");     // keeper.replId 为 null，仅 replId2 匹配
+        assertTrue(healthStatus.replIdMatch());
     }
 
     @Test
@@ -81,11 +96,11 @@ public class CrossRegionRedisHealthStatusTest extends AbstractRedisTest {
         assertEquals(INSTANCEUP, healthStatus.getState());
         assertEquals(0, markup.get());
 
-        healthStatus.updateReplIds("a", "a");           // replId 一致 -> HEALTHY + InstanceUp
+        healthStatus.updateReplIds("a", "a", null);           // replId 一致 -> HEALTHY + InstanceUp
         assertEquals(HEALTHY, healthStatus.getState());
         assertEquals(1, markup.get());
 
-        healthStatus.updateReplIds("a", "a");           // 已 HEALTHY，不重复触发
+        healthStatus.updateReplIds("a", "a", null);           // 已 HEALTHY，不重复触发
         assertEquals(HEALTHY, healthStatus.getState());
         assertEquals(1, markup.get());
     }
@@ -103,11 +118,11 @@ public class CrossRegionRedisHealthStatusTest extends AbstractRedisTest {
         });
 
         healthStatus.pong();                            // -> INSTANCEUP
-        healthStatus.updateReplIds("a", "b");           // 不一致，不拉入
+        healthStatus.updateReplIds("a", "b", null);           // 不一致，不拉入
         assertEquals(INSTANCEUP, healthStatus.getState());
         assertEquals(0, markup.get());
 
-        healthStatus.updateReplIds(null, null);         // 失败清空，同样不拉入
+        healthStatus.updateReplIds(null, null, null);         // 失败清空，同样不拉入
         assertEquals(INSTANCEUP, healthStatus.getState());
         assertEquals(0, markup.get());
     }
@@ -124,7 +139,7 @@ public class CrossRegionRedisHealthStatusTest extends AbstractRedisTest {
             }
         });
 
-        healthStatus.updateReplIds("a", "a");           // UNKNOWN 状态，即便 replId 一致也不拉入
+        healthStatus.updateReplIds("a", "a", null);           // UNKNOWN 状态，即便 replId 一致也不拉入
         assertEquals(UNKNOWN, healthStatus.getState());
         assertEquals(0, markup.get());
     }
@@ -138,7 +153,7 @@ public class CrossRegionRedisHealthStatusTest extends AbstractRedisTest {
         assertEquals(INSTANCEUP, healthStatus.getState());
 
         // replId 一致 -> HEALTHY
-        healthStatus.updateReplIds("a", "a");
+        healthStatus.updateReplIds("a", "a", null);
         assertEquals(HEALTHY, healthStatus.getState());
 
         // ping 超时 -> DOWN
@@ -152,7 +167,7 @@ public class CrossRegionRedisHealthStatusTest extends AbstractRedisTest {
         assertEquals(INSTANCEUP, healthStatus.getState());
 
         // 再 replId 一致 -> HEALTHY
-        healthStatus.updateReplIds("a", "a");
+        healthStatus.updateReplIds("a", "a", null);
         assertEquals(HEALTHY, healthStatus.getState());
     }
 

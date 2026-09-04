@@ -45,7 +45,7 @@ public class InfoReplIdActionFactory implements RedisHealthCheckActionFactory<In
     @Override
     public InfoReplIdAction create(RedisHealthCheckInstance instance) {
         logger.info("[create] {}", instance.getCheckInfo().getHostPort());
-        InfoReplIdAction action = new InfoReplIdAction(scheduled, instance, executors, redisSessionManager);
+        InfoReplIdAction action = new InfoReplIdAction(scheduled, instance, executors, redisSessionManager, metaCache);
         collectors.forEach(c -> {
             if (c.supportInstance(instance)) {
                 logger.info("[create][add listener] {}, collector={}", instance.getCheckInfo().getHostPort(), c.getClass().getSimpleName());

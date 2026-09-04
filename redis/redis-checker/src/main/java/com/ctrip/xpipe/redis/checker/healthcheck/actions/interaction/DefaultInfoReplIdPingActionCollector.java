@@ -14,8 +14,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdAc
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessor;
-import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import org.unidal.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -144,10 +144,10 @@ public class DefaultInfoReplIdPingActionCollector extends AbstractInfoReplIdPing
                 if (hs == null) return;
 
                 if (context.isSuccess()) {
-                    Pair<String, String> replIds = context.getResult();
-                    hs.updateReplIds(replIds.getKey(), replIds.getValue());
+                    Triple<String, String, String> replIds = context.getResult();
+                    hs.updateReplIds(replIds.getFirst(), replIds.getMiddle(), replIds.getLast());
                 } else {
-                    hs.updateReplIds(null, null);
+                    hs.updateReplIds(null, null, null);
                 }
             }
 
