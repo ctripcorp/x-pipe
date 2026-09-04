@@ -33,6 +33,7 @@ public class CrossRegionRedisHealthStatus extends HealthStatus {
 
     private volatile String slaveReplId;
     private volatile String keeperReplId;
+    private volatile String keeperReplId2;
 
     public CrossRegionRedisHealthStatus(RedisHealthCheckInstance instance, ScheduledExecutorService scheduled) {
         super(instance, scheduled);
@@ -61,21 +62,24 @@ public class CrossRegionRedisHealthStatus extends HealthStatus {
         }
     }
 
-    /** InfoReplIdAction 的 listener 写回；replId 一致时拉入 */
-    public void updateReplIds(String slaveReplId, String keeperReplId) {
+    /** InfoReplIdAction 的 listener 写回；replId 或 replId2 一致时拉入 */
+    public void updateReplIds(String slaveReplId, String keeperReplId, String keeperReplId2) {
         this.slaveReplId = slaveReplId;
         this.keeperReplId = keeperReplId;
+        this.keeperReplId2 = keeperReplId2;
         boolean match = replIdMatch();
-        logger.info("[updateReplIds] {} slaveReplId={}, keeperReplId={}, match={}, state={}",
-                instance.getCheckInfo().getHostPort(), slaveReplId, keeperReplId, match, state.get());
+        logger.info("[updateReplIds] {} slaveReplId={}, keeperReplId={}, keeperReplId2={}, match={}, state={}",
+                instance.getCheckInfo().getHostPort(), slaveReplId, keeperReplId, keeperReplId2, match, state.get());
         if (match) {
             markUp();
         }
     }
 
-    /** 校验逻辑：只比较 replId 是否相等 */
+    /** 校验逻辑：slave 的 master_replid 匹配 keeper 的 master_replid 或 master_replid2（或关系） */
     public boolean replIdMatch() {
-        return slaveReplId != null && keeperReplId != null && slaveReplId.equals(keeperReplId);
+        return slaveReplId != null
+                && ((keeperReplId != null && slaveReplId.equals(keeperReplId))
+                    || (keeperReplId2 != null && slaveReplId.equals(keeperReplId2)));
     }
 
     /** 由 replId 一致触发的 mark-up 逻辑 */
