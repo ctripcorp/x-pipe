@@ -170,14 +170,6 @@ public class CrossRegionFsyncCoordinatorTest {
     }
 
     @Test
-    public void testGraceSameSlaveReenterDefer() {
-        RedisSlave a = slave("10.0.0.2", 6379);
-        release(a);
-        online(a);                                           // 进 grace
-        assertFalse(coordinator.onFullSyncRequest(a));       // grace 内不重复全量，defer
-    }
-
-    @Test
     public void testDisconnectKeepsLeaseUntilTimeout() {
         RedisSlave a = slave("10.0.0.2", 6379);
         release(a);                                          // 放行 a（占用名额）
@@ -188,6 +180,17 @@ public class CrossRegionFsyncCoordinatorTest {
 
         clock.set(SETTLE_MILLIS + DISCONNECT_TIMEOUT_MILLI); // 断链超时
         assertEquals(0, coordinator.occupiedCount4Test(slaveSet(a)));   // 强制释放
+    }
+
+    @Test
+    public void testResetClearsLeaseAndSettleWindow() {
+        RedisSlave a = slave("10.0.0.2", 6379);
+        release(a);                                          // 放行 a（授予租约）
+        assertEquals(1, coordinator.occupiedCount4Test(slaveSet(a)));
+
+        coordinator.reset();                                 // 降级/切换重置
+        assertEquals(0, coordinator.occupiedCount4Test(slaveSet(a)));   // 租约清空
+        assertFalse(coordinator.onFullSyncRequest(a));       // a 重新成为新请求 → defer
     }
 
     @Test

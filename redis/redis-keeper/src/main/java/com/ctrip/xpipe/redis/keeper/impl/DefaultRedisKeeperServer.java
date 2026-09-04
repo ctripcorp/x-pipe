@@ -766,6 +766,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				if (previous != null && previous.keeperState().isActive()
 						&& !redisKeeperServerState.keeperState().isActive()) {
 					closeSlaves("keeper downgrade");
+					crossRegionFsyncCoordinator.reset();
 				}
 
 				DefaultRedisKeeperServer.this.redisKeeperServerState = redisKeeperServerState;

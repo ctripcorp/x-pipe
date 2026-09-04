@@ -237,7 +237,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 
 	@Override
 	public int getCrossRegionFsyncGraceSeconds() {
-		return getIntProperty(KEY_CROSS_REGION_FSYNC_GRACE_SECONDS, 5);
+		return getIntProperty(KEY_CROSS_REGION_FSYNC_GRACE_SECONDS, 90);
 	}
 
 	@Override
