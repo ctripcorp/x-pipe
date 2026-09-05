@@ -88,6 +88,7 @@ import org.junit.runners.Suite.SuiteClasses;
         PrepareStoreWatcherTest.class,
         KeeperPubSubRegistryTest.class,
         PublishCommandHandlerTest.class,
+        SubscribeCommandHandlerTest.class,
         DefaultRedisSlaveTest.class,
         RoleCommandHandlerTest.class,
         PrepareObservationHandlerTest.class,

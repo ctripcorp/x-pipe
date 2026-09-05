@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,7 +33,7 @@ public class KeeperPubSubRegistry implements AutoCloseable {
 
 	private static final Logger logger = LoggerFactory.getLogger(KeeperPubSubRegistry.class);
 
-	private static final String PSUBSCRIBE_PATTERN = "*";
+	private static final String PSUBSCRIBE_PATTERN = KeeperPubSubConstants.PSUBSCRIBE_PATTERN;
 
 	private final ReplId replId;
 
@@ -104,14 +105,25 @@ public class KeeperPubSubRegistry implements AutoCloseable {
 	}
 
 	public int subscribedChannelCount(RedisClient<?> client) {
+		return subscribedChannels(client).size();
+	}
+
+	public boolean isSubscribed(RedisClient<?> client, String channel) {
 		Objects.requireNonNull(client, "client");
-		int count = 0;
-		for (Set<RedisClient<?>> subscribers : channelSubscribers.values()) {
-			if (subscribers.contains(client)) {
-				count++;
+		Objects.requireNonNull(channel, "channel");
+		Set<RedisClient<?>> subscribers = channelSubscribers.get(channel);
+		return subscribers != null && subscribers.contains(client);
+	}
+
+	public List<String> subscribedChannels(RedisClient<?> client) {
+		Objects.requireNonNull(client, "client");
+		List<String> channels = new ArrayList<>();
+		for (Map.Entry<String, Set<RedisClient<?>>> entry : channelSubscribers.entrySet()) {
+			if (entry.getValue().contains(client)) {
+				channels.add(entry.getKey());
 			}
 		}
-		return count;
+		return channels;
 	}
 
 	/**

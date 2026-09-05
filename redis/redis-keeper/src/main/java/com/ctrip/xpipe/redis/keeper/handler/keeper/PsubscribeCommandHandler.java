@@ -13,22 +13,23 @@ import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubRegistry;
 import com.ctrip.xpipe.utils.StringUtil;
 
 /**
- * SUBSCRIBE：每连接最多 {@link KeeperPubSubConstants#MAX_SUBSCRIBE_CHANNELS} 个 channel（D16 / §4.4.1）。
+ * PSUBSCRIBE：只接受 {@code *}（D16 / §4.4.1）。
  */
-public class SubscribeCommandHandler extends AbstractCommandHandler {
+public class PsubscribeCommandHandler extends AbstractCommandHandler {
 
-	static final String ERR_CHANNEL_LIMIT = "subscribe channel limit exceeded";
+	static final String ERR_PATTERN = "psubscribe only supports *";
 
 	@Override
 	public String[] getCommands() {
-		return new String[]{"subscribe"};
+		return new String[]{"psubscribe"};
 	}
 
 	@Override
 	protected void doHandle(String[] args, RedisClient<?> redisClient) {
 		logger.debug("[doHandle]{},{}", redisClient, StringUtil.join(" ", args));
-		if (args == null || args.length == 0) {
-			redisClient.sendMessage(new RedisErrorParser("wrong format").format());
+		if (args == null || args.length != 1
+				|| !KeeperPubSubConstants.PSUBSCRIBE_PATTERN.equals(args[0])) {
+			redisClient.sendMessage(new RedisErrorParser(ERR_PATTERN).format());
 			return;
 		}
 		KeeperPubSubRegistry registry = registryOf(redisClient);
@@ -36,15 +37,12 @@ public class SubscribeCommandHandler extends AbstractCommandHandler {
 			redisClient.sendMessage(new RedisErrorParser("wrong format").format());
 			return;
 		}
-		for (String channel : args) {
-			if (!registry.isSubscribed(redisClient, channel)
-					&& registry.subscribedChannelCount(redisClient) >= KeeperPubSubConstants.MAX_SUBSCRIBE_CHANNELS) {
-				redisClient.sendMessage(new RedisErrorParser(ERR_CHANNEL_LIMIT).format());
-				return;
-			}
-			registry.subscribe(redisClient, channel);
-			sendSubscribeAck(redisClient, channel, registry.subscribedChannelCount(redisClient));
-		}
+		registry.psubscribeAll(redisClient);
+		redisClient.sendMessage(new ArrayParser(new Object[]{
+				new ByteArrayOutputStreamPayload(Subscribe.PSUBSCRIBE),
+				new ByteArrayOutputStreamPayload(KeeperPubSubConstants.PSUBSCRIBE_PATTERN),
+				1L
+		}).format());
 	}
 
 	@Override
@@ -59,14 +57,6 @@ public class SubscribeCommandHandler extends AbstractCommandHandler {
 
 	private static KeeperPubSubRegistry registryOf(RedisClient<?> redisClient) {
 		return ((RedisKeeperServer) redisClient.getRedisServer()).getPubSubRegistry();
-	}
-
-	private static void sendSubscribeAck(RedisClient<?> redisClient, String channel, long count) {
-		redisClient.sendMessage(new ArrayParser(new Object[]{
-				new ByteArrayOutputStreamPayload(Subscribe.SUBSCRIBE),
-				new ByteArrayOutputStreamPayload(channel),
-				count
-		}).format());
 	}
 
 }

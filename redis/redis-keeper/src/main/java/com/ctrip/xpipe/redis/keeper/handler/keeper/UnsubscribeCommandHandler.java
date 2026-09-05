@@ -1,49 +1,52 @@
 package com.ctrip.xpipe.redis.keeper.handler.keeper;
 
 import com.ctrip.xpipe.payload.ByteArrayOutputStreamPayload;
-import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.Subscribe;
 import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RedisErrorParser;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisServer;
-import com.ctrip.xpipe.redis.keeper.config.KeeperPubSubConstants;
 import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
 import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubRegistry;
 import com.ctrip.xpipe.utils.StringUtil;
 
-/**
- * SUBSCRIBE：每连接最多 {@link KeeperPubSubConstants#MAX_SUBSCRIBE_CHANNELS} 个 channel（D16 / §4.4.1）。
- */
-public class SubscribeCommandHandler extends AbstractCommandHandler {
+import java.util.List;
 
-	static final String ERR_CHANNEL_LIMIT = "subscribe channel limit exceeded";
+/**
+ * UNSUBSCRIBE：订阅方退出的正常路径（D16 / §4.4.1）。无参时退订该连接全部 channel。
+ */
+public class UnsubscribeCommandHandler extends AbstractCommandHandler {
+
+	static final String ACK_KIND = "unsubscribe";
 
 	@Override
 	public String[] getCommands() {
-		return new String[]{"subscribe"};
+		return new String[]{"unsubscribe"};
 	}
 
 	@Override
 	protected void doHandle(String[] args, RedisClient<?> redisClient) {
 		logger.debug("[doHandle]{},{}", redisClient, StringUtil.join(" ", args));
-		if (args == null || args.length == 0) {
-			redisClient.sendMessage(new RedisErrorParser("wrong format").format());
-			return;
-		}
 		KeeperPubSubRegistry registry = registryOf(redisClient);
 		if (registry == null) {
 			redisClient.sendMessage(new RedisErrorParser("wrong format").format());
 			return;
 		}
-		for (String channel : args) {
-			if (!registry.isSubscribed(redisClient, channel)
-					&& registry.subscribedChannelCount(redisClient) >= KeeperPubSubConstants.MAX_SUBSCRIBE_CHANNELS) {
-				redisClient.sendMessage(new RedisErrorParser(ERR_CHANNEL_LIMIT).format());
+		if (args == null || args.length == 0) {
+			List<String> channels = registry.subscribedChannels(redisClient);
+			if (channels.isEmpty()) {
+				sendUnsubscribeAck(redisClient, "", 0L);
 				return;
 			}
-			registry.subscribe(redisClient, channel);
-			sendSubscribeAck(redisClient, channel, registry.subscribedChannelCount(redisClient));
+			for (String channel : channels) {
+				registry.unsubscribe(redisClient, channel);
+				sendUnsubscribeAck(redisClient, channel, registry.subscribedChannelCount(redisClient));
+			}
+			return;
+		}
+		for (String channel : args) {
+			registry.unsubscribe(redisClient, channel);
+			sendUnsubscribeAck(redisClient, channel, registry.subscribedChannelCount(redisClient));
 		}
 	}
 
@@ -61,11 +64,11 @@ public class SubscribeCommandHandler extends AbstractCommandHandler {
 		return ((RedisKeeperServer) redisClient.getRedisServer()).getPubSubRegistry();
 	}
 
-	private static void sendSubscribeAck(RedisClient<?> redisClient, String channel, long count) {
+	private static void sendUnsubscribeAck(RedisClient<?> redisClient, String channel, long remaining) {
 		redisClient.sendMessage(new ArrayParser(new Object[]{
-				new ByteArrayOutputStreamPayload(Subscribe.SUBSCRIBE),
+				new ByteArrayOutputStreamPayload(ACK_KIND),
 				new ByteArrayOutputStreamPayload(channel),
-				count
+				remaining
 		}).format());
 	}
 

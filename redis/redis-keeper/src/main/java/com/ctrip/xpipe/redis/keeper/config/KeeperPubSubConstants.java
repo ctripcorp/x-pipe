@@ -9,6 +9,8 @@ public final class KeeperPubSubConstants {
 
 	public static final int PUBSUB_DELIVER_QUEUE_SIZE = 1024;
 
+	public static final String PSUBSCRIBE_PATTERN = "*";
+
 	private KeeperPubSubConstants() {
 	}
 }
