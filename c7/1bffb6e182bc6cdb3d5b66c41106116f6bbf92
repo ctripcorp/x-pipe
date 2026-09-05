@@ -1,0 +1,39 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/pubsub/KeeperPubSubRegistry.java
+  s_8aa4d19dda0e8c::t_c65d6cc36976f3 108-118,120,122-123,126
+  s_8aa4d19dda0e8c::t_f4d3e2692b175d 19
+  s_8aa4d19dda0e8c::t_24e72ff24d9b10 121
+  s_8aa4d19dda0e8c::t_b9d201951be7d5 36
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperPubSubConstants.java
+  s_8aa4d19dda0e8c::t_067406f5b3efb6 12-13
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/handler/keeper/SubscribeCommandHandler.java
+  s_8aa4d19dda0e8c::t_786385d8c1046b 3-5,10,12,16,19-70
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/handler/CommandHandlerManager.java
+  s_8aa4d19dda0e8c::t_70d905945714d6 40-41
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_8aa4d19dda0e8c::t_296b3a77f9f0c7 91
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/handler/keeper/UnsubscribeCommandHandler.java
+  s_8aa4d19dda0e8c::t_91f7779de2cc79 1-75
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/handler/keeper/PsubscribeCommandHandler.java
+  s_8aa4d19dda0e8c::t_30d9d4e254b6b7 1-36,38-62
+  s_8aa4d19dda0e8c::t_f007470c432053 37
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/handler/keeper/SubscribeCommandHandlerTest.java
+  s_8aa4d19dda0e8c::t_efd8c87336bae3 113
+  s_8aa4d19dda0e8c::t_dbc727e1ecd8b7 134-135,138
+  s_8aa4d19dda0e8c::t_04cf901e886a79 1-112,114-133,136-137,139-157
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "c71bffb6e182bc6cdb3d5b66c41106116f6bbf92",
+  "prompts": {},
+  "sessions": {
+    "s_8aa4d19dda0e8c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "56facab4-b22d-48ee-af6b-3f0af1b132ba",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
