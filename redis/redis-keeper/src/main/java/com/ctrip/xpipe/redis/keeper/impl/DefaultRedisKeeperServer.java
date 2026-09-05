@@ -43,6 +43,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcher;
+import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubRegistry;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
@@ -119,6 +120,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@VisibleForTesting ReplicationStoreManager replicationStoreManager;
 
 	private volatile PrepareStoreWatcher prepareWatcher;
+
+	private final KeeperPubSubRegistry pubSubRegistry;
 
 	private final boolean tfsMode;
 
@@ -209,6 +212,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.clusterId = ClusterId.from(((ClusterMeta) currentKeeperMeta.parent().parent()).getDbId());
 		this.shardId = ShardId.from(currentKeeperMeta.parent().getDbId());
 		this.replId = ReplId.from(replId);
+		this.pubSubRegistry = new KeeperPubSubRegistry(this.replId);
 		this.currentKeeperMeta = currentKeeperMeta;
 		this.baseDir = baseDir;
 		this.keeperConfig = keeperConfig;
@@ -502,19 +506,22 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	protected void doDispose() throws Exception {
-
-		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
-		this.ckStore.dispose();
-		this.leaderElector.dispose();
-		masterConfigEventLoopGroup.shutdownGracefully();
-		masterEventLoopGroup.shutdownGracefully();
-		rdbOnlyEventLoopGroup.shutdownGracefully();
-		bossGroup.shutdownGracefully();
-		workerGroup.shutdownGracefully();
-		replicationStoreManager.dispose();
-		this.scheduled.shutdownNow();
-		this.clientExecutors.shutdownNow();
-		super.doDispose();
+		try {
+			LifecycleHelper.disposeIfPossible(keeperRedisMaster);
+			this.ckStore.dispose();
+			this.leaderElector.dispose();
+			masterConfigEventLoopGroup.shutdownGracefully();
+			masterEventLoopGroup.shutdownGracefully();
+			rdbOnlyEventLoopGroup.shutdownGracefully();
+			bossGroup.shutdownGracefully();
+			workerGroup.shutdownGracefully();
+			replicationStoreManager.dispose();
+			this.scheduled.shutdownNow();
+			this.clientExecutors.shutdownNow();
+			super.doDispose();
+		} finally {
+			this.pubSubRegistry.close();
+		}
 	}
 
 	
@@ -723,6 +730,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public boolean isReadOnlyStore() {
 		return replicationStoreManager != null && replicationStoreManager.isReadOnly();
+	}
+
+	@Override
+	public KeeperPubSubRegistry getPubSubRegistry() {
+		return pubSubRegistry;
 	}
 
 	@Override

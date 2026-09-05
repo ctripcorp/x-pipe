@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.XSyncContinue;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
+import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubRegistry;
 import com.ctrip.xpipe.redis.keeper.impl.SetRdbDumperException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
@@ -70,6 +71,14 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	 */
 	default boolean isReadOnlyStore() {
 		return false;
+	}
+
+	/**
+	 * Per-keeper Pub/Sub registry and async deliverer (D16 / D18). Null when the server
+	 * does not host Pub/Sub (existing stubs / mocks).
+	 */
+	default KeeperPubSubRegistry getPubSubRegistry() {
+		return null;
 	}
 
 	CKStore getCkStore();
