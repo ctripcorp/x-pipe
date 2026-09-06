@@ -79,6 +79,7 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 			Assert.assertTrue(manager.isReadOnly());
 			Assert.assertTrue(manager.getLifecycleState().isStarted());
 			Assert.assertNotNull(server.getPrepareWatcher());
+			Assert.assertNull(server.getPrepareCmdParser());
 			verify(manager, never()).create();
 
 			ReplicationStore opened = server.getReplicationStore();
@@ -118,6 +119,27 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 				Assert.assertNotNull(server.getReplicationStore());
 			}
 			waitConditionUntilTimeOut(() -> countPrepareWatchThreads() == 0);
+		} finally {
+			stopQuietly(server);
+		}
+	}
+
+	@Test
+	public void testPubsubParseStartsParserOnPrepareAndStopsOnLeave() throws Exception {
+		TestKeeperConfig config = watchConfig(true);
+		config.setPubsubParseEnabled(true);
+		DefaultRedisKeeperServer server = startActiveServer(config, true);
+		DefaultEndPoint master = new DefaultEndPoint("127.0.0.1", 0);
+		try {
+			Assert.assertNull(server.getPrepareCmdParser());
+			becomePrepare(server);
+			Assert.assertNotNull(server.getPrepareCmdParser());
+			Assert.assertTrue(server.getPrepareCmdParser().isRunning());
+			waitConditionUntilTimeOut(() -> countPrepareCmdParserThreads() >= 1);
+
+			server.getRedisKeeperServerState().becomeActive(master);
+			Assert.assertNull(server.getPrepareCmdParser());
+			waitConditionUntilTimeOut(() -> countPrepareCmdParserThreads() == 0);
 		} finally {
 			stopQuietly(server);
 		}
@@ -226,6 +248,12 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 	private static long countPrepareWatchThreads() {
 		return Thread.getAllStackTraces().keySet().stream()
 				.filter(t -> t.getName() != null && t.getName().contains("prepare-watch"))
+				.count();
+	}
+
+	private static long countPrepareCmdParserThreads() {
+		return Thread.getAllStackTraces().keySet().stream()
+				.filter(t -> t.getName() != null && t.getName().contains("prepare-cmd-parser"))
 				.count();
 	}
 

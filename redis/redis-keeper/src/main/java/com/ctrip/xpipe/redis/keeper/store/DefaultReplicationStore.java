@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
+import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubParseHook;
 import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStore;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -88,6 +89,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	static final String READ_ONLY_STORE_MSG = "read only store";
 
 	protected final boolean readOnly;
+
+	private volatile KeeperPubSubParseHook pubSubParseHook;
 
 	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
@@ -1170,7 +1173,35 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	public int appendCommands(ByteBuf byteBuf) throws IOException {
 		checkNotReadOnly();
 		makeSureOpen();
-		return cmdStore.appendCommands(byteBuf);
+		KeeperPubSubParseHook hook = this.pubSubParseHook;
+		ByteBuf snapshot = hook != null ? byteBuf.retainedDuplicate() : null;
+		try {
+			int wrote = cmdStore.appendCommands(byteBuf);
+			if (hook != null && snapshot != null) {
+				try {
+					hook.onCommands(snapshot);
+				} catch (Throwable th) {
+					getLogger().warn("[appendCommands][pubsub parse]{}", this, th);
+				}
+			}
+			return wrote;
+		} finally {
+			if (snapshot != null) {
+				snapshot.release();
+			}
+		}
+	}
+
+	/**
+	 * ACTIVE/BACKUP 写盘成功后的 PUBLISH 解析钩子。开关关闭时为 null，零额外开销。
+	 */
+	public void setPubSubParseHook(KeeperPubSubParseHook pubSubParseHook) {
+		this.pubSubParseHook = pubSubParseHook;
+	}
+
+	@VisibleForTesting
+	public KeeperPubSubParseHook getPubSubParseHook() {
+		return pubSubParseHook;
 	}
 
 	@Override

@@ -42,7 +42,9 @@ import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareCmdParser;
 import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcher;
+import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubParseHook;
 import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubRegistry;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
@@ -121,7 +123,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private volatile PrepareStoreWatcher prepareWatcher;
 
+	private volatile PrepareCmdParser prepareCmdParser;
+
 	private final KeeperPubSubRegistry pubSubRegistry;
+
+	private final KeeperPubSubParseHook pubSubParseHook;
 
 	private final boolean tfsMode;
 
@@ -213,6 +219,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.shardId = ShardId.from(currentKeeperMeta.parent().getDbId());
 		this.replId = ReplId.from(replId);
 		this.pubSubRegistry = new KeeperPubSubRegistry(this.replId);
+		this.pubSubParseHook = keeperConfig.isPubsubParseEnabled() && redisOpParser != null
+				? new KeeperPubSubParseHook(redisOpParser, this::deliverParsedPublish)
+				: null;
 		this.currentKeeperMeta = currentKeeperMeta;
 		this.baseDir = baseDir;
 		this.keeperConfig = keeperConfig;
@@ -232,8 +241,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	protected ReplicationStoreManager createReplicationStoreManager(KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
 																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor,
 																	ScheduledExecutorService scheduled) {
-		return new DefaultReplicationStoreManager(this.ckStore, keeperConfig, replId, currentKeeperMeta.getId(),
-				baseDir, keeperMonitor, syncRateManager, redisOpParser, scheduled, asyncFileSystem);
+		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(this.ckStore, keeperConfig, replId,
+				currentKeeperMeta.getId(), baseDir, keeperMonitor, syncRateManager, redisOpParser, scheduled, asyncFileSystem);
+		if (pubSubParseHook != null) {
+			manager.setPubSubParseHook(pubSubParseHook);
+		}
+		return manager;
 	}
 
 	private LeaderElector createLeaderElector(){
@@ -681,8 +694,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 		
 		try {
-			ReplicationStore replicationStore = replicationStoreManager.createIfNotExist(); 
-			return replicationStore;
+			return replicationStoreManager.createIfNotExist();
 		} catch (IOException e) {
 			logger.error("[getCurrentReplicationStore]" + this, e);
 			throw new XpipeRuntimeException("[getCurrentReplicationStore]" + this, e);
@@ -824,8 +836,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	/**
 	 * PREPARE → ACTIVE/BACKUP (spec §3.8.3 / T-R.9).
 	 * Leave read-only watch first (D15), then restart Manager (GC) → reopen {@code latest.store.dir}
-	 * → flip state → write meta → reconnect.
-	 * State is set before {@link #initReplicationStore} so meta role matches the target.
+	 * → stamp meta role the same way {@code doBecomeActive}/{@code doBecomeBackup} do → setState → reconnect.
+	 * {@link #initReplicationStore} is NodeAdded-only (new store object), not called here.
 	 */
 	@Override
 	public synchronized void doReenterFromPrepare(Endpoint masterAddress, boolean becomeActive) {
@@ -835,12 +847,22 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			LifecycleHelper.startIfPossible(replicationStoreManager);
 			// Prefer getCurrent → latest.store.dir; create() only when no latest exists.
 			ReplicationStore store = replicationStoreManager.createIfNotExist();
+			if (store != null) {
+				try {
+					if (becomeActive) {
+						store.getMetaStore().becomeActive();
+					} else {
+						store.getMetaStore().becomeBackup();
+					}
+				} catch (Exception e) {
+					logger.error("[doReenterFromPrepare][meta role]{}", store, e);
+				}
+			}
 			if (becomeActive) {
 				setRedisKeeperServerState(new RedisKeeperServerStateActive(this, masterAddress));
 			} else {
 				setRedisKeeperServerState(new RedisKeeperServerStateBackup(this, masterAddress));
 			}
-			initReplicationStore(store);
 			reconnectMaster();
 			logger.info("[doReenterFromPrepare][done]");
 		} catch (Exception e) {
@@ -869,6 +891,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			LifecycleHelper.startIfPossible(replicationStoreManager);
 			prepareWatcher = new PrepareStoreWatcher(replicationStoreManager, keeperConfig, this::closeSlaves);
 			prepareWatcher.start();
+			startPrepareCmdParserIfEnabled();
 			logger.info("[startPrepareWatch]{}", this);
 		} catch (Throwable th) {
 			logger.error("[startPrepareWatch]{}", this, th);
@@ -882,7 +905,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	 * Catches {@link Throwable}: timeout or any failure is ERROR + EventMonitor, never blocks state switch (D4).
 	 */
 	private void leavePrepareWatch() {
-		if (prepareWatcher == null && !replicationStoreManager.isReadOnly()) {
+		if (prepareWatcher == null && prepareCmdParser == null && !replicationStoreManager.isReadOnly()) {
 			return;
 		}
 		try {
@@ -896,6 +919,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private void doLeavePrepareWatch() throws IOException {
 		closeSlaves("leavePrepare");
+		stopPrepareCmdParser();
 		stopPrepareWatcher();
 		try {
 			if (replicationStoreManager.getLifecycleState().canStop()) {
@@ -913,6 +937,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	private void rollbackPrepareWatchQuietly() {
 		try {
+			stopPrepareCmdParser();
 			stopPrepareWatcher();
 			if (replicationStoreManager.getLifecycleState().canStop()) {
 				replicationStoreManager.stop();
@@ -921,6 +946,26 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		} catch (Throwable nested) {
 			logger.error("[rollbackPrepareWatch]{}", this, nested);
 		}
+	}
+
+	private void startPrepareCmdParserIfEnabled() {
+		if (!keeperConfig.isPubsubParseEnabled() || redisOpParser == null) {
+			return;
+		}
+		prepareCmdParser = new PrepareCmdParser(replicationStoreManager, redisOpParser, this::deliverParsedPublish);
+		prepareCmdParser.start();
+	}
+
+	private void stopPrepareCmdParser() {
+		PrepareCmdParser parser = this.prepareCmdParser;
+		this.prepareCmdParser = null;
+		if (parser != null) {
+			parser.stop();
+		}
+	}
+
+	private void deliverParsedPublish(String channel, String message) {
+		pubSubRegistry.publish(channel, message);
 	}
 
 	private void stopPrepareWatcher() {
@@ -1309,6 +1354,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 	}
 
+	/**
+	 * New store object only ({@link NodeAdded} from {@code Manager.create()}).
+	 * Stamps the current keeper role onto a freshly created UUID dir.
+	 * Role changes (including PREPARE re-entry) go through {@code MetaStore.becomeActive/becomeBackup}, not here.
+	 */
 	public synchronized void initReplicationStore(ReplicationStore replicationStore) {
 		
 		logger.info("[initReplicationStore]{}", replicationStore);
@@ -1408,11 +1458,19 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@VisibleForTesting
 	public void setReplicationStoreManager(ReplicationStoreManager replicationStoreManager) {
 		this.replicationStoreManager = replicationStoreManager;
+		if (pubSubParseHook != null && replicationStoreManager instanceof DefaultReplicationStoreManager) {
+			((DefaultReplicationStoreManager) replicationStoreManager).setPubSubParseHook(pubSubParseHook);
+		}
 	}
 
 	@VisibleForTesting
 	PrepareStoreWatcher getPrepareWatcher() {
 		return prepareWatcher;
+	}
+
+	@VisibleForTesting
+	PrepareCmdParser getPrepareCmdParser() {
+		return prepareCmdParser;
 	}
 
 	@VisibleForTesting

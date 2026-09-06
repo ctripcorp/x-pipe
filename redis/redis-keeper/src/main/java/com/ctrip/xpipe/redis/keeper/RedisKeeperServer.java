@@ -116,8 +116,9 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	/**
 	 * PREPARE → ACTIVE/BACKUP re-entry (spec §3.8.3 / T-R.9):
 	 * {@code Manager.start()} → {@code createIfNotExist()} (reopen {@code latest.store.dir}) →
-	 * setState → {@code initReplicationStore} → {@code reconnectMaster}.
+	 * {@code MetaStore.becomeActive/becomeBackup} (same as {@code doBecomeActive}) → setState → {@code reconnectMaster}.
 	 * Must <b>not</b> call {@code create()} when latest store dir already exists.
+	 * Must <b>not</b> call {@code initReplicationStore} (that is NodeAdded / new-store only).
 	 */
 	void doReenterFromPrepare(Endpoint masterAddress, boolean becomeActive);
 	

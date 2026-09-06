@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubParseHook;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
@@ -61,6 +62,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     private final AtomicReference<ReplicationStore> currentStore = new AtomicReference<>();
 
     private volatile boolean readOnly;
+
+    private volatile KeeperPubSubParseHook pubSubParseHook;
 
     private final KeeperConfig keeperConfig;
 
@@ -305,10 +308,30 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         return getLifecycleState().isStopping() || getLifecycleState().isPositivelyStopped();
     }
 
+    /**
+     * Bind the ACTIVE/BACKUP PUBLISH parse hook when a writable store is constructed.
+     * Each store object is created once ({@code create()} / {@code getCurrent()} reopen), so uniqueness
+     * follows Manager lifecycle — no Server-side identity cache. Read-only stores never append, skip.
+     */
+    public void setPubSubParseHook(KeeperPubSubParseHook pubSubParseHook) {
+        this.pubSubParseHook = pubSubParseHook;
+    }
+
     protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid,
                                                       KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
-        return new GtidReplicationStore(this.ckStore,storeBaseDir,keeperConfig,keeperRunid, keeperMonitor, redisOpParser,
+        ReplicationStore replicationStore = new GtidReplicationStore(this.ckStore,storeBaseDir,keeperConfig,keeperRunid, keeperMonitor, redisOpParser,
                 syncRateManager, commandNotifyScheduler, asyncFileSystem, replId, this.readOnly);
+        bindPubSubParseHook(replicationStore);
+        return replicationStore;
+    }
+
+    private void bindPubSubParseHook(ReplicationStore store) {
+        KeeperPubSubParseHook hook = this.pubSubParseHook;
+        if (hook == null || readOnly || !(store instanceof DefaultReplicationStore)) {
+            return;
+        }
+        hook.reset();
+        ((DefaultReplicationStore) store).setPubSubParseHook(hook);
     }
 
     void recordLatestStore(String storeDir) throws IOException {
