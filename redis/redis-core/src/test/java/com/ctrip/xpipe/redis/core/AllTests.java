@@ -73,6 +73,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DcInfoTest.class,
         DefaultPsyncTest.class,
         DefaultGapAllowedSyncTest.class,
+        CmdTailGapAllowedSyncTest.class,
         PartialOnlyPsyncTest.class,
         META_SERVER_SERVICETest.class,
         BulkStringEofJudgerTest.class,
