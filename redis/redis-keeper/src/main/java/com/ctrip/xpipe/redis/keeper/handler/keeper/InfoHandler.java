@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;
 import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareWatchSnapshot;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -323,6 +324,7 @@ public class InfoHandler extends AbstractCommandHandler {
 
 		/**
 		 * D34: PREPARE has released Store lease — return minimal INFO without touching Store.
+		 * D11: Store fields from Watcher snapshot; slave list from RedisKeeperServer (no FS).
 		 */
 		private String getPrepareInfo(RedisKeeperServer redisKeeperServer) {
 			StringBuilder sb = new StringBuilder();
@@ -340,6 +342,53 @@ public class InfoHandler extends AbstractCommandHandler {
 				// Must not masquerade as up/connected while lease is released
 			}
 
+			PrepareWatchSnapshot snapshot = redisKeeperServer.getPrepareWatchSnapshot();
+			ReplicationStore opened = redisKeeperServer.getOpenedStore();
+			if (opened != null && snapshot != null) {
+				appendPrepareSnapshotOffsets(sb, redisKeeperServer, snapshot);
+			} else {
+				appendPrepareFallbackOffsets(sb);
+			}
+			return sb.toString();
+		}
+
+		private void appendPrepareSnapshotOffsets(StringBuilder sb, RedisKeeperServer redisKeeperServer,
+												  PrepareWatchSnapshot snapshot) {
+			long replOff = snapshot.getReplOffset();
+			long backlogEnd = snapshot.getBacklogEndOffset();
+			long backlogBegin = snapshot.getBacklogFirstByteOffset();
+			sb.append("slave_repl_offset:" + replOff + RedisProtocol.CRLF);
+			sb.append("slave_priority:0" + RedisProtocol.CRLF);
+			appendConnectedSlaves(sb, redisKeeperServer);
+			sb.append("master_replid:" + snapshot.getMasterReplId() + RedisProtocol.CRLF);
+			sb.append("master_replid2:" + snapshot.getMasterReplId2() + RedisProtocol.CRLF);
+			sb.append("master_repl_offset:" + replOff + RedisProtocol.CRLF);
+			sb.append("second_repl_offset:" + snapshot.getSecondReplOffset() + RedisProtocol.CRLF);
+			sb.append("repl_backlog_active:1" + RedisProtocol.CRLF);
+			sb.append("repl_backlog_first_byte_offset:" + backlogBegin + RedisProtocol.CRLF);
+			long histlen = backlogEnd - backlogBegin + 1;
+			if (histlen < 0) {
+				histlen = 0;
+			}
+			sb.append("repl_backlog_size:" + histlen + RedisProtocol.CRLF);
+			sb.append("repl_backlog_histlen:" + histlen + RedisProtocol.CRLF);
+		}
+
+		private void appendConnectedSlaves(StringBuilder sb, RedisKeeperServer redisKeeperServer) {
+			Set<RedisSlave> slaves = redisKeeperServer.slaves();
+			int n = slaves == null ? 0 : slaves.size();
+			sb.append("connected_slaves:" + n + RedisProtocol.CRLF);
+			if (slaves == null) {
+				return;
+			}
+			int slaveIndex = 0;
+			for (RedisSlave slave : slaves) {
+				sb.append(String.format("slave%d:%s" + RedisProtocol.CRLF, slaveIndex, slave.info()));
+				slaveIndex++;
+			}
+		}
+
+		private void appendPrepareFallbackOffsets(StringBuilder sb) {
 			sb.append("slave_repl_offset:0" + RedisProtocol.CRLF);
 			sb.append("slave_priority:0" + RedisProtocol.CRLF);
 			sb.append("connected_slaves:0" + RedisProtocol.CRLF);
@@ -351,7 +400,6 @@ public class InfoHandler extends AbstractCommandHandler {
 			sb.append("repl_backlog_first_byte_offset:0" + RedisProtocol.CRLF);
 			sb.append("repl_backlog_size:0" + RedisProtocol.CRLF);
 			sb.append("repl_backlog_histlen:0" + RedisProtocol.CRLF);
-			return sb.toString();
 		}
 
 		@Override

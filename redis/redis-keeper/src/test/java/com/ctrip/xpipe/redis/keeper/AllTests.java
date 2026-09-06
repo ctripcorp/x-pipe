@@ -105,6 +105,7 @@ import org.junit.runners.Suite.SuiteClasses;
         KeeperCommandHandlerTest.class,
         InfoHandlerTest.class,
         ConfigHandlerTest.class,
+        KeeperPrepareCapabilityTest.class,
         ApplierCommandHandlerTest.class,
         FakeRedisRdbOnlyDumpTest.class,
 

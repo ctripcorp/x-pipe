@@ -44,6 +44,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
 import com.ctrip.xpipe.redis.keeper.prepare.PrepareCmdParser;
 import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcher;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareWatchSnapshot;
 import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubParseHook;
 import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubRegistry;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
@@ -742,6 +743,22 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public boolean isReadOnlyStore() {
 		return replicationStoreManager != null && replicationStoreManager.isReadOnly();
+	}
+
+	@Override
+	public boolean isTfsMode() {
+		return tfsMode;
+	}
+
+	@Override
+	public ReplicationStore getOpenedStore() {
+		return replicationStoreManager == null ? null : replicationStoreManager.getOpenedStore();
+	}
+
+	@Override
+	public PrepareWatchSnapshot getPrepareWatchSnapshot() {
+		PrepareStoreWatcher watcher = this.prepareWatcher;
+		return watcher == null ? null : watcher.getSnapshot();
 	}
 
 	@Override

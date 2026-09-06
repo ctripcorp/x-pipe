@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.XSyncContinue;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareWatchSnapshot;
 import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubRegistry;
 import com.ctrip.xpipe.redis.keeper.impl.SetRdbDumperException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
@@ -71,6 +72,28 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	 */
 	default boolean isReadOnlyStore() {
 		return false;
+	}
+
+	/**
+	 * Container-level TFS mode (m1 D33). Default false so existing stubs stay local-disk.
+	 */
+	default boolean isTfsMode() {
+		return false;
+	}
+
+	/**
+	 * Already-opened store pointer. No lock, no FS; {@code null} if none is open.
+	 * INFO / ROLE on the command thread must use this instead of {@link #getReplicationStore()} (D10 / D11).
+	 */
+	default ReplicationStore getOpenedStore() {
+		return null;
+	}
+
+	/**
+	 * Watcher periodic snapshot. Command thread read-only; {@code null} if watch is off or store not opened (D11).
+	 */
+	default PrepareWatchSnapshot getPrepareWatchSnapshot() {
+		return null;
 	}
 
 	/**

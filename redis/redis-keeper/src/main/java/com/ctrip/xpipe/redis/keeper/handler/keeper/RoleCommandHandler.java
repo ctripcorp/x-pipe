@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
 import com.ctrip.xpipe.redis.keeper.RedisServer;
 import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareWatchSnapshot;
 
 /**
  * @author wenchao.meng
@@ -46,15 +47,28 @@ public class RoleCommandHandler extends AbstractCommandHandler {
 		result[1] = masterEndPoint == null ? "0.0.0.0": masterEndPoint.getHost();
 		result[2] = masterEndPoint == null ? "0": masterEndPoint.getPort();
 		if (prepare) {
-			// D34: never touch Store; never report CONNECTED while lease is released
+			// D34: never report CONNECTED while lease is released. D11: offset from snapshot only.
 			result[3] = MASTER_STATE.REDIS_REPL_NONE.getDesc();
-			result[4] = -1L;
+			result[4] = prepareReplOffset(redisKeeperServer);
 		} else {
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
 			result[3] = redisMaster == null ? MASTER_STATE.REDIS_REPL_NONE.getDesc(): redisMaster.getMasterState().getDesc();
 			result[4] = replicationStore.getMetaStore().getCurrentReplStage() == null ? -1L: replicationStore.getCurReplStageReplOff();
 		}
 		redisClient.sendMessage(ParserManager.parse(result));
+	}
+
+	/**
+	 * Command thread: {@code getOpenedStore()} + Watcher snapshot only. No FS / {@code getCurrent()} (D11).
+	 * Snapshot missing → D34 {@code -1}.
+	 */
+	private static long prepareReplOffset(RedisKeeperServer redisKeeperServer) {
+		ReplicationStore opened = redisKeeperServer.getOpenedStore();
+		PrepareWatchSnapshot snapshot = redisKeeperServer.getPrepareWatchSnapshot();
+		if (opened == null || snapshot == null) {
+			return -1L;
+		}
+		return snapshot.getReplOffset();
 	}
 
 	@Override

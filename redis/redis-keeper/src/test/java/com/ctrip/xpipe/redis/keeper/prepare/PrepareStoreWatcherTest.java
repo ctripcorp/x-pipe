@@ -277,6 +277,8 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 			long backlog = snap.getBacklogEndOffset();
 			Assert.assertEquals(total, backlog);
 			Assert.assertTrue(total > 0);
+			Assert.assertEquals(REPL_ID, snap.getMasterReplId());
+			Assert.assertTrue(snap.getBacklogFirstByteOffset() >= 0);
 
 			verify(fs, never()).open(anyString(), any(), anyBoolean(), anyBoolean(), any());
 			verify(fs, never()).open(anyString(), anyString(), any(), anyBoolean(), anyString());

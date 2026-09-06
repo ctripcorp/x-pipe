@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.RedisMaster;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareWatchSnapshot;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
 import io.netty.buffer.ByteBuf;
@@ -139,6 +140,34 @@ public class RoleCommandHandlerTest extends AbstractRedisKeeperTest{
 		Assert.assertEquals(preparePort, slaveRole.getMasterPort());
 		Assert.assertEquals(MASTER_STATE.REDIS_REPL_NONE, slaveRole.getMasterState());
 		Assert.assertEquals(-1L, slaveRole.getMasterOffset());
+	}
+
+	@Test
+	public void testPrepareFillsOffsetFromSnapshotWithoutTouchingStore() {
+		String prepareHost = "10.0.0.1";
+		int preparePort = 6380;
+		long replOffset = 4242L;
+		when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(keeperServerState);
+		when(keeperServerState.keeperState()).thenReturn(KeeperState.PREPARE);
+		when(keeperServerState.getMaster()).thenReturn(new DefaultEndPoint(prepareHost, preparePort));
+		when(redisKeeperServer.getRedisMaster()).thenReturn(null);
+		when(redisKeeperServer.getOpenedStore()).thenReturn(replicationStore);
+		when(redisKeeperServer.getPrepareWatchSnapshot())
+				.thenReturn(new PrepareWatchSnapshot(100L, 100L, replOffset));
+
+		String real = ByteBufUtils.readToString(captureRoleResponse());
+		String expected = String.format("*5\r\n+%s\r\n+%s\r\n:%d\r\n+%s\r\n:%d\r\n",
+				SERVER_ROLE.KEEPER.toString(), prepareHost, preparePort,
+				MASTER_STATE.REDIS_REPL_NONE.getDesc(), replOffset);
+		Assert.assertEquals(expected, real);
+		verify(redisKeeperServer, never()).getReplicationStore();
+		verify(replicationStore, never()).getMetaStore();
+		verify(replicationStore, never()).getCurReplStageReplOff();
+
+		Object[] reverse = new ArrayParser().read(Unpooled.wrappedBuffer(real.getBytes())).getPayload();
+		SlaveRole slaveRole = new SlaveRole(reverse);
+		Assert.assertEquals(MASTER_STATE.REDIS_REPL_NONE, slaveRole.getMasterState());
+		Assert.assertEquals(replOffset, slaveRole.getMasterOffset());
 	}
 
 }

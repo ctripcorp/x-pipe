@@ -3,8 +3,10 @@ package com.ctrip.xpipe.redis.keeper.prepare;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.MetaStore;
 import com.ctrip.xpipe.redis.core.store.ReplId;
+import com.ctrip.xpipe.redis.core.store.ReplStage;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.meta.AbstractMetaStore;
@@ -166,7 +168,40 @@ public class PrepareStoreWatcher {
 			}
 		}
 		long totalLength = cmdStore == null ? 0L : cmdStore.totalLength();
-		this.snapshot = new PrepareWatchSnapshot(totalLength, store.backlogEndOffset());
+		long backlogEnd = store.backlogEndOffset();
+		long backlogBegin = store.backlogBeginOffset();
+		if (backlogBegin < 0) {
+			backlogBegin = 0L;
+		}
+		long replOffset = 0L;
+		String masterReplId = ReplicationStoreMeta.EMPTY_REPL_ID;
+		String masterReplId2 = ReplicationStoreMeta.EMPTY_REPL_ID;
+		long secondReplOffset = ReplicationStoreMeta.DEFAULT_SECOND_REPLID_OFFSET;
+		MetaStore metaStore = store.getMetaStore();
+		ReplStage curStage = metaStore == null ? null : metaStore.getCurrentReplStage();
+		if (curStage != null) {
+			// Same inclusive last-byte formula as DefaultReplicationStore.getCurReplStageReplOff()
+			replOffset = curStage.getBegOffsetRepl() - 1 + backlogEnd - curStage.getBegOffsetBacklog();
+			if (curStage.getReplId() != null) {
+				masterReplId = curStage.getReplId();
+			}
+			if (curStage.getReplId2() != null) {
+				masterReplId2 = curStage.getReplId2();
+			}
+			secondReplOffset = curStage.getSecondReplIdOffset();
+		} else if (metaStore != null) {
+			if (metaStore.getReplId() != null) {
+				masterReplId = metaStore.getReplId();
+			}
+			if (metaStore.getReplId2() != null) {
+				masterReplId2 = metaStore.getReplId2();
+			}
+			if (metaStore.getSecondReplIdOffset() != null) {
+				secondReplOffset = metaStore.getSecondReplIdOffset();
+			}
+		}
+		this.snapshot = new PrepareWatchSnapshot(totalLength, backlogEnd, replOffset,
+				masterReplId, masterReplId2, secondReplOffset, backlogBegin);
 	}
 
 	private static boolean sameOpenedStoreDir(ReplicationStore opened, String latestDir) {
