@@ -1,6 +1,7 @@
 package com.ctrip.xpipe;
 
 import com.ctrip.xpipe.api.sso.SsoConfigTest;
+import com.ctrip.xpipe.foundation.DefaultFoundationServiceTest;
 import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.concurrent.*;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPortTest;
@@ -42,6 +43,7 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({
         SsoConfigTest.class,
+        DefaultFoundationServiceTest.class,
         XpipeNettyClientPoolTest.class,
         XpipeNettyClientKeyedObjectPoolTest.class,
         DefaultCommandFutureTest.class,

@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.service.foundation;
 
-import com.ctrip.framework.foundation.Foundation;
 import com.ctrip.xpipe.service.AbstractServiceTest;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,6 +33,11 @@ public class CtripFoundationServiceTest extends AbstractServiceTest {
         foundationService = spy(foundationService);
 
         when(config.getGroupDcMap()).thenReturn(Collections.emptyMap());
+    }
+
+    @Test
+    public void testGetHostNameNotEmpty() {
+        Assert.assertFalse(StringUtil.isEmpty(new CtripFoundationService().getHostName()));
     }
 
     @Test

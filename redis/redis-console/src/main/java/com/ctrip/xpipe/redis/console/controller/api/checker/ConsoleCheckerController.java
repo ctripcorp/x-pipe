@@ -43,6 +43,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -138,10 +139,10 @@ public class ConsoleCheckerController extends AbstractConsoleController {
     }
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_DC_ALL_META)
-    public String getDcAllMeta(@PathVariable String dcName, @RequestParam(value="format", required = false) String format) {
+    public byte[] getDcAllMeta(@PathVariable String dcName, @RequestParam(value="format", required = false) String format) {
         DcMeta dcMeta = metaCache.getXpipeMeta().getDcs().get(dcName);
         XpipeMeta xpipeMeta = new XpipeMeta().addDc(dcMeta);
-        return (format != null && format.equals("xml"))? xpipeMeta.toString() : coder.encode(xpipeMeta);
+        return (format != null && format.equals("xml"))? xpipeMeta.toString().getBytes(StandardCharsets.UTF_8) : coder.encode(xpipeMeta).getBytes(StandardCharsets.UTF_8);
     }
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_PROXY_CHAINS)
