@@ -2,17 +2,14 @@ package com.ctrip.xpipe.redis.keeper.impl.fakeredis;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
-import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
-import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
-import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
+import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperCommonConfig;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
@@ -57,16 +54,14 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 	}
 	
 	
-	protected RedisKeeperServer createRedisKeeperServer(Long replId,  KeeperMeta keeper, KeeperConfig keeperConfig,
-			File baseDir, LeaderElectorManager leaderElectorManager) {
-
-		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
-		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
-		RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
+	@Override
+	protected RedisKeeperServer createRedisKeeperServer(Long replId, KeeperMeta keeper, KeeperConfig keeperConfig,
+			File baseDir, LeaderElectorManager leaderElectorManager, boolean tfsMode) {
 
 		return new DefaultRedisKeeperServer(replId, keeper, keeperConfig, baseDir, leaderElectorManager,
-				createkeepersMonitorManager(), getRegistry().getComponent(KeeperResourceManager.class),
-				Mockito.mock(SyncRateManager.class), opParser, asyncFileSystem()){
+				createkeepersMonitorManager(), getResourceManager(),
+				Mockito.mock(SyncRateManager.class), createRedisOpParser(), asyncFileSystem(),
+				new ReplDelayConfigCache(new TestKeeperCommonConfig(), new TestKeeperConfig()), tfsMode){
 		
 			@Override
 			public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {

@@ -534,7 +534,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         logger.info("[destroy]{}", this);
         // Permanent refuse reopen before close/rmdir so create/getCurrent/gc cannot race a new open.
         managerMetaDestroyed = true;
-        closeManagerMetaFile();
+        try {
+            // Drain in-flight atomicReplace (TMP_REP_*) before walkFileTree; close awaits FS in-flight.
+            releaseCurrentStore();
+        } catch (Exception e) {
+            logger.warn("[destroy][releaseCurrentStore]", e);
+        } finally {
+            closeManagerMetaFile();
+        }
         AsyncFileSystemHelper.await(() -> asyncFileSystem.rmdir(this.baseDir.getAbsolutePath(), true),
                 "rmdir replication store manager baseDir " + baseDir);
     }

@@ -37,7 +37,7 @@ public class AbstractRedisKeeperContextTest extends AbstractRedisKeeperTest {
 	
 	private String keeperConfigFile = "keeper6666.xml";
 
-	private int keeperServerPortMin = 7777, keeperServerPortMax = 7877;
+	private int keeperServerPortMin = 7777, keeperServerPortMax = 8076;
 
 	@Before
 	public void beforeAbstractRedisKeeperTest() throws Exception {

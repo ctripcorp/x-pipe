@@ -21,6 +21,7 @@ import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
@@ -541,22 +542,40 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 
 	
 	@Test
-	public void testDestroy() throws Exception{
-		
-		DefaultReplicationStoreManager replicationStoreManager = (DefaultReplicationStoreManager) createReplicationStoreManager(
-				keeperConfig);
-		
-		LifecycleHelper.initializeIfPossible(replicationStoreManager);
-		LifecycleHelper.startIfPossible(replicationStoreManager);
-		
-		DefaultReplicationStore store = (DefaultReplicationStore) replicationStoreManager.create();
-		
-		Assert.assertTrue(store.getBaseDir().exists());
-		
-		replicationStoreManager.destroy();
-		
-		Assert.assertTrue(!store.getBaseDir().exists());
-		
+	public void testDestroy() throws Exception {
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
+				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
+				mock(SyncRateManager.class), createRedisOpParser(), null, fileSystem);
+		try {
+			LifecycleHelper.initializeIfPossible(replicationStoreManager);
+			LifecycleHelper.startIfPossible(replicationStoreManager);
+
+			DefaultReplicationStore store = (DefaultReplicationStore) replicationStoreManager.create();
+			Assert.assertTrue(store.getBaseDir().exists());
+
+			clearInvocations(fileSystem);
+			replicationStoreManager.destroy();
+
+			Assert.assertTrue(!store.getBaseDir().exists());
+			Assert.assertNull(replicationStoreManager.getOpenedStore());
+			InOrder order = inOrder(fileSystem);
+			order.verify(fileSystem, atLeastOnce()).close(any(AsyncFile.class));
+			order.verify(fileSystem).rmdir(eq(replicationStoreManager.getBaseDir().getAbsolutePath()), eq(true));
+		} finally {
+			try {
+				LifecycleHelper.stopIfPossible(replicationStoreManager);
+			} catch (Throwable ignore) {
+			}
+			try {
+				LifecycleHelper.disposeIfPossible(replicationStoreManager);
+			} catch (Throwable ignore) {
+			}
+			try {
+				fileSystem.shutdown();
+			} catch (Throwable ignore) {
+			}
+		}
 	}
 
 	@Test

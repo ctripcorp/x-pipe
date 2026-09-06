@@ -449,22 +449,27 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
 
     @Test
     public void testFreshStoreErrorsOnCommandThreadWithoutBecomeSlave() throws Exception {
+        Mockito.when(keeperServer.getRedisKeeperServerState()).thenReturn(keeperServerState);
+        Mockito.when(keeperServerState.psync(redisClient, new String[]{"?", "-4"})).thenReturn(true);
         Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
         Mockito.when(store.isFresh()).thenReturn(true);
 
         handler.doHandle(new String[]{"?", "-4"}, redisClient);
 
+        Mockito.verify(keeperServerState).psync(redisClient, new String[]{"?", "-4"});
         Mockito.verify(redisClient).sendMessage(any(ByteBuf.class));
         Mockito.verify(redisClient, Mockito.never()).becomeGapAllowRedisSlave();
-        Mockito.verify(keeperServerState, Mockito.never()).psync(any(), any());
     }
 
     @Test
     public void testNullStoreTreatedAsFreshOnCommandThread() throws Exception {
+        Mockito.when(keeperServer.getRedisKeeperServerState()).thenReturn(keeperServerState);
+        Mockito.when(keeperServerState.psync(redisClient, new String[]{"?", "-4"})).thenReturn(true);
         Mockito.when(keeperServer.getReplicationStore()).thenReturn(null);
 
         handler.doHandle(new String[]{"?", "-4"}, redisClient);
 
+        Mockito.verify(keeperServerState).psync(redisClient, new String[]{"?", "-4"});
         Mockito.verify(redisClient).sendMessage(any(ByteBuf.class));
         Mockito.verify(redisClient, Mockito.never()).becomeGapAllowRedisSlave();
     }
