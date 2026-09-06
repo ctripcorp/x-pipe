@@ -1,0 +1,47 @@
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/console/config/TestFoundationServiceHostNameTest.java
+  s_fdd697009f8439::t_c2097a5d6a3686 1-5,7-26
+  s_fdd697009f8439::t_9a2fa192623d71 6
+core/src/main/java/com/ctrip/xpipe/api/foundation/FoundationService.java
+  s_fdd697009f8439::t_8b68f9a6676706 27-28
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/AllTests.java
+  s_fdd697009f8439::t_793f38fffdf51f 265
+  s_fdd697009f8439::t_fafff3dd065cf0 14
+core/src/test/java/com/ctrip/xpipe/foundation/DefaultFoundationServiceTest.java
+  s_fdd697009f8439::t_56f82b6dc40fa4 1-15
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/controller/api/checker/ConsoleCheckerControllerDcAllMetaTest.java
+  s_fdd697009f8439::t_cf60f7d2960fbb 1-64,66-68,71-115
+  s_fdd697009f8439::t_b4f909f934fbdf 65,69-70
+services/ctrip-service/src/main/java/com/ctrip/xpipe/service/foundation/CtripFoundationService.java
+  s_fdd697009f8439::t_8b60702a4fc962 45-49
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/console/config/TestFoundationService.java
+  s_fdd697009f8439::t_1e87ac6dad06e1 34-38
+core/src/test/java/com/ctrip/xpipe/AllTests.java
+  s_fdd697009f8439::t_23f20c825adcf3 46
+  s_fdd697009f8439::t_ead26164e36f45 4
+services/ctrip-service/src/test/java/com/ctrip/xpipe/service/foundation/CtripFoundationServiceTest.java
+  s_fdd697009f8439::t_57a16e90f3f08e 4
+  s_fdd697009f8439::t_5725a62d65a1fa 39-42
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/checker/ConsoleCheckerController.java
+  s_fdd697009f8439::t_564dc78f9a0ba3 142,145
+  s_fdd697009f8439::t_9f262f8a0b2863 46
+core/src/main/java/com/ctrip/xpipe/foundation/DefaultFoundationService.java
+  s_fdd697009f8439::t_5b809ec4d7ad46 13
+  s_fdd697009f8439::t_deb072bcf83311 30-31
+  s_fdd697009f8439::t_75b17f4897b222 82-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "af90b258ab2d18f186b115b2d0d2efb9e7d2872a",
+  "prompts": {},
+  "sessions": {
+    "s_fdd697009f8439": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4942d845-07d5-43e5-b836-483153bdc08c",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
