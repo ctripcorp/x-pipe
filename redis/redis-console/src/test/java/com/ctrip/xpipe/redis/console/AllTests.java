@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManagerTest;
 import com.ctrip.xpipe.redis.console.controller.api.BeaconRouteControllerTest;
+import com.ctrip.xpipe.redis.console.controller.api.checker.ConsoleCheckerControllerDcAllMetaTest;
 import com.ctrip.xpipe.redis.console.controller.api.ChangeConfigTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
@@ -261,6 +262,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultBeaconManagerTest.class,
         DefaultBeaconManagerSentinelExcludeTest.class,
         BeaconRouteControllerTest.class,
+        ConsoleCheckerControllerDcAllMetaTest.class,
 
         DefaultPersistenceCacheTest.class,
         CheckerPersistenceCacheTest.class,

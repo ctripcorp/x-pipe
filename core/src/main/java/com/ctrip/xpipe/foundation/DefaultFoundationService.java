@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -26,6 +27,8 @@ public class DefaultFoundationService implements FoundationService {
 	public static final String APP_ID_KEY = "appId";
 	
 	public static final String LOCAL_IP_KEY = "localIp";
+
+	public static final String HOST_NAME_KEY = "hostName";
 	
 	private Config config = Config.DEFAULT;
 
@@ -72,6 +75,15 @@ public class DefaultFoundationService implements FoundationService {
 			return Inet4Address.getLoopbackAddress().getHostAddress();
 		} catch (Exception e) {
 			return "127.0.0.1";
+		}
+	}
+
+	@Override
+	public String getHostName() {
+		try {
+			return InetAddress.getLocalHost().getHostName();
+		} catch (Exception e) {
+			return "localhost";
 		}
 	}
 

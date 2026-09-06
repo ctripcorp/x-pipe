@@ -31,6 +31,12 @@ public class TestFoundationService implements FoundationService, ApplicationCont
     }
 
     @Override
+    public String getHostName() {
+        Assert.assertNotNull(applicationContext);
+        return applicationContext.getEnvironment().getProperty(HOST_NAME_KEY, "localhost");
+    }
+
+    @Override
     public String getGroupId() {
         Assert.assertNotNull(applicationContext);
         return applicationContext.getEnvironment().getProperty("groupId");

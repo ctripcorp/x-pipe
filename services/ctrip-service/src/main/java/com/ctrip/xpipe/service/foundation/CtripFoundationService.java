@@ -42,6 +42,11 @@ public class CtripFoundationService implements FoundationService{
 		return Foundation.net().getHostAddress();
 	}
 
+	@Override
+	public String getHostName() {
+		return Foundation.net().getHostName();
+	}
+
 	public int getHttpPort() {
 		return Foundation.web().getHttpPort();
 	}
