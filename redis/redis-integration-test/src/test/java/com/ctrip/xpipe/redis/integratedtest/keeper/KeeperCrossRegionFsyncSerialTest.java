@@ -143,7 +143,11 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
         DefaultRedisKeeperServer newActiveServer = (DefaultRedisKeeperServer) getRedisKeeperServer(backup);
         newActiveServer.setCrossRegion(true);
 
-        // 统一指回新 active，触发重新全量
+        // 模拟「增量出问题」：SLAVEOF NO ONE 使 replid 变化 + 写分歧数据，再统一指回旧 active
+        for (RedisMeta slave : crossRegionSlaves) {
+            jedisExecCommand(slave.getIp(), slave.getPort(), "SLAVEOF", "NO", "ONE");
+            jedisExecCommand(slave.getIp(), slave.getPort(), "SET", "diverge_" + slave.getPort(), "1");
+        }
         for (RedisMeta slave : crossRegionSlaves) {
             setRedisMaster(slave, new HostPort(backup.getIp(), backup.getPort()));
         }
@@ -346,5 +350,4 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
             sleep(30);
         }
     }
-
 }

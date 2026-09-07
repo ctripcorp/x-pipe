@@ -856,6 +856,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			return;
 		}
 
+		// cross-region 场景：非 active（backup）不允许下游 slave 全量，直接关闭，防止 backup 上做非串行全量
+		if (crossRegion.get() && !getRedisKeeperServerState().keeperState().isActive()) {
+			logger.info("[fullSyncToSlave][cross region not active, close slave]{}", redisSlave);
+			redisSlave.close();
+			return;
+		}
+
 		logger.info("[fullSyncToSlave]{}, {}", redisSlave, rdbDumper.get());
 
 		if (crossRegion.get() && !redisSlave.isKeeper()
