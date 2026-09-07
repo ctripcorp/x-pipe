@@ -39,6 +39,9 @@ public class CrossRegionFsyncCoordinator {
     /** 租约表：key=ip:port（跨重连稳定），value=断链起始时间（0 表示在线） */
     private final Map<String, Long> lease = new HashMap<>();
 
+    /** 放行顺序（ip:port），仅用于测试验证按序全量 */
+    private final List<String> admitOrder = new ArrayList<>();
+
     private final IntSupplier  maxLoadingSlavesCntSupplier;
     private final LongSupplier graceMillisSupplier;
     private final LongSupplier settleMillisSupplier;
@@ -70,6 +73,7 @@ public class CrossRegionFsyncCoordinator {
     public synchronized void reset() {
         lease.clear();
         settleDeadline = -1;
+        admitOrder.clear();
     }
 
     /**
@@ -138,6 +142,7 @@ public class CrossRegionFsyncCoordinator {
             logger.info("[tick][admit]{}", s);
             releaser.accept(s);
             lease.put(key(s), 0L);                  // 授予租约
+            admitOrder.add(key(s));                 // 记录放行顺序
             remaining--;
         }
         settleDeadline = -1;
@@ -195,5 +200,10 @@ public class CrossRegionFsyncCoordinator {
                         && s.getSlaveState() == REDIS_REPL_WAIT_SEQ_FSYNC
                         && !lease.containsKey(key(s)))
                 .count();
+    }
+
+    @VisibleForTesting
+    public synchronized List<String> admitOrder4Test() {
+        return new ArrayList<>(admitOrder);
     }
 }

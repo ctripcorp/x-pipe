@@ -95,6 +95,9 @@ public interface KeeperConfig extends CoreConfig{
 
     boolean fsyncRateLimit();
 
+    /** 测试开关：开启后向下游 slave 注入错误命令，模拟增量加载持续失败 */
+    boolean isBreakDownstreamCommands();
+
 	boolean tryRorRdb();
 	int getXsyncMaxGap();
 

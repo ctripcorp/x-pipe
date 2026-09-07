@@ -134,6 +134,7 @@ public class CrossRegionFsyncCoordinatorTest {
         coordinator.tick(slaveSet(a, b, c), this::admit);   // 满窗口，放行 a（ip:port 最小）
         assertEquals(1, released.size());
         assertSame(a, released.get(0));
+        assertEquals(Collections.singletonList("10.0.0.2:6379"), coordinator.admitOrder4Test());
     }
 
     @Test

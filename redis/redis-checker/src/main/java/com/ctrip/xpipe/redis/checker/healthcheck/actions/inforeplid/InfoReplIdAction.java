@@ -43,8 +43,6 @@ public class InfoReplIdAction extends AbstractHealthCheckAction<RedisHealthCheck
             String slaveReplId = slaveInfo.extract(MASTER_REPLID);
             String masterHost = slaveInfo.getKeyKeeperMasterHost();
             int masterPort = slaveInfo.getKeyKeeperMasterPort();
-            logger.info("[doTask][slave] {} slaveReplId={}, master={}:{}",
-                    instance.getCheckInfo().getHostPort(), slaveReplId, masterHost, masterPort);
             if (slaveReplId == null || masterHost == null || masterPort <= 0) {
                 logger.info("[doTask][slave info incomplete] {}", instance.getCheckInfo().getHostPort());
                 notifyListeners(new InfoReplIdActionContext(instance, new IllegalStateException("slave info incomplete")));
@@ -68,8 +66,6 @@ public class InfoReplIdAction extends AbstractHealthCheckAction<RedisHealthCheck
             InfoResultExtractor keeperInfo = upstream.syncInfo(InfoCommand.INFO_TYPE.REPLICATION);
             String keeperReplId = keeperInfo.extract(MASTER_REPLID);
             String keeperReplId2 = keeperInfo.extract(MASTER_REPLID2);
-            logger.info("[doTask][upstream] {} keeperReplId={}, keeperReplId2={}",
-                    instance.getCheckInfo().getHostPort(), keeperReplId, keeperReplId2);
             if (keeperReplId == null) {
                 logger.info("[doTask][keeper info incomplete] {}", instance.getCheckInfo().getHostPort());
                 notifyListeners(new InfoReplIdActionContext(instance, new IllegalStateException("keeper info incomplete")));
@@ -78,8 +74,10 @@ public class InfoReplIdAction extends AbstractHealthCheckAction<RedisHealthCheck
 
             boolean replIdMatch = slaveReplId.equals(keeperReplId)
                     || (keeperReplId2 != null && slaveReplId.equals(keeperReplId2));
-            logger.info("[doTask][replId match={}] {} slaveReplId={}, keeperReplId={}, keeperReplId2={}",
-                    replIdMatch, instance.getCheckInfo().getHostPort(), slaveReplId, keeperReplId, keeperReplId2);
+            if(!replIdMatch) {
+                logger.info("[doTask][replId match={}] {} slaveReplId={}, keeperReplId={}, keeperReplId2={}",
+                        replIdMatch, instance.getCheckInfo().getHostPort(), slaveReplId, keeperReplId, keeperReplId2);
+            }
             notifyListeners(new InfoReplIdActionContext(instance, new Triple<>(slaveReplId, keeperReplId, keeperReplId2)));
         } catch (Throwable th) {
             logger.info("[doTask][fail] {}", instance.getCheckInfo().getHostPort(), th);

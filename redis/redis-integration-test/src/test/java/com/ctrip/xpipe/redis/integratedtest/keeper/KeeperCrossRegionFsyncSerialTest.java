@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.impl.CrossRegionFsyncCoordinator;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import org.junit.Assert;
 import org.junit.Before;
@@ -91,6 +92,72 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
     }
 
     /**
+     * 验证「全量同步进行中异步切换 keeper」：切换打断旧 active 上正在进行的全量，
+     * slave 重连到新 active 后重新按 ip:port 串行放行，且任意时刻最多 1 个 loading。
+     */
+    @Test
+    public void testSwitchKeeperDuringCrossRegionSerialFsync() throws Exception {
+        KeeperMeta firstActive = getKeeperActive();
+        KeeperMeta backup = getKeepersBackup().iterator().next();
+        waitKeeperConnected(firstActive, backup);
+
+        List<RedisMeta> crossRegionSlaves = getRedisSlaves();
+        Assert.assertEquals(CROSS_REGION_SLAVE_COUNT, crossRegionSlaves.size());
+        waitAllSlavesOnline(crossRegionSlaves);
+
+        // 先写入一批数据
+        sendMessageToMaster(redisMaster, 20);
+        sleep(2000);
+
+        // 旧 active keeper 置为 cross-region
+        DefaultRedisKeeperServer firstActiveServer = (DefaultRedisKeeperServer) getRedisKeeperServer(firstActive);
+        firstActiveServer.setCrossRegion(true);
+
+        // 模拟「增量出问题」：SLAVEOF NO ONE 使 replid 变化 + 写分歧数据，再统一指回旧 active
+        for (RedisMeta slave : crossRegionSlaves) {
+            jedisExecCommand(slave.getIp(), slave.getPort(), "SLAVEOF", "NO", "ONE");
+            jedisExecCommand(slave.getIp(), slave.getPort(), "SET", "diverge_" + slave.getPort(), "1");
+        }
+        for (RedisMeta slave : crossRegionSlaves) {
+            setRedisMaster(slave, new HostPort(firstActive.getIp(), firstActive.getPort()));
+        }
+
+        // 等全量真正开始（至少一个 slave 进入 loading）
+        waitAtLeastOneLoading(firstActiveServer);
+
+        // 全量进行中，异步切换 keeper
+        final Throwable[] switchError = new Throwable[1];
+        Thread switchThread = new Thread(() -> {
+            try {
+                switchActiveKeeper(firstActive, backup);
+            } catch (Throwable th) {
+                switchError[0] = th;
+            }
+        }, "switch-keeper-during-fsync");
+        switchThread.start();
+        switchThread.join();
+        Assert.assertNull("switch keeper failed", switchError[0]);
+        waitKeeperConnected(backup, firstActive);
+
+        // 新 active 置为 cross-region（必须在 slave 重连之前，否则绕过串行）
+        DefaultRedisKeeperServer newActiveServer = (DefaultRedisKeeperServer) getRedisKeeperServer(backup);
+        newActiveServer.setCrossRegion(true);
+
+        // 统一指回新 active，触发重新全量
+        for (RedisMeta slave : crossRegionSlaves) {
+            setRedisMaster(slave, new HostPort(backup.getIp(), backup.getPort()));
+        }
+
+        // 采样验证：全量串行（同一时刻最多 1 个 loading）且按 ip:port 升序
+        List<RedisMeta> fullSyncOrder = sampleFullSyncOrder(newActiveServer, crossRegionSlaves);
+        Assert.assertEquals("all cross-region slaves should do full sync", CROSS_REGION_SLAVE_COUNT, fullSyncOrder.size());
+        assertAscendingByIpPort(fullSyncOrder);
+
+        // 全量完成后数据与 master 一致（分歧数据被 RDB 覆盖清除）
+        assertRedisEquals(redisMaster, crossRegionSlaves);
+    }
+
+    /**
      * 验证「拉入」：不切换 keeper，直接让 cross-region keeper 的多个 slave 全量同步，
      * 同一时刻最多 maxLoadingSlaves 个 loading，且按 ip:port 字典序依次放行。
      */
@@ -133,52 +200,88 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
     }
 
     /**
+     * 验证「增量加载持续失败」：打开 breakDownstreamCommands 开关后，下游 slave 反复全量/增量失败，
+     * 但任意时刻最多 1 个 loading（不并发）；关闭开关后 slave 恢复 online 且数据一致。
+     */
+    @Test
+    public void testIncrementalBreakFallbackToFullSync() throws Exception {
+        KeeperMeta active = getKeeperActive();
+        List<RedisMeta> crossRegionSlaves = getRedisSlaves();
+        Assert.assertEquals(CROSS_REGION_SLAVE_COUNT, crossRegionSlaves.size());
+        waitAllSlavesOnline(crossRegionSlaves);
+
+        sendMessageToMaster(redisMaster, 20);
+        sleep(2000);
+
+        DefaultRedisKeeperServer activeServer = (DefaultRedisKeeperServer) getRedisKeeperServer(active);
+        activeServer.setCrossRegion(true);
+
+        TestKeeperConfig config = (TestKeeperConfig) activeServer.getKeeperConfig();
+        // 调小 maxTransfer：任何待传增量命令都会命中「too much to transfer」→ 回落全量
+        config.setReplicationStoreMaxCommandsToTransferBeforeCreateRdb(1);
+        // 打开开关：增量加载持续失败
+        config.setBreakDownstreamCommands(true);
+
+        // 模拟「增量出问题」：SLAVEOF NO ONE 使 replid 变化 + 写分歧数据，再统一指回 keeper
+        for (RedisMeta slave : crossRegionSlaves) {
+            jedisExecCommand(slave.getIp(), slave.getPort(), "SLAVEOF", "NO", "ONE");
+            jedisExecCommand(slave.getIp(), slave.getPort(), "SET", "diverge_" + slave.getPort(), "1");
+        }
+        for (RedisMeta slave : crossRegionSlaves) {
+            setRedisMaster(slave, new HostPort(active.getIp(), active.getPort()));
+        }
+
+        // 开关打开期间：增量失败 + maxTransfer 阈值回落全量，slave 反复全量，但任意时刻最多 1 个 loading
+        assertNoConcurrentLoadingDuring(activeServer, 15_000);
+
+        // 关闭开关 + 恢复 maxTransfer：slave 恢复 online 且数据一致
+        config.setBreakDownstreamCommands(false);
+        config.setReplicationStoreMaxCommandsToTransferBeforeCreateRdb(Integer.MAX_VALUE);
+        waitAllSlavesOnline(crossRegionSlaves);
+        assertRedisEquals(redisMaster, crossRegionSlaves);
+    }
+
+    /**
      * 周期采样 keeper 的 slave 状态，返回 slave 进入 loading 状态的先后顺序。
      * 期间断言：任意时刻处于 loading 的 cross-region slave 数不超过 1（串行）。
      */
     private List<RedisMeta> sampleFullSyncOrder(DefaultRedisKeeperServer server, List<RedisMeta> slaves) {
-        Map<Integer, RedisMeta> byPort = new HashMap<>();
+        Map<String, RedisMeta> byKey = new HashMap<>();
         for (RedisMeta s : slaves) {
-            byPort.put(s.getPort(), s);
+            byKey.put(s.getIp() + ":" + s.getPort(), s);
         }
 
-        LinkedHashSet<Integer> admittedOrder = new LinkedHashSet<>();
-        Set<Integer> seenWaiting = new HashSet<>();
+        CrossRegionFsyncCoordinator coordinator = server.getCrossRegionFsyncCoordinator();
+        int baseline = coordinator.admitOrder4Test().size();
         long deadline = System.currentTimeMillis() + 60_000;
         while (System.currentTimeMillis() < deadline) {
             int loading = 0;
             Set<RedisSlave> fseqSlaves = server.slaves();
             for (RedisSlave rs : fseqSlaves) {
                 if (rs.isKeeper()) continue;
-                int port = rs.getSlaveListeningPort();
                 SLAVE_STATE st = rs.getSlaveState();
-                if(st != SLAVE_STATE.REDIS_REPL_ONLINE) {
-                    logger.info("[fullsyncslave] slave {}, state {}", rs, st);
-                }
                 if (st == SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING || st == SLAVE_STATE.REDIS_REPL_SEND_BULK) {
                     loading++;
-                }
-                if(st == SLAVE_STATE.REDIS_REPL_WAIT_SEQ_FSYNC){
-                    seenWaiting.add(port);
-                }else if(seenWaiting.contains(port)) {
-                    admittedOrder.add(port);
                 }
             }
             Assert.assertTrue("concurrent cross-region full sync detected: " + loading, loading <= 1);
 
-            if (admittedOrder.size() >= slaves.size() && loading == 0 && allOnline(server.slaves())) {
-                break;
+            List<String> admitOrder = coordinator.admitOrder4Test();
+            List<String> newAdmits = new ArrayList<>(admitOrder.subList(baseline, admitOrder.size()));
+            if (newAdmits.size() >= slaves.size() && loading == 0 && allOnline(server.slaves())) {
+                List<RedisMeta> order = new ArrayList<>();
+                for (String key : newAdmits) {
+                    RedisMeta meta = byKey.get(key);
+                    Assert.assertNotNull("unknown admitted key: " + key, meta);
+                    order.add(meta);
+                }
+                return order;
             }
             sleep(30);
         }
 
-        List<RedisMeta> order = new ArrayList<>();
-        for (int port : admittedOrder) {
-            RedisMeta meta = byPort.get(port);
-            Assert.assertNotNull("unknown slave listening port: " + port, meta);
-            order.add(meta);
-        }
-        return order;
+        Assert.fail("full sync did not complete in time, admitOrder: " + coordinator.admitOrder4Test());
+        return null;
     }
 
     private boolean allOnline(Set<RedisSlave> slaves) {
@@ -212,6 +315,35 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
     private void waitAllSlavesOnline(List<RedisMeta> slaves) throws Exception {
         for (RedisMeta slave : slaves) {
             waitSlaveOnline(slave.getIp(), slave.getPort());
+        }
+    }
+
+    private void waitAtLeastOneLoading(DefaultRedisKeeperServer server) throws Exception {
+        waitConditionUntilTimeOut(() -> {
+            for (RedisSlave rs : server.slaves()) {
+                if (rs.isKeeper()) continue;
+                SLAVE_STATE st = rs.getSlaveState();
+                if (st == SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING || st == SLAVE_STATE.REDIS_REPL_SEND_BULK) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+
+    private void assertNoConcurrentLoadingDuring(DefaultRedisKeeperServer server, long durationMillis) {
+        long deadline = System.currentTimeMillis() + durationMillis;
+        while (System.currentTimeMillis() < deadline) {
+            int loading = 0;
+            for (RedisSlave rs : server.slaves()) {
+                if (rs.isKeeper()) continue;
+                SLAVE_STATE st = rs.getSlaveState();
+                if (st == SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING || st == SLAVE_STATE.REDIS_REPL_SEND_BULK) {
+                    loading++;
+                }
+            }
+            Assert.assertTrue("concurrent cross-region full sync detected: " + loading, loading <= 1);
+            sleep(30);
         }
     }
 

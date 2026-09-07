@@ -26,9 +26,7 @@ public class DefaultConsoleCheckerApiService extends AbstractService implements 
     @Override
     public HEALTH_STATE getHealthStates(HostPort checker, String ip, int port) {
         try {
-            HEALTH_STATE state = restTemplate.getForObject(getPath(checker, PATH_HEALTH_STATUS), HEALTH_STATE.class, ip, port);
-            logger.info("[getHealthStates] checker={}, {}({})={}", checker, ip, port, state);
-            return state;
+            return restTemplate.getForObject(getPath(checker, PATH_HEALTH_STATUS), HEALTH_STATE.class, ip, port);
         } catch (Throwable th) {
             logger.info("[getHealthStates][fail] checker={}, {}({}), cause={}", checker, ip, port, th.getMessage());
             throw th;
@@ -38,9 +36,7 @@ public class DefaultConsoleCheckerApiService extends AbstractService implements 
     @Override
     public HEALTH_STATE getCrossRegionHealthStates(HostPort checker, String ip, int port) {
         try {
-            HEALTH_STATE state = restTemplate.getForObject(getPath(checker, PATH_CROSS_REGION_HEALTH_STATUS), HEALTH_STATE.class, ip, port);
-            logger.info("[getCrossRegionHealthStates] checker={}, {}({})={}", checker, ip, port, state);
-            return state;
+            return restTemplate.getForObject(getPath(checker, PATH_CROSS_REGION_HEALTH_STATUS), HEALTH_STATE.class, ip, port);
         } catch (Throwable th) {
             logger.info("[getCrossRegionHealthStates][fail] checker={}, {}({}), cause={}", checker, ip, port, th.getMessage());
             throw th;
