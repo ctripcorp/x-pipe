@@ -61,7 +61,6 @@ public class InstanceHealthStatusGetGroupCommand extends AbstractCommand<Map<Hos
             try {
                 HEALTH_STATE state = entry.getValue().get();
                 result.put(entry.getKey(), state);
-                logger.info("[getAllHealthStates][result] checker={}, {}({})={}", entry.getKey(), ip, port, state);
             } catch (InterruptedException | ExecutionException e) {
                 result.put(entry.getKey(), HEALTH_STATE.UNKNOWN);
                 logger.info("[getAllHealthStates][unknown] checker={}, {}({}), cause={}",

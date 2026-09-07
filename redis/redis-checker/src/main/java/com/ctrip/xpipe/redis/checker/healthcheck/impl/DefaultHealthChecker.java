@@ -126,21 +126,12 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
 
                     if (clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) {
                         if (isClusterActiveIdcCurrentIdc(cluster)) {
-                            logger.info("[generateHealthCheckInstances][active dc current] dc={}, cluster={}, activeDc={}, type={}",
-                                    dcMeta.getId(), cluster.getId(), cluster.getActiveDc(), clusterType);
                             generateHealthCheckInstances(cluster);
                         } else if (isClusterActiveDcCrossRegion(cluster) && clusterDcIsCurrentDc(cluster)) {
-                            logger.info("[generateHealthCheckInstances][cross region] dc={}, cluster={}, activeDc={}, currentDc={}, type={}",
-                                    dcMeta.getId(), cluster.getId(), cluster.getActiveDc(), currentDcId, clusterType);
                             generateHealthCheckInstances4CrossRegion(cluster);
                         } else {
-                            logger.info("[generateHealthCheckInstances][skip] dc={}, cluster={}, activeDc={}, currentDc={}, crossRegion={}, clusterDcIsCurrentDc={}",
-                                    dcMeta.getId(), cluster.getId(), cluster.getActiveDc(), currentDcId,
-                                    isClusterActiveDcCrossRegion(cluster), clusterDcIsCurrentDc(cluster));
                         }
                     } else if (clusterType.supportMultiActiveDC() && isClusterInCurrentIdc(cluster)) {
-                        logger.info("[generateHealthCheckInstances][multi active] dc={}, cluster={}, type={}",
-                                dcMeta.getId(), cluster.getId(), clusterType);
                         generateHealthCheckInstances(cluster);
                     }
 
@@ -152,11 +143,8 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
     }
 
     void generateHealthCheckInstances4CrossRegion(ClusterMeta clusterMeta) {
-        logger.info("[generateHealthCheckInstances4CrossRegion][begin] cluster={}", clusterMeta.getId());
         for(ShardMeta shard : clusterMeta.getShards().values()) {
             for(RedisMeta redis : shard.getRedises()) {
-                logger.info("[generateHealthCheckInstances4CrossRegion][redis] cluster={}, shard={}, {}:{}",
-                        clusterMeta.getId(), shard.getId(), redis.getIp(), redis.getPort());
                 instanceManager.getOrCreateRedisInstanceForInfoReplIdAction(redis);
             }
         }

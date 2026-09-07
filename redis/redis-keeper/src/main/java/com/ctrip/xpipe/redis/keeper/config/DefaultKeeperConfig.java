@@ -60,6 +60,7 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	private static String KEY_CROSS_REGION_FSYNC_DISCONNECT_TIMEOUT_SECONDS = "crossregion.replication.fsync.disconnect.timeout.seconds";
 
 	private static String KEY_FSYNC_RATE_LIMIT = "keeper.repl.fsync.rate.limit";
+	private static String KEY_BREAK_DOWNSTREAM_COMMANDS = "keeper.break.downstream.commands";
 	private static String KEY_INDEX_DUAL_WRITE = "keeper.index.dual.write";
 	private static String KEY_INDEX_READ_V2 = "keeper.index.read.v2";
 	private static String KEY_INDEX_ZONE_CONSECUTIVE_THRESHOLD = "keeper.index.zone.consecutive.threshold";
@@ -253,6 +254,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public boolean fsyncRateLimit() {
 		return getBooleanProperty(KEY_FSYNC_RATE_LIMIT, true);
+	}
+
+	@Override
+	public boolean isBreakDownstreamCommands() {
+		return getBooleanProperty(KEY_BREAK_DOWNSTREAM_COMMANDS, false);
 	}
 
 	@Override

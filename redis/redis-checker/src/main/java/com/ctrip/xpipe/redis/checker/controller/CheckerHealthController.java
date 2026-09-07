@@ -17,8 +17,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.checker.model.RedisMsg;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.google.common.collect.Lists;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.*;
@@ -33,8 +31,6 @@ import java.util.*;
 @RequestMapping("/api")
 @ConditionalOnProperty(name = { HealthChecker.ENABLED }, matchIfMissing = true)
 public class CheckerHealthController {
-
-    private static final Logger logger = LoggerFactory.getLogger(CheckerHealthController.class);
 
     @Autowired
     private DefaultDelayPingActionCollector defaultDelayPingActionCollector;
@@ -62,21 +58,13 @@ public class CheckerHealthController {
     @RequestMapping(value = "/health/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getHealthState(@PathVariable String ip, @PathVariable int port) {
         boolean stable = siteStability.isSiteStable();
-        HEALTH_STATE state = stable ? defaultDelayPingActionCollector.getState(new HostPort(ip, port)) : HEALTH_STATE.UNKNOWN;
-        if (state == HEALTH_STATE.UNKNOWN) {
-            logger.info("[getHealthState][unknown] {}:{}, siteStable={}", ip, port, stable);
-        }
-        return state;
+        return stable ? defaultDelayPingActionCollector.getState(new HostPort(ip, port)) : HEALTH_STATE.UNKNOWN;
     }
 
     @RequestMapping(value = "/health/cross/region/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getCrossRegionHealthState(@PathVariable String ip, @PathVariable int port) {
         boolean stable = siteStability.isSiteStable();
-        HEALTH_STATE state = stable ? defaultInfoReplIdPingActionCollector.getHealthState(new HostPort(ip, port)) : HEALTH_STATE.UNKNOWN;
-        if (state == HEALTH_STATE.UNKNOWN) {
-            logger.info("[getCrossRegionHealthState][unknown] {}:{}, siteStable={}", ip, port, stable);
-        }
-        return state;
+        return stable ? defaultInfoReplIdPingActionCollector.getHealthState(new HostPort(ip, port)) : HEALTH_STATE.UNKNOWN;
     }
 
     @RequestMapping(value = "/health/check/instance/{ip}/{port}", method = RequestMethod.GET)

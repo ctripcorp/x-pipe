@@ -68,8 +68,10 @@ public class CrossRegionRedisHealthStatus extends HealthStatus {
         this.keeperReplId = keeperReplId;
         this.keeperReplId2 = keeperReplId2;
         boolean match = replIdMatch();
-        logger.info("[updateReplIds] {} slaveReplId={}, keeperReplId={}, keeperReplId2={}, match={}, state={}",
-                instance.getCheckInfo().getHostPort(), slaveReplId, keeperReplId, keeperReplId2, match, state.get());
+        if(!match) {
+            logger.info("[updateReplIds] {} slaveReplId={}, keeperReplId={}, keeperReplId2={}, match={}, state={}",
+                    instance.getCheckInfo().getHostPort(), slaveReplId, keeperReplId, keeperReplId2, match, state.get());
+        }
         if (match) {
             markUp();
         }

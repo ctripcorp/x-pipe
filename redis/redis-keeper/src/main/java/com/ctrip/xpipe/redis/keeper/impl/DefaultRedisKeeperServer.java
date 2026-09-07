@@ -412,6 +412,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		crossRegionFsyncCoordinator.tick(slaves(), this::continueFsyncToSlave);
 	}
 
+	@VisibleForTesting
+	public CrossRegionFsyncCoordinator getCrossRegionFsyncCoordinator() {
+		return crossRegionFsyncCoordinator;
+	}
+
+	public boolean isBreakDownstreamCommands() {
+		return keeperConfig.isBreakDownstreamCommands();
+	}
+
 	private void continueFsyncToSlave(RedisSlave slave) {
 		try {
 			logger.info("[continueFsyncToSlave]{}", slave);
@@ -720,6 +729,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public void closeSlaves(String reason) {
 		
+		if (crossRegionFsyncCoordinator != null) {
+			crossRegionFsyncCoordinator.reset();
+		}
 		closeSlavesExcept(reason, null);
 	}
 
@@ -766,7 +778,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				if (previous != null && previous.keeperState().isActive()
 						&& !redisKeeperServerState.keeperState().isActive()) {
 					closeSlaves("keeper downgrade");
-					crossRegionFsyncCoordinator.reset();
 				}
 
 				DefaultRedisKeeperServer.this.redisKeeperServerState = redisKeeperServerState;

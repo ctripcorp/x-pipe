@@ -336,6 +336,18 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return true;
 	}
 
+	private boolean breakDownstreamCommands = false;
+
+	public TestKeeperConfig setBreakDownstreamCommands(boolean breakDownstreamCommands) {
+		this.breakDownstreamCommands = breakDownstreamCommands;
+		return this;
+	}
+
+	@Override
+	public boolean isBreakDownstreamCommands() {
+		return breakDownstreamCommands;
+	}
+
 	@Override
 	public boolean tryRorRdb() {
 		return true;

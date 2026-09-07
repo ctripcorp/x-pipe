@@ -190,10 +190,6 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         HealthCheckConfig config = new CompositeHealthCheckConfig(info, checkerConfig, relationsService, metaCache.isCrossRegion(currentDcId, info.getDcId()));
         Endpoint endpoint = endpointFactory.getOrCreateEndpoint(redis);
 
-        logger.info("[getOrCreateRedisInstanceForInfoReplIdAction] {}:{}, activeDc={}, dcId={}, clusterType={}, crossRegion={}",
-                redis.getIp(), redis.getPort(), info.getActiveDc(), info.getDcId(), info.getClusterType(),
-                metaCache.isCrossRegion(currentDcId, info.getDcId()));
-
         instance.setEndpoint(endpoint)
                 .setSession(redisSessionManager.findOrCreateSession(endpoint))
                 .setInstanceInfo(info)
@@ -208,14 +204,10 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     private void initActionsForRedisForInfoReplIdAction(DefaultRedisHealthCheckInstance instance) {
         List<RedisHealthCheckActionFactory<?>> redisHealthCheckActionFactories = factoriesByClusterType.get(instance.getCheckInfo().getClusterType());
         if (redisHealthCheckActionFactories == null) {
-            logger.warn("[initActionsForRedisForInfoReplIdAction][no factory for cluster type] {}, type={}",
-                    instance.getCheckInfo().getHostPort(), instance.getCheckInfo().getClusterType());
             return;
         }
         for(RedisHealthCheckActionFactory<?> factory : redisHealthCheckActionFactories) {
             if (factory instanceof PingActionFactory || factory instanceof InfoReplIdActionFactory) {
-                logger.info("[initActionsForRedisForInfoReplIdAction] {}, factory={}",
-                        instance.getCheckInfo().getHostPort(), factory.getClass().getSimpleName());
                 initActions(instance, factory);
             }
         }
