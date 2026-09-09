@@ -1,0 +1,46 @@
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/handler/ZstdEncoder.java
+  s_c49371a3173010::t_e80ee979a08065 332
+  s_c49371a3173010::t_3b050be083f263 44-47,63-66,71-72
+  s_c49371a3173010::t_4f598174997fc9 5
+  s_c49371a3173010::t_d6679026ee6f1c 162-169,177,179,206-212
+redis/redis-proxy/src/test/java/com/ctrip/xpipe/redis/proxy/config/DefaultProxyConfigTest.java
+  s_c49371a3173010::t_69c7f61f71ceea 31-32,36-52
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/config/DefaultProxyConfig.java
+  s_c49371a3173010::t_dc38e3ba1cd665 52-55
+  s_c49371a3173010::t_b1ec2d5ddc9718 66-71
+  s_c49371a3173010::t_32a0d8602950cc 9
+  s_c49371a3173010::t_b939fe0a15c71c 189,194-209
+  s_c49371a3173010::t_449e2025a53adb 137-145
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/handler/ZstdDecoder.java
+  s_c49371a3173010::t_7b475565a7de77 31-32
+  s_c49371a3173010::t_b571e67edbd7b9 214-215,217-218
+  s_c49371a3173010::t_6b28646b6445c8 3
+  s_c49371a3173010::t_7347ae4b632beb 83
+  s_c49371a3173010::t_9823389e130675 216
+pom.xml
+  s_c49371a3173010::t_89dedd28061c34 76
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/session/DefaultBackendSession.java
+  s_c49371a3173010::t_3d28d89b8d8924 133
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/config/ProxyConfig.java
+  s_c49371a3173010::t_0cdfea7ae7e41e 70-72,75-92
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/DefaultProxyServer.java
+  s_c49371a3173010::t_9cd68df65d1a6e 134
+redis/redis-proxy/src/test/java/com/ctrip/xpipe/redis/proxy/handler/ZstdEncoderTest.java
+  s_c49371a3173010::t_b907576222b89b 118-139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "05029e6f41af224cb9672082d9c4a6e14c74ef30",
+  "prompts": {},
+  "sessions": {
+    "s_c49371a3173010": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7b1ac98f-2c0c-4443-ae2c-4e47efd02501",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}

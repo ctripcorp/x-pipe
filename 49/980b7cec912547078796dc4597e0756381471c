@@ -1,0 +1,19 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/CrossRegionFsyncCoordinatorTest.java
+  s_0cfa55ac7dd4fa::t_cd2462649d91e8 186-195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "49980b7cec912547078796dc4597e0756381471c",
+  "prompts": {},
+  "sessions": {
+    "s_0cfa55ac7dd4fa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb89d177-18b8-46f3-a634-1dfc42ffa52f",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
