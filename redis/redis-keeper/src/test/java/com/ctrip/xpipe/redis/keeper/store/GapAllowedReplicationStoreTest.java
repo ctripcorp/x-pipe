@@ -17,6 +17,7 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStore;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.GtidSetWrapper;
@@ -33,12 +34,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V2_FILE;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -1079,6 +1084,150 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		}
 		Assert.assertNotNull(createdRdb.get());
 		Assert.assertTrue(((AbstractStore) createdRdb.get()).isClosed());
+	}
+
+	/**
+	 * T-H3.HO.1: meta already open, cmd {@code awaitOpen} fails → already opened handles
+	 * released; same FS reconstruct must not hit {@code writer already open}.
+	 */
+	@Test
+	public void constructCmdAwaitOpenFailReleasesHandlesSoReconstructSucceeds() throws Exception {
+		store.close();
+		store = null;
+
+		File caseDir = new File(baseDir, "h3m-cmd-await-open-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		String keeperRunid = randomKeeperRunid();
+		AsyncFileSystem fs = asyncFileSystem();
+		seedXsyncThenClose(caseDir, keeperRunid, fs);
+
+		AtomicBoolean failCmdOpenOnce = new AtomicBoolean(true);
+		AsyncFileSystem spyFs = spy(fs);
+		doAnswer(invocation -> {
+			boolean write = invocation.getArgument(3);
+			if (write && failCmdOpenOnce.getAndSet(false)) {
+				return CompletableFuture.<AsyncSegmentFile>failedFuture(
+						new IOException("injected cmd awaitOpen fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(spyFs).open(anyString(), anyString(), anyList(), anyBoolean(), anyString());
+
+		try {
+			openGtidStore(caseDir, keeperRunid, spyFs);
+			Assert.fail("expected construct fail when cmd awaitOpen fails");
+		} catch (Throwable expected) {
+			assertNotWriterAlreadyOpen(expected);
+			Assert.assertTrue(causeContains(expected, "injected cmd awaitOpen fail"));
+		}
+
+		GtidReplicationStore reopened = null;
+		try {
+			reopened = openGtidStore(caseDir, keeperRunid, spyFs);
+			Assert.assertFalse(reopened.isFresh());
+			Assert.assertNotNull(ReflectionTestUtils.getField(reopened, "cmdStore"));
+		} catch (Throwable t) {
+			assertNotWriterAlreadyOpen(t);
+			throw t;
+		} finally {
+			closeQuietly(reopened);
+		}
+	}
+
+	/**
+	 * T-H3.HO.2: cmd already open, {@code recoverIndex} throws → meta+cmd released;
+	 * same FS reconstruct must not hit {@code writer already open}.
+	 */
+	@Test
+	public void constructRecoverIndexFailReleasesHandlesSoReconstructSucceeds() throws Exception {
+		store.close();
+		store = null;
+
+		File caseDir = new File(baseDir, "h3m-recover-index-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		String keeperRunid = randomKeeperRunid();
+		AsyncFileSystem fs = asyncFileSystem();
+		seedXsyncThenClose(caseDir, keeperRunid, fs);
+
+		AtomicBoolean failRecoverOnce = new AtomicBoolean(true);
+		try {
+			new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, fs, getReplId()) {
+				@Override
+				protected void initializeCommandStore(CommandStore cmdStore) throws IOException {
+					if (failRecoverOnce.getAndSet(false)) {
+						DefaultIndexStore real = (DefaultIndexStore) ReflectionTestUtils.getField(cmdStore, "indexStore");
+						DefaultIndexStore spyIndex = spy(real);
+						doAnswer(inv -> {
+							throw new IOException("injected recoverIndex fail");
+						}).when(spyIndex).openWriter(any());
+						ReflectionTestUtils.setField(cmdStore, "indexStore", spyIndex);
+					}
+					super.initializeCommandStore(cmdStore);
+				}
+			};
+			Assert.fail("expected construct fail when recoverIndex throws");
+		} catch (Throwable expected) {
+			assertNotWriterAlreadyOpen(expected);
+			Assert.assertTrue(causeContains(expected, "injected recoverIndex fail"));
+		}
+
+		GtidReplicationStore reopened = null;
+		try {
+			reopened = openGtidStore(caseDir, keeperRunid, fs);
+			Assert.assertFalse(reopened.isFresh());
+			Assert.assertNotNull(ReflectionTestUtils.getField(reopened, "cmdStore"));
+		} catch (Throwable t) {
+			assertNotWriterAlreadyOpen(t);
+			throw t;
+		} finally {
+			closeQuietly(reopened);
+		}
+	}
+
+	private GtidReplicationStore openGtidStore(File dir, String keeperRunid, AsyncFileSystem fs) throws IOException {
+		return new GtidReplicationStore(dir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(),
+				redisOpParser, Mockito.mock(SyncRateManager.class), null, fs, getReplId());
+	}
+
+	private void seedXsyncThenClose(File dir, String keeperRunid, AsyncFileSystem fs) throws IOException {
+		GtidReplicationStore seed = openGtidStore(dir, keeperRunid, fs);
+		try {
+			RdbStore rdb = seed.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.XSYNC,
+					new GtidSet(GtidSet.EMPTY_GTIDSET), masterUuidA);
+			rdb.updateRdbType(RdbStore.Type.NORMAL);
+			rdb.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			seed.confirmRdbGapAllowed(rdb);
+		} finally {
+			seed.close();
+		}
+	}
+
+	private static boolean causeContains(Throwable t, String snippet) {
+		for (Throwable c = t; c != null; c = c.getCause()) {
+			if (c.getMessage() != null && c.getMessage().contains(snippet)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static void assertNotWriterAlreadyOpen(Throwable t) {
+		for (Throwable c = t; c != null; c = c.getCause()) {
+			String msg = c.getMessage();
+			if (msg != null && msg.toLowerCase().contains("writer already open")) {
+				Assert.fail("writer slot leaked: " + t);
+			}
+		}
+	}
+
+	private static void closeQuietly(ReplicationStore toClose) {
+		if (toClose == null) {
+			return;
+		}
+		try {
+			toClose.close();
+		} catch (Exception ignore) {
+		}
 	}
 
 }
