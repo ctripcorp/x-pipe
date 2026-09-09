@@ -311,7 +311,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			logger.error("[doStart][ck start fail] ignore", th);
 		}
 
-		this.resetReplAfterLongTimeDown();
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
 	 	this.redisKeeperServerState = initKeeperServerState();
@@ -363,7 +362,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 	}
 
-	private void resetReplAfterLongTimeDown() {
+	@Override
+	public void resetReplAfterLongTimeDown() {
 		try {
 			ReplicationStore replicationStore = replicationStoreManager.getCurrent();
 			if (null == replicationStore || null == replicationStore.getMetaStore().getCurReplStageReplId()) {
@@ -853,7 +853,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	/**
 	 * PREPARE → ACTIVE/BACKUP (spec §3.8.3 / T-R.9).
 	 * Leave read-only watch first (D15), then restart Manager (GC) → reopen {@code latest.store.dir}
-	 * → stamp meta role the same way {@code doBecomeActive}/{@code doBecomeBackup} do → setState → reconnect.
+	 * → Backup {@link #resetReplAfterLongTimeDown()} → stamp meta role the same way
+	 * {@code doBecomeActive}/{@code doBecomeBackup} do → setState → reconnect.
 	 * {@link #initReplicationStore} is NodeAdded-only (new store object), not called here.
 	 */
 	@Override
@@ -864,6 +865,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			LifecycleHelper.startIfPossible(replicationStoreManager);
 			// Prefer getCurrent → latest.store.dir; create() only when no latest exists.
 			ReplicationStore store = replicationStoreManager.createIfNotExist();
+			if (!becomeActive) {
+				resetReplAfterLongTimeDown();
+				store = replicationStoreManager.getCurrent();
+			}
 			if (store != null) {
 				try {
 					if (becomeActive) {

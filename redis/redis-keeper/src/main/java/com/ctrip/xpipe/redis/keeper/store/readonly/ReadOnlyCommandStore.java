@@ -294,7 +294,7 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 
 	@Override
 	public long getCommandsLastUpdatedAt() {
-		// 生产唯一调用方是 doInitialize 的 resetReplAfterLongTimeDown，只读 Store 不会走到
+		// 生产唯一调用方是切 Backup 的 resetReplAfterLongTimeDown；只读 Store 不会走到
 		return 0L;
 	}
 

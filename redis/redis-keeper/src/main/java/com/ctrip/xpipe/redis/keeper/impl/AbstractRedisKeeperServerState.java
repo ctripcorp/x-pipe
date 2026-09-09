@@ -137,6 +137,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	protected void doBecomeBackup(Endpoint masterAddress){
 		
 		logger.info("[doBecomeBackup]{}", this);
+		redisKeeperServer.resetReplAfterLongTimeDown();
 		try{
 			redisKeeperServer.getReplicationStore().getMetaStore().becomeBackup();
 		}catch(Exception e){

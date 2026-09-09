@@ -119,6 +119,13 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	KeeperMeta getCurrentKeeperMeta();
 	
 	void reconnectMaster();
+
+	/**
+	 * Drop an expired store so Backup {@code PartialOnlyGapAllowedSync} sends {@code PSYNC ? -2}.
+	 * Called when entering Backup, before {@link #reconnectMaster()}. Not called from initialize
+	 * (role is unset; must not {@code getCurrent}/{@code create} for a write lease).
+	 */
+	void resetReplAfterLongTimeDown();
 	
 	void stopAndDisposeMaster();
 	
@@ -139,8 +146,9 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	/**
 	 * PREPARE → ACTIVE/BACKUP re-entry (spec §3.8.3 / T-R.9):
 	 * {@code Manager.start()} → {@code createIfNotExist()} (reopen {@code latest.store.dir}) →
+	 * Backup also {@link #resetReplAfterLongTimeDown()} →
 	 * {@code MetaStore.becomeActive/becomeBackup} (same as {@code doBecomeActive}) → setState → {@code reconnectMaster}.
-	 * Must <b>not</b> call {@code create()} when latest store dir already exists.
+	 * Must <b>not</b> call {@code create()} when latest store dir already exists, except Backup expiry reset.
 	 * Must <b>not</b> call {@code initReplicationStore} (that is NodeAdded / new-store only).
 	 */
 	void doReenterFromPrepare(Endpoint masterAddress, boolean becomeActive);
