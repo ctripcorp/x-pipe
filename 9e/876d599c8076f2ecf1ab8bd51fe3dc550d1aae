@@ -1,0 +1,41 @@
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/AllTests.java
+  s_6a80d001f8c4e6::t_635b4fd9fe818a 1-14
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/config/ComparatorConstants.java
+  s_6a80d001f8c4e6::t_849e6ae3ebad47 1-24
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/ComparatorApplication.java
+  s_6a80d001f8c4e6::t_859ac745d0963f 1-20
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/spring/ComparatorContextConfig.java
+  s_6a80d001f8c4e6::t_76efb663531fb1 1-31
+redis/redis-comparator/src/test/resources/xpipe-test.properties
+  s_6a80d001f8c4e6::t_377615972c5aa0 1
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/spring/ComparatorContextConfigTest.java
+  s_6a80d001f8c4e6::t_8edbf07ed86a09 1-82
+redis/redis-comparator/src/main/resources/META-INF/app.properties
+  s_6a80d001f8c4e6::t_04b2cca2357e0c 1
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/spring/Production.java
+  s_6a80d001f8c4e6::t_23b6096017814d 1-14
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/config/ComparatorConfigTest.java
+  s_6a80d001f8c4e6::t_a7eb28fd2e3bcb 1-42
+redis/redis-comparator/src/test/resources/META-INF/app.properties
+  s_6a80d001f8c4e6::t_9d305abda7e389 1
+redis/pom.xml
+  s_6a80d001f8c4e6::t_a48f9cdeedf695 22
+redis/redis-comparator/pom.xml
+  s_6a80d001f8c4e6::t_e01d04d4f2e902 1-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "9e876d599c8076f2ecf1ab8bd51fe3dc550d1aae",
+  "prompts": {},
+  "sessions": {
+    "s_6a80d001f8c4e6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e1fbf23b-72f4-43a8-91e0-c0520c2f2b80",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
