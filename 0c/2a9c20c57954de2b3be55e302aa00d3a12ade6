@@ -1,0 +1,37 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdAction.java
+  s_44a1e39ac9e424::t_3454802867bb29 26-27,30-31,33,36
+  s_44a1e39ac9e424::t_bd3d86bc91ccd4 61-66,68-72,79-83
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/interaction/DefaultInfoReplIdPingActionCollector.java
+  s_44a1e39ac9e424::t_82363b958cfbcb 18
+  s_44a1e39ac9e424::t_18ebac551deaeb 147-148,150
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/interaction/CrossRegionRedisHealthStatusTest.java
+  s_44a1e39ac9e424::t_a19cb1a150dfcb 61,121
+  s_44a1e39ac9e424::t_5ba21d11ad2fa8 64,99,103,142,156,170
+  s_44a1e39ac9e424::t_9ac9f4062ab1dc 55
+  s_44a1e39ac9e424::t_5517ad23ad1e1d 125
+  s_44a1e39ac9e424::t_010d1e18e7eb14 69-82
+  s_44a1e39ac9e424::t_dd1bbefbd7c65e 58
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdActionFactory.java
+  s_44a1e39ac9e424::t_0c642e8abc8d22 48
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdActionContext.java
+  s_44a1e39ac9e424::t_4a716f602dcd8a 5,7,9
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/interaction/CrossRegionRedisHealthStatus.java
+  s_44a1e39ac9e424::t_a97bfea0e76bbb 65-66,69,71-72,78,80-82
+  s_44a1e39ac9e424::t_7d6e92e2710c59 36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "0c2a9c20c57954de2b3be55e302aa00d3a12ade6",
+  "prompts": {},
+  "sessions": {
+    "s_44a1e39ac9e424": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0655bc0e-73c5-44a4-8706-25c0bf410849",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}

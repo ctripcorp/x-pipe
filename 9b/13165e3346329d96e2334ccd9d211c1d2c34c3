@@ -1,0 +1,41 @@
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/KeeperCrossRegionFsyncSerialTest.java
+  s_0cfa55ac7dd4fa::t_8057d7272706f7 334-349
+  s_0cfa55ac7dd4fa::t_254f41b0ac66f9 203-218,222,224-233,235-236,240-243
+  s_0cfa55ac7dd4fa::t_dc9f11fffdfb66 11
+  s_0cfa55ac7dd4fa::t_3b1f0de1214973 249,251,254-255,269-278,283-284
+  s_0cfa55ac7dd4fa::t_ea534a04b47129 219-221,223
+  s_0cfa55ac7dd4fa::t_8e7677c568f23c 237-239
+  s_0cfa55ac7dd4fa::t_b173483db90b11 234
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java
+  s_0cfa55ac7dd4fa::t_e8493abc10d0e0 260-263
+  s_0cfa55ac7dd4fa::t_29bb3c170650f4 63
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  s_0cfa55ac7dd4fa::t_481b5c77025810 339-350
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_0cfa55ac7dd4fa::t_000d8c055aac47 421
+  s_0cfa55ac7dd4fa::t_4c0dab166f579b 415-419
+  s_0cfa55ac7dd4fa::t_2f3eb417ffbee2 420,422-423
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisSlave.java
+  s_0cfa55ac7dd4fa::t_0966d6819dd05a 28
+  s_0cfa55ac7dd4fa::t_a4257d3de00222 413-420
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/CrossRegionFsyncCoordinator.java
+  s_0cfa55ac7dd4fa::t_464a5a97b5eebb 76
+  s_0cfa55ac7dd4fa::t_b336050342383d 145
+  s_0cfa55ac7dd4fa::t_acb4038241eab8 204-208
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "9b13165e3346329d96e2334ccd9d211c1d2c34c3",
+  "prompts": {},
+  "sessions": {
+    "s_0cfa55ac7dd4fa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb89d177-18b8-46f3-a634-1dfc42ffa52f",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}

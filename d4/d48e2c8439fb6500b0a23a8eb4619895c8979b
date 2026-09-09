@@ -1,0 +1,30 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/checker/impl/DefaultConsoleCheckerApiService.java
+  s_0d1093d11d3910::t_205ff55a98942c 7-8,14-15,28-35,40-47
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/controller/CheckerHealthController.java
+  s_0d1093d11d3910::t_b1a94d56f27725 20-21
+  s_0d1093d11d3910::t_941862185bd02d 64-69,74-79
+  s_0d1093d11d3910::t_bbb24994f3e539 37-38
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/interaction/DefaultDelayPingActionCollector.java
+  s_0d1093d11d3910::t_8d5c6dedbd2504 66
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/checker/command/InstanceHealthStatusGetGroupCommand.java
+  s_0d1093d11d3910::t_27d76d5656a1c8 10-11,24
+  s_0d1093d11d3910::t_afb48825840d03 62-64,67-68
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/interaction/DefaultInfoReplIdPingActionCollector.java
+  s_0d1093d11d3910::t_639687dbda791b 58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "d4d48e2c8439fb6500b0a23a8eb4619895c8979b",
+  "prompts": {},
+  "sessions": {
+    "s_0d1093d11d3910": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88e417e4-b5b0-487f-b45f-330c85f659aa",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
