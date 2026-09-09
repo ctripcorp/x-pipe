@@ -1,0 +1,59 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  s_ad13ae614b1c56::t_c6566f5be65f8d 300-311
+  s_ad13ae614b1c56::t_a5b522f558c224 298-299
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/CrossRegionFsyncCoordinatorTest.java
+  s_ad13ae614b1c56::t_ed83095768b687 8,26,104-106,108-112,129
+  s_ad13ae614b1c56::t_bef9f50ba01937 1-7,9-25,27-103,107,113-128,130-203
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisSlave.java
+  s_ad13ae614b1c56::t_cac1d61786fc5f 261
+redis/redis-integration-test/pom.xml
+  s_9e745988b86bd5::t_b37261de82c743 118-123
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java
+  s_ad13ae614b1c56::t_db58a20fefe613 59
+  s_ad13ae614b1c56::t_74cb36b030931a 243-246
+  s_ad13ae614b1c56::t_90ec0a669103c4 240-242
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_ad13ae614b1c56::t_0186e88db6cceb 843,851
+  s_9e745988b86bd5::t_e908a498a262c4 1185-1189
+  s_ad13ae614b1c56::t_ec471f8b50b573 272-274
+  s_ad13ae614b1c56::t_cbd4c2101acd13 97
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerTest.java
+  s_ad13ae614b1c56::t_ac32870b41df87 279,285-286
+  s_ad13ae614b1c56::t_386fa5dac1e64c 301-302,309,312-322,329
+  s_ad13ae614b1c56::t_f0fae4381744f7 308,310-311,323,327
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/CrossRegionFsyncCoordinator.java
+  s_ad13ae614b1c56::t_14a584552d2d20 1-10,12-27,33-37,43-44,49-51,59-67,69-70,72-78,80-84,88,90-98,113,115,117-124,129-130,133-135,141,143-151,153-161
+  s_ad13ae614b1c56::t_67a9c8b0ff62b2 28,116,125,127
+  s_ad13ae614b1c56::t_e1674244abec2f 79,89,99,126,128,132,136-140,142
+  s_ad13ae614b1c56::t_410dfe8e91329e 11,29-32,40-42,45-48,52-58,68,85-87,100,131,152
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/KeeperCrossRegionFsyncSerialTest.java
+  s_9e745988b86bd5::t_ad3c9ae9e59bd4 27
+  s_9e745988b86bd5::t_f36fe481fa19e8 152-154
+  s_9e745988b86bd5::t_6264111184f9b3 1-26,28-151,155
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperConfig.java
+  s_ad13ae614b1c56::t_983e475f4b052c 90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "bfa750fb0b0bb4a9ad0441182872bd74e179d85d",
+  "prompts": {},
+  "sessions": {
+    "s_9e745988b86bd5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5e445600-f45c-480f-8604-e33e3eee55c5",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    },
+    "s_ad13ae614b1c56": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3c4a85b5-abc9-4d74-b313-1442ca93f529",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}

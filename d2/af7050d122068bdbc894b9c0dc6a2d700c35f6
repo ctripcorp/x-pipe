@@ -1,0 +1,48 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_f6223590275fac::t_01cf1877097724 540,549,558-560
+  s_f6223590275fac::t_22fbe4d56a988c 1642,1644
+  s_f6223590275fac::t_e34c380e958852 981,1042,1111,1310,1492,1523,1559,1854,2056,2083,2098,2113,2140,2183,2270,2287,2315,2325,2363,2470,2576,2634,2665,2705,2742,2762,2770,2797,2840,2924,2934,2982,2992,3039
+  s_f6223590275fac::t_5daaa71e677df5 2551,2553
+  s_f6223590275fac::t_9ee782018a75a8 2215,2231,2233,2245-2249,2251-2252
+  s_f6223590275fac::t_f8daac5aa18ca9 630-633
+  s_f6223590275fac::t_e73c56cea23416 1797,1799
+  h_6ceeb547b3b36a 125,557,2232,2244
+  s_f6223590275fac::t_cff9f4d77dd172 501,503
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_f6223590275fac::t_a545832b7b2753 372,379,383,387
+  s_f6223590275fac::t_27455cd2175f58 373-378,381-382
+  s_f6223590275fac::t_c9100012814484 629
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AbstractStorageFile.java
+  s_f6223590275fac::t_9bc5a27c322706 67-68
+  s_f6223590275fac::t_06140f1ed1b737 5
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  h_6ceeb547b3b36a 301
+  s_f6223590275fac::t_b08cbaf9225c73 309
+  s_f6223590275fac::t_7bbc5459056402 57-58,63,67,69,73-81,84-85
+  s_f6223590275fac::t_ab1e5db6693336 294
+  s_f6223590275fac::t_5bb08c5b1dea9f 303-308,310-318
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFile.java
+  s_f6223590275fac::t_8582f65997a59c 40,56-64,67-68
+  s_f6223590275fac::t_f5fb28bc38e5fb 72-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "d2af7050d122068bdbc894b9c0dc6a2d700c35f6",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_f6223590275fac": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_1a3cc7b7-06ef-49d1-8247-18b2b1bf4263",
+        "model": "claude-opus-5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}

@@ -1,0 +1,39 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  h_6ceeb547b3b36a 2216-2217
+  s_0303dd6ef2d4c2::t_075e413d4cf55c 2209-2215,2218-2219
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystemTest.java
+  s_602004817b57e8::t_a3d74bac22baab 138-141
+  s_602004817b57e8::t_210f030c5b81de 1216
+  s_602004817b57e8::t_6e68f6f9fcb34a 1457
+  s_602004817b57e8::t_da743c7f8ded89 883-888
+  s_602004817b57e8::t_a1b51f5916a38f 1737
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "d6c2507506d963cddef77b53b7143c76acfe4e54",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_0303dd6ef2d4c2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "054781b8-9163-40d1-9a1a-a57c3f4d9f1e",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_602004817b57e8": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_ef1e0921-55d1-4587-af7a-ef1af15e3a0b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}

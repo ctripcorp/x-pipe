@@ -1,0 +1,27 @@
+network/az/remote_cron/recover_beacon.sh
+  s_39b1808f8662aa::t_03b9d68eac3015 12
+network/az/data/ntgxh/verify_group_ips
+  s_39b1808f8662aa::t_85b6a3dbe068ec 1-2
+network/az/remote_cron/apply_iptables_beacon.sh
+  s_39b1808f8662aa::t_4def5cc0ff1dbd 6-8
+network/az/start.sh
+  s_39b1808f8662aa::t_6864d7dbcdb186 62
+network/az/remote_cron/init_ipsets_beacon.sh
+  s_39b1808f8662aa::t_d19331a0cde71a 16-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "6daa145f51481e2d035b4bc85a6bdacc39ba5051",
+  "prompts": {},
+  "sessions": {
+    "s_39b1808f8662aa": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6707fe7a-47e1-4a81-92d7-e7c8d416561f",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}

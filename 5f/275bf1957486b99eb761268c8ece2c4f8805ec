@@ -1,0 +1,90 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/controller/CheckerHealthController.java
+  s_0d1093d11d3910::t_91de30b57b22f5 82,102
+  s_0d1093d11d3910::t_dfac164df686ca 39,66,131,143
+  s_0d1093d11d3910::t_c5f5387b0c4ca0 10
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/KeeperCrossRegionFsyncSerialTest.java
+  s_0d1093d11d3910::t_249fb9fb0e90dd 84-116
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/meta/DefaultDcMetaChangeManager.java
+  s_0d1093d11d3910::t_392aaf49f05c63 269
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/interaction/CrossRegionRedisHealthStatusTest.java
+  s_0d1093d11d3910::t_aa64b1067ac454 1-165
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/checker/CrossRegionPullInPullOutTest.java
+  s_0d1093d11d3910::t_c6990f8b851659 1-2,4,6,8,15,17,20-21,29,31,33-35,49-50,126,134-135
+  s_0d1093d11d3910::t_1db76a8034477c 5,7,10-13,16,18-19,22-28,36-38,45-48,51,54-55,59-71,73-125,127-133
+  s_0d1093d11d3910::t_4048ab7bff2c47 39
+  s_0d1093d11d3910::t_98c4457151e008 40-44
+  s_0d1093d11d3910::t_c3abbe94e7aef6 3,30,32,52-53,56-58,72
+  s_0d1093d11d3910::t_cee347e91b3a41 9,14
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/interaction/DefaultAggregatorPullServiceTest.java
+  s_0d1093d11d3910::t_cae5914676ca59 62,296,303,305
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdPingActionCollector.java
+  s_0d1093d11d3910::t_f31a15ea56caff 1,10,18
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdActionFactory.java
+  s_0d1093d11d3910::t_ec469a227037da 1,8,28,31,33-34,36-37,42-47,50,56-57
+  s_0d1093d11d3910::t_82e882a085ec41 22
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/HealthCheckInstanceManager.java
+  s_0d1093d11d3910::t_14641ce43f57eb 19
+  s_0d1093d11d3910::t_942359a3a484b3 25
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdActionFactoryTest.java
+  s_0d1093d11d3910::t_43466fdfd986f6 1,6-7,17,20,22-25,31-33,41-42,46-47
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/interaction/AbstractInfoReplIdPingActionCollector.java
+  s_0d1093d11d3910::t_392efdf7ba9cbd 7,15,19,25,59,72
+redis/redis-integration-test/src/test/resources/xpipe-dr-proxy.sql
+  s_0d1093d11d3910::t_4ae9c5a519f5ee 1-19,22-35,38-43
+  s_0d1093d11d3910::t_6d50dca84576bd 20-21
+  s_0d1093d11d3910::t_207fc271320b09 36-37,44-45
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/DefaultHealthChecker.java
+  s_0d1093d11d3910::t_029eb85f52784f 147
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/DefaultHealthCheckerMockTest.java
+  s_0d1093d11d3910::t_9ab6f95f522334 176
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdActionContext.java
+  s_0d1093d11d3910::t_d4ddab3ebddf4c 1,5,7-14,16
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/impl/HealthCheckReporter.java
+  s_0d1093d11d3910::t_b7417e6bff6e37 161,167,173-174
+  s_0d1093d11d3910::t_d310cd74b311d3 166
+  s_0d1093d11d3910::t_5a4d5b5284f21f 13
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/meta/DefaultDcMetaChangeManagerTest.java
+  s_0d1093d11d3910::t_75225021278f78 443,456,466,478,493,504,515,526,539
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/DefaultHealthCheckInstanceManagerTest.java
+  s_0d1093d11d3910::t_cca00797c55aa5 56
+  s_0d1093d11d3910::t_0814115638e931 90-91
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/interaction/CrossRegionRedisHealthStatus.java
+  s_0d1093d11d3910::t_bc65dc1b6cf97c 78
+  s_0d1093d11d3910::t_1219d9fcef44f8 14,20,27,34-36,64-77,79,81-83,85-86
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/DefaultHealthCheckInstanceManager.java
+  s_0d1093d11d3910::t_5a3650080a384a 87
+  s_0d1093d11d3910::t_ad72897496386e 59,63
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/interaction/DefaultInfoReplIdPingActionCollector.java
+  s_0d1093d11d3910::t_8a54ac66878d0a 8,12-14,17,35,37,136-159
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdActionListener.java
+  s_0d1093d11d3910::t_a9c38019f596d6 1,8,12
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/interaction/DefaultAggregatorPullService.java
+  s_0d1093d11d3910::t_02eb5ae69e92b5 51,135
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/HealthCheckInstanceFactory.java
+  s_0d1093d11d3910::t_ad03a632867542 23
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/ping/PingActionFactory.java
+  s_0d1093d11d3910::t_463edfa94d6374 10,56,64,73,95
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdAction.java
+  s_0d1093d11d3910::t_a4454549f88495 1,3,7-10,17,19,21,23-26,28,33-40,43-47,49-53
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/DefaultHealthCheckInstanceFactory.java
+  s_0d1093d11d3910::t_1be6e0a02b3f5a 208
+  s_0d1093d11d3910::t_fc8a2970393fc1 14
+  s_0d1093d11d3910::t_195fc13dd1e2ff 198,204
+  s_0d1093d11d3910::t_654c7dec8268aa 186
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "5f275bf1957486b99eb761268c8ece2c4f8805ec",
+  "prompts": {},
+  "sessions": {
+    "s_0d1093d11d3910": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "88e417e4-b5b0-487f-b45f-330c85f659aa",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
