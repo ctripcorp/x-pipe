@@ -404,10 +404,10 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		return new File(store.toString().substring("ReplicationStore:".length()));
 	}
 
-	/** Manager meta path is package-private on {@link AsyncFile}; test scopes write-fail injection. */
+	/** Manager meta path is package-private on {@link AbstractStorageFile}; test scopes write-fail injection. */
 	private static boolean isManagerMetaFile(AsyncFile file) {
 		try {
-			java.lang.reflect.Field pathField = AsyncFile.class.getDeclaredField("path");
+			java.lang.reflect.Field pathField = AbstractStorageFile.class.getDeclaredField("path");
 			pathField.setAccessible(true);
 			String path = (String) pathField.get(file);
 			return path != null && path.endsWith("store_manager_meta.properties");

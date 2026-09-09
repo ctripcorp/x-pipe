@@ -1714,6 +1714,19 @@ public class DefaultIndexStoreTest {
         return field.get(target);
     }
 
+    /**
+     * Mockito spy is a distinct instance. {@link StreamCommandReader} still holds the original
+     * store from {@link DefaultIndexStore#openWriter}; rebind so write/rotate callbacks hit the spy.
+     */
+    private DefaultIndexStore spyOpenedIndexStore() throws Exception {
+        DefaultIndexStore store = spy(defaultIndexStore);
+        StreamCommandReader oldReader = (StreamCommandReader) getField(store, "streamCommandReader");
+        Field offsetField = StreamCommandReader.class.getDeclaredField("currentOffset");
+        offsetField.setAccessible(true);
+        setField(store, "streamCommandReader", new StreamCommandReader(store, offsetField.getLong(oldReader)));
+        return store;
+    }
+
     private static class GtidIndexSnapshot {
         final String uuid;
         final long startGno;
@@ -2113,7 +2126,7 @@ public class DefaultIndexStoreTest {
         String uuid = "a50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
         defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
 
-        DefaultIndexStore store = spy(defaultIndexStore);
+        DefaultIndexStore store = spyOpenedIndexStore();
         AtomicInteger remainingFails = new AtomicInteger(2);
         doAnswer(inv -> {
             if (remainingFails.getAndDecrement() > 0) {
@@ -2155,7 +2168,7 @@ public class DefaultIndexStoreTest {
         String uuid = "b50c0ac6608a3351a6ed0c6a92d93ec736b390a0";
         defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
 
-        DefaultIndexStore store = spy(defaultIndexStore);
+        DefaultIndexStore store = spyOpenedIndexStore();
         AtomicInteger remainingFails = new AtomicInteger(1);
         doAnswer(inv -> {
             if (remainingFails.getAndDecrement() > 0) {
@@ -2193,7 +2206,7 @@ public class DefaultIndexStoreTest {
         GtidSet expected = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(new GtidSet(uuid + ":1-2"), expected);
 
-        DefaultIndexStore store = spy(defaultIndexStore);
+        DefaultIndexStore store = spyOpenedIndexStore();
         AtomicInteger remainingFails = new AtomicInteger(2);
         doAnswer(inv -> {
             if (remainingFails.getAndDecrement() > 0) {
@@ -2239,7 +2252,7 @@ public class DefaultIndexStoreTest {
         GtidSet expected = defaultIndexStore.getIndexGtidSet();
         Assert.assertEquals(new GtidSet(uuid + ":1-2"), expected);
 
-        DefaultIndexStore store = spy(defaultIndexStore);
+        DefaultIndexStore store = spyOpenedIndexStore();
         AtomicInteger remainingFails = new AtomicInteger(2);
         doAnswer(inv -> {
             if (remainingFails.getAndDecrement() > 0) {
@@ -2295,7 +2308,7 @@ public class DefaultIndexStoreTest {
      */
     @Test
     public void testRebindWritersToCurrentTipIfUnbound_SkipWhenAlreadyBound() throws Exception {
-        DefaultIndexStore store = spy(defaultIndexStore);
+        DefaultIndexStore store = spyOpenedIndexStore();
         Assert.assertNotNull(getField(store, "indexWriterV2"));
         store.rebindWritersToCurrentTipIfUnbound();
         verify(store, never()).doSwitchCmdFile();
