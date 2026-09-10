@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.comparator;
 
+import com.ctrip.xpipe.redis.comparator.compare.ShardComparatorTest;
 import com.ctrip.xpipe.redis.comparator.config.ComparatorConfigTest;
 import com.ctrip.xpipe.redis.comparator.spring.ComparatorContextConfigTest;
 import com.ctrip.xpipe.redis.comparator.stream.StreamRingBufferTest;
@@ -10,7 +11,8 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
         ComparatorConfigTest.class,
         ComparatorContextConfigTest.class,
-        StreamRingBufferTest.class
+        StreamRingBufferTest.class,
+        ShardComparatorTest.class
 })
 public class AllTests {
 }
