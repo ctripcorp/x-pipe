@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManagerTest;
 import com.ctrip.xpipe.redis.keeper.handler.applier.ApplierCommandHandlerTest;
 import com.ctrip.xpipe.redis.keeper.handler.keeper.*;
 import com.ctrip.xpipe.redis.keeper.health.DiskHealthCheckerTest;
+import com.ctrip.xpipe.redis.keeper.health.job.DiskReadWriteCheckJobTest;
 import com.ctrip.xpipe.redis.keeper.impl.*;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.*;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.xsync.XsyncForKeeperAndKeeperTest;
@@ -134,6 +135,7 @@ import org.junit.runners.Suite.SuiteClasses;
         TimerSlidingWindowTest.class,
 
         DiskHealthCheckerTest.class,
+        DiskReadWriteCheckJobTest.class,
 
         RordbReplicationSupportTest.class,
 
