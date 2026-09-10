@@ -21,7 +21,7 @@ import static com.ctrip.xpipe.redis.keeper.SLAVE_STATE.*;
  * <pre>
  *   放行(releaser.accept)     → 授予租约（key=ip:port，跨重连稳定）
  *   全量完成 + grace 过期     → 释放租约
- *   断链                      → 保留租约（瞬断重连可续跑），超时后强制释放
+ *   断链                      → 直接删除租约（重连后重新排队，保证顺序）
  * </pre>
  *
  * 严格按 ip:port 字典序放行；grace 起点由 slave 自身维护（{@link RedisSlave#getGraceStart()}，
@@ -36,8 +36,8 @@ public class CrossRegionFsyncCoordinator {
 
     private long settleDeadline = -1;                                // 结算窗口 deadline（-1 表示无正在结算的批次）
 
-    /** 租约表：key=ip:port（跨重连稳定），value=断链起始时间（0 表示在线） */
-    private final Map<String, Long> lease = new HashMap<>();
+    /** 租约表：key=ip:port（跨重连稳定），断链即删除 */
+    private final Set<String> lease = new HashSet<>();
 
     /** 放行顺序（ip:port），仅用于测试验证按序全量 */
     private final List<String> admitOrder = new ArrayList<>();
@@ -45,27 +45,22 @@ public class CrossRegionFsyncCoordinator {
     private final IntSupplier  maxLoadingSlavesCntSupplier;
     private final LongSupplier graceMillisSupplier;
     private final LongSupplier settleMillisSupplier;
-    private final LongSupplier disconnectTimeoutMillisSupplier;
     private final LongSupplier clock;
 
     public CrossRegionFsyncCoordinator(IntSupplier maxLoadingSlavesCntSupplier,
                                        LongSupplier graceMillisSupplier,
-                                       LongSupplier settleMillisSupplier,
-                                       LongSupplier disconnectTimeoutMillisSupplier) {
-        this(maxLoadingSlavesCntSupplier, graceMillisSupplier, settleMillisSupplier,
-                disconnectTimeoutMillisSupplier, System::currentTimeMillis);
+                                       LongSupplier settleMillisSupplier) {
+        this(maxLoadingSlavesCntSupplier, graceMillisSupplier, settleMillisSupplier, System::currentTimeMillis);
     }
 
     @VisibleForTesting
     public CrossRegionFsyncCoordinator(IntSupplier maxLoadingSlavesCntSupplier,
                                        LongSupplier graceMillisSupplier,
                                        LongSupplier settleMillisSupplier,
-                                       LongSupplier disconnectTimeoutMillisSupplier,
                                        LongSupplier clock) {
         this.maxLoadingSlavesCntSupplier = maxLoadingSlavesCntSupplier;
         this.graceMillisSupplier = graceMillisSupplier;
         this.settleMillisSupplier = settleMillisSupplier;
-        this.disconnectTimeoutMillisSupplier = disconnectTimeoutMillisSupplier;
         this.clock = clock;
     }
 
@@ -85,14 +80,17 @@ public class CrossRegionFsyncCoordinator {
 
         String key = key(slave);
 
-        if (lease.containsKey(key)) {
-            // 已获租约：loading 中 retry 或断链重连 → 直接续跑
-            lease.put(key, 0L);
-            return true;
+        if (lease.contains(key)) {
+            // 只有「连接中、WAIT_RDB_DUMPING」的 dumper resume 才续跑（同一个全量的继续）
+            if (slave.getSlaveState() == REDIS_REPL_WAIT_RDB_DUMPING) {
+                return true;
+            }
+            // 断链重连 / ONLINE 重连（新连接 state=null）→ 删掉旧租约，重新排队
+            lease.remove(key);
         }
 
         if (slave.isColdStart()) return true;                        // 冷启动直接放行
-        return false;                                                // 新请求 → defer
+        return false;                                                // 其余一律排队
     }
 
     /**
@@ -105,15 +103,14 @@ public class CrossRegionFsyncCoordinator {
         int  maxLoadingSlavesCnt = maxLoadingSlavesCntSupplier.getAsInt();
         long graceMillis = graceMillisSupplier.getAsLong();
         long settleMillis = settleMillisSupplier.getAsLong();
-        long disconnectTimeoutMillis = disconnectTimeoutMillisSupplier.getAsLong();
 
-        cleanLeases(slaves, now, graceMillis,disconnectTimeoutMillis);
+        cleanLeases(slaves, now, graceMillis);
 
         // 1. 当前等待集合（WAIT_SEQ_FSYNC 且未断链且未获租约）
         Set<RedisSlave> waiting = slaves.stream()
                 .filter(s -> !s.isKeeper() && s.isOpen()
                         && s.getSlaveState() == REDIS_REPL_WAIT_SEQ_FSYNC
-                        && !lease.containsKey(key(s)))
+                        && !lease.contains(key(s)))
                 .collect(Collectors.toSet());
 
         if (waiting.isEmpty()) {
@@ -141,36 +138,31 @@ public class CrossRegionFsyncCoordinator {
             if (remaining <= 0) break;
             logger.info("[tick][admit]{}", s);
             releaser.accept(s);
-            lease.put(key(s), 0L);                  // 授予租约
-            admitOrder.add(key(s));                 // 记录放行顺序
+            lease.add(key(s));                     // 授予租约
             remaining--;
         }
         settleDeadline = -1;
     }
 
-    private void cleanLeases(Set<RedisSlave> slaves, long now, long graceMillis,long disconnectTimeoutMillis) {
+    private void cleanLeases(Set<RedisSlave> slaves, long now, long graceMillis) {
         Map<String, RedisSlave> live = new HashMap<>();
         for (RedisSlave s : slaves) {
             if (s.isKeeper()) continue;
             live.put(key(s), s);
         }
 
-        Iterator<Map.Entry<String, Long>> it = lease.entrySet().iterator();
+        Iterator<String> it = lease.iterator();
         while (it.hasNext()) {
-            Map.Entry<String, Long> e = it.next();
-            RedisSlave s = live.get(e.getKey());
+            String k = it.next();
+            RedisSlave s = live.get(k);
             if (s != null && s.isOpen()) {
-                // 在线：重置断链时间；若已进入增量且 grace 过期 → 释放租约
-                e.setValue(0L);
+                // 在线：若已进入增量且 grace 过期 → 释放租约
                 if (s.getSlaveState() == REDIS_REPL_ONLINE && now - s.getGraceStart() >= graceMillis) {
+                    admitOrder.add(key(s));                // 记录同步完成顺序
                     it.remove();
                 }
-            } else if (e.getValue() == 0) {
-                // 断链：记录断链时间，先保留租约
-                e.setValue(now);
-            } else if (now - e.getValue() >= disconnectTimeoutMillis) {
-                // 断链超时：强制释放，避免永久断链卡死后续 slave
-                logger.info("[cleanLeases][disconnect timeout]{}", e.getKey());
+            } else {
+                // 断链：直接删除租约，重连后重新排队（保证 ip:port 顺序）
                 it.remove();
             }
         }
@@ -189,7 +181,7 @@ public class CrossRegionFsyncCoordinator {
 
     @VisibleForTesting
     public synchronized int occupiedCount4Test(Set<RedisSlave> slaves) {
-        cleanLeases(slaves, clock.getAsLong(), graceMillisSupplier.getAsLong(),disconnectTimeoutMillisSupplier.getAsLong());
+        cleanLeases(slaves, clock.getAsLong(), graceMillisSupplier.getAsLong());
         return lease.size();
     }
 
@@ -198,7 +190,7 @@ public class CrossRegionFsyncCoordinator {
         return (int) slaves.stream()
                 .filter(s -> !s.isKeeper() && s.isOpen()
                         && s.getSlaveState() == REDIS_REPL_WAIT_SEQ_FSYNC
-                        && !lease.containsKey(key(s)))
+                        && !lease.contains(key(s)))
                 .count();
     }
 

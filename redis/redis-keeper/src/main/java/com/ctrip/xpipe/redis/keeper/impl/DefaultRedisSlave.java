@@ -25,7 +25,6 @@ import com.ctrip.xpipe.utils.*;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -409,14 +408,6 @@ public class DefaultRedisSlave implements RedisSlave {
 	public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
 		closeState.makeSureOpen();
 		getLogger().debug("[onCommand]{}, {}", this, cmd);
-
-		// 测试开关：注入错误命令，使下游增量加载失败
-		if (getRedisServer() instanceof DefaultRedisKeeperServer
-				&& ((DefaultRedisKeeperServer) getRedisServer()).isBreakDownstreamCommands()) {
-			ChannelFuture future = channel().writeAndFlush(Unpooled.wrappedBuffer("*1\r\n$999999999\r\n".getBytes()));
-			future.addListener(writeExceptionListener);
-			return future;
-		}
 
 		Object command = cmd;
 
