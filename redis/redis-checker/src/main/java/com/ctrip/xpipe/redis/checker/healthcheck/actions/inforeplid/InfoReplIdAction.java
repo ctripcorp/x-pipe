@@ -58,7 +58,8 @@ public class InfoReplIdAction extends AbstractHealthCheckAction<RedisHealthCheck
             if (!keeperInMeta) {
                 logger.info("[doTask][keeper not in meta] {} master={}:{}",
                         instance.getCheckInfo().getHostPort(), masterHost, masterPort);
-                notifyListeners(new InfoReplIdActionContext(instance, new IllegalStateException("keeper not in meta")));
+                notifyListeners(new InfoReplIdActionContext(instance,
+                        new KeeperNotInMetaException(String.format("keeper not in meta, master=%s:%d", masterHost, masterPort))));
                 return;
             }
 

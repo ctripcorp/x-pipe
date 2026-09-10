@@ -4,6 +4,8 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
+import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
@@ -12,6 +14,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdPingActionCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.KeeperNotInMetaException;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessor;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -41,6 +44,9 @@ public class DefaultInfoReplIdPingActionCollector extends AbstractInfoReplIdPing
 
     @Autowired
     private CheckerConfig config;
+
+    @Autowired
+    private AlertManager alertManager;
 
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
@@ -146,6 +152,10 @@ public class DefaultInfoReplIdPingActionCollector extends AbstractInfoReplIdPing
                 if (context.isSuccess()) {
                     Triple<String, String, String> replIds = context.getResult();
                     hs.updateReplIds(replIds.getFirst(), replIds.getMiddle(), replIds.getLast());
+                } else if (context.getCause() instanceof KeeperNotInMetaException) {
+                    // 连错 keeper：不拉出，改为告警
+                    alertManager.alert(context.instance().getCheckInfo(),
+                            ALERT_TYPE.REPL_WRONG_SLAVE, context.getCause().getMessage());
                 } else {
                     hs.updateReplIds(null, null, null);
                 }
