@@ -4,16 +4,22 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.Redis;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.store.CommandStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.SLAVE_STATE;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.CrossRegionFsyncCoordinator;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
+import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import redis.clients.jedis.Jedis;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 import static com.ctrip.xpipe.redis.core.protocal.MASTER_STATE.REDIS_REPL_CONNECTED;
@@ -28,6 +34,8 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
     private static final int CROSS_REGION_SLAVE_COUNT = 3;
 
     private static final int GRACE_SECONDS = 5;
+
+    private static final long INCREMENTAL_BREAK_MILLIS = 15_000;
 
     protected String getXpipeMetaConfigFile() {
         return "integrated-keeper-fullseq-test.xml";
@@ -204,8 +212,8 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
     }
 
     /**
-     * 验证「增量加载持续失败」：打开 breakDownstreamCommands 开关后，下游 slave 反复全量/增量失败，
-     * 但任意时刻最多 1 个 loading（不并发）；关闭开关后 slave 恢复 online 且数据一致。
+     * 验证「增量加载持续失败」：持续写 master 期间，通过反射持续往 keeper 的 cmd 文件写入错误命令，
+     * 下游 slave 反复「增量失败→全量」，但任意时刻最多 1 个 loading（不并发）；停止破坏后 slave 恢复 online 且数据一致。
      */
     @Test
     public void testIncrementalBreakFallbackToFullSync() throws Exception {
@@ -222,27 +230,38 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
 
         TestKeeperConfig config = (TestKeeperConfig) activeServer.getKeeperConfig();
         // 调小 maxTransfer：任何待传增量命令都会命中「too much to transfer」→ 回落全量
-        config.setReplicationStoreMaxCommandsToTransferBeforeCreateRdb(1);
-        // 打开开关：增量加载持续失败
-        config.setBreakDownstreamCommands(true);
+        config.setReplicationStoreMaxCommandsToTransferBeforeCreateRdb(100);
+        config.setCmdBatchLowRateBps(100);
 
-        // 模拟「增量出问题」：SLAVEOF NO ONE 使 replid 变化 + 写分歧数据，再统一指回 keeper
-        for (RedisMeta slave : crossRegionSlaves) {
-            jedisExecCommand(slave.getIp(), slave.getPort(), "SLAVEOF", "NO", "ONE");
-            jedisExecCommand(slave.getIp(), slave.getPort(), "SET", "diverge_" + slave.getPort(), "1");
+        int count = 2;
+        int i = 0;
+        while(i < count) {
+            writeWrongCommand(activeServer);
+            // 采样验证：全量串行（同一时刻最多 1 个 loading）且按 ip:port 升序
+            List<RedisMeta> fullSyncOrder = sampleFullSyncOrder(activeServer, crossRegionSlaves);
+            Assert.assertEquals("all cross-region slaves should do full sync", CROSS_REGION_SLAVE_COUNT, fullSyncOrder.size());
+            assertAscendingByIpPort(fullSyncOrder);
+
+            waitAllSlavesOnline(crossRegionSlaves);
+            i++;
         }
-        for (RedisMeta slave : crossRegionSlaves) {
-            setRedisMaster(slave, new HostPort(active.getIp(), active.getPort()));
-        }
 
-        // 开关打开期间：增量失败 + maxTransfer 阈值回落全量，slave 反复全量，但任意时刻最多 1 个 loading
-        assertNoConcurrentLoadingDuring(activeServer, 15_000);
-
-        // 关闭开关 + 恢复 maxTransfer：slave 恢复 online 且数据一致
-        config.setBreakDownstreamCommands(false);
+        // 再恢复 maxTransfer，slave 数据与 master 一致（分歧数据被 RDB 覆盖清除）
         config.setReplicationStoreMaxCommandsToTransferBeforeCreateRdb(Integer.MAX_VALUE);
-        waitAllSlavesOnline(crossRegionSlaves);
         assertRedisEquals(redisMaster, crossRegionSlaves);
+    }
+
+    /** 反射拿到 keeper 的 CommandStore，绕过索引直接往底层 cmd 文件追加一条错误命令 */
+    private void writeWrongCommand(DefaultRedisKeeperServer server) throws Exception {
+        ReplicationStore replicationStore = server.getReplicationStore();
+        if (replicationStore == null) return;
+
+        Field cmdStoreField = DefaultReplicationStore.class.getDeclaredField("cmdStore");
+        cmdStoreField.setAccessible(true);
+        CommandStore cmdStore = (CommandStore) cmdStoreField.get(replicationStore);
+        if (cmdStore == null) return;
+
+        cmdStore.onlyAppendCommand(Unpooled.wrappedBuffer("*1\r\n$999999999\r\n".getBytes()));
     }
 
     /**
@@ -333,21 +352,5 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
             }
             return false;
         });
-    }
-
-    private void assertNoConcurrentLoadingDuring(DefaultRedisKeeperServer server, long durationMillis) {
-        long deadline = System.currentTimeMillis() + durationMillis;
-        while (System.currentTimeMillis() < deadline) {
-            int loading = 0;
-            for (RedisSlave rs : server.slaves()) {
-                if (rs.isKeeper()) continue;
-                SLAVE_STATE st = rs.getSlaveState();
-                if (st == SLAVE_STATE.REDIS_REPL_WAIT_RDB_DUMPING || st == SLAVE_STATE.REDIS_REPL_SEND_BULK) {
-                    loading++;
-                }
-            }
-            Assert.assertTrue("concurrent cross-region full sync detected: " + loading, loading <= 1);
-            sleep(30);
-        }
     }
 }

@@ -18,8 +18,6 @@ public class CrossRegionFsyncCoordinatorTest {
 
     private static final long GRACE_MILLIS = 5000;
 
-    private static final long DISCONNECT_TIMEOUT_MILLI = 60_000;
-
     private CrossRegionFsyncCoordinator coordinator;
     private AtomicLong clock;
     private List<RedisSlave> released;
@@ -27,7 +25,7 @@ public class CrossRegionFsyncCoordinatorTest {
     @Before
     public void setup() {
         clock = new AtomicLong(0);
-        coordinator = new CrossRegionFsyncCoordinator(() -> 1, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, () -> DISCONNECT_TIMEOUT_MILLI, clock::get);
+        coordinator = new CrossRegionFsyncCoordinator(() -> 1, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, clock::get);
         released = new ArrayList<>();
     }
 
@@ -98,6 +96,46 @@ public class CrossRegionFsyncCoordinatorTest {
     }
 
     @Test
+    public void testReconnectAfterDisconnectRequeues() {
+        RedisSlave a = slave("10.0.0.2", 6379);
+        release(a);                                          // 放行 a（授予租约，进入 WAIT_RDB_DUMPING）
+        when(a.getSlaveState()).thenReturn(null);            // 断链重连：新连接 state=null
+        assertFalse(coordinator.onFullSyncRequest(a));       // 重连 → 删旧租约 + 重新排队
+        assertEquals(0, coordinator.occupiedCount4Test(slaveSet(a)));
+    }
+
+    @Test
+    public void testReconnectAfterOnlineRequeues() {
+        RedisSlave a = slave("10.0.0.2", 6379);
+        release(a);                                          // 放行 a（授予租约）
+        online(a);                                           // 全量完成，ONLINE（grace 内租约还在）
+        when(a.getSlaveState()).thenReturn(null);            // 断链重连：新连接 state=null
+        assertFalse(coordinator.onFullSyncRequest(a));       // ONLINE 重连 → 重新排队，不续跑
+        assertEquals(0, coordinator.occupiedCount4Test(slaveSet(a)));
+    }
+
+    @Test
+    public void testReconnectWhileAdmittedNotStartedRequeues() {
+        RedisSlave a = slave("10.0.0.2", 6379);
+        release(a);                                              // 放行 a（授予租约）
+        when(a.getSlaveState()).thenReturn(REDIS_REPL_WAIT_SEQ_FSYNC);  // 已放行但 doFullSync 还没跑
+        assertFalse(coordinator.onFullSyncRequest(a));           // 非 loading → 删租约 + 重新排队
+        assertEquals(0, coordinator.occupiedCount4Test(slaveSet(a)));
+    }
+
+    @Test
+    public void testReconnectReleasesSlotForWaiting() {
+        RedisSlave a = slave("10.0.0.2", 6379);
+        RedisSlave b = slave("10.0.0.3", 6379);
+        release(a);                                          // 放行 a（占名额，WAIT_RDB_DUMPING）
+        assertFalse(coordinator.onFullSyncRequest(b));       // b 排队
+
+        when(a.getSlaveState()).thenReturn(null);            // a 断链重连
+        assertFalse(coordinator.onFullSyncRequest(a));       // a 重新排队，删旧租约
+        assertEquals(0, coordinator.occupiedCount4Test(slaveSet(a, b)));  // 名额释放
+    }
+
+    @Test
     public void testReentrantWhileWaitingReturnsFalse() {
         RedisSlave a = slave("10.0.0.2", 6379);
         assertFalse(coordinator.onFullSyncRequest(a));       // WAITING
@@ -115,7 +153,7 @@ public class CrossRegionFsyncCoordinatorTest {
     @Test
     public void testDynamicMaxLoadingSlavesCnt() {
         AtomicInteger max = new AtomicInteger(-1);
-        CrossRegionFsyncCoordinator c = new CrossRegionFsyncCoordinator(max::get, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, () -> DISCONNECT_TIMEOUT_MILLI, clock::get);
+        CrossRegionFsyncCoordinator c = new CrossRegionFsyncCoordinator(max::get, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, clock::get);
         RedisSlave a = slave("10.0.0.2", 6379);
 
         assertTrue(c.onFullSyncRequest(a));   // max=-1（禁用）→ 直接放行
@@ -139,7 +177,7 @@ public class CrossRegionFsyncCoordinatorTest {
 
     @Test
     public void testMultipleSlotsAdmitConcurrently() {
-        CrossRegionFsyncCoordinator multi = new CrossRegionFsyncCoordinator(() -> 2, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, () -> DISCONNECT_TIMEOUT_MILLI, clock::get);
+        CrossRegionFsyncCoordinator multi = new CrossRegionFsyncCoordinator(() -> 2, () -> GRACE_MILLIS, () -> SETTLE_MILLIS, clock::get);
         RedisSlave a = slave("10.0.0.2", 6379);
         RedisSlave b = slave("10.0.0.3", 6379);
         RedisSlave c = slave("10.0.0.4", 6379);
@@ -171,16 +209,15 @@ public class CrossRegionFsyncCoordinatorTest {
     }
 
     @Test
-    public void testDisconnectKeepsLeaseUntilTimeout() {
+    public void testDisconnectDeletesLease() {
         RedisSlave a = slave("10.0.0.2", 6379);
         release(a);                                          // 放行 a（占用名额）
         assertEquals(1, coordinator.occupiedCount4Test(slaveSet(a)));
 
-        disconnect(a);                                       // 断链：租约保留，不释放
-        assertEquals(1, coordinator.occupiedCount4Test(slaveSet(a)));
+        disconnect(a);                                       // 断链：直接删除租约
+        assertEquals(0, coordinator.occupiedCount4Test(slaveSet(a)));
 
-        clock.set(SETTLE_MILLIS + DISCONNECT_TIMEOUT_MILLI); // 断链超时
-        assertEquals(0, coordinator.occupiedCount4Test(slaveSet(a)));   // 强制释放
+        assertFalse(coordinator.onFullSyncRequest(a));       // 重连后重新排队，不再续跑
     }
 
     @Test
