@@ -1,0 +1,52 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/compare/store/ReplCompareReadonlyMetaTest.java
+  s_a26a181e30370d::t_d2e4ff2be65db3 119-120
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/compare/store/ReplCompareMetaReader.java
+  s_a26a181e30370d::t_e976f8b8103b66 4
+  s_a26a181e30370d::t_af10ab84c653ba 68-69
+  s_a26a181e30370d::t_102e7c1480cc2b 78-93,99-100
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/compare/store/ReplCompareReadonlyCmdTest.java
+  s_6d47a470815501::t_33dff6df297a7c 88-89,97-98
+  s_6d47a470815501::t_a5a894099b88ea 11
+  s_a26a181e30370d::t_a4ffce0e07bbbf 1-10,12-22,26-87,90-96,99-196,200-249,251-278,288-298
+  s_6d47a470815501::t_bfc2b9f6996634 23-25
+  s_a26a181e30370d::t_b4b5c4a9f5054f 197-199
+  s_6d47a470815501::t_0d675d8f5c8c18 250
+  s_6d47a470815501::t_5759a3ebdd4823 279-287
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_a26a181e30370d::t_87a45f8142b885 4
+  s_a26a181e30370d::t_e2b49054626e92 84
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/compare/store/ReplCompareCmdStore.java
+  s_6d47a470815501::t_a1bd81113459df 31-32
+  s_6d47a470815501::t_d765a0fd30917e 49
+  s_a26a181e30370d::t_462b45a18f56e8 1-30,33-48,50-94,97-124,126-159
+  s_6d47a470815501::t_bb8f498ccfd507 95-96
+  s_6d47a470815501::t_ee68247d9fbd3f 125
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/compare/store/ReplCompareStoreManager.java
+  s_a26a181e30370d::t_39bbbc3fe131cd 45-56
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/compare/store/ReplCompareStore.java
+  s_a26a181e30370d::t_89cb950c7406e7 1-161
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "6391663bdcc5116232481833f3be795089d0ac50",
+  "prompts": {},
+  "sessions": {
+    "s_6d47a470815501": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0983dc74-97df-4cc9-b838-ed2a0ac2738d",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_a26a181e30370d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "78c4342b-e6ae-4217-b684-957a8a329372",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

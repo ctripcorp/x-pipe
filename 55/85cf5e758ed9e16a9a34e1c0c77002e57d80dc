@@ -1,0 +1,62 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_fb820d44bd11bc::t_126378db041e95 4
+  s_fb820d44bd11bc::t_2d2cf688c6b357 86
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/protocal/cmd/ReplStreamCapturePsync.java
+  s_fb820d44bd11bc::t_7d28d7deddd2a5 1-100
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/protocal/cmd/ReplStreamCapturePsyncTest.java
+  s_fb820d44bd11bc::t_54e367b88cc6df 1-2,4-70,72-79,83,86-87
+  s_fb820d44bd11bc::t_32d92689e5a8e0 71
+  s_fb820d44bd11bc::t_c0bd5cbee0879e 3
+  s_fb820d44bd11bc::t_70d256152c4ce2 80-82,84-85
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/compare/ReplStreamBuffer.java
+  s_9a96dc832ca078::t_b7d4b706168c3a 3,17-18
+  s_fb820d44bd11bc::t_2d8f9c3f8d218d 1-2,4-10,12-16,19,21-33,35,37-40,42-43,47-51,56-68,71-77,79-82,85-88,90-106,110-111,114-118,122-124,126-138,141-143,145-147,149-184,188-190,194-197,199-208,210-212,223,225-227
+  s_9a96dc832ca078::t_4796e89c5cfa5e 209,213-222,224
+  s_9a96dc832ca078::t_a107c102cf0354 107-109
+  s_fb820d44bd11bc::t_e818270f521705 11
+  s_9a96dc832ca078::t_51564d133be374 41,44,46
+  s_fb820d44bd11bc::t_82ff6879a0d421 20
+  s_fb820d44bd11bc::t_ce0b446771ee0b 139-140,144,148
+  s_9a96dc832ca078::t_7b52bed7ddbebd 69-70,83-84,89
+  s_fb820d44bd11bc::t_de38d2a11a7a36 187
+  s_fb820d44bd11bc::t_a8403b640bc5e7 185-186,191-193,198
+  s_fb820d44bd11bc::t_0f0a98d53274c7 34,36
+  s_fb820d44bd11bc::t_6a5c0cc2fce0b1 119
+  s_9a96dc832ca078::t_9faa56516e1679 112-113,120-121,125
+  s_9a96dc832ca078::t_c8106485c6f491 52-55,78
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/compare/ReplStreamBufferTest.java
+  s_fb820d44bd11bc::t_9369f935b2fe0f 148
+  s_9a96dc832ca078::t_d4e9b5ef355266 60-64
+  s_9a96dc832ca078::t_e35fc011d26857 137-139
+  s_9a96dc832ca078::t_13b818fcc621dd 18,43,50,52-54
+  s_9a96dc832ca078::t_9a16bbc8150e9b 55
+  s_fb820d44bd11bc::t_d94876963e0c3f 1-17,19-20,22-42,44-49,51,56-59,65-124,126-129,131-132,134-136,140-147,149-150,153,156,158,161-172
+  s_9a96dc832ca078::t_0a9b2cd4e661b0 125,130,133,151-152,154-155,157,159-160
+  s_9a96dc832ca078::t_8818eea6204ad0 21
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/AllTests.java
+  s_fb820d44bd11bc::t_aa3c827547bcab 75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "5585cf5e758ed9e16a9a34e1c0c77002e57d80dc",
+  "prompts": {},
+  "sessions": {
+    "s_9a96dc832ca078": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e5570709-23dc-411e-8cc8-9eb83bf44c68",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_fb820d44bd11bc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "fa2e0a6d-1543-4ea1-bbc2-1d420f2aad1b",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

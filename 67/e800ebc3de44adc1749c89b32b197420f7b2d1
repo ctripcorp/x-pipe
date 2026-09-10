@@ -1,0 +1,21 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/GapAllowedReplicationStoreTest.java
+  s_2d50491fc017b7::t_8032931942118e 1089-1232
+  s_2d50491fc017b7::t_1721e8766b7eac 37,44-46
+  s_2d50491fc017b7::t_a33031a4a22911 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "67e800ebc3de44adc1749c89b32b197420f7b2d1",
+  "prompts": {},
+  "sessions": {
+    "s_2d50491fc017b7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "42819016-353e-4b62-9cf1-bb45f98b01a5",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

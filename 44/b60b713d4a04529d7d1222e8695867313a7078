@@ -1,0 +1,35 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/compare/ReplCompareSlaveHandler.java
+  s_63c3387e1ddb40::t_bb69deeae87132 1-48
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/compare/ReplCompareMasterReplicationTest.java
+  s_63c3387e1ddb40::t_e48edfea157d29 1-81,84-114,116-117,120-149,153-155,157-162,164-208
+  s_63c3387e1ddb40::t_364af45d75397b 82-83,115,118-119,150-152,156,163
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/compare/ReplCompareMasterReplicationListener.java
+  s_63c3387e1ddb40::t_c733e475ee3e48 1-84
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/compare/ReplCompareUpstreamListener.java
+  s_63c3387e1ddb40::t_a9a903a608df11 1-30
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_63c3387e1ddb40::t_59d7d0be447c94 88
+  s_63c3387e1ddb40::t_2cd6153a24cf5f 4
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/compare/ReplCompareMasterReplication.java
+  s_63c3387e1ddb40::t_43a9594814c926 16
+  s_63c3387e1ddb40::t_da8d9b75af373c 1-15,17-34,37-41,43-59,61,72-111,113-312
+  s_63c3387e1ddb40::t_63e390f339b458 35-36,42
+  s_63c3387e1ddb40::t_9dff3213289b82 112
+  s_63c3387e1ddb40::t_99f41d440f2972 60,62-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "44b60b713d4a04529d7d1222e8695867313a7078",
+  "prompts": {},
+  "sessions": {
+    "s_63c3387e1ddb40": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c4d3b8da-956e-46ce-ae25-72d731b78502",
+        "model": "claude-opus-5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

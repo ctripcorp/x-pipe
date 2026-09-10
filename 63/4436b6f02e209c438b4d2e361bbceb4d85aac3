@@ -1,0 +1,31 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/health/job/DiskReadWriteCheckJob.java
+  s_b0751a0e14a2f0::t_8a1829260ab2f4 17,19,21-25,30-31
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/health/job/DiskReadWriteCheckJobTest.java
+  s_b0751a0e14a2f0::t_176f4d3233596d 1-92
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/health/DiskHealthCheckerTest.java
+  s_b0751a0e14a2f0::t_78a65f6b1f58ab 100-112
+  s_b0751a0e14a2f0::t_303e31bcb10cf9 3,17
+  s_b0751a0e14a2f0::t_babe957463eeeb 38
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/health/DiskHealthChecker.java
+  s_b0751a0e14a2f0::t_5c228a2123093e 81-82
+  s_b0751a0e14a2f0::t_7d8159e4f06b9d 3
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_b0751a0e14a2f0::t_d787dac8cf59aa 11
+  s_b0751a0e14a2f0::t_b8b9edcb442534 138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "634436b6f02e209c438b4d2e361bbceb4d85aac3",
+  "prompts": {},
+  "sessions": {
+    "s_b0751a0e14a2f0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c4751a82-d170-4631-a582-25e955d0cb4a",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

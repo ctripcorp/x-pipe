@@ -1,0 +1,87 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/RedisKeeperServer.java
+  s_3c97291df435ed::t_b4a808b2422133 67-74
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/prepare/PrepareStoreWatcherTest.java
+  s_d4de1c562eb568::t_8ef861b1f5d260 185-219
+  s_d4de1c562eb568::t_c4574236ea14d6 167,173
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_3c97291df435ed::t_fb6a11af243346 66
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/protocal/Psync.java
+  s_3c97291df435ed::t_10280b9fb197ec 18
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/RedisKeeperServerStatePrepareTest.java
+  s_3c97291df435ed::t_ee3fc82763bbc6 1-45
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerPrepareWatchTest.java
+  s_3c97291df435ed::t_07238c3236a5a1 26
+  s_3c97291df435ed::t_310439987967d8 11
+  s_3c97291df435ed::t_e1c2e9e696dbd1 127-139
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/RedisKeeperServerStatePrepare.java
+  s_3c97291df435ed::t_e15a3c15a004e1 54-56
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_3c97291df435ed::t_251b6be7e1841f 1038-1043
+  s_3c97291df435ed::t_0e7428a5654fe3 724-727
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/handler/keeper/GapAllowSyncHandlerTest.java
+  s_f4ce297966e0c3::t_e45ee0cd26fce4 476-477,479-481,483-485,489-491
+  s_d4de1c562eb568::t_f3a06b9fe31f1f 451-475,486-487
+  s_3c97291df435ed::t_59a8351ac9c9f9 412-450,493-495,512-517,521-571
+  s_f4ce297966e0c3::t_9a795aa3ae4883 60-62
+  s_f4ce297966e0c3::t_2c99a86522716e 478,482,488
+  s_3c97291df435ed::t_03a368bcc3808f 5-6,14
+  s_3c97291df435ed::t_608fa0f55ac498 74-76
+  s_f4ce297966e0c3::t_abdb328b001e2e 492,496-511
+  s_3c97291df435ed::t_9b5838b7169035 518-520
+  s_f4ce297966e0c3::t_1ec15d6866e5fc 63-64
+  s_f4ce297966e0c3::t_006435c953418c 16
+  s_f4ce297966e0c3::t_c6e2adea304f94 12
+  s_f4ce297966e0c3::t_a2017caf92b86b 86
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java
+  s_f4ce297966e0c3::t_311fbe1f9575f8 152,155,157-170,173-176
+  s_d4de1c562eb568::t_f301e1158c1805 153-154,156
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/prepare/PrepareStoreWatcher.java
+  s_d4de1c562eb568::t_09399f9b57a336 140-146
+  s_d4de1c562eb568::t_0088bc26084dc6 28-29
+  s_d4de1c562eb568::t_eb8c45f780f9d7 134-135
+  s_d4de1c562eb568::t_2eaa13dc301976 4,10
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/meta/DefaultMetaStoreReadOnlyTest.java
+  s_d4de1c562eb568::t_13d056f2adfadd 93,99-120,126-153,156-158,165,181
+  s_f4ce297966e0c3::t_404de699c5e972 94-98,122-125,154-155,159-164,166-180,182-189
+  s_f4ce297966e0c3::t_6d830275ad5e29 121
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/handler/keeper/GapAllowSyncHandler.java
+  s_f4ce297966e0c3::t_91c0053def6e43 115-116
+  s_3c97291df435ed::t_5e3dd4bf02d0d2 4,15,25
+  s_3c97291df435ed::t_b18eab576ef8c9 350-355
+  s_3c97291df435ed::t_d44a4bf9b957b4 34-35
+  s_3c97291df435ed::t_6cc76a295f32ef 134-137
+  s_3c97291df435ed::t_16529c2540ceab 394-407
+  s_3c97291df435ed::t_5b9d702f5ed18b 377
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.43-trip",
+  "base_commit_sha": "1bec3ecd252794144d729d1e8aab73ddc6a82969",
+  "prompts": {},
+  "sessions": {
+    "s_3c97291df435ed": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "331da6d6-eeef-41cc-acec-e881e1a83507",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_d4de1c562eb568": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7abf982d-8c9b-4ab4-99bd-64628ecfd9a2",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_f4ce297966e0c3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d4bcfc07-c5ea-425b-8cef-8cb1e5a443bf",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+network/az/start.sh
+  s_873086435b270c::t_eff93262293bf3 2,5-9,19-20,34,37-59,81-96,98-101,110
+  s_873086435b270c::t_7ba1e54f4df152 201-203
+network/az/README.md
+  s_873086435b270c::t_8a6855e6e031a3 48-51,55,60-64,71-72,81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "92a6dd1c1dd7cdffd8fb464b763d195e4c054653",
+  "prompts": {},
+  "sessions": {
+    "s_873086435b270c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3410482a-d1d9-4273-b5c9-18fcbe879755",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}
