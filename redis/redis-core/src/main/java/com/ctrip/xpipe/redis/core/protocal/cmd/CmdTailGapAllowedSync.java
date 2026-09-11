@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
+import com.ctrip.xpipe.redis.core.exception.RdbRejectedException;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import io.netty.buffer.ByteBuf;
 
@@ -20,7 +20,12 @@ import java.util.concurrent.ScheduledExecutorService;
  * this class does no GTID processing.
  * <p>
  * RDB is rejected in-class: {@link #createRdbReader()}, {@link #failReadRdb(Throwable)},
- * {@link #doOnFullSync()}, {@link #doOnXFullSync()} all throw and disconnect.
+ * {@link #doOnFullSync()}, {@link #doOnXFullSync()} all throw {@link RdbRejectedException}
+ * and mark this command closed. Comparator must detect this by type, not by exception
+ * message. Closing the TCP channel is the owner's job (a {@code FixedObjectPool}
+ * wrapping the replica connection, same pattern as
+ * {@code AbstractRedisMasterReplication}). This class does not override
+ * {@code afterCommandExecute} and does not send {@code REPLCONF}.
  * <p>
  * Parent {@link AbstractGapAllowedSync#doReset()} throws {@link UnsupportedOperationException}.
  * Reconnect must {@code new} another instance; do not reset / reuse.
@@ -75,19 +80,15 @@ public class CmdTailGapAllowedSync extends AbstractGapAllowedSync {
         throw rejectRdb("doOnXFullSync");
     }
 
-    private RedisRuntimeException rejectRdb(String method) {
+    private RdbRejectedException rejectRdb(String method) {
         return rejectRdb(method, null);
     }
 
-    private RedisRuntimeException rejectRdb(String method, Throwable cause) {
+    private RdbRejectedException rejectRdb(String method, Throwable cause) {
         close();
         if (cause == null) {
-            return new RedisRuntimeException(rejectMessage(method));
+            return new RdbRejectedException(method);
         }
-        return new RedisRuntimeException(rejectMessage(method), cause);
-    }
-
-    private static String rejectMessage(String method) {
-        return CmdTailGapAllowedSync.class.getSimpleName() + "." + method + ": RDB not allowed";
+        return new RdbRejectedException(method, cause);
     }
 }

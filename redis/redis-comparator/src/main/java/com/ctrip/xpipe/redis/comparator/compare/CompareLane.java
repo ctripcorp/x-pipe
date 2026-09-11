@@ -40,8 +40,9 @@ public interface CompareLane {
     void disconnect();
 
     /**
-     * 新的 {@code ? -4}。CONTINUE 时由写侧换新 RingBuffer
-     *（{@code streamStart} 即 continue offset；{@code streamStart} 不可变，不能原地改起点）。
+     * 停写当前 session（与是否先 {@link #disconnect()} 无关），再起新的 {@code ? -4}。
+     * CONTINUE 时由写侧换新 RingBuffer（{@code streamStart} 即 continue offset；
+     * {@code streamStart} 不可变，不能原地改起点）。
      */
     void reconnect();
 }

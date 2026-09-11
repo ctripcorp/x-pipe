@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 
 import com.ctrip.xpipe.netty.commands.ByteBufReceiver;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
+import com.ctrip.xpipe.redis.core.exception.RdbRejectedException;
 import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.Psync;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
@@ -52,6 +53,7 @@ public class CmdTailGapAllowedSyncTest extends AbstractRedisTest {
             sync.createRdbReader();
             Assert.fail("expected RedisRuntimeException");
         } catch (RedisRuntimeException e) {
+            Assert.assertTrue(e instanceof RdbRejectedException);
             Assert.assertTrue(e.getMessage().contains("createRdbReader"));
         }
     }
@@ -62,6 +64,7 @@ public class CmdTailGapAllowedSyncTest extends AbstractRedisTest {
             sync.doOnFullSync();
             Assert.fail("expected RedisRuntimeException");
         } catch (RedisRuntimeException e) {
+            Assert.assertTrue(e instanceof RdbRejectedException);
             Assert.assertTrue(e.getMessage().contains("doOnFullSync"));
         }
     }
@@ -72,6 +75,7 @@ public class CmdTailGapAllowedSyncTest extends AbstractRedisTest {
             sync.doOnXFullSync();
             Assert.fail("expected RedisRuntimeException");
         } catch (RedisRuntimeException e) {
+            Assert.assertTrue(e instanceof RdbRejectedException);
             Assert.assertTrue(e.getMessage().contains("doOnXFullSync"));
         }
     }
@@ -82,6 +86,7 @@ public class CmdTailGapAllowedSyncTest extends AbstractRedisTest {
             sync.failReadRdb(new IOException("rdb"));
             Assert.fail("expected RedisRuntimeException");
         } catch (RedisRuntimeException e) {
+            Assert.assertTrue(e instanceof RdbRejectedException);
             Assert.assertTrue(e.getMessage().contains("failReadRdb"));
             Assert.assertTrue(e.getCause() instanceof IOException);
         }
@@ -157,6 +162,9 @@ public class CmdTailGapAllowedSyncTest extends AbstractRedisTest {
         Assert.assertFalse(text.contains("ReplicationStore"));
         Assert.assertFalse(text.contains("ReplicationStoreManager"));
         Assert.assertFalse(text.contains("RdbStore"));
+        Assert.assertFalse(text.contains("protected void afterCommandExecute"));
+        Assert.assertFalse(text.contains("returnObject"));
+        Assert.assertFalse(text.contains("static final class RdbRejectedException"));
     }
 
     private CmdTailGapAllowedSync newSync() {

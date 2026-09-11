@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.redis.comparator.spring;
 
-import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 
 /**
  * 运行时基座：继承 {@link AbstractSpringConfigContext} 得到 {@code SCHEDULED_EXECUTOR} /
- * {@code GLOBAL_EXECUTOR}；额外注册 Netty 客户端池。不注册比对线程池（每分片专属线程，D33 ②）。
+ * {@code GLOBAL_EXECUTOR}。不注册共享 Netty keyed pool —— 每路流自管一根复制连接
+ * （{@code FixedObjectPool}，D32 / §4.8.1）。不注册比对线程池（每分片专属线程，D33 ②）。
  */
 @Configuration
 @ComponentScan(
@@ -21,11 +20,4 @@ import org.springframework.context.annotation.FilterType;
         )
 )
 public class ComparatorContextConfig extends AbstractSpringConfigContext {
-
-    public static final String CLIENT_POOL = "clientPool";
-
-    @Bean(name = CLIENT_POOL)
-    public XpipeNettyClientKeyedObjectPool getClientPool() {
-        return new XpipeNettyClientKeyedObjectPool();
-    }
 }

@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.comparator.spring;
 
 import com.ctrip.xpipe.AbstractTest;
-import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.comparator.config.ComparatorConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.junit.Assert;
@@ -35,7 +34,6 @@ public class ComparatorContextConfigTest extends AbstractTest {
         Assert.assertNotNull(config);
         Assert.assertEquals(30000, config.getMetaRefreshIntervalMilli());
 
-        Assert.assertNotNull(getBean(XpipeNettyClientKeyedObjectPool.class));
         Assert.assertNotNull(AbstractSpringConfigContext.getApplicationContext()
                 .getBean(AbstractSpringConfigContext.SCHEDULED_EXECUTOR, ScheduledExecutorService.class));
         Assert.assertNotNull(AbstractSpringConfigContext.getApplicationContext()
@@ -45,6 +43,8 @@ public class ComparatorContextConfigTest extends AbstractTest {
                 .getBeansOfType(Production.class).size());
         Assert.assertEquals(0, AbstractSpringConfigContext.getApplicationContext()
                 .getBeansOfType(org.springframework.web.client.RestTemplate.class).size());
+        Assert.assertEquals(0, AbstractSpringConfigContext.getApplicationContext()
+                .getBeansOfType(com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool.class).size());
     }
 
     @Test
