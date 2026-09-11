@@ -5,6 +5,9 @@ import com.ctrip.xpipe.redis.comparator.balance.CompareTaskAssigner;
 import com.ctrip.xpipe.redis.comparator.balance.ServerGroupProvider;
 import com.ctrip.xpipe.redis.comparator.config.ComparatorConfig;
 import com.ctrip.xpipe.redis.comparator.meta.ComparatorMetaService;
+import com.ctrip.xpipe.redis.comparator.meta.KeeperStreamFactory;
+import com.ctrip.xpipe.redis.comparator.meta.PrepareWatchCache;
+import com.ctrip.xpipe.redis.comparator.meta.ShardCompareTaskManager;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.junit.Assert;
 import org.junit.Test;
@@ -54,6 +57,12 @@ public class ComparatorContextConfigTest extends AbstractTest {
                 .getBeansOfType(CompareTaskAssigner.class).size());
         Assert.assertEquals(0, AbstractSpringConfigContext.getApplicationContext()
                 .getBeansOfType(ComparatorMetaService.class).size());
+        Assert.assertEquals(0, AbstractSpringConfigContext.getApplicationContext()
+                .getBeansOfType(ShardCompareTaskManager.class).size());
+        Assert.assertEquals(0, AbstractSpringConfigContext.getApplicationContext()
+                .getBeansOfType(PrepareWatchCache.class).size());
+        Assert.assertEquals(0, AbstractSpringConfigContext.getApplicationContext()
+                .getBeansOfType(KeeperStreamFactory.class).size());
     }
 
     @Test

@@ -4,6 +4,8 @@ import com.ctrip.xpipe.redis.comparator.balance.CmsServerGroupProviderTest;
 import com.ctrip.xpipe.redis.comparator.balance.CompareTaskAssignerTest;
 import com.ctrip.xpipe.redis.comparator.compare.ShardComparatorTest;
 import com.ctrip.xpipe.redis.comparator.meta.ComparatorMetaServiceTest;
+import com.ctrip.xpipe.redis.comparator.meta.KeeperStreamFactoryTest;
+import com.ctrip.xpipe.redis.comparator.meta.ShardCompareTaskManagerTest;
 import com.ctrip.xpipe.redis.comparator.config.ComparatorConfigTest;
 import com.ctrip.xpipe.redis.comparator.spring.ComparatorContextConfigTest;
 import com.ctrip.xpipe.redis.comparator.stream.KeeperReplStreamTest;
@@ -18,6 +20,8 @@ import org.junit.runners.Suite;
         CompareTaskAssignerTest.class,
         CmsServerGroupProviderTest.class,
         ComparatorMetaServiceTest.class,
+        ShardCompareTaskManagerTest.class,
+        KeeperStreamFactoryTest.class,
         StreamRingBufferTest.class,
         ShardComparatorTest.class,
         KeeperReplStreamTest.class

@@ -6,8 +6,15 @@ import com.ctrip.xpipe.redis.comparator.balance.CompareTaskAssigner;
 import com.ctrip.xpipe.redis.comparator.balance.ServerGroupProvider;
 import com.ctrip.xpipe.redis.comparator.config.ComparatorConfig;
 import com.ctrip.xpipe.redis.comparator.meta.ComparatorMetaService;
+import com.ctrip.xpipe.redis.comparator.meta.KeeperStreamFactory;
+import com.ctrip.xpipe.redis.comparator.meta.PrepareWatchCache;
+import com.ctrip.xpipe.redis.comparator.meta.ShardCompareTaskManager;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
+import com.ctrip.xpipe.utils.OsUtils;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,12 +24,16 @@ import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * 生产 profile 下注册外部依赖 Bean。测试 profile 不加载本类，单测注入
- * {@link ServerGroupProvider} 假实现、自行构造 {@link ComparatorMetaService}，不访问网络（D23）。
+ * {@link ServerGroupProvider} / {@link PrepareWatchCache} / {@link KeeperStreamFactory}
+ * 假实现、自行构造 {@link ComparatorMetaService}，不访问网络（D23）。
  * 复制连接由 {@code KeeperReplStream} 自管，不在此注册 keyed client pool。
+ * 应用持有 {@link EventLoopGroup}，同一分片 N 路同一条 EventLoop（D32 ⑤）。
  */
 @Configuration
 @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 public class Production extends AbstractProfile {
+
+    public static final String COMPARATOR_EVENT_LOOP_GROUP = "comparatorEventLoopGroup";
 
     @Bean
     public ServerGroupProvider serverGroupProvider(ComparatorConfig config) {
@@ -40,5 +51,39 @@ public class Production extends AbstractProfile {
                                                    @Qualifier(AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
                                                    ScheduledExecutorService scheduled) {
         return new CompareTaskAssigner(serverGroupProvider, config, FoundationService.DEFAULT, scheduled);
+    }
+
+    @Bean(name = COMPARATOR_EVENT_LOOP_GROUP, destroyMethod = "shutdownGracefully")
+    public EventLoopGroup comparatorEventLoopGroup() {
+        int n = Math.min(Math.max(OsUtils.getCpuCount(), 1), 8);
+        return new NioEventLoopGroup(n, XpipeThreadFactory.create("comparator-io", true));
+    }
+
+    @Bean
+    public PrepareWatchCache prepareWatchCache(@Qualifier(COMPARATOR_EVENT_LOOP_GROUP) EventLoopGroup eventLoopGroup,
+                                               @Qualifier(AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
+                                               ScheduledExecutorService scheduled) {
+        return new PrepareWatchCache.Default(eventLoopGroup, scheduled);
+    }
+
+    @Bean
+    public KeeperStreamFactory keeperStreamFactory(@Qualifier(COMPARATOR_EVENT_LOOP_GROUP) EventLoopGroup eventLoopGroup,
+                                                   @Qualifier(AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
+                                                   ScheduledExecutorService scheduled,
+                                                   ComparatorConfig config) {
+        return new KeeperStreamFactory.Default(eventLoopGroup, scheduled, config,
+                KeeperStreamFactory.DEFAULT_LISTENING_PORT);
+    }
+
+    @Bean(initMethod = "start", destroyMethod = "stop")
+    public ShardCompareTaskManager shardCompareTaskManager(ComparatorMetaService comparatorMetaService,
+                                                           CompareTaskAssigner compareTaskAssigner,
+                                                           PrepareWatchCache prepareWatchCache,
+                                                           KeeperStreamFactory keeperStreamFactory,
+                                                           ComparatorConfig config,
+                                                           @Qualifier(AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
+                                                           ScheduledExecutorService scheduled) {
+        return new ShardCompareTaskManager(comparatorMetaService, compareTaskAssigner, prepareWatchCache,
+                keeperStreamFactory, config, scheduled);
     }
 }
