@@ -179,10 +179,9 @@ public class StreamRingBufferTest extends AbstractTest {
         try {
             direct.writeBytes(new byte[]{1, 2, 3, 4});
             int ref = direct.refCnt();
-            int readerIndex = direct.readerIndex();
             buffer.write(direct);
             Assert.assertEquals(ref, direct.refCnt());
-            Assert.assertEquals(readerIndex, direct.readerIndex());
+            Assert.assertEquals(0, direct.readableBytes());
             assertPeekHit(buffer, 0L, new byte[]{1, 2, 3, 4});
         } finally {
             direct.release();
@@ -194,10 +193,22 @@ public class StreamRingBufferTest extends AbstractTest {
             int ref = composite.refCnt();
             buffer.write(composite);
             Assert.assertEquals(ref, composite.refCnt());
+            Assert.assertEquals(0, composite.readableBytes());
             assertPeekHit(buffer, 4L, new byte[]{5, 6});
         } finally {
             composite.release();
         }
+    }
+
+    @Test
+    public void testWriteConsumesReadableBytesSoRetryDoesNotDuplicate() {
+        StreamRingBuffer buffer = new StreamRingBuffer(16, 100L);
+        ByteBuf buf = Unpooled.wrappedBuffer(new byte[]{1, 2, 3});
+        buffer.write(buf);
+        buffer.write(buf);
+        Assert.assertEquals(0, buf.readableBytes());
+        Assert.assertEquals(103L, buffer.getReceivedEnd());
+        assertPeekHit(buffer, 100L, new byte[]{1, 2, 3});
     }
 
     private static void write(StreamRingBuffer buffer, byte[] bytes) {

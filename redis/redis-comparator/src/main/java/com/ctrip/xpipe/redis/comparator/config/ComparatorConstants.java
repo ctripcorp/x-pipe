@@ -9,6 +9,8 @@ public final class ComparatorConstants {
 
     public static final int STREAM_RECONNECT_MAX_MILLI = 30000;
 
+    public static final int STREAM_CONNECT_TIMEOUT_MILLI = 5000;
+
     public static final int REPLCONF_ACK_INTERVAL_MILLI = 1000;
 
     public static final int COMPARE_WAIT_MILLI = 100;

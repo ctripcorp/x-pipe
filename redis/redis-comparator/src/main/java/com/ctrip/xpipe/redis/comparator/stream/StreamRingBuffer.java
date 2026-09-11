@@ -53,6 +53,8 @@ public final class StreamRingBuffer {
 
     /**
      * 拷贝 inbound 到自有 chunk。禁止 retain / 钉住 Direct；不改 autoRead。
+     * 拷贝后推进 {@code readerIndex}：{@code NettyClientHandler} 的
+     * {@code RetryByteBufReadPolicy} 在 readableBytes 不变时会把同一段再投递。
      */
     public void write(ByteBuf buf) {
         Objects.requireNonNull(buf, "buf");
@@ -68,14 +70,16 @@ public final class StreamRingBuffer {
             VarHandle.storeStoreFence();
         }
         int srcIndex = buf.readerIndex();
-        while (remaining > 0) {
+        int left = remaining;
+        while (left > 0) {
             int phys = physical(pos);
-            int chunk = Math.min(remaining, capacity - phys);
+            int chunk = Math.min(left, capacity - phys);
             buf.getBytes(srcIndex, data, phys, chunk);
             srcIndex += chunk;
             pos += chunk;
-            remaining -= chunk;
+            left -= chunk;
         }
+        buf.skipBytes(remaining);
         receivedEnd = newEnd;
     }
 

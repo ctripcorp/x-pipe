@@ -1,24 +1,42 @@
 package com.ctrip.xpipe.redis.comparator.stream;
 
 import com.ctrip.xpipe.AbstractTest;
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.ByteBufReceiver;
+import com.ctrip.xpipe.redis.comparator.compare.ShardComparator;
+import com.ctrip.xpipe.simpleserver.AbstractIoAction;
+import com.ctrip.xpipe.simpleserver.Server;
+import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.ctrip.xpipe.redis.comparator.compare.ShardComparator.CompareOnceResult;
 import com.ctrip.xpipe.redis.comparator.config.ComparatorConfig;
+import com.ctrip.xpipe.redis.comparator.config.ComparatorConstants;
+import com.ctrip.xpipe.redis.comparator.report.CompareReporter;
+import com.ctrip.xpipe.redis.comparator.report.CompareReporter.MismatchReport;
 import com.ctrip.xpipe.redis.comparator.stream.StreamRingBuffer.PeekStatus;
 import com.ctrip.xpipe.redis.core.protocal.cmd.CmdTailGapAllowedSync;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.EventLoop;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -33,12 +51,27 @@ public class KeeperReplStreamTest extends AbstractTest {
 
     private final List<KeeperReplStream> streams = new ArrayList<>();
 
+    private NioEventLoopGroup ioGroup;
+
+    private EventLoop eventLoop;
+
+    @Before
+    public void beforeKeeperReplStreamTest() {
+        ioGroup = new NioEventLoopGroup(1, XpipeThreadFactory.create("keeper-repl-stream-test"));
+        eventLoop = ioGroup.next();
+    }
+
     @After
     public void afterKeeperReplStreamTest() {
         for (KeeperReplStream stream : streams) {
             stream.stop();
         }
         streams.clear();
+        eventLoop = null;
+        if (ioGroup != null) {
+            ioGroup.shutdownGracefully(0, 200, TimeUnit.MILLISECONDS);
+            ioGroup = null;
+        }
     }
 
     @Test
@@ -121,8 +154,222 @@ public class KeeperReplStreamTest extends AbstractTest {
         Assert.assertTrue(text.contains("RdbRejectedException"));
         Assert.assertTrue(text.contains("FixedObjectPool"));
         Assert.assertFalse(text.contains("XpipeNettyClientKeyedObjectPool"));
+        Assert.assertFalse(text.contains("NettyClientFactory("));
+        Assert.assertFalse(text.contains("new NioEventLoopGroup"));
+        Assert.assertTrue(text.contains("EventLoop eventLoop"));
+        Assert.assertTrue(text.contains("CONNECT_TIMEOUT_MILLIS"));
         Assert.assertFalse(text.contains("connectGen"));
         Assert.assertFalse(text.contains("cacheEpoch"));
+        Assert.assertTrue(text.contains("ReplConfType.LISTENING_PORT"));
+        Assert.assertTrue(text.contains("ReplConfType.ACK"));
+        Assert.assertFalse(text.contains("ReplConfType.CAPA"));
+        Assert.assertFalse(text.contains("getComparedEnd"));
+        Assert.assertTrue(text.contains("getReceivedEnd()"));
+        Assert.assertTrue(text.contains("STREAM_RECONNECT_MAX_MILLI"));
+        Assert.assertTrue(text.contains("scheduleWithFixedDelay"));
+    }
+
+    @Test
+    public void testRealReplconfOnSameConnectionWithoutProbe() throws Exception {
+        List<String> commands = new CopyOnWriteArrayList<>();
+        Server server = startServer(socket -> new AbstractIoAction(socket) {
+            @Override
+            protected Object doRead(InputStream ins) throws IOException {
+                return readLine(ins);
+            }
+
+            @Override
+            protected void doWrite(OutputStream ous, Object readResult) throws IOException {
+                if (readResult == null) {
+                    return;
+                }
+                String line = readResult.toString().trim();
+                commands.add(line);
+                String lower = line.toLowerCase();
+                if (lower.startsWith("config get")) {
+                    ous.write("*2\r\n$13\r\nprepare-watch\r\n$1\r\n1\r\n".getBytes(StandardCharsets.US_ASCII));
+                } else if (lower.startsWith("replconf listening-port")) {
+                    ous.write("+OK\r\n".getBytes(StandardCharsets.US_ASCII));
+                } else if (lower.startsWith("psync")) {
+                    ous.write(("+CONTINUE " + REPL_ID + " 100\r\n").getBytes(StandardCharsets.US_ASCII));
+                    ous.write(new byte[]{1, 2, 3});
+                } else if (lower.startsWith("replconf ack")) {
+                    return;
+                } else {
+                    ous.write("+OK\r\n".getBytes(StandardCharsets.US_ASCII));
+                }
+                ous.flush();
+            }
+        });
+        KeeperReplStream stream = new KeeperReplStream(
+                new DefaultEndPoint("127.0.0.1", server.getPort()),
+                scheduled, compareConfig(), () -> { }, "c", "s",
+                KeeperReplStream.TEST_HTTP_PORT, eventLoop);
+        stream.setAckIntervalMilli(5);
+        streams.add(stream);
+        stream.start();
+
+        waitConditionUntilTimeOut(() -> REPL_ID.equals(stream.getReplId()), 3000);
+        waitConditionUntilTimeOut(() -> stream.getBuffer() != null
+                && stream.getBuffer().getReceivedEnd() == 103L, 2000);
+        waitConditionUntilTimeOut(() -> commands.stream().anyMatch(c ->
+                c.toLowerCase().startsWith("replconf ack") && c.contains("103")), 2000);
+
+        Assert.assertEquals(1, countStartsWith(commands, "replconf listening-port"));
+        Assert.assertTrue(commands.stream().anyMatch(c ->
+                c.toLowerCase().contains("listening-port " + KeeperReplStream.TEST_HTTP_PORT)));
+        Assert.assertEquals(1, countStartsWith(commands, "config get"));
+        Assert.assertEquals(1, countStartsWith(commands, "psync"));
+        Assert.assertTrue(commands.stream().anyMatch(c ->
+                c.toLowerCase().startsWith("psync") && c.contains("-4")));
+        int configAt = indexStartsWith(commands, "config get");
+        int listenAt = indexStartsWith(commands, "replconf listening-port");
+        int psyncAt = indexStartsWith(commands, "psync");
+        Assert.assertTrue(configAt < listenAt && listenAt < psyncAt);
+        Assert.assertEquals(1, server.getTotalConnected());
+        Assert.assertFalse(commands.stream().anyMatch(c -> c.toLowerCase().contains("capa")));
+    }
+
+    @Test
+    public void testListeningPortBeforeStreamAndPeriodicAck() throws Exception {
+        RecordingReplconf repl = new RecordingReplconf();
+        KeeperReplStream stream = stream(fixedProbe(true), new RecordingMonitor(),
+                new AtomicInteger()::incrementAndGet, scheduled, repl, true);
+        stream.start();
+        Assert.assertEquals(Collections.singletonList(KeeperReplStream.TEST_HTTP_PORT), repl.listeningPorts);
+        CmdTailGapAllowedSync sync = stream.currentSync();
+        Assert.assertNotNull(sync);
+        sync.getRequest().release();
+
+        feedContinue(sync, 100L);
+        waitConditionUntilTimeOut(() -> !repl.acks.isEmpty(), 2000);
+        Assert.assertEquals(Long.valueOf(100L), repl.acks.get(0));
+
+        Assert.assertEquals(ByteBufReceiver.RECEIVER_RESULT.CONTINUE,
+                sync.receive(null, Unpooled.wrappedBuffer(new byte[]{1, 2, 3})));
+        waitConditionUntilTimeOut(() -> repl.acks.contains(103L), 2000);
+        Assert.assertEquals(1, repl.listeningPorts.size());
+    }
+
+    @Test
+    public void testAckFollowsReceivedEndNotComparedEndWhenPeerLags() throws Exception {
+        RecordingReplconf fastRepl = new RecordingReplconf();
+        RecordingReplconf slowRepl = new RecordingReplconf();
+        KeeperReplStream fast = stream(fixedProbe(true), new RecordingMonitor(),
+                new AtomicInteger()::incrementAndGet, scheduled, fastRepl, true);
+        KeeperReplStream slow = stream(fixedProbe(true), new RecordingMonitor(),
+                new AtomicInteger()::incrementAndGet, scheduled, slowRepl, true);
+        fast.start();
+        slow.start();
+        CmdTailGapAllowedSync fastSync = fast.currentSync();
+        CmdTailGapAllowedSync slowSync = slow.currentSync();
+        fastSync.getRequest().release();
+        slowSync.getRequest().release();
+        feedContinue(fastSync, 100L);
+        feedContinue(slowSync, 100L);
+
+        byte[] prefix = {1, 2, 3, 4, 5};
+        byte[] extra = new byte[40];
+        Arrays.fill(extra, (byte) 9);
+        fastSync.receive(null, Unpooled.wrappedBuffer(concat(prefix, extra)));
+        slowSync.receive(null, Unpooled.wrappedBuffer(prefix));
+
+        ShardComparator cmp = new ShardComparator("c1", "s1", Arrays.asList(fast, slow),
+                compareConfig(), new NoopReporter());
+        Assert.assertTrue(cmp.alignStart());
+        CompareOnceResult result;
+        int steps = 0;
+        do {
+            result = cmp.compareOnce();
+            Assert.assertTrue(++steps < 100);
+        } while (result != CompareOnceResult.NO_DATA);
+        Assert.assertEquals(105L, cmp.getComparedEnd());
+        Assert.assertEquals(145L, fast.getBuffer().getReceivedEnd());
+        waitConditionUntilTimeOut(() -> fastRepl.acks.contains(145L), 2000);
+        Assert.assertEquals(145L, last(fastRepl.acks).longValue());
+        Assert.assertNotEquals(cmp.getComparedEnd(), last(fastRepl.acks).longValue());
+    }
+
+    @Test
+    public void testReconnectBackoffStaysWithinBoundsAndUsesNewInstance() {
+        CaptureDelayedSchedule manual = new CaptureDelayedSchedule();
+        try {
+            KeeperReplStream stream = stream(fixedProbe(true), new RecordingMonitor(),
+                    new AtomicInteger()::incrementAndGet, manual, new RecordingReplconf(), false);
+            stream.start();
+            CmdTailGapAllowedSync prev = stream.currentSync();
+            Assert.assertNotNull(prev);
+            for (int i = 0; i < 7; i++) {
+                prev.receive(null, Unpooled.wrappedBuffer(
+                        ("+FULLRESYNC " + REPL_ID + " 1\r\n").getBytes(StandardCharsets.UTF_8)));
+                Assert.assertNull(stream.getReplId());
+                long expected = Math.min(
+                        (long) ComparatorConstants.STREAM_RECONNECT_MIN_MILLI << i,
+                        ComparatorConstants.STREAM_RECONNECT_MAX_MILLI);
+                Assert.assertEquals(expected, manual.delays.get(i).longValue());
+                Assert.assertNotNull(manual.delayed);
+                manual.delayed.run();
+                CmdTailGapAllowedSync neu = stream.currentSync();
+                Assert.assertNotNull(neu);
+                Assert.assertNotSame(prev, neu);
+                prev = neu;
+            }
+            Assert.assertEquals(7, stream.getStreamReconnectCount());
+        } finally {
+            manual.shutdownNow();
+        }
+    }
+
+    @Test
+    public void testDisconnectCancelsPendingReconnect() {
+        CaptureDelayedSchedule manual = new CaptureDelayedSchedule();
+        try {
+            KeeperReplStream stream = stream(fixedProbe(true), new RecordingMonitor(),
+                    new AtomicInteger()::incrementAndGet, manual, new RecordingReplconf(), false);
+            stream.start();
+            CmdTailGapAllowedSync first = stream.currentSync();
+            first.receive(null, Unpooled.wrappedBuffer(
+                    ("+FULLRESYNC " + REPL_ID + " 1\r\n").getBytes(StandardCharsets.UTF_8)));
+            Assert.assertNotNull(manual.delayed);
+            stream.disconnect();
+            Assert.assertNull(stream.getReplId());
+            manual.delayed.run();
+            Assert.assertNull(stream.currentSync());
+            Assert.assertEquals(1, stream.getStreamReconnectCount());
+        } finally {
+            manual.shutdownNow();
+        }
+    }
+
+    @Test
+    public void testAckThrowDoesNotFailPsync() throws Exception {
+        RecordingReplconf repl = new RecordingReplconf();
+        repl.ackThrow = new RuntimeException("ack");
+        KeeperReplStream stream = stream(fixedProbe(true), new RecordingMonitor(),
+                new AtomicInteger()::incrementAndGet, scheduled, repl, true);
+        stream.start();
+        CmdTailGapAllowedSync sync = stream.currentSync();
+        sync.getRequest().release();
+        Assert.assertEquals(ByteBufReceiver.RECEIVER_RESULT.CONTINUE, feedContinue(sync, 100L));
+        TimeUnit.MILLISECONDS.sleep(30);
+        Assert.assertFalse(sync.future().isDone());
+        Assert.assertEquals(ByteBufReceiver.RECEIVER_RESULT.CONTINUE,
+                sync.receive(null, Unpooled.wrappedBuffer(new byte[]{7, 8})));
+        Assert.assertEquals(102L, stream.getBuffer().getReceivedEnd());
+        Assert.assertEquals(REPL_ID, stream.getReplId());
+    }
+
+    @Test
+    public void testListeningPortFailRetriesWithoutOpeningSync() throws Exception {
+        RecordingReplconf repl = new RecordingReplconf();
+        repl.failListening = true;
+        KeeperReplStream stream = stream(fixedProbe(true), new RecordingMonitor(),
+                new AtomicInteger()::incrementAndGet, scheduled, repl, true);
+        stream.start();
+        Assert.assertNull(stream.currentSync());
+        Assert.assertFalse(repl.listeningPorts.isEmpty());
+        waitConditionUntilTimeOut(() -> stream.getStreamReconnectCount() >= 1, 2000);
+        Assert.assertNull(stream.currentSync());
     }
 
     @Test
@@ -324,33 +571,50 @@ public class KeeperReplStreamTest extends AbstractTest {
     }
 
     private KeeperReplStream stream(KeeperReplStream.PrepareWatchProbe probe, EventMonitor monitor) {
-        return stream(probe, monitor, new AtomicInteger()::incrementAndGet, scheduled);
+        return stream(probe, monitor, new AtomicInteger()::incrementAndGet, scheduled, new RecordingReplconf(), true);
     }
 
     private KeeperReplStream stream(KeeperReplStream.PrepareWatchProbe probe, EventMonitor monitor,
             AtomicInteger wakes) {
-        return stream(probe, monitor, wakes::incrementAndGet, scheduled);
+        return stream(probe, monitor, wakes::incrementAndGet, scheduled, new RecordingReplconf(), true);
     }
 
     private KeeperReplStream stream(KeeperReplStream.PrepareWatchProbe probe, EventMonitor monitor,
             Runnable dataAvailable) {
-        return stream(probe, monitor, dataAvailable, scheduled);
+        return stream(probe, monitor, dataAvailable, scheduled, new RecordingReplconf(), true);
     }
 
     private KeeperReplStream stream(KeeperReplStream.PrepareWatchProbe probe, EventMonitor monitor,
             Runnable dataAvailable, ScheduledExecutorService scheduler) {
-        ComparatorConfig config = new ComparatorConfig() {
+        return stream(probe, monitor, dataAvailable, scheduler, new RecordingReplconf(), true);
+    }
+
+    private KeeperReplStream stream(KeeperReplStream.PrepareWatchProbe probe, EventMonitor monitor,
+            Runnable dataAvailable, ScheduledExecutorService scheduler,
+            KeeperReplStream.ReplconfProbe replconf, boolean fastReconnect) {
+        KeeperReplStream stream = new KeeperReplStream(
+                new DefaultEndPoint("127.0.0.1", randomPort()),
+                scheduler, compareConfig(), dataAvailable, eventLoop, probe, false, monitor, replconf);
+        if (fastReconnect) {
+            stream.setReconnectDelayMilli(1);
+        }
+        stream.setAckIntervalMilli(5);
+        streams.add(stream);
+        return stream;
+    }
+
+    private static ComparatorConfig compareConfig() {
+        return new ComparatorConfig() {
             @Override
             public int getStreamBufferBytes() {
                 return 64;
             }
+
+            @Override
+            public int getCompareChunkBytes() {
+                return 8;
+            }
         };
-        KeeperReplStream stream = new KeeperReplStream(
-                new DefaultEndPoint("127.0.0.1", randomPort()),
-                scheduler, config, dataAvailable, probe, false, monitor);
-        stream.setReconnectDelayMilli(1);
-        streams.add(stream);
-        return stream;
     }
 
     private static KeeperReplStream.PrepareWatchProbe fixedProbe(boolean enabled) {
@@ -369,6 +633,38 @@ public class KeeperReplStreamTest extends AbstractTest {
     private static ByteBufReceiver.RECEIVER_RESULT feedContinue(CmdTailGapAllowedSync sync, long offset) {
         return sync.receive(null, Unpooled.wrappedBuffer(
                 ("+CONTINUE " + REPL_ID + " " + offset + "\r\n").getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private static byte[] concat(byte[] a, byte[] b) {
+        byte[] out = new byte[a.length + b.length];
+        System.arraycopy(a, 0, out, 0, a.length);
+        System.arraycopy(b, 0, out, a.length, b.length);
+        return out;
+    }
+
+    private static Long last(List<Long> values) {
+        return values.get(values.size() - 1);
+    }
+
+    private static int countStartsWith(List<String> commands, String prefix) {
+        String needle = prefix.toLowerCase();
+        int n = 0;
+        for (String command : commands) {
+            if (command.toLowerCase().startsWith(needle)) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    private static int indexStartsWith(List<String> commands, String prefix) {
+        String needle = prefix.toLowerCase();
+        for (int i = 0; i < commands.size(); i++) {
+            if (commands.get(i).toLowerCase().startsWith(needle)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private static String source() throws Exception {
@@ -409,6 +705,7 @@ public class KeeperReplStreamTest extends AbstractTest {
 
     static final class CaptureDelayedSchedule extends ScheduledThreadPoolExecutor {
         volatile Runnable delayed;
+        final List<Long> delays = new ArrayList<>();
 
         CaptureDelayedSchedule() {
             super(1);
@@ -416,8 +713,56 @@ public class KeeperReplStreamTest extends AbstractTest {
 
         @Override
         public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
+            long millis = unit.toMillis(delay);
+            if (millis <= 0) {
+                return super.schedule(command, delay, unit);
+            }
+            delays.add(millis);
             delayed = command;
-            return super.schedule(() -> { }, 1, TimeUnit.DAYS);
+            ScheduledFuture<?> future = super.schedule(() -> { }, 1, TimeUnit.DAYS);
+            future.cancel(false);
+            return future;
+        }
+    }
+
+    static final class RecordingReplconf implements KeeperReplStream.ReplconfProbe {
+        final List<Integer> listeningPorts = new CopyOnWriteArrayList<>();
+        final List<Long> acks = new CopyOnWriteArrayList<>();
+        volatile boolean failListening;
+        volatile RuntimeException ackThrow;
+
+        @Override
+        public CommandFuture<Object> listeningPort(int port) {
+            listeningPorts.add(port);
+            DefaultCommandFuture<Object> future = new DefaultCommandFuture<>();
+            if (failListening) {
+                future.setFailure(new RuntimeException("listening-port"));
+            } else {
+                future.setSuccess("OK");
+            }
+            return future;
+        }
+
+        @Override
+        public void ack(long receivedEnd) {
+            if (ackThrow != null) {
+                throw ackThrow;
+            }
+            acks.add(receivedEnd);
+        }
+    }
+
+    static final class NoopReporter implements CompareReporter {
+        @Override
+        public void onMismatch(MismatchReport report) {
+        }
+
+        @Override
+        public void onCompareLost(String cluster, String shard, long from, long to) {
+        }
+
+        @Override
+        public void onReplIdMismatch(String cluster, String shard, List<String> replIds) {
         }
     }
 }

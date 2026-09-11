@@ -33,6 +33,7 @@ public class ComparatorConfigTest extends AbstractTest {
     public void testConstantsMatchSpec() {
         Assert.assertEquals(1000, ComparatorConstants.STREAM_RECONNECT_MIN_MILLI);
         Assert.assertEquals(30000, ComparatorConstants.STREAM_RECONNECT_MAX_MILLI);
+        Assert.assertEquals(5000, ComparatorConstants.STREAM_CONNECT_TIMEOUT_MILLI);
         Assert.assertEquals(1000, ComparatorConstants.REPLCONF_ACK_INTERVAL_MILLI);
         Assert.assertEquals(100, ComparatorConstants.COMPARE_WAIT_MILLI);
         Assert.assertEquals(1000, ComparatorConstants.COMPARE_STOP_JOIN_MILLI);
