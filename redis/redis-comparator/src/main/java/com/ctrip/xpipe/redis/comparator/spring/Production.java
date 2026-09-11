@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.comparator.balance.CmsServerGroupProvider;
 import com.ctrip.xpipe.redis.comparator.balance.CompareTaskAssigner;
 import com.ctrip.xpipe.redis.comparator.balance.ServerGroupProvider;
 import com.ctrip.xpipe.redis.comparator.config.ComparatorConfig;
+import com.ctrip.xpipe.redis.comparator.meta.ComparatorMetaService;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,7 +17,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * 生产 profile 下注册外部依赖 Bean。测试 profile 不加载本类，单测注入
- * {@link ServerGroupProvider} 假实现，不访问网络（D23）。
+ * {@link ServerGroupProvider} 假实现、自行构造 {@link ComparatorMetaService}，不访问网络（D23）。
  * 复制连接由 {@code KeeperReplStream} 自管，不在此注册 keyed client pool。
  */
 @Configuration
@@ -26,6 +27,11 @@ public class Production extends AbstractProfile {
     @Bean
     public ServerGroupProvider serverGroupProvider(ComparatorConfig config) {
         return new CmsServerGroupProvider(config);
+    }
+
+    @Bean
+    public ComparatorMetaService comparatorMetaService(ComparatorConfig config) {
+        return new ComparatorMetaService(config);
     }
 
     @Bean(initMethod = "start", destroyMethod = "stop")
