@@ -19,6 +19,8 @@ public final class ComparatorConstants {
 
     public static final int COMPARE_THREAD_WARN_THRESHOLD = 500;
 
+    public static final String COMPARE_THREAD_NAME_PREFIX = "shard-compare-";
+
     public static final int MISMATCH_LOG_MIN_INTERVAL_MILLI = 60000;
 
     private ComparatorConstants() {

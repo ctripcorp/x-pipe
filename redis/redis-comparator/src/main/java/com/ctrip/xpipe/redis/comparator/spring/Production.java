@@ -13,6 +13,7 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
+import com.google.common.util.concurrent.MoreExecutors;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,6 +22,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 生产 profile 下注册外部依赖 Bean。测试 profile 不加载本类，单测注入
@@ -34,6 +37,8 @@ import java.util.concurrent.ScheduledExecutorService;
 public class Production extends AbstractProfile {
 
     public static final String COMPARATOR_EVENT_LOOP_GROUP = "comparatorEventLoopGroup";
+
+    public static final String COMPARATOR_TASK_SCHEDULED = ShardCompareTaskManager.TASK_SCHEDULED;
 
     @Bean
     public ServerGroupProvider serverGroupProvider(ComparatorConfig config) {
@@ -51,6 +56,15 @@ public class Production extends AbstractProfile {
                                                    @Qualifier(AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
                                                    ScheduledExecutorService scheduled) {
         return new CompareTaskAssigner(serverGroupProvider, config, FoundationService.DEFAULT, scheduled);
+    }
+
+    @Bean(name = COMPARATOR_TASK_SCHEDULED, destroyMethod = "shutdown")
+    public ScheduledExecutorService comparatorTaskScheduled() {
+        ScheduledThreadPoolExecutor exec = new ScheduledThreadPoolExecutor(1,
+                XpipeThreadFactory.create(COMPARATOR_TASK_SCHEDULED));
+        exec.setRemoveOnCancelPolicy(true);
+        return MoreExecutors.getExitingScheduledExecutorService(exec,
+                AbstractSpringConfigContext.THREAD_POOL_TIME_OUT, TimeUnit.SECONDS);
     }
 
     @Bean(name = COMPARATOR_EVENT_LOOP_GROUP, destroyMethod = "shutdownGracefully")
@@ -81,9 +95,9 @@ public class Production extends AbstractProfile {
                                                            PrepareWatchCache prepareWatchCache,
                                                            KeeperStreamFactory keeperStreamFactory,
                                                            ComparatorConfig config,
-                                                           @Qualifier(AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
-                                                           ScheduledExecutorService scheduled) {
+                                                           @Qualifier(COMPARATOR_TASK_SCHEDULED)
+                                                           ScheduledExecutorService taskScheduled) {
         return new ShardCompareTaskManager(comparatorMetaService, compareTaskAssigner, prepareWatchCache,
-                keeperStreamFactory, config, scheduled);
+                keeperStreamFactory, config, taskScheduled);
     }
 }

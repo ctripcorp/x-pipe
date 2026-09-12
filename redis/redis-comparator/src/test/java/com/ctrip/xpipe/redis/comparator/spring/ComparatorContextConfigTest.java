@@ -25,7 +25,8 @@ import java.util.stream.Stream;
 
 /**
  * T-MB.4 ②③：测试 profile 下上下文可启动（Production / CMS 不加载，不访问网络）；
- * 周期任务入口挂 {@code SCHEDULED_EXECUTOR}，不另起比对线程池。
+ * CMS / ACK 挂 {@code SCHEDULED_EXECUTOR}；分片任务 refresh 挂专用 scheduled。
+ * 不另起比对线程池。
  */
 public class ComparatorContextConfigTest extends AbstractTest {
 
@@ -87,12 +88,22 @@ public class ComparatorContextConfigTest extends AbstractTest {
                 } catch (IOException e) {
                     throw new IllegalStateException(path.toString(), e);
                 }
-                Assert.assertFalse(path + " must not create a private scheduled pool",
-                        text.contains("new ScheduledThreadPoolExecutor")
-                                || text.contains("Executors.newScheduledThreadPool"));
-                if (text.contains("scheduleAtFixedRate") || text.contains("scheduleWithFixedDelay")) {
-                    Assert.assertTrue(path + " scheduled task must use SCHEDULED_EXECUTOR",
-                            text.contains("SCHEDULED_EXECUTOR"));
+                boolean createsPool = text.contains("new ScheduledThreadPoolExecutor")
+                        || text.contains("Executors.newScheduledThreadPool");
+                String file = path.getFileName().toString();
+                if (createsPool) {
+                    Assert.assertTrue(path + " only Production may create comparatorTaskScheduled",
+                            file.equals("Production.java") && text.contains("COMPARATOR_TASK_SCHEDULED"));
+                } else if (text.contains("scheduleAtFixedRate") || text.contains("scheduleWithFixedDelay")) {
+                    if (file.equals("ShardCompareTaskManager.java")) {
+                        Assert.assertTrue(path + " must use dedicated TASK_SCHEDULED",
+                                text.contains("TASK_SCHEDULED"));
+                        Assert.assertFalse(path + " must not use shared SCHEDULED_EXECUTOR",
+                                text.contains("SCHEDULED_EXECUTOR"));
+                    } else {
+                        Assert.assertTrue(path + " scheduled task must use SCHEDULED_EXECUTOR",
+                                text.contains("SCHEDULED_EXECUTOR"));
+                    }
                 }
             });
         }

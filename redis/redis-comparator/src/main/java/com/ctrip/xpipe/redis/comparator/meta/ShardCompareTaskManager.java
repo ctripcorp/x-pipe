@@ -6,13 +6,15 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.comparator.balance.CompareTaskAssigner;
 import com.ctrip.xpipe.redis.comparator.compare.CompareLane;
+import com.ctrip.xpipe.redis.comparator.compare.ShardComparator;
 import com.ctrip.xpipe.redis.comparator.config.ComparatorConfig;
+import com.ctrip.xpipe.redis.comparator.config.ComparatorConstants;
+import com.ctrip.xpipe.redis.comparator.report.CompareReporter;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
@@ -33,19 +35,31 @@ import java.util.concurrent.atomic.AtomicInteger;
  * DcMeta → 分片比对任务，增量启停（D22 / D35 ① / §4.6.2 / D33 ⑤）。
  * <p>
  * 同步策略：任务表只在 {@code refreshLock} 下改（周期 refresh 与 probe 回调经
- * {@link AbstractSpringConfigContext#SCHEDULED_EXECUTOR}{@code #execute} 回流）。
+ * 专用 {@code comparatorTaskScheduled#execute} 回流，与 ACK/reconnect 隔离）。
  * {@code stop()} 锁内置 {@code stopped} 并抬 {@code refreshEpoch}。
  * {@code stopped} 只在 {@code refreshLock} 内读写：{@code refresh} 进锁后、
  * {@code ++refreshEpoch} 之前看见则返回；{@code applyProbed} 见停止位或
  * epoch 不匹配则返回。拆任务时 {@link KeeperStreamFactory#release(long)}。
  * 协商异步扇出，禁止 for 循环阻塞连 Keeper。未变化的 {@code ip:port} 不重建连接。
- * 本 Phase 不起比对线程（Phase CX）。
+ * keeper 增删 / 端口变：关掉离开的 {@link CompareLane}、open 新实例，
+ * {@link ShardComparator#replaceLanes} 整数组替换，不重建比对线程。
+ * 先 {@code new ShardComparator} + {@code start}，再
+ * {@code open(..., cmp::wake)}（绑死该实例，不用 {@code task.comparator} 间接层），
+ * 然后 {@code replaceLanes}。open 成功不足 2 路：先 {@code stop} 比对器，再 close lane、拆任务。
+ * 同实例增删 keeper：新路仍绑当前 {@code cmp::wake}，离开的路先 close 再 {@code replaceLanes}。
+ * 拆任务 {@code stop()} 比对器，再 {@code close} 本 Manager 打开的全部 lane。
+ * 任务增删在专用 scheduled 上起停本分片比对线程（D33 ⑤⑥）；超
+ * {@code COMPARE_THREAD_WARN_THRESHOLD} 只 WARN + 打点，不拒绝建任务。
  */
 public class ShardCompareTaskManager {
 
     public static final String MONITOR_TYPE = "ShardCompareTaskManager";
 
     public static final String EVENT_INSUFFICIENT_LANES = "insufficientLanes";
+
+    public static final String EVENT_COMPARE_THREAD_WARN = "compareThreadWarn";
+
+    public static final String TASK_SCHEDULED = "comparatorTaskScheduled";
 
     private static final Logger logger = LoggerFactory.getLogger(ShardCompareTaskManager.class);
 
@@ -62,6 +76,10 @@ public class ShardCompareTaskManager {
     private final ScheduledExecutorService scheduled;
 
     private final EventMonitor eventMonitor;
+
+    private final CompareReporter reporter;
+
+    private int compareThreadWarnThreshold = ComparatorConstants.COMPARE_THREAD_WARN_THRESHOLD;
 
     private final Object refreshLock = new Object();
 
@@ -83,6 +101,14 @@ public class ShardCompareTaskManager {
                                    PrepareWatchCache watchCache, KeeperStreamFactory streamFactory,
                                    ComparatorConfig config, ScheduledExecutorService scheduled,
                                    EventMonitor eventMonitor) {
+        this(metaService, assigner, watchCache, streamFactory, config, scheduled, eventMonitor,
+                CompareReporter.NOOP);
+    }
+
+    public ShardCompareTaskManager(ComparatorMetaService metaService, CompareTaskAssigner assigner,
+                                   PrepareWatchCache watchCache, KeeperStreamFactory streamFactory,
+                                   ComparatorConfig config, ScheduledExecutorService scheduled,
+                                   EventMonitor eventMonitor, CompareReporter reporter) {
         this.metaService = metaService;
         this.assigner = assigner;
         this.watchCache = watchCache;
@@ -90,11 +116,12 @@ public class ShardCompareTaskManager {
         this.config = config;
         this.scheduled = scheduled;
         this.eventMonitor = eventMonitor == null ? EventMonitor.DEFAULT : eventMonitor;
+        this.reporter = reporter == null ? CompareReporter.NOOP : reporter;
     }
 
     public void start() {
         if (scheduled == null) {
-            throw new IllegalStateException(AbstractSpringConfigContext.SCHEDULED_EXECUTOR + " required");
+            throw new IllegalStateException(TASK_SCHEDULED + " required");
         }
         synchronized (refreshLock) {
             stopped = false;
@@ -291,6 +318,18 @@ public class ShardCompareTaskManager {
             task.cluster = desired.cluster;
             task.shard = desired.shard;
         }
+        ShardComparator cmp = task.comparator;
+        if (cmp == null) {
+            try {
+                cmp = startComparator(task);
+            } catch (Throwable t) {
+                logger.error("[startComparator] cluster={} shard={} dbId={}",
+                        desired.cluster, desired.shard, desired.dbId, t);
+                stopTask(task);
+                return;
+            }
+        }
+        boolean streamsChanged = false;
         List<String> stale = new ArrayList<>();
         for (String key : task.streams.keySet()) {
             if (!accepted.containsKey(key)) {
@@ -299,6 +338,7 @@ public class ShardCompareTaskManager {
         }
         for (String key : stale) {
             closeQuietly(task.streams.remove(key), desired.cluster, desired.shard, key);
+            streamsChanged = true;
         }
         for (Map.Entry<String, Endpoint> entry : accepted.entrySet()) {
             if (task.streams.containsKey(entry.getKey())) {
@@ -306,8 +346,9 @@ public class ShardCompareTaskManager {
             }
             try {
                 CompareLane lane = streamFactory.open(desired.dbId, desired.cluster, desired.shard,
-                        entry.getValue(), task.wake);
+                        entry.getValue(), cmp::wake);
                 task.streams.put(entry.getKey(), lane);
+                streamsChanged = true;
             } catch (Throwable t) {
                 logger.error("[open] cluster={} shard={} keeper={}",
                         desired.cluster, desired.shard, entry.getKey(), t);
@@ -318,10 +359,42 @@ public class ShardCompareTaskManager {
                     desired.cluster, desired.shard, desired.dbId, task.streams.size());
             safeLog(EVENT_INSUFFICIENT_LANES);
             stopTask(task);
+            return;
+        }
+        if (streamsChanged) {
+            cmp.replaceLanes(new ArrayList<>(task.streams.values()));
+        }
+    }
+
+    private ShardComparator startComparator(ShardCompareTask task) {
+        ShardComparator cmp = new ShardComparator(task.cluster, task.shard,
+                Collections.emptyList(), config, reporter);
+        int n = 1;
+        for (ShardCompareTask existing : tasks.values()) {
+            if (existing != task && existing.comparator != null) {
+                n++;
+            }
+        }
+        if (n > compareThreadWarnThreshold) {
+            logger.warn("[compareThreadWarn] cluster={} shard={} threads={} threshold={}",
+                    task.cluster, task.shard, n, compareThreadWarnThreshold);
+            safeLog(EVENT_COMPARE_THREAD_WARN);
+        }
+        cmp.start();
+        task.comparator = cmp;
+        return cmp;
+    }
+
+    private void stopComparator(ShardCompareTask task) {
+        ShardComparator cmp = task.comparator;
+        task.comparator = null;
+        if (cmp != null) {
+            cmp.stop();
         }
     }
 
     private void stopTask(ShardCompareTask task) {
+        stopComparator(task);
         for (Map.Entry<String, CompareLane> entry : task.streams.entrySet()) {
             closeQuietly(entry.getValue(), task.cluster, task.shard, entry.getKey());
         }
@@ -381,14 +454,7 @@ public class ShardCompareTaskManager {
 
         private final Map<String, CompareLane> streams = new LinkedHashMap<>();
 
-        private volatile Runnable wakeHook;
-
-        private final Runnable wake = () -> {
-            Runnable hook = wakeHook;
-            if (hook != null) {
-                hook.run();
-            }
-        };
+        private ShardComparator comparator;
 
         ShardCompareTask(long dbId, String cluster, String shard) {
             this.dbId = dbId;
@@ -412,9 +478,14 @@ public class ShardCompareTaskManager {
             return Collections.unmodifiableMap(streams);
         }
 
-        public void setWakeHook(Runnable wakeHook) {
-            this.wakeHook = wakeHook;
+        public ShardComparator getComparator() {
+            return comparator;
         }
+    }
+
+    @VisibleForTesting
+    void setCompareThreadWarnThreshold(int threshold) {
+        this.compareThreadWarnThreshold = threshold;
     }
 
     private static final class DesiredShard {

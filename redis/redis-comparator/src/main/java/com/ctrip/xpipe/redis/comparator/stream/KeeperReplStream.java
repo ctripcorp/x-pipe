@@ -61,7 +61,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * IO 线程只拷贝 + 发布 + 唤醒（唤醒失败只 ERROR，不打断收包）；{@code EventMonitor}
  * 丢到 {@code scheduled}，不在 event loop 上打点。
  * <p>
- * {@code dataAvailable} 只允许唤醒本分片比对线程，禁止比对 / dump / 打点 / 等待。
+ * {@code dataAvailable} 绑本分片比对器 {@code wake}（{@code onCommands} /
+ * {@code onKeeperContinue} 只 {@code notify}）。有界等待是未唤醒时的兜底。
+ * 禁止在此比对 / dump / 打点 / 等待。
  * 建流前发 {@code REPLCONF listening-port}；CONTINUE 后 ACK 定时器挂
  * {@code scheduled}，值取本路 {@code receivedEnd}，禁止 {@code comparedEnd}；不发 {@code capa}。
  */
@@ -222,6 +224,11 @@ public final class KeeperReplStream implements CompareLane {
     @Override
     public StreamRingBuffer getBuffer() {
         return buffer;
+    }
+
+    @Override
+    public void close() {
+        stop();
     }
 
     @Override

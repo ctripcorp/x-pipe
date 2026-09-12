@@ -77,12 +77,8 @@ public interface KeeperStreamFactory {
 
         @Override
         public void close(CompareLane lane) {
-            if (lane instanceof KeeperReplStream) {
-                ((KeeperReplStream) lane).stop();
-                return;
-            }
             if (lane != null) {
-                lane.disconnect();
+                lane.close();
             }
         }
     }

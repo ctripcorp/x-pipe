@@ -45,4 +45,10 @@ public interface CompareLane {
      * {@code streamStart} 不可变，不能原地改起点）。
      */
     void reconnect();
+
+    /**
+     * 释放本路（停自动建流并拆连接）。幂等。
+     * 由打开方 {@code ShardCompareTaskManager} 调用，比对器 {@code stop} 不 close。
+     */
+    void close();
 }

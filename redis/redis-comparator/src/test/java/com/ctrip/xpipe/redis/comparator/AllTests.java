@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.comparator;
 
 import com.ctrip.xpipe.redis.comparator.balance.CmsServerGroupProviderTest;
 import com.ctrip.xpipe.redis.comparator.balance.CompareTaskAssignerTest;
+import com.ctrip.xpipe.redis.comparator.compare.ShardComparatorLoopTest;
 import com.ctrip.xpipe.redis.comparator.compare.ShardComparatorTest;
 import com.ctrip.xpipe.redis.comparator.meta.ComparatorMetaServiceTest;
 import com.ctrip.xpipe.redis.comparator.meta.KeeperStreamFactoryTest;
@@ -24,6 +25,7 @@ import org.junit.runners.Suite;
         KeeperStreamFactoryTest.class,
         StreamRingBufferTest.class,
         ShardComparatorTest.class,
+        ShardComparatorLoopTest.class,
         KeeperReplStreamTest.class
 })
 public class AllTests {

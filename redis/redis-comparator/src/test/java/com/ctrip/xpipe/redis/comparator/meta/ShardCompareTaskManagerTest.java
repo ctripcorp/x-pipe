@@ -9,13 +9,16 @@ import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.redis.comparator.balance.CompareTaskAssigner;
 import com.ctrip.xpipe.redis.comparator.balance.FakeServerGroupProvider;
 import com.ctrip.xpipe.redis.comparator.compare.CompareLane;
+import com.ctrip.xpipe.redis.comparator.compare.ShardComparator;
 import com.ctrip.xpipe.redis.comparator.config.ComparatorConfig;
+import com.ctrip.xpipe.redis.comparator.config.ComparatorConstants;
 import com.ctrip.xpipe.redis.comparator.stream.StreamRingBuffer;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -95,6 +98,8 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
         CompareLane first = manager.taskOf(MINE).getStreams().get("10.0.0.1:6380");
         CompareLane second = manager.taskOf(MINE).getStreams().get("10.0.0.2:6380");
         Assert.assertEquals(2, factory.opens.size());
+        ShardComparator firstCmp = manager.taskOf(MINE).getComparator();
+        Assert.assertNotNull(firstCmp);
 
         manager.refresh();
         Assert.assertEquals(2, factory.opens.size());
@@ -102,6 +107,7 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
         Assert.assertTrue(factory.releases.isEmpty());
         Assert.assertSame(first, manager.taskOf(MINE).getStreams().get("10.0.0.1:6380"));
         Assert.assertSame(second, manager.taskOf(MINE).getStreams().get("10.0.0.2:6380"));
+        Assert.assertSame(firstCmp, manager.taskOf(MINE).getComparator());
     }
 
     @Test
@@ -119,6 +125,8 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
         manager.refresh();
         Assert.assertEquals(2, factory.opens.size());
         CompareLane kept = manager.taskOf(MINE).getStreams().get("10.0.0.1:6380");
+        ShardComparator firstCmp = manager.taskOf(MINE).getComparator();
+        Assert.assertNotNull(firstCmp);
 
         meta.dc = new DcMeta("jq");
         ClusterMeta cluster = new ClusterMeta("c1");
@@ -135,6 +143,10 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
         Assert.assertNull(manager.taskOf(OTHER));
         Assert.assertNotNull(manager.taskOf(MINE));
         Assert.assertSame(kept, manager.taskOf(MINE).getStreams().get("10.0.0.1:6380"));
+        Assert.assertSame(firstCmp, manager.taskOf(MINE).getComparator());
+        CompareLane[] bound = manager.taskOf(MINE).getComparator().getLanes();
+        Assert.assertEquals(3, bound.length);
+        Assert.assertSame(kept, bound[0]);
         Assert.assertTrue(factory.closes.contains("10.0.0.2:6380"));
         Assert.assertTrue(factory.opens.contains("10.0.0.2:6381"));
         Assert.assertTrue(factory.opens.contains("10.0.0.3:6380"));
@@ -262,15 +274,147 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
     }
 
     @Test
-    public void testSourceUsesScheduledExecutorAndNoCompareThread() throws Exception {
+    public void testSourceUsesScheduledExecutorAndWiresComparator() throws Exception {
         String text = new String(Files.readAllBytes(Paths.get(SOURCE)), StandardCharsets.UTF_8);
-        Assert.assertTrue(text.contains("SCHEDULED_EXECUTOR"));
+        Assert.assertTrue(text.contains("TASK_SCHEDULED"));
+        Assert.assertFalse(text.contains("SCHEDULED_EXECUTOR"));
         Assert.assertTrue(text.contains("scheduleWithFixedDelay"));
         Assert.assertTrue(text.contains("catch (Throwable"));
+        Assert.assertTrue(text.contains("ShardComparator"));
+        Assert.assertTrue(text.contains("replaceLanes"));
+        Assert.assertFalse(text.contains("restartComparator"));
+        Assert.assertTrue(text.contains("COMPARE_THREAD_WARN_THRESHOLD"));
         Assert.assertFalse(text.contains("TfsKeeperUtils"));
         Assert.assertFalse(text.contains("new Thread("));
-        Assert.assertFalse(text.contains("ShardComparator"));
         Assert.assertFalse(text.contains("new RestTemplate("));
+        Assert.assertTrue(text.contains("::wake"));
+        Assert.assertFalse(text.contains("entry.getValue(), null"));
+        Assert.assertTrue(text.contains("Collections.emptyList()"));
+    }
+
+    @Test
+    public void testOpenHookWakesCompareThreadUnderWaitTimeout() throws Exception {
+        StubMeta meta = twoTfsMine();
+        FakeFactory factory = new FakeFactory();
+        ShardCompareTaskManager manager = manager(meta, allReady(), factory, allMineAssigner());
+        try {
+            manager.refresh();
+            ShardCompareTaskManager.ShardCompareTask task = manager.taskOf(MINE);
+            ShardComparator cmp = task.getComparator();
+            Assert.assertNotNull(cmp);
+            Assert.assertEquals(2, factory.wakes.size());
+            Assert.assertNotNull(factory.wakes.get(0));
+            Assert.assertNotNull(factory.wakes.get(1));
+            waitConditionUntilTimeOut(() -> cmp.getCompareThread() != null
+                    && cmp.getCompareThread().getState() == Thread.State.TIMED_WAITING);
+
+            FakeLane first = (FakeLane) task.getStreams().get("10.0.0.1:6380");
+            FakeLane second = (FakeLane) task.getStreams().get("10.0.0.2:6380");
+            byte[] payload = new byte[]{1, 2, 3, 4, 5, 6, 7, 8};
+            first.write(payload);
+            second.write(payload);
+            long begin = System.nanoTime();
+            factory.wakes.get(0).run();
+            waitConditionUntilTimeOut(() -> cmp.getComparedBytes() >= 8, 50);
+            long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
+            Assert.assertEquals(8L, cmp.getComparedBytes());
+            Assert.assertTrue("open hook must wake under COMPARE_WAIT_MILLI, took " + elapsed + "ms",
+                    elapsed < ComparatorConstants.COMPARE_WAIT_MILLI);
+        } finally {
+            manager.stop();
+        }
+    }
+
+    @Test
+    public void testCompareThreadNameAndSameMetaKeepsComparator() throws Exception {
+        StubMeta meta = twoTfsMine();
+        FakeFactory factory = new FakeFactory();
+        ShardCompareTaskManager manager = manager(meta, allReady(), factory, allMineAssigner());
+        try {
+            manager.refresh();
+            ShardCompareTaskManager.ShardCompareTask task = manager.taskOf(MINE);
+            Assert.assertNotNull(task.getComparator());
+            waitConditionUntilTimeOut(() -> task.getComparator().getCompareThread() != null
+                    && task.getComparator().getCompareThread().isAlive());
+            Thread t = task.getComparator().getCompareThread();
+            Assert.assertTrue(t.getName().contains("c1"));
+            Assert.assertTrue(t.getName().contains("two-tfs"));
+            manager.refresh();
+            Assert.assertSame(task.getComparator(), manager.taskOf(MINE).getComparator());
+            Assert.assertSame(t, manager.taskOf(MINE).getComparator().getCompareThread());
+        } finally {
+            manager.stop();
+        }
+    }
+
+    @Test
+    public void testRemoveAndReaddDoesNotAccumulateThreads() throws Exception {
+        StubMeta meta = new StubMeta();
+        ClusterMeta cluster = new ClusterMeta("c1");
+        addShard(meta.dc, cluster, MINE, "cx-loop",
+                keeper("tfs", "10.0.0.1", 6380),
+                keeper("tfs", "10.0.0.2", 6380));
+        meta.dc.addCluster(cluster);
+        FakeFactory factory = new FakeFactory();
+        ShardCompareTaskManager manager = manager(meta, allReady(), factory, allMineAssigner());
+        try {
+            for (int i = 0; i < 3; i++) {
+                manager.refresh();
+                ShardCompareTaskManager.ShardCompareTask task = manager.taskOf(MINE);
+                Assert.assertNotNull(task);
+                waitConditionUntilTimeOut(() -> task.getComparator() != null
+                        && task.getComparator().getCompareThread() != null
+                        && task.getComparator().getCompareThread().isAlive());
+                Thread t = task.getComparator().getCompareThread();
+                meta.dc = new DcMeta("jq");
+                ClusterMeta gone = new ClusterMeta("c1");
+                addShard(meta.dc, gone, MINE, "cx-loop",
+                        keeper("tfs", "10.0.0.1", 6380),
+                        keeper("DEFAULT", "10.0.0.2", 6380));
+                meta.dc.addCluster(gone);
+                manager.refresh();
+                Assert.assertNull(manager.taskOf(MINE));
+                waitConditionUntilTimeOut(() -> !t.isAlive(), ComparatorConstants.COMPARE_STOP_JOIN_MILLI);
+                Assert.assertEquals(0, countAliveCompareThreads("c1", "cx-loop"));
+                meta.dc = new DcMeta("jq");
+                ClusterMeta back = new ClusterMeta("c1");
+                addShard(meta.dc, back, MINE, "cx-loop",
+                        keeper("tfs", "10.0.0.1", 6380),
+                        keeper("tfs", "10.0.0.2", 6380));
+                meta.dc.addCluster(back);
+            }
+        } finally {
+            manager.stop();
+        }
+        Assert.assertEquals(0, countAliveCompareThreads("c1", "cx-loop"));
+    }
+
+    @Test
+    public void testThreadWarnDoesNotRejectTask() throws Exception {
+        StubMeta meta = new StubMeta();
+        ClusterMeta cluster = new ClusterMeta("c1");
+        addShard(meta.dc, cluster, MINE, "s-a",
+                keeper("tfs", "10.0.0.1", 6380),
+                keeper("tfs", "10.0.0.2", 6380));
+        addShard(meta.dc, cluster, 12L, "s-b",
+                keeper("tfs", "10.0.1.1", 6380),
+                keeper("tfs", "10.0.1.2", 6380));
+        meta.dc.addCluster(cluster);
+        FakeFactory factory = new FakeFactory();
+        RecordingMonitor monitor = new RecordingMonitor();
+        ShardCompareTaskManager manager = manager(meta, allReady(), factory, allMineAssigner(), monitor);
+        manager.setCompareThreadWarnThreshold(1);
+        try {
+            manager.refresh();
+            Assert.assertEquals(2, manager.getTasks().size());
+            Assert.assertNotNull(manager.taskOf(MINE).getComparator());
+            Assert.assertNotNull(manager.taskOf(12L).getComparator());
+            Assert.assertTrue(monitor.events.contains(
+                    ShardCompareTaskManager.MONITOR_TYPE + "/"
+                            + ShardCompareTaskManager.EVENT_COMPARE_THREAD_WARN));
+        } finally {
+            manager.stop();
+        }
     }
 
     private ShardCompareTaskManager manager(StubMeta meta, FakeWatchCache cache, FakeFactory factory,
@@ -291,6 +435,20 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
         assigner.start();
         cap.task.get().run();
         return assigner;
+    }
+
+    private static int countAliveCompareThreads(String cluster, String shard) {
+        int n = 0;
+        for (Thread t : Thread.getAllStackTraces().keySet()) {
+            if (!t.isAlive()) {
+                continue;
+            }
+            String name = t.getName();
+            if (name.contains("shard-compare") && name.contains(cluster) && name.contains(shard)) {
+                n++;
+            }
+        }
+        return n;
     }
 
     private static FakeWatchCache allReady() {
@@ -423,18 +581,21 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
 
         final List<Long> releases = new ArrayList<>();
 
+        final List<Runnable> wakes = new ArrayList<>();
+
         @Override
         public CompareLane open(long shardDbId, String cluster, String shard, Endpoint endpoint,
                                 Runnable dataAvailable) {
             String key = endpoint.getHost() + ":" + endpoint.getPort();
             opens.add(key);
+            wakes.add(dataAvailable);
             return new FakeLane(key);
         }
 
         @Override
         public void close(CompareLane lane) {
             closes.add(lane.getAddress());
-            lane.disconnect();
+            lane.close();
         }
 
         @Override
@@ -446,6 +607,8 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
     static final class FakeLane implements CompareLane {
 
         private final String address;
+
+        private final StreamRingBuffer buffer = new StreamRingBuffer(64, 0);
 
         private volatile boolean disconnected;
 
@@ -470,7 +633,7 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
 
         @Override
         public StreamRingBuffer getBuffer() {
-            return null;
+            return buffer;
         }
 
         @Override
@@ -481,6 +644,15 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
         @Override
         public void reconnect() {
             disconnected = false;
+        }
+
+        @Override
+        public void close() {
+            disconnected = true;
+        }
+
+        void write(byte[] bytes) {
+            buffer.write(Unpooled.wrappedBuffer(bytes));
         }
     }
 

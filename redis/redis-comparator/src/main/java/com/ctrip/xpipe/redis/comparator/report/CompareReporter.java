@@ -14,6 +14,20 @@ import java.util.Objects;
  */
 public interface CompareReporter {
 
+    CompareReporter NOOP = new CompareReporter() {
+        @Override
+        public void onMismatch(MismatchReport report) {
+        }
+
+        @Override
+        public void onCompareLost(String cluster, String shard, long comparedEndBefore, long comparedEndAfter) {
+        }
+
+        @Override
+        public void onReplIdMismatch(String cluster, String shard, List<String> replIds) {
+        }
+    };
+
     void onMismatch(MismatchReport report);
 
     void onCompareLost(String cluster, String shard, long comparedEndBefore, long comparedEndAfter);

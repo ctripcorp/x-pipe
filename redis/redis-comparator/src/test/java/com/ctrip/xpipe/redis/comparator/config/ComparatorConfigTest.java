@@ -38,6 +38,7 @@ public class ComparatorConfigTest extends AbstractTest {
         Assert.assertEquals(100, ComparatorConstants.COMPARE_WAIT_MILLI);
         Assert.assertEquals(1000, ComparatorConstants.COMPARE_STOP_JOIN_MILLI);
         Assert.assertEquals(500, ComparatorConstants.COMPARE_THREAD_WARN_THRESHOLD);
+        Assert.assertEquals("shard-compare-", ComparatorConstants.COMPARE_THREAD_NAME_PREFIX);
         Assert.assertEquals(60000, ComparatorConstants.MISMATCH_LOG_MIN_INTERVAL_MILLI);
     }
 }
