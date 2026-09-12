@@ -51,4 +51,12 @@ public interface CompareLane {
      * 由打开方 {@code ShardCompareTaskManager} 调用，比对器 {@code stop} 不 close。
      */
     void close();
+
+    /**
+     * 本路重连次数。默认 0；生产 {@code KeeperReplStream} 覆盖。
+     * 给 {@code /api/status} 用，不进 Hickwall（D36 ② 只打 {@code comparedBytes}）。
+     */
+    default int getStreamReconnectCount() {
+        return 0;
+    }
 }

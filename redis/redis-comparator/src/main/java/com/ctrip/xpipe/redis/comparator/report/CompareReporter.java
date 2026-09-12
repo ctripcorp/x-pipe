@@ -34,6 +34,12 @@ public interface CompareReporter {
 
     void onReplIdMismatch(String cluster, String shard, List<String> replIds);
 
+    /**
+     * 任务拆除时清掉该分片的失配 dump 限流桶（D36 ③）。默认空实现。
+     */
+    default void forgetShard(String cluster, String shard) {
+    }
+
     final class LaneBytes {
         private final String address;
         private final byte[] chunk;

@@ -9,6 +9,9 @@ import com.ctrip.xpipe.redis.comparator.meta.KeeperStreamFactoryTest;
 import com.ctrip.xpipe.redis.comparator.meta.ShardCompareTaskManagerTest;
 import com.ctrip.xpipe.redis.comparator.config.ComparatorConfigTest;
 import com.ctrip.xpipe.redis.comparator.spring.ComparatorContextConfigTest;
+import com.ctrip.xpipe.redis.comparator.controller.ComparatorStatusControllerTest;
+import com.ctrip.xpipe.redis.comparator.report.CompareMetricsCollectorTest;
+import com.ctrip.xpipe.redis.comparator.report.DefaultCompareReporterTest;
 import com.ctrip.xpipe.redis.comparator.stream.KeeperReplStreamTest;
 import com.ctrip.xpipe.redis.comparator.stream.StreamRingBufferTest;
 import org.junit.runner.RunWith;
@@ -26,7 +29,10 @@ import org.junit.runners.Suite;
         StreamRingBufferTest.class,
         ShardComparatorTest.class,
         ShardComparatorLoopTest.class,
-        KeeperReplStreamTest.class
+        KeeperReplStreamTest.class,
+        DefaultCompareReporterTest.class,
+        CompareMetricsCollectorTest.class,
+        ComparatorStatusControllerTest.class
 })
 public class AllTests {
 }

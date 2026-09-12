@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.comparator.spring;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.comparator.balance.CmsServerGroupProvider;
 import com.ctrip.xpipe.redis.comparator.balance.CompareTaskAssigner;
 import com.ctrip.xpipe.redis.comparator.balance.ServerGroupProvider;
@@ -9,6 +10,9 @@ import com.ctrip.xpipe.redis.comparator.meta.ComparatorMetaService;
 import com.ctrip.xpipe.redis.comparator.meta.KeeperStreamFactory;
 import com.ctrip.xpipe.redis.comparator.meta.PrepareWatchCache;
 import com.ctrip.xpipe.redis.comparator.meta.ShardCompareTaskManager;
+import com.ctrip.xpipe.redis.comparator.report.CompareMetricsCollector;
+import com.ctrip.xpipe.redis.comparator.report.CompareReporter;
+import com.ctrip.xpipe.redis.comparator.report.DefaultCompareReporter;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -89,15 +93,29 @@ public class Production extends AbstractProfile {
                 KeeperStreamFactory.DEFAULT_LISTENING_PORT);
     }
 
+    @Bean
+    public CompareReporter compareReporter(ComparatorConfig config) {
+        return new DefaultCompareReporter(config);
+    }
+
     @Bean(initMethod = "start", destroyMethod = "stop")
     public ShardCompareTaskManager shardCompareTaskManager(ComparatorMetaService comparatorMetaService,
                                                            CompareTaskAssigner compareTaskAssigner,
                                                            PrepareWatchCache prepareWatchCache,
                                                            KeeperStreamFactory keeperStreamFactory,
                                                            ComparatorConfig config,
+                                                           CompareReporter compareReporter,
                                                            @Qualifier(COMPARATOR_TASK_SCHEDULED)
                                                            ScheduledExecutorService taskScheduled) {
         return new ShardCompareTaskManager(comparatorMetaService, compareTaskAssigner, prepareWatchCache,
-                keeperStreamFactory, config, taskScheduled);
+                keeperStreamFactory, config, taskScheduled, EventMonitor.DEFAULT, compareReporter);
+    }
+
+    @Bean(initMethod = "start", destroyMethod = "stop")
+    public CompareMetricsCollector compareMetricsCollector(ShardCompareTaskManager shardCompareTaskManager,
+                                                           ComparatorConfig config,
+                                                           @Qualifier(AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
+                                                           ScheduledExecutorService scheduled) {
+        return new CompareMetricsCollector(shardCompareTaskManager, scheduled, config);
     }
 }

@@ -7,7 +7,9 @@ import com.ctrip.xpipe.redis.comparator.config.ComparatorConfig;
 import com.ctrip.xpipe.redis.comparator.meta.ComparatorMetaService;
 import com.ctrip.xpipe.redis.comparator.meta.KeeperStreamFactory;
 import com.ctrip.xpipe.redis.comparator.meta.PrepareWatchCache;
+import com.ctrip.xpipe.redis.comparator.controller.ComparatorStatusController;
 import com.ctrip.xpipe.redis.comparator.meta.ShardCompareTaskManager;
+import com.ctrip.xpipe.redis.comparator.report.CompareMetricsCollector;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import org.junit.Assert;
 import org.junit.Test;
@@ -64,6 +66,10 @@ public class ComparatorContextConfigTest extends AbstractTest {
                 .getBeansOfType(PrepareWatchCache.class).size());
         Assert.assertEquals(0, AbstractSpringConfigContext.getApplicationContext()
                 .getBeansOfType(KeeperStreamFactory.class).size());
+        Assert.assertEquals(0, AbstractSpringConfigContext.getApplicationContext()
+                .getBeansOfType(CompareMetricsCollector.class).size());
+        Assert.assertEquals(1, AbstractSpringConfigContext.getApplicationContext()
+                .getBeansOfType(ComparatorStatusController.class).size());
     }
 
     @Test

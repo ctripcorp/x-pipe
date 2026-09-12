@@ -47,7 +47,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * {@code open(..., cmp::wake)}（绑死该实例，不用 {@code task.comparator} 间接层），
  * 然后 {@code replaceLanes}。open 成功不足 2 路：先 {@code stop} 比对器，再 close lane、拆任务。
  * 同实例增删 keeper：新路仍绑当前 {@code cmp::wake}，离开的路先 close 再 {@code replaceLanes}。
- * 拆任务 {@code stop()} 比对器，再 {@code close} 本 Manager 打开的全部 lane。
+ * 拆任务 {@code stop()} 比对器，再 {@code close} 本 Manager 打开的全部 lane，
+ * 并 {@link CompareReporter#forgetShard} 清掉该分片的 dump 限流桶。
  * 任务增删在专用 scheduled 上起停本分片比对线程（D33 ⑤⑥）；超
  * {@code COMPARE_THREAD_WARN_THRESHOLD} 只 WARN + 打点，不拒绝建任务。
  */
@@ -401,6 +402,11 @@ public class ShardCompareTaskManager {
         task.streams.clear();
         tasks.remove(task.dbId);
         try {
+            reporter.forgetShard(task.cluster, task.shard);
+        } catch (Throwable t) {
+            logger.warn("[forgetShard] cluster={} shard={}", task.cluster, task.shard, t);
+        }
+        try {
             streamFactory.release(task.dbId);
         } catch (Throwable t) {
             logger.error("[release] cluster={} shard={} dbId={}", task.cluster, task.shard, task.dbId, t);
@@ -444,6 +450,13 @@ public class ShardCompareTaskManager {
         }
     }
 
+    @VisibleForTesting
+    public void putTask(ShardCompareTask task) {
+        synchronized (refreshLock) {
+            tasks.put(task.dbId, task);
+        }
+    }
+
     public static final class ShardCompareTask {
 
         private final long dbId;
@@ -456,10 +469,19 @@ public class ShardCompareTaskManager {
 
         private ShardComparator comparator;
 
-        ShardCompareTask(long dbId, String cluster, String shard) {
+        public ShardCompareTask(long dbId, String cluster, String shard) {
             this.dbId = dbId;
             this.cluster = cluster;
             this.shard = shard;
+        }
+
+        @VisibleForTesting
+        public void bind(ShardComparator comparator, Map<String, CompareLane> streams) {
+            this.comparator = comparator;
+            this.streams.clear();
+            if (streams != null) {
+                this.streams.putAll(streams);
+            }
         }
 
         public long getDbId() {
