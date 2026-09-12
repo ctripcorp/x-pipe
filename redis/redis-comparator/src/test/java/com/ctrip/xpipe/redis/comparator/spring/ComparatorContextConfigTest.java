@@ -83,6 +83,50 @@ public class ComparatorContextConfigTest extends AbstractTest {
     }
 
     @Test
+    public void testListeningPortBoundToServerPort() throws IOException {
+        String text = new String(Files.readAllBytes(
+                Paths.get("src/main/java/com/ctrip/xpipe/redis/comparator/spring/Production.java")),
+                StandardCharsets.UTF_8);
+        Assert.assertTrue("REPLCONF listening-port must follow HTTP server.port (D35 ④)",
+                text.contains("${server.port:8080}"));
+        Assert.assertFalse("must not hardcode DEFAULT_LISTENING_PORT in Production",
+                text.contains("DEFAULT_LISTENING_PORT"));
+    }
+
+    @Test
+    public void testPackageStartupScriptContract() throws IOException {
+        Path script = packageRoot().resolve("src/main/scripts/startup.sh");
+        Assert.assertTrue(script.toString(), Files.isRegularFile(script));
+        String text = new String(Files.readAllBytes(script), StandardCharsets.UTF_8);
+        Assert.assertTrue(text.contains("SAFE_PERCENT=50"));
+        Assert.assertTrue(text.contains("MAX_MEM=8"));
+        Assert.assertTrue(text.contains("MAX_DIRECT_MB=512"));
+        Assert.assertTrue(text.contains("free -g"));
+        Assert.assertTrue(text.contains("/health"));
+        Assert.assertTrue(text.contains("getPortFromPathOrDefault $FULL_DIR 8080"));
+        Assert.assertTrue("must test the jar path variable, not the literal PATH_TO_JAR",
+                text.contains("! -f \"$PATH_TO_JAR\""));
+        Assert.assertTrue("underscore after appname must not be part of the variable name",
+                text.contains("${appname}_*.log"));
+        Assert.assertFalse("must not copy keeper 45% off-heap Direct",
+                text.contains("MaxDirectMemorySize=${MAX_DIRECT}g"));
+    }
+
+    @Test
+    public void testPackageConfigHasAppIdAndNoCmsSecrets() throws IOException {
+        Path config = packageRoot().resolve("src/main/config");
+        String app = new String(Files.readAllBytes(config.resolve("app.properties")), StandardCharsets.UTF_8);
+        Assert.assertTrue(app.contains("app.id=100077310"));
+        String xpipe = new String(Files.readAllBytes(config.resolve("xpipe.properties")), StandardCharsets.UTF_8);
+        Assert.assertFalse(xpipe.contains("comparator.cms.access.token"));
+        Assert.assertFalse(xpipe.contains("comparator.cms.get.server.url"));
+    }
+
+    private static Path packageRoot() {
+        return Paths.get("..", "package", "redis-comparator-package");
+    }
+
+    @Test
     public void testScheduledTasksUseScheduledExecutor() throws IOException {
         Path root = Paths.get("src/main/java");
         Assert.assertTrue(root.toFile().isDirectory());

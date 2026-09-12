@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -88,9 +89,9 @@ public class Production extends AbstractProfile {
     public KeeperStreamFactory keeperStreamFactory(@Qualifier(COMPARATOR_EVENT_LOOP_GROUP) EventLoopGroup eventLoopGroup,
                                                    @Qualifier(AbstractSpringConfigContext.SCHEDULED_EXECUTOR)
                                                    ScheduledExecutorService scheduled,
-                                                   ComparatorConfig config) {
-        return new KeeperStreamFactory.Default(eventLoopGroup, scheduled, config,
-                KeeperStreamFactory.DEFAULT_LISTENING_PORT);
+                                                   ComparatorConfig config,
+                                                   @Value("${server.port:8080}") int listeningPort) {
+        return new KeeperStreamFactory.Default(eventLoopGroup, scheduled, config, listeningPort);
     }
 
     @Bean

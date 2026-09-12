@@ -14,6 +14,7 @@
 		<module>redis-keeper-package</module>
 	    <module>redis-console-package</module>
 		<module>redis-proxy-package</module>
+		<module>redis-comparator-package</module>
     </modules>
 
 
