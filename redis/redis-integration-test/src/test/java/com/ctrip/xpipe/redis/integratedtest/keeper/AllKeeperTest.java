@@ -36,6 +36,7 @@ import org.junit.runners.Suite.SuiteClasses;
 		TfsKeeperTopologyTest.class,
 		TfsComparatorHarnessTest.class,
 		TfsKeeperCompareConsistentTest.class,
+		TfsKeeperCompareMismatchTest.class,
 		TfsComparatorHarnessStopTest.class,
 		AbstractTfsKeeperIntegratedTest.class
 })

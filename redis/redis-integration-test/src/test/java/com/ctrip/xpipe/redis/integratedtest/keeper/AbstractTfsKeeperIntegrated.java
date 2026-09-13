@@ -86,10 +86,20 @@ public abstract class AbstractTfsKeeperIntegrated extends AbstractKeeperIntegrat
 	}
 
 	/**
-	 * 默认两 Keeper 同一 {@code keeperBaseDir}。失配用例可 override 成两套目录（D40）。
+	 * 失配用例使用独立目录；默认共享目录行为保持不变（D38 / D40）。
+	 */
+	protected boolean useDivergentStoreDirs() {
+		return false;
+	}
+
+	/**
+	 * 默认两 Keeper 同一 {@code keeperBaseDir}；失配用例按端口拆成两套目录（D40）。
 	 */
 	protected File keeperBaseDir(KeeperMeta keeperMeta) {
-		return tfsStoreDir();
+		if (!useDivergentStoreDirs()) {
+			return tfsStoreDir();
+		}
+		return new File(getTestFileDir(), TFS_STORE_DIR_NAME + "_" + keeperMeta.getPort());
 	}
 
 	/**
