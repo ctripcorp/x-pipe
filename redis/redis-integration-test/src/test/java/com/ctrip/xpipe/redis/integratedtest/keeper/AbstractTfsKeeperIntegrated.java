@@ -1,0 +1,250 @@
+package com.ctrip.xpipe.redis.integratedtest.keeper;
+
+import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.api.pool.SimpleObjectPool;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigGetCommand;
+import com.ctrip.xpipe.redis.core.store.ReplId;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.ratelimit.impl.UnlimitedSyncRateManager;
+import org.apache.commons.exec.ExecuteException;
+import org.apache.commons.io.FileUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+/**
+ * TFS 共用目录集成测基类（spec D38 / D39 / §4.12.2）。
+ * 不改 {@code AbstractIntegratedTest} 默认工厂（分端口目录 + {@code tfsMode=false}）。
+ */
+public abstract class AbstractTfsKeeperIntegrated extends AbstractKeeperIntegratedSingleDc {
+
+	protected static final String TFS_STORE_DIR_NAME = "tfs_store";
+
+	protected static final int PREPARE_WATCH_META_INTERVAL_MILLI = 50;
+
+	protected static final int READY_WAIT_MILLI = 30000;
+
+	protected static final int READY_POLL_MILLI = 100;
+
+	protected static final int CONFIG_GET_TIMEOUT_SECONDS = 30;
+
+	protected File tfsStoreDir() {
+		return new File(getTestFileDir(), TFS_STORE_DIR_NAME);
+	}
+
+	/**
+	 * 默认两 Keeper 同一 {@code keeperBaseDir}。失配用例可 override 成两套目录（D40）。
+	 */
+	protected File keeperBaseDir(KeeperMeta keeperMeta) {
+		return tfsStoreDir();
+	}
+
+	protected File expectedManagerBaseDir() {
+		return new File(tfsStoreDir(), ReplId.from(getShardDbId()).toString());
+	}
+
+	@Override
+	protected KeeperConfig getKeeperConfig() {
+		TestKeeperConfig config = (TestKeeperConfig) super.getKeeperConfig();
+		config.setPrepareStoreWatchEnabled(true);
+		config.setPrepareWatchMetaIntervalMilli(PREPARE_WATCH_META_INTERVAL_MILLI);
+		return config;
+	}
+
+	@Override
+	protected void startKeepers() throws Exception {
+		FileUtils.forceMkdir(tfsStoreDir());
+		super.startKeepers();
+	}
+
+	@Override
+	protected RedisKeeperServer startKeeper(KeeperMeta keeperMeta, KeeperConfig keeperConfig,
+			LeaderElectorManager leaderElectorManager) throws Exception {
+		logger.info(remarkableMessage("[startKeeper][tfs]{}, {}"), keeperMeta, keeperConfig);
+		File baseDir = keeperBaseDir(keeperMeta);
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer(keeperMeta, baseDir, keeperConfig,
+				leaderElectorManager, new NoneKeepersMonitorManager(), new UnlimitedSyncRateManager());
+		add(redisKeeperServer);
+		return redisKeeperServer;
+	}
+
+	@Override
+	protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
+			LeaderElectorManager leaderElectorManager, KeepersMonitorManager keeperMonitorManager,
+			SyncRateManager syncRateManager) {
+		Long replId = keeperMeta.parent().getDbId();
+		return new DefaultRedisKeeperServer(replId, keeperMeta, keeperConfig, baseDir,
+				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser(),
+				createTestAsyncFileSystem(), null, true);
+	}
+
+	@Override
+	protected void startRedises() throws ExecuteException, IOException {
+		RedisMeta master = getRedisMaster();
+		if (master == null) {
+			throw new IllegalStateException("no redis master in meta");
+		}
+		startRedis(master);
+	}
+
+	@Override
+	protected List<RedisMeta> getRedisSlaves() {
+		return Collections.emptyList();
+	}
+
+	@Override
+	protected int getInitSleepMilli() {
+		return 0;
+	}
+
+	/**
+	 * 父类 {@code @Before} 仍调用此方法；这里只转给 TFS 拓扑，不走 {@code KeeperStateChangeJob}。
+	 */
+	@Override
+	protected final void makeKeeperRight() throws Exception {
+		makeTfsKeeperRight();
+	}
+
+	protected void makeTfsKeeperRight() throws Exception {
+		RedisMeta master = getRedisMaster();
+		KeeperMeta active = getKeeperActive();
+		List<KeeperMeta> backups = getKeepersBackup();
+		if (backups.isEmpty()) {
+			throw new IllegalStateException("TFS topology needs Active + Prepare keeper");
+		}
+		KeeperMeta prepare = backups.get(0);
+
+		logger.info(remarkableMessage("[makeTfsKeeperRight][ACTIVE]{} -> {}:{}"),
+				active, master.getIp(), master.getPort());
+		setKeeperState(active, KeeperState.ACTIVE, master.getIp(), master.getPort());
+		waitTfsActiveReady(active);
+
+		logger.info(remarkableMessage("[makeTfsKeeperRight][PREPARE]{}"), prepare);
+		setKeeperState(prepare, KeeperState.PREPARE, master.getIp(), master.getPort());
+		waitTfsPrepareReady(prepare);
+	}
+
+	protected void waitTfsActiveReady(KeeperMeta active) throws Exception {
+		try {
+			waitConditionUntilTimeOut(() -> isTfsActiveReady(active), READY_WAIT_MILLI, READY_POLL_MILLI);
+		} catch (TimeoutException e) {
+			TimeoutException dump = new TimeoutException(describeTfsActiveWait(active));
+			dump.initCause(e);
+			throw dump;
+		}
+	}
+
+	protected void waitTfsPrepareReady(KeeperMeta prepare) throws Exception {
+		try {
+			waitConditionUntilTimeOut(() -> isTfsPrepareReady(prepare), READY_WAIT_MILLI, READY_POLL_MILLI);
+		} catch (TimeoutException e) {
+			TimeoutException dump = new TimeoutException(describeTfsPrepareWait(prepare));
+			dump.initCause(e);
+			throw dump;
+		}
+	}
+
+	private boolean isTfsActiveReady(KeeperMeta active) {
+		try {
+			RedisKeeperServer server = getRedisKeeperServer(active);
+			if (server == null || server.getRedisMaster() == null) {
+				return false;
+			}
+			if (server.getRedisMaster().getMasterState() != MASTER_STATE.REDIS_REPL_CONNECTED) {
+				return false;
+			}
+			ReplicationStore store = server.getReplicationStore();
+			return store != null && store.checkOk();
+		} catch (Exception e) {
+			logger.warn("[waitTfsActiveReady]{}", tfsLogKey(active), e);
+			return false;
+		}
+	}
+
+	private boolean isTfsPrepareReady(KeeperMeta prepare) {
+		try {
+			RedisKeeperServer server = getRedisKeeperServer(prepare);
+			return server != null
+					&& server.getRedisKeeperServerState() != null
+					&& server.getRedisKeeperServerState().keeperState() == KeeperState.PREPARE
+					&& server.isReadOnlyStore();
+		} catch (Exception e) {
+			logger.warn("[waitTfsPrepareReady]{}", tfsLogKey(prepare), e);
+			return false;
+		}
+	}
+
+	protected String describeTfsActiveWait(KeeperMeta active) {
+		try {
+			RedisKeeperServer server = getRedisKeeperServer(active);
+			if (server == null) {
+				return String.format("[waitTfsActiveReady]%s server=null", tfsLogKey(active));
+			}
+			String masterState = server.getRedisMaster() == null
+					? "null" : String.valueOf(server.getRedisMaster().getMasterState());
+			ReplicationStore store = server.getReplicationStore();
+			return String.format("[waitTfsActiveReady]%s masterState=%s store=%s checkOk=%s",
+					tfsLogKey(active), masterState,
+					store == null ? "null" : "open",
+					store == null ? "null" : store.checkOk());
+		} catch (Exception e) {
+			return String.format("[waitTfsActiveReady]%s dumpFailed=%s", tfsLogKey(active), e);
+		}
+	}
+
+	protected String describeTfsPrepareWait(KeeperMeta prepare) {
+		try {
+			RedisKeeperServer server = getRedisKeeperServer(prepare);
+			if (server == null) {
+				return String.format("[waitTfsPrepareReady]%s server=null", tfsLogKey(prepare));
+			}
+			KeeperState state = server.getRedisKeeperServerState() == null
+					? null : server.getRedisKeeperServerState().keeperState();
+			return String.format("[waitTfsPrepareReady]%s keeperState=%s readOnlyStore=%s",
+					tfsLogKey(prepare), state, server.isReadOnlyStore());
+		} catch (Exception e) {
+			return String.format("[waitTfsPrepareReady]%s dumpFailed=%s", tfsLogKey(prepare), e);
+		}
+	}
+
+	protected String tfsLogKey(KeeperMeta keeperMeta) {
+		return String.format("%s/%s %s %s:%s",
+				getClusterId(), getShardId(),
+				ReplId.from(getShardDbId()),
+				keeperMeta.getIp(), keeperMeta.getPort());
+	}
+
+	protected DefaultRedisKeeperServer tfsKeeperServer(KeeperMeta keeperMeta) {
+		return (DefaultRedisKeeperServer) getRedisKeeperServer(keeperMeta);
+	}
+
+	protected ReplicationStoreManager tfsStoreManager(KeeperMeta keeperMeta) {
+		return tfsKeeperServer(keeperMeta).getReplicationStoreManager();
+	}
+
+	protected boolean configGetPrepareWatch(KeeperMeta keeperMeta) throws Exception {
+		SimpleObjectPool<NettyClient> pool = getXpipeNettyClientKeyedObjectPool()
+				.getKeyPool(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort()));
+		return new ConfigGetCommand.ConfigGetPrepareWatch(pool, scheduled)
+				.execute().get(CONFIG_GET_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+	}
+
+}

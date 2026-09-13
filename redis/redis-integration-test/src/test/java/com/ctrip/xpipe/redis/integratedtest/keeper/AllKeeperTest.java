@@ -32,7 +32,8 @@ import org.junit.runners.Suite.SuiteClasses;
 		KeeperSwitchTest.class,
 		KeeperConcurrentChangeUpstreamTest.class,
 		KeeperFastStateChangeTest.class,
-		ApplierServerToKeeperToFakeXsyncServerTest.class
+		ApplierServerToKeeperToFakeXsyncServerTest.class,
+		TfsKeeperTopologyTest.class
 })
 public class AllKeeperTest {
 	
