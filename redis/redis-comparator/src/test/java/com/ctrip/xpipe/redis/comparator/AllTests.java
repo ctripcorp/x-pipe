@@ -32,7 +32,8 @@ import org.junit.runners.Suite;
         KeeperReplStreamTest.class,
         DefaultCompareReporterTest.class,
         CompareMetricsCollectorTest.class,
-        ComparatorStatusControllerTest.class
+        ComparatorStatusControllerTest.class,
+        ComparatorStageTwoAcceptanceTest.class
 })
 public class AllTests {
 }
