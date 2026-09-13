@@ -35,6 +35,7 @@ import org.junit.runners.Suite.SuiteClasses;
 		ApplierServerToKeeperToFakeXsyncServerTest.class,
 		TfsKeeperTopologyTest.class,
 		TfsComparatorHarnessTest.class,
+		TfsKeeperCompareConsistentTest.class,
 		TfsComparatorHarnessStopTest.class,
 		AbstractTfsKeeperIntegratedTest.class
 })

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.comparator.config.ComparatorConstants;
 import com.ctrip.xpipe.redis.comparator.report.CompareReporter;
 import com.ctrip.xpipe.redis.comparator.report.CompareReporter.LaneBytes;
 import com.ctrip.xpipe.redis.comparator.report.CompareReporter.MismatchReport;
+import com.ctrip.xpipe.redis.comparator.stream.StreamRingBuffer;
 import com.ctrip.xpipe.redis.comparator.stream.StreamRingBuffer.PeekStatus;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -53,6 +54,8 @@ public final class ShardComparator {
 
     private static final CompareLane[] EMPTY_LANES = new CompareLane[0];
 
+    private static final StreamRingBuffer[] EMPTY_BUFFERS = new StreamRingBuffer[0];
+
     private static final Logger logger = LoggerFactory.getLogger(ShardComparator.class);
 
     private final String cluster;
@@ -70,6 +73,9 @@ public final class ShardComparator {
     private byte[][] peekBuf;
 
     private volatile boolean compareOffsetAligned;
+
+    /** RingBuffer identity is the lane generation token (D35). Guarded by {@code this}. */
+    private StreamRingBuffer[] alignedBuffers = EMPTY_BUFFERS;
 
     private boolean released;
 
@@ -160,6 +166,7 @@ public final class ShardComparator {
             loopEpoch++;
             compareThread = null;
             compareOffsetAligned = false;
+            alignedBuffers = EMPTY_BUFFERS;
             this.lanes = EMPTY_LANES;
         }
     }
@@ -188,6 +195,7 @@ public final class ShardComparator {
                 throw new IllegalStateException("stopped, create a new ShardComparator");
             }
             compareOffsetAligned = false;
+            alignedBuffers = EMPTY_BUFFERS;
             this.lanes = copy;
         }
     }
@@ -256,18 +264,23 @@ public final class ShardComparator {
     private AlignSideEffect decideAlignStart(CompareLane[] lanes) {
         if (lanes.length < 2) {
             compareOffsetAligned = false;
+            alignedBuffers = EMPTY_BUFFERS;
             return AlignSideEffect.NOT_READY;
         }
         List<String> replIds = new ArrayList<>(lanes.length);
+        StreamRingBuffer[] buffers = new StreamRingBuffer[lanes.length];
         long s0 = Long.MIN_VALUE;
-        for (CompareLane lane : lanes) {
-            String id = lane.getReplId();
-            if (id == null) {
+        for (int i = 0; i < lanes.length; i++) {
+            CompareLane lane = lanes[i];
+            CompareLane.Generation generation = lane.generation();
+            if (generation == null) {
                 compareOffsetAligned = false;
+                alignedBuffers = EMPTY_BUFFERS;
                 return AlignSideEffect.NOT_READY;
             }
-            replIds.add(id);
-            s0 = Math.max(s0, lane.getContinueOffset());
+            replIds.add(generation.getReplId());
+            buffers[i] = generation.getBuffer();
+            s0 = Math.max(s0, generation.getContinueOffset());
         }
         String first = replIds.get(0);
         for (int i = 1; i < replIds.size(); i++) {
@@ -275,12 +288,31 @@ public final class ShardComparator {
                 logger.warn("[replIdMismatch] cluster={}, shard={}, replIds={}", cluster, shard, replIds);
                 replIdMismatchCount++;
                 compareOffsetAligned = false;
+                alignedBuffers = EMPTY_BUFFERS;
                 return AlignSideEffect.mismatch(lanes, replIds);
             }
         }
         comparedEnd = s0;
+        alignedBuffers = buffers;
         compareOffsetAligned = true;
         return AlignSideEffect.ALIGNED;
+    }
+
+    /**
+     * 必须持有 {@code this}。replId 非 null 是当前 generation 的 buffer/offset
+     * 已发布门槛；RingBuffer 对象身份变化表示同一路进入了新 generation。
+     */
+    private boolean isAlignedGeneration(CompareLane[] lanes) {
+        if (!compareOffsetAligned || alignedBuffers.length != lanes.length) {
+            return false;
+        }
+        for (int i = 0; i < lanes.length; i++) {
+            CompareLane.Generation generation = lanes[i].generation();
+            if (generation == null || generation.getBuffer() != alignedBuffers[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void applyReplIdReset(AlignSideEffect side) {
@@ -308,30 +340,33 @@ public final class ShardComparator {
     }
 
     public CompareOnceResult compareOnce() {
-        CompareLane[] lanes = this.lanes;
-        if (lanes.length < 2) {
-            return CompareOnceResult.NO_DATA;
+        CompareLane[] lanes;
+        StreamRingBuffer[] buffers;
+        AlignSideEffect side = null;
+        synchronized (this) {
+            lanes = this.lanes;
+            if (lanes.length < 2) {
+                compareOffsetAligned = false;
+                alignedBuffers = EMPTY_BUFFERS;
+                return CompareOnceResult.NO_DATA;
+            }
+            if (!isAlignedGeneration(lanes)) {
+                compareOffsetAligned = false;
+                alignedBuffers = EMPTY_BUFFERS;
+            }
+            if (!compareOffsetAligned) {
+                side = decideAlignStart(lanes);
+            }
+            buffers = alignedBuffers;
         }
-        if (!compareOffsetAligned) {
-            AlignSideEffect side = null;
-            synchronized (this) {
-                lanes = this.lanes;
-                if (lanes.length < 2) {
-                    return CompareOnceResult.NO_DATA;
-                }
-                if (!compareOffsetAligned) {
-                    side = decideAlignStart(lanes);
-                }
-            }
-            if (side != null && !side.aligned) {
-                applyReplIdReset(side);
-                return side.replIdMismatch
-                        ? CompareOnceResult.REPL_ID_RESET : CompareOnceResult.NO_DATA;
-            }
+        if (side != null && !side.aligned) {
+            applyReplIdReset(side);
+            return side.replIdMismatch
+                    ? CompareOnceResult.REPL_ID_RESET : CompareOnceResult.NO_DATA;
         }
         long minReceived = Long.MAX_VALUE;
-        for (CompareLane lane : lanes) {
-            minReceived = Math.min(minReceived, lane.getBuffer().getReceivedEnd());
+        for (StreamRingBuffer buffer : buffers) {
+            minReceived = Math.min(minReceived, buffer.getReceivedEnd());
         }
         long avail = minReceived - comparedEnd;
         if (avail <= 0) {
@@ -342,7 +377,7 @@ public final class ShardComparator {
         boolean overwritten = false;
         boolean notYet = false;
         for (int i = 0; i < lanes.length; i++) {
-            PeekStatus status = lanes[i].getBuffer().peek(comparedEnd, n, peekBuf[i]);
+            PeekStatus status = buffers[i].peek(comparedEnd, n, peekBuf[i]);
             if (status == PeekStatus.OVERWRITTEN) {
                 overwritten = true;
             } else if (status != PeekStatus.HIT) {
@@ -352,7 +387,7 @@ public final class ShardComparator {
         if (overwritten) {
             compareLostCount++;
             long from = comparedEnd;
-            realign(lanes);
+            realign(buffers);
             reporter.onCompareLost(cluster, shard, from, comparedEnd);
             return CompareOnceResult.REALIGNED;
         }
@@ -380,9 +415,17 @@ public final class ShardComparator {
     }
 
     private void realign(CompareLane[] lanes) {
+        StreamRingBuffer[] buffers = new StreamRingBuffer[lanes.length];
+        for (int i = 0; i < lanes.length; i++) {
+            buffers[i] = lanes[i].getBuffer();
+        }
+        realign(buffers);
+    }
+
+    private void realign(StreamRingBuffer[] buffers) {
         long sPrime = comparedEnd;
-        for (CompareLane lane : lanes) {
-            sPrime = Math.max(sPrime, lane.getBuffer().getBufferStart());
+        for (StreamRingBuffer buffer : buffers) {
+            sPrime = Math.max(sPrime, buffer.getBufferStart());
         }
         comparedEnd = sPrime;
         realignCount++;

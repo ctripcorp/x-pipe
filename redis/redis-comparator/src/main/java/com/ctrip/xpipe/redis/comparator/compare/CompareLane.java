@@ -12,6 +12,18 @@ import com.ctrip.xpipe.redis.comparator.stream.StreamRingBuffer;
  */
 public interface CompareLane {
 
+    /**
+     * 单路流 generation 的一致快照。生产流应在其 session 锁内覆盖此方法；
+     * 默认实现保持测试 lane 与简单实现的单次 replId 读取语义。
+     */
+    default Generation generation() {
+        String replId = getReplId();
+        if (replId == null) {
+            return null;
+        }
+        return new Generation(replId, getContinueOffset(), getBuffer());
+    }
+
     String getAddress();
 
     /**
@@ -58,5 +70,29 @@ public interface CompareLane {
      */
     default int getStreamReconnectCount() {
         return 0;
+    }
+
+    final class Generation {
+        private final String replId;
+        private final long continueOffset;
+        private final StreamRingBuffer buffer;
+
+        public Generation(String replId, long continueOffset, StreamRingBuffer buffer) {
+            this.replId = replId;
+            this.continueOffset = continueOffset;
+            this.buffer = buffer;
+        }
+
+        public String getReplId() {
+            return replId;
+        }
+
+        public long getContinueOffset() {
+            return continueOffset;
+        }
+
+        public StreamRingBuffer getBuffer() {
+            return buffer;
+        }
     }
 }

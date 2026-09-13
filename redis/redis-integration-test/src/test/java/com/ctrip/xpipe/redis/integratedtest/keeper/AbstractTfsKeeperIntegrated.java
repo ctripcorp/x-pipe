@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetStateCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.ConfigGetCommand;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
@@ -25,6 +26,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.UnlimitedSyncRateManager;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.io.FileUtils;
@@ -54,6 +56,8 @@ public abstract class AbstractTfsKeeperIntegrated extends AbstractKeeperIntegrat
 
 	protected static final int CONFIG_GET_TIMEOUT_SECONDS = 30;
 
+	private static final int TFS_SET_STATE_TIMEOUT_MILLI = 10000;
+
 	protected TfsComparatorHarness comparatorHarness;
 
 	/**
@@ -62,6 +66,15 @@ public abstract class AbstractTfsKeeperIntegrated extends AbstractKeeperIntegrat
 	 * 打成 terminated（见 {@code AbstractRedisKeeperTest}）。
 	 */
 	private static volatile AsyncFileSystem sharedTfsIntegratedFileSystem;
+
+	@Override
+	protected void setKeeperState(KeeperMeta keeperMeta, KeeperState keeperState, String ip, Integer port)
+			throws Exception {
+		KeeperSetStateCommand command = new KeeperSetStateCommand(keeperMeta, keeperState,
+				new Pair<>(ip, port), scheduled);
+		command.setCommandTimeoutMilli(TFS_SET_STATE_TIMEOUT_MILLI);
+		command.execute().sync();
+	}
 
 	@After
 	public void stopTfsComparator() {

@@ -212,6 +212,16 @@ public final class KeeperReplStream implements CompareLane {
     }
 
     @Override
+    public Generation generation() {
+        synchronized (sessionLock) {
+            if (replId == null) {
+                return null;
+            }
+            return new Generation(replId, continueOffset, buffer);
+        }
+    }
+
+    @Override
     public String getReplId() {
         return replId;
     }
