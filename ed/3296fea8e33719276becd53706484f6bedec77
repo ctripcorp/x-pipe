@@ -1,0 +1,39 @@
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/ComparatorStageTwoAcceptanceTest.java
+  s_b4b3079667b681::t_6418a060b2805a 87,94,96-104,106-109
+  s_b4b3079667b681::t_6a0834fff0388c 1-13,15-86,88-89,91-92,95,105,116-145,155-159,161-205,207-208,212-230,236-250,256-260,263-310,312-404
+  s_b4b3079667b681::t_40bdc978944056 211
+  s_9003edba795095::t_aef6a45f8dffbb 231-235,251-255
+  s_b4b3079667b681::t_76aceae6719e8d 206,209-210
+  s_b4b3079667b681::t_dd43abfd402a98 14
+  s_b4b3079667b681::t_fedf4df0947d87 90,93
+  s_b4b3079667b681::t_6118072aa51838 261-262
+  s_b4b3079667b681::t_407763d21fabde 311
+  s_b4b3079667b681::t_432de10206df43 110-115
+  s_9003edba795095::t_8da581a2a3b108 146-154,160
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/AllTests.java
+  s_b4b3079667b681::t_a07297eb5b3236 35-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "ed3296fea8e33719276becd53706484f6bedec77",
+  "prompts": {},
+  "sessions": {
+    "s_9003edba795095": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b953fd0e-7776-4308-94ef-ff32656c9c39",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_b4b3079667b681": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "07022e63-07ef-4185-ab33-ea61376e71fc",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
