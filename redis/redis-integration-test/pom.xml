@@ -70,6 +70,11 @@
 		</dependency>
 		<dependency>
 			<groupId>com.ctrip.framework.xpipe.redis</groupId>
+			<artifactId>redis-comparator</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.ctrip.framework.xpipe.redis</groupId>
 			<artifactId>redis-meta</artifactId>
 			<scope>test</scope>
 		</dependency>

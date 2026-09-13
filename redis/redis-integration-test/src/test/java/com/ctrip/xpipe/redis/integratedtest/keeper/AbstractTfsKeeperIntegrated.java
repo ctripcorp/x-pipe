@@ -1,9 +1,12 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.redis.comparator.config.ComparatorConfig;
+import com.ctrip.xpipe.redis.comparator.report.CompareReporter;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
@@ -15,13 +18,18 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.UnlimitedSyncRateManager;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.apache.commons.exec.ExecuteException;
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,6 +54,20 @@ public abstract class AbstractTfsKeeperIntegrated extends AbstractKeeperIntegrat
 
 	protected static final int CONFIG_GET_TIMEOUT_SECONDS = 30;
 
+	protected TfsComparatorHarness comparatorHarness;
+
+	/**
+	 * JVM 级共用一份生产 TailCache（默认 1MiB chunk）。不在 {@code @After}
+	 * shutdown：与 keeper dispose / gc 赛跑会把后续用例的 {@code ioExecutor}
+	 * 打成 terminated（见 {@code AbstractRedisKeeperTest}）。
+	 */
+	private static volatile AsyncFileSystem sharedTfsIntegratedFileSystem;
+
+	@After
+	public void stopTfsComparator() {
+		stopComparator();
+	}
+
 	protected File tfsStoreDir() {
 		return new File(getTestFileDir(), TFS_STORE_DIR_NAME);
 	}
@@ -55,6 +77,37 @@ public abstract class AbstractTfsKeeperIntegrated extends AbstractKeeperIntegrat
 	 */
 	protected File keeperBaseDir(KeeperMeta keeperMeta) {
 		return tfsStoreDir();
+	}
+
+	/**
+	 * 生产 TailCache 默认 1MiB chunk。单测 {@code createTestAsyncFileSystem} 用 1KiB
+	 * 练多 chunk：{@code readAllBytes} 一次 {@code fs.read}，{@code meta.v2.json}
+	 * 超过 1KiB 会短读，PREPARE {@code PSYNC ? -4} 打不开店。
+	 */
+	protected AsyncFileSystem createTfsIntegratedFileSystem(KeeperConfig keeperConfig) {
+		return sharedTfsIntegratedFileSystem(keeperConfig);
+	}
+
+	static AsyncFileSystem sharedTfsIntegratedFileSystem(KeeperConfig keeperConfig) {
+		AsyncFileSystem fs = sharedTfsIntegratedFileSystem;
+		if (fs != null) {
+			return fs;
+		}
+		synchronized (AbstractTfsKeeperIntegrated.class) {
+			if (sharedTfsIntegratedFileSystem == null) {
+				AsyncFileSystem created = ContainerResourceManager.createAsyncFileSystem(keeperConfig);
+				Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+					try {
+						created.shutdown();
+					} catch (Throwable t) {
+						LoggerFactory.getLogger(AbstractTfsKeeperIntegrated.class)
+								.error("[tfs-it-async-fs-shutdown]", t);
+					}
+				}, "tfs-it-async-fs-shutdown"));
+				sharedTfsIntegratedFileSystem = created;
+			}
+			return sharedTfsIntegratedFileSystem;
+		}
 	}
 
 	protected File expectedManagerBaseDir() {
@@ -93,7 +146,7 @@ public abstract class AbstractTfsKeeperIntegrated extends AbstractKeeperIntegrat
 		Long replId = keeperMeta.parent().getDbId();
 		return new DefaultRedisKeeperServer(replId, keeperMeta, keeperConfig, baseDir,
 				leaderElectorManager, keeperMonitorManager, resourceManager, syncRateManager, generateRedisOpParser(),
-				createTestAsyncFileSystem(), null, true);
+				createTfsIntegratedFileSystem(keeperConfig), null, true);
 	}
 
 	@Override
@@ -245,6 +298,71 @@ public abstract class AbstractTfsKeeperIntegrated extends AbstractKeeperIntegrat
 				.getKeyPool(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort()));
 		return new ConfigGetCommand.ConfigGetPrepareWatch(pool, scheduled)
 				.execute().get(CONFIG_GET_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+	}
+
+	protected Endpoint keeperEndpoint(KeeperMeta keeperMeta) {
+		String ip = StringUtil.isEmpty(keeperMeta.getIp()) ? "localhost" : keeperMeta.getIp();
+		return new DefaultEndPoint(ip, keeperMeta.getPort());
+	}
+
+	protected TfsComparatorHarness startComparator() {
+		return startComparator(CompareReporter.NOOP);
+	}
+
+	protected TfsComparatorHarness startComparator(CompareReporter reporter) {
+		if (comparatorHarness != null) {
+			throw new IllegalStateException("comparator already started");
+		}
+		if (activeKeeper == null || backupKeeper == null) {
+			throw new IllegalStateException("need Active + Prepare keeper");
+		}
+		comparatorHarness = new TfsComparatorHarness(getClusterId(), getShardId(), getShardDbId(),
+				keeperEndpoint(activeKeeper), keeperEndpoint(backupKeeper), scheduled, reporter,
+				new ComparatorConfig());
+		return comparatorHarness;
+	}
+
+	protected void stopComparator() {
+		TfsComparatorHarness harness = comparatorHarness;
+		comparatorHarness = null;
+		if (harness != null) {
+			harness.stop();
+		}
+	}
+
+	protected void waitAligned() throws Exception {
+		try {
+			waitConditionUntilTimeOut(() -> comparatorHarness != null
+							&& comparatorHarness.comparator().isCompareOffsetAligned(),
+					READY_WAIT_MILLI, READY_POLL_MILLI);
+		} catch (TimeoutException e) {
+			TimeoutException dump = new TimeoutException(describeComparatorWait("waitAligned"));
+			dump.initCause(e);
+			throw dump;
+		}
+	}
+
+	protected void waitComparedBytesGrow(long from) throws Exception {
+		waitComparedBytesGrow(from, READY_WAIT_MILLI);
+	}
+
+	protected void waitComparedBytesGrow(long from, int timeoutMilli) throws Exception {
+		try {
+			waitConditionUntilTimeOut(() -> comparatorHarness != null
+							&& comparatorHarness.comparedBytes() > from,
+					timeoutMilli, READY_POLL_MILLI);
+		} catch (TimeoutException e) {
+			TimeoutException dump = new TimeoutException(
+					describeComparatorWait("waitComparedBytesGrow from=" + from));
+			dump.initCause(e);
+			throw dump;
+		}
+	}
+
+	protected String describeComparatorWait(String prefix) {
+		String harnessDump = comparatorHarness == null ? "harness=null" : comparatorHarness.describe();
+		return String.format("[%s] %s | %s | %s", prefix, harnessDump,
+				describeTfsActiveWait(activeKeeper), describeTfsPrepareWait(backupKeeper));
 	}
 
 }
