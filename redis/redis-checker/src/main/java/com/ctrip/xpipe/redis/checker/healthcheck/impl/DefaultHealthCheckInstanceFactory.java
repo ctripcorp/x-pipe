@@ -38,6 +38,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author chen.zhu
@@ -58,6 +59,10 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     private RedisSessionManager redisSessionManager;
 
     private KeeperSessionManager keeperSessionManager;
+
+    private List<KeeperHealthCheckActionFactory<?>> keeperHealthCheckActionFactories = Collections.emptyList();
+
+    private final Map<HealthCheckAction, KeeperHealthCheckActionFactory<?>> keeperFactoriesByAction = new ConcurrentHashMap<>();
 
     private Map<ClusterType, List<RedisHealthCheckActionFactory<?>>> factoriesByClusterType;
 
@@ -97,6 +102,12 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
                 clusterHealthCheckFactories, null, metaCache, dcRelationsService);
     }
 
+    @Autowired(required = false)
+    @VisibleForTesting
+    public void setKeeperHealthCheckActionFactories(List<KeeperHealthCheckActionFactory<?>> factories) {
+        this.keeperHealthCheckActionFactories = new ArrayList<>(factories);
+    }
+
     @Override
     public void remove(RedisHealthCheckInstance instance) {
         Endpoint endpoint = instance.getEndpoint();
@@ -106,7 +117,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     @Override
     public void remove(KeeperHealthCheckInstance instance) {
-        // Keeper endpoints are direct and are never registered with the routed endpoint factory.
+        cleanupKeeperInstance(instance, false);
     }
 
     @Override
@@ -136,12 +147,75 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     @Override
     public KeeperHealthCheckInstance create(KeeperMeta keeperMeta) {
         DefaultKeeperHealthCheckInstance instance = new DefaultKeeperHealthCheckInstance();
-        KeeperInstanceInfo info = createKeeperInstanceInfo(keeperMeta);
-        Endpoint endpoint = new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort());
+        try {
+            KeeperInstanceInfo info = createKeeperInstanceInfo(keeperMeta);
+            Endpoint endpoint = new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort());
 
-        instance.setEndpoint(endpoint).setSession(keeperSessionManager.findOrCreateSession(endpoint));
-        instance.setInstanceInfo(info).setHealthCheckConfig(new DefaultHealthCheckConfig(checkerConfig, dcRelationsService));
-        return instance;
+            instance.setEndpoint(endpoint).setSession(keeperSessionManager.findOrCreateSession(endpoint));
+            instance.setInstanceInfo(info).setHealthCheckConfig(new DefaultHealthCheckConfig(checkerConfig, dcRelationsService));
+            initActionsForKeeper(instance);
+            LifecycleHelper.initializeIfPossible(instance);
+            LifecycleHelper.startIfPossible(instance);
+            return instance;
+        } catch (Exception e) {
+            try {
+                cleanupKeeperInstance(instance, true);
+            } catch (RuntimeException cleanupFailure) {
+                e.addSuppressed(cleanupFailure);
+            }
+            throw new IllegalStateException("failed to create Keeper health-check instance for "
+                    + keeperMeta.getIp() + ":" + keeperMeta.getPort(), e);
+        }
+    }
+
+    private void initActionsForKeeper(DefaultKeeperHealthCheckInstance instance) {
+        List<KeeperHealthCheckActionFactory<?>> supportedFactories = keeperHealthCheckActionFactories.stream()
+                .filter(factory -> factory.supportInstnace(instance))
+                .collect(java.util.stream.Collectors.toList());
+        if (supportedFactories.size() != 1) {
+            throw new IllegalStateException("Keeper instance must have exactly one delay action factory, actual: "
+                    + supportedFactories.size());
+        }
+
+        KeeperHealthCheckActionFactory<?> factory = supportedFactories.get(0);
+        HealthCheckAction action = factory.create(instance);
+        if (action == null) {
+            throw new IllegalStateException("Keeper delay action factory returned null");
+        }
+        instance.register(action);
+        keeperFactoriesByAction.put(action, factory);
+    }
+
+    private void cleanupKeeperInstance(KeeperHealthCheckInstance instance, boolean rollback) {
+        List<HealthCheckAction> actions = new ArrayList<>(instance.getHealthCheckActions());
+        try {
+            for (HealthCheckAction action : actions) {
+                destroyKeeperAction(action);
+            }
+            LifecycleHelper.stopIfPossible(instance);
+            if (rollback) {
+                LifecycleHelper.disposeIfPossible(instance);
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("failed to cleanup Keeper health-check instance " + instance, e);
+        }
+
+        for (HealthCheckAction action : actions) {
+            keeperFactoriesByAction.remove(action);
+            instance.unregister(action);
+        }
+        if (instance instanceof DefaultKeeperHealthCheckInstance) {
+            ((DefaultKeeperHealthCheckInstance) instance).setEndpoint(null).setSession(null);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void destroyKeeperAction(HealthCheckAction action) throws Exception {
+        KeeperHealthCheckActionFactory factory = keeperFactoriesByAction.get(action);
+        if (factory == null) {
+            throw new IllegalStateException("missing Keeper action factory for " + action);
+        }
+        factory.destroy(action);
     }
 
     private KeeperInstanceInfo createKeeperInstanceInfo(KeeperMeta keeperMeta) {
