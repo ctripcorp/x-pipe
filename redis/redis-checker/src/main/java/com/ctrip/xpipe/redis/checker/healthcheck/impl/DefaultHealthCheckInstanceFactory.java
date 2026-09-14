@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.checker.DcRelationsService;
@@ -17,11 +18,15 @@ import com.ctrip.xpipe.redis.checker.healthcheck.config.CompositeHealthCheckConf
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckActionFactory;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.KeeperSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisCheckRuleMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -52,6 +57,8 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     private RedisSessionManager redisSessionManager;
 
+    private KeeperSessionManager keeperSessionManager;
+
     private Map<ClusterType, List<RedisHealthCheckActionFactory<?>>> factoriesByClusterType;
 
     private Map<ClusterType, List<ClusterHealthCheckActionFactory<?>>> clusterHealthCheckFactoriesByClusterType;
@@ -65,7 +72,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     @Autowired(required = false)
     public DefaultHealthCheckInstanceFactory(CheckerConfig checkerConfig, HealthCheckEndpointFactory endpointFactory,
-                                             RedisSessionManager redisSessionManager,
+                                             RedisSessionManager redisSessionManager, KeeperSessionManager keeperSessionManager,
                                              List<RedisHealthCheckActionFactory<?>> factories,
                                              List<ClusterHealthCheckActionFactory<?>> clusterHealthCheckFactories,
                                              GroupCheckerLeaderElector clusterServer, MetaCache metaCache, DcRelationsService dcRelationsService) {
@@ -73,6 +80,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         this.dcRelationsService = dcRelationsService;
         this.endpointFactory = endpointFactory;
         this.redisSessionManager = redisSessionManager;
+        this.keeperSessionManager = keeperSessionManager;
         this.clusterServer = clusterServer;
         this.metaCache = metaCache;
         this.factoriesByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(factories);
@@ -81,11 +89,12 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     @Autowired(required = false)
     public DefaultHealthCheckInstanceFactory(CheckerConfig checkerConfig, HealthCheckEndpointFactory endpointFactory,
-                                             RedisSessionManager redisSessionManager,
+                                             RedisSessionManager redisSessionManager, KeeperSessionManager keeperSessionManager,
                                              List<RedisHealthCheckActionFactory<?>> factories,
                                              List<ClusterHealthCheckActionFactory<?>> clusterHealthCheckFactories,
                                              MetaCache metaCache, DcRelationsService dcRelationsService) {
-        this(checkerConfig, endpointFactory, redisSessionManager, factories, clusterHealthCheckFactories, null, metaCache, dcRelationsService);
+        this(checkerConfig, endpointFactory, redisSessionManager, keeperSessionManager, factories,
+                clusterHealthCheckFactories, null, metaCache, dcRelationsService);
     }
 
     @Override
@@ -93,6 +102,11 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         Endpoint endpoint = instance.getEndpoint();
         endpointFactory.remove(new HostPort(endpoint.getHost(), endpoint.getPort()));
         stopCheck(instance);
+    }
+
+    @Override
+    public void remove(KeeperHealthCheckInstance instance) {
+        // Keeper endpoints are direct and are never registered with the routed endpoint factory.
     }
 
     @Override
@@ -117,6 +131,30 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         startCheck(instance);
 
         return instance;
+    }
+
+    @Override
+    public KeeperHealthCheckInstance create(KeeperMeta keeperMeta) {
+        DefaultKeeperHealthCheckInstance instance = new DefaultKeeperHealthCheckInstance();
+        KeeperInstanceInfo info = createKeeperInstanceInfo(keeperMeta);
+        Endpoint endpoint = new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort());
+
+        instance.setEndpoint(endpoint).setSession(keeperSessionManager.findOrCreateSession(endpoint));
+        instance.setInstanceInfo(info).setHealthCheckConfig(new DefaultHealthCheckConfig(checkerConfig, dcRelationsService));
+        return instance;
+    }
+
+    private KeeperInstanceInfo createKeeperInstanceInfo(KeeperMeta keeperMeta) {
+        ShardMeta shardMeta = keeperMeta.parent();
+        ClusterMeta clusterMeta = shardMeta.parent();
+        DcMeta dcMeta = clusterMeta.parent();
+        DefaultKeeperInstanceInfo info = new DefaultKeeperInstanceInfo(dcMeta.getId(), clusterMeta.getId(),
+                shardMeta.getId(), shardMeta.getDbId(), new HostPort(keeperMeta.getIp(), keeperMeta.getPort()),
+                clusterMeta.getActiveDc(), ClusterType.lookup(clusterMeta.getType()));
+        Integer orgId = clusterMeta.getOrgId();
+        info.setClusterOrgId(orgId == null ? -1 : orgId);
+        info.setStatus(clusterMeta.getStatus());
+        return info;
     }
 
     private RedisInstanceInfo createRedisInstanceInfo(RedisMeta redisMeta) {
