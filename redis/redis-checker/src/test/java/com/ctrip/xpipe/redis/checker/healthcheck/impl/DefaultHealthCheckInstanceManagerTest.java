@@ -171,6 +171,27 @@ public class DefaultHealthCheckInstanceManagerTest extends AbstractCheckerTest {
                 healthCheckInstanceManager.findKeeperHealthCheckInstance(new HostPort(oyKeeper.getIp(), oyKeeper.getPort())));
     }
 
+    @Test
+    public void testKeeperRemoveFailureRetainsInstanceForRetry() {
+        KeeperMeta keeper = new KeeperMeta().setIp("127.0.0.1").setPort(6379);
+        HostPort address = new HostPort(keeper.getIp(), keeper.getPort());
+        healthCheckInstanceManager.getOrCreate(keeper);
+        Mockito.doThrow(new IllegalStateException("expected cleanup failure"))
+                .doNothing().when(instanceFactory).remove(mockKeeperInstance);
+
+        try {
+            healthCheckInstanceManager.removeKeeper(address);
+            Assert.fail("remove should expose cleanup failure");
+        } catch (IllegalStateException expected) {
+            Assert.assertSame(mockKeeperInstance,
+                    healthCheckInstanceManager.findKeeperHealthCheckInstance(address));
+        }
+
+        Assert.assertSame(mockKeeperInstance, healthCheckInstanceManager.removeKeeper(address));
+        Assert.assertNull(healthCheckInstanceManager.findKeeperHealthCheckInstance(address));
+        Mockito.verify(instanceFactory, Mockito.times(2)).remove(mockKeeperInstance);
+    }
+
     @Override
     protected String getXpipeMetaConfigFile() {
         return "multi-type-health-instances.xml";

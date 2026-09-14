@@ -123,8 +123,11 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
 
     @Override
     public KeeperHealthCheckInstance removeKeeper(HostPort hostPort) {
-        KeeperHealthCheckInstance instance = keeperInstances.remove(hostPort);
-        if (null != instance) instanceFactory.remove(instance);
+        KeeperHealthCheckInstance instance = keeperInstances.get(hostPort);
+        if (null != instance) {
+            instanceFactory.remove(instance);
+            keeperInstances.remove(hostPort, instance);
+        }
         return instance;
     }
 

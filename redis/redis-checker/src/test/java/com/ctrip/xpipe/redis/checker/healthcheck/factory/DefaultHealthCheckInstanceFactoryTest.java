@@ -6,11 +6,12 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerIntegrationTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.KeeperInstanceInfo;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionListener;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperDelayActionContext;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperDelayActionListener;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckInstanceFactory;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -23,7 +24,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -42,18 +50,23 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
     private DefaultHealthCheckEndpointFactory endpointFactory;
 
     private MetaCache metaCache;
-    
+
     private MetaCache oldMetaCache;
+
+    private TestKeeperActionFactory keeperActionFactory;
 
     @Before
     public void beforeDefaultHealthCheckRedisInstanceFactoryTest() {
         oldMetaCache = endpointFactory.getMetaCache();
         metaCache = mock(MetaCache.class);
         endpointFactory.setMetaCache(metaCache);
+        keeperActionFactory = new TestKeeperActionFactory(false);
+        factory.setKeeperHealthCheckActionFactories(Collections.singletonList(keeperActionFactory));
     }
-    
+
     @After
     public void afterDefaultHealthCheckRedisInstanceFactoryTest() {
+        factory.setKeeperHealthCheckActionFactories(Collections.emptyList());
         endpointFactory.setMetaCache(oldMetaCache);
     }
 
@@ -84,8 +97,12 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
         Assert.assertEquals(first.getEndpoint(), second.getEndpoint());
         Assert.assertSame(first.getRedisSession(), second.getRedisSession());
         Assert.assertNotNull(first.getHealthCheckConfig());
-        Assert.assertTrue(first.getHealthCheckActions().isEmpty());
-        Assert.assertFalse(first.getLifecycleState().isStarted());
+        Assert.assertEquals(1, first.getHealthCheckActions().size());
+        Assert.assertEquals(1, second.getHealthCheckActions().size());
+        Assert.assertTrue(first.getLifecycleState().isStarted());
+        Assert.assertTrue(second.getLifecycleState().isStarted());
+        TestKeeperAction firstAction = (TestKeeperAction) first.getHealthCheckActions().get(0);
+        Assert.assertTrue(firstAction.getLifecycleState().isStarted());
 
         KeeperInstanceInfo info = first.getCheckInfo();
         Assert.assertEquals("cluster", info.getClusterId());
@@ -103,7 +120,113 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
                 .anyMatch(method -> "getCreateTime".equals(method.getName())));
 
         factory.remove(first);
+        Assert.assertTrue(first.getLifecycleState().isStopped());
+        Assert.assertTrue(firstAction.getLifecycleState().isStopped());
+        Assert.assertTrue(first.getHealthCheckActions().isEmpty());
+        Assert.assertNull(first.getEndpoint());
+        Assert.assertNull(first.getRedisSession());
         factory.remove(second);
+    }
+
+    @Test
+    public void testKeeperCreateFailureRollsBack() {
+        TestKeeperActionFactory failingFactory = new TestKeeperActionFactory(true);
+        factory.setKeeperHealthCheckActionFactories(Collections.singletonList(failingFactory));
+
+        try {
+            factory.create(normalKeeperMeta());
+            Assert.fail("Keeper create should fail when its action cannot start");
+        } catch (IllegalStateException expected) {
+            Assert.assertNotNull(expected.getCause());
+        }
+
+        Assert.assertEquals(1, failingFactory.actions.size());
+        TestKeeperAction action = failingFactory.actions.get(0);
+        KeeperHealthCheckInstance instance = action.getActionInstance();
+        Assert.assertTrue(action.destroyed);
+        Assert.assertFalse(action.resourceAllocated);
+        Assert.assertTrue(action.disposed);
+        Assert.assertTrue(action.getLifecycleState().isDisposed());
+        Assert.assertTrue(instance.getLifecycleState().isDisposed());
+        Assert.assertTrue(instance.getHealthCheckActions().isEmpty());
+        Assert.assertNull(instance.getEndpoint());
+        Assert.assertNull(instance.getRedisSession());
+    }
+
+    @Test
+    public void testKeeperInitializeFailureUsesFactoryDestroy() {
+        TestKeeperActionFactory failingFactory = new TestKeeperActionFactory(true, false, false);
+        factory.setKeeperHealthCheckActionFactories(Collections.singletonList(failingFactory));
+
+        try {
+            factory.create(normalKeeperMeta());
+            Assert.fail("Keeper create should fail when its action cannot initialize");
+        } catch (IllegalStateException expected) {
+            Assert.assertNotNull(expected.getCause());
+        }
+
+        TestKeeperAction action = failingFactory.actions.get(0);
+        KeeperHealthCheckInstance instance = action.getActionInstance();
+        Assert.assertTrue(action.destroyed);
+        Assert.assertFalse(action.resourceAllocated);
+        Assert.assertTrue(instance.getHealthCheckActions().isEmpty());
+        Assert.assertNull(instance.getEndpoint());
+        Assert.assertNull(instance.getRedisSession());
+    }
+
+    @Test
+    public void testKeeperRemoveFailureRetainsCleanupOwnership() {
+        TestKeeperActionFactory failingFactory = new TestKeeperActionFactory(false, false, true);
+        factory.setKeeperHealthCheckActionFactories(Collections.singletonList(failingFactory));
+        KeeperHealthCheckInstance instance = factory.create(normalKeeperMeta());
+        TestKeeperAction action = failingFactory.actions.get(0);
+
+        try {
+            factory.remove(instance);
+            Assert.fail("Keeper remove should expose action stop failure");
+        } catch (IllegalStateException expected) {
+            Assert.assertNotNull(expected.getCause());
+        }
+
+        Assert.assertSame(action, instance.getHealthCheckActions().get(0));
+        Assert.assertNotNull(instance.getEndpoint());
+        Assert.assertNotNull(instance.getRedisSession());
+        Assert.assertTrue(action.getLifecycleState().isStarted());
+        Assert.assertFalse(action.destroyed);
+
+        action.failOnStop = false;
+        factory.remove(instance);
+        Assert.assertTrue(action.destroyed);
+        Assert.assertTrue(instance.getHealthCheckActions().isEmpty());
+        Assert.assertNull(instance.getEndpoint());
+        Assert.assertNull(instance.getRedisSession());
+    }
+
+    @Test
+    public void testKeeperGenericChainAndAssemblySourceIsolation() throws Exception {
+        String keeperTypes = source("healthcheck/KeeperHealthCheckActionFactory.java")
+                + source("healthcheck/actions/keeperdelay/KeeperDelayActionContext.java")
+                + source("healthcheck/actions/keeperdelay/KeeperDelayActionListener.java");
+        for (String forbidden : Arrays.asList("RedisHealthCheckInstance", "RedisInstanceInfo", "DelayActionContext")) {
+            Assert.assertFalse("Keeper generic chain must not reference " + forbidden,
+                    Pattern.compile("\\b" + Pattern.quote(forbidden) + "\\b").matcher(keeperTypes).find());
+        }
+
+        String assembly = source("healthcheck/impl/DefaultHealthCheckInstanceFactory.java");
+        Assert.assertTrue(assembly.contains("initActionsForKeeper"));
+        for (String forbidden : Arrays.asList("DelayPingActionCollector", "createHealthStatus", "HealthStateService", "AlertManager")) {
+            Assert.assertFalse("Keeper assembly must not enter " + forbidden, assembly.contains(forbidden));
+        }
+
+        String keeperListenerType = Arrays.toString(KeeperDelayActionListener.class.getGenericInterfaces());
+        String redisListenerType = Arrays.toString(DelayActionListener.class.getGenericInterfaces());
+        Assert.assertFalse(keeperListenerType.contains("Redis"));
+        Assert.assertFalse(redisListenerType.contains("Keeper"));
+
+        KeeperHealthCheckInstance instance = mock(KeeperHealthCheckInstance.class);
+        KeeperDelayActionContext context = new KeeperDelayActionContext(instance, 123L);
+        Assert.assertSame(instance, context.instance());
+        Assert.assertEquals(Long.valueOf(123L), context.getResult());
     }
 
     @Test
@@ -167,6 +290,12 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
         }
     }
 
+    private String source(String relativePath) throws Exception {
+        File file = new File("src/main/java/com/ctrip/xpipe/redis/checker/" + relativePath);
+        Assert.assertTrue("source missing: " + file.getAbsolutePath(), file.isFile());
+        return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+    }
+
     protected DcMeta newDcMeta(String dcId) {
         DcMeta dcMeta = new DcMeta().setId(dcId);
         ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setParent(dcMeta)
@@ -199,5 +328,132 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
         shardMeta.addKeeper(keeperMeta);
         return keeperMeta;
     }
-    
+
+    private static class TestKeeperActionFactory implements KeeperHealthCheckActionFactory<TestKeeperAction> {
+
+        private final boolean failOnInitialize;
+
+        private final boolean failOnStart;
+
+        private final boolean failOnStop;
+
+        private final List<TestKeeperAction> actions = new ArrayList<>();
+
+        private TestKeeperActionFactory(boolean failOnStart) {
+            this(false, failOnStart, false);
+        }
+
+        private TestKeeperActionFactory(boolean failOnInitialize, boolean failOnStart, boolean failOnStop) {
+            this.failOnInitialize = failOnInitialize;
+            this.failOnStart = failOnStart;
+            this.failOnStop = failOnStop;
+        }
+
+        @Override
+        public TestKeeperAction create(KeeperHealthCheckInstance instance) {
+            TestKeeperAction action = new TestKeeperAction(instance, failOnInitialize, failOnStart, failOnStop);
+            actions.add(action);
+            return action;
+        }
+
+        @Override
+        public void destroy(TestKeeperAction action) throws Exception {
+            action.destroyFromFactory();
+        }
+    }
+
+    private static class TestKeeperAction extends AbstractLifecycle implements HealthCheckAction<KeeperHealthCheckInstance> {
+
+        private final KeeperHealthCheckInstance instance;
+
+        private final boolean failOnInitialize;
+
+        private final boolean failOnStart;
+
+        private boolean failOnStop;
+
+        private boolean resourceAllocated;
+
+        private boolean stopped;
+
+        private boolean disposed;
+
+        private boolean destroyed;
+
+        private TestKeeperAction(KeeperHealthCheckInstance instance, boolean failOnInitialize,
+                                 boolean failOnStart, boolean failOnStop) {
+            this.instance = instance;
+            this.failOnInitialize = failOnInitialize;
+            this.failOnStart = failOnStart;
+            this.failOnStop = failOnStop;
+        }
+
+        @Override
+        protected void doInitialize() throws Exception {
+            resourceAllocated = true;
+            if (failOnInitialize) {
+                throw new IllegalStateException("expected initialize failure");
+            }
+        }
+
+        @Override
+        protected void doStart() throws Exception {
+            if (failOnStart) {
+                throw new IllegalStateException("expected start failure");
+            }
+        }
+
+        @Override
+        protected void doStop() {
+            if (failOnStop) {
+                throw new IllegalStateException("expected stop failure");
+            }
+            stopped = true;
+        }
+
+        @Override
+        protected void doDispose() {
+            disposed = true;
+        }
+
+        private void destroyFromFactory() throws Exception {
+            if (getLifecycleState().canStop()) {
+                stop();
+            }
+            if (getLifecycleState().canDispose()) {
+                dispose();
+            }
+            resourceAllocated = false;
+            destroyed = true;
+        }
+
+        @Override
+        public void addListener(HealthCheckActionListener listener) {
+        }
+
+        @Override
+        public void removeListener(HealthCheckActionListener listener) {
+        }
+
+        @Override
+        public void addListeners(List<HealthCheckActionListener> listeners) {
+        }
+
+        @Override
+        public void addController(HealthCheckActionController controller) {
+        }
+
+        @Override
+        public void addControllers(List<HealthCheckActionController> controllers) {
+        }
+
+        @Override
+        public void removeController(HealthCheckActionController controller) {
+        }
+
+        @Override
+        public KeeperHealthCheckInstance getActionInstance() {
+            return instance;
+        }
+    }
 }
