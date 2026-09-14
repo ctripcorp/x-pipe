@@ -33,6 +33,8 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public static final String KEY_HEALTHY_DELAY = "console.healthy.delay";
 
+    public static final String KEY_KEEPER_DELAY_CHECK_ENABLED = "keeper.delay.check.enabled";
+
     public static final String KEY_REDIS_REPL_DISKLESS_MINIMUM_VERSION = "redis.repl.diskless.minimum.version";
 
     public static final String KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL = "redis.replication.health.check.interval";
@@ -167,6 +169,10 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public int getHealthyDelayMilli() {
         return getIntProperty(KEY_HEALTHY_DELAY, 2000);
+    }
+
+    public boolean isKeeperDelayCheckEnabled() {
+        return getBooleanProperty(KEY_KEEPER_DELAY_CHECK_ENABLED, false);
     }
 
     public String getReplDisklessMinRedisVersion() {
