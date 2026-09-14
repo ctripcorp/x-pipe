@@ -1,0 +1,38 @@
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/handler/ZstdEncoder.java
+  s_c49371a3173010::t_317da9e94baf24 14-15
+  s_c49371a3173010::t_26e3141be0b96d 352-356
+  s_c49371a3173010::t_cfc40a3a70d3bf 247
+  s_c49371a3173010::t_3b9f7c7788f037 35,51-52,61-66,78-81,87
+  s_c49371a3173010::t_fd38d3b2f2e6e5 178-182,209-213,216
+redis/redis-proxy/src/test/java/com/ctrip/xpipe/redis/proxy/handler/ZstdEncoderTest.java
+  s_c49371a3173010::t_fe0f004e96d0a5 14
+  s_c49371a3173010::t_692492631b9f81 141-182
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/handler/ZstdConstants.java
+  s_c49371a3173010::t_b468ba282891f0 31-33
+redis/redis-proxy/src/test/java/com/ctrip/xpipe/redis/proxy/config/DefaultProxyConfigTest.java
+  s_c49371a3173010::t_61f5d2ff6a61ef 42
+  s_c49371a3173010::t_ca0bfc3b025cba 37
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/config/ProxyConfig.java
+  s_c49371a3173010::t_8f11baed979b0c 94-98
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/config/DefaultProxyConfig.java
+  s_c49371a3173010::t_9019ecd021d189 72-73
+  s_c49371a3173010::t_ec186390071bbc 145
+  s_c49371a3173010::t_a354ae9e215321 215-218
+  s_c49371a3173010::t_981ea614b038ec 196
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "d0f4ebaebc571f4759a172da1ddb6866f8059c49",
+  "prompts": {},
+  "sessions": {
+    "s_c49371a3173010": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7b1ac98f-2c0c-4443-ae2c-4e47efd02501",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}

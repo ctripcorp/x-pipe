@@ -1,0 +1,50 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/CrossRegionFsyncCoordinator.java
+  s_01bd81fc215ee3::t_f7dba0b69fa3a5 24
+  s_01bd81fc215ee3::t_317f70643cc952 147,154,156-157,159,161,164-165
+  s_01bd81fc215ee3::t_49854a8f299349 107,113
+  s_01bd81fc215ee3::t_932aa36e876eaf 39-40,52-53
+  s_01bd81fc215ee3::t_6593729c125b65 184,193
+  s_01bd81fc215ee3::t_e641addc49c138 83
+  s_01bd81fc215ee3::t_557cf1e7888052 84-89,93
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/KeeperCrossRegionFsyncSerialTest.java
+  s_01bd81fc215ee3::t_35cf380601e749 7-8,15-16,20,22
+  s_01bd81fc215ee3::t_c4fe89e7a18f27 215-216,254-264
+  s_01bd81fc215ee3::t_8cdf866198f2d9 38
+  s_01bd81fc215ee3::t_2752ed35af90c6 249
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_01bd81fc215ee3::t_04f95ac1e0bd95 274
+  s_0cfa55ac7dd4fa::t_bc2e5d0151faaf 1098
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  s_01bd81fc215ee3::t_ce572e4b512e51 33,406-410,413
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/CrossRegionFsyncCoordinatorTest.java
+  s_01bd81fc215ee3::t_3bd4a71cb8e0c5 108-137
+  s_01bd81fc215ee3::t_7a1dd74ec67919 212,217-218,220
+  s_01bd81fc215ee3::t_5dbb0e9a1283b6 99-107
+  s_01bd81fc215ee3::t_29819d02f20600 28
+  s_01bd81fc215ee3::t_c2a8c0328698ff 180
+  s_01bd81fc215ee3::t_4f87eba08960d1 156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "10edc7bb4a41b841b3cff291675da71978511494",
+  "prompts": {},
+  "sessions": {
+    "s_01bd81fc215ee3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "899c74fe-6065-4451-9a1e-c06c9dd86470",
+        "model": "deepseek-v4-pro-ga-260813"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    },
+    "s_0cfa55ac7dd4fa": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb89d177-18b8-46f3-a634-1dfc42ffa52f",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}

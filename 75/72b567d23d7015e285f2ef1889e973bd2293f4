@@ -1,0 +1,27 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdAction.java
+  s_01bd81fc215ee3::t_7ceb259db09464 61-62
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/KeeperNotInMetaException.java
+  s_01bd81fc215ee3::t_20cf768e4e5b95 1-12
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/interaction/DefaultInfoReplIdPingActionCollector.java
+  s_01bd81fc215ee3::t_e88f62c9916a42 7-8
+  s_01bd81fc215ee3::t_7472188cc14bb6 48-49
+  s_01bd81fc215ee3::t_2a01b840c5efb8 156-158
+  s_01bd81fc215ee3::t_603df751ff8994 17
+  s_01bd81fc215ee3::t_8a3bb7ce838eb6 155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "7572b567d23d7015e285f2ef1889e973bd2293f4",
+  "prompts": {},
+  "sessions": {
+    "s_01bd81fc215ee3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "899c74fe-6065-4451-9a1e-c06c9dd86470",
+        "model": "deepseek-v4-pro-ga-260813"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
