@@ -76,6 +76,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.Cro
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.CurrentDcSentinelHelloCheckControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.OneWaySentinelHelloCheckControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.DefaultSentinelMonitorsCheckTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.capability.KeeperCapabilityCacheTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconConsistencyCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.SentinelBeaconConsistencyCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.DefaultBeaconMetaControllerTest;
@@ -210,6 +211,7 @@ import org.junit.runners.Suite;
         DefaultRouteChooserTest.class,
 
         DefaultHealthCheckInstanceManagerTest.class,
+        KeeperCapabilityCacheTest.class,
 
         DefaultOuterClientAggregatorTest.class,
         DefaultDelayPingActionCollectorTest.class,
