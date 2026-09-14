@@ -30,6 +30,8 @@ public interface CheckerConfig {
 
     int getHealthyDelayMilli();
 
+    boolean isKeeperDelayCheckEnabled();
+
     long getHealthMarkCompensateIntervalMill();
 
     int getHealthMarkCompensateThreads();

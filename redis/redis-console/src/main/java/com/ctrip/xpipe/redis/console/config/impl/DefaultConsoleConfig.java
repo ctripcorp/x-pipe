@@ -132,6 +132,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public boolean isKeeperDelayCheckEnabled() {
+        return checkConfigBean.isKeeperDelayCheckEnabled();
+    }
+
+    @Override
     public long getHealthMarkCompensateIntervalMill() {
         return checkConfigBean.getHealthMarkCompensateIntervalMill();
     }

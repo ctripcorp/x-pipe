@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.console.config.impl;
 
+import com.ctrip.xpipe.api.config.Config;
+import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
@@ -14,7 +16,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -24,11 +28,41 @@ import java.util.Set;
  */
 public class DefaultConsoleConfigTest extends AbstractConsoleTest {
 
+    private Map<String, String> properties;
+
+    private TestableCheckConfigBean checkConfigBean;
+
     private DefaultConsoleConfig consoleConfig;
 
     @Before
     public void beforeDefaultConsoleConfigTest() {
-        consoleConfig = new DefaultConsoleConfig(new CheckConfigBean(FoundationService.DEFAULT),
+        properties = new HashMap<>();
+        checkConfigBean = new TestableCheckConfigBean();
+        checkConfigBean.useConfig(new Config() {
+            @Override
+            public String get(String key) {
+                return properties.get(key);
+            }
+
+            @Override
+            public String get(String key, String defaultValue) {
+                return properties.getOrDefault(key, defaultValue);
+            }
+
+            @Override
+            public void addConfigChangeListener(ConfigChangeListener configChangeListener) {
+            }
+
+            @Override
+            public void removeConfigChangeListener(ConfigChangeListener configChangeListener) {
+            }
+
+            @Override
+            public int getOrder() {
+                return 0;
+            }
+        });
+        consoleConfig = new DefaultConsoleConfig(checkConfigBean,
                 new ConsoleConfigBean(FoundationService.DEFAULT),
                 new DataCenterConfigBean(),
                 new CommonConfigBean());
@@ -58,6 +92,31 @@ public class DefaultConsoleConfigTest extends AbstractConsoleTest {
         List<BeaconOrgRoute> expected = Lists.newArrayList(orgRoute1, orgRoute2);
 
         Assert.assertEquals(expected, orgRoutes);
+    }
+
+    @Test
+    public void testKeeperDelayCheckEnabled() {
+        Assert.assertFalse(checkConfigBean.isKeeperDelayCheckEnabled());
+        Assert.assertEquals(checkConfigBean.isKeeperDelayCheckEnabled(), consoleConfig.isKeeperDelayCheckEnabled());
+
+        properties.put(CheckConfigBean.KEY_KEEPER_DELAY_CHECK_ENABLED, "false");
+        Assert.assertFalse(checkConfigBean.isKeeperDelayCheckEnabled());
+        Assert.assertEquals(checkConfigBean.isKeeperDelayCheckEnabled(), consoleConfig.isKeeperDelayCheckEnabled());
+
+        properties.put(CheckConfigBean.KEY_KEEPER_DELAY_CHECK_ENABLED, "true");
+        Assert.assertTrue(checkConfigBean.isKeeperDelayCheckEnabled());
+        Assert.assertEquals(checkConfigBean.isKeeperDelayCheckEnabled(), consoleConfig.isKeeperDelayCheckEnabled());
+    }
+
+    private static class TestableCheckConfigBean extends CheckConfigBean {
+
+        TestableCheckConfigBean() {
+            super(FoundationService.DEFAULT);
+        }
+
+        void useConfig(Config config) {
+            setConfig(config);
+        }
     }
 
 }

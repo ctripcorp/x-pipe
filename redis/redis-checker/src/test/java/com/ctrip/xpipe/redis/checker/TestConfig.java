@@ -105,6 +105,11 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
+    public boolean isKeeperDelayCheckEnabled() {
+        return false;
+    }
+
+    @Override
     public long getHealthMarkCompensateIntervalMill() {
         return 60 * 1000;
     }
