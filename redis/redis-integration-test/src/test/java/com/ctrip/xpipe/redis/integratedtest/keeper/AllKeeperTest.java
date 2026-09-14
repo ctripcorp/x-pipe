@@ -34,6 +34,7 @@ import org.junit.runners.Suite.SuiteClasses;
 		KeeperFastStateChangeTest.class,
 		ApplierServerToKeeperToFakeXsyncServerTest.class,
 		TfsKeeperTopologyTest.class,
+		TfsKeeperPubSubTest.class,
 		TfsComparatorHarnessTest.class,
 		TfsKeeperCompareConsistentTest.class,
 		TfsKeeperCompareMismatchTest.class,
