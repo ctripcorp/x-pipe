@@ -55,10 +55,10 @@ public class MetricDelayListener extends AbstractDelayActionListener implements 
         int minutes = commonConfigBean.getDelayMetricNewInstanceMinutes();
         long recvTime = context.getRecvTimeMilli();
         boolean isNew = isNewInstance(createTime, recvTime, minutes);
+        data.addTag("type", "redis");
         data.addTag("isNew", isNew ? TAG_IS_NEW_YES : TAG_IS_NEW_NO);
         data.addTag("crossDc", String.valueOf(!foundationService.getDataCenter().equalsIgnoreCase(info.getDcId())));
         data.addTag("crossRegion", String.valueOf(info.isCrossRegion()));
-        data.addTag("srcShardId", "-");
         return data;
     }
 
