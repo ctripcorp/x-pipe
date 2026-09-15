@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
@@ -47,6 +48,7 @@ public class KeeperDelayActionTest {
 
     @Mock private RedisSession session;
     @Mock private HealthCheckConfig config;
+    @Mock private CheckerConfig checkerConfig;
     @Mock private FoundationService foundationService;
     @Mock private KeeperCapabilityCache capabilityCache;
     @Mock private ScheduledExecutorService scheduled;
@@ -71,6 +73,7 @@ public class KeeperDelayActionTest {
         when(foundationService.getLocalIp()).thenReturn(LOCAL_IP);
         when(config.checkIntervalMilli()).thenReturn(60_000);
         when(config.getDelayConfig(anyString(), anyString(), anyString())).thenReturn(delayConfig(1000));
+        when(checkerConfig.isKeeperDelayCheckEnabled()).thenReturn(true);
         when(capabilityCache.getIfPresent(info.getHostPort()))
                 .thenReturn(KeeperCapabilityCache.Capability.SUPPORTED);
         doReturn(scheduledFuture).when(scheduled)
@@ -82,7 +85,8 @@ public class KeeperDelayActionTest {
         when(listener.worksfor(any())).thenReturn(true);
         when(listener.supportInstance(instance)).thenReturn(true);
 
-        action = new KeeperDelayAction(scheduled, instance, executors, foundationService, capabilityCache);
+        action = new KeeperDelayAction(scheduled, instance, executors, foundationService,
+                checkerConfig, capabilityCache);
         action.addListener(listener);
         action.initialize();
         action.start();

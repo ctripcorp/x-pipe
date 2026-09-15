@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.capability.KeeperCapabilityCache;
@@ -30,6 +31,9 @@ public class KeeperDelayActionFactory implements KeeperHealthCheckActionFactory<
     private FoundationService foundationService;
 
     @Autowired
+    private CheckerConfig checkerConfig;
+
+    @Autowired
     private KeeperCapabilityCache capabilityCache;
 
     @Autowired
@@ -41,7 +45,7 @@ public class KeeperDelayActionFactory implements KeeperHealthCheckActionFactory<
     @Override
     public KeeperDelayAction create(KeeperHealthCheckInstance instance) {
         KeeperDelayAction action = new KeeperDelayAction(
-                scheduled, instance, executors, foundationService, capabilityCache);
+                scheduled, instance, executors, foundationService, checkerConfig, capabilityCache);
         for (KeeperDelayActionListener listener : listeners) {
             if (listener.supportInstance(instance)) {
                 action.addListener(listener);

@@ -27,9 +27,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
@@ -61,6 +60,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     private final List<ClusterMeta> clustersToAdd = new ArrayList<>();
     private final List<RedisMeta> redisListToDelete = new ArrayList<>();
     private final List<RedisMeta> redisListToAdd = new ArrayList<>();
+    private final List<KeeperMeta> keeperListToDelete = new ArrayList<>();
+    private final List<KeeperMeta> keeperListToAdd = new ArrayList<>();
 
     public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager,
                                       HealthCheckEndpointFactory healthCheckEndpointFactory,
@@ -82,80 +83,35 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     @Override
     public void compare(DcMeta future) {
-        // init
+        // The first compare only establishes the incremental baseline. Cold-start instances are owned by DefaultHealthChecker.
         if(current == null) {
             healthCheckEndpointFactory.updateRoutes();
             current = future;
-            reconcileKeepers(future);
             return;
         }
 
-        try {
-            // normal logic
+        DcRouteMetaComparator routeComparator = new DcRouteMetaComparator(current, future, Route.TAG_CONSOLE);
+        routeComparator.compare();
+        boolean dcZoneChanged = !Objects.equals(current.getZone(), future.getZone());
+        if (dcZoneChanged || !routeComparator.getAdded().isEmpty()
+                || !routeComparator.getMofified().isEmpty() || !routeComparator.getRemoved().isEmpty()) {
+            healthCheckEndpointFactory.updateRoutes();
+        }
+
+        if (dcZoneChanged) {
+            logger.info("[compare][dc zone changed] dc={}, current={}, future={}", dcId, current.getZone(), future.getZone());
+            current.getClusters().values().forEach(this::visitRemovedForDcChange);
+            future.getClusters().values().forEach(this::visitAdded);
+        } else {
             DcMetaComparator comparator = DcMetaComparator.buildComparator(current, future);
-            DcRouteMetaComparator dcRouteMetaComparator = new DcRouteMetaComparator(current, future, Route.TAG_CONSOLE);
-            dcRouteMetaComparator.compare();
-            //change routes
-            if(!dcRouteMetaComparator.getAdded().isEmpty()
-                    || !dcRouteMetaComparator.getMofified().isEmpty()
-                    || !dcRouteMetaComparator.getRemoved().isEmpty()) {
-                healthCheckEndpointFactory.updateRoutes();
-            }
-
             comparator.accept(this);
-            removeAndAdd();
-            clearUp();
-            this.current = future;
-        } finally {
-            reconcileKeepers(future);
         }
-    }
-
-    private void reconcileKeepers(DcMeta future) {
-        if (keeperSelector == null || keeperCapabilityCache == null) {
-            return;
-        }
-
-        Map<HostPort, KeeperMeta> expected = new HashMap<>();
-        for (KeeperMeta keeper : keeperSelector.select(future)) {
-            expected.put(new HostPort(keeper.getIp(), keeper.getPort()), keeper);
-        }
-
-        Map<HostPort, KeeperHealthCheckInstance> actual = new HashMap<>();
-        for (KeeperHealthCheckInstance instance : instanceManager.getKeeperInstancesByDc(dcId)) {
-            HostPort address = getKeeperAddress(instance);
-            if (address != null) {
-                actual.put(address, instance);
-            }
-        }
-
-        for (HostPort address : actual.keySet()) {
-            if (!expected.containsKey(address)) {
-                try {
-                    instanceManager.removeKeeper(address);
-                } catch (Throwable throwable) {
-                    logger.error("[reconcileKeepers][remove] dc={}, keeper={}", dcId, address, throwable);
-                } finally {
-                    keeperCapabilityCache.invalidate(address);
-                }
-            }
-        }
-        for (Map.Entry<HostPort, KeeperMeta> entry : expected.entrySet()) {
-            if (!actual.containsKey(entry.getKey())) {
-                instanceManager.getOrCreate(entry.getValue());
-            }
-        }
-    }
-
-    private HostPort getKeeperAddress(KeeperHealthCheckInstance instance) {
-        KeeperInstanceInfo info = instance == null ? null : instance.getCheckInfo();
-        return info == null ? null : info.getHostPort();
+        removeAndAdd();
+        clearUp();
+        this.current = future;
     }
 
     private void removeAllKeepers() {
-        if (keeperCapabilityCache == null) {
-            return;
-        }
         for (KeeperHealthCheckInstance instance : instanceManager.getKeeperInstancesByDc(dcId)) {
             HostPort address = getKeeperAddress(instance);
             if (address == null) {
@@ -166,20 +122,29 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             } catch (Throwable throwable) {
                 logger.error("[removeAllKeepers] dc={}, keeper={}", dcId, address, throwable);
             } finally {
-                keeperCapabilityCache.invalidate(address);
+                invalidateKeeper(address);
             }
         }
-        keeperCapabilityCache.invalidateDc(dcId);
+        if (keeperCapabilityCache != null) {
+            keeperCapabilityCache.invalidateDc(dcId);
+        }
+    }
+
+    private HostPort getKeeperAddress(KeeperHealthCheckInstance instance) {
+        KeeperInstanceInfo info = instance == null ? null : instance.getCheckInfo();
+        return info == null ? null : info.getHostPort();
     }
 
     private void removeAndAdd() {
         this.redisListToDelete.forEach(this::removeRedis);
         this.redisListToDelete.forEach(this::removeRedisOnlyForPingAction);
         this.clustersToDelete.forEach(this::removeCluster);
+        this.keeperListToDelete.forEach(this::removeKeeper);
 
         this.clustersToAdd.forEach(this::addCluster);
         this.redisListToAdd.forEach(this::addRedis);
         this.redisListToAdd.forEach(this::addRedisOnlyForPingAction);
+        this.keeperListToAdd.forEach(this::addKeeper);
     }
 
     private void clearUp() {
@@ -187,6 +152,8 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         clustersToDelete.clear();
         redisListToAdd.clear();
         redisListToDelete.clear();
+        keeperListToAdd.clear();
+        keeperListToDelete.clear();
     }
 
     private void removeCluster(ClusterMeta removed) {
@@ -230,32 +197,77 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         instanceManager.getOrCreate(added);
     }
 
+    private void removeKeeper(KeeperMeta removed) {
+        HostPort address = new HostPort(removed.getIp(), removed.getPort());
+        try {
+            if (instanceManager.removeKeeper(address) != null) {
+                logger.info("[removeKeeper][{}] {}", address, removed);
+            }
+        } finally {
+            invalidateKeeper(address);
+        }
+    }
+
+    private void addKeeper(KeeperMeta added) {
+        logger.info("[addKeeper][{}:{}] {}", added.getIp(), added.getPort(), added);
+        instanceManager.getOrCreate(added);
+    }
+
+    private void invalidateKeeper(HostPort address) {
+        if (keeperCapabilityCache != null) {
+            keeperCapabilityCache.invalidate(address);
+        }
+    }
+
     @Override
     public void visitAdded(ClusterMeta added) {
         logger.debug("[visitAdded][{}][{}]", dcId, added.getId());
         this.clustersToAdd.add(added);
+        selectKeepers(added, keeperListToAdd);
     }
 
     @Override
     public void visitModified(MetaComparator comparator) {
-        ClusterMetaComparator clusterMetaComparator = (ClusterMetaComparator) comparator;
+        ClusterMetaComparator clusterComparator = (ClusterMetaComparator) comparator;
         if (comparator.isConfigChange()) {
-            this.clustersToDelete.add(clusterMetaComparator.getCurrent());
-            this.clustersToAdd.add(clusterMetaComparator.getFuture());
+            this.clustersToDelete.add(clusterComparator.getCurrent());
+            this.clustersToAdd.add(clusterComparator.getFuture());
+            selectKeepers(clusterComparator.getCurrent(), keeperListToDelete);
+            selectKeepers(clusterComparator.getFuture(), keeperListToAdd);
         } else {
-            ClusterMetaComparatorCollector clusterMetaComparatorCollector = new ClusterMetaComparatorCollector();
-            clusterMetaComparator.accept(clusterMetaComparatorCollector);
-            Pair<List<RedisMeta>, List<RedisMeta>> modifiedRedises = clusterMetaComparatorCollector.collect();
+            ClusterMetaComparatorCollector redisCollector = new ClusterMetaComparatorCollector();
+            clusterComparator.accept(redisCollector);
+            Pair<List<RedisMeta>, List<RedisMeta>> modifiedRedises = redisCollector.collect();
             this.redisListToDelete.addAll(modifiedRedises.getKey());
             this.redisListToAdd.addAll(modifiedRedises.getValue());
+
+            if (keeperSelector != null) {
+                KeeperMetaComparatorCollector keeperCollector = new KeeperMetaComparatorCollector();
+                clusterComparator.accept(keeperCollector);
+                Pair<List<KeeperMeta>, List<KeeperMeta>> modifiedKeepers = keeperCollector.collect();
+                modifiedKeepers.getKey().stream().filter(keeperSelector::shouldLoad).forEach(keeperListToDelete::add);
+                modifiedKeepers.getValue().stream().filter(keeperSelector::shouldLoad).forEach(keeperListToAdd::add);
+            }
         }
     }
-
 
     @Override
     public void visitRemoved(ClusterMeta removed) {
         logger.debug("[visitRemoved][{}][{}]", dcId, removed.getId());
         this.clustersToDelete.add(removed);
+        selectKeepers(removed, keeperListToDelete);
+    }
+
+    private void visitRemovedForDcChange(ClusterMeta removed) {
+        logger.debug("[visitRemovedForDcChange][{}][{}]", dcId, removed.getId());
+        this.clustersToDelete.add(removed);
+        removed.getShards().values().forEach(shard -> keeperListToDelete.addAll(shard.getKeepers()));
+    }
+
+    private void selectKeepers(ClusterMeta cluster, List<KeeperMeta> selected) {
+        if (keeperSelector != null) {
+            selected.addAll(keeperSelector.select(cluster));
+        }
     }
 
     protected boolean isInterestedInCluster(ClusterMeta cluster) {

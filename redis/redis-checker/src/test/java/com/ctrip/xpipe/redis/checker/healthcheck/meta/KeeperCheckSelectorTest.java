@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -15,30 +14,26 @@ import java.util.Collections;
 
 public class KeeperCheckSelectorTest {
 
-    private CheckerConfig checkerConfig;
     private MetaCache metaCache;
     private KeeperCheckSelector selector;
 
     @Before
     public void setUp() {
-        checkerConfig = Mockito.mock(CheckerConfig.class);
         metaCache = Mockito.mock(MetaCache.class);
-        selector = new KeeperCheckSelector(checkerConfig, metaCache, "active");
+        selector = new KeeperCheckSelector(metaCache, "active");
     }
 
     @Test
-    public void testDisabledAndNonOneWayAreNotSelected() {
+    public void testSwitchDoesNotAffectSelectionAndNonOneWayIsNotSelected() {
         DcMeta dc = keeperDc("active", "one_way", "active");
-        Assert.assertTrue(selector.select(dc).isEmpty());
+        Assert.assertEquals(1, selector.select(dc).size());
 
-        Mockito.when(checkerConfig.isKeeperDelayCheckEnabled()).thenReturn(true);
         dc.getClusters().values().iterator().next().setType("single_dc");
         Assert.assertTrue(selector.select(dc).isEmpty());
     }
 
     @Test
     public void testOnlyCurrentActiveDcOwnerIsSelected() {
-        Mockito.when(checkerConfig.isKeeperDelayCheckEnabled()).thenReturn(true);
         DcMeta dc = keeperDc("active", "one_way", "other");
         Assert.assertTrue(selector.select(dc).isEmpty());
 
@@ -49,7 +44,6 @@ public class KeeperCheckSelectorTest {
 
     @Test
     public void testSameRegionNonTfsCandidateIsSelectedButCrossRegionIsNot() {
-        Mockito.when(checkerConfig.isKeeperDelayCheckEnabled()).thenReturn(true);
         DcMeta dc = keeperDc("backup", "one_way", "active");
         KeeperMeta keeper = dc.getClusters().values().iterator().next()
                 .getShards().values().iterator().next().getKeepers().get(0);
