@@ -14,7 +14,9 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class MetricDelayListenerTest extends AbstractCheckerTest {
@@ -123,6 +125,35 @@ public class MetricDelayListenerTest extends AbstractCheckerTest {
         listener.onAction(contextWithRecvTime(recvTime));
 
         Assert.assertEquals("1", capturedPoint.get().getTags().get("isNew"));
+    }
+
+    @Test
+    public void testRedisPointContract() {
+        long recvTime = 1_234_567_890L;
+        DefaultRedisInstanceInfo info = (DefaultRedisInstanceInfo) instance.getCheckInfo();
+        info.setCreateTime(new Date(recvTime - 20 * MILLIS_PER_MINUTE));
+        info.setCrossRegion(false);
+        DelayActionContext context = new DelayActionContext(instance, 1_234_567L);
+        ReflectionTestUtils.setField(context, "recvTimeMilli", recvTime);
+
+        listener.onAction(context);
+
+        MetricData point = capturedPoint.get();
+        Assert.assertEquals("delay", point.getMetricType());
+        Assert.assertEquals(info.getDcId(), point.getDcName());
+        Assert.assertEquals(info.getClusterId(), point.getClusterName());
+        Assert.assertEquals(info.getShardId(), point.getShardName());
+        Assert.assertEquals(info.getClusterType().toString(), point.getClusterType());
+        Assert.assertEquals(info.getHostPort(), point.getHostPort());
+        Assert.assertEquals(1234.567, point.getValue(), 0.0);
+        Assert.assertEquals(recvTime, point.getTimestampMilli());
+        Assert.assertEquals(new HashSet<>(Arrays.asList("type", "isNew", "crossDc", "crossRegion")),
+                point.getTags().keySet());
+        Assert.assertEquals("redis", point.getTags().get("type"));
+        Assert.assertEquals("0", point.getTags().get("isNew"));
+        Assert.assertEquals("false", point.getTags().get("crossDc"));
+        Assert.assertEquals("false", point.getTags().get("crossRegion"));
+        Assert.assertNull(point.getTags().get("srcShardId"));
     }
 
     @Test
