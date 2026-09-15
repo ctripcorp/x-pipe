@@ -91,12 +91,18 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
     public void testCreateKeeper() {
         KeeperMeta keeperMeta = normalKeeperMeta();
         KeeperHealthCheckInstance first = factory.create(keeperMeta);
+        ShardMeta keeperShard = keeperMeta.parent();
+        ClusterMeta keeperCluster = keeperShard.parent();
+        DcMeta dcMeta = keeperCluster.parent();
+        dcMeta.getKeeperContainers().get(0).setDiskType("DEFAULT");
         KeeperHealthCheckInstance second = factory.create(keeperMeta);
 
         Assert.assertEquals(new DefaultEndPoint(keeperMeta.getIp(), keeperMeta.getPort()), first.getEndpoint());
         Assert.assertEquals(first.getEndpoint(), second.getEndpoint());
         Assert.assertSame(first.getRedisSession(), second.getRedisSession());
         Assert.assertNotNull(first.getHealthCheckConfig());
+        Assert.assertTrue(first.isTfs());
+        Assert.assertFalse(second.isTfs());
         Assert.assertEquals(1, first.getHealthCheckActions().size());
         Assert.assertEquals(1, second.getHealthCheckActions().size());
         Assert.assertTrue(first.getLifecycleState().isStarted());
@@ -318,12 +324,15 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
 
     protected KeeperMeta normalKeeperMeta() {
         DcMeta dcMeta = new DcMeta().setId("jq");
+        long keeperContainerId = 1L;
+        dcMeta.addKeeperContainer(new KeeperContainerMeta().setId(keeperContainerId).setDiskType("TFS"));
         ClusterMeta clusterMeta = new ClusterMeta().setId("cluster").setType(ClusterType.ONE_WAY.toString())
                 .setActiveDc("oy").setOrgId(42).setStatus("normal");
         dcMeta.addCluster(clusterMeta);
         ShardMeta shardMeta = new ShardMeta().setId("shard").setDbId(100L);
         clusterMeta.addShard(shardMeta);
         KeeperMeta keeperMeta = new KeeperMeta().setIp("127.0.0.1").setPort(6380)
+                .setKeeperContainerId(keeperContainerId)
                 .setActive(true).setMaster("127.0.0.2:6379");
         shardMeta.addKeeper(keeperMeta);
         return keeperMeta;

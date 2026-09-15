@@ -17,6 +17,8 @@ public class DefaultKeeperHealthCheckInstance extends AbstractHealthCheckInstanc
 
     private RedisSession session;
 
+    private boolean tfs;
+
     public DefaultKeeperHealthCheckInstance setEndpoint(Endpoint endpoint) {
         this.endpoint = endpoint;
         return this;
@@ -24,6 +26,11 @@ public class DefaultKeeperHealthCheckInstance extends AbstractHealthCheckInstanc
 
     public DefaultKeeperHealthCheckInstance setSession(RedisSession session) {
         this.session = session;
+        return this;
+    }
+
+    public DefaultKeeperHealthCheckInstance setTfs(boolean tfs) {
+        this.tfs = tfs;
         return this;
     }
 
@@ -35,6 +42,11 @@ public class DefaultKeeperHealthCheckInstance extends AbstractHealthCheckInstanc
     @Override
     public RedisSession getRedisSession() {
         return session;
+    }
+
+    @Override
+    public boolean isTfs() {
+        return tfs;
     }
 
     @Override

@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedis
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.CRDTDelayActionControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MetricDelayListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperDelayActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CRDTDelayPingActionCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultAggregatorPullServiceTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollectorTest;
@@ -137,6 +138,7 @@ import org.junit.runners.Suite;
         DefaultAlertEntityHolderTest.class,
         DefaultDcMetaChangeManagerTest.class,
         DelayActionTest.class,
+        KeeperDelayActionTest.class,
         MetricDelayListenerTest.class,
         CRDTDelayActionControllerTest.class,
         CurrentDcSentinelHelloCollectorTest.class,
