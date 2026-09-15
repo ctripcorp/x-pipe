@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** Keeper capability cache populated only by explicit meta refreshes; reads are memory-only. */
+/** Keeper capability cache populated by the independent refresh manager; reads are memory-only. */
 @Component
 public class KeeperCapabilityCache {
 
@@ -42,6 +42,7 @@ public class KeeperCapabilityCache {
     private final Map<HostPort, RefreshAttempt> inflight = new HashMap<>();
     private final Map<HostPort, Long> addressGenerations = new HashMap<>();
     private final Map<String, Long> dcGenerations = new HashMap<>();
+    private long lifecycleGeneration;
 
     public Capability get(HostPort address) {
         if (address == null) {
@@ -73,6 +74,7 @@ public class KeeperCapabilityCache {
                     return;
                 }
                 attempt = new RefreshAttempt(address, info.getDcId(), session,
+                        lifecycleGeneration,
                         addressGenerations.getOrDefault(address, 0L),
                         dcGenerations.getOrDefault(info.getDcId(), 0L));
                 inflight.put(address, attempt);
@@ -111,8 +113,18 @@ public class KeeperCapabilityCache {
         }
     }
 
+    /** Advances the lifecycle gate and drops all cached or in-flight state. */
+    public void invalidateAll() {
+        synchronized (stateLock) {
+            lifecycleGeneration++;
+            values.clear();
+            inflight.clear();
+        }
+    }
+
     private boolean isCurrent(RefreshAttempt attempt) {
-        return attempt.addressGeneration == addressGenerations.getOrDefault(attempt.address, 0L)
+        return attempt.lifecycleGeneration == lifecycleGeneration
+                && attempt.addressGeneration == addressGenerations.getOrDefault(attempt.address, 0L)
                 && attempt.dcGeneration == dcGenerations.getOrDefault(attempt.dcId, 0L);
     }
 
@@ -121,14 +133,16 @@ public class KeeperCapabilityCache {
         private final HostPort address;
         private final String dcId;
         private final RedisSession session;
+        private final long lifecycleGeneration;
         private final long addressGeneration;
         private final long dcGeneration;
 
         private RefreshAttempt(HostPort address, String dcId, RedisSession session,
-                               long addressGeneration, long dcGeneration) {
+                               long lifecycleGeneration, long addressGeneration, long dcGeneration) {
             this.address = address;
             this.dcId = dcId;
             this.session = session;
+            this.lifecycleGeneration = lifecycleGeneration;
             this.addressGeneration = addressGeneration;
             this.dcGeneration = dcGeneration;
         }

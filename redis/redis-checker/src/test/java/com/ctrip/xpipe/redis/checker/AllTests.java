@@ -81,6 +81,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.Cur
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.controller.OneWaySentinelHelloCheckControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.DefaultSentinelMonitorsCheckTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.capability.KeeperCapabilityCacheTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.capability.KeeperCapabilityRefreshManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.BeaconConsistencyCheckActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.DefaultBeaconMetaControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.clusteractions.beacon.SentinelBeaconConsistencyCheckActionTest;
@@ -93,6 +94,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckInstance
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckerMockTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRouteChooserTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.DefaultDcMetaChangeManagerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelectorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperMetaChangeManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityInspectorTest;
 import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatusTest;
@@ -217,7 +220,10 @@ import org.junit.runners.Suite;
         DefaultRouteChooserTest.class,
 
         DefaultHealthCheckInstanceManagerTest.class,
+        KeeperCheckSelectorTest.class,
         KeeperCapabilityCacheTest.class,
+        KeeperCapabilityRefreshManagerTest.class,
+        KeeperMetaChangeManagerTest.class,
 
         DefaultOuterClientAggregatorTest.class,
         DefaultDelayPingActionCollectorTest.class,

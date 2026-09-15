@@ -21,7 +21,6 @@ import org.unidal.tuple.Triple;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.Objects;
 
@@ -73,17 +72,7 @@ public class SentinelMonitorsCheck extends AbstractAllCheckerLeaderTask {
     }
 
     protected List<DcMeta> dcsToCheck() {
-        List<DcMeta> result = Lists.newArrayList();
-        result.add(metaCache.getXpipeMeta().getDcs().get(currentDcId));
-        Set<String> ignoreDcNames = config.getIgnoredHealthCheckDc();
-        List<DcMeta> toRemove = Lists.newArrayList();
-        for(DcMeta dcMeta: result) {
-            if(ignoreDcNames.contains(dcMeta.getId()) || ignoreDcNames.contains(dcMeta.getId().toLowerCase())) {
-                toRemove.add(dcMeta);
-            }
-        }
-        result.removeAll(toRemove);
-        return result;
+        return Lists.newArrayList(metaCache.getXpipeMeta().getDcs().get(currentDcId));
     }
     
     @Override

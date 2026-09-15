@@ -110,6 +110,11 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
+    public int getKeeperCapabilityRefreshIntervalMilli() {
+        return 60000;
+    }
+
+    @Override
     public long getHealthMarkCompensateIntervalMill() {
         return 60 * 1000;
     }
@@ -197,11 +202,6 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     @Override
     public int getQuorum() {
         return 1;
-    }
-
-    @Override
-    public Set<String> getIgnoredHealthCheckDc() {
-        return new HashSet<>();
     }
 
     @Override
