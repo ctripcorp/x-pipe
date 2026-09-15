@@ -43,6 +43,18 @@
             <artifactId>netty-all</artifactId>
         </dependency>
 
+        <!-- Google Guice for cdubbo：ctrip-service 排除 guice，与 proxy/keeper/meta 一致显式加回 -->
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>aopalliance</groupId>
+                    <artifactId>aopalliance</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <dependency>
             <groupId>com.ctrip.framework.xpipe</groupId>
             <artifactId>core</artifactId>
