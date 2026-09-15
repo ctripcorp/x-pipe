@@ -2,11 +2,11 @@ package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelector;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -48,10 +48,10 @@ public class DefaultHealthCheckInstanceManagerTest extends AbstractCheckerTest {
     private MetaCache metaCache;
 
     @Mock
-    private CheckerConfig checkerConfig;
+    private HealthCheckInstanceFactory instanceFactory;
 
     @Mock
-    private HealthCheckInstanceFactory instanceFactory;
+    private KeeperCheckSelector keeperSelector;
 
     @Mock
     private RedisHealthCheckInstance mockCheckInstance;
@@ -73,8 +73,6 @@ public class DefaultHealthCheckInstanceManagerTest extends AbstractCheckerTest {
         Mockito.when(instanceFactory.getOrCreateRedisInstanceForPsubPingAction(Mockito.any())).thenReturn(mockCheckInstance);
         Mockito.when(mockKeeperInstance.getCheckInfo()).thenReturn(mockKeeperInfo);
         Mockito.when(mockKeeperInfo.getDcId()).thenReturn("jq");
-
-        Mockito.when(checkerConfig.getIgnoredHealthCheckDc()).thenReturn(Collections.emptySet());
 
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
         Mockito.doAnswer(inv -> {
@@ -190,6 +188,20 @@ public class DefaultHealthCheckInstanceManagerTest extends AbstractCheckerTest {
         Assert.assertSame(mockKeeperInstance, healthCheckInstanceManager.removeKeeper(address));
         Assert.assertNull(healthCheckInstanceManager.findKeeperHealthCheckInstance(address));
         Mockito.verify(instanceFactory, Mockito.times(2)).remove(mockKeeperInstance);
+    }
+
+    @Test
+    public void testKeeperMissingCheckUsesSelectorWithoutCreating() {
+        healthChecker.generateHealthCheckInstances();
+        KeeperMeta keeper = new KeeperMeta().setIp("127.0.0.9").setPort(6380);
+        Mockito.when(keeperSelector.select(Mockito.any(XpipeMeta.class)))
+                .thenReturn(Collections.singletonList(keeper));
+        healthCheckInstanceManager.getOrCreate(keeper);
+
+        Assert.assertTrue(healthCheckInstanceManager.checkInstancesMiss(getXpipeMeta()));
+        healthCheckInstanceManager.removeKeeper(new HostPort(keeper.getIp(), keeper.getPort()));
+        Assert.assertFalse(healthCheckInstanceManager.checkInstancesMiss(getXpipeMeta()));
+        Mockito.verify(instanceFactory, Mockito.times(1)).create(keeper);
     }
 
     @Override

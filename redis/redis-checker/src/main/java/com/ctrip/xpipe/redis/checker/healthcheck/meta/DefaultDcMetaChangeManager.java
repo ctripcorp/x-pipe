@@ -5,9 +5,13 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.AbstractStartStoppable;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.KeeperInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.capability.KeeperCapabilityCache;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.Route;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -23,7 +27,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -37,15 +43,19 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     private DcMeta current;
 
-    private HealthCheckInstanceManager instanceManager;
+    private final HealthCheckInstanceManager instanceManager;
 
     private static final String currentDcId = FoundationService.DEFAULT.getDataCenter();
-    
-    private HealthCheckEndpointFactory healthCheckEndpointFactory;
 
-    private MetaCache metaCache;
+    private final HealthCheckEndpointFactory healthCheckEndpointFactory;
+
+    private final MetaCache metaCache;
 
     private final String dcId;
+
+    private final KeeperCheckSelector keeperSelector;
+
+    private final KeeperCapabilityCache keeperCapabilityCache;
 
     private final List<ClusterMeta> clustersToDelete = new ArrayList<>();
     private final List<ClusterMeta> clustersToAdd = new ArrayList<>();
@@ -55,10 +65,19 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
     public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager,
                                       HealthCheckEndpointFactory healthCheckEndpointFactory,
                                       MetaCache metaCache) {
+        this(dcId, instanceManager, healthCheckEndpointFactory, metaCache, null, null);
+    }
+
+    public DefaultDcMetaChangeManager(String dcId, HealthCheckInstanceManager instanceManager,
+                                      HealthCheckEndpointFactory healthCheckEndpointFactory,
+                                      MetaCache metaCache, KeeperCheckSelector keeperSelector,
+                                      KeeperCapabilityCache keeperCapabilityCache) {
         this.dcId = dcId;
         this.instanceManager = instanceManager;
         this.healthCheckEndpointFactory = healthCheckEndpointFactory;
         this.metaCache = metaCache;
+        this.keeperSelector = keeperSelector;
+        this.keeperCapabilityCache = keeperCapabilityCache;
     }
 
     @Override
@@ -67,25 +86,90 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
         if(current == null) {
             healthCheckEndpointFactory.updateRoutes();
             current = future;
+            reconcileKeepers(future);
             return;
         }
 
-        // normal logic
-        DcMetaComparator comparator = DcMetaComparator.buildComparator(current, future);
-        DcRouteMetaComparator dcRouteMetaComparator = new DcRouteMetaComparator(current, future, Route.TAG_CONSOLE);
-        dcRouteMetaComparator.compare();
-        //change routes
-        if(!dcRouteMetaComparator.getAdded().isEmpty()
-                || !dcRouteMetaComparator.getMofified().isEmpty()
-                || !dcRouteMetaComparator.getRemoved().isEmpty()) {
-            healthCheckEndpointFactory.updateRoutes();
+        try {
+            // normal logic
+            DcMetaComparator comparator = DcMetaComparator.buildComparator(current, future);
+            DcRouteMetaComparator dcRouteMetaComparator = new DcRouteMetaComparator(current, future, Route.TAG_CONSOLE);
+            dcRouteMetaComparator.compare();
+            //change routes
+            if(!dcRouteMetaComparator.getAdded().isEmpty()
+                    || !dcRouteMetaComparator.getMofified().isEmpty()
+                    || !dcRouteMetaComparator.getRemoved().isEmpty()) {
+                healthCheckEndpointFactory.updateRoutes();
+            }
+
+            comparator.accept(this);
+            removeAndAdd();
+            clearUp();
+            this.current = future;
+        } finally {
+            reconcileKeepers(future);
+        }
+    }
+
+    private void reconcileKeepers(DcMeta future) {
+        if (keeperSelector == null || keeperCapabilityCache == null) {
+            return;
         }
 
-        comparator.accept(this);
-        removeAndAdd();
-        clearUp();
+        Map<HostPort, KeeperMeta> expected = new HashMap<>();
+        for (KeeperMeta keeper : keeperSelector.select(future)) {
+            expected.put(new HostPort(keeper.getIp(), keeper.getPort()), keeper);
+        }
 
-        this.current = future;
+        Map<HostPort, KeeperHealthCheckInstance> actual = new HashMap<>();
+        for (KeeperHealthCheckInstance instance : instanceManager.getKeeperInstancesByDc(dcId)) {
+            HostPort address = getKeeperAddress(instance);
+            if (address != null) {
+                actual.put(address, instance);
+            }
+        }
+
+        for (HostPort address : actual.keySet()) {
+            if (!expected.containsKey(address)) {
+                try {
+                    instanceManager.removeKeeper(address);
+                } catch (Throwable throwable) {
+                    logger.error("[reconcileKeepers][remove] dc={}, keeper={}", dcId, address, throwable);
+                } finally {
+                    keeperCapabilityCache.invalidate(address);
+                }
+            }
+        }
+        for (Map.Entry<HostPort, KeeperMeta> entry : expected.entrySet()) {
+            if (!actual.containsKey(entry.getKey())) {
+                instanceManager.getOrCreate(entry.getValue());
+            }
+        }
+    }
+
+    private HostPort getKeeperAddress(KeeperHealthCheckInstance instance) {
+        KeeperInstanceInfo info = instance == null ? null : instance.getCheckInfo();
+        return info == null ? null : info.getHostPort();
+    }
+
+    private void removeAllKeepers() {
+        if (keeperCapabilityCache == null) {
+            return;
+        }
+        for (KeeperHealthCheckInstance instance : instanceManager.getKeeperInstancesByDc(dcId)) {
+            HostPort address = getKeeperAddress(instance);
+            if (address == null) {
+                continue;
+            }
+            try {
+                instanceManager.removeKeeper(address);
+            } catch (Throwable throwable) {
+                logger.error("[removeAllKeepers] dc={}, keeper={}", dcId, address, throwable);
+            } finally {
+                keeperCapabilityCache.invalidate(address);
+            }
+        }
+        keeperCapabilityCache.invalidateDc(dcId);
     }
 
     private void removeAndAdd() {
@@ -249,10 +333,13 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
 
     @Override
     protected void doStop() {
-        logger.info("[stop] {}", current.getId());
-        for(ClusterMeta cluster : current.getClusters().values()) {
-            visitRemoved(cluster);
+        if (current != null) {
+            logger.info("[stop] {}", current.getId());
+            for(ClusterMeta cluster : current.getClusters().values()) {
+                visitRemoved(cluster);
+            }
         }
+        removeAllKeepers();
     }
 
     private void removeRedisOnlyForPingAction(RedisMeta removed) {

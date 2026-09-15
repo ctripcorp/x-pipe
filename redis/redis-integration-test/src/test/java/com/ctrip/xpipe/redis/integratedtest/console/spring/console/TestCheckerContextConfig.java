@@ -20,7 +20,6 @@ import com.ctrip.xpipe.redis.console.config.impl.DefaultCommonConfig;
 import com.ctrip.xpipe.redis.console.dao.MigrationClusterDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationEventDao;
 import com.ctrip.xpipe.redis.console.dao.MigrationShardDao;
-import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
@@ -97,11 +96,6 @@ public class TestCheckerContextConfig {
     @Bean
     public CheckerDbConfig checkerDbConfig(PersistenceCache persistenceCache) {
         return new DefaultCheckerDbConfig(persistenceCache);
-    }
-
-    @Bean
-    public DcIgnoredConfigChangeListener dcIgnoredConfigChangeListener() {
-        return new DcIgnoredConfigChangeListener();
     }
 
     @Bean

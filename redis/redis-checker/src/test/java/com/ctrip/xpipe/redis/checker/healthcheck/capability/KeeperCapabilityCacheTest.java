@@ -142,6 +142,25 @@ public class KeeperCapabilityCacheTest {
     }
 
     @Test
+    public void testInvalidateAllFencesOldCallbacksAndDoesNotClearReplacementInflight() {
+        KeeperCapabilityCache cache = new KeeperCapabilityCache();
+        ControlledSession session = new ControlledSession();
+        HostPort address = new HostPort("127.0.0.1", 6380);
+        KeeperHealthCheckInstance instance = instance(address, "dc", session);
+
+        cache.refresh(instance);
+        cache.invalidateAll();
+        cache.refresh(instance);
+        session.success(PREPARE_WATCH, "1");
+        session.success(PUBSUB_PARSE, "1");
+        Assert.assertEquals(KeeperCapabilityCache.Capability.UNKNOWN, cache.get(address));
+
+        session.success(PREPARE_WATCH, "1");
+        session.success(PUBSUB_PARSE, "1");
+        Assert.assertEquals(KeeperCapabilityCache.Capability.SUPPORTED, cache.get(address));
+    }
+
+    @Test
     public void testSynchronousFailureIsContainedAndReadPathDoesNotQuery() throws Exception {
         KeeperCapabilityCache cache = new KeeperCapabilityCache();
         ControlledSession session = new ControlledSession();

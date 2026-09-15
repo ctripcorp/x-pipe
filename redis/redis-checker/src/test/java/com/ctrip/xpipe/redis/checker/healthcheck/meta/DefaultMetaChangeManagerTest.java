@@ -33,13 +33,4 @@ public class DefaultMetaChangeManagerTest extends AbstractCheckerIntegrationTest
     public void testGetOrCreate() {
     }
 
-    @Test
-    public void testIgnore() {
-        metaChangeManager.ignore("NULL");
-    }
-
-    @Test
-    public void testStartIfPossible() {
-        metaChangeManager.startIfPossible("NULL");
-    }
 }

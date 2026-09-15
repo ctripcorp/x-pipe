@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelector;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -47,6 +48,9 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
 
     @Autowired
     private HealthCheckInstanceFactory instanceFactory;
+
+    @Autowired
+    private KeeperCheckSelector keeperSelector;
 
     @Override
     public RedisHealthCheckInstance getOrCreate(RedisMeta redis) {
@@ -177,10 +181,14 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
         Set<String> currentClusters = clusterHealthCheckerInstances.keySet();
         Set<HostPort> currentInstances = instances.keySet();
         Set<HostPort> currentPingInstances = redisInstanceForPingAction.keySet();
+        Set<HostPort> currentKeeperInstances = keeperInstances.keySet();
 
         Set<String> expectClusters = new HashSet<>();
         Set<HostPort> expectInstances = new HashSet<>();
         Set<HostPort> expectPingInstances = new HashSet<>();
+        Set<HostPort> expectKeeperInstances = keeperSelector.select(xpipeMeta).stream()
+                .map(keeper -> new HostPort(keeper.getIp(), keeper.getPort()))
+                .collect(Collectors.toSet());
 
         String currentDc = FoundationService.DEFAULT.getDataCenter();
         String currentZone = xpipeMeta.getDcs().get(currentDc).getZone();
@@ -247,6 +255,12 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
             logger.debug("[checkInstancesMiss][CrossRegionInstance][current] {}", currentPingInstances);
             logger.debug("[checkInstancesMiss][CrossRegionInstance][expect] {}", expectPingInstances);
             EventMonitor.DEFAULT.logEvent(ALERT_TYPE, "CrossRegionInstanceMissing");
+        }
+        if (!currentKeeperInstances.equals(expectKeeperInstances)) {
+            noMissing = false;
+            logger.debug("[checkInstancesMiss][KeeperInstance][current] {}", currentKeeperInstances);
+            logger.debug("[checkInstancesMiss][KeeperInstance][expect] {}", expectKeeperInstances);
+            EventMonitor.DEFAULT.logEvent(ALERT_TYPE, "KeeperInstanceMissing");
         }
         if (noMissing) {
             EventMonitor.DEFAULT.logEvent(ALERT_TYPE, "noMissing");

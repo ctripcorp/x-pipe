@@ -35,6 +35,8 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public static final String KEY_KEEPER_DELAY_CHECK_ENABLED = "keeper.delay.check.enabled";
 
+    public static final String KEY_KEEPER_CAPABILITY_REFRESH_INTERVAL_MILLI = "keeper.capability.refresh.interval.milli";
+
     public static final String KEY_REDIS_REPL_DISKLESS_MINIMUM_VERSION = "redis.repl.diskless.minimum.version";
 
     public static final String KEY_REDIS_REPLICATION_HEALTH_CHECK_INTERVAL = "redis.replication.health.check.interval";
@@ -96,8 +98,6 @@ public class CheckConfigBean extends AbstractConfigBean {
     public static final String KEY_CHECKER_STABLE_THRESHOLD = "checker.stable.recover.threshold";
 
     public static final String KEY_CHECKER_UNSTABLE_THRESHOLD = "checker.stable.loss.threshold";
-
-    public static final String KEY_IGNORED_DC_FOR_HEALTH_CHECK = "ignored.dc.for.health.check";
 
     public static final String KEY_CHECKER_CURRENT_DC_ALL_META_REFRESH_INTERVAL = "checker.current_dc_all_meta.refresh.interval.milli";
 
@@ -173,6 +173,10 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public boolean isKeeperDelayCheckEnabled() {
         return getBooleanProperty(KEY_KEEPER_DELAY_CHECK_ENABLED, false);
+    }
+
+    public int getKeeperCapabilityRefreshIntervalMilli() {
+        return getIntProperty(KEY_KEEPER_CAPABILITY_REFRESH_INTERVAL_MILLI, 60000);
     }
 
     public String getReplDisklessMinRedisVersion() {
@@ -326,10 +330,6 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public float getSiteUnstableThreshold() {
         return getFloatProperty(KEY_CHECKER_UNSTABLE_THRESHOLD, 0.8f);
-    }
-
-    public Set<String> getIgnoredHealthCheckDc() {
-        return getSplitStringSet(getProperty(KEY_IGNORED_DC_FOR_HEALTH_CHECK, ""));
     }
 
     public int getCheckerCurrentDcAllMetaRefreshIntervalMilli() {

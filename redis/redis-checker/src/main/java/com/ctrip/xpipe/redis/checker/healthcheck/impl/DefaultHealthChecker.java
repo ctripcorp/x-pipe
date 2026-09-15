@@ -4,9 +4,10 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
+import com.ctrip.xpipe.redis.checker.healthcheck.capability.KeeperCapabilityRefreshManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelector;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -43,7 +44,10 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
     private MetaChangeManager metaChangeManager;
 
     @Autowired
-    private CheckerConfig checkerConfig;
+    private KeeperCapabilityRefreshManager keeperCapabilityRefreshManager;
+
+    @Autowired
+    private KeeperCheckSelector keeperSelector;
 
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
@@ -98,12 +102,29 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
     protected void doStart() throws Exception {
         super.doStart();
         metaChangeManager.start();
+        try {
+            keeperCapabilityRefreshManager.start();
+        } catch (Exception | Error throwable) {
+            try {
+                metaChangeManager.stop();
+            } catch (Exception | Error cleanupFailure) {
+                throwable.addSuppressed(cleanupFailure);
+            }
+            throw throwable;
+        }
     }
 
     @Override
     protected void doStop() throws Exception {
-        metaChangeManager.stop();
-        super.doStop();
+        try {
+            keeperCapabilityRefreshManager.stop();
+        } finally {
+            try {
+                metaChangeManager.stop();
+            } finally {
+                super.doStop();
+            }
+        }
     }
 
     @VisibleForTesting
@@ -116,10 +137,6 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
         XpipeMeta meta = metaCache.getXpipeMeta();
 
         for(DcMeta dcMeta : meta.getDcs().values()) {
-            if(checkerConfig.getIgnoredHealthCheckDc().contains(dcMeta.getId())) {
-                continue;
-            }
-
             for (ClusterMeta cluster : dcMeta.getClusters().values()) {
                 try {
                     ClusterType clusterType = ClusterType.lookup(cluster.getType());
@@ -127,6 +144,7 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                     if (clusterType.supportSingleActiveDC() || clusterType.isCrossDc()) {
                         if (isClusterActiveIdcCurrentIdc(cluster)) {
                             generateHealthCheckInstances(cluster);
+                            generateKeeperHealthCheckInstances(cluster);
                         } else if (isClusterActiveDcCrossRegion(cluster) && clusterDcIsCurrentDc(cluster)) {
                             generateHealthCheckInstances4CrossRegion(cluster);
                         }
@@ -139,6 +157,10 @@ public class DefaultHealthChecker extends AbstractLifecycle implements HealthChe
                 }
             }
         }
+    }
+
+    private void generateKeeperHealthCheckInstances(ClusterMeta clusterMeta) {
+        keeperSelector.select(clusterMeta).forEach(instanceManager::getOrCreate);
     }
 
     void generateHealthCheckInstances4CrossRegion(ClusterMeta clusterMeta) {

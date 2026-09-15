@@ -3,8 +3,9 @@ package com.ctrip.xpipe.redis.checker.healthcheck.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.CheckerConsoleService;
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.capability.KeeperCapabilityRefreshManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelector;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.MetaChangeManager;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -42,14 +43,16 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
     private MetaChangeManager metaChangeManager;
 
     @Mock
+    private KeeperCapabilityRefreshManager keeperCapabilityRefreshManager;
+
+    @Mock
     private CheckerConsoleService checkerConsoleService;
 
     @Mock
-    private CheckerConfig checkerConfig;
+    private KeeperCheckSelector keeperSelector;
 
     @Before
     public void setupDefaultHealthCheckerMockTest() throws IOException, SAXException {
-        when(checkerConfig.getIgnoredHealthCheckDc()).thenReturn(Collections.emptySet());
         when(metaCache.getXpipeMeta()).thenReturn(getXpipeMeta());
     }
 
@@ -179,6 +182,66 @@ public class DefaultHealthCheckerMockTest extends AbstractCheckerTest {
         checker.generateHealthCheckInstances();
         verify(instanceManager, times(2)).getOrCreate(new ClusterMeta().setId("one_way_cluster"));
         verify(instanceManager, times(1)).getOrCreate(any(RedisMeta.class));
+    }
+
+    @Test
+    public void testGenerateKeeperHealthCheckInstancesUsesSelector() {
+        XpipeMeta meta = new XpipeMeta();
+        DcMeta dc = new DcMeta("jq");
+        ClusterMeta cluster = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq");
+        dc.addCluster(cluster);
+        meta.addDc(dc);
+        KeeperMeta keeper = new KeeperMeta().setIp("127.0.0.9").setPort(6380);
+        when(metaCache.getXpipeMeta()).thenReturn(meta);
+        when(keeperSelector.select(cluster)).thenReturn(Collections.singletonList(keeper));
+
+        checker.generateHealthCheckInstances();
+
+        verify(instanceManager).getOrCreate(keeper);
+    }
+
+    @Test
+    public void testKeeperManagerLifecycleOrder() throws Exception {
+        XpipeMeta meta = new XpipeMeta();
+        DcMeta dc = new DcMeta("jq");
+        ClusterMeta cluster = new ClusterMeta().setId("one_way_cluster").setType("one_way").setActiveDc("jq");
+        dc.addCluster(cluster);
+        meta.addDc(dc);
+        KeeperMeta keeper = new KeeperMeta().setIp("127.0.0.9").setPort(6380);
+        when(metaCache.getXpipeMeta()).thenReturn(meta);
+        when(keeperSelector.select(cluster)).thenReturn(Collections.singletonList(keeper));
+
+        checker.doInitialize();
+        checker.doStart();
+        checker.doStop();
+
+        org.mockito.InOrder lifecycle = inOrder(instanceManager, metaChangeManager, keeperCapabilityRefreshManager);
+        lifecycle.verify(instanceManager).getOrCreate(keeper);
+        lifecycle.verify(metaChangeManager).start();
+        lifecycle.verify(keeperCapabilityRefreshManager).start();
+        lifecycle.verify(keeperCapabilityRefreshManager).stop();
+        lifecycle.verify(metaChangeManager).stop();
+    }
+
+    @Test
+    public void testKeeperCapabilityStartFailureStopsMetaAndPreservesFailure() throws Exception {
+        IllegalStateException startFailure = new IllegalStateException("keeper capability start failed");
+        IllegalArgumentException stopFailure = new IllegalArgumentException("meta stop failed");
+        doThrow(startFailure).when(keeperCapabilityRefreshManager).start();
+        doThrow(stopFailure).when(metaChangeManager).stop();
+
+        try {
+            checker.doStart();
+            Assert.fail("keeper capability start failure should propagate");
+        } catch (IllegalStateException actual) {
+            Assert.assertSame(startFailure, actual);
+            Assert.assertArrayEquals(new Throwable[]{stopFailure}, actual.getSuppressed());
+        }
+
+        org.mockito.InOrder lifecycle = inOrder(metaChangeManager, keeperCapabilityRefreshManager);
+        lifecycle.verify(metaChangeManager).start();
+        lifecycle.verify(keeperCapabilityRefreshManager).start();
+        lifecycle.verify(metaChangeManager).stop();
     }
 
     @Override

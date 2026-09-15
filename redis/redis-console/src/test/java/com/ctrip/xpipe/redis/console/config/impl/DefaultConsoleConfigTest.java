@@ -108,6 +108,16 @@ public class DefaultConsoleConfigTest extends AbstractConsoleTest {
         Assert.assertEquals(checkConfigBean.isKeeperDelayCheckEnabled(), consoleConfig.isKeeperDelayCheckEnabled());
     }
 
+    @Test
+    public void testKeeperCapabilityRefreshInterval() {
+        Assert.assertEquals(60000, consoleConfig.getKeeperCapabilityRefreshIntervalMilli());
+        Assert.assertEquals(60000, checkConfigBean.getKeeperCapabilityRefreshIntervalMilli());
+
+        properties.put(CheckConfigBean.KEY_KEEPER_CAPABILITY_REFRESH_INTERVAL_MILLI, "1234");
+        Assert.assertEquals(1234, checkConfigBean.getKeeperCapabilityRefreshIntervalMilli());
+        Assert.assertEquals(1234, consoleConfig.getKeeperCapabilityRefreshIntervalMilli());
+    }
+
     private static class TestableCheckConfigBean extends CheckConfigBean {
 
         TestableCheckConfigBean() {
