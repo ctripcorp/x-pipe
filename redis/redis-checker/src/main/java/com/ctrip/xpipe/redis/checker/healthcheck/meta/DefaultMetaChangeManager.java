@@ -39,7 +39,7 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
 
     @Autowired
     private HealthCheckInstanceManager instanceManager;
-    
+
     @Autowired
     private HealthCheckEndpointFactory healthCheckEndpointFactory;
 
@@ -108,12 +108,12 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
     @Override
     public DcMetaChangeManager getOrCreate(String dcId) {
         return MapUtils.getOrCreate(dcMetaChangeManagers, dcId, new ObjectFactory<DcMetaChangeManager>() {
-                    @Override
-                    public DcMetaChangeManager create() {
-                        return new DefaultDcMetaChangeManager(dcId, instanceManager, healthCheckEndpointFactory,
-                                metaCache, keeperSelector, keeperCapabilityCache);
-                    }
-                });
+            @Override
+            public DcMetaChangeManager create() {
+                return new DefaultDcMetaChangeManager(dcId, instanceManager, healthCheckEndpointFactory,
+                        metaCache, keeperSelector, keeperCapabilityCache);
+            }
+        });
     }
 
 }

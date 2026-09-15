@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.checker.healthcheck.meta;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -18,28 +17,26 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Owns the side-effect-free hard-loading rules for Keeper health-check instances. */
+/** Owns the side-effect-free loading rules for Keeper health-check instances. */
 @Component
 public class KeeperCheckSelector {
 
-    private final CheckerConfig checkerConfig;
     private final MetaCache metaCache;
     private final String currentDcId;
 
     @Autowired
-    public KeeperCheckSelector(CheckerConfig checkerConfig, MetaCache metaCache) {
-        this(checkerConfig, metaCache, FoundationService.DEFAULT.getDataCenter());
+    public KeeperCheckSelector(MetaCache metaCache) {
+        this(metaCache, FoundationService.DEFAULT.getDataCenter());
     }
 
     @VisibleForTesting
-    public KeeperCheckSelector(CheckerConfig checkerConfig, MetaCache metaCache, String currentDcId) {
-        this.checkerConfig = checkerConfig;
+    public KeeperCheckSelector(MetaCache metaCache, String currentDcId) {
         this.metaCache = metaCache;
         this.currentDcId = currentDcId;
     }
 
     public List<KeeperMeta> select(XpipeMeta xpipeMeta) {
-        if (xpipeMeta == null || !checkerConfig.isKeeperDelayCheckEnabled()) {
+        if (xpipeMeta == null) {
             return Collections.emptyList();
         }
         List<KeeperMeta> selected = new ArrayList<>();
@@ -50,7 +47,7 @@ public class KeeperCheckSelector {
     }
 
     public List<KeeperMeta> select(DcMeta dcMeta) {
-        if (dcMeta == null || !checkerConfig.isKeeperDelayCheckEnabled()) {
+        if (dcMeta == null) {
             return Collections.emptyList();
         }
         List<KeeperMeta> selected = new ArrayList<>();
@@ -61,7 +58,7 @@ public class KeeperCheckSelector {
     }
 
     public List<KeeperMeta> select(ClusterMeta clusterMeta) {
-        if (clusterMeta == null || !checkerConfig.isKeeperDelayCheckEnabled()) {
+        if (clusterMeta == null) {
             return Collections.emptyList();
         }
         List<KeeperMeta> selected = new ArrayList<>();
@@ -76,7 +73,7 @@ public class KeeperCheckSelector {
     }
 
     public boolean shouldLoad(KeeperMeta keeperMeta) {
-        if (!checkerConfig.isKeeperDelayCheckEnabled() || keeperMeta == null || keeperMeta.parent() == null) {
+        if (keeperMeta == null || keeperMeta.parent() == null) {
             return false;
         }
         ShardMeta shardMeta = keeperMeta.parent();

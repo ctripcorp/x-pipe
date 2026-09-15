@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.AbstractHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
@@ -24,6 +25,7 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
             new KeeperDelayActionContext(null, HealthStatus.UNSET_TIME);
     public static final long SAMPLE_LOST = 99999L * 1000 * 1000;
 
+    private final CheckerConfig checkerConfig;
     private final KeeperCapabilityCache capabilityCache;
     private final AtomicReference<KeeperDelayActionContext> context = new AtomicReference<>(INIT_CONTEXT);
     private final LongSupplier expireInterval;
@@ -38,8 +40,9 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
 
     public KeeperDelayAction(ScheduledExecutorService scheduled, KeeperHealthCheckInstance instance,
                              ExecutorService executors, FoundationService foundationService,
-                             KeeperCapabilityCache capabilityCache) {
+                             CheckerConfig checkerConfig, KeeperCapabilityCache capabilityCache) {
         super(scheduled, instance, executors);
+        this.checkerConfig = checkerConfig;
         this.capabilityCache = capabilityCache;
         String currentDc = foundationService.getDataCenter();
         this.expireInterval = () -> {
@@ -54,12 +57,17 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
 
     @Override
     protected void doTask() {
-        KeeperCapabilityCache.Capability capability =
-                capabilityCache.getIfPresent(instance.getCheckInfo().getHostPort());
         synchronized (subscriptionLock) {
             if (stoppingOrStopped) {
                 return;
             }
+            if (!checkerConfig.isKeeperDelayCheckEnabled()) {
+                closeSubscription(false);
+                return;
+            }
+
+            KeeperCapabilityCache.Capability capability =
+                    capabilityCache.getIfPresent(instance.getCheckInfo().getHostPort());
             if (capability != KeeperCapabilityCache.Capability.SUPPORTED) {
                 closeSubscription(false);
                 return;
@@ -86,7 +94,9 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
                 logger.warn("[expire][{}] last update time: {}", instance.getCheckInfo().getHostPort(),
                         DateTimeUtils.timeAsString(current.getRecvTimeMilli()));
             }
-            notifyListeners(new KeeperDelayActionContext(instance, SAMPLE_LOST));
+            if (checkerConfig.isKeeperDelayCheckEnabled()) {
+                notifyListeners(new KeeperDelayActionContext(instance, SAMPLE_LOST));
+            }
             return;
         }
         if (current == INIT_CONTEXT) {
@@ -96,7 +106,9 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
             expired = false;
             logger.info("[expire][{}] recovery", instance.getCheckInfo().getHostPort());
         }
-        notifyListeners(current);
+        if (checkerConfig.isKeeperDelayCheckEnabled()) {
+            notifyListeners(current);
+        }
     }
 
     private boolean isExpired(KeeperDelayActionContext current) {
