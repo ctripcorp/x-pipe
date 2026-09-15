@@ -1,0 +1,30 @@
+redis/redis-proxy/src/test/java/com/ctrip/xpipe/redis/proxy/handler/ZstdEncoderTest.java
+  s_c49371a3173010::t_5ea5e364225c0a 141
+  s_c49371a3173010::t_c2c5a01921af0b 185
+  s_c49371a3173010::t_46b59ddd5d9a17 98,118
+  s_c49371a3173010::t_0c3b7bb396b769 188-212
+  s_c49371a3173010::t_dcb69410a0f4c4 213
+  s_c49371a3173010::t_1127b5f9bd138a 169
+redis/redis-proxy/src/main/java/com/ctrip/xpipe/redis/proxy/handler/ZstdEncoder.java
+  s_c49371a3173010::t_6977d869abac89 219,221,228-231
+  s_c49371a3173010::t_b4d33631a5d5b2 70-72
+  s_c49371a3173010::t_9459c2f2951a76 53-55
+  s_c49371a3173010::t_e5d5e0e537a1e8 185-191
+  s_c49371a3173010::t_9194a99bd0fe66 372-376
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "22dfdf87c382973c2bc3fee95988b8194f0c2dbf",
+  "prompts": {},
+  "sessions": {
+    "s_c49371a3173010": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7b1ac98f-2c0c-4443-ae2c-4e47efd02501",
+        "model": "ep-5e9quh5a"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
