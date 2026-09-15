@@ -11,4 +11,6 @@ public interface KeeperHealthCheckInstance extends HealthCheckInstance<KeeperIns
     Endpoint getEndpoint();
 
     RedisSession getRedisSession();
+
+    boolean isTfs();
 }

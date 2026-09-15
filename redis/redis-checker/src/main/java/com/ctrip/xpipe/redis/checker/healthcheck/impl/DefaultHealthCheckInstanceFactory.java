@@ -23,10 +23,12 @@ import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisCheckRuleMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -151,7 +153,9 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
             KeeperInstanceInfo info = createKeeperInstanceInfo(keeperMeta);
             Endpoint endpoint = new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort());
 
-            instance.setEndpoint(endpoint).setSession(keeperSessionManager.findOrCreateSession(endpoint));
+            instance.setEndpoint(endpoint)
+                    .setSession(keeperSessionManager.findOrCreateSession(endpoint))
+                    .setTfs(isTfsKeeper(keeperMeta));
             instance.setInstanceInfo(info).setHealthCheckConfig(new DefaultHealthCheckConfig(checkerConfig, dcRelationsService));
             initActionsForKeeper(instance);
             LifecycleHelper.initializeIfPossible(instance);
@@ -216,6 +220,22 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
             throw new IllegalStateException("missing Keeper action factory for " + action);
         }
         factory.destroy(action);
+    }
+
+    private boolean isTfsKeeper(KeeperMeta keeperMeta) {
+        Long containerId = keeperMeta.getKeeperContainerId();
+        if (containerId == null) {
+            return false;
+        }
+        ShardMeta shardMeta = keeperMeta.parent();
+        ClusterMeta clusterMeta = shardMeta.parent();
+        DcMeta dcMeta = clusterMeta.parent();
+        for (KeeperContainerMeta containerMeta : dcMeta.getKeeperContainers()) {
+            if (Objects.equals(containerId, containerMeta.getId())) {
+                return KeeperDiskTypeUtils.isTfs(containerMeta.getDiskType());
+            }
+        }
+        return false;
     }
 
     private KeeperInstanceInfo createKeeperInstanceInfo(KeeperMeta keeperMeta) {
