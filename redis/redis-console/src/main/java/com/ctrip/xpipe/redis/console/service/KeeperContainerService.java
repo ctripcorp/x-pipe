@@ -30,7 +30,6 @@ public interface KeeperContainerService {
 	List<KeepercontainerTbl> filterKeeperContainersByAz(List<KeepercontainerTbl> keeperContainers, String dcName);
 	List<KeepercontainerTbl> getKeeperContainerByAz(Long azId);
 
-	List<Set<Long>> divideKeeperContainers(int partsCount);
 
 	List<KeeperContainerInfoModel> findAllInfos();
 	KeeperContainerInfoModel findKeeperContainerInfoModelById(long id);

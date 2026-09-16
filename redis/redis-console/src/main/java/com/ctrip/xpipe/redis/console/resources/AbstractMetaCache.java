@@ -175,7 +175,12 @@ public abstract class AbstractMetaCache implements MetaCache {
         return masterCount.get();
     }
 
-    protected XpipeMeta createDividedMeta(XpipeMeta full, Set<String> reqClusters, Set<Long> requestKeeperContainers) {
+    /**
+     * 分片 Meta 只按 cluster 分片：KeeperContainer 与 route / metaServer / sentinel 一样整份携带。
+     * Checker 的 TFS 判定是 {@code KeeperMeta.keeperContainerId} → 同 DcMeta 的 KeeperContainer 点查，
+     * 缺少 container 只会静默退化，不能按 part 过滤（spec keeper-tfs-m5 D47）。
+     */
+    protected XpipeMeta createDividedMeta(XpipeMeta full, Set<String> reqClusters) {
         XpipeMeta part = new XpipeMeta();
         for (DcMeta dcMeta: full.getDcs().values()) {
             DcMeta partDcMeta = new DcMeta(dcMeta.getId()).setLastModifiedTime(dcMeta.getLastModifiedTime()).setZone(dcMeta.getZone());
@@ -211,12 +216,7 @@ public abstract class AbstractMetaCache implements MetaCache {
                 partDcMeta.addCluster(partClusterMeta);
             }
             dcMeta.getSentinels().values().forEach(partDcMeta::addSentinel);
-
-            dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
-                if (requestKeeperContainers.contains(keeperContainerMeta.getId())) {
-                    partDcMeta.addKeeperContainer(keeperContainerMeta);
-                }
-            });
+            dcMeta.getKeeperContainers().forEach(partDcMeta::addKeeperContainer);
             dcMeta.getRoutes().forEach(partDcMeta::addRoute);
             dcMeta.getMetaServers().forEach(partDcMeta::addMetaServer);
         }
