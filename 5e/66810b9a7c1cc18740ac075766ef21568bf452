@@ -1,0 +1,84 @@
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/meta/ShardCompareTaskManager.java
+  s_e44145792dcdbe::t_569579e2e056b0 472,478-484
+  s_737f1aac96aa60::t_96d453626268b1 50-51
+  s_e44145792dcdbe::t_5d1789946fcfff 453-459
+  s_737f1aac96aa60::t_5c695c63d97e8d 405-408
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/report/CompareMetricsCollector.java
+  s_e44145792dcdbe::t_9274c3cbc279b4 1-27,29-103,105-107,109,112,114,117-148
+  s_7c0350bd309de0::t_d7e30ba2713e18 28,104,108,110-111,113,115-116
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/controller/ComparatorStatusControllerTest.java
+  s_e44145792dcdbe::t_849a5ace366e43 1-125
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/spring/ComparatorContextConfigTest.java
+  s_e44145792dcdbe::t_e1adbf2b271e93 10,12
+  s_e44145792dcdbe::t_ebc2b111115466 69-72
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/compare/CompareLane.java
+  s_e44145792dcdbe::t_7096c9fe801326 54-56,58-61
+  s_7c0350bd309de0::t_b54ddf93e44a58 57
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/AllTests.java
+  s_e44145792dcdbe::t_4fd536aeb3c715 12-14
+  s_e44145792dcdbe::t_d8a2907549b027 32-35
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/controller/ComparatorStatusController.java
+  s_e44145792dcdbe::t_8db587bee3c531 1-177
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/report/CompareReporter.java
+  s_737f1aac96aa60::t_9252e60d581aa4 37-42
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/report/DefaultCompareReporter.java
+  s_e44145792dcdbe::t_d612285152dec1 1-22,24-108,117-127,133-232
+  s_737f1aac96aa60::t_83c179d69f03ad 23
+  s_737f1aac96aa60::t_6d7fe80241e2a9 109-116
+  s_737f1aac96aa60::t_66dc01d669bbf0 128-132
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/report/DefaultCompareReporterTest.java
+  s_e44145792dcdbe::t_e8fca9b233c85d 156-157
+  s_737f1aac96aa60::t_af2b363f27a06e 82-120
+  s_e44145792dcdbe::t_f68bf3e28755d0 1-8,11-26,29-81,121-153,155,158-303
+  s_737f1aac96aa60::t_5ebc209bd55aca 9-10
+  s_737f1aac96aa60::t_03b1bef07b8175 27-28
+  s_e44145792dcdbe::t_1bb225033d5f4f 154
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/report/CompareMetricsCollectorTest.java
+  s_737f1aac96aa60::t_bed82dcfc3cd7f 60-61,63,65
+  s_e44145792dcdbe::t_0bcad2ac759bfc 50-52,57-59,62,64,66-68,73-85
+  s_737f1aac96aa60::t_f75f8503b0abf7 117-132
+  s_e44145792dcdbe::t_d7c3720a12c42b 33-35,40
+  s_e44145792dcdbe::t_b03dfab439ec35 1-30,32,38-39,41-42,53-56,69-72,86-92,95-97,100-106,115-116,135-191,194-195,197-205
+  s_737f1aac96aa60::t_cf88157845c5d9 36
+  s_7c0350bd309de0::t_a3804210866b74 31,37,43-49
+  s_e44145792dcdbe::t_df6c4bb7dc5363 93-94,98-99
+  s_e44145792dcdbe::t_9505e001f6fb79 133-134
+  s_7c0350bd309de0::t_1e5206166ad59a 107-114
+  s_737f1aac96aa60::t_754dfcf05be966 192-193,196
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/spring/Production.java
+  s_e44145792dcdbe::t_e69ddb4e4a1303 13-15
+  s_e44145792dcdbe::t_3bf3aa10087231 96-100,107,111-119
+  s_e44145792dcdbe::t_881a46e1316cf3 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "5e66810b9a7c1cc18740ac075766ef21568bf452",
+  "prompts": {},
+  "sessions": {
+    "s_737f1aac96aa60": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "de9695d1-825e-402d-abb1-8b08a980e158",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_7c0350bd309de0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "09f41d4a-8481-4d96-b451-a3e52c1ebb46",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e44145792dcdbe": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "48842745-78a9-4a96-b5bc-b0c9edbd72e5",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

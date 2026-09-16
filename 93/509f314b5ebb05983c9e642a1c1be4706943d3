@@ -1,0 +1,54 @@
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/report/CompareReporter.java
+  s_f15acabec19ddc::t_3ecdc9023dc0c6 1-8,14-18,20,22-33,35,37,39-58,60,62,64,66,68,70-71
+  s_89871fde733314::t_d9d9fb904f4e93 13
+  s_89871fde733314::t_0bd234a40a3edc 9-12,19,21
+  s_f15acabec19ddc::t_fb6a8e5617c3ea 34,36,38,59,61,63,65,67,69
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/compare/CompareLane.java
+  s_f15acabec19ddc::t_28319a66df75ec 1-5,12-16,21-22,27-28,34-35,40-41,46-47
+  s_89871fde733314::t_2001a6651a182b 6-11,17-20,23-26,29-33,36-39,42-45
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/AllTests.java
+  s_f15acabec19ddc::t_7b2dfeb912aea5 3
+  s_f15acabec19ddc::t_39720b31d6bfba 14-15
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/compare/ShardComparator.java
+  s_89871fde733314::t_2647adeba63ee2 106
+  s_f15acabec19ddc::t_88492697bc10bd 180,184,186,188,190,192,194,196
+  s_f15acabec19ddc::t_d1c8a4bb0c22bd 182
+  s_89871fde733314::t_ce4a72b11445de 149
+  s_f15acabec19ddc::t_4dd06ce6de6f08 1-80,83-105,107-148,150-179,181,183,185,187,189,191,193,195,197-235
+  s_89871fde733314::t_40bf195797aeac 81-82
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/compare/ShardComparatorTest.java
+  s_f15acabec19ddc::t_250190308af704 16,25-31,45,97-98,117,120-130,141,175-177,180,184,187,189,205
+  s_89871fde733314::t_9eae20f41d497b 103-104
+  s_f15acabec19ddc::t_f212119e88384e 248,251,254,257,283
+  s_f15acabec19ddc::t_d1164b64ce6e32 1-15,17-24,32-44,46-63,66-96,99-102,105-116,133-135,140,142-150,153-156,158,162-166,169-174,178,181-183,185-186,188,190-204,206-247,249-250,252-253,255-256,258-259,263-268,270-275,278,281-282,284-285,291-292,298-299
+  s_89871fde733314::t_f44c19cd2bcb68 276-277,279-280,286-290,293-297
+  s_89871fde733314::t_7faadb0f9fea03 64-65
+  s_89871fde733314::t_1315cae02a3b5c 179
+  s_f15acabec19ddc::t_b59d9727b79857 118-119,131-132,136-139
+  s_89871fde733314::t_14fccc4f23728c 151-152,157,159-161,167-168
+  s_89871fde733314::t_41b3ce7e06969c 260-262,269
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "93509f314b5ebb05983c9e642a1c1be4706943d3",
+  "prompts": {},
+  "sessions": {
+    "s_89871fde733314": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5d108028-228c-4f87-b581-2d9d338a066c",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_f15acabec19ddc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8bb0e7fb-f079-4f32-8e6c-9c49d8433a0c",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

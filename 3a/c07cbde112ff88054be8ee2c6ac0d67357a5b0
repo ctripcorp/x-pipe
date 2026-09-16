@@ -1,0 +1,19 @@
+redis/redis-comparator/pom.xml
+  s_3bc0c3b5a51586::t_1960522d58f031 46-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "3ac07cbde112ff88054be8ee2c6ac0d67357a5b0",
+  "prompts": {},
+  "sessions": {
+    "s_3bc0c3b5a51586": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "af3ae80b-8578-45c8-9787-0f7081fc7302",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

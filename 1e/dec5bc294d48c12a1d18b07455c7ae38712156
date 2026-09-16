@@ -1,0 +1,80 @@
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/meta/KeeperStreamFactory.java
+  s_a997d0077456dd::t_4d0e84fd5f20cb 26-29
+  s_4b38e317dcd45f::t_6137775de83889 1-6,8-25,30-55,57-60,66-67,78-89
+  s_a997d0077456dd::t_49a87484f62bac 56,61-62,64-65
+  s_a997d0077456dd::t_f693a0f8f43fbc 68-77
+  s_a997d0077456dd::t_98b4a30289d656 7
+  s_a997d0077456dd::t_4fe0a236835b6c 63
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/spring/ComparatorContextConfigTest.java
+  s_4b38e317dcd45f::t_091b527f134935 60-65
+  s_4b38e317dcd45f::t_00b1c8e9599e67 8-10
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/spring/Production.java
+  s_4b38e317dcd45f::t_5a87d77bc29025 36-37
+  s_4b38e317dcd45f::t_1177a3b5e06806 9-11,14-17
+  s_4b38e317dcd45f::t_d7426e4eeefc68 27-28,30
+  s_4b38e317dcd45f::t_69882c66ddd50b 55-88
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/AllTests.java
+  s_4b38e317dcd45f::t_ffa295a22b0bd3 23
+  s_a997d0077456dd::t_db78d927cbbf3a 24
+  s_a997d0077456dd::t_849bf449c55552 7
+  s_4b38e317dcd45f::t_504014e318b38f 8
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/meta/ShardCompareTaskManagerTest.java
+  s_a997d0077456dd::t_a67f6bfb11bbb5 26
+  s_a997d0077456dd::t_d1746cc6c0c847 175
+  s_a997d0077456dd::t_f3def597178476 142,149
+  s_4b38e317dcd45f::t_85a9a475764921 52,54-55,57
+  s_4b38e317dcd45f::t_9347d9fb1d2cac 305,307,312,315-322,324,353-360,362,365-367
+  s_4b38e317dcd45f::t_ec3e2d21e83ed0 267
+  s_a997d0077456dd::t_0e428b401f4aa9 28
+  s_a997d0077456dd::t_b901afb0afe953 155-174,176-199,201-216,218-240
+  s_4b38e317dcd45f::t_9e6efada6f3f64 90
+  s_4b38e317dcd45f::t_7b7e2d9ba1e129 1-25,27,29-48,50-51,53,56,58-72,74-89,91-101,103-107,109-110,119-124,126-127,130,132-141,143,146-148,152-154,241-266,268-287,289,293-304,306,308-311,313-314,323,325-352,361,363-364,368-374,377-378,381-388,393-406,415-423,426-437,443-602
+  s_a997d0077456dd::t_9d911f1eab6043 424-425,438-442
+  s_4b38e317dcd45f::t_adeb8307a0f54c 111-118,125,128-129,131,144-145,150-151
+  s_4b38e317dcd45f::t_1f2a1d247f018f 288,290-292
+  s_a997d0077456dd::t_853968bc9c7eb6 375-376,379-380,389-392,407-414
+  s_a997d0077456dd::t_8eb811008b50c0 217
+  s_a997d0077456dd::t_4b8adabc62c12a 102
+  s_4b38e317dcd45f::t_7978ed6a460075 108
+  s_a997d0077456dd::t_1510d70b057d35 200
+  s_4b38e317dcd45f::t_c56514f05e4744 73
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/meta/PrepareWatchCache.java
+  s_4b38e317dcd45f::t_8ba251c03a461d 1-142
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/meta/KeeperStreamFactoryTest.java
+  s_a997d0077456dd::t_dae400d7b099b6 1-32,40-60
+  s_a997d0077456dd::t_2580b0f9d5f910 33-39
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/meta/ShardCompareTaskManager.java
+  s_4b38e317dcd45f::t_788a15acf96637 1-36,41-71,74-98,102-112,115-136,146-150,154-259,261-329,335-436
+  s_a997d0077456dd::t_93bf68002ef920 73
+  s_a997d0077456dd::t_1c8edd92e31df0 145,151-153
+  s_a997d0077456dd::t_7ba719c179e3a8 99-101,113-114
+  s_a997d0077456dd::t_a3b57644168926 330-334
+  s_a997d0077456dd::t_f8714adbf6e134 260
+  s_a997d0077456dd::t_f18ee44dd680b4 72
+  s_a997d0077456dd::t_bbf343c9aea6b4 37-40
+  s_4b38e317dcd45f::t_d9e2aff53bb93c 137-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "1edec5bc294d48c12a1d18b07455c7ae38712156",
+  "prompts": {},
+  "sessions": {
+    "s_4b38e317dcd45f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f1201a9f-b651-46c4-aa4c-39560dd96645",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_a997d0077456dd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "de62bcc2-6ef0-4502-a4e1-bce395eebc74",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
