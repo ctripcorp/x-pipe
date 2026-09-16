@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.CRDTDelayActionCo
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MetricDelayListenerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperDelayActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperDelayCheckAcceptanceTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperMetricDelayListenerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CRDTDelayPingActionCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultAggregatorPullServiceTest;
@@ -96,6 +97,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRouteChooserTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.DefaultDcMetaChangeManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperMetaChangeManagerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultKeeperSessionManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityInspectorTest;
 import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatusTest;
@@ -143,6 +145,7 @@ import org.junit.runners.Suite;
         DefaultDcMetaChangeManagerTest.class,
         DelayActionTest.class,
         KeeperDelayActionTest.class,
+        KeeperDelayCheckAcceptanceTest.class,
         KeeperMetricDelayListenerTest.class,
         MetricDelayListenerTest.class,
         CRDTDelayActionControllerTest.class,
@@ -224,6 +227,7 @@ import org.junit.runners.Suite;
         KeeperCapabilityCacheTest.class,
         KeeperCapabilityRefreshManagerTest.class,
         KeeperMetaChangeManagerTest.class,
+        DefaultKeeperSessionManagerTest.class,
 
         DefaultOuterClientAggregatorTest.class,
         DefaultDelayPingActionCollectorTest.class,
