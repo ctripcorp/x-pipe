@@ -156,7 +156,7 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 					any(AbstractStorageFile.ReplaceMode.class), anyBoolean(), any());
 			verify(fs, never()).open(anyString(), anyString(), anyList(), eq(true), anyString());
 			verify(fs, atLeastOnce()).open(contains("store_manager_meta.properties"),
-					eq(AbstractStorageFile.OpenMode.READ), eq(AbstractStorageFile.ReplaceMode.NORMAL), eq(true), any());
+					eq(AbstractStorageFile.OpenMode.READ), eq(AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP), eq(true), any());
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
 			LifecycleHelper.disposeIfPossible(manager);

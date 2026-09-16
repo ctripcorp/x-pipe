@@ -400,7 +400,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         if (readOnly) {
             AsyncFile asyncFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
                     () -> asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.READ,
-                            AbstractStorageFile.ReplaceMode.NORMAL, true,
+                            AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP, true,
                             replId.toString()),
                     "open manager meta " + metaFile.getAbsolutePath());
             managerMetaAsyncFile = asyncFile;

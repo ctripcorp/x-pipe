@@ -139,7 +139,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 		File file = metaV2File();
 		AbstractStorageFile.OpenMode openMode = readOnly ? AbstractStorageFile.OpenMode.READ : AbstractStorageFile.OpenMode.READ_WRITE;
 		AbstractStorageFile.ReplaceMode replaceMode = readOnly
-				? AbstractStorageFile.ReplaceMode.NORMAL
+				? AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP
 				: AbstractStorageFile.ReplaceMode.ATOMIC;
 		AsyncFile asyncFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(file.getAbsolutePath(), openMode, replaceMode, true,
 						fileSystemReplId.toString()),

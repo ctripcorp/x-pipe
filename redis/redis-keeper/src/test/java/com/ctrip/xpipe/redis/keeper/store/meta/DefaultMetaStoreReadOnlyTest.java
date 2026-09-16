@@ -81,7 +81,7 @@ public class DefaultMetaStoreReadOnlyTest extends AbstractRedisKeeperTest {
 			verify(fs, never()).open(anyString(), eq(AbstractStorageFile.OpenMode.READ_WRITE),
 					any(AbstractStorageFile.ReplaceMode.class), anyBoolean(), any());
 			verify(fs, atLeastOnce()).open(contains(META_V2_FILE), eq(AbstractStorageFile.OpenMode.READ),
-					eq(AbstractStorageFile.ReplaceMode.NORMAL), eq(true), any());
+					eq(AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP), eq(true), any());
 			Assert.assertEquals(runid, readOnly.dupReplicationStoreMeta().getKeeperRunid());
 		} finally {
 			readOnly.close();
