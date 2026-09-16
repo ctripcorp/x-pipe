@@ -1,0 +1,68 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  h_6ceeb547b3b36a 25
+  s_0157dd4ec810c9::t_8ab546c49e1bbc 26-27,32,36-38
+  s_0157dd4ec810c9::t_114c96deb7ff79 63
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  s_0157dd4ec810c9::t_b0c7d8cf3d0fb8 160
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultRdbStore.java
+  s_0157dd4ec810c9::t_2f4f4ad994f043 35
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java
+  s_0157dd4ec810c9::t_3d5fb8d912efdb 412-413
+  s_0157dd4ec810c9::t_a30abb1f58a205 402-403
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/prepare/PrepareStoreWatcherTest.java
+  s_0157dd4ec810c9::t_29fb82a8a9e25c 8
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_0157dd4ec810c9::t_68ea690747d87b 1137
+  s_0157dd4ec810c9::t_235164b9fb0b37 1105-1107,1110-1111
+  s_0157dd4ec810c9::t_4534921f59ce12 253-254,257
+  s_0157dd4ec810c9::t_8a7217d3a0f619 465,474,500,549-550,1236,1334,1354,1372,1442,1526,1581,1640,1707,1723,1756,1799,1828,2153,2241,2335
+  s_0157dd4ec810c9::t_a04b94ee49ddd7 1120,1125-1126,1128
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFile.java
+  s_0157dd4ec810c9::t_28584e715bf1de 24-25,28,30
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AbstractStorageFile.java
+  s_0157dd4ec810c9::t_852b970e22786a 25,31-34,36-46,51
+  h_6ceeb547b3b36a 35
+  s_0157dd4ec810c9::t_58cf5739bb88ab 79-86
+  s_0157dd4ec810c9::t_fbc8bc64f0e9cc 109,112
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_0157dd4ec810c9::t_6bb3e8c58b9e5c 368-374
+  s_0157dd4ec810c9::t_c58f27b6ab75a0 511
+  s_0157dd4ec810c9::t_fb704b9caca27a 396
+  s_0157dd4ec810c9::t_36c95744c85ddb 86-87,91-93
+  s_0157dd4ec810c9::t_509e92f22e8826 104,113
+  s_0157dd4ec810c9::t_f71842f41cb63a 200
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystemTest.java
+  s_0157dd4ec810c9::t_bb3b260ad8b956 77-78,82,85,89
+  s_0157dd4ec810c9::t_6bb08c2c43bab9 497
+  s_0157dd4ec810c9::t_b8b676aebf1d08 67
+  s_0157dd4ec810c9::t_04a88fb2776b67 591
+  s_0157dd4ec810c9::t_af9dd30d8eab1a 542-543,548-549,555
+  s_0157dd4ec810c9::t_474c8e8673f4b5 577
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java
+  s_0157dd4ec810c9::t_793cd67d26f76c 141-144
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncIndexFile.java
+  s_0157dd4ec810c9::t_7404d778ad2e4a 11
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystemModeAndRetryTest.java
+  s_0157dd4ec810c9::t_49dae1451133a5 357-359
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "aa2c540d3f5420d04add336c85bbcf68f01adeb0",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_0157dd4ec810c9": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_2abf67a1-7497-4fe7-91db-a0719400ef97",
+        "model": "claude-opus-5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
