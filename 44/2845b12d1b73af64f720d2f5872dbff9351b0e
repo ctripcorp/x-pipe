@@ -1,0 +1,21 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystemTest.java
+  s_0157dd4ec810c9::t_141ea71faf5870 1434
+  s_0157dd4ec810c9::t_921790f91de3f0 1406-1408
+  s_0157dd4ec810c9::t_e1eb92eeb1f170 1461
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "442845b12d1b73af64f720d2f5872dbff9351b0e",
+  "prompts": {},
+  "sessions": {
+    "s_0157dd4ec810c9": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_2abf67a1-7497-4fe7-91db-a0719400ef97",
+        "model": "claude-opus-5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
