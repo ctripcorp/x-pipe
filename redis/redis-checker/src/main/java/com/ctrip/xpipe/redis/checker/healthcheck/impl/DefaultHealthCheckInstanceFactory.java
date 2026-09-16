@@ -211,6 +211,9 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         if (instance instanceof DefaultKeeperHealthCheckInstance) {
             ((DefaultKeeperHealthCheckInstance) instance).setEndpoint(null).setSession(null);
         }
+        // the session itself is left to the periodic cleanup of DefaultKeeperSessionManager: a
+        // same-address Keeper change arrives as remove-before-add, so closing it here would only
+        // churn a connection that the following add reuses
     }
 
     @SuppressWarnings("unchecked")
