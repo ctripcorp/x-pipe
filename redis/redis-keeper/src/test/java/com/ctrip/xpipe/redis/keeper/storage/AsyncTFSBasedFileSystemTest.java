@@ -64,7 +64,7 @@ public class AsyncTFSBasedFileSystemTest {
     }
 
     // openSync only builds the file object; openWithFileEntry does the FileEntry bookkeeping,
-    // the atomicReplace/tmp recovery, and the channel opening. TailCacheFileSystem passes its
+    // the atomic replace / tmp recovery, and the channel opening. TailCacheFileSystem passes its
     // own registerInFlight/scheduleCloseChannels here; the tests drive the delegate directly,
     // so there is no in-flight registry to feed and detached channels are closed inline.
     private static final BiConsumer<String, CompletableFuture<?>> NO_REGISTER = (key, future) -> { };
@@ -74,19 +74,19 @@ public class AsyncTFSBasedFileSystemTest {
     private static final long IO_TIMEOUT_MS = 5_000;
 
     private AsyncFile openFile(String filePath, AbstractStorageFile.OpenMode openMode,
-            boolean atomicReplace, boolean lenient) {
-        return openFileWithInit(filePath, openMode, atomicReplace, lenient).getKey();
+            AbstractStorageFile.ReplaceMode replaceMode, boolean lenient) {
+        return openFileWithInit(filePath, openMode, replaceMode, lenient).getKey();
     }
 
     // Same as openFile, but also reports what openWithFileEntry returned: whether the init is
-    // complete. An atomicReplace reader that finds a pending tmp file cannot apply the replace,
+    // complete. An atomic replace reader that finds a pending tmp file cannot apply the replace,
     // so it defers the recovery to the first writer and reports false.
     private Pair<AsyncFile, Boolean> openFileWithInit(String filePath, AbstractStorageFile.OpenMode openMode,
-            boolean atomicReplace, boolean lenient) {
+            AbstractStorageFile.ReplaceMode replaceMode, boolean lenient) {
         // key must be stable per path: the writer-exclusion and reader-sharing checks in
         // acquireFileEntry are keyed on it.
         String key = StorageUtil.asyncFileKey(filePath);
-        AsyncFile file = fs.openSync(filePath, key, key, openMode, atomicReplace, lenient, null, false);
+        AsyncFile file = fs.openSync(filePath, key, key, openMode, replaceMode, lenient, null, false);
         boolean initialized = fs.openWithFileEntry(file, false, NO_REGISTER, CLOSE_CHANNELS,
                 RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
         return new Pair<>(file, initialized);
@@ -170,7 +170,7 @@ public class AsyncTFSBasedFileSystemTest {
         Files.write(Paths.get(filePath), data);
     }
 
-    // Builds the TMP_REP_ sibling with the [8-byte length][data] layout the atomicReplace recovery
+    // Builds the TMP_REP_ sibling with the [8-byte length][data] layout the atomic replace recovery
     // expects. declaredLength goes into the header as given, so callers can forge an incomplete
     // replace by declaring more than they write.
     private Path writeTmpFile(String filePath, long declaredLength, byte[] data) throws IOException {
@@ -195,7 +195,7 @@ public class AsyncTFSBasedFileSystemTest {
     @Test
     public void testOpenAndCloseWriteMode() throws Exception {
         String p = path("file1");
-        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         fs.writeSync(file, bufOf(new byte[]{1, 2, 3}));
         StorageUtil.closeChannels(fs.closeSync(file));
         assertTrue(Files.exists(Paths.get(p)));
@@ -206,7 +206,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testOpenAndCloseReadMode() throws Exception {
         String p = path("file2");
         writeFile(p, new byte[]{10, 20, 30});
-        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false);
         byte[] data = readAll(file, 3);
         assertArrayEquals(new byte[]{10, 20, 30}, data);
         StorageUtil.closeChannels(fs.closeSync(file));
@@ -218,11 +218,11 @@ public class AsyncTFSBasedFileSystemTest {
         byte[] expected = new byte[100];
         for (int i = 0; i < expected.length; i++) expected[i] = (byte) (i % 256);
         // Writer writes 100 bytes
-        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         fs.writeSync(writer, bufOf(expected));
         StorageUtil.closeChannels(fs.closeSync(writer));
         // Separate reader reads back
-        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false);
         byte[] actual = readAll(reader, 100);
         assertArrayEquals(expected, actual);
         StorageUtil.closeChannels(fs.closeSync(reader));
@@ -232,7 +232,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testReadWithAlignment() throws Exception {
         String p = path("file5");
         writeFile(p, new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
-        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false);
         // alignSize=8, offset=3, length=4 -> aligned range [0, 8)
         ByteBuf buf = fs.readSync(file, 4, 3, 8);
         try {
@@ -255,7 +255,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testPositionAndRead() throws Exception {
         String p = path("file6");
         writeFile(p, new byte[]{10, 20, 30, 40, 50});
-        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false);
         // readSync(file, length, offset, alignSize) reads at absolute offset
         ByteBuf buf = fs.readSync(file, 3, 2, 0);
         try {
@@ -282,12 +282,12 @@ public class AsyncTFSBasedFileSystemTest {
     public void testTruncate() throws Exception {
         String p = path("file7");
         // Writer writes 200 bytes then truncates to 100
-        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         fs.writeSync(writer, bufOf(new byte[200]));
         fs.truncateSync(writer, 100);
         StorageUtil.closeChannels(fs.closeSync(writer));
         // Separate reader verifies size
-        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false);
         assertEquals(100, fs.sizeSync(reader));
         StorageUtil.closeChannels(fs.closeSync(reader));
     }
@@ -296,12 +296,12 @@ public class AsyncTFSBasedFileSystemTest {
     public void testTruncateNoOp() throws Exception {
         String p = path("file8");
         // Writer writes 100 bytes then truncates to 200 (no-op)
-        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         fs.writeSync(writer, bufOf(new byte[100]));
         fs.truncateSync(writer, 200); // size >= current size, no-op
         StorageUtil.closeChannels(fs.closeSync(writer));
         // Separate reader verifies size unchanged
-        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false);
         assertEquals(100, fs.sizeSync(reader));
         StorageUtil.closeChannels(fs.closeSync(reader));
     }
@@ -309,7 +309,7 @@ public class AsyncTFSBasedFileSystemTest {
     @Test(expected = IllegalStateException.class)
     public void testFsyncOnClosedFileThrows() throws Exception {
         String p = path("file9b");
-        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         StorageUtil.closeChannels(fs.closeSync(file));
         fs.fsyncSync(file);
     }
@@ -329,7 +329,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testTransferToSync() throws Exception {
         String p = path("file12");
         writeFile(p, new byte[]{10, 20, 30, 40, 50});
-        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false);
         ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
         long transferred = fs.transferToSync(file, 1, 3, target);
         assertEquals(3, transferred);
@@ -391,7 +391,7 @@ public class AsyncTFSBasedFileSystemTest {
         assertFalse(fs.exists(p).get());
         writeFile(p, new byte[]{1});
         assertTrue(fs.exists(p).get());
-        assertTrue(fs.isFile(openFile(p, AbstractStorageFile.OpenMode.READ, false, false)).get());
+        assertTrue(fs.isFile(openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false)).get());
         assertFalse(fs.isDirectory(p).get());
         assertTrue(fs.isDirectory(tempDir.toString()).get());
     }
@@ -404,8 +404,8 @@ public class AsyncTFSBasedFileSystemTest {
     public void testAtomicReplaceWrite() throws Exception {
         String p = path("file14");
         writeFile(p, new byte[]{1, 2, 3});
-        // Writer with atomicReplace=true writes new content
-        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, true, false);
+        // Writer with ReplaceMode.ATOMIC writes new content
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false);
         fs.writeSync(writer, bufOf(new byte[]{10, 20, 30, 40}));
         StorageUtil.closeChannels(fs.closeSync(writer));
         // Verify on disk
@@ -413,7 +413,7 @@ public class AsyncTFSBasedFileSystemTest {
         // tmp file should be deleted
         assertFalse(Files.exists(Paths.get(tempDir.toString(), "TMP_REP_file14")));
         // Separate reader verifies content
-        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false);
         assertArrayEquals(new byte[]{10, 20, 30, 40}, readAll(reader, 4));
         StorageUtil.closeChannels(fs.closeSync(reader));
     }
@@ -435,15 +435,15 @@ public class AsyncTFSBasedFileSystemTest {
             ch.write(ByteBuffer.wrap(newData));
             ch.force(true);
         }
-        // Open with atomicReplace=true should recover from tmp, overwriting original file
-        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, true, false);
+        // Opening for write with ReplaceMode.ATOMIC should recover from tmp, overwriting original file
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false);
         StorageUtil.closeChannels(fs.closeSync(writer));
         // tmp should be cleaned up
         assertFalse(Files.exists(tmpPath));
         // Verify on disk: file content is the new data, not the old
         assertArrayEquals(newData, Files.readAllBytes(Paths.get(p)));
         // Separate reader reads recovered data
-        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false);
         assertArrayEquals(newData, readAll(reader, newData.length));
         StorageUtil.closeChannels(fs.closeSync(reader));
     }
@@ -465,7 +465,7 @@ public class AsyncTFSBasedFileSystemTest {
             ch.force(true);
         }
         // Open should succeed, corrupt tmp gets deleted, original file untouched
-        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, true, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false);
         StorageUtil.closeChannels(fs.closeSync(writer));
         // tmp should be deleted
         assertFalse(Files.exists(tmpPath));
@@ -473,7 +473,7 @@ public class AsyncTFSBasedFileSystemTest {
         assertTrue(Files.exists(Paths.get(p)));
         assertArrayEquals(originalData, Files.readAllBytes(Paths.get(p)));
         // Separate reader reads original data (NOT affected by corrupt tmp)
-        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false);
         assertArrayEquals(originalData, readAll(reader, originalData.length));
         StorageUtil.closeChannels(fs.closeSync(reader));
     }
@@ -489,17 +489,17 @@ public class AsyncTFSBasedFileSystemTest {
         // Applying the replace needs write permission, so the reader initializes the entry but
         // reports the init as incomplete and leaves both the tmp and the target file alone.
         Pair<AsyncFile, Boolean> openedReader =
-                openFileWithInit(p, AbstractStorageFile.OpenMode.READ, true, false);
+                openFileWithInit(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.ATOMIC, false);
         AsyncFile reader = openedReader.getKey();
         assertFalse(openedReader.getValue());
         assertTrue(Files.exists(tmpPath));
         assertArrayEquals(oldData, Files.readAllBytes(Paths.get(p)));
-        // readTmpFirst is off by default, so this reader sees the superseded content.
+        // Plain ATOMIC never falls back to the tmp file, so this reader sees the superseded content.
         assertArrayEquals(oldData, readAll(reader, oldData.length));
 
         // The writer joins the entry the reader initialized and finishes the recovery there.
         Pair<AsyncFile, Boolean> openedWriter =
-                openFileWithInit(p, AbstractStorageFile.OpenMode.WRITE, true, false);
+                openFileWithInit(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false);
         AsyncFile writer = openedWriter.getKey();
         assertTrue(openedWriter.getValue());
         assertFalse(Files.exists(tmpPath));
@@ -520,7 +520,7 @@ public class AsyncTFSBasedFileSystemTest {
         // There is nothing to recover, so the init is complete even for a reader. Dropping the
         // leftover still needs write permission, so the tmp file survives the reader.
         Pair<AsyncFile, Boolean> openedReader =
-                openFileWithInit(p, AbstractStorageFile.OpenMode.READ, true, false);
+                openFileWithInit(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.ATOMIC, false);
         AsyncFile reader = openedReader.getKey();
         assertTrue(openedReader.getValue());
         assertTrue(Files.exists(tmpPath));
@@ -529,7 +529,7 @@ public class AsyncTFSBasedFileSystemTest {
 
         // The writer drops the incomplete tmp and leaves the target file untouched.
         Pair<AsyncFile, Boolean> openedWriter =
-                openFileWithInit(p, AbstractStorageFile.OpenMode.WRITE, true, false);
+                openFileWithInit(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false);
         AsyncFile writer = openedWriter.getKey();
         assertTrue(openedWriter.getValue());
         assertFalse(Files.exists(tmpPath));
@@ -539,21 +539,20 @@ public class AsyncTFSBasedFileSystemTest {
         StorageUtil.closeChannels(fs.closeSync(reader));
     }
 
-    // The readTmpFirst cases below need a pending tmp file to outlive the open, and only an
-    // atomicReplace reader leaves one behind: a writer recovers and deletes it while opening.
+    // The ATOMIC_PREFER_TMP cases below need a pending tmp file to outlive the open, and only a
+    // reader leaves one behind: a writer recovers and deletes it while opening.
     private AsyncFile openReaderOverPendingTmp(String filePath, byte[] oldData, byte[] newData)
             throws IOException {
         writeFile(filePath, oldData);
         writeTmpFile(filePath, newData.length, newData);
-        fs.setReadTmpFirst(true);
-        Pair<AsyncFile, Boolean> opened =
-                openFileWithInit(filePath, AbstractStorageFile.OpenMode.READ, true, false);
+        Pair<AsyncFile, Boolean> opened = openFileWithInit(filePath, AbstractStorageFile.OpenMode.READ,
+                AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP, false);
         assertFalse(opened.getValue());
         return opened.getKey();
     }
 
     @Test
-    public void testReadSyncFromValidTmpWhenReadTmpFirst() throws Exception {
+    public void testReadSyncFromValidTmpWhenPreferTmp() throws Exception {
         String p = path("file_tmp_first_read");
         byte[] newData = new byte[]{5, 6, 7, 8, 9};
         AsyncFile reader = openReaderOverPendingTmp(p, new byte[]{1, 2, 3}, newData);
@@ -575,7 +574,7 @@ public class AsyncTFSBasedFileSystemTest {
     }
 
     @Test
-    public void testSizeSyncFromValidTmpWhenReadTmpFirst() throws Exception {
+    public void testSizeSyncFromValidTmpWhenPreferTmp() throws Exception {
         String p = path("file_tmp_first_size");
         AsyncFile reader = openReaderOverPendingTmp(p, new byte[]{1, 2, 3}, new byte[]{5, 6, 7, 8, 9});
         try {
@@ -589,7 +588,7 @@ public class AsyncTFSBasedFileSystemTest {
     }
 
     @Test
-    public void testTransferToSyncFromValidTmpWhenReadTmpFirst() throws Exception {
+    public void testTransferToSyncFromValidTmpWhenPreferTmp() throws Exception {
         String p = path("file_tmp_first_transfer");
         AsyncFile reader = openReaderOverPendingTmp(p, new byte[]{1, 2, 3}, new byte[]{5, 6, 7, 8, 9});
         ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
@@ -610,8 +609,8 @@ public class AsyncTFSBasedFileSystemTest {
     public void testMultipleReadersSameFile() throws Exception {
         String p = path("file17");
         writeFile(p, new byte[]{1, 2, 3});
-        AsyncFile reader1 = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
-        AsyncFile reader2 = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
+        AsyncFile reader1 = openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false);
+        AsyncFile reader2 = openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false);
         assertArrayEquals(new byte[]{1, 2, 3}, readAll(reader1, 3));
         assertArrayEquals(new byte[]{1, 2, 3}, readAll(reader2, 3));
         StorageUtil.closeChannels(fs.closeSync(reader1));
@@ -621,9 +620,9 @@ public class AsyncTFSBasedFileSystemTest {
     @Test(expected = IllegalStateException.class)
     public void testDoubleWriterThrows() throws Exception {
         String p = path("file18");
-        AsyncFile writer1 = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+        AsyncFile writer1 = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         try {
-            openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+            openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         } finally {
             StorageUtil.closeChannels(fs.closeSync(writer1));
         }
@@ -632,10 +631,10 @@ public class AsyncTFSBasedFileSystemTest {
     @Test
     public void testCloseReleasesEntry() throws Exception {
         String p = path("file19");
-        AsyncFile writer1 = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+        AsyncFile writer1 = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         StorageUtil.closeChannels(fs.closeSync(writer1));
         // After close, should be able to open writer again
-        AsyncFile writer2 = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+        AsyncFile writer2 = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         StorageUtil.closeChannels(fs.closeSync(writer2));
     }
 
@@ -653,7 +652,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testAutoFsyncByBytes() throws Exception {
         fs.setFsyncIntervalBytes(10);
         String p = path("file20");
-        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
 
         // Write less than threshold (5 < 10 bytes) — should NOT trigger fsync
         fs.writeSync(file, bufOf(new byte[5]));
@@ -1045,7 +1044,7 @@ public class AsyncTFSBasedFileSystemTest {
         // lenient=true with a directory path → channel not opened, file object still created
         String dir = path("lenient_dir");
         Files.createDirectories(Paths.get(dir));
-        AsyncFile file = openFile(dir, AbstractStorageFile.OpenMode.READ, false, true);
+        AsyncFile file = openFile(dir, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, true);
         assertNotNull(file);
         // readSync should NPE because channel is null (lenient skipped openCurrentChannel)
         try {
@@ -1062,7 +1061,7 @@ public class AsyncTFSBasedFileSystemTest {
         // OpenMode.READ_WRITE: file opened for both read and write, positioned at end
         String p = path("rw_file");
         writeFile(p, new byte[]{1, 2, 3, 4, 5});
-        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ_WRITE, false, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ_WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         // channel positioned at end of file (size=5)
         assertEquals(5, fs.sizeSync(file));
         // Write appends after position (end of file)
@@ -1089,7 +1088,7 @@ public class AsyncTFSBasedFileSystemTest {
         // pendingFsyncBytes accumulation has been observed.
         fs.setFsyncIntervalMillis(Long.MAX_VALUE / 2_000_000L);
         String p = path("file_time_fsync");
-        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         // Write a few bytes — neither threshold reached
         fs.writeSync(file, bufOf(new byte[5]));
         assertEquals(5, file.pendingFsyncBytes);
@@ -1104,15 +1103,15 @@ public class AsyncTFSBasedFileSystemTest {
 
     @Test
     public void testTruncateAtomicReplaceNoPositionChange() throws Exception {
-        // atomicReplace=true truncate should NOT change channel position
+        // An atomic replace truncate should NOT change channel position
         String p = path("file_trunc_ar");
-        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, true, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false);
         fs.writeSync(writer, bufOf(new byte[100]));
         // atomicReplaceWrite sets position to 0 then writes, so position=100 after write
-        // Truncate to 50 — atomicReplace path skips channel.position(size)
+        // Truncate to 50 — the atomic replace path skips channel.position(size)
         fs.truncateSync(writer, 50);
         // Position should NOT have been changed to 50 by truncate
-        // (for atomicReplace, position is left as-is after truncate)
+        // (for an atomic replace, position is left as-is after truncate)
         StorageUtil.closeChannels(fs.closeSync(writer));
         // File should be truncated to 50 bytes on disk
         assertEquals(50, Files.size(Paths.get(p)));
@@ -1123,7 +1122,7 @@ public class AsyncTFSBasedFileSystemTest {
         // truncateSync: pendingFsyncBytes reduction logic (line 351) runs,
         // then fsyncInternal at line 353 resets to 0. Verify end-to-end correctness.
         String p = path("file_trunc_pending");
-        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+        AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         fs.writeSync(writer, bufOf(new byte[100]));
         assertEquals(100, writer.pendingFsyncBytes);
         // truncateSync reduces pendingFsyncBytes by (100-30)=70, then fsyncInternal resets to 0
@@ -1139,7 +1138,7 @@ public class AsyncTFSBasedFileSystemTest {
     @Test
     public void testCloseSyncIdempotent() throws Exception {
         String p = path("file_double_close");
-        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, false, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false);
         fs.writeSync(file, bufOf(new byte[]{1}));
         StorageUtil.closeChannels(fs.closeSync(file));
         // Second close should be a no-op, not throw
@@ -1432,7 +1431,7 @@ public class AsyncTFSBasedFileSystemTest {
     public void testLastModifiedAsyncFile() throws Exception {
         String p = path("file_lm");
         writeFile(p, new byte[]{1, 2, 3});
-        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
+        AsyncFile file = openFile(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false);
         long lm = fs.lastModified(file).get();
         assertTrue("lastModified should be positive", lm > 0);
         StorageUtil.closeChannels(fs.closeSync(file));

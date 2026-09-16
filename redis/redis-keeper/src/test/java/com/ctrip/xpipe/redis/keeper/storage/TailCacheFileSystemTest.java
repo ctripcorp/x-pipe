@@ -176,7 +176,7 @@ public class TailCacheFileSystemTest {
     @Test
     public void testWriteThenCloseThenReopen() throws Exception {
         String p = path("file2");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         writeTcfSync(writer, new byte[]{10, 20, 30});
         // Verify cache has data before close
         FileCacheEntry entry = writer.getCacheEntry();
@@ -189,7 +189,7 @@ public class TailCacheFileSystemTest {
         assertArrayEquals(new byte[]{10, 20, 30}, readFileSync(p));
 
         // Reopen reader and verify correct data
-        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             byte[] data = readTcfSync(reader, 3);
             assertArrayEquals(new byte[]{10, 20, 30}, data);
@@ -207,7 +207,7 @@ public class TailCacheFileSystemTest {
         String p = path("file3");
         writeFileSync(p, new byte[]{5, 6, 7, 8});
 
-        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             // TAIL_CACHE reader does not preload chunks; read goes to delegate
             byte[] data = readTcfSync(reader, 4);
@@ -228,7 +228,7 @@ public class TailCacheFileSystemTest {
         // Once pending reaches threshold, ioExecutor is scheduled and data is flushed.
 
         String p = path("file4");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = writer.getCacheEntry();
 
         // Write 50 bytes — pending(50) == writeSize(50), 50 < writeBatchBytes(128) → no IO
@@ -279,7 +279,7 @@ public class TailCacheFileSystemTest {
     @Test
     public void testReadAfterWriteAndFsync() throws Exception {
         String p = path("file5");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         writeTcfSync(writer, new byte[]{1, 2, 3, 4, 5});
         // fsync flushes cache to disk
         delegate.reset();
@@ -290,7 +290,7 @@ public class TailCacheFileSystemTest {
         assertArrayEquals(new byte[]{1, 2, 3, 4, 5}, readFileSync(p));
         // Separate reader reads
         delegate.reset();
-        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             delegate.fileReadCount = 0;
             byte[] data = readTcfSync(reader, 5);
@@ -305,8 +305,8 @@ public class TailCacheFileSystemTest {
     @Test
     public void testWriteExceedsPerFileLimitKeepsFailing() throws Exception {
         String p = path("file6");
-        // atomicReplace uses FULL_CACHE; payload larger than maxCacheSizePerFileBytes (10KB)
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, true, false, null).get();
+        // an atomic replace uses FULL_CACHE; payload larger than maxCacheSizePerFileBytes (10KB)
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false, null).get();
         try {
             byte[] bigData = new byte[11 * 1024];
             Arrays.fill(bigData, (byte) 42);
@@ -333,7 +333,7 @@ public class TailCacheFileSystemTest {
     @Test
     public void testNoCacheModePassesThrough() throws Exception {
         String p = path("file7");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null,
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null,
                 AbstractStorageFile.CacheMode.NO_CACHE).get();
         try {
             delegate.reset();
@@ -354,14 +354,14 @@ public class TailCacheFileSystemTest {
     public void testAtomicReplaceCache() throws Exception {
         String p = path("file8");
         writeFileSync(p, new byte[]{1, 2, 3});
-        // Writer with atomicReplace replaces entire file content
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, true, false, null).get();
+        // Writer with an atomic replace mode replaces entire file content
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false, null).get();
         writeTcfSync(writer, new byte[]{10, 20, 30, 40});
         tcf.close(writer).get(5, TimeUnit.SECONDS);
         // Disk should have new content
         assertArrayEquals(new byte[]{10, 20, 30, 40}, readFileSync(p));
         // Separate reader reads new data
-        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             byte[] data = readTcfSync(reader, 4);
             assertArrayEquals(new byte[]{10, 20, 30, 40}, data);
@@ -379,7 +379,7 @@ public class TailCacheFileSystemTest {
         String p = path("file9");
         writeFileSync(p, new byte[10]);
         // Writer appends 20 bytes
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         writeTcfSync(writer, new byte[20]);
         // Writer's size reflects cache (10 + 20 = 30) — no delegate size call needed
         delegate.reset();
@@ -388,7 +388,7 @@ public class TailCacheFileSystemTest {
         assertEquals("size should come from cache, no delegate call", 0, delegate.fileReadCount);
         tcf.close(writer).get(5, TimeUnit.SECONDS);
         // Separate reader opens and verifies size = 30
-        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             long readerSize = tcf.size(reader).get(5, TimeUnit.SECONDS);
             assertEquals(30, readerSize);
@@ -401,7 +401,7 @@ public class TailCacheFileSystemTest {
     public void testTruncateUpdatesCache() throws Exception {
         String p = path("file10");
         // Writer writes 200 bytes then truncates to 100
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         writeTcfSync(writer, new byte[200]);
         tcf.truncate(writer, 100).get(5, TimeUnit.SECONDS);
         // Writer's size reflects truncated cache
@@ -409,7 +409,7 @@ public class TailCacheFileSystemTest {
         assertEquals(100, writerSize);
         tcf.close(writer).get(5, TimeUnit.SECONDS);
         // Separate reader verifies size = 100
-        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             long readerSize = tcf.size(reader).get(5, TimeUnit.SECONDS);
             assertEquals(100, readerSize);
@@ -421,7 +421,7 @@ public class TailCacheFileSystemTest {
     @Test
     public void testFsyncFlushesCache() throws Exception {
         String p = path("file11");
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             writeTcfSync(file, new byte[]{1, 2, 3, 4, 5});
             tcf.fsync(file).get(5, TimeUnit.SECONDS);
@@ -435,7 +435,7 @@ public class TailCacheFileSystemTest {
     @Test
     public void testDeleteClearsCacheAndFile() throws Exception {
         String p = path("file12");
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         writeTcfSync(file, new byte[]{1, 2, 3});
         tcf.fsync(file).get(5, TimeUnit.SECONDS);
         assertTrue(Files.exists(Paths.get(p)));
@@ -447,7 +447,7 @@ public class TailCacheFileSystemTest {
     @Test
     public void testCloseOnClosedFileIsNoOp() throws Exception {
         String p = path("file14");
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         tcf.close(file).get(5, TimeUnit.SECONDS);
         // Second close should not throw
         tcf.close(file).get(5, TimeUnit.SECONDS);
@@ -739,7 +739,7 @@ public class TailCacheFileSystemTest {
         // settles at 2 — that difference is what pins minRetainChunks down.
         TailCacheFileSystem tightTcf = newTcf(evictConfig(2, 200, 0));
         String p = path("file_evict_min_retain");
-        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = file.getCacheEntry();
 
         // Chunks 0..2: maxEvictable is 0/0/0, so nothing is evicted yet.
@@ -777,7 +777,7 @@ public class TailCacheFileSystemTest {
         // dropped even though all of them are durable and maxEvictable > 0.
         TailCacheFileSystem looseTcf = newTcf(evictConfig(1, 100 * 1024, 60_000));
         String p = path("file_evict_retention");
-        AsyncFile file = looseTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile file = looseTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = file.getCacheEntry();
 
         for (int i = 0; i < 5; i++) {
@@ -796,7 +796,7 @@ public class TailCacheFileSystemTest {
         // maxEvictable on every write and the cache settles at minRetainChunks + 1.
         TailCacheFileSystem looseTcf = newTcf(evictConfig(1, 100 * 1024, 0));
         String p = path("file_evict_no_retention");
-        AsyncFile file = looseTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile file = looseTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = file.getCacheEntry();
 
         for (int i = 0; i < 5; i++) {
@@ -816,7 +816,7 @@ public class TailCacheFileSystemTest {
         // blocks eviction entirely below the low watermark no longer does here.
         TailCacheFileSystem tightTcf = newTcf(evictConfig(1, 200, 60_000));
         String p = path("file_evict_high_wm");
-        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = file.getCacheEntry();
 
         // Chunks 0..1: maxEvictable is 0 then 0, nothing evicted.
@@ -842,7 +842,7 @@ public class TailCacheFileSystemTest {
         // would block for ioWaitTimeoutMs and fail with CacheMemoryReserveException instead.
         TailCacheFileSystem tightTcf = newTcf(evictConfig(1, 200, 0));
         String p = path("file_evict_undurable");
-        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = file.getCacheEntry();
 
         for (int i = 0; i < 3; i++) {
@@ -865,7 +865,7 @@ public class TailCacheFileSystemTest {
         String p = path("file18");
         long before = tcf.getGlobalCommittedBytes();
 
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         writeTcfSync(file, new byte[(int) CHUNK_SIZE]);
 
         // Memory should increase after write
@@ -891,7 +891,7 @@ public class TailCacheFileSystemTest {
         TailCacheFileSystem noFsTcf = newNoFsTcf();
         String p = path("nofs_nocache");
         try {
-            noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null,
+            noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null,
                     AbstractStorageFile.CacheMode.NO_CACHE);
             fail("expected IllegalArgumentException for NO_FS + NO_CACHE");
         } catch (IllegalArgumentException expected) {
@@ -920,7 +920,7 @@ public class TailCacheFileSystemTest {
         writeFileSync(p, new byte[]{9, 9, 9, 9});
         delegate.reset();
 
-        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             FileCacheEntry entry = writer.getCacheEntry();
             assertTrue(entry.isInitialized());
@@ -942,7 +942,7 @@ public class TailCacheFileSystemTest {
         // Writes never reach the delegate and never leave the cache.
         TailCacheFileSystem noFsTcf = newNoFsTcf();
         String p = path("nofs_write_mem");
-        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             delegate.reset();
             // Well above writeBatchBytes(128) — under ASYNC this would have triggered a flush.
@@ -968,7 +968,7 @@ public class TailCacheFileSystemTest {
     public void testNoFsFsyncIsNoOp() throws Exception {
         TailCacheFileSystem noFsTcf = newNoFsTcf();
         String p = path("nofs_fsync_noop");
-        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             noFsTcf.write(writer, bufOf(new byte[]{1, 2, 3})).get(5, TimeUnit.SECONDS);
             delegate.reset();
@@ -993,12 +993,12 @@ public class TailCacheFileSystemTest {
         // unreadable rather than silently degrading to a disk read.
         TailCacheFileSystem tcfSwitch = newTcf(baseConfig());
         String p = path("nofs_read_below_start");
-        AsyncFile writer = tcfSwitch.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcfSwitch.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         tcfSwitch.write(writer, bufOf(new byte[]{1, 2, 3, 4, 5})).get(5, TimeUnit.SECONDS);
         tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
         tcfSwitch.close(writer).get(5, TimeUnit.SECONDS);
 
-        AsyncFile reader = tcfSwitch.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        AsyncFile reader = tcfSwitch.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             FileCacheEntry entry = reader.getCacheEntry();
             assertEquals("reader cache window starts at EOF", 5, entry.cacheStartOffset);
@@ -1033,7 +1033,7 @@ public class TailCacheFileSystemTest {
         // (true, false) — serve from cache, never degrade — so the read still works.
         TailCacheFileSystem noFsTcf = newNoFsTcf();
         String p = path("nofs_read_in_window");
-        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             noFsTcf.write(writer, bufOf(new byte[]{1, 2, 3, 4, 5})).get(5, TimeUnit.SECONDS);
             assertArrayEquals(new byte[]{3, 4, 5},
@@ -1059,7 +1059,7 @@ public class TailCacheFileSystemTest {
         TailCacheFileSystem tightTcf = newTcf(
                 evictConfig(1, 200, 0).setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS));
         String p = path("nofs_dirty_evict");
-        AsyncFile writer = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             FileCacheEntry entry = writer.getCacheEntry();
             for (int i = 0; i < 3; i++) {
@@ -1134,7 +1134,7 @@ public class TailCacheFileSystemTest {
         // cacheStartOffset. Callers of a tail cache are expected to know that.
         TailCacheFileSystem noFsTcf = newNoFsTcf();
         String p = path("nofs_size");
-        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             noFsTcf.write(writer, bufOf(new byte[70])).get(5, TimeUnit.SECONDS);
             assertEquals(70, (long) noFsTcf.size(writer).get(5, TimeUnit.SECONDS));
@@ -1152,7 +1152,7 @@ public class TailCacheFileSystemTest {
         TailCacheFileSystem noFsTcf = newNoFsTcf();
         String p = path("nofs_close_drop");
         writeFileSync(p, new byte[]{7, 7});
-        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = noFsTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         noFsTcf.write(writer, bufOf(new byte[]{1, 2, 3})).get(5, TimeUnit.SECONDS);
         delegate.reset();
 
@@ -1385,7 +1385,7 @@ public class TailCacheFileSystemTest {
         FaultyDelegate faulty = newFaultyDelegate();
         TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
         String p = path("hang_write");
-        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = writer.getCacheEntry();
 
         // First write exceeds writeBatchBytes(128) so it submits IO, which then wedges.
@@ -1412,7 +1412,7 @@ public class TailCacheFileSystemTest {
         FaultyDelegate faulty = newFaultyDelegate();
         TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
         String p = path("hang_read");
-        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
 
         hangTcf.write(writer, bufOf(new byte[]{1, 2, 3, 4, 5})).get(5, TimeUnit.SECONDS);
         faulty.hangOn(Op.FILE_WRITE);
@@ -1435,7 +1435,7 @@ public class TailCacheFileSystemTest {
         FaultyDelegate faulty = newFaultyDelegate();
         TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
         String p = path("hang_fsync");
-        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
 
         faulty.hangOn(Op.FILE_WRITE);
         hangTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
@@ -1465,7 +1465,7 @@ public class TailCacheFileSystemTest {
         FaultyDelegate faulty = newFaultyDelegate();
         TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
         String p = path("hang_close");
-        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
 
         faulty.hangOn(Op.FILE_WRITE);
         hangTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
@@ -1499,7 +1499,7 @@ public class TailCacheFileSystemTest {
 
         faulty.hangOn(Op.FILE_SIZE);
         long start = System.nanoTime();
-        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         long elapsedMs = (System.nanoTime() - start) / 1_000_000L;
 
         assertTrue("open must return within its budget, took " + elapsedMs + "ms",
@@ -1527,7 +1527,7 @@ public class TailCacheFileSystemTest {
         FaultyDelegate faulty = newFaultyDelegate();
         TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
         String p = path("hang_switch_nofs");
-        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
 
         faulty.hangOn(Op.FILE_WRITE);
         hangTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
@@ -1555,7 +1555,7 @@ public class TailCacheFileSystemTest {
                 elapsedMs < BOUNDED_MS);
 
         // A fresh writer can be opened and used while the disk is still wedged.
-        AsyncFile reopened = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile reopened = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             hangTcf.write(reopened, bufOf(new byte[]{1, 2})).get(5, TimeUnit.SECONDS);
             assertArrayEquals(new byte[]{1, 2},
@@ -1581,7 +1581,7 @@ public class TailCacheFileSystemTest {
         // flush path resumes from that boundary and no repair is needed.
         TailCacheFileSystem tcfSwitch = newTcf(baseConfig());
         String p = path("switch_write_only");
-        AsyncFile writer = tcfSwitch.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcfSwitch.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             tcfSwitch.write(writer, bufOf(bytes(1, 2, 3))).get(5, TimeUnit.SECONDS);
             tcfSwitch.fsync(writer).get(5, TimeUnit.SECONDS);
@@ -1728,7 +1728,7 @@ public class TailCacheFileSystemTest {
         String p = Paths.get(dir, "file").toString();
         assertFalse("directory does not exist yet", Files.exists(Paths.get(dir)));
 
-        AsyncFile writer = tcfSwitch.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcfSwitch.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             assertTrue(writer.needPrepare);
             FileCacheEntry entry = writer.getCacheEntry();
@@ -1963,7 +1963,7 @@ public class TailCacheFileSystemTest {
     public void testRestoreFailureDegradesTailCacheWriteButFailsAtomicReplace() throws Exception {
         // A tail-cache writer can absorb a failed restore: the bytes stay in the cache and
         // writtenToFsOffset still describes a real boundary, so write returns normally. An
-        // atomicReplace writer has no partial-flush state to fall back on, so it must fail loudly.
+        // an atomic replace writer has no partial-flush state to fall back on, so it must fail loudly.
         FaultyDelegate faulty = newFaultyDelegate();
         TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig()
                 .setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS));
@@ -1971,8 +1971,8 @@ public class TailCacheFileSystemTest {
         String tailPath = Paths.get(dir, "tail").toString();
         String atomicPath = Paths.get(dir, "atomic").toString();
 
-        AsyncFile tailWriter = hangTcf.open(tailPath, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        AsyncFile atomicWriter = hangTcf.open(atomicPath, AbstractStorageFile.OpenMode.WRITE, true, false, null).get();
+        AsyncFile tailWriter = hangTcf.open(tailPath, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        AsyncFile atomicWriter = hangTcf.open(atomicPath, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false, null).get();
         try {
             hangTcf.write(tailWriter, bufOf(bytes(1, 2, 3))).get(5, TimeUnit.SECONDS);
             FileCacheEntry tailEntry = tailWriter.getCacheEntry();
@@ -1992,7 +1992,7 @@ public class TailCacheFileSystemTest {
 
             try {
                 hangTcf.write(atomicWriter, bufOf(bytes(9, 9)));
-                fail("expected OperationNotExecutedException for atomicReplace");
+                fail("expected OperationNotExecutedException for an atomic replace");
             } catch (OperationNotExecutedException expected) {
                 // no partial-flush semantics to degrade to
             }
@@ -2022,7 +2022,7 @@ public class TailCacheFileSystemTest {
         TailCacheFileSystem noCacheTcf = newTcf(config);
 
         String p = path("file21");
-        AsyncFile file = noCacheTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile file = noCacheTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             noCacheTcf.write(file, bufOf(new byte[]{7, 8, 9})).get(5, TimeUnit.SECONDS);
             // No cache memory allocated (chunks not used)
@@ -2042,7 +2042,7 @@ public class TailCacheFileSystemTest {
     @Test(expected = Exception.class)
     public void testWriteOnClosedFileThrows() throws Exception {
         String p = path("file22");
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         tcf.close(file).get(5, TimeUnit.SECONDS);
         tcf.write(file, bufOf(new byte[]{1})).get(5, TimeUnit.SECONDS);
     }
@@ -2050,9 +2050,9 @@ public class TailCacheFileSystemTest {
     @Test
     public void testDoubleWriterThrows() throws Exception {
         String p = path("file23");
-        AsyncFile writer1 = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer1 = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
-            tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+            tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
             fail("should have thrown");
         } catch (Exception e) {
             // open() now runs openFileSync on the calling thread and returns an already
@@ -2068,8 +2068,8 @@ public class TailCacheFileSystemTest {
     public void testMultipleReadersAllowed() throws Exception {
         String p = path("file24");
         writeFileSync(p, new byte[]{1, 2, 3});
-        AsyncFile reader1 = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
-        AsyncFile reader2 = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        AsyncFile reader1 = tcf.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        AsyncFile reader2 = tcf.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             byte[] d1 = readTcfSync(reader1, 3);
             byte[] d2 = readTcfSync(reader2, 3);
@@ -2085,7 +2085,7 @@ public class TailCacheFileSystemTest {
     public void testWriteToReadModeThrows() throws Exception {
         String p = path("file25");
         writeFileSync(p, new byte[]{1});
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             tcf.write(file, bufOf(new byte[]{2})).get(5, TimeUnit.SECONDS);
         } finally {
@@ -2102,7 +2102,7 @@ public class TailCacheFileSystemTest {
         // NO_CACHE → not in cache; local readable → (false, true)
         String p = path("file_pdr_nocache");
         writeFileSync(p, new byte[10]); // file must exist for READ mode open
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null,
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null,
                 AbstractStorageFile.CacheMode.NO_CACHE).get();
         FileCacheEntry entry = file.getCacheEntry();
         Pair<Boolean, Boolean> d = tcf.preferCacheRead(file, entry, 0, true, tcf.getBackingFsMode());
@@ -2115,7 +2115,7 @@ public class TailCacheFileSystemTest {
     public void testPreferCacheReadCacheHitWriter() throws Exception {
         // Writer with data in cache, preferCache=true → (true, true); read hits cache
         String p = path("file_pdr_hit");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         writeTcfSync(writer, new byte[]{1, 2, 3, 4, 5});
         tcf.fsync(writer).get(5, TimeUnit.SECONDS);
         // Now: cacheEndOffset=5, writtenToFsOffset=5, cacheStartOffset=0
@@ -2138,7 +2138,7 @@ public class TailCacheFileSystemTest {
     @Test
     public void testPreferCacheReadLocalReadableFromOffset() throws Exception {
         String p = path("file_pdr_local_from");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         writeTcfSync(writer, new byte[]{1, 2, 3, 4, 5});
         tcf.fsync(writer).get(5, TimeUnit.SECONDS);
         FileCacheEntry entry = writer.getCacheEntry();
@@ -2176,7 +2176,7 @@ public class TailCacheFileSystemTest {
     public void testReadPositionUpdatesOnCacheHit() throws Exception {
         // read(file, length) with fromPosition=true should update file.position on cache hit
         String p = path("file_read_pos");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         writeTcfSync(writer, new byte[]{10, 20, 30, 40, 50});
         tcf.fsync(writer).get(5, TimeUnit.SECONDS);
         // position starts at 0
@@ -2205,10 +2205,10 @@ public class TailCacheFileSystemTest {
 
     @Test
     public void testTruncateAtomicReplaceCache() throws Exception {
-        // atomicReplace truncate: allocates new buffer, copies prefix, setAtomicChunk
+        // atomic replace truncate: allocates new buffer, copies prefix, setAtomicChunk
         String p = path("file_trunc_ar");
         writeFileSync(p, new byte[]{1, 2, 3, 4, 5, 6, 7, 8});
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, true, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false, null).get();
         // FULL_CACHE mode loaded entire file into cache chunk 0
         FileCacheEntry entry = writer.getCacheEntry();
         assertTrue(entry.isInitialized());
@@ -2237,7 +2237,7 @@ public class TailCacheFileSystemTest {
     public void testTruncateNoCacheChangeWhenSizeGteCacheEnd() throws Exception {
         // truncate with size >= cacheEndOffset → cache not modified
         String p = path("file_trunc_nochg");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         writeTcfSync(writer, new byte[50]);
         tcf.fsync(writer).get(5, TimeUnit.SECONDS);
         FileCacheEntry entry = writer.getCacheEntry();
@@ -2253,7 +2253,7 @@ public class TailCacheFileSystemTest {
     public void testTruncateCacheToStart() throws Exception {
         // truncate to 0 → releaseAllChunks, cacheStartOffset=0, cacheEndOffset=0
         String p = path("file_trunc_zero");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         writeTcfSync(writer, new byte[(int) (CHUNK_SIZE * 2)]);
         tcf.fsync(writer).get(5, TimeUnit.SECONDS);
         FileCacheEntry entry = writer.getCacheEntry();
@@ -2416,7 +2416,7 @@ public class TailCacheFileSystemTest {
         // NO_CACHE mode → size delegates to FS, no cache memory used
         String p = path("file_size_nocache");
         writeFileSync(p, new byte[42]);
-        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.READ, false, false, null,
+        AsyncFile file = tcf.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null,
                 AbstractStorageFile.CacheMode.NO_CACHE).get();
         try {
             long size = tcf.size(file).get(5, TimeUnit.SECONDS);
@@ -2445,7 +2445,7 @@ public class TailCacheFileSystemTest {
 
         String p = path("file_xfer_direct");
         writeFileSync(p, new byte[]{1, 2, 3, 4, 5});
-        AsyncFile reader = tcfDirect.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        AsyncFile reader = tcfDirect.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             delegate.reset();
             delegate.transferToCount = 0;
@@ -2463,7 +2463,7 @@ public class TailCacheFileSystemTest {
     public void testTransferToCachePath() throws Exception {
         // transferPreferCache=true + data in cache → cache path (no delegate)
         String p = path("file_xfer_cache");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         writeTcfSync(writer, new byte[]{10, 20, 30, 40, 50});
         tcf.fsync(writer).get(5, TimeUnit.SECONDS);
         // Writer has data in cache, transferPreferCache=true (default)
@@ -2608,7 +2608,7 @@ public class TailCacheFileSystemTest {
         // Verify cacheGen increments on each atomic write, writtenGen tracks flush
         String p = path("file_atomic_gen");
         writeFileSync(p, new byte[]{1, 2, 3});
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, true, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false, null).get();
         FileCacheEntry entry = writer.getCacheEntry();
         assertTrue(entry.isInitialized());
         long gen0 = entry.cacheGen;
@@ -2634,7 +2634,7 @@ public class TailCacheFileSystemTest {
     public void testResolveFileCacheModeOverrideTailCache() throws Exception {
         // Explicit TAIL_CACHE override with non-atomic → uses TAIL_CACHE
         String p = path("file_override_tc");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null,
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null,
                 AbstractStorageFile.CacheMode.TAIL_CACHE).get();
         assertEquals(AbstractStorageFile.CacheMode.TAIL_CACHE, writer.cacheMode);
         tcf.close(writer).get(5, TimeUnit.SECONDS);
@@ -2645,7 +2645,7 @@ public class TailCacheFileSystemTest {
         // Explicit FULL_CACHE override → uses FULL_CACHE, WRITE upgrades to READ_WRITE
         String p = path("file_override_fc");
         writeFileSync(p, new byte[]{1, 2, 3});
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null,
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null,
                 AbstractStorageFile.CacheMode.FULL_CACHE).get();
         assertEquals(AbstractStorageFile.CacheMode.FULL_CACHE, writer.cacheMode);
         // FULL_CACHE with WRITE → effectiveOpenMode upgraded to READ_WRITE
@@ -2662,9 +2662,9 @@ public class TailCacheFileSystemTest {
 
     @Test(expected = Exception.class)
     public void testResolveFileCacheModeAtomicTailCacheThrows() throws Exception {
-        // atomicReplace + TAIL_CACHE override → IllegalArgumentException
+        // an atomic replace + TAIL_CACHE override → IllegalArgumentException
         String p = path("file_atomic_tc_err");
-        tcf.open(p, AbstractStorageFile.OpenMode.WRITE, true, false, null,
+        tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false, null,
                 AbstractStorageFile.CacheMode.TAIL_CACHE).get();
     }
 
@@ -2682,7 +2682,7 @@ public class TailCacheFileSystemTest {
         // The read-mode guard is a caller bug, so position(AsyncFile) throws it synchronously
         // rather than wrapping it in a failed future.
         String p = path("file_pos_write");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             tcf.position(writer, 0);
             fail("Expected IllegalArgumentException");
@@ -2698,7 +2698,7 @@ public class TailCacheFileSystemTest {
         // FULL_CACHE mode: entire file loaded, reads come from cache
         String p = path("file_full_rw");
         writeFileSync(p, new byte[]{1, 2, 3, 4, 5});
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null,
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null,
                 AbstractStorageFile.CacheMode.FULL_CACHE).get();
         try {
             // FULL_CACHE loads entire file; writer should have all chunks
@@ -2848,7 +2848,7 @@ public class TailCacheFileSystemTest {
     public void testChunkDataAfterWrite() throws Exception {
         // Verify actual chunk buffer contents after multi-chunk writes
         String p = path("file_chunk_data");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         // Write 200 bytes — spans chunks [0,64), [64,128), [128,192), [192,200)
         byte[] data = new byte[200];
         for (int i = 0; i < 200; i++) data[i] = (byte) (i % 128);
@@ -2884,7 +2884,7 @@ public class TailCacheFileSystemTest {
     public void testChunkDataAfterTruncate() throws Exception {
         // Verify chunk buffer contents are correct after truncation
         String p = path("file_chunk_trunc");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         // Write 200 bytes (4 chunks)
         byte[] data = new byte[200];
         for (int i = 0; i < 200; i++) data[i] = (byte) (i % 128);
@@ -2915,7 +2915,7 @@ public class TailCacheFileSystemTest {
     public void testWrittenToFsOffsetAfterFlush() throws Exception {
         // writtenToFsOffset tracks what has been flushed to delegate
         String p = path("file_wfs_offset");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = writer.getCacheEntry();
 
         // After init (empty file): writtenToFsOffset = 0
@@ -2945,7 +2945,7 @@ public class TailCacheFileSystemTest {
     public void testPendingFsyncBytesPropagation() throws Exception {
         // pendingFsyncBytes on entry should reflect delegate's pendingFsyncBytes after fsync
         String p = path("file_pfsync");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = writer.getCacheEntry();
 
         writeTcfSync(writer, new byte[100]);
@@ -2968,7 +2968,7 @@ public class TailCacheFileSystemTest {
     public void testBodySizeBytesTracking() throws Exception {
         // bodySizeBytes should accurately track total chunk memory
         String p = path("file_body_size");
-        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = writer.getCacheEntry();
 
         assertEquals(0, entry.bodySizeBytes);
@@ -3004,7 +3004,7 @@ public class TailCacheFileSystemTest {
         TailCacheFileSystem tightTcf = newTcf(config);
 
         String p = path("file_cso_evict");
-        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile file = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = file.getCacheEntry();
 
         // Write chunk 0 [0,64) and fsync — makes it durable (evictable)
@@ -3083,8 +3083,8 @@ public class TailCacheFileSystemTest {
         // memoryTracker.committedBytes() should match sum of all entries' bodySizeBytes
         String p1 = path("file_gcb1");
         String p2 = path("file_gcb2");
-        AsyncFile w1 = tcf.open(p1, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
-        AsyncFile w2 = tcf.open(p2, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile w1 = tcf.open(p1, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        AsyncFile w2 = tcf.open(p2, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
 
         writeTcfSync(w1, new byte[(int) CHUNK_SIZE]);
         writeTcfSync(w2, new byte[(int) CHUNK_SIZE]);
@@ -3132,7 +3132,7 @@ public class TailCacheFileSystemTest {
         FaultyDelegate faulty = newFaultyDelegate();
         TailCacheFileSystem hangTcf = newTcf(faulty, hangConfig());
         String p = path("merge_inflight");
-        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = writer.getCacheEntry();
 
         faulty.hangOn(Op.FILE_WRITE);
@@ -3168,7 +3168,7 @@ public class TailCacheFileSystemTest {
         FaultyDelegate faulty = newFaultyDelegate();
         TailCacheFileSystem enospcTcf = newTcf(faulty, baseConfig());
         String p = path("enospc");
-        AsyncFile writer = enospcTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = enospcTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
 
         faulty.failOn(new IOException("No space left on device"), Op.FILE_WRITE);
         // Exceeds writeBatchBytes so the flush is attempted and fails inside the io task.
@@ -3196,7 +3196,7 @@ public class TailCacheFileSystemTest {
         // silently dropping a chunk.
         TailCacheFileSystem tightTcf = newTcf(evictConfig(1, 200, 0).setIoWaitTimeoutMs(50));
         String p = path("reserve_timeout");
-        AsyncFile writer = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tightTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         try {
             FileCacheEntry entry = writer.getCacheEntry();
             // 3 chunks = 192B fits under 200B.
@@ -3353,7 +3353,7 @@ public class TailCacheFileSystemTest {
                         .setMaxEvictRatioPerWrite(0.5));
 
         String p = path("file_eio_recovery");
-        AsyncFile writer = eioTcf.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = eioTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         FileCacheEntry entry = writer.getCacheEntry();
 
         // Step 1: Write A={1,2,3,4,5} — writeSync → page cache

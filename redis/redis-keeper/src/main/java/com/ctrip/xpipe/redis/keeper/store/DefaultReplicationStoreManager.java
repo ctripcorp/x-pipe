@@ -399,7 +399,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         }
         if (readOnly) {
             AsyncFile asyncFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
-                    () -> asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.READ, false, true,
+                    () -> asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.READ,
+                            AbstractStorageFile.ReplaceMode.NORMAL, true,
                             replId.toString()),
                     "open manager meta " + metaFile.getAbsolutePath());
             managerMetaAsyncFile = asyncFile;
@@ -408,7 +409,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         // Parent dir may not exist before first create(); open(CREATE) needs it.
         AsyncFileSystemHelper.await(() -> asyncFileSystem.mkdir(baseDir.getAbsolutePath(), true),
                 "mkdir manager baseDir for meta " + baseDir.getAbsolutePath());
-        AsyncFile asyncFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.READ_WRITE, true, true,
+        AsyncFile asyncFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.READ_WRITE,
+                        AbstractStorageFile.ReplaceMode.ATOMIC, true,
                         replId.toString()),
                 "open manager meta " + metaFile.getAbsolutePath());
         managerMetaAsyncFile = asyncFile;
@@ -535,7 +537,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         // Permanent refuse reopen before close/rmdir so create/getCurrent/gc cannot race a new open.
         managerMetaDestroyed = true;
         try {
-            // Drain in-flight atomicReplace (TMP_REP_*) before walkFileTree; close awaits FS in-flight.
+            // Drain in-flight atomic replace (TMP_REP_*) before walkFileTree; close awaits FS in-flight.
             releaseCurrentStore();
         } catch (Exception e) {
             logger.warn("[destroy][releaseCurrentStore]", e);

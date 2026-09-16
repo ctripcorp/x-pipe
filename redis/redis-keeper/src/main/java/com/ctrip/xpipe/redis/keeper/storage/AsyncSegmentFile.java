@@ -157,7 +157,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
 
     AsyncSegmentFile(String dirPath, String prefix, List<String> indexPrefixes, String key, String ioKey,
             boolean writeMode) {
-        super(writeMode ? OpenMode.WRITE : OpenMode.READ, false, key, ioKey,
+        super(writeMode ? OpenMode.WRITE : OpenMode.READ, ReplaceMode.NORMAL, key, ioKey,
                 Paths.get(dirPath, prefix).toString(), dirPath);
         this.prefix = prefix;
         this.indexPrefixes = indexPrefixes;

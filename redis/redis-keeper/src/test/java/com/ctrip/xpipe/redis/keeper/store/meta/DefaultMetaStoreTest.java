@@ -89,10 +89,10 @@ public class DefaultMetaStoreTest extends AbstractRedisKeeperTest {
         try {
             DefaultMetaStore store = newInitializedMetaStore(fileSystem);
             verify(fileSystem, times(1)).open(contains(META_V2_FILE), eq(AbstractStorageFile.OpenMode.READ_WRITE),
-                    eq(true), eq(true), eq(getReplId().toString()));
+                    eq(AbstractStorageFile.ReplaceMode.ATOMIC), eq(true), eq(getReplId().toString()));
             store.setRdbFileSize(1024);
             verify(fileSystem, times(1)).open(contains(META_V2_FILE), eq(AbstractStorageFile.OpenMode.READ_WRITE),
-                    eq(true), eq(true), eq(getReplId().toString()));
+                    eq(AbstractStorageFile.ReplaceMode.ATOMIC), eq(true), eq(getReplId().toString()));
             store.close();
         } finally {
             fileSystem.shutdown();

@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
@@ -280,7 +281,7 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 			Assert.assertEquals(REPL_ID, snap.getMasterReplId());
 			Assert.assertTrue(snap.getBacklogFirstByteOffset() >= 0);
 
-			verify(fs, never()).open(anyString(), any(), anyBoolean(), anyBoolean(), any());
+			verify(fs, never()).open(anyString(), any(), any(AbstractStorageFile.ReplaceMode.class), anyBoolean(), any());
 			verify(fs, never()).open(anyString(), anyString(), any(), anyBoolean(), anyString());
 			verify(fs, never()).list(anyString());
 			verify(fs, never()).list(any(AsyncSegmentFile.class));

@@ -595,7 +595,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			verify(fileSystem, atLeastOnce()).mkdir(contains(getReplId().toString()), eq(true));
 			// T-S.5: READ_WRITE long-lived handle — two creates → open at most once before stop.
 			verify(fileSystem, times(1)).open(contains("store_manager_meta.properties"),
-					eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(true), eq(true), eq(getReplId().toString()));
+					eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(AbstractStorageFile.ReplaceMode.ATOMIC), eq(true), eq(getReplId().toString()));
 		} finally {
 			LifecycleHelper.stopIfPossible(replicationStoreManager);
 			LifecycleHelper.disposeIfPossible(replicationStoreManager);
@@ -617,7 +617,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		LifecycleHelper.startIfPossible(real);
 		real.create();
 		verify(fileSystem, times(1)).open(contains("store_manager_meta.properties"),
-				eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(true), eq(true), eq(getReplId().toString()));
+				eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(AbstractStorageFile.ReplaceMode.ATOMIC), eq(true), eq(getReplId().toString()));
 
 		DefaultReplicationStoreManager manager = spy(real);
 		doThrow(new IOException("injected releaseCurrentStore fail")).when(manager).releaseCurrentStore();
@@ -661,7 +661,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 				logger.info("[testDestroyRefusesManagerMetaReopen] expected: {}", e.getMessage());
 			}
 			verify(fileSystem, never()).open(contains("store_manager_meta.properties"),
-					any(AbstractStorageFile.OpenMode.class), anyBoolean(), anyBoolean(), any());
+					any(AbstractStorageFile.OpenMode.class), any(AbstractStorageFile.ReplaceMode.class), anyBoolean(), any());
 		} finally {
 			try {
 				LifecycleHelper.stopIfPossible(manager);
@@ -692,7 +692,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			LifecycleHelper.startIfPossible(manager);
 			manager.create();
 			verify(fileSystem, times(1)).open(contains("store_manager_meta.properties"),
-					eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(true), eq(true), eq(getReplId().toString()));
+					eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(AbstractStorageFile.ReplaceMode.ATOMIC), eq(true), eq(getReplId().toString()));
 
 			LifecycleHelper.stopIfPossible(manager);
 			Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
@@ -704,12 +704,12 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 				logger.info("[testManagerMetaClosedOnStopAndReopensAfterStart] expected: {}", e.getMessage());
 			}
 			verify(fileSystem, never()).open(contains("store_manager_meta.properties"),
-					any(AbstractStorageFile.OpenMode.class), anyBoolean(), anyBoolean(), any());
+					any(AbstractStorageFile.OpenMode.class), any(AbstractStorageFile.ReplaceMode.class), anyBoolean(), any());
 
 			LifecycleHelper.startIfPossible(manager);
 			manager.create();
 			verify(fileSystem, times(1)).open(contains("store_manager_meta.properties"),
-					eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(true), eq(true), eq(getReplId().toString()));
+					eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(AbstractStorageFile.ReplaceMode.ATOMIC), eq(true), eq(getReplId().toString()));
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
 			LifecycleHelper.disposeIfPossible(manager);

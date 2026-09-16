@@ -22,17 +22,33 @@ public abstract class AbstractStorageFile {
 
     public enum CacheMode {
         NO_CACHE,
-        // Not valid for atomicReplace open.
+        // Not valid for an atomic replace open.
         TAIL_CACHE,
         // Memory is held until close() is called.
         FULL_CACHE
+    }
+
+    public enum ReplaceMode {
+        NORMAL,
+        // Whole-file replace.
+        ATOMIC,
+        // Whole-file replace, and reads prefer read tmp file first.
+        ATOMIC_PREFER_TMP;
+
+        boolean isAtomicReplace() {
+            return this != NORMAL;
+        }
+
+        boolean preferTmp() {
+            return this == ATOMIC_PREFER_TMP;
+        }
     }
 
     volatile long pendingFsyncBytes = 0;
     volatile long lastFsyncNanos = System.nanoTime();
     volatile long lastModified = 0;
     final OpenMode openMode;
-    final boolean atomicReplace;
+    final ReplaceMode replaceMode;
     volatile CacheMode cacheMode = CacheMode.NO_CACHE;
     volatile Runnable onCacheClose = () -> {};
     volatile boolean closed = false;
@@ -60,6 +76,14 @@ public abstract class AbstractStorageFile {
         return openMode.canWrite();
     }
 
+    boolean isAtomicReplace() {
+        return replaceMode.isAtomicReplace();
+    }
+
+    boolean preferTmp() {
+        return replaceMode.preferTmp();
+    }
+
     abstract FileChannel currentWriteChannel();
 
     abstract long openCurrentChannel() throws IOException;
@@ -82,10 +106,10 @@ public abstract class AbstractStorageFile {
         return key;
     }
 
-    AbstractStorageFile(OpenMode openMode, boolean atomicReplace, String key, String ioKey,
+    AbstractStorageFile(OpenMode openMode, ReplaceMode replaceMode, String key, String ioKey,
             String path, String dirPath) {
         this.openMode = openMode;
-        this.atomicReplace = atomicReplace;
+        this.replaceMode = replaceMode;
         this.key = key;
         this.ioKey = ioKey;
         this.path = path;

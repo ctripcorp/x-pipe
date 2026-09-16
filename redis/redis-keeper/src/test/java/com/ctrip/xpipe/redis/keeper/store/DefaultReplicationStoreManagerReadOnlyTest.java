@@ -151,12 +151,12 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 			Assert.assertNull(manager.getOpenedStore());
 			verify(fs, never()).mkdir(anyString(), anyBoolean());
 			verify(fs, never()).open(anyString(), eq(AbstractStorageFile.OpenMode.WRITE),
-					anyBoolean(), anyBoolean(), any());
+					any(AbstractStorageFile.ReplaceMode.class), anyBoolean(), any());
 			verify(fs, never()).open(anyString(), eq(AbstractStorageFile.OpenMode.READ_WRITE),
-					anyBoolean(), anyBoolean(), any());
+					any(AbstractStorageFile.ReplaceMode.class), anyBoolean(), any());
 			verify(fs, never()).open(anyString(), anyString(), anyList(), eq(true), anyString());
 			verify(fs, atLeastOnce()).open(contains("store_manager_meta.properties"),
-					eq(AbstractStorageFile.OpenMode.READ), eq(false), eq(true), any());
+					eq(AbstractStorageFile.OpenMode.READ), eq(AbstractStorageFile.ReplaceMode.NORMAL), eq(true), any());
 		} finally {
 			LifecycleHelper.stopIfPossible(manager);
 			LifecycleHelper.disposeIfPossible(manager);
@@ -176,7 +176,7 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 			Assert.assertSame(store, manager.getOpenedStore());
 			clearInvocations(fs);
 			Assert.assertSame(store, manager.getOpenedStore());
-			verify(fs, never()).open(anyString(), any(), anyBoolean(), anyBoolean(), any());
+			verify(fs, never()).open(anyString(), any(), any(AbstractStorageFile.ReplaceMode.class), anyBoolean(), any());
 
 			LifecycleHelper.stopIfPossible(manager);
 			Assert.assertNull(manager.getOpenedStore());

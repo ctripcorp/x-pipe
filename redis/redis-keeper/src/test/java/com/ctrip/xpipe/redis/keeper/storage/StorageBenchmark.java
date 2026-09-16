@@ -108,7 +108,7 @@ public class StorageBenchmark {
 
     private AsyncFile openTfsFile(String filePath, AbstractStorageFile.OpenMode openMode) {
         String key = StorageUtil.asyncFileKey(filePath);
-        AsyncFile file = tfs.openSync(filePath, key, key, openMode, false, false, null, false);
+        AsyncFile file = tfs.openSync(filePath, key, key, openMode, AbstractStorageFile.ReplaceMode.NORMAL, false, null, false);
         tfs.openWithFileEntry(file, false, NO_REGISTER, CLOSE_CHANNELS,
                 RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
         return file;
@@ -160,7 +160,7 @@ public class StorageBenchmark {
 
     private double benchAsyncFileWrite_TailCache() throws Exception {
         String p = path("bench_af_write_tail");
-        AsyncFile file = tailFs.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile file = tailFs.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         byte[] data = new byte[CHUNK_SIZE];
 
         double mbps = doWrite(TOTAL_ITERATIONS,
@@ -261,7 +261,7 @@ public class StorageBenchmark {
 
     private double benchAsyncFileRead_TailCache() throws Exception {
         String p = path("bench_af_read_tail");
-        AsyncFile writer = tailFs.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = tailFs.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         byte[] data = new byte[CHUNK_SIZE];
         for (int i = 0; i < TOTAL_ITERATIONS; i++) {
             tailFs.write(writer, bufOf(data).retain());
@@ -270,7 +270,7 @@ public class StorageBenchmark {
         tailFs.close(writer).get();
         trackingIo.clear();
 
-        AsyncFile reader = tailFs.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        AsyncFile reader = tailFs.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         // Clear cache so reads go through TailCacheFileSystem but miss cache (fall through to TFS).
         // After reset: cacheStartOffset=-1, isInitialized()=false, preferCacheRead()=(false, true),
         // all reads submit to ioExecutor -> delegate.readSync (TFS path).

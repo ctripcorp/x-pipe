@@ -280,7 +280,7 @@ public class DefaultIndexStoreTest {
 
     private AsyncFile openTestAsyncFile(File file, boolean write) throws IOException {
         return AsyncFileSystemHelper.awaitOpen(testFs,
-                testFs.open(file.getAbsolutePath(), write ? AbstractStorageFile.OpenMode.WRITE : AbstractStorageFile.OpenMode.READ, false, true, "test-repl-0"),
+                testFs.open(file.getAbsolutePath(), write ? AbstractStorageFile.OpenMode.WRITE : AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, true, "test-repl-0"),
                 "open test async file " + file.getName());
     }
 

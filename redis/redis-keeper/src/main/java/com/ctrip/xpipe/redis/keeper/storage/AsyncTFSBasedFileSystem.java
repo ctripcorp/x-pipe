@@ -45,13 +45,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     private final ExecutorService ioExecutor;
     private volatile long fsyncIntervalBytes;
     private volatile long fsyncIntervalNanos;
-    // When set, reads of an atomicReplace file (readSync / sizeSync / transferToSync) are served
-    // from a valid pending tmp file instead of the target file, which still holds the superseded
-    // content until a writer recovers it. Off by default because it costs an extra stat, open and
-    // header read on every such call.
-    // it is possible read size from tmp while read from target file. mostly there is no problem. As tmp and target represent the same data.
-    // still the caller should be aware of this.
-    private volatile boolean readTmpFirst;
 
     // Registry of shared file state, keyed by file key.
     private final ConcurrentHashMap<String, FileEntry> fileEntries = new ConcurrentHashMap<>();
@@ -62,7 +55,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         this.ioExecutor = ioExecutor;
         this.fsyncIntervalBytes = fsyncIntervalBytes;
         this.fsyncIntervalNanos = fsyncIntervalMillis * 1_000_000L;
-        readTmpFirst = false;
         for (int i = 0; i < LOCK_STRIPES; i++) openCloseLocks[i] = new Object();
     }
 
@@ -82,14 +74,6 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         this.fsyncIntervalNanos = fsyncIntervalMillis * 1_000_000L;
     }
 
-    public boolean isReadTmpFirst() {
-        return readTmpFirst;
-    }
-
-    public void setReadTmpFirst(boolean readTmpFirst) {
-        this.readTmpFirst = readTmpFirst;
-    }
-
     @Override
     public void shutdown() {
         ioExecutor.shutdown();
@@ -99,14 +83,14 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return openCloseLocks[(key.hashCode() & 0x7fffffff) % LOCK_STRIPES];
     }
 
-    // atomicReplace uses tmp file approach instead of rename because tfs currently does not support rename.
-    // Tmp file format: [8-byte length][data].
+    // An atomic replace uses the tmp file approach instead of rename because tfs currently does not
+    // support rename. Tmp file format: [8-byte length][data].
 
     @Override
     public AsyncFile openSync(String path, String key, String ioKey,
-            AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant,
-            boolean noFs) {
-        AsyncFile file = new AsyncFile(path, atomicReplace, openMode, key, ioKey, lenient);
+            AbstractStorageFile.OpenMode openMode, AbstractStorageFile.ReplaceMode replaceMode,
+            boolean lenient, String tenant, boolean noFs) {
+        AsyncFile file = new AsyncFile(path, replaceMode, openMode, key, ioKey, lenient);
         file.needPrepare = noFs;
         return file;
     }
@@ -117,7 +101,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             BiConsumer<String, List<FileChannel>> clean,
             long recoverTimeoutMs, long ioTimeoutMs) {
         final Path p = Paths.get(file.path);
-        final Function<FileEntry, Boolean> initAction = noFs || !file.atomicReplace
+        final Function<FileEntry, Boolean> initAction = noFs || !file.isAtomicReplace()
                 ? entry -> true
                 : entry -> StorageUtil.awaitIoCachePrep(ioExecutor, file, file.key, recoverTimeoutMs, register,
                         () -> recoverAtomicReplaceSync(p, file.canWrite()), null);
@@ -126,7 +110,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 : (f, entry, first) -> StorageUtil.awaitIoCachePrep(ioExecutor, f, null, ioTimeoutMs, register,
                         () -> {
                             // always try to recover unless already done in init(in other words, the writer is the initializer).
-                            if (f.atomicReplace && f.canWrite() && !first) {
+                            if (f.isAtomicReplace() && f.canWrite() && !first) {
                                 recoverAtomicReplaceSync(p, true);
                                 entry.initialized = true;
                             }
@@ -213,7 +197,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     }
 
     private boolean tmpFirst(AsyncFile file) {
-        return file.atomicReplace && readTmpFirst;
+        return file.preferTmp();
     }
 
     // Returns the data length and the open channel of a valid tmp file, or NO_VALID_TMP.
@@ -381,8 +365,13 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     @Override
     public ByteBuf readSync(AsyncFile file, long length, long offset, long alignSize) {
         StorageUtil.requireOpen(file);
-        // A whole-file replace is never read with alignment which is why the tmp read below can drop alignSize.
-        assert !file.atomicReplace || alignSize == 0 : "atomicReplace read must not be aligned: " + file.path;
+        // A whole-file replace is never read with alignment, which is what lets the tmp read below
+        // drop alignSize. Rejected rather than asserted so a future aligned caller fails loudly
+        // instead of silently getting a buffer that does not honour the alignment contract.
+        if (file.isAtomicReplace() && alignSize != 0) {
+            throw new IllegalArgumentException(
+                    "atomic replace read must not be aligned: " + file.path + ", alignSize=" + alignSize);
+        }
         try {
             if (tmpFirst(file)) {
                 Pair<Long, FileChannel> tmp = openValidTmpSync(file.path);
@@ -404,7 +393,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public long writeSync(AsyncFile file, ByteBuf data) {
         try {
             StorageUtil.requireOpen(file);
-            if (file.atomicReplace) {
+            if (file.isAtomicReplace()) {
                 return atomicReplaceWrite(file, data);
             }
             return writeAndFlush(file, data);
@@ -519,7 +508,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 return;
             }
             file.channel.truncate(size);
-            if (!file.atomicReplace) {
+            if (!file.isAtomicReplace()) {
                 file.channel.position(size);
             }
             if (size < oldSize) {

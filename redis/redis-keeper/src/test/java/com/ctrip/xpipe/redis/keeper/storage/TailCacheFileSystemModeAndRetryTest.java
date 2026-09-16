@@ -184,7 +184,7 @@ public class TailCacheFileSystemModeAndRetryTest {
     @Test
     public void testAsyncNoFsAsyncDrainsPriorInFlightWriteWithoutLossOrDuplication() throws Exception {
         String p = path("switch-inflight");
-        AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         byte[] first = new byte[200];
         Arrays.fill(first, (byte) 1);
 
@@ -222,7 +222,7 @@ public class TailCacheFileSystemModeAndRetryTest {
     @Test
     public void testNoFsCloseAndReopenIsNotCorruptedByLateInFlightWrite() throws Exception {
         String p = path("late-write");
-        AsyncFile oldWriter = fs.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile oldWriter = fs.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         byte[] stale = new byte[200];
         Arrays.fill(stale, (byte) 7);
         delegate.hang(Op.FILE_WRITE);
@@ -232,7 +232,7 @@ public class TailCacheFileSystemModeAndRetryTest {
         fs.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
         fs.close(oldWriter).get(5, TimeUnit.SECONDS);
         assertTrue(oldWriter.closed);
-        AsyncFile replacement = fs.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile replacement = fs.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         write(fs, replacement, bytes(1, 2, 3));
         assertArrayEquals(bytes(1, 2, 3), read(fs.read(replacement, 3, 0).get()));
 
@@ -256,7 +256,7 @@ public class TailCacheFileSystemModeAndRetryTest {
     @Test
     public void testAsyncNoFsAsyncRestoresTruncatedRegularFileAndAppendedSuffix() throws Exception {
         String p = path("regular-restore");
-        AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         write(fs, writer, bytes(1, 2, 3, 4, 5, 6, 7, 8));
         fs.fsync(writer).get();
 
@@ -302,7 +302,7 @@ public class TailCacheFileSystemModeAndRetryTest {
     public void testAtomicReplaceSurvivesNoFsToAsyncAndFlushesLatestGeneration() throws Exception {
         TailCacheFileSystem target = newFileSystem(noFsConfig());
         String p = path("atomic-latest");
-        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, true, false, null).get();
+        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false, null).get();
         write(target, writer, bytes(1, 1, 1));
         long firstGen = writer.getCacheEntry().cacheGen;
         write(target, writer, bytes(9, 8, 7, 6));
@@ -354,7 +354,9 @@ public class TailCacheFileSystemModeAndRetryTest {
     private void runTruncateRetryScenario(boolean atomic, String name) throws Exception {
         String p = path(name);
         Files.write(Paths.get(p), bytes(1, 2, 3, 4, 5, 6));
-        AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE, atomic, false, null).get();
+        AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE,
+                atomic ? AbstractStorageFile.ReplaceMode.ATOMIC : AbstractStorageFile.ReplaceMode.NORMAL,
+                false, null).get();
         if (atomic) {
             write(fs, writer, bytes(1, 2, 3, 4, 5, 6));
             fs.fsync(writer).get();
@@ -374,7 +376,7 @@ public class TailCacheFileSystemModeAndRetryTest {
     @Test
     public void testFileDeleteIsRegisteredInFlightAndRetryWaitsForPriorDelete() throws Exception {
         String p = path("delete-barrier");
-        AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         write(fs, writer, bytes(1, 2, 3));
         fs.fsync(writer).get();
         delegate.resetCounts();
@@ -492,7 +494,7 @@ public class TailCacheFileSystemModeAndRetryTest {
     public void testFileWriteIoFailureIsRecoveredByFsyncWithoutReappend() throws Exception {
         TailCacheFileSystem target = newFileSystem(baseConfig().setWriteBatchBytes(1));
         String p = path("file-write-recover");
-        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         delegate.failOnce(Op.FILE_WRITE, Failure.IO);
         write(target, writer, bytes(1, 2, 3, 4));
         waitUntil("failed write attempt must finish", () -> delegate.count(Op.FILE_WRITE) == 1);
@@ -529,7 +531,7 @@ public class TailCacheFileSystemModeAndRetryTest {
     public void testAtomicRestoreFailureRetrySamePayloadUsesLatestGeneration() throws Exception {
         TailCacheFileSystem target = newFileSystem(noFsConfig());
         String p = path("atomic-restore-retry");
-        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, true, false, null).get();
+        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.ATOMIC, false, null).get();
         write(target, writer, bytes(1, 1, 1));
         target.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.ASYNC);
         delegate.failOnce(Op.FILE_SIZE, Failure.IO);
@@ -553,7 +555,7 @@ public class TailCacheFileSystemModeAndRetryTest {
     @Test
     public void testFileDeleteFailureRetrySameHandleIsIdempotent() throws Exception {
         String p = path("delete-retry");
-        AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         write(fs, writer, bytes(1, 2, 3));
         fs.fsync(writer).get();
         delegate.failOnce(Op.FILE_DELETE, Failure.IO);
@@ -662,7 +664,7 @@ public class TailCacheFileSystemModeAndRetryTest {
     @Test
     public void testFileRestorePartialIoFailureRetryIsIdempotent() throws Exception {
         String p = path("file-restore-partial");
-        AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         write(fs, writer, bytes(1, 2, 3, 4, 5, 6));
         fs.fsync(writer).get();
         fs.setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS);
@@ -718,7 +720,7 @@ public class TailCacheFileSystemModeAndRetryTest {
     public void testPureNoFsRegularFileTruncateIsCacheOnly() throws Exception {
         TailCacheFileSystem target = newFileSystem(noFsConfig());
         String p = path("pure-truncate");
-        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile writer = target.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         write(target, writer, bytes(1, 2, 3, 4, 5, 6));
         target.truncate(writer, 3).get();
 
@@ -736,9 +738,9 @@ public class TailCacheFileSystemModeAndRetryTest {
     public void testPureNoFsPositionIsMetadataOnlyForFileAndSegment() throws Exception {
         TailCacheFileSystem target = newFileSystem(noFsConfig());
         String p = path("position-file");
-        AsyncFile fileWriter = target.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile fileWriter = target.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         write(target, fileWriter, bytes(1, 2, 3, 4));
-        AsyncFile fileReader = target.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        AsyncFile fileReader = target.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         target.position(fileReader, 2).get();
         assertEquals(2, fileReader.position);
         assertNull(fileReader.channel);
@@ -826,9 +828,9 @@ public class TailCacheFileSystemModeAndRetryTest {
     public void testPureNoFsReadersExposeOnlySharedInMemoryState() throws Exception {
         TailCacheFileSystem target = newFileSystem(noFsConfig());
         String p = path("shared-file");
-        AsyncFile fileWriter = target.open(p, AbstractStorageFile.OpenMode.WRITE, false, false, null).get();
+        AsyncFile fileWriter = target.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         write(target, fileWriter, bytes(1, 2));
-        AsyncFile fileReader = target.open(p, AbstractStorageFile.OpenMode.READ, false, false, null).get();
+        AsyncFile fileReader = target.open(p, AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
         assertSame(fileWriter.getCacheEntry(), fileReader.getCacheEntry());
         assertArrayEquals(bytes(1, 2), read(target.read(fileReader, 2, 0).get()));
         write(target, fileWriter, bytes(3, 4));

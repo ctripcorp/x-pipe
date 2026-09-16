@@ -250,10 +250,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         return memoryTracker.committedBytes();
     }
 
-    private CacheMode resolveFileCacheMode(boolean atomicReplace, CacheMode override) {
+    private CacheMode resolveFileCacheMode(AbstractStorageFile.ReplaceMode replaceMode, CacheMode override) {
+        boolean atomicReplace = replaceMode.isAtomicReplace();
         if (override != null) {
             if (atomicReplace && override == CacheMode.TAIL_CACHE) {
-                throw new IllegalArgumentException("TAIL_CACHE is not supported for atomicReplace");
+                throw new IllegalArgumentException("TAIL_CACHE is not supported for an atomic replace");
             }
             return override;
         }
@@ -461,7 +462,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (!entry.isInitialized() || entry.fsInconsistent) {
             return;
         }
-        boolean cacheDirty = entry.isCacheDirty(file.atomicReplace);
+        boolean cacheDirty = entry.isCacheDirty(file.isAtomicReplace());
         boolean fsyncDirty = entry.isFsyncDirty();
         if (!cacheDirty && !fsyncDirty) {
             return;
@@ -470,7 +471,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         final String path = file.path;
         final ByteBuf writeBuf;
         final long ioGen;
-        if (file.atomicReplace) {
+        if (file.isAtomicReplace()) {
             Pair<Long, ByteBuf> atomic = entry.getPendingAtomicWriteBufAfterInFlight();
             writeBuf = atomic.getValue();
             ioGen = atomic.getKey();
@@ -496,7 +497,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
             synchronized (entry) {
                 if (!entry.fsInconsistent) {
-                    if (file.atomicReplace) {
+                    if (file.isAtomicReplace()) {
                         if (ioGen > entry.writtenGen) {
                             entry.writtenGen = ioGen;
                         }
@@ -545,8 +546,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             throw new OperationNotExecutedException(path, flushError);
         }
 
-        boolean stillDirty = entry.isCacheDirty(file.atomicReplace)
-                || (!file.atomicReplace && entry.isFsyncDirty());
+        boolean stillDirty = entry.isCacheDirty(file.isAtomicReplace())
+                || (!file.isAtomicReplace() && entry.isFsyncDirty());
         if (stillDirty) {
             if (retryableFailure) {
                 throw new OperationNotExecutedException(path, flushError);
@@ -1101,11 +1102,13 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     // ---- AsyncFile ----
 
     @Override
-    public CompletableFuture<AsyncFile> open(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant) {
-        return open(path, openMode, atomicReplace, lenient, tenant, null);
+    public CompletableFuture<AsyncFile> open(String path, AbstractStorageFile.OpenMode openMode,
+            AbstractStorageFile.ReplaceMode replaceMode, boolean lenient, String tenant) {
+        return open(path, openMode, replaceMode, lenient, tenant, null);
     }
 
-    public CompletableFuture<AsyncFile> open(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant, CacheMode cacheMode) {
+    public CompletableFuture<AsyncFile> open(String path, AbstractStorageFile.OpenMode openMode,
+            AbstractStorageFile.ReplaceMode replaceMode, boolean lenient, String tenant, CacheMode cacheMode) {
         String key = StorageUtil.asyncFileKey(path);
         String ioKey = openMode.canWrite() ? key : allocateReaderIoKey(key);
         BackingFsMode fsMode = backingFsMode;
@@ -1114,15 +1117,15 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             awaitInFlightIo(key, path, false);
         }
         return CompletableFuture.completedFuture(
-                openFileSync(path, key, ioKey, openMode, atomicReplace, lenient, tenant, cacheMode, fsMode));
+                openFileSync(path, key, ioKey, openMode, replaceMode, lenient, tenant, cacheMode, fsMode));
     }
 
 
     private AsyncFile openFileSync(String path, String key, String ioKey,
-            AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant,
-            CacheMode cacheModeOverride, BackingFsMode fsMode) {
+            AbstractStorageFile.OpenMode openMode, AbstractStorageFile.ReplaceMode replaceMode,
+            boolean lenient, String tenant, CacheMode cacheModeOverride, BackingFsMode fsMode) {
         final boolean noFs = fsMode == BackingFsMode.NO_FS;
-        CacheMode cacheMode = resolveFileCacheMode(atomicReplace, cacheModeOverride);
+        CacheMode cacheMode = resolveFileCacheMode(replaceMode, cacheModeOverride);
         if (noFs && cacheMode == CacheMode.NO_CACHE) {
             throw new IllegalArgumentException("NO_CACHE is not supported when backing FS mode is NO_FS");
         }
@@ -1131,7 +1134,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             effectiveOpenMode = AbstractStorageFile.OpenMode.READ_WRITE;
         }
         AsyncFile file = delegate.openSync(path, key, ioKey, effectiveOpenMode,
-                atomicReplace, lenient, tenant, noFs);
+                replaceMode, lenient, tenant, noFs);
         boolean initialized = delegate.openWithFileEntry(file, noFs, this::registerInFlight,
                 this::scheduleCloseChannels, restoreWaitTimeoutMs, ioWaitTimeoutMs);
         file.cacheMode = cacheMode;
@@ -1230,7 +1233,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         initStorageCache(file, first, noCache, initFromFs);
 
         FileCacheEntry entry = file.getCacheEntry();
-        if (first || !file.canWrite() || file.atomicReplace || noFs || entry == null
+        if (first || !file.canWrite() || file.isAtomicReplace() || noFs || entry == null
                 || !entry.isInitialized() || entry.fsInconsistent) {
             return;
         }
@@ -1328,7 +1331,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             long initialSize = timeBounded
                     ? awaitIoCachePrep(file, null, ioWaitTimeoutMs, () -> delegate.sizeSync(file), null)
                     : executeWithIoFailureHandling(file, () -> delegate.sizeSync(file));
-            long initialCapacity = file.atomicReplace
+            long initialCapacity = file.isAtomicReplace()
                     ? initialSize
                     : StorageUtil.chunkCapacityForBytes(initialSize, chunkSize);
             if (initialCapacity > maxCacheSizePerFileBytes) {
@@ -1348,7 +1351,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             boolean aligned = fullData.getKey();
             fileData = fullData.getValue();
             actualSize = fileData.readableBytes();
-            long actualCapacity = file.atomicReplace
+            long actualCapacity = file.isAtomicReplace()
                     ? actualSize
                     : StorageUtil.chunkCapacityForBytes(actualSize, chunkSize);
             if (actualCapacity > maxCacheSizePerFileBytes) {
@@ -1366,7 +1369,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 memoryTracker.release(reservedBytes - actualCapacity);
                 reservedBytes = actualCapacity;
             }
-            if (file.atomicReplace) {
+            if (file.isAtomicReplace()) {
                 allocated.put(0L, fileData.retain());
             } else if (aligned) {
                 long dataChunks = fileData.capacity() / chunkSize;
@@ -1436,7 +1439,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         boolean aligned = true;
         if (fileSize == 0) return new Pair<>(true, Unpooled.buffer(0));
         ByteBuf data;
-        if (file.atomicReplace) {
+        if (file.isAtomicReplace()) {
             aligned = false;
             data = delegate.readSync(file, fileSize, 0, 0);
         } else if (fileSize <= preloadChunkThreshold * chunkSize) {
@@ -1520,7 +1523,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             ByteBuf cached = null;
             synchronized (entry) {
                 if (readOffset >= entry.cacheStartOffset && entry.isInitialized()) {
-                    cached = entry.readWithCache(length, readOffset, file.atomicReplace, chunkSize);
+                    cached = entry.readWithCache(length, readOffset, file.isAtomicReplace(), chunkSize);
                 }
             }
             if (cached != null) {
@@ -1575,7 +1578,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 return Pair.of(true, false);
             }
             if (!preferCache || fsMode == BackingFsMode.NO_CACHE) {
-                if (file.atomicReplace) {
+                if (file.isAtomicReplace()) {
                     return Pair.of(entry.cacheGen != entry.writtenGen, true);
                 }
                 return Pair.of(offset >= entry.writtenToFsOffset, true);
@@ -1634,7 +1637,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             data.release();
             throw new IllegalStateException("file is closed: " + file.path);
         }
-        if (file.atomicReplace && data.readableBytes() == 0) {
+        if (file.isAtomicReplace() && data.readableBytes() == 0) {
             data.release();
             throw new IllegalArgumentException("atomic replace requires non-empty data: " + file.path);
         }
@@ -1701,7 +1704,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             Exception prepareError = null;
             try {
                 if (hasInFlightIo(id)) {
-                    if (!useCache || file.atomicReplace || entry.fsInconsistent) {
+                    if (!useCache || file.isAtomicReplace() || entry.fsInconsistent) {
                         awaitInFlightIo(id, file.path, false);
                     } else {
                         data.release();
@@ -1717,7 +1720,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
             if (prepareFailed) {
                 data.release();
-                if (useCache && !file.atomicReplace) {
+                if (useCache && !file.isAtomicReplace()) {
                     if (prepareError != null) {
                         logger.warn("failed to prepare backing FS for {}, data remains in cache", file.path, prepareError);
                     } else {
@@ -1750,7 +1753,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (!useCache) {
             writeBuf = data;
             atomicIoGen = 0;
-        } else if (file.atomicReplace) {
+        } else if (file.isAtomicReplace()) {
             writeBuf = data;
             atomicIoGen = entry.cacheGen;
         } else {
@@ -1793,7 +1796,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             if (useCache) {
                 synchronized (entry) {
                     if (!entry.fsInconsistent) {
-                        if (file.atomicReplace) {
+                        if (file.isAtomicReplace()) {
                             if (atomicIoGen > entry.writtenGen) {
                                 entry.writtenGen = atomicIoGen;
                             }
@@ -1822,7 +1825,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         FileCacheEntry entry = file.getCacheEntry();
 
         ByteBuf view = data.duplicate();
-        if (file.atomicReplace) {
+        if (file.isAtomicReplace()) {
             replaceAtomicCache(file, entry, view);
             return;
         }
@@ -2147,7 +2150,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             synchronized (entry) {
                 if (entry.isInitialized()) {
                     if (size < entry.cacheEndOffset) {
-                        if (file.atomicReplace) {
+                        if (file.isAtomicReplace()) {
                             ByteBuf newChunk;
                             try {
                                 newChunk = StorageAllocator.ALLOC.directBuffer((int) size);
@@ -2235,7 +2238,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         if (noFs && file.canWrite()) {
             FileCacheEntry entry = file.getCacheEntry();
-            if (entry != null && (entry.fsInconsistent || entry.isCacheDirty(file.atomicReplace) || entry.isFsyncDirty())) {
+            if (entry != null && (entry.fsInconsistent || entry.isCacheDirty(file.isAtomicReplace()) || entry.isFsyncDirty())) {
                 logger.warn("{} may have data loss", file.path);
             }
         }
@@ -2329,7 +2332,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             synchronized (entry) {
                 if (offset >= entry.cacheStartOffset && entry.isInitialized()) {
                     long end = Math.min(offset + count, entry.cacheEndOffset);
-                    slices = entry.collectCacheSlices(offset, end, false, file.atomicReplace, chunkSize);
+                    slices = entry.collectCacheSlices(offset, end, false, file.isAtomicReplace(), chunkSize);
                 }
             }
             if (slices != null) {

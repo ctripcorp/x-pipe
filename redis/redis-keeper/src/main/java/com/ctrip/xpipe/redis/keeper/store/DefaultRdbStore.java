@@ -32,7 +32,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	protected File file;
 
-	// write handle for dump (append, atomicReplace=false, lenient=true)
+	// write handle for dump (append, ReplaceMode.NORMAL, lenient=true)
 	protected volatile AsyncFile writeAsyncFile;
 
 	// cached read handle for recovered rdb metadata (size/mtime); lazily opened after dump ends
@@ -342,7 +342,7 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 
 	protected void doReadRdbFile(RdbFileListener rdbFileListener) throws IOException {
 
-		AsyncFile readFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.READ, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
+		AsyncFile readFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, true, fileSystemReplId.toString()), "open rdb for read " + file);
 		// Refcounted close: writeAndFlush(FileRegion) is async; must not fs.close until Netty deallocate.
 		AsyncRdbReadHandle readHandle = new AsyncRdbReadHandle(asyncFileSystem, readFile, String.valueOf(file));
 
@@ -471,11 +471,11 @@ public class DefaultRdbStore extends AbstractStore implements RdbStore {
 	}
 
 	private AsyncFile openWriteHandle() throws IOException {
-		return AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.WRITE, false, true, fileSystemReplId.toString()), "open rdb for write " + file);
+		return AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, true, fileSystemReplId.toString()), "open rdb for write " + file);
 	}
 
 	private AsyncFile openReadHandle() throws IOException {
-		return AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.READ, false, true, fileSystemReplId.toString()), "open rdb for read " + file);
+		return AsyncFileSystemHelper.awaitOpen(asyncFileSystem, () -> asyncFileSystem.open(path(), AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, true, fileSystemReplId.toString()), "open rdb for read " + file);
 	}
 
 	private String path() {

@@ -77,11 +77,11 @@ public class DefaultMetaStoreReadOnlyTest extends AbstractRedisKeeperTest {
 		try {
 			verify(fs, never()).mkdir(anyString(), anyBoolean());
 			verify(fs, never()).open(anyString(), eq(AbstractStorageFile.OpenMode.WRITE),
-					anyBoolean(), anyBoolean(), any());
+					any(AbstractStorageFile.ReplaceMode.class), anyBoolean(), any());
 			verify(fs, never()).open(anyString(), eq(AbstractStorageFile.OpenMode.READ_WRITE),
-					anyBoolean(), anyBoolean(), any());
+					any(AbstractStorageFile.ReplaceMode.class), anyBoolean(), any());
 			verify(fs, atLeastOnce()).open(contains(META_V2_FILE), eq(AbstractStorageFile.OpenMode.READ),
-					eq(false), eq(true), any());
+					eq(AbstractStorageFile.ReplaceMode.NORMAL), eq(true), any());
 			Assert.assertEquals(runid, readOnly.dupReplicationStoreMeta().getKeeperRunid());
 		} finally {
 			readOnly.close();
@@ -180,7 +180,7 @@ public class DefaultMetaStoreReadOnlyTest extends AbstractRedisKeeperTest {
 			Assert.assertEquals(REPL_ID, readOnly.getCurrentReplStage().getReplId());
 			Assert.assertEquals(REPL_ID, readOnly.getCurReplStageReplId());
 			verify(fs, never()).open(contains(META_V2_FILE), eq(AbstractStorageFile.OpenMode.READ),
-					eq(false), eq(true), any());
+					eq(AbstractStorageFile.ReplaceMode.NORMAL), eq(true), any());
 		} finally {
 			readOnly.close();
 			fs.shutdown();
