@@ -10,7 +10,6 @@ import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.model.RedisCheckRuleTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -55,9 +54,6 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     private ClusterService clusterService;
 
     @Autowired
-    private KeeperContainerService keeperContainerService;
-
-    @Autowired
     protected ConsoleConfig consoleConfig;
 
     @Autowired
@@ -70,8 +66,6 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     private RouteChooseStrategy strategy = null;
 
     private List<Set<String>> clusterParts;
-
-    private List<Set<Long>> keeperContainerParts;
 
     private List<TimeBoundCache<String>> xmlFormatXPipeMetaParts = null;
 
@@ -213,19 +207,6 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         return parts;
     }
 
-    List<Set<Long>> divideKeeperContainers(int partsCount, XpipeMeta xpipeMeta) {
-        List<Set<Long>> result = new ArrayList<>(partsCount);
-        IntStream.range(0, partsCount).forEach(i -> result.add(new HashSet<>()));
-        for(DcMeta dcMeta : xpipeMeta.getDcs().values()) {
-            for(KeeperContainerMeta keeperContainerMeta : dcMeta.getKeeperContainers()) {
-                result.get((int) (keeperContainerMeta.getId() % partsCount)).add(
-                        keeperContainerMeta.getId()
-                );
-            }
-        }
-        return result;
-    }
-
     protected void refreshMetaParts(XpipeMeta xpipeMeta) {
         try {
             int parts = Math.max(1, consoleConfig.getClusterDividedParts());
@@ -236,15 +217,7 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
                 logger.info("[refreshClusterParts] skip for parts miss, expect {}, actual {}", parts, newClusterParts.size());
                 return;
             }
-            List<Set<Long>> newKeeperContainerParts = divideKeeperContainers(parts, xpipeMeta);
-            if (newKeeperContainerParts.size() < parts) {
-                logger.info("[refreshKeeperContainerParts] skip for parts miss, expect {}, actual {}",
-                        parts, newKeeperContainerParts.size());
-                return;
-            }
-
             this.clusterParts = newClusterParts;
-            this.keeperContainerParts = newKeeperContainerParts;
 
             List<TimeBoundCache<String>> localXPipeMetaParts = new ArrayList<>();
             IntStream.range(0, parts).forEach(i -> {
@@ -288,15 +261,9 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
     @Override
     public synchronized XpipeMeta getDividedXpipeMeta(int partIndex) {
         if (null == meta || null == clusterParts) throw new DataNotFoundException("data not ready");
-        if (partIndex >= clusterParts.size() || partIndex >= keeperContainerParts.size())
-            throw new DataNotFoundException("no part " + partIndex);
+        if (partIndex >= clusterParts.size()) throw new DataNotFoundException("no part " + partIndex);
 
-        XpipeMeta xpipeMeta = getXpipeMeta();
-        Set<String> requestClusters = clusterParts.get(partIndex);
-        Set<Long> requestKeeperContainers = keeperContainerParts.get(partIndex);
-
-
-        return createDividedMeta(xpipeMeta, requestClusters, requestKeeperContainers);
+        return createDividedMeta(getXpipeMeta(), clusterParts.get(partIndex));
     }
 
     @Override

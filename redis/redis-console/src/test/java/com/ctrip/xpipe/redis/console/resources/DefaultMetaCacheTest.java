@@ -167,13 +167,85 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
             }
         }
 
-        Assert.assertEquals(1, allKeepers.size());
-        Assert.assertEquals(Sets.newHashSet(new HostPort("1.1.1.3", 8080)), allKeepers);
+        // D47: keeperContainer 不参与分片，每个 part 都带本 DC 全量 container
+        Assert.assertEquals(4, allKeepers.size());
+        Assert.assertEquals(Sets.newHashSet(new HostPort("1.1.1.1", 8080),
+                new HostPort("1.1.1.2", 8080),
+                new HostPort("1.1.1.3", 8080),
+                new HostPort("1.1.1.4", 8080)), allKeepers);
 
         Assert.assertEquals(1, allCluster.size());
         Assert.assertEquals(3, allCluster.stream().findFirst().get().intValue());
 
 
+    }
+
+    /**
+     * D47 / AC-19d：container 分片键与 cluster 分片键互相独立时，任一 part 的 keeper 都必须能在同 DcMeta 内
+     * 解析出自己的 KeeperContainer —— 这正是 Checker 构建 {@code instance.isTfs} 的点查路径。
+     */
+    @Test
+    public void testDividedMetaCarriesAllKeeperContainersForEveryPart() {
+        int parts = 2;
+        XpipeMeta full = keeperContainerCrossPartMeta();
+        Set<Long> allContainerIds = Sets.newHashSet(CONTAINER_ID_OF_PART_0, CONTAINER_ID_OF_PART_1);
+
+        metaCache.setMeta(Pair.of(full, xpipeMetaManager));
+        when(consoleConfig.getClusterDividedParts()).thenReturn(parts);
+        metaCache.refreshMetaParts(full);
+
+        for (int partIndex = 0; partIndex < parts; partIndex++) {
+            XpipeMeta part = metaCache.getDividedXpipeMeta(partIndex);
+            Assert.assertEquals(full.getDcs().keySet(), part.getDcs().keySet());
+
+            for (DcMeta dcMeta : part.getDcs().values()) {
+                Map<Long, String> diskTypeByContainerId = Maps.newHashMap();
+                dcMeta.getKeeperContainers().forEach(container ->
+                        diskTypeByContainerId.put(container.getId(), container.getDiskType()));
+                Assert.assertEquals(allContainerIds, diskTypeByContainerId.keySet());
+
+                for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                    Assert.assertEquals(partIndex, (int) (clusterMeta.getDbId() % parts));
+                    for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+                        for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
+                            Assert.assertEquals("TFS", diskTypeByContainerId.get(keeperMeta.getKeeperContainerId()));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static final long CONTAINER_ID_OF_PART_0 = 10L;
+
+    private static final long CONTAINER_ID_OF_PART_1 = 11L;
+
+    /**
+     * 单 DC 两 cluster：cluster dbId 与其 keeper 所属 containerId 落在不同 part（parts = 2）。
+     */
+    private XpipeMeta keeperContainerCrossPartMeta() {
+        DcMeta dcMeta = new DcMeta().setId("jq").setZone("SHA");
+        dcMeta.addKeeperContainer(new KeeperContainerMeta().setId(CONTAINER_ID_OF_PART_0)
+                .setIp("1.1.1.10").setPort(8080).setDiskType("TFS"));
+        dcMeta.addKeeperContainer(new KeeperContainerMeta().setId(CONTAINER_ID_OF_PART_1)
+                .setIp("1.1.1.11").setPort(8080).setDiskType("TFS"));
+
+        dcMeta.addCluster(oneWayClusterWithKeeper("clusterInPart1", 1L, CONTAINER_ID_OF_PART_0, 6000));
+        dcMeta.addCluster(oneWayClusterWithKeeper("clusterInPart0", 2L, CONTAINER_ID_OF_PART_1, 6100));
+
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        xpipeMeta.addDc(dcMeta);
+        return xpipeMeta;
+    }
+
+    private ClusterMeta oneWayClusterWithKeeper(String clusterId, long clusterDbId, long keeperContainerId, int keeperPort) {
+        ClusterMeta clusterMeta = new ClusterMeta().setId(clusterId).setDbId(clusterDbId)
+                .setType(ClusterType.ONE_WAY.toString()).setActiveDc("jq");
+        ShardMeta shardMeta = new ShardMeta().setId("shard").setDbId(clusterDbId);
+        shardMeta.addKeeper(new KeeperMeta().setIp("127.0.0.1").setPort(keeperPort).setActive(true)
+                .setKeeperContainerId(keeperContainerId));
+        clusterMeta.addShard(shardMeta);
+        return clusterMeta;
     }
 
 

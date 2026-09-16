@@ -134,6 +134,22 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
         factory.remove(second);
     }
 
+    /**
+     * D47 / AC-19d：TFS 判定是「keeperContainerId → 同 DcMeta 的 KeeperContainer」点查，container 缺失时只能静默
+     * 退化为非 TFS（Controller 直接 skip，既不打点也不告警）。故分片 Meta 必须整份下发 container，本例锁住该失败模式。
+     */
+    @Test
+    public void testKeeperNotTfsWhenItsContainerMissingFromDcMeta() {
+        KeeperMeta keeperMeta = normalKeeperMeta();
+        DcMeta dcMeta = ((ClusterMeta) keeperMeta.parent().parent()).parent();
+        dcMeta.getKeeperContainers().clear();
+
+        KeeperHealthCheckInstance instance = factory.create(keeperMeta);
+
+        Assert.assertFalse(instance.isTfs());
+        factory.remove(instance);
+    }
+
     @Test
     public void testKeeperCreateFailureRollsBack() {
         TestKeeperActionFactory failingFactory = new TestKeeperActionFactory(true);
