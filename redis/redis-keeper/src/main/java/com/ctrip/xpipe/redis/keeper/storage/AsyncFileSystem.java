@@ -22,6 +22,11 @@ public interface AsyncFileSystem {
 
     // ---- AsyncFile ----
     // lenient: if true and path is not a regular file, I/O operations will throw NPE
+    // atomicReplace: open for write first. A pending tmp file is only recovered by an opener with
+    // write permission, so a read that comes first can see the superseded content, or a partially
+    // rewritten file if a previous replace died halfway through. Reads deliberately do not fall
+    // back to the tmp file: probing it on every read costs an extra stat and read on the hot path,
+    // which is not worth paying unless a caller really has no writer to open first.
     default CompletableFuture<AsyncFile> open(String path, AbstractStorageFile.OpenMode openMode, boolean atomicReplace, boolean lenient, String tenant) {
         throw new UnsupportedOperationException();
     }
@@ -30,7 +35,10 @@ public interface AsyncFileSystem {
             boolean atomicReplace, boolean lenient, String tenant, boolean noFs) {
         throw new UnsupportedOperationException();
     }
-    default AsyncFile openWithFileEntry(AsyncFile file, boolean noFs,
+    // Attach the file to its shared FileEntry, running init and opening the channel as needed.
+    // Returns whether the init is complete once this open returns. Currently recovering a pending atomicReplace tmp file needs write permission, so
+    // read-only init leaves this false and the first writer that opens the key finishes the recovery.
+    default boolean openWithFileEntry(AsyncFile file, boolean noFs,
             BiConsumer<String, CompletableFuture<?>> register,
             BiConsumer<String, List<FileChannel>> clean,
             long recoverTimeoutMs, long ioTimeoutMs) {
@@ -54,6 +62,7 @@ public interface AsyncFileSystem {
     // When alignSize > 0, the read range is expanded so both start and end are aligned to alignSize boundaries.
     // The returned buffer's readerIndex points to the requested offset (leading padding is skipped),
     // and total capacity covers the full aligned range, allowing zero-copy chunk slicing.
+    // An atomicReplace file must be read unaligned, so alignSize has to be 0 for it.
     // Caller must release() the returned ByteBuf when done.
     default ByteBuf readSync(AsyncFile file, long length, long offset, long alignSize) {
         throw new UnsupportedOperationException();
@@ -154,7 +163,9 @@ public interface AsyncFileSystem {
             List<String> indexPrefixes, boolean write, String tenant, boolean noFs) {
         throw new UnsupportedOperationException();
     }
-    default AsyncSegmentFile openWithFileEntry(AsyncSegmentFile file, boolean noFs,
+    // Attach the segment file to its shared FileEntry, running init and opening channels as
+    // needed. Returns whether the init is complete.
+    default boolean openWithFileEntry(AsyncSegmentFile file, boolean noFs,
             BiConsumer<String, CompletableFuture<?>> register,
             BiConsumer<String, List<FileChannel>> clean,
             long recoverTimeoutMs, long ioTimeoutMs) {

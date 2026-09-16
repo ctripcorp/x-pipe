@@ -166,10 +166,11 @@ public class AsyncSegmentFile extends AbstractStorageFile {
     }
 
     // Called once by the initializer opener.
-    // Scans the directory, builds the maximal contiguous segment chain, deletes invalid files,
-    // and publishes the initial SegmentDirState into entry.
+    // Scans the directory, builds the maximal contiguous segment chain, and publishes the initial
+    // SegmentDirState into entry. read-only init leaves the files outside the chain and log only.
+    // until the writer first open will removes them.
     static void initFromFiles(FileEntry entry, String dirPath, String prefix, List<String> indexPrefixes,
-            List<String> allFiles) throws IOException {
+            List<String> allFiles, boolean canDelete) throws IOException {
         List<long[]> segs = new ArrayList<>();
         Map<Long, List<String>> indexCandidates = new HashMap<>();
 
@@ -180,8 +181,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
                     long size = Files.size(Paths.get(dirPath, name));
                     segs.add(new long[]{offset, size});
                 } catch (NumberFormatException e) {
-                    logger.warn("Deleting unrecognized file in {}: {}", dirPath, name);
-                    Files.deleteIfExists(Paths.get(dirPath, name));
+                    dropInvalidFile(dirPath, name, "unrecognized file", canDelete);
                 }
             } else {
                 for (String indexPrefix : indexPrefixes) {
@@ -192,8 +192,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
                                 .computeIfAbsent(offset, k -> new ArrayList<>())
                                 .add(name);
                     } catch (NumberFormatException e) {
-                        logger.warn("Deleting unrecognized file in {}: {}", dirPath, name);
-                        Files.deleteIfExists(Paths.get(dirPath, name));
+                        dropInvalidFile(dirPath, name, "unrecognized file", canDelete);
                     }
                     break;
                 }
@@ -217,18 +216,15 @@ public class AsyncSegmentFile extends AbstractStorageFile {
                         logger.warn("Overlapping segment in {}: {} ends at {} but chain head is {}",
                                 dirPath, prefix + seg[0], segEnd, chainHead);
                     }
-                    logger.warn("Deleting off-chain segment in {}: {}", dirPath, prefix + seg[0]);
-                    Files.deleteIfExists(Paths.get(dirPath, prefix + seg[0]));
+                    dropInvalidFile(dirPath, prefix + seg[0], "off-chain segment", canDelete);
                 }
             }
         }
 
         for (Map.Entry<Long, List<String>> byOffset : indexCandidates.entrySet()) {
             if (!validOffsets.contains(byOffset.getKey())) {
-                List<String> files = byOffset.getValue();
-                logger.warn("Deleting off-chain index files in {}: {}", dirPath, files);
-                for (String name : files) {
-                    Files.deleteIfExists(Paths.get(dirPath, name));
+                for (String name : byOffset.getValue()) {
+                    dropInvalidFile(dirPath, name, "off-chain index file", canDelete);
                 }
             }
         }
@@ -241,6 +237,16 @@ public class AsyncSegmentFile extends AbstractStorageFile {
             for (long o : validOffsets) arr[i++] = o;
             Arrays.sort(arr);
             entry.state = new SegmentDirState(arr);
+        }
+    }
+
+    private static void dropInvalidFile(String dirPath, String name, String reason, boolean canDelete)
+            throws IOException {
+        if (canDelete) {
+            logger.warn("Deleting {} in {}: {}", reason, dirPath, name);
+            Files.deleteIfExists(Paths.get(dirPath, name));
+        } else {
+            logger.warn("Found {} in {}: {}, deleting it needs write permission, deferred", reason, dirPath, name);
         }
     }
 

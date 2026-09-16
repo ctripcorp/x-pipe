@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
@@ -36,10 +37,21 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     private static final Logger logger = LoggerFactory.getLogger(AsyncTFSBasedFileSystem.class);
     private static final String TMP_REP_ = "TMP_REP_";
     private static final int LOCK_STRIPES = 32;
+    // Size of the length header a tmp file carries in front of its data.
+    private static final int TMP_HEADER_BYTES = 8;
+    // Returned by openValidTmpSync when there is nothing usable to read from the tmp file.
+    private static final Pair<Long, FileChannel> NO_VALID_TMP = new Pair<>(-1L, null);
 
     private final ExecutorService ioExecutor;
     private volatile long fsyncIntervalBytes;
     private volatile long fsyncIntervalNanos;
+    // When set, reads of an atomicReplace file (readSync / sizeSync / transferToSync) are served
+    // from a valid pending tmp file instead of the target file, which still holds the superseded
+    // content until a writer recovers it. Off by default because it costs an extra stat, open and
+    // header read on every such call.
+    // it is possible read size from tmp while read from target file. mostly there is no problem. As tmp and target represent the same data.
+    // still the caller should be aware of this.
+    private volatile boolean readTmpFirst;
 
     // Registry of shared file state, keyed by file key.
     private final ConcurrentHashMap<String, FileEntry> fileEntries = new ConcurrentHashMap<>();
@@ -50,6 +62,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         this.ioExecutor = ioExecutor;
         this.fsyncIntervalBytes = fsyncIntervalBytes;
         this.fsyncIntervalNanos = fsyncIntervalMillis * 1_000_000L;
+        readTmpFirst = false;
         for (int i = 0; i < LOCK_STRIPES; i++) openCloseLocks[i] = new Object();
     }
 
@@ -67,6 +80,14 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     public void setFsyncIntervalMillis(long fsyncIntervalMillis) {
         this.fsyncIntervalNanos = fsyncIntervalMillis * 1_000_000L;
+    }
+
+    public boolean isReadTmpFirst() {
+        return readTmpFirst;
+    }
+
+    public void setReadTmpFirst(boolean readTmpFirst) {
+        this.readTmpFirst = readTmpFirst;
     }
 
     @Override
@@ -91,22 +112,24 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public AsyncFile openWithFileEntry(AsyncFile file, boolean noFs,
+    public boolean openWithFileEntry(AsyncFile file, boolean noFs,
             BiConsumer<String, CompletableFuture<?>> register,
             BiConsumer<String, List<FileChannel>> clean,
             long recoverTimeoutMs, long ioTimeoutMs) {
         final Path p = Paths.get(file.path);
-        final Consumer<FileEntry> initAction = noFs || !file.atomicReplace
-                ? entry -> { }
+        final Function<FileEntry, Boolean> initAction = noFs || !file.atomicReplace
+                ? entry -> true
                 : entry -> StorageUtil.awaitIoCachePrep(ioExecutor, file, file.key, recoverTimeoutMs, register,
+                        () -> recoverAtomicReplaceSync(p, file.canWrite()), null);
+        final OpenAction<AsyncFile> openAction = noFs
+                ? (f, entry, first) -> { }
+                : (f, entry, first) -> StorageUtil.awaitIoCachePrep(ioExecutor, f, null, ioTimeoutMs, register,
                         () -> {
-                            recoverAtomicReplaceSync(p);
-                            return null;
-                        }, null);
-        final BiConsumer<AsyncFile, FileEntry> openAction = noFs
-                ? (f, entry) -> { }
-                : (f, entry) -> StorageUtil.awaitIoCachePrep(ioExecutor, f, null, ioTimeoutMs, register,
-                        () -> {
+                            // always try to recover unless already done in init(in other words, the writer is the initializer).
+                            if (f.atomicReplace && f.canWrite() && !first) {
+                                recoverAtomicReplaceSync(p, true);
+                                entry.initialized = true;
+                            }
                             openChannelIfNeeded(f, p);
                             return null;
                         }, null);
@@ -114,61 +137,108 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 f -> clean.accept(f.path, closeSync(f)));
     }
 
-    private void recoverAtomicReplaceSync(Path filePath) {
+    // Returns true if the file is already recovered or no recovery is needed.
+    private boolean recoverAtomicReplaceSync(Path filePath, boolean canWrite) {
         Path tmpPath = getTmpPath(filePath.toString());
         try {
-            if (!StorageUtil.existsSync(tmpPath)) {
-                return;
+            Pair<Long, FileChannel> tmp = openValidTmpSync(filePath.toString());
+            long expectedLen = tmp.getKey();
+            if (expectedLen < 0) {
+                if (canWrite && Files.deleteIfExists(tmpPath)) {
+                    logger.warn("deleted incomplete tmp file {}", tmpPath);
+                }
+                return true;
+            }
+            try (FileChannel tmpCh = tmp.getValue()) {
+                if (!canWrite) {
+                    logger.info("valid tmp file {} left behind, recovery deferred to the first writer", tmpPath);
+                    return false;
+                }
+                try (FileChannel fileCh = FileChannel.open(filePath,
+                        StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
+                    ByteBuf dataBuf = readFully(tmpCh, expectedLen, TMP_HEADER_BYTES, 0);
+                    try {
+                        int dataRead = dataBuf.readableBytes();
+                        if (dataRead != expectedLen) {
+                            logger.error("failed to read data from tmp file: read {} bytes, expected {}, deleting {}. This should not happen.",
+                                dataRead, expectedLen, tmpPath);
+                            Files.deleteIfExists(tmpPath);
+                            return true;
+                        }
+                        fileCh.truncate(0);
+                        writeFully(fileCh, dataBuf);
+                    } finally {
+                        dataBuf.release();
+                    }
+                    fileCh.force(true);
+                }
+                Files.deleteIfExists(tmpPath);
+                logger.info("recovered from tmp file: {}", tmpPath);
+                return true;
             }
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         }
-        try (FileChannel tmpCh = FileChannel.open(tmpPath, StandardOpenOption.READ);
-             FileChannel fileCh = FileChannel.open(filePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
-            long tmpSize = tmpCh.size();
-            if (tmpSize < 8) {
-                logger.warn("tmp file size too small: {} < 8, deleting {}", tmpSize, tmpPath);
-                Files.deleteIfExists(tmpPath);
-                return;
+    }
+
+    // Checks the [length][data] layout of an open tmp file and returns the data length, or -1 when
+    // the tmp file is not a complete atomic replace, meaning it must be discarded rather than used.
+    // tmpPath is only for logging.
+    private long tmpDataLength(FileChannel tmpCh, Path tmpPath) throws IOException {
+        long tmpSize = tmpCh.size();
+        if (tmpSize < TMP_HEADER_BYTES) {
+            logger.warn("tmp file size too small: {} < {}, invalid tmp file {}", tmpSize, TMP_HEADER_BYTES, tmpPath);
+            return -1;
+        }
+        long dataLength;
+        ByteBuf lenBuf = readFully(tmpCh, TMP_HEADER_BYTES, 0, 0);
+        try {
+            int lenRead = lenBuf.readableBytes();
+            if (lenRead != TMP_HEADER_BYTES) {
+                logger.warn("failed to read length from tmp file: read {} bytes, expected {}, invalid tmp file {}",
+                        lenRead, TMP_HEADER_BYTES, tmpPath);
+                return -1;
             }
-            long expectedLen = 0;
-            ByteBuf lenBuf = readFully(tmpCh, 8, 0, 0);
-            try {
-                int lenRead = lenBuf.readableBytes();
-                if (lenRead != 8) {
-                    logger.warn("failed to read length from tmp file: read {} bytes, expected 8, deleting {}", lenRead, tmpPath);
-                    Files.deleteIfExists(tmpPath);
-                    return;
-                }
-                expectedLen = lenBuf.readLong();
-            } finally {
-                lenBuf.release();
+            dataLength = lenBuf.readLong();
+        } finally {
+            lenBuf.release();
+        }
+        long expectedTmpSize = TMP_HEADER_BYTES + dataLength;
+        if (tmpSize != expectedTmpSize) {
+            logger.warn("tmp file size mismatch: actual {} != expected {}, invalid tmp file {}",
+                    tmpSize, expectedTmpSize, tmpPath);
+            return -1;
+        }
+        return dataLength;
+    }
+
+    private boolean tmpFirst(AsyncFile file) {
+        return file.atomicReplace && readTmpFirst;
+    }
+
+    // Returns the data length and the open channel of a valid tmp file, or NO_VALID_TMP.
+    private Pair<Long, FileChannel> openValidTmpSync(String filePath) throws IOException {
+        Path tmpPath = getTmpPath(filePath);
+        if (!StorageUtil.existsSync(tmpPath)) {
+            return NO_VALID_TMP;
+        }
+        FileChannel tmpCh;
+        try {
+            tmpCh = FileChannel.open(tmpPath, StandardOpenOption.READ);
+        } catch (NoSuchFileException e) {
+            logger.info("tmp file {} is gone between exists and open, using the target file {}",
+                    tmpPath, filePath);
+            return NO_VALID_TMP;
+        }
+        boolean valid = false;
+        try {
+            long dataLength = tmpDataLength(tmpCh, tmpPath);
+            valid = dataLength >= 0;
+            return valid ? new Pair<>(dataLength, tmpCh) : NO_VALID_TMP;
+        } finally {
+            if (!valid) {
+                StorageUtil.closeChannels(Collections.singletonList(tmpCh));
             }
-            long expectedTmpSize = 8 + expectedLen;
-            if (tmpSize != expectedTmpSize) {
-                logger.warn("tmp file size mismatch: actual {} != expected {}, deleting {}", tmpSize, expectedTmpSize, tmpPath);
-                Files.deleteIfExists(tmpPath);
-                return;
-            }
-            ByteBuf dataBuf = readFully(tmpCh, expectedLen, 8, 0);
-            try {
-                int dataRead = dataBuf.readableBytes();
-                if (dataRead != expectedLen) {
-                    logger.error("failed to read data from tmp file: read {} bytes, expected {}, deleting {}. This should not happen.",
-                        dataRead, expectedLen, tmpPath);
-                    Files.deleteIfExists(tmpPath);
-                    return;
-                }
-                fileCh.truncate(0);
-                writeFully(fileCh, dataBuf);
-            } finally {
-                dataBuf.release();
-            }
-            fileCh.force(true);
-            Files.deleteIfExists(tmpPath);
-            logger.info("recovered from tmp file: {}", tmpPath);
-        } catch (IOException e) {
-            throw StorageUtil.wrapIOException(e);
         }
     }
 
@@ -211,9 +281,14 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
     }
 
-    private <T extends AbstractStorageFile> T openWithFileEntry(T file,
-            Consumer<FileEntry> initAction,
-            BiConsumer<T, FileEntry> openAction, Consumer<T> cleanupAction) {
+    @FunctionalInterface
+    private interface OpenAction<T> {
+        void accept(T file, FileEntry entry, boolean first);
+    }
+
+    private <T extends AbstractStorageFile> boolean openWithFileEntry(T file,
+            Function<FileEntry, Boolean> initAction,
+            OpenAction<T> openAction, Consumer<T> cleanupAction) {
         final String key = file.key;
         final String path = file.path;
         final boolean write = file.canWrite();
@@ -223,7 +298,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
         if (iAmInitializer) {
             try {
-                initAction.accept(entry);
+                entry.initialized = initAction.apply(entry);
             } catch (Throwable t) {
                 logger.error("Failed to initialize file entry {}", path, t);
                 entry.initError = t;
@@ -248,9 +323,9 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
         boolean success = false;
         try {
-            openAction.accept(file, entry);
+            openAction.accept(file, entry, iAmInitializer);
             success = true;
-            return file;
+            return entry.initialized;
         } finally {
             if (!success) {
                 try {
@@ -306,7 +381,17 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     @Override
     public ByteBuf readSync(AsyncFile file, long length, long offset, long alignSize) {
         StorageUtil.requireOpen(file);
+        // A whole-file replace is never read with alignment which is why the tmp read below can drop alignSize.
+        assert !file.atomicReplace || alignSize == 0 : "atomicReplace read must not be aligned: " + file.path;
         try {
+            if (tmpFirst(file)) {
+                Pair<Long, FileChannel> tmp = openValidTmpSync(file.path);
+                if (tmp.getKey() >= 0) {
+                    try (FileChannel tmpCh = tmp.getValue()) {
+                        return readFully(tmpCh, length, TMP_HEADER_BYTES + offset, 0);
+                    }
+                }
+            }
             return readFully(file.channel, length, offset, alignSize);
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
@@ -360,6 +445,13 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public long sizeSync(AsyncFile file) {
         StorageUtil.requireOpen(file);
         try {
+            if (tmpFirst(file)) {
+                Pair<Long, FileChannel> tmp = openValidTmpSync(file.path);
+                if (tmp.getKey() >= 0) {
+                    StorageUtil.closeChannels(Collections.singletonList(tmp.getValue()));
+                    return tmp.getKey();
+                }
+            }
             return file.channel.size();
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
@@ -580,7 +672,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         long length = data.readableBytes();
         Path tmpPath = getTmpPath(file.path);
         try (FileChannel tmpCh = FileChannel.open(tmpPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-            ByteBuf lenBuf = Unpooled.buffer(8);
+            ByteBuf lenBuf = Unpooled.buffer(TMP_HEADER_BYTES);
             try {
                 lenBuf.writeLong(length);
                 writeFully(tmpCh, lenBuf);
@@ -610,21 +702,26 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     }
 
     @Override
-    public AsyncSegmentFile openWithFileEntry(AsyncSegmentFile file, boolean noFs,
+    public boolean openWithFileEntry(AsyncSegmentFile file, boolean noFs,
             BiConsumer<String, CompletableFuture<?>> register,
             BiConsumer<String, List<FileChannel>> clean,
             long recoverTimeoutMs, long ioTimeoutMs) {
-        final Consumer<FileEntry> initAction = noFs
-                ? entry -> { }
+        final Function<FileEntry, Boolean> initAction = noFs
+                ? entry -> true
                 : entry -> StorageUtil.awaitIoCachePrep(ioExecutor, file, file.key, recoverTimeoutMs, register,
                         () -> {
-                            initFromDiskSync(entry, file.dirPath, file.prefix, file.indexPrefixes);
-                            return null;
+                            initFromDiskSync(entry, file.dirPath, file.prefix, file.indexPrefixes,
+                                    file.canWrite());
+                            return true;
                         }, null);
-        final BiConsumer<AsyncSegmentFile, FileEntry> openAction = (f, entry) -> {
+        final OpenAction<AsyncSegmentFile> openAction = (f, entry, first) -> {
             f.openInitialResources(entry);
             if (!noFs) {
                 StorageUtil.awaitIoCachePrep(ioExecutor, f, null, ioTimeoutMs, register, () -> {
+                    // always try to delete orphan files unless already done in init(in other words, the writer is the initializer).
+                    if (f.canWrite() && !first) {
+                        deleteOrphanSegmentFilesSync(f);
+                    }
                     initCurrentChannelsSync(f);
                     return null;
                 }, null);
@@ -634,10 +731,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                 f -> clean.accept(f.path, closeSync(f)));
     }
 
-    private void initFromDiskSync(FileEntry entry, String path, String prefix, List<String> indexPrefixes) {
+    private void initFromDiskSync(FileEntry entry, String path, String prefix, List<String> indexPrefixes,
+            boolean canDelete) {
         try {
             AsyncSegmentFile.initFromFiles(entry, path, prefix, indexPrefixes,
-                    StorageUtil.listNamesSync(Paths.get(path)));
+                    StorageUtil.listNamesSync(Paths.get(path)), canDelete);
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e);
         }
@@ -925,6 +1023,14 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public long transferToSync(AsyncFile file, long position, long count, WritableByteChannel target) {
         StorageUtil.requireOpen(file);
         try {
+            if (tmpFirst(file)) {
+                Pair<Long, FileChannel> tmp = openValidTmpSync(file.path);
+                if (tmp.getKey() >= 0) {
+                    try (FileChannel tmpCh = tmp.getValue()) {
+                        return tmpCh.transferTo(TMP_HEADER_BYTES + position, count, target);
+                    }
+                }
+            }
             return file.channel.transferTo(position, count, target);
         } catch (IOException e) {
             throw StorageUtil.wrapIOException(e, target);

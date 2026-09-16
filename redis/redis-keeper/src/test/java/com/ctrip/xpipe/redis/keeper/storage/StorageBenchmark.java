@@ -109,15 +109,17 @@ public class StorageBenchmark {
     private AsyncFile openTfsFile(String filePath, AbstractStorageFile.OpenMode openMode) {
         String key = StorageUtil.asyncFileKey(filePath);
         AsyncFile file = tfs.openSync(filePath, key, key, openMode, false, false, null, false);
-        return tfs.openWithFileEntry(file, false, NO_REGISTER, CLOSE_CHANNELS,
+        tfs.openWithFileEntry(file, false, NO_REGISTER, CLOSE_CHANNELS,
                 RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
+        return file;
     }
 
     private AsyncSegmentFile openTfsSeg(String dirPath, boolean write) {
         String key = StorageUtil.segmentKey(dirPath, SEG_PREFIX);
         AsyncSegmentFile seg = tfs.openSync(dirPath, SEG_PREFIX, key, key, INDEX_PREFIXES, write, null, false);
-        return tfs.openWithFileEntry(seg, false, NO_REGISTER, CLOSE_CHANNELS,
+        tfs.openWithFileEntry(seg, false, NO_REGISTER, CLOSE_CHANNELS,
                 RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
+        return seg;
     }
 
     private void rollSeg(AsyncSegmentFile seg) throws Exception {

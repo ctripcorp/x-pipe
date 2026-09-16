@@ -1132,8 +1132,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         AsyncFile file = delegate.openSync(path, key, ioKey, effectiveOpenMode,
                 atomicReplace, lenient, tenant, noFs);
-        delegate.openWithFileEntry(file, noFs, this::registerInFlight, this::scheduleCloseChannels,
-                restoreWaitTimeoutMs, ioWaitTimeoutMs);
+        boolean initialized = delegate.openWithFileEntry(file, noFs, this::registerInFlight,
+                this::scheduleCloseChannels, restoreWaitTimeoutMs, ioWaitTimeoutMs);
         file.cacheMode = cacheMode;
         if (cacheMode != CacheMode.NO_CACHE) {
             boolean write = file.canWrite();
@@ -1164,7 +1164,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             };
 
             try {
-                initFileCache(file, first, fsMode == BackingFsMode.NO_CACHE, noFs);
+                if (initialized) {
+                    initFileCache(file, first, fsMode == BackingFsMode.NO_CACHE, noFs);
+                } else {
+                    skipCacheInit(file, first);
+                }
             } catch (Throwable t) {
                 logger.error("init file cache failed for {}, closing file", file.path, t);
                 cleanupOpenFailed(file);
@@ -1194,6 +1198,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         } catch (Throwable t) {
             logger.error("failed to release cache entry for {}", file.path, t);
         }
+    }
+
+    private void skipCacheInit(AbstractStorageFile file, boolean first) {
+        logger.info("skip cache init for {}", file.path);
+        initCache(file.cacheEntry, first, () -> { });
     }
 
     private void initCache(FileCacheEntry entry, boolean first, Runnable init) {

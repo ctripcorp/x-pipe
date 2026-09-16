@@ -75,20 +75,30 @@ public class AsyncTFSBasedFileSystemTest {
 
     private AsyncFile openFile(String filePath, AbstractStorageFile.OpenMode openMode,
             boolean atomicReplace, boolean lenient) {
+        return openFileWithInit(filePath, openMode, atomicReplace, lenient).getKey();
+    }
+
+    // Same as openFile, but also reports what openWithFileEntry returned: whether the init is
+    // complete. An atomicReplace reader that finds a pending tmp file cannot apply the replace,
+    // so it defers the recovery to the first writer and reports false.
+    private Pair<AsyncFile, Boolean> openFileWithInit(String filePath, AbstractStorageFile.OpenMode openMode,
+            boolean atomicReplace, boolean lenient) {
         // key must be stable per path: the writer-exclusion and reader-sharing checks in
         // acquireFileEntry are keyed on it.
         String key = StorageUtil.asyncFileKey(filePath);
         AsyncFile file = fs.openSync(filePath, key, key, openMode, atomicReplace, lenient, null, false);
-        return fs.openWithFileEntry(file, false, NO_REGISTER, CLOSE_CHANNELS,
+        boolean initialized = fs.openWithFileEntry(file, false, NO_REGISTER, CLOSE_CHANNELS,
                 RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
+        return new Pair<>(file, initialized);
     }
 
     private AsyncSegmentFile openSeg(String dirPath, boolean write) {
         String key = StorageUtil.segmentKey(dirPath, SEG_PREFIX);
         AsyncSegmentFile seg = fs.openSync(dirPath, SEG_PREFIX, key, key, INDEX_PREFIXES, write, null, false);
         // openWithFileEntry also runs initCurrentChannelsSync, so the tail channel is ready.
-        return fs.openWithFileEntry(seg, false, NO_REGISTER, CLOSE_CHANNELS,
+        fs.openWithFileEntry(seg, false, NO_REGISTER, CLOSE_CHANNELS,
                 RECOVER_TIMEOUT_MS, IO_TIMEOUT_MS);
+        return seg;
     }
 
     private void positionSeg(AsyncSegmentFile seg, long offset) {
@@ -158,6 +168,24 @@ public class AsyncTFSBasedFileSystemTest {
 
     private void writeFile(String filePath, byte[] data) throws IOException {
         Files.write(Paths.get(filePath), data);
+    }
+
+    // Builds the TMP_REP_ sibling with the [8-byte length][data] layout the atomicReplace recovery
+    // expects. declaredLength goes into the header as given, so callers can forge an incomplete
+    // replace by declaring more than they write.
+    private Path writeTmpFile(String filePath, long declaredLength, byte[] data) throws IOException {
+        Path target = Paths.get(filePath);
+        Path tmpPath = target.resolveSibling("TMP_REP_" + target.getFileName());
+        try (FileChannel ch = FileChannel.open(tmpPath, StandardOpenOption.WRITE,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+            ByteBuffer lenBuf = ByteBuffer.allocate(8);
+            lenBuf.putLong(declaredLength);
+            lenBuf.flip();
+            ch.write(lenBuf);
+            ch.write(ByteBuffer.wrap(data));
+            ch.force(true);
+        }
+        return tmpPath;
     }
 
     // =========================================================================
@@ -448,6 +476,130 @@ public class AsyncTFSBasedFileSystemTest {
         AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ, false, false);
         assertArrayEquals(originalData, readAll(reader, originalData.length));
         StorageUtil.closeChannels(fs.closeSync(reader));
+    }
+
+    @Test
+    public void testValidTmpDeferredByReaderThenRecoveredByWriter() throws Exception {
+        String p = path("file15_deferred");
+        byte[] oldData = new byte[]{1, 2, 3};
+        byte[] newData = new byte[]{5, 6, 7, 8, 9};
+        writeFile(p, oldData);
+        Path tmpPath = writeTmpFile(p, newData.length, newData);
+
+        // Applying the replace needs write permission, so the reader initializes the entry but
+        // reports the init as incomplete and leaves both the tmp and the target file alone.
+        Pair<AsyncFile, Boolean> openedReader =
+                openFileWithInit(p, AbstractStorageFile.OpenMode.READ, true, false);
+        AsyncFile reader = openedReader.getKey();
+        assertFalse(openedReader.getValue());
+        assertTrue(Files.exists(tmpPath));
+        assertArrayEquals(oldData, Files.readAllBytes(Paths.get(p)));
+        // readTmpFirst is off by default, so this reader sees the superseded content.
+        assertArrayEquals(oldData, readAll(reader, oldData.length));
+
+        // The writer joins the entry the reader initialized and finishes the recovery there.
+        Pair<AsyncFile, Boolean> openedWriter =
+                openFileWithInit(p, AbstractStorageFile.OpenMode.WRITE, true, false);
+        AsyncFile writer = openedWriter.getKey();
+        assertTrue(openedWriter.getValue());
+        assertFalse(Files.exists(tmpPath));
+        assertArrayEquals(newData, Files.readAllBytes(Paths.get(p)));
+
+        StorageUtil.closeChannels(fs.closeSync(writer));
+        StorageUtil.closeChannels(fs.closeSync(reader));
+    }
+
+    @Test
+    public void testInvalidTmpLeftByReaderThenDeletedByWriter() throws Exception {
+        String p = path("file16_deferred");
+        byte[] originalData = new byte[]{10, 20, 30};
+        writeFile(p, originalData);
+        // Header claims 100 bytes but only 5 follow: an incomplete replace that must be discarded.
+        Path tmpPath = writeTmpFile(p, 100, new byte[]{1, 2, 3, 4, 5});
+
+        // There is nothing to recover, so the init is complete even for a reader. Dropping the
+        // leftover still needs write permission, so the tmp file survives the reader.
+        Pair<AsyncFile, Boolean> openedReader =
+                openFileWithInit(p, AbstractStorageFile.OpenMode.READ, true, false);
+        AsyncFile reader = openedReader.getKey();
+        assertTrue(openedReader.getValue());
+        assertTrue(Files.exists(tmpPath));
+        assertArrayEquals(originalData, Files.readAllBytes(Paths.get(p)));
+        assertArrayEquals(originalData, readAll(reader, originalData.length));
+
+        // The writer drops the incomplete tmp and leaves the target file untouched.
+        Pair<AsyncFile, Boolean> openedWriter =
+                openFileWithInit(p, AbstractStorageFile.OpenMode.WRITE, true, false);
+        AsyncFile writer = openedWriter.getKey();
+        assertTrue(openedWriter.getValue());
+        assertFalse(Files.exists(tmpPath));
+        assertArrayEquals(originalData, Files.readAllBytes(Paths.get(p)));
+
+        StorageUtil.closeChannels(fs.closeSync(writer));
+        StorageUtil.closeChannels(fs.closeSync(reader));
+    }
+
+    // The readTmpFirst cases below need a pending tmp file to outlive the open, and only an
+    // atomicReplace reader leaves one behind: a writer recovers and deletes it while opening.
+    private AsyncFile openReaderOverPendingTmp(String filePath, byte[] oldData, byte[] newData)
+            throws IOException {
+        writeFile(filePath, oldData);
+        writeTmpFile(filePath, newData.length, newData);
+        fs.setReadTmpFirst(true);
+        Pair<AsyncFile, Boolean> opened =
+                openFileWithInit(filePath, AbstractStorageFile.OpenMode.READ, true, false);
+        assertFalse(opened.getValue());
+        return opened.getKey();
+    }
+
+    @Test
+    public void testReadSyncFromValidTmpWhenReadTmpFirst() throws Exception {
+        String p = path("file_tmp_first_read");
+        byte[] newData = new byte[]{5, 6, 7, 8, 9};
+        AsyncFile reader = openReaderOverPendingTmp(p, new byte[]{1, 2, 3}, newData);
+        try {
+            // Served from the tmp file, not from the superseded target file.
+            assertArrayEquals(newData, readAll(reader, newData.length));
+            // Offsets stay relative to the data, so the 8-byte tmp header is invisible.
+            ByteBuf buf = fs.readSync(reader, 2, 1, 0);
+            try {
+                byte[] mid = new byte[buf.readableBytes()];
+                buf.readBytes(mid);
+                assertArrayEquals(new byte[]{6, 7}, mid);
+            } finally {
+                buf.release();
+            }
+        } finally {
+            StorageUtil.closeChannels(fs.closeSync(reader));
+        }
+    }
+
+    @Test
+    public void testSizeSyncFromValidTmpWhenReadTmpFirst() throws Exception {
+        String p = path("file_tmp_first_size");
+        AsyncFile reader = openReaderOverPendingTmp(p, new byte[]{1, 2, 3}, new byte[]{5, 6, 7, 8, 9});
+        try {
+            // The reported size is the pending data length, excluding the tmp header, while the
+            // target file on disk still has the shorter superseded content.
+            assertEquals(3, Files.size(Paths.get(p)));
+            assertEquals(5, fs.sizeSync(reader));
+        } finally {
+            StorageUtil.closeChannels(fs.closeSync(reader));
+        }
+    }
+
+    @Test
+    public void testTransferToSyncFromValidTmpWhenReadTmpFirst() throws Exception {
+        String p = path("file_tmp_first_transfer");
+        AsyncFile reader = openReaderOverPendingTmp(p, new byte[]{1, 2, 3}, new byte[]{5, 6, 7, 8, 9});
+        ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
+        try {
+            long transferred = fs.transferToSync(reader, 1, 3, target);
+            assertEquals(3, transferred);
+            assertArrayEquals(new byte[]{6, 7, 8}, target.toByteArray());
+        } finally {
+            StorageUtil.closeChannels(fs.closeSync(reader));
+        }
     }
 
     // =========================================================================
@@ -788,17 +940,21 @@ public class AsyncTFSBasedFileSystemTest {
         // Segment at offset 20, size 5 -> covers [20, 25) -- gap! not contiguous with [0, 10)
         writeFile(dir + "/" + SEG_PREFIX + "20", new byte[5]);
 
-        AsyncSegmentFile seg = openSeg(dir, false);
-        List<Long> offsets = listSeg(seg);
-        // Only the highest segment chain should be kept.
-        // Since [20,25) is not contiguous with [0,10), the off-chain one should be deleted.
+        // Only the highest segment chain is kept in the state.
         // The algorithm starts from highest offset and builds chain downward.
         // Highest is 20 (size 5, end=25). Next is 0 (size 10, end=10 != 20). So 0 is off-chain.
-        // Result: only offset 20 remains
-        assertEquals(Collections.singletonList(20L), offsets);
+        AsyncSegmentFile reader = openSeg(dir, false);
+        assertEquals(Collections.singletonList(20L), listSeg(reader));
+        // A reader has no write permission, so the off-chain file is only logged, not deleted.
+        assertTrue(Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
+
+        // The writer joins the entry the reader initialized and does the deletion.
+        AsyncSegmentFile writer = openSeg(dir, true);
+        assertEquals(Collections.singletonList(20L), listSeg(writer));
         assertFalse(Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
         assertTrue(Files.exists(Paths.get(dir, SEG_PREFIX + "20")));
-        StorageUtil.closeChannels(fs.closeSync(seg));
+        StorageUtil.closeChannels(fs.closeSync(writer));
+        StorageUtil.closeChannels(fs.closeSync(reader));
     }
 
     @Test
@@ -814,13 +970,19 @@ public class AsyncTFSBasedFileSystemTest {
         writeFile(dir + "/" + SEG_PREFIX + "0", new byte[20]);
         writeFile(dir + "/" + SEG_PREFIX + "10", new byte[20]);
 
-        AsyncSegmentFile seg = openSeg(dir, false);
-        List<Long> offsets = listSeg(seg);
-        // Only offset 10 remains (offset 0 was overlapping)
-        assertEquals(Collections.singletonList(10L), offsets);
+        // A reader keeps the overlapping file on disk, it is only excluded from the state.
+        AsyncSegmentFile reader = openSeg(dir, false);
+        assertEquals(Collections.singletonList(10L), listSeg(reader));
+        assertTrue(Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
+        StorageUtil.closeChannels(fs.closeSync(reader));
+
+        // The entry is gone with the reader, so the writer inits from disk itself and, having write
+        // permission, deletes the overlapping file during the init.
+        AsyncSegmentFile writer = openSeg(dir, true);
+        assertEquals(Collections.singletonList(10L), listSeg(writer));
         assertFalse(Files.exists(Paths.get(dir, SEG_PREFIX + "0")));
         assertTrue(Files.exists(Paths.get(dir, SEG_PREFIX + "10")));
-        StorageUtil.closeChannels(fs.closeSync(seg));
+        StorageUtil.closeChannels(fs.closeSync(writer));
     }
 
     @Test
@@ -834,12 +996,16 @@ public class AsyncTFSBasedFileSystemTest {
         // Valid index file at offset 0
         writeFile(dir + "/" + IDX_PREFIX + "0", new byte[]{6});
 
-        AsyncSegmentFile seg = openSeg(dir, false);
-        // Orphan index should be deleted
+        // A reader leaves the orphan index file alone.
+        AsyncSegmentFile reader = openSeg(dir, false);
+        assertTrue(Files.exists(Paths.get(dir, IDX_PREFIX + "100")));
+
+        // The writer joins the entry and deletes it, keeping the index of the valid segment.
+        AsyncSegmentFile writer = openSeg(dir, true);
         assertFalse(Files.exists(Paths.get(dir, IDX_PREFIX + "100")));
-        // Valid index should remain
         assertTrue(Files.exists(Paths.get(dir, IDX_PREFIX + "0")));
-        StorageUtil.closeChannels(fs.closeSync(seg));
+        StorageUtil.closeChannels(fs.closeSync(writer));
+        StorageUtil.closeChannels(fs.closeSync(reader));
     }
 
     @Test
