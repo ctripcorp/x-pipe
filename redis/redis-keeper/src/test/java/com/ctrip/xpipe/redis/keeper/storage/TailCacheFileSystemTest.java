@@ -1403,6 +1403,9 @@ public class TailCacheFileSystemTest {
         assertEquals(1000, readBytes(hangTcf.read(writer, 1000, 0).get(5, TimeUnit.SECONDS)).length);
 
         faulty.release();
+        // Close once the disk recovers: only the last handle closing releases the cache chunks,
+        // and shutdown() does not do it, so abandoning the handle here would leak them.
+        hangTcf.close(writer).get(5, TimeUnit.SECONDS);
     }
 
     @Test
@@ -1428,6 +1431,7 @@ public class TailCacheFileSystemTest {
                 elapsedMs < BOUNDED_MS);
 
         faulty.release();
+        hangTcf.close(writer).get(5, TimeUnit.SECONDS);
     }
 
     @Test
@@ -1454,6 +1458,7 @@ public class TailCacheFileSystemTest {
                 elapsedMs < BOUNDED_MS);
 
         faulty.release();
+        hangTcf.close(writer).get(5, TimeUnit.SECONDS);
     }
 
     @Test
