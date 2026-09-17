@@ -1,0 +1,24 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/TimerSlidingWindowTest.java
+  s_0e90817c4c2805::t_9e8ad7ba028fb1 342-345
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/TimerSlidingWindow.java
+  s_0e90817c4c2805::t_cfbdcefd9644d2 43
+  s_0e90817c4c2805::t_6f452c97152fb9 159,96,118-119,126,146,153,158,166-167,174
+  s_0e90817c4c2805::t_6d16024ea386cc 76,141,145
+  s_0e90817c4c2805::t_3c12e7909def03 117,123,175
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "2d37d20836c1c4979a30be6a1b25d3e9e43f2e56",
+  "prompts": {},
+  "sessions": {
+    "s_0e90817c4c2805": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bed712f7-0a7b-4c5e-a565-678f7c294278",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

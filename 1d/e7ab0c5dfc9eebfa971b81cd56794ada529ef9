@@ -1,0 +1,36 @@
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/DefaultKeeperStateChangeHandler.java
+  s_1feda8eb740353::t_e6ee0216cb3438 193
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/job/TfsKeeperStateChangeJobTest.java
+  s_1feda8eb740353::t_d565cd2f559f11 50
+  s_e3786497b76ceb::t_e0d49b9293be59 191,193,197,202,205-206,209-210,213-214,217,220-222,224,226-229,231,235,240,244,248,253,257,260-262,266-269,271,277-278,281,285,288-290,295-296,342
+  s_1feda8eb740353::t_ff00d47ab4b27f 192,194,203-204,207-208,211-212,215-216,218,223,225,230,241-243,245-247,249-252,254-256,258,263-265,272-273,279-280,282-284,286,291-294
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsPrepareReleaseCommand.java
+  s_1feda8eb740353::t_b8cb37a0ba02bd 83
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/job/TfsKeeperStateChangeJob.java
+  s_1feda8eb740353::t_e3da681cf3f07a 199,227,234,239,242-243,245-246,251-252,254-255,257-258,260-261,263-264
+  s_e3786497b76ceb::t_c7c8adcb6b4a72 238
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "1de7ab0c5dfc9eebfa971b81cd56794ada529ef9",
+  "prompts": {},
+  "sessions": {
+    "s_1feda8eb740353": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3e3b9ae4-f70b-44fe-a85d-50873568a596",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e3786497b76ceb": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6704cbff-5bf3-49a1-b886-9d722b6e27e5",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

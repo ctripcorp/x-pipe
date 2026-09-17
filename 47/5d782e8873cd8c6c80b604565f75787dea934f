@@ -1,0 +1,85 @@
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsDirPathResolver.java
+  s_13d20876f26753::t_32dbbe156c0ad7 10-11,15-19,23-25
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsGatewayFactory.java
+  s_13d20876f26753::t_7b6985734bdd40 56,75,86
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsDirPathResolverTest.java
+  s_05387142ca836e::t_956fa6b053c902 13-15
+  s_13d20876f26753::t_73fa5d4c2a373f 10-12,17
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsGatewayFactoryTest.java
+  s_13d20876f26753::t_f9de45256ab2ab 27-29,31-34,48-50,52,55
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsGateway.java
+  s_13d20876f26753::t_f45cc7394c5ece 4
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/job/TfsKeeperStateChangeJobTest.java
+  s_1feda8eb740353::t_d565cd2f559f11 50
+  s_e3786497b76ceb::t_e0d49b9293be59 191,193,197,202,205-206,209-210,213-214,217,220-222,224,226-229,231,235,240,244,248,253,257,260-262,266-269,271,277-278,281,285,288-290,295-296,342
+  s_1feda8eb740353::t_ff00d47ab4b27f 192,194,203-204,207-208,211-212,215-216,218,223,225,230,241-243,245-247,249-252,254-256,258,263-265,272-273,279-280,282-284,286,291-294
+  s_13d20876f26753::t_7b7f5dcb71d23f 174
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/AllTests.java
+  s_13d20876f26753::t_20ff8e6f5858bc 54
+  s_13d20876f26753::t_11410f6ac6dcf7 143-144
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsForceCloseDirCommand.java
+  s_13d20876f26753::t_7b54283f04532b 85-87,99,121,129,131-132,134-136
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/config/DefaultMetaServerConfigTfsTest.java
+  s_13d20876f26753::t_51c3d3f50523d0 1-14,16-17
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/config/UnitTestServerConfig.java
+  s_13d20876f26753::t_edacc0218a8114 205,213-215,233-234,41,43,45,206-212,217-232
+  s_13d20876f26753::t_39e9c935f0c85c 40,42,44
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsForceCloseDirCommandTest.java
+  s_13d20876f26753::t_7a5c6ff4f53d86 65-71,17,38,40-41,45-46,48,55,63,73-74,76,79-80,82,86-87,89-90,93-94,96,104,119,136,138,146,149
+  s_be6488d16ab8b6::t_f9cdcd58e61cfa 105-111,42,72,77-78,81,83-85,91-92,95,97-98,101,115
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/config/DefaultMetaServerConfig.java
+  s_13d20876f26753::t_8c9c5104f0f679 71,73,77,80,243,251-253,256-257,69,75,244,246-250
+  s_13d20876f26753::t_72dc5456abe898 68,70,74,76
+  s_13d20876f26753::t_d0241ff624f5cd 245
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/config/MetaServerConfig.java
+  s_13d20876f26753::t_042d5d44887bbb 68,70,61-67
+  s_13d20876f26753::t_6a3d4999c56c1c 60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "475d782e8873cd8c6c80b604565f75787dea934f",
+  "prompts": {},
+  "sessions": {
+    "s_05387142ca836e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c493e91c-d4fe-4ff7-9cd9-7635531c6b87",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_13d20876f26753": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1cb34ccb-fb95-4da1-b7e5-0a3e60bdcbdd",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_1feda8eb740353": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3e3b9ae4-f70b-44fe-a85d-50873568a596",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_be6488d16ab8b6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c6d15e77-5dc6-4ed4-9e9e-54397d49ecae",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e3786497b76ceb": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6704cbff-5bf3-49a1-b886-9d722b6e27e5",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

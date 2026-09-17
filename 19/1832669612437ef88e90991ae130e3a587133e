@@ -1,0 +1,35 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  h_6ceeb547b3b36a 5,20,122,130,157,159,180,190,201,221,368,387,396,419,404,409,416,223,227,231,235,239,241,270,274,281,297,427,444,454,333,345,207,286,293,437,45,81,340,57,71,76,86,113,95,105,22
+  s_72174907f32b60::t_a338685b026bd5 121,156,179,189,199-200,219-220,301,305,309,313,365,367,385-386,394-395,441,443,414,226,230,234,238,269,273,279-280,292,296,403,451,453,459,344,330,193,217,381,436,44,80,250,263,426,52,55-56,62,69-70,75,85,100,112,93-94,104
+  s_f6223590275fac::t_5bb08c5b1dea9f 133,140,154-155,177-178,216,364,376,379,188,434,187,363,262,92,257-259,261,328
+  s_f6223590275fac::t_ab1e5db6693336 41,77,46,58,72,82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "191832669612437ef88e90991ae130e3a587133e",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_72174907f32b60": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_2e59336e-1937-42b2-86df-5ebf28406cdd",
+        "model": "claude-opus-5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_f6223590275fac": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_1a3cc7b7-06ef-49d1-8247-18b2b1bf4263",
+        "model": "claude-opus-5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}

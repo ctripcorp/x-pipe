@@ -1,0 +1,19 @@
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperMetaEnricher.java
+  s_b353cdd93cc3fd::t_1aabc001614457 27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "5c41128bdcff4f4e61d3b0fe938a97da69954b59",
+  "prompts": {},
+  "sessions": {
+    "s_b353cdd93cc3fd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "213aa845-54e6-46cd-bece-ea5c22f3ed68",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

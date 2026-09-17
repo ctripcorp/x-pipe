@@ -1,0 +1,19 @@
+redis/redis-console/src/main/resources/META-INF/dal/jdbc/meta-dal.xml
+  s_52af9d3e1e8ae3::t_749c85a0e5b6db 3622-3628
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "1744f095fd20957381093bb92ca72b0b82634e51",
+  "prompts": {},
+  "sessions": {
+    "s_52af9d3e1e8ae3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "88017821-050a-42c9-acdc-f52bfc68e3d6",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

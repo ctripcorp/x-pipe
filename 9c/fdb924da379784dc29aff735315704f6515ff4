@@ -1,0 +1,45 @@
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/AllTests.java
+  s_6a80d001f8c4e6::t_635b4fd9fe818a 1-4,6-11,14-16
+  s_e4531e4b091ad9::t_7accf8d94a4d63 5,12
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/stream/StreamRingBufferTest.java
+  s_e4531e4b091ad9::t_92da54c6cd4d95 1-151,153-181,183-184,186-200,203-235,238-254
+  s_e4531e4b091ad9::t_dad565154757c2 152
+  s_52074fff5f6e3b::t_beb02f6648df6c 201-202
+  s_e4531e4b091ad9::t_48529b48dfab13 236
+  s_e4531e4b091ad9::t_6b9041ca0d2d96 237
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/stream/StreamRingBuffer.java
+  s_e4531e4b091ad9::t_2ccba72cae9c0e 1-5,7-16,20-36,39-50,52-63,72,74-76,78,80-94,96-110,115-122,124-137
+  s_e4531e4b091ad9::t_adf9a09b05010f 6,17-19,37-38,51,64-70,79,95,111-114,123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "9cfdb924da379784dc29aff735315704f6515ff4",
+  "prompts": {},
+  "sessions": {
+    "s_52074fff5f6e3b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9bb4cf03-fd69-40ed-a555-ece3f5a05303",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_6a80d001f8c4e6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e1fbf23b-72f4-43a8-91e0-c0520c2f2b80",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e4531e4b091ad9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "169c716e-6d62-4431-a118-986c17505026",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

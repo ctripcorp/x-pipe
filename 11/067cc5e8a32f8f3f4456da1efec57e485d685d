@@ -1,0 +1,19 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystem.java
+  s_3e657dbad0c269::t_7fe9df52cfc6fc 22-23,26-27,33-34,36-37,40-41,48-49,52-53,55-56,58-59,62-63,72-73,75-76,83-84,86-87,90-91,93-94,97-98,100-101,106-107,109-110,133-134,136-137,141-142,144-145,148-149,151-152,155-156,158-159,161-162,164-165,169-170,172-173,180-181,183-184,186-187,189-190,192-193,195-196,198-199,201-202,210-211,213-214,227-228,230-231,234-235,237-238,242-243,246-247,250-251,253-254
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "11067cc5e8a32f8f3f4456da1efec57e485d685d",
+  "prompts": {},
+  "sessions": {
+    "s_3e657dbad0c269": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_cee60442-d0fb-4d11-9774-9a19cd93cd4e",
+        "model": "claude-opus-5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}

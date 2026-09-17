@@ -1,0 +1,19 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultRdbStore.java
+  s_37c18bc1336678::t_7ea026f401d376 92-94,174,250,254,328,339,350,355,368,384,386,395,405-407,420,426,428,434,436-437,461-462,466-467,470-471,499,507,543-545,557-559,602
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "ce35d99fc8f2fbe6af4e346e0a32665986d28383",
+  "prompts": {},
+  "sessions": {
+    "s_37c18bc1336678": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "904e8e1d-93c0-4d70-85c1-c58150cfb22c",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

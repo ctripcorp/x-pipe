@@ -1,0 +1,47 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/KeeperContainerServiceImpl.java
+  s_52af9d3e1e8ae3::t_b848df384c0671 69-71,186
+  s_52af9d3e1e8ae3::t_71c41bd123d656 778-782,470
+  s_96f36fb7497230::t_070267c05ad089 467-469
+  s_d114876e13e484::t_b1ddf10e8ad32a 141-142
+  s_8be0cc53cc3885::t_52f79214828ffe 279,281,284-289,294-297
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "76ad8ac71421d87f776189d68f0456a141281019",
+  "prompts": {},
+  "sessions": {
+    "s_52af9d3e1e8ae3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "88017821-050a-42c9-acdc-f52bfc68e3d6",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_8be0cc53cc3885": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c5590af2-b31f-4e61-acb5-aa54a9fe9c61",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_96f36fb7497230": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "695877d5-a4ca-4f40-8429-bf5dde7dfe0b",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_d114876e13e484": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f7ba6003-c089-4785-abfa-ce8895481b9f",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

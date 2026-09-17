@@ -1,0 +1,40 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/LogicalBuServiceImpl.java
+  s_52af9d3e1e8ae3::t_b8873c4a2fd857 203,264,189,195,202,204-214
+  s_52af9d3e1e8ae3::t_9363c185e272c7 5,16,22
+  s_52af9d3e1e8ae3::t_0cd25a092e2623 78-79,102-103
+  s_b761d12fc89d17::t_3f6263bff83646 24
+  s_b761d12fc89d17::t_6bbff41e4a243f 88-89
+  s_b761d12fc89d17::t_e57ea7df52f808 190,200-201
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/LogicalBuServiceImplResolveTest.java
+  s_52af9d3e1e8ae3::t_7b559ca59b0ff5 84,85-90,96-107,149-151,153-159,161,110-112,126-127,129-130,137,143,145
+  s_52af9d3e1e8ae3::t_0272a2269281d3 8,15,21
+  s_52af9d3e1e8ae3::t_188408ad1b42dd 25,28
+  s_b761d12fc89d17::t_1c60f8ee030f78 91-92,95,108-109,113-125,128,131-136,138-142,144,146-148
+  s_52af9d3e1e8ae3::t_31db1c5c2f2b6d 93-94,160
+  s_52af9d3e1e8ae3::t_9832a0178cb80f 152
+  s_b761d12fc89d17::t_c5849a285d7033 3,7,26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "2837f42233da4a7fcdb5a7d9bf275e69f2dd0154",
+  "prompts": {},
+  "sessions": {
+    "s_52af9d3e1e8ae3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "88017821-050a-42c9-acdc-f52bfc68e3d6",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_b761d12fc89d17": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "60f70e29-8966-46c8-92e0-7631c1c1b200",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

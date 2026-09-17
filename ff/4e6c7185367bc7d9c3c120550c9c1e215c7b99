@@ -1,0 +1,270 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/AsyncReferenceFileRegion.java
+  s_4031c88d2da665::t_1f5744ed7bf4e9 93-95
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelperTest.java
+  ai_agent 1-10,12-15,17-20,23-51,53-58,136-155,352
+  s_f5a484c361566c::t_c988960a16591d 135,11,16,52,60,63,65,70,73-77,82-85,89-90,93-95,112,116,159,170,176,179,181,186,193,196-197,200-203
+  s_0e7be5ff9e8eb3::t_66f4c361d70b52 156,59,61,67-68,79-80,91,96-98,100,107-108,118-119,124,133-134,157-158,160-161,166,168-169,173-175,177-178,180,183-185,187-188,191,198-199,205-207,209-210,213,221-223,225-226,231,233-234,238,239-240,246,251-253,268-270,278,283-285,287-288,290-294,296-301,303,305-307,309,312,314-316,318-323,326,328-330,332-333,335-337,339-340,350-351
+  s_3ac35a10ba208a::t_4802ba43cb546d 21,62,64,66,69,71-72,78,81,86-88,92,99,101-106,109-111,114-115,117,120-123,125-132,162-165,167,171-172,182,189-190,204,208,211-212,214-220,224,227-230,232,235-237
+  s_f5a484c361566c::t_7323f1fb472a08 113,192,194-195
+  s_654e402fd0250c::t_2b1338810bb4f4 22
+  s_654e402fd0250c::t_39df8497d482f1 241-245,247-250,254-255,257-263,265,267,272-274,282,286,295,302,308,310-311,313,317,324-325,327,331,338,342-345,347
+  s_0e7be5ff9e8eb3::t_e14258cb5faba8 256,264,266,289,304,334,341,346,348-349
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AsyncRdbReferenceFileRegion.java
+  s_4031c88d2da665::t_25bcfca7de8a8a 100-102
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  s_a97b4af8abb7da::t_bdd0bc3f8b1fef 130-131,137-138,142,144,148,169,178-179,184-185,211-212,221-222,458-459,468,501,526-527,532-533,560-561,566-567,677,104-105,122-123,696-697,248-249,69,81,90,97-98,369,383-384,388,393-394,418,719,729-730,746-747
+  s_df87853bc61dc2::t_b6f7e55409e1a2 157,165,172,216,219,228,352,442,466-467,525,544,556,559,571,690,580,695,89,95-96,374,380-381,423,717,722,728,709-710,723,731-745
+  s_95cdc5e5b983cc::t_9c9ae3fd1ed008 195,223,698,242,247,134,206,225,234,244,689,712,716,750
+  s_1724b33c39121b::t_ccbd8154636dc7 534,538,198,204,238,241,64,67,70,74,358,362,707,711
+  s_3ac35a10ba208a::t_974ee4dcdad0b3 167
+  s_3ac35a10ba208a::t_7518c33bab2eeb 524
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/GtidSetWrapper.java
+  s_4031c88d2da665::t_f7bc897fc1a756 199-200
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelper.java
+  s_654e402fd0250c::t_b3d5e9dc9ec512 52,447,459,48,78,129,131,189,254-255,257-258,278,317,294-296,307,309-310,327,337,368,378,389-391,404,35-37,54-55,57-59,85,87,89,91,93-94,96-98,103-104,107,120,130,136,138-139,141,143,145-146,148-150,194-196,222,241,427-429,431-436,442-443,445-446,453,481-482,487-488,494-495,497-498,500-504,506-507,514-516,519,521,523,526-527
+  s_f5a484c361566c::t_138602c7a05519 213,454,71,207,216,227,14,31-34,116,156-162,164,172,204,298,300,315,321-326,328-332,334-336,338-341,345-347,349-350,352,355-367,369-377,379-388,392-396,400-403,405,407,88,90,95,140,142,147,238,242
+  s_0e7be5ff9e8eb3::t_29038b8304595c 8,422,448-450,465-467,471-472,477-478,483-484,522,529,45,47,51,79-81,108-109,234-236,416,419,530,533-534,537,21,113-114,133-134,187-188,192-193,261-262,280,319-320,167,171,173-174,182-183,266-267,272,282-283,333,342-344,348,351,353-354,397-399,406,408-409,60-61,92,99-101,144,151-153,197-198,243,245-246,441,489-490,513,524-525
+  s_0e7be5ff9e8eb3::t_7e1220b9bb4ab6 41,43,65,67,115,127,154,163,175,179,53,56,82,86,102,105,135,137,491,493
+  ai_agent 76,6-7,20,29-30,112,119,122-126,128,132,184-186,190-191,199-200,210,247-248,252-253,256,260,276,312,314,318,205,121
+  s_0e7be5ff9e8eb3::t_28ca2dc2be6d44 279,166,170,271
+  s_3ac35a10ba208a::t_5dc3869130655d 117-118,155,165,168-169,176-178,180-181,249-251,259,263-265,268-270,273-275,277,281,284-293,297,299,301-306,308,311,313,316
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/OffsetCommandReader.java
+  s_3ac35a10ba208a::t_d2ed5a062334f3 147
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStore.java
+  s_fd1cbddeb7332a::t_00089ba80a3477 81,86-88,123-126,128,89
+  s_fd1cbddeb7332a::t_37dd72217e61e1 204-205
+  s_5917cd349106ee::t_a7247e7caeabd6 385,944,955
+  s_fd1cbddeb7332a::t_d62245a2773248 523-524
+  s_07c320fa7a39de::t_8acb587224c9b9 85,783-784,787-788,319,685,691,694,699-700,991-992,1000-1001,1011-1012,1016,1020,529,531-532,633-634,638,947,960,1007-1008,647-649,938,945,949,956-957,969-970,978,980-981
+  s_e54c6e961df050::t_e4cf40a6c5e7c6 314,987,996,1003
+  s_7ce7d3084aee79::t_93a3736fb12626 644
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReaderV2.java
+  s_3ac35a10ba208a::t_3583f92fe123e5 121
+  s_4031c88d2da665::t_186c39be10be0a 93-94
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java
+  s_4e44087c4833d9::t_f89a31e5859bea 60
+  ai_agent 80,126,128,140,148,184,187,205,440,81-82,84-88,141-147,313-315,323,327,329-331,333-334,336-340,342,345-352,354-355,357,360,362,364-367,370-377,379-380,484,486-487
+  s_e233e536b919d8::t_ebd9ae7d4ff966 296-297
+  s_4e44087c4833d9::t_9356f3bc715309 356,358
+  s_4e44087c4833d9::t_a9427f32401817 495-497,501-502,505-506,160-161,171,174,181-182,197-199,206,226,246,279,441-442,273,83,89,159,227,332,335,341,343,353,359,368,378,290-291
+  s_11242d2da087bf::t_7f513647834fe8 129,149,200
+  s_8723c000dbd82d::t_14bb84ea4c7453 165-166,189,195,207,209,275-276,259,153-155,157-158,167,169-170,261
+  s_f5a484c361566c::t_43d4d433eb8d53 224,405,268,218,220,228-230,244,263,269-272,287-289
+  s_11242d2da087bf::t_199e71bd1b5ec7 488
+  s_f5a484c361566c::t_deace17a9029f3 156,168
+  s_f5a484c361566c::t_2f76ca4b8a1958 381-382
+  s_f5a484c361566c::t_929a17c7a37be4 402-403
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriterV2.java
+  s_3ac35a10ba208a::t_e77d88c6f9e7c6 282
+  s_4031c88d2da665::t_e7c727383b5256 215,293-294
+  s_4031c88d2da665::t_686a9d6e6b1b2a 216
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultRdbStore.java
+  s_37c18bc1336678::t_7ea026f401d376 92-94,174,250,254,328,338,349,354,367,383,385,394,404-406,419,425,427,433,435-436,459-460,463-464,467-468,496,504,536-538,546-548,591
+  s_f5a484c361566c::t_f1e1b7d5a787cb 534
+  s_3ac35a10ba208a::t_aa7cafee5ab4a6 544
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReader.java
+  s_3ac35a10ba208a::t_b7b6238ec7b510 310
+  s_3ac35a10ba208a::t_ab87a2024f97e4 362
+  s_4031c88d2da665::t_229adb625d6dcf 131-132
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_f50b714e793707::t_02354377bcb31c 745,723
+  s_95cdc5e5b983cc::t_639d23e30f7063 746-747,421,427-428,452-453,483,485-486,724,729
+  s_0e90817c4c2805::t_10d27467ae7bfb 406,410,429,434,385
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java
+  s_fd1cbddeb7332a::t_fe135852b0af92 55,58
+  s_f4ce297966e0c3::t_311fbe1f9575f8 138,140,113,129-130,188
+  s_beeb2c0a61171f::t_71fc421f151323 181-182,114,120-121,124-126,128,131,139,141,148,190
+  s_f5a484c361566c::t_c50fb3ab17db19 134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "ff4e6c7185367bc7d9c3c120550c9c1e215c7b99",
+  "prompts": {},
+  "sessions": {
+    "s_07c320fa7a39de": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0957336a-f0cc-42b7-a979-375f0dd822b9",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_0e7be5ff9e8eb3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "17ab8255-178e-4934-bdb8-cb4f15cc9a96",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_0e90817c4c2805": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bed712f7-0a7b-4c5e-a565-678f7c294278",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_11242d2da087bf": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "19926478-c156-4191-8ae5-22002a763b80",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_1724b33c39121b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3138da91-5f92-4059-8a40-c9983b275153",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_37c18bc1336678": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "904e8e1d-93c0-4d70-85c1-c58150cfb22c",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_3ac35a10ba208a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9daff0ae-f55d-42c7-9774-cc4396a4f8cf",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_4031c88d2da665": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "32a7116b-35bf-462b-9ead-6ab4fad1e437",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_4e44087c4833d9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "07d31bd6-d5ca-4212-b256-74b1e273844d",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_5917cd349106ee": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7694679e-2e15-4fbe-ad89-2224ebf38afa",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_654e402fd0250c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "addcf917-6c02-43c2-91b2-88a6b01fbf01",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_7ce7d3084aee79": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a19fe535-98ea-427d-be52-61352366802c",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_8723c000dbd82d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "462517d2-504a-41df-bda0-09c3364033a9",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_95cdc5e5b983cc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "684cb6d6-f89d-4291-b857-74792ec0f633",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_a97b4af8abb7da": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "781563c5-47af-445f-ac23-3568692faa78",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_beeb2c0a61171f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f4c10ab7-1571-4a7c-aafc-441685af4cfc",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_df87853bc61dc2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c66a5d38-5591-4e56-8b43-46f555865929",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e233e536b919d8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "62fc2fa4-bd40-460c-9612-0814dc1399f7",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e54c6e961df050": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "beb15784-5aaa-4de4-9cef-39d01d91f3b8",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_f4ce297966e0c3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d4bcfc07-c5ea-425b-8cef-8cb1e5a443bf",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_f50b714e793707": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "263c490c-390d-4ecd-986e-85016991936f",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_f5a484c361566c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "12f1ad3e-2068-4d9e-bf99-d3b43b0cc3ae",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_fd1cbddeb7332a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "21a689ed-e270-4cf4-94c7-e12aaa2a559f",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

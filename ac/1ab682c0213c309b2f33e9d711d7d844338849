@@ -1,0 +1,117 @@
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/manager/DefaultKeeperManagerTest.java
+  s_09b64d4e568f0f::t_8eb28a4039f6b3 10,31-32
+  s_c5a86963b9c76c::t_ee6b985f8b1bb2 30
+  s_09b64d4e568f0f::t_5d205a15900e58 164-216,280-369,259,264-265,272,277-278
+  s_c5a86963b9c76c::t_e4ca397131e99c 217-251,252,266
+  s_635b7ae942c845::t_b6ad725139ee3f 253-257,260-263
+  s_c0b5117166b653::t_089f9cb82f3c87 258,267-271,273-276
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperRoleAssigner.java
+  s_b353cdd93cc3fd::t_b9b68f3bebc066 84-85
+  s_d949253b229f6f::t_853f93ef8292d0 45-56
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/elect/KeeperRoleAssignerTest.java
+  s_d949253b229f6f::t_bb9cdb51644d22 80,83,86-87,90-91,94-95,96-118
+  s_b353cdd93cc3fd::t_f34913c4d55a1c 81-82,84,89,92
+  s_367091a3bca486::t_8008321a416bb6 85,88,93,119
+  s_d949253b229f6f::t_43ff5e9ef73951 15
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/manager/DefaultKeeperManager.java
+  s_c5a86963b9c76c::t_4e5a4e23f9b848 18
+  s_09b64d4e568f0f::t_b9db2ed6e2b649 23,35
+  s_09b64d4e568f0f::t_50919422c18c8d 509-514,517,520-522,525-530,569-571
+  s_c5a86963b9c76c::t_91a96aeef31438 515-516,523,531-540
+  s_09b64d4e568f0f::t_5819d300bc2874 518-519
+  s_c0b5117166b653::t_982906de33cf8d 555,548-550,552,556-558
+  s_09b64d4e568f0f::t_d8805556996da1 573-574,551
+  s_09b64d4e568f0f::t_5c8dd7519eac3f 645-646,648-652,655,677
+  s_c5a86963b9c76c::t_00b11d7469a8f9 658,661-663,665-668,670-672,453,559-560
+  s_c0b5117166b653::t_f753f69ea06bdf 447,450-452
+  s_d949253b229f6f::t_acd07c4331c1df 575-576
+  s_635b7ae942c845::t_b6b67b9884e48a 659-660,664,669,682,687
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/AllTests.java
+  s_13d20876f26753::t_20ff8e6f5858bc 55
+  s_13d20876f26753::t_11410f6ac6dcf7 148-149
+  s_be6488d16ab8b6::t_e6636a495c8a7e 56
+  s_be6488d16ab8b6::t_a29932efc8381e 147
+  s_635b7ae942c845::t_b51fc34660cad1 23
+  s_635b7ae942c845::t_e4d7b76085e537 110
+  s_d949253b229f6f::t_41e960eef7bb65 139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "ac1ab682c0213c309b2f33e9d711d7d844338849",
+  "prompts": {},
+  "sessions": {
+    "s_09b64d4e568f0f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a88be674-a249-4ac0-895d-81fb4f19bf2e",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_13d20876f26753": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1cb34ccb-fb95-4da1-b7e5-0a3e60bdcbdd",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_367091a3bca486": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a514e973-9488-4f84-aeb0-c648c017cdfd",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_635b7ae942c845": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1702d3ba-a4e8-4c8f-a8e7-18e4fcd2a8ba",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_b353cdd93cc3fd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "213aa845-54e6-46cd-bece-ea5c22f3ed68",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_be6488d16ab8b6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c6d15e77-5dc6-4ed4-9e9e-54397d49ecae",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_c0b5117166b653": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "43622fc3-372f-438a-ba47-479f3bb215ce",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_c5a86963b9c76c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e9c072a0-d1c9-479b-9634-f989df4f074e",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_d949253b229f6f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "2c3a39eb-342a-4fa6-8fdb-03b830f1b440",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

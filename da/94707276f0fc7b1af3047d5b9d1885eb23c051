@@ -1,0 +1,37 @@
+redis/redis-comparator/pom.xml
+  s_6a80d001f8c4e6::t_e01d04d4f2e902 1-45,59-81,89-91,50-51,54-55,57
+  s_3bc0c3b5a51586::t_1960522d58f031 58,46,48-49,52-53
+  s_54e82570358018::t_b4b899788e7527 82,84-88,47,56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "da94707276f0fc7b1af3047d5b9d1885eb23c051",
+  "prompts": {},
+  "sessions": {
+    "s_3bc0c3b5a51586": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "af3ae80b-8578-45c8-9787-0f7081fc7302",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_54e82570358018": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ae74afa5-8723-47a5-9901-efe99dc3ebbc",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_6a80d001f8c4e6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e1fbf23b-72f4-43a8-91e0-c0520c2f2b80",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
