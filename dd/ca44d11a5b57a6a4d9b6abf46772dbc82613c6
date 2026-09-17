@@ -1,3 +1,8 @@
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/AllTests.java
+  s_f6aa65f7012ddd::t_a434825458922f 87
+  s_f6aa65f7012ddd::t_08b1297a2923d9 101
+  s_f6aa65f7012ddd::t_26396016f2fd42 111
+  s_f6aa65f7012ddd::t_73e24d1fe46000 173
 ---
 {
   "schema_version": "authorship/3.0.0",
