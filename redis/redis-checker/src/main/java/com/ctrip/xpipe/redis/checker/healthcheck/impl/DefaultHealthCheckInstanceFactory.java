@@ -156,7 +156,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
             instance.setEndpoint(endpoint)
                     .setSession(keeperSessionManager.findOrCreateSession(endpoint))
                     .setTfs(isTfsKeeper(keeperMeta));
-            instance.setInstanceInfo(info).setHealthCheckConfig(new DefaultHealthCheckConfig(checkerConfig, dcRelationsService));
+            instance.setInstanceInfo(info).setHealthCheckConfig(new DefaultHealthCheckConfig(checkerConfig, relationsService));
             initActionsForKeeper(instance);
             LifecycleHelper.initializeIfPossible(instance);
             LifecycleHelper.startIfPossible(instance);
