@@ -35,7 +35,9 @@ public abstract class AbstractConfigCommand<T> extends AbstractRedisCommand<T>{
 		GTID_XSYNC_MAX_GAP("gtid-xsync-max-gap"),
 
 		SLAVE_REPL_ALL("slave-repl-all"), //extend for xredis
-		RORDB_SYNC("swap-repl-rordb-sync") // extend for ror
+		RORDB_SYNC("swap-repl-rordb-sync"), // extend for ror
+		PREPARE_WATCH("prepare-watch"), // keeper TFS prepare read-only watch (m5 D20)
+		PUBSUB_PARSE("pubsub-parse") // keeper command-stream PUBLISH parse (m5 D20)
 		;
 		
 		private String configName;

@@ -6,7 +6,9 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelector;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.utils.MapUtils;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 /**
  * @author chen.zhu
@@ -39,10 +42,15 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
 
     private ConcurrentMap<HostPort, RedisHealthCheckInstance> redisInstanceForPingAction = Maps.newConcurrentMap();
 
+    private ConcurrentMap<HostPort, KeeperHealthCheckInstance> keeperInstances = Maps.newConcurrentMap();
+
     private static final String ALERT_TYPE = "HealthCheckInstance";
 
     @Autowired
     private HealthCheckInstanceFactory instanceFactory;
+
+    @Autowired
+    private KeeperCheckSelector keeperSelector;
 
     @Override
     public RedisHealthCheckInstance getOrCreate(RedisMeta redis) {
@@ -56,7 +64,18 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
-    public RedisHealthCheckInstance getOrCreateRedisInstanceForInfoReplIdAction(RedisMeta redis) {
+    public KeeperHealthCheckInstance getOrCreate(KeeperMeta keeper) {
+        try {
+            HostPort key = new HostPort(keeper.getIp(), keeper.getPort());
+            return MapUtils.getOrCreate(keeperInstances, key, () -> instanceFactory.create(keeper));
+        } catch (Throwable th) {
+            logger.error("getOrCreate keeper health check instance:{}:{}", keeper.getIp(), keeper.getPort(), th);
+        }
+        return null;
+    }
+
+    @Override
+        public RedisHealthCheckInstance getOrCreateRedisInstanceForInfoReplIdAction(RedisMeta redis) {
         try {
             HostPort key = new HostPort(redis.getIp(), redis.getPort());
             return MapUtils.getOrCreate(redisInstanceForPingAction, key,
@@ -84,6 +103,11 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
+    public KeeperHealthCheckInstance findKeeperHealthCheckInstance(HostPort hostPort) {
+        return keeperInstances.get(hostPort);
+    }
+
+    @Override
     public RedisHealthCheckInstance findRedisInstanceForInfoReplIdPingAction(HostPort hostPort) {
         return redisInstanceForPingAction.get(hostPort);
     }
@@ -98,6 +122,16 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     public RedisHealthCheckInstance remove(HostPort hostPort) {
         RedisHealthCheckInstance instance = instances.remove(hostPort);
         if (null != instance) instanceFactory.remove(instance);
+        return instance;
+    }
+
+    @Override
+    public KeeperHealthCheckInstance removeKeeper(HostPort hostPort) {
+        KeeperHealthCheckInstance instance = keeperInstances.get(hostPort);
+        if (null != instance) {
+            instanceFactory.remove(instance);
+            keeperInstances.remove(hostPort, instance);
+        }
         return instance;
     }
 
@@ -122,6 +156,20 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
     }
 
     @Override
+    public List<KeeperHealthCheckInstance> getAllKeeperInstance() {
+        return Lists.newLinkedList(keeperInstances.values());
+    }
+
+    @Override
+    public List<KeeperHealthCheckInstance> getKeeperInstancesByDc(String dcId) {
+        if (StringUtil.isEmpty(dcId)) return Lists.newLinkedList();
+        return keeperInstances.values().stream()
+                .filter(instance -> instance.getCheckInfo().getDcId() != null
+                        && dcId.equalsIgnoreCase(instance.getCheckInfo().getDcId()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<ClusterHealthCheckInstance> getAllClusterInstance() {
         return Lists.newLinkedList(clusterHealthCheckerInstances.values());
     }
@@ -133,10 +181,14 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
         Set<String> currentClusters = clusterHealthCheckerInstances.keySet();
         Set<HostPort> currentInstances = instances.keySet();
         Set<HostPort> currentPingInstances = redisInstanceForPingAction.keySet();
+        Set<HostPort> currentKeeperInstances = keeperInstances.keySet();
 
         Set<String> expectClusters = new HashSet<>();
         Set<HostPort> expectInstances = new HashSet<>();
         Set<HostPort> expectPingInstances = new HashSet<>();
+        Set<HostPort> expectKeeperInstances = keeperSelector.select(xpipeMeta).stream()
+                .map(keeper -> new HostPort(keeper.getIp(), keeper.getPort()))
+                .collect(Collectors.toSet());
 
         String currentDc = FoundationService.DEFAULT.getDataCenter();
         String currentZone = xpipeMeta.getDcs().get(currentDc).getZone();
@@ -203,6 +255,12 @@ public class DefaultHealthCheckInstanceManager implements HealthCheckInstanceMan
             logger.debug("[checkInstancesMiss][CrossRegionInstance][current] {}", currentPingInstances);
             logger.debug("[checkInstancesMiss][CrossRegionInstance][expect] {}", expectPingInstances);
             EventMonitor.DEFAULT.logEvent(ALERT_TYPE, "CrossRegionInstanceMissing");
+        }
+        if (!currentKeeperInstances.equals(expectKeeperInstances)) {
+            noMissing = false;
+            logger.debug("[checkInstancesMiss][KeeperInstance][current] {}", currentKeeperInstances);
+            logger.debug("[checkInstancesMiss][KeeperInstance][expect] {}", expectKeeperInstances);
+            EventMonitor.DEFAULT.logEvent(ALERT_TYPE, "KeeperInstanceMissing");
         }
         if (noMissing) {
             EventMonitor.DEFAULT.logEvent(ALERT_TYPE, "noMissing");

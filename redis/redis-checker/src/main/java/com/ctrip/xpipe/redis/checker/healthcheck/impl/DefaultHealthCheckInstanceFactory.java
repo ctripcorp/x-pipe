@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.checker.RelationsService;
@@ -17,11 +18,17 @@ import com.ctrip.xpipe.redis.checker.healthcheck.config.CompositeHealthCheckConf
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthCheckActionFactory;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.KeeperSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisCheckRuleMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -33,6 +40,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author chen.zhu
@@ -52,6 +60,12 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     private RedisSessionManager redisSessionManager;
 
+    private KeeperSessionManager keeperSessionManager;
+
+    private List<KeeperHealthCheckActionFactory<?>> keeperHealthCheckActionFactories = Collections.emptyList();
+
+    private final Map<HealthCheckAction, KeeperHealthCheckActionFactory<?>> keeperFactoriesByAction = new ConcurrentHashMap<>();
+
     private Map<ClusterType, List<RedisHealthCheckActionFactory<?>>> factoriesByClusterType;
 
     private Map<ClusterType, List<ClusterHealthCheckActionFactory<?>>> clusterHealthCheckFactoriesByClusterType;
@@ -65,7 +79,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     @Autowired(required = false)
     public DefaultHealthCheckInstanceFactory(CheckerConfig checkerConfig, HealthCheckEndpointFactory endpointFactory,
-                                             RedisSessionManager redisSessionManager,
+                                             RedisSessionManager redisSessionManager, KeeperSessionManager keeperSessionManager,
                                              List<RedisHealthCheckActionFactory<?>> factories,
                                              List<ClusterHealthCheckActionFactory<?>> clusterHealthCheckFactories,
                                              GroupCheckerLeaderElector clusterServer, MetaCache metaCache, RelationsService relationsService) {
@@ -73,6 +87,7 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         this.relationsService = relationsService;
         this.endpointFactory = endpointFactory;
         this.redisSessionManager = redisSessionManager;
+        this.keeperSessionManager = keeperSessionManager;
         this.clusterServer = clusterServer;
         this.metaCache = metaCache;
         this.factoriesByClusterType = ClusterTypeSupporterSeparator.divideByClusterType(factories);
@@ -81,11 +96,18 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
 
     @Autowired(required = false)
     public DefaultHealthCheckInstanceFactory(CheckerConfig checkerConfig, HealthCheckEndpointFactory endpointFactory,
-                                             RedisSessionManager redisSessionManager,
+                                             RedisSessionManager redisSessionManager, KeeperSessionManager keeperSessionManager,
                                              List<RedisHealthCheckActionFactory<?>> factories,
                                              List<ClusterHealthCheckActionFactory<?>> clusterHealthCheckFactories,
                                              MetaCache metaCache, RelationsService relationsService) {
-        this(checkerConfig, endpointFactory, redisSessionManager, factories, clusterHealthCheckFactories, null, metaCache, relationsService);
+        this(checkerConfig, endpointFactory, redisSessionManager, keeperSessionManager, factories,
+                clusterHealthCheckFactories, null, metaCache, relationsService);
+    }
+
+    @Autowired(required = false)
+    @VisibleForTesting
+    public void setKeeperHealthCheckActionFactories(List<KeeperHealthCheckActionFactory<?>> factories) {
+        this.keeperHealthCheckActionFactories = new ArrayList<>(factories);
     }
 
     @Override
@@ -93,6 +115,11 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         Endpoint endpoint = instance.getEndpoint();
         endpointFactory.remove(new HostPort(endpoint.getHost(), endpoint.getPort()));
         stopCheck(instance);
+    }
+
+    @Override
+    public void remove(KeeperHealthCheckInstance instance) {
+        cleanupKeeperInstance(instance, false);
     }
 
     @Override
@@ -117,6 +144,114 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
         startCheck(instance);
 
         return instance;
+    }
+
+    @Override
+    public KeeperHealthCheckInstance create(KeeperMeta keeperMeta) {
+        DefaultKeeperHealthCheckInstance instance = new DefaultKeeperHealthCheckInstance();
+        try {
+            KeeperInstanceInfo info = createKeeperInstanceInfo(keeperMeta);
+            Endpoint endpoint = new DefaultEndPoint(info.getHostPort().getHost(), info.getHostPort().getPort());
+
+            instance.setEndpoint(endpoint)
+                    .setSession(keeperSessionManager.findOrCreateSession(endpoint))
+                    .setTfs(isTfsKeeper(keeperMeta));
+            instance.setInstanceInfo(info).setHealthCheckConfig(new DefaultHealthCheckConfig(checkerConfig, relationsService));
+            initActionsForKeeper(instance);
+            LifecycleHelper.initializeIfPossible(instance);
+            LifecycleHelper.startIfPossible(instance);
+            return instance;
+        } catch (Exception e) {
+            try {
+                cleanupKeeperInstance(instance, true);
+            } catch (RuntimeException cleanupFailure) {
+                e.addSuppressed(cleanupFailure);
+            }
+            throw new IllegalStateException("failed to create Keeper health-check instance for "
+                    + keeperMeta.getIp() + ":" + keeperMeta.getPort(), e);
+        }
+    }
+
+    private void initActionsForKeeper(DefaultKeeperHealthCheckInstance instance) {
+        List<KeeperHealthCheckActionFactory<?>> supportedFactories = keeperHealthCheckActionFactories.stream()
+                .filter(factory -> factory.supportInstnace(instance))
+                .collect(java.util.stream.Collectors.toList());
+        if (supportedFactories.size() != 1) {
+            throw new IllegalStateException("Keeper instance must have exactly one delay action factory, actual: "
+                    + supportedFactories.size());
+        }
+
+        KeeperHealthCheckActionFactory<?> factory = supportedFactories.get(0);
+        HealthCheckAction action = factory.create(instance);
+        if (action == null) {
+            throw new IllegalStateException("Keeper delay action factory returned null");
+        }
+        instance.register(action);
+        keeperFactoriesByAction.put(action, factory);
+    }
+
+    private void cleanupKeeperInstance(KeeperHealthCheckInstance instance, boolean rollback) {
+        List<HealthCheckAction> actions = new ArrayList<>(instance.getHealthCheckActions());
+        try {
+            for (HealthCheckAction action : actions) {
+                destroyKeeperAction(action);
+            }
+            LifecycleHelper.stopIfPossible(instance);
+            if (rollback) {
+                LifecycleHelper.disposeIfPossible(instance);
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("failed to cleanup Keeper health-check instance " + instance, e);
+        }
+
+        for (HealthCheckAction action : actions) {
+            keeperFactoriesByAction.remove(action);
+            instance.unregister(action);
+        }
+        if (instance instanceof DefaultKeeperHealthCheckInstance) {
+            ((DefaultKeeperHealthCheckInstance) instance).setEndpoint(null).setSession(null);
+        }
+        // the session itself is left to the periodic cleanup of DefaultKeeperSessionManager: a
+        // same-address Keeper change arrives as remove-before-add, so closing it here would only
+        // churn a connection that the following add reuses
+    }
+
+    @SuppressWarnings("unchecked")
+    private void destroyKeeperAction(HealthCheckAction action) throws Exception {
+        KeeperHealthCheckActionFactory factory = keeperFactoriesByAction.get(action);
+        if (factory == null) {
+            throw new IllegalStateException("missing Keeper action factory for " + action);
+        }
+        factory.destroy(action);
+    }
+
+    private boolean isTfsKeeper(KeeperMeta keeperMeta) {
+        Long containerId = keeperMeta.getKeeperContainerId();
+        if (containerId == null) {
+            return false;
+        }
+        ShardMeta shardMeta = keeperMeta.parent();
+        ClusterMeta clusterMeta = shardMeta.parent();
+        DcMeta dcMeta = clusterMeta.parent();
+        for (KeeperContainerMeta containerMeta : dcMeta.getKeeperContainers()) {
+            if (Objects.equals(containerId, containerMeta.getId())) {
+                return KeeperDiskTypeUtils.isTfs(containerMeta.getDiskType());
+            }
+        }
+        return false;
+    }
+
+    private KeeperInstanceInfo createKeeperInstanceInfo(KeeperMeta keeperMeta) {
+        ShardMeta shardMeta = keeperMeta.parent();
+        ClusterMeta clusterMeta = shardMeta.parent();
+        DcMeta dcMeta = clusterMeta.parent();
+        DefaultKeeperInstanceInfo info = new DefaultKeeperInstanceInfo(dcMeta.getId(), clusterMeta.getId(),
+                shardMeta.getId(), shardMeta.getDbId(), new HostPort(keeperMeta.getIp(), keeperMeta.getPort()),
+                clusterMeta.getActiveDc(), ClusterType.lookup(clusterMeta.getType()));
+        Integer orgId = clusterMeta.getOrgId();
+        info.setClusterOrgId(orgId == null ? -1 : orgId);
+        info.setStatus(clusterMeta.getStatus());
+        return info;
     }
 
     private RedisInstanceInfo createRedisInstanceInfo(RedisMeta redisMeta) {

@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.factory.ObjectFactory;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckInstanceManager;
+import com.ctrip.xpipe.redis.checker.healthcheck.capability.KeeperCapabilityCache;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -17,7 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -35,7 +39,7 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
 
     @Autowired
     private HealthCheckInstanceManager instanceManager;
-    
+
     @Autowired
     private HealthCheckEndpointFactory healthCheckEndpointFactory;
 
@@ -48,9 +52,16 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
     @Autowired
     private MetaCache metaCache;
 
+    @Autowired
+    private KeeperCheckSelector keeperSelector;
+
+    @Autowired
+    private KeeperCapabilityCache keeperCapabilityCache;
+
     private ScheduledFuture future;
 
     private ConcurrentMap<String, DcMetaChangeManager> dcMetaChangeManagers = Maps.newConcurrentMap();
+    private final Set<String> missingDcs = ConcurrentHashMap.newKeySet();
 
     @Override
     public void start() {
@@ -72,14 +83,24 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
         }
     }
 
-    private void checkDcMetaChange() {
+    void checkDcMetaChange() {
         XpipeMeta meta = metaCache.getXpipeMeta();
+        if (meta == null) {
+            return;
+        }
+
+        for (String managedDc : new HashSet<>(dcMetaChangeManagers.keySet())) {
+            if (!meta.getDcs().containsKey(managedDc)) {
+                if (missingDcs.add(managedDc)) {
+                    logger.warn("[checkDcMetaChange] managed dc missing from meta, skip removal, dcId: {}", managedDc);
+                }
+            } else if (missingDcs.remove(managedDc)) {
+                logger.info("[checkDcMetaChange] managed dc recovered in meta, dcId: {}", managedDc);
+            }
+        }
+
         for(Map.Entry<String, DcMeta> entry : meta.getDcs().entrySet()) {
             String dcId = entry.getKey();
-            if(checkerConfig.getIgnoredHealthCheckDc().contains(dcId)) {
-                ignore(dcId);
-                continue;
-            }
             getOrCreate(dcId).compare(entry.getValue());
         }
     }
@@ -87,39 +108,12 @@ public class DefaultMetaChangeManager implements MetaChangeManager {
     @Override
     public DcMetaChangeManager getOrCreate(String dcId) {
         return MapUtils.getOrCreate(dcMetaChangeManagers, dcId, new ObjectFactory<DcMetaChangeManager>() {
-                    @Override
-                    public DcMetaChangeManager create() {
-                        return new DefaultDcMetaChangeManager(dcId, instanceManager, healthCheckEndpointFactory, metaCache);
-                    }
-                });
+            @Override
+            public DcMetaChangeManager create() {
+                return new DefaultDcMetaChangeManager(dcId, instanceManager, healthCheckEndpointFactory,
+                        metaCache, keeperSelector, keeperCapabilityCache);
+            }
+        });
     }
 
-    @Override
-    public void ignore(String dcId) {
-        if(!dcMetaChangeManagers.containsKey(dcId)) {
-            logger.warn("[ignore] not found dcId: {}", dcId);
-            return;
-        }
-        try {
-            dcMetaChangeManagers.get(dcId).stop();
-        } catch (Exception e) {
-            logger.error("[ignore]", e);
-        }
-    }
-
-    @Override
-    public void startIfPossible(String dcId) {
-        logger.info("[startIfPossible] dcId: {}", dcId);
-        if(metaCache.getXpipeMeta().findDc(dcId) == null) {
-            logger.info("[startIfPossible] not found dcId: {}", dcId);
-            return;
-        }
-        try {
-            DcMetaChangeManager manager = getOrCreate(dcId);
-            manager.compare(metaCache.getXpipeMeta().findDc(dcId));
-            manager.start();
-        } catch (Exception e) {
-            logger.error("[start]", e);
-        }
-    }
 }

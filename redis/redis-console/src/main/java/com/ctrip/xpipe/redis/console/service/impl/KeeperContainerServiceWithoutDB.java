@@ -24,7 +24,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestOperations;
 
 import java.util.*;
-import java.util.stream.IntStream;
 
 @Service
 @Conditional(ConsoleDisableDbCondition.class)
@@ -120,20 +119,6 @@ public class KeeperContainerServiceWithoutDB implements KeeperContainerService {
                 result.add(keeperContainer);
             }
         }
-        return result;
-    }
-
-    @Override
-    public List<Set<Long>> divideKeeperContainers(int partsCount) {
-        List<KeepercontainerTbl> all = findAll();
-        if (all == null) return Collections.emptyList();
-
-        List<Set<Long>> result = new ArrayList<>(partsCount);
-        IntStream.range(0, partsCount).forEach(i -> result.add(new HashSet<>()));
-
-        all.forEach(keeperContainer -> result.get((int) keeperContainer.getKeepercontainerId() % partsCount)
-                .add(keeperContainer.getKeepercontainerId()));
-
         return result;
     }
 

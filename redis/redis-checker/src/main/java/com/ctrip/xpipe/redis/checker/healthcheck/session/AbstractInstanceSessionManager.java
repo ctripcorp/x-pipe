@@ -37,6 +37,11 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
 
     private ConcurrentMap<Endpoint, RedisSession> sessions = new ConcurrentHashMap<>();
 
+    @VisibleForTesting
+    protected ConcurrentMap<Endpoint, RedisSession> getSessions() {
+        return sessions;
+    }
+
     @Autowired
     protected MetaCache metaCache;
 
@@ -118,7 +123,13 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
             return;
 
         Set<HostPort> redisInUse = getInUseInstances();
-        if(redisInUse == null || redisInUse.isEmpty()) {
+        // null means the in-use set could not be determined (meta unavailable) -> never clean up
+        if(redisInUse == null) {
+            return;
+        }
+        // an empty set means "no instance is in use at all"; whether that recycles every session
+        // is decided per manager, see cleanUpOnEmptyInUseInstances()
+        if(redisInUse.isEmpty() && !cleanUpOnEmptyInUseInstances()) {
             return;
         }
         List<Endpoint> unusedRedises = new LinkedList<>();
@@ -139,8 +150,8 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
                 // add try logic to continue working on others
                 try {
                     redisSession.closeConnection();
-                } catch (Exception ignore) {
-
+                } catch (Exception e) {
+                    logger.error("[removeUnusedRedises] close failed, endpoint: {}", endpoint, e);
                 }
                 sessions.remove(endpoint);
             }
@@ -149,6 +160,20 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
 
     protected abstract Set<HostPort> getInUseInstances();
 
+    /**
+     * Whether an empty in-use set should recycle every session owned by this manager.
+     *
+     * Defaults to {@code false}, which keeps the long-standing production behaviour: an empty set
+     * is treated the same as an unavailable one and nothing is closed. {@link DefaultRedisSessionManager}
+     * relies on that default, because its in-use set is empty whenever the meta holds dcs but no
+     * redis at all -- recycling there would close every Redis session at once.
+     *
+     * Only managers whose in-use set is a precise expectation (see {@link DefaultKeeperSessionManager})
+     * should override this to {@code true}.
+     */
+    protected boolean cleanUpOnEmptyInUseInstances() {
+        return false;
+    }
 
     protected void closeAllConnections() {
         try {

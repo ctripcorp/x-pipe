@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManagerTest;
 import com.ctrip.xpipe.redis.console.controller.api.BeaconRouteControllerTest;
+import com.ctrip.xpipe.redis.console.controller.api.checker.ConsoleCheckerControllerDcAllMetaTest;
 import com.ctrip.xpipe.redis.console.controller.api.ChangeConfigTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
@@ -26,7 +27,6 @@ import com.ctrip.xpipe.redis.console.controller.consoleportal.migration.Exclusiv
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
-import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigListenerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone.KeeperAvailableZoneCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.SentinelBeaconClusterMonitorCheckTest;
@@ -185,8 +185,6 @@ import org.junit.runners.Suite.SuiteClasses;
         HeteroDcMetaProcessorTest.class,
         ClusterMetaServiceImplTest.class,
 
-        DcIgnoredConfigListenerTest.class,
-
         DefaultProxyChainTest.class,
         DefaultProxyMonitorCollectorManagerTest.class,
         DefaultProxyChainAnalyzerTest.class,
@@ -261,6 +259,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultBeaconManagerTest.class,
         DefaultBeaconManagerSentinelExcludeTest.class,
         BeaconRouteControllerTest.class,
+        ConsoleCheckerControllerDcAllMetaTest.class,
 
         DefaultPersistenceCacheTest.class,
         CheckerPersistenceCacheTest.class,

@@ -30,6 +30,10 @@ public interface CheckerConfig {
 
     int getHealthyDelayMilli();
 
+    boolean isKeeperDelayCheckEnabled();
+
+    int getKeeperCapabilityRefreshIntervalMilli();
+
     long getHealthMarkCompensateIntervalMill();
 
     int getHealthMarkCompensateThreads();
@@ -65,8 +69,6 @@ public interface CheckerConfig {
     Boolean getSiteStable();
 
     int getQuorum();
-
-    Set<String> getIgnoredHealthCheckDc();
 
     int getClustersPartIndex();
 

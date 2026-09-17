@@ -16,7 +16,6 @@ import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
-import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
@@ -48,11 +47,6 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECU
 @ServletComponentScan("com.ctrip.framework.fireman")
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE_CHECKER)
 public class TestConsoleCheckerContextConfig extends TestConsoleContextConfig {
-
-    @Bean
-    public DcIgnoredConfigChangeListener dcIgnoredConfigChangeListener() {
-        return new DcIgnoredConfigChangeListener();
-    }
 
     @Bean
     public DefaultPingService pingService() {

@@ -132,6 +132,16 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public boolean isKeeperDelayCheckEnabled() {
+        return checkConfigBean.isKeeperDelayCheckEnabled();
+    }
+
+    @Override
+    public int getKeeperCapabilityRefreshIntervalMilli() {
+        return checkConfigBean.getKeeperCapabilityRefreshIntervalMilli();
+    }
+
+    @Override
     public long getHealthMarkCompensateIntervalMill() {
         return checkConfigBean.getHealthMarkCompensateIntervalMill();
     }
@@ -319,11 +329,6 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     @Override
     public int getHealthCheckSuspendMinutes() {
         return consoleConfigBean.getHealthCheckSuspendMinutes();
-    }
-
-    @Override
-    public Set<String> getIgnoredHealthCheckDc() {
-        return checkConfigBean.getIgnoredHealthCheckDc();
     }
 
     @Override

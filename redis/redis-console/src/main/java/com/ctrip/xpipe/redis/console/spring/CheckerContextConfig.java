@@ -19,7 +19,6 @@ import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultCommonConfig;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfig;
-import com.ctrip.xpipe.redis.console.healthcheck.meta.DcIgnoredConfigChangeListener;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultBeaconManager;
 import com.ctrip.xpipe.redis.console.migration.auto.DefaultMonitorManager;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
@@ -114,11 +113,6 @@ public class CheckerContextConfig {
     @Bean
     public RelationsService relationsService(){
         return new DefaultRelationsService();
-    }
-
-    @Bean
-    public DcIgnoredConfigChangeListener dcIgnoredConfigChangeListener() {
-        return new DcIgnoredConfigChangeListener();
     }
 
     @Bean

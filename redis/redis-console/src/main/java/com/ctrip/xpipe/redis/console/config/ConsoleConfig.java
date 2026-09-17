@@ -99,8 +99,6 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getHealthCheckSuspendMinutes();
 
-	Set<String> getIgnoredHealthCheckDc();
-
 	int getPingDownAfterMilli();
 
 	int getPingDownAfterMilliThroughProxy();
