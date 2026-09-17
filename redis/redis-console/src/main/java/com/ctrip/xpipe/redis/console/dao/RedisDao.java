@@ -42,6 +42,25 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
     }
 
 
+    /**
+     * host_name 列是 NOT NULL DEFAULT ''（物理机行必须是空串而非 NULL，否则新唯一键
+     * (redis_ip, redis_port, host_name, deleted_at) 会因 MySQL 视 NULL 互不相等而丢失去重保护）。
+     * unidal 生成的是全字段 INSERT/UPDATE，host_name 恒出现在字段列表里，DB 的 DEFAULT '' 不会生效，
+     * 因此所有写路径都必须在此兜底，避免 Java 侧未赋值的 null 直接撞 NOT NULL 约束。
+     */
+    private static void normalizeHostName(RedisTbl redis) {
+        if (null != redis && null == redis.getHostName()) {
+            redis.setHostName("");
+        }
+    }
+
+    private static void normalizeHostName(List<RedisTbl> redises) {
+        if (null == redises) return;
+        for (RedisTbl redis : redises) {
+            normalizeHostName(redis);
+        }
+    }
+
     public RedisTbl findByPK(long id){
         return queryHandler.handleQuery(new DalQuery<RedisTbl>() {
 
@@ -87,6 +106,7 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
         if (null != redises) {
             Map<Long, String> cache = new HashMap<Long, String>();
             for (RedisTbl redis : redises) {
+                normalizeHostName(redis);
                 checkRedisNotExist(redis);
                 if (redis.getCreateTime() == null) {
                     redis.setCreateTime(new Date());
@@ -129,6 +149,7 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
     public RedisTbl createRedisesBatch(RedisTbl redis) throws DalException {
         if (null == redis) throw new BadRequestException("Null redis cannot be created");
 
+        normalizeHostName(redis);
         if (redis.getRedisRole().equals(XPipeConsoleConstant.ROLE_KEEPER)) {
             redis.setRunId(getToCreateKeeperId(redis));
         }
@@ -143,6 +164,7 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
     public void deleteRedisesBatch(List<RedisTbl> redises) {
         if (null != redises && !redises.isEmpty()) {
             for (RedisTbl redis : redises) {
+                normalizeHostName(redis);
                 redis.setRunId(generateDeletedName(redis.getRunId()));
             }
             queryHandler.handleBatchDelete(new DalQuery<int[]>() {
@@ -158,6 +180,7 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
 
     @DalTransaction
     public void updateBatch(List<RedisTbl> redises) {
+        normalizeHostName(redises);
         queryHandler.handleBatchUpdate(new DalQuery<int[]>() {
             @Override
             public int[] doQuery() throws DalException {
@@ -169,6 +192,7 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
     @DalTransaction
     public void updateBatchMaster(List<RedisTbl> redises) {
 
+         normalizeHostName(redises);
          queryHandler.handleBatchUpdate(new DalQuery<int[]>() {
             @Override
             public int[] doQuery() throws DalException {
@@ -181,6 +205,7 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
     @DalTransaction
     public void updateBatchKeeperActive(List<RedisTbl> redises) {
 
+        normalizeHostName(redises);
         queryHandler.handleBatchUpdate(new DalQuery<int[]>() {
             @Override
             public int[] doQuery() throws DalException {

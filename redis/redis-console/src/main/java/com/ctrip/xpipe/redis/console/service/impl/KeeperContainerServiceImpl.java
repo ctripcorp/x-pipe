@@ -351,6 +351,9 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     proto.setKeepercontainerDc(dcTbl.getId())
             .setKeepercontainerIp(createInfo.getKeepercontainerIp())
             .setKeepercontainerPort(createInfo.getKeepercontainerPort())
+            // 物理机容器以 IP 为身份，hostname 留空串；该列 NOT NULL，且 unidal 生成的是全字段
+            // INSERT，DB 的 DEFAULT '' 不会生效，必须在此显式赋值
+            .setKeepercontainerHostName("")
             .setKeepercontainerOrgId(org.getId())
             .setTag(createInfo.getTag() == null ? "" : createInfo.getTag())
             .setKeepercontainerActive(createInfo.isActive())
@@ -494,6 +497,8 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     proto.setKeepercontainerDc(dcTbl.getId())
             .setKeepercontainerIp(keeperContainerInfoModel.getAddr().getHost())
             .setKeepercontainerPort(keeperContainerInfoModel.getAddr().getPort())
+            // 同上：物理机容器 hostname 留空串，NOT NULL 列必须显式赋值
+            .setKeepercontainerHostName("")
             .setKeepercontainerDiskType(keeperContainerInfoModel.getDiskType())
             .setKeepercontainerActive(keeperContainerInfoModel.isActive())
             .setTag(keeperContainerInfoModel.getTag() == null ? "" : keeperContainerInfoModel.getTag());

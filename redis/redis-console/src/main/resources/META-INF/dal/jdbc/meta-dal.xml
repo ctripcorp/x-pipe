@@ -1146,6 +1146,7 @@
 		<member name="id" field="id" value-type="Long" length="20" nullable="true" key="true" auto-increment="true" />
 		<member name="count" value-type="long" select-expr="COUNT(rt.id) count" all="false"/>
 		<member name="az-id" field="az_id" value-type="Long" />
+		<member name="host-name" field="host_name" value-type="String" />
 		<member name="keepercontainer-disk-type" value-type="String" all="false"/>
 		<var name="key-id" value-type="Long" key-member="id" />
 
@@ -1162,6 +1163,7 @@
 		<readsets>
 			<readset name="IP-AND-PORT">
 				<member name='redis-ip'/>
+				<member name="host-name"/>
 				<member name="redis-port"/>
 			</readset>
 			<readset name="REDIS-MSG-INFO">
@@ -1183,6 +1185,7 @@
 				<member name="keepercontainer-id"/>
 				<member name="keeper-priority"/>
 				<member name="az-id"/>
+				<member name="host-name"/>
 				<member name="create-time"/>
 			</readset>
 			<readset name="CONTAINER_ID">
@@ -1765,12 +1768,14 @@
 			<readset name="KEEPER_COUNT">
 				<member name='keepercontainer-id'/>
 				<member name='keepercontainer-ip'/>
+				<member name='keepercontainer-host-name'/>
 				<member name="count"/>
 			</readset>
 
 			<readset name="KEEPER_COUNT_BY_CLUSTER">
 				<member name='keepercontainer-id'/>
 				<member name='keepercontainer-ip'/>
+				<member name='keepercontainer-host-name'/>
 				<member name='keepercontainer-port'/>
 				<member name="keepercontainer-active"/>
 				<member name="az-id"/>
@@ -1782,6 +1787,7 @@
 			<readset name="CONTAINER_ADDRESS">
 				<member name='keepercontainer-id'/>
 				<member name='keepercontainer-ip'/>
+				<member name='keepercontainer-host-name'/>
 				<member name='keepercontainer-port'/>
 			</readset>
 
