@@ -1,0 +1,26 @@
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/factory/DefaultHealthCheckInstanceFactoryTest.java
+  s_ac51b49143329b::t_663485f3192f9a 137-152
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/resources/DefaultMetaCacheTest.java
+  s_ac51b49143329b::t_17979be54d2933 170-175,183-248
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/DefaultMetaCache.java
+  s_ac51b49143329b::t_427eecb55b2604 264,266
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/resources/AbstractMetaCache.java
+  s_ac51b49143329b::t_ab150f1adcdcd0 219
+  s_ac51b49143329b::t_4d270948d31fac 178-183
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "f6180724c263d1bdd744bfb87584d2c83a058520",
+  "prompts": {},
+  "sessions": {
+    "s_ac51b49143329b": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_e0c211a8-0524-489d-a9e5-10995ab2a1fe",
+        "model": "claude-opus-5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
