@@ -1,0 +1,57 @@
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/AllTests.java
+  s_fdd697009f8439::t_fafff3dd065cf0 14
+  s_f6aa65f7012ddd::t_f15a80608ea0a9 127
+  s_0901644a0696eb::t_444249b80359b0 172
+  s_2b87d80adf54cb::t_1babc24d42368d 170
+  s_f6aa65f7012ddd::t_565e1c7ddab1f2 273
+  s_07ff9260d4dcf5::t_287e09eaa9dd25 114
+  s_f6aa65f7012ddd::t_cbb58e9457f066 274
+  s_f8d3bae99b1e09::t_d637d4df065e36 120
+  s_f6aa65f7012ddd::t_e22b6b76c6bbba 129-130
+  s_f6aa65f7012ddd::t_f1d58ee96ef57a 128
+  s_8be0cc53cc3885::t_3507138d6adc98 111
+  s_174c3aeac3ce00::t_df6373934eee82 7
+  s_976b945d43ca3b::t_faabaf675e550a 84
+  s_d114876e13e484::t_fc829f58dddc0b 116
+  s_976b945d43ca3b::t_278423f09aa242 222
+  s_f6aa65f7012ddd::t_8dbaf7213dc3f6 261,263
+  s_fdd697009f8439::t_793f38fffdf51f 265
+  s_62b394aaf9f56c::t_7fcf774cfa3aa2 246,249-250
+  s_f6aa65f7012ddd::t_e75131014067dc 56
+  s_62b394aaf9f56c::t_fef31c4bc1fe2d 83
+  s_174c3aeac3ce00::t_155fa6d68bb79b 300-301
+services/ctrip-service/src/main/java/com/ctrip/xpipe/service/foundation/CtripFoundationService.java
+  s_fdd697009f8439::t_8b60702a4fc962 45-49
+core/src/main/java/com/ctrip/xpipe/foundation/DefaultFoundationService.java
+  s_fdd697009f8439::t_deb072bcf83311 30-31
+  s_fdd697009f8439::t_5b809ec4d7ad46 13
+  s_fdd697009f8439::t_75b17f4897b222 82-89
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/console/config/TestFoundationService.java
+  s_fdd697009f8439::t_1e87ac6dad06e1 34-38
+core/src/test/java/com/ctrip/xpipe/foundation/DefaultFoundationServiceTest.java
+  s_fdd697009f8439::t_56f82b6dc40fa4 1-15
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/checker/ConsoleCheckerController.java
+  s_0b08afc9f9b66d::t_22a9002ddc23e1 108,110-111,113,115,117
+  s_fdd697009f8439::t_9f262f8a0b2863 46
+  s_fdd697009f8439::t_564dc78f9a0ba3 142,145
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/console/config/TestFoundationServiceHostNameTest.java
+  s_fdd697009f8439::t_9a2fa192623d71 6
+  s_fdd697009f8439::t_c2097a5d6a3686 1-5,7-26
+services/ctrip-service/src/test/java/com/ctrip/xpipe/service/foundation/CtripFoundationServiceTest.java
+  s_fdd697009f8439::t_57a16e90f3f08e 4
+  s_fdd697009f8439::t_5725a62d65a1fa 39-42
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/controller/api/checker/ConsoleCheckerControllerDcAllMetaTest.java
+  s_fdd697009f8439::t_cf60f7d2960fbb 1-64,66-68,71-115
+  s_fdd697009f8439::t_b4f909f934fbdf 65,69-70
+core/src/test/java/com/ctrip/xpipe/AllTests.java
+  s_fdd697009f8439::t_23f20c825adcf3 46
+  s_fdd697009f8439::t_ead26164e36f45 4
+core/src/main/java/com/ctrip/xpipe/api/foundation/FoundationService.java
+  s_fdd697009f8439::t_8b68f9a6676706 27-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "fe55630491a68f0b88af3529abc9604defd255d4",
+  "prompts": {}
+}
