@@ -1,0 +1,19 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/protocal/cmd/AbstractConfigCommand.java
+  s_e7874cf525bbe5::t_b5ca508f2776df 38-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "fe8165dc21e049c882133ea1f9d0acdf31df376f",
+  "prompts": {},
+  "sessions": {
+    "s_e7874cf525bbe5": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_089cf85b-0cf7-4da0-b9e2-3a2ba9106b53",
+        "model": "claude-opus-5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
