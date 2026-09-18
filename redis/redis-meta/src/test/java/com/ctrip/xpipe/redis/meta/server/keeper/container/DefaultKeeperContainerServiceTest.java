@@ -4,6 +4,8 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.keeper.container.HostNameVerification;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import okhttp3.mockwebserver.MockResponse;
@@ -16,6 +18,9 @@ import org.junit.Test;
 import org.springframework.http.HttpMethod;
 
 import java.net.InetAddress;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author lishanglin
@@ -62,6 +67,79 @@ public class DefaultKeeperContainerServiceTest extends AbstractMetaServerTest {
         Assert.assertEquals(HttpMethod.DELETE.toString(), request.getMethod());
         Assert.assertEquals("/keepers/clusters/1/shards/1", request.getPath());
         Assert.assertEquals(meta, Codec.DEFAULT.decode(request.getBody().readByteArray(), KeeperTransMeta.class));
+    }
+
+    @Test
+    public void testResolveByHostname() throws Exception {
+        // 准备 mock addressService
+        KeeperContainerAddressService addressService = mock(KeeperContainerAddressService.class);
+        when(addressService.getIpByHostname("pod-a-0")).thenReturn("127.0.0.1");
+
+        // 容器形态: IP 为空,有 hostname
+        KeeperContainerMeta containerMeta = new KeeperContainerMeta()
+                .setIp("")  // 容器登记时无 IP
+                .setHostname("pod-a-0")
+                .setPort(webServer.getPort());
+        
+        DefaultKeeperContainerService podService = new DefaultKeeperContainerService(
+                containerMeta, RestTemplateFactory.createCommonsHttpRestTemplate(), addressService);
+
+        this.webServer.enqueue(new MockResponse());
+        KeeperTransMeta meta = mockKeeperMeta();
+        podService.addKeeper(meta);
+        
+        RecordedRequest request = this.webServer.takeRequest();
+        Assert.assertEquals(HttpMethod.POST.toString(), request.getMethod());
+        Assert.assertEquals("/keepers", request.getPath());
+        
+        // 验证请求头带有 hostname
+        String hostnameHeader = request.getHeader(HostNameVerification.HEADER_TARGET_HOST_NAME);
+        Assert.assertEquals("pod-a-0", hostnameHeader);
+        
+        // 验证请求体
+        Assert.assertEquals(meta, Codec.DEFAULT.decode(request.getBody().readByteArray(), KeeperTransMeta.class));
+    }
+
+    @Test
+    public void testResolveByHostnameWithZeroIp() throws Exception {
+        // 准备 mock addressService
+        KeeperContainerAddressService addressService = mock(KeeperContainerAddressService.class);
+        when(addressService.getIpByHostname("pod-b-0")).thenReturn("127.0.0.1");
+
+        // 容器形态: IP 为 0.0.0.0,有 hostname
+        KeeperContainerMeta containerMeta = new KeeperContainerMeta()
+                .setIp("0.0.0.0")  // 容器登记时 IP 为默认值
+                .setHostname("pod-b-0")
+                .setPort(webServer.getPort());
+        
+        DefaultKeeperContainerService podService = new DefaultKeeperContainerService(
+                containerMeta, RestTemplateFactory.createCommonsHttpRestTemplate(), addressService);
+
+        this.webServer.enqueue(new MockResponse());
+        KeeperTransMeta meta = mockKeeperMeta();
+        podService.removeKeeper(meta);
+        
+        RecordedRequest request = this.webServer.takeRequest();
+        Assert.assertEquals(HttpMethod.DELETE.toString(), request.getMethod());
+        Assert.assertEquals(String.format("/keepers/clusters/%s/shards/%s", meta.getClusterDbId(), meta.getShardDbId()), request.getPath());
+        
+        // 验证请求头带有 hostname
+        String hostnameHeader = request.getHeader(HostNameVerification.HEADER_TARGET_HOST_NAME);
+        Assert.assertEquals("pod-b-0", hostnameHeader);
+    }
+
+    @Test
+    public void testPhysicalMachineNoHostnameHeader() throws Exception {
+        // 物理机形态: IP 有值, hostname 为空,不应该带 hostname header
+        this.webServer.enqueue(new MockResponse());
+        KeeperTransMeta meta = mockKeeperMeta();
+        this.service.removeKeeper(meta);
+        
+        RecordedRequest request = this.webServer.takeRequest();
+        
+        // 验证请求头不包含 hostname
+        String hostnameHeader = request.getHeader(HostNameVerification.HEADER_TARGET_HOST_NAME);
+        Assert.assertNull(hostnameHeader);
     }
 
     private KeeperTransMeta mockKeeperMeta() {

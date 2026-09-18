@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.meta.server.spring;
 
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
+import com.ctrip.xpipe.redis.core.keeper.container.DefaultKeeperContainerAddressService;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.applier.manager.DefaultApplierStateController;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
@@ -70,5 +73,13 @@ public class Production extends AbstractProfile{
 	@Bean
 	public RedisStateManager getRedisStateManager(){
 		return new DefaultRedisStateManager();
+	}
+
+	@Bean
+	public KeeperContainerAddressService keeperContainerAddressService(ZkClient zkClient) throws Exception {
+		DefaultKeeperContainerAddressService service = new DefaultKeeperContainerAddressService(zkClient);
+		service.initialize();
+		service.start();
+		return service;
 	}
 }
