@@ -92,9 +92,15 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
   public List<RedisTbl> getNewKeepers(String dcName, String clusterName, ShardModel shardModel, String srcKeeperContainerIp, String targetKeeperContainerIp) {
     List<RedisTbl> newKeepers = new ArrayList<>();
     logger.debug("[migrateKeepers] origin keepers {} from cluster:{}, dc:{}, shard:{}",shardModel.getKeepers(), clusterName, dcName, shardModel.getShardTbl().getShardName());
+    // Replacement semantics: the new keeper inherits the election weight of the keeper it replaces
+    // (the one on srcKeeperContainerIp). Do NOT fall back to the per-medium config default here —
+    // during grayscale the TFS default is still 0, which would mislabel a keeper migrated onto BM.
+    int replacedKeeperPriority = 0;
     for (RedisTbl keeper : shardModel.getKeepers()) {
       if (!ObjectUtils.equals(keeper.getRedisIp(), srcKeeperContainerIp)) {
         newKeepers.add(keeper);
+      } else {
+        replacedKeeperPriority = keeper.getKeeperPriority();
       }
     }
 
@@ -116,7 +122,8 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
         newKeepers.add(new RedisTbl().setKeepercontainerId(keeperSelected.getKeeperContainerId())
                 .setRedisIp(keeperSelected.getHost())
                 .setRedisPort(keeperSelected.getPort())
-                .setRedisRole(XPipeConsoleConstant.ROLE_KEEPER));
+                .setRedisRole(XPipeConsoleConstant.ROLE_KEEPER)
+                .setKeeperPriority(replacedKeeperPriority));
         break;
       }
     }

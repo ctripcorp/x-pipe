@@ -74,6 +74,31 @@ public class DefaultKeeperAdvancedServiceGetNewKeepersTest {
         Assert.assertEquals(3, newKeepers.size());
     }
 
+    @Test
+    public void testGetNewKeepersInheritsReplacedKeeperPriority() {
+        ShardModel shardModel = shardModelWithKeepers(
+                keeper(SRC_IP, 6380, 1L).setKeeperPriority(3),
+                keeper("10.0.0.2", 6381, 2L).setKeeperPriority(1));
+
+        when(keeperContainerService.find(2L)).thenReturn(new KeepercontainerTbl().setKeepercontainerId(2L).setAzId(1L));
+
+        KeeperBasicInfo selected = new KeeperBasicInfo();
+        selected.setHost(TARGET_IP);
+        selected.setPort(6383);
+        selected.setKeeperContainerId(4L);
+        doReturn(Lists.newArrayList(selected)).when(keeperAdvancedService)
+                .findBestKeepersByKeeperContainer(eq(TARGET_IP), anyInt(), any(), eq(1));
+
+        List<RedisTbl> newKeepers = keeperAdvancedService.getNewKeepers(
+                DC_NAME, CLUSTER_NAME, shardModel, SRC_IP, TARGET_IP);
+
+        RedisTbl migrated = newKeepers.stream()
+                .filter(keeper -> TARGET_IP.equals(keeper.getRedisIp()))
+                .findFirst().orElse(null);
+        Assert.assertNotNull(migrated);
+        Assert.assertEquals(3, migrated.getKeeperPriority());
+    }
+
     private ShardModel shardModelWithKeepers(RedisTbl... keepers) {
         ShardModel shardModel = new ShardModel();
         shardModel.setShardTbl(new ShardTbl().setShardName("shard1"));
