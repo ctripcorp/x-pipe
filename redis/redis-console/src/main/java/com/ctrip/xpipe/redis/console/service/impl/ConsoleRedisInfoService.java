@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.console.checker.CheckerManager;
-import com.ctrip.xpipe.redis.console.checker.ConsoleCheckerService;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
@@ -29,9 +28,9 @@ public class ConsoleRedisInfoService implements RedisInfoService {
     public ConsoleServiceManager consoleManager;
 
     @Override
-    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getLocalAllInfosRetMessage() {
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getLocalAllInfosRetMessage(String section) {
         return checkerManager.getLeaderCheckerServices()
-                .stream().map(ConsoleCheckerService::getAllLocalRedisInfos)
+                .stream().map(s -> s.getAllLocalRedisInfos(section))
                 .reduce((acc, another)->{
                     acc.putAll(another);
                     return acc;
@@ -39,12 +38,7 @@ public class ConsoleRedisInfoService implements RedisInfoService {
     }
 
     @Override
-    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getGlobalAllInfosRetMessage() {
-        return consoleConfig.getConsoleDomains().keySet()
-                .stream().map(consoleManager::getLocalRedisInfosByDc)
-                .reduce((acc, another)->{
-                    acc.putAll(another);
-                    return acc;
-                }).orElseGet(HashMap::new);
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getGlobalAllInfosRetMessage(String section) {
+        return consoleManager.getAllLocalRedisInfos(consoleConfig.getConsoleDomains().keySet(), section);
     }
 }

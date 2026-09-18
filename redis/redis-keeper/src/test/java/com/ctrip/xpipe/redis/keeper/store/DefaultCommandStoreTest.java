@@ -24,6 +24,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.After;
 import org.junit.Assert;
@@ -893,13 +894,16 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		failed.set(0);
 		Mockito.when(gtidCmdFilter.gtidSetContains(anyString(), anyLong())).thenReturn(false);
 		TestKeeperConfig keeperConfig = createRotationTestKeeperConfig(flush);
-		Mockito.when(ckStore.getKeeperConfig()).thenReturn(keeperConfig);
-		Mockito.when(ckStore.getMasterEventLoop()).thenReturn(nioEventLoopGroup);
+		EventLoop mockEventLoop = Mockito.mock(EventLoop.class);
+		Mockito.when(mockEventLoop.inEventLoop()).thenReturn(true);
+		Mockito.when(nioEventLoopGroup.next()).thenReturn(mockEventLoop);
 
-		openCommandStore(createDefaultCommandStore(ckStore, keeperConfig,
+		// 传入 nioEventLoopGroup 才会创建 TimerSlidingWindow —— 本用例依赖滑动窗口
+		openCommandStore(new DefaultCommandStore(ckStore, nioEventLoopGroup, keeperConfig,
 				commandTemplate, smallMaxFileSize, () -> false, () -> 3600, 0, () -> 20,
 				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
-				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true));
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true,
+				0L, asyncFileSystem(), () -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId()));
 
 		// 用于记录每条命令的 GTID、完整字节内容以及预期的全局起始偏移
 		class CmdRecord {

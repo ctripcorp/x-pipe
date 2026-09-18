@@ -147,6 +147,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public String getDcZone(String dc) {
+        return null;
+    }
+
+    @Override
     public boolean isCurrentDc(String dc) {
         return false;
     }

@@ -60,7 +60,11 @@ public class DefaultKeeperRepl implements KeeperRepl {
 
 	@Override
 	public String replId2() {
-		return replicationStore.getMetaStore().getReplId2();
+		ReplStage curReplStage = replicationStore.getMetaStore().getCurrentReplStage();
+		if (curReplStage == null) {
+			return replicationStore.getMetaStore().getReplId2();
+		}
+		return curReplStage.getReplId2();
 	}
 
 	@Override

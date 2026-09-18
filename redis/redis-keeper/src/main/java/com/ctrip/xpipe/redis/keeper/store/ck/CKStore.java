@@ -47,7 +47,6 @@ public class CKStore implements Keeperable {
     private MetricProxy metricProxy;
 
     private volatile boolean isKeeper;
-    private NioEventLoopGroup masterEventLoop;
     private RedisOpParser redisOpParser;
     private String address;
 
@@ -378,14 +377,6 @@ public class CKStore implements Keeperable {
     public void setKeeper() { this.isKeeper = true; }
 
     public void setMaster() { this.isKeeper = false; }
-
-    public void setMasterEventLoop(NioEventLoopGroup masterEventLoop) {
-        this.masterEventLoop = masterEventLoop;
-    }
-
-    public NioEventLoopGroup getMasterEventLoop() {
-        return this.masterEventLoop;
-    }
 
     public KeeperConfig getKeeperConfig() { return this.keeperConfig; }
 }

@@ -587,6 +587,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		for (int i = 0; i < 10; i++) {
 
 			RedisKeeperServerState redisKeeperServerState = Mockito.mock(RedisKeeperServerState.class);
+			when(redisKeeperServerState.keeperState()).thenReturn(KeeperState.UNKNOWN);
 			long begin = System.currentTimeMillis();
 			redisKeeperServer.setRedisKeeperServerState(redisKeeperServerState);
 			long end = System.currentTimeMillis();
@@ -778,12 +779,14 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		assertFalse(redisKeeperServer.allClients().contains(slave));
 	}
 
-	private RedisSlave mockRedisSlave(RedisKeeperServer redisKeeperServer) {
+	private RedisSlave mockRedisSlave(RedisKeeperServer redisKeeperServer, String ip, int port) {
 		ChannelFuture future = Mockito.mock(ChannelFuture.class);
 		Channel channel = Mockito.mock(Channel.class);
 		when(channel.closeFuture()).thenReturn(future);
 		RedisClient client =  redisKeeperServer.clientConnected(channel);
 		RedisSlave slave = client.becomeSlave();
+		slave.setClientIpAddress(ip);
+		slave.setSlaveListeningPort(port);
 		return slave;
 	}
 
@@ -810,6 +813,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.setRdbDumper(nextDumper);
 
 		RedisSlave slave2 = mock(RedisSlave.class);
+		when(slave2.isOpen()).thenReturn(true);
 		redisKeeperServer.fullSyncToSlave(slave2);
 
 		verify(nextDumper).tryFullSync(slave2);
@@ -827,17 +831,35 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		RdbDumper dumper = Mockito.mock(RdbDumper.class);
 		redisKeeperServer.setRdbDumper(dumper);
 
-		RedisSlave slave1 = mockRedisSlave(redisKeeperServer);
-		RedisSlave slave2 = mockRedisSlave(redisKeeperServer);
+		RedisSlave slave1 = mockRedisSlave(redisKeeperServer, "10.0.0.2", 6379);
+		RedisSlave slave2 = mockRedisSlave(redisKeeperServer, "10.0.0.3", 6379);
 
 		redisKeeperServer.fullSyncToSlave(slave1);
 		redisKeeperServer.fullSyncToSlave(slave2);
 		Assert.assertEquals(slave2.getSlaveState(), REDIS_REPL_WAIT_SEQ_FSYNC);
 
+		// 第一次 tick 起结算窗口，满 2s 后第二次 tick 放行 slave1（IP 最小）
+		((DefaultRedisKeeperServer)redisKeeperServer).continueFsyncSequentially();
+		sleep(2000);
+		((DefaultRedisKeeperServer)redisKeeperServer).continueFsyncSequentially();
+
+		// 等 slave1 真正进入全量（异步执行），避免 close 先于 tryFullSync(slave1) 执行
+		waitConditionUntilTimeOut(() -> {
+			try {
+				verify(dumper, times(1)).tryFullSync(any());
+				return true;
+			} catch (Throwable e) {
+				return false;
+			}
+		});
+
+		// slave1 关闭 → 释放名额 → 结算后放行 slave2
 		slave1.close();
 		redisKeeperServer.clientDisconnected(slave1.channel());
-		((DefaultRedisKeeperServer)redisKeeperServer).updateLoadingSlaves();
 		((DefaultRedisKeeperServer)redisKeeperServer).continueFsyncSequentially();
+		sleep(2000);
+		((DefaultRedisKeeperServer)redisKeeperServer).continueFsyncSequentially();
+
 		waitConditionUntilTimeOut(() -> {
 			try {
 				verify(dumper, times(2)).tryFullSync(any());
@@ -868,6 +890,21 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 
 	private void waitUntilStoreExpired(ReplicationStore store) throws Exception {
 		waitConditionUntilTimeOut(() -> System.currentTimeMillis() - store.lastReplDataUpdatedAt() > 0);
+	}
+
+	@Test
+	public void testDowngradeClosesSlaves() throws Exception {
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer));
+
+		RedisSlave slave = mockRedisSlave(redisKeeperServer, "10.0.0.2", 6379);
+		assertTrue(slave.isOpen());
+
+		// ACTIVE → BACKUP 降级，应关闭所有 slave
+		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer));
+
+		waitConditionUntilTimeOut(() -> !slave.isOpen());
 	}
 
 }

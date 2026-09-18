@@ -2,7 +2,9 @@ package com.ctrip.xpipe.redis.console.console.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
+import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -14,11 +16,9 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.mockito.Mockito.*;
 
@@ -131,5 +131,31 @@ public class ConsoleServiceManagerTest extends AbstractConsoleTest{
         } catch (Throwable th) {
             Assert.fail();
         }
+    }
+
+    @Test
+    public void getAllLocalRedisInfos_concurrentSkipFailedDc() throws Exception {
+        // good DC returns one host; bad DC throws -> must be skipped, not crash the aggregate
+        ConsoleService ok = mock(ConsoleService.class);
+        ConsoleService bad = mock(ConsoleService.class);
+        HostPort hp = new HostPort("1.1.1.1", 6379);
+        when(ok.getAllLocalRedisInfos(any())).thenReturn(
+                Collections.singletonMap(hp, new InfoActionContext.Result()));
+        when(bad.getAllLocalRedisInfos(any())).thenThrow(new RuntimeException("dc down"));
+
+        ConsoleServiceManager manager = new ConsoleServiceManager(consoleConfig, consoleLeaderElector);
+        Field servicesField = ConsoleServiceManager.class.getDeclaredField("services");
+        servicesField.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<String, ConsoleService> services = (Map<String, ConsoleService>) servicesField.get(manager);
+        services.put("JQ", ok);
+        services.put("OY", bad);
+
+        Map<HostPort, ActionContextRetMessage<Map<String, String>>> result =
+                manager.getAllLocalRedisInfos(new HashSet<>(Arrays.asList("jq", "oy")), null);
+
+        // bad DC skipped, only good DC's host survives, no exception thrown
+        Assert.assertEquals(1, result.size());
+        Assert.assertTrue(result.containsKey(hp));
     }
 }

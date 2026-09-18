@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.checker;
 import java.util.List;
 import java.util.Set;
 
-public class TestDcRelationsService implements DcRelationsService {
+public class TestRelationsService implements RelationsService {
 
     @Override
     public String getClusterTargetDcByPriority(long clusterId, String clusterName, String downDc, List<String> availableDcs) {
@@ -22,6 +22,16 @@ public class TestDcRelationsService implements DcRelationsService {
 
     @Override
     public Set<String> getExcludedDcsForBiCluster(String clusterName, Set<String> downDcs, Set<String> availableDcs) {
+        return null;
+    }
+
+    @Override
+    public boolean isReachableRegion(String srcDc, String dstDc) {
+        return true;
+    }
+
+    @Override
+    public Integer getRegionDelay(String fromDc, String toDc) {
         return null;
     }
 

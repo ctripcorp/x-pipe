@@ -88,6 +88,8 @@ public interface CheckerConfig {
 
     boolean supportSentinelHealthCheck(ClusterType clusterType, String clusterName);
 
+    boolean supportCollectInfo(ClusterType clusterType);
+
     default boolean supportSentinelBeacon(long orgId, String clusterName) {
         return false;
     }
@@ -110,7 +112,7 @@ public interface CheckerConfig {
 
     long subscribeTimeoutMilli();
 
-    String getDcsRelations();
+    String getRelations();
 
     int maxRemovedDcsCnt();
 
@@ -125,8 +127,6 @@ public interface CheckerConfig {
     int getMarkupInstanceMaxDelayMilli();
 
     boolean getShouldDoAfterNettyClientConnected();
-
-    boolean checkBeaconLastModifyTime();
 
     boolean shouldComputeExtraInHash();
 

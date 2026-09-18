@@ -104,6 +104,10 @@ public interface KeeperConfig extends CoreConfig{
 	 */
     int getCrossRegionMaxLoadingSlavesCnt();
 
+    int getCrossRegionFsyncGraceSeconds();
+
+    int getCrossRegionFsyncSettleSeconds();
+
     boolean fsyncRateLimit();
 
 	boolean tryRorRdb();

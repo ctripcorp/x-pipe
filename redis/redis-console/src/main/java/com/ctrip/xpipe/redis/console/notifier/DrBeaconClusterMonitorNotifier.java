@@ -43,15 +43,15 @@ public class DrBeaconClusterMonitorNotifier implements BeaconRouteClusterMonitor
     }
 
     @Override
-    public void notifyClusterUpdate(String clusterName, String dc, long orgId, String lastModifyTime) {
+    public void notifyClusterUpdate(String clusterName, String dc, long orgId) {
         ClusterType clusterType = metaCache.getClusterType(clusterName);
         if (StringUtil.isEmpty(dc)) {
             interestedDcs(clusterName).forEach(interestedDc ->
-                    beaconManager.registerCluster(clusterName, interestedDc, clusterType, (int) orgId, lastModifyTime,
+                    beaconManager.registerCluster(clusterName, interestedDc, clusterType, (int) orgId,
                             BeaconRouteType.DR));
             return;
         }
-        beaconManager.registerCluster(clusterName, dc, clusterType, (int) orgId, lastModifyTime, BeaconRouteType.DR);
+        beaconManager.registerCluster(clusterName, dc, clusterType, (int) orgId, BeaconRouteType.DR);
     }
 
     @Override

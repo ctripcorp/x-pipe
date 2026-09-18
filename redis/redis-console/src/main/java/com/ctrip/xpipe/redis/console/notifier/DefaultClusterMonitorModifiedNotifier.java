@@ -52,13 +52,13 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
     }
 
     @Override
-    public void notifyClusterUpdate(final String clusterName, long orgId, String lastModifyTime) {
-        notifyClusterUpdateInternal(clusterName, null, orgId, lastModifyTime);
+    public void notifyClusterUpdate(final String clusterName, long orgId) {
+        notifyClusterUpdateInternal(clusterName, null, orgId);
     }
 
     @Override
-    public void notifyClusterUpdate(final String clusterName, String dc, long orgId, String lastModifyTime) {
-        notifyClusterUpdateInternal(clusterName, dc, orgId, lastModifyTime);
+    public void notifyClusterUpdate(final String clusterName, String dc, long orgId) {
+        notifyClusterUpdateInternal(clusterName, dc, orgId);
     }
 
     @Override
@@ -71,8 +71,7 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
         notifyClusterDeleteInternal(clusterName, dc, orgId);
     }
 
-    private void notifyClusterUpdateInternal(final String clusterName, final String dc, long orgId,
-                                             String lastModifyTime) {
+    private void notifyClusterUpdateInternal(final String clusterName, final String dc, long orgId) {
         try {
             boolean shouldNotifyDr = drNotifier.needNotify(clusterName, dc, orgId);
             boolean shouldNotifySentinel = sentinelNotifier.needNotify(clusterName, dc, orgId);
@@ -89,10 +88,10 @@ public class DefaultClusterMonitorModifiedNotifier implements ClusterMonitorModi
                 @Override
                 protected void doExecute() {
                     if (shouldNotifyDr) {
-                        drNotifier.notifyClusterUpdate(clusterName, dc, orgId, lastModifyTime);
+                        drNotifier.notifyClusterUpdate(clusterName, dc, orgId);
                     }
                     if (shouldNotifySentinel) {
-                        sentinelNotifier.notifyClusterUpdate(clusterName, dc, orgId, lastModifyTime);
+                        sentinelNotifier.notifyClusterUpdate(clusterName, dc, orgId);
                     }
                     future().setSuccess();
                 }

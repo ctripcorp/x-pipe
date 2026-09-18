@@ -14,21 +14,19 @@ import java.util.Map;
  */
 public interface BeaconManager {
 
-    String EXTRA_LAST_MODIFY_TIME = "lastModifyTime";
-
-    default void registerCluster(String clusterId, String dc, ClusterType clusterType, int orgId, String lastModifyTime,
+    default void registerCluster(String clusterId, String dc, ClusterType clusterType, int orgId,
                                  BeaconRouteType routeType) {
-        registerCluster(clusterId, dc, clusterType, orgId, lastModifyTime, routeType, Collections.emptyMap());
+        registerCluster(clusterId, dc, clusterType, orgId, routeType, Collections.emptyMap());
     }
 
-    void registerCluster(String clusterId, String dc, ClusterType clusterType, int orgId, String lastModifyTime,
+    void registerCluster(String clusterId, String dc, ClusterType clusterType, int orgId,
                          BeaconRouteType routeType, Map<String, HostPort> shardMasters);
 
-    void updateCluster(String clusterId, String dc, ClusterType clusterType, int orgId, String lastModifyTime,
+    void updateCluster(String clusterId, String dc, ClusterType clusterType, int orgId,
                        BeaconRouteType routeType);
 
     BeaconCheckStatus checkClusterHash(String clusterId, String dc, ClusterType clusterType, int orgId,
-                                       String lastModifyTime, BeaconRouteType routeType);
+                                       BeaconRouteType routeType);
 
     /**
      * Local cluster meta hash used in {@link #checkClusterHash}; same as

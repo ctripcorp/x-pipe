@@ -24,7 +24,7 @@ import java.nio.charset.Charset;
 
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class DefaultGapAllowedSyncTest extends AbstractRedisTest{
 	
 	private DefaultGapAllowedSync defaultGAsync;

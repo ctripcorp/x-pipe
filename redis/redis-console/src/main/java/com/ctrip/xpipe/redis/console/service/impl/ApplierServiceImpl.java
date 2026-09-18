@@ -358,7 +358,7 @@ public class ApplierServiceImpl extends AbstractConsoleService<ApplierTblDao> im
             }
         }
 
-        monitorNotifier.notifyClusterUpdate(clusterName, dcName, cluster.getClusterOrgId(), cluster.getClusterLastModifiedTime());
+        monitorNotifier.notifyClusterUpdate(clusterName, dcName, cluster.getClusterOrgId());
     }
 
     @Override

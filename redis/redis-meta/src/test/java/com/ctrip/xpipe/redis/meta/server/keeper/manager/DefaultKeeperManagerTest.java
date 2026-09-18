@@ -97,6 +97,19 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
     }
 
     @Test
+    public void testDoCheckEmptySurviveAddsMetaKeepers() {
+        DefaultKeeperManager.DeadKeeperChecker checker = manager.new DeadKeeperChecker();
+        KeeperMeta metaKeeper = new KeeperMeta().setIp("1.1.1.1").setPort(1111);
+        ShardMeta shardMeta = new ShardMeta().setId(shardId).setDbId(shardDbId).addKeeper(metaKeeper);
+
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(Collections.emptyList());
+
+        checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
+        verify(keeperStateController, times(1)).addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, metaKeeper));
+        verify(keeperStateController, times(0)).removeKeeper(any());
+    }
+
+    @Test
     public void testDoCheckRemoved() {
         DefaultKeeperManager.DeadKeeperChecker checker = manager.new DeadKeeperChecker();
         KeeperMeta metaKeeper = new KeeperMeta().setIp("1.1.1.1").setPort(1111);

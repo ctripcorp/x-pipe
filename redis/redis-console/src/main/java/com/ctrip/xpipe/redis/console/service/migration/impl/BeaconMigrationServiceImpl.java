@@ -9,7 +9,7 @@ import com.ctrip.xpipe.command.CommandChainException;
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.console.cache.DcCache;
@@ -74,7 +74,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
 
     private AlertManager alertManager;
 
-    private DcRelationsService dcRelationsService;
+    private RelationsService relationsService;
 
     private HeteroMigrationSupport heteroMigrationSupport;
 
@@ -100,7 +100,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
                                       ClusterService clusterService, DcClusterService dcClusterService,
                                       MigrationEventDao migrationEventDao, MigrationClusterDao migrationClusterDao,
                                       BeaconMetaService beaconMetaService, AlertManager alertManager,
-                                      DcRelationsService dcRelationsService, HeteroMigrationSupport heteroMigrationSupport) {
+                                      RelationsService relationsService, HeteroMigrationSupport heteroMigrationSupport) {
         this.checker = checker;
         this.migrationEventManager = migrationEventManager;
         this.configService = configService;
@@ -112,7 +112,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         this.migrationClusterDao = migrationClusterDao;
         this.beaconMetaService = beaconMetaService;
         this.alertManager = alertManager;
-        this.dcRelationsService = dcRelationsService;
+        this.relationsService = relationsService;
         this.heteroMigrationSupport = heteroMigrationSupport;
         this.scheduled = Executors.newScheduledThreadPool(1, XpipeThreadFactory.create("BeaconMigrationTimeout"));
     }
@@ -123,7 +123,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         SequenceCommandChain migrateSequenceCmd = new SequenceCommandChain();
         migrateSequenceCmd.add(new MigrationPreCheckCmd(migrationRequest, checker, configService, clusterService, dcCache, beaconMetaService, config, heteroMigrationSupport));
         migrateSequenceCmd.add(new MigrationFetchProcessingEventCmd(migrationRequest, clusterService, migrationClusterDao, dcCache));
-        migrateSequenceCmd.add(new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, dcRelationsService, heteroMigrationSupport));
+        migrateSequenceCmd.add(new MigrationChooseTargetDcCmd(migrationRequest, dcCache, dcClusterService, relationsService, heteroMigrationSupport));
         migrateSequenceCmd.add(new MigrationBuildEventCmd(migrationRequest, migrationEventDao, migrationEventManager));
         migrateSequenceCmd.add(new MigrationDoExecuteCmd(migrationRequest, migrationEventManager, migrationExecutors));
         CommandFuture<?> future = migrateSequenceCmd.execute(prepareExecutors);
@@ -223,7 +223,7 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
         //til this moment, ups means all
         ups.removeAll(downs);
 
-        Set<String> excludedDcs = dcRelationsService.getExcludedDcsForBiCluster(clusterName, downs, ups);
+        Set<String> excludedDcs = relationsService.getExcludedDcsForBiCluster(clusterName, downs, ups);
         if (excludedDcs.isEmpty()) {
             logger.warn("[bi migrate] cannot make a choice, {}", groups);
             throw new XpipeRuntimeException("[bi migrate] cannot make a choice");
@@ -233,8 +233,8 @@ public class BeaconMigrationServiceImpl implements BeaconMigrationService {
     }
 
     @VisibleForTesting
-    void setDcRelationsService(DcRelationsService dcRelationsService) {
-        this.dcRelationsService = dcRelationsService;
+    void setRelationsService(RelationsService relationsService) {
+        this.relationsService = relationsService;
     }
 
 }

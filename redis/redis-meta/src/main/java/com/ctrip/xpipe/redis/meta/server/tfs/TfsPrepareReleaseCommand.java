@@ -77,6 +77,9 @@ public class TfsPrepareReleaseCommand extends AbstractCommand<Void> {
             @Override
             public void operationComplete(CommandFuture<String> commandFuture) throws Exception {
                 if (commandFuture.isSuccess()) {
+                    getLogger().info("[prepareRelease][ok, skip force close]cluster_{},shard_{},{},reply={}",
+                            shardContext.getClusterDbId(), shardContext.getShardDbId(), oldTfsActive,
+                            commandFuture.getNow());
                     future().setSuccess(null);
                     return;
                 }

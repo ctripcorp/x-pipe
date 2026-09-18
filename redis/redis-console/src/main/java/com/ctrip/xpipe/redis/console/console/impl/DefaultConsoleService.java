@@ -7,9 +7,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STAT
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
+import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.SentinelBeaconPostMigrateRequest;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
-import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.SentinelBeaconPostMigrateRequest;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
@@ -17,9 +17,12 @@ import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.tuple.Pair;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.web.client.RestOperations;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestOperations;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -241,10 +244,19 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
     }
 
     @Override
-    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllLocalRedisInfos() {
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllLocalRedisInfos(String section) {
         try {
-            return restTemplate.getForObject(allLocalRedisInfosUrl, InfoActionContext.ResultMap.class);
+            String url = (section == null || section.isEmpty())
+                    ? allLocalRedisInfosUrl
+                    : allLocalRedisInfosUrl + "?section=" + java.net.URLEncoder.encode(section, "UTF-8");
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.ACCEPT_ENCODING, "lz4");
+            HttpEntity<?> entity = new HttpEntity<>(headers);
+            ResponseEntity<InfoActionContext.ResultMap> resp =
+                    restTemplate.exchange(url, HttpMethod.GET, entity, InfoActionContext.ResultMap.class);
+            return resp.getBody() == null ? Collections.emptyMap() : resp.getBody();
         } catch (Throwable t) {
+            logger.warn("[getAllLocalRedisInfos] fail: {}", allLocalRedisInfosUrl, t);
             return Collections.emptyMap();
         }
     }

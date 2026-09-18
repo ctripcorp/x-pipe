@@ -1,14 +1,16 @@
 package com.ctrip.xpipe.redis.console.console.impl;
 
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.command.AbstractCommand;
+import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.CheckerService;
-import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
-import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.RemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
+import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
@@ -21,6 +23,7 @@ import com.ctrip.xpipe.redis.console.exception.NotEnoughResultsException;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -38,13 +41,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.command.AbstractCommand;
-import com.ctrip.xpipe.command.ParallelCommandChain;
-
-import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
-
 import static com.ctrip.xpipe.redis.console.resources.AbstractMetaCache.CURRENT_IDC;
+import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
 
 /**
  * @author wenchao.meng
@@ -55,6 +53,8 @@ import static com.ctrip.xpipe.redis.console.resources.AbstractMetaCache.CURRENT_
 public class ConsoleServiceManager implements RemoteCheckerManager {
 
     private static final long BROADCAST_TIMEOUT_MILLI = 5000L;
+
+    private static final long REDIS_INFO_BROADCAST_TIMEOUT_MILLI = 8000L;
 
     private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -243,8 +243,25 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
     }
 
     public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getLocalRedisInfosByDc(String dcId) {
-        ConsoleService service = getServiceByDc(dcId);
-        return service.getAllLocalRedisInfos();
+        return getLocalRedisInfosByDc(dcId, null);
+    }
+
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getLocalRedisInfosByDc(String dcId, String section) {
+        return getServiceByDc(dcId).getAllLocalRedisInfos(section);
+    }
+
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllLocalRedisInfos(Set<String> dcIds, String section) {
+        Map<String, BroadcastResult<Map<HostPort, ActionContextRetMessage<Map<String, String>>>>> raw =
+                broadcast(dcIds, dc -> getServiceByDc(dc).getAllLocalRedisInfos(section), REDIS_INFO_BROADCAST_TIMEOUT_MILLI);
+        Map<HostPort, ActionContextRetMessage<Map<String, String>>> result = new HashMap<>();
+        raw.forEach((dc, r) -> {
+            if (r.isSuccess() && r.value != null) {
+                result.putAll(r.value);
+            } else {
+                logger.warn("[getAllLocalRedisInfos][{}] fail/skip: {}", dc, r.errorMsg);
+            }
+        });
+        return result;
     }
 
     public RetMessage preMigrateSentinelBeacon(String dcId, String clusterName) {
@@ -256,6 +273,10 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
     }
 
     private <T> Map<String, BroadcastResult<T>> broadcast(Set<String> dcIds, Function<String, T> perDcTask) {
+        return broadcast(dcIds, perDcTask, BROADCAST_TIMEOUT_MILLI);
+    }
+
+    private <T> Map<String, BroadcastResult<T>> broadcast(Set<String> dcIds, Function<String, T> perDcTask, long timeoutMilli) {
         Map<String, BroadcastResult<T>> result = new LinkedHashMap<>();
         if (dcIds == null || dcIds.isEmpty()) return result;
 
@@ -279,9 +300,9 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
 
         boolean timedOut = false;
         try {
-            timedOut = !chain.execute().await(BROADCAST_TIMEOUT_MILLI, TimeUnit.MILLISECONDS);
+            timedOut = !chain.execute().await(timeoutMilli, TimeUnit.MILLISECONDS);
             if (timedOut) {
-                logger.warn("[broadcast] timeout after {}ms, collecting partial results", BROADCAST_TIMEOUT_MILLI);
+                logger.warn("[broadcast] timeout after {}ms, collecting partial results", timeoutMilli);
             }
         } catch (Throwable th) {
             logger.error("[broadcast] chain fail, collecting partial results", th);
@@ -290,7 +311,7 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
             if (future.isSuccess()) {
                 result.put(dcId.toUpperCase(), BroadcastResult.success(future.getNow()));
             } else if (!future.isDone()) {
-                result.put(dcId.toUpperCase(), BroadcastResult.fail("broadcast timeout after " + BROADCAST_TIMEOUT_MILLI + "ms"));
+                result.put(dcId.toUpperCase(), BroadcastResult.fail("broadcast timeout after " + timeoutMilli + "ms"));
             } else {
                 Throwable cause = future.cause();
                 String msg = cause != null ? cause.getClass().getSimpleName() + ": " + cause.getMessage()

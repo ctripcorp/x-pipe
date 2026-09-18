@@ -208,8 +208,7 @@ public class DefaultKeeperElectorManager extends AbstractCurrentMetaObserver imp
 		List<KeeperMeta> enrichedKeepers = KeeperMetaEnricher.enrich(dcMetaCache, clusterDbId, shardDbId, survivalKeepers);
 		KeeperMeta activeKeeper = klea.select(clusterDbId, shardDbId, enrichedKeepers);
 		if (activeKeeper == null) {
-			logger.warn("[updateShardLeader][no active keeper]cluster_{},shard_{},{}", clusterDbId, shardDbId, enrichedKeepers);
-			return;
+			logger.warn("[updateShardLeader][no active keeper, still write survive]cluster_{},shard_{},{}", clusterDbId, shardDbId, enrichedKeepers);
 		}
 		currentMetaManager.setSurviveKeepers(clusterDbId, shardDbId, enrichedKeepers, activeKeeper);
 	}

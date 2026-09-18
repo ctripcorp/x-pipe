@@ -245,6 +245,54 @@ public class DefaultKeeperStateChangeHandlerTest extends AbstractMetaServerTest{
 		Assert.assertFalse(keeperCallOrder.stream().anyMatch(entry -> entry.endsWith(":PREPARE")));
 	}
 
+	@Test
+	public void testMetaOnlyTfsReceivesPrepareAndSurviveOnlyGetsActiveBackup() throws Exception {
+		setStateTimeMilli = 50;
+		keeperCallOrder.clear();
+		KeeperMeta bm = keepers.get(0).setKeeperContainerId(1L).setActive(true).setPriority(1);
+		KeeperMeta surviveTfs = keepers.get(1).setKeeperContainerId(3L).setActive(false).setPriority(2);
+		KeeperMeta metaOnly = new KeeperMeta().setIp("localhost").setPort(randomPort())
+				.setKeeperContainerId(2L).setActive(false).setPriority(1);
+		List<KeeperMeta> surviveKeepers = Lists.newArrayList(bm, surviveTfs);
+		List<KeeperMeta> metaKeepers = Lists.newArrayList(bm, surviveTfs, metaOnly);
+
+		when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(surviveKeepers);
+		when(dcMetaCache.getShardKeepers(clusterDbId, shardDbId)).thenReturn(metaKeepers);
+		when(dcMetaCache.getKeeperContainer(any(KeeperMeta.class))).thenAnswer(invocation -> {
+			KeeperMeta keeperMeta = invocation.getArgument(0);
+			KeeperContainerMeta keeperContainerMeta = new KeeperContainerMeta();
+			keeperContainerMeta.setDiskType(keeperMeta.getKeeperContainerId() != null && keeperMeta.getKeeperContainerId() >= 2L
+					? "tfs" : "DEFAULT");
+			return keeperContainerMeta;
+		});
+
+		startServer(metaOnly.getPort(), new Function<String, String>() {
+			@Override
+			public String apply(String s) {
+				recordKeeperSetState(metaOnly.getPort(), s);
+				return "+OK\r\n";
+			}
+		});
+
+		handler.keeperActiveElected(clusterDbId, shardDbId, bm);
+		waitConditionUntilTimeOut(() -> keeperCallOrder.size() >= 3);
+		Assert.assertTrue(keeperCallOrder.contains(metaOnly.getPort() + ":PREPARE"));
+		Assert.assertTrue(keeperCallOrder.contains(bm.getPort() + ":ACTIVE"));
+		Assert.assertTrue(keeperCallOrder.contains(surviveTfs.getPort() + ":BACKUP"));
+		Assert.assertFalse(keeperCallOrder.contains(metaOnly.getPort() + ":BACKUP"));
+		Assert.assertFalse(keeperCallOrder.contains(metaOnly.getPort() + ":ACTIVE"));
+	}
+
+	@Test
+	public void testGetShardKeepersThrowStillSubmitsSurviveJob() throws Exception {
+		setStateTimeMilli = 50;
+		when(dcMetaCache.getShardKeepers(clusterDbId, shardDbId))
+				.thenThrow(new IllegalArgumentException("unknown clusterDbId shardDbId"));
+
+		handler.keeperActiveElected(clusterDbId, shardDbId, keepers.get(0));
+		waitConditionUntilTimeOut(() -> calledCount.get() >= 2);
+	}
+
 	private void recordKeeperSetState(int port, String request) {
 		String state = parseKeeperSetState(request);
 		if (state != null) {

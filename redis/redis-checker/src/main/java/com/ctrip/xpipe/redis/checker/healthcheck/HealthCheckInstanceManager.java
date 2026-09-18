@@ -17,17 +17,17 @@ public interface HealthCheckInstanceManager {
 
     RedisHealthCheckInstance getOrCreate(RedisMeta redis);
 
-    KeeperHealthCheckInstance getOrCreate(KeeperMeta keeper);
+    RedisHealthCheckInstance getOrCreateRedisInstanceForInfoReplIdAction(RedisMeta redis);
 
-    RedisHealthCheckInstance getOrCreateRedisInstanceForPsubPingAction(RedisMeta redis);
+    KeeperHealthCheckInstance getOrCreate(KeeperMeta keeper);
 
     ClusterHealthCheckInstance getOrCreate(ClusterMeta cluster);
 
     RedisHealthCheckInstance findRedisHealthCheckInstance(HostPort hostPort);
 
-    KeeperHealthCheckInstance findKeeperHealthCheckInstance(HostPort hostPort);
+    RedisHealthCheckInstance findRedisInstanceForInfoReplIdPingAction(HostPort hostPort);
 
-    RedisHealthCheckInstance findRedisInstanceForPsubPingAction(HostPort hostPort);
+    KeeperHealthCheckInstance findKeeperHealthCheckInstance(HostPort hostPort);
 
     ClusterHealthCheckInstance findClusterHealthCheckInstance(String clusterId);
 

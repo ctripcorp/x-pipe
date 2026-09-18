@@ -2,9 +2,9 @@ package com.ctrip.xpipe.redis.console.notifier;
 
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
-import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -59,15 +59,15 @@ public class SentinelBeaconClusterMonitorNotifier implements BeaconRouteClusterM
     }
 
     @Override
-    public void notifyClusterUpdate(String clusterName, String dc, long orgId, String lastModifyTime) {
+    public void notifyClusterUpdate(String clusterName, String dc, long orgId) {
         ClusterType clusterType = metaCache.getClusterType(clusterName);
         if (StringUtil.isEmpty(dc)) {
             interestedDcs(clusterName).forEach(interestedDc ->
-                    beaconManager.registerCluster(clusterName, interestedDc, clusterType, (int) orgId, lastModifyTime,
+                    beaconManager.registerCluster(clusterName, interestedDc, clusterType, (int) orgId,
                             BeaconRouteType.SENTINEL));
             return;
         }
-        beaconManager.registerCluster(clusterName, dc, clusterType, (int) orgId, lastModifyTime, BeaconRouteType.SENTINEL);
+        beaconManager.registerCluster(clusterName, dc, clusterType, (int) orgId, BeaconRouteType.SENTINEL);
     }
 
     @Override

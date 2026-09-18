@@ -2,7 +2,6 @@ package com.ctrip.xpipe.redis.console.controller.api;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthChecker;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
@@ -43,13 +42,15 @@ public class HealthController extends AbstractConsoleController{
     }
 
     @RequestMapping(value = "/redis/info/local", produces = "application/json;charset=UTF-8", method = RequestMethod.GET)
-    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getLocalAllRedisInfo() {
-        return infoService.getLocalAllInfosRetMessage();
+    public byte[] getLocalAllRedisInfo(
+            @RequestParam(value = "section", required = false) String section) {
+        return coder.encodeAsBytes(infoService.getLocalAllInfosRetMessage(section));
     }
 
     @RequestMapping(value = "/redis/info/global", produces = "application/json;charset=UTF-8", method = RequestMethod.GET)
-    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getGlobalAllRedisInfo() {
-        return infoService.getGlobalAllInfosRetMessage();
+    public byte[] getGlobalAllRedisInfo(
+            @RequestParam(value = "section", required = false) String section) {
+        return coder.encodeAsBytes(infoService.getGlobalAllInfosRetMessage(section));
     }
 
     @RequestMapping(value = "/shard/inner/delay/{shardId}", method = RequestMethod.GET)

@@ -2,7 +2,9 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.healthcheck.BiDirectionSupport;
+import com.ctrip.xpipe.redis.checker.healthcheck.LocalDcSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
+import com.ctrip.xpipe.redis.checker.healthcheck.SingleDcSupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CurrentDcCheckController;
 import org.springframework.stereotype.Component;
 
@@ -12,7 +14,7 @@ import org.springframework.stereotype.Component;
  * Jun 01, 2021 4:28 PM
  */
 @Component
-public class CurrentDcInfoController extends CurrentDcCheckController implements InfoActionController, BiDirectionSupport, OneWaySupport {
+public class CurrentDcInfoController extends CurrentDcCheckController implements InfoActionController, BiDirectionSupport, OneWaySupport, SingleDcSupport, LocalDcSupport {
     public CurrentDcInfoController(FoundationService foundationService) {
         super(foundationService.getDataCenter());
     }

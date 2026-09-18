@@ -77,7 +77,8 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
                                                     InstanceStatusAdjuster instanceStatusAdjuster,
                                                     @Nullable GroupCheckerLeaderElector groupCheckerLeaderElector,
                                                     StabilityHolder stabilityHolder, CheckerConfig checkerConfig,
-                                                    MetaCache metaCache, DefaultDelayPingActionCollector delayPingActionCollector,
+                                                    MetaCache metaCache,
+                                                    DefaultDelayPingActionCollector delayPingActionCollector,
                                                     HealthCheckInstanceManager healthCheckInstanceManager) {
         this.collector = instanceHealthStatusCollector;
         this.adjuster = instanceStatusAdjuster;
@@ -154,7 +155,6 @@ public class InstanceHealthStatusConsistenceInspector extends AbstractLifecycle 
             for (ClusterMeta clusterMeta: dcMeta.getClusters().values()) {
                 try {
                     if (!ClusterType.isSameClusterType(clusterMeta.getType(), ClusterType.ONE_WAY)) continue;
-                    if (clusterMeta.getActiveDc() != null && metaCache.isCrossRegion(dcMeta.getId(), clusterMeta.getActiveDc())) continue;;
                     if (!clusterMeta.getActiveDc().equalsIgnoreCase(currentDc)) continue;
 
                     Set<HostPort> interestedInstances = MapUtils.getOrCreate(interestedClusterInstances, clusterMeta.getId(), HashSet::new);

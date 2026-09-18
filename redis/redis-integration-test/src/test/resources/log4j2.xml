@@ -23,6 +23,7 @@
         <logger name="org.hibernate" level="INFO"/>
         <logger name="io.netty" level="INFO"/>
         <logger name="org.apache" level="WARN"/>
+        <logger name="qunar.tc.qconfig.client.impl" level="INFO" />
 
 
 		<logger name="io.netty.handler.logging.LoggingHandler" level="INFO"/>

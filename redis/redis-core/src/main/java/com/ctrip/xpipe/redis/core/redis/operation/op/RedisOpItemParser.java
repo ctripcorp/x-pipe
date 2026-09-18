@@ -16,7 +16,7 @@ public final class RedisOpItemParser {
     public static RedisOpItem parse(RedisOpParser redisOpParser, Object[] payload) {
         RedisOpItem redisOpItem = new RedisOpItem();
         try {
-            RedisOp redisOp = redisOpParser.parse(payload);
+             RedisOp redisOp = redisOpParser.parse(payload);
             redisOpItem.setRedisOpType(redisOp.getOpType());
             redisOpItem.setGtid(redisOp.getOpGtid());
             redisOpItem.setDbId(redisOp.getDbId());

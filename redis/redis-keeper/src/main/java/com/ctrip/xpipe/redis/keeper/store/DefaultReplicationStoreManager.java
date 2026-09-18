@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
 import com.google.common.util.concurrent.MoreExecutors;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +82,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private CKStore ckStore;
 
+    private NioEventLoopGroup masterEventLoopGroup;
+
     private final AsyncFileSystem asyncFileSystem;
 
     private final ScheduledExecutorService commandNotifyScheduler;
@@ -111,13 +114,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
     }
 
-    public DefaultReplicationStoreManager(CKStore ckStore, KeeperConfig keeperConfig, ReplId replId,
+    public DefaultReplicationStoreManager(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
                                           SyncRateManager syncRateManager, RedisOpParser redisOpParser,
                                           ScheduledExecutorService commandNotifyScheduler,
                                           AsyncFileSystem asyncFileSystem) {
         this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem);
         this.ckStore = ckStore;
+        this.masterEventLoopGroup = masterEventLoopGroup;
     }
 
     @Override
@@ -319,7 +323,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid,
                                                       KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
-        ReplicationStore replicationStore = new GtidReplicationStore(this.ckStore,storeBaseDir,keeperConfig,keeperRunid, keeperMonitor, redisOpParser,
+        ReplicationStore replicationStore = new GtidReplicationStore(this.ckStore, this.masterEventLoopGroup, storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, redisOpParser,
                 syncRateManager, commandNotifyScheduler, asyncFileSystem, replId, this.readOnly);
         bindPubSubParseHook(replicationStore);
         return replicationStore;

@@ -221,6 +221,7 @@ public class DefaultMonitorManagerTest extends AbstractTest {
         Assert.assertEquals("JQ", route.getDcName());
         Assert.assertEquals("ONE_WAY", route.getType());
         Assert.assertTrue(route.isActiveDc());
+        Assert.assertTrue(route.isManagedByBeacon());
         Assert.assertNotNull(route.getBeaconName());
         Assert.assertNotNull(route.getBeaconHost());
     }
@@ -243,6 +244,27 @@ public class DefaultMonitorManagerTest extends AbstractTest {
         Assert.assertEquals("JQ", route.getDcName());
         Assert.assertEquals("ONE_WAY", route.getType());
         Assert.assertFalse(route.isActiveDc());
+        Assert.assertTrue(route.isManagedByBeacon());
+        Assert.assertNotNull(route.getBeaconName());
+        Assert.assertNotNull(route.getBeaconHost());
+    }
+
+    @Test
+    public void testGetClusterRoutesManagedByBeaconFalseWhenNotInGray() {
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(new ClusterMeta("non-gray-cluster").setOrgId(1)
+                .setType(ClusterType.ONE_WAY.name()).setActiveDc("jq").setDcs("jq"));
+        xpipeMeta.addDc(dcMeta);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+        Mockito.when(config.supportSentinelBeacon(1L, "non-gray-cluster")).thenReturn(false);
+
+        List<SentinelClusterBeaconRouteItem> routes =
+                beaconServiceManager.getSentinelClusterRoutes("non-gray-cluster");
+
+        Assert.assertEquals(1, routes.size());
+        SentinelClusterBeaconRouteItem route = routes.get(0);
+        Assert.assertFalse(route.isManagedByBeacon());
         Assert.assertNotNull(route.getBeaconName());
         Assert.assertNotNull(route.getBeaconHost());
     }

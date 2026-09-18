@@ -2,24 +2,24 @@ package com.ctrip.xpipe.redis.checker.model;
 
 import java.util.List;
 
-public class ClusterDcRelations {
+public class ClusterRelations {
     private String clusterName;
-    private List<DcRelation> relations;
+    private List<Relation> relations;
 
     public String getClusterName() {
         return clusterName;
     }
 
-    public ClusterDcRelations setClusterName(String clusterName) {
+    public ClusterRelations setClusterName(String clusterName) {
         this.clusterName = clusterName;
         return this;
     }
 
-    public List<DcRelation> getRelations() {
+    public List<Relation> getRelations() {
         return relations;
     }
 
-    public ClusterDcRelations setRelations(List<DcRelation> relations) {
+    public ClusterRelations setRelations(List<Relation> relations) {
         this.relations = relations;
         return this;
     }

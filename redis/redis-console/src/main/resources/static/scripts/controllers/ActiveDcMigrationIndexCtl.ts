@@ -15,8 +15,19 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
 	$scope.doMigrate = doMigrate;
 	$scope.clusterOrgNameSelected = clusterOrgNameSelected;
 	$scope.getMasterUnhealthyClusters = getMasterUnhealthyClusters;
+	$scope.applyBatchClusterNames = applyBatchClusterNames;
+	$scope.clearBatchClusterNames = clearBatchClusterNames;
+	$scope.toggleBatchPanel = function () { $scope.batchState.panelOpen = !$scope.batchState.panelOpen; };
     $scope.migrationSysCheckResp = {};
     $scope.enableMigrationButton = false;
+    $scope.pinnedClusterNames = [];
+    $scope.batchState = {
+        input: '',
+        names: [],
+        hiddenCount: 0,
+        notFoundNames: [],
+        panelOpen: false
+    };
 
 	init();
 
@@ -33,12 +44,15 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
                 $scope.organizations.push({"orgName": "不选择"});
             });
             if (!!$stateParams.clusters && $stateParams.clusters.length > 0) {
+                $scope.pinnedClusterNames = $stateParams.clusters.map(function (c) { return c.clusterName; });
 				showClusters($stateParams.clusters, $stateParams.fromDc);
 			} else if ($stateParams.clusterName != undefined) {
+                $scope.pinnedClusterNames = [$stateParams.clusterName];
                 ClusterService.load_cluster($stateParams.clusterName).then(function(cluster) {
                     showClusters([cluster], $stateParams.fromDc || cluster.heteroDefaultFromDc);
                 });
 			} else {
+                $scope.pinnedClusterNames = [];
 				MigrationService.getDefaultMigrationCluster().then(showCluster);
 			}
 		});
@@ -106,8 +120,9 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
 			if (isHeteroCluster(c) && !c.migrationAzGroupClusterId) {
 				return false;
 			}
-			var activeDcId = getMigrationActiveDcId(c);
-			if (!activeDcId || !$scope.sourceDcInfo || activeDcId != $scope.sourceDcInfo.id) {
+			if (!$scope.sourceDcInfo) return false;
+			var clusterActiveDcId = isHeteroCluster(c) ? c.migrationActiveDcId : c.activedcId;
+			if (!clusterActiveDcId || clusterActiveDcId != $scope.sourceDcInfo.id) {
 				return false;
 			}
 			return true;
@@ -196,7 +211,18 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
         	return dcInfo.dcName === dcName;
 		})[0];
 
-		ClusterService.findClustersByActiveDcName(dcName).then(function (data) {
+        var hasPinned = $scope.pinnedClusterNames && $scope.pinnedClusterNames.length > 0;
+        var hasBatch = $scope.batchState.names && $scope.batchState.names.length > 0;
+        var clusterQuery;
+        if (hasPinned) {
+            clusterQuery = ClusterService.findClustersByNames($scope.pinnedClusterNames, dcName);
+        } else if (hasBatch) {
+            clusterQuery = ClusterService.findClustersByNames($scope.batchState.names, dcName);
+        } else {
+            clusterQuery = ClusterService.findClustersByActiveDcName(dcName);
+        }
+
+		clusterQuery.then(function (data) {
 			var result = data;
 			if(orgName && orgName !== "不选择") {
                 result = result.filter(function (localCluster) {
@@ -209,9 +235,91 @@ function ActiveDcMigrationIndexCtl($rootScope, $scope, $window, $stateParams, $i
                 });
 			}
             $scope.clusters = filterMigrationClusters(result);
+            updateBatchStats();
+			$scope.tableParams.reload();
+		}, function () {
+			$scope.clusters = [];
+			if (hasBatch) {
+				$scope.batchState.notFoundNames = ($scope.batchState.names || []).slice();
+				$scope.batchState.hiddenCount = $scope.batchState.notFoundNames.length;
+				toastr.error('部分集群名不存在,请检查输入');
+			} else {
+				toastr.error('查询集群失败');
+			}
 			$scope.tableParams.reload();
 		});
 
+	}
+
+	function updateBatchStats() {
+		if (!$scope.batchState.names || $scope.batchState.names.length === 0) {
+			$scope.batchState.hiddenCount = 0;
+			$scope.batchState.notFoundNames = [];
+			return;
+		}
+		var visibleNames = {};
+		($scope.clusters || []).forEach(function (c) { visibleNames[c.clusterName] = true; });
+		var notFound = [];
+		for (var i = 0; i < $scope.batchState.names.length; ++i) {
+			if (!visibleNames[$scope.batchState.names[i]]) {
+				notFound.push($scope.batchState.names[i]);
+			}
+		}
+		$scope.batchState.hiddenCount = notFound.length;
+		$scope.batchState.notFoundNames = notFound;
+	}
+
+	function applyBatchClusterNames() {
+		var raw = $scope.batchState.input || '';
+		var parts = raw.split(/[,,\s]+/);
+		var names = [];
+		var seen = {};
+		for (var i = 0; i < parts.length; ++i) {
+			var name = (parts[i] || '').trim();
+			if (name && !seen[name]) {
+				seen[name] = true;
+				names.push(name);
+			}
+		}
+		$scope.batchState.names = names;
+		if (names.length === 0) {
+			if ($scope.sourceDc) sourceDcSelected();
+			return;
+		}
+		if ($scope.sourceDc) {
+			sourceDcSelected();
+			return;
+		}
+		ClusterService.findClustersByNames(names, '').then(function (probeResult) {
+			var probeClusters = probeResult || [];
+			if (probeClusters.length === 0) {
+				toastr.error('未找到任何有效集群');
+				return;
+			}
+			var firstCluster = probeClusters[0];
+			var guessedFromDc = firstCluster.heteroDefaultFromDc
+				|| ($scope.dcs.filter(function (d) { return d.id === firstCluster.activedcId; })[0] || {}).dcName;
+			if (!guessedFromDc) {
+				toastr.error('无法自动推断源机房,请先选择源机房再应用筛选');
+				return;
+			}
+			$scope.sourceDc = guessedFromDc;
+			sourceDcSelected();
+		}, function () {
+			toastr.error('部分集群名不存在,请检查输入');
+			$scope.batchState.notFoundNames = names.slice();
+			$scope.batchState.hiddenCount = names.length;
+		});
+	}
+
+	function clearBatchClusterNames() {
+		$scope.batchState.input = '';
+		$scope.batchState.names = [];
+		$scope.batchState.hiddenCount = 0;
+		$scope.batchState.notFoundNames = [];
+		if ($scope.sourceDc) {
+			sourceDcSelected();
+		}
 	}
 
 	function targetDcSelected(cluster) {

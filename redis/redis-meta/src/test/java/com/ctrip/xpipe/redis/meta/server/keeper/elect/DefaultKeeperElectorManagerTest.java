@@ -108,6 +108,31 @@ public class DefaultKeeperElectorManagerTest extends AbstractKeeperElectorManage
 	}
 
 	@Test
+	public void testUpdateShardLeaderEmptyChildrenClearsSurvive() {
+		when(keeperActiveElectAlgorithm.select(anyLong(), anyLong(), anyList())).thenReturn(null);
+
+		keeperElectorManager.updateShardLeader(
+				Collections.singletonList(Collections.emptyList()), clusterMeta.getDbId(), shardMeta.getDbId());
+
+		verify(currentMetaManager).setSurviveKeepers(eq(clusterMeta.getDbId()), eq(shardMeta.getDbId()),
+				argThat(keepers -> keepers != null && keepers.isEmpty()), isNull());
+	}
+
+	@Test
+	public void testUpdateShardLeaderWritesSurviveWhenSelectReturnsNull() {
+		String prefix = "/path";
+		List<ChildData> dataList = new LinkedList<>();
+		dataList.add(new ChildData(prefix + "/" + randomString(10) + "-latch-01", null,
+				JsonCodec.INSTANCE.encodeAsBytes(new KeeperMeta().setId("127.0.0.1").setPort(4000))));
+		when(keeperActiveElectAlgorithm.select(anyLong(), anyLong(), anyList())).thenReturn(null);
+
+		keeperElectorManager.updateShardLeader(Collections.singletonList(dataList), clusterMeta.getDbId(), shardMeta.getDbId());
+
+		verify(currentMetaManager).setSurviveKeepers(eq(clusterMeta.getDbId()), eq(shardMeta.getDbId()),
+				argThat(keepers -> keepers != null && keepers.size() == 1), isNull());
+	}
+
+	@Test
 	public void testObserverShardLeader() throws Exception {
 		Long clusterDbId = clusterMeta.getDbId();
 		Long shardDbId = shardMeta.getDbId();

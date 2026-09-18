@@ -6,9 +6,13 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.RedisInfoManager;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessage;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.*;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.RedisMsgCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultInfoReplIdPingActionCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatusDesc;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.AbstractRedisConfigRuleAction;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.InfoActionContext;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisinfo.RedisMsgCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityHolder;
 import com.ctrip.xpipe.redis.checker.model.RedisMsg;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -32,7 +36,7 @@ public class CheckerHealthController {
     private DefaultDelayPingActionCollector defaultDelayPingActionCollector;
 
     @Autowired
-    private DefaultPsubPingActionCollector defaultPsubPingActionCollector;
+    private DefaultInfoReplIdPingActionCollector defaultInfoReplIdPingActionCollector;
 
     @Autowired
     private RedisMsgCollector redisMsgCollector;
@@ -53,14 +57,14 @@ public class CheckerHealthController {
 
     @RequestMapping(value = "/health/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getHealthState(@PathVariable String ip, @PathVariable int port) {
-        if (siteStability.isSiteStable()) return defaultDelayPingActionCollector.getState(new HostPort(ip, port));
-        else return HEALTH_STATE.UNKNOWN;
+        boolean stable = siteStability.isSiteStable();
+        return stable ? defaultDelayPingActionCollector.getState(new HostPort(ip, port)) : HEALTH_STATE.UNKNOWN;
     }
 
     @RequestMapping(value = "/health/cross/region/{ip}/{port}", method = RequestMethod.GET)
     public HEALTH_STATE getCrossRegionHealthState(@PathVariable String ip, @PathVariable int port) {
-        if (siteStability.isSiteStable()) return defaultPsubPingActionCollector.getHealthState(new HostPort(ip, port));
-        else return HEALTH_STATE.UNKNOWN;
+        boolean stable = siteStability.isSiteStable();
+        return stable ? defaultInfoReplIdPingActionCollector.getHealthState(new HostPort(ip, port)) : HEALTH_STATE.UNKNOWN;
     }
 
     @RequestMapping(value = "/health/check/instance/{ip}/{port}", method = RequestMethod.GET)
@@ -75,7 +79,7 @@ public class CheckerHealthController {
 
     @RequestMapping(value = "/health/check/cross/region//instance/{ip}/{port}", method = RequestMethod.GET)
     public String getCrossRegionHealthCheckInstance(@PathVariable String ip, @PathVariable int port) {
-        RedisHealthCheckInstance instance = instanceManager.findRedisInstanceForPsubPingAction(new HostPort(ip, port));
+        RedisHealthCheckInstance instance = instanceManager.findRedisInstanceForInfoReplIdPingAction(new HostPort(ip, port));
         if(instance == null) {
             return "Not found";
         }
@@ -95,7 +99,7 @@ public class CheckerHealthController {
 
     @RequestMapping(value = "/health/check/redis-for-ping-action/{ip}/{port}", method = RequestMethod.GET)
     public String getHealthCheckRedisInstanceForPingAction(@PathVariable String ip, @PathVariable int port) {
-        RedisHealthCheckInstance instance = instanceManager.findRedisInstanceForPsubPingAction(new HostPort(ip, port));
+        RedisHealthCheckInstance instance = instanceManager.findRedisInstanceForInfoReplIdPingAction(new HostPort(ip, port));
         if(instance == null) {
             return "Not found";
         }
@@ -104,13 +108,16 @@ public class CheckerHealthController {
     }
 
     @RequestMapping(value = "/health/redis/info/{ip}/{port}", method = RequestMethod.GET)
-    public ActionContextRetMessage<Map<String, String>> getRedisInfo(@PathVariable String ip, @PathVariable int port) {
-        return ActionContextRetMessage.from(redisInfoManager.getInfoByHostPort(new HostPort(ip, port)));
+    public ActionContextRetMessage<Map<String, String>> getRedisInfo(
+            @PathVariable String ip, @PathVariable int port,
+            @RequestParam(value = "section", required = false) String section) {
+        return InfoActionContext.toRetMessage(redisInfoManager.getInfoByHostPort(new HostPort(ip, port)), section);
     }
 
     @RequestMapping(value = "/health/redis/info/all", method = RequestMethod.GET)
-    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllRedisInfo() {
-        return ActionContextRetMessage.map(redisInfoManager.getAllInfos());
+    public Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllRedisInfo(
+            @RequestParam(value = "section", required = false) String section) {
+        return InfoActionContext.toRetMessage(redisInfoManager.getAllInfos(), section);
     }
 
     @GetMapping("/health/check/status/all")
@@ -121,7 +128,7 @@ public class CheckerHealthController {
 
     @GetMapping("/health/check/cross/region/status/all")
     public Map<HostPort, HealthStatusDesc> getAllCrossRegionHealthStatusDesc() {
-        if (siteStability.isSiteStable()) return defaultPsubPingActionCollector.getAllHealthStatus();
+        if (siteStability.isSiteStable()) return defaultInfoReplIdPingActionCollector.getAllHealthStatus();
         else return Collections.emptyMap();
     }
 
@@ -133,7 +140,7 @@ public class CheckerHealthController {
         Map<HostPort, HealthStatusDesc> result = new HashMap<>();
         for (HostPort hostPort : hostPorts) {
             if (Objects.equals(currentDc, metaCache.getDc(hostPort)) && metaCache.isCrossRegion(metaCache.getActiveDc(hostPort), currentDc)) {
-                result.put(hostPort, defaultPsubPingActionCollector.getHealthStatusDesc(hostPort));
+                result.put(hostPort, defaultInfoReplIdPingActionCollector.getHealthStatusDesc(hostPort));
             } else {
                 result.put(hostPort, defaultDelayPingActionCollector.getHealthStatusDesc(hostPort));
             }

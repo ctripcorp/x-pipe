@@ -47,6 +47,9 @@ public class LZ4CompressionResponseBodyAdvice implements ResponseBodyAdvice<byte
         // 设置 Content-Encoding 头部为 lz4
         serverHttpResponse.getHeaders().set("Content-Encoding", "lz4");
         serverHttpResponse.getHeaders().setContentLength(compressedLength);
+        // 携带原始未压缩长度:raw LZ4 block 不自带原始长度,客户端需据此分配解压 buffer,
+        // 否则只能凭压缩比经验值上限猜测(见 LZ4DecompressionInterceptor 的 fallback)
+        serverHttpResponse.getHeaders().set("Original-Length", String.valueOf(body.length));
 
         // 返回压缩后的字节数组（需要截取实际压缩长度）
         return Arrays.copyOf(compressedBytes, compressedLength);

@@ -22,6 +22,7 @@ import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStore;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Triple;
@@ -78,6 +79,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected CKStore ckStore;
 
+	protected NioEventLoopGroup masterEventLoopGroup;
+
 	protected ScheduledExecutorService commandNotifyScheduler;
 
 	protected final AsyncFileSystem asyncFileSystem;
@@ -106,6 +109,24 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
 								   ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
 								   ReplId fileSystemReplId, boolean readOnly) throws IOException {
+		this(ckStore, null, baseDir, config, keeperRunid, cmdReaderWriterFactory, keeperMonitor, syncRateManager, redisOp,
+				commandNotifyScheduler, asyncFileSystem, fileSystemReplId, readOnly);
+	}
+
+	public DefaultReplicationStore(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, File baseDir, KeeperConfig config, String keeperRunid,
+								   CommandReaderWriterFactory cmdReaderWriterFactory,
+								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
+								   ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+								   ReplId fileSystemReplId) throws IOException {
+		this(ckStore, masterEventLoopGroup, baseDir, config, keeperRunid, cmdReaderWriterFactory, keeperMonitor, syncRateManager, redisOp,
+				commandNotifyScheduler, asyncFileSystem, fileSystemReplId, false);
+	}
+
+	public DefaultReplicationStore(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, File baseDir, KeeperConfig config, String keeperRunid,
+								   CommandReaderWriterFactory cmdReaderWriterFactory,
+								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
+								   ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+								   ReplId fileSystemReplId, boolean readOnly) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
 		this.commandsRetainTimeoutMilli = config::getReplicationStoreCommandFileRetainTimeoutMilli;
@@ -115,6 +136,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		this.syncRateManager = syncRateManager;
 		this.redisOpParser = redisOp;
 		this.ckStore = ckStore;
+		this.masterEventLoopGroup = masterEventLoopGroup;
 		this.commandNotifyScheduler = commandNotifyScheduler;
 		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
 		this.fileSystemReplId = Objects.requireNonNull(fileSystemReplId, "fileSystemReplId");
@@ -236,6 +258,15 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
+	public long getCurReplStageReplOffWithFlush() {
+		ReplStage curStage = metaStore.getCurrentReplStage();
+		long backlogEndOffset = backlogEndOffsetWithFlush();
+		if (getLogger().isDebugEnabled()) {
+			getLogger().debug("getCurReplStageReplOff: {}, {}, {}", curStage.getBegOffsetRepl(), backlogEndOffset, curStage.getBegOffsetBacklog());
+		}
+		return curStage.getBegOffsetRepl() - 1 + backlogEndOffset - curStage.getBegOffsetBacklog();	}
+
+	@Override
 	public boolean increaseLost(GtidSet lost) throws IOException {
 		getLogger().info("[increaseLost] {}", lost);
 
@@ -255,7 +286,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		makeSureOpen();
 		getLogger().info("[psyncContinue] newReplId:{}", newReplId);
 		if (newReplId == null) return;
-		long backlogEnd = backlogEndOffset();
+		long backlogEnd = backlogEndOffsetWithFlush();
 
 		// T-H2.B2: already PSYNC — prepare → Cmd switchToPsync (no-op) → saveMeta(CAS); no Index restore
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = metaStore.preparePsyncContinue(newReplId, backlogEnd);
@@ -287,7 +318,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		// T-H2.B2 / T-H3.CP4: XSYNC→PSYNC — prepare → Cmd switchToPsync (close Index) → saveMeta(CAS);
 		// meta fail → restoreXsyncIndex (buildIndex only, no openWriter)
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
-				metaStore.prepareSwitchToPsync(replId, replOff + 1, backlogEndOffset());
+				metaStore.prepareSwitchToPsync(replId, replOff + 1, backlogEndOffsetWithFlush());
 		try {
 			cmdStore.switchToPsync(replId, replOff);
 			if (!metaStore.saveMeta(prepared.getKey(), prepared.getValue())) {
@@ -323,7 +354,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		// T-H2.A3: prepare → createCmd → switchToXSync → saveMeta(CAS); no RDB storeRef
 		// T-H3.CP5b: Helper already retried leaf IO; do not retry commitContinueNewCmdThenMeta here
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = metaStore.prepareXsyncContinueFrom(
-				replId, replOff + 1, backlogEndOffset(), masterUuid, gtidLost, gtidExecuted, cmdFilePrefix);
+				replId, replOff + 1, backlogEndOffsetWithFlush(), masterUuid, gtidLost, gtidExecuted, cmdFilePrefix);
 		this.cmdStore = commitContinueNewCmdThenMeta(replId, -1L, true, gtidEmpty, prepared.getKey(), prepared.getValue());
 	}
 
@@ -336,7 +367,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		// T-H2.B1: prepare → Cmd switchToXSync (Index) → saveMeta(CAS); meta fail → roll Index back to PSYNC
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = metaStore.prepareSwitchToXsync(
-				replId, replOff + 1, backlogEndOffset(), masterUuid, gtidCont, gtidLost);
+				replId, replOff + 1, backlogEndOffsetWithFlush(), masterUuid, gtidCont, gtidLost);
 		boolean cmdSwitched = false;
 		try {
 			cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
@@ -368,7 +399,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		getLogger().info("[xsyncContinue] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}", replId, replOff, masterUuid, gtidCont);
 		// T-H3.CP3: rebind before getIndexGtidSet — unbound writers would read empty tip header
 		cmdStore.rebindIndexWritersIfUnbound();
-		return metaStore.xsyncContinue(replId,replOff+1, backlogEndOffset(),masterUuid,gtidCont,cmdStore.getIndexGtidSet());
+		return metaStore.xsyncContinue(replId,replOff+1, backlogEndOffsetWithFlush(),masterUuid,gtidCont,cmdStore.getIndexGtidSet());
 	}
 
 	@Override
@@ -485,7 +516,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
 
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared;
-		long rdbNextByte = backlogEndOffset();
+		long rdbNextByte = backlogEndOffsetWithFlush();
 		if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
 			prepared = metaStore.prepareRdbConfirmXsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, rdbNextByte,
 					rdbStore.getMasterUuid(), new GtidSet(rdbStore.getGtidLost()), new GtidSet(rdbStore.getGtidSet()),
@@ -637,7 +668,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 			UPDATE_RDB_RESULT result;
 			long rdbContBacklogOffset;
-			long backlogEnd = backlogEndOffset();
+			long backlogEnd = backlogEndOffsetWithFlush();
 			if (replProto == ReplStage.ReplProto.PSYNC) {
 				result = metaStore.checkReplIdAndUpdateRdbInfoPsync(dumpedRdbFile.getName(),
 						rdbType, eofType, rdbOffset, rdbReplId, backlogBeginOffset(), backlogEnd);
@@ -743,7 +774,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
 		// T-H2.A2: prepare → createCmd(+switchToPsync) → saveMeta(CAS); no RDB storeRef
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
-				metaStore.preparePsyncContinueFrom(replId, replOff, backlogEndOffset(), cmdFilePrefix);
+				metaStore.preparePsyncContinueFrom(replId, replOff, backlogEndOffsetWithFlush(), cmdFilePrefix);
 		this.cmdStore = commitContinueNewCmdThenMeta(replId, replOff, false, null,
 				prepared.getKey(), prepared.getValue());
 	}
@@ -835,7 +866,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
 											  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
 											  KeeperMonitor keeperMonitor, GtidCmdFilter gtidCmdFilter) throws IOException {
-		DefaultCommandStore cmdStore = new DefaultCommandStore(this.ckStore, config, new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
+		DefaultCommandStore cmdStore = new DefaultCommandStore(this.ckStore, this.masterEventLoopGroup ,config, new File(baseDir, replMeta.getCmdFilePrefix()), cmdFileSize,
 				config::getRecordWrongStream,
 				config::getReplicationStoreCommandFileKeepTimeSeconds,
 				config.getReplicationStoreMinTimeMilliToGcAfterCreate(),
@@ -924,14 +955,14 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public long backlogEndOffset() {
+		// 不刷盘：本方法是热路径读取（getCurReplStageReplOff / DefaultKeeperRepl.getEndOffset /
+		// lockAndCheckIfFullSyncPossible / GapAllowSyncHandler / InfoHandler）。
+		// TimerSlidingWindow.flushAll() 会 submit 到唯一的 master event loop 并阻塞等待，
+		// 在这里刷盘等于让每次读取都在复制热线程上做一次跨线程往返。
+		// 需要精确（已刷盘）值的调用方请用 backlogEndOffsetWithFlush()。
 		makeSureOpen();
 		if (null == cmdStore) {
 			return ReplicationStoreMeta.DEFAULT_END_OFFSET;
-		}
-		try {
-			cmdStore.flushSlidingWindow();
-		} catch (IOException e) {
-			throw new XpipeRuntimeException("[backlogEndOffset] flush sliding window failed", e);
 		}
 		return cmdStore.totalLength();
 	}
@@ -942,6 +973,14 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		if (cmdStore != null) {
 			cmdStore.flushPendingData();
 		}
+	}
+
+	@Override
+	public long backlogEndOffsetWithFlush() {
+		makeSureOpen();
+		if (null == cmdStore) return ReplicationStoreMeta.DEFAULT_END_OFFSET;
+		flushSlidingWindow();
+		return cmdStore.totalLength();
 	}
 
 	@Override
@@ -1415,6 +1454,17 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public void resetStateForContinue() {
 		cmdStore.resetStateForContinue();
+	}
+
+	@Override
+	public void flushSlidingWindow() {
+		if(cmdStore != null) {
+			try {
+				cmdStore.flushSlidingWindow();
+			} catch (IOException e) {
+				throw new XpipeRuntimeException("flushSlidingWindow", e);
+			}
+		}
 	}
 
 	protected Logger getLogger() {

@@ -11,4 +11,8 @@ public class InstanceSick extends AbstractInstanceEvent {
     public InstanceSick(RedisHealthCheckInstance instance) {
         super(instance);
     }
+
+    public void setNeedAdjust(boolean needAdjust) {
+        this.needAdjust = needAdjust;
+    }
 }

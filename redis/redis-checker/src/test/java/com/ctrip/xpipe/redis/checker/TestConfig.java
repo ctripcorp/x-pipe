@@ -4,7 +4,6 @@ import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.alert.AlertConfig;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DcClusterDelayMarkDown;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 
 import java.util.*;
@@ -241,6 +240,11 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
+    public boolean supportCollectInfo(ClusterType clusterType) {
+        return false;
+    }
+
+    @Override
     public String sentinelCheckDowngradeStrategy() {
         return "lessThanHalf";
     }
@@ -291,7 +295,7 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
-    public String getDcsRelations() {
+    public String getRelations() {
         return "{}";
     }
 
@@ -327,11 +331,6 @@ public class TestConfig implements CheckerConfig, AlertConfig {
 
     @Override
     public boolean getShouldDoAfterNettyClientConnected() {
-        return true;
-    }
-
-    @Override
-    public boolean checkBeaconLastModifyTime() {
         return true;
     }
 

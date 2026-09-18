@@ -12,5 +12,5 @@ import java.util.Map;
  */
 public interface ConsoleCheckerService {
 
-    Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllLocalRedisInfos();
+    Map<HostPort, ActionContextRetMessage<Map<String, String>>> getAllLocalRedisInfos(String section);
 }

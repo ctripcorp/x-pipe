@@ -41,6 +41,18 @@ public class SentinelBeaconMigrationControllerTest {
     }
 
     @Test
+    public void shouldSkipOneWayBackupDc() {
+        ClusterInstanceInfo info = new DefaultClusterInstanceInfo("cluster1", "uat-aws", ClusterType.ONE_WAY, 1, "20201030");
+        Mockito.when(instance.getCheckInfo()).thenReturn(info);
+        Assert.assertFalse(controller.shouldCheck(instance));
+
+        info = new DefaultClusterInstanceInfo("cluster1", "uat-aws", ClusterType.SINGLE_DC, 1, "20201030");
+        Mockito.when(instance.getCheckInfo()).thenReturn(info);
+        Assert.assertTrue(controller.shouldCheck(instance));
+    }
+
+
+    @Test
     public void shouldSkipWhenSentinelCheckDisabled() {
         Mockito.when(checkerDbConfig.shouldSentinelCheck("cluster1")).thenReturn(false);
         Assert.assertFalse(controller.shouldCheck(instance));

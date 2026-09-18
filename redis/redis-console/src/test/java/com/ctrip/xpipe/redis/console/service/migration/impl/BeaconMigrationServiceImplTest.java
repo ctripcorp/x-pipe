@@ -1,10 +1,10 @@
 package com.ctrip.xpipe.redis.console.service.migration.impl;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
-import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.api.migration.auto.data.MonitorGroupMeta;
+import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
-import com.ctrip.xpipe.redis.checker.DcRelationsService;
+import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.console.controller.api.migrate.meta.BeaconMigrationRequest;
 import com.ctrip.xpipe.redis.console.migration.command.ReactorMigrationCommandBuilderImpl;
@@ -48,7 +48,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
 
     private MetaCache metaCache;
 
-    private DcRelationsService dcRelationsService;
+    private RelationsService relationsService;
 
     @Override
     protected String prepareDatas() throws IOException {
@@ -75,9 +75,9 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
         Mockito.when(metaCache.isDcInRegion(Mockito.anyString(), Mockito.anyString())).thenReturn(true);
         beaconMetaService.setMetaCache(metaCache);
 
-        dcRelationsService = Mockito.mock(DcRelationsService.class);
-        Mockito.when(dcRelationsService.getClusterTargetDcByPriority(Mockito.anyLong(), Mockito.anyString(), Mockito.anyString(), Mockito.anyList())).thenReturn("oy");
-        migrationService.setDcRelationsService(dcRelationsService);
+        relationsService = Mockito.mock(RelationsService.class);
+        Mockito.when(relationsService.getClusterTargetDcByPriority(Mockito.anyLong(), Mockito.anyString(), Mockito.anyString(), Mockito.anyList())).thenReturn("oy");
+        migrationService.setRelationsService(relationsService);
 
         Mockito.when(reactorMigrationCommandBuilder.buildDcCheckCommand(anyString(), anyString(), anyString(), anyString()))
                 .thenAnswer(invocation -> failCheckCommand());
@@ -229,7 +229,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
         groups.add(buildSimpleGroup("C", "SHaXY", true));
         groups.add(buildSimpleGroup("d", "SHAjQ", false));
 
-        Mockito.when(dcRelationsService.getExcludedDcsForBiCluster(Mockito.anyString(), Mockito.anySet(), Mockito.anySet())).thenReturn(new HashSet<>());
+        Mockito.when(relationsService.getExcludedDcsForBiCluster(Mockito.anyString(), Mockito.anySet(), Mockito.anySet())).thenReturn(new HashSet<>());
 
         try {
             migrationService.decideExcludes("test", groups);
@@ -238,7 +238,7 @@ public class BeaconMigrationServiceImplTest extends AbstractConsoleIntegrationTe
             assertTrue(e.getMessage().contains("cannot make a choice"));
         }
 
-        Mockito.when(dcRelationsService.getExcludedDcsForBiCluster(Mockito.anyString(), Mockito.anySet(), Mockito.anySet())).thenReturn(Sets.newHashSet("SHAXY", "SHAJQ"));
+        Mockito.when(relationsService.getExcludedDcsForBiCluster(Mockito.anyString(), Mockito.anySet(), Mockito.anySet())).thenReturn(Sets.newHashSet("SHAXY", "SHAJQ"));
         assertArrayEqualsDespiteOrder(new String[]{"SHAXY", "SHAJQ"}, migrationService.decideExcludes("test", groups));
     }
 

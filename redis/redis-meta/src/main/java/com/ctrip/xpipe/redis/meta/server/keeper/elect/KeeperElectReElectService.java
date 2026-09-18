@@ -59,8 +59,7 @@ public class KeeperElectReElectService {
         KeeperActiveElectAlgorithm algorithm = keeperActiveElectAlgorithmManager.get(clusterDbId, shardDbId);
         KeeperMeta activeKeeper = algorithm.select(clusterDbId, shardDbId, enriched);
         if (activeKeeper == null) {
-            logger.warn("[reElect][no active keeper]cluster_{},shard_{},{}", clusterDbId, shardDbId, enriched);
-            return;
+            logger.warn("[reElect][no active keeper, still write survive]cluster_{},shard_{},{}", clusterDbId, shardDbId, enriched);
         }
 
         logger.info("[reElect]cluster_{},shard_{},active={},survive={}", clusterDbId, shardDbId, activeKeeper, enriched);

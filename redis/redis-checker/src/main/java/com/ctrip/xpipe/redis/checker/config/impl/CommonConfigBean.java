@@ -47,7 +47,7 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     private static final String KEY_OUTER_CLIENT_TOKEN = "console.outer.client.token";
 
-    private static final String KEY_DCS_RELATIONS = "dcs.relations";
+    private static final String KEY_REGIONS_RELATIONS = "regions.relations";
 
     public static final String KEY_REDIS_ALERT_SENDER_EMAIL = "redis.alert.sender.email";
 
@@ -65,7 +65,6 @@ public class CommonConfigBean extends AbstractConfigBean {
 
     public static final String KEY_KEEPERCONTAINER_DISK_INFO_COLLECT_INTERVAL_MILLS = "keeper.disk.info.collect.interval";
 
-    public static final String KEY_CHECK_BEACON_LAST_MODIFY = "beacon.check.modify.time";
     public static final String KEY_BEACON_SHOULD_COMPUTE_EXTRA_IN_HASH = "beacon.should.compute.extra.in.hash";
     public static final String KEY_BEACON_SENTINEL_GRAY_CLUSTERS = "beacon.sentinel.gray.clusters";
     public static final String KEY_BEACON_SENTINEL_GRAY_BU = "beacon.sentinel.gray.bu";
@@ -159,8 +158,8 @@ public class CommonConfigBean extends AbstractConfigBean {
         return getProperty(KEY_OUTER_CLIENT_TOKEN, "");
     }
 
-    public String getDcsRelations() {
-        return getProperty(KEY_DCS_RELATIONS, "{}");
+    public String getRelations() {
+        return getProperty(KEY_REGIONS_RELATIONS, "{}");
     }
 
     public String getRedisAlertSenderEmail() {
@@ -184,10 +183,6 @@ public class CommonConfigBean extends AbstractConfigBean {
             return MAX_DELAY_METRIC_NEW_INSTANCE_MINUTES;
         }
         return minutes;
-    }
-
-    public boolean getCheckBeaconLastModify() {
-        return getBooleanProperty(KEY_CHECK_BEACON_LAST_MODIFY, true);
     }
 
     public boolean shouldComputeExtraInHash() {

@@ -12,6 +12,7 @@ import com.ctrip.xpipe.utils.CloseState;
 import com.google.common.io.Files;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,20 @@ public class DefaultCommandStore extends AbstractCommandStore implements Command
 							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex,
 							   long cmdStoreStartOffset, AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes,
 							   ReplId fileSystemReplId) throws IOException {
-		super(ckStore, keeperConfig, file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+		this(ckStore, null, keeperConfig, file, maxFileSize, recordWrongStreamConfig, maxTimeSecondKeeperCmdFileAfterModified,
+				minTimeMilliToGcAfterModified, fileNumToKeep, commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
+				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, cmdStoreStartOffset,
+				asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
+	}
+
+	public DefaultCommandStore(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, KeeperConfig keeperConfig, File file, int maxFileSize,
+							   BooleanSupplier recordWrongStreamConfig, IntSupplier maxTimeSecondKeeperCmdFileAfterModified,
+							   int minTimeMilliToGcAfterModified, IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
+							   BooleanSupplier commandOffsetNotifyCoalescingEnabled, CommandReaderWriterFactory cmdReaderWriterFactory,
+							   KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex,
+							   long cmdStoreStartOffset, AsyncFileSystem asyncFileSystem, IntSupplier asyncWriteMaxBytes,
+							   ReplId fileSystemReplId) throws IOException {
+		super(ckStore, masterEventLoopGroup, keeperConfig, file, maxFileSize, maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
 				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled,
 				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, cmdStoreStartOffset,
 				asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);

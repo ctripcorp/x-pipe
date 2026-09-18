@@ -16,6 +16,7 @@ public class SentinelClusterBeaconRouteItem {
     private String azGroupType;
     private long orgId;
     private boolean activeDc;
+    private boolean managedByBeacon;
     private String beaconName;
     private String beaconHost;
 
@@ -23,7 +24,8 @@ public class SentinelClusterBeaconRouteItem {
     }
 
     public SentinelClusterBeaconRouteItem(BeaconSystem beaconSystem,
-                                           DcMeta dcMeta, ClusterMeta clusterMeta, MonitorService monitorService) {
+                                           DcMeta dcMeta, ClusterMeta clusterMeta, MonitorService monitorService,
+                                           boolean managedByBeacon) {
         this.system = beaconSystem.getSystemName();
         this.beaconMode = BeaconRouteType.SENTINEL.name();
         this.clusterName = clusterMeta.getId();
@@ -32,6 +34,7 @@ public class SentinelClusterBeaconRouteItem {
         this.azGroupType = clusterMeta.getAzGroupType();
         this.orgId = clusterMeta.getOrgId();
         this.activeDc = dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc());
+        this.managedByBeacon = managedByBeacon;
         this.beaconName = monitorService != null ? monitorService.getName() : null;
         this.beaconHost = monitorService != null ? monitorService.getHost() : null;
     }
@@ -98,6 +101,14 @@ public class SentinelClusterBeaconRouteItem {
 
     public void setActiveDc(boolean activeDc) {
         this.activeDc = activeDc;
+    }
+
+    public boolean isManagedByBeacon() {
+        return managedByBeacon;
+    }
+
+    public void setManagedByBeacon(boolean managedByBeacon) {
+        this.managedByBeacon = managedByBeacon;
     }
 
     public String getBeaconName() {

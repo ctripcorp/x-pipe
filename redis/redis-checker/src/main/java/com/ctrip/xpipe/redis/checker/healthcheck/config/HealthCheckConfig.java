@@ -30,6 +30,10 @@ public interface HealthCheckConfig {
 
     boolean supportSentinelBeacon(long clusterOrgId, String clusterName);
 
+    boolean supportCollectInfo(ClusterType clusterType);
+
+    boolean isReachable(String srcDc, String dstDc);
+
     int getNonCoreCheckIntervalMilli();
 
     DelayConfig getDelayConfig(String clusterName, String fromDc, String toDc);

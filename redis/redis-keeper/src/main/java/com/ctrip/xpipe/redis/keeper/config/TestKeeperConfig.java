@@ -30,6 +30,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private boolean readV2 = true;
 	private int indexZoneConsecutiveThreshold = 8192;
 	private int blockSizeThreshold = 8192;
+	private int cmdBatchLowRateBps = -1;
 
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
 
@@ -296,6 +297,30 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return maxLoadingSlaves;
 	}
 
+	private int crossRegionFsyncGraceSeconds = 5;
+
+	public TestKeeperConfig setCrossRegionFsyncGraceSeconds(int seconds) {
+		this.crossRegionFsyncGraceSeconds = seconds;
+		return this;
+	}
+
+	@Override
+	public int getCrossRegionFsyncGraceSeconds() {
+		return crossRegionFsyncGraceSeconds;
+	}
+
+	private int crossRegionFsyncSettleSeconds = 2;
+
+	public TestKeeperConfig setCrossRegionFsyncSettleSeconds(int seconds) {
+		this.crossRegionFsyncSettleSeconds = seconds;
+		return this;
+	}
+
+	@Override
+	public int getCrossRegionFsyncSettleSeconds() {
+		return crossRegionFsyncSettleSeconds;
+	}
+
 	@Override
 	public int getApplierReadIdleSeconds() {
 		return 60;
@@ -419,9 +444,14 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return 4;
 	}
 
+	public TestKeeperConfig setCmdBatchLowRateBps(int cmdBatchLowRateBps){
+		this.cmdBatchLowRateBps = cmdBatchLowRateBps;
+		return this;
+	}
+
 	@Override
 	public int getCmdBatchLowRateBps() {
-		return -1;
+		return cmdBatchLowRateBps;
 	}
 
 	public TestKeeperConfig setDualWrite(boolean dualWrite){

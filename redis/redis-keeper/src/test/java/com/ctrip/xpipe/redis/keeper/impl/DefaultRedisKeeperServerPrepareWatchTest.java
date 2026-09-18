@@ -27,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Phase LC (T-LC.5): PREPARE host lifecycle and getCurrentReplicationStore gate. AC-1 / AC-2b / AC-4 / AC-21.
@@ -151,6 +152,7 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 		try {
 			becomePrepare(server);
 			RedisSlave slave = mock(RedisSlave.class);
+			when(slave.isOpen()).thenReturn(true);
 			server.fullSyncToSlave(slave, false);
 			verify(slave).close();
 			Assert.assertNull(server.rdbDumper());

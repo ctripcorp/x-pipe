@@ -26,6 +26,7 @@ import com.ctrip.xpipe.redis.meta.server.tfs.TfsShardContext;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -41,7 +42,8 @@ import static com.ctrip.xpipe.redis.core.protocal.cmd.AbstractRedisCommand.DEFAU
 public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements RequestResponseCommand<Void> {
 
     private final TfsShardContext shardContext;
-    private final List<KeeperMeta> keepers;
+    private final List<KeeperMeta> surviveKeepers;
+    private final List<KeeperMeta> unionKeepers;
     private final KeeperMeta previousActiveKeeper;
     private final Pair<String, Integer> activeKeeperMaster;
     private final RouteMeta routeForActiveKeeper;
@@ -51,10 +53,11 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
     private final ScheduledExecutorService scheduled;
     private final Executor executor;
     private final Map<KeeperMeta, KeeperState> keeperRoles;
-    private final TfsGateway tfsGateway;
+    /** Null in production (Factory per ForceCloseDir, D23). Tests inject via {@link #setTfsGateway}. */
+    private TfsGateway tfsGateway;
     private Command<?> activeSuccessCommand;
 
-    public TfsKeeperStateChangeJob(Long clusterDbId, Long shardDbId, List<KeeperMeta> keepers,
+    public TfsKeeperStateChangeJob(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers,
                                    KeeperMeta previousActiveKeeper,
                                    Pair<String, Integer> activeKeeperMaster,
                                    RouteMeta routeForActiveKeeper,
@@ -64,11 +67,15 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
                                    ScheduledExecutorService scheduled,
                                    Executor executor,
                                    Map<KeeperMeta, KeeperState> keeperRoles) {
-        this(clusterDbId, shardDbId, keepers, previousActiveKeeper, activeKeeperMaster, routeForActiveKeeper,
-                clientPool, dcMetaCache, metaServerConfig, scheduled, executor, keeperRoles, null);
+        this(clusterDbId, shardDbId, surviveKeepers, previousActiveKeeper, activeKeeperMaster, routeForActiveKeeper,
+                clientPool, dcMetaCache, metaServerConfig, scheduled, executor, keeperRoles, surviveKeepers);
     }
 
-    public TfsKeeperStateChangeJob(Long clusterDbId, Long shardDbId, List<KeeperMeta> keepers,
+    /**
+     * @param surviveKeepers ZK survive; Step2 ACTIVE and Step3 others only
+     * @param unionKeepers survive∪meta; Step1 PREPARE uses target-PREPARE TFS on this list
+     */
+    public TfsKeeperStateChangeJob(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers,
                                    KeeperMeta previousActiveKeeper,
                                    Pair<String, Integer> activeKeeperMaster,
                                    RouteMeta routeForActiveKeeper,
@@ -78,9 +85,10 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
                                    ScheduledExecutorService scheduled,
                                    Executor executor,
                                    Map<KeeperMeta, KeeperState> keeperRoles,
-                                   TfsGateway tfsGateway) {
+                                   List<KeeperMeta> unionKeepers) {
         this.shardContext = new TfsShardContext(clusterDbId, shardDbId);
-        this.keepers = new LinkedList<>(keepers);
+        this.surviveKeepers = new LinkedList<>(surviveKeepers);
+        this.unionKeepers = unionKeepers == null ? this.surviveKeepers : new LinkedList<>(unionKeepers);
         this.previousActiveKeeper = previousActiveKeeper;
         this.activeKeeperMaster = activeKeeperMaster;
         this.routeForActiveKeeper = routeForActiveKeeper;
@@ -90,6 +98,10 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
         this.scheduled = scheduled;
         this.executor = executor;
         this.keeperRoles = keeperRoles;
+    }
+
+    @VisibleForTesting
+    public void setTfsGateway(TfsGateway tfsGateway) {
         this.tfsGateway = tfsGateway;
     }
 
@@ -106,7 +118,7 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
 
         KeeperMeta newActive = findNewActiveKeeper();
         if (newActive == null) {
-            future().setFailure(new Exception("can not find active keeper:" + keepers));
+            future().setFailure(new Exception("can not find active keeper:" + surviveKeepers));
             return;
         }
 
@@ -134,7 +146,7 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
         }
 
         ParallelCommandChain othersChain = new ParallelCommandChain(executor);
-        for (KeeperMeta keeperMeta : keepers) {
+        for (KeeperMeta keeperMeta : surviveKeepers) {
             if (MetaUtils.same(keeperMeta, newActive)) {
                 continue;
             }
@@ -163,7 +175,7 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
     }
 
     private KeeperMeta findNewActiveKeeper() {
-        for (KeeperMeta keeperMeta : keepers) {
+        for (KeeperMeta keeperMeta : surviveKeepers) {
             if (KeeperState.ACTIVE == resolveKeeperState(keeperMeta)) {
                 return keeperMeta;
             }
@@ -172,11 +184,11 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
     }
 
     /**
-     * All TFS keepers whose target role is PREPARE must release lease before new slot opens (D32).
+     * Target-PREPARE TFS on survive∪meta (D38). Step2/3 still use survive only.
      */
     private List<KeeperMeta> collectTargetPrepareTfsKeepers() {
         List<KeeperMeta> result = new LinkedList<>();
-        for (KeeperMeta keeperMeta : keepers) {
+        for (KeeperMeta keeperMeta : unionKeepers) {
             if (KeeperState.PREPARE != resolveKeeperState(keeperMeta)) {
                 continue;
             }
@@ -247,7 +259,7 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
     @Override
     public String toString() {
         return String.format("[%s] master: %s",
-                StringUtil.join(",", keeper -> String.format("%s.%s", keeper.desc(), keeper.isActive()), keepers),
+                StringUtil.join(",", keeper -> String.format("%s.%s", keeper.desc(), keeper.isActive()), surviveKeepers),
                 activeKeeperMaster);
     }
 

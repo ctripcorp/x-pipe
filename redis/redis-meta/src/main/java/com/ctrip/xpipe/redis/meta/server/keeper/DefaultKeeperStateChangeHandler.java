@@ -172,7 +172,7 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		keyedOneThreadTaskExecutor.execute(new Pair<>(clusterDbId, shardDbId), keeperStateChangeJob);
 	}
 
-	private Command<Void> createKeeperActiveElectedJob(Long clusterDbId, Long shardDbId, List<KeeperMeta> keepers,
+	private Command<Void> createKeeperActiveElectedJob(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers,
 													   Pair<String, Integer> master) {
 		String dstDcId;
 		if (dcMetaCache.isCurrentShardParentCluster(clusterDbId, shardDbId)) {
@@ -181,17 +181,23 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 			dstDcId = dcMetaCache.getUpstreamDc(dcMetaCache.getCurrentDc(), clusterDbId, shardDbId);
 		}
 		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dstDcId, clusterDbId);
-		KeeperMeta activeKeeper = findActiveKeeper(keepers);
+		List<KeeperMeta> union = TfsKeeperUtils.mergeSurviveAndShardKeepers(
+				surviveKeepers, dcMetaCache, clusterDbId, shardDbId);
+		if (union.size() != surviveKeepers.size()) {
+			logger.info("[keeperActiveElected][survive∪meta]cluster_{},shard_{},survive={},union={}",
+					clusterDbId, shardDbId, surviveKeepers, union);
+		}
+		KeeperMeta activeKeeper = findActiveKeeper(surviveKeepers);
 		Map<KeeperMeta, KeeperState> keeperRoles = activeKeeper == null
 				? null
-				: KeeperRoleAssigner.assignRoles(activeKeeper, keepers, dcMetaCache);
+				: KeeperRoleAssigner.assignRoles(activeKeeper, union, dcMetaCache);
 
-		if (TfsKeeperUtils.shardHasTfsKeeper(keepers, dcMetaCache)) {
+		if (TfsKeeperUtils.shardHasTfsKeeper(union, dcMetaCache)) {
 			KeeperMeta previousActive = currentMetaManager.getPreviousActiveKeeper(clusterDbId, shardDbId);
-			return new TfsKeeperStateChangeJob(clusterDbId, shardDbId, keepers, previousActive, master,
-					routeMeta, clientPool, dcMetaCache, metaServerConfig, scheduled, executors, keeperRoles, null);
+			return new TfsKeeperStateChangeJob(clusterDbId, shardDbId, surviveKeepers, previousActive, master,
+					routeMeta, clientPool, dcMetaCache, metaServerConfig, scheduled, executors, keeperRoles, union);
 		}
-		return new KeeperStateChangeJob(keepers, master, routeMeta, clientPool, KeeperStateChangeJob.DEFAULT_DELAY_BASE_MILLI,
+		return new KeeperStateChangeJob(surviveKeepers, master, routeMeta, clientPool, KeeperStateChangeJob.DEFAULT_DELAY_BASE_MILLI,
 				KeeperStateChangeJob.DEFAULT_RETRY_TIMES, scheduled, executors, keeperRoles);
 	}
 

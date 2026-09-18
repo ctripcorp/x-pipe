@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
@@ -8,10 +9,12 @@ import com.ctrip.xpipe.utils.OffsetNotifier;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
+import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -27,7 +30,7 @@ public class TimerSlidingWindow implements AutoCloseable {
 
     private CompositeByteBuf window;
 
-    private final NioEventLoopGroup eventLoopGroup;
+    private final EventLoop eventLoop;
     private final KeeperConfig keeperConfig;
     private final CommandWriter commandWriter;
     private final CommandStoreDelay commandStoreDelay;
@@ -52,7 +55,7 @@ public class TimerSlidingWindow implements AutoCloseable {
                               CommandStoreDelay commandStoreDelay, OffsetNotifier offsetNotifier,
                               NioEventLoopGroup eventLoopGroup) throws IOException {
         this.keeperConfig = keeperConfig;
-        this.eventLoopGroup = eventLoopGroup;
+        this.eventLoop = eventLoopGroup.next();
         this.window = ByteBufAllocator.DEFAULT.compositeBuffer(1024);
         this.commandWriter = commandWriter;
         this.commandStoreDelay = commandStoreDelay;
@@ -103,8 +106,22 @@ public class TimerSlidingWindow implements AutoCloseable {
 
     /** 手动刷新所有数据 */
     public void flushAll() throws IOException {
-        flushBuffer();
-    }
+        if(eventLoop.inEventLoop()) {
+            flushBuffer();
+        }else {
+            Future<?> flushFuture = eventLoop.submit(() -> {
+                try {
+                    flushBuffer();
+                } catch (IOException e) {
+                    throw new XpipeRuntimeException("flushBuffer",e);
+                }
+            });
+            try {
+                flushFuture.get(1000,TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+                throw new IOException(e);
+            }
+        }    }
 
     /** 未刷盘字节快照；调用方不得假定与后续操作原子一致 */
     public int bufferSize(){
@@ -243,7 +260,7 @@ public class TimerSlidingWindow implements AutoCloseable {
         long flushIntervalMillis = keeperConfig.getCmdBatchFlushIntervalMillis();
         scheduledDeadlineNano = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(flushIntervalMillis);
         long delayMillis = Math.max(flushIntervalMillis, 1);
-        delayFlushFuture = eventLoopGroup.schedule(this::delayFlush, delayMillis, TimeUnit.MILLISECONDS);
+        delayFlushFuture = eventLoop.schedule(this::delayFlush, delayMillis, TimeUnit.MILLISECONDS);
     }
 
     /** 取消尚未执行的定时刷盘任务 */

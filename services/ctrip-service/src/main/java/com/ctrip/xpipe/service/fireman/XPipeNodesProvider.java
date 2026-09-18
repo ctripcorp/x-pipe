@@ -28,6 +28,10 @@ public class XPipeNodesProvider extends DefaultNodesProvider implements NodesPro
 
     @Override
     public List<AppNode> fetchNodes(Map<String, Object> requestBody) {
+        if (config.disableDb()) {
+            logger.info("[fetchNodes] no-db mode, skip fireman CMS call");
+            return null;
+        }
         Set<String> poolIds = config.getFiremanRelatedPools();
         if (null != poolIds && !poolIds.isEmpty()) {
             Map<Object, Object> queries = new HashMap<>();
