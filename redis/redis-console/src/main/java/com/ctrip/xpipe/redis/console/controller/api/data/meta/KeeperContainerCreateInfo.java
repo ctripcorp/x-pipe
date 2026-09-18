@@ -16,6 +16,8 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
     private String keepercontainerIp;
 
     private int keepercontainerPort;
+    
+    private String keepercontainerHostName;
 
     private long keepercontainerOrgId;
 
@@ -50,6 +52,15 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
         if(keepercontainerPort == 0) {
             throw new CheckFailException("Illegal Port");
         }
+    }
+
+    public String getKeepercontainerHostName() {
+        return keepercontainerHostName;
+    }
+
+    public KeeperContainerCreateInfo setKeepercontainerHostName(String keepercontainerHostName) {
+        this.keepercontainerHostName = keepercontainerHostName;
+        return this;
     }
 
     public String getDcName() {

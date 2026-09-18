@@ -68,6 +68,20 @@ public class KeeperContainerServiceWithoutDB implements KeeperContainerService {
     }
 
     @Override
+    public KeepercontainerTbl findByHostName(String hostname) {
+        if (StringUtil.isEmpty(hostname)) {
+            return null;
+        }
+        List<KeepercontainerTbl> allKeeper = findAll();
+        for(KeepercontainerTbl keeperContainer : allKeeper) {
+            if(hostname.equals(keeperContainer.getKeepercontainerHostName())) {
+                return keeperContainer;
+            }
+        }
+        return null;
+    }
+
+    @Override
     public List<KeepercontainerTbl> findAll() {
         return allKeepContainer.getData();
     }

@@ -231,4 +231,32 @@ public class KeeperContainerUsedInfoMsgCollectorTest {
         assertEquals(expectedToString, situation.toString());
     }
 
+    @Test
+    public void testKeeperContainerUsedInfoModelWithHostName() {
+        KeeperContainerUsedInfoModel model = new KeeperContainerUsedInfoModel("10.0.0.1", "dc1", 1024, 2048);
+        model.setHostName("pod-abc-0");
+        
+        assertEquals("10.0.0.1", model.getKeeperIp());
+        assertEquals("pod-abc-0", model.getHostName());
+        assertEquals("dc1", model.getDcName());
+        assertEquals(1024, model.getActiveInputFlow());
+        assertEquals(2048, model.getActiveRedisUsedMemory());
+    }
+
+    @Test
+    public void testKeeperContainerUsedInfoModelCloneWithHostName() {
+        KeeperContainerUsedInfoModel model = new KeeperContainerUsedInfoModel("10.0.0.1", "dc1", 1024, 2048);
+        model.setHostName("pod-abc-0");
+        model.setOrg("org1");
+        model.setTag("tag1");
+        
+        KeeperContainerUsedInfoModel cloned = KeeperContainerUsedInfoModel.cloneKeeperContainerUsedInfoModel(model);
+        
+        assertEquals("10.0.0.1", cloned.getKeeperIp());
+        assertEquals("pod-abc-0", cloned.getHostName());
+        assertEquals("dc1", cloned.getDcName());
+        assertEquals("org1", cloned.getOrg());
+        assertEquals("tag1", cloned.getTag());
+    }
+
 }

@@ -8,6 +8,8 @@ public class KeeperContainerUsedInfoModel {
 
     private String keeperIp;
 
+    private String hostName;
+
     private String dcName;
 
     private String org;
@@ -60,6 +62,15 @@ public class KeeperContainerUsedInfoModel {
         this.activeRedisUsedMemory = activeRedisUsedMemory;
     }
 
+    public String getHostName() {
+        return hostName;
+    }
+
+    public KeeperContainerUsedInfoModel setHostName(String hostName) {
+        this.hostName = hostName;
+        return this;
+    }
+
     public KeeperContainerUsedInfoModel(KeeperContainerUsedInfoModel model, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard) {
         this.keeperIp = model.getKeeperIp();
         this.dcName = model.getDcName();
@@ -86,8 +97,10 @@ public class KeeperContainerUsedInfoModel {
     public static KeeperContainerUsedInfoModel cloneKeeperContainerUsedInfoModel(KeeperContainerUsedInfoModel model) {
         KeeperContainerUsedInfoModel newModel = new KeeperContainerUsedInfoModel();
         newModel.setKeeperIp(model.getKeeperIp());
+        newModel.setHostName(model.getHostName());
         newModel.setDcName(model.getDcName());
         newModel.setOrg(model.getOrg());
+        newModel.setTag(model.getTag());
         newModel.setAz(model.getAz());
         newModel.setUpdateTime(model.getUpdateTime());
         newModel.setActiveInputFlow(model.getActiveInputFlow());
@@ -130,6 +143,19 @@ public class KeeperContainerUsedInfoModel {
     }
 
     public String getKeeperIp() {
+        return keeperIp;
+    }
+
+    /**
+     * 获取对外展示的IP地址
+     * 对于容器形态(hostname非空),应该返回从ZK反查得到的实时IP
+     * 对于物理机形态(hostname为空),直接返回keeperIp
+     * 
+     * 注意: 调用方需要确保在容器形态下,keeperIp字段已经填充了反查好的实时IP
+     */
+    public String getDisplayIp() {
+        // hostname非空表示容器形态,此时keeperIp应该是反查后的实时IP
+        // hostname为空表示物理机形态,keeperIp就是真实IP
         return keeperIp;
     }
 
@@ -320,6 +346,7 @@ public class KeeperContainerUsedInfoModel {
     public String toString() {
         return "KeeperContainerUsedInfoModel{" +
                 "keeperIp='" + keeperIp + '\'' +
+                ", hostName='" + hostName + '\'' +
                 ", dcName='" + dcName + '\'' +
                 ", org='" + org + '\'' +
                 ", tag='" + tag + '\'' +

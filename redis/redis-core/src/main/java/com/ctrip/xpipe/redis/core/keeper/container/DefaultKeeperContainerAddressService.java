@@ -25,11 +25,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * watch 本机房 ZK 的 keepercontainer 注册路径，维护 hostname 与 IP 的双向映射。
+ * watch 本机房 ZK 的 keepercontainer 注册路径，维护 hostname → IP 的单向映射。
  * <p>
- * 缓存刷新采用全量重建而非增量增删：每次 watch 事件都基于 PathChildrenCache 的当前快照
- * 重算两张表。相比逐节点 put/remove，全量重建让正向与反向映射天然保持一致 —— pod 换 IP 时
- * 旧 IP 的反向映射会随重建自然消失，不需要小心处理"先删旧值再写新值"的时序。
+ * 缓存刷新采用全量重建：每次 watch 事件都基于 PathChildrenCache 的当前快照重算映射表。
  * <p>
  * 另有一个定时任务做兜底全量重建，覆盖 watch 事件丢失与 session 重连后事件补发不全的情况，
  * 因此不需要单独监听连接状态。这个模式与 metaserver 维护集群成员列表的做法一致。
@@ -47,10 +45,9 @@ public class DefaultKeeperContainerAddressService extends AbstractLifecycle
     private ScheduledFuture<?> refreshFuture;
 
     /**
-     * hostname -> ip，以及它的反向表。两张表只在 rebuild 里被整体替换，读路径无锁。
+     * hostname -> ip。只在 rebuild 里被整体替换，读路径无锁。
      */
     private volatile Map<String, String> hostnameToIp = new HashMap<>();
-    private volatile Map<String, String> ipToHostname = new HashMap<>();
 
     public DefaultKeeperContainerAddressService(ZkClient zkClient) {
         this(zkClient, DEFAULT_REFRESH_INTERVAL_MILLI);
@@ -100,7 +97,6 @@ public class DefaultKeeperContainerAddressService extends AbstractLifecycle
             containersCache = null;
         }
         hostnameToIp = new HashMap<>();
-        ipToHostname = new HashMap<>();
     }
 
     @Override
@@ -109,14 +105,8 @@ public class DefaultKeeperContainerAddressService extends AbstractLifecycle
         return hostnameToIp.get(hostname);
     }
 
-    @Override
-    public String getHostnameByIp(String ip) {
-        if (null == ip || ip.isEmpty()) return null;
-        return ipToHostname.get(ip);
-    }
-
     /**
-     * 基于 ZK 当前快照全量重算两张映射表。幂等，可被 watch 事件与定时任务并发触发。
+     * 基于 ZK 当前快照全量重算映射表。幂等，可被 watch 事件与定时任务并发触发。
      */
     synchronized void rebuild() {
         PathChildrenCache cache = containersCache;
@@ -124,10 +114,6 @@ public class DefaultKeeperContainerAddressService extends AbstractLifecycle
 
         List<ChildData> children = cache.getCurrentData();
         Map<String, String> freshHostnameToIp = new HashMap<>();
-        Map<String, String> freshIpToHostname = new HashMap<>();
-        // 已判定有歧义的 IP。必须单独记账：一旦从 freshIpToHostname 里删掉冲突项，
-        // 后续同 IP 的 put 又会返回 null，靠返回值判断会漏掉第三个及之后的声明者。
-        Set<String> ambiguousIps = new HashSet<>();
 
         for (ChildData child : children) {
             String hostname = hostnameOf(child);
@@ -135,35 +121,18 @@ public class DefaultKeeperContainerAddressService extends AbstractLifecycle
             if (null == hostname || null == ip) continue;
 
             // 正向映射可信：hostname 取自 ZK 子节点名，每个容器只写自己的节点，不会串。
-            // 同 IP 的多个 hostname 都保留，误发的命令由容器端 hostname 自校验拦下。
             freshHostnameToIp.put(hostname, ip);
-
-            if (ambiguousIps.contains(ip)) {
-                logger.warn("[rebuild][ip ambiguous]{} also claimed by {}", ip, hostname);
-                continue;
-            }
-
-            String previousOwner = freshIpToHostname.put(ip, hostname);
-            if (null != previousOwner) {
-                // Cilium 回收 IP 后立即分配给新 pod，而旧 pod 的临时节点尚未随 session 过期被清理。
-                // 多个 hostname 争同一 IP 时反向解析已不可信，丢弃该 IP 的反向映射，
-                // 让依赖它的入站校验走"解析不到"的拒绝路径，而不是赌一个可能错误的 hostname。
-                logger.warn("[rebuild][ip conflict]{} claimed by both {} and {}", ip, previousOwner, hostname);
-                ambiguousIps.add(ip);
-                freshIpToHostname.remove(ip);
-            }
         }
 
         // 监听的是注册根路径，任一容器的增删改都会触发全量重建，因此重复内容很常见
         // （扩缩容时一批 pod 逐个上下线，以及定时兜底与 watch 事件叠加）。
-        // 内容无变化时直接返回，省掉两次 volatile 写与旧 map 的提前失效。
-        if (freshHostnameToIp.equals(hostnameToIp) && freshIpToHostname.equals(ipToHostname)) {
+        // 内容无变化时直接返回，省掉一次 volatile 写与旧 map 的提前失效。
+        if (freshHostnameToIp.equals(hostnameToIp)) {
             return;
         }
 
         logger.info("[rebuild]{} -> {}", hostnameToIp, freshHostnameToIp);
         this.hostnameToIp = freshHostnameToIp;
-        this.ipToHostname = freshIpToHostname;
     }
 
     private String hostnameOf(ChildData child) {

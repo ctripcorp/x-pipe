@@ -3,9 +3,12 @@ package com.ctrip.xpipe.redis.core.keeper.container;
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 
 /**
- * hostname 与 IP 的双向解析，数据来源是本机房 ZK 注册路径下由 keepercontainer 自注册的临时节点。
+ * hostname → IP 单向解析，数据来源是本机房 ZK 注册路径下由 keepercontainer 自注册的临时节点。
  * <p>
- * 所有需要"用 hostname 反查 IP"或"用 IP 反查 hostname"的入口都只依赖本接口，不直接访问 ZK。
+ * 外部系统（metaserver/checker）从 meta 得到 hostname，自己 watch ZK 得到 IP，
+ * 调用 console API 时同时携带 hostname + IP，无需 console 反向查询。
+ * 因此只提供 hostname→IP 单向映射，不提供 IP→hostname 反向映射。
+ * <p>
  * console、metaserver、checker 各自装配一份，watch 的都是本机房那套 ZK；跨机房解析不走这里，
  * 而是转发给目标机房的 console。
  * <p>
@@ -19,11 +22,4 @@ public interface KeeperContainerAddressService extends Lifecycle {
      * @return 该 hostname 当前注册的 IP；容器未注册或已下线时返回 null
      */
     String getIpByHostname(String hostname);
-
-    /**
-     * @param ip 容器 IP
-     * @return 当前持有该 IP 的 pod hostname；查不到返回 null，
-     *         意味着这是物理机 IP，或是 pod 重建前的过期 IP
-     */
-    String getHostnameByIp(String ip);
 }

@@ -20,6 +20,7 @@ public class KeeperContainerInfoModel implements Serializable {
     private long clusterCount;
     private String diskType;
     private long logicalBuId;
+    private String keepercontainerHostName;
 
     public static long getSerialVersionUID() {
         return serialVersionUID;
@@ -120,6 +121,14 @@ public class KeeperContainerInfoModel implements Serializable {
 
     public void setLogicalBuId(long logicalBuId) {
         this.logicalBuId = logicalBuId;
+    }
+
+    public String getKeepercontainerHostName() {
+        return keepercontainerHostName;
+    }
+
+    public void setKeepercontainerHostName(String keepercontainerHostName) {
+        this.keepercontainerHostName = keepercontainerHostName;
     }
 
     @Override

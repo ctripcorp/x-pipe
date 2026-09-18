@@ -51,28 +51,22 @@ public class DefaultKeeperContainerAddressServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testResolveBothDirectionsAfterRegister() throws Exception {
+    public void testResolveAfterRegister() throws Exception {
         register(POD_A, "10.0.0.5");
 
         waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A)), 3000);
-        Assert.assertEquals(POD_A, service.getHostnameByIp("10.0.0.5"));
 
-        // 未注册的 hostname 与物理机 IP 都应解析不到，而非返回脏值
+        // 未注册的 hostname 应解析不到，而非返回脏值
         Assert.assertNull(service.getIpByHostname("not-registered"));
-        Assert.assertNull(service.getHostnameByIp("1.1.1.1"));
     }
 
     @Test
-    public void testIpChangeEvictsStaleReverseMapping() throws Exception {
+    public void testIpChange() throws Exception {
         register(POD_A, "10.0.0.5");
         waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A)), 3000);
 
         setData(POD_A, "10.0.0.9");
         waitConditionUntilTimeOut(() -> "10.0.0.9".equals(service.getIpByHostname(POD_A)), 3000);
-
-        // 旧 IP 的反查必须失效，否则用旧 IP 发来的命令会被误认为合法
-        Assert.assertNull(service.getHostnameByIp("10.0.0.5"));
-        Assert.assertEquals(POD_A, service.getHostnameByIp("10.0.0.9"));
     }
 
     /**
@@ -89,24 +83,19 @@ public class DefaultKeeperContainerAddressServiceTest extends AbstractTest {
         // 节点消失到新节点建立之间存在窗口，此时解析不到是正确行为：
         // 宁可让调用方拿到 null 走拒绝路径，也不能返回已失效的旧 IP
         waitConditionUntilTimeOut(() -> null == service.getIpByHostname(POD_A), 3000);
-        Assert.assertNull(service.getHostnameByIp("10.0.0.5"));
 
         register(POD_A, "10.0.0.9");
         waitConditionUntilTimeOut(() -> "10.0.0.9".equals(service.getIpByHostname(POD_A)), 3000);
-
-        Assert.assertEquals(POD_A, service.getHostnameByIp("10.0.0.9"));
-        Assert.assertNull("旧 IP 不能复活", service.getHostnameByIp("10.0.0.5"));
     }
 
     @Test
-    public void testNodeRemovedClearsBothDirections() throws Exception {
+    public void testNodeRemoved() throws Exception {
         register(POD_A, "10.0.0.5");
         waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A)), 3000);
 
         delete(POD_A);
 
         waitConditionUntilTimeOut(() -> null == service.getIpByHostname(POD_A), 3000);
-        Assert.assertNull(service.getHostnameByIp("10.0.0.5"));
     }
 
     @Test
@@ -116,9 +105,6 @@ public class DefaultKeeperContainerAddressServiceTest extends AbstractTest {
 
         waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A))
                 && "10.0.0.6".equals(service.getIpByHostname(POD_B)), 3000);
-
-        Assert.assertEquals(POD_A, service.getHostnameByIp("10.0.0.5"));
-        Assert.assertEquals(POD_B, service.getHostnameByIp("10.0.0.6"));
 
         // 单个容器下线不影响其他容器
         delete(POD_A);
@@ -134,7 +120,6 @@ public class DefaultKeeperContainerAddressServiceTest extends AbstractTest {
         // 定时兜底路径：即使 watch 事件全部丢失，全量重建也要能纠正缓存
         service.rebuild();
         Assert.assertEquals("10.0.0.5", service.getIpByHostname(POD_A));
-        Assert.assertEquals(POD_A, service.getHostnameByIp("10.0.0.5"));
     }
 
     @Test
@@ -151,12 +136,10 @@ public class DefaultKeeperContainerAddressServiceTest extends AbstractTest {
 
     /**
      * 正向映射不可能一对多：hostname 是 ZK 节点名，同名节点只能存在一个，
-     * 重复 create 会被 ZK 以 NodeExists 拒绝。这是读侧不必处理
-     * "一个 hostname 对应多个 IP" 的结构性前提 —— 与反向映射不同，
-     * 后者确实可能被多个 hostname 争抢（见下一个用例）。
+     * 重复 create 会被 ZK 以 NodeExists 拒绝。
      */
     @Test
-    public void testHostnameIsStructurallyUniqueSoForwardMappingCannotFanOut() throws Exception {
+    public void testHostnameIsStructurallyUnique() throws Exception {
         register(POD_A, "10.0.0.5");
         waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A)), 3000);
 
@@ -173,48 +156,18 @@ public class DefaultKeeperContainerAddressServiceTest extends AbstractTest {
     }
 
     @Test
-    public void testIpClaimedByTwoHostnamesDropsReverseMapping() throws Exception {
+    public void testMultipleHostnamesCanShareSameIp() throws Exception {
         // Cilium 回收 IP 后立刻分给新 pod，旧 pod 的临时节点还没随 session 过期被清理
+        // 此时多个 hostname 可能对应同一个 IP，正向解析各自仍可用
         register(POD_A, "10.0.0.5");
         register(POD_B, "10.0.0.5");
 
         waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A))
                 && "10.0.0.5".equals(service.getIpByHostname(POD_B)), 3000);
 
-        // 正向解析各自仍可用，但反向解析不可信，必须返回 null 让调用方走拒绝路径，
-        // 而不是赌一个可能错误的 hostname
-        Assert.assertNull(service.getHostnameByIp("10.0.0.5"));
-
-        // 旧 pod 节点消失后反向解析恢复
-        delete(POD_A);
-        waitConditionUntilTimeOut(() -> POD_B.equals(service.getHostnameByIp("10.0.0.5")), 3000);
-    }
-
-    /**
-     * 三个及以上 hostname 争同一 IP。用 Map.put 的返回值判断冲突时，
-     * 删掉冲突项后第三个声明者的 put 会返回 null，冲突检测就失效了，
-     * 反向映射会残留最后一个声明者。歧义 IP 必须单独记账。
-     */
-    @Test
-    public void testThreeHostnamesClaimingOneIpStillDropsReverseMapping() throws Exception {
-        register(POD_A, "10.0.0.5");
-        register(POD_B, "10.0.0.5");
-        register("keepercontainer-pod-c-0", "10.0.0.5");
-
-        waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname("keepercontainer-pod-c-0")), 3000);
-
-        Assert.assertNull(service.getHostnameByIp("10.0.0.5"));
-
-        // 三个正向映射都应保留，误发命令由容器端 hostname 自校验拦下
+        // 两个正向映射都应保留，误发命令由容器端 hostname 自校验拦下
         Assert.assertEquals("10.0.0.5", service.getIpByHostname(POD_A));
         Assert.assertEquals("10.0.0.5", service.getIpByHostname(POD_B));
-        Assert.assertEquals("10.0.0.5", service.getIpByHostname("keepercontainer-pod-c-0"));
-
-        // 收敛到只剩一个声明者后反向解析恢复
-        delete(POD_A);
-        delete(POD_B);
-        waitConditionUntilTimeOut(
-                () -> "keepercontainer-pod-c-0".equals(service.getHostnameByIp("10.0.0.5")), 3000);
     }
 
     /**

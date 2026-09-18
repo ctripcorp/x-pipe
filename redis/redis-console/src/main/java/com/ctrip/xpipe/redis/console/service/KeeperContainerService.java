@@ -13,6 +13,13 @@ public interface KeeperContainerService {
 
 	KeepercontainerTbl find(long id);
 	KeepercontainerTbl find(String ip);
+	
+	/**
+	 * 按 hostname 查找 keepercontainer
+	 * @param hostname 容器的 pod hostname
+	 * @return 找到的容器，不存在则返回 null
+	 */
+	KeepercontainerTbl findByHostName(String hostname);
 
 	List<KeepercontainerTbl> findAll();
 	List<KeepercontainerTbl> findAllByDcName(String dcName);

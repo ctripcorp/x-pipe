@@ -21,6 +21,7 @@ import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.tuple.Pair;
@@ -70,6 +71,9 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
 
     @Autowired
     private KeeperContainerDiskInfoCollector keeperContainerDiskInfoCollector;
+
+    @Autowired
+    private KeeperContainerAddressService keeperContainerAddressService;
 
     private ScheduledExecutorService scheduled;
 
@@ -196,8 +200,9 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
             }
             if (selectedDcName.equals(dcMeta.getId())) {
                 dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
-                    if (!result.containsKey(keeperContainerMeta.getIp())) {
-                        result.put(keeperContainerMeta.getIp(),  getKeeperBasicModel(keeperContainerMeta.getIp(), dcMeta.getId()));
+                    String key = getContainerKey(keeperContainerMeta.getIp(), keeperContainerMeta.getHostname());
+                    if (!result.containsKey(key)) {
+                        result.put(key,  getKeeperBasicModel(keeperContainerMeta.getIp(), keeperContainerMeta.getHostname(), dcMeta.getId()));
                     }
                 });
             }
@@ -207,10 +212,11 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
 
     private void generateKeeperMsg(String dc, String cluster, String shard, List<KeeperMeta> keeperMetas, Map<String, KeeperContainerUsedInfoModel> result, RedisMsg redisMsg) {
         for (KeeperMeta keeperMeta : keeperMetas) {
-            if (!result.containsKey(keeperMeta.getIp())) {
-                result.put(keeperMeta.getIp(), getKeeperBasicModel(keeperMeta.getIp(), dc));
+            String key = getContainerKey(keeperMeta.getIp(), keeperMeta.getHostname());
+            if (!result.containsKey(key)) {
+                result.put(key, getKeeperBasicModel(keeperMeta.getIp(), keeperMeta.getHostname(), dc));
             }
-            KeeperContainerUsedInfoModel model = result.get(keeperMeta.getIp());
+            KeeperContainerUsedInfoModel model = result.get(key);
             DcClusterShardKeeper dcClusterShardKeeper = new DcClusterShardKeeper(dc, cluster, shard, keeperMeta.getActive(), keeperMeta.getPort());
             KeeperContainerUsedInfoModel.KeeperUsedInfo keeperUsedInfo = new KeeperContainerUsedInfoModel.KeeperUsedInfo(redisMsg.getUsedMemory(), redisMsg.getInPutFlow(), keeperMeta.getIp());
             model.getDetailInfo().put(dcClusterShardKeeper, keeperUsedInfo);
@@ -225,6 +231,14 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
                     .setUpdateTime(DateTimeUtils.currentTimeAsString());
 
         }
+    }
+
+    private String getContainerKey(String ip, String hostname) {
+        // 聚合key统一规则: hostname 非空 ? hostname : ip
+        if (hostname != null && !hostname.isEmpty()) {
+            return hostname;
+        }
+        return ip;
     }
 
     protected ClusterMeta getDcMeta(ClusterMeta clusterMeta, String dcName) {
@@ -243,9 +257,35 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         return null;
     }
 
-    private KeeperContainerUsedInfoModel getKeeperBasicModel(String ip, String dcName) {
-        KeeperContainerUsedInfoModel model = new KeeperContainerUsedInfoModel(ip, dcName, 0, 0);
-        KeepercontainerTbl keepercontainerTbl = keeperContainerService.find(ip);
+    private KeeperContainerUsedInfoModel getKeeperBasicModel(String ip, String hostname, String dcName) {
+        // 先尝试按hostname查找(容器形态),找不到再按IP查找(物理机形态)
+        KeepercontainerTbl keepercontainerTbl = null;
+        if (hostname != null && !hostname.isEmpty()) {
+            keepercontainerTbl = keeperContainerService.findByHostName(hostname);
+        }
+        if (keepercontainerTbl == null && ip != null && !ip.isEmpty()) {
+            keepercontainerTbl = keeperContainerService.find(ip);
+        }
+        
+        // 对于容器形态,反查实时IP用于对外展示
+        String displayIp = ip;
+        if (hostname != null && !hostname.isEmpty()) {
+            // 容器形态:从ZK反查实时IP
+            String resolvedIp = keeperContainerAddressService.getIpByHostname(hostname);
+            if (resolvedIp != null) {
+                displayIp = resolvedIp;
+            } else {
+                logger.warn("[getKeeperBasicModel] failed to resolve hostname: {}, keeperIp may be stale", hostname);
+            }
+        }
+        
+        KeeperContainerUsedInfoModel model = new KeeperContainerUsedInfoModel(displayIp, dcName, 0, 0);
+        model.setHostName(hostname);
+        
+        if (keepercontainerTbl == null) {
+            logger.warn("[getKeeperBasicModel] keepercontainer not found for ip: {}, hostname: {}", ip, hostname);
+            return model;
+        }
 
         OrganizationTbl organizationTbl = organizationService.getOrganization(keepercontainerTbl.getKeepercontainerOrgId());
         if (organizationTbl != null) {

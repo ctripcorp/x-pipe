@@ -42,6 +42,11 @@ public class RedisServiceWithoutDB implements RedisService {
     }
 
     @Override
+    public List<RedisTbl> findAllRedisWithSameHostName(String hostName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public List<RedisTbl> findAllRedisByIp(String ip) {
         throw new UnsupportedOperationException();
     }

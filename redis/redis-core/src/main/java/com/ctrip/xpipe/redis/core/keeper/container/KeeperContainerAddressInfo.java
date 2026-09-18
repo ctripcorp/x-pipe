@@ -11,6 +11,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class KeeperContainerAddressInfo {
 
+    /**
+     * keepercontainer 管理面端口，固定为 8080
+     */
+    public static final int KEEPER_CONTAINER_PORT = 8080;
+
     @JsonProperty("IpAddress")
     private String ipAddress;
 

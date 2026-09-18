@@ -37,6 +37,7 @@ import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
@@ -189,8 +190,10 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	}
 
 	@Bean
-	public KeeperContainerCheckerService keeperContainerService() {
-		return new DefaultKeeperContainerService();
+	public KeeperContainerCheckerService keeperContainerService(KeeperContainerAddressService keeperContainerAddressService) {
+		DefaultKeeperContainerService service = new DefaultKeeperContainerService();
+		service.setKeeperContainerAddressService(keeperContainerAddressService);
+		return service;
 	}
 
 	@Bean
