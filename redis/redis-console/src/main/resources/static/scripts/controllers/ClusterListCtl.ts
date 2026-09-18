@@ -80,6 +80,7 @@ function ClusterListCtl($rootScope, $scope, $window, $stateParams, $state, AppUt
     $scope.filteredClusters = [];
     $scope.sourceClusters = [];
 
+
     initClusterList();
 
     var dcs = [];

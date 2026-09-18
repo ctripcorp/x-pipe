@@ -33,6 +33,10 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int cmdBatchLowRateBps = -1;
 
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
+
+	private int prepareWatchMetaIntervalMilli = DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI;
+	private boolean prepareStoreWatchEnabled = false;
+	private boolean pubsubParseEnabled = false;
 	
 	
 	public TestKeeperConfig(){
@@ -157,9 +161,16 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return commandReaderFlyingThreshold;
 	}
 
+	private boolean commandOffsetNotifyCoalescingEnabled = true;
+
 	@Override
 	public boolean isCommandOffsetNotifyCoalescingEnabled() {
-		return true;
+		return commandOffsetNotifyCoalescingEnabled;
+	}
+
+	public TestKeeperConfig setCommandOffsetNotifyCoalescingEnabled(boolean commandOffsetNotifyCoalescingEnabled) {
+		this.commandOffsetNotifyCoalescingEnabled = commandOffsetNotifyCoalescingEnabled;
+		return this;
 	}
 
 	@Override
@@ -359,6 +370,36 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	}
 
 	@Override
+	public boolean isPrepareStoreWatchEnabled() {
+		return prepareStoreWatchEnabled;
+	}
+
+	public TestKeeperConfig setPrepareStoreWatchEnabled(boolean prepareStoreWatchEnabled) {
+		this.prepareStoreWatchEnabled = prepareStoreWatchEnabled;
+		return this;
+	}
+
+	@Override
+	public int getPrepareWatchMetaIntervalMilli() {
+		return prepareWatchMetaIntervalMilli;
+	}
+
+	public TestKeeperConfig setPrepareWatchMetaIntervalMilli(int prepareWatchMetaIntervalMilli) {
+		this.prepareWatchMetaIntervalMilli = prepareWatchMetaIntervalMilli;
+		return this;
+	}
+
+	@Override
+	public boolean isPubsubParseEnabled() {
+		return pubsubParseEnabled;
+	}
+
+	public TestKeeperConfig setPubsubParseEnabled(boolean pubsubParseEnabled) {
+		this.pubsubParseEnabled = pubsubParseEnabled;
+		return this;
+	}
+
+	@Override
 	public boolean stopWriteCk() {
 		return false;
 	}
@@ -455,5 +496,30 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public int getBlockSizeThreshold() {
 		return blockSizeThreshold;
+	}
+
+	@Override
+	public int getAsyncWriteMaxBytes() {
+		return 65536;
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalBytes() {
+		return DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES;
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalMillis() {
+		return DEFAULT_ASYNC_FSYNC_INTERVAL_MILLIS;
+	}
+
+	@Override
+	public int getAsyncIoThreads() {
+		return DEFAULT_ASYNC_IO_THREADS;
+	}
+
+	@Override
+	public long getAsyncTailCacheMaxSizeBytes() {
+		return DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR;
 	}
 }

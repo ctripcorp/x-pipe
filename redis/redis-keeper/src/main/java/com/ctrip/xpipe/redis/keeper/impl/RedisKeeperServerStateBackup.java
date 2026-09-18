@@ -40,6 +40,12 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 	}
 
 	@Override
+	public void becomePrepare(Endpoint masterAddress) {
+		logger.info("[becomePrepare]{}", masterAddress);
+		doBecomePrepare(masterAddress);
+	}
+
+	@Override
 	public void becomeActive(Endpoint masterAddress) {
 		
 		logger.info("[becomeActive]{}", masterAddress);

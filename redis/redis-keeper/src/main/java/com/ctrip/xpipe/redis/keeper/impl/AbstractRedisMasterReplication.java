@@ -507,8 +507,17 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
                 redisMaster.getCurrentReplicationStore().confirmRdb(rdbStore);
             }
         } catch (Throwable th) {
-            dumpFail(th);
+            // T-H2.F1: default dumpFail; Default overrides to fail its own currentPsync
+            confirmFail(th);
         }
+    }
+
+    /**
+     * Confirm-path failure hook. Default: {@link #dumpFail} (Rdbonly teardown via dumper).
+     * {@link DefaultRedisMasterReplication} overrides to close/fail its {@code currentPsync}.
+     */
+    protected void confirmFail(Throwable th) {
+        dumpFail(th);
     }
 
     protected abstract void doReFullSync();
@@ -524,7 +533,14 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
     @Override
     public void endWriteRdb() {
-        dumpFinished();
+        // Only CONNECTED when an in-flight dump finishes successfully.
+        // dumpFail already cleared rdbDumper — do not treat a late endWriteRdb as success (T-H2.F1).
+        RdbDumper dumper = rdbDumper.getAndSet(null);
+        if (dumper == null) {
+            logger.info("[endWriteRdb][no active dumper]{}", this);
+            return;
+        }
+        dumper.dumpFinished();
         doEndWriteRdb();
     }
 
@@ -577,22 +593,13 @@ public abstract class AbstractRedisMasterReplication extends AbstractLifecycle i
 
     protected abstract void doOnUpdateXsync();
 
-    protected void dumpFinished() {
-        logger.info("[dumpFinished]{}", this);
-        RdbDumper dumper = rdbDumper.get();
-        if (dumper != null) {
-            rdbDumper.set(null);
-            dumper.dumpFinished();
-        }
-    }
-
     protected void dumpFail(Throwable th) {
+        logger.error("[dumpFail]{}", this, th);
         if (replicationObserver != null) {
             replicationObserver.onDumpFail(th);
         }
-        RdbDumper dumper = rdbDumper.get();
+        RdbDumper dumper = rdbDumper.getAndSet(null);
         if (dumper != null) {
-            rdbDumper.set(null);
             dumper.dumpFail(th);
         }
     }

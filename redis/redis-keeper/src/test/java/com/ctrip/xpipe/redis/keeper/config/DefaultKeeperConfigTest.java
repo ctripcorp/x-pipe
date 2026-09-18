@@ -107,6 +107,24 @@ public class DefaultKeeperConfigTest extends AbstractRedisKeeperTest{
 	}
 
 	@Test
+	public void testPrepareWatchAndPubsubDefaultsWhenQConfigAbsent() {
+		KeeperConfig keeperConfig = new DefaultKeeperConfig();
+		Assert.assertFalse(keeperConfig.isPrepareStoreWatchEnabled());
+		Assert.assertFalse(keeperConfig.isPubsubParseEnabled());
+		Assert.assertEquals(KeeperConfig.DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI,
+				keeperConfig.getPrepareWatchMetaIntervalMilli());
+	}
+
+	@Test
+	public void testTestKeeperConfigPrepareWatchAndPubsubMatchProductionDefaults() {
+		KeeperConfig keeperConfig = new TestKeeperConfig();
+		Assert.assertFalse(keeperConfig.isPrepareStoreWatchEnabled());
+		Assert.assertFalse(keeperConfig.isPubsubParseEnabled());
+		Assert.assertEquals(KeeperConfig.DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI,
+				keeperConfig.getPrepareWatchMetaIntervalMilli());
+	}
+
+	@Test
 	public void testCommandOffsetNotifyCoalescingConfig() {
 		String key = DefaultKeeperConfig.KEY_COMMAND_OFFSET_NOTIFY_COALESCING_ENABLED;
 		String oldValue = System.getProperty(key);

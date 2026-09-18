@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -64,6 +66,43 @@ public class VarInt {
             byte b = (byte) (bits + ((v != 0) ? 0x80 : 0));
             byteBuffer.put(b);
         } while (v != 0);
+    }
+
+    public static void encodeToByteBuf(int v, ByteBuf byteBuf) {
+        do {
+            int bits = v & 0x7F;
+            v >>>= 7;
+            byte b = (byte) (bits + ((v != 0) ? 0x80 : 0));
+            byteBuf.writeByte(b);
+        } while (v != 0);
+    }
+
+    public static int getVarInt(ByteBuf src) {
+        int tmp;
+        if ((tmp = src.readByte()) >= 0) {
+            return tmp;
+        }
+        int result = tmp & 0x7f;
+        if ((tmp = src.readByte()) >= 0) {
+            result |= tmp << 7;
+        } else {
+            result |= (tmp & 0x7f) << 7;
+            if ((tmp = src.readByte()) >= 0) {
+                result |= tmp << 14;
+            } else {
+                result |= (tmp & 0x7f) << 14;
+                if ((tmp = src.readByte()) >= 0) {
+                    result |= tmp << 21;
+                } else {
+                    result |= (tmp & 0x7f) << 21;
+                    result |= (tmp = src.readByte()) << 28;
+                    while (tmp < 0) {
+                        tmp = src.readByte();
+                    }
+                }
+            }
+        }
+        return result;
     }
 
 

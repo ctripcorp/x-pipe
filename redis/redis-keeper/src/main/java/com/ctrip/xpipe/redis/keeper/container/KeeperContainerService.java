@@ -85,6 +85,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
     @Override
     protected void doDispose() throws Exception {
         this.searcherExecutor.shutdown();
+        containerResourceManager.shutdownAsyncFileSystem();
     }
 
     @Override
@@ -125,9 +126,10 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
                     }
 
                     File baseDir = getReplicationStoreDir(keeperMeta);
-                    RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperTransMeta.getReplId(), keeperMeta,
+                    DefaultRedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(keeperTransMeta.getReplId(), keeperMeta,
                             keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager,
-                            redisOpParser, replDelayConfigCache);
+                            redisOpParser, containerResourceManager.getAsyncFileSystem(), replDelayConfigCache,
+                            keeperContainerConfig.isTfsMode());
 
                     try {
                         register(redisKeeperServer);
@@ -339,9 +341,10 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
     private RedisKeeperServer createRedisKeeperServer(Long replId, KeeperMeta keeper,
                                                       File baseDir) throws Exception {
 
-        RedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(replId, keeper, keeperConfig,
+        DefaultRedisKeeperServer redisKeeperServer = new DefaultRedisKeeperServer(replId, keeper, keeperConfig,
                 baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager,
-                redisOpParser, replDelayConfigCache);
+                redisOpParser, containerResourceManager.getAsyncFileSystem(), replDelayConfigCache,
+                keeperContainerConfig.isTfsMode());
 
         register(redisKeeperServer);
         return redisKeeperServer;

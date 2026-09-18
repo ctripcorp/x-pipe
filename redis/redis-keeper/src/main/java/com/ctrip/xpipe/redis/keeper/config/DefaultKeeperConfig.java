@@ -8,6 +8,7 @@ import com.ctrip.xpipe.config.DefaultFileConfig;
 import com.ctrip.xpipe.config.DefaultPropertyConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
+import io.netty.util.internal.PlatformDependent;
 
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP_CROSSREGION;
@@ -70,6 +71,10 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
     private static String KEY_APPLIER_NETTY_RECV_BUFFER_SIZE = "applier.netty.recv.buffer.size";
 
 	private static String KEY_RECORD_WRONG_STREAM = "keeper.record.wrong.stream";
+
+	public static final String KEY_PREPARE_STORE_WATCH_ENABLED = "keeper.prepare.store.watch.enabled";
+	public static final String KEY_PREPARE_WATCH_META_INTERVAL_MILLI = "keeper.prepare.watch.meta.interval.milli";
+	public static final String KEY_PUBSUB_PARSE_ENABLED = "keeper.pubsub.parse.enabled";
 
 	private static String KEY_REDIS_RATE_LIMITE_MIN = "redis.rate.limit.min";
 	private static String KEY_REDIS_RATE_LIMITE_MAX = "redis.rate.limit.max";
@@ -277,6 +282,21 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	}
 
 	@Override
+	public boolean isPrepareStoreWatchEnabled() {
+		return getBooleanProperty(KEY_PREPARE_STORE_WATCH_ENABLED, false);
+	}
+
+	@Override
+	public int getPrepareWatchMetaIntervalMilli() {
+		return getIntProperty(KEY_PREPARE_WATCH_META_INTERVAL_MILLI, DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI);
+	}
+
+	@Override
+	public boolean isPubsubParseEnabled() {
+		return getBooleanProperty(KEY_PUBSUB_PARSE_ENABLED, false);
+	}
+
+	@Override
 	public boolean stopWriteCk() {
 		return getBooleanProperty(KEY_STOP_WRITE_CK, false);
 	}
@@ -349,5 +369,38 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getBlockSizeThreshold() {
 		return getIntProperty(KEY_BLOCK_SIZE_THRESHOLD, 8192);
+	}
+
+	public int getAsyncWriteMaxBytes() {
+		return getIntProperty(KEY_ASYNC_WRITE_MAX_BYTES, 65536);
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalBytes() {
+		return getLongProperty(KEY_ASYNC_FSYNC_INTERVAL_BYTES, DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalMillis() {
+		return getLongProperty(KEY_ASYNC_FSYNC_INTERVAL_MILLIS, DEFAULT_ASYNC_FSYNC_INTERVAL_MILLIS);
+	}
+
+	@Override
+	public int getAsyncIoThreads() {
+		return getIntProperty(KEY_ASYNC_IO_THREADS, DEFAULT_ASYNC_IO_THREADS);
+	}
+
+	@Override
+	public long getAsyncTailCacheMaxSizeBytes() {
+		return getLongProperty(KEY_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES, defaultAsyncTailCacheMaxSizeBytes());
+	}
+
+	static long defaultAsyncTailCacheMaxSizeBytes() {
+		long maxDirect = PlatformDependent.maxDirectMemory();
+		if (maxDirect <= 0) {
+			return DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR;
+		}
+		long sized = (long) (maxDirect * DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_RATIO);
+		return Math.max(DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR, sized);
 	}
 }
