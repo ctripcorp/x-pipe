@@ -1,13 +1,14 @@
-package com.ctrip.xpipe.redis.checker.impl;
+package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
+import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.mockito.Mockito.when;
 
@@ -15,7 +16,7 @@ import static org.mockito.Mockito.when;
  * Task 8: console 直连容器寻址 + 对外 API 反查
  * 测试 DefaultKeeperContainerService 通过 hostname 解析 IP 的能力
  */
-public class DefaultKeeperContainerServiceTest extends AbstractCheckerTest {
+public class DefaultKeeperContainerServiceTest extends AbstractConsoleTest {
 
     @Mock
     private KeeperContainerAddressService addressService;
@@ -26,7 +27,7 @@ public class DefaultKeeperContainerServiceTest extends AbstractCheckerTest {
     public void setup() {
         MockitoAnnotations.initMocks(this);
         keeperContainerService = new DefaultKeeperContainerService();
-        keeperContainerService.setKeeperContainerAddressService(addressService);
+        ReflectionTestUtils.setField(keeperContainerService, "keeperContainerAddressService", addressService);
     }
 
     @Test

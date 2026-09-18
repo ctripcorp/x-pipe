@@ -1,16 +1,15 @@
 package com.ctrip.xpipe.redis.meta.server.spring;
 
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.core.keeper.container.DefaultKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
-import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierStateController;
-import com.ctrip.xpipe.redis.meta.server.keeper.applier.manager.DefaultApplierStateController;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.job.ConsoleNotifycationTask;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierStateController;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.manager.DefaultApplierStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcNotifier;
 import com.ctrip.xpipe.redis.meta.server.redis.RedisStateManager;
@@ -76,10 +75,7 @@ public class Production extends AbstractProfile{
 	}
 
 	@Bean
-	public KeeperContainerAddressService keeperContainerAddressService(ZkClient zkClient) throws Exception {
-		DefaultKeeperContainerAddressService service = new DefaultKeeperContainerAddressService(zkClient);
-		service.initialize();
-		service.start();
-		return service;
+	public KeeperContainerAddressService keeperContainerAddressService(ZkClient zkClient) {
+		return new DefaultKeeperContainerAddressService(zkClient);
 	}
 }

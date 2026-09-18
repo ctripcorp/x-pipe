@@ -9,7 +9,6 @@ import com.ctrip.xpipe.command.RetryCommandFactory;
 import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
-import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.exception.ServerException;
@@ -26,16 +25,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import org.springframework.util.CollectionUtils;
-
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static com.ctrip.xpipe.redis.checker.resource.Resource.*;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.KEEPER_KEYED_NETTY_CLIENT_POOL;
+import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_COMMAND_EXECUTOR;
 import static com.ctrip.xpipe.redis.console.keeper.AutoMigrateOverloadKeeperContainerAction.KEEPER_MIGRATION_ACTIVE_ROLLBACK_ERROR;
 
 @Service
@@ -294,9 +292,11 @@ public class ShardModelServiceImpl implements ShardModelService{
             return false;
         }
         Endpoint activeKeeper = null, backUpKeeper = null;
+        String activeKeeperHostname = null;
         for (RedisTbl keeper : keepers) {
             if (keeper.getRedisIp().equals(activeIp)) {
                 activeKeeper = new DefaultEndPoint(keeper.getRedisIp(), keeper.getRedisPort());
+                activeKeeperHostname = keeper.getHostName();
             } else if (keeper.getRedisIp().equals(backupIp)) {
                 backUpKeeper = new DefaultEndPoint(keeper.getRedisIp(), keeper.getRedisPort());
             }
@@ -307,7 +307,7 @@ public class ShardModelServiceImpl implements ShardModelService{
                     shardModel.getShardTbl().getShardName(), activeIp, backupIp, keepers.size());
             return false;
         }
-        Command<?> switchMasterCommand = retryCommandFactory.createRetryCommand(new KeeperResetCommand<>(activeKeeper.getHost(), shardModel.getShardTbl().getId(), keeperContainerCheckerService));
+        Command<?> switchMasterCommand = retryCommandFactory.createRetryCommand(new KeeperResetCommand<>(activeKeeper.getHost(), activeKeeperHostname, shardModel.getShardTbl().getId(), keeperContainerCheckerService));
         Command<?> checkKeeperRoleCommand = retryCommandFactory.createRetryCommand(new CheckKeeperActiveCommand<>(keyedObjectPool, scheduled, backUpKeeper, true));
         SequenceCommandChain chain = new SequenceCommandChain(false, false);
         chain.add(switchMasterCommand);
@@ -338,12 +338,15 @@ public class ShardModelServiceImpl implements ShardModelService{
             return false;
         }
         Endpoint activeKeeper, backUpKeeper;
+        String activeKeeperHostname = null;
         if (newKeepers.get(0).getRedisIp().equals(targetKeeperContainerIp)) {
             activeKeeper = new DefaultEndPoint(newKeepers.get(1).getRedisIp(), newKeepers.get(1).getRedisPort());
+            activeKeeperHostname = newKeepers.get(1).getHostName();
             backUpKeeper = new DefaultEndPoint(newKeepers.get(0).getRedisIp(), newKeepers.get(0).getRedisPort());
         } else {
             backUpKeeper = new DefaultEndPoint(newKeepers.get(1).getRedisIp(), newKeepers.get(1).getRedisPort());
             activeKeeper = new DefaultEndPoint(newKeepers.get(0).getRedisIp(), newKeepers.get(0).getRedisPort());
+            activeKeeperHostname = newKeepers.get(0).getHostName();
         }
         SequenceCommandChain chain = null;
         try {
@@ -360,7 +363,7 @@ public class ShardModelServiceImpl implements ShardModelService{
                 return false;
             }
             Command<?> fullSyncJudgeRetryCommand = retryCommandFactory.createRetryCommand(new FullSyncJudgeCommand<>(keyedObjectPool, scheduled, activeKeeper, backUpKeeper, activeMasterReplOffset));
-            Command<?> switchmasterCommand = retryCommandFactory.createRetryCommand(new KeeperResetCommand<>(activeKeeper.getHost(), shardModel.getShardTbl().getId(), keeperContainerCheckerService));
+            Command<?> switchmasterCommand = retryCommandFactory.createRetryCommand(new KeeperResetCommand<>(activeKeeper.getHost(), activeKeeperHostname, shardModel.getShardTbl().getId(), keeperContainerCheckerService));
             Command<?> checkKeeperRoleCommand = retryCommandFactory.createRetryCommand(new CheckKeeperActiveCommand<>(keyedObjectPool, scheduled, backUpKeeper, true));
             chain = new SequenceCommandChain(false, false);
             chain.add(fullSyncJudgeRetryCommand);

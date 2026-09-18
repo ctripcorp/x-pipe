@@ -6,6 +6,7 @@ public class KeeperRestElectionModel {
     private String ip;
     private String port;
     private String shardId;
+    private String hostname;
 
     public String getIp() {
         return ip;
@@ -29,6 +30,14 @@ public class KeeperRestElectionModel {
 
     public void setShardId(String shardId) {
         this.shardId = shardId;
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
+
+    public void setHostname(String hostname) {
+        this.hostname = hostname;
     }
 
     @Override

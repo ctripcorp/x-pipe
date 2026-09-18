@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class KeeperStateModel {
     private String host;
     private int port;
+    private String hostname;
     private MASTER_STATE role;
     private String state;
     private String masterHost;
@@ -38,6 +39,15 @@ public class KeeperStateModel {
 
     public KeeperStateModel setPort(int port) {
         this.port = port;
+        return this;
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
+
+    public KeeperStateModel setHostname(String hostname) {
+        this.hostname = hostname;
         return this;
     }
 

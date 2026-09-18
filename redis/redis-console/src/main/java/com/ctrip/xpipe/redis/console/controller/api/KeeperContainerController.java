@@ -12,9 +12,12 @@ import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.KeeperRestElectionModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
-import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerCheckerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.List;
@@ -107,7 +110,7 @@ public class KeeperContainerController extends AbstractConsoleController{
     @RequestMapping(value = "/keepers/election/reset", method = RequestMethod.POST)
     public RetMessage resetElection(@RequestBody KeeperRestElectionModel model){
         try {
-            keeperContainerService.resetKeeper(model.getIp(), Long.parseLong(model.getShardId()));
+            keeperContainerService.resetKeeper(model.getIp(), model.getHostname(), Long.parseLong(model.getShardId()));
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
@@ -117,13 +120,11 @@ public class KeeperContainerController extends AbstractConsoleController{
     @RequestMapping(value = "/keepers/release/rdb", method = RequestMethod.POST)
     public RetMessage releaseRdb(@RequestBody KeeperRestElectionModel model){
         try {
-            keeperContainerService.releaseRdb(model.getIp(), Integer.parseInt(model.getPort()), Long.parseLong(model.getShardId()));
+            keeperContainerService.releaseRdb(model.getIp(), model.getHostname(), Integer.parseInt(model.getPort()), Long.parseLong(model.getShardId()));
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
-
-
 
 }

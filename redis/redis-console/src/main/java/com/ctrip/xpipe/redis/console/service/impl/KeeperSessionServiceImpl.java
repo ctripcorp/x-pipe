@@ -66,7 +66,10 @@ public class KeeperSessionServiceImpl extends AbstractService implements KeeperS
             HostPort keeper = new HostPort(keeperMeta.getIp(), keeperMeta.getPort());
             List<CommandFuture<?>> futures = new ArrayList<>();
             futuresMap.put(keeper, futures);
-            KeeperStateModel model = new KeeperStateModel().setHost(keeperMeta.getIp()).setPort(keeperMeta.getPort());
+            KeeperStateModel model = new KeeperStateModel()
+                    .setHost(keeperMeta.getIp())
+                    .setPort(keeperMeta.getPort())
+                    .setHostname(keeperMeta.getHostname());
             resultMap.put(keeper, model);
             CommandFuture<Role> keeperRole = getKeeperRole(keeperMeta.getIp(), keeperMeta.getPort(), new RedisSession.RollCallback() {
                 @Override

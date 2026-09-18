@@ -1,15 +1,16 @@
-package com.ctrip.xpipe.redis.checker.impl;
+package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.keeper.container.HostNameVerification;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressInfo;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
-import com.ctrip.xpipe.redis.core.keeper.container.HostNameVerification;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.utils.StringUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -20,67 +21,45 @@ import org.springframework.web.client.RestClientException;
 
 import java.util.List;
 
+/**
+ * Console 直连 KeeperContainer 的服务实现
+ * 提供统一的地址解析逻辑，支持 IP 和 hostname 两种形态
+ */
 @Service
 public class DefaultKeeperContainerService extends AbstractService implements KeeperContainerCheckerService {
 
     private static final String HTTP_PREFIX = "http://";
     private static final String PATH_GET_KEEPER_DISK_INFO = "/keepers/disk";
 
+    @Autowired
     private KeeperContainerAddressService keeperContainerAddressService;
 
-    public void setKeeperContainerAddressService(KeeperContainerAddressService keeperContainerAddressService) {
-        this.keeperContainerAddressService = keeperContainerAddressService;
-    }
-
     /**
-     * 统一的地址解析逻辑：
-     * 1. 已有真实 IP（物理机路径）直接使用
-     * 2. 空串/0.0.0.0/hostname 形态走 ZK 缓存反查
+     * 解析地址：hostname 不为空则用它反查 IP，为空则直接使用 ip
      * 
-     * @param ipOrHostname IP 或 hostname
+     * @param ip IP 地址
+     * @param hostname 主机名
      * @param port 端口
      * @return 解析后的 HostPort
      * @throws IllegalStateException hostname 无法解析时抛出
      */
-    public HostPort resolveAddress(String ipOrHostname, int port) {
-        // 空串直接尝试解析
-        if (StringUtil.isEmpty(ipOrHostname)) {
-            throw new IllegalStateException("empty address cannot be resolved");
+    private HostPort resolveAddress(String ip, String hostname, int port) {
+        String address = ip;
+        
+        // hostname 不为空则使用 hostname 反查 IP
+        if (!StringUtil.isEmpty(hostname)) {
+            if (keeperContainerAddressService == null) {
+                throw new IllegalStateException("KeeperContainerAddressService not initialized");
+            }
+            
+            String resolvedIp = keeperContainerAddressService.getIpByHostname(hostname);
+            if (resolvedIp == null) {
+                throw new IllegalStateException("no alive keepercontainer for hostname: " + hostname);
+            }
+            address = resolvedIp;
         }
         
-        // 已有真实 IP（物理机路径）直接使用
-        if (isRealIpAddress(ipOrHostname)) {
-            return new HostPort(ipOrHostname, port);
-        }
-        
-        // hostname 形态走 ZK 缓存反查
-        if (keeperContainerAddressService == null) {
-            throw new IllegalStateException("KeeperContainerAddressService not initialized");
-        }
-        
-        String resolvedIp = keeperContainerAddressService.getIpByHostname(ipOrHostname);
-        if (resolvedIp == null) {
-            throw new IllegalStateException(
-                    "no alive keepercontainer for hostname: " + ipOrHostname);
-        }
-        
-        return new HostPort(resolvedIp, port);
-    }
-    
-    /**
-     * 判断是否为真实 IP 地址（非空、非 0.0.0.0 占位符）
-     */
-    private boolean isRealIpAddress(String address) {
-        if (StringUtil.isEmpty(address)) {
-            return false;
-        }
-        // 0.0.0.0 是容器登记时的占位符，不是真实 IP
-        if ("0.0.0.0".equals(address)) {
-            return false;
-        }
-        // 简单判断：包含点号且不包含字母，视为 IP
-        // hostname 通常包含字母
-        return address.contains(".") && !address.matches(".*[a-zA-Z].*");
+        return new HostPort(address, port);
     }
     
     /**
@@ -97,14 +76,14 @@ public class DefaultKeeperContainerService extends AbstractService implements Ke
 
     @Override
     public KeeperDiskInfo getKeeperDiskInfo(String keeperContainerIp) throws RestClientException {
-        HostPort address = resolveAddress(keeperContainerIp, KeeperContainerAddressInfo.KEEPER_CONTAINER_PORT);
+        HostPort address = new HostPort(keeperContainerIp, KeeperContainerAddressInfo.KEEPER_CONTAINER_PORT);
         return restTemplate.exchange(HTTP_PREFIX + address.getHost() + ":" + address.getPort() + PATH_GET_KEEPER_DISK_INFO,
                 HttpMethod.GET, null, KeeperDiskInfo.class).getBody();
     }
 
     @Override
     public boolean setKeeperContainerDiskIOLimit(String keeperContainerIp, int keeperContainerPort, int limitInByte) {
-        HostPort address = resolveAddress(keeperContainerIp, keeperContainerPort);
+        HostPort address = new HostPort(keeperContainerIp, keeperContainerPort);
         Boolean rst = restTemplate.postForObject("http://{ip}:{port}/keepers/limit/totalIO?limit={limit}",
                 null, Boolean.class, address.getHost(), address.getPort(), limitInByte);
         return null != rst && rst;
@@ -112,20 +91,20 @@ public class DefaultKeeperContainerService extends AbstractService implements Ke
 
     @Override
     public List<KeeperInstanceMeta> getAllKeepers(String keeperContainerIp) {
-        HostPort address = resolveAddress(keeperContainerIp, KeeperContainerAddressInfo.KEEPER_CONTAINER_PORT);
+        HostPort address = new HostPort(keeperContainerIp, KeeperContainerAddressInfo.KEEPER_CONTAINER_PORT);
         return restTemplate.exchange(String.format("http://%s:%d/keepers", address.getHost(), address.getPort()), 
                 HttpMethod.GET, null,
                 new ParameterizedTypeReference<List<KeeperInstanceMeta>>() {}).getBody();
     }
 
     @Override
-    public void resetKeeper(String activeKeeperIp, Long replId) {
-        HostPort address = resolveAddress(activeKeeperIp, KeeperContainerAddressInfo.KEEPER_CONTAINER_PORT);
+    public void resetKeeper(String ip, String hostname, Long replId) {
+        HostPort address = resolveAddress(ip, hostname, KeeperContainerAddressInfo.KEEPER_CONTAINER_PORT);
+        
         KeeperTransMeta keeperInstanceMeta = new KeeperTransMeta();
         keeperInstanceMeta.setReplId(replId);
         
-        // 对于 hostname 形态，需要携带 hostname header 用于容器端自校验
-        String hostname = isRealIpAddress(activeKeeperIp) ? null : activeKeeperIp;
+        // 如果使用 hostname,需要携带 hostname header 用于容器端自校验
         HttpHeaders headers = buildHeadersWithHostname(hostname);
         
         HttpEntity<KeeperTransMeta> requestEntity = new HttpEntity<>(keeperInstanceMeta, headers);
@@ -134,13 +113,13 @@ public class DefaultKeeperContainerService extends AbstractService implements Ke
     }
 
     @Override
-    public void releaseRdb(String ip, int port, Long replId) {
-        HostPort address = resolveAddress(ip, port);
+    public void releaseRdb(String ip, String hostname, int port, Long replId) {
+        HostPort address = resolveAddress(ip, hostname, port);
+        
         KeeperTransMeta keeperInstanceMeta = new KeeperTransMeta();
         keeperInstanceMeta.setReplId(replId);
         
-        // 对于 hostname 形态，需要携带 hostname header 用于容器端自校验
-        String hostname = isRealIpAddress(ip) ? null : ip;
+        // 如果使用 hostname,需要携带 hostname header 用于容器端自校验
         HttpHeaders headers = buildHeadersWithHostname(hostname);
         
         HttpEntity<KeeperTransMeta> requestEntity = new HttpEntity<>(keeperInstanceMeta, headers);

@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.spring;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
-import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
@@ -11,7 +10,6 @@ import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
-import com.ctrip.xpipe.redis.checker.impl.DefaultKeeperContainerService;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
 import com.ctrip.xpipe.redis.checker.resource.DefaultCheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
@@ -37,7 +35,6 @@ import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
-import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
@@ -190,10 +187,8 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	}
 
 	@Bean
-	public KeeperContainerCheckerService keeperContainerService(KeeperContainerAddressService keeperContainerAddressService) {
-		DefaultKeeperContainerService service = new DefaultKeeperContainerService();
-		service.setKeeperContainerAddressService(keeperContainerAddressService);
-		return service;
+	public KeeperContainerCheckerService keeperContainerService() {
+		return new DefaultKeeperContainerService();
 	}
 
 	@Bean

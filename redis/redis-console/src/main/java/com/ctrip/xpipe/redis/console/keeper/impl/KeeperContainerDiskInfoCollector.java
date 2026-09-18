@@ -1,10 +1,9 @@
 package com.ctrip.xpipe.redis.console.keeper.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.cache.TimeBoundCache;
-import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderAware;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;

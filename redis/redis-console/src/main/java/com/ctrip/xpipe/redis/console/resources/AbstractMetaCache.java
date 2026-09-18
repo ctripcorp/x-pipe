@@ -21,6 +21,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.tuple.Triple;
 
 import java.util.*;
@@ -60,13 +61,9 @@ public abstract class AbstractMetaCache implements MetaCache {
     
     /**
      * KeeperContainer 地址解析服务,用于将容器 hostname 解析为实时 IP
-     * 可选依赖:如果没有注入,则只处理有 IP 的 keeper
      */
+    @Autowired
     protected KeeperContainerAddressService keeperContainerAddressService;
-    
-    public void setKeeperContainerAddressService(KeeperContainerAddressService keeperContainerAddressService) {
-        this.keeperContainerAddressService = keeperContainerAddressService;
-    }
 
     @Override
     public XpipeMeta getXpipeMeta() {

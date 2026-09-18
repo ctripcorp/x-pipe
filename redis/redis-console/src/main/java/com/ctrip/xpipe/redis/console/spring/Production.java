@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.spring;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.core.keeper.container.DefaultKeeperContainerAddressService;
@@ -33,11 +32,8 @@ public class Production extends AbstractProfile {
     }
 
     @Bean
-    public KeeperContainerAddressService keeperContainerAddressService(ZkClient zkClient) throws Exception {
-        DefaultKeeperContainerAddressService service = new DefaultKeeperContainerAddressService(zkClient);
-        service.initialize();
-        service.start();
-        return service;
+    public KeeperContainerAddressService keeperContainerAddressService(ZkClient zkClient) {
+        return new DefaultKeeperContainerAddressService(zkClient);
     }
 
 }
