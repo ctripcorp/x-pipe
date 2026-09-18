@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategy;
@@ -62,6 +63,9 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     @Autowired
     private RouteChooseStrategyFactory routeChooseStrategyFactory;
+    
+    @Autowired(required = false)
+    private KeeperContainerAddressService keeperContainerAddressService;
 
     private RouteChooseStrategy strategy = null;
 

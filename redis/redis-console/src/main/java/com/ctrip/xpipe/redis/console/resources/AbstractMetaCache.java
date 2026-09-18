@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.exception.TooManyClustersRemovedException;
 import com.ctrip.xpipe.redis.console.exception.TooManyDcsRemovedException;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.cluster.ClusterType.HETERO;
+
 
 /**
  * @author lishanglin
@@ -55,6 +57,16 @@ public abstract class AbstractMetaCache implements MetaCache {
     protected long lastUpdateTime = 0;
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
+    
+    /**
+     * KeeperContainer 地址解析服务,用于将容器 hostname 解析为实时 IP
+     * 可选依赖:如果没有注入,则只处理有 IP 的 keeper
+     */
+    protected KeeperContainerAddressService keeperContainerAddressService;
+    
+    public void setKeeperContainerAddressService(KeeperContainerAddressService keeperContainerAddressService) {
+        this.keeperContainerAddressService = keeperContainerAddressService;
+    }
 
     @Override
     public XpipeMeta getXpipeMeta() {
@@ -385,7 +397,10 @@ public abstract class AbstractMetaCache implements MetaCache {
                         dcMeta.getClusters().forEach((clusterName, clusterMeta) -> {
                             clusterMeta.getShards().forEach((shardName, shardMeta) -> {
                                 shardMeta.getKeepers().forEach(keeperMeta -> {
-                                    localKeepers.add(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()));
+                                    HostPort keeperAddr = resolveKeeperAddress(keeperMeta);
+                                    if (keeperAddr != null) {
+                                        localKeepers.add(keeperAddr);
+                                    }
                                 });
                             });
                         });
@@ -396,6 +411,48 @@ public abstract class AbstractMetaCache implements MetaCache {
         }
 
         return allKeepers;
+    }
+    
+    /**
+     * 解析 keeper 地址,支持物理机(IP)和容器(hostname)两种形态
+     * 
+     * @param keeperMeta keeper 元数据
+     * @return 解析后的 HostPort,解析失败返回 null
+     */
+    private HostPort resolveKeeperAddress(KeeperMeta keeperMeta) {
+        String ip = keeperMeta.getIp();
+        int port = keeperMeta.getPort();
+        
+        // 情况 1: 有真实 IP (物理机或已解析的容器)
+        if (ip != null && !ip.isEmpty() && !"0.0.0.0".equals(ip)) {
+            return new HostPort(ip, port);
+        }
+        
+        // 情况 2: 只有 hostname (容器形态)
+        String hostname = keeperMeta.getHostname();
+        if (hostname != null && !hostname.isEmpty()) {
+            if (keeperContainerAddressService == null) {
+                logger.warn("[resolveKeeperAddress] keeper {} has hostname {} but no KeeperContainerAddressService, skip",
+                        keeperMeta.getId(), hostname);
+                return null;
+            }
+            
+            String resolvedIp = keeperContainerAddressService.getIpByHostname(hostname);
+            if (resolvedIp == null) {
+                logger.warn("[resolveKeeperAddress] failed to resolve hostname {} for keeper {}, skip",
+                        hostname, keeperMeta.getId());
+                return null;
+            }
+            
+            logger.debug("[resolveKeeperAddress] resolved hostname {} -> {} for keeper {}",
+                    hostname, resolvedIp, keeperMeta.getId());
+            return new HostPort(resolvedIp, port);
+        }
+        
+        // 情况 3: 既没有有效 IP 也没有 hostname,跳过
+        logger.warn("[resolveKeeperAddress] keeper {} has neither valid ip nor hostname, skip", 
+                keeperMeta.getId());
+        return null;
     }
 
     @Override
