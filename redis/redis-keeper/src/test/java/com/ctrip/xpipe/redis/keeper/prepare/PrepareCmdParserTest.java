@@ -48,6 +48,10 @@ public class PrepareCmdParserTest extends AbstractRedisKeeperTest {
 		List<String> received = new CopyOnWriteArrayList<>();
 		PrepareCmdParser parser = new PrepareCmdParser(watching, createRedisOpParser(),
 				(channel, message) -> received.add(channel + ":" + message));
+		// D48：只读句柄的开关与 totalLength 观察只由 Watcher 驱动，Reader 自己不 reopen，
+		// 所以 Parser 的闭环必须和生产一样带上 Watcher（doBecomePrepare 先起 watcher 再起 parser）
+		PrepareStoreWatcher watcher = new PrepareStoreWatcher(watching, keeperConfig,
+				PrepareStoreChangeListener.NOOP);
 		try {
 			LifecycleHelper.initializeIfPossible(occupying);
 			LifecycleHelper.startIfPossible(occupying);
@@ -58,6 +62,7 @@ public class PrepareCmdParserTest extends AbstractRedisKeeperTest {
 			LifecycleHelper.initializeIfPossible(watching);
 			watching.setReadOnly(true);
 			LifecycleHelper.startIfPossible(watching);
+			watcher.start();
 			parser.start();
 			waitConditionUntilTimeOut(() -> parser.getAttachCount() >= 1);
 
@@ -67,6 +72,7 @@ public class PrepareCmdParserTest extends AbstractRedisKeeperTest {
 			Assert.assertTrue(countParserThreads() >= 1);
 		} finally {
 			parser.stop();
+			watcher.stop();
 			stopDispose(watching);
 			stopDispose(occupying);
 			fs.shutdown();

@@ -23,15 +23,32 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ReadOnlyCommandStoreTest {
 
 	private static final File CMD_FILE = new File("/data/repl_1/store_abc/cmd_");
+
+	/**
+	 * v1.77 删掉的只读 reopen API（T-HC.2 / AC-6 ④）：仓库内不得有残留引用。
+	 * 名字按片段拼接，避免本文件自身命中门禁。
+	 */
+	private static final List<String> REMOVED_APIS =
+			Arrays.asList("reopen" + "AndObserve", "observe" + "CurrentEnd", "REOPEN_" + "DEBOUNCE_MILLI");
+
+	/**
+	 * 只扫源码目录，不扫 target / .git。
+	 */
+	private static final List<String> SCAN_ROOTS = Arrays.asList("core", "redis", "services");
 
 	@Mock
 	private AsyncFileSystem asyncFileSystem;
@@ -89,41 +106,136 @@ public class ReadOnlyCommandStoreTest {
 	}
 
 	@Test
-	public void testObserveCurrentEndReopensListingHandleAndRefreshesTotalLength() throws Exception {
+	public void testCloseForCycleThenOpenAndObserveSwapsSnapshot() throws Exception {
 		Mockito.when(asyncFileSystem.list(asyncSegmentFile)).thenReturn(Arrays.asList(100L, 200L));
 		Mockito.when(asyncFileSystem.sizeOfSegment(asyncSegmentFile, 200L))
 				.thenReturn(CompletableFuture.completedFuture(50L));
 		store.initialize();
 		Assert.assertEquals(250L, store.totalLength());
+		Assert.assertEquals(100L, store.lowestAvailableOffset());
+
+		store.closeHandleForCycle();
+		Assert.assertNull(store.getAsyncSegmentFile());
+		Mockito.verify(asyncFileSystem, Mockito.times(1)).close(asyncSegmentFile);
+		// 关相不动快照
+		Assert.assertEquals(250L, store.totalLength());
+		Assert.assertEquals(100L, store.lowestAvailableOffset());
+
+		// 幂等：再关一次不会重复 close
+		store.closeHandleForCycle();
+		Mockito.verify(asyncFileSystem, Mockito.times(1)).close(asyncSegmentFile);
 
 		Mockito.when(asyncFileSystem.list(asyncSegmentFile)).thenReturn(Arrays.asList(200L, 400L));
 		Mockito.when(asyncFileSystem.sizeOfSegment(asyncSegmentFile, 400L))
 				.thenReturn(CompletableFuture.completedFuture(80L));
 
-		store.observeCurrentEnd();
+		Assert.assertEquals(ReadOnlyCommandStore.ObserveResult.OPENED, store.openAndObserve());
 
 		Assert.assertEquals(480L, store.totalLength());
+		Assert.assertEquals(200L, store.lowestAvailableOffset());
 		Mockito.verify(asyncFileSystem, Mockito.times(2)).open(
 				Mockito.eq("/data/repl_1/store_abc"),
 				Mockito.eq("cmd_"),
 				Mockito.eq(Collections.emptyList()),
 				Mockito.eq(false),
 				Mockito.eq("repl_1"));
+	}
+
+	@Test
+	public void testOpenAndObserveFailClosesHandleAndKeepsSnapshot() throws Exception {
+		Mockito.when(asyncFileSystem.list(asyncSegmentFile)).thenReturn(Arrays.asList(100L, 200L));
+		Mockito.when(asyncFileSystem.sizeOfSegment(asyncSegmentFile, 200L))
+				.thenReturn(CompletableFuture.completedFuture(50L),
+						CompletableFuture.failedFuture(new RuntimeException("size fail")));
+		store.initialize();
+		Assert.assertEquals(250L, store.totalLength());
+
+		Assert.assertEquals(ReadOnlyCommandStore.ObserveResult.FAILED, store.openAndObserve());
+
+		Assert.assertNull(store.getAsyncSegmentFile());
+		Assert.assertEquals(250L, store.totalLength());
+		Assert.assertEquals(100L, store.lowestAvailableOffset());
 		Mockito.verify(asyncFileSystem, Mockito.atLeastOnce()).close(asyncSegmentFile);
 	}
 
 	@Test
-	public void testTrueImplementations() throws Exception {
+	public void testGettersReadSnapshotWithoutFsAfterHandleClosed() throws Exception {
+		Mockito.when(asyncFileSystem.list(asyncSegmentFile)).thenReturn(Arrays.asList(0L, 100L, 200L));
+		Mockito.when(asyncFileSystem.sizeOfSegment(asyncSegmentFile, 200L))
+				.thenReturn(CompletableFuture.completedFuture(20L));
 		store.initialize();
+		store.closeHandleForCycle();
+		Mockito.clearInvocations(asyncFileSystem);
+
+		Assert.assertEquals(220L, store.totalLength());
+		Assert.assertEquals(0L, store.lowestAvailableOffset());
+		Assert.assertEquals(100L, store.startOffsetOf(150L));
+
+		Mockito.verifyNoInteractions(asyncFileSystem);
+	}
+
+	@Test
+	public void testReadAtReturnsNullWhenHandleClosed() throws Exception {
+		store.initialize();
+		store.closeHandleForCycle();
+
+		Assert.assertNull(store.readAt(0L, 16L));
+		Mockito.verify(asyncFileSystem, Mockito.never())
+				.read(Mockito.any(AsyncSegmentFile.class), Mockito.anyLong(), Mockito.anyLong());
+	}
+
+	@Test
+	public void testLowestAvailableOffsetOnEmptyDirDoesNotTouchFs() throws Exception {
+		store.initialize();
+		store.closeHandleForCycle();
+		Mockito.clearInvocations(asyncFileSystem);
+
+		Assert.assertEquals(0L, store.lowestAvailableOffset());
+		Assert.assertEquals(0L, store.totalLength());
+		Assert.assertEquals(ReadOnlyCmdOffsetSnapshot.OFFSET_BEFORE_FIRST_SEGMENT, store.startOffsetOf(0L));
+		Mockito.verifyNoInteractions(asyncFileSystem);
+	}
+
+	@Test
+	public void testRemovedReopenApisAreGoneFromRepository() throws Exception {
+		File repoRoot = new File("../..").getCanonicalFile();
+		Assert.assertTrue("repo root missing: " + repoRoot, new File(repoRoot, "redis").isDirectory());
+		List<String> hits = new ArrayList<>();
+		int scanned = 0;
+		for (String root : SCAN_ROOTS) {
+			File dir = new File(repoRoot, root);
+			Assert.assertTrue("scan root missing: " + dir, dir.isDirectory());
+			try (Stream<Path> paths = Files.walk(dir.toPath())) {
+				List<Path> sources = paths.filter(Files::isRegularFile)
+						.filter(path -> path.toString().endsWith(".java"))
+						.filter(path -> !path.toString().contains(File.separator + "target" + File.separator))
+						.collect(Collectors.toList());
+				scanned += sources.size();
+				for (Path path : sources) {
+					String text = new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+					for (String forbidden : REMOVED_APIS) {
+						if (text.contains(forbidden)) {
+							hits.add(forbidden + " @ " + path);
+						}
+					}
+				}
+			}
+		}
+		Assert.assertTrue("no java source scanned", scanned > 100);
+		Assert.assertTrue("removed reopen APIs still referenced: " + hits, hits.isEmpty());
+	}
+
+	@Test
+	public void testTrueImplementations() throws Exception {
 		Mockito.when(asyncFileSystem.list(asyncSegmentFile)).thenReturn(Arrays.asList(100L, 200L));
+		Mockito.when(asyncFileSystem.sizeOfSegment(asyncSegmentFile, 200L))
+				.thenReturn(CompletableFuture.completedFuture(50L));
+		store.initialize();
 
 		Assert.assertEquals(100L, store.lowestAvailableOffset());
-		Mockito.when(asyncFileSystem.list(asyncSegmentFile)).thenReturn(Collections.emptyList());
-		Assert.assertEquals(0L, store.lowestAvailableOffset());
-
-		Assert.assertEquals(0L, store.totalLength());
-		store.refreshTotalLength(50L);
-		Assert.assertEquals(50L, store.totalLength());
+		Assert.assertEquals(250L, store.totalLength());
+		store.refreshTotalLength(300L);
+		Assert.assertEquals(300L, store.totalLength());
 
 		Assert.assertEquals(Long.MAX_VALUE, store.lowestReadingOffset());
 		CommandReader<?> reader1 = Mockito.mock(CommandReader.class);
@@ -189,7 +301,6 @@ public class ReadOnlyCommandStoreTest {
 		covered.incrementAndGet(); // initialize
 		store.totalLength();
 		covered.incrementAndGet();
-		Mockito.when(asyncFileSystem.list(asyncSegmentFile)).thenReturn(Collections.singletonList(0L));
 		store.lowestAvailableOffset();
 		covered.incrementAndGet();
 		store.addReader(Mockito.mock(CommandReader.class));
@@ -224,6 +335,7 @@ public class ReadOnlyCommandStoreTest {
 	@Test
 	public void testTotalLengthSnapshotMonotonic() {
 		Assert.assertEquals(0L, store.totalLength());
+		Assert.assertSame(ReadOnlyCmdOffsetSnapshot.EMPTY, store.offsetSnapshot());
 		store.refreshTotalLength(100L);
 		Assert.assertEquals(100L, store.totalLength());
 		store.refreshTotalLength(80L);

@@ -155,8 +155,9 @@ public class KeeperStageOneAcceptanceTest extends AbstractRedisKeeperContextTest
 			writable.appendCommands(Unpooled.wrappedBuffer(PING_CMD));
 			long writerAfter = writable.getCommandStore().totalLength();
 			Assert.assertTrue(writerAfter > firstSeen);
-			sleep(ReadOnlyCommandStore.REOPEN_DEBOUNCE_MILLI + 20);
-			readOnly.observeCurrentEnd();
+			// 句柄两相：Watcher 关相 → 开相观察（D48）
+			readOnly.closeHandleForCycle();
+			Assert.assertEquals(ReadOnlyCommandStore.ObserveResult.OPENED, readOnly.openAndObserve());
 			assertConservativeEnd(readOnly, writable.getCommandStore());
 			Assert.assertTrue(readOnly.totalLength() >= firstSeen);
 		} finally {
@@ -251,8 +252,8 @@ public class KeeperStageOneAcceptanceTest extends AbstractRedisKeeperContextTest
 	private static String assertNoM5ReadOnlyBranch(File source) throws Exception {
 		Assert.assertTrue("missing " + source.getPath(), source.isFile());
 		String text = stripComments(new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
-		for (String forbidden : Arrays.asList("ReadOnlyCommandStore", "observeCurrentEnd", "setReadOnly",
-				"isReadOnly", "prepareWatch", "MISS_BACKOFF", "REOPEN_DEBOUNCE")) {
+		for (String forbidden : Arrays.asList("ReadOnlyCommandStore", "openAndObserve", "closeHandleForCycle",
+				"setReadOnly", "isReadOnly", "prepareWatch", "MISS_BACKOFF")) {
 			Assert.assertFalse(source.getName() + " must not contain " + forbidden, text.contains(forbidden));
 		}
 		return text;

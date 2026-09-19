@@ -95,14 +95,11 @@ public class ReopenOffsetCommandReaderTest {
 	}
 
 	@Test
-	public void testReopenSeesNewBytesAfterWriteSideAppend() throws Exception {
+	public void testWatcherCycleSeesNewBytesAfterWriteSideAppend() throws Exception {
 		Mockito.when(asyncFileSystem.list(readHandle1)).thenReturn(Collections.singletonList(0L));
 		Mockito.when(asyncFileSystem.sizeOfSegment(readHandle1, 0L))
-				.thenReturn(CompletableFuture.completedFuture(0L));
-		Mockito.when(asyncFileSystem.list(readHandle2)).thenReturn(Collections.singletonList(0L));
-		Mockito.when(asyncFileSystem.sizeOfSegment(readHandle2, 0L))
 				.thenReturn(CompletableFuture.completedFuture(8L));
-		Mockito.when(asyncFileSystem.read(readHandle2, 8L, 0L))
+		Mockito.when(asyncFileSystem.read(readHandle1, 8L, 0L))
 				.thenReturn(CompletableFuture.completedFuture(Unpooled.wrappedBuffer(new byte[8])));
 
 		ReopenOffsetCommandReader reader = newReader(0);
@@ -110,22 +107,25 @@ public class ReopenOffsetCommandReaderTest {
 		Assert.assertEquals(0, sleepCount.get());
 		Assert.assertEquals(0L, store.totalLength());
 
-		now.addAndGet(ReadOnlyCommandStore.REOPEN_DEBOUNCE_MILLI);
+		// 关相：句柄不在，Reader 只 return null，不 reopen
+		store.closeHandleForCycle();
+		Assert.assertNull(reader.read(10));
+		Assert.assertEquals(0, sleepCount.get());
+
+		// 开相：Watcher 独占驱动 open + 观察
+		Assert.assertEquals(ReadOnlyCommandStore.ObserveResult.OPENED, store.openAndObserve());
+		Assert.assertEquals(8L, store.totalLength());
+
 		ByteBuf buf = reader.read(10);
 		Assert.assertNotNull(buf);
 		Assert.assertEquals(8, buf.readableBytes());
-		Assert.assertEquals(8L, store.totalLength());
-		Assert.assertSame(readHandle2, store.getAsyncSegmentFile());
+		Assert.assertSame(readHandle1, store.getAsyncSegmentFile());
 		buf.release();
 		reader.close();
 	}
 
 	@Test
 	public void testZeroByteMissBacksOffWithoutRebuildOrDisconnect() throws Exception {
-		Mockito.when(asyncFileSystem.list(readHandle1)).thenReturn(Collections.singletonList(0L));
-		Mockito.when(asyncFileSystem.sizeOfSegment(readHandle1, 0L))
-				.thenReturn(CompletableFuture.completedFuture(0L));
-
 		Mockito.when(listener.isOpen()).thenAnswer(invocation -> sleepCount.get() < 2);
 
 		store.addCommandsListener(new OffsetReplicationProgress(0), listener);
@@ -133,14 +133,21 @@ public class ReopenOffsetCommandReaderTest {
 		Assert.assertEquals(2, sleepCount.get());
 		Assert.assertEquals(ReadOnlyCommandStore.MISS_BACKOFF_MILLI, lastSleepMilli.get());
 		Mockito.verify(closeableListener, Mockito.never()).close();
-		Assert.assertSame(readHandle1, store.getAsyncSegmentFile());
+		// Reader 既不 reopen 也不换句柄
+		Assert.assertSame(listingHandle, store.getAsyncSegmentFile());
+		Mockito.verify(asyncFileSystem, Mockito.times(1)).open(
+				Mockito.anyString(), Mockito.anyString(), Mockito.anyList(), Mockito.eq(false), Mockito.anyString());
 	}
 
 	@Test
-	public void testReopenFailThrowsWithoutClosingListener() throws Exception {
-		Mockito.when(asyncFileSystem.open(Mockito.anyString(), Mockito.anyString(), Mockito.anyList(),
-						Mockito.eq(false), Mockito.anyString()))
-				.thenReturn(CompletableFuture.failedFuture(new RuntimeException("open fail")));
+	public void testReadFailThrowsWithoutClosingListener() throws Exception {
+		Mockito.when(asyncFileSystem.list(readHandle1)).thenReturn(Collections.singletonList(0L));
+		Mockito.when(asyncFileSystem.sizeOfSegment(readHandle1, 0L))
+				.thenReturn(CompletableFuture.completedFuture(8L));
+		Mockito.when(asyncFileSystem.read(readHandle1, 8L, 0L))
+				.thenReturn(CompletableFuture.failedFuture(new RuntimeException("read fail")));
+		store.closeHandleForCycle();
+		Assert.assertEquals(ReadOnlyCommandStore.ObserveResult.OPENED, store.openAndObserve());
 
 		ReopenOffsetCommandReader reader = newReader(0);
 		try {
@@ -165,14 +172,11 @@ public class ReopenOffsetCommandReaderTest {
 	}
 
 	@Test
-	public void testAddCommandsListenerDeliversAfterReopen() throws Exception {
+	public void testAddCommandsListenerDeliversAfterWatcherCycle() throws Exception {
 		Mockito.when(asyncFileSystem.list(readHandle1)).thenReturn(Collections.singletonList(0L));
 		Mockito.when(asyncFileSystem.sizeOfSegment(readHandle1, 0L))
-				.thenReturn(CompletableFuture.completedFuture(0L));
-		Mockito.when(asyncFileSystem.list(readHandle2)).thenReturn(Collections.singletonList(0L));
-		Mockito.when(asyncFileSystem.sizeOfSegment(readHandle2, 0L))
 				.thenReturn(CompletableFuture.completedFuture(4L));
-		Mockito.when(asyncFileSystem.read(readHandle2, 4L, 0L))
+		Mockito.when(asyncFileSystem.read(readHandle1, 4L, 0L))
 				.thenReturn(CompletableFuture.completedFuture(Unpooled.wrappedBuffer(new byte[4])));
 
 		AtomicBoolean delivered = new AtomicBoolean();
@@ -185,47 +189,57 @@ public class ReopenOffsetCommandReaderTest {
 			return null;
 		});
 
+		// 退避期间由 Watcher（这里用 sleeper 回调模拟其线程）走一次关相 → 开相
 		store.setReopenSleeper(millis -> {
 			sleepCount.incrementAndGet();
 			lastSleepMilli.set(millis);
-			now.addAndGet(ReadOnlyCommandStore.REOPEN_DEBOUNCE_MILLI);
+			if (sleepCount.get() == 1) {
+				store.closeHandleForCycle();
+				store.openAndObserve();
+			}
 		});
 
 		store.addCommandsListener(new OffsetReplicationProgress(0), listener);
 
+		Assert.assertEquals(1, sleepCount.get());
 		Assert.assertEquals(4, deliveredBytes.get());
 		Mockito.verify(closeableListener, Mockito.never()).close();
 		Assert.assertEquals(4L, store.totalLength());
 	}
 
 	@Test
-	public void testReopenDebounceSkipsCloseOpenWithinWindow() throws Exception {
+	public void testReaderNeverOpensOrClosesHandle() throws Exception {
 		Mockito.when(asyncFileSystem.list(readHandle1)).thenReturn(Collections.singletonList(0L));
 		Mockito.when(asyncFileSystem.sizeOfSegment(readHandle1, 0L))
-				.thenReturn(CompletableFuture.completedFuture(0L));
-		Mockito.when(asyncFileSystem.list(readHandle2)).thenReturn(Collections.singletonList(0L));
-		Mockito.when(asyncFileSystem.sizeOfSegment(readHandle2, 0L))
 				.thenReturn(CompletableFuture.completedFuture(8L));
 
-		store.reopenAndObserve();
-		store.reopenAndObserve();
+		store.closeHandleForCycle();
+		Assert.assertEquals(ReadOnlyCommandStore.ObserveResult.OPENED, store.openAndObserve());
 		Assert.assertSame(readHandle1, store.getAsyncSegmentFile());
+
+		// 关相里 Reader 仍有 visible（快照保留），但 readAt 返回 null 且不自行 open
+		store.closeHandleForCycle();
+		ReopenOffsetCommandReader reader = newReader(0);
+		Assert.assertEquals(8L, store.totalLength());
+		Assert.assertNull(reader.read(10));
+		reader.close();
+
+		// open：initialize + 一次开相；close：两次关相
 		Mockito.verify(asyncFileSystem, Mockito.times(2)).open(
 				Mockito.anyString(), Mockito.anyString(), Mockito.anyList(), Mockito.eq(false), Mockito.anyString());
-
-		now.addAndGet(ReadOnlyCommandStore.REOPEN_DEBOUNCE_MILLI);
-		store.reopenAndObserve();
-		Assert.assertSame(readHandle2, store.getAsyncSegmentFile());
-		Assert.assertEquals(8L, store.totalLength());
-		Mockito.verify(asyncFileSystem, Mockito.times(3)).open(
-				Mockito.anyString(), Mockito.anyString(), Mockito.anyList(), Mockito.eq(false), Mockito.anyString());
+		Mockito.verify(asyncFileSystem, Mockito.times(1)).close(listingHandle);
+		Mockito.verify(asyncFileSystem, Mockito.times(1)).close(readHandle1);
 	}
 
 	@Test
 	public void testAddCommandsListenerRethrowsWithoutClosingListener() throws Exception {
-		Mockito.when(asyncFileSystem.open(Mockito.anyString(), Mockito.anyString(), Mockito.anyList(),
-						Mockito.eq(false), Mockito.anyString()))
-				.thenReturn(CompletableFuture.failedFuture(new RuntimeException("open fail")));
+		Mockito.when(asyncFileSystem.list(readHandle1)).thenReturn(Collections.singletonList(0L));
+		Mockito.when(asyncFileSystem.sizeOfSegment(readHandle1, 0L))
+				.thenReturn(CompletableFuture.completedFuture(8L));
+		Mockito.when(asyncFileSystem.read(readHandle1, 8L, 0L))
+				.thenReturn(CompletableFuture.failedFuture(new RuntimeException("read fail")));
+		store.closeHandleForCycle();
+		Assert.assertEquals(ReadOnlyCommandStore.ObserveResult.OPENED, store.openAndObserve());
 
 		try {
 			store.addCommandsListener(new OffsetReplicationProgress(0), listener);
@@ -259,6 +273,9 @@ public class ReopenOffsetCommandReaderTest {
 		Assert.assertFalse(readerText.contains("Thread.sleep"));
 		Assert.assertFalse(readerText.contains("ReopenSleeper"));
 		Assert.assertFalse(readerText.contains("EventMonitor"));
+		// D48：句柄开关只由 Watcher 驱动，Reader 不碰
+		Assert.assertFalse(readerText.contains("openAndObserve"));
+		Assert.assertFalse(readerText.contains("closeHandleForCycle"));
 		Assert.assertTrue(storeText.contains("readAt"));
 		Assert.assertTrue(storeText.contains("missAndBackoff"));
 		Assert.assertTrue(ReadOnlyCommandStore.isForbiddenBackoffThread(

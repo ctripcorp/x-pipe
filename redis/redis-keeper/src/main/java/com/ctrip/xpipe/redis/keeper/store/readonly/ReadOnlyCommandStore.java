@@ -28,13 +28,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * PREPARE 只读 CommandStore（m5 D5b / D30 / D30b）。
@@ -49,16 +49,25 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 	public static final String PREPARE_WATCH_MISS = "prepareWatchMiss";
 
 	/**
-	 * {@link #addCommandsListener} 读到 null 后的防空转间隔。reopen 也不一定有新数据。
+	 * {@link #addCommandsListener} 在开相里追上可见尾后的防空转间隔（D9 ①）。
 	 */
 	public static final int MISS_BACKOFF_MILLI = 10;
 
-	/**
-	 * {@link #reopenAndObserve()} 距上次 close+open 不足此时长则跳过。同句柄 size 看不到新尾。
-	 */
-	public static final int REOPEN_DEBOUNCE_MILLI = 100;
-
 	private static final List<String> NO_INDEX_PREFIXES = Collections.emptyList();
+
+	/**
+	 * {@link #openAndObserve()} 的结果（D48 / D49）。
+	 */
+	public enum ObserveResult {
+		/**
+		 * 句柄已打开且快照已整份替换。
+		 */
+		OPENED,
+		/**
+		 * open / list / size 抛 IO 异常：内部已关句柄，保留旧快照，由 Watcher 下周期重试。
+		 */
+		FAILED
+	}
 
 	@FunctionalInterface
 	interface ReopenSleeper {
@@ -82,7 +91,10 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 
 	private final ConcurrentMap<CommandReader<?>, Boolean> readers = new ConcurrentHashMap<>();
 
-	private final AtomicLong totalLengthSnapshot = new AtomicLong(0L);
+	/**
+	 * cmd 的 offset 内存快照（D48 ④）。不可变对象整份替换，写者只有 Watcher 一条线程。
+	 */
+	private volatile ReadOnlyCmdOffsetSnapshot offsetSnapshot = ReadOnlyCmdOffsetSnapshot.EMPTY;
 
 	private volatile AsyncSegmentFile asyncSegmentFile;
 
@@ -94,11 +106,6 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 	private ReopenSleeper reopenSleeper = Thread::sleep;
 
 	private MilliClock milliClock = System::currentTimeMillis;
-
-	/**
-	 * 上次实际 close+open 的时刻；负数表示还没 reopen 过。
-	 */
-	private long lastReopenAtMillis = -1L;
 
 	public ReadOnlyCommandStore(File cmdFile, AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId) {
 		this.baseDir = Objects.requireNonNull(cmdFile, "cmdFile").getParentFile();
@@ -118,7 +125,8 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 							fileSystemReplId.toString()),
 					"open read-only command segment " + fileNamePrefix);
 			try {
-				observeSizeOnCurrentHandle();
+				// 首开是 refCount 0→1 的全新目录扫描，必然新鲜，用它种子快照（D30）；失败只 WARN 不阻断
+				applyObservedSnapshot(observeSnapshotOnCurrentHandle());
 			} catch (Throwable th) {
 				logger.warn("[initialize][seed fail]{}", this, th);
 			}
@@ -142,68 +150,97 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 		}
 		logger.info("[close]{}", this);
 		synchronized (handleLock) {
-			AsyncSegmentFile handle = asyncSegmentFile;
-			asyncSegmentFile = null;
-			AsyncFileSystemHelper.closeHandle(asyncFileSystem, handle, "close read-only command segment " + fileNamePrefix);
+			closeHandleLocked("close read-only command segment " + fileNamePrefix);
 		}
+	}
+
+	/**
+	 * 当前 offset 快照。Reader 每次 {@code doRead} 只读一次引用，区间校验与 {@code visible} 计算
+	 * 都基于同一个本地引用（D49）。
+	 */
+	ReadOnlyCmdOffsetSnapshot offsetSnapshot() {
+		return offsetSnapshot;
 	}
 
 	@Override
 	public long totalLength() {
-		return totalLengthSnapshot.get();
+		return offsetSnapshot().getObservedEnd();
+	}
+
+	@Override
+	public long lowestAvailableOffset() {
+		return offsetSnapshot().getFirstOffset();
+	}
+
+	long startOffsetOf(long readOffset) {
+		return offsetSnapshot().startOffsetOf(readOffset);
 	}
 
 	/**
 	 * 观察快照只前进（D30）。{@code observedEnd} 为当前段 {@code startOffset + size}。
 	 * <p>
-	 * 包内调用方：{@code initialize()} 种子；{@code reopenAndObserve()} 在 close+open 共享句柄之后。
+	 * 段链条不变，只抬观察末尾；防御性保留，正常路径由 {@link #openAndObserve()} 整份换快照。
 	 */
 	void refreshTotalLength(long observedEnd) {
 		if (observedEnd < 0) {
 			return;
 		}
-		totalLengthSnapshot.accumulateAndGet(observedEnd, Math::max);
+		ReadOnlyCmdOffsetSnapshot current = offsetSnapshot;
+		if (observedEnd <= current.getObservedEnd()) {
+			return;
+		}
+		this.offsetSnapshot = current.withObservedEnd(observedEnd);
 	}
 
+	/**
+	 * 仅诊断：是否还有 Reader。**不是** Watcher 的 reopen gate（D48，撤销 v1.16 的 {@code hasReaders()} gate）。
+	 */
 	public boolean hasReaders() {
 		return !readers.isEmpty();
 	}
 
 	/**
-	 * 无 Reader 时由 Watcher 刷新 {@code totalLength}（D30 ③）。有 Reader 时它们自己 {@link #reopenAndObserve()}，不必再调。
-	 * 内部 close+open 共享句柄；失败只 WARN，快照保持原值。禁止 Redis 命令线程（D11）。
+	 * 关相入口（D48），只允许 {@code PrepareStoreWatcher} 调用。幂等：{@code handleLock} 内置空句柄后
+	 * close；**快照保持不动**，关相期间三个 offset getter 仍返回上次观察值。
 	 */
-	public void observeCurrentEnd() {
-		try {
-			reopenAndObserve();
-		} catch (Throwable th) {
-			logger.warn("[observeCurrentEnd][fail]{}", this, th);
+	public void closeHandleForCycle() {
+		synchronized (handleLock) {
+			closeHandleLocked("close read-only command segment for cycle " + fileNamePrefix);
 		}
 	}
 
 	/**
-	 * close 共享句柄再 open，然后观察段 size。失败抛出，由 Reader 走 D9 分支②。
-	 * 须先关尽该文件全部句柄再 open（FS-M5.4）。
-	 * 距上次实际 reopen 不足 {@link #REOPEN_DEBOUNCE_MILLI} 则跳过 close+open（同句柄 size 看不到新尾）。
+	 * 开相入口（D48），只允许 {@code PrepareStoreWatcher} 调用：open → {@code list} + 末段
+	 * {@code sizeOfSegment} → 整份替换快照。
+	 * <p>
+	 * 返回 {@link ObserveResult#FAILED} 时内部已关句柄并保留旧快照，由 Watcher 下周期重试。
+	 * 本方法不抛异常，不得在 Redis 命令线程上调用（会做 FS 调用，D11）。
 	 */
-	void reopenAndObserve() throws IOException {
+	public ObserveResult openAndObserve() {
 		synchronized (handleLock) {
-			makeSureOpen();
-			long now = milliClock.now();
-			if (lastReopenAtMillis >= 0 && now - lastReopenAtMillis < REOPEN_DEBOUNCE_MILLI) {
-				return;
+			try {
+				makeSureOpen();
+				if (asyncSegmentFile == null) {
+					this.asyncSegmentFile = openSharedHandle();
+				}
+				applyObservedSnapshot(observeSnapshotOnCurrentHandle());
+				return ObserveResult.OPENED;
+			} catch (Throwable th) {
+				logger.warn("[openAndObserve][fail][keep last snapshot]{} {}", offsetSnapshot, this, th);
+				closeHandleLocked("close read-only command segment after observe fail " + fileNamePrefix);
+				return ObserveResult.FAILED;
 			}
-			reopenSharedHandle();
-			lastReopenAtMillis = now;
-			observeSizeOnCurrentHandle();
 		}
 	}
 
+	/**
+	 * 关相时句柄不在，返回 {@code null} 而**不抛**（D48 ③）；Reader 按 D9 分支 ① 处理。
+	 */
 	ByteBuf readAt(long offset, long length) throws IOException {
 		synchronized (handleLock) {
 			makeSureOpen();
 			if (asyncSegmentFile == null) {
-				throw new IOException("no read-only command handle, offset=" + offset);
+				return null;
 			}
 			return AsyncFileSystemHelper.await(
 					() -> asyncFileSystem.read(asyncSegmentFile, length, offset),
@@ -211,54 +248,52 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 		}
 	}
 
-	long startOffsetOf(long readOffset) {
-		synchronized (handleLock) {
-			if (asyncSegmentFile == null) {
-				return -1L;
-			}
-			return asyncFileSystem.getStartOffsetByReadOffset(asyncSegmentFile, readOffset);
+	/**
+	 * 整份替换快照。正常路径 {@code observedEnd} 只前进（D49 的不变式已保证），这里的取 max 是防御。
+	 */
+	private void applyObservedSnapshot(ReadOnlyCmdOffsetSnapshot fresh) {
+		if (fresh == null) {
+			return;
 		}
+		long lastEnd = offsetSnapshot.getObservedEnd();
+		this.offsetSnapshot = fresh.getObservedEnd() >= lastEnd ? fresh : fresh.withObservedEnd(lastEnd);
 	}
 
-	private void reopenSharedHandle() throws IOException {
-		AsyncSegmentFile previous = asyncSegmentFile;
+	private void closeHandleLocked(String operation) {
+		AsyncSegmentFile handle = asyncSegmentFile;
+		if (handle == null) {
+			return;
+		}
 		this.asyncSegmentFile = null;
-		AsyncFileSystemHelper.closeHandle(asyncFileSystem, previous,
-				"reopen read-only command shared handle " + fileNamePrefix);
-		this.asyncSegmentFile = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
+		AsyncFileSystemHelper.closeHandle(asyncFileSystem, handle, operation);
+	}
+
+	private AsyncSegmentFile openSharedHandle() throws IOException {
+		return AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
 				() -> asyncFileSystem.open(baseDir.getAbsolutePath(), fileNamePrefix, NO_INDEX_PREFIXES, false,
 						fileSystemReplId.toString()),
-				"reopen read-only command segment " + fileNamePrefix);
+				"open read-only command segment " + fileNamePrefix);
 	}
 
-	private void observeSizeOnCurrentHandle() throws IOException {
+	private ReadOnlyCmdOffsetSnapshot observeSnapshotOnCurrentHandle() throws IOException {
 		if (asyncSegmentFile == null) {
 			throw new IOException("no read-only command handle to observe");
 		}
 		List<Long> segmentOffsets = asyncFileSystem.list(asyncSegmentFile);
 		if (segmentOffsets == null || segmentOffsets.isEmpty()) {
-			return;
+			return ReadOnlyCmdOffsetSnapshot.EMPTY;
 		}
-		long lastStart = segmentOffsets.get(segmentOffsets.size() - 1);
+		long[] starts = new long[segmentOffsets.size()];
+		for (int i = 0; i < starts.length; i++) {
+			starts[i] = segmentOffsets.get(i);
+		}
+		Arrays.sort(starts);
+		long lastStart = starts[starts.length - 1];
 		Long segmentSize = AsyncFileSystemHelper.await(
 				() -> asyncFileSystem.sizeOfSegment(asyncSegmentFile, lastStart),
 				"size read-only command segment " + fileNamePrefix);
-		if (segmentSize != null && segmentSize >= 0) {
-			refreshTotalLength(lastStart + segmentSize);
-		}
-	}
-
-	@Override
-	public long lowestAvailableOffset() {
-		synchronized (handleLock) {
-			makeSureOpen();
-			List<Long> segmentOffsets = asyncFileSystem.list(asyncSegmentFile);
-			if (segmentOffsets == null || segmentOffsets.isEmpty()) {
-				logger.info("[lowestAvailableOffset][no cmd segments][start offset 0]");
-				return 0L;
-			}
-			return segmentOffsets.get(0);
-		}
+		long observedEnd = segmentSize == null || segmentSize < 0 ? lastStart : lastStart + segmentSize;
+		return new ReadOnlyCmdOffsetSnapshot(observedEnd, starts, milliClock.now());
 	}
 
 	@Override

@@ -125,6 +125,9 @@ public class PrepareStoreWatcher {
 			throw injected;
 		}
 
+		// 三个只读句柄一起关，再一起开（D48）：cmd → meta.v2.json → store_manager_meta
+		closeReadOnlyHandles();
+
 		String latestDir = manager.reloadLatestStoreDir();
 		ReplicationStore opened = manager.getOpenedStore();
 		if (opened != null && latestDir != null && !sameOpenedStoreDir(opened, latestDir)) {
@@ -135,8 +138,39 @@ public class PrepareStoreWatcher {
 			manager.releaseCurrentStore();
 		} else if (opened != null) {
 			reloadOpenedMeta(opened);
+			openAndObserveCmd(opened);
 		}
 		refreshSnapshot();
+	}
+
+	/**
+	 * 关相：逐个兜异常，任何一个失败都不能挡住其它句柄与下一轮。
+	 */
+	private void closeReadOnlyHandles() {
+		ReplicationStore opened = manager.getOpenedStore();
+		if (opened != null) {
+			ReadOnlyCommandStore cmdStore = readOnlyCmdStore(opened);
+			if (cmdStore != null) {
+				try {
+					cmdStore.closeHandleForCycle();
+				} catch (Throwable th) {
+					logger.warn("[closeReadOnlyHandles][cmd]{}", this, th);
+				}
+			}
+			MetaStore metaStore = opened.getMetaStore();
+			if (metaStore instanceof AbstractMetaStore) {
+				try {
+					((AbstractMetaStore) metaStore).closeReadOnlyMetaHandle();
+				} catch (Throwable th) {
+					logger.warn("[closeReadOnlyHandles][meta]{}", this, th);
+				}
+			}
+		}
+		try {
+			manager.closeReadOnlyMetaHandle();
+		} catch (Throwable th) {
+			logger.warn("[closeReadOnlyHandles][managerMeta]{}", this, th);
+		}
 	}
 
 	private void reloadOpenedMeta(ReplicationStore opened) {
@@ -144,6 +178,25 @@ public class PrepareStoreWatcher {
 		if (metaStore instanceof AbstractMetaStore) {
 			((AbstractMetaStore) metaStore).reloadReadOnlyMeta();
 		}
+	}
+
+	/**
+	 * 开相：Watcher 是只读 cmd 句柄的唯一所有者，**禁止**直接 close/open/list/size（D48）。
+	 */
+	private void openAndObserveCmd(ReplicationStore opened) {
+		ReadOnlyCommandStore cmdStore = readOnlyCmdStore(opened);
+		if (cmdStore == null) {
+			return;
+		}
+		cmdStore.openAndObserve();
+	}
+
+	private static ReadOnlyCommandStore readOnlyCmdStore(ReplicationStore store) {
+		if (!(store instanceof DefaultReplicationStore)) {
+			return null;
+		}
+		CommandStore cmdStore = ((DefaultReplicationStore) store).getCommandStore();
+		return cmdStore instanceof ReadOnlyCommandStore ? (ReadOnlyCommandStore) cmdStore : null;
 	}
 
 	private void safePoll() {
@@ -160,13 +213,8 @@ public class PrepareStoreWatcher {
 			this.snapshot = null;
 			return;
 		}
+		// 观察发生在 openAndObserveCmd()（与有无 Reader 无关，D48）；这里只读内存快照
 		CommandStore cmdStore = ((DefaultReplicationStore) store).getCommandStore();
-		if (cmdStore instanceof ReadOnlyCommandStore) {
-			ReadOnlyCommandStore readOnly = (ReadOnlyCommandStore) cmdStore;
-			if (!readOnly.hasReaders()) {
-				readOnly.observeCurrentEnd();
-			}
-		}
 		long totalLength = cmdStore == null ? 0L : cmdStore.totalLength();
 		long backlogEnd = store.backlogEndOffset();
 		long backlogBegin = store.backlogBeginOffset();

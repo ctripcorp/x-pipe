@@ -10,9 +10,11 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * PREPARE 只读读取（m5 D9）。共用 Store 的一个只读句柄，position read 出 {@link ByteBuf}。
- * 可见尾追上则 Store close+open 再观察；仍 0 则返回 null，退避由 {@link ReadOnlyCommandStore#addCommandsListener} 做。
- * reopen / read 失败只抛异常，由 listener 持有方断链。
+ * PREPARE 只读读取（m5 D9 / D48）。共用 Store 的一个只读句柄，position read 出 {@link ByteBuf}。
+ * <p>
+ * 句柄的开关由 {@code PrepareStoreWatcher} 独占驱动，Reader **永不** open / close / reopen：
+ * 可见尾追上（开相）或句柄不在（关相）都只 {@code return null}，退避与等待由
+ * {@link ReadOnlyCommandStore#addCommandsListener} 做。read 失败只抛异常，由 listener 持有方断链。
  */
 public class ReopenOffsetCommandReader extends AbstractFlyingThresholdCommandReader<ByteBuf> {
 
@@ -48,13 +50,10 @@ public class ReopenOffsetCommandReader extends AbstractFlyingThresholdCommandRea
 	}
 
 	private ByteBuf readOnce() throws IOException {
+		// 快照纯内存读（D48 ④）；句柄开关只由 Watcher 两相驱动，Reader 不 reopen、不 sleep
 		long visible = commandStore.totalLength() - curPosition;
 		if (visible <= 0) {
-			commandStore.reopenAndObserve();
-			visible = commandStore.totalLength() - curPosition;
-			if (visible <= 0) {
-				return null;
-			}
+			return null;
 		}
 
 		long toRead = Math.min(visible, READ_CHUNK_BYTES);

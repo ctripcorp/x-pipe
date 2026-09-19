@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import org.junit.Assert;
 import org.junit.Test;
@@ -33,6 +34,72 @@ public class DefaultMetaStoreReadOnlyTest extends AbstractRedisKeeperTest {
 	private static final String REPL_ID = "000000000000000000000000000000000000000A";
 
 	private static final String CMD_PREFIX = "cmd_rs_readonly_";
+
+	@Test
+	public void testReloadReadOnlyMetaDoesNotCloseHandleItself() throws Exception {
+		AsyncFileSystem fs = spy(createTestAsyncFileSystem());
+		File dir = new File(getTestFileDir());
+		String runid = randomKeeperRunid();
+		DefaultMetaStore writable = new DefaultMetaStore(dir, runid, fs, getReplId());
+		writable.initialize();
+		writable.rdbConfirmPsync(REPL_ID, 100, 0, "rdb_x", RdbStore.Type.NORMAL, new LenEofType(10), CMD_PREFIX);
+		writable.close();
+
+		DefaultMetaStore readOnly = new DefaultMetaStore(dir, runid, fs, getReplId(), true);
+		readOnly.initialize();
+		try {
+			clearInvocations(fs);
+			readOnly.reloadReadOnlyMeta();
+			verify(fs, never()).close(any(AsyncFile.class));
+
+			readOnly.closeReadOnlyMetaHandle();
+			verify(fs, atLeastOnce()).close(any(AsyncFile.class));
+			// 幂等：句柄已关，再关不会重复 close
+			clearInvocations(fs);
+			readOnly.closeReadOnlyMetaHandle();
+			verify(fs, never()).close(any(AsyncFile.class));
+		} finally {
+			readOnly.close();
+			fs.shutdown();
+		}
+	}
+
+	@Test
+	public void testReloadEntriesDoNotCloseHandleInSource() throws Exception {
+		assertMethodBodyHasNoClose(
+				new File("src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java"),
+				"public void reloadReadOnlyMeta()", "closeHandle");
+		assertMethodBodyHasNoClose(
+				new File("src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java"),
+				"public synchronized String reloadLatestStoreDir()", "closeManagerMetaFile");
+	}
+
+	private static void assertMethodBodyHasNoClose(File source, String signature, String forbidden) throws Exception {
+		Assert.assertTrue("missing " + source.getPath(), source.isFile());
+		String text = new String(java.nio.file.Files.readAllBytes(source.toPath()),
+				java.nio.charset.StandardCharsets.UTF_8);
+		int start = text.indexOf(signature);
+		Assert.assertTrue("signature not found: " + signature, start >= 0);
+		int open = text.indexOf('{', start);
+		Assert.assertTrue(open > start);
+		int depth = 0;
+		int end = -1;
+		for (int i = open; i < text.length(); i++) {
+			char c = text.charAt(i);
+			if (c == '{') {
+				depth++;
+			} else if (c == '}') {
+				depth--;
+				if (depth == 0) {
+					end = i;
+					break;
+				}
+			}
+		}
+		Assert.assertTrue("unbalanced braces for " + signature, end > open);
+		String body = text.substring(open, end);
+		Assert.assertFalse(signature + " must not call " + forbidden, body.contains(forbidden));
+	}
 
 	@Test
 	public void testReadOnlyParseMatchesProduction() throws Exception {
@@ -125,6 +192,8 @@ public class DefaultMetaStoreReadOnlyTest extends AbstractRedisKeeperTest {
 			writable.rdbConfirmPsync(REPL_ID, 100, 0, "rdb_x", RdbStore.Type.NORMAL, new LenEofType(10), CMD_PREFIX);
 			writable.close();
 
+			// D48：reload 不再自关句柄，调用方（Watcher 关相）必须先关
+			readOnly.closeReadOnlyMetaHandle();
 			readOnly.reloadReadOnlyMeta();
 			Assert.assertEquals(REPL_ID, readOnly.getCurrentReplStage().getReplId());
 			Assert.assertEquals(REPL_ID, readOnly.getCurReplStageReplId());
@@ -154,6 +223,7 @@ public class DefaultMetaStoreReadOnlyTest extends AbstractRedisKeeperTest {
 			writable.close();
 
 			Assert.assertEquals(REPL_ID, readOnly.getCurrentReplStage().getReplId());
+			readOnly.closeReadOnlyMetaHandle();
 			readOnly.reloadReadOnlyMeta();
 			Assert.assertEquals("000000000000000000000000000000000000000B", readOnly.getReplId());
 		} finally {

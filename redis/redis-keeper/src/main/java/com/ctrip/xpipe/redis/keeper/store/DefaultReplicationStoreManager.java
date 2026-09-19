@@ -575,9 +575,23 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         return currentStore.get();
     }
 
+    /**
+     * Watcher-only 关相入口 (D48). Read-only mode: close the manager-meta handle and <b>keep the
+     * {@code currentMeta} cache</b> — a request-side {@code getCurrent()} during the closed phase must
+     * read memory instead of triggering a lazy reopen that would ruin the quiet window (§4.2.3b).
+     */
+    @Override
+    public synchronized void closeReadOnlyMetaHandle() {
+        if (!readOnly) {
+            return;
+        }
+        closeManagerMetaFile();
+    }
+
     @Override
     public synchronized String reloadLatestStoreDir() throws IOException {
-        closeManagerMetaFile();
+        // No close here (D48): the handle is closed by the watcher's closed phase and stays quiet for
+        // >= keeper.prepare.watch.close.hold.milli before this force-load reopens it lazily.
         currentMeta.set(null);
         Properties meta = currentMeta(true);
         if (meta == null) {

@@ -60,10 +60,19 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	File getBaseDir();
 
 	/**
-	 * Re-read {@code store_manager_meta.properties} from disk (reopen handle, drop cache).
+	 * Re-read {@code store_manager_meta.properties} from disk (drop cache, force load).
 	 * Returns {@code latest.store.dir} or {@code null}. Does not open or close the current store.
 	 * Used by PrepareStoreWatcher (D8) so occupying-keeper 换店 is visible.
+	 * <p>
+	 * Callers must have closed the handle via {@link #closeReadOnlyMetaHandle()} beforehand (D48):
+	 * this method no longer closes it, so the reopen happens after the watcher's quiet window.
 	 */
 	String reloadLatestStoreDir() throws IOException;
+	/**
+	 * Close the manager-meta handle in read-only mode (PrepareStoreWatcher closed phase, D48).
+	 * Idempotent, no-op in production mode. Keeps the in-memory {@code latest.store.dir} cache so
+	 * request-side accessors stay FS-free while the handle is closed.
+	 */
+	void closeReadOnlyMetaHandle();
 
 }

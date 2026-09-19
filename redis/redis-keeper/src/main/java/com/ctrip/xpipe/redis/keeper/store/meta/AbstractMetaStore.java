@@ -152,8 +152,30 @@ public abstract class AbstractMetaStore implements MetaStore{
 	}
 
 	/**
-	 * Watcher-only (D8). Close the read handle then {@link #loadMeta()} so the whole
-	 * {@code metaRef} tracks the occupying keeper (FS-M5.4). Getters must not reload.
+	 * Watcher-only 关相入口 (D48). Idempotent close of the read-only {@code meta.v2.json} handle.
+	 * Keeps {@code metaRef} intact: getters read memory during the closed phase (§4.2.3b).
+	 */
+	public void closeReadOnlyMetaHandle() {
+		if (!readOnly) {
+			return;
+		}
+		synchronized (metaRef) {
+			if (closed || metaAsyncFile == null) {
+				return;
+			}
+			AsyncFileSystemHelper.closeHandle(asyncFileSystem, metaAsyncFile,
+					"close read-only meta for cycle " + metaV2File().getAbsolutePath());
+			metaAsyncFile = null;
+		}
+	}
+
+	/**
+	 * Watcher-only 开相入口 (D8 / D48). Only {@link #loadMeta()} — it does <b>not</b> close the handle
+	 * itself any more.
+	 * <p>
+	 * <b>The caller must already have closed the handle via {@link #closeReadOnlyMetaHandle()} at least
+	 * {@code keeper.prepare.watch.close.hold.milli} ago</b> (FS-M5.4 + FS-M5.5): a reopen without that
+	 * quiet window is not guaranteed to see the occupying keeper's latest bytes. Getters must not reload.
 	 */
 	public void reloadReadOnlyMeta() {
 		if (!readOnly) {
@@ -164,11 +186,6 @@ public abstract class AbstractMetaStore implements MetaStore{
 				return;
 			}
 			try {
-				if (metaAsyncFile != null) {
-					AsyncFileSystemHelper.closeHandle(asyncFileSystem, metaAsyncFile,
-							"reopen read-only meta " + metaV2File().getAbsolutePath());
-					metaAsyncFile = null;
-				}
 				loadMeta();
 			} catch (Throwable th) {
 				logger.warn("[reloadReadOnlyMeta] keep cached meta {}", baseDir, th);
