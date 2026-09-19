@@ -62,7 +62,7 @@ public class ReopenOffsetCommandReaderTest {
 
 	private final AtomicReference<String> sleepThreadName = new AtomicReference<>();
 
-	private final ReadOnlyCommandStore.ReopenSleeper sleeper = millis -> {
+	private final ReadOnlyCommandStore.BackoffSleeper sleeper = millis -> {
 		sleepCount.incrementAndGet();
 		lastSleepMilli.set(millis);
 		sleepThreadName.set(Thread.currentThread().getName());
@@ -90,7 +90,7 @@ public class ReopenOffsetCommandReaderTest {
 
 		store = new ReadOnlyCommandStore(CMD_FILE, asyncFileSystem, ReplId.from(1L));
 		store.setMilliClock(now::get);
-		store.setReopenSleeper(sleeper);
+		store.setBackoffSleeper(sleeper);
 		store.initialize();
 	}
 
@@ -161,11 +161,90 @@ public class ReopenOffsetCommandReaderTest {
 		reader.close();
 	}
 
+	/**
+	 * AC-5b ④：关相里 Reader 与「追上可见尾」走同一条路 —— 按 {@code MISS_BACKOFF_MILLI} 退避，
+	 * 不 reopen、不等唤醒；Watcher 进开相后下一次退避结束即恢复消费。
+	 */
 	@Test
-	public void testBackoffSkipsNettyAndCommandHandlerThreads() throws Exception {
-		runOnThread("nioEventLoopGroup-2-1", () -> store.missAndBackoff());
-		Assert.assertEquals(0, sleepCount.get());
+	public void testClosedPhaseBacksOffWithSameMissPathAndResumesAfterOpen() throws Exception {
+		Mockito.when(asyncFileSystem.list(readHandle1)).thenReturn(Collections.singletonList(0L));
+		Mockito.when(asyncFileSystem.sizeOfSegment(readHandle1, 0L))
+				.thenReturn(CompletableFuture.completedFuture(4L));
+		Mockito.when(asyncFileSystem.read(readHandle1, 4L, 0L))
+				.thenReturn(CompletableFuture.completedFuture(Unpooled.wrappedBuffer(new byte[4])));
 
+		// 关相：句柄不在，Reader 读到 null
+		store.closeHandleForCycle();
+		Assert.assertFalse(store.isHandleOpen());
+
+		// 退避的第二轮里模拟 Watcher 进开相，验证 Reader 无需被唤醒也能恢复
+		store.setBackoffSleeper(millis -> {
+			sleepCount.incrementAndGet();
+			lastSleepMilli.set(millis);
+			if (sleepCount.get() == 2) {
+				store.openAndObserve();
+			}
+		});
+
+		AtomicInteger deliveredBytes = new AtomicInteger();
+		Mockito.when(listener.isOpen()).thenAnswer(invocation -> deliveredBytes.get() == 0);
+		Mockito.when(listener.onCommand(Mockito.any())).thenAnswer(invocation -> {
+			ByteBuf buf = invocation.getArgument(0);
+			deliveredBytes.set(buf.readableBytes());
+			return null;
+		});
+
+		store.addCommandsListener(new OffsetReplicationProgress(0), listener);
+
+		Assert.assertEquals(2, sleepCount.get());
+		Assert.assertEquals(ReadOnlyCommandStore.MISS_BACKOFF_MILLI, lastSleepMilli.get());
+		Assert.assertEquals(4, deliveredBytes.get());
+		Assert.assertTrue(store.isHandleOpen());
+		Mockito.verify(closeableListener, Mockito.never()).close();
+	}
+
+	/**
+	 * AC-7b：退避不持 {@code handleLock} —— 退避中的 Reader 不阻塞 Watcher 关 / 开句柄。
+	 */
+	@Test
+	public void testBackoffDoesNotBlockWatcherCyclingHandle() throws Exception {
+		Mockito.when(asyncFileSystem.list(readHandle1)).thenReturn(Collections.singletonList(0L));
+		Mockito.when(asyncFileSystem.sizeOfSegment(readHandle1, 0L))
+				.thenReturn(CompletableFuture.completedFuture(0L));
+
+		AtomicReference<Exception> watcherError = new AtomicReference<>();
+		store.setBackoffSleeper(millis -> {
+			sleepCount.incrementAndGet();
+			// 退避期间另一条线程（Watcher）关句柄再 open，不得被挡住
+			Thread watcher = new Thread(() -> {
+				try {
+					store.closeHandleForCycle();
+					store.openAndObserve();
+				} catch (Exception e) {
+					watcherError.set(e);
+				}
+			}, "prepare-watch-repl_1");
+			watcher.start();
+			watcher.join(5000);
+			Assert.assertFalse("watcher blocked by reader backoff", watcher.isAlive());
+		});
+
+		Mockito.when(listener.isOpen()).thenAnswer(invocation -> sleepCount.get() < 1);
+		runOnThread("psync-repl_1",
+				() -> store.addCommandsListener(new OffsetReplicationProgress(0), listener));
+
+		Assert.assertNull(watcherError.get());
+		Assert.assertEquals(1, sleepCount.get());
+		Assert.assertTrue(store.isHandleOpen());
+		Mockito.verify(closeableListener, Mockito.never()).close();
+	}
+
+	/**
+	 * AC-7b / D18c：退避睡在调用 {@code addCommandsListener} 的那条线程上 —— 该循环本身就是阻塞的，
+	 * 线程归属由调用方保证（slave 的 psync executor / `PrepareCmdParser` 线程），Store 内不做运行时判定。
+	 */
+	@Test
+	public void testBackoffSleepsOnCallerThread() throws Exception {
 		runOnThread("psync-repl_1", () -> store.missAndBackoff());
 		Assert.assertEquals(1, sleepCount.get());
 		Assert.assertEquals("psync-repl_1", sleepThreadName.get());
@@ -190,7 +269,7 @@ public class ReopenOffsetCommandReaderTest {
 		});
 
 		// 退避期间由 Watcher（这里用 sleeper 回调模拟其线程）走一次关相 → 开相
-		store.setReopenSleeper(millis -> {
+		store.setBackoffSleeper(millis -> {
 			sleepCount.incrementAndGet();
 			lastSleepMilli.set(millis);
 			if (sleepCount.get() == 1) {
@@ -271,30 +350,38 @@ public class ReopenOffsetCommandReaderTest {
 		Assert.assertFalse(readerText.contains("disconnectListener"));
 		Assert.assertFalse(readerText.contains("fs.open"));
 		Assert.assertFalse(readerText.contains("Thread.sleep"));
-		Assert.assertFalse(readerText.contains("ReopenSleeper"));
+		Assert.assertFalse(readerText.contains("BackoffSleeper"));
 		Assert.assertFalse(readerText.contains("EventMonitor"));
 		// D48：句柄开关只由 Watcher 驱动，Reader 不碰
 		Assert.assertFalse(readerText.contains("openAndObserve"));
 		Assert.assertFalse(readerText.contains("closeHandleForCycle"));
 		Assert.assertTrue(storeText.contains("readAt"));
 		Assert.assertTrue(storeText.contains("missAndBackoff"));
-		Assert.assertTrue(ReadOnlyCommandStore.isForbiddenBackoffThread(
-				namedThread("nioEventLoop-1-1")));
-		Assert.assertTrue(ReadOnlyCommandStore.isForbiddenBackoffThread(
-				namedThread("RedisCommandHandler-0")));
-		Assert.assertFalse(ReadOnlyCommandStore.isForbiddenBackoffThread(
-				namedThread("psync-repl_1")));
+		// D9 ①：读不到数据只退避，不做 wait / notify 唤醒
+		Assert.assertFalse(storeText.contains("phaseMonitor"));
+		Assert.assertFalse(storeText.contains("notifyAll"));
+		Assert.assertFalse(storeText.contains("awaitHandleOpen"));
+		Assert.assertFalse(readerText.contains("isHandleOpen"));
+		// D18c：Store 不按线程名做运行时判定（keeper 的 event loop 叫 boss-/work-/master-，按名字匹配本就不成立）
+		Assert.assertFalse(storeText.contains("Thread.currentThread().getName()"));
+		// AC-7b：阻塞循环的线程归属由调用方保证 —— slave 走 psync executor，PREPARE 走 parser 自己的线程
+		Assert.assertTrue(stripComments(readSource(
+				"src/main/java/com/ctrip/xpipe/redis/keeper/handler/keeper/GapAllowSyncHandler.java"))
+				.contains("processPsyncSequentially"));
+		Assert.assertTrue(stripComments(readSource(
+				"src/main/java/com/ctrip/xpipe/redis/keeper/prepare/PrepareCmdParser.java"))
+				.contains("\"prepare-cmd-parser\""));
+	}
+
+	private static String readSource(String path) throws java.io.IOException {
+		File source = new File(path);
+		Assert.assertTrue(path, source.isFile());
+		return new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8);
 	}
 
 	private ReopenOffsetCommandReader newReader(long offset) {
 		return new ReopenOffsetCommandReader(offset, store,
 				AbstractCommandStore.DEFAULT_COMMAND_READER_FLYING_THRESHOLD);
-	}
-
-	private static Thread namedThread(String name) {
-		Thread thread = new Thread();
-		thread.setName(name);
-		return thread;
 	}
 
 	private static void runOnThread(String name, ThrowingRunnable action) throws Exception {

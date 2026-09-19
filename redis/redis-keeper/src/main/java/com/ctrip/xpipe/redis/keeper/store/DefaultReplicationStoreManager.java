@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.util.concurrent.MoreExecutors;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
@@ -586,6 +587,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             return;
         }
         closeManagerMetaFile();
+    }
+
+    /**
+     * Whether the {@code store_manager_meta.properties} handle is currently open (D48 phase fact).
+     */
+    @VisibleForTesting
+    public synchronized boolean isManagerMetaHandleOpen() {
+        return managerMetaAsyncFile != null;
     }
 
     @Override

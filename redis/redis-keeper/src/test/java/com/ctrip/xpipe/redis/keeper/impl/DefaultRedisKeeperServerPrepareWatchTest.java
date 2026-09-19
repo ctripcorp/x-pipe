@@ -199,7 +199,8 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 	private TestKeeperConfig watchConfig(boolean enabled) {
 		TestKeeperConfig config = new TestKeeperConfig();
 		config.setPrepareStoreWatchEnabled(enabled);
-		config.setPrepareWatchMetaIntervalMilli(50);
+		config.setPrepareWatchReopenIntervalMilli(50);
+		config.setPrepareWatchCloseHoldMilli(10);
 		return config;
 	}
 

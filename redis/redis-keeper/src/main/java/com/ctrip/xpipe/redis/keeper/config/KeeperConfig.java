@@ -35,7 +35,8 @@ public interface KeeperConfig extends CoreConfig{
 	double DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_RATIO = 0.8d;
 	long DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR = 256L * 1024 * 1024;
 
-	int DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI = 5000;
+	int DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI = 5000;
+	int DEFAULT_PREPARE_WATCH_CLOSE_HOLD_MILLI = 1000;
 
 
 	int getMetaServerConnectTimeout();
@@ -121,7 +122,15 @@ public interface KeeperConfig extends CoreConfig{
 
 	boolean isPrepareStoreWatchEnabled();
 
-	int getPrepareWatchMetaIntervalMilli();
+	/**
+	 * 只读句柄保持打开的最小时长，到点进关相（m5 D48）。
+	 */
+	int getPrepareWatchReopenIntervalMilli();
+
+	/**
+	 * 只读句柄关相的最小静置时长，到点才允许 open（m5 D48 / FS-M5.5）。
+	 */
+	int getPrepareWatchCloseHoldMilli();
 
 	boolean isPubsubParseEnabled();
 

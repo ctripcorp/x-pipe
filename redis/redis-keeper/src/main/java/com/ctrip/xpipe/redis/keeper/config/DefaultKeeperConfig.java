@@ -73,7 +73,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	private static String KEY_RECORD_WRONG_STREAM = "keeper.record.wrong.stream";
 
 	public static final String KEY_PREPARE_STORE_WATCH_ENABLED = "keeper.prepare.store.watch.enabled";
-	public static final String KEY_PREPARE_WATCH_META_INTERVAL_MILLI = "keeper.prepare.watch.meta.interval.milli";
+	public static final String KEY_PREPARE_WATCH_REOPEN_INTERVAL_MILLI = "keeper.prepare.watch.reopen.interval.milli";
+	public static final String KEY_PREPARE_WATCH_CLOSE_HOLD_MILLI = "keeper.prepare.watch.close.hold.milli";
 	public static final String KEY_PUBSUB_PARSE_ENABLED = "keeper.pubsub.parse.enabled";
 
 	private static String KEY_REDIS_RATE_LIMITE_MIN = "redis.rate.limit.min";
@@ -287,8 +288,13 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	}
 
 	@Override
-	public int getPrepareWatchMetaIntervalMilli() {
-		return getIntProperty(KEY_PREPARE_WATCH_META_INTERVAL_MILLI, DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI);
+	public int getPrepareWatchReopenIntervalMilli() {
+		return getIntProperty(KEY_PREPARE_WATCH_REOPEN_INTERVAL_MILLI, DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI);
+	}
+
+	@Override
+	public int getPrepareWatchCloseHoldMilli() {
+		return getIntProperty(KEY_PREPARE_WATCH_CLOSE_HOLD_MILLI, DEFAULT_PREPARE_WATCH_CLOSE_HOLD_MILLI);
 	}
 
 	@Override

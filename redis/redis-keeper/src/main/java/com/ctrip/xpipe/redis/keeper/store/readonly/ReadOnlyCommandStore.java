@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.store.readonly;
 
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.store.BacklogOffsetReplicationProgress;
@@ -44,12 +43,9 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 
 	private static final Logger logger = LoggerFactory.getLogger(ReadOnlyCommandStore.class);
 
-	public static final String MONITOR_TYPE = "ReadOnlyCommandStore";
-
-	public static final String PREPARE_WATCH_MISS = "prepareWatchMiss";
-
 	/**
-	 * {@link #addCommandsListener} 在开相里追上可见尾后的防空转间隔（D9 ①）。
+	 * {@link #addCommandsListener} 读不到数据时的防空转间隔（D9 ①）：开相追上可见尾与关相句柄不在
+	 * 是同一条路 —— 只读侧不需要「句柄一开就被唤醒」的及时性，下一轮重试晚 10ms 无影响。
 	 */
 	public static final int MISS_BACKOFF_MILLI = 10;
 
@@ -69,8 +65,11 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 		FAILED
 	}
 
+	/**
+	 * {@link #missAndBackoff()} 的可注入 sleep，单测用（句柄开关由 Watcher 驱动，Store 自己不 reopen）。
+	 */
 	@FunctionalInterface
-	interface ReopenSleeper {
+	interface BackoffSleeper {
 		void sleep(long millis) throws InterruptedException;
 	}
 
@@ -103,7 +102,7 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 	 */
 	private final Object handleLock = new Object();
 
-	private ReopenSleeper reopenSleeper = Thread::sleep;
+	private BackoffSleeper backoffSleeper = Thread::sleep;
 
 	private MilliClock milliClock = System::currentTimeMillis;
 
@@ -231,6 +230,14 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 				return ObserveResult.FAILED;
 			}
 		}
+	}
+
+	/**
+	 * 句柄开闭的**事实**以共享句柄是否为 null 为准（D48 状态归属）。纯内存读，仅诊断与验收用；
+	 * Reader **不**据此分支 —— 关相与「追上可见尾」对它是同一件事：没数据可读（D9 ①）。
+	 */
+	public boolean isHandleOpen() {
+		return asyncSegmentFile != null;
 	}
 
 	/**
@@ -519,35 +526,26 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 		throw unsupported("resetStateForContinue");
 	}
 
+	/**
+	 * 读不到数据时的唯一处置（D9 ①）：{@link #MISS_BACKOFF_MILLI} 退避。
+	 * <p>
+	 * 开相追上可见尾与关相句柄不在**不分路**：只读侧不需要「句柄一开就被唤醒」的及时性，退避本身
+	 * 就是频率上界；因此不设 monitor / notify，也不持 {@link #handleLock}（Watcher 随时能关句柄）。
+	 * <p>
+	 * 调用方必须是每 slave 的 psync executor 或 {@code PrepareCmdParser} 线程（D18c）—— 该循环本身
+	 * 就是阻塞的，不能跑在 Netty IO / 命令 handler 线程上。这条由 AC-7b 的依赖断言把关，运行时不再检查。
+	 */
 	void missAndBackoff() {
-		if (isForbiddenBackoffThread(Thread.currentThread())) {
-			logger.error("[backoff][forbidden thread]{}", Thread.currentThread().getName());
-			return;
-		}
 		try {
-			reopenSleeper.sleep(MISS_BACKOFF_MILLI);
+			backoffSleeper.sleep(MISS_BACKOFF_MILLI);
 		} catch (InterruptedException e) {
 			logger.info("[backoff][interrupted]{}", this, e);
 			Thread.currentThread().interrupt();
 		}
 	}
 
-	static boolean isForbiddenBackoffThread(Thread thread) {
-		if (thread == null) {
-			return false;
-		}
-		String name = thread.getName();
-		if (name == null) {
-			return false;
-		}
-		String lower = name.toLowerCase();
-		return lower.contains("nioeventloop")
-				|| lower.contains("nioeventloopgroup")
-				|| lower.contains("commandhandler");
-	}
-
-	void setReopenSleeper(ReopenSleeper reopenSleeper) {
-		this.reopenSleeper = reopenSleeper == null ? Thread::sleep : reopenSleeper;
+	void setBackoffSleeper(BackoffSleeper backoffSleeper) {
+		this.backoffSleeper = backoffSleeper == null ? Thread::sleep : backoffSleeper;
 	}
 
 	void setMilliClock(MilliClock milliClock) {

@@ -48,7 +48,13 @@ public abstract class AbstractTfsKeeperIntegrated extends AbstractKeeperIntegrat
 
 	protected static final String TFS_STORE_DIR_NAME = "tfs_store";
 
-	protected static final int PREPARE_WATCH_META_INTERVAL_MILLI = 50;
+	/**
+	 * 两相节奏的两个阈值压到最小（D48）。tick 固定 1s 不可配，所以一个完整 cycle 仍 ≈2s；
+	 * 集成测只验证「两相节奏不破坏既有闭环」，不做「Xs 后可见」的墙钟断言（T-HA.4）。
+	 */
+	protected static final int PREPARE_WATCH_REOPEN_INTERVAL_MILLI = 50;
+
+	protected static final int PREPARE_WATCH_CLOSE_HOLD_MILLI = 10;
 
 	protected static final int READY_WAIT_MILLI = 30000;
 
@@ -141,7 +147,8 @@ public abstract class AbstractTfsKeeperIntegrated extends AbstractKeeperIntegrat
 	protected KeeperConfig getKeeperConfig() {
 		TestKeeperConfig config = (TestKeeperConfig) super.getKeeperConfig();
 		config.setPrepareStoreWatchEnabled(true);
-		config.setPrepareWatchMetaIntervalMilli(PREPARE_WATCH_META_INTERVAL_MILLI);
+		config.setPrepareWatchReopenIntervalMilli(PREPARE_WATCH_REOPEN_INTERVAL_MILLI);
+		config.setPrepareWatchCloseHoldMilli(PREPARE_WATCH_CLOSE_HOLD_MILLI);
 		return config;
 	}
 

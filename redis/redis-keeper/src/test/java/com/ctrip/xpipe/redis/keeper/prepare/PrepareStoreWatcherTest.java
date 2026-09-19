@@ -17,9 +17,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -32,7 +34,11 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 /**
- * Phase WT (T-WT.4): PrepareStoreWatcher. AC-5 / D8 / D11.
+ * Phase WT (T-WT.4) / Phase HW (T-HW.6): PrepareStoreWatcher 的变更感知语义。AC-5 / D8 / D11 / D48。
+ * <p>
+ * 返工后所有「感知 + reload + 观察」动作都发生在**关相到点后的那一次开相** poll 上，因此用注入时钟把
+ * 一个完整 cycle 驱完（{@link #driveOpenPhaseAction}），不再靠单次 {@code pollOnce()}。
+ * 两相节奏本身的断言在 {@link PrepareStoreWatcherPhaseTest}。
  */
 public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 
@@ -40,18 +46,26 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 
 	private static final String REPL_ID_B = "000000000000000000000000000000000000000B";
 
+	private static final int REOPEN_INTERVAL_MILLI = 5000;
+
+	private static final int CLOSE_HOLD_MILLI = 1000;
+
 	private TestKeeperConfig keeperConfig;
+
+	private final AtomicLong now = new AtomicLong();
 
 	@Before
 	public void beforePrepareStoreWatcherTest() {
 		keeperConfig = new TestKeeperConfig();
 		keeperConfig.setReplicationStoreGcIntervalSeconds(60);
 		keeperConfig.setMinTimeMilliToGcAfterCreate(60_000);
-		keeperConfig.setPrepareWatchMetaIntervalMilli(50);
+		keeperConfig.setPrepareWatchReopenIntervalMilli(REOPEN_INTERVAL_MILLI);
+		keeperConfig.setPrepareWatchCloseHoldMilli(CLOSE_HOLD_MILLI);
+		now.set(0);
 	}
 
 	@Test
-	public void testStoreDirChangeReleasesAndDisconnectsWithinOnePoll() throws Exception {
+	public void testStoreDirChangeReleasesAndDisconnectsWithinOneOpenPhase() throws Exception {
 		AsyncFileSystem fs = createTestAsyncFileSystem();
 		File base = new File(getTestFileDir());
 		String runid = randomKeeperRunid();
@@ -59,7 +73,7 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 		DefaultReplicationStoreManager watching = newManager(fs, base, runid);
 		List<String> changes = new ArrayList<>();
 		AtomicInteger slavesClosed = new AtomicInteger();
-		PrepareStoreWatcher watcher = new PrepareStoreWatcher(watching, keeperConfig, reason -> {
+		PrepareStoreWatcher watcher = newWatcher(watching, reason -> {
 			changes.add(reason);
 			slavesClosed.incrementAndGet();
 		});
@@ -74,7 +88,7 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 			watching.setReadOnly(true);
 			LifecycleHelper.startIfPossible(watching);
 			Assert.assertEquals(dirA, ((DefaultReplicationStore) watching.getCurrent()).getBaseDir());
-			watcher.pollOnce();
+			driveOpenPhaseAction(watcher);
 			Assert.assertEquals(dirA, ((DefaultReplicationStore) watching.getOpenedStore()).getBaseDir());
 			Assert.assertEquals(0, watcher.getStoreSwitchedCount());
 
@@ -83,7 +97,7 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 			File dirB = storeB.getBaseDir();
 			Assert.assertNotEquals(dirA, dirB);
 
-			watcher.pollOnce();
+			driveOpenPhaseAction(watcher);
 
 			Assert.assertNull(watching.getOpenedStore());
 			Assert.assertNull(watcher.getSnapshot());
@@ -110,7 +124,7 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 		DefaultReplicationStoreManager occupying = newManager(fs, base, runid);
 		DefaultReplicationStoreManager watching = newManager(fs, base, runid);
 		List<String> changes = new ArrayList<>();
-		PrepareStoreWatcher watcher = new PrepareStoreWatcher(watching, keeperConfig, changes::add);
+		PrepareStoreWatcher watcher = newWatcher(watching, changes::add);
 		try {
 			LifecycleHelper.initializeIfPossible(occupying);
 			LifecycleHelper.startIfPossible(occupying);
@@ -123,7 +137,7 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 			LifecycleHelper.startIfPossible(watching);
 			Assert.assertNull(watching.getOpenedStore());
 
-			watcher.pollOnce();
+			driveOpenPhaseAction(watcher);
 
 			Assert.assertNull(watching.getOpenedStore());
 			Assert.assertNull(watcher.getSnapshot());
@@ -147,7 +161,7 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 		DefaultReplicationStoreManager occupying = newManager(fs, base, runid);
 		DefaultReplicationStoreManager watching = newManager(fs, base, runid);
 		List<String> changes = new ArrayList<>();
-		PrepareStoreWatcher watcher = new PrepareStoreWatcher(watching, keeperConfig, changes::add);
+		PrepareStoreWatcher watcher = newWatcher(watching, changes::add);
 		try {
 			LifecycleHelper.initializeIfPossible(occupying);
 			LifecycleHelper.startIfPossible(occupying);
@@ -159,14 +173,14 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 			watching.setReadOnly(true);
 			LifecycleHelper.startIfPossible(watching);
 			Assert.assertEquals(dir, ((DefaultReplicationStore) watching.getCurrent()).getBaseDir());
-			watcher.pollOnce();
+			driveOpenPhaseAction(watcher);
 			ReplicationStore opened = watching.getOpenedStore();
 			Assert.assertEquals(dir, ((DefaultReplicationStore) opened).getBaseDir());
 			Assert.assertEquals(REPL_ID, opened.getMetaStore().getCurrentReplStage().getReplId());
 
 			writable.psyncContinue(REPL_ID_B);
 			Assert.assertEquals(REPL_ID, opened.getMetaStore().getCurrentReplStage().getReplId());
-			watcher.pollOnce();
+			driveOpenPhaseAction(watcher);
 
 			ReplicationStore still = watching.getOpenedStore();
 			Assert.assertSame(opened, still);
@@ -189,8 +203,7 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 		String runid = randomKeeperRunid();
 		DefaultReplicationStoreManager occupying = newManager(fs, base, runid);
 		DefaultReplicationStoreManager watching = newManager(fs, base, runid);
-		PrepareStoreWatcher watcher = new PrepareStoreWatcher(watching, keeperConfig,
-				PrepareStoreChangeListener.NOOP);
+		PrepareStoreWatcher watcher = newWatcher(watching, PrepareStoreChangeListener.NOOP);
 		try {
 			LifecycleHelper.initializeIfPossible(occupying);
 			LifecycleHelper.startIfPossible(occupying);
@@ -201,13 +214,13 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 			LifecycleHelper.startIfPossible(watching);
 			Assert.assertNull(((DefaultReplicationStore) watching.getCurrent()).getMetaStore().getCurrentReplStage());
 
-			watcher.pollOnce();
+			driveOpenPhaseAction(watcher);
 			Assert.assertNull(watching.getOpenedStore().getMetaStore().getCurrentReplStage());
 
 			writable.psyncContinueFrom(REPL_ID, 1);
 			Assert.assertNull(watching.getOpenedStore().getMetaStore().getCurrentReplStage());
 
-			watcher.pollOnce();
+			driveOpenPhaseAction(watcher);
 			Assert.assertEquals(REPL_ID, watching.getOpenedStore().getMetaStore().getCurrentReplStage().getReplId());
 			Assert.assertEquals(0, watcher.getStoreSwitchedCount());
 		} finally {
@@ -218,8 +231,14 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 		}
 	}
 
+	/**
+	 * AC-5b ⑦：tick 抛异常后下一 tick 仍执行。走真实 scheduler，tick 固定 1s，两个阈值压到最小，
+	 * 因此首个快照大约在第 3 个 tick 出现。
+	 */
 	@Test
 	public void testPollExceptionDoesNotStopNextCycle() throws Exception {
+		keeperConfig.setPrepareWatchReopenIntervalMilli(1);
+		keeperConfig.setPrepareWatchCloseHoldMilli(1);
 		AsyncFileSystem fs = createTestAsyncFileSystem();
 		File base = new File(getTestFileDir());
 		String runid = randomKeeperRunid();
@@ -238,7 +257,8 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 			watching.getCurrent();
 			watcher.failNextPoll(new RuntimeException("injected watch fail"));
 			watcher.start();
-			waitConditionUntilTimeOut(() -> watcher.getSnapshot() != null, 2000);
+			waitConditionUntilTimeOut(() -> watcher.getSnapshot() != null,
+					6 * PrepareStoreWatcher.WATCH_TICK_MILLI);
 			Assert.assertTrue(watcher.getPollCount() >= 2);
 			Assert.assertNotNull(watcher.getSnapshot());
 			Assert.assertEquals(0, watcher.getStoreSwitchedCount());
@@ -257,8 +277,7 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 		String runid = randomKeeperRunid();
 		DefaultReplicationStoreManager occupying = newManager(fs, base, runid);
 		DefaultReplicationStoreManager watching = newManager(fs, base, runid);
-		PrepareStoreWatcher watcher = new PrepareStoreWatcher(watching, keeperConfig,
-				PrepareStoreChangeListener.NOOP);
+		PrepareStoreWatcher watcher = newWatcher(watching, PrepareStoreChangeListener.NOOP);
 		try {
 			LifecycleHelper.initializeIfPossible(occupying);
 			LifecycleHelper.startIfPossible(occupying);
@@ -268,7 +287,7 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 			watching.setReadOnly(true);
 			LifecycleHelper.startIfPossible(watching);
 			watching.getCurrent();
-			watcher.pollOnce();
+			driveOpenPhaseAction(watcher);
 
 			PrepareWatchSnapshot snap = watcher.getSnapshot();
 			Assert.assertNotNull(snap);
@@ -296,6 +315,25 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 			stopDispose(occupying);
 			fs.shutdown();
 		}
+	}
+
+	private PrepareStoreWatcher newWatcher(DefaultReplicationStoreManager manager,
+										   PrepareStoreChangeListener listener) {
+		PrepareStoreWatcher watcher = new PrepareStoreWatcher(manager, keeperConfig, listener);
+		watcher.setClock(now::get);
+		return watcher;
+	}
+
+	/**
+	 * 把一个完整 cycle 驱到「开相动作」那一 poll：第一轮可能只做重绑，随后开相到点进关相，静置到点做
+	 * 换店判定 / meta reload / {@code openAndObserve()}。全程用注入时钟，不睡墙钟。
+	 */
+	private void driveOpenPhaseAction(PrepareStoreWatcher watcher) throws IOException {
+		watcher.pollOnce();
+		now.addAndGet(REOPEN_INTERVAL_MILLI);
+		watcher.pollOnce();
+		now.addAndGet(CLOSE_HOLD_MILLI);
+		watcher.pollOnce();
 	}
 
 	private DefaultReplicationStoreManager newManager(AsyncFileSystem fs, File base, String runid) {

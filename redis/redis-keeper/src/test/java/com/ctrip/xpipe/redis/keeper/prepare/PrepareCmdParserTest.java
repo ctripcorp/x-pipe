@@ -28,6 +28,12 @@ public class PrepareCmdParserTest extends AbstractRedisKeeperTest {
 
 	private static final String REPL_ID = "000000000000000000000000000000000000000A";
 
+	/**
+	 * Watcher 的 tick 固定 1s（D48），一次「关相 → 静置 → 开相」至少跨两个 tick，因此任何依赖
+	 * 「只读侧看到新字节」的等待都必须按 tick 的倍数给上界，不能沿用返工前的 3s。
+	 */
+	private static final int WATCH_CYCLE_WAIT_MILLI = 6 * PrepareStoreWatcher.WATCH_TICK_MILLI;
+
 	private TestKeeperConfig keeperConfig;
 
 	@Before
@@ -35,7 +41,8 @@ public class PrepareCmdParserTest extends AbstractRedisKeeperTest {
 		keeperConfig = new TestKeeperConfig();
 		keeperConfig.setReplicationStoreGcIntervalSeconds(60);
 		keeperConfig.setMinTimeMilliToGcAfterCreate(60_000);
-		keeperConfig.setPrepareWatchMetaIntervalMilli(50);
+		keeperConfig.setPrepareWatchReopenIntervalMilli(50);
+		keeperConfig.setPrepareWatchCloseHoldMilli(10);
 	}
 
 	@Test
@@ -67,7 +74,7 @@ public class PrepareCmdParserTest extends AbstractRedisKeeperTest {
 			waitConditionUntilTimeOut(() -> parser.getAttachCount() >= 1);
 
 			storeA.appendCommands(publishBuf("delay", "t1"));
-			waitConditionUntilTimeOut(() -> received.contains("delay:t1"), 3000);
+			waitConditionUntilTimeOut(() -> received.contains("delay:t1"), WATCH_CYCLE_WAIT_MILLI);
 			Assert.assertEquals(1, received.size());
 			Assert.assertTrue(countParserThreads() >= 1);
 		} finally {
@@ -114,12 +121,12 @@ public class PrepareCmdParserTest extends AbstractRedisKeeperTest {
 			File dirB = storeB.getBaseDir();
 			Assert.assertNotEquals(dirA, dirB);
 
-			waitConditionUntilTimeOut(() -> watching.getOpenedStore() == null, 3000);
+			waitConditionUntilTimeOut(() -> watching.getOpenedStore() == null, WATCH_CYCLE_WAIT_MILLI);
 			Assert.assertEquals(1, changes.size());
-			waitConditionUntilTimeOut(() -> parser.getAttachCount() >= 2, 3000);
+			waitConditionUntilTimeOut(() -> parser.getAttachCount() >= 2, WATCH_CYCLE_WAIT_MILLI);
 			waitConditionUntilTimeOut(() -> watching.getOpenedStore() != null
-					&& dirB.equals(((DefaultReplicationStore) watching.getOpenedStore()).getBaseDir()), 3000);
-			waitConditionUntilTimeOut(() -> watcher.getPollCount() > pollsBefore, 3000);
+					&& dirB.equals(((DefaultReplicationStore) watching.getOpenedStore()).getBaseDir()), WATCH_CYCLE_WAIT_MILLI);
+			waitConditionUntilTimeOut(() -> watcher.getPollCount() > pollsBefore, WATCH_CYCLE_WAIT_MILLI);
 			Assert.assertTrue(countParserThreads() >= 1);
 			Assert.assertTrue(countWatchThreads() >= 1);
 		} finally {

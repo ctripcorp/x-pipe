@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,6 +167,16 @@ public abstract class AbstractMetaStore implements MetaStore{
 			AsyncFileSystemHelper.closeHandle(asyncFileSystem, metaAsyncFile,
 					"close read-only meta for cycle " + metaV2File().getAbsolutePath());
 			metaAsyncFile = null;
+		}
+	}
+
+	/**
+	 * Whether the {@code meta.v2.json} handle is currently open (D48 phase fact).
+	 */
+	@VisibleForTesting
+	public boolean isMetaHandleOpen() {
+		synchronized (metaRef) {
+			return metaAsyncFile != null;
 		}
 	}
 

@@ -34,7 +34,8 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
 
-	private int prepareWatchMetaIntervalMilli = DEFAULT_PREPARE_WATCH_META_INTERVAL_MILLI;
+	private int prepareWatchReopenIntervalMilli = DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI;
+	private int prepareWatchCloseHoldMilli = DEFAULT_PREPARE_WATCH_CLOSE_HOLD_MILLI;
 	private boolean prepareStoreWatchEnabled = false;
 	private boolean pubsubParseEnabled = false;
 	
@@ -380,12 +381,22 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	}
 
 	@Override
-	public int getPrepareWatchMetaIntervalMilli() {
-		return prepareWatchMetaIntervalMilli;
+	public int getPrepareWatchReopenIntervalMilli() {
+		return prepareWatchReopenIntervalMilli;
 	}
 
-	public TestKeeperConfig setPrepareWatchMetaIntervalMilli(int prepareWatchMetaIntervalMilli) {
-		this.prepareWatchMetaIntervalMilli = prepareWatchMetaIntervalMilli;
+	public TestKeeperConfig setPrepareWatchReopenIntervalMilli(int prepareWatchReopenIntervalMilli) {
+		this.prepareWatchReopenIntervalMilli = prepareWatchReopenIntervalMilli;
+		return this;
+	}
+
+	@Override
+	public int getPrepareWatchCloseHoldMilli() {
+		return prepareWatchCloseHoldMilli;
+	}
+
+	public TestKeeperConfig setPrepareWatchCloseHoldMilli(int prepareWatchCloseHoldMilli) {
+		this.prepareWatchCloseHoldMilli = prepareWatchCloseHoldMilli;
 		return this;
 	}
 
