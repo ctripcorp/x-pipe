@@ -39,10 +39,14 @@ import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindowTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreReadOnlyTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareCmdParserChainRebuiltTest;
 import com.ctrip.xpipe.redis.keeper.prepare.PrepareCmdParserTest;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcherLocateMissTest;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcherPhaseTest;
 import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcherTest;
 import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubParseHookTest;
 import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubRegistryTest;
+import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCmdChainLocateTest;
 import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCmdOffsetSnapshotTest;
 import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.readonly.ReopenOffsetCommandReaderTest;
@@ -89,9 +93,13 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultCommandStoreTest.class,
         ReadOnlyCmdOffsetSnapshotTest.class,
         ReadOnlyCommandStoreTest.class,
+        ReadOnlyCmdChainLocateTest.class,
         ReopenOffsetCommandReaderTest.class,
         PrepareStoreWatcherTest.class,
+        PrepareStoreWatcherPhaseTest.class,
+        PrepareStoreWatcherLocateMissTest.class,
         PrepareCmdParserTest.class,
+        PrepareCmdParserChainRebuiltTest.class,
         KeeperPubSubRegistryTest.class,
         KeeperPubSubParseHookTest.class,
         PublishCommandHandlerTest.class,

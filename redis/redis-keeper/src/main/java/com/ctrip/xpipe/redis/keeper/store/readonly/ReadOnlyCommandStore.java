@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.store.ratelimit.SyncRateLimiter;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
+import com.ctrip.xpipe.redis.keeper.storage.SegmentOffsetBeforeFirstException;
 import com.ctrip.xpipe.redis.keeper.store.AbstractCommandStore;
 import com.ctrip.xpipe.redis.keeper.store.AbstractStore;
 import com.ctrip.xpipe.tuple.Pair;
@@ -34,6 +35,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * PREPARE 只读 CommandStore（m5 D5b / D30 / D30b）。
@@ -56,11 +58,17 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 	 */
 	public enum ObserveResult {
 		/**
-		 * 句柄已打开且快照已整份替换。
+		 * 句柄已打开、不变式成立且快照已整份替换。
 		 */
 		OPENED,
 		/**
+		 * 段不连续：链条覆盖不住上次观察末尾（D49）。句柄**仍打开**、快照**整份保留**，
+		 * 由 Watcher 用 30s 做「信息没更新 / cmd 非法」的二分。
+		 */
+		LOCATE_MISS,
+		/**
 		 * open / list / size 抛 IO 异常：内部已关句柄，保留旧快照，由 Watcher 下周期重试。
+		 * **不计入** 30s 宽限（沿用 m3「FS 故障无限重试、不拆生产链路」的语义）。
 		 */
 		FAILED
 	}
@@ -89,6 +97,11 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 	private final AtomicBoolean initialized = new AtomicBoolean(false);
 
 	private final ConcurrentMap<CommandReader<?>, Boolean> readers = new ConcurrentHashMap<>();
+
+	/**
+	 * 连续 {@code LOCATE_MISS} 的累计次数，仅诊断与单测断言用（不打点，观测靠 WARN 日志，D49）。
+	 */
+	private final AtomicLong locateMissCount = new AtomicLong();
 
 	/**
 	 * cmd 的 offset 内存快照（D48 ④）。不可变对象整份替换，写者只有 Watcher 一条线程。
@@ -192,6 +205,13 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 	}
 
 	/**
+	 * 仅诊断 / 单测：{@code LOCATE_MISS} 的累计次数。
+	 */
+	long getLocateMissCount() {
+		return locateMissCount.get();
+	}
+
+	/**
 	 * 仅诊断：是否还有 Reader。**不是** Watcher 的 reopen gate（D48，撤销 v1.16 的 {@code hasReaders()} gate）。
 	 */
 	public boolean hasReaders() {
@@ -210,26 +230,106 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 
 	/**
 	 * 开相入口（D48），只允许 {@code PrepareStoreWatcher} 调用：open → {@code list} + 末段
-	 * {@code sizeOfSegment} → 整份替换快照。
+	 * {@code sizeOfSegment} → 校验不变式 → 整份替换快照。
 	 * <p>
-	 * 返回 {@link ObserveResult#FAILED} 时内部已关句柄并保留旧快照，由 Watcher 下周期重试。
+	 * 三态（D49）：
+	 * <ul>
+	 * <li>{@link ObserveResult#OPENED} —— 不变式成立，快照整份替换；</li>
+	 * <li>{@link ObserveResult#LOCATE_MISS} —— 段不连续，句柄仍开、快照整份保留，打点 + WARN；</li>
+	 * <li>{@link ObserveResult#FAILED} —— FS 抛异常，内部已关句柄并保留旧快照。</li>
+	 * </ul>
 	 * 本方法不抛异常，不得在 Redis 命令线程上调用（会做 FS 调用，D11）。
 	 */
 	public ObserveResult openAndObserve() {
 		synchronized (handleLock) {
+			ReadOnlyCmdOffsetSnapshot fresh;
 			try {
 				makeSureOpen();
 				if (asyncSegmentFile == null) {
 					this.asyncSegmentFile = openSharedHandle();
 				}
-				applyObservedSnapshot(observeSnapshotOnCurrentHandle());
-				return ObserveResult.OPENED;
+				fresh = observeSnapshotOnCurrentHandle();
 			} catch (Throwable th) {
 				logger.warn("[openAndObserve][fail][keep last snapshot]{} {}", offsetSnapshot, this, th);
 				closeHandleLocked("close read-only command segment after observe fail " + fileNamePrefix);
 				return ObserveResult.FAILED;
 			}
+			ReadOnlyCmdOffsetSnapshot last = offsetSnapshot;
+			if (hasProbe(last) && !chainCoversProbe(fresh, last.getObservedEnd())) {
+				// 段不连续：现象上分不清「TFS 信息没更新」与「cmd 非法」，本轮整份沿用旧快照（含 firstOffset，
+				// 跳高此时是假象），句柄留给 Watcher 一起关，由它按 30s 做二分（D49）
+				locateMissCount.incrementAndGet();
+				logger.warn("[openAndObserve][locate miss][keep last snapshot] last={} fresh={} {}", last, fresh, this);
+				return ObserveResult.LOCATE_MISS;
+			}
+			applyObservedSnapshot(fresh);
+			return ObserveResult.OPENED;
 		}
+	}
+
+	/**
+	 * 二分的阶段二（D49）：按当前段链条**重建**快照，接受它为事实。只允许 {@code PrepareStoreWatcher}
+	 * 在 {@code REOPEN_LOCATE_GRACE_MILLI} 宽限用尽后调用。
+	 * <p>
+	 * 与 {@link #openAndObserve()} 的区别只在写快照的方式：这里是独立写入路径，**绕过**
+	 * {@link #applyObservedSnapshot} 的单调 max guard —— 占槽方原地重置后 {@code observedEnd} 必须
+	 * 允许回退，否则 {@code totalLength()} 会停在一个不存在的位置，Reader 会读到垃圾；{@code firstOffset}
+	 * 同样允许跳高。
+	 * <p>
+	 * **不关句柄、不 release Store、不产生任何中断信号**：落在空洞里（{@code < firstOffset}）或新尾右边
+	 * （{@code > observedEnd}）的 Reader 由 {@code ReopenOffsetCommandReader} 的快照区间校验自行失效，
+	 * 仍落在区间内的 Reader 继续读是安全的（链条恒连续）。
+	 *
+	 * @return 是否重建成功；失败（句柄不在 / FS 抛错）只 WARN 并保留旧快照，由 Watcher 下周期重试
+	 */
+	public boolean rebuildSnapshotFromCurrentChain() {
+		synchronized (handleLock) {
+			try {
+				makeSureOpen();
+				if (asyncSegmentFile == null) {
+					logger.warn("[rebuildSnapshotFromCurrentChain][no handle][keep last snapshot]{} {}",
+							offsetSnapshot, this);
+					return false;
+				}
+				ReadOnlyCmdOffsetSnapshot rebuilt = observeSnapshotOnCurrentHandle();
+				logger.info("[rebuildSnapshotFromCurrentChain] last={} rebuilt={} {}", offsetSnapshot, rebuilt, this);
+				this.offsetSnapshot = rebuilt;
+				return true;
+			} catch (Throwable th) {
+				logger.warn("[rebuildSnapshotFromCurrentChain][fail][keep last snapshot]{} {}",
+						offsetSnapshot, this, th);
+				return false;
+			}
+		}
+	}
+
+	/**
+	 * 是否有 probe 可校验（D49）。{@link ReadOnlyCmdOffsetSnapshot#EMPTY} 是**「从未成功观察过」的哨兵**
+	 * —— {@code initialize()} 的种子观察允许失败，此时 {@code observedEnd == 0} 并不表示「观察到末尾是 0」，
+	 * 拿它当 probe 会在占槽方已 GC 过前缀（{@code segs[0] > 0}）时把首次观察误判成 {@code LOCATE_MISS}，
+	 * 白等一个 30s 宽限。
+	 * <p>
+	 * 用**引用相等**区分：{@link #observeSnapshotOnCurrentHandle()} 观察到空目录时返回带
+	 * {@code observedAtMillis} 的新实例，绝不返回该常量。因此「观察到过空目录、随后出现起点 > 0 的链条」
+	 * 仍是真不连续，照判 {@code LOCATE_MISS}。
+	 */
+	private boolean hasProbe(ReadOnlyCmdOffsetSnapshot last) {
+		return last != ReadOnlyCmdOffsetSnapshot.EMPTY;
+	}
+
+	/**
+	 * D49 的一条不变式：{@code segs[0] <= probe <= segs[last] + sizeOfSegment(segs[last])}，
+	 * {@code probe} 取上次快照的 {@code observedEnd}。
+	 * <p>
+	 * 一条式子同时覆盖「老段掉链」「前缀被删」「末段 size 回退」，并顺带保证 {@code observedEnd} 单调不减。
+	 * {@code segs} 为空时：{@code probe == 0} 是合法空目录（算 {@code OPENED}，不推进），
+	 * {@code probe > 0} 说明观察到的目录比上次还空，走二分。
+	 */
+	private boolean chainCoversProbe(ReadOnlyCmdOffsetSnapshot fresh, long probe) {
+		if (fresh.getSegmentCount() == 0) {
+			return probe == 0;
+		}
+		return fresh.getFirstOffset() <= probe && probe <= fresh.getObservedEnd();
 	}
 
 	/**
@@ -242,6 +342,13 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 
 	/**
 	 * 关相时句柄不在，返回 {@code null} 而**不抛**（D48 ③）；Reader 按 D9 分支 ① 处理。
+	 * <p>
+	 * {@link SegmentOffsetBeforeFirstException} 是 Reader 侧的**单点**残留（D49）：快照可能比 FS 实际
+	 * 状态旧，区间校验通过后占槽方的 GC 仍可能已把这个 offset 所在前缀删掉。它由
+	 * {@code TailCacheFileSystem.readInternal} 的 {@code fsPrepare} 内联同步抛出，不经
+	 * {@code AsyncFileSystemHelper.await} 的 future 包装，这里明确转 {@link IOException}：
+	 * 语义是**只断本 Reader**（D9 分支 ②），**不做宽限** —— 全局的段不连续已由 {@link #openAndObserve()}
+	 * 的不变式与 Watcher 的 30s 二分拦住，与本条无关。
 	 */
 	ByteBuf readAt(long offset, long length) throws IOException {
 		synchronized (handleLock) {
@@ -249,9 +356,14 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 			if (asyncSegmentFile == null) {
 				return null;
 			}
-			return AsyncFileSystemHelper.await(
-					() -> asyncFileSystem.read(asyncSegmentFile, length, offset),
-					"read read-only command " + fileNamePrefix);
+			try {
+				return AsyncFileSystemHelper.await(
+						() -> asyncFileSystem.read(asyncSegmentFile, length, offset),
+						"read read-only command " + fileNamePrefix);
+			} catch (SegmentOffsetBeforeFirstException e) {
+				throw new IOException("read-only command offset " + offset + " before first segment, snapshot="
+						+ offsetSnapshot + ", " + this, e);
+			}
 		}
 	}
 
@@ -288,7 +400,8 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 		}
 		List<Long> segmentOffsets = asyncFileSystem.list(asyncSegmentFile);
 		if (segmentOffsets == null || segmentOffsets.isEmpty()) {
-			return ReadOnlyCmdOffsetSnapshot.EMPTY;
+			// 观察到的空目录是**事实**，不能返回 EMPTY 常量 —— 那个身份留给「从未观察过」（见 hasProbe）
+			return new ReadOnlyCmdOffsetSnapshot(0L, new long[0], milliClock.now());
 		}
 		long[] starts = new long[segmentOffsets.size()];
 		for (int i = 0; i < starts.length; i++) {

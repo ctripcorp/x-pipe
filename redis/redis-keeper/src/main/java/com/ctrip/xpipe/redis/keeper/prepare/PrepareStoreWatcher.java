@@ -39,6 +39,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>
  * 感知语义不变：未打开不 {@code getCurrent()}；换店只 {@code releaseCurrentStore()} + 断 slave，
  * 打开由请求侧触发。reopen **不看** {@code hasReaders()}，无 Reader 也照常 cycle（D48）。
+ * <p>
+ * open 之后还要过一条不变式（D49）：段链条必须覆盖上次观察到的末尾。不成立时以
+ * {@link #REOPEN_LOCATE_GRACE_MILLI} 做二分 —— 之内当「TFS 信息没更新」关句柄重试，之外当「cmd 非法」
+ * 重建 offset 快照。
  */
 public class PrepareStoreWatcher {
 
@@ -48,6 +52,19 @@ public class PrepareStoreWatcher {
 	 * Watcher 唤醒间隔，**固定不可配**（D48）：两个相位阈值用时钟判定，tick 只决定判定粒度。
 	 */
 	public static final int WATCH_TICK_MILLI = 1000;
+
+	/**
+	 * 段不连续的判据分界（D49）：之内按「TFS 信息没更新」重试，之外按「cmd 非法」重建快照。
+	 * <p>
+	 * 只读侧看到「段不连续」时无法从现象上区分这两者，而处置互斥 —— 前者必须保持旧快照等它自愈，
+	 * 后者必须丢弃旧快照，否则 Reader 会跨着空洞把不连续的字节当连续流交出去。故用时间做二分。
+	 */
+	public static final int REOPEN_LOCATE_GRACE_MILLI = 30000;
+
+	/**
+	 * {@link #locateMissSinceMillis} 的空值。用 {@code -1} 而非 {@code 0}：注入时钟的起点可以是 0。
+	 */
+	private static final long NO_LOCATE_MISS = -1L;
 
 	/**
 	 * 只读句柄的相位（D48）。
@@ -86,6 +103,8 @@ public class PrepareStoreWatcher {
 
 	private final AtomicLong storeSwitchedCount = new AtomicLong();
 
+	private final AtomicLong chainRebuiltCount = new AtomicLong();
+
 	private MilliClock clock = System::currentTimeMillis;
 
 	/**
@@ -96,6 +115,11 @@ public class PrepareStoreWatcher {
 	private volatile long lastOpenAtMillis;
 
 	private volatile long lastCloseAtMillis;
+
+	/**
+	 * 连续 {@code LOCATE_MISS} 的起点（D49 的二分计时）；{@link #NO_LOCATE_MISS} 表示当前没有在计时。
+	 */
+	private volatile long locateMissSinceMillis = NO_LOCATE_MISS;
 
 	/**
 	 * 当前已绑定的 Store 实例，用于识别「请求侧新开了一个店」。
@@ -161,6 +185,22 @@ public class PrepareStoreWatcher {
 	}
 
 	/**
+	 * 仅单测：按「cmd 非法」重建快照的次数（D49 阶段二）。
+	 */
+	@VisibleForTesting
+	long getChainRebuiltCount() {
+		return chainRebuiltCount.get();
+	}
+
+	/**
+	 * 仅单测：连续 {@code LOCATE_MISS} 的起点，{@link #NO_LOCATE_MISS} 表示未在计时。
+	 */
+	@VisibleForTesting
+	long getLocateMissSinceMillis() {
+		return locateMissSinceMillis;
+	}
+
+	/**
 	 * 仅单测：让下一轮 {@link #pollOnce()} 抛出指定异常。
 	 */
 	@VisibleForTesting
@@ -220,7 +260,7 @@ public class PrepareStoreWatcher {
 		if (now - lastCloseAtMillis < closeHoldMilli()) {
 			return;
 		}
-		if (reopenReadOnlyHandles()) {
+		if (reopenReadOnlyHandles(now)) {
 			enterOpenPhase(now);
 		} else {
 			// 句柄没能打开：重新计静置时长，下一轮再试
@@ -229,11 +269,11 @@ public class PrepareStoreWatcher {
 	}
 
 	/**
-	 * 静置窗口已过，做本轮该做的事：换店判定 → reload meta → open + 观察。
+	 * 静置窗口已过，做本轮该做的事：换店判定 → reload meta → open + 观察 → 段不连续的二分。
 	 *
 	 * @return 是否可以进开相；{@code false} 表示句柄仍未打开，需要继续静置后重试
 	 */
-	private boolean reopenReadOnlyHandles() throws IOException {
+	private boolean reopenReadOnlyHandles(long now) throws IOException {
 		String latestDir = manager.reloadLatestStoreDir();
 		ReplicationStore current = manager.getOpenedStore();
 		if (current == null) {
@@ -251,13 +291,58 @@ public class PrepareStoreWatcher {
 			refreshSnapshot();
 			return true;
 		}
-		if (cmdStore.openAndObserve() == ReadOnlyCommandStore.ObserveResult.OPENED) {
+		ReadOnlyCommandStore.ObserveResult observed = cmdStore.openAndObserve();
+		if (observed == ReadOnlyCommandStore.ObserveResult.OPENED) {
+			clearLocateMiss();
 			refreshSnapshot();
 			return true;
 		}
-		// FS 故障：cmd 句柄已由 Store 关掉，meta 两个句柄一起关，保证下轮是完整 close→静置→open
+		if (observed == ReadOnlyCommandStore.ObserveResult.LOCATE_MISS) {
+			return onLocateMiss(cmdStore, now);
+		}
+		// FS 故障：cmd 句柄已由 Store 关掉，meta 两个句柄一起关，保证下轮是完整 close→静置→open。
+		// 不动 LOCATE_MISS 计时 —— FAILED 不计入 30s 宽限（D49）
 		closeReadOnlyHandles();
 		return false;
+	}
+
+	/**
+	 * 段不连续的二分（D49）。
+	 * <ul>
+	 * <li><b>30s 内</b>按「TFS 信息没更新」：关三个句柄退回关相（保证下轮是完整 close→静置→open），
+	 * 约 1s 后重试，快照整份保留，**不碰任何 Reader** —— 它们只是没有新数据可读；</li>
+	 * <li><b>满 30s</b>按「cmd 非法」：接受当前链条为事实重建快照（允许 {@code observedEnd} 回退），
+	 * ERROR 日志，句柄**保持打开**、**不** {@code onStoreChanged}、**不** {@code releaseCurrentStore()}
+	 * —— 目录没换，没有理由拆店；落在空洞 / 新尾右边的 Reader 由快照区间校验自行失效。</li>
+	 * </ul>
+	 *
+	 * @return 是否可以进开相
+	 */
+	private boolean onLocateMiss(ReadOnlyCommandStore cmdStore, long now) {
+		if (locateMissSinceMillis == NO_LOCATE_MISS) {
+			this.locateMissSinceMillis = now;
+		}
+		long elapsed = now - locateMissSinceMillis;
+		if (elapsed < REOPEN_LOCATE_GRACE_MILLI) {
+			logger.warn("[locateMiss][retry] elapsed={}ms grace={}ms {}", elapsed, REOPEN_LOCATE_GRACE_MILLI, this);
+			closeReadOnlyHandles();
+			return false;
+		}
+		logger.error("[locateMiss][cmd chain illegal][rebuild snapshot] elapsed={}ms grace={}ms {}",
+				elapsed, REOPEN_LOCATE_GRACE_MILLI, this);
+		if (!cmdStore.rebuildSnapshotFromCurrentChain()) {
+			// 重建自己也失败（句柄不在 / FS 抛错）：保留计时与旧快照，按 FS 故障那条路下一轮再试
+			closeReadOnlyHandles();
+			return false;
+		}
+		chainRebuiltCount.incrementAndGet();
+		clearLocateMiss();
+		refreshSnapshot();
+		return true;
+	}
+
+	private void clearLocateMiss() {
+		this.locateMissSinceMillis = NO_LOCATE_MISS;
 	}
 
 	/**
@@ -271,6 +356,8 @@ public class PrepareStoreWatcher {
 		manager.releaseCurrentStore();
 		this.boundStore = null;
 		this.snapshot = null;
+		// 店都没了，旧店上的定位计时没有意义
+		clearLocateMiss();
 	}
 
 	/**
@@ -283,6 +370,7 @@ public class PrepareStoreWatcher {
 			return;
 		}
 		this.boundStore = current;
+		clearLocateMiss();
 		if (current == null) {
 			return;
 		}
