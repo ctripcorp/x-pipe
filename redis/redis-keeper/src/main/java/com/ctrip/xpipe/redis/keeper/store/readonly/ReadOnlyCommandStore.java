@@ -184,7 +184,7 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 		return offsetSnapshot().getFirstOffset();
 	}
 
-	long startOffsetOf(long readOffset) {
+	public long startOffsetOf(long readOffset) {
 		return offsetSnapshot().startOffsetOf(readOffset);
 	}
 

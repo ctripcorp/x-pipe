@@ -1487,7 +1487,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@VisibleForTesting
-	PrepareStoreWatcher getPrepareWatcher() {
+	public PrepareStoreWatcher getPrepareWatcher() {
 		return prepareWatcher;
 	}
 

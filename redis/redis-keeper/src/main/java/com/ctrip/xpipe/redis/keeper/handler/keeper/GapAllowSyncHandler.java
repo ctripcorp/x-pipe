@@ -470,6 +470,10 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             return full;
         }
 
+        public boolean isKeeperPartial() {
+            return keeperPartial;
+        }
+
         public String getFullCause() {
             return fullCause;
         }

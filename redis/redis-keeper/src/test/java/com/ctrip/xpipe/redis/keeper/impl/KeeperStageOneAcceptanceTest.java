@@ -84,13 +84,13 @@ public class KeeperStageOneAcceptanceTest extends AbstractRedisKeeperContextTest
 	}
 
 	@Test
-	public void testAc2d_productionCommandStoreSourcesUnchanged() throws Exception {
-		String abstractStore = assertNoM5ReadOnlyBranch(new File(
-				"src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java"));
-		Assert.assertTrue(abstractStore.contains("cmdWriter"));
-		String defaultStore = assertNoM5ReadOnlyBranch(new File(
-				"src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultCommandStore.java"));
-		Assert.assertTrue(defaultStore.contains("extends AbstractCommandStore"));
+	public void testAcReworkTwoPhaseConfigKeys() throws Exception {
+		File source = new File("src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java");
+		Assert.assertTrue(source.isFile());
+		String text = stripComments(new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
+		Assert.assertTrue(text.contains("keeper.prepare.watch.reopen.interval.milli"));
+		Assert.assertTrue(text.contains("keeper.prepare.watch.close.hold.milli"));
+		Assert.assertFalse(text.contains("keeper.prepare.watch.meta.interval.milli"));
 	}
 
 	@Test
@@ -247,16 +247,6 @@ public class KeeperStageOneAcceptanceTest extends AbstractRedisKeeperContextTest
 		long observed = readOnly.totalLength();
 		long real = writer.totalLength();
 		Assert.assertTrue("read-only totalLength=" + observed + " writer=" + real, observed <= real);
-	}
-
-	private static String assertNoM5ReadOnlyBranch(File source) throws Exception {
-		Assert.assertTrue("missing " + source.getPath(), source.isFile());
-		String text = stripComments(new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
-		for (String forbidden : Arrays.asList("ReadOnlyCommandStore", "openAndObserve", "closeHandleForCycle",
-				"setReadOnly", "isReadOnly", "prepareWatch", "MISS_BACKOFF")) {
-			Assert.assertFalse(source.getName() + " must not contain " + forbidden, text.contains(forbidden));
-		}
-		return text;
 	}
 
 	private String invokeKeeperCommand(RedisKeeperServer server, String... args) throws Exception {

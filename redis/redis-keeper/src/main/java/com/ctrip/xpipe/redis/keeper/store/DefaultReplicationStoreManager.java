@@ -597,6 +597,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         return managerMetaAsyncFile != null;
     }
 
+    /**
+     * Cached {@code store_manager_meta.properties} only. Does not load or open a handle.
+     */
+    @VisibleForTesting
+    public Properties getCurrentMetaCache() {
+        return currentMeta.get();
+    }
+
     @Override
     public synchronized String reloadLatestStoreDir() throws IOException {
         // No close here (D48): the handle is closed by the watcher's closed phase and stays quiet for
