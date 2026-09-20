@@ -1,0 +1,23 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/DefaultCrossRegionKeeperSessionManager.java
+  s_9f61b3a8669d28::t_8b4e917ed24c50 17-18,20-26,28-30
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/session/DefaultCrossRegionKeeperSessionManagerTest.java
+  s_9f61b3a8669d28::t_8178f2ca6ee05a 201-202
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/CrossRegionKeeperSessionManager.java
+  s_9f61b3a8669d28::t_3e443fb3a1bc2c 4,6-9,11-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "6cd4eece67680199fdeffc6e3f0266f6763565c0",
+  "prompts": {},
+  "sessions": {
+    "s_9f61b3a8669d28": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "155ce38a-ac9f-4193-9a35-bffb46f89020",
+        "model": "ep-s52bpjk9"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
