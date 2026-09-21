@@ -1,0 +1,19 @@
+doc/cross-region-health-check.md
+  s_4789e52c98b8bb::t_081bf773b96c3a 1-146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "74ba8abbed6e31a0ab03ecb5a946b295c2ef4699",
+  "prompts": {},
+  "sessions": {
+    "s_4789e52c98b8bb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "28545e76-fdb1-4b09-b42b-92348e4ae098",
+        "model": "ep-s52bpjk9"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}

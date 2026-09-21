@@ -1,0 +1,42 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/CrossRegionKeeperSessionManager.java
+  s_9f61b3a8669d28::t_f68dedaaaffb4c 1-20
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/AbstractCheckerIntegrationTest.java
+  s_9f61b3a8669d28::t_211a090f6e12a8 185-198
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/DefaultCrossRegionKeeperSessionManager.java
+  s_9f61b3a8669d28::t_36b9d612b5274c 1-80
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdActionTest.java
+  s_9f61b3a8669d28::t_03fa53bcccf24f 1-333
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/resource/Resource.java
+  s_9f61b3a8669d28::t_211a090f6e12a8 25-28
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/RedisSession.java
+  s_9f61b3a8669d28::t_211a090f6e12a8 349-369
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/spring/ResourceConfig.java
+  s_9f61b3a8669d28::t_211a090f6e12a8 103-116
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdActionFactory.java
+  s_9f61b3a8669d28::t_211a090f6e12a8 8,18-19,28,33,36,43-44
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/session/DefaultCrossRegionKeeperSessionManagerTest.java
+  s_9f61b3a8669d28::t_14f956fd0bc6e6 72-74,78-83
+  s_9f61b3a8669d28::t_db4a04396c88ec 1-28,30,32-71,75-77,84-305
+  s_9f61b3a8669d28::t_86d588df847e84 29,31
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdAction.java
+  s_9f61b3a8669d28::t_211a090f6e12a8 6-7,20,22-30,39,43-44,46-47,49,55-58,60-64,66-73,75-79,81-107,109-110,112-120,122,125-126,129-138,140-158,160-165
+  s_9f61b3a8669d28::t_315116e3db7b02 121,127
+  s_9f61b3a8669d28::t_ce98537f56e145 111,139
+  s_9f61b3a8669d28::t_f2416c49696185 74,80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "e5b12112b5113bfc693030c1668c4c57c8044a83",
+  "prompts": {},
+  "sessions": {
+    "s_9f61b3a8669d28": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "155ce38a-ac9f-4193-9a35-bffb46f89020",
+        "model": "ep-s52bpjk9"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
