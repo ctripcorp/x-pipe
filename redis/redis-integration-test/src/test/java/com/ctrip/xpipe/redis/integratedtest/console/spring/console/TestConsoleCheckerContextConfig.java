@@ -41,7 +41,8 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECU
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = {
                 com.ctrip.xpipe.redis.console.spring.CheckerContextConfig.class,
                 com.ctrip.xpipe.redis.console.spring.ConsoleCheckerContextConfig.class,
-                com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.class
+                com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.class,
+                com.ctrip.xpipe.redis.console.spring.FiremanServletScanConfig.class
         })
 })
 @ServletComponentScan("com.ctrip.framework.fireman")

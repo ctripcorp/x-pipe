@@ -42,7 +42,6 @@ import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.*;
 
 
@@ -58,7 +57,6 @@ import org.springframework.context.annotation.*;
 		"com.ctrip.xpipe.redis.checker.alert"},
 		excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.ctrip\\.xpipe\\.service\\.ignite\\.DalIgniteValidate")
 )
-@ServletComponentScan("com.ctrip.framework.fireman")
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE)
 public class ConsoleContextConfig implements XPipeMvcRegistrations {
 
