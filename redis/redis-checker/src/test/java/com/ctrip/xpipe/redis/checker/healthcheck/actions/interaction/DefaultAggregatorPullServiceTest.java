@@ -59,7 +59,7 @@ public class DefaultAggregatorPullServiceTest extends AbstractCheckerTest {
     @Mock
     private DefaultDelayPingActionCollector defaultDelayPingActionCollector;
     @Mock
-    private DefaultInfoReplIdPingActionCollector defaultInfoReplIdPingActionCollector;
+    private DefaultPsubPingActionCollector defaultPsubPingActionCollector;
 
     private static final String LOCAL_IP = "127.0.0.1";
     private HostPort hostPort1 = new HostPort(LOCAL_IP, 6379);
@@ -293,16 +293,16 @@ public class DefaultAggregatorPullServiceTest extends AbstractCheckerTest {
         Assert.assertNull(aggregatorPullService.dcInstancesAllUp("test", JQ, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6381, OY, SHARD, true))));
         Assert.assertNotNull(aggregatorPullService.dcInstancesAllUp("test", JQ, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6383, AWS, SHARD, true))));
         Assert.assertEquals(AWS, aggregatorPullService.dcInstancesAllUp("test", JQ, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6381, OY, SHARD, true), new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6383, AWS, SHARD, true))));
-        verify(defaultInfoReplIdPingActionCollector, never()).getAllHealthStatus();
+        verify(defaultPsubPingActionCollector, never()).getAllHealthStatus();
         verify(defaultDelayPingActionCollector, times(4)).getAllHealthStatus();
 
 
         Map<HostPort, HealthStatusDesc> allStatusCrossRegion = new HashMap<>();
         allStatusCrossRegion.put(new HostPort(LOCAL_IP, 6383), new HealthStatusDesc(new HostPort(LOCAL_IP, 6383), HEALTH_STATE.DOWN));
         allStatusCrossRegion.put(new HostPort(LOCAL_IP, 6384), new HealthStatusDesc(new HostPort(LOCAL_IP, 6384), HEALTH_STATE.DOWN));
-        when(defaultInfoReplIdPingActionCollector.getAllHealthStatus()).thenReturn(allStatusCrossRegion);
+        when(defaultPsubPingActionCollector.getAllHealthStatus()).thenReturn(allStatusCrossRegion);
         Assert.assertNull(aggregatorPullService.dcInstancesAllUp("test", AWS, Sets.newHashSet(new OuterClientService.HostPortDcStatus(LOCAL_HOST, 6383, AWS, SHARD, true))));
-        verify(defaultInfoReplIdPingActionCollector, times(1)).getAllHealthStatus();
+        verify(defaultPsubPingActionCollector, times(1)).getAllHealthStatus();
         verify(defaultDelayPingActionCollector, times(4)).getAllHealthStatus();
     }
 }

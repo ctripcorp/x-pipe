@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * cross-region slave 的「拉入」状态机：
- * UNKNOWN --ping--> INSTANCEUP --replId一致--> HEALTHY --ping超时--> DOWN
+ * UNKNOWN --ping--> INSTANCEUP --subSuccess(psub 拉入通知)--> HEALTHY --ping超时--> DOWN
  */
 public class CrossRegionRedisHealthStatusTest extends AbstractRedisTest {
 
@@ -48,40 +48,7 @@ public class CrossRegionRedisHealthStatusTest extends AbstractRedisTest {
         healthStatus = new CrossRegionRedisHealthStatus(instance, scheduled);
     }
 
-    @Test
-    public void testReplIdMatch() {
-        assertFalse(healthStatus.replIdMatch());        // 初始均为 null
-
-        healthStatus.updateReplIds("a", null, null);
-        assertFalse(healthStatus.replIdMatch());        // keeper null
-
-        healthStatus.updateReplIds(null, "a", null);
-        assertFalse(healthStatus.replIdMatch());        // slave null
-
-        healthStatus.updateReplIds("a", "b", null);
-        assertFalse(healthStatus.replIdMatch());        // 不相等
-
-        healthStatus.updateReplIds("a", "a", null);
-        assertTrue(healthStatus.replIdMatch());         // 相等
-    }
-
-    @Test
-    public void testReplId2Match() {
-        healthStatus.updateReplIds("a", "b", "a");      // slave 匹配 keeper.replId2（或关系）
-        assertTrue(healthStatus.replIdMatch());
-
-        healthStatus.updateReplIds("a", "b", "b");      // 两者都不匹配
-        assertFalse(healthStatus.replIdMatch());
-
-        healthStatus.updateReplIds("a", "a", "b");      // slave 匹配 keeper.replId（或关系另一支）
-        assertTrue(healthStatus.replIdMatch());
-
-        healthStatus.updateReplIds("a", null, "a");     // keeper.replId 为 null，仅 replId2 匹配
-        assertTrue(healthStatus.replIdMatch());
-    }
-
-    @Test
-    public void testUpdateReplIdsMatchMarksUpAndNotifies() {
+    private AtomicInteger countMarkUp() {
         AtomicInteger markup = new AtomicInteger();
         healthStatus.addObserver(new Observer() {
             @Override
@@ -91,57 +58,69 @@ public class CrossRegionRedisHealthStatusTest extends AbstractRedisTest {
                 }
             }
         });
+        return markup;
+    }
+
+    @Test
+    public void testSubSuccessMarksUpAndNotifies() {
+        AtomicInteger markup = countMarkUp();
 
         healthStatus.pong();                            // UNKNOWN -> INSTANCEUP，不触发 markUp
         assertEquals(INSTANCEUP, healthStatus.getState());
         assertEquals(0, markup.get());
 
-        healthStatus.updateReplIds("a", "a", null);           // replId 一致 -> HEALTHY + InstanceUp
+        healthStatus.subSuccess();                      // psub 收到拉入通知 -> HEALTHY + InstanceUp
         assertEquals(HEALTHY, healthStatus.getState());
         assertEquals(1, markup.get());
 
-        healthStatus.updateReplIds("a", "a", null);           // 已 HEALTHY，不重复触发
+        healthStatus.subSuccess();                      // 已 HEALTHY，不重复触发
         assertEquals(HEALTHY, healthStatus.getState());
         assertEquals(1, markup.get());
     }
 
     @Test
-    public void testUpdateReplIdsNotMatchStaysInstanceUp() {
-        AtomicInteger markup = new AtomicInteger();
-        healthStatus.addObserver(new Observer() {
-            @Override
-            public void update(Object args, Observable observable) {
-                if (args instanceof InstanceUp) {
-                    markup.incrementAndGet();
-                }
-            }
-        });
+    public void testSubSuccessWhenNotInstanceUpNoMarkUp() {
+        AtomicInteger markup = countMarkUp();
 
-        healthStatus.pong();                            // -> INSTANCEUP
-        healthStatus.updateReplIds("a", "b", null);           // 不一致，不拉入
-        assertEquals(INSTANCEUP, healthStatus.getState());
-        assertEquals(0, markup.get());
-
-        healthStatus.updateReplIds(null, null, null);         // 失败清空，同样不拉入
-        assertEquals(INSTANCEUP, healthStatus.getState());
-        assertEquals(0, markup.get());
-    }
-
-    @Test
-    public void testUpdateReplIdsWhenNotInstanceUpNoMarkUp() {
-        AtomicInteger markup = new AtomicInteger();
-        healthStatus.addObserver(new Observer() {
-            @Override
-            public void update(Object args, Observable observable) {
-                if (args instanceof InstanceUp) {
-                    markup.incrementAndGet();
-                }
-            }
-        });
-
-        healthStatus.updateReplIds("a", "a", null);           // UNKNOWN 状态，即便 replId 一致也不拉入
+        healthStatus.subSuccess();                      // UNKNOWN 状态，忽略
         assertEquals(UNKNOWN, healthStatus.getState());
         assertEquals(0, markup.get());
+    }
+
+    @Test
+    public void testSubSuccessAfterPingDown() {
+        AtomicInteger markup = countMarkUp();
+
+        healthStatus.pong();
+        healthStatus.subSuccess();
+        assertEquals(HEALTHY, healthStatus.getState());
+
+        when(config.pingDownAfterMilli()).thenReturn(20);   // ping 超时 -> DOWN
+        sleep(30);
+        healthStatus.healthStatusUpdate();
+        assertEquals(DOWN, healthStatus.getState());
+
+        healthStatus.subSuccess();                      // DOWN 状态下忽略，需重新 ping 通
+        assertEquals(DOWN, healthStatus.getState());
+        assertEquals(1, markup.get());
+
+        healthStatus.pong();                            // DOWN -> INSTANCEUP
+        assertEquals(INSTANCEUP, healthStatus.getState());
+        healthStatus.subSuccess();                      // -> HEALTHY
+        assertEquals(HEALTHY, healthStatus.getState());
+        assertEquals(2, markup.get());
+    }
+
+    @Test
+    public void testPongOnlyMovesUnknownOrDown() {
+        healthStatus.pong();                            // UNKNOWN -> INSTANCEUP
+        assertEquals(INSTANCEUP, healthStatus.getState());
+
+        healthStatus.subSuccess();                      // -> HEALTHY
+        assertEquals(HEALTHY, healthStatus.getState());
+
+        healthStatus.pong();                            // HEALTHY 下 ping 成功不改状态
+        assertEquals(HEALTHY, healthStatus.getState());
     }
 
     @Test
@@ -152,8 +131,8 @@ public class CrossRegionRedisHealthStatusTest extends AbstractRedisTest {
         healthStatus.pong();
         assertEquals(INSTANCEUP, healthStatus.getState());
 
-        // replId 一致 -> HEALTHY
-        healthStatus.updateReplIds("a", "a", null);
+        // subSuccess（psub 拉入通知）-> HEALTHY
+        healthStatus.subSuccess();
         assertEquals(HEALTHY, healthStatus.getState());
 
         // ping 超时 -> DOWN
@@ -166,8 +145,8 @@ public class CrossRegionRedisHealthStatusTest extends AbstractRedisTest {
         healthStatus.pong();
         assertEquals(INSTANCEUP, healthStatus.getState());
 
-        // 再 replId 一致 -> HEALTHY
-        healthStatus.updateReplIds("a", "a", null);
+        // 再收到拉入通知 -> HEALTHY
+        healthStatus.subSuccess();
         assertEquals(HEALTHY, healthStatus.getState());
     }
 
