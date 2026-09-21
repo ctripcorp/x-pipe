@@ -32,7 +32,7 @@ public abstract class AbstractStorageFile {
         NORMAL,
         // Whole-file replace.
         ATOMIC,
-        // Whole-file replace, and reads prefer read tmp file first.
+        // Whole-file replace; reads prefer a valid pending tmp first. Read-only opens only
         ATOMIC_PREFER_TMP;
 
         boolean isAtomicReplace() {

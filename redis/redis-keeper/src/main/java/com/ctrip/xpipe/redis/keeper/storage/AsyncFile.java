@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -44,8 +45,17 @@ public class AsyncFile extends AbstractStorageFile {
         try {
             long offset = -1;
             if (openMode == OpenMode.READ) {
-                newChannel = FileChannel.open(Paths.get(path),
-                        StandardOpenOption.READ, StandardOpenOption.CREATE);
+                // Java cannot pair READ with CREATE; ATOMIC_PREFER_TMP may open before the target
+                // exists (content still only in tmp). Leave channel null; IO retries open or
+                // treats a still-missing target as empty.
+                try {
+                    newChannel = FileChannel.open(Paths.get(path), StandardOpenOption.READ);
+                } catch (NoSuchFileException e) {
+                    if (preferTmp()) {
+                        return -1;
+                    }
+                    throw e;
+                }
             } else {
                 Set<? extends OpenOption> options = openMode == OpenMode.WRITE
                         ? EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE)

@@ -601,6 +601,107 @@ public class AsyncTFSBasedFileSystemTest {
         }
     }
 
+    @Test
+    public void testPreferTmpOpenSucceedsWithOnlyTmpAndNullChannel() throws Exception {
+        String p = path("file_prefer_tmp_only_tmp");
+        byte[] newData = new byte[]{5, 6, 7, 8, 9};
+        writeTmpFile(p, newData.length, newData);
+        assertFalse(Files.exists(Paths.get(p)));
+
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ,
+                AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP, false);
+        try {
+            assertNull(reader.channel);
+            assertEquals(newData.length, fs.sizeSync(reader));
+            assertArrayEquals(newData, readAll(reader, newData.length));
+            // Served entirely from tmp; target channel stays closed.
+            assertNull(reader.channel);
+        } finally {
+            StorageUtil.closeChannels(fs.closeSync(reader));
+        }
+    }
+
+    @Test
+    public void testPreferTmpLazyOpensTargetAfterRecover() throws Exception {
+        String p = path("file_prefer_tmp_lazy_open");
+        byte[] newData = new byte[]{5, 6, 7, 8, 9};
+        writeTmpFile(p, newData.length, newData);
+        assertFalse(Files.exists(Paths.get(p)));
+
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ,
+                AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP, false);
+        assertNull(reader.channel);
+        try {
+            // Writer recovers the pending tmp onto the target while the reader is still open.
+            AsyncFile writer = openFile(p, AbstractStorageFile.OpenMode.WRITE,
+                    AbstractStorageFile.ReplaceMode.ATOMIC, false);
+            StorageUtil.closeChannels(fs.closeSync(writer));
+            assertFalse(Files.exists(Paths.get(p).resolveSibling("TMP_REP_" + Paths.get(p).getFileName())));
+            assertArrayEquals(newData, Files.readAllBytes(Paths.get(p)));
+
+            assertEquals(newData.length, fs.sizeSync(reader));
+            assertNotNull(reader.channel);
+            // Detach so read / transferTo must lazy-open again.
+            StorageUtil.closeChannels(reader.detachCurrentChannels());
+            assertNull(reader.channel);
+            assertArrayEquals(newData, readAll(reader, newData.length));
+            assertNotNull(reader.channel);
+
+            StorageUtil.closeChannels(reader.detachCurrentChannels());
+            assertNull(reader.channel);
+            ByteArrayOutputStreamChannel target = new ByteArrayOutputStreamChannel();
+            assertEquals(newData.length, fs.transferToSync(reader, 0, newData.length, target));
+            assertArrayEquals(newData, target.toByteArray());
+            assertNotNull(reader.channel);
+        } finally {
+            StorageUtil.closeChannels(fs.closeSync(reader));
+        }
+    }
+
+    @Test
+    public void testPreferTmpIoReturnsEmptyWhenTargetAndTmpMissing() throws Exception {
+        String p = path("file_prefer_tmp_missing_both");
+        AsyncFile reader = openFile(p, AbstractStorageFile.OpenMode.READ,
+                AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP, false);
+        try {
+            assertNull(reader.channel);
+            assertEquals(0L, fs.sizeSync(reader));
+            ByteBuf buf = fs.readSync(reader, 1, 0, 0);
+            try {
+                assertEquals(0, buf.readableBytes());
+            } finally {
+                buf.release();
+            }
+            assertEquals(0L, fs.transferToSync(reader, 0, 1, new ByteArrayOutputStreamChannel()));
+            assertNull(reader.channel);
+        } finally {
+            StorageUtil.closeChannels(fs.closeSync(reader));
+        }
+    }
+
+    @Test
+    public void testReadOpenMissingFileWithoutPreferTmpStillFails() {
+        String p = path("file_read_missing_no_prefer");
+        assertFalse(Files.exists(Paths.get(p)));
+        for (AbstractStorageFile.ReplaceMode mode : new AbstractStorageFile.ReplaceMode[]{
+                AbstractStorageFile.ReplaceMode.NORMAL,
+                AbstractStorageFile.ReplaceMode.ATOMIC}) {
+            try {
+                openFile(p, AbstractStorageFile.OpenMode.READ, mode, false);
+                fail("expected open failure for missing target with " + mode);
+            } catch (RuntimeException e) {
+                Throwable t = e;
+                while (t.getCause() != null) {
+                    t = t.getCause();
+                }
+                assertTrue("mode=" + mode + " got " + t,
+                        t instanceof java.nio.file.NoSuchFileException
+                                || (t instanceof StorageIOException
+                                && t.getCause() instanceof java.nio.file.NoSuchFileException));
+            }
+        }
+    }
+
     // =========================================================================
     // D. FileEntry ref counting & concurrency
     // =========================================================================

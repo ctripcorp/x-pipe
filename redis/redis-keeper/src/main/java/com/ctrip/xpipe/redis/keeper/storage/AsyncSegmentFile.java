@@ -66,8 +66,9 @@ public class AsyncSegmentFile extends AbstractStorageFile {
                 newChannel.position(physicalSize);
                 logicalOffset = startOffset + physicalSize;
             } else {
+                // java don't support CREATE option for read mode
                 newChannel = FileChannel.open(segmentPath(startOffset),
-                        StandardOpenOption.READ, StandardOpenOption.CREATE);
+                        StandardOpenOption.READ);
             }
 
             synchronized (this) {

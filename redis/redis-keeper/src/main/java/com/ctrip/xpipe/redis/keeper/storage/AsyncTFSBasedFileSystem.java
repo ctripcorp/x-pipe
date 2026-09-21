@@ -200,6 +200,16 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         return file.preferTmp();
     }
 
+    // ATOMIC_PREFER_TMP read fallback only: after a tmp miss, open the target if still null.
+    // Returns null when the target is still absent.
+    private FileChannel atomicPreferTmpTargetChannelOrNull(AsyncFile file) throws IOException {
+        if (file.channel != null) {
+            return file.channel;
+        }
+        file.openCurrentChannel();
+        return file.channel;
+    }
+
     // Returns the data length and the open channel of a valid tmp file, or NO_VALID_TMP.
     private Pair<Long, FileChannel> openValidTmpSync(String filePath) throws IOException {
         Path tmpPath = getTmpPath(filePath);
@@ -380,6 +390,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                         return readFully(tmpCh, length, TMP_HEADER_BYTES + offset, 0);
                     }
                 }
+                FileChannel ch = atomicPreferTmpTargetChannelOrNull(file);
+                if (ch == null) {
+                    return Unpooled.buffer(0);
+                }
+                return readFully(ch, length, offset, alignSize);
             }
             return readFully(file.channel, length, offset, alignSize);
         } catch (IOException e) {
@@ -440,6 +455,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                     StorageUtil.closeChannels(Collections.singletonList(tmp.getValue()));
                     return tmp.getKey();
                 }
+                FileChannel ch = atomicPreferTmpTargetChannelOrNull(file);
+                return ch == null ? 0L : ch.size();
             }
             return file.channel.size();
         } catch (IOException e) {
@@ -1019,6 +1036,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                         return tmpCh.transferTo(TMP_HEADER_BYTES + position, count, target);
                     }
                 }
+                FileChannel ch = atomicPreferTmpTargetChannelOrNull(file);
+                return ch == null ? 0L : ch.transferTo(position, count, target);
             }
             return file.channel.transferTo(position, count, target);
         } catch (IOException e) {

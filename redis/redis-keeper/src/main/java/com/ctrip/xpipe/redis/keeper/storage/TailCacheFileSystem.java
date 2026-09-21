@@ -1124,6 +1124,10 @@ public class TailCacheFileSystem implements AsyncFileSystem {
     private AsyncFile openFileSync(String path, String key, String ioKey,
             AbstractStorageFile.OpenMode openMode, AbstractStorageFile.ReplaceMode replaceMode,
             boolean lenient, String tenant, CacheMode cacheModeOverride, BackingFsMode fsMode) {
+        if (replaceMode.preferTmp() && openMode != AbstractStorageFile.OpenMode.READ) {
+            throw new IllegalArgumentException(
+                    "ATOMIC_PREFER_TMP is only allowed with OpenMode.READ: " + path);
+        }
         final boolean noFs = fsMode == BackingFsMode.NO_FS;
         CacheMode cacheMode = resolveFileCacheMode(replaceMode, cacheModeOverride);
         if (noFs && cacheMode == CacheMode.NO_CACHE) {
@@ -1456,6 +1460,11 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
     @Override
     public CompletableFuture<Boolean> isFile(AsyncFile file) {
+        // ATOMIC_PREFER_TMP may have no target yet (channel null / path absent) while a pending
+        // tmp or a later recover still makes this a valid file handle.
+        if (file.preferTmp()) {
+            return CompletableFuture.completedFuture(true);
+        }
         if (backingFsMode == BackingFsMode.NO_FS) {
             if (file.needPrepare) {
                 return CompletableFuture.completedFuture(true);

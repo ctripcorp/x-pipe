@@ -157,6 +157,24 @@ public class TailCacheFileSystemTest {
         Files.write(Paths.get(filePath), data);
     }
 
+    // Same [length][data] layout as AsyncTFSBasedFileSystem atomic-replace tmp siblings.
+    private Path writeTmpFileSync(String filePath, byte[] data) throws IOException {
+        Path target = Paths.get(filePath);
+        Path tmpPath = target.resolveSibling("TMP_REP_" + target.getFileName());
+        try (FileChannel ch = FileChannel.open(tmpPath,
+                java.nio.file.StandardOpenOption.WRITE,
+                java.nio.file.StandardOpenOption.CREATE,
+                java.nio.file.StandardOpenOption.TRUNCATE_EXISTING)) {
+            java.nio.ByteBuffer lenBuf = java.nio.ByteBuffer.allocate(8);
+            lenBuf.putLong(data.length);
+            lenBuf.flip();
+            ch.write(lenBuf);
+            ch.write(java.nio.ByteBuffer.wrap(data));
+            ch.force(true);
+        }
+        return tmpPath;
+    }
+
     private byte[] readTcfSync(AsyncFile file, long length) throws Exception {
         return readBytes(tcf.read(file, length).get(5, TimeUnit.SECONDS));
     }
@@ -327,6 +345,87 @@ public class TailCacheFileSystemTest {
             }
         } finally {
             tcf.close(file).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testAtomicPreferTmpRejectedUnlessReadOpen() {
+        String p = path("prefer_tmp_write_rejected");
+        try {
+            tcf.open(p, AbstractStorageFile.OpenMode.WRITE,
+                    AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP, false, null).get();
+            fail("expected IllegalArgumentException");
+        } catch (Exception e) {
+            Throwable t = e;
+            while (t.getCause() != null) {
+                t = t.getCause();
+            }
+            assertTrue(t instanceof IllegalArgumentException);
+            assertTrue(t.getMessage().contains("ATOMIC_PREFER_TMP"));
+        }
+        try {
+            tcf.open(p, AbstractStorageFile.OpenMode.READ_WRITE,
+                    AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP, false, null).get();
+            fail("expected IllegalArgumentException");
+        } catch (Exception e) {
+            Throwable t = e;
+            while (t.getCause() != null) {
+                t = t.getCause();
+            }
+            assertTrue(t instanceof IllegalArgumentException);
+            assertTrue(t.getMessage().contains("OpenMode.READ"));
+        }
+    }
+
+    @Test
+    public void testNoFsIsFileTrueForPreferTmpWithNullChannel() throws Exception {
+        TailCacheFileSystem noFs = newNoFsTcf();
+        String p = path("nofs_prefer_tmp_isfile");
+        AsyncFile reader = noFs.open(p, AbstractStorageFile.OpenMode.READ,
+                AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP, false, null).get();
+        try {
+            assertNull(reader.channel);
+            // After prepare, needPrepare is cleared while prefer-tmp may still leave channel null.
+            reader.needPrepare = false;
+            assertTrue(noFs.isFile(reader).get());
+        } finally {
+            noFs.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testPreferTmpOpenViaTailCacheWithOnlyTmp() throws Exception {
+        String p = path("tcf_prefer_tmp_only_tmp");
+        byte[] newData = new byte[]{5, 6, 7, 8, 9};
+        writeTmpFileSync(p, newData);
+        assertFalse(Files.exists(Paths.get(p)));
+
+        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ,
+                AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP, false, null).get();
+        try {
+            assertNull(reader.channel);
+            assertEquals(AbstractStorageFile.CacheMode.FULL_CACHE, reader.cacheMode);
+            assertEquals(newData.length, (long) tcf.size(reader).get(5, TimeUnit.SECONDS));
+            assertArrayEquals(newData, readTcfSync(reader, newData.length));
+        } finally {
+            tcf.close(reader).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testAsyncIsFileTrueForPreferTmpWhenTargetMissing() throws Exception {
+        String p = path("async_prefer_tmp_isfile");
+        byte[] newData = new byte[]{1, 2, 3};
+        writeTmpFileSync(p, newData);
+        assertFalse(Files.exists(Paths.get(p)));
+
+        AsyncFile reader = tcf.open(p, AbstractStorageFile.OpenMode.READ,
+                AbstractStorageFile.ReplaceMode.ATOMIC_PREFER_TMP, false, null).get();
+        try {
+            assertNull(reader.channel);
+            assertTrue(tcf.isFile(reader).get(5, TimeUnit.SECONDS));
+        } finally {
+            tcf.close(reader).get(5, TimeUnit.SECONDS);
         }
     }
 
