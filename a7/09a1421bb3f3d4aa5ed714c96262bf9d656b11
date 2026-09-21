@@ -1,0 +1,12 @@
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/AllTests.java
+  s_f6aa65f7012ddd::t_a434825458922f 84
+  s_f6aa65f7012ddd::t_08b1297a2923d9 96
+  s_f6aa65f7012ddd::t_26396016f2fd42 106
+  s_f6aa65f7012ddd::t_73e24d1fe46000 166
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "a709a1421bb3f3d4aa5ed714c96262bf9d656b11",
+  "prompts": {}
+}

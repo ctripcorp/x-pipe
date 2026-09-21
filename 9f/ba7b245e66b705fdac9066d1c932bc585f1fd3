@@ -1,0 +1,72 @@
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsForceCloseDirCommand.java
+  s_13d20876f26753::t_7b54283f04532b 85-87,99,124,132,134-135,137-139
+  s_be6488d16ab8b6::t_25ee1c7b4f6d87 113,116-118
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/MockTfsGateway.java
+  s_be6488d16ab8b6::t_dab5fd04ba28ad 14-16
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/job/TfsKeeperStateChangeJobTest.java
+  s_1feda8eb740353::t_d565cd2f559f11 50
+  s_e3786497b76ceb::t_e0d49b9293be59 192,194,198,203,206-207,210-211,214-215,218,221-223,225,227-230,232,236,241,245,249,254,258,261-263,267-270,272,278-279,282,286,289-291,296-297,343
+  s_1feda8eb740353::t_ff00d47ab4b27f 193,195,204-205,208-209,212-213,216-217,219,224,226,231,242-244,246-248,250-253,255-257,259,264-266,273-274,280-281,283-285,287,292-295
+  s_13d20876f26753::t_7b7f5dcb71d23f 174
+  s_be6488d16ab8b6::t_ea036fe3c28b29 177
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsGatewayFactory.java
+  s_13d20876f26753::t_7b6985734bdd40 3,7,14,19-20,23-25,27-28,31-33,35-39
+  s_be6488d16ab8b6::t_355c37643ac39d 8,30,34,40
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsForceCloseDirCommandTest.java
+  s_13d20876f26753::t_7a5c6ff4f53d86 69-75,17,38,40-41,45-46,49,56,67,77-78,83,86-87,89,93-94,99-100,103-104,106,114,141,161,163,171,174,125
+  s_be6488d16ab8b6::t_f9cdcd58e61cfa 115-121,42,76,84-85,88,90-92,101-102,105,107-108,111,136,47,63-66,79-82,95-98,122-124,126-132,139,157-160
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsGatewayFactoryTest.java
+  s_13d20876f26753::t_f9de45256ab2ab 27-29,31-34,37-39
+  s_be6488d16ab8b6::t_c2586c7ab244c5 30,35-36,40-43
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsPrepareReleaseCommandTest.java
+  s_be6488d16ab8b6::t_375cbdfe63ede9 59-62,84-87
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsGateway.java
+  s_13d20876f26753::t_f45cc7394c5ece 4
+  s_be6488d16ab8b6::t_1b24eecb08ed63 5
+  s_be6488d16ab8b6::t_a5cc7511db50f7 9-13
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/AllTests.java
+  s_13d20876f26753::t_20ff8e6f5858bc 54
+  s_13d20876f26753::t_11410f6ac6dcf7 145-146
+  s_be6488d16ab8b6::t_e6636a495c8a7e 55
+  s_be6488d16ab8b6::t_a29932efc8381e 144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "9fba7b245e66b705fdac9066d1c932bc585f1fd3",
+  "prompts": {},
+  "sessions": {
+    "s_13d20876f26753": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1cb34ccb-fb95-4da1-b7e5-0a3e60bdcbdd",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_1feda8eb740353": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3e3b9ae4-f70b-44fe-a85d-50873568a596",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_be6488d16ab8b6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c6d15e77-5dc6-4ed4-9e9e-54397d49ecae",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e3786497b76ceb": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6704cbff-5bf3-49a1-b886-9d722b6e27e5",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

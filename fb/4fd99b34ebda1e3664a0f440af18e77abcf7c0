@@ -1,0 +1,10 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/DefaultHealthCheckInstanceFactory.java
+  s_31dc4cff0431ca::t_67c9c9390f159f 265
+  s_31dc4cff0431ca::t_35c2b1138e3a30 293
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "fb4fd99b34ebda1e3664a0f440af18e77abcf7c0",
+  "prompts": {}
+}

@@ -1,0 +1,20 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexEntryTest.java
+  s_95cdc5e5b983cc::t_4ad885b737565a 15
+  s_95cdc5e5b983cc::t_8abdf2c0c8d7b8 333
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "bed66e0f9e57465a142117639c7e6a95a4ed3a07",
+  "prompts": {},
+  "sessions": {
+    "s_95cdc5e5b983cc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "684cb6d6-f89d-4291-b857-74792ec0f633",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

@@ -1,0 +1,65 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java
+  s_8c310274456610::t_c64a871908780f 155-178
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/readonly/ReadOnlyCmdOffsetSnapshotTest.java
+  s_8c310274456610::t_d2baeaad1abab8 1-68
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/prepare/PrepareCmdParserTest.java
+  s_8c310274456610::t_58833665629b4e 51-54
+  s_8c310274456610::t_f2af6ccda09925 65,75
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/meta/DefaultMetaStoreReadOnlyTest.java
+  s_8c310274456610::t_a7750a44bf35ae 39-42,48-103
+  s_8c310274456610::t_567b7663619e4f 43-47
+  s_8c310274456610::t_8dba5d51377b28 195-196
+  s_8c310274456610::t_8feaeacb34dbda 9
+  s_8c310274456610::t_cfa55dfd1983b2 226
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/readonly/ReopenOffsetCommandReader.java
+  s_8c310274456610::t_5fac999de2bd99 53,56
+  s_8c310274456610::t_324c7eca220bc8 13-17
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java
+  s_8c310274456610::t_bb176fc82d3103 578-582,584-587,589-594
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/readonly/ReadOnlyCommandStore.java
+  s_8c310274456610::t_04d87077fdc16f 52,56-57,59,61-70
+  s_8c310274456610::t_79f1bf0a2aecc1 153
+  s_8c310274456610::t_3d1e38a031fcdc 94-97
+  s_8c310274456610::t_76852b2e477868 128-129
+  s_8c310274456610::t_a902f87a960f38 157-164,167-176,182,188-192,195-197,203-204,206-208,213-217,219,221-231,236-238,243,251-256,258-259,262-266,268-272,275,278,284-288,291,295-296
+  s_8c310274456610::t_25ed064ecb561b 31
+  s_8c310274456610::t_ad0e22c6ecc90b 290
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/ReplicationStoreManager.java
+  s_8c310274456610::t_fe2a252943fe2c 63,66-68,71-76
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/readonly/ReadOnlyCmdOffsetSnapshot.java
+  s_8c310274456610::t_3545a09870bab9 1-99
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/readonly/ReopenOffsetCommandReaderTest.java
+  s_8c310274456610::t_bd7f7a3576ee6a 276-278
+  s_8c310274456610::t_877dc28aca3940 98,102,110-118,122,143-150
+  s_8c310274456610::t_c0493528fe4c95 175,179,192,196-199,204,211,216-217,220-222,224-228,230-231,236-242
+  s_8c310274456610::t_28c07e8e827bc0 136-139
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/prepare/PrepareStoreWatcher.java
+  s_8c310274456610::t_4718451df684d8 128-130,141,146-175,183-199
+  s_8c310274456610::t_df99314c717eb8 216
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/readonly/ReadOnlyCommandStoreTest.java
+  s_8c310274456610::t_94e2d311351ae0 26-27,30,34,41-42,44-45
+  s_8c310274456610::t_2ea7ccf3013fda 43,46-51
+  s_8c310274456610::t_e8bb71ea177fdd 204-218,220-222,224
+  s_8c310274456610::t_007908dd73211c 338
+  s_8c310274456610::t_354fdcc3b6d47d 33
+  s_8c310274456610::t_ce0cc2847ec551 109,115-126,132,135,145,147-151,153-156,158-170,172,174-193,195-203,219,223,225-238
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/KeeperStageOneAcceptanceTest.java
+  s_8c310274456610::t_31561e3b11b8c1 158-160
+  s_8c310274456610::t_e12e2210eb8862 255-256
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "ef56cc60e7540e10e5cd7081ec94b41df0905017",
+  "prompts": {},
+  "sessions": {
+    "s_8c310274456610": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_d19f098b-3e60-415b-98d6-d2222231f116",
+        "model": "claude-opus-5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

@@ -1,0 +1,304 @@
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/meta/ShardCompareTaskManager.java
+  s_4b38e317dcd45f::t_788a15acf96637 1-8,10,13-37,43,54-60,65-80,85-90,93-104,113-119,121-124,126,130-140,143-164,174-178,182-287,289-320,334-341,343-349,351,353-362,394-397,399-403,414-449,460-469,471,473-477,487-502,505,513-529,62,64,82,84,107-108,324,326,332,363-364,367-369,378,383,387-388,511-512,404,406,408,457-459,485-486
+  s_a997d0077456dd::t_bbf343c9aea6b4 39-42
+  s_a997d0077456dd::t_f18ee44dd680b4 91
+  s_a997d0077456dd::t_93bf68002ef920 92
+  s_a997d0077456dd::t_7ba719c179e3a8 127-129,141-142
+  s_4b38e317dcd45f::t_d9e2aff53bb93c 165-172
+  s_a997d0077456dd::t_1c8edd92e31df0 173,179-181
+  s_a997d0077456dd::t_f8714adbf6e134 288
+  s_6284956bfeeebc::t_a59f42961f6196 321,323,350,365-366,370-372,386
+  s_a997d0077456dd::t_a3b57644168926 410-413
+  s_e44145792dcdbe::t_5d1789946fcfff 450-452,454-456
+  s_c1feece3227cdc::t_dca7b87e637ab5 9,11-12
+  s_210740754e2765::t_610f9fc5327462 38,52
+  s_f0d211e8f2305b::t_82583f6894d151 44-45
+  s_6284956bfeeebc::t_fe3e3ff9a6090d 46-47,49
+  s_6284956bfeeebc::t_63fc8356372ed1 48
+  s_c1feece3227cdc::t_affec05fbf8ab3 53,61
+  s_210740754e2765::t_998ff703d13f16 63
+  s_c1feece3227cdc::t_7ceeac46338af8 81,83
+  s_c1feece3227cdc::t_94741782625700 105-106,109-112,120
+  s_210740754e2765::t_dbd424d885fb4e 125
+  s_c1feece3227cdc::t_7b67ffb46f29f9 322,333,342,352,374,376,379-382,384,389-393,398
+  s_7ad9a15d003b43::t_d96d9e8eb87e12 325,327-330
+  s_e44145792dcdbe::t_569579e2e056b0 331,377,472,478-484
+  s_7ad9a15d003b43::t_556dd7b430fdf9 373,375,385
+  s_c1feece3227cdc::t_d63603915477a1 470
+  s_c1feece3227cdc::t_d6fd9c53b57091 503-504,508-510,453
+  s_737f1aac96aa60::t_96d453626268b1 50-51
+  s_737f1aac96aa60::t_5c695c63d97e8d 405,407
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/report/CompareMetricsCollector.java
+  s_e44145792dcdbe::t_9274c3cbc279b4 1-27,29-103,105-107,109,112,114,117-148
+  s_7c0350bd309de0::t_d7e30ba2713e18 28,104,108,110-111,113,115-116
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/report/CompareMetricsCollectorTest.java
+  s_e44145792dcdbe::t_b03dfab439ec35 1-30,32,38-39,41-42,53-56,69-72,86-92,95-97,100-106,115-116,135-191,194-195,197-205
+  s_7c0350bd309de0::t_a3804210866b74 31,37,43-49
+  s_e44145792dcdbe::t_d7c3720a12c42b 33-35,40
+  s_737f1aac96aa60::t_cf88157845c5d9 36
+  s_e44145792dcdbe::t_0bcad2ac759bfc 50-52,57-59,62,64,66-68,73-85
+  s_737f1aac96aa60::t_bed82dcfc3cd7f 60-61,63,65
+  s_e44145792dcdbe::t_df6c4bb7dc5363 93-94,98-99
+  s_7c0350bd309de0::t_1e5206166ad59a 107-114
+  s_737f1aac96aa60::t_f75f8503b0abf7 117-132
+  s_e44145792dcdbe::t_9505e001f6fb79 133-134
+  s_737f1aac96aa60::t_754dfcf05be966 192-193,196
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/report/DefaultCompareReporter.java
+  s_e44145792dcdbe::t_d612285152dec1 1-22,24-108,117-127,133-232
+  s_737f1aac96aa60::t_83c179d69f03ad 23
+  s_737f1aac96aa60::t_6d7fe80241e2a9 109-116
+  s_737f1aac96aa60::t_66dc01d669bbf0 128-132
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/compare/CompareLane.java
+  s_f15acabec19ddc::t_28319a66df75ec 1-5,12-16,21-22,27-28,34-35,40-41,47,62
+  s_89871fde733314::t_2001a6651a182b 6-11,17-20,23-26,29-33,36-39,42,46
+  s_f3bf3f61b449a0::t_75bdd4d6d6e3ba 43-45
+  s_e44145792dcdbe::t_7096c9fe801326 48-49,52,54-56,58-61
+  s_f0d211e8f2305b::t_c1b907b2c67f95 50,53
+  s_be0fe3649a6da0::t_ced9f11ee4e2d3 51
+  s_7c0350bd309de0::t_b54ddf93e44a58 57
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/AllTests.java
+  s_6a80d001f8c4e6::t_635b4fd9fe818a 1-2,10-11,17-22,36-38
+  s_e4531e4b091ad9::t_7accf8d94a4d63 16,23
+  s_f15acabec19ddc::t_7b2dfeb912aea5 6
+  s_f15acabec19ddc::t_39720b31d6bfba 29
+  s_ac73e7f7dd34c2::t_ab52277179f7a1 15
+  s_ac73e7f7dd34c2::t_daffef66b00b1d 30
+  s_fea562535be069::t_0f667f20900390 3-4
+  s_fea562535be069::t_6426e7f774b250 24-25
+  s_54e82570358018::t_702ff6153022f5 7
+  s_54e82570358018::t_ec60e7d2977cbf 26
+  s_a997d0077456dd::t_849bf449c55552 8
+  s_4b38e317dcd45f::t_504014e318b38f 9
+  s_4b38e317dcd45f::t_ffa295a22b0bd3 27
+  s_a997d0077456dd::t_db78d927cbbf3a 28
+  s_c1feece3227cdc::t_ebf3ee97489b69 5
+  s_c1feece3227cdc::t_45529c6dd1f594 31
+  s_e44145792dcdbe::t_4fd536aeb3c715 12-14
+  s_e44145792dcdbe::t_d8a2907549b027 32-34
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/controller/ComparatorStatusControllerTest.java
+  s_e44145792dcdbe::t_849a5ace366e43 1-125
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/spring/ComparatorContextConfigTest.java
+  s_6a80d001f8c4e6::t_8edbf07ed86a09 1-3,6,13-29,32-54,73-82,85-96,113-117
+  s_08e1c295a1a2fc::t_aa52346a302fd0 83-84
+  s_e44145792dcdbe::t_ebc2b111115466 55,57,59,61,63,65,67,69-72
+  s_f2bf885d68b22d::t_720e958ea7f687 56
+  s_fea562535be069::t_bc23923ed9a675 4-5
+  s_fea562535be069::t_d86a783769e164 58,60
+  s_54e82570358018::t_b17d68c32affc0 7
+  s_54e82570358018::t_b3facd5ae32d5b 62
+  s_4b38e317dcd45f::t_00b1c8e9599e67 8-9,11
+  s_4b38e317dcd45f::t_091b527f134935 64,66,68
+  s_210740754e2765::t_707ad05a3ae802 30-31
+  s_210740754e2765::t_2f539c067ebbb7 97-112
+  s_e44145792dcdbe::t_e1adbf2b271e93 10,12
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/report/DefaultCompareReporterTest.java
+  s_e44145792dcdbe::t_f68bf3e28755d0 1-8,11-26,29-81,121-153,155,158-303
+  s_737f1aac96aa60::t_5ebc209bd55aca 9-10
+  s_737f1aac96aa60::t_03b1bef07b8175 27-28
+  s_737f1aac96aa60::t_af2b363f27a06e 82-120
+  s_e44145792dcdbe::t_1bb225033d5f4f 154
+  s_e44145792dcdbe::t_e8fca9b233c85d 156-157
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/report/CompareReporter.java
+  s_f15acabec19ddc::t_3ecdc9023dc0c6 1-8,14-16,31-32,34,43-53,55,57,59-78,80,82,84,86,88,90-91,20-21,24-25,28,30,41-42
+  s_89871fde733314::t_0bd234a40a3edc 9-12,33,35
+  s_89871fde733314::t_d9d9fb904f4e93 13
+  s_737f1aac96aa60::t_9252e60d581aa4 36,37-40
+  s_f15acabec19ddc::t_fb6a8e5617c3ea 54,56,58,79,81,83,85,87,89
+  s_c1feece3227cdc::t_031e7ff15d7040 17-19,22-23,26-27,29
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/spring/Production.java
+  s_6a80d001f8c4e6::t_23b6096017814d 1-2,16,25-27,32,38-41,121
+  s_f2bf885d68b22d::t_e48c5c3bf1d3c8 36
+  s_fea562535be069::t_cc3a59e668b0fc 3,5-8,17,23-24,28,33,48-49,58,61-62
+  s_e44145792dcdbe::t_3bf3aa10087231 31,42,47,51,57,52,56,44,64,79-80,86-87,95,101,106,46,73,96-98,100,107,111,113-119
+  s_4b38e317dcd45f::t_69882c66ddd50b 50,60,63,55,74-78,81-85,88-90,94,102-105,110,120,72,99,112
+  s_08e1c295a1a2fc::t_07b8ac35df6b58 59
+  s_54e82570358018::t_24bc4cff8a754d 9
+  s_54e82570358018::t_59ca1dc0b02518 53-54
+  s_4b38e317dcd45f::t_1177a3b5e06806 10-12,18-19,21-22
+  s_4b38e317dcd45f::t_d7426e4eeefc68 34-35,37
+  s_4b38e317dcd45f::t_5a87d77bc29025 43
+  s_210740754e2765::t_1ef71f3707279d 20,29-30
+  s_210740754e2765::t_9859d242e03adb 45
+  s_210740754e2765::t_7efe843c594204 65-71
+  s_210740754e2765::t_b8cf3900edf371 108-109
+  s_e44145792dcdbe::t_881a46e1316cf3 4
+  s_e44145792dcdbe::t_e69ddb4e4a1303 13-15
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/controller/ComparatorStatusController.java
+  s_e44145792dcdbe::t_8db587bee3c531 1-177
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "2943757d2e27cfa03cfc303a78dbc11f207b28bf",
+  "prompts": {},
+  "sessions": {
+    "s_08e1c295a1a2fc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6950d8e4-e8d0-45ed-a084-2b59a517bc40",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_210740754e2765": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "96775aa3-5dc9-4bf2-a4c7-4f13284dac3d",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_4b38e317dcd45f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f1201a9f-b651-46c4-aa4c-39560dd96645",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_54e82570358018": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ae74afa5-8723-47a5-9901-efe99dc3ebbc",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_6284956bfeeebc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1d09d21d-3145-47cb-9369-32a32560aa11",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_6a80d001f8c4e6": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e1fbf23b-72f4-43a8-91e0-c0520c2f2b80",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_737f1aac96aa60": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "de9695d1-825e-402d-abb1-8b08a980e158",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_7ad9a15d003b43": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "285bfa07-2bb3-4d2d-ade1-d9b22765cfa0",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_7c0350bd309de0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "09f41d4a-8481-4d96-b451-a3e52c1ebb46",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_89871fde733314": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5d108028-228c-4f87-b581-2d9d338a066c",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_a997d0077456dd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "de62bcc2-6ef0-4502-a4e1-bce395eebc74",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_ac73e7f7dd34c2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1780ae11-33c1-4bec-abf6-0d611510a0d4",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_be0fe3649a6da0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b5ea09a5-57df-4656-959f-d8982bd70f6e",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_c1feece3227cdc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "b0a32a77-c9fb-492e-a803-db3a3744626a",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e44145792dcdbe": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "48842745-78a9-4a96-b5bc-b0c9edbd72e5",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e4531e4b091ad9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "169c716e-6d62-4431-a118-986c17505026",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_f0d211e8f2305b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5b917dff-fd7c-43e4-ab72-51ee05840963",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_f15acabec19ddc": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8bb0e7fb-f079-4f32-8e6c-9c49d8433a0c",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_f2bf885d68b22d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "4d3480a5-a436-4e9d-b3ef-244e1818b11d",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_f3bf3f61b449a0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "78e32b25-a020-4f95-b376-c497c498f85c",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_fea562535be069": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ae438c17-4f7d-4ff9-940e-365d99810474",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

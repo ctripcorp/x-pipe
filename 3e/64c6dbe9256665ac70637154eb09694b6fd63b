@@ -1,0 +1,34 @@
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/AllTests.java
+  s_275f505a95b41e::t_9b6420743de896 23
+  s_275f505a95b41e::t_d82158bea6aa69 146
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/DefaultKeeperSessionManager.java
+  s_2429e98aaab7c5::t_73d3b9e1d23634 54
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/impl/DefaultHealthCheckInstanceFactory.java
+  s_2429e98aaab7c5::t_c2e8a7f8710906 214-216
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/session/KeeperSessionManager.java
+  s_2429e98aaab7c5::t_756d6a5e6c99b8 5-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "3e64c6dbe9256665ac70637154eb09694b6fd63b",
+  "prompts": {},
+  "sessions": {
+    "s_2429e98aaab7c5": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_737d6574-7ec9-4ee2-8be7-71224dc2dfd3",
+        "model": "claude-opus-5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_275f505a95b41e": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_5733322a-0cbd-4c6b-838d-292862918602",
+        "model": "claude-opus-5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

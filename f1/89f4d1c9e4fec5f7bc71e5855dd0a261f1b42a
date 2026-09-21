@@ -1,0 +1,69 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/meta/DefaultMetaStoreTest.java
+  s_aa629edc4923ee::t_5f39a93abb28ee 73-75,80,88-92,141,143,149,154-155,160-163,165,168,173,175-178,180-181,186-188,191,193,201,203,383-384,386,394,396,398-401,93,95-96,98-108,110-113,115,118-120,122-123,125-126,128-131,133-140
+  s_2b79766f13874d::t_3f798f9d8c42e6 11,14
+  s_2b79766f13874d::t_fccb5f0d8b67ea 24
+  s_2b79766f13874d::t_c6281c6cc398b6 94,97,109,116,121,124
+  s_2b79766f13874d::t_de5526169f523a 117,132
+  s_2b79766f13874d::t_1c5e9590ff0ee6 127
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java
+  s_fd1cbddeb7332a::t_fe135852b0af92 55,58
+  s_f4ce297966e0c3::t_311fbe1f9575f8 138,140,113,129-130,189
+  s_beeb2c0a61171f::t_71fc421f151323 182-183,114,120-121,124-126,128,131,139,141,148,191,178-179
+  s_f5a484c361566c::t_c50fb3ab17db19 134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "f189f4d1c9e4fec5f7bc71e5855dd0a261f1b42a",
+  "prompts": {},
+  "sessions": {
+    "s_2b79766f13874d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "54ebc04f-8b6c-4549-a866-79555cf04581",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_aa629edc4923ee": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "dcdcbf57-b9d7-4f22-b5c1-27d6372d55a7",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_beeb2c0a61171f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f4c10ab7-1571-4a7c-aafc-441685af4cfc",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_f4ce297966e0c3": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d4bcfc07-c5ea-425b-8cef-8cb1e5a443bf",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_f5a484c361566c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "12f1ad3e-2068-4d9e-bf99-d3b43b0cc3ae",
+        "model": "grok-4.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_fd1cbddeb7332a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "21a689ed-e270-4cf4-94c7-e12aaa2a559f",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

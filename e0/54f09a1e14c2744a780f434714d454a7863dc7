@@ -1,0 +1,77 @@
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/TfsComparatorHarness.java
+  s_e54e24f31c7115::t_c3d64dc82b0a9a 1-9,11-35,37-64,75-91,97,99,109-111,124-158
+  s_f20a4f45a37c97::t_a040d79da92cfe 10
+  s_f20a4f45a37c97::t_4f7a2977bf5863 36
+  s_f20a4f45a37c97::t_1b8d30536b253f 65-74
+  s_f20a4f45a37c97::t_daffd5bb6fb4d9 92-96,98,100-108,112-123
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/TfsComparatorHarnessStopTest.java
+  s_f20a4f45a37c97::t_1c5e2d7ea3fe23 1-117
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/AbstractTfsKeeperIntegrated.java
+  s_3cb1a839243da0::t_bd942c71cf87c2 1-3,5-7,10-20,22-24,26-27,29-30,33-37,40-49,71-72,77-78,113-148,150-198,206-208,222,271,286-298,368,59,63,82,86,108
+  s_fb805336072a92::t_adaeafe5cf18f4 38-39
+  s_fb805336072a92::t_732cf346db4993 50
+  s_fb805336072a92::t_88c0bae9dd6e6c 51-56
+  s_e54e24f31c7115::t_26699b09a7c0b9 80-81,87
+  s_fb805336072a92::t_9fc7378d7d9496 199-205,209-221,223-270,272-285
+  s_fb805336072a92::t_9c7784a4c59f91 299-300
+  s_e54e24f31c7115::t_8f7de144663fad 301-302,58,65,69-70,89-90,95,110-112,303-367
+  s_e54e24f31c7115::t_c3e77f9641fac3 4,8-9,28,31
+  s_e54e24f31c7115::t_55b1a5bd214f08 21
+  s_f20a4f45a37c97::t_6c0c55e4ebb8b4 25
+  s_f20a4f45a37c97::t_7842249e3ecf7d 32
+  s_e54e24f31c7115::t_3cb006efc99b90 57,66-68
+  s_f20a4f45a37c97::t_43a473a2aa48bd 60-62,64
+  s_f20a4f45a37c97::t_b9271fe8f49d9f 83-85
+  s_f20a4f45a37c97::t_13aeafbbc78c11 88,91-94,96-107,109
+  s_e54e24f31c7115::t_edcc59728d7685 149
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/TfsComparatorHarnessTest.java
+  s_e54e24f31c7115::t_840d2582eeda8b 1-31
+redis/redis-integration-test/pom.xml
+  s_e54e24f31c7115::t_139ee9ac6c8485 73-75
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/AllKeeperTest.java
+  s_3cb1a839243da0::t_6fb69944492a7b 35
+  s_e54e24f31c7115::t_a9a0659bb75df7 36
+  s_f20a4f45a37c97::t_3b6d9524d5dc6d 37-39
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/AbstractTfsKeeperIntegratedTest.java
+  s_f20a4f45a37c97::t_cb853d829299a7 1-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "e054f09a1e14c2744a780f434714d454a7863dc7",
+  "prompts": {},
+  "sessions": {
+    "s_3cb1a839243da0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d0836220-afe9-4fcd-ae11-cc38523b034d",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e54e24f31c7115": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "113536a0-68d1-4267-b6ab-42b23df9d078",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_f20a4f45a37c97": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cf19e9bd-a1c7-48dc-a3d2-a785545a5e06",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_fb805336072a92": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "251f017f-5660-4d9f-8ee9-a08e13119301",
+        "model": "grok-4.6"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

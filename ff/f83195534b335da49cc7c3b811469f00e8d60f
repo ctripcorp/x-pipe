@@ -1,0 +1,34 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  h_6ceeb547b3b36a 5,19,36,44,51,80,82,84,103,105,124,128,146,149,172
+  s_72174907f32b60::t_a338685b026bd5 43,79,102,123,127,145,148,164,169,171
+  s_f6223590275fac::t_5bb08c5b1dea9f 54,62,77-78,100-101,118,121-122,132,141,144,159,163,168
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "fff83195534b335da49cc7c3b811469f00e8d60f",
+  "prompts": {},
+  "humans": {
+    "h_6ceeb547b3b36a": {
+      "author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  },
+  "sessions": {
+    "s_72174907f32b60": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_2e59336e-1937-42b2-86df-5ebf28406cdd",
+        "model": "claude-opus-5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_f6223590275fac": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_1a3cc7b7-06ef-49d1-8247-18b2b1bf4263",
+        "model": "claude-opus-5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}

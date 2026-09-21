@@ -1,0 +1,47 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_72174907f32b60::t_ab9ca4547db7f4 41,61-62,65-66,69-70,73-74,77-78,81-82,86-87,90-91,94-95,98-99,102-103,106-107,110-111,114-115,224-225,686-687,391-392,407-408,417-418,426-427,448,16,228-229,233-234,386-387,690-691,695-696,22,143-144,148-149,269-270,275,327-328,394,599-600,649-650,808-809,466-467,538-539,552-553,567-568,584-585,634-635,655-656,119-120,129-130,134-135,192-193,198-199,284,358-359,378,431-432
+  s_f6223590275fac::t_01cf1877097724 127,405,415,424,460,673,262,377,678,711,203,326,176,527,191,371,438
+  s_f6223590275fac::t_9ee782018a75a8 347,440,458,674
+  s_0303dd6ef2d4c2::t_075e413d4cf55c 445,247,709,260,324,630,499,525,303,369,519,534,580
+  s_3e657dbad0c269::t_eeeb4b8f343572 447,456,243,705,261,283,325,526,581,631,125,190,370,375,383,535
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.44-trip",
+  "base_commit_sha": "7a5af509f66b2f3677aa35238289d90587e459ab",
+  "prompts": {},
+  "sessions": {
+    "s_0303dd6ef2d4c2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "054781b8-9163-40d1-9a1a-a57c3f4d9f1e",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_3e657dbad0c269": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_cee60442-d0fb-4d11-9774-9a19cd93cd4e",
+        "model": "claude-opus-5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_72174907f32b60": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_2e59336e-1937-42b2-86df-5ebf28406cdd",
+        "model": "claude-opus-5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    },
+    "s_f6223590275fac": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_1a3cc7b7-06ef-49d1-8247-18b2b1bf4263",
+        "model": "claude-opus-5"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
