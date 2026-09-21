@@ -4,21 +4,14 @@ import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdActionContext;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdActionListener;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdPingActionCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.KeeperNotInMetaException;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.event.AbstractInstanceEvent;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.HealthEventProcessor;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubPingActionCollector;
 import com.ctrip.xpipe.utils.VisibleForTesting;
-import org.unidal.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,18 +28,15 @@ import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.SCHEDULED_EXECUTOR;
 
 @Component
-public class DefaultInfoReplIdPingActionCollector extends AbstractInfoReplIdPingActionCollector implements InfoReplIdPingActionCollector, HealthStateService, OneWaySupport {
+public class DefaultPsubPingActionCollector extends AbstractPsubPingActionCollector implements PsubPingActionCollector, HealthStateService, OneWaySupport {
 
-    private static final Logger logger = LoggerFactory.getLogger(DefaultInfoReplIdPingActionCollector.class);
+    private static final Logger logger = LoggerFactory.getLogger(DefaultPsubPingActionCollector.class);
 
     @Autowired
     private List<HealthEventProcessor> healthEventProcessors;
 
     @Autowired
     private CheckerConfig config;
-
-    @Autowired
-    private AlertManager alertManager;
 
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
@@ -61,7 +51,6 @@ public class DefaultInfoReplIdPingActionCollector extends AbstractInfoReplIdPing
                 .findFirst().orElse(null);
 
         if (null != key) return allHealthStatus.get(key).getState();
-        logger.info("[getHealthState][unknown] {}:{}", hostPort.getHost(), hostPort.getPort());
         return HEALTH_STATE.UNKNOWN;
     }
 
@@ -138,34 +127,6 @@ public class DefaultInfoReplIdPingActionCollector extends AbstractInfoReplIdPing
     @VisibleForTesting
     public HealthStatus getHealthStatus4Test(RedisHealthCheckInstance instance) {
         return getHealthStatus(instance);
-    }
-
-    @Override
-    public InfoReplIdActionListener createInfoReplIdActionListener() {
-        return new InfoReplIdActionListener() {
-            @Override
-            public void onAction(InfoReplIdActionContext context) {
-                CrossRegionRedisHealthStatus hs =
-                        (CrossRegionRedisHealthStatus) getHealthStatus(context.instance());
-                if (hs == null) return;
-
-                if (context.isSuccess()) {
-                    Triple<String, String, String> replIds = context.getResult();
-                    hs.updateReplIds(replIds.getFirst(), replIds.getMiddle(), replIds.getLast());
-                } else if (context.getCause() instanceof KeeperNotInMetaException) {
-                    // 连错 keeper：不拉出，改为告警
-                    alertManager.alert(context.instance().getCheckInfo(),
-                            ALERT_TYPE.REPL_WRONG_SLAVE, context.getCause().getMessage());
-                } else {
-                    hs.updateReplIds(null, null, null);
-                }
-            }
-
-            @Override
-            public void stopWatch(HealthCheckAction<RedisHealthCheckInstance> action) {
-                removeHealthStatus(action);
-            }
-        };
     }
 
     @Override
