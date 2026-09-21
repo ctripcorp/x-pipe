@@ -15,8 +15,6 @@ public class XPipeFiremanDependency implements FiremanDependency {
 
     private static Logger logger = LoggerFactory.getLogger(XPipeFiremanDependency.class);
 
-    private final FiremanConfig firemanConfig = new FiremanConfig();
-
     @Override
     public List<String> getAppIds() {
         return Lists.newArrayList("100004374");
@@ -43,7 +41,7 @@ public class XPipeFiremanDependency implements FiremanDependency {
 
     @Override
     public boolean openAvailableCheckTask() {
-        return !firemanConfig.disableDb();
+        return true;
     }
 
     @Override

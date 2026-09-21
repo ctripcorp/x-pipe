@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.checker.alert.message.subscriber.AlertEntityDelaySu
 import com.ctrip.xpipe.redis.checker.alert.message.subscriber.AlertRecoverySubscriberTest;
 import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBeanTest;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfigTest;
+import com.ctrip.xpipe.redis.checker.spring.FiremanServletScanConditionTest;
 import com.ctrip.xpipe.redis.checker.controller.CheckerHealthControllerTest;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessageTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedisConfigCheckRuleActionFactoryTest;
@@ -110,6 +111,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses(value = {
         CommonConfigBeanTest.class,
         DefaultCheckerDbConfigTest.class,
+        FiremanServletScanConditionTest.class,
         ClusterStatusTest.class,
 
         DefaultSentinelHelloCollectorTest.class,
