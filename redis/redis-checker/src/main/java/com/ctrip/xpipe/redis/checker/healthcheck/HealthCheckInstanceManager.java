@@ -17,7 +17,7 @@ public interface HealthCheckInstanceManager {
 
     RedisHealthCheckInstance getOrCreate(RedisMeta redis);
 
-    RedisHealthCheckInstance getOrCreateRedisInstanceForPsubPingAction(RedisMeta redis);
+    RedisHealthCheckInstance getOrCreateRedisInstanceForInfoReplIdAction(RedisMeta redis);
 
     KeeperHealthCheckInstance getOrCreate(KeeperMeta keeper);
 
@@ -25,7 +25,7 @@ public interface HealthCheckInstanceManager {
 
     RedisHealthCheckInstance findRedisHealthCheckInstance(HostPort hostPort);
 
-    RedisHealthCheckInstance findRedisInstanceForPsubPingAction(HostPort hostPort);
+    RedisHealthCheckInstance findRedisInstanceForInfoReplIdPingAction(HostPort hostPort);
 
     KeeperHealthCheckInstance findKeeperHealthCheckInstance(HostPort hostPort);
 

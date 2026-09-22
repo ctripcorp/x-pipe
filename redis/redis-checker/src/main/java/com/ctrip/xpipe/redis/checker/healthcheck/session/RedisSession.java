@@ -346,6 +346,27 @@ public class RedisSession {
         return new InfoResultExtractor(info);
     }
 
+    /**
+     * Async counterpart of {@link #syncInfo(InfoCommand.INFO_TYPE)}: hands an
+     * {@link InfoResultExtractor} to the callback instead of blocking the calling thread.
+     *
+     * Reuses {@link #info(String, Callbackable)} so the timeout stays the command's own
+     * ({@link #commandTimeOut}) rather than a caller-side {@code get} deadline.
+     */
+    public void info(InfoCommand.INFO_TYPE infoType, Callbackable<InfoResultExtractor> callback) {
+        info(infoType.cmd(), new Callbackable<String>() {
+            @Override
+            public void success(String message) {
+                callback.success(new InfoResultExtractor(message));
+            }
+
+            @Override
+            public void fail(Throwable throwable) {
+                callback.fail(throwable);
+            }
+        });
+    }
+
 
     public CommandFuture<RedisInfo> getRedisReplInfo() {
         InfoReplicationCommand command = new InfoReplicationCommand(clientPool, scheduled, commandTimeOut);
