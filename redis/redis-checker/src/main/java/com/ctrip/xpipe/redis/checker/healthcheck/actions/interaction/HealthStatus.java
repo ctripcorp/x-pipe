@@ -145,8 +145,6 @@ public class HealthStatus extends AbstractObservable implements Startable, Stopp
         }
     }
 
-    protected void subSuccess(){}
-
     void delay(long delayMilli){
 
         //first time

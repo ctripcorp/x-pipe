@@ -10,7 +10,7 @@ import com.ctrip.xpipe.redis.checker.RedisDelayManager;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderAware;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollector;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultPsubPingActionCollector;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultInfoReplIdPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HEALTH_STATE;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStateService;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
@@ -158,20 +158,20 @@ public class HealthCheckReporter implements GroupCheckerLeaderAware {
     private Map<HostPort, HEALTH_STATE> getAllRedisStates() {
         Map<HostPort, HEALTH_STATE> redisStates = new HashMap<>();
         DefaultDelayPingActionCollector delayPingActionCollector = null;
-        DefaultPsubPingActionCollector psubPingActionCollector = null;
+        DefaultInfoReplIdPingActionCollector infoReplIdPingActionCollector = null;
         for (HealthStateService service : healthStateServices) {
             if (service instanceof DefaultDelayPingActionCollector) {
                 delayPingActionCollector = (DefaultDelayPingActionCollector) service;
             }
-            if (service instanceof DefaultPsubPingActionCollector) {
-                psubPingActionCollector = (DefaultPsubPingActionCollector) service;
+            if (service instanceof DefaultInfoReplIdPingActionCollector) {
+                infoReplIdPingActionCollector = (DefaultInfoReplIdPingActionCollector) service;
             }
         }
         if (delayPingActionCollector != null) {
             redisStates.putAll(delayPingActionCollector.getAllCachedState());
         }
-        if (psubPingActionCollector != null) {
-            Map<HostPort, HEALTH_STATE> allCachedState = psubPingActionCollector.getAllCachedState();
+        if (infoReplIdPingActionCollector != null) {
+            Map<HostPort, HEALTH_STATE> allCachedState = infoReplIdPingActionCollector.getAllCachedState();
             for (Map.Entry<HostPort, HEALTH_STATE> entry : allCachedState.entrySet()) {
                 redisStates.put(entry.getKey(), entry.getValue());
             }
