@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid;
 
+import com.ctrip.xpipe.command.CommandChainException;
+import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
@@ -10,8 +12,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.session.CrossRegionKeeperSessio
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -24,15 +24,20 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.unidal.tuple.Triple;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * InfoReplId 的异步链路：五个终止分支、防重入、以及 stop 后的回调丢弃。
+ * InfoReplId 的链式检查：两条 INFO 命令按序执行，五个终止分支、编号新旧、以及 stop 后的丢弃。
  *
- * 两个 INFO 命令都由测试显式触发回调，不依赖真实网络与真实定时。
+ * 测试只替换 session 的异步回调边界（{@link RedisSession#infoReplication}）并显式触发回调，
+ * 命令、链、推进逻辑全部走真实实现；不依赖真实网络与真实定时。
  */
 @RunWith(MockitoJUnitRunner.Silent.class)
 public class InfoReplIdActionTest {
@@ -73,19 +78,20 @@ public class InfoReplIdActionTest {
 
     private ScheduledExecutorService scheduled;
 
+    /** Two threads: a check stuck on one must not starve a later check. */
     private ExecutorService executors;
 
     private InfoReplIdAction action;
 
-    /** Written from the dispatch executor thread (stage 2 is reached off the callback thread). */
-    private volatile Callbackable<InfoResultExtractor> slaveCallback;
+    /** One callback per started check, in start order. */
+    private final List<Callbackable<String>> slaveCallbacks = new CopyOnWriteArrayList<>();
 
-    private volatile Callbackable<InfoResultExtractor> keeperCallback;
+    private final List<Callbackable<String>> keeperCallbacks = new CopyOnWriteArrayList<>();
 
     @Before
     public void before() throws Exception {
         scheduled = Executors.newSingleThreadScheduledExecutor();
-        executors = Executors.newSingleThreadExecutor();
+        executors = Executors.newFixedThreadPool(2);
 
         Mockito.when(instance.getCheckInfo()).thenReturn(instanceInfo);
         Mockito.when(instance.getRedisSession()).thenReturn(redisSession);
@@ -102,8 +108,7 @@ public class InfoReplIdActionTest {
         Mockito.when(metaCache.getKeeperOfDcClusterShard(DC_ID, CLUSTER_ID, SHARD_ID))
                 .thenReturn(Collections.singletonList(
                         new KeeperMeta().setIp(KEEPER.getHost()).setPort(KEEPER.getPort())));
-
-        captureAsyncCommands();
+        captureInfoCallbacks();
 
         action = new InfoReplIdAction(scheduled, instance, executors,
                 crossRegionKeeperSessionManager, metaCache);
@@ -119,25 +124,25 @@ public class InfoReplIdActionTest {
         executors.shutdownNow();
     }
 
-    @SuppressWarnings("unchecked")
-    private void captureAsyncCommands() {
+    /** 只替换 session 的异步边界：按发起顺序抓住每次都回调，由测试决定何时完成。 */
+    private void captureInfoCallbacks() {
         Mockito.doAnswer(invocation -> {
-            slaveCallback = invocation.getArgument(1);
+            slaveCallbacks.add(invocation.getArgument(0));
             return null;
-        }).when(redisSession).info(Mockito.eq(InfoCommand.INFO_TYPE.REPLICATION), Mockito.any());
+        }).when(redisSession).infoReplication(Mockito.any());
 
         Mockito.doAnswer(invocation -> {
-            keeperCallback = invocation.getArgument(1);
+            keeperCallbacks.add(invocation.getArgument(0));
             return null;
-        }).when(keeperSession).info(Mockito.eq(InfoCommand.INFO_TYPE.REPLICATION), Mockito.any());
+        }).when(keeperSession).infoReplication(Mockito.any());
     }
 
     // ---------- 成功路径 ----------
 
     @Test
     public void successWhenSlaveReplIdMatchesKeeper() {
-        runSlave(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()));
-        runKeeper(redisInfo(SLAVE_REPL_ID, null, null, -1));
+        runCheck(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()),
+                redisInfo(SLAVE_REPL_ID, null, null, -1));
 
         InfoReplIdActionContext context = verifyNotified();
         Assert.assertTrue(context.isSuccess());
@@ -148,8 +153,8 @@ public class InfoReplIdActionTest {
 
     @Test
     public void successWhenSlaveReplIdMatchesKeeperReplId2() {
-        runSlave(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()));
-        runKeeper(redisInfo(KEEPER_REPL_ID, SLAVE_REPL_ID, null, -1));
+        runCheck(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()),
+                redisInfo(KEEPER_REPL_ID, SLAVE_REPL_ID, null, -1));
 
         InfoReplIdActionContext context = verifyNotified();
         Assert.assertTrue(context.isSuccess());
@@ -158,8 +163,8 @@ public class InfoReplIdActionTest {
 
     @Test
     public void replIdMismatchIsStillASuccessfulContext() {
-        runSlave(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()));
-        runKeeper(redisInfo(KEEPER_REPL_ID, null, null, -1));
+        runCheck(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()),
+                redisInfo(KEEPER_REPL_ID, null, null, -1));
 
         // 匹配与否由 CrossRegionRedisHealthStatus.replIdMatch 判定，action 只负责把三个 replId 送出去
         InfoReplIdActionContext context = verifyNotified();
@@ -175,7 +180,7 @@ public class InfoReplIdActionTest {
         runSlave(redisInfo(null, null, KEEPER.getHost(), KEEPER.getPort()));
 
         assertFailure(IllegalStateException.class, "slave info incomplete");
-        Mockito.verifyNoInteractions(crossRegionKeeperSessionManager);
+        Mockito.verifyNoInteractions(keeperSession);
     }
 
     @Test
@@ -183,7 +188,7 @@ public class InfoReplIdActionTest {
         runSlave(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), -1));
 
         assertFailure(IllegalStateException.class, "slave info incomplete");
-        Mockito.verifyNoInteractions(crossRegionKeeperSessionManager);
+        Mockito.verifyNoInteractions(keeperSession);
     }
 
     @Test
@@ -193,15 +198,15 @@ public class InfoReplIdActionTest {
 
         runSlave(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()));
 
+        // 监听方按具体类型分支：KeeperNotInMetaException 要告警，不能被链异常包住
         assertFailure(KeeperNotInMetaException.class, null);
-        // 连错 keeper 时不得再去读它的 INFO
-        Mockito.verifyNoInteractions(crossRegionKeeperSessionManager);
+        Mockito.verifyNoInteractions(keeperSession);
     }
 
     @Test
     public void failureWhenKeeperInfoIncomplete() {
-        runSlave(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()));
-        runKeeper(redisInfo(null, null, null, -1));
+        runCheck(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()),
+                redisInfo(null, null, null, -1));
 
         assertFailure(IllegalStateException.class, "keeper info incomplete");
     }
@@ -209,126 +214,224 @@ public class InfoReplIdActionTest {
     @Test
     public void failureWhenSlaveCommandFails() {
         action.doTask();
-        slaveCallback.fail(new RuntimeException("slave boom"));
+        awaitStageOne(1);
+        slaveCallbacks.get(0).fail(new RuntimeException("slave boom"));
 
-        InfoReplIdActionContext context = verifyNotified();
-        Assert.assertFalse(context.isSuccess());
-        Assert.assertEquals("slave boom", context.getCause().getMessage());
+        assertFailure(RuntimeException.class, "slave boom");
+        Mockito.verifyNoInteractions(keeperSession);
     }
 
     @Test
     public void failureWhenKeeperCommandFails() {
         runSlave(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()));
-        awaitKeeperCommand();
-        keeperCallback.fail(new RuntimeException("keeper boom"));
+        awaitStageTwo(1);
+        keeperCallbacks.get(0).fail(new RuntimeException("keeper boom"));
 
-        InfoReplIdActionContext context = verifyNotified();
-        Assert.assertFalse(context.isSuccess());
-        Assert.assertEquals("keeper boom", context.getCause().getMessage());
+        assertFailure(RuntimeException.class, "keeper boom");
     }
 
-    @Test
-    public void exceptionInsideSuccessCallbackIsCapturedNotEscaped() {
-        Mockito.when(metaCache.getKeeperOfDcClusterShard(DC_ID, CLUSTER_ID, SHARD_ID))
-                .thenThrow(new IllegalStateException("meta boom"));
-
-        // 回调内抛出的异常必须被捕获成失败上下文，而不是逃逸到命令线程
-        runSlave(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()));
-
-        InfoReplIdActionContext context = verifyNotified();
-        Assert.assertFalse(context.isSuccess());
-        Assert.assertEquals("meta boom", context.getCause().getMessage());
-    }
-
-    // ---------- 防重入与生命周期 ----------
+    // ---------- 链的推进 ----------
 
     @Test
-    public void secondTickIsSkippedWhileCheckInFlight() {
+    public void stageTwoIsNotIssuedBeforeStageOneCompletes() {
         action.doTask();
-        action.doTask();
+        awaitStageOne(1);
 
-        Mockito.verify(redisSession, Mockito.times(1))
-                .info(Mockito.eq(InfoCommand.INFO_TYPE.REPLICATION), Mockito.any());
+        // 链是顺序的：stage 1 未完成前不得发起 stage 2
+        Mockito.verifyNoInteractions(keeperSession);
     }
 
     @Test
-    public void nextTickRunsAfterCompletion() {
-        runSlave(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()));
-        runKeeper(redisInfo(SLAVE_REPL_ID, null, null, -1));
+    public void stageTwoIsSkippedWhenStageOneFails() {
+        action.doTask();
+        awaitStageOne(1);
+        slaveCallbacks.get(0).fail(new RuntimeException("timeout"));
         verifyNotified();
 
+        // SequenceCommandChain 失败即停：不得发起 keeper 查询
+        Mockito.verifyNoInteractions(keeperSession);
+    }
+
+    // ---------- 编号新旧（无 in-flight 守卫的两个方向）----------
+
+    @Test
+    public void everyTickStartsItsOwnCheckWithoutWaitingForThePrevious() {
+        action.doTask();
         action.doTask();
 
-        Mockito.verify(redisSession, Mockito.times(2))
-                .info(Mockito.eq(InfoCommand.INFO_TYPE.REPLICATION), Mockito.any());
+        // 没有守卫：上一轮未完成也照常发起新一轮
+        Mockito.verify(redisSession, Mockito.timeout(2000).times(2)).infoReplication(Mockito.any());
     }
 
     @Test
-    public void inFlightIsReleasedOnFailurePath() {
-        runSlave(redisInfo(null, null, KEEPER.getHost(), KEEPER.getPort()));
-        assertFailure(IllegalStateException.class, "slave info incomplete");
-
+    public void aCheckSlowerThanTheTickIntervalStillPublishes() {
+        // 模拟「单次检查耗时跨过下一个 tick」：check 1 尚未完成，check 2 已发起
+        action.doTask();
+        awaitStageOne(1);
         action.doTask();
 
-        // 失败路径同样必须复位，否则该实例会被永久跳过
-        Mockito.verify(redisSession, Mockito.times(2))
-                .info(Mockito.eq(InfoCommand.INFO_TYPE.REPLICATION), Mockito.any());
+        // 让 check 1 完整跑完
+        slaveCallbacks.get(0).success(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()));
+        awaitStageTwo(1);
+        keeperCallbacks.get(0).success(redisInfo(SLAVE_REPL_ID, null, null, -1));
+
+        // 慢检查若被一律丢弃，则「持续慢」= 永久静默
+        Assert.assertTrue(verifyNotified().isSuccess());
+    }
+
+    @Test
+    public void lateResultIsDroppedAfterANewerOneWasPublished() {
+        action.doTask();
+        long olderStamp = action.latestCheckStamp();
+        action.doTask();   // 更新的一轮已发起
+
+        // 较新的一轮先产出结果
+        action.publish(action.latestCheckStamp(), successChain(), successResult());
+        verifyNotified();
+
+        // 较旧的一轮这时才回来：这才是「后回来」，必须丢弃
+        action.publish(olderStamp, successChain(), successResult());
+
+        Mockito.verify(listener, Mockito.after(300).times(1)).onAction(Mockito.any());
+    }
+
+    @Test
+    public void aCheckThatNeverCompletesDoesNotMuteLaterChecks() throws Exception {
+        CountDownLatch blocker = new CountDownLatch(1);
+        CountDownLatch firstCheckBlocked = new CountDownLatch(1);
+        AtomicInteger metaCalls = new AtomicInteger();
+        Mockito.when(metaCache.getKeeperOfDcClusterShard(DC_ID, CLUSTER_ID, SHARD_ID))
+                .thenAnswer(invocation -> {
+                    if (metaCalls.incrementAndGet() == 1) {
+                        firstCheckBlocked.countDown();
+                        blocker.await();   // 第一次检查永久卡在 stage 2 的 meta 查询上
+                    }
+                    return Collections.singletonList(
+                            new KeeperMeta().setIp(KEEPER.getHost()).setPort(KEEPER.getPort()));
+                });
+
+        try {
+            action.doTask();
+            awaitStageOne(1);
+            slaveCallbacks.get(0).success(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()));
+            Assert.assertTrue("check 1 未进入 stage 2", firstCheckBlocked.await(2, TimeUnit.SECONDS));
+
+            // 卡住期间下一轮照常发起并完成 —— 这条正是去掉守卫要换来的性质
+            action.doTask();
+            awaitStageOne(2);
+            slaveCallbacks.get(1).success(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()));
+            awaitStageTwo(1);
+            keeperCallbacks.get(0).success(redisInfo(SLAVE_REPL_ID, null, null, -1));
+
+            Assert.assertTrue("卡住的检查不得让实例静默", verifyNotified().isSuccess());
+        } finally {
+            blocker.countDown();
+        }
     }
 
     @Test
     public void notificationIsDroppedAfterStop() throws Exception {
         LifecycleHelper.stopIfPossible(action);
 
-        action.doTask();
-        slaveCallback.success(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()));
-        slaveCallback.fail(new RuntimeException("late"));
+        runCheck(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()),
+                redisInfo(SLAVE_REPL_ID, null, null, -1));
 
-        Thread.sleep(200);
-        Mockito.verify(listener, Mockito.never()).onAction(Mockito.any());
+        Mockito.verify(listener, Mockito.after(300).never()).onAction(Mockito.any());
+    }
+
+    // ---------- stage 2 未被执行的收尾 ----------
+
+    @Test
+    public void keeperStageFutureIsClosedWhenTheChainFailsBeforeItRuns() {
+        // -1 不可能是任何真实编号（从 1 开始），于是走「陈旧丢弃」分支，断言只针对 future 本身
+        DefaultCommandFuture<String> slaveFuture = new DefaultCommandFuture<>();
+        KeeperReplIdCommand keeperStage = new KeeperReplIdCommand(instance, slaveFuture,
+                crossRegionKeeperSessionManager, metaCache, executors);
+        DefaultCommandFuture<Object> chainFuture = new DefaultCommandFuture<>();
+        chainFuture.setFailure(new CommandChainException("sequence chain, fail stop",
+                new RuntimeException("slave boom"), Collections.emptyList()));
+
+        action.publish(-1L, chainFuture, keeperStage.future());
+
+        Assert.assertTrue("未被执行的 stage 的 future 也必须有终态", keeperStage.future().isDone());
+        Assert.assertTrue(keeperStage.future().cause() instanceof IllegalStateException);
+        Assert.assertEquals("slave boom", keeperStage.future().cause().getCause().getMessage());
+    }
+
+    @Test
+    public void keeperStageFutureIsNotTouchedWhenThatStageItselfFailed() {
+        DefaultCommandFuture<String> slaveFuture = new DefaultCommandFuture<>();
+        KeeperReplIdCommand keeperStage = new KeeperReplIdCommand(instance, slaveFuture,
+                crossRegionKeeperSessionManager, metaCache, executors);
+        keeperStage.future().setFailure(new KeeperNotInMetaException("keeper not in meta"));
+        DefaultCommandFuture<Object> chainFuture = new DefaultCommandFuture<>();
+        chainFuture.setFailure(new CommandChainException("sequence chain, fail stop",
+                new KeeperNotInMetaException("keeper not in meta"), Collections.emptyList()));
+
+        action.publish(-1L, chainFuture, keeperStage.future());
+
+        Assert.assertEquals("keeper not in meta", keeperStage.future().cause().getMessage());
     }
 
     // ---------- 线程契约 ----------
 
     @Test
-    public void callbackWorkIsOffloadedFromTheCompletingThread() {
-        // 生产环境下 success/fail 由 netty event loop 调用；回调体必须不在这条线程上干活
+    public void keeperLookupRunsOffTheCompletingThread() {
+        // stage 1 的回调由 netty event loop 触发，而解析 / meta 查询必须在池线程上
         Thread completingThread = Thread.currentThread();
-        AtomicReference<Thread> workThread = new AtomicReference<>();
+        List<Thread> lookupThreads = new CopyOnWriteArrayList<>();
         Mockito.when(metaCache.getKeeperOfDcClusterShard(DC_ID, CLUSTER_ID, SHARD_ID))
                 .thenAnswer(invocation -> {
-                    workThread.set(Thread.currentThread());
+                    lookupThreads.add(Thread.currentThread());
                     return Collections.singletonList(
                             new KeeperMeta().setIp(KEEPER.getHost()).setPort(KEEPER.getPort()));
                 });
 
-        runSlave(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()));
-        runKeeper(redisInfo(SLAVE_REPL_ID, null, null, -1));
+        runCheck(redisInfo(SLAVE_REPL_ID, null, KEEPER.getHost(), KEEPER.getPort()),
+                redisInfo(SLAVE_REPL_ID, null, null, -1));
         verifyNotified();
 
-        Assert.assertNotNull("meta 查询未执行", workThread.get());
-        Assert.assertNotSame("meta 查询必须离开回调线程，否则会阻塞 netty event loop",
-                completingThread, workThread.get());
+        Assert.assertFalse("meta 查询未执行", lookupThreads.isEmpty());
+        for (Thread lookupThread : lookupThreads) {
+            Assert.assertNotSame("meta 查询必须离开完成线程，否则会阻塞 netty event loop",
+                    completingThread, lookupThread);
+        }
     }
 
     // ---------- helpers ----------
 
-    private void runSlave(InfoResultExtractor slaveInfo) {
+    /** 一次成功收尾所需的两个 future：链的与 stage 2 结果的。 */
+    private DefaultCommandFuture<Object> successChain() {
+        DefaultCommandFuture<Object> chain = new DefaultCommandFuture<>();
+        chain.setSuccess(Collections.emptyList());
+        return chain;
+    }
+
+    private DefaultCommandFuture<Triple<String, String, String>> successResult() {
+        DefaultCommandFuture<Triple<String, String, String>> result = new DefaultCommandFuture<>();
+        result.setSuccess(new Triple<>("a", "a", null));
+        return result;
+    }
+
+    /** 一轮完整检查：只有 stage 1 完成后，链才会发起 stage 2。 */
+    private void runCheck(String slaveInfo, String keeperInfo) {
+        runSlave(slaveInfo);
+        awaitStageTwo(1);
+        keeperCallbacks.get(0).success(keeperInfo);
+    }
+
+    private void runSlave(String slaveInfo) {
         action.doTask();
-        slaveCallback.success(slaveInfo);
+        awaitStageOne(1);
+        slaveCallbacks.get(0).success(slaveInfo);
     }
 
-    private void runKeeper(InfoResultExtractor keeperInfo) {
-        awaitKeeperCommand();
-        keeperCallback.success(keeperInfo);
+    private void awaitStageOne(int times) {
+        Mockito.verify(redisSession, Mockito.timeout(2000).times(times)).infoReplication(Mockito.any());
     }
 
-    /**
-     * 回调被投递到线程池执行，stage 2 的发起不再同步，必须等它真的发出命令。
-     */
-    private void awaitKeeperCommand() {
-        Mockito.verify(keeperSession, Mockito.timeout(2000).atLeastOnce())
-                .info(Mockito.eq(InfoCommand.INFO_TYPE.REPLICATION), Mockito.any());
-        Assert.assertNotNull("stage 2 未被触发", keeperCallback);
+    private void awaitStageTwo(int times) {
+        Mockito.verify(keeperSession, Mockito.timeout(2000).times(times)).infoReplication(Mockito.any());
     }
 
     private void assertFailure(Class<? extends Throwable> expected, String message) {
@@ -347,7 +450,7 @@ public class InfoReplIdActionTest {
         return captor.getValue();
     }
 
-    private InfoResultExtractor redisInfo(String replId, String replId2, String masterHost, int masterPort) {
+    private String redisInfo(String replId, String replId2, String masterHost, int masterPort) {
         StringBuilder info = new StringBuilder();
         info.append("# Replication\r\n");
         info.append("role:slave\r\n");
@@ -363,6 +466,6 @@ public class InfoReplIdActionTest {
         if (replId2 != null) {
             info.append("master_replid2:").append(replId2).append("\r\n");
         }
-        return new InfoResultExtractor(info.toString());
+        return info.toString();
     }
 }

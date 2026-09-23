@@ -98,6 +98,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRouteChooserTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.DefaultDcMetaChangeManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperMetaChangeManagerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultCrossRegionKeeperSessionManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultKeeperSessionManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityInspectorTest;
 import com.ctrip.xpipe.redis.checker.impl.*;
@@ -230,6 +232,8 @@ import org.junit.runners.Suite;
         KeeperCapabilityRefreshManagerTest.class,
         KeeperMetaChangeManagerTest.class,
         DefaultKeeperSessionManagerTest.class,
+        DefaultCrossRegionKeeperSessionManagerTest.class,
+        InfoReplIdActionTest.class,
 
         DefaultOuterClientAggregatorTest.class,
         DefaultDelayPingActionCollectorTest.class,
