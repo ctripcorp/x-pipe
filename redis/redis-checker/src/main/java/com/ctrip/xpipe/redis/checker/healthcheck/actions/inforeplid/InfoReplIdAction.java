@@ -1,54 +1,54 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid;
 
-import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.command.CommandChainException;
+import com.ctrip.xpipe.command.ExecutorSequenceCommandChain;
+import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.redis.checker.healthcheck.AbstractHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
-import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.CrossRegionKeeperSessionManager;
-import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Triple;
 
-import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Checks that a backup-dc redis replicates from the Keeper the meta claims: the redis'
  * {@code master_replid} must equal the upstream Keeper's {@code master_replid} or
  * {@code master_replid2}.
  *
- * <p>Threading: both INFO commands are issued from the scheduling thread, but their callbacks are
- * completed by the netty event loop (or the command-timeout thread on timeout). Every callback
- * therefore does nothing but {@link #dispatch}, which hands the work to the action's executor --
- * meta lookups deep-clone a shard and {@code findOrCreateSession} takes a shared lock, neither of
- * which belongs on an event loop shared by every channel.
+ * <p>The check is a {@link SequenceCommandChain} of two INFO commands -- the redis' own, then the
+ * Keeper's. {@link ExecutorSequenceCommandChain} keeps every stage on this action's executor, so
+ * neither the parsing nor the meta lookup lands on the netty event loop that completed the previous
+ * stage.
  *
- * <p>{@link #inFlight} keeps at most one check per instance outstanding: the periodic task returns
- * immediately, so without it a tick would overlap the previous one. It is written from callback
- * threads and read from the scheduling thread, hence the {@link AtomicBoolean}.
+ * <p>Ticks never wait for each other: each one starts a check and stamps it with
+ * {@link #latestCheck}, and a result is discarded only when one from a newer check has already been
+ * published -- i.e. when it came back late.
+ *
+ * <p>There is deliberately no in-flight guard. Such a guard is a latch that a check failing to
+ * complete would leave closed, muting this instance with nothing able to release it -- the stage
+ * between the two INFO commands is covered by no command timeout, so that is reachable. Here the
+ * worst case of a check that never completes is discarded work, never silence.
  */
 public class InfoReplIdAction extends AbstractHealthCheckAction<RedisHealthCheckInstance> {
 
     protected static final Logger logger = LoggerFactory.getLogger(InfoReplIdAction.class);
 
-    private static final String MASTER_REPLID = "master_replid";
-
-    private static final String MASTER_REPLID2 = "master_replid2";
-
     private final CrossRegionKeeperSessionManager crossRegionKeeperSessionManager;
 
     private final MetaCache metaCache;
 
-    private final AtomicBoolean inFlight = new AtomicBoolean(false);
+    /** Stamp handed to each started check. */
+    private final AtomicLong latestCheck = new AtomicLong();
+
+    /** Stamp of the newest check whose result has been published. */
+    private final AtomicLong publishedCheck = new AtomicLong();
 
     public InfoReplIdAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
                             ExecutorService executors, CrossRegionKeeperSessionManager crossRegionKeeperSessionManager,
@@ -60,139 +60,102 @@ public class InfoReplIdAction extends AbstractHealthCheckAction<RedisHealthCheck
 
     @Override
     protected void doTask() {
-        if (!inFlight.compareAndSet(false, true)) {
-            logger.debug("[doTask][previous check still running] {}", instance.getCheckInfo().getHostPort());
-            return;
-        }
-        try {
-            fetchSlaveInfo();
-        } catch (Throwable th) {
-            fail(th);
-        }
-    }
+        long checkId = latestCheck.incrementAndGet();
 
-    private void fetchSlaveInfo() {
-        instance.getRedisSession().info(InfoCommand.INFO_TYPE.REPLICATION,
-                new Callbackable<InfoResultExtractor>() {
-                    @Override
-                    public void success(InfoResultExtractor slaveInfo) {
-                        dispatch(() -> onSlaveInfo(slaveInfo));
-                    }
+        SessionInfoCommand slaveInfo = new SessionInfoCommand(instance.getRedisSession());
+        KeeperReplIdCommand keeperReplId = new KeeperReplIdCommand(instance, slaveInfo.future(),
+                crossRegionKeeperSessionManager, metaCache, executors);
 
-                    @Override
-                    public void fail(Throwable throwable) {
-                        dispatch(() -> InfoReplIdAction.this.fail(throwable));
-                    }
-                });
-    }
-
-    private void onSlaveInfo(InfoResultExtractor slaveInfo) {
-        String slaveReplId = slaveInfo.extract(MASTER_REPLID);
-        String masterHost = slaveInfo.getKeyKeeperMasterHost();
-        int masterPort = slaveInfo.getKeyKeeperMasterPort();
-        if (slaveReplId == null || masterHost == null || masterPort <= 0) {
-            logger.info("[doTask][slave info incomplete] {}", instance.getCheckInfo().getHostPort());
-            finish(new InfoReplIdActionContext(instance, new IllegalStateException("slave info incomplete")));
-            return;
-        }
-
-        List<KeeperMeta> keepers = metaCache.getKeeperOfDcClusterShard(
-                instance.getCheckInfo().getDcId(),
-                instance.getCheckInfo().getClusterId(),
-                instance.getCheckInfo().getShardId());
-        boolean keeperInMeta = keepers.stream()
-                .anyMatch(keeper -> masterHost.equals(keeper.getIp()) && masterPort == keeper.getPort());
-        if (!keeperInMeta) {
-            logger.info("[doTask][keeper not in meta] {} master={}:{}",
-                    instance.getCheckInfo().getHostPort(), masterHost, masterPort);
-            finish(new InfoReplIdActionContext(instance,
-                    new KeeperNotInMetaException(String.format("keeper not in meta, master=%s:%d", masterHost, masterPort))));
-            return;
-        }
-
-        fetchKeeperInfo(slaveReplId, masterHost, masterPort);
-    }
-
-    /** Runs off the event loop already, since {@link #onSlaveInfo} is itself dispatched. */
-    private void fetchKeeperInfo(String slaveReplId, String masterHost, int masterPort) {
-        RedisSession upstream = crossRegionKeeperSessionManager
-                .findOrCreateSession(new HostPort(masterHost, masterPort));
-        upstream.info(InfoCommand.INFO_TYPE.REPLICATION, new Callbackable<InfoResultExtractor>() {
-            @Override
-            public void success(InfoResultExtractor keeperInfo) {
-                dispatch(() -> onKeeperInfo(slaveReplId, keeperInfo));
-            }
-
-            @Override
-            public void fail(Throwable throwable) {
-                dispatch(() -> InfoReplIdAction.this.fail(throwable));
-            }
-        });
+        SequenceCommandChain chain = new ExecutorSequenceCommandChain(executors);
+        chain.add(slaveInfo);
+        chain.add(keeperReplId);
+        chain.future().addListener(chainFuture -> publish(checkId, chainFuture, keeperReplId.future()));
+        chain.execute(executors);
     }
 
     /**
-     * The only thing an INFO callback does on the netty event loop. Guarantees the check always
-     * reaches {@link #finish}: either the work completes and publishes, or it throws and becomes a
-     * failure context. Leaving {@link #inFlight} set would silently stop this instance forever.
+     * Publishes a finished check, unless it has been superseded.
+     *
+     * <p>Package-private so a test can drive it with a chain that failed before its second stage ran;
+     * that is the one path on which {@code resultFuture} has not completed by itself.
      */
-    private void dispatch(Runnable work) {
-        try {
-            executors.execute(new AbstractExceptionLogTask() {
-                @Override
-                protected void doRun() {
-                    try {
-                        work.run();
-                    } catch (Throwable th) {
-                        InfoReplIdAction.this.fail(th);
-                    }
-                }
-            });
-        } catch (RejectedExecutionException e) {
-            // the pool uses AbortPolicy, so a shutdown (or a saturated queue) surfaces here
-            logger.error("[dispatch][rejected] {}", instance.getCheckInfo().getHostPort(), e);
-            inFlight.set(false);
-        }
-    }
-
-    private void onKeeperInfo(String slaveReplId, InfoResultExtractor keeperInfo) {
-        String keeperReplId = keeperInfo.extract(MASTER_REPLID);
-        String keeperReplId2 = keeperInfo.extract(MASTER_REPLID2);
-        if (keeperReplId == null) {
-            logger.info("[doTask][keeper info incomplete] {}", instance.getCheckInfo().getHostPort());
-            finish(new InfoReplIdActionContext(instance, new IllegalStateException("keeper info incomplete")));
-            return;
+    void publish(long checkId, CommandFuture<?> chainFuture,
+                 CommandFuture<Triple<String, String, String>> resultFuture) {
+        Throwable cause = chainFuture.isSuccess() ? null : domainCause(chainFuture.cause());
+        if (null != cause) {
+            // A chain stops at its failing stage, so the keeper stage may not have run at all and its
+            // future would stay incomplete for good. Close it before anything else: the command
+            // object outlives this notification, and a future handed to a listener must always reach
+            // a terminal state. (When the keeper stage did run and failed, it is already done.)
+            if (!resultFuture.isDone()) {
+                resultFuture.setFailure(
+                        new IllegalStateException("keeper stage skipped, a previous stage failed", cause));
+            }
+            // stage failures are ordinary here (a command timeout, an INFO without a master), and
+            // the stages already logged the domain ones; this records the check as a whole
+            logger.info("[publish][fail] {}", instance.getCheckInfo().getHostPort(), cause);
         }
 
-        boolean replIdMatch = slaveReplId.equals(keeperReplId)
-                || (keeperReplId2 != null && slaveReplId.equals(keeperReplId2));
-        if (!replIdMatch) {
-            logger.info("[doTask][replId match={}] {} slaveReplId={}, keeperReplId={}, keeperReplId2={}",
-                    replIdMatch, instance.getCheckInfo().getHostPort(), slaveReplId, keeperReplId, keeperReplId2);
-        }
-        finish(new InfoReplIdActionContext(instance, new Triple<>(slaveReplId, keeperReplId, keeperReplId2)));
-    }
-
-    /**
-     * Sole exit of a check: releases {@link #inFlight} so the next tick may start, then publishes.
-     * A result arriving after stop is dropped -- the instance may already be unregistered.
-     */
-    private void finish(InfoReplIdActionContext context) {
-        inFlight.set(false);
         if (!getLifecycleState().isStarted()) {
-            logger.debug("[finish][not started, drop] {}", instance.getCheckInfo().getHostPort());
+            logger.debug("[publish][not started, drop] {}", instance.getCheckInfo().getHostPort());
             return;
         }
-        notifyListeners(context);
+
+        if (!claimPublish(checkId)) {
+            logger.info("[publish][late, drop] check {} arrived after newer result {} {}",
+                    checkId, publishedCheck.get(), instance.getCheckInfo().getHostPort());
+            return;
+        }
+
+        if (null == cause) {
+            notifyListeners(new InfoReplIdActionContext(instance, resultFuture.getNow()));
+        } else {
+            notifyListeners(new InfoReplIdActionContext(instance, cause));
+        }
     }
 
-    private void fail(Throwable th) {
-        logger.info("[doTask][fail] {}", instance.getCheckInfo().getHostPort(), th);
-        finish(new InfoReplIdActionContext(instance, th));
+    /**
+     * Claims the right to publish this check's result, dropping it only when one from a newer check
+     * has already been published -- i.e. when it came back late.
+     *
+     * <p>The comparison is against the last <em>published</em> stamp, not the last <em>started</em>
+     * one. Were it the latter, a check that consistently outlives a tick interval would always find a
+     * newer check already started and every result would be dropped: slow would mean silent, which is
+     * the very outcome the stamp exists to avoid.
+     */
+    private boolean claimPublish(long checkId) {
+        while (true) {
+            long published = publishedCheck.get();
+            if (checkId <= published) {
+                return false;
+            }
+            if (publishedCheck.compareAndSet(published, checkId)) {
+                return true;
+            }
+        }
+    }
+
+    /**
+     * The chain reports a stage failure wrapped in {@link CommandChainException}, but listeners
+     * branch on the concrete type (a {@link KeeperNotInMetaException} alerts, anything else clears
+     * the repl-ids), so hand them the original cause.
+     */
+    private Throwable domainCause(Throwable cause) {
+        Throwable unwrapped = cause;
+        while (unwrapped instanceof CommandChainException && null != unwrapped.getCause()) {
+            unwrapped = unwrapped.getCause();
+        }
+        return unwrapped;
     }
 
     @Override
     protected Logger getHealthCheckLogger() {
         return logger;
+    }
+
+    @VisibleForTesting
+    long latestCheckStamp() {
+        return latestCheck.get();
     }
 
 }

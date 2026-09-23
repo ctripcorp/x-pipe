@@ -1,11 +1,11 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
-import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.OneWaySupport;
@@ -44,9 +44,6 @@ public class DefaultInfoReplIdPingActionCollector extends AbstractInfoReplIdPing
 
     @Autowired
     private CheckerConfig config;
-
-    @Autowired
-    private AlertManager alertManager;
 
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
@@ -154,8 +151,9 @@ public class DefaultInfoReplIdPingActionCollector extends AbstractInfoReplIdPing
                     hs.updateReplIds(replIds.getFirst(), replIds.getMiddle(), replIds.getLast());
                 } else if (context.getCause() instanceof KeeperNotInMetaException) {
                     // 连错 keeper：不拉出，改为告警
-                    alertManager.alert(context.instance().getCheckInfo(),
-                            ALERT_TYPE.REPL_WRONG_SLAVE, context.getCause().getMessage());
+                    EventMonitor.DEFAULT.logAlertEvent(String.format("%s, %s, %s",
+                            ALERT_TYPE.REPL_WRONG_SLAVE, context.instance().getCheckInfo(),
+                            context.getCause().getMessage()));
                 } else {
                     hs.updateReplIds(null, null, null);
                 }
