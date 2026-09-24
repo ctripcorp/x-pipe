@@ -1,0 +1,19 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdAction.java
+  s_9f61b3a8669d28::t_2e53ad1846531a 56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "c6fbd62cbb76982be5724622e74274469a90105c",
+  "prompts": {},
+  "sessions": {
+    "s_9f61b3a8669d28": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "155ce38a-ac9f-4193-9a35-bffb46f89020",
+        "model": "ep-s52bpjk9"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}

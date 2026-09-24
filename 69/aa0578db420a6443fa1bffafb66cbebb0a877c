@@ -1,0 +1,33 @@
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdActionTest.java
+  s_9f61b3a8669d28::t_14ca01672ed176 25-26,32,34-35,80-81,83,105,121-122,124-126,129-131,138-139,150-151,160-161,177-178,186,196,198,203-204,212-214,216-217,223,226,229,232,234-236,238-239,243-244,247,251-254,258-259,263,265-267,271-272,279-280,289-290,292,295,300-301,304-308,313-317,320-323,326-327,330-331,350,366
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/SessionInfoCommand.java
+  s_9f61b3a8669d28::t_797ad24ad59609 1-46
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/KeeperReplIdCommand.java
+  s_9f61b3a8669d28::t_ed72dc141d2ef2 61,72-73
+  s_9f61b3a8669d28::t_a3f46a5d2c83e4 80
+  s_9f61b3a8669d28::t_9feedfa960b82a 1-60,62-71,74-79,81-93,95-116
+  s_9f61b3a8669d28::t_db094c42c149ce 94
+core/src/main/java/com/ctrip/xpipe/command/ExecutorSequenceCommandChain.java
+  s_9f61b3a8669d28::t_37a75103169581 23-30
+  s_9f61b3a8669d28::t_6821ea1fbac2c0 1-22,31-40
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdAction.java
+  s_9f61b3a8669d28::t_f036024eedee0f 67,82-86
+  s_9f61b3a8669d28::t_5c32d3f79f7300 63-64,68
+  s_9f61b3a8669d28::t_5f528502c4e52a 4-6,24-27,29-31,41,59,62,65,69-71,74-76,79-81,91-93,95-98,100
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "69aa0578db420a6443fa1bffafb66cbebb0a877c",
+  "prompts": {},
+  "sessions": {
+    "s_9f61b3a8669d28": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "155ce38a-ac9f-4193-9a35-bffb46f89020",
+        "model": "ep-s52bpjk9"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}

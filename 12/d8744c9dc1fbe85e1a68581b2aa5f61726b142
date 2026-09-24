@@ -1,0 +1,23 @@
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdActionTest.java
+  s_9f61b3a8669d28::t_fdc46c9500f628 343-374
+  s_9f61b3a8669d28::t_aef5dfbd193b86 3-4
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdAction.java
+  s_9f61b3a8669d28::t_b1616aa38beab1 114-132,134-141,146
+  s_9f61b3a8669d28::t_1357dda9845ec8 133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "12d8744c9dc1fbe85e1a68581b2aa5f61726b142",
+  "prompts": {},
+  "sessions": {
+    "s_9f61b3a8669d28": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "155ce38a-ac9f-4193-9a35-bffb46f89020",
+        "model": "ep-s52bpjk9"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
