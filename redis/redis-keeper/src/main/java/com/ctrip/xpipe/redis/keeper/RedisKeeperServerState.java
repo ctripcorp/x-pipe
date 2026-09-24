@@ -18,6 +18,12 @@ public interface RedisKeeperServerState{
 	void becomeActive(Endpoint masterAddress);
 	
 	void becomeBackup(Endpoint masterAddress);
+
+	/**
+	 * Enter PREPARE: stop serving this store lease (Phase Rb) and switch runtime state.
+	 * Idempotent when already PREPARE.
+	 */
+	void becomePrepare(Endpoint masterAddress);
 	
 	void setShardStatus(ShardStatus shardStatus) throws IOException;
 	

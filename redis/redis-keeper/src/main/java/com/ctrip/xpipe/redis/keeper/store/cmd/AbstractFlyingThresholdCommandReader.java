@@ -76,8 +76,16 @@ public abstract class AbstractFlyingThresholdCommandReader<R> implements Command
     }
 
     @Override
-    public void flushed(Object cmdContent){
+    public void flushed(R cmdContent){
+        onFlushed(cmdContent);
         checkOpenGate(flying.decrementAndGet());
+    }
+
+    /**
+     * Hook for subclasses when a previously emitted read result is fully flushed
+     * (e.g. Netty {@code ChannelFuture} complete). Default no-op.
+     */
+    protected void onFlushed(R cmdContent) {
     }
 
 }

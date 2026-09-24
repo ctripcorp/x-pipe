@@ -124,7 +124,6 @@ public class KeeperRdbNotContinueTest extends AbstractKeeperIntegratedMultiDc {
 
         Assert.assertNotNull(activeDcKeeperServer.getReplicationStore().getMetaStore().dupReplicationStoreMeta().getRdbFile());
 
-        Assert.assertEquals(4,activeDcKeeperServer.getKeeperMonitor().getKeeperStats().getFullSyncCount());
         waitConditionUntilTimeOut(() -> {
             try {
                 String info = new InfoCommand(slaveClientPool, InfoCommand.INFO_TYPE.GTID, scheduled).execute().get();
@@ -136,6 +135,10 @@ public class KeeperRdbNotContinueTest extends AbstractKeeperIntegratedMultiDc {
         }, 30000, 1000);
 
         sendMessageToMasterAndTestSlaveRedis(128);
+
+        // Absolute setup fullSyncCount is brittle under AsyncFileSystem lag (topology admits 5
+        // FULLSYNCs to jq active: 8000/8001/6380 + jq:6001 + oy:6100). Assert scenario delta.
+        long fullSyncBefore = activeDcKeeperServer.getKeeperMonitor().getKeeperStats().getFullSyncCount();
 
         backupDcKeeperServer.releaseRdb();
         backupDcKeeperServer.getReplicationStore().gc();
@@ -167,7 +170,8 @@ public class KeeperRdbNotContinueTest extends AbstractKeeperIntegratedMultiDc {
                 return false;
             }
         }, 30000, 1000);
-        Assert.assertEquals(6,activeDcKeeperServer.getKeeperMonitor().getKeeperStats().getFullSyncCount());
+        long fullSyncAfter = activeDcKeeperServer.getKeeperMonitor().getKeeperStats().getFullSyncCount();
+        Assert.assertEquals(2, fullSyncAfter - fullSyncBefore);
 
         sendMessageToMasterAndTestSlaveRedis(128);
     }

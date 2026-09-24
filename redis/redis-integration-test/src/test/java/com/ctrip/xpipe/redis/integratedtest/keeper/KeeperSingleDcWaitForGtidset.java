@@ -38,8 +38,9 @@ public class KeeperSingleDcWaitForGtidset extends AbstractKeeperIntegratedSingle
 
         sleep(2000);
 
-        //make sure redis has more log
+        //make sure redis has more log — wait slaves catch up so offset exceeds backup
         sendMessageToMaster(redisMaster, 1);
+        waitSlavesReplOffsetCatchUp(redisMaster, slaves);
 
         logger.info("make slaves slave of keeper {}:{}", backupKeeper.getIp(), backupKeeper.getPort());
         xslaveof(backupKeeper.getIp(), backupKeeper.getPort(), slaves);

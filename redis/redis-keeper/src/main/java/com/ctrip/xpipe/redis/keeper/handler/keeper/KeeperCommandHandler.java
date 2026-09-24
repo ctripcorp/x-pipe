@@ -71,6 +71,9 @@ public class KeeperCommandHandler extends AbstractCommandHandler {
 				case BACKUP:
 					currentState.becomeBackup(masterAddress);
 					break;
+				case PREPARE:
+					currentState.becomePrepare(masterAddress);
+					break;
 				case UNKNOWN:
 					throw new IllegalStateException("state can not change to unknown!");
 				default:

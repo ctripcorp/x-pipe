@@ -66,6 +66,8 @@ public class KeeperMultiDcChangePrimary extends AbstractKeeperIntegratedMultiDc{
 		//change backup to primary
 		
 		when(dcMetaCache.getShardRedises(getClusterDbId(), getShardDbId())).thenReturn(getDcRedises(backupDc, getClusterId(), getShardId()));
+		// D31 makeKeepersOk needs getKeeperActive; null → assignRolesOrNull skip setstate
+		when(currentMetaManager.getKeeperActive(getClusterDbId(), getShardDbId())).thenReturn(getKeeperActive(backupDc));
 		when(currentMetaManager.getSurviveKeepers(getClusterDbId(), getShardDbId())).thenReturn(getDcKeepers(backupDc, getClusterId(), getShardId()));
 
 		ClusterMeta clusterMeta = mock(ClusterMeta.class);

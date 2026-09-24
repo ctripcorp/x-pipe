@@ -321,7 +321,7 @@ public class CKStoreTest extends AbstractRedisKeeperTest {
         // ======================================================================================
 
         this.ckStore = Mockito.spy(originStore);
-        store = new GtidReplicationStore(this.ckStore, baseDir, keeperConfig, randomKeeperRunid(), createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class));
+        store = new GtidReplicationStore(this.ckStore, baseDir, keeperConfig, randomKeeperRunid(), createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem(), getReplId());
     }
 
     @Test

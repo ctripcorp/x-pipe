@@ -5,13 +5,16 @@ import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.GtidSetReplicationProgress;
 import com.ctrip.xpipe.redis.core.store.RdbFileListener;
 import com.ctrip.xpipe.redis.core.store.RdbStore;
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ReplStage;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntSupplier;
 
 /**
  * @author lishanglin
@@ -27,8 +30,9 @@ public class GtidRdbStore extends DefaultRdbStore implements RdbStore {
     protected String masterUuid;
 
     public GtidRdbStore(File file, String replId, long rdbOffset, EofType eofType, ReplStage.ReplProto replProto,
-                        String gtidSet, String gtidLost, String masterUuid) throws IOException {
-        super(file, replId, rdbOffset, eofType);
+                        String gtidSet, String gtidLost, String masterUuid, AsyncFileSystem asyncFileSystem,
+                        IntSupplier asyncWriteMaxBytes, ReplId fileSystemReplId) throws IOException {
+        super(file, replId, rdbOffset, eofType, asyncFileSystem, asyncWriteMaxBytes, fileSystemReplId);
         this.replProto = replProto;
         this.gtidSet.set(gtidSet);
         this.gtidLost.set(gtidLost);
