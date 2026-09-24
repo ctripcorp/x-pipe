@@ -131,7 +131,7 @@ class StorageUtil {
 
     static <T> CompletableFuture<T> supply(ExecutorService executor, java.util.function.Supplier<T> task) {
         try {
-            return CompletableFuture.supplyAsync(task, executor);
+            return CompletableFuture.supplyAsync(wrapSupplier(task), executor);
         } catch (Exception e) {
             return CompletableFuture.failedFuture(e);
         }
@@ -139,7 +139,7 @@ class StorageUtil {
 
     static <T> CompletableFuture<T> supply(ExecutorService executor, java.util.function.Supplier<T> task, ByteBuf data) {
         try {
-            return CompletableFuture.supplyAsync(task, executor);
+            return CompletableFuture.supplyAsync(wrapSupplier(task), executor);
         } catch (Exception e) {
             data.release();
             return CompletableFuture.failedFuture(e);
@@ -148,10 +148,32 @@ class StorageUtil {
 
     static CompletableFuture<Void> run(ExecutorService executor, Runnable task) {
         try {
-            return CompletableFuture.runAsync(task, executor);
+            return CompletableFuture.runAsync(wrapRunnable(task), executor);
         } catch (RejectedExecutionException e) {
             return CompletableFuture.failedFuture(e);
         }
+    }
+
+    private static <T> java.util.function.Supplier<T> wrapSupplier(java.util.function.Supplier<T> task) {
+        return () -> {
+            try {
+                return task.get();
+            } catch (Throwable t) {
+                logger.warn("async storage IO task failed", t);
+                throw t;
+            }
+        };
+    }
+
+    private static Runnable wrapRunnable(Runnable task) {
+        return () -> {
+            try {
+                task.run();
+            } catch (Throwable t) {
+                logger.warn("async storage IO task failed", t);
+                throw t;
+            }
+        };
     }
 
     static String asyncFileKey(String path) {
