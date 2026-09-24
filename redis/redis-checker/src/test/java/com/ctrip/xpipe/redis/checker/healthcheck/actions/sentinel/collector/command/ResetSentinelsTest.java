@@ -8,7 +8,9 @@ import com.ctrip.xpipe.redis.checker.SentinelManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.exception.SentinelsException;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
@@ -50,10 +52,13 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
     @Mock
     private CheckerConfig checkerConfig;
 
+    @Mock
+    private CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService;
+
     @Before
     public void init() throws Exception {
         resetSentinels = new ResetSentinels(new SentinelHelloCollectContext(), metaCache,
-                keyedObjectPool, scheduled, resetExecutor, sentinelManager, checkerConfig);
+                keyedObjectPool, scheduled, resetExecutor, sentinelManager, checkerConfig, currentDcKeeperContainerAddressService);
         resetSentinels.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()).setScheduled(scheduled);
     }
 
@@ -146,7 +151,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
             try {
                 verify(checkerConfig, times(3)).getDefaultSentinelQuorumConfig();
                 verify(sentinelManager, times(3)).slaves(any(), any());
-                verify(metaCache, never()).getAllKeepers();
+                verify(metaCache, never()).getKeeperOfDcClusterShard(anyString(), anyString(), anyString());
                 return true;
             } catch (Throwable th) {
                 return false;
@@ -155,12 +160,19 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
 
     }
 
+    KeeperMeta keeperMeta(String ip, int port) {
+        KeeperMeta keeperMeta = new KeeperMeta();
+        keeperMeta.setIp(ip);
+        keeperMeta.setPort(port);
+        return keeperMeta;
+    }
+
     @Test
     public void rateLimit1() throws Exception {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
 
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(), anyString(), anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
         Sentinel sentinel5000 = new Sentinel(hello5000.getSentinelAddr().toString(), hello5000.getSentinelAddr().getHost(), hello5000.getSentinelAddr().getPort());
@@ -280,7 +292,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
                 "repl_backlog_histlen:28454078\r\n\r\n");
 
 
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(),anyString(),anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         when(sentinelManager.reset(any(), any())).thenReturn(new AbstractCommand<Long>() {
             @Override
@@ -322,7 +334,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
 
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(),anyString(),anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
         Sentinel sentinel5000 = new Sentinel(hello5000.getSentinelAddr().toString(), hello5000.getSentinelAddr().getHost(), hello5000.getSentinelAddr().getPort());
@@ -441,7 +453,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
                 "repl_backlog_first_byte_offset:120501034\r\n" +
                 "repl_backlog_histlen:28454078\r\n\r\n");
 
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(),anyString(),anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         when(sentinelManager.reset(any(), any())).thenReturn(new AbstractCommand<Long>() {
             @Override
@@ -482,7 +494,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
 
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(),anyString(),anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
         Sentinel sentinel5000 = new Sentinel(hello5000.getSentinelAddr().toString(), hello5000.getSentinelAddr().getHost(), hello5000.getSentinelAddr().getPort());
@@ -594,7 +606,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
             Assert.fail();
         }
 
-        verify(metaCache, times(5)).getAllKeepers();
+        verify(metaCache, times(5)).getKeeperOfDcClusterShard(anyString(),anyString(),anyString());
         verify(sentinelManager, times(5)).slaves(any(), anyString());
         verify(sentinelManager, never()).reset(any(), anyString());
     }
@@ -603,7 +615,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
     public void masterLostSlaves() throws Exception {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(),anyString(),anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
         Sentinel sentinel5000 = new Sentinel(hello5000.getSentinelAddr().toString(), hello5000.getSentinelAddr().getHost(), hello5000.getSentinelAddr().getPort());
@@ -733,7 +745,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
             Assert.assertTrue(th.getCause().getCause().getMessage().contains("lost slaves"));
         }
 
-        verify(metaCache, times(5)).getAllKeepers();
+        verify(metaCache, times(5)).getKeeperOfDcClusterShard(anyString(),anyString(),anyString());
         verify(sentinelManager, times(5)).slaves(any(), anyString());
         verify(sentinelManager, never()).reset(any(), anyString());
 
@@ -744,7 +756,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
     public void masterRoleFailed() throws Exception {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(),anyString(),anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
         Sentinel sentinel5000 = new Sentinel(hello5000.getSentinelAddr().toString(), hello5000.getSentinelAddr().getHost(), hello5000.getSentinelAddr().getPort());
@@ -858,7 +870,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
             Assert.assertTrue(th.getCause().getCause().getMessage().contains("info replication master"));
         }
 
-        verify(metaCache, times(5)).getAllKeepers();
+        verify(metaCache, times(5)).getKeeperOfDcClusterShard(anyString(),anyString(),anyString());
         verify(sentinelManager, times(5)).slaves(any(), anyString());
         verify(sentinelManager, never()).reset(any(), anyString());
     }
@@ -868,7 +880,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
 
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(),anyString(),anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
         Sentinel sentinel5000 = new Sentinel(hello5000.getSentinelAddr().toString(), hello5000.getSentinelAddr().getHost(), hello5000.getSentinelAddr().getPort());
@@ -1021,7 +1033,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
 
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(),anyString(),anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
         Sentinel sentinel5000 = new Sentinel(hello5000.getSentinelAddr().toString(), hello5000.getSentinelAddr().getHost(), hello5000.getSentinelAddr().getPort());
@@ -1179,7 +1191,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
 
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(),anyString(),anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
         Sentinel sentinel5000 = new Sentinel(hello5000.getSentinelAddr().toString(), hello5000.getSentinelAddr().getHost(), hello5000.getSentinelAddr().getPort());
@@ -1317,7 +1329,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
 
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(),anyString(),anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
         Sentinel sentinel5000 = new Sentinel(hello5000.getSentinelAddr().toString(), hello5000.getSentinelAddr().getHost(), hello5000.getSentinelAddr().getPort());
@@ -1474,7 +1486,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
 
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(),anyString(),anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
         Sentinel sentinel5000 = new Sentinel(hello5000.getSentinelAddr().toString(), hello5000.getSentinelAddr().getHost(), hello5000.getSentinelAddr().getPort());
@@ -1636,7 +1648,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
 
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(),anyString(),anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
         Sentinel sentinel5000 = new Sentinel(hello5000.getSentinelAddr().toString(), hello5000.getSentinelAddr().getHost(), hello5000.getSentinelAddr().getPort());
@@ -1776,7 +1788,7 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
     public void sentinelSlavesFailed() throws Exception {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(5, 3));
-        when(metaCache.getAllKeepers()).thenReturn(Sets.newHashSet(new HostPort(LOCAL_HOST, 8000), new HostPort(LOCAL_HOST, 8001), new HostPort(LOCAL_HOST, 8002)));
+        when(metaCache.getKeeperOfDcClusterShard(anyString(),anyString(),anyString())).thenReturn(Lists.newArrayList(keeperMeta(LOCAL_HOST, 8000), keeperMeta(LOCAL_HOST, 8001), keeperMeta(LOCAL_HOST, 8002)));
 
         SentinelHello hello5000 = new SentinelHello(new HostPort(LOCAL_HOST, 5000), new HostPort(LOCAL_HOST, 6379), "cluster+shard+activeDc");
         Sentinel sentinel5000 = new Sentinel(hello5000.getSentinelAddr().toString(), hello5000.getSentinelAddr().getHost(), hello5000.getSentinelAddr().getPort());

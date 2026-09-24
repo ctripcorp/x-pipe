@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.meta.server.spring;
 import com.ctrip.xpipe.lifecycle.SpringComponentRegistry;
 import com.ctrip.xpipe.redis.core.entity.ApplierTransMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
+import com.ctrip.xpipe.redis.core.keeper.container.TestCurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
@@ -46,6 +48,15 @@ public class TestProfile extends AbstractProfile implements ApplicationContextAw
 	@Bean
 	public SpringComponentRegistry getSpringRegistry(){
 		return new SpringComponentRegistry((ConfigurableApplicationContext)applicationContext);
+	}
+
+	/**
+	 * 生产上由 Production 基于 ZkClient 装配，watch 本机房 keepercontainer 注册路径；
+	 * 单测不依赖真实注册数据，用内存实现顶上。
+	 */
+	@Bean
+	public CurrentDcKeeperContainerAddressService getCurrentDcKeeperContainerAddressService(){
+		return new TestCurrentDcKeeperContainerAddressService();
 	}
 
 	@Bean

@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
@@ -92,7 +91,14 @@ public class DefaultKeeperContainerAnalyzerService implements KeeperContainerAna
                                                                   Map<String, Long> peerDataStandardMap,
                                                                  KeeperContainerOverloadStandardModel defaultOverloadStandard,
                                                                  KeeperContainerUsedInfoModel infoModel){
-        KeepercontainerTbl keepercontainerTbl = keeperContainerService.find(infoModel.getKeeperIp());
+        // 按 id 定位而不是按 IP：容器的 keeperIp 是 ZK 反查到的实时 IP，DB 里存的是占位值，按 IP 查不到
+        Long keeperContainerId = infoModel.getKeeperContainerId();
+        KeepercontainerTbl keepercontainerTbl = keeperContainerId == null ? null : keeperContainerService.find(keeperContainerId);
+        if (keepercontainerTbl == null) {
+            logger.warn("[getRealStandard] keepercontainer not found, keeperContainerId: {}, model: {}, fallback to default standard",
+                    keeperContainerId, infoModel);
+            return defaultOverloadStandard;
+        }
         infoModel.setDiskType(keepercontainerTbl.getKeepercontainerDiskType());
         infoModel.setKeeperContainerActive(keepercontainerTbl.isKeepercontainerActive());
         infoModel.setExpectFullSyncTime(getExpectFullSyncTime(keepercontainerTbl.getKeepercontainerDiskType(), infoModel.getActiveRedisUsedMemory()));

@@ -15,10 +15,8 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -32,8 +30,8 @@ import java.util.concurrent.TimeUnit;
  * 另有一个定时任务做兜底全量重建，覆盖 watch 事件丢失与 session 重连后事件补发不全的情况，
  * 因此不需要单独监听连接状态。这个模式与 metaserver 维护集群成员列表的做法一致。
  */
-public class DefaultKeeperContainerAddressService extends AbstractLifecycle
-        implements KeeperContainerAddressService, TopElement {
+public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifecycle
+        implements CurrentDcKeeperContainerAddressService, TopElement {
 
     private static final long DEFAULT_REFRESH_INTERVAL_MILLI = 30 * 1000L;
 
@@ -49,11 +47,11 @@ public class DefaultKeeperContainerAddressService extends AbstractLifecycle
      */
     private volatile Map<String, String> hostnameToIp = new HashMap<>();
 
-    public DefaultKeeperContainerAddressService(ZkClient zkClient) {
+    public DefaultCurrentDcKeeperContainerAddressService(ZkClient zkClient) {
         this(zkClient, DEFAULT_REFRESH_INTERVAL_MILLI);
     }
 
-    public DefaultKeeperContainerAddressService(ZkClient zkClient, long refreshIntervalMilli) {
+    public DefaultCurrentDcKeeperContainerAddressService(ZkClient zkClient, long refreshIntervalMilli) {
         this.zkClient = zkClient;
         this.refreshIntervalMilli = refreshIntervalMilli;
     }
@@ -103,6 +101,12 @@ public class DefaultKeeperContainerAddressService extends AbstractLifecycle
     public String getIpByHostname(String hostname) {
         if (null == hostname || hostname.isEmpty()) return null;
         return hostnameToIp.get(hostname);
+    }
+
+    @Override
+    public Map<String, String> getAllHostnameToIp() {
+        // 返回快照副本，避免外部修改影响内部状态
+        return new HashMap<>(hostnameToIp);
     }
 
     /**

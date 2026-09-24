@@ -18,8 +18,11 @@ public interface KeeperContainerCheckerService {
 
     List<KeeperInstanceMeta> getAllKeepers(String keeperContainerIp);
 
-    void resetKeeper(String ip, String hostname, Long replId);
+    /**
+     * @param dcName keeper 所在机房，hostname 非空时用于定向反查 IP；为空则退化为查询所有机房
+     */
+    void resetKeeper(String dcName, String ip, String hostname, Long replId);
 
-    void releaseRdb(String ip, String hostname, int port, Long replId);
+    void releaseRdb(String dcName, String ip, String hostname, int port, Long replId);
 
 }

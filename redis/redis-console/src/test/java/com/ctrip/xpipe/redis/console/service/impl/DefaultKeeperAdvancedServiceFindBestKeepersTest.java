@@ -25,9 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,7 +56,8 @@ public class DefaultKeeperAdvancedServiceFindBestKeepersTest {
     public void setUp() {
         executor = Executors.newSingleThreadExecutor();
         ReflectionTestUtils.setField(keeperAdvancedService, "executor", executor);
-        when(redisService.findAllRedisWithSameIP(anyString())).thenReturn(Collections.<RedisTbl>emptyList());
+        // 端口记账已统一按 keepercontainer_id
+        when(redisService.findAllKeepersByKeeperContainerId(anyLong())).thenReturn(Collections.<RedisTbl>emptyList());
         when(consoleConfig.getKeeperAutoSelectDiskType()).thenReturn("BM");
     }
 

@@ -4,8 +4,8 @@ import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.keeper.container.HostNameVerification;
-import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import okhttp3.mockwebserver.MockResponse;
@@ -72,7 +72,7 @@ public class DefaultKeeperContainerServiceTest extends AbstractMetaServerTest {
     @Test
     public void testResolveByHostname() throws Exception {
         // 准备 mock addressService
-        KeeperContainerAddressService addressService = mock(KeeperContainerAddressService.class);
+        CurrentDcKeeperContainerAddressService addressService = mock(CurrentDcKeeperContainerAddressService.class);
         when(addressService.getIpByHostname("pod-a-0")).thenReturn("127.0.0.1");
 
         // 容器形态: IP 为空,有 hostname
@@ -103,7 +103,7 @@ public class DefaultKeeperContainerServiceTest extends AbstractMetaServerTest {
     @Test
     public void testResolveByHostnameWithZeroIp() throws Exception {
         // 准备 mock addressService
-        KeeperContainerAddressService addressService = mock(KeeperContainerAddressService.class);
+        CurrentDcKeeperContainerAddressService addressService = mock(CurrentDcKeeperContainerAddressService.class);
         when(addressService.getIpByHostname("pod-b-0")).thenReturn("127.0.0.1");
 
         // 容器形态: IP 为 0.0.0.0,有 hostname

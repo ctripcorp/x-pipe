@@ -407,6 +407,61 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
         return count >= quorum();
     }
 
+    public String resolveKeeperContainerIp(String dcId, String hostname) {
+        ConsoleService service = getServiceByDc(dcId);
+        if (service == null) {
+            logger.warn("[resolveKeeperContainerIp] unknown dc: {}", dcId);
+            return null;
+        }
+        return service.resolveKeeperContainerIp(hostname);
+    }
+
+    public Map<String, String> getAllKeeperContainerHostnameToIpMap(String dcId) {
+        ConsoleService service = getServiceByDc(dcId);
+        if (service == null) {
+            logger.warn("[getAllKeeperContainerHostnameToIpMap] unknown dc: {}", dcId);
+            return Collections.emptyMap();
+        }
+        return service.getAllKeeperContainerHostnameToIp();
+    }
+
+    private static final String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
+    public String broadcastResolveKeeperContainerIp(String hostname) {
+        // 获取所有 DC ID
+        Set<String> allDcs = consoleConfig.getConsoleDomains().keySet();
+        
+        // 过滤掉本机房（调用方已经查询过本机房了）
+        Set<String> remoteDcs = new LinkedHashSet<>();
+        for (String dcId : allDcs) {
+            if (!dcId.equalsIgnoreCase(currentDc)) {
+                remoteDcs.add(dcId);
+            }
+        }
+        
+        if (remoteDcs.isEmpty()) {
+            logger.warn("[broadcastResolveKeeperContainerIp] no remote dcs available");
+            return null;
+        }
+        
+        Map<String, BroadcastResult<String>> results = broadcast(
+                remoteDcs,
+                dcId -> getServiceByDc(dcId).resolveKeeperContainerIp(hostname)
+        );
+
+        // 返回第一个成功找到的结果
+        for (Map.Entry<String, BroadcastResult<String>> entry : results.entrySet()) {
+            BroadcastResult<String> result = entry.getValue();
+            if (result.isSuccess() && result.value != null) {
+                logger.info("[broadcastResolveKeeperContainerIp] found hostname {} in dc={}, ip={}", 
+                        hostname, entry.getKey(), result.value);
+                return result.value;
+            }
+        }
+
+        logger.warn("[broadcastResolveKeeperContainerIp] hostname {} not found in any remote dc", hostname);
+        return null;
+    }
+
 
     private int quorum(){
 

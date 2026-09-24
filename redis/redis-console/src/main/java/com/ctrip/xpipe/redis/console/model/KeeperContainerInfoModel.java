@@ -1,7 +1,6 @@
 package com.ctrip.xpipe.redis.console.model;
 
 import com.ctrip.xpipe.codec.JsonCodec;
-import com.ctrip.xpipe.endpoint.HostPort;
 
 import java.io.Serializable;
 
@@ -10,7 +9,9 @@ public class KeeperContainerInfoModel implements Serializable {
 
     private long id;
     private boolean active;
-    private HostPort addr;
+    /** 容器化后 ip 可能随重建变化，与 hostname、port 分开暴露，不再拼成 address */
+    private String ip;
+    private int port;
     private String dcName;
     private String orgName;
     private String tag;
@@ -34,12 +35,20 @@ public class KeeperContainerInfoModel implements Serializable {
         this.id = id;
     }
 
-    public HostPort getAddr() {
-        return addr;
+    public String getIp() {
+        return ip;
     }
 
-    public void setAddr(HostPort addr) {
-        this.addr = addr;
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
     }
 
     public long getKeeperCount() {

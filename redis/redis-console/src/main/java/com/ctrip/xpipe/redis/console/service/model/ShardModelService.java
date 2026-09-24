@@ -2,8 +2,8 @@ package com.ctrip.xpipe.redis.console.service.model;
 
 import com.ctrip.xpipe.redis.console.model.ReplDirectionInfoModel;
 import com.ctrip.xpipe.redis.console.model.ShardModel;
-
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
+
 import java.util.List;
 
 public interface ShardModelService {
@@ -19,10 +19,10 @@ public interface ShardModelService {
 	ShardModel getSourceShardModel(String clusterName, String srcDcName, String toDcName, String shardName);
 
 	boolean migrateBackupKeeper(String dcName, String clusterName, ShardModel shardModel,
-								String srcKeeperContainerIp, String targetKeeperContainerIp);
+								long srcKeeperContainerId, long targetKeeperContainerId);
 
-	boolean switchActiveKeeper(String srcIp, String targetIp, ShardModel shardModel);
+	boolean switchActiveKeeper(String dcName, ShardModel shardModel, long activeKeeperContainerId, long backupKeeperContainerId);
 
 	boolean migrateActiveKeeper(String dcName, String clusterName, ShardModel shardModel,
-								String srcKeeperContainerIp, String targetKeeperContainerIp) throws Throwable;
+								long srcKeeperContainerId, long targetKeeperContainerId) throws Throwable;
 }

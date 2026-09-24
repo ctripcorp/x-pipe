@@ -14,10 +14,13 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelInvalidSlaves;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.MasterSlavesInfo;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.exception.SentinelsException;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.pojo.RedisInfo;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -35,6 +38,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
     private ScheduledExecutorService scheduled;
     private ExecutorService resetExecutor;
     private CheckerConfig checkerConfig;
+    private CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService;
     private Map<HostPort, List<HostPort>> allSentinels = new ConcurrentHashMap<>();
     private Map<HostPort, List<HostPort>> availableSentinels = new ConcurrentHashMap<>();
     private Map<HostPort, SentinelInvalidSlaves> problemSentinels = new ConcurrentHashMap<>();
@@ -44,7 +48,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
     public ResetSentinels(SentinelHelloCollectContext context, MetaCache metaCache,
                           XpipeNettyClientKeyedObjectPool keyedObjectPool,
                           ScheduledExecutorService scheduled, ExecutorService resetExecutor, SentinelManager sentinelManager,
-                          CheckerConfig checkerConfig) {
+                          CheckerConfig checkerConfig, CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService) {
         super(context);
         this.metaCache = metaCache;
         this.keyedObjectPool = keyedObjectPool;
@@ -52,6 +56,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         this.resetExecutor = resetExecutor;
         this.sentinelManager = sentinelManager;
         this.checkerConfig = checkerConfig;
+        this.currentDcKeeperContainerAddressService = currentDcKeeperContainerAddressService;
     }
 
     @Override
@@ -335,7 +340,15 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         if (!context.getInfo().getClusterType().supportKeeper())
             return new HashSet<>();
 
-        Set<HostPort> allKeepers = metaCache.getAllKeepers();
+        List<KeeperMeta> metaKeepers = metaCache.getKeeperOfDcClusterShard(context.getInfo().getActiveDc(), context.getInfo().getClusterId(), context.getInfo().getShardId());
+        Set<HostPort> allKeepers = metaKeepers.stream().map(keeperMeta -> {
+            if (StringUtil.isEmpty(keeperMeta.getHostname())) {
+                return new HostPort(keeperMeta.getIp(), keeperMeta.getPort());
+            } else {
+                String containerIp = currentDcKeeperContainerAddressService.getIpByHostname(keeperMeta.getHostname());
+                return new HostPort(containerIp == null ? keeperMeta.getHostname() : containerIp, keeperMeta.getPort());
+            }
+        }).collect(Collectors.toSet());
         Set<HostPort> keepers = new HashSet<>();
         for (HostPort currentSlave : slaves) {
             if (allKeepers.contains(currentSlave)) {

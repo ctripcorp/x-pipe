@@ -10,16 +10,10 @@ import com.ctrip.xpipe.redis.console.model.KeeperMsgModel;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.resources.ConsolePortalService;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
-import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestOperations;
 
@@ -75,6 +69,21 @@ public class KeeperContainerServiceWithoutDB implements KeeperContainerService {
         List<KeepercontainerTbl> allKeeper = findAll();
         for(KeepercontainerTbl keeperContainer : allKeeper) {
             if(hostname.equals(keeperContainer.getKeepercontainerHostName())) {
+                return keeperContainer;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public KeepercontainerTbl findByHostNameAndPort(String hostname, int port) {
+        if (StringUtil.isEmpty(hostname)) {
+            return null;
+        }
+        List<KeepercontainerTbl> allKeeper = findAll();
+        for(KeepercontainerTbl keeperContainer : allKeeper) {
+            if(hostname.equals(keeperContainer.getKeepercontainerHostName()) 
+                && port == keeperContainer.getKeepercontainerPort()) {
                 return keeperContainer;
             }
         }
@@ -172,6 +181,11 @@ public class KeeperContainerServiceWithoutDB implements KeeperContainerService {
     }
 
     @Override
+    public void deleteKeeperContainerByHostname(String keepercontainerHostName, int keepercontainerPort) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void addKeeperContainerByInfoModel(KeeperContainerInfoModel keeperContainerInfoModel) {
         throw new UnsupportedOperationException();
     }
@@ -192,7 +206,7 @@ public class KeeperContainerServiceWithoutDB implements KeeperContainerService {
     }
 
     @Override
-    public List<KeeperMsgModel> getAllKeepers(String keeperIp) {
+    public List<KeeperMsgModel> getAllKeepers(long keeperContainerId) {
         throw new UnsupportedOperationException();
     }
 

@@ -13,13 +13,9 @@ public interface KeeperContainerService {
 
 	KeepercontainerTbl find(long id);
 	KeepercontainerTbl find(String ip);
-	
-	/**
-	 * 按 hostname 查找 keepercontainer
-	 * @param hostname 容器的 pod hostname
-	 * @return 找到的容器，不存在则返回 null
-	 */
+
 	KeepercontainerTbl findByHostName(String hostname);
+	KeepercontainerTbl findByHostNameAndPort(String hostname, int port);
 
 	List<KeepercontainerTbl> findAll();
 	List<KeepercontainerTbl> findAllByDcName(String dcName);
@@ -50,11 +46,17 @@ public interface KeeperContainerService {
 
 	void deleteKeeperContainer(String keepercontainerIp, int keepercontainerPort);
 
+	void deleteKeeperContainerByHostname(String keepercontainerHostName, int keepercontainerPort);
+
 	void addKeeperContainerByInfoModel(KeeperContainerInfoModel keeperContainerInfoModel);
 
 	void updateKeeperContainerByInfoModel(KeeperContainerInfoModel keeperContainerInfoModel);
 
 	Map<Long, Long> keeperContainerIdDcMap();
 
-	List<KeeperMsgModel> getAllKeepers(String keeperIp);
+	/**
+	 * 查询指定 keepercontainer 上的 keeper 实例明细。
+	 * 容器化后 ip 不再唯一标识容器（pod 重建会变、多实例可能共用占位 ip），因此按 keepercontainer_id 定位
+	 */
+	List<KeeperMsgModel> getAllKeepers(long keeperContainerId);
 }

@@ -23,6 +23,11 @@ public interface RedisService {
 	 */
 	List<RedisTbl> findAllRedisWithSameHostName(String hostName);
 
+	/**
+	 * 按 keepercontainer_id 查询该容器上的所有 keeper 实例端口
+	 */
+	List<RedisTbl> findAllKeepersByKeeperContainerId(long keeperContainerId);
+
 	List<RedisTbl> findAllRedisByIp(String ip);
 
 	List<RedisTbl> findAllByDcClusterShard(long dcClusterShardId);

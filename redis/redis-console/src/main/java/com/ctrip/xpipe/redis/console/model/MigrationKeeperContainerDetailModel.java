@@ -218,6 +218,14 @@ public class MigrationKeeperContainerDetailModel implements Serializable {
     @Override
     public String toString() {
         String type = switchActive ? "switchActiveKeeper" : (keeperPairOverload ? "migrateBackupKeeper" : "migrateActiveKeeper");
-        return String.format("[%s]%s->%s:%s", type, srcKeeperContainer.getKeeperIp(), targetKeeperContainer.getKeeperIp(), migrateShards);
+        return String.format("[%s]%s->%s:%s", type, getContainerIdentifier(srcKeeperContainer), getContainerIdentifier(targetKeeperContainer), migrateShards);
+    }
+
+    public String getContainerIdentifier(KeeperContainerUsedInfoModel model) {
+        if (model == null) return "null";
+        if (model.getHostName() != null && !model.getHostName().isEmpty()) {
+            return model.getHostName();
+        }
+        return model.getKeeperIp();
     }
 }

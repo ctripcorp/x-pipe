@@ -46,11 +46,13 @@ public class KeeperContainerCreateInfo extends AbstractCreateInfo {
 
     @Override
     public void check() throws CheckFailException {
-        if(!IpUtils.isValidIpFormat(keepercontainerIp)) {
-            throw new CheckFailException("Illegal IP Address");
-        }
-        if(keepercontainerPort == 0) {
-            throw new CheckFailException("Illegal Port");
+        if (StringUtil.isEmpty(keepercontainerHostName)) {
+            if (!IpUtils.isValidIpFormat(keepercontainerIp)) {
+                throw new CheckFailException("Illegal IP Address");
+            }
+            if (keepercontainerPort == 0) {
+                throw new CheckFailException("Illegal Port");
+            }
         }
     }
 

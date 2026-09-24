@@ -115,6 +115,18 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     }
 
     @Override
+    public List<RedisTbl> findAllKeepersByKeeperContainerId(long keeperContainerId) {
+        return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
+            @Override
+            public List<RedisTbl> doQuery() throws DalException {
+                // 用 REDIS_MSG_INFO 而非 IP_AND_PORT：除端口记账外，keeper 详情展示还需要
+                // role / keeper_active / master / dc_cluster_shard_id
+                return dao.findAllKeepersByKeepercontainerId(keeperContainerId, RedisTblEntity.READSET_REDIS_MSG_INFO);
+            }
+        });
+    }
+
+    @Override
     public List<RedisTbl> findAllRedisByIp(String ip) {
         return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
             @Override
@@ -590,6 +602,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             }
             proto.setId(redis.getId()).setRedisIp(redis.getRedisIp()).setRedisPort(redis.getRedisPort())
                     .setKeeperActive(redis.isKeeperActive()).setKeepercontainerId(redis.getKeepercontainerId());
+            // 容器 keeper 的 redis_ip 是占位值，hostname 才是稳定标识，必须与 ip 一并落库；
+            // 物理机与 keepercontainer 写入口径一致，用空串而非 null
+            proto.setHostName(redis.getHostName() == null ? "" : redis.getHostName());
 
             Long azId = redis.getAzId();
             proto.setAzId(azId != null && azId > 0 ? azId : 0L);

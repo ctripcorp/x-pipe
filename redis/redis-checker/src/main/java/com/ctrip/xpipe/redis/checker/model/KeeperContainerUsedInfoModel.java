@@ -1,10 +1,15 @@
 package com.ctrip.xpipe.redis.checker.model;
 
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 public class KeeperContainerUsedInfoModel {
+
+    private Long keeperContainerId;
 
     private String keeperIp;
 
@@ -71,7 +76,17 @@ public class KeeperContainerUsedInfoModel {
         return this;
     }
 
+    public Long getKeeperContainerId() {
+        return keeperContainerId;
+    }
+
+    public KeeperContainerUsedInfoModel setKeeperContainerId(Long keeperContainerId) {
+        this.keeperContainerId = keeperContainerId;
+        return this;
+    }
+
     public KeeperContainerUsedInfoModel(KeeperContainerUsedInfoModel model, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard) {
+        this.keeperContainerId = model.getKeeperContainerId();
         this.keeperIp = model.getKeeperIp();
         this.dcName = model.getDcName();
         this.org = model.getOrg();
@@ -96,6 +111,7 @@ public class KeeperContainerUsedInfoModel {
 
     public static KeeperContainerUsedInfoModel cloneKeeperContainerUsedInfoModel(KeeperContainerUsedInfoModel model) {
         KeeperContainerUsedInfoModel newModel = new KeeperContainerUsedInfoModel();
+        newModel.setKeeperContainerId(model.getKeeperContainerId());
         newModel.setKeeperIp(model.getKeeperIp());
         newModel.setHostName(model.getHostName());
         newModel.setDcName(model.getDcName());
@@ -126,7 +142,7 @@ public class KeeperContainerUsedInfoModel {
         Map<DcClusterShardKeeper, KeeperUsedInfo> clonedDetailInfo = new HashMap<>();
         for (Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> entry : model.getDetailInfo().entrySet()) {
             DcClusterShardKeeper key = new DcClusterShardKeeper(entry.getKey().getDcId(), entry.getKey().getClusterId(), entry.getKey().getShardId(), entry.getKey().isActive(), entry.getKey().getPort());
-            KeeperUsedInfo value = new KeeperUsedInfo(entry.getValue().getPeerData(), entry.getValue().getInputFlow(), entry.getValue().keeperIP);
+            KeeperUsedInfo value = new KeeperUsedInfo(entry.getValue().getPeerData(), entry.getValue().getInputFlow(), entry.getValue().keeperIP, entry.getValue().getKeeperContainerId());
             clonedDetailInfo.put(key, value);
         }
         return clonedDetailInfo;
@@ -143,19 +159,6 @@ public class KeeperContainerUsedInfoModel {
     }
 
     public String getKeeperIp() {
-        return keeperIp;
-    }
-
-    /**
-     * 获取对外展示的IP地址
-     * 对于容器形态(hostname非空),应该返回从ZK反查得到的实时IP
-     * 对于物理机形态(hostname为空),直接返回keeperIp
-     * 
-     * 注意: 调用方需要确保在容器形态下,keeperIp字段已经填充了反查好的实时IP
-     */
-    public String getDisplayIp() {
-        // hostname非空表示容器形态,此时keeperIp应该是反查后的实时IP
-        // hostname为空表示物理机形态,keeperIp就是真实IP
         return keeperIp;
     }
 
@@ -342,10 +345,15 @@ public class KeeperContainerUsedInfoModel {
         return this;
     }
 
+    public String ipOrHostname() {
+        return StringUtil.isEmpty(hostName) ? keeperIp : hostName;
+    }
+
     @Override
     public String toString() {
         return "KeeperContainerUsedInfoModel{" +
-                "keeperIp='" + keeperIp + '\'' +
+                "keeperContainerId=" + keeperContainerId +
+                ", keeperIp='" + keeperIp + '\'' +
                 ", hostName='" + hostName + '\'' +
                 ", dcName='" + dcName + '\'' +
                 ", org='" + org + '\'' +
@@ -376,12 +384,12 @@ public class KeeperContainerUsedInfoModel {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         KeeperContainerUsedInfoModel that = (KeeperContainerUsedInfoModel) o;
-        return Objects.equals(keeperIp, that.keeperIp) && Objects.equals(dcName, that.dcName);
+        return Objects.equals(keeperContainerId, that.keeperContainerId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(keeperIp, dcName);
+        return Objects.hash(keeperContainerId);
     }
 
     public static class KeeperUsedInfo {
@@ -391,6 +399,8 @@ public class KeeperContainerUsedInfoModel {
         private long inputFlow;
 
         private String keeperIP;
+        
+        private Long keeperContainerId;
 
         public KeeperUsedInfo() {
         }
@@ -399,6 +409,13 @@ public class KeeperContainerUsedInfoModel {
             this.peerData = peerData;
             this.inputFlow = inputFlow;
             this.keeperIP = keeperIP;
+        }
+        
+        public KeeperUsedInfo(long peerData, long inputFlow, String keeperIP, Long keeperContainerId) {
+            this.peerData = peerData;
+            this.inputFlow = inputFlow;
+            this.keeperIP = keeperIP;
+            this.keeperContainerId = keeperContainerId;
         }
 
         public long getPeerData() {
@@ -424,18 +441,29 @@ public class KeeperContainerUsedInfoModel {
         public void setKeeperIP(String keeperIP) {
             this.keeperIP = keeperIP;
         }
+        
+        public Long getKeeperContainerId() {
+            return keeperContainerId;
+        }
+        
+        public void setKeeperContainerId(Long keeperContainerId) {
+            this.keeperContainerId = keeperContainerId;
+        }
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (!(o instanceof KeeperUsedInfo)) return false;
             KeeperUsedInfo that = (KeeperUsedInfo) o;
-            return getPeerData() == that.getPeerData() && getInputFlow() == that.getInputFlow() && Objects.equals(getKeeperIP(), that.getKeeperIP());
+            // keeperIp 对容器是占位值，所有 pod 都一样，单靠它区分不开，必须带上 keeperContainerId
+            return getPeerData() == that.getPeerData() && getInputFlow() == that.getInputFlow()
+                    && Objects.equals(getKeeperContainerId(), that.getKeeperContainerId())
+                    && Objects.equals(getKeeperIP(), that.getKeeperIP());
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(getPeerData(), getInputFlow(), getKeeperIP());
+            return Objects.hash(getPeerData(), getInputFlow(), getKeeperContainerId(), getKeeperIP());
         }
 
         @Override
@@ -444,6 +472,7 @@ public class KeeperContainerUsedInfoModel {
                     "peerData=" + peerData +
                     ", inputFlow=" + inputFlow +
                     ", keeperContainerIP='" + keeperIP + '\'' +
+                    ", keeperContainerId=" + keeperContainerId +
                     '}';
         }
     }
@@ -451,7 +480,7 @@ public class KeeperContainerUsedInfoModel {
     @VisibleForTesting
     public KeeperContainerUsedInfoModel createKeeper(String clusterId, String shardId, boolean active, long inputFlow, long redisUsedMemory){
         if (this.detailInfo == null) this.detailInfo = new HashMap<>();
-        detailInfo.put(new DcClusterShardKeeper(this.dcName, clusterId, shardId, active), new KeeperUsedInfo(redisUsedMemory, inputFlow, this.keeperIp));
+        detailInfo.put(new DcClusterShardKeeper(this.dcName, clusterId, shardId, active), new KeeperUsedInfo(redisUsedMemory, inputFlow, this.keeperIp, this.keeperContainerId));
         this.setDetailInfo(detailInfo);
         return this;
     }

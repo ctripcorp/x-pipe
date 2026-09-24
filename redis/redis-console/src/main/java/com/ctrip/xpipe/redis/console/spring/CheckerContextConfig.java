@@ -34,8 +34,8 @@ import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
-import com.ctrip.xpipe.redis.core.keeper.container.DefaultKeeperContainerAddressService;
-import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
+import com.ctrip.xpipe.redis.core.keeper.container.DefaultCurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
@@ -183,8 +183,8 @@ public class CheckerContextConfig {
 
     @Bean
     @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-    public KeeperContainerAddressService keeperContainerAddressService(ZkClient zkClient) {
-        return new DefaultKeeperContainerAddressService(zkClient);
+    public CurrentDcKeeperContainerAddressService keeperContainerAddressService(ZkClient zkClient) {
+        return new DefaultCurrentDcKeeperContainerAddressService(zkClient);
     }
 
     @Bean

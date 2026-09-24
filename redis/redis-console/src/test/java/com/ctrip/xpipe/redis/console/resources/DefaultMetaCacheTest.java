@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.console.service.impl.RedisCheckRuleServiceImpl;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
@@ -80,9 +79,7 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertFalse(metaCache.getIsLeader().get());
         Assert.assertNull(metaCache.getFuture());
         Assert.assertNull(metaCache.meta);
-        Assert.assertEquals(metaCache.DEFAULT_KEEPER_NUMBERS, metaCache.allKeeperSize);
         Assert.assertEquals(0, metaCache.lastUpdateTime);
-        Assert.assertNull(metaCache.allKeepers);
 
         metaCache.isleader();
         Assert.assertTrue(metaCache.getIsLeader().get());
@@ -135,18 +132,6 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertTrue(redises.contains(new HostPort("127.0.0.2", 8101)));
         Assert.assertTrue(redises.contains(new HostPort("10.0.0.2", 6379)));
         Assert.assertTrue(redises.contains(new HostPort("10.0.0.2", 6479)));
-    }
-
-    @Test
-    public void testGetAllKeepers() {
-        Set<HostPort> allKeepers = metaCache.getAllKeepers();
-        Assert.assertEquals(6, allKeepers.size());
-        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.1", 6000),
-                new HostPort("127.0.0.1", 6001),
-                new HostPort("127.0.0.1", 6100),
-                new HostPort("127.0.0.1", 6101),
-                new HostPort("127.0.0.2", 6100),
-                new HostPort("127.0.0.2", 6101)), allKeepers);
     }
 
     @Test
@@ -502,58 +487,6 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertTrue(regionDcs.contains("oy"));
         verify(consoleServiceManager, times(1)).dcsInCurrentRegion();
 
-    }
-
-    @Test
-    public void testGetAllKeepersWithPodHostname() throws Exception {
-        // 创建一个包含容器 keeper 的 meta
-        XpipeMeta testMeta = new XpipeMeta();
-        
-        DcMeta dcMeta = new DcMeta("jq");
-        ClusterMeta clusterMeta = new ClusterMeta("cluster-pod").setDbId(100L);
-        ShardMeta shardMeta = new ShardMeta("shard-pod");
-        
-        // 物理机 keeper (有 IP)
-        KeeperMeta physicalKeeper = new KeeperMeta()
-                .setIp("127.0.0.1")
-                .setPort(6380)
-                .setKeeperContainerId(1L);
-        
-        // 容器 keeper (只有 hostname,IP 为空)
-        KeeperMeta podKeeper = new KeeperMeta()
-                .setIp("")  // 容器 IP 为空
-                .setHostname("pod-abc-0")  // 有 hostname
-                .setPort(6380)
-                .setKeeperContainerId(2L);
-        
-        shardMeta.addKeeper(physicalKeeper);
-        shardMeta.addKeeper(podKeeper);
-        clusterMeta.addShard(shardMeta);
-        dcMeta.addCluster(clusterMeta);
-        testMeta.addDc(dcMeta);
-        
-        // 设置 meta
-        metaCache.setMeta(Pair.of(testMeta, xpipeMetaManager));
-        
-        // 测试 1: 没有 KeeperContainerAddressService 时,hostname 的 keeper 应该被跳过
-        Set<HostPort> allKeepersWithoutService = metaCache.getAllKeepers();
-        Assert.assertEquals("Should have 1 keeper without addressService", 1, allKeepersWithoutService.size());
-        Assert.assertTrue("Physical keeper should be in the list", 
-                allKeepersWithoutService.contains(new HostPort("127.0.0.1", 6380)));
-        
-        // 测试 2: 有 KeeperContainerAddressService 且能解析时,hostname 的 keeper 应该被解析
-        KeeperContainerAddressService mockAddressService = mock(KeeperContainerAddressService.class);
-        when(mockAddressService.getIpByHostname("pod-abc-0")).thenReturn("10.0.0.5");
-        metaCache.setKeeperContainerAddressService(mockAddressService);
-        
-        // 清空缓存,重新计算
-        metaCache.allKeepers = null;
-        Set<HostPort> allKeepersWithService = metaCache.getAllKeepers();
-        Assert.assertEquals("Should have 2 keepers with addressService", 2, allKeepersWithService.size());
-        Assert.assertTrue("Physical keeper should be in the list", 
-                allKeepersWithService.contains(new HostPort("127.0.0.1", 6380)));
-        Assert.assertTrue("Pod keeper should be resolved and in the list", 
-                allKeepersWithService.contains(new HostPort("10.0.0.5", 6380)));
     }
 
     protected String getXpipeMetaConfigFile() {

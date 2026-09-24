@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.console.exception.TooManyClustersRemovedException;
 import com.ctrip.xpipe.redis.console.exception.TooManyDcsRemovedException;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
-import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
 import com.ctrip.xpipe.redis.core.meta.impl.DefaultXpipeMetaManager;
@@ -18,10 +17,8 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.tuple.Triple;
 
 import java.util.*;
@@ -37,8 +34,6 @@ import static com.ctrip.xpipe.cluster.ClusterType.HETERO;
  */
 public abstract class AbstractMetaCache implements MetaCache {
 
-    protected int DEFAULT_KEEPER_NUMBERS = 3 * 10000;
-
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
     public static final String CURRENT_IDC = FoundationService.DEFAULT.getDataCenter();
@@ -47,23 +42,9 @@ public abstract class AbstractMetaCache implements MetaCache {
 
     protected Map<String, Triple<String, String, Long>> monitor2ClusterShard;
 
-    protected Set<HostPort> allKeepers;
-
-    protected Map<String, String> allKeeperContainersDcMap;
-
-    protected Map<String, String> allApplierContainersDcMap;
-
-    protected int allKeeperSize = DEFAULT_KEEPER_NUMBERS;
-
     protected long lastUpdateTime = 0;
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
-    
-    /**
-     * KeeperContainer 地址解析服务,用于将容器 hostname 解析为实时 IP
-     */
-    @Autowired
-    protected KeeperContainerAddressService keeperContainerAddressService;
 
     @Override
     public XpipeMeta getXpipeMeta() {
@@ -95,8 +76,6 @@ public abstract class AbstractMetaCache implements MetaCache {
         Pair<XpipeMeta, XpipeMetaManager> meta = new Pair<>(xpipeMeta, new DefaultXpipeMetaManager(xpipeMeta));
         AbstractMetaCache.this.meta = meta;
         monitor2ClusterShard = Maps.newHashMap();
-        allKeeperSize = allKeepers == null ? DEFAULT_KEEPER_NUMBERS : allKeepers.size();
-        allKeepers = null;
         lastUpdateTime = System.currentTimeMillis();
     }
 
@@ -384,126 +363,6 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public Set<HostPort> getAllKeepers(){
-        XpipeMeta xpipeMeta = getXpipeMeta();
-        if (allKeepers == null) {
-            synchronized (this) {
-                if (allKeepers == null) {
-                    Set<HostPort> localKeepers = Sets.newHashSetWithExpectedSize(allKeeperSize);
-                    xpipeMeta.getDcs().forEach((dcName, dcMeta) -> {
-                        dcMeta.getClusters().forEach((clusterName, clusterMeta) -> {
-                            clusterMeta.getShards().forEach((shardName, shardMeta) -> {
-                                shardMeta.getKeepers().forEach(keeperMeta -> {
-                                    HostPort keeperAddr = resolveKeeperAddress(keeperMeta);
-                                    if (keeperAddr != null) {
-                                        localKeepers.add(keeperAddr);
-                                    }
-                                });
-                            });
-                        });
-                    });
-                    allKeepers = localKeepers;
-                }
-            }
-        }
-
-        return allKeepers;
-    }
-    
-    /**
-     * 解析 keeper 地址,支持物理机(IP)和容器(hostname)两种形态
-     * 
-     * @param keeperMeta keeper 元数据
-     * @return 解析后的 HostPort,解析失败返回 null
-     */
-    private HostPort resolveKeeperAddress(KeeperMeta keeperMeta) {
-        String ip = keeperMeta.getIp();
-        int port = keeperMeta.getPort();
-        
-        // 情况 1: 有真实 IP (物理机或已解析的容器)
-        if (ip != null && !ip.isEmpty() && !"0.0.0.0".equals(ip)) {
-            return new HostPort(ip, port);
-        }
-        
-        // 情况 2: 只有 hostname (容器形态)
-        String hostname = keeperMeta.getHostname();
-        if (hostname != null && !hostname.isEmpty()) {
-            if (keeperContainerAddressService == null) {
-                logger.warn("[resolveKeeperAddress] keeper {} has hostname {} but no KeeperContainerAddressService, skip",
-                        keeperMeta.getId(), hostname);
-                return null;
-            }
-            
-            String resolvedIp = keeperContainerAddressService.getIpByHostname(hostname);
-            if (resolvedIp == null) {
-                logger.warn("[resolveKeeperAddress] failed to resolve hostname {} for keeper {}, skip",
-                        hostname, keeperMeta.getId());
-                return null;
-            }
-            
-            logger.debug("[resolveKeeperAddress] resolved hostname {} -> {} for keeper {}",
-                    hostname, resolvedIp, keeperMeta.getId());
-            return new HostPort(resolvedIp, port);
-        }
-        
-        // 情况 3: 既没有有效 IP 也没有 hostname,跳过
-        logger.warn("[resolveKeeperAddress] keeper {} has neither valid ip nor hostname, skip", 
-                keeperMeta.getId());
-        return null;
-    }
-
-    @Override
-    public String getDcByIpAndPeerClusterShard(String hostIp, Pair<String, String> peerClusterShard) {
-        if (getAllKeeperContainersDcMap().containsKey(hostIp)) {
-            return getAllKeeperContainersDcMap().get(hostIp);
-        }
-
-        if (getAllKeeperContainersDcMap().containsKey(hostIp)) {
-            return getAllKeeperContainersDcMap().get(hostIp);
-        }
-
-        return getDcByIpAndClusterShard(hostIp, peerClusterShard);
-    }
-
-    @Override
-    public Map<String, String> getAllKeeperContainersDcMap(){
-        XpipeMeta xpipeMeta = getXpipeMeta();
-        if (allKeeperContainersDcMap == null) {
-            synchronized (this) {
-                if (allKeeperContainersDcMap == null) {
-                    Map<String, String> tempKeeperContainersDcMap = Maps.newLinkedHashMapWithExpectedSize(allKeeperSize);
-                    xpipeMeta.getDcs().forEach((dcName, dcMeta)->{
-                        dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
-                            tempKeeperContainersDcMap.put(keeperContainerMeta.getIp(), dcName);
-                        });
-                    });
-                    allKeeperContainersDcMap = tempKeeperContainersDcMap;
-                }
-            }
-        }
-        return allKeeperContainersDcMap;
-    }
-
-    @Override
-    public Map<String, String> getAllApplierContainersDcMap(){
-        XpipeMeta xpipeMeta = getXpipeMeta();
-        if (allApplierContainersDcMap == null) {
-            synchronized (this) {
-                if (allApplierContainersDcMap == null) {
-                    Map<String, String> tempApplierContainersDcMap = Maps.newLinkedHashMapWithExpectedSize(allKeeperSize);
-                    xpipeMeta.getDcs().forEach((dcName, dcMeta)->{
-                        dcMeta.getApplierContainers().forEach(applierContainerMeta -> {
-                            tempApplierContainersDcMap.put(applierContainerMeta.getIp(), dcName);
-                        });
-                    });
-                    allApplierContainersDcMap = tempApplierContainersDcMap;
-                }
-            }
-        }
-        return allApplierContainersDcMap;
-    }
-
-    @Override
     public String getSentinelMonitorName(String clusterId, String shardId) {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();
@@ -556,6 +415,21 @@ public abstract class AbstractMetaCache implements MetaCache {
         ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
         if (null == shardMeta) return Collections.emptyList();
         return shardMeta.getKeepers();
+    }
+
+    @Override
+    public Map<KeeperMeta, String> getKeeper2DcOfClusterShard(String cluster, String shard) {
+        Map<KeeperMeta, String> keepers = new HashMap<>();
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        xpipeMetaManager.doGetDcs().forEach(dc -> {
+            ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
+            if (shardMeta != null) {
+                shardMeta.getKeepers().forEach(keeperMeta -> {
+                    keepers.put(keeperMeta, dc);
+                });
+            }
+        });
+        return keepers;
     }
 
     @Override

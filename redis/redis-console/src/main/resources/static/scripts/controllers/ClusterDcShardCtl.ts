@@ -33,6 +33,7 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
     $scope.unfoldAllUnhealthyDelay = unfoldAllUnhealthyDelay;
     $scope.setClusterType = setClusterType;
     $scope.keeperMediumLabel = keeperMediumLabel;
+    $scope.keeperAddr = keeperAddr;
 
     if ($scope.clusterName) {
         loadCluster();
@@ -57,6 +58,20 @@ function ClusterCtl($rootScope, $scope, $stateParams, $window, $interval, $locat
             return '';
         }
         return mediumTag(keeper.keepercontainerDiskType) + '/' + keeper.keepercontainerDiskType;
+    }
+
+    /**
+     * 容器 keeper 展示成 hostname(ip)，ip 由后端按 hostname 反查后回填到 redisIp；
+     * 反查不到就只显示 hostname。物理机没有 hostname，原样显示 ip
+     */
+    function keeperAddr(keeper) {
+        if (!keeper) {
+            return '';
+        }
+        if (!keeper.hostName) {
+            return keeper.redisIp || '';
+        }
+        return keeper.redisIp ? keeper.hostName + '(' + keeper.redisIp + ')' : keeper.hostName;
     }
 
     function loadCluster() {

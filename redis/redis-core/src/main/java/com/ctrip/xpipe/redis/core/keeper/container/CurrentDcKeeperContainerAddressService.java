@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.core.keeper.container;
 
 import com.ctrip.xpipe.api.lifecycle.Lifecycle;
 
+import java.util.Map;
+
 /**
  * hostname → IP 单向解析，数据来源是本机房 ZK 注册路径下由 keepercontainer 自注册的临时节点。
  * <p>
@@ -15,11 +17,22 @@ import com.ctrip.xpipe.api.lifecycle.Lifecycle;
  * 只解析 IP、不返回端口：容器管理面端口与 keeper 实例端口是两套语义（前者固定 8080，
  * 后者从 6380 起递增），端口该取哪个由调用方按自身场景决定，本服务不做假设。
  */
-public interface KeeperContainerAddressService extends Lifecycle {
+public interface CurrentDcKeeperContainerAddressService extends Lifecycle {
 
     /**
+     * 解析单个 hostname 对应的 IP
+     *
      * @param hostname pod hostname
      * @return 该 hostname 当前注册的 IP；容器未注册或已下线时返回 null
      */
     String getIpByHostname(String hostname);
+
+    /**
+     * 获取本机房所有 keeper container 的 hostname → IP 映射
+     * <p>
+     * 用于批量查询场景，避免多次调用 getIpByHostname
+     *
+     * @return hostname → IP 映射表的快照
+     */
+    Map<String, String> getAllHostnameToIp();
 }

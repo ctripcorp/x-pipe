@@ -23,16 +23,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.ctrip.xpipe.redis.core.protocal.RedisProtocol.KEEPER_PORT_DEFAULT;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 /**
  * keeper 分配的双轨行为：容器（pod hostname 为身份）与物理机（IP 为身份）长期并存，
- * 端口记账、去重、落库字段都要按各自的键走。
+ * 端口记账已统一使用 keepercontainer_id，keeperGood 断言仍使用 IP/hostname 以便调用方区分 pod。
  */
 @RunWith(MockitoJUnitRunner.class)
 public class DefaultKeeperAdvancedServicePodAllocationTest {
@@ -72,8 +68,8 @@ public class DefaultKeeperAdvancedServicePodAllocationTest {
     }
 
     @Test
-    public void testPodContainerAllocationCarriesHostNameAndAccountsPortsByHostName() {
-        when(redisService.findAllRedisWithSameHostName(anyString())).thenReturn(Collections.emptyList());
+    public void testPodContainerAllocationCarriesHostNameAndAccountsPortsByKeeperContainerId() {
+        when(redisService.findAllKeepersByKeeperContainerId(anyLong())).thenReturn(Collections.emptyList());
         mockCandidates(pod(1L, POD_A), pod(2L, POD_B));
 
         List<KeeperBasicInfo> best = allocate(2);
@@ -86,19 +82,19 @@ public class DefaultKeeperAdvancedServicePodAllocationTest {
         // host 仍是登记时的占位值，真实地址由消费方经 ZK 反查
         Assert.assertEquals(PLACEHOLDER_IP, best.get(0).getHost());
 
-        // 端口记账必须按 hostname 查：所有 pod 的 redis_ip 都是 0.0.0.0，
-        // 按 IP 查会把不同 pod 的端口混成一份，导致端口被无谓地跳过
-        verify(redisService).findAllRedisWithSameHostName(POD_A);
-        verify(redisService).findAllRedisWithSameHostName(POD_B);
+        // 端口记账已统一使用 keepercontainer_id
+        verify(redisService).findAllKeepersByKeeperContainerId(1L);
+        verify(redisService).findAllKeepersByKeeperContainerId(2L);
         verify(redisService, never()).findAllRedisWithSameIP(anyString());
+        verify(redisService, never()).findAllRedisWithSameHostName(anyString());
     }
 
     @Test
-    public void testPodContainerSkipsPortsAlreadyUsedOnSameHostName() {
+    public void testPodContainerSkipsPortsAlreadyUsedOnSameKeeperContainer() {
         // 该 pod 上 6380 与 6381 已被占用
-        when(redisService.findAllRedisWithSameHostName(POD_A))
+        when(redisService.findAllKeepersByKeeperContainerId(1L))
                 .thenReturn(Arrays.asList(redisOnPod(POD_A, 6380), redisOnPod(POD_A, 6381)));
-        when(redisService.findAllRedisWithSameHostName(POD_B)).thenReturn(Collections.emptyList());
+        when(redisService.findAllKeepersByKeeperContainerId(2L)).thenReturn(Collections.emptyList());
         mockCandidates(pod(1L, POD_A), pod(2L, POD_B));
 
         List<KeeperBasicInfo> best = allocate(2);
@@ -109,35 +105,36 @@ public class DefaultKeeperAdvancedServicePodAllocationTest {
     }
 
     @Test
-    public void testPhysicalAndPodMixedAllocationUsesRespectiveKeys() {
-        when(redisService.findAllRedisWithSameIP("10.0.0.1"))
+    public void testPhysicalAndPodMixedAllocationUsesKeeperContainerId() {
+        when(redisService.findAllKeepersByKeeperContainerId(1L))
                 .thenReturn(Collections.singletonList(redisOnIp("10.0.0.1", 6380)));
-        when(redisService.findAllRedisWithSameHostName(POD_A)).thenReturn(Collections.emptyList());
+        when(redisService.findAllKeepersByKeeperContainerId(2L)).thenReturn(Collections.emptyList());
         mockCandidates(physical(1L, "10.0.0.1"), pod(2L, POD_A));
 
         List<KeeperBasicInfo> best = allocate(2);
 
-        // 物理机：按 IP 记账，6380 已用故取 6381，hostName 落空串而非 null
+        // 物理机：6380 已用故取 6381，hostName 落空串而非 null
         Assert.assertEquals("10.0.0.1", best.get(0).getHost());
         Assert.assertEquals("", best.get(0).getHostName());
         Assert.assertFalse(best.get(0).isPodKeeper());
         Assert.assertEquals(6381, best.get(0).getPort());
 
-        // 容器：按 hostname 记账，端口空间干净
+        // 容器：端口空间独立
         Assert.assertEquals(POD_A, best.get(1).getHostName());
         Assert.assertEquals(KEEPER_PORT_DEFAULT, best.get(1).getPort());
 
-        verify(redisService).findAllRedisWithSameIP("10.0.0.1");
-        verify(redisService).findAllRedisWithSameHostName(POD_A);
+        // 端口记账统一使用 keepercontainer_id
+        verify(redisService).findAllKeepersByKeeperContainerId(1L);
+        verify(redisService).findAllKeepersByKeeperContainerId(2L);
     }
 
     /**
-     * 两个 pod 共享同一个占位 IP 是常态。若去重键仍是 host，第二个 pod 会被误判为
-     * "该地址端口已选过"从而被迫跳到下一个端口。
+     * 两个 pod 共享同一个占位 IP 是常态。由于端口记账使用 keepercontainer_id，
+     * 两个 pod 独立分配端口，不会互相干扰。
      */
     @Test
     public void testTwoPodsSharingPlaceholderIpGetSamePort() {
-        when(redisService.findAllRedisWithSameHostName(anyString())).thenReturn(Collections.emptyList());
+        when(redisService.findAllKeepersByKeeperContainerId(anyLong())).thenReturn(Collections.emptyList());
         mockCandidates(pod(1L, POD_A), pod(2L, POD_B));
 
         List<KeeperBasicInfo> best = allocate(2);
@@ -148,25 +145,29 @@ public class DefaultKeeperAdvancedServicePodAllocationTest {
     }
 
     /**
-     * 同一台物理机上登记多个 keepercontainer 实例（同 IP、不同管理端口）时，它们共享
-     * 一份 keeper 端口空间，记账键必须仍是 IP 而不能退化成 containerId。
+     * 不同 keepercontainer 实例（即使同 IP）端口空间独立。
+     * 由于端口记账使用 keepercontainer_id，每个容器独立记账。
      */
     @Test
-    public void testSameIpDifferentContainerInstancesShareOnePortSpace() {
-        when(redisService.findAllRedisWithSameIP("10.0.0.1")).thenReturn(Collections.emptyList());
+    public void testDifferentContainerInstancesHaveIndependentPortSpace() {
+        when(redisService.findAllKeepersByKeeperContainerId(1L)).thenReturn(Collections.emptyList());
+        when(redisService.findAllKeepersByKeeperContainerId(2L)).thenReturn(Collections.emptyList());
         mockCandidates(physical(1L, "10.0.0.1"), physical(2L, "10.0.0.1"));
 
         List<KeeperBasicInfo> best = allocate(2);
 
+        // 两个容器端口空间独立，都分配 6380
         Assert.assertEquals(KEEPER_PORT_DEFAULT, best.get(0).getPort());
-        Assert.assertEquals(KEEPER_PORT_DEFAULT + 1, best.get(1).getPort());
-        // 同一个键只查一次
-        verify(redisService).findAllRedisWithSameIP("10.0.0.1");
+        Assert.assertEquals(KEEPER_PORT_DEFAULT, best.get(1).getPort());
+        
+        // 分别查询每个容器
+        verify(redisService).findAllKeepersByKeeperContainerId(1L);
+        verify(redisService).findAllKeepersByKeeperContainerId(2L);
     }
 
     @Test
     public void testKeeperGoodPredicateReceivesContainerKey() {
-        when(redisService.findAllRedisWithSameHostName(anyString())).thenReturn(Collections.emptyList());
+        when(redisService.findAllKeepersByKeeperContainerId(anyLong())).thenReturn(Collections.emptyList());
         mockCandidates(pod(1L, POD_A), pod(2L, POD_B));
 
         // 探活断言拿到的第一个参数应是容器标识（此处即 hostname），否则调用方无法区分 pod

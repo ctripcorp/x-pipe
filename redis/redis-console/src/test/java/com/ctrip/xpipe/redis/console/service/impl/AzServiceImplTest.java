@@ -28,11 +28,6 @@ public class AzServiceImplTest extends AbstractServiceImplTest{
     @Autowired
     private KeeperContainerServiceImpl keeperContainerService;
 
-    @Autowired
-    private KeeperServiceImpl keeperService;
-
-    @Autowired
-    private RedisServiceImpl redisService;
 
     @Test(expected = IllegalArgumentException.class)
     public void testAddAzFailByWrongDc() {

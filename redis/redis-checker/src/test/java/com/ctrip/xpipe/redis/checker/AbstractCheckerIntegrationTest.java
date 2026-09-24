@@ -19,6 +19,8 @@ import com.ctrip.xpipe.redis.checker.impl.DefaultRemoteCheckerManager;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
 import com.ctrip.xpipe.redis.core.client.NettyRedisPoolClientFactory;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
+import com.ctrip.xpipe.redis.core.keeper.container.TestCurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
@@ -247,6 +249,15 @@ public class AbstractCheckerIntegrationTest extends AbstractCheckerTest {
         @Bean
         public RelationsService relationsService(){
             return new TestRelationsService();
+        }
+
+        /**
+         * 生产上这个 bean 由 console 的 CheckerContextConfig 在 production profile 下装配，
+         * 依赖 ZkClient；测试上下文没有 ZK，用内存实现顶上。
+         */
+        @Bean
+        public CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService() {
+            return new TestCurrentDcKeeperContainerAddressService();
         }
 
     }

@@ -4,7 +4,7 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
-import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
+import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.KeeperUsedInfo;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.KeeperContainerOverloadCause;
 import com.ctrip.xpipe.redis.console.keeper.entity.IPPairData;
@@ -51,7 +51,7 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
     private static final String KEEPER_PAIR_RESOURCE_LACK = "keeper_pair_resource_lack";
 
     @Override
-    public List<MigrationKeeperContainerDetailModel> getMigrationPlans(Map<String, KeeperContainerUsedInfoModel> modelsMap) {
+    public List<MigrationKeeperContainerDetailModel> getMigrationPlans(Map<Long, KeeperContainerUsedInfoModel> modelsMap) {
         List<KeeperContainerUsedInfoModel> models = new ArrayList<>(modelsMap.values());
         keeperContainerAnalyzerService.initStandard(models);
         List<KeeperContainerUsedInfoModel> modelsWithoutResource = new ArrayList<>();
@@ -65,14 +65,14 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
         analyzerContext.initAvailablePool(modelsWithoutResource);
         for (KeeperContainerUsedInfoModel model : modelsWithoutResource) {
             generateDataOverLoadMigrationPlans(model, modelsMap);
-            for (String ip : analyzerContext.getAllPairsIP(model.getKeeperIp())) {
-                generatePairOverLoadMigrationPlans(model, modelsMap.get(ip));
+            for (Long pairContainerId : analyzerContext.getAllPairsContainerId(model.getKeeperContainerId())) {
+                generatePairOverLoadMigrationPlans(model, modelsMap.get(pairContainerId));
             }
         }
         return analyzerContext.getAllMigrationPlans();
     }
 
-    private void generateDataOverLoadMigrationPlans(KeeperContainerUsedInfoModel model, Map<String, KeeperContainerUsedInfoModel> modelsMap) {
+    private void generateDataOverLoadMigrationPlans(KeeperContainerUsedInfoModel model, Map<Long, KeeperContainerUsedInfoModel> modelsMap) {
         Object[] cause = getDataOverloadCause(model);
         if (cause == null) return;
         List<Map.Entry<DcClusterShardKeeper, KeeperUsedInfo>> descShards = getDescShards(model.getDetailInfo(), (Boolean) cause[1]);
@@ -80,7 +80,7 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
         while (filterChain.isDataOverLoad(model) && iterator.hasNext()) {
             Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard = iterator.next();
             if (!dcClusterShard.getKey().isActive()) continue;
-            KeeperContainerUsedInfoModel backUpKeeper = modelsMap.get(analyzerContext.getBackUpKeeperIp(dcClusterShard.getKey()));
+            KeeperContainerUsedInfoModel backUpKeeper = modelsMap.get(analyzerContext.getBackUpKeeperContainerId(dcClusterShard.getKey()));
             if (canSwitchMaster(model, backUpKeeper, dcClusterShard)) {
                 analyzerContext.addMigrationPlan(model, backUpKeeper, true, false, (String) cause[0], dcClusterShard, null);
                 continue;
@@ -102,12 +102,14 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
     private void generatePairOverLoadMigrationPlans(KeeperContainerUsedInfoModel modelA, KeeperContainerUsedInfoModel modelB) {
         Object[] cause = getPariOverloadCause(modelA, modelB);
         if (cause == null) return;
-        List<Map.Entry<DcClusterShardKeeper, KeeperUsedInfo>> descShards = getDescShards(analyzerContext.getIPPairData(modelA.getKeeperIp(), modelB.getKeeperIp()).getEntryMap(), (Boolean) cause[1]);
+        Long containerIdA = modelA.getKeeperContainerId();
+        Long containerIdB = modelB.getKeeperContainerId();
+        List<Map.Entry<DcClusterShardKeeper, KeeperUsedInfo>> descShards = getDescShards(analyzerContext.getContainerPairData(containerIdA, containerIdB).getEntryMap(), (Boolean) cause[1]);
         Iterator<Map.Entry<DcClusterShardKeeper, KeeperUsedInfo>> iterator = descShards.iterator();
-        while (filterChain.isKeeperContainerPairOverload(modelA, modelB, analyzerContext.getIPPairData(modelA.getKeeperIp(), modelB.getKeeperIp())) && iterator.hasNext()) {
+        while (filterChain.isKeeperContainerPairOverload(modelA, modelB, analyzerContext.getContainerPairData(containerIdA, containerIdB)) && iterator.hasNext()) {
             Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard = iterator.next();
-            KeeperContainerUsedInfoModel activeKeeperContainer = dcClusterShard.getValue().getKeeperIP().equals(modelA.getKeeperIp()) ? modelA : modelB;
-            KeeperContainerUsedInfoModel backUpKeeperContainer = dcClusterShard.getValue().getKeeperIP().equals(modelA.getKeeperIp()) ? modelB : modelA;
+            KeeperContainerUsedInfoModel activeKeeperContainer = dcClusterShard.getValue().getKeeperContainerId().equals(containerIdA) ? modelA : modelB;
+            KeeperContainerUsedInfoModel backUpKeeperContainer = dcClusterShard.getValue().getKeeperContainerId().equals(containerIdA) ? modelB : modelA;
             KeeperContainerUsedInfoModel bestKeeperContainer = analyzerContext.getBestKeeperContainer(backUpKeeperContainer, dcClusterShard, activeKeeperContainer, (Boolean) cause[1], true);
             if (bestKeeperContainer == null) {
                 continue;
@@ -117,10 +119,10 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
                 analyzerContext.recycleKeeperContainer(bestKeeperContainer, (Boolean) cause[1]);
             }
         }
-        if (filterChain.isKeeperContainerPairOverload(modelA, modelB, analyzerContext.getIPPairData(modelA.getKeeperIp(), modelB.getKeeperIp()))) {
+        if (filterChain.isKeeperContainerPairOverload(modelA, modelB, analyzerContext.getContainerPairData(containerIdA, containerIdB))) {
             logger.debug("[analyzeKeeperContainerUsedInfo] no available space for overload keeperContainer pair to migrate {} {}", modelA, modelB);
             CatEventMonitor.DEFAULT.logEvent(KEEPER_PAIR_RESOURCE_LACK, "Dc:" + currentDc + " OrgA:" + modelA.getOrg() + " AzA:" + modelA.getAz() + " OrgB:" + modelB.getOrg() + " AzB:" + modelB.getAz());
-            analyzerContext.addResourceLackPlan(modelA, modelB.getKeeperIp(),KeeperContainerOverloadCause.PAIR_RESOURCE_LACK.name());
+            analyzerContext.addResourceLackPlan(modelA, modelB.ipOrHostname(), KeeperContainerOverloadCause.PAIR_RESOURCE_LACK.name());
         }
     }
 
@@ -134,7 +136,7 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
 
     private boolean canSwitchMaster(KeeperContainerUsedInfoModel src, KeeperContainerUsedInfoModel backUp, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard) {
         return backUp != null
-                && !analyzerContext.isProblemKeeperContainer(backUp.getKeeperIp())
+                && !analyzerContext.isProblemKeeperContainerById(backUp.getKeeperContainerId())
                 && (src.getOrg() == null || src.getOrg().equals(backUp.getOrg()))
                 && (src.getAz() == null || src.getAz().equals(backUp.getAz()))
                 && filterChain.isKeeperContainerUseful(backUp)
@@ -164,9 +166,9 @@ public class DefaultKeeperContainerMigrationAnalyzer implements KeeperContainerM
                 .setFlowOverload((long) (Math.min(pairB.getInputFlowStandard(), pairA.getInputFlowStandard()) * keeperPairOverLoadFactor))
                 .setPeerDataOverload((long) (Math.min(pairB.getRedisUsedMemoryStandard(), pairA.getRedisUsedMemoryStandard()) * keeperPairOverLoadFactor));
 
-        IPPairData longLongPair = analyzerContext.getIPPairData(pairA.getKeeperIp(), pairB.getKeeperIp());
-        long overloadInputFlow = longLongPair.getInputFlow() - minStandardModel.getFlowOverload();
-        long overloadPeerData = longLongPair.getPeerData() - minStandardModel.getPeerDataOverload();
+        IPPairData containerPairData = analyzerContext.getContainerPairData(pairA.getKeeperContainerId(), pairB.getKeeperContainerId());
+        long overloadInputFlow = containerPairData.getInputFlow() - minStandardModel.getFlowOverload();
+        long overloadPeerData = containerPairData.getPeerData() - minStandardModel.getPeerDataOverload();
         if (overloadInputFlow <= 0 && overloadPeerData <= 0) {
             return null;
         } else if (overloadPeerData > 0 && overloadInputFlow >= overloadPeerData) {

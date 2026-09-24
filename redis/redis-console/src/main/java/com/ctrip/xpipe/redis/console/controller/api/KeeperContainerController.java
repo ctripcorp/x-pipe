@@ -13,11 +13,9 @@ import com.ctrip.xpipe.redis.console.model.KeeperRestElectionModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerCheckerService;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +39,9 @@ public class KeeperContainerController extends AbstractConsoleController{
 
     @Autowired
     KeeperContainerCheckerService keeperContainerService;
+
+    @Autowired
+    CurrentDcKeeperContainerAddressService keeperContainerAddressService;
 
     @RequestMapping(value = "/keepercontainer/overload/info/all", method = RequestMethod.GET)
     public List<MigrationKeeperContainerDetailModel> getAllReadyToMigrateKeeperContainers() {
@@ -110,7 +111,7 @@ public class KeeperContainerController extends AbstractConsoleController{
     @RequestMapping(value = "/keepers/election/reset", method = RequestMethod.POST)
     public RetMessage resetElection(@RequestBody KeeperRestElectionModel model){
         try {
-            keeperContainerService.resetKeeper(model.getIp(), model.getHostname(), Long.parseLong(model.getShardId()));
+            keeperContainerService.resetKeeper(model.getDcName(), model.getIp(), model.getHostname(), Long.parseLong(model.getShardId()));
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
@@ -120,11 +121,30 @@ public class KeeperContainerController extends AbstractConsoleController{
     @RequestMapping(value = "/keepers/release/rdb", method = RequestMethod.POST)
     public RetMessage releaseRdb(@RequestBody KeeperRestElectionModel model){
         try {
-            keeperContainerService.releaseRdb(model.getIp(), model.getHostname(), Integer.parseInt(model.getPort()), Long.parseLong(model.getShardId()));
+            keeperContainerService.releaseRdb(model.getDcName(), model.getIp(), model.getHostname(), Integer.parseInt(model.getPort()), Long.parseLong(model.getShardId()));
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
+    }
+
+    @RequestMapping(value = "/keepercontainer/address/{hostname}", method = RequestMethod.GET)
+    public RetMessage resolveKeeperContainerIp(@PathVariable String hostname) {
+        try {
+            String ip = keeperContainerAddressService.getIpByHostname(hostname);
+            if (ip != null) {
+                return RetMessage.createSuccessMessage(ip);
+            } else {
+                return RetMessage.createFailMessage("hostname not found: " + hostname);
+            }
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
+
+    @RequestMapping(value = "/keepercontainer/address/all", method = RequestMethod.GET)
+    public Map<String, String> getAllKeeperContainerHostnameToIpMap() {
+        return keeperContainerAddressService.getAllHostnameToIp();
     }
 
 }

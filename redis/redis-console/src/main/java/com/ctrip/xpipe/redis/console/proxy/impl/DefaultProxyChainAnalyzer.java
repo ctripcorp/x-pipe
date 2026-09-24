@@ -1,4 +1,5 @@
 package com.ctrip.xpipe.redis.console.proxy.impl;
+
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.command.AbstractCommand;
@@ -11,7 +12,9 @@ import com.ctrip.xpipe.redis.console.proxy.ProxyChain;
 import com.ctrip.xpipe.redis.console.proxy.ProxyChainAnalyzer;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollector;
 import com.ctrip.xpipe.redis.console.proxy.ProxyMonitorCollectorManager;
+import com.ctrip.xpipe.redis.console.service.CrossDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.console.service.RouteService;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.proxy.endpoint.DefaultProxyEndpoint;
 import com.ctrip.xpipe.spring.AbstractProfile;
@@ -30,7 +33,10 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -65,6 +71,9 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
 
     @Resource(name = SCHEDULED_EXECUTOR)
     private ScheduledExecutorService scheduled;
+
+    @Autowired
+    private CrossDcKeeperContainerAddressService crossDcKeeperContainerAddressService;
 
     private ScheduledFuture<?> future;
 
@@ -262,8 +271,26 @@ public class DefaultProxyChainAnalyzer extends AbstractStartStoppable implements
                 }
 
                 if (backupDcId == null) {
-                    backupDcId = metaCache.getDcByIpAndPeerClusterShard(chainSrc.getHost(), peerClusterShard);
+                    Map<KeeperMeta, String> keeper2Dc = metaCache.getKeeper2DcOfClusterShard(peerClusterShard.getKey(), peerClusterShard.getValue());
+                    for (Map.Entry<KeeperMeta, String> keeperAndDc : keeper2Dc.entrySet()) {
+                        try {
+                            KeeperMeta keeper = keeperAndDc.getKey();
+                            String dc = keeperAndDc.getValue();
+                            String ip = StringUtil.isEmpty(keeper.getHostname()) ? keeper.getIp() : crossDcKeeperContainerAddressService.getIpByHostname(dc, keeper.getHostname());
+                            if (ip.equals(chainSrc.getHost())) {
+                                backupDcId = dc;
+                                break;
+                            }
+                        } catch (Exception e) {
+                            logger.error("[analyzeProxyChain] check chainSrc {} with keeper {}-{} failed", chainSrc, keeperAndDc.getKey().getIp(), keeperAndDc.getKey().getHostname(), e);
+                        }
+                    }
                 }
+
+                if (backupDcId == null) {
+                    backupDcId = metaCache.getDcByIpAndClusterShard(chainSrc.getHost(), peerClusterShard);
+                }
+
                 if (backupDcId == null) {
                     logger.info("[analyzeProxyChain] get backupDc fail by chainSrc {}", chainSrc);
                     continue;

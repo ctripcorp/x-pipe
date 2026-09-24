@@ -4,8 +4,14 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.handler.KeeperContainerFilterChain;
-import com.ctrip.xpipe.redis.console.model.*;
-import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.model.AzTbl;
+import com.ctrip.xpipe.redis.console.model.ConfigModel;
+import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
+import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
+import com.ctrip.xpipe.redis.console.service.AzService;
+import com.ctrip.xpipe.redis.console.service.ConfigService;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
+import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultKeeperContainerAnalyzerService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -82,7 +88,8 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         configModels.add(configModel);
         configModels.add(configModel1);
         Mockito.when(configService.getConfigs(KEY_KEEPER_CONTAINER_STANDARD)).thenReturn(configModels);
-        Mockito.when(keeperContainerService.find(Mockito.anyString())).thenReturn(new KeepercontainerTbl().setKeepercontainerActive(true));
+        // 标准值按 keepercontainer_id 定位，不再按 IP
+        Mockito.when(keeperContainerService.find(Mockito.anyLong())).thenReturn(new KeepercontainerTbl().setKeepercontainerActive(true));
         migrationAnalyzer.setKeeperContainerAnalyzerService(keeperContainerAnalyzerService);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
         Mockito.when(config.getKeeperContainerDiskOverLoadFactor()).thenReturn(0.8);
@@ -90,25 +97,27 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         keepercontainerTbl.setKeepercontainerActive(true);
     }
 
-    public KeeperContainerUsedInfoModel createKeeperContainer(Map<String, KeeperContainerUsedInfoModel> models, String keeperIp, long activeInputFlow, long activeRedisUsedMemory){
+    public KeeperContainerUsedInfoModel createKeeperContainer(Map<Long, KeeperContainerUsedInfoModel> models, String keeperIp, long activeInputFlow, long activeRedisUsedMemory){
         KeeperContainerUsedInfoModel model = new KeeperContainerUsedInfoModel(keeperIp, DC, activeInputFlow, activeRedisUsedMemory);
         model.setDiskAvailable(true).setDiskUsed(70).setDiskSize(100);
-        models.put(keeperIp, model);
+        model.setKeeperContainerId((long) keeperIp.hashCode());
+        models.put(model.getKeeperContainerId(), model);
         return model;
     }
 
-    public KeeperContainerUsedInfoModel createKeeperContainer(Map<String, KeeperContainerUsedInfoModel> models, String keeperIp, long activeInputFlow, long activeRedisUsedMemory, String az, String org){
+    public KeeperContainerUsedInfoModel createKeeperContainer(Map<Long, KeeperContainerUsedInfoModel> models, String keeperIp, long activeInputFlow, long activeRedisUsedMemory, String az, String org){
         KeeperContainerUsedInfoModel model = new KeeperContainerUsedInfoModel(keeperIp, DC, activeInputFlow, activeRedisUsedMemory);
         model.setDiskAvailable(true).setDiskUsed(70).setDiskSize(100);
         model.setAz(az).setOrg(org);
-        models.put(keeperIp, model);
+        model.setKeeperContainerId((long) keeperIp.hashCode());
+        models.put(model.getKeeperContainerId(), model);
         return model;
     }
 
     @Test
     public void testUpdateKeeperContainerUsedInfo() {
         //To prevent a second updateKeeperContainerUsedInfo() data when expired
-        Map<String, KeeperContainerUsedInfoModel> models1 = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models1 = new HashMap<>();
         createKeeperContainer(models1, IP1, 14, 14)
                 .createKeeper(Cluster1, Shard1, true, 2, 2)
                 .createKeeper(Cluster1, Shard2, true, 3, 3)
@@ -117,7 +126,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 //        analyzer.updateKeeperContainerUsedInfo(0, new ArrayList<>(models1.values()));
 //        Assert.assertEquals(1, analyzer.getCheckerIndexesSize());
 
-        Map<String, KeeperContainerUsedInfoModel> models2 = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models2 = new HashMap<>();
         createKeeperContainer(models2, IP3, 5, 5)
                 .createKeeper(Cluster3, Shard1, true, 2, 2)
                 .createKeeper(Cluster4, Shard2, true, 3, 3);
@@ -127,7 +136,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
     @Test
     public void testUpdateKeeperContainerUsedInfoExpired() throws InterruptedException {
-        Map<String, KeeperContainerUsedInfoModel> models1 = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models1 = new HashMap<>();
         createKeeperContainer(models1, IP1, 14, 14)
                 .createKeeper(Cluster1, Shard1, true, 2, 2)
                 .createKeeper(Cluster1, Shard2, true, 3, 3)
@@ -138,7 +147,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
         TimeUnit.MILLISECONDS.sleep(expireTime+100);
 
-        Map<String, KeeperContainerUsedInfoModel> models2 = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models2 = new HashMap<>();
         createKeeperContainer(models2, IP3, 5, 5)
                 .createKeeper(Cluster3, Shard1, true, 2, 2)
                 .createKeeper(Cluster4, Shard2, true, 3, 3);
@@ -148,7 +157,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
     @Test
     public void testGetAllDcReadyToMigrationKeeperContainersWithBoth() {
-        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 10, 10)
                 .createKeeper(Cluster1, Shard1, true, 4, 4)
                 .createKeeper(Cluster1, Shard2, false, 6, 6)
@@ -184,7 +193,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
     @Test
     public void testMultiSrcKeeperSingleTargetWithBoth() {
-        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 22, 22)
                 .createKeeper(Cluster1, Shard1, true, 4, 4)
                 .createKeeper(Cluster1, Shard2, true, 5, 5)
@@ -220,7 +229,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     public void testSingleSrcKeeperMultiTargetWithBoth() {
         filterChain.setConfig(config);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(1.0);
-        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 27, 27)
                 .createKeeper(Cluster1, Shard1, true, 5, 5)
                 .createKeeper(Cluster1, Shard2, true, 5, 5)
@@ -255,7 +264,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
     @Test
     public void testKeeperResourceLackWithBoth() {
-        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 20, 20)
                 .createKeeper(Cluster1, Shard1, true, 10, 10)
                 .createKeeper(Cluster1, Shard2, true, 10, 10)
@@ -278,7 +287,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     public void testGetAllDcReadyToMigrationKeeperContainersWithPeerDataOverLoad() {
         filterChain.setConfig(config);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
-        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 4, 23)
                 .createKeeper(Cluster1, Shard1, true, 1, 6)
                 .createKeeper(Cluster1, Shard2, true, 1, 5)
@@ -313,7 +322,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
 
     @Test
     public void testMultiSrcKeeperSingleTargetWithPeerDataOverLoad() {
-        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 4, 17)
                 .createKeeper(Cluster1, Shard1, true, 1, 5)
                 .createKeeper(Cluster1, Shard2, true, 1, 5)
@@ -344,7 +353,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     public void testSingleSrcKeeperMultiTargetWithPeerDataOverLoad() {
         filterChain.setConfig(config);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(1.0);
-        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 6, 32)
                 .createKeeper(Cluster1, Shard1, true, 1, 5)
                 .createKeeper(Cluster1, Shard2, true, 1, 5)
@@ -372,7 +381,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     public void testKeeperResourceLackWithPeerDataOverLoad() {
         filterChain.setConfig(config);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
-        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 6, 32)
                 .createKeeper(Cluster1, Shard1, true, 1, 5)
                 .createKeeper(Cluster1, Shard2, true, 1, 5)
@@ -399,7 +408,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     public void testGetAllDcReadyToMigrationKeeperContainersWithMixed() {
         filterChain.setConfig(config);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(1.0);
-        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models = new HashMap<>();
         // inputOverLoad
         createKeeperContainer(models, IP1, 20, 4)
                 .createKeeper(Cluster1, Shard1, true, 4, 1)
@@ -439,7 +448,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     @Test
     public void testMultiSrcKeeperSingleTargetWithMixed() {
         filterChain.setConfig(config);
-        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 4, 19)
                 .createKeeper(Cluster1, Shard1, true, 1, 8)
                 .createKeeper(Cluster1, Shard2, true, 1, 7)
@@ -470,7 +479,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
     public void testMultiSrcMultiTargetWithFixed() {
         filterChain.setConfig(config);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
-        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 4, 19)
                 .createKeeper(Cluster1, Shard1, true, 1, 8)
                 .createKeeper(Cluster1, Shard2, true, 1, 7)
@@ -508,7 +517,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         filterChain.setConfig(config);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
         Mockito.when(azService.getAvailableZoneTblById(Mockito.anyLong())).thenReturn(null);
-        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 17, 17, "PTJQ-A", "kj")
                 .createKeeper(Cluster1, Shard1, true, 5, 5)
                 .createKeeper(Cluster1, Shard2, true, 5, 5)
@@ -551,7 +560,7 @@ public class DefaultKeeperUsedInfoAnalyzerTest {
         Mockito.when(metaCache.getXpipeMeta()).thenReturn(meta);
         filterChain.setConfig(config);
         Mockito.when(config.getKeeperPairOverLoadFactor()).thenReturn(5.0);
-        Map<String, KeeperContainerUsedInfoModel> models = new HashMap<>();
+        Map<Long, KeeperContainerUsedInfoModel> models = new HashMap<>();
         createKeeperContainer(models, IP1, 42, 42)
                 .createKeeper(Cluster1, Shard1, true, 14, 14)
                 .createKeeper(Cluster1, Shard2, true, 14, 14)

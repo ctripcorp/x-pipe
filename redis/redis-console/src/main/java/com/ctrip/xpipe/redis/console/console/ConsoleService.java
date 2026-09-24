@@ -63,6 +63,10 @@ public interface ConsoleService extends CheckerService {
 
     List<SentinelClusterBeaconRouteItem> getSentinelClusterBeaconRoute(String clusterName);
 
+    String resolveKeeperContainerIp(String hostname);
+
+    Map<String, String> getAllKeeperContainerHostnameToIp();
+
     class ShardCheckerHealthCheckModels extends ArrayList<ShardCheckerHealthCheckModel> {}
 
     class InstancesDelayStatusModels extends HashMap<HostPort, Long> {};

@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTblDao;
@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.console.model.ShardModel;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -90,7 +89,7 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
   }
 
   @Override
-  public List<RedisTbl> getNewKeepers(String dcName, String clusterName, ShardModel shardModel, String srcKeeperContainerIp, String targetKeeperContainerIp) {
+  public List<RedisTbl> getNewKeepers(String dcName, String clusterName, ShardModel shardModel, long srcKeeperContainerId, long targetKeeperContainerId) {
     List<RedisTbl> newKeepers = new ArrayList<>();
     logger.debug("[migrateKeepers] origin keepers {} from cluster:{}, dc:{}, shard:{}",shardModel.getKeepers(), clusterName, dcName, shardModel.getShardTbl().getShardName());
     // Replacement semantics: the new keeper inherits the election weight of the keeper it replaces
@@ -98,7 +97,7 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     // during grayscale the TFS default is still 0, which would mislabel a keeper migrated onto BM.
     int replacedKeeperPriority = 0;
     for (RedisTbl keeper : shardModel.getKeepers()) {
-      if (!ObjectUtils.equals(keeper.getRedisIp(), srcKeeperContainerIp)) {
+      if (keeper.getKeepercontainerId() != srcKeeperContainerId) {
         newKeepers.add(keeper);
       } else {
         replacedKeeperPriority = keeper.getKeeperPriority();
@@ -106,18 +105,26 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     }
 
     if (newKeepers.isEmpty()) {
-      logger.warn("[migrateKeepers] unexpected keepers {} from cluster:{}, dc:{}, shard:{}",
+      logger.warn("[migrateKeepers] unexpected keepers {} from cluster:{}, dc:{}, shard:{}", 
               newKeepers, clusterName, dcName, shardModel.getShardTbl().getShardName());
       return newKeepers;
     }
 
     long alreadyUsedAzId = keeperContainerService.find(newKeepers.get(0).getKeepercontainerId()).getAzId();
-    List<KeeperBasicInfo> bestKeepers = findBestKeepers(clusterName, dcName, targetKeeperContainerIp);
-    logger.debug("[migrateKeepers] best keepers {} from cluster:{}, dc:{}, shard:{}, targetKeeperContainerIp:{}, srcKeeperContainerIp:{}",
-            bestKeepers, clusterName, dcName, shardModel.getShardTbl().getShardName(), targetKeeperContainerIp, srcKeeperContainerIp);
+    
+    // 当 targetKeeperContainerId 为 0 时，自动选择最佳 keeper container（兼容老逻辑）
+    List<KeeperBasicInfo> bestKeepers;
+    if (targetKeeperContainerId == 0) {
+      bestKeepers = findBestKeepers(dcName, KEEPER_PORT_DEFAULT, (ip, port) -> true, clusterName);
+    } else {
+      bestKeepers = findBestKeepersByKeeperContainerId(targetKeeperContainerId, KEEPER_PORT_DEFAULT, (ip, port) -> true, 1);
+    }
+    
+    logger.debug("[migrateKeepers] best keepers {} from cluster:{}, dc:{}, shard:{}, targetContainerId:{}, srcContainerId:{}", 
+            bestKeepers, clusterName, dcName, shardModel.getShardTbl().getShardName(), targetKeeperContainerId, srcKeeperContainerId);
     for (KeeperBasicInfo keeperSelected : bestKeepers) {
-      logger.debug("[migrateKeepers] keeperSelected {} , result:{}",keeperSelected, ObjectUtils.equals(keeperSelected.getHost(), srcKeeperContainerIp));
-      if (!ObjectUtils.equals(keeperSelected.getHost(), srcKeeperContainerIp)
+      logger.debug("[migrateKeepers] keeperSelected {}, result:{}", keeperSelected, keeperSelected.getKeeperContainerId() == srcKeeperContainerId);
+      if (keeperSelected.getKeeperContainerId() != srcKeeperContainerId
               && keeperSelected.getKeeperContainerId() != newKeepers.get(0).getKeepercontainerId()
               && isDifferentAz(keeperSelected, alreadyUsedAzId, dcName)) {
         newKeepers.add(new RedisTbl().setKeepercontainerId(keeperSelected.getKeeperContainerId())
@@ -129,9 +136,22 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
         break;
       }
     }
-    logger.debug("[migrateKeepers] new keepers {} from cluster:{}, dc:{}, shard:{}",
+    logger.debug("[migrateKeepers] new keepers {} from cluster:{}, dc:{}, shard:{}", 
             newKeepers, clusterName, dcName, shardModel.getShardTbl().getShardName());
     return newKeepers;
+  }
+  
+  private List<KeeperBasicInfo> findBestKeepersByKeeperContainerId(long targetKeeperContainerId, int beginPort, BiPredicate<String, Integer> keeperGood, int returnCount) {
+    List<KeeperBasicInfo> result = new LinkedList<>();
+    KeepercontainerTbl keepercontainerTbl = keeperContainerService.find(targetKeeperContainerId);
+    if (keepercontainerTbl == null) {
+      logger.warn("[findBestKeepersByKeeperContainerId] keepercontainer not found for id: {}", targetKeeperContainerId);
+      return result;
+    }
+    List<KeepercontainerTbl> keepercontainerTbls = new LinkedList<>();
+    keepercontainerTbls.add(keepercontainerTbl);
+    fillInResult(keepercontainerTbls, result, beginPort, keeperGood, returnCount);
+    return result;
   }
 
   @Override
@@ -150,29 +170,12 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     return newAzId != alreadyUsedAzId;
   }
 
-  private List<KeeperBasicInfo> findBestKeepers(String clusterName, String dcName, String targetKeeperContainerIp) {
-    if (targetKeeperContainerIp == null ) {
-      return findBestKeepers(dcName, KEEPER_PORT_DEFAULT, (ip, port) -> true, clusterName);
-    } else {
-      return findBestKeepersByKeeperContainer(targetKeeperContainerIp, KEEPER_PORT_DEFAULT, (ip, port) -> true, 1);
-    }
-  }
-
-  @Override
-  public List<KeeperBasicInfo> findBestKeepersByKeeperContainer(String targetKeeperContainerIp,
-                                              int beginPort, BiPredicate<String, Integer> keeperGood, int returnCount) {
-    List<KeeperBasicInfo> result = new LinkedList<>();
-    List<KeepercontainerTbl> keepercontainerTbls = new LinkedList<>();
-    keepercontainerTbls.add(keeperContainerService.find(targetKeeperContainerIp));
-    fillInResult(keepercontainerTbls, result, beginPort, keeperGood, returnCount);
-    return result;
-  }
 
 
   private void fillInResult(List<KeepercontainerTbl> keeperCount, List<KeeperBasicInfo> result, int beginPort,
       BiPredicate<String, Integer> keeperGood, int returnCount) {
 
-    Map<String, Set<Integer>> usedPortsByContainer = getUsedPortsByContainerKey(keeperCount);
+    Map<Long, Set<Integer>> usedPortsByContainer = getUsedPortsByKeeperContainerId(keeperCount);
     // find available port
     for (int i = 0; i < returnCount; i++) {
 
@@ -194,19 +197,20 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
 
   @VisibleForTesting
   int findAvailablePort(KeepercontainerTbl keepercontainerTbl, int beginPort,
-                        BiPredicate<String, Integer> keeperGood, List<KeeperBasicInfo> result, Map<String, Set<Integer>> usedPortsByContainer) {
+                        BiPredicate<String, Integer> keeperGood, List<KeeperBasicInfo> result, Map<Long, Set<Integer>> usedPortsByContainer) {
 
     int port = beginPort;
-    String containerKey = containerKey(keepercontainerTbl);
+    long keeperContainerId = keepercontainerTbl.getKeepercontainerId();
 
-    Set<Integer> existingPorts = usedPortsByContainer.get(containerKey);
+    Set<Integer> existingPorts = usedPortsByContainer.get(keeperContainerId);
 
     for (;; port++) {
 
-      if (alreadySelected(containerKey, port, result)) {
+      if (alreadySelected(keeperContainerId, port, result)) {
         continue;
       }
 
+      String containerKey = containerKey(keepercontainerTbl);
       if (!(keeperGood.test(containerKey, port))) {
         continue;
       }
@@ -220,10 +224,10 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     return port;
   }
 
-  private boolean alreadySelected(String containerKey, int port, List<KeeperBasicInfo> result) {
+  private boolean alreadySelected(long keeperContainerId, int port, List<KeeperBasicInfo> result) {
 
     for (KeeperBasicInfo keeperSelected : result) {
-      if (containerKeyOf(keeperSelected).equalsIgnoreCase(containerKey) && keeperSelected.getPort() == port) {
+      if (keeperSelected.getKeeperContainerId() == keeperContainerId && keeperSelected.getPort() == port) {
         return true;
       }
     }
@@ -233,9 +237,8 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
   /**
    * 端口记账的键：物理机容器用 IP，pod 容器用 hostname。
    * <p>
-   * 键不能换成 keepercontainerId —— 一台物理机上可以登记多个 keepercontainer 实例（同 IP
-   * 不同管理端口），它们共享同一份 keeper 端口空间，按 id 分组会让同机实例间的端口冲突失去检测。
-   * pod 则是一容器一 hostname，按 hostname 分组与按 IP 分组等价。
+   * 该键仅用于 keeperGood 断言，让调用方区分 pod。
+   * 端口记账已统一改用 keepercontainer_id。
    */
   private String containerKey(KeepercontainerTbl keepercontainerTbl) {
     return isPodContainer(keepercontainerTbl)
@@ -261,29 +264,20 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
     return null == hostName ? "" : hostName;
   }
 
-  private Map<String, Set<Integer>> getUsedPortsByContainerKey(List<KeepercontainerTbl> keeperCount) {
+  private Map<Long, Set<Integer>> getUsedPortsByKeeperContainerId(List<KeepercontainerTbl> keeperCount) {
 
-    Map<String, Set<Integer>> map = Maps.newHashMap();
-    // 同一个键可能对应多行（同机多容器实例），查询只需按键做一次
-    Map<String, KeepercontainerTbl> keyToContainer = Maps.newHashMap();
-    keeperCount.forEach(kc -> {
-      String key = containerKey(kc);
-      map.putIfAbsent(key, new HashSet<Integer>());
-      keyToContainer.putIfAbsent(key, kc);
-    });
+    Map<Long, Set<Integer>> map = Maps.newHashMap();
+    keeperCount.forEach(kc -> map.putIfAbsent(kc.getKeepercontainerId(), new HashSet<Integer>()));
 
     List<Future> futures = new ArrayList<>(map.size());
-    for(Map.Entry<String, Set<Integer>> entry : map.entrySet()) {
+    for(Map.Entry<Long, Set<Integer>> entry : map.entrySet()) {
 
-      String containerKey = entry.getKey();
+      long keeperContainerId = entry.getKey();
       Set<Integer> existingPorts = entry.getValue();
-      boolean pod = isPodContainer(keyToContainer.get(containerKey));
       Future future = executor.submit(new Runnable() {
         @Override
         public void run() {
-          List<RedisTbl> redisOnSameContainer = pod
-                  ? redisService.findAllRedisWithSameHostName(containerKey)
-                  : redisService.findAllRedisWithSameIP(containerKey);
+          List<RedisTbl> redisOnSameContainer = redisService.findAllKeepersByKeeperContainerId(keeperContainerId);
           redisOnSameContainer.forEach(redisTbl -> existingPorts.add(redisTbl.getRedisPort()));
         }
       });
@@ -299,7 +293,7 @@ public class DefaultKeeperAdvancedService extends AbstractConsoleService<RedisTb
             futureToCancel.cancel(true);
           }
         }
-        return getUsedPortsByContainerKey(keeperCount);
+        return getUsedPortsByKeeperContainerId(keeperCount);
       }
     }
     return map;

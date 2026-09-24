@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.KeeperStateModel;
 import com.ctrip.xpipe.redis.console.healthcheck.session.KeeperConsoleSessionManager;
 import com.ctrip.xpipe.redis.console.keeper.command.KeeperReplIdGetCommand;
+import com.ctrip.xpipe.redis.console.service.CrossDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.console.service.KeeperSessionService;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
@@ -17,6 +18,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -38,6 +40,9 @@ public class KeeperSessionServiceImpl extends AbstractService implements KeeperS
 
     @Autowired
     private MetaCache metaCache;
+
+    @Autowired
+    private CrossDcKeeperContainerAddressService keeperContainerAddressService;
 
     @Resource(name = GLOBAL_EXECUTOR)
     private ExecutorService executor;
@@ -63,15 +68,26 @@ public class KeeperSessionServiceImpl extends AbstractService implements KeeperS
         Map<HostPort, KeeperStateModel> resultMap = new HashMap<>();
         Map<HostPort, List<CommandFuture<?>>> futuresMap = new HashMap<>();
         redisOfDcClusterShard.forEach(keeperMeta -> {
-            HostPort keeper = new HostPort(keeperMeta.getIp(), keeperMeta.getPort());
+            // 容器 keeper 的 meta ip 是占位值，按 hostname 反查真实 ip。
+            // 只能用局部变量，不能 keeperMeta.setIp()：metaCache 返回的是共享 meta 对象，改它会污染全局缓存
+            String ip = keeperMeta.getIp();
+            if (!StringUtil.isEmpty(keeperMeta.getHostname())) {
+                String realIp = keeperContainerAddressService.getIpByHostname(dcId, keeperMeta.getHostname());
+                if (!StringUtil.isEmpty(realIp)) {
+                    ip = realIp;
+                }
+            }
+            // 用反查后的 ip 构造 endpoint，replId 查询才能连到真实地址
+            HostPort keeper = new HostPort(ip, keeperMeta.getPort());
             List<CommandFuture<?>> futures = new ArrayList<>();
             futuresMap.put(keeper, futures);
+            // 反查到的 ip 回填给前端展示，hostname 一并返回
             KeeperStateModel model = new KeeperStateModel()
-                    .setHost(keeperMeta.getIp())
+                    .setHost(ip)
                     .setPort(keeperMeta.getPort())
                     .setHostname(keeperMeta.getHostname());
             resultMap.put(keeper, model);
-            CommandFuture<Role> keeperRole = getKeeperRole(keeperMeta.getIp(), keeperMeta.getPort(), new RedisSession.RollCallback() {
+            CommandFuture<Role> keeperRole = getKeeperRole(ip, keeperMeta.getPort(), new RedisSession.RollCallback() {
                 @Override
                 public void role(String role, Role detail) {
                     model.setRole(((SlaveRole) detail).getMasterState());
@@ -83,7 +99,7 @@ public class KeeperSessionServiceImpl extends AbstractService implements KeeperS
                 }
             });
             futures.add(keeperRole);
-            CommandFuture<String> keeperInfo = infoKeeper(keeperMeta.getIp(), keeperMeta.getPort(), InfoCommand.INFO_TYPE.REPLICATION.cmd(), new Callbackable<String>() {
+            CommandFuture<String> keeperInfo = infoKeeper(ip, keeperMeta.getPort(), InfoCommand.INFO_TYPE.REPLICATION.cmd(), new Callbackable<String>() {
                 @Override
                 public void success(String message) {
                     InfoResultExtractor extractor = new InfoResultExtractor(message);

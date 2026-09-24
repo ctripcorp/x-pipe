@@ -1,7 +1,7 @@
 package com.ctrip.xpipe.redis.meta.server.keeper.container;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
-import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerServiceFactory;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
@@ -21,8 +21,8 @@ public class DefaultKeeperContainerServiceFactory implements KeeperContainerServ
     private Map<KeeperContainerMeta, KeeperContainerService> services = Maps.newConcurrentMap();
     private RestOperations restTemplate = RestTemplateFactory.createCommonsHttpRestTemplate();
 
-    @Autowired(required = false)
-    private KeeperContainerAddressService addressService;
+    @Autowired
+    private CurrentDcKeeperContainerAddressService addressService;
 
     @Override
     public KeeperContainerService getOrCreateKeeperContainerService(KeeperContainerMeta keeperContainerMeta) {

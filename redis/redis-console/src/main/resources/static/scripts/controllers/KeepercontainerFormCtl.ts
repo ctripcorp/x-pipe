@@ -87,7 +87,9 @@ function KeepercontainerFormCtl($scope, $stateParams, $window, toastr, AppUtil, 
             logicalBuId = 0;
         }
         if($scope.operateType == OPERATE_TYPE.CREATE) {
-            KeeperContainerService.addKeepercontainer($scope.keepercontainer.addr, $scope.keepercontainer.dcName,
+            KeeperContainerService.addKeepercontainer($scope.keepercontainer.ip,
+                        $scope.keepercontainer.keepercontainerHostName, $scope.keepercontainer.port,
+                        $scope.keepercontainer.dcName,
                         $scope.keepercontainer.orgName, $scope.keepercontainer.azName, $scope.keepercontainer.active,
                         $scope.keepercontainer.diskType, $scope.keepercontainer.tag, logicalBuId)
                 .then(function(result) {
@@ -101,7 +103,9 @@ function KeepercontainerFormCtl($scope, $stateParams, $window, toastr, AppUtil, 
                     toastr.error(AppUtil.errorMsg(result), "添加失败");
                 });
         } else {
-            KeeperContainerService.updateKeepercontainer($scope.keepercontainer.addr, $scope.keepercontainer.dcName,
+            KeeperContainerService.updateKeepercontainer($scope.keepercontainer.ip,
+                        $scope.keepercontainer.keepercontainerHostName, $scope.keepercontainer.port,
+                        $scope.keepercontainer.dcName,
                         $scope.keepercontainer.orgName, $scope.keepercontainer.azName, $scope.keepercontainer.active,
                         $scope.keepercontainer.diskType, $scope.keepercontainer.tag, logicalBuId)
                 .then(function(result) {

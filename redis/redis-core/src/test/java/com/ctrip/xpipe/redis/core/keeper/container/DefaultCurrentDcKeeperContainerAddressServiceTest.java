@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.core.keeper.container;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
-import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 import org.apache.curator.framework.CuratorFramework;
@@ -19,29 +18,29 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-public class DefaultKeeperContainerAddressServiceTest extends AbstractTest {
+public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractTest {
 
     private static final String POD_A = "keepercontainer-pod-a-0";
     private static final String POD_B = "keepercontainer-pod-b-0";
 
     private TestingServer zkServer;
     private DefaultZkClient zkClient;
-    private DefaultKeeperContainerAddressService service;
+    private DefaultCurrentDcKeeperContainerAddressService service;
 
     @Before
-    public void beforeDefaultKeeperContainerAddressServiceTest() throws Exception {
+    public void beforeDefaultCurrentDcKeeperContainerAddressServiceTest() throws Exception {
         zkServer = new TestingServer();
         zkClient = new DefaultZkClient(new DefaultZkConfig(zkServer.getConnectString()));
         zkClient.initialize();
         zkClient.start();
 
-        service = new DefaultKeeperContainerAddressService(zkClient);
+        service = new DefaultCurrentDcKeeperContainerAddressService(zkClient);
         service.initialize();
         service.start();
     }
 
     @After
-    public void afterDefaultKeeperContainerAddressServiceTest() throws Exception {
+    public void afterDefaultCurrentDcKeeperContainerAddressServiceTest() throws Exception {
         try {
             service.stop();
             zkClient.stop();

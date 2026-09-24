@@ -18,6 +18,7 @@ import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import com.ctrip.xpipe.utils.ObjectUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.dianping.cat.utils.StringUtils;
@@ -63,6 +64,8 @@ public class ShardModelServiceImpl implements ShardModelService{
     private AzGroupClusterRepository azGroupClusterRepository;
 	@Autowired
     private KeeperAdvancedService keeperAdvancedService;
+	@Autowired
+    private CrossDcKeeperContainerAddressService keeperContainerAddressService;
 
     private static final Logger logger = LoggerFactory.getLogger(ShardModelServiceImpl.class);
 
@@ -277,37 +280,39 @@ public class ShardModelServiceImpl implements ShardModelService{
 
 	@Override
 	public boolean migrateBackupKeeper(String dcName, String clusterName, ShardModel shardModel,
-                                       String srcKeeperContainerIp, String targetKeeperContainerIp) {
+                                       long srcKeeperContainerId, long targetKeeperContainerId) {
         List<RedisTbl> newKeepers = keeperAdvancedService.getNewKeepers(dcName, clusterName, shardModel,
-                                                                        srcKeeperContainerIp, targetKeeperContainerIp);
+                                                                        srcKeeperContainerId, targetKeeperContainerId);
         return doMigrateKeepers(dcName, clusterName, shardModel, newKeepers);
     }
 
     @Override
-    public boolean switchActiveKeeper(String activeIp, String backupIp, ShardModel shardModel) {
+    public boolean switchActiveKeeper(String dcName, ShardModel shardModel, long activeKeeperContainerId, long backupKeeperContainerId) {
         List<RedisTbl> keepers = shardModel.getKeepers();
         if (keepers == null || keepers.isEmpty()) {
-            logger.warn("[switchMaster][keeperSizeMissMatch][{}:{}->{}] {}",
-                    shardModel.getShardTbl().getShardName(), activeIp, backupIp, 0);
+            logger.warn("[switchMaster][keeperSizeMissMatch][activeId:{}, backupId:{}] {}",
+                    activeKeeperContainerId, backupKeeperContainerId, 0);
             return false;
         }
         Endpoint activeKeeper = null, backUpKeeper = null;
-        String activeKeeperHostname = null;
+        String activeKeeperIp = null;
+        
         for (RedisTbl keeper : keepers) {
-            if (keeper.getRedisIp().equals(activeIp)) {
-                activeKeeper = new DefaultEndPoint(keeper.getRedisIp(), keeper.getRedisPort());
-                activeKeeperHostname = keeper.getHostName();
-            } else if (keeper.getRedisIp().equals(backupIp)) {
-                backUpKeeper = new DefaultEndPoint(keeper.getRedisIp(), keeper.getRedisPort());
+            if (keeper.getKeepercontainerId() == activeKeeperContainerId) {
+                activeKeeperIp = resolveKeeperIp(keeper.getRedisIp(), keeper.getHostName(), dcName);
+                activeKeeper = new DefaultEndPoint(activeKeeperIp, keeper.getRedisPort());
+            } else if (keeper.getKeepercontainerId() == backupKeeperContainerId) {
+                String backupIp = resolveKeeperIp(keeper.getRedisIp(), keeper.getHostName(), dcName);
+                backUpKeeper = new DefaultEndPoint(backupIp, keeper.getRedisPort());
             }
         }
 
         if (activeKeeper == null || backUpKeeper == null) {
-            logger.warn("[switchMaster][keeperActiveMissMatch][{}:{}->{}] keepers={}",
-                    shardModel.getShardTbl().getShardName(), activeIp, backupIp, keepers.size());
+            logger.warn("[switchMaster][keeperNotFound][activeId:{}, backupId:{}]",
+                    activeKeeperContainerId, backupKeeperContainerId);
             return false;
         }
-        Command<?> switchMasterCommand = retryCommandFactory.createRetryCommand(new KeeperResetCommand<>(activeKeeper.getHost(), activeKeeperHostname, shardModel.getShardTbl().getId(), keeperContainerCheckerService));
+        Command<?> switchMasterCommand = retryCommandFactory.createRetryCommand(new KeeperResetCommand<>(activeKeeperIp, shardModel.getShardTbl().getId(), keeperContainerCheckerService));
         Command<?> checkKeeperRoleCommand = retryCommandFactory.createRetryCommand(new CheckKeeperActiveCommand<>(keyedObjectPool, scheduled, backUpKeeper, true));
         SequenceCommandChain chain = new SequenceCommandChain(false, false);
         chain.add(switchMasterCommand);
@@ -316,37 +321,43 @@ public class ShardModelServiceImpl implements ShardModelService{
             chain.execute().get();
             return chain.future().isSuccess();
         } catch (Exception e) {
-            logger.error("[switchMaster][commandChainError][{}:{}->{}]", shardModel.getShardTbl().getShardName(), activeKeeper, backUpKeeper, e);
+            logger.error("[switchMaster][commandChainError][activeId:{}, backupId:{}]", activeKeeperContainerId, backupKeeperContainerId, e);
             return false;
         }  finally {
             try {
                 keyedObjectPool.clear(activeKeeper);
                 keyedObjectPool.clear(backUpKeeper);
             } catch (ObjectPoolException e) {
-                logger.error("[switchMaster][keyedObjectPoolClearError][{}:{}->{}]", shardModel.getShardTbl().getShardName(), activeKeeper, backUpKeeper, e);
+                logger.error("[switchMaster][keyedObjectPoolClearError][activeId:{}, backupId:{}]", activeKeeperContainerId, backupKeeperContainerId, e);
             }
         }
     }
 
     @Override
-    public boolean migrateActiveKeeper(String dcName, String clusterName, ShardModel shardModel, String srcKeeperContainerIp, String targetKeeperContainerIp) throws Throwable {
+    public boolean migrateActiveKeeper(String dcName, String clusterName, ShardModel shardModel, 
+                                        long srcKeeperContainerId, long targetKeeperContainerId) throws Throwable {
         List<RedisTbl> oldKeepers = shardModel.getKeepers();
         List<RedisTbl> newKeepers = keeperAdvancedService.getNewKeepers(dcName, clusterName, shardModel,
-                srcKeeperContainerIp, targetKeeperContainerIp);
+                srcKeeperContainerId, targetKeeperContainerId);
         if (!doMigrateKeepers(dcName, clusterName, shardModel, newKeepers)) {
             logger.error("[migrateActiveKeeper][doMigrateKeepersFailed][{}:{}:{}]", dcName, clusterName, shardModel);
             return false;
         }
         Endpoint activeKeeper, backUpKeeper;
-        String activeKeeperHostname = null;
-        if (newKeepers.get(0).getRedisIp().equals(targetKeeperContainerIp)) {
-            activeKeeper = new DefaultEndPoint(newKeepers.get(1).getRedisIp(), newKeepers.get(1).getRedisPort());
-            activeKeeperHostname = newKeepers.get(1).getHostName();
-            backUpKeeper = new DefaultEndPoint(newKeepers.get(0).getRedisIp(), newKeepers.get(0).getRedisPort());
+        String activeKeeperIp = null;
+        
+        if (newKeepers.get(0).getKeepercontainerId() == targetKeeperContainerId) {
+            activeKeeperIp = resolveKeeperIp(newKeepers.get(1).getRedisIp(), newKeepers.get(1).getHostName(), dcName);
+            activeKeeper = new DefaultEndPoint(activeKeeperIp, newKeepers.get(1).getRedisPort());
+            
+            String backupIp = resolveKeeperIp(newKeepers.get(0).getRedisIp(), newKeepers.get(0).getHostName(), dcName);
+            backUpKeeper = new DefaultEndPoint(backupIp, newKeepers.get(0).getRedisPort());
         } else {
-            backUpKeeper = new DefaultEndPoint(newKeepers.get(1).getRedisIp(), newKeepers.get(1).getRedisPort());
-            activeKeeper = new DefaultEndPoint(newKeepers.get(0).getRedisIp(), newKeepers.get(0).getRedisPort());
-            activeKeeperHostname = newKeepers.get(0).getHostName();
+            String backupIp = resolveKeeperIp(newKeepers.get(1).getRedisIp(), newKeepers.get(1).getHostName(), dcName);
+            backUpKeeper = new DefaultEndPoint(backupIp, newKeepers.get(1).getRedisPort());
+            
+            activeKeeperIp = resolveKeeperIp(newKeepers.get(0).getRedisIp(), newKeepers.get(0).getHostName(), dcName);
+            activeKeeper = new DefaultEndPoint(activeKeeperIp, newKeepers.get(0).getRedisPort());
         }
         SequenceCommandChain chain = null;
         try {
@@ -363,7 +374,7 @@ public class ShardModelServiceImpl implements ShardModelService{
                 return false;
             }
             Command<?> fullSyncJudgeRetryCommand = retryCommandFactory.createRetryCommand(new FullSyncJudgeCommand<>(keyedObjectPool, scheduled, activeKeeper, backUpKeeper, activeMasterReplOffset));
-            Command<?> switchmasterCommand = retryCommandFactory.createRetryCommand(new KeeperResetCommand<>(activeKeeper.getHost(), activeKeeperHostname, shardModel.getShardTbl().getId(), keeperContainerCheckerService));
+            Command<?> switchmasterCommand = retryCommandFactory.createRetryCommand(new KeeperResetCommand<>(activeKeeperIp, shardModel.getShardTbl().getId(), keeperContainerCheckerService));
             Command<?> checkKeeperRoleCommand = retryCommandFactory.createRetryCommand(new CheckKeeperActiveCommand<>(keyedObjectPool, scheduled, backUpKeeper, true));
             chain = new SequenceCommandChain(false, false);
             chain.add(fullSyncJudgeRetryCommand);
@@ -383,6 +394,27 @@ public class ShardModelServiceImpl implements ShardModelService{
             }
         }
 
+    }
+    
+    /**
+     * 解析 keeper 容器的真实 IP
+     * 
+     * @param keeperIp keeper 的 IP（容器可能为空）
+     * @param hostname keeper 的 hostname（物理机为空）
+     * @return 解析后的真实 IP
+     */
+    private String resolveKeeperIp(String keeperIp, String hostname, String dcName) {
+        // 容器形态：hostname不为空且IP为空时，需要反查IP
+        if (!StringUtil.isEmpty(hostname)) {
+            String resolvedIp = keeperContainerAddressService.getIpByHostname(dcName, hostname);
+            if (resolvedIp == null) {
+                throw new IllegalStateException("Cannot resolve IP for hostname: " + hostname);
+            }
+            logger.debug("[resolveKeeperIp] hostname {} resolved to {}", hostname, resolvedIp);
+            return resolvedIp;
+        }
+
+        return keeperIp;
     }
 
     private boolean getMigrateActiveKeeperResult(SequenceCommandChain chain, String dcName, String clusterName, ShardModel shardModel, List<RedisTbl> oldKeepers) throws Throwable{

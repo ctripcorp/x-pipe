@@ -6,10 +6,10 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
-import com.ctrip.xpipe.redis.core.meta.MetaUtils;
 import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
+import com.ctrip.xpipe.redis.core.meta.MetaUtils;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.meta.impl.CurrentCRDTShardMeta;
@@ -375,10 +375,13 @@ public class CurrentMeta implements Releasable {
 		List<KeeperMeta> keeperMetas = new ArrayList<>();
 		if (surviveKeepers != null) {
 			for (KeeperMeta surviveKeeper : surviveKeepers) {
+				// 仍然新建对象返回，避免把 currentMeta 内的实例暴露给调用方；
+				// keeperContainerId 是容器 keeper 的定位依据，不能在这里丢掉
 				keeperMetas.add(new KeeperMeta()
 						.setIp(surviveKeeper.getIp())
 						.setPort(surviveKeeper.getPort())
-						.setActive(surviveKeeper.getActive()));
+						.setActive(surviveKeeper.getActive())
+						.setKeeperContainerId(surviveKeeper.getKeeperContainerId()));
 			}
 		}
 		return keeperMetas;

@@ -1371,6 +1371,17 @@
 					]]>
 				</statement>
 			</query>
+			<query name='find-all-keepers-by-keepercontainer-id' type='SELECT' multiple="true">
+				<param name='keeper-container-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='keepercontainer-id' /> = ${keeper-container-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
 			<query name='find-with-host-name-port' type='SELECT' multiple="false">
 				<param name='host-name'/>
 				<param name='redis-port'/>
@@ -1990,6 +2001,19 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='keepercontainer-host-name'/> = ${keepercontainer-host-name}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-by-hostname-port" type="SELECT" multiple="false">
+				<param name="keepercontainer-host-name"/>
+				<param name="keepercontainer-port"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='keepercontainer-host-name'/> = ${keepercontainer-host-name}
+					AND <FIELD name='keepercontainer-port'/> = ${keepercontainer-port}
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>

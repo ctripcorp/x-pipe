@@ -248,12 +248,12 @@ function router($stateProvider, $urlRouterProvider) {
             controller: 'AppliercontainerFormCtl'
         })
         .state('keepercontainer_overall',{
-            url: '/keepercontainer_overall?keepercontainerIp',
+            url: '/keepercontainer_overall?keeperContainerId',
             templateUrl: 'views/index/keepercontainer_overall.html',
             controller: 'KeepercontainerOverallCtl'
         })
         .state('keepercontainer_keeper_overall',{
-            url: '/keepercontainer_keeper_overall?ip',
+            url: '/keepercontainer_keeper_overall?keeperContainerId',
             templateUrl: 'views/index/keepercontainer_keeper_overall.html',
             controller: 'KeeperContainerKeeperOverAllCtl'
         })

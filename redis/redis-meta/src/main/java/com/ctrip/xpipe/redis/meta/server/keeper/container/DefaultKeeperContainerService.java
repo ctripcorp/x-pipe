@@ -3,8 +3,8 @@ package com.ctrip.xpipe.redis.meta.server.keeper.container;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.keeper.container.HostNameVerification;
-import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorParser;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -30,14 +30,14 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
             };
     private KeeperContainerMeta keeperContainerMeta;
     private RestOperations restTemplate;
-    private KeeperContainerAddressService addressService;
+    private CurrentDcKeeperContainerAddressService addressService;
 
     public DefaultKeeperContainerService(KeeperContainerMeta keeperContainerMeta, RestOperations restTemplate) {
         this(keeperContainerMeta, restTemplate, null);
     }
 
     public DefaultKeeperContainerService(KeeperContainerMeta keeperContainerMeta, RestOperations restTemplate,
-                                         KeeperContainerAddressService addressService) {
+                                         CurrentDcKeeperContainerAddressService addressService) {
         this.keeperContainerMeta = keeperContainerMeta;
         this.restTemplate = restTemplate;
         this.addressService = addressService;
@@ -131,25 +131,17 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
         }
     }
 
-    /**
-     * 解析容器地址: IP 有值优先用 IP；IP 无值时用 hostname 反查 IP
-     */
+
     private String resolveAddress() {
         String ip = keeperContainerMeta.getIp();
         String hostname = keeperContainerMeta.getHostname();
-        
-        // 物理机形态: IP 有值直接用
-        if (!StringUtil.isEmpty(ip) && !"0.0.0.0".equals(ip)) {
+
+        if (StringUtil.isEmpty(hostname)) {
             return ip;
         }
         
-        // 容器形态: IP 为空或 0.0.0.0，用 hostname 反查
-        if (StringUtil.isEmpty(hostname)) {
-            throw new IllegalStateException("keepercontainer has neither valid ip nor hostname: " + keeperContainerMeta);
-        }
-        
         if (null == addressService) {
-            throw new IllegalStateException("KeeperContainerAddressService not configured, cannot resolve hostname: " + hostname);
+            throw new IllegalStateException("CurrentDcKeeperContainerAddressService not configured, cannot resolve hostname: " + hostname);
         }
         
         String resolvedIp = addressService.getIpByHostname(hostname);

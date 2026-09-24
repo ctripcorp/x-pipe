@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.CrossRegionKeeperSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.After;
 import org.junit.Assert;
@@ -68,6 +69,9 @@ public class InfoReplIdActionTest {
     private CrossRegionKeeperSessionManager crossRegionKeeperSessionManager;
 
     @Mock
+    private CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService;
+
+    @Mock
     private MetaCache metaCache;
 
     @Mock
@@ -111,7 +115,7 @@ public class InfoReplIdActionTest {
         captureInfoCallbacks();
 
         action = new InfoReplIdAction(scheduled, instance, executors,
-                crossRegionKeeperSessionManager, metaCache);
+                crossRegionKeeperSessionManager, metaCache, currentDcKeeperContainerAddressService);
         action.addListener(listener);
         LifecycleHelper.initializeIfPossible(action);
         LifecycleHelper.startIfPossible(action);
@@ -346,7 +350,7 @@ public class InfoReplIdActionTest {
         // -1 不可能是任何真实编号（从 1 开始），于是走「陈旧丢弃」分支，断言只针对 future 本身
         DefaultCommandFuture<String> slaveFuture = new DefaultCommandFuture<>();
         KeeperReplIdCommand keeperStage = new KeeperReplIdCommand(instance, slaveFuture,
-                crossRegionKeeperSessionManager, metaCache, executors);
+                crossRegionKeeperSessionManager, currentDcKeeperContainerAddressService, metaCache, executors);
         DefaultCommandFuture<Object> chainFuture = new DefaultCommandFuture<>();
         chainFuture.setFailure(new CommandChainException("sequence chain, fail stop",
                 new RuntimeException("slave boom"), Collections.emptyList()));
@@ -362,7 +366,7 @@ public class InfoReplIdActionTest {
     public void keeperStageFutureIsNotTouchedWhenThatStageItselfFailed() {
         DefaultCommandFuture<String> slaveFuture = new DefaultCommandFuture<>();
         KeeperReplIdCommand keeperStage = new KeeperReplIdCommand(instance, slaveFuture,
-                crossRegionKeeperSessionManager, metaCache, executors);
+                crossRegionKeeperSessionManager, currentDcKeeperContainerAddressService, metaCache, executors);
         keeperStage.future().setFailure(new KeeperNotInMetaException("keeper not in meta"));
         DefaultCommandFuture<Object> chainFuture = new DefaultCommandFuture<>();
         chainFuture.setFailure(new CommandChainException("sequence chain, fail stop",

@@ -1,13 +1,13 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.service.CrossDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.HostNameVerification;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressInfo;
-import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,7 @@ public class DefaultKeeperContainerService extends AbstractService implements Ke
     private static final String PATH_GET_KEEPER_DISK_INFO = "/keepers/disk";
 
     @Autowired
-    private KeeperContainerAddressService keeperContainerAddressService;
+    private CrossDcKeeperContainerAddressService keeperContainerAddressService;
 
     /**
      * 解析地址：hostname 不为空则用它反查 IP，为空则直接使用 ip
@@ -43,18 +43,18 @@ public class DefaultKeeperContainerService extends AbstractService implements Ke
      * @return 解析后的 HostPort
      * @throws IllegalStateException hostname 无法解析时抛出
      */
-    private HostPort resolveAddress(String ip, String hostname, int port) {
+    private HostPort resolveAddress(String dcName, String ip, String hostname, int port) {
         String address = ip;
         
         // hostname 不为空则使用 hostname 反查 IP
         if (!StringUtil.isEmpty(hostname)) {
-            if (keeperContainerAddressService == null) {
-                throw new IllegalStateException("KeeperContainerAddressService not initialized");
-            }
-            
-            String resolvedIp = keeperContainerAddressService.getIpByHostname(hostname);
+            // 已知机房时直接定向到该机房的 console；未知机房才退化为广播查询所有机房
+            String resolvedIp = StringUtil.isEmpty(dcName)
+                    ? keeperContainerAddressService.getIpByHostname(hostname)
+                    : keeperContainerAddressService.getIpByHostname(dcName, hostname);
             if (resolvedIp == null) {
-                throw new IllegalStateException("no alive keepercontainer for hostname: " + hostname);
+                throw new IllegalStateException("no alive keepercontainer for hostname: " + hostname
+                        + (StringUtil.isEmpty(dcName) ? "" : " in dc: " + dcName));
             }
             address = resolvedIp;
         }
@@ -98,8 +98,8 @@ public class DefaultKeeperContainerService extends AbstractService implements Ke
     }
 
     @Override
-    public void resetKeeper(String ip, String hostname, Long replId) {
-        HostPort address = resolveAddress(ip, hostname, KeeperContainerAddressInfo.KEEPER_CONTAINER_PORT);
+    public void resetKeeper(String dcName, String ip, String hostname, Long replId) {
+        HostPort address = resolveAddress(dcName, ip, hostname, KeeperContainerAddressInfo.KEEPER_CONTAINER_PORT);
         
         KeeperTransMeta keeperInstanceMeta = new KeeperTransMeta();
         keeperInstanceMeta.setReplId(replId);
@@ -113,8 +113,8 @@ public class DefaultKeeperContainerService extends AbstractService implements Ke
     }
 
     @Override
-    public void releaseRdb(String ip, String hostname, int port, Long replId) {
-        HostPort address = resolveAddress(ip, hostname, port);
+    public void releaseRdb(String dcName, String ip, String hostname, int port, Long replId) {
+        HostPort address = resolveAddress(dcName, ip, hostname, port);
         
         KeeperTransMeta keeperInstanceMeta = new KeeperTransMeta();
         keeperInstanceMeta.setReplId(replId);

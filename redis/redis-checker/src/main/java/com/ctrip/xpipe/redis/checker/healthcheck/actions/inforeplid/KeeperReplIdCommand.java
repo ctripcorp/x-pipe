@@ -7,9 +7,11 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.CrossRegionKeeperSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.unidal.tuple.Triple;
 
 import java.util.List;
@@ -37,16 +39,19 @@ class KeeperReplIdCommand extends AbstractCommand<Triple<String, String, String>
 
     private final CrossRegionKeeperSessionManager crossRegionKeeperSessionManager;
 
+    private final CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService;
+
     private final MetaCache metaCache;
 
     private final Executor executor;
 
     KeeperReplIdCommand(RedisHealthCheckInstance instance, CommandFuture<String> slaveInfoFuture,
-                        CrossRegionKeeperSessionManager crossRegionKeeperSessionManager,
+                        CrossRegionKeeperSessionManager crossRegionKeeperSessionManager, CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService,
                         MetaCache metaCache, Executor executor) {
         this.instance = instance;
         this.slaveInfoFuture = slaveInfoFuture;
         this.crossRegionKeeperSessionManager = crossRegionKeeperSessionManager;
+        this.currentDcKeeperContainerAddressService = currentDcKeeperContainerAddressService;
         this.metaCache = metaCache;
         this.executor = executor;
     }
@@ -67,7 +72,11 @@ class KeeperReplIdCommand extends AbstractCommand<Triple<String, String, String>
                 instance.getCheckInfo().getClusterId(),
                 instance.getCheckInfo().getShardId());
         boolean keeperInMeta = keepers.stream()
-                .anyMatch(keeper -> masterHost.equals(keeper.getIp()) && masterPort == keeper.getPort());
+                .anyMatch(keeper -> {
+                    String metaKeeperIp = StringUtil.isEmpty(keeper.getHostname()) ? keeper.getIp() :
+                            currentDcKeeperContainerAddressService.getIpByHostname(keeper.getHostname());
+                    return metaKeeperIp != null && masterHost.equals(keeper.getIp()) && masterPort == keeper.getPort();
+                });
         if (!keeperInMeta) {
             getLogger().info("[doExecute][keeper not in meta] {} master={}:{}",
                     instance.getCheckInfo().getHostPort(), masterHost, masterPort);

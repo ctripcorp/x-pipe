@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
-import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleDisableDbCondition;
 import com.ctrip.xpipe.redis.checker.spring.DisableDbMode;
@@ -12,7 +11,6 @@ import com.ctrip.xpipe.redis.console.keeper.entity.KeeperContainerDiskType;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.query.DalQuery;
 import com.ctrip.xpipe.redis.console.service.*;
-import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -68,6 +66,9 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
   @Autowired
   private LogicalBuService logicalBuService;
+
+  @Autowired
+  private CrossDcKeeperContainerAddressService keeperContainerAddressService;
 
   private RestOperations restTemplate;
 
@@ -315,12 +316,12 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
 
     KeepercontainerTbl proto = dao.createLocal();
 
-    if(keeperContainerAlreadyExists(createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort())) {
+    if(keeperContainerAlreadyExists(createInfo.getKeepercontainerHostName(), createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort())) {
       throw new IllegalArgumentException("Keeper Container with IP: "
               + createInfo.getKeepercontainerIp() + " already exists");
     }
 
-    if (!checkIpAndPort(createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort())) {
+    if (!keeperContainerIsHealthy(createInfo.getKeepercontainerHostName(), createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort(), createInfo.getDcName())) {
       throw new IllegalArgumentException(String.format("Keeper container with ip:%s, port:%d is unhealthy",
               createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort()));
     }
@@ -349,11 +350,11 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     }
 
     proto.setKeepercontainerDc(dcTbl.getId())
-            .setKeepercontainerIp(createInfo.getKeepercontainerIp())
+            .setKeepercontainerIp(createInfo.getKeepercontainerIp() == null ? "" : createInfo.getKeepercontainerIp())
             .setKeepercontainerPort(createInfo.getKeepercontainerPort())
             // 物理机容器以 IP 为身份，hostname 留空串；该列 NOT NULL，且 unidal 生成的是全字段
             // INSERT，DB 的 DEFAULT '' 不会生效，必须在此显式赋值
-            .setKeepercontainerHostName("")
+            .setKeepercontainerHostName(createInfo.getKeepercontainerHostName() == null ? "" : createInfo.getKeepercontainerHostName())
             .setKeepercontainerOrgId(org.getId())
             .setTag(createInfo.getTag() == null ? "" : createInfo.getTag())
             .setKeepercontainerActive(createInfo.isActive())
@@ -374,13 +375,16 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
             dao.findByDcName(dc, KeepercontainerTblEntity.READSET_FULL));
 
     OrgInfoTranslator translator = new OrgInfoTranslator();
-    return Lists.newArrayList(Lists.transform(keepercontainerTbls, new Function<KeepercontainerTbl, KeeperContainerCreateInfo>() {
+    
+    // 先转换所有结果
+    List<KeeperContainerCreateInfo> result = Lists.newArrayList(Lists.transform(keepercontainerTbls, new Function<KeepercontainerTbl, KeeperContainerCreateInfo>() {
       @Override
       public KeeperContainerCreateInfo apply(KeepercontainerTbl input) {
         OrganizationTbl org = translator.getFromXPipeId(input.getKeepercontainerOrgId());
 
         KeeperContainerCreateInfo info = new KeeperContainerCreateInfo()
                 .setDcName(dc).setActive(input.isKeepercontainerActive())
+                .setKeepercontainerHostName(input.getKeepercontainerHostName())
                 .setKeepercontainerIp(input.getKeepercontainerIp())
                 .setKeepercontainerPort(input.getKeepercontainerPort())
                 .setTag(input.getTag())
@@ -402,12 +406,28 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
         return info;
       }
     }));
+    
+    // 检查是否有 keeper container 有 hostname，有才反查 IP
+    List<KeeperContainerCreateInfo> hasHostname = result.stream().filter(info -> !StringUtil.isEmpty(info.getKeepercontainerHostName())).toList();
+    if (!hasHostname.isEmpty()) {
+      Map<String, String> hostnameToIpMap = keeperContainerAddressService.getAllHostnameToIp(dc);
+      if (hostnameToIpMap != null) {
+        hasHostname.forEach(info -> {
+          String ip = hostnameToIpMap.get(info.getKeepercontainerHostName());
+          if (!StringUtil.isEmpty(ip)) {
+            info.setKeepercontainerIp(ip);
+          }
+        });
+      }
+    }
+    
+    return result;
   }
 
   @Override
   public void
   updateKeeperContainer(KeeperContainerCreateInfo createInfo) {
-    KeepercontainerTbl keepercontainerTbl = findByIpPort(createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort());
+    KeepercontainerTbl keepercontainerTbl = findContainer(createInfo.getKeepercontainerHostName(), createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort());
     if(keepercontainerTbl == null) {
       throw new IllegalArgumentException(String.format("%s:%d keeper container not found",
               createInfo.getKeepercontainerIp(), createInfo.getKeepercontainerPort()));
@@ -459,12 +479,31 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   @Override
+  public void deleteKeeperContainerByHostname(String keepercontainerHostname, int keepercontainerPort) {
+    KeepercontainerTbl keepercontainerTbl = findByHostNameAndPort(keepercontainerHostname, keepercontainerPort);
+    if(null == keepercontainerTbl) throw new BadRequestException("Cannot find keepercontainer");
+
+    List<RedisTbl> keepers = redisService.findAllRedisWithSameHostName(keepercontainerHostname);
+    if(keepers != null && !keepers.isEmpty()) {
+      throw new BadRequestException(String.format("This keepercontainer %s:%d is not empty, unable to delete!", keepercontainerHostname, keepercontainerPort));
+    }
+
+    KeepercontainerTbl proto = keepercontainerTbl;
+    queryHandler.handleDelete(new DalQuery<Integer>() {
+      @Override
+      public Integer doQuery() throws DalException {
+        return dao.deleteKeeperContainer(proto, KeepercontainerTblEntity.UPDATESET_FULL);
+      }
+    }, true);
+  }
+
+  @Override
   public void addKeeperContainerByInfoModel(KeeperContainerInfoModel keeperContainerInfoModel) {
     KeepercontainerTbl proto = dao.createLocal();
 
     String hostname = keeperContainerInfoModel.getKeepercontainerHostName();
-    String ip = keeperContainerInfoModel.getAddr().getHost();
-    int port = keeperContainerInfoModel.getAddr().getPort();
+    String ip = keeperContainerInfoModel.getIp();
+    int port = keeperContainerInfoModel.getPort();
 
     // 双轨查重：hostname 非空按 hostname 查重，否则按 (ip, port) 查重
     if(keeperContainerAlreadyExists(hostname, ip, port)) {
@@ -472,11 +511,8 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       throw new IllegalArgumentException("Keeper Container with " + identity + " already exists");
     }
 
-    // 双轨校验：hostname 登记路径跳过 IP 校验（容器可能未调度、无 IP）
-    if (!isPodContainerByHostname(hostname)) {
-      if (!checkIpAndPort(ip, port)) {
-        throw new IllegalArgumentException(String.format("Keeper container with ip:%s, port:%d is unhealthy", ip, port));
-      }
+    if (!keeperContainerIsHealthy(hostname, ip, port, keeperContainerInfoModel.getDcName())) {
+      throw new IllegalArgumentException(String.format("Keeper container with ip:%s, port:%d is unhealthy", ip, port));
     }
 
     DcTbl dcTbl = dcService.find(keeperContainerInfoModel.getDcName());
@@ -502,7 +538,7 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     }
 
     proto.setKeepercontainerDc(dcTbl.getId())
-            .setKeepercontainerIp(ip)
+            .setKeepercontainerIp(ip == null ? "" : ip)
             .setKeepercontainerPort(port)
             // 容器登记时带 hostname，物理机留空串
             .setKeepercontainerHostName(hostname == null ? "" : hostname)
@@ -519,20 +555,14 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     });
   }
 
-  /**
-   * 根据 hostname 字段判断是否为 pod 容器
-   */
-  private boolean isPodContainerByHostname(String hostname) {
-    return !StringUtil.isEmpty(hostname);
-  }
 
   /**
    * 双轨定位：用于更新场景
    * hostname 非空按 hostname 定位，否则按 (ip, port) 定位
    */
-  private KeepercontainerTbl findContainerForUpdate(String hostname, String ip, int port) {
+  private KeepercontainerTbl findContainer(String hostname, String ip, int port) {
     if (!StringUtil.isEmpty(hostname)) {
-      return findByHostName(hostname);
+      return findByHostNameAndPort(hostname, port);
     } else {
       return findByIpPort(ip, port);
     }
@@ -541,11 +571,11 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   @Override
   public void updateKeeperContainerByInfoModel(KeeperContainerInfoModel keeperContainerInfoModel) {
     String hostname = keeperContainerInfoModel.getKeepercontainerHostName();
-    String ip = keeperContainerInfoModel.getAddr().getHost();
-    int port = keeperContainerInfoModel.getAddr().getPort();
+    String ip = keeperContainerInfoModel.getIp();
+    int port = keeperContainerInfoModel.getPort();
 
     // 双轨定位：hostname 非空按 hostname 定位，否则按 (ip, port) 定位
-    KeepercontainerTbl proto = findContainerForUpdate(hostname, ip, port);
+    KeepercontainerTbl proto = findContainer(hostname, ip, port);
     if(proto == null) {
       String identity = StringUtil.isEmpty(hostname) ? "IP: " + ip : "hostname: " + hostname;
       throw new IllegalArgumentException("Keeper container with " + identity + " does not exist");
@@ -594,8 +624,8 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
   }
 
   @Override
-  public List<KeeperMsgModel> getAllKeepers(String keeperIp) {
-    List<RedisTbl> keepers = redisService.findAllRedisByIp(keeperIp);
+  public List<KeeperMsgModel> getAllKeepers(long keeperContainerId) {
+    List<RedisTbl> keepers = redisService.findAllKeepersByKeeperContainerId(keeperContainerId);
     if (keepers.isEmpty()) return Collections.emptyList();
     List<KeeperMsgModel> result = new ArrayList<>();
     keepers.forEach(keeper -> {
@@ -652,7 +682,8 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       KeeperContainerInfoModel model = new KeeperContainerInfoModel();
       model.setId(baseInfo.getKeepercontainerId());
       model.setActive(baseInfo.isKeepercontainerActive());
-      model.setAddr(new HostPort(baseInfo.getKeepercontainerIp(), baseInfo.getKeepercontainerPort()));
+      model.setIp(baseInfo.getKeepercontainerIp());
+      model.setPort(baseInfo.getKeepercontainerPort());
       model.setKeepercontainerHostName(baseInfo.getKeepercontainerHostName());
       model.setDcName(baseInfo.getDcInfo().getDcName());
       model.setOrgName(baseInfo.getOrgInfo().getOrgName());
@@ -694,7 +725,8 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     keeperContainerInfoModel.setActive(keepercontainerTbl.isKeepercontainerActive());
     keeperContainerInfoModel.setDcName(dcNameMap.get(keepercontainerTbl.getKeepercontainerDc()));
     keeperContainerInfoModel.setAzName(azNameMap.get(keepercontainerTbl.getAzId()));
-    keeperContainerInfoModel.setAddr(new HostPort(keepercontainerTbl.getKeepercontainerIp(), keepercontainerTbl.getKeepercontainerPort()));
+    keeperContainerInfoModel.setIp(keepercontainerTbl.getKeepercontainerIp());
+    keeperContainerInfoModel.setPort(keepercontainerTbl.getKeepercontainerPort());
     keeperContainerInfoModel.setKeepercontainerHostName(keepercontainerTbl.getKeepercontainerHostName());
     keeperContainerInfoModel.setDiskType(keepercontainerTbl.getKeepercontainerDiskType());
     keeperContainerInfoModel.setTag(keepercontainerTbl.getTag());
@@ -742,7 +774,8 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
       keeperContainerInfoModel.setActive(keepercontainer.isKeepercontainerActive());
       keeperContainerInfoModel.setDcName(dcName);
       keeperContainerInfoModel.setAzName(azName);
-      keeperContainerInfoModel.setAddr(new HostPort(keepercontainer.getKeepercontainerIp(), keepercontainer.getKeepercontainerPort()));
+      keeperContainerInfoModel.setIp(keepercontainer.getKeepercontainerIp());
+      keeperContainerInfoModel.setPort(keepercontainer.getKeepercontainerPort());
       keeperContainerInfoModel.setKeepercontainerHostName(keepercontainer.getKeepercontainerHostName());
       keeperContainerInfoModel.setOrgName(orgName);
       result.add(keeperContainerInfoModel);
@@ -782,36 +815,17 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     });
   }
 
-  /**
-   * 判断是否为 pod 容器（hostname 非空）
-   * 统一规则：hostname 非空则为容器，否则为物理机
-   */
-  private boolean isPodContainer(KeepercontainerTbl tbl) {
-    return tbl != null 
-        && tbl.getKeepercontainerHostName() != null 
-        && !tbl.getKeepercontainerHostName().isEmpty();
-  }
-
-  /**
-   * 容器身份键：pod 容器用 hostname，物理机用 ip
-   * 用于查重、定位等场景
-   */
-  private String containerKey(KeepercontainerTbl tbl) {
-    if (isPodContainer(tbl)) {
-      return tbl.getKeepercontainerHostName();
+  @Override
+  public KeepercontainerTbl findByHostNameAndPort(String hostname, int port) {
+    if (StringUtil.isEmpty(hostname)) {
+      return null;
     }
-    return tbl.getKeepercontainerIp();
-  }
-
-  /**
-   * 容器身份键：根据入参判断
-   * hostname 非空优先用 hostname，否则用 ip
-   */
-  private String containerKey(String hostname, String ip) {
-    if (!StringUtil.isEmpty(hostname)) {
-      return hostname;
-    }
-    return ip;
+    return queryHandler.handleQuery(new DalQuery<KeepercontainerTbl>() {
+      @Override
+      public KeepercontainerTbl doQuery() throws DalException {
+        return dao.findByHostnamePort(hostname, port, KeepercontainerTblEntity.READSET_FULL);
+      }
+    });
   }
 
   protected boolean keeperContainerAlreadyExists(String ip, int port) {
@@ -829,14 +843,18 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
    * 双轨查重：hostname 非空按 hostname 查重，否则按 (ip, port) 查重
    */
   protected boolean keeperContainerAlreadyExists(String hostname, String ip, int port) {
+    return findContainer(hostname, ip, port) != null;
+  }
+
+  protected boolean keeperContainerIsHealthy(String hostname, String ip, int port, String dcName) {
+    String kcIp = ip;
     if (!StringUtil.isEmpty(hostname)) {
-      // 容器路径：按 hostname 查重
-      KeepercontainerTbl existing = findByHostName(hostname);
-      return existing != null;
-    } else {
-      // 物理机路径：按 (ip, port) 查重
-      return keeperContainerAlreadyExists(ip, port);
+      kcIp = keeperContainerAddressService.getIpByHostname(dcName, hostname);
     }
+    if (!StringUtil.isEmpty(kcIp)) {
+      throw new XpipeRuntimeException("keeper container ip of hostname: " + hostname + " not found");
+    }
+    return checkIpAndPort(kcIp, port);
   }
 
   protected void getOrCreateRestTemplate() {
