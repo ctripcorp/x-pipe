@@ -365,7 +365,7 @@ public class DefaultDcMetaChangeManager extends AbstractStartStoppable implement
             return;
         }
         logger.info("[addRedisOnlyForPingAction][{}:{}] {}", added.getIp(), added.getPort(), added);
-        instanceManager.getOrCreateRedisInstanceForPsubPingAction(added);
+        instanceManager.getOrCreateRedisInstanceForInfoReplIdAction(added);
     }
 
 }

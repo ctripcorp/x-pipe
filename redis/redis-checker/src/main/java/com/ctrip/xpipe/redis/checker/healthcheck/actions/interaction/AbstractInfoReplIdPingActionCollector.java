@@ -4,29 +4,25 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.healthcheck.ActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdPingActionCollector;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionListener;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubActionContext;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubActionListener;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.psubscribe.PsubPingActionCollector;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
 
 import java.util.Map;
 
-public abstract class AbstractPsubPingActionCollector implements PsubPingActionCollector {
+public abstract class AbstractInfoReplIdPingActionCollector implements InfoReplIdPingActionCollector {
 
     protected Map<RedisHealthCheckInstance, HealthStatus> allHealthStatus = Maps.newConcurrentMap();
 
-    protected PingActionListener pingActionListener = new AbstractPsubPingActionCollector.CollectorPingActionListener();
-
-    protected PsubActionListener psubActionListener = new AbstractPsubPingActionCollector.CollectorPsubActionListener();
+    protected PingActionListener pingActionListener = new AbstractInfoReplIdPingActionCollector.CollectorPingActionListener();
 
     protected abstract HealthStatus getHealthStatus(RedisHealthCheckInstance instance);
 
     protected void removeHealthStatus(HealthCheckAction<RedisHealthCheckInstance> action) {
         HealthStatus healthStatus = allHealthStatus.remove(action.getActionInstance());
-        if(healthStatus != null) {
+        if (healthStatus != null) {
             healthStatus.stop();
         }
     }
@@ -39,11 +35,6 @@ public abstract class AbstractPsubPingActionCollector implements PsubPingActionC
     @Override
     public PingActionListener createPingActionListener() {
         return pingActionListener;
-    }
-
-    @Override
-    public PsubActionListener createPsubActionListener() {
-        return psubActionListener;
     }
 
     @Override
@@ -65,7 +56,7 @@ public abstract class AbstractPsubPingActionCollector implements PsubPingActionC
         @Override
         public void onAction(PingActionContext pingActionContext) {
             HealthStatus healthStatus = getHealthStatus(pingActionContext.instance());
-            if(healthStatus == null) {
+            if (healthStatus == null) {
                 return;
             }
             if (!pingActionContext.isSuccess()) {
@@ -78,7 +69,7 @@ public abstract class AbstractPsubPingActionCollector implements PsubPingActionC
             if (pingActionContext.getResult()) {
                 healthStatus.pong();
             } else {
-                if(healthStatus.getState() == HEALTH_STATE.UNKNOWN) {
+                if (healthStatus.getState() == HEALTH_STATE.UNKNOWN) {
                     healthStatus.pongInit();
                 }
             }
@@ -91,25 +82,6 @@ public abstract class AbstractPsubPingActionCollector implements PsubPingActionC
 
         @Override
         public void stopWatch(HealthCheckAction action) {
-            removeHealthStatus(action);
-        }
-    }
-
-    protected class CollectorPsubActionListener implements PsubActionListener {
-
-        @Override
-        public void onAction(PsubActionContext psubActionContext) {
-            HealthStatus healthStatus = getHealthStatus(psubActionContext.instance());
-            if(healthStatus == null) {
-                return;
-            }
-            if (!psubActionContext.getResult().isEmpty()) {
-                healthStatus.subSuccess();
-            }
-        }
-
-        @Override
-        public void stopWatch(HealthCheckAction<RedisHealthCheckInstance> action) {
             removeHealthStatus(action);
         }
     }

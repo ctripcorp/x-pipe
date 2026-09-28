@@ -346,7 +346,6 @@ public class RedisSession {
         return new InfoResultExtractor(info);
     }
 
-
     public CommandFuture<RedisInfo> getRedisReplInfo() {
         InfoReplicationCommand command = new InfoReplicationCommand(clientPool, scheduled, commandTimeOut);
         silentCommand(command);
