@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.ZkUtils;
@@ -14,18 +15,22 @@ import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
  * watch 本机房 ZK 的 keepercontainer 注册路径，维护 hostname → IP 的单向映射。
  * <p>
- * 缓存刷新采用全量重建：每次 watch 事件都基于 PathChildrenCache 的当前快照重算映射表。
+ * 缓存刷新采用全量重建：rebuild 在执行时读取 PathChildrenCache 的当前快照重算映射表。
+ * watch 回调与定时兜底只把重建投递到独立单线程池，不在回调线程里计算。
  * <p>
  * 另有一个定时任务做兜底全量重建，覆盖 watch 事件丢失与 session 重连后事件补发不全的情况，
  * 因此不需要单独监听连接状态。这个模式与 metaserver 维护集群成员列表的做法一致。
@@ -35,12 +40,26 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
 
     private static final long DEFAULT_REFRESH_INTERVAL_MILLI = 30 * 1000L;
 
+    /** 1 个在跑 + 1 个排队，其余提交由 DiscardPolicy 丢掉。 */
+    private static final int REBUILD_POOL_SIZE = 1;
+    private static final int REBUILD_QUEUE_CAPACITY = 1;
+
     private final ZkClient zkClient;
     private final long refreshIntervalMilli;
 
     private PathChildrenCache containersCache;
     private ScheduledExecutorService scheduled;
     private ScheduledFuture<?> refreshFuture;
+
+    /**
+     * watch 与定时兜底共用的重建池：core = max = 1，队列容量 1，拒绝策略 DiscardPolicy。
+     * 同一时刻最多 1 个在跑、1 个在排队，更多提交直接丢弃（n 次事件最多触发两次 rebuild）。
+     * <p>
+     * 合并不变量：{@link #rebuild()} 在执行时才读 cache 当前快照，因此被丢弃的提交必然被
+     * 「已入队但尚未开始」的那次 rebuild 覆盖，丢弃无损。
+     * 若将来改成在提交时抓快照，这个合并就不再安全。
+     */
+    private volatile ThreadPoolExecutor rebuildExecutor;
 
     /**
      * hostname -> ip。只在 rebuild 里被整体替换，读路径无锁。
@@ -61,23 +80,48 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
         CuratorFramework client = zkClient.get();
         String registerPath = MetaZkConfig.getKeeperContainerRegisterPath();
 
-        containersCache = new PathChildrenCache(client, registerPath, true,
-                XpipeThreadFactory.create("KeeperContainerAddressCache"));
-        containersCache.getListenable().addListener(new ContainersChanged());
-        // BUILD_INITIAL_CACHE 保证 start 返回时快照已就绪，避免启动后短暂窗口内解析全部落空
-        containersCache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
-        rebuild();
+        rebuildExecutor = newRebuildExecutor();
+        try {
+            containersCache = new PathChildrenCache(client, registerPath, true,
+                    XpipeThreadFactory.create("KeeperContainerAddressCache"));
+            containersCache.getListenable().addListener(new ContainersChanged());
+            // BUILD_INITIAL_CACHE 只把子节点放进 PathChildrenCache。映射由后面这次投递异步重算，
+            // doStart 不等它完成。
+            containersCache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
+            submitRebuild();
 
-        scheduled = Executors.newScheduledThreadPool(1,
-                XpipeThreadFactory.create("KeeperContainerAddressRefresh"));
-        refreshFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
-            @Override
-            protected void doRun() {
-                rebuild();
+            scheduled = Executors.newScheduledThreadPool(1,
+                    XpipeThreadFactory.create("KeeperContainerAddressRefresh"));
+            refreshFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+                @Override
+                protected void doRun() {
+                    submitRebuild();
+                }
+            }, refreshIntervalMilli, refreshIntervalMilli, TimeUnit.MILLISECONDS);
+
+            logger.info("[doStart][watch]{}", registerPath);
+        } catch (Exception e) {
+            try {
+                doStop();
+            } catch (Exception stopEx) {
+                e.addSuppressed(stopEx);
             }
-        }, refreshIntervalMilli, refreshIntervalMilli, TimeUnit.MILLISECONDS);
+            throw e;
+        }
+    }
 
-        logger.info("[doStart][watch]{}", registerPath);
+    /**
+     * core = max = 1，队列容量 1，DiscardPolicy。合并不变量见 {@link #rebuildExecutor}。
+     */
+    private ThreadPoolExecutor newRebuildExecutor() {
+        return new ThreadPoolExecutor(
+                REBUILD_POOL_SIZE,
+                REBUILD_POOL_SIZE,
+                0L,
+                TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(REBUILD_QUEUE_CAPACITY),
+                XpipeThreadFactory.create("KeeperContainerAddressRebuild"),
+                new ThreadPoolExecutor.DiscardPolicy());
     }
 
     @Override
@@ -89,6 +133,11 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
         if (scheduled != null) {
             scheduled.shutdownNow();
             scheduled = null;
+        }
+        ThreadPoolExecutor executor = rebuildExecutor;
+        rebuildExecutor = null;
+        if (executor != null) {
+            executor.shutdownNow();
         }
         if (containersCache != null) {
             containersCache.close();
@@ -110,9 +159,34 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
     }
 
     /**
-     * 基于 ZK 当前快照全量重算映射表。幂等，可被 watch 事件与定时任务并发触发。
+     * 只投递，不在调用线程计算。池已关闭或尚未创建时直接返回。
+     * <p>
+     * 丢弃是否安全见 {@link #rebuildExecutor}：这里不能改成「提交时抓快照」。
      */
-    synchronized void rebuild() {
+    @VisibleForTesting
+    protected void submitRebuild() {
+        ThreadPoolExecutor executor = this.rebuildExecutor;
+        if (executor == null || executor.isShutdown()) {
+            return;
+        }
+        executor.execute(this::rebuildSafely);
+    }
+
+    private void rebuildSafely() {
+        try {
+            rebuild();
+        } catch (Throwable th) {
+            logger.error("[rebuild][fail]", th);
+        }
+    }
+
+    /**
+     * 基于 ZK 当前快照全量重算映射表。幂等，可被 watch 事件与定时任务并发触发。
+     * <p>
+     * 必须在执行时读快照。投递侧靠丢弃合并事件，被丢掉的更新要靠这次读取补上。
+     */
+    @VisibleForTesting
+    protected synchronized void rebuild() {
         PathChildrenCache cache = containersCache;
         if (null == cache) return;
 
@@ -137,6 +211,35 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
 
         logger.info("[rebuild]{} -> {}", hostnameToIp, freshHostnameToIp);
         this.hostnameToIp = freshHostnameToIp;
+    }
+
+    /** 单测读取 watch 快照，确认事件已经进 cache、且发生在 rebuild 读快照之前。 */
+    @VisibleForTesting
+    protected List<ChildData> currentChildren() {
+        PathChildrenCache cache = containersCache;
+        if (cache == null) {
+            return Collections.emptyList();
+        }
+        List<ChildData> children = cache.getCurrentData();
+        return children == null ? Collections.emptyList() : children;
+    }
+
+    /** 单测把映射打成过期值，验证定时兜底会从 ZK 快照重建回来。 */
+    @VisibleForTesting
+    protected void overwriteHostnameToIp(Map<String, String> hostnameToIp) {
+        this.hostnameToIp = new HashMap<>(hostnameToIp);
+    }
+
+    /** 单测判断重建池是否已排空，避免把残留任务误认成定时兜底。 */
+    @VisibleForTesting
+    protected boolean rebuildExecutorIdle() {
+        ThreadPoolExecutor executor = rebuildExecutor;
+        if (executor == null) {
+            return false;
+        }
+        return executor.getQueue().isEmpty()
+                && executor.getActiveCount() == 0
+                && executor.getTaskCount() == executor.getCompletedTaskCount();
     }
 
     private String hostnameOf(ChildData child) {
@@ -175,7 +278,7 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
         @Override
         public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) {
             logger.info("[childEvent]{}, {}", event.getType(), ZkUtils.toString(event.getData()));
-            rebuild();
+            submitRebuild();
         }
     }
 }

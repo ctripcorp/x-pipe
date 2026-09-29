@@ -3,10 +3,12 @@ package com.ctrip.xpipe.redis.core.keeper.container;
 import com.ctrip.xpipe.AbstractTest;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkClient;
 import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingServer;
 import org.apache.zookeeper.CreateMode;
@@ -16,7 +18,11 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractTest {
 
@@ -211,6 +217,145 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
         Assert.assertEquals("10.0.0.5", decoded.getIpAddress());
     }
 
+    /**
+     * 池里 1 个在跑 + 1 个排队，其余提交被丢掉。挡住第一次 rebuild，连续投递必须只再跑一次。
+     */
+    @Test
+    public void testRebuildSubmissionsCoalesceToAtMostTwo() throws Exception {
+        HoldingAddressService probe = new HoldingAddressService(zkClient);
+        probe.initialize();
+        boolean started = false;
+        try {
+            probe.start();
+            started = true;
+            probe.hold = true;
+            probe.submitRebuild();
+            Assert.assertTrue(probe.entered.await(5, TimeUnit.SECONDS));
+
+            for (int i = 0; i < 20; i++) {
+                probe.submitRebuild();
+            }
+            Assert.assertEquals("n 次提交在一次 rebuild 未完成时最多再排队一次",
+                    1, probe.startedWhileHolding.get());
+
+            probe.release.countDown();
+            waitConditionUntilTimeOut(() -> probe.startedWhileHolding.get() == 2, 3000);
+            Assert.assertEquals(2, probe.startedWhileHolding.get());
+        } finally {
+            probe.release.countDown();
+            if (started) {
+                probe.stop();
+            }
+        }
+    }
+
+    /**
+     * 被丢掉的 watch 事件不能丢更新：rebuild 执行时才读快照，所以末次 IP 必须进映射，
+     * 且从按住第一次 rebuild 到松开，启动次数不超过两次。
+     */
+    @Test
+    public void testDiscardedWatchEventsStillPublishLastSnapshot() throws Exception {
+        HoldingAddressService probe = new HoldingAddressService(zkClient);
+        probe.initialize();
+        boolean started = false;
+        try {
+            probe.start();
+            started = true;
+            register(POD_A, "10.0.0.1");
+            waitConditionUntilTimeOut(() -> "10.0.0.1".equals(probe.getIpByHostname(POD_A)), 3000);
+
+            probe.hold = true;
+            probe.submitRebuild();
+            Assert.assertTrue(probe.entered.await(5, TimeUnit.SECONDS));
+
+            String lastIp = "10.0.0.8";
+            for (int i = 2; i <= 8; i++) {
+                setData(POD_A, "10.0.0." + i);
+            }
+            // 快照先于 listener 可见。等提交数稳定，避免松开时还有 listener 没投递，多跑出第三次 rebuild。
+            waitUntilWatchQuiescent(probe, lastIp);
+            Assert.assertEquals("watch 事件必须被合并，不能一次事件一次 rebuild",
+                    1, probe.startedWhileHolding.get());
+
+            probe.release.countDown();
+            waitConditionUntilTimeOut(() -> lastIp.equals(probe.getIpByHostname(POD_A)), 3000);
+            waitConditionUntilTimeOut(() -> probe.startedWhileHolding.get() >= 2, 3000);
+            Assert.assertTrue("末次事件由已入队的 rebuild 覆盖，总次数不超过两次，actual="
+                            + probe.startedWhileHolding.get(),
+                    probe.startedWhileHolding.get() <= 2);
+        } finally {
+            probe.release.countDown();
+            if (started) {
+                probe.stop();
+            }
+        }
+    }
+
+    @Test
+    public void testScheduledRefreshRebuildsFromZk() throws Exception {
+        register(POD_A, "10.0.0.5");
+        DefaultCurrentDcKeeperContainerAddressService fast =
+                new DefaultCurrentDcKeeperContainerAddressService(zkClient, 400);
+        fast.initialize();
+        boolean started = false;
+        try {
+            fast.start();
+            started = true;
+            waitConditionUntilTimeOut(() -> "10.0.0.5".equals(fast.getIpByHostname(POD_A)), 3000);
+            waitConditionUntilTimeOut(fast::rebuildExecutorIdle, 3000);
+
+            Map<String, String> stale = new HashMap<>();
+            stale.put(POD_A, "1.1.1.1");
+            fast.overwriteHostnameToIp(stale);
+            Assert.assertEquals("1.1.1.1", fast.getIpByHostname(POD_A));
+
+            waitConditionUntilTimeOut(() -> "10.0.0.5".equals(fast.getIpByHostname(POD_A)), 3000);
+        } finally {
+            if (started) {
+                fast.stop();
+            }
+        }
+    }
+
+    private void waitUntilWatchQuiescent(HoldingAddressService probe, String ip) throws Exception {
+        long deadline = System.currentTimeMillis() + 3000;
+        int previousSubmits = -1;
+        long stableSince = -1;
+        while (System.currentTimeMillis() < deadline) {
+            boolean snapshotReady = ip.equals(ipInSnapshot(probe, POD_A));
+            int submits = probe.submitsWhileHolding.get();
+            if (snapshotReady && submits == previousSubmits) {
+                if (stableSince < 0) {
+                    stableSince = System.currentTimeMillis();
+                } else if (System.currentTimeMillis() - stableSince >= 150) {
+                    return;
+                }
+            } else {
+                stableSince = -1;
+            }
+            previousSubmits = submits;
+            Thread.sleep(20);
+        }
+        Assert.fail("watch 没有在超时前稳定到 " + ip + ", submits=" + probe.submitsWhileHolding.get());
+    }
+
+    private String ipInSnapshot(DefaultCurrentDcKeeperContainerAddressService target, String hostname) {
+        for (ChildData child : target.currentChildren()) {
+            String path = child.getPath();
+            if (path == null || !path.endsWith("/" + hostname)) {
+                continue;
+            }
+            byte[] data = child.getData();
+            if (data == null || data.length == 0) {
+                return null;
+            }
+            KeeperContainerAddressInfo info =
+                    Codec.DEFAULT.decode(new String(data), KeeperContainerAddressInfo.class);
+            return info == null ? null : info.getIpAddress();
+        }
+        return null;
+    }
+
     private String path(String hostname) {
         return MetaZkConfig.getKeeperContainerRegisterPath() + "/" + hostname;
     }
@@ -227,5 +372,47 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
 
     private void delete(String hostname) throws Exception {
         zkClient.get().delete().forPath(path(hostname));
+    }
+
+    /**
+     * 把第一次进入的 rebuild 按在读快照之前，用来制造「1 个在跑 + 1 个排队」的窗口。
+     * 定时周期拉得很长，避免兜底任务混进计数。
+     */
+    private static final class HoldingAddressService extends DefaultCurrentDcKeeperContainerAddressService {
+
+        private final AtomicInteger startedWhileHolding = new AtomicInteger();
+        private final AtomicInteger submitsWhileHolding = new AtomicInteger();
+        private final CountDownLatch entered = new CountDownLatch(1);
+        private final CountDownLatch release = new CountDownLatch(1);
+        private volatile boolean hold;
+
+        private HoldingAddressService(ZkClient zkClient) {
+            super(zkClient, TimeUnit.MINUTES.toMillis(10));
+        }
+
+        @Override
+        protected void submitRebuild() {
+            if (hold) {
+                submitsWhileHolding.incrementAndGet();
+            }
+            super.submitRebuild();
+        }
+
+        @Override
+        protected synchronized void rebuild() {
+            if (hold) {
+                int n = startedWhileHolding.incrementAndGet();
+                if (n == 1) {
+                    entered.countDown();
+                    try {
+                        release.await();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }
+            }
+            super.rebuild();
+        }
     }
 }
