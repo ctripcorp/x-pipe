@@ -2,13 +2,13 @@ package com.ctrip.xpipe.redis.keeper.container;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.cluster.RebuildableLeaderLatch;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressInfo;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.zk.ZkClient;
-import org.apache.curator.framework.recipes.leader.LeaderLatch;
 
 /**
  * keepercontainer 启动时把自身 hostname 与 IP 注册到本机房 ZK，供 console/metaserver/checker
@@ -31,8 +31,8 @@ import org.apache.curator.framework.recipes.leader.LeaderLatch;
  * 只在启动时探测一次 IP，latch id 固定为该值：pod IP 与 pod 生命周期绑定，IP 变化必然伴随
  * pod 重建与进程重启，运行中不会变。
  * <p>
- * 已知缺口：LeaderLatch 没有定时器兜底，回调遇到未处理的返回码会停摆（spec §5.6 的 A/B/C/D）。
- * 探测与重建由后续 Phase（If/Ig）补上。
+ * LeaderLatch 没有定时器兜底，回调遇到未处理的返回码会停摆（spec §5.6 的 A/B/C/D），
+ * 所以只经 {@link RebuildableLeaderLatch} 持有，重建能力由它提供；断链探测在 Ig 接入。
  */
 public class KeeperContainerZkRegistrar extends AbstractLifecycle implements TopElement {
 
@@ -40,7 +40,7 @@ public class KeeperContainerZkRegistrar extends AbstractLifecycle implements Top
     private final String hostName;
     private final String ip;
 
-    private volatile LeaderLatch latch;
+    private volatile RebuildableLeaderLatch latch;
 
     public KeeperContainerZkRegistrar(ZkClient zkClient, String hostName, String ip) {
         this.zkClient = zkClient;
@@ -64,8 +64,8 @@ public class KeeperContainerZkRegistrar extends AbstractLifecycle implements Top
     protected void doStart() throws Exception {
         String path = path();
         String id = Codec.DEFAULT.encode(new KeeperContainerAddressInfo(ip));
-        LeaderLatch current = new LeaderLatch(zkClient.get(), path, id);
-        // 先赋值再 start：start 即使抛异常也可能已把状态置为 STARTED，doStop 要能 close 掉它
+        RebuildableLeaderLatch current = new RebuildableLeaderLatch(zkClient.get(), path, id);
+        // 先赋值再 start：start 即使抛异常，内部 latch 也可能已置为 STARTED，doStop 要能 close 掉它
         this.latch = current;
         try {
             current.start();
@@ -77,7 +77,7 @@ public class KeeperContainerZkRegistrar extends AbstractLifecycle implements Top
 
     @Override
     protected void doStop() throws Exception {
-        LeaderLatch current = this.latch;
+        RebuildableLeaderLatch current = this.latch;
         this.latch = null;
         if (null == current) {
             return;
@@ -95,7 +95,7 @@ public class KeeperContainerZkRegistrar extends AbstractLifecycle implements Top
     /** 本进程 latch 子节点的完整路径，未建好或已关闭时为 null。 */
     @VisibleForTesting
     protected String ourPath() {
-        LeaderLatch current = this.latch;
+        RebuildableLeaderLatch current = this.latch;
         return null == current ? null : current.getOurPath();
     }
 
