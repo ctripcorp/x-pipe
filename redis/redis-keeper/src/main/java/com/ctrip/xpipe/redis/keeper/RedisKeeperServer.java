@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper;
 
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.lifecycle.Destroyable;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
@@ -13,6 +14,8 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.XSyncContinue;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareWatchSnapshot;
+import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubRegistry;
 import com.ctrip.xpipe.redis.keeper.impl.SetRdbDumperException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
@@ -63,6 +66,44 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 		
 	ReplicationStore getReplicationStore();
 
+	/**
+	 * Whether the store manager is in PREPARE read-only watch mode (D12).
+	 * Default false so existing stubs stay closed-gate.
+	 */
+	default boolean isReadOnlyStore() {
+		return false;
+	}
+
+	/**
+	 * Container-level TFS mode (m1 D33). Default false so existing stubs stay local-disk.
+	 */
+	default boolean isTfsMode() {
+		return false;
+	}
+
+	/**
+	 * Already-opened store pointer. No lock, no FS; {@code null} if none is open.
+	 * INFO / ROLE on the command thread must use this instead of {@link #getReplicationStore()} (D10 / D11).
+	 */
+	default ReplicationStore getOpenedStore() {
+		return null;
+	}
+
+	/**
+	 * Watcher periodic snapshot. Command thread read-only; {@code null} if watch is off or store not opened (D11).
+	 */
+	default PrepareWatchSnapshot getPrepareWatchSnapshot() {
+		return null;
+	}
+
+	/**
+	 * Per-keeper Pub/Sub registry and async deliverer (D16 / D18). Null when the server
+	 * does not host Pub/Sub (existing stubs / mocks).
+	 */
+	default KeeperPubSubRegistry getPubSubRegistry() {
+		return null;
+	}
+
 	CKStore getCkStore();
 
 	ReplId getReplId();
@@ -78,6 +119,13 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	KeeperMeta getCurrentKeeperMeta();
 	
 	void reconnectMaster();
+
+	/**
+	 * Drop an expired store so Backup {@code PartialOnlyGapAllowedSync} sends {@code PSYNC ? -2}.
+	 * Called when entering Backup, before {@link #reconnectMaster()}. Not called from initialize
+	 * (role is unset; must not {@code getCurrent}/{@code create} for a write lease).
+	 */
+	void resetReplAfterLongTimeDown();
 	
 	void stopAndDisposeMaster();
 	
@@ -86,6 +134,24 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	void promoteSlave(String ip, int port) throws RedisSlavePromotionException;
 
 	void closeSlaves(String reason);
+
+	/**
+	 * Orchestrate PREPARE transition: stop write → setState PREPARE (reject new slave) →
+	 * closeSlaves → {@code replicationStoreManager.stop()} (cancel GC / flush / close handles)
+	 * (spec §3.8).
+	 * Failures must propagate so Handler returns Redis ERROR (ForceCloseDir).
+	 */
+	void doBecomePrepare(Endpoint masterAddress);
+
+	/**
+	 * PREPARE → ACTIVE/BACKUP re-entry (spec §3.8.3 / T-R.9):
+	 * {@code Manager.start()} → {@code createIfNotExist()} (reopen {@code latest.store.dir}) →
+	 * Backup also {@link #resetReplAfterLongTimeDown()} →
+	 * {@code MetaStore.becomeActive/becomeBackup} (same as {@code doBecomeActive}) → setState → {@code reconnectMaster}.
+	 * Must <b>not</b> call {@code create()} when latest store dir already exists, except Backup expiry reset.
+	 * Must <b>not</b> call {@code initReplicationStore} (that is NodeAdded / new-store only).
+	 */
+	void doReenterFromPrepare(Endpoint masterAddress, boolean becomeActive);
 	
 	public static enum PROMOTION_STATE{
 		

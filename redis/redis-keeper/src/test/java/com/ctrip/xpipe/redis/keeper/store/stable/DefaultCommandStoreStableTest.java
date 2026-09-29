@@ -2,7 +2,9 @@ package com.ctrip.xpipe.redis.keeper.store.stable;
 
 import com.ctrip.xpipe.command.DefaultCommandFuture;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
+import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
+import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
@@ -53,7 +55,7 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
 		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
 		RedisOpParser opParser = new GeneralRedisOpParser(redisOpParserManager);
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
+		commandStore = createDefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter);
 		commandStore.initialize();
 	}
 
@@ -84,9 +86,9 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 				commandStore.addCommandsListener(new OffsetReplicationProgress(0), new CommandsListener() {
 
 					@Override
-					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
+					public ChannelFuture onCommand(Object cmd) {
 
-						String result = readFileChannelInfoMessageAsString((DefaultReferenceFileRegion) cmd);
+						String result = readReferenceFileRegionAsString((ReferenceFileRegion) cmd);
 						if (!comparator.compare(readIndex, result)) {
 							future.setFailure(new Exception("not equals:" + result));
 						}
@@ -116,6 +118,16 @@ public class DefaultCommandStoreStableTest extends AbstractRedisKeeperTest {
 			} catch (IOException e) {
 				future.setFailure(e);
 			}
+		}
+	}
+
+	private String readReferenceFileRegionAsString(ReferenceFileRegion referenceFileRegion) {
+		try {
+			ByteArrayWritableByteChannel channel = new ByteArrayWritableByteChannel();
+			referenceFileRegion.transferTo(channel, 0L);
+			return new String(channel.getResult(), Codec.defaultCharset);
+		} catch (IOException e) {
+			throw new IllegalStateException(String.format("[read]%s", referenceFileRegion), e);
 		}
 	}
 

@@ -164,11 +164,38 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 		return Long.parseLong(gtidSet);
 	}
 
+	/**
+	 * Wait until every slave's {@code slave_repl_offset} equals master's {@code master_repl_offset}.
+	 * <p>
+	 * {@code assertMultiDcGtid} only ensures {@code gtid_set} equality; PING/SELECT are not in
+	 * {@code gtid_set} so bytes may still lag. Under AsyncFileSystem, cmd rotate can occupy the
+	 * master-IO thread for hundreds of ms (spec §3.5.8 / log 2026-08-09), during which a trailing
+	 * PING sits in the socket buffer and never gets forwarded before a zero-wait assertion fires.
+	 * Poll each side fresh per iteration so a moving master (auto PING) still converges when the
+	 * chain is caught up momentarily.
+	 */
 	protected void assertReplOffset(RedisMeta master) throws Exception {
+		try {
+			waitConditionUntilTimeOut(() -> {
+				try {
+					long masterOffset = getOffset(master.getIp(), master.getPort(), true);
+					for (RedisMeta slave : getRedisSlaves()) {
+						long slaveOffset = getOffset(slave.getIp(), slave.getPort(), false);
+						if (slaveOffset != masterOffset) return false;
+					}
+					return true;
+				} catch (Exception e) {
+					logger.warn("[assertReplOffset] info failed, master={}", master, e);
+					return false;
+				}
+			}, 30000, 100);
+		} catch (java.util.concurrent.TimeoutException ignore) {
+			// fall through to strict assert below for a readable Expected/Actual failure
+		}
 		long masterOffset = getOffset(master.getIp(), master.getPort(), true);
-		for(RedisMeta slave: getRedisSlaves()) {
+		for (RedisMeta slave : getRedisSlaves()) {
 			long slaveOffset = getOffset(slave.getIp(), slave.getPort(), false);
-			logger.info("slave {}:{} gtid set: {}", slave.getIp(), slave.getPort(), slaveOffset);
+			logger.info("slave {}:{} repl offset: {}", slave.getIp(), slave.getPort(), slaveOffset);
 			Assert.assertEquals(masterOffset, slaveOffset);
 		}
 	}

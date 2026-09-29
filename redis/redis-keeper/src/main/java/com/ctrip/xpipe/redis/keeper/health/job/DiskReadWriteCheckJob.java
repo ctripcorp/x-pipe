@@ -14,18 +14,21 @@ import java.io.FileReader;
  */
 public class DiskReadWriteCheckJob extends AbstractCommand<Boolean> {
 
-    private String path;
+    private String storePath;
 
-    private static final String TEST_FILE = "foo";
+    private String hostname;
 
-    public DiskReadWriteCheckJob(String path) {
-        this.path = path;
+    private static final String DISK_CHECK_DIR = "disk_check";
+
+    public DiskReadWriteCheckJob(String storePath, String hostname) {
+        this.storePath = storePath;
+        this.hostname = hostname;
     }
 
     @Override
     protected void doExecute() throws Throwable {
-        File dir = new File(path);
-        File file = new File(path + File.separator + TEST_FILE);
+        File dir = new File(storePath, DISK_CHECK_DIR);
+        File file = new File(dir, hostname);
         String data = String.valueOf(System.currentTimeMillis() / 1000);
         BufferedReader bufferedReader = null;
         FileOutputStream outputStream = null;

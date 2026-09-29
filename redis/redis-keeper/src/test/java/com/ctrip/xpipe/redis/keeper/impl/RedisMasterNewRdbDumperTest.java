@@ -7,8 +7,12 @@ import com.ctrip.xpipe.redis.keeper.exception.psync.PsyncMasterRdbOffsetNotConti
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.Collections;
 import java.util.concurrent.ScheduledExecutorService;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 /**
@@ -33,6 +37,23 @@ public class RedisMasterNewRdbDumperTest {
         dumper.future().setFailure(new PsyncMasterRdbOffsetNotContinuousRuntimeException(10, 20));
 
         verify(redisKeeperServer, times(1)).resetDefaultReplication();
+    }
+
+    @Test
+    public void doExecuteFailMustDumpFailAndClearRdbDumper() throws Exception {
+        RedisKeeperServer redisKeeperServer = mock(RedisKeeperServer.class);
+        when(redisKeeperServer.slaves()).thenReturn(Collections.emptySet());
+
+        RedisMasterNewRdbDumper dumper = spy(new RedisMasterNewRdbDumper(mock(RedisMaster.class), redisKeeperServer, false, false,
+                mock(NioEventLoopGroup.class), mock(ScheduledExecutorService.class), mock(KeeperResourceManager.class)));
+        doThrow(new IOException("prepareNewRdb fail")).when(dumper).startRdbOnlyReplication();
+
+        dumper.execute();
+
+        verify(dumper).dumpFail(any(IOException.class));
+        verify(redisKeeperServer).clearRdbDumper(eq(dumper), eq(false));
+        assertTrue(dumper.future().isDone());
+        assertFalse(dumper.future().isSuccess());
     }
 
     @Test

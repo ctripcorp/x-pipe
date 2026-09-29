@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.gtid.GtidSet;
+import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
@@ -10,17 +11,43 @@ import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
+import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStore;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.GtidSetWrapper;
 import com.ctrip.xpipe.tuple.Pair;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static com.ctrip.xpipe.redis.core.store.MetaStore.META_V2_FILE;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 
@@ -59,7 +86,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
 		redisOpParser = new GeneralRedisOpParser(redisOpParserManager);
 		baseDir = new File(getTestFileDir());
-		store = new GtidReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class));
+		store = new GtidReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem(), getReplId());
 	}
 
 	@Test
@@ -251,6 +278,956 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		gtidSet = store.getGtidSet();
 		Assert.assertEquals(gtidSet.getKey(), new GtidSet(masterUuidA + ":101-200"));
 		Assert.assertEquals(gtidSet.getValue(), new GtidSet(masterUuidC + ":1-100"));
+	}
+
+	/**
+	 * T-H2.A1: meta save fails after Cmd created → close new cmd, no storeRef, I1 / fresh, can full-sync again.
+	 */
+	@Test
+	public void confirmRdbGapAllowedMetaWriteFailureKeepsI1AndAllowsRetry() throws Exception {
+		store.close();
+		store = null;
+
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected confirm meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		File caseDir = new File(baseDir, "h2a1-meta-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		try {
+			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+
+			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.XSYNC,
+					new GtidSet(masterUuidC + ":1-100"), masterUuidA);
+			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+			rdbStore.updateRdbGtidSet(masterUuidA + ":1-100");
+
+			failMetaWrite.set(true);
+			try {
+				store.confirmRdbGapAllowed(rdbStore);
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected confirm meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected confirm meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+
+			assertConfirmRollbackClean(store);
+			Assert.assertTrue(store.isFresh());
+
+			RdbStore retryRdb = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.XSYNC,
+					new GtidSet(masterUuidC + ":1-100"), masterUuidA);
+			retryRdb.updateRdbType(RdbStore.Type.NORMAL);
+			retryRdb.updateRdbGtidSet(masterUuidA + ":1-100");
+			store.confirmRdbGapAllowed(retryRdb);
+
+			Assert.assertFalse(store.isFresh());
+			Assert.assertNotNull(store.getRdbStore());
+			Assert.assertNotNull(ReflectionTestUtils.getField(store, "cmdStore"));
+			Assert.assertNotNull(store.getMetaStore().dupReplicationStoreMeta().getCmdFilePrefix());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	/**
+	 * T-H2.A1: createCommandStore fails → meta not committed, no RDB ref, I1 holds.
+	 */
+	@Test
+	public void confirmRdbGapAllowedCreateCmdFailureKeepsI1() throws Exception {
+		store.close();
+		store = null;
+
+		File caseDir = new File(baseDir, "h2a1-create-cmd-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+				redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem(), getReplId()) {
+			@Override
+			protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
+													  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
+													  KeeperMonitor keeperMonitor, GtidCmdFilter filter) throws IOException {
+				throw new IOException("injected createCommandStore fail");
+			}
+		};
+
+		RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
+		rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+		rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+
+		try {
+			store.confirmRdbGapAllowed(rdbStore);
+			Assert.fail("expected IOException when createCommandStore fails");
+		} catch (IOException expected) {
+			Assert.assertTrue(expected.getMessage().contains("injected createCommandStore fail"));
+		}
+
+		assertConfirmRollbackClean(store);
+		Assert.assertTrue(store.isFresh());
+	}
+
+	/**
+	 * T-H2.A2: psyncContinueFrom meta fail after createCmd → new cmd closed; old cmd/prefix/proto kept.
+	 */
+	@Test
+	public void psyncContinueFromMetaWriteFailureKeepsOldCmd() throws Exception {
+		store.close();
+		store = null;
+
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected psyncContinueFrom meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		File caseDir = new File(baseDir, "h2a2-psync-meta-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		try {
+			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+
+			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
+			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+			rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			store.confirmRdbGapAllowed(rdbStore);
+
+			Object oldCmdStore = ReflectionTestUtils.getField(store, "cmdStore");
+			ReplicationStoreMeta oldMeta = store.getMetaStore().dupReplicationStoreMeta();
+			String oldPrefix = oldMeta.getCmdFilePrefix();
+			Assert.assertNotNull(oldCmdStore);
+			Assert.assertNotNull(oldPrefix);
+			Assert.assertEquals(ReplStage.ReplProto.PSYNC, oldMeta.getCurReplStage().getProto());
+
+			failMetaWrite.set(true);
+			try {
+				store.psyncContinueFrom(replidB, 20000);
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected psyncContinueFrom meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected psyncContinueFrom meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+
+			Assert.assertSame(oldCmdStore, ReflectionTestUtils.getField(store, "cmdStore"));
+			ReplicationStoreMeta meta = store.getMetaStore().dupReplicationStoreMeta();
+			Assert.assertEquals(oldPrefix, meta.getCmdFilePrefix());
+			Assert.assertEquals(ReplStage.ReplProto.PSYNC, meta.getCurReplStage().getProto());
+			Assert.assertEquals(replidA, meta.getCurReplStage().getReplId());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	/**
+	 * T-H2.A3: xsyncContinueFrom meta fail → no half-dead cmd+Index; old cmd/meta unchanged.
+	 */
+	@Test
+	public void xsyncContinueFromMetaWriteFailureKeepsOldCmd() throws Exception {
+		store.close();
+		store = null;
+
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected xsyncContinueFrom meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		File caseDir = new File(baseDir, "h2a3-xsync-meta-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		try {
+			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+
+			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
+			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+			rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			store.confirmRdbGapAllowed(rdbStore);
+
+			Object oldCmdStore = ReflectionTestUtils.getField(store, "cmdStore");
+			ReplicationStoreMeta oldMeta = store.getMetaStore().dupReplicationStoreMeta();
+			String oldPrefix = oldMeta.getCmdFilePrefix();
+
+			failMetaWrite.set(true);
+			try {
+				store.xsyncContinueFrom(replidB, 20000, masterUuidB, new GtidSet(masterUuidB + ":1-10"),
+						new GtidSet(GtidSet.EMPTY_GTIDSET));
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected xsyncContinueFrom meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected xsyncContinueFrom meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+
+			Assert.assertSame(oldCmdStore, ReflectionTestUtils.getField(store, "cmdStore"));
+			ReplicationStoreMeta meta = store.getMetaStore().dupReplicationStoreMeta();
+			Assert.assertEquals(oldPrefix, meta.getCmdFilePrefix());
+			Assert.assertEquals(ReplStage.ReplProto.PSYNC, meta.getCurReplStage().getProto());
+			Assert.assertEquals(replidA, meta.getCurReplStage().getReplId());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	/**
+	 * T-H2.B1: switchToXSync meta fail after Cmd Index switch → Index/proto back to PSYNC.
+	 */
+	@Test
+	public void switchToXSyncMetaWriteFailureKeepsPsyncIndex() throws Exception {
+		store.close();
+		store = null;
+
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected switchToXSync meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		File caseDir = new File(baseDir, "h2b1-switch-xsync-meta-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		try {
+			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+
+			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
+			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+			rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			store.confirmRdbGapAllowed(rdbStore);
+
+			Object oldCmdStore = ReflectionTestUtils.getField(store, "cmdStore");
+			ReplicationStoreMeta oldMeta = store.getMetaStore().dupReplicationStoreMeta();
+			String oldPrefix = oldMeta.getCmdFilePrefix();
+			Boolean buildIndexBefore = (Boolean) ReflectionTestUtils.getField(oldCmdStore, "buildIndex");
+			Assert.assertFalse(Boolean.TRUE.equals(buildIndexBefore));
+			Assert.assertEquals(ReplStage.ReplProto.PSYNC, oldMeta.getCurReplStage().getProto());
+
+			failMetaWrite.set(true);
+			try {
+				store.switchToXSync(replidB, 20000, masterUuidB,
+						new GtidSet(masterUuidB + ":1-10"), new GtidSet(GtidSet.EMPTY_GTIDSET));
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected switchToXSync meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected switchToXSync meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+
+			Assert.assertSame(oldCmdStore, ReflectionTestUtils.getField(store, "cmdStore"));
+			Boolean buildIndexAfter = (Boolean) ReflectionTestUtils.getField(oldCmdStore, "buildIndex");
+			Assert.assertFalse(Boolean.TRUE.equals(buildIndexAfter));
+			ReplicationStoreMeta meta = store.getMetaStore().dupReplicationStoreMeta();
+			Assert.assertEquals(oldPrefix, meta.getCmdFilePrefix());
+			Assert.assertEquals(ReplStage.ReplProto.PSYNC, meta.getCurReplStage().getProto());
+			Assert.assertEquals(replidA, meta.getCurReplStage().getReplId());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	/**
+	 * T-H2.B2: psyncContinue meta fail after Cmd switchToPsync → replId/Index back to before call.
+	 */
+	@Test
+	public void psyncContinueMetaWriteFailureKeepsOldReplId() throws Exception {
+		store.close();
+		store = null;
+
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected psyncContinue meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		File caseDir = new File(baseDir, "h2b2-psync-continue-meta-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		try {
+			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+
+			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
+			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+			rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			store.confirmRdbGapAllowed(rdbStore);
+
+			Object oldCmdStore = ReflectionTestUtils.getField(store, "cmdStore");
+			ReplicationStoreMeta oldMeta = store.getMetaStore().dupReplicationStoreMeta();
+			String oldPrefix = oldMeta.getCmdFilePrefix();
+			Boolean buildIndexBefore = (Boolean) ReflectionTestUtils.getField(oldCmdStore, "buildIndex");
+			Assert.assertFalse(Boolean.TRUE.equals(buildIndexBefore));
+			Assert.assertEquals(ReplStage.ReplProto.PSYNC, oldMeta.getCurReplStage().getProto());
+			Assert.assertEquals(replidA, oldMeta.getCurReplStage().getReplId());
+
+			failMetaWrite.set(true);
+			try {
+				store.psyncContinue(replidB);
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected psyncContinue meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected psyncContinue meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+
+			Assert.assertSame(oldCmdStore, ReflectionTestUtils.getField(store, "cmdStore"));
+			Boolean buildIndexAfter = (Boolean) ReflectionTestUtils.getField(oldCmdStore, "buildIndex");
+			Assert.assertFalse(Boolean.TRUE.equals(buildIndexAfter));
+			ReplicationStoreMeta meta = store.getMetaStore().dupReplicationStoreMeta();
+			Assert.assertEquals(oldPrefix, meta.getCmdFilePrefix());
+			Assert.assertEquals(ReplStage.ReplProto.PSYNC, meta.getCurReplStage().getProto());
+			Assert.assertEquals(replidA, meta.getCurReplStage().getReplId());
+			// failed continue must not promote old replId into replId2
+			Assert.assertEquals(oldMeta.getCurReplStage().getReplId2(), meta.getCurReplStage().getReplId2());
+			Assert.assertNotEquals(replidA, meta.getCurReplStage().getReplId2());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	/**
+	 * T-H3.CP4.2 / T-H2.B2: switchToPSync meta fail after Cmd closed Index → proto/Index back to XSYNC;
+	 * restore only flips {@code buildIndex}, must not {@code openWriter}.
+	 */
+	@Test
+	public void switchToPSyncMetaWriteFailureKeepsXsyncIndex() throws Exception {
+		store.close();
+		store = null;
+
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected switchToPSync meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		File caseDir = new File(baseDir, "h2b2-switch-psync-meta-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		try {
+			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+
+			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.XSYNC,
+					new GtidSet(GtidSet.EMPTY_GTIDSET), masterUuidA);
+			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+			rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			store.confirmRdbGapAllowed(rdbStore);
+
+			Object oldCmdStore = ReflectionTestUtils.getField(store, "cmdStore");
+			ReplicationStoreMeta oldMeta = store.getMetaStore().dupReplicationStoreMeta();
+			String oldPrefix = oldMeta.getCmdFilePrefix();
+			Boolean buildIndexBefore = (Boolean) ReflectionTestUtils.getField(oldCmdStore, "buildIndex");
+			Assert.assertTrue(Boolean.TRUE.equals(buildIndexBefore));
+			Assert.assertEquals(ReplStage.ReplProto.XSYNC, oldMeta.getCurReplStage().getProto());
+			Assert.assertEquals(replidA, oldMeta.getCurReplStage().getReplId());
+
+			DefaultIndexStore spyIndex = spyIndexStoreAndReplace();
+			failMetaWrite.set(true);
+			try {
+				store.switchToPSync(replidB, 20000);
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected switchToPSync meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected switchToPSync meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+
+			Assert.assertSame(oldCmdStore, ReflectionTestUtils.getField(store, "cmdStore"));
+			Boolean buildIndexAfter = (Boolean) ReflectionTestUtils.getField(oldCmdStore, "buildIndex");
+			Assert.assertTrue(Boolean.TRUE.equals(buildIndexAfter));
+			verify(spyIndex, never()).openWriter(any());
+			ReplicationStoreMeta meta = store.getMetaStore().dupReplicationStoreMeta();
+			Assert.assertEquals(oldPrefix, meta.getCmdFilePrefix());
+			Assert.assertEquals(ReplStage.ReplProto.XSYNC, meta.getCurReplStage().getProto());
+			Assert.assertEquals(replidA, meta.getCurReplStage().getReplId());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	/**
+	 * T-H2.A3: switchToXSync (Index) fails → close new cmd; meta/old cmd untouched.
+	 */
+	@Test
+	public void xsyncContinueFromIndexCreateFailureKeepsOldCmd() throws Exception {
+		store.close();
+		store = null;
+
+		File caseDir = new File(baseDir, "h2a3-xsync-index-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+				redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem(), getReplId()) {
+			@Override
+			protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
+													  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
+													  KeeperMonitor keeperMonitor, GtidCmdFilter filter) throws IOException {
+				CommandStore created = super.createCommandStore(baseDir, replMeta, cmdFileSize, config,
+						cmdReaderWriterFactory, keeperMonitor, filter);
+				CommandStore spied = Mockito.spy(created);
+				Mockito.doThrow(new IOException("injected switchToXSync fail"))
+						.when(spied).switchToXSync(any(GtidSet.class));
+				return spied;
+			}
+		};
+
+		RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
+		rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+		rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+		store.confirmRdbGapAllowed(rdbStore);
+
+		Object oldCmdStore = ReflectionTestUtils.getField(store, "cmdStore");
+		ReplicationStoreMeta oldMeta = store.getMetaStore().dupReplicationStoreMeta();
+		String oldPrefix = oldMeta.getCmdFilePrefix();
+
+		try {
+			store.xsyncContinueFrom(replidB, 20000, masterUuidB, new GtidSet(masterUuidB + ":1-10"),
+					new GtidSet(GtidSet.EMPTY_GTIDSET));
+			Assert.fail("expected IOException when switchToXSync fails");
+		} catch (IOException expected) {
+			Assert.assertTrue(expected.getMessage().contains("injected switchToXSync fail")
+					|| (expected.getCause() != null && expected.getCause().getMessage() != null
+					&& expected.getCause().getMessage().contains("injected switchToXSync fail")));
+		}
+
+		Assert.assertSame(oldCmdStore, ReflectionTestUtils.getField(store, "cmdStore"));
+		ReplicationStoreMeta meta = store.getMetaStore().dupReplicationStoreMeta();
+		Assert.assertEquals(oldPrefix, meta.getCmdFilePrefix());
+		Assert.assertEquals(ReplStage.ReplProto.PSYNC, meta.getCurReplStage().getProto());
+		Assert.assertEquals(replidA, meta.getCurReplStage().getReplId());
+	}
+
+	/**
+	 * T-H2.D1: checkReplIdAndUpdateRdbGapAllowed meta write fail → storeRef keeps old RDB, meta rdb fields unchanged.
+	 */
+	@Test
+	public void checkReplIdAndUpdateRdbGapAllowedMetaWriteFailureKeepsOldRdb() throws Exception {
+		store.close();
+		store = null;
+
+		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
+		AtomicBoolean failMetaWrite = new AtomicBoolean(false);
+		doAnswer(invocation -> {
+			AsyncFile file = invocation.getArgument(0);
+			String path = (String) ReflectionTestUtils.getField(file, "path");
+			if (failMetaWrite.get() && path != null && path.contains(META_V2_FILE)) {
+				ByteBuf buf = invocation.getArgument(1);
+				if (buf != null && buf.refCnt() > 0) {
+					buf.release();
+				}
+				return java.util.concurrent.CompletableFuture.failedFuture(
+						new IOException("injected updateRdb meta write fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(fileSystem).write(any(AsyncFile.class), any(ByteBuf.class));
+
+		File caseDir = new File(baseDir, "h2d1-update-rdb-meta-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		try {
+			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+
+			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, masterUuidA);
+			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+			rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			store.confirmRdbGapAllowed(rdbStore);
+			store.appendCommands(Unpooled.wrappedBuffer(generateVanillaCommands(1000)));
+
+			RdbStore oldRdbStore = store.getRdbStore();
+			ReplicationStoreMeta oldMeta = store.getMetaStore().dupReplicationStoreMeta();
+			String oldRdbFile = oldMeta.getRdbFile();
+			Assert.assertNotNull(oldRdbStore);
+			Assert.assertNotNull(oldRdbFile);
+
+			DumpedRdbStore dumpedRdbStore = prepareNewRdbPsync();
+			dumpedRdbStore.setRdbOffset(10500);
+
+			failMetaWrite.set(true);
+			try {
+				store.checkReplIdAndUpdateRdbGapAllowed(dumpedRdbStore);
+				Assert.fail("expected IOException when meta save fails");
+			} catch (IOException expected) {
+				Assert.assertTrue(expected.getMessage().contains("injected updateRdb meta write fail")
+						|| (expected.getCause() != null && expected.getCause().getMessage() != null
+						&& expected.getCause().getMessage().contains("injected updateRdb meta write fail")));
+			} finally {
+				failMetaWrite.set(false);
+			}
+			dumpedRdbStore.close();
+
+			// storeRef must still point to the old RDB; meta rdb file unchanged.
+			Assert.assertSame(oldRdbStore, store.getRdbStore());
+			ReplicationStoreMeta meta = store.getMetaStore().dupReplicationStoreMeta();
+			Assert.assertEquals(oldRdbFile, meta.getRdbFile());
+		} finally {
+			if (store != null) {
+				try {
+					store.close();
+				} catch (Exception ignore) {
+				}
+				store = null;
+			}
+			fileSystem.shutdown();
+		}
+	}
+
+	private static void assertConfirmRollbackClean(GtidReplicationStore store) {
+		Assert.assertNull(store.getRdbStore());
+		Assert.assertNull(ReflectionTestUtils.getField(store, "cmdStore"));
+		ReplicationStoreMeta meta = store.getMetaStore().dupReplicationStoreMeta();
+		Assert.assertNull(meta.getCmdFilePrefix());
+		// I1: cmdFilePrefix == null ⟺ cmdStore == null
+		Assert.assertTrue((meta.getCmdFilePrefix() == null) == (ReflectionTestUtils.getField(store, "cmdStore") == null));
+	}
+
+	private void prepareXsyncStoreWithGtidCommands(int cmdCount) throws IOException {
+		RdbStore rdbStore = store.prepareRdb(replidA, 0, new LenEofType(100), ReplStage.ReplProto.XSYNC,
+				new GtidSet(GtidSet.EMPTY_GTIDSET), masterUuidA);
+		rdbStore.updateRdbType(RdbStore.Type.NORMAL);
+		rdbStore.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+		store.confirmRdbGapAllowed(rdbStore);
+		store.appendCommands(Unpooled.wrappedBuffer(generateGtidCommands(masterUuidA, 1, cmdCount)));
+	}
+
+	private DefaultIndexStore spyIndexStoreAndReplace() {
+		DefaultIndexStore real = (DefaultIndexStore) ReflectionTestUtils.getField(store.cmdStore, "indexStore");
+		DefaultIndexStore spyIndex = spy(real);
+		ReflectionTestUtils.setField(store.cmdStore, "indexStore", spyIndex);
+		return spyIndex;
+	}
+
+	private void failDoSwitchCmdFileTimes(DefaultIndexStore spyIndex, int times) throws IOException {
+		AtomicInteger remainingFails = new AtomicInteger(times);
+		doAnswer(inv -> {
+			if (remainingFails.getAndDecrement() > 0) {
+				throw new IOException("injected switch fail");
+			}
+			return inv.callRealMethod();
+		}).when(spyIndex).doSwitchCmdFile();
+	}
+
+	private void rotateUnbind(DefaultIndexStore spyIndex) throws IOException {
+		AbstractCommandStore cmdStore = (AbstractCommandStore) store.cmdStore;
+		CommandWriter cmdWriter = cmdStore.getCommandWriter();
+		try {
+			spyIndex.rotateWithCmdRoll(() -> {
+				cmdWriter.doRotate();
+				return null;
+			});
+			Assert.fail("expected IOException after doSwitchCmdFile + retry both fail");
+		} catch (IOException e) {
+			Assert.assertTrue(e.getMessage().contains("injected switch fail"));
+		}
+	}
+
+	private GtidSet readTipIndexHeader() throws IOException {
+		AbstractCommandStore cmdStore = (AbstractCommandStore) store.cmdStore;
+		String prefix = cmdStore.getCommandFileNamePrefix();
+		String indexPrefix = AbstractIndex.INDEX + prefix;
+		AsyncFile tipIndex = AsyncFileSystemHelper.await(
+				cmdStore.getAsyncFileSystem().getCurrentIndexFiles(cmdStore.getWriteSegmentFile(), List.of(indexPrefix)),
+				"get tip index v1").getValue().get(indexPrefix);
+		return GtidSetWrapper.readGtidSet(cmdStore.getAsyncFileSystem(), tipIndex);
+	}
+
+	/**
+	 * T-H3.CP1.1: reconnect {@code getGtidSet} (before CP3 {@code xsyncContinue} rebind)
+	 * uses continueGtidSetSnapshot, not the rolled empty tip IndexReader.
+	 */
+	@Test
+	public void getGtidSet_AfterRotateUnbind_UsesSnapshotNotEmptyTip() throws Exception {
+		prepareXsyncStoreWithGtidCommands(6);
+		Pair<GtidSet, GtidSet> expected = store.getGtidSet();
+
+		DefaultIndexStore spyIndex = spyIndexStoreAndReplace();
+		failDoSwitchCmdFileTimes(spyIndex, 2);
+		rotateUnbind(spyIndex);
+		Assert.assertNull(ReflectionTestUtils.getField(spyIndex, "indexWriter"));
+		Assert.assertNull(ReflectionTestUtils.getField(spyIndex, "indexWriterV2"));
+
+		Pair<GtidSet, GtidSet> afterUnbind = store.getGtidSet();
+		Assert.assertEquals(expected.getKey(), afterUnbind.getKey());
+		Assert.assertEquals(expected.getValue(), afterUnbind.getValue());
+	}
+
+	/**
+	 * T-H3.CP3: rotate dual-fail unbind then {@code xsyncContinue} rebinds writers;
+	 * tip header = accumulated GtidSet, not EMPTY.
+	 */
+	@Test
+	public void xsyncContinue_AfterRotateUnbind_RebindsWritersWithSnapshotHeader() throws Exception {
+		prepareXsyncStoreWithGtidCommands(10);
+		GtidSet expected = store.cmdStore.getIndexGtidSet();
+		Assert.assertEquals(new GtidSet(masterUuidA + ":1-10"), expected);
+
+		DefaultIndexStore spyIndex = spyIndexStoreAndReplace();
+		failDoSwitchCmdFileTimes(spyIndex, 2);
+		rotateUnbind(spyIndex);
+		Assert.assertNull(ReflectionTestUtils.getField(spyIndex, "indexWriter"));
+		Assert.assertNull(ReflectionTestUtils.getField(spyIndex, "indexWriterV2"));
+
+		store.xsyncContinue(replidA, store.getCurReplStageReplOff(), masterUuidA, expected);
+
+		Assert.assertNotNull(ReflectionTestUtils.getField(spyIndex, "indexWriter"));
+		Assert.assertNotNull(ReflectionTestUtils.getField(spyIndex, "indexWriterV2"));
+		GtidSet header = readTipIndexHeader();
+		Assert.assertFalse("tip header must not be EMPTY", header.isEmpty());
+		Assert.assertEquals(expected, header);
+	}
+
+	/**
+	 * T-H3.CP3: rebind IO failure on {@code xsyncContinue} is thrown.
+	 */
+	@Test
+	public void xsyncContinue_RebindIoFailurePropagates() throws Exception {
+		prepareXsyncStoreWithGtidCommands(4);
+		GtidSet gtidCont = store.cmdStore.getIndexGtidSet();
+
+		DefaultIndexStore spyIndex = spyIndexStoreAndReplace();
+		failDoSwitchCmdFileTimes(spyIndex, 3);
+		rotateUnbind(spyIndex);
+
+		try {
+			store.xsyncContinue(replidA, store.getCurReplStageReplOff(), masterUuidA, gtidCont);
+			Assert.fail("expected IOException from rebind");
+		} catch (IOException e) {
+			Assert.assertTrue(e.getMessage().contains("injected switch fail"));
+		}
+		Assert.assertNull(ReflectionTestUtils.getField(spyIndex, "indexWriter"));
+		Assert.assertNull(ReflectionTestUtils.getField(spyIndex, "indexWriterV2"));
+	}
+
+	/**
+	 * T-H3.CP3: writers already bound → {@code xsyncContinue} does not reopen.
+	 */
+	@Test
+	public void xsyncContinue_WritersAlreadyBound_DoesNotReopen() throws Exception {
+		prepareXsyncStoreWithGtidCommands(3);
+		GtidSet gtidCont = store.cmdStore.getIndexGtidSet();
+		DefaultIndexStore spyIndex = spyIndexStoreAndReplace();
+		Assert.assertNotNull(ReflectionTestUtils.getField(spyIndex, "indexWriterV2"));
+
+		store.xsyncContinue(replidA, store.getCurReplStageReplOff(), masterUuidA, gtidCont);
+
+		verify(spyIndex, never()).doSwitchCmdFile();
+		Assert.assertNotNull(ReflectionTestUtils.getField(spyIndex, "indexWriterV2"));
+	}
+
+	/**
+	 * T-H3.CP6.4: DRS construct — createCommandStore fail closes already created meta / rdb.
+	 */
+	@Test
+	public void constructCreateCommandStoreFailClosesCreatedMetaAndRdb() throws Exception {
+		store.close();
+		store = null;
+
+		File caseDir = new File(baseDir, "h3j-construct-cmd-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		String keeperRunid = randomKeeperRunid();
+		GtidReplicationStore seed = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), keeperRunid,
+				createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem(), getReplId());
+		RdbStore seedRdb = seed.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
+		seedRdb.updateRdbType(RdbStore.Type.NORMAL);
+		seedRdb.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+		seed.confirmRdbGapAllowed(seedRdb);
+		seed.close();
+
+		AtomicReference<MetaStore> createdMeta = new AtomicReference<>();
+		AtomicReference<RdbStore> createdRdb = new AtomicReference<>();
+		try {
+			new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem(), getReplId()) {
+				@Override
+				protected MetaStore createMetaStore(File baseDir, String keeperRunid) throws IOException {
+					MetaStore created = super.createMetaStore(baseDir, keeperRunid);
+					createdMeta.set(created);
+					return created;
+				}
+
+				@Override
+				protected RdbStore createRdbStore(File rdb, String replId, long rdbOffset, EofType eofType,
+												  ReplStage.ReplProto replProto, GtidSet gtidLost, String masterUuid)
+						throws IOException {
+					RdbStore created = super.createRdbStore(rdb, replId, rdbOffset, eofType, replProto, gtidLost, masterUuid);
+					createdRdb.set(created);
+					return created;
+				}
+
+				@Override
+				protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
+														  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
+														  KeeperMonitor keeperMonitor, GtidCmdFilter filter) throws IOException {
+					throw new IOException("injected createCommandStore fail");
+				}
+			};
+			Assert.fail("expected construct fail when createCommandStore throws");
+		} catch (IOException expected) {
+			Assert.assertTrue(expected.getMessage().contains("injected createCommandStore fail"));
+		}
+
+		Assert.assertNotNull(createdMeta.get());
+		try {
+			createdMeta.get().loadMeta();
+			Assert.fail("expected meta closed after construct fail");
+		} catch (IOException e) {
+			Assert.assertTrue(e.getMessage().contains("MetaStore closed"));
+		}
+		Assert.assertNotNull(createdRdb.get());
+		Assert.assertTrue(((AbstractStore) createdRdb.get()).isClosed());
+	}
+
+	/**
+	 * T-H3.HO.1: meta already open, cmd {@code awaitOpen} fails → already opened handles
+	 * released; same FS reconstruct must not hit {@code writer already open}.
+	 */
+	@Test
+	public void constructCmdAwaitOpenFailReleasesHandlesSoReconstructSucceeds() throws Exception {
+		store.close();
+		store = null;
+
+		File caseDir = new File(baseDir, "h3m-cmd-await-open-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		String keeperRunid = randomKeeperRunid();
+		AsyncFileSystem fs = asyncFileSystem();
+		seedXsyncThenClose(caseDir, keeperRunid, fs);
+
+		AtomicBoolean failCmdOpenOnce = new AtomicBoolean(true);
+		AsyncFileSystem spyFs = spy(fs);
+		doAnswer(invocation -> {
+			boolean write = invocation.getArgument(3);
+			if (write && failCmdOpenOnce.getAndSet(false)) {
+				return CompletableFuture.<AsyncSegmentFile>failedFuture(
+						new IOException("injected cmd awaitOpen fail"));
+			}
+			return invocation.callRealMethod();
+		}).when(spyFs).open(anyString(), anyString(), anyList(), anyBoolean(), anyString());
+
+		try {
+			openGtidStore(caseDir, keeperRunid, spyFs);
+			Assert.fail("expected construct fail when cmd awaitOpen fails");
+		} catch (Throwable expected) {
+			assertNotWriterAlreadyOpen(expected);
+			Assert.assertTrue(causeContains(expected, "injected cmd awaitOpen fail"));
+		}
+
+		GtidReplicationStore reopened = null;
+		try {
+			reopened = openGtidStore(caseDir, keeperRunid, spyFs);
+			Assert.assertFalse(reopened.isFresh());
+			Assert.assertNotNull(ReflectionTestUtils.getField(reopened, "cmdStore"));
+		} catch (Throwable t) {
+			assertNotWriterAlreadyOpen(t);
+			throw t;
+		} finally {
+			closeQuietly(reopened);
+		}
+	}
+
+	/**
+	 * T-H3.HO.2: cmd already open, {@code recoverIndex} throws → meta+cmd released;
+	 * same FS reconstruct must not hit {@code writer already open}.
+	 */
+	@Test
+	public void constructRecoverIndexFailReleasesHandlesSoReconstructSucceeds() throws Exception {
+		store.close();
+		store = null;
+
+		File caseDir = new File(baseDir, "h3m-recover-index-fail");
+		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
+		String keeperRunid = randomKeeperRunid();
+		AsyncFileSystem fs = asyncFileSystem();
+		seedXsyncThenClose(caseDir, keeperRunid, fs);
+
+		AtomicBoolean failRecoverOnce = new AtomicBoolean(true);
+		try {
+			new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(),
+					redisOpParser, Mockito.mock(SyncRateManager.class), null, fs, getReplId()) {
+				@Override
+				protected void initializeCommandStore(CommandStore cmdStore) throws IOException {
+					if (failRecoverOnce.getAndSet(false)) {
+						DefaultIndexStore real = (DefaultIndexStore) ReflectionTestUtils.getField(cmdStore, "indexStore");
+						DefaultIndexStore spyIndex = spy(real);
+						doAnswer(inv -> {
+							throw new IOException("injected recoverIndex fail");
+						}).when(spyIndex).openWriter(any());
+						ReflectionTestUtils.setField(cmdStore, "indexStore", spyIndex);
+					}
+					super.initializeCommandStore(cmdStore);
+				}
+			};
+			Assert.fail("expected construct fail when recoverIndex throws");
+		} catch (Throwable expected) {
+			assertNotWriterAlreadyOpen(expected);
+			Assert.assertTrue(causeContains(expected, "injected recoverIndex fail"));
+		}
+
+		GtidReplicationStore reopened = null;
+		try {
+			reopened = openGtidStore(caseDir, keeperRunid, fs);
+			Assert.assertFalse(reopened.isFresh());
+			Assert.assertNotNull(ReflectionTestUtils.getField(reopened, "cmdStore"));
+		} catch (Throwable t) {
+			assertNotWriterAlreadyOpen(t);
+			throw t;
+		} finally {
+			closeQuietly(reopened);
+		}
+	}
+
+	private GtidReplicationStore openGtidStore(File dir, String keeperRunid, AsyncFileSystem fs) throws IOException {
+		return new GtidReplicationStore(dir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(),
+				redisOpParser, Mockito.mock(SyncRateManager.class), null, fs, getReplId());
+	}
+
+	private void seedXsyncThenClose(File dir, String keeperRunid, AsyncFileSystem fs) throws IOException {
+		GtidReplicationStore seed = openGtidStore(dir, keeperRunid, fs);
+		try {
+			RdbStore rdb = seed.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.XSYNC,
+					new GtidSet(GtidSet.EMPTY_GTIDSET), masterUuidA);
+			rdb.updateRdbType(RdbStore.Type.NORMAL);
+			rdb.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
+			seed.confirmRdbGapAllowed(rdb);
+		} finally {
+			seed.close();
+		}
+	}
+
+	private static boolean causeContains(Throwable t, String snippet) {
+		for (Throwable c = t; c != null; c = c.getCause()) {
+			if (c.getMessage() != null && c.getMessage().contains(snippet)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static void assertNotWriterAlreadyOpen(Throwable t) {
+		for (Throwable c = t; c != null; c = c.getCause()) {
+			String msg = c.getMessage();
+			if (msg != null && msg.toLowerCase().contains("writer already open")) {
+				Assert.fail("writer slot leaked: " + t);
+			}
+		}
+	}
+
+	private static void closeQuietly(ReplicationStore toClose) {
+		if (toClose == null) {
+			return;
+		}
+		try {
+			toClose.close();
+		} catch (Exception ignore) {
+		}
 	}
 
 }

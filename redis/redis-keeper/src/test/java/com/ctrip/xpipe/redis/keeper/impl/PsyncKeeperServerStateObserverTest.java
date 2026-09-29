@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.RedisClient;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import io.netty.buffer.ByteBuf;
 import org.junit.Before;
@@ -37,16 +38,21 @@ public class PsyncKeeperServerStateObserverTest extends AbstractRedisKeeperTest 
     @Mock
     private ReplicationStore replicationStore;
 
+    @Mock
+    private RedisKeeperServerState keeperServerState;
+
     private ThreadPoolExecutor singleThreadExecutors;
 
     @Before
-    public void beforePsyncKeeperServerStateObserverTest() {
+    public void beforePsyncKeeperServerStateObserverTest() throws Exception {
         singleThreadExecutors = new ThreadPoolExecutor(1, 1,
                 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(), XpipeThreadFactory.create("single-thread-test-executors"));
 
         observer = Mockito.spy(new RedisKeeperServerStateBackup.PsyncKeeperServerStateObserver(new String[]{"?", "-1"}, redisClient));
         when(redisClient.getRedisServer()).thenReturn(redisKeeperServer);
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(keeperServerState);
+        when(keeperServerState.psync(redisClient, new String[]{"?", "-1"})).thenReturn(true);
         when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
         when(replicationStore.isFresh()).thenReturn(true);
         doAnswer(invocation -> {

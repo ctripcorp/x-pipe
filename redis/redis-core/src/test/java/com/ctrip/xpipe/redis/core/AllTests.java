@@ -29,6 +29,7 @@ import com.ctrip.xpipe.redis.core.redis.DefaultRunIdGeneratorTest;
 import com.ctrip.xpipe.redis.core.redis.op.RedisOpDelTest;
 import com.ctrip.xpipe.redis.core.redis.op.RedisOpMsetTest;
 import com.ctrip.xpipe.redis.core.redis.operation.op.RedisOpItemParserTest;
+import com.ctrip.xpipe.redis.core.redis.operation.stream.ResyncingCommandParserTest;
 import com.ctrip.xpipe.redis.core.redis.operation.stream.StreamCommandParserTest;
 import com.ctrip.xpipe.redis.core.redis.parser.GeneralRedisOpParserTest;
 import com.ctrip.xpipe.redis.core.redis.parser.RedisReplStreamParseTest;
@@ -72,6 +73,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DcInfoTest.class,
         DefaultPsyncTest.class,
         DefaultGapAllowedSyncTest.class,
+        CmdTailGapAllowedSyncTest.class,
         PartialOnlyPsyncTest.class,
         META_SERVER_SERVICETest.class,
         BulkStringEofJudgerTest.class,
@@ -108,6 +110,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         DefaultProxyEndpointHealthCheckerTest.class,
         StreamCommandParserTest.class,
+        ResyncingCommandParserTest.class,
         RedisOpItemParserTest.class,
 
         AllRdbTests.class

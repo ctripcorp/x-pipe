@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.health;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.observer.Observable;
@@ -77,7 +78,8 @@ public class DiskHealthChecker extends AbstractLifecycleObservable implements To
             String storePath = keeperContainerConfig.getReplicationStoreDir();
             logger.debug("[check][start] {}", storePath);
             KeeperDiskInfo diskInfo = new KeeperDiskInfo();
-            DiskReadWriteCheckJob diskReadWriteCheckJob = new DiskReadWriteCheckJob(storePath);
+            DiskReadWriteCheckJob diskReadWriteCheckJob = new DiskReadWriteCheckJob(storePath,
+                    FoundationService.DEFAULT.getHostName());
             DiskSpaceUsageCheckJob diskSpaceUsageCheckJob = new DiskSpaceUsageCheckJob(storePath);
 
             diskInfo.available = diskReadWriteCheckJob.execute().get(checkTimeoutSeconds, TimeUnit.SECONDS);

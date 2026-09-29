@@ -42,7 +42,14 @@ import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManager;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.netty.NettyMasterHandler;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareCmdParser;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcher;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareWatchSnapshot;
+import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubParseHook;
+import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubRegistry;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
@@ -93,6 +100,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public static int DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT = Integer.parseInt(System.getProperty(KEY_DEFAULT_KEEPER_WORKER_GROUP_THREAD_COUNT, "5"));
 	private static final int DEFAULT_LONG_TIME_ALERT_TASK_MILLI = 1000;
 
+	static final String PREPARE_WATCH_EVENT_TYPE = "PrepareStoreWatch";
+
+	static final String EVENT_PREPARE_WATCH_START_FAIL = "startFail";
+
+	static final String EVENT_PREPARE_WATCH_LEAVE_FAIL = "leaveFail";
+
 	private static String KEY_SEQ_FSYNC_CHECK_PERIOD_SEC = "SEQ_FSYNC_CHECK_PERIOD_SEC";
 	public static int DEFAULT_FSYNC_CHECK_PERIOD_SEC = Integer.parseInt(System.getProperty(KEY_SEQ_FSYNC_CHECK_PERIOD_SEC, "2"));
 
@@ -108,6 +121,18 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	private SyncRateManager syncRateManager;
 	
 	@VisibleForTesting ReplicationStoreManager replicationStoreManager;
+
+	private volatile PrepareStoreWatcher prepareWatcher;
+
+	private volatile PrepareCmdParser prepareCmdParser;
+
+	private final KeeperPubSubRegistry pubSubRegistry;
+
+	private final KeeperPubSubParseHook pubSubParseHook;
+
+	private final boolean tfsMode;
+
+	private AsyncFileSystem asyncFileSystem;
 
 	private ServerSocketChannel serverSocketChannel;
 	
@@ -166,19 +191,35 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager,
-									KeeperResourceManager resourceManager, SyncRateManager syncRateManager, RedisOpParser redisOpParser){
+									KeeperResourceManager resourceManager, SyncRateManager syncRateManager, RedisOpParser redisOpParser,
+									AsyncFileSystem asyncFileSystem){
 
-		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, redisOpParser, null);
+		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager, resourceManager, syncRateManager, redisOpParser, asyncFileSystem, null, false);
 	}
 
 	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
 									LeaderElectorManager leaderElectorManager,
 									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager,
-									SyncRateManager syncRateManager, RedisOpParser redisOpParser, ReplDelayConfigCache replDelayConfigCache){
+									SyncRateManager syncRateManager, RedisOpParser redisOpParser,
+									AsyncFileSystem asyncFileSystem, ReplDelayConfigCache replDelayConfigCache){
+		this(replId, currentKeeperMeta, keeperConfig, baseDir, leaderElectorManager, keepersMonitorManager,
+				resourceManager, syncRateManager, redisOpParser, asyncFileSystem, replDelayConfigCache, false);
+	}
+
+	public DefaultRedisKeeperServer(Long replId, KeeperMeta currentKeeperMeta, KeeperConfig keeperConfig, File baseDir,
+									LeaderElectorManager leaderElectorManager,
+									KeepersMonitorManager keepersMonitorManager, KeeperResourceManager resourceManager,
+									SyncRateManager syncRateManager, RedisOpParser redisOpParser,
+									AsyncFileSystem asyncFileSystem, ReplDelayConfigCache replDelayConfigCache,
+									boolean tfsMode){
 
 		this.clusterId = ClusterId.from(((ClusterMeta) currentKeeperMeta.parent().parent()).getDbId());
 		this.shardId = ShardId.from(currentKeeperMeta.parent().getDbId());
 		this.replId = ReplId.from(replId);
+		this.pubSubRegistry = new KeeperPubSubRegistry(this.replId);
+		this.pubSubParseHook = keeperConfig.isPubsubParseEnabled() && redisOpParser != null
+				? new KeeperPubSubParseHook(redisOpParser, this::deliverParsedPublish)
+				: null;
 		this.currentKeeperMeta = currentKeeperMeta;
 		this.baseDir = baseDir;
 		this.keeperConfig = keeperConfig;
@@ -190,14 +231,20 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.crossRegion = new AtomicBoolean(false);
 		this.syncRateManager = syncRateManager;
 		this.replDelayConfigCache = replDelayConfigCache;
+		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
+		this.tfsMode = tfsMode;
 		ckStore = new CKStore(this.replId,this.redisOpParser,String.format("%s:%d",currentKeeperMeta.getIp(),currentKeeperMeta.getPort()),keeperConfig);
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(CKStore ckStore,NioEventLoopGroup masterEventLoopGroup, KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
 																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor,
 																	ScheduledExecutorService scheduled) {
-		return new DefaultReplicationStoreManager.ClusterAndShardCompatible(ckStore,masterEventLoopGroup,keeperConfig, replId, currentKeeperMeta.getId(),
-				baseDir, keeperMonitor, redisOpParser, syncRateManager, scheduled).setDeprecatedClusterAndShard(clusterId, shardId);
+		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(this.ckStore, masterEventLoopGroup, keeperConfig, replId,
+				currentKeeperMeta.getId(), baseDir, keeperMonitor, syncRateManager, redisOpParser, scheduled, asyncFileSystem);
+		if (pubSubParseHook != null) {
+			manager.setPubSubParseHook(pubSubParseHook);
+		}
+		return manager;
 	}
 
 	private LeaderElector createLeaderElector(){
@@ -262,7 +309,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			logger.error("[doStart][ck start fail] ignore", th);
 		}
 
-		this.resetReplAfterLongTimeDown();
 		this.leaderElector = createLeaderElector();
 		this.leaderElector.initialize();
 	 	this.redisKeeperServerState = initKeeperServerState();
@@ -319,7 +365,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 	}
 
-	private void resetReplAfterLongTimeDown() {
+	@Override
+	public void resetReplAfterLongTimeDown() {
 		try {
 			ReplicationStore replicationStore = replicationStoreManager.getCurrent();
 			if (null == replicationStore || null == replicationStore.getMetaStore().getCurReplStageReplId()) {
@@ -451,7 +498,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		this.leaderElector.stop();
 		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		stopServer();
-		replicationStoreManager.stop();
+		leavePrepareWatch();
+		// PREPARE may already have stopped the manager; do not require canStop.
+		LifecycleHelper.stopIfPossible(replicationStoreManager);
 		super.doStop();
 	}
 
@@ -470,19 +519,22 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	protected void doDispose() throws Exception {
-
-		LifecycleHelper.disposeIfPossible(keeperRedisMaster);
-		this.ckStore.dispose();
-		this.leaderElector.dispose();
-		masterConfigEventLoopGroup.shutdownGracefully();
-		masterEventLoopGroup.shutdownGracefully();
-		rdbOnlyEventLoopGroup.shutdownGracefully();
-		bossGroup.shutdownGracefully();
-		workerGroup.shutdownGracefully();
-		replicationStoreManager.dispose();
-		this.scheduled.shutdownNow();
-		this.clientExecutors.shutdownNow();
-		super.doDispose();
+		try {
+			LifecycleHelper.disposeIfPossible(keeperRedisMaster);
+			this.ckStore.dispose();
+			this.leaderElector.dispose();
+			masterConfigEventLoopGroup.shutdownGracefully();
+			masterEventLoopGroup.shutdownGracefully();
+			rdbOnlyEventLoopGroup.shutdownGracefully();
+			bossGroup.shutdownGracefully();
+			workerGroup.shutdownGracefully();
+			replicationStoreManager.dispose();
+			this.scheduled.shutdownNow();
+			this.clientExecutors.shutdownNow();
+			super.doDispose();
+		} finally {
+			this.pubSubRegistry.close();
+		}
 	}
 
 	
@@ -636,10 +688,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 			throw new RedisKeeperServerStateException(toString(), getLifecycleState().getPhaseName());
 		}
+		if (redisKeeperServerState != null && KeeperState.PREPARE == redisKeeperServerState.keeperState()
+				&& !replicationStoreManager.isReadOnly()) {
+			throw new RedisKeeperServerStateException(toString(), "PREPARE");
+		}
 		
 		try {
-			ReplicationStore replicationStore = replicationStoreManager.createIfNotExist(); 
-			return replicationStore;
+			return replicationStoreManager.createIfNotExist();
 		} catch (IOException e) {
 			logger.error("[getCurrentReplicationStore]" + this, e);
 			throw new XpipeRuntimeException("[getCurrentReplicationStore]" + this, e);
@@ -685,6 +740,32 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
    }
 
 	@Override
+	public boolean isReadOnlyStore() {
+		return replicationStoreManager != null && replicationStoreManager.isReadOnly();
+	}
+
+	@Override
+	public boolean isTfsMode() {
+		return tfsMode;
+	}
+
+	@Override
+	public ReplicationStore getOpenedStore() {
+		return replicationStoreManager == null ? null : replicationStoreManager.getOpenedStore();
+	}
+
+	@Override
+	public PrepareWatchSnapshot getPrepareWatchSnapshot() {
+		PrepareStoreWatcher watcher = this.prepareWatcher;
+		return watcher == null ? null : watcher.getSnapshot();
+	}
+
+	@Override
+	public KeeperPubSubRegistry getPubSubRegistry() {
+		return pubSubRegistry;
+	}
+
+	@Override
 	public CKStore getCkStore() {
 		return ckStore;
 	}
@@ -728,6 +809,201 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			crossRegionFsyncCoordinator.reset();
 		}
 		closeSlavesExcept(reason, null);
+	}
+
+	/**
+	 * PREPARE lease release (spec §3.8 / T-R.4):
+	 * stopAndDisposeMaster → setState PREPARE (reject new slave sync) → closeSlaves →
+	 * {@code replicationStoreManager.stop()} (cancel GC → best-effort flush → releaseCurrentStore).
+	 * Exceptions from lease release propagate to {@link com.ctrip.xpipe.redis.keeper.handler.keeper.KeeperCommandHandler}
+	 * as Redis ERROR (Metaserver ForceCloseDir). Read-only watch start (m5 D7/D4) never changes the reply.
+	 */
+	@Override
+	public synchronized void doBecomePrepare(Endpoint masterAddress) {
+		logger.info("[doBecomePrepare]{}", masterAddress);
+		try {
+			// Stop write first, then flip state so new PSYNC/XSYNC is rejected before we tear down
+			// existing slaves / store (avoids serving sync while closing).
+			stopAndDisposeMaster();
+			setRedisKeeperServerState(new RedisKeeperServerStatePrepare(this, masterAddress));
+			AsyncFileSystemHelper.runWithIoTimeout(AsyncFileSystemHelper.PREPARE_IO_TIMEOUT_MILLIS, () -> {
+				closeSlaves("prepare");
+				try {
+					if (replicationStoreManager.getLifecycleState().canStop()) {
+						replicationStoreManager.stop();
+					} else {
+						// Already stopped (or never started): still drop lease reference.
+						replicationStoreManager.releaseCurrentStore();
+					}
+				} catch (IOException e) {
+					throw e;
+				} catch (Exception e) {
+					throw new IOException("stop replicationStoreManager failed", e);
+				}
+			});
+			startPrepareWatchIfEnabled();
+			logger.info("[doBecomePrepare][done]");
+		} catch (Exception e) {
+			logger.error("[doBecomePrepare]", e);
+			if (e instanceof RuntimeException) {
+				throw (RuntimeException) e;
+			}
+			throw new XpipeRuntimeException("[doBecomePrepare] lease release failed", e);
+		}
+	}
+
+	/**
+	 * PREPARE → ACTIVE/BACKUP (spec §3.8.3 / T-R.9).
+	 * Leave read-only watch first (D15), then restart Manager (GC) → reopen {@code latest.store.dir}
+	 * → Backup {@link #resetReplAfterLongTimeDown()} → stamp meta role the same way
+	 * {@code doBecomeActive}/{@code doBecomeBackup} do → setState → reconnect.
+	 * {@link #initReplicationStore} is NodeAdded-only (new store object), not called here.
+	 */
+	@Override
+	public synchronized void doReenterFromPrepare(Endpoint masterAddress, boolean becomeActive) {
+		logger.info("[doReenterFromPrepare][active={}]{}", becomeActive, masterAddress);
+		try {
+			leavePrepareWatch();
+			LifecycleHelper.startIfPossible(replicationStoreManager);
+			// Prefer getCurrent → latest.store.dir; create() only when no latest exists.
+			ReplicationStore store = replicationStoreManager.createIfNotExist();
+			if (!becomeActive) {
+				resetReplAfterLongTimeDown();
+				store = replicationStoreManager.getCurrent();
+			}
+			if (store != null) {
+				try {
+					if (becomeActive) {
+						store.getMetaStore().becomeActive();
+					} else {
+						store.getMetaStore().becomeBackup();
+					}
+				} catch (Exception e) {
+					logger.error("[doReenterFromPrepare][meta role]{}", store, e);
+				}
+			}
+			if (becomeActive) {
+				setRedisKeeperServerState(new RedisKeeperServerStateActive(this, masterAddress));
+			} else {
+				setRedisKeeperServerState(new RedisKeeperServerStateBackup(this, masterAddress));
+			}
+			reconnectMaster();
+			logger.info("[doReenterFromPrepare][done]");
+		} catch (Exception e) {
+			logger.error("[doReenterFromPrepare]", e);
+			if (e instanceof RuntimeException) {
+				throw (RuntimeException) e;
+			}
+			throw new XpipeRuntimeException("[doReenterFromPrepare] reopen store failed", e);
+		}
+	}
+
+	/**
+	 * After lease release: TFS + watch switch → setReadOnly → start Manager → PrepareStoreWatcher.
+	 * Catches {@link Throwable} so the caller try/catch (which rethrows lease failures) never sees watch errors (D4).
+	 */
+	private void startPrepareWatchIfEnabled() {
+		if (!keeperConfig.isPrepareStoreWatchEnabled()) {
+			return;
+		}
+		if (!tfsMode) {
+			logger.warn("[startPrepareWatch] skip, mode is not TFS {}", this);
+			return;
+		}
+		try {
+			replicationStoreManager.setReadOnly(true);
+			LifecycleHelper.startIfPossible(replicationStoreManager);
+			prepareWatcher = new PrepareStoreWatcher(replicationStoreManager, keeperConfig, this::closeSlaves);
+			prepareWatcher.start();
+			startPrepareCmdParserIfEnabled();
+			logger.info("[startPrepareWatch]{}", this);
+		} catch (Throwable th) {
+			logger.error("[startPrepareWatch]{}", this, th);
+			EventMonitor.DEFAULT.logEvent(PREPARE_WATCH_EVENT_TYPE, EVENT_PREPARE_WATCH_START_FAIL);
+			rollbackPrepareWatchQuietly();
+		}
+	}
+
+	/**
+	 * Leave PREPARE watch before production {@code start()} / process stop (D15).
+	 * Catches {@link Throwable}: timeout or any failure is ERROR + EventMonitor, never blocks state switch (D4).
+	 */
+	private void leavePrepareWatch() {
+		if (prepareWatcher == null && prepareCmdParser == null && !replicationStoreManager.isReadOnly()) {
+			return;
+		}
+		try {
+			AsyncFileSystemHelper.runWithIoTimeout(AsyncFileSystemHelper.PREPARE_IO_TIMEOUT_MILLIS, this::doLeavePrepareWatch);
+		} catch (Throwable th) {
+			logger.error("[leavePrepareWatch]{}", this, th);
+			EventMonitor.DEFAULT.logEvent(PREPARE_WATCH_EVENT_TYPE, EVENT_PREPARE_WATCH_LEAVE_FAIL);
+			rollbackPrepareWatchQuietly();
+		}
+	}
+
+	private void doLeavePrepareWatch() throws IOException {
+		closeSlaves("leavePrepare");
+		stopPrepareCmdParser();
+		stopPrepareWatcher();
+		try {
+			if (replicationStoreManager.getLifecycleState().canStop()) {
+				replicationStoreManager.stop();
+			} else {
+				replicationStoreManager.releaseCurrentStore();
+			}
+		} catch (IOException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new IOException("leavePrepare stop manager failed", e);
+		}
+		resetReadOnlyIfStopped();
+	}
+
+	private void rollbackPrepareWatchQuietly() {
+		try {
+			stopPrepareCmdParser();
+			stopPrepareWatcher();
+			if (replicationStoreManager.getLifecycleState().canStop()) {
+				replicationStoreManager.stop();
+			}
+			resetReadOnlyIfStopped();
+		} catch (Throwable nested) {
+			logger.error("[rollbackPrepareWatch]{}", this, nested);
+		}
+	}
+
+	private void startPrepareCmdParserIfEnabled() {
+		if (!keeperConfig.isPubsubParseEnabled() || redisOpParser == null) {
+			return;
+		}
+		prepareCmdParser = new PrepareCmdParser(replicationStoreManager, redisOpParser, this::deliverParsedPublish);
+		prepareCmdParser.start();
+	}
+
+	private void stopPrepareCmdParser() {
+		PrepareCmdParser parser = this.prepareCmdParser;
+		this.prepareCmdParser = null;
+		if (parser != null) {
+			parser.stop();
+		}
+	}
+
+	private void deliverParsedPublish(String channel, String message) {
+		pubSubRegistry.publish(channel, message);
+	}
+
+	private void stopPrepareWatcher() {
+		PrepareStoreWatcher watcher = this.prepareWatcher;
+		this.prepareWatcher = null;
+		if (watcher != null) {
+			watcher.stop();
+		}
+	}
+
+	private void resetReadOnlyIfStopped() {
+		if (replicationStoreManager.isReadOnly() && !replicationStoreManager.getLifecycleState().isStarted()) {
+			replicationStoreManager.setReadOnly(false);
+		}
 	}
 
 	private void closeSlavesExcept(String reason, RedisSlave slave) {
@@ -860,6 +1136,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 		logger.info("[fullSyncToSlave]{}, {}", redisSlave, rdbDumper.get());
 
+		if (redisKeeperServerState != null && KeeperState.PREPARE == redisKeeperServerState.keeperState()) {
+			logger.error("[fullSyncToSlave][prepare] unreachable, refuse {}", redisSlave);
+			redisSlave.close();
+			return;
+		}
+
 		if (crossRegion.get() && !redisSlave.isKeeper()
 				&& !crossRegionFsyncCoordinator.onFullSyncRequest(redisSlave)) {
 			redisSlave.waitForSeqFsync();
@@ -897,11 +1179,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 			try{
 				RdbDumper newDumper = dumpNewRdb(tryRordb, freshRdbNeeded);
-				redisSlave.waitForRdbDumping();
 				if (newDumper.future().isDone() && !newDumper.future().isSuccess()) {
 					logger.info("[fullSyncToSlave][new dumper fail immediatelly]");
 					redisSlave.close();
+					return;
 				}
+				redisSlave.waitForRdbDumping();
 			}catch(AbstractRdbDumperException e){
 				logger.error("[fullSyncToSlave]", e);
 				if(e.isCancelSlave()){
@@ -1094,6 +1377,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		
 	}
 
+	/**
+	 * New store object only ({@link NodeAdded} from {@code Manager.create()}).
+	 * Stamps the current keeper role onto a freshly created UUID dir.
+	 * Role changes (including PREPARE re-entry) go through {@code MetaStore.becomeActive/becomeBackup}, not here.
+	 */
 	public synchronized void initReplicationStore(ReplicationStore replicationStore) {
 
 		logger.info("[initReplicationStore]{}", replicationStore);
@@ -1193,6 +1481,19 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@VisibleForTesting
 	public void setReplicationStoreManager(ReplicationStoreManager replicationStoreManager) {
 		this.replicationStoreManager = replicationStoreManager;
+		if (pubSubParseHook != null && replicationStoreManager instanceof DefaultReplicationStoreManager) {
+			((DefaultReplicationStoreManager) replicationStoreManager).setPubSubParseHook(pubSubParseHook);
+		}
+	}
+
+	@VisibleForTesting
+	public PrepareStoreWatcher getPrepareWatcher() {
+		return prepareWatcher;
+	}
+
+	@VisibleForTesting
+	PrepareCmdParser getPrepareCmdParser() {
+		return prepareCmdParser;
 	}
 
 	@VisibleForTesting

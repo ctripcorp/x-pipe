@@ -89,14 +89,14 @@ public abstract class ConfigGetCommand<T> extends AbstractConfigCommand<T>{
 				throw new IllegalStateException(getName() + " result length not right:" + payload.length);
 			}
 			String result = payloadToString(payload[1]);
-			if(result.equalsIgnoreCase("yes")){
+			if(result.equalsIgnoreCase("yes") || "1".equals(result)){
 				return true;
 			}
-			if(result.equalsIgnoreCase("no")){
+			if(result.equalsIgnoreCase("no") || "0".equals(result)){
 				return false;
 			}
 			if (null != defaultValue()) return defaultValue();
-			throw new IllegalStateException("expected yes or no, but:" + result);
+			throw new IllegalStateException("expected yes/no or 1/0, but:" + result);
 		}
 
 	}
@@ -203,6 +203,40 @@ public abstract class ConfigGetCommand<T> extends AbstractConfigCommand<T>{
 			return REDIS_CONFIG_TYPE.GTID_ENABLED.getConfigName();
 		}
 
+	}
+
+	public static class ConfigGetPrepareWatch extends ConfigGetBool {
+
+		public ConfigGetPrepareWatch(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
+		}
+
+		@Override
+		protected Boolean defaultValue() {
+			return false;
+		}
+
+		@Override
+		protected String getConfigName() {
+			return REDIS_CONFIG_TYPE.PREPARE_WATCH.getConfigName();
+		}
+	}
+
+	public static class ConfigGetPubsubParse extends ConfigGetBool {
+
+		public ConfigGetPubsubParse(SimpleObjectPool<NettyClient> clientPool, ScheduledExecutorService scheduled) {
+			super(clientPool, scheduled);
+		}
+
+		@Override
+		protected Boolean defaultValue() {
+			return false;
+		}
+
+		@Override
+		protected String getConfigName() {
+			return REDIS_CONFIG_TYPE.PUBSUB_PARSE.getConfigName();
+		}
 	}
 
 }

@@ -1,24 +1,44 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
+import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
+import com.ctrip.xpipe.redis.core.protocal.protocal.ArrayParser;
 import com.ctrip.xpipe.redis.core.server.FakeRedisServer;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.*;
+import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.InfoHandler;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.KeeperCommandHandler;
+import com.ctrip.xpipe.redis.keeper.handler.keeper.RoleCommandHandler;
+import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
+import io.netty.buffer.Unpooled;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.ctrip.xpipe.redis.keeper.SLAVE_STATE.*;
@@ -31,6 +51,8 @@ import static org.mockito.Mockito.*;
  *         2016年4月21日 下午5:42:29
  */
 public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest {
+
+	private final KeeperCommandHandler keeperCommandHandler = new KeeperCommandHandler();
 
 	@Before
 	public void beforeDefaultRedisKeeperServerTest() throws Exception {
@@ -63,8 +85,14 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		redisKeeperServer.start();
 		redisKeeperServer.getReplicationStore();
 
+		// Server.stop → Manager.stop: releaseCurrentStore + isPositivelyStopped refuse reopen
 		redisKeeperServer.stop();
-		redisKeeperServer.getReplicationStore();
+		try {
+			redisKeeperServer.getReplicationStore();
+			Assert.fail();
+		} catch (Exception e) {
+			logger.info("after stop", e);
+		}
 
 		redisKeeperServer.dispose();
 
@@ -74,6 +102,481 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 			Assert.fail();
 		}catch (Exception e){
 			logger.info("{}", e);
+		}
+	}
+
+	/**
+	 * T-R.10 / T-R.11⑦: ACTIVE↔BACKUP must not {@code Manager.stop()}/{@code releaseCurrentStore}
+	 * (m1 §4.5: target BACKUP skips PREPARE Step1).
+	 */
+	@Test
+	public void testActiveToBackupDoesNotReleaseStore() throws Exception {
+		DefaultRedisKeeperServer redisKeeperServer = (DefaultRedisKeeperServer) createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			redisKeeperServer.setRedisKeeperServerState(
+					new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 0)));
+			ReplicationStore storeBefore = redisKeeperServer.getReplicationStore();
+			Assert.assertTrue(storeBefore.checkOk());
+
+			ReplicationStoreManager manager = spy(redisKeeperServer.getReplicationStoreManager());
+			redisKeeperServer.setReplicationStoreManager(manager);
+
+			redisKeeperServer.getRedisKeeperServerState()
+					.becomeBackup(new DefaultEndPoint("127.0.0.1", randomPort()));
+
+			Assert.assertTrue(redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateBackup);
+			Assert.assertTrue(manager.getLifecycleState().isStarted());
+			ReplicationStore storeAfter = redisKeeperServer.getReplicationStore();
+			Assert.assertTrue(storeAfter.checkOk());
+			Assert.assertSame(storeBefore, storeAfter);
+			verify(manager, never()).stop();
+			verify(manager, never()).releaseCurrentStore();
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	/**
+	 * T-H3.RD.1 / T-H3.RD.4: {@code doInitialize} does not {@code resetReplAfterLongTimeDown}.
+	 */
+	@Test
+	public void initializeDoesNotResetExpiredStore() throws Exception {
+		TestKeeperConfig config = keeperConfigKeepSeconds(0);
+		KeeperMeta keeperMeta = createKeeperMeta();
+		DefaultRedisKeeperServer redisKeeperServer = newKeeper(config, keeperMeta);
+		redisKeeperServer.initialize();
+		String stageReplId;
+		try {
+			seedNonFresh(redisKeeperServer);
+			ReplicationStore store = redisKeeperServer.getReplicationStore();
+			stageReplId = store.getMetaStore().getCurReplStageReplId();
+			waitUntilStoreExpired(store);
+			Assert.assertFalse(store.isFresh());
+		} finally {
+			redisKeeperServer.dispose();
+		}
+
+		DefaultRedisKeeperServer restarted = newKeeper(config, keeperMeta);
+		restarted.initialize();
+		try {
+			ReplicationStore store = restarted.getReplicationStore();
+			Assert.assertFalse(store.isFresh());
+			Assert.assertEquals(stageReplId, store.getMetaStore().getCurReplStageReplId());
+			Assert.assertEquals(KeeperState.UNKNOWN, restarted.getRedisKeeperServerState().keeperState());
+		} finally {
+			restarted.dispose();
+		}
+	}
+
+	/**
+	 * T-H3.RD.2 / T-H3.RD.4: Unknown → Backup on an expired store creates an empty store.
+	 */
+	@Test
+	public void unknownToBackupResetsExpiredStore() throws Exception {
+		TestKeeperConfig config = keeperConfigKeepSeconds(0);
+		DefaultRedisKeeperServer redisKeeperServer = newKeeper(config, createKeeperMeta());
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			Assert.assertEquals(KeeperState.UNKNOWN, redisKeeperServer.getRedisKeeperServerState().keeperState());
+			seedNonFresh(redisKeeperServer);
+			waitUntilStoreExpired(redisKeeperServer.getReplicationStore());
+			Assert.assertFalse(redisKeeperServer.getReplicationStore().isFresh());
+
+			redisKeeperServer.getRedisKeeperServerState()
+					.becomeBackup(new DefaultEndPoint("127.0.0.1", randomPort()));
+
+			Assert.assertTrue(redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateBackup);
+			Assert.assertTrue(redisKeeperServer.getReplicationStore().isFresh());
+			Assert.assertNull(redisKeeperServer.getReplicationStore().getMetaStore().getCurReplStageReplId());
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	/**
+	 * T-H3.RD.2 / T-H3.RD.4: Active → Backup on an expired store creates an empty store.
+	 */
+	@Test
+	public void activeToBackupResetsExpiredStore() throws Exception {
+		TestKeeperConfig config = keeperConfigKeepSeconds(0);
+		DefaultRedisKeeperServer redisKeeperServer = newKeeper(config, createKeeperMeta());
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			redisKeeperServer.setRedisKeeperServerState(
+					new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 0)));
+			seedNonFresh(redisKeeperServer);
+			waitUntilStoreExpired(redisKeeperServer.getReplicationStore());
+
+			redisKeeperServer.getRedisKeeperServerState()
+					.becomeBackup(new DefaultEndPoint("127.0.0.1", randomPort()));
+
+			Assert.assertTrue(redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateBackup);
+			Assert.assertTrue(redisKeeperServer.getReplicationStore().isFresh());
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	/**
+	 * T-H3.RD.4: already Backup {@code setMasterAddress} does not reset an expired store.
+	 */
+	@Test
+	public void alreadyBackupSetMasterDoesNotResetExpiredStore() throws Exception {
+		TestKeeperConfig config = keeperConfigKeepSeconds(0);
+		DefaultRedisKeeperServer redisKeeperServer = newKeeper(config, createKeeperMeta());
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			redisKeeperServer.getRedisKeeperServerState()
+					.becomeBackup(new DefaultEndPoint("127.0.0.1", 6379));
+			Assert.assertTrue(redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateBackup);
+
+			seedNonFresh(redisKeeperServer);
+			waitUntilStoreExpired(redisKeeperServer.getReplicationStore());
+			ReplicationStore storeBefore = redisKeeperServer.getReplicationStore();
+			Assert.assertFalse(storeBefore.isFresh());
+
+			ReplicationStoreManager manager = spy(redisKeeperServer.getReplicationStoreManager());
+			redisKeeperServer.setReplicationStoreManager(manager);
+
+			redisKeeperServer.getRedisKeeperServerState()
+					.becomeBackup(new DefaultEndPoint("127.0.0.1", 6380));
+
+			Assert.assertTrue(redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateBackup);
+			ReplicationStore storeAfter = redisKeeperServer.getReplicationStore();
+			Assert.assertSame(storeBefore, storeAfter);
+			Assert.assertFalse(storeAfter.isFresh());
+			verify(manager, never()).create();
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	/**
+	 * T-H3.RD.3 / T-H3.RD.4: PREPARE → Backup resets an expired store before reconnect.
+	 */
+	@Test
+	public void prepareToBackupResetsExpiredStore() throws Exception {
+		TestKeeperConfig config = keeperConfigKeepSeconds(0);
+		DefaultRedisKeeperServer redisKeeperServer = newKeeper(config, createKeeperMeta());
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			redisKeeperServer.setRedisKeeperServerState(
+					new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 0)));
+			seedNonFresh(redisKeeperServer);
+			waitUntilStoreExpired(redisKeeperServer.getReplicationStore());
+			Assert.assertFalse(redisKeeperServer.getReplicationStore().isFresh());
+
+			redisKeeperServer.getRedisKeeperServerState()
+					.becomePrepare(new DefaultEndPoint("127.0.0.1", randomPort()));
+			Assert.assertEquals(KeeperState.PREPARE, redisKeeperServer.getRedisKeeperServerState().keeperState());
+
+			redisKeeperServer.getRedisKeeperServerState()
+					.becomeBackup(new DefaultEndPoint("127.0.0.1", randomPort()));
+
+			Assert.assertTrue(redisKeeperServer.getRedisKeeperServerState() instanceof RedisKeeperServerStateBackup);
+			Assert.assertTrue(redisKeeperServer.getReplicationStore().isFresh());
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	/**
+	 * T-R.11①: {@code SETSTATE PREPARE} → +OK; {@code GETSTATE} → PREPARE.
+	 */
+	@Test
+	public void testKeeperCommandSetStatePrepareOkAndGetState() throws Exception {
+		DefaultRedisKeeperServer redisKeeperServer = (DefaultRedisKeeperServer) createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			redisKeeperServer.setRedisKeeperServerState(
+					new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 0)));
+			Assert.assertTrue(redisKeeperServer.getReplicationStore().checkOk());
+
+			String setResp = invokeKeeperCommand(redisKeeperServer, "setstate", "PREPARE", "127.0.0.1", String.valueOf(randomPort()));
+			Assert.assertEquals("+" + RedisProtocol.OK + "\r\n", setResp);
+			Assert.assertEquals(KeeperState.PREPARE, redisKeeperServer.getRedisKeeperServerState().keeperState());
+
+			String getResp = invokeKeeperCommand(redisKeeperServer, "getstate");
+			Assert.assertEquals("+" + KeeperState.PREPARE + "\r\n", getResp);
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	/**
+	 * T-R.11②: ACTIVE→PREPARE clears master/slaves, drops currentStore, keeps latest.store.dir (close≠destroy).
+	 */
+	@Test
+	public void testActiveToPrepareReleasesLease() throws Exception {
+		FakeRedisServer fakeMaster = startFakeRedisServer();
+		DefaultRedisKeeperServer redisKeeperServer = (DefaultRedisKeeperServer) createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			Endpoint master = localHostEndpoint(fakeMaster.getPort());
+			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, master));
+			redisKeeperServer.reconnectMaster();
+			waitConditionUntilTimeOut(() -> fakeMaster.getConnected() == 1);
+			Assert.assertNotNull(redisKeeperServer.getRedisMaster());
+
+			ReplicationStore storeBefore = redisKeeperServer.getReplicationStore();
+			File storeDir = new File(storeBefore.toString().substring("ReplicationStore:".length()));
+			Assert.assertTrue(storeDir.isDirectory());
+
+			EmbeddedChannel slaveChannel = new EmbeddedChannel();
+			slaveChannel.closeFuture().addListener(f -> redisKeeperServer.clientDisconnected(slaveChannel));
+			RedisSlave slave = redisKeeperServer.clientConnected(slaveChannel).becomeSlave();
+			slave.markPsyncProcessed();
+			Assert.assertEquals(1, redisKeeperServer.slaves().size());
+
+			DefaultReplicationStoreManager manager =
+					(DefaultReplicationStoreManager) redisKeeperServer.getReplicationStoreManager();
+
+			redisKeeperServer.getRedisKeeperServerState().becomePrepare(new DefaultEndPoint("127.0.0.1", randomPort()));
+
+			Assert.assertEquals(KeeperState.PREPARE, redisKeeperServer.getRedisKeeperServerState().keeperState());
+			Assert.assertNull(redisKeeperServer.getRedisMaster());
+			waitConditionUntilTimeOut(() -> redisKeeperServer.slaves().isEmpty());
+			Assert.assertFalse(((DefaultRedisSlave) slave).isOpen());
+			Assert.assertNull(manager.getCurrent());
+			Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
+			Assert.assertTrue("PREPARE must not destroy latest.store.dir", storeDir.isDirectory());
+			try {
+				redisKeeperServer.getReplicationStore();
+				Assert.fail("PREPARE must refuse getReplicationStore");
+			} catch (Exception expected) {
+				logger.info("prepare gate ok", expected);
+			}
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	/**
+	 * D34 / T-17.4: after SETSTATE PREPARE, ROLE / INFO REPLICATION / INFO ALL succeed with state=PREPARE;
+	 * getReplicationStore gate remains closed.
+	 */
+	@Test
+	public void testPrepareObservationCommandsCompatible() throws Exception {
+		DefaultRedisKeeperServer redisKeeperServer = (DefaultRedisKeeperServer) createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			Endpoint master = new DefaultEndPoint("127.0.0.1", 0);
+			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, master));
+			Assert.assertTrue(redisKeeperServer.getReplicationStore().checkOk());
+
+			String setResp = invokeKeeperCommand(redisKeeperServer, "setstate", "PREPARE", "10.0.0.1", "6380");
+			Assert.assertEquals("+" + RedisProtocol.OK + "\r\n", setResp);
+			Assert.assertEquals(KeeperState.PREPARE, redisKeeperServer.getRedisKeeperServerState().keeperState());
+
+			try {
+				redisKeeperServer.getReplicationStore();
+				Assert.fail("PREPARE must refuse getReplicationStore");
+			} catch (Exception expected) {
+				logger.info("prepare gate ok", expected);
+			}
+
+			EmbeddedChannel roleChannel = new EmbeddedChannel();
+			new RoleCommandHandler().handle(new String[0], new DefaultRedisClient(roleChannel, redisKeeperServer));
+			ByteBuf roleBuf = roleChannel.readOutbound();
+			Assert.assertNotNull(roleBuf);
+			String roleRaw = ByteBufUtils.readToString(roleBuf.duplicate());
+			roleBuf.release();
+			Assert.assertFalse(roleRaw.startsWith("-"));
+			SlaveRole slaveRole = new SlaveRole(new ArrayParser().read(Unpooled.wrappedBuffer(roleRaw.getBytes())).getPayload());
+			Assert.assertEquals(MASTER_STATE.REDIS_REPL_NONE, slaveRole.getMasterState());
+			Assert.assertEquals(-1L, slaveRole.getMasterOffset());
+
+			String replicationInfo = invokeInfoCommand(redisKeeperServer, "replication");
+			Assert.assertTrue(replicationInfo.contains("state:" + KeeperState.PREPARE));
+			Assert.assertEquals(KeeperState.PREPARE.name(), new InfoResultExtractor(replicationInfo).getKeeperState());
+
+			String allInfo = invokeInfoCommand(redisKeeperServer, "all");
+			Assert.assertTrue(allInfo.contains("state:" + KeeperState.PREPARE));
+			Assert.assertFalse(allInfo.startsWith("-"));
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	/**
+	 * T-R.11③: PREPARE is idempotent — second SETSTATE PREPARE still OK.
+	 */
+	@Test
+	public void testPrepareIdempotent() throws Exception {
+		DefaultRedisKeeperServer redisKeeperServer = (DefaultRedisKeeperServer) createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			Endpoint master = new DefaultEndPoint("127.0.0.1", 0);
+			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, master));
+			redisKeeperServer.getRedisKeeperServerState().becomePrepare(master);
+			Assert.assertEquals(KeeperState.PREPARE, redisKeeperServer.getRedisKeeperServerState().keeperState());
+
+			String resp = invokeKeeperCommand(redisKeeperServer, "setstate", "PREPARE", "10.0.0.1", "6380");
+			Assert.assertEquals("+" + RedisProtocol.OK + "\r\n", resp);
+			Assert.assertEquals(KeeperState.PREPARE, redisKeeperServer.getRedisKeeperServerState().keeperState());
+			Assert.assertTrue(redisKeeperServer.getReplicationStoreManager().getLifecycleState().isPositivelyStopped());
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	/**
+	 * T-R.9 / T-R.11④: PREPARE → ACTIVE reopens the same {@code latest.store.dir}; meta remains readable.
+	 */
+	@Test
+	public void testPrepareToActiveReopensLatestStoreDir() throws Exception {
+		DefaultRedisKeeperServer redisKeeperServer = (DefaultRedisKeeperServer) createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			Endpoint master = new DefaultEndPoint("127.0.0.1", 0);
+			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, master));
+			ReplicationStore storeBefore = redisKeeperServer.getReplicationStore();
+			storeBefore.getMetaStore().becomeActive();
+			String latestStoreId = storeBefore.toString();
+			String replIdBefore = storeBefore.getMetaStore().getReplId();
+			Assert.assertTrue(storeBefore.checkOk());
+
+			redisKeeperServer.getRedisKeeperServerState().becomePrepare(master);
+			Assert.assertEquals(KeeperState.PREPARE, redisKeeperServer.getRedisKeeperServerState().keeperState());
+			Assert.assertTrue(redisKeeperServer.getReplicationStoreManager().getLifecycleState().isPositivelyStopped());
+			try {
+				redisKeeperServer.getReplicationStore();
+				Assert.fail("PREPARE must refuse getReplicationStore");
+			} catch (Exception expected) {
+				logger.info("prepare gate ok", expected);
+			}
+
+			redisKeeperServer.getRedisKeeperServerState()
+					.becomeActive(new DefaultEndPoint("127.0.0.1", randomPort()));
+			Assert.assertEquals(KeeperState.ACTIVE, redisKeeperServer.getRedisKeeperServerState().keeperState());
+			Assert.assertTrue(redisKeeperServer.getReplicationStoreManager().getLifecycleState().isStarted());
+			ReplicationStore storeAfter = redisKeeperServer.getReplicationStore();
+			Assert.assertTrue(storeAfter.checkOk());
+			Assert.assertEquals(latestStoreId, storeAfter.toString());
+			Assert.assertEquals(replIdBefore, storeAfter.getMetaStore().getReplId());
+			Assert.assertEquals(KeeperState.ACTIVE, storeAfter.getMetaStore().dupReplicationStoreMeta().getKeeperState());
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	/**
+	 * T-R.11⑤ (server gate): after PREPARE, hot path refuses reopen; latest dir remains on disk.
+	 * Manager {@code gc()} no-op while stopped is covered in DefaultReplicationStoreManagerTest.
+	 */
+	@Test
+	public void testPrepareRefusesReopenAndKeepsLatestDir() throws Exception {
+		DefaultRedisKeeperServer redisKeeperServer = (DefaultRedisKeeperServer) createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		try {
+			Endpoint master = new DefaultEndPoint("127.0.0.1", 0);
+			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, master));
+			ReplicationStore store = redisKeeperServer.getReplicationStore();
+			File storeDir = new File(store.toString().substring("ReplicationStore:".length()));
+			Assert.assertTrue(storeDir.isDirectory());
+
+			redisKeeperServer.getRedisKeeperServerState().becomePrepare(master);
+			DefaultReplicationStoreManager manager =
+					(DefaultReplicationStoreManager) redisKeeperServer.getReplicationStoreManager();
+			Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
+			Assert.assertNull(manager.getCurrent());
+			Assert.assertTrue(storeDir.isDirectory());
+			try {
+				manager.createIfNotExist();
+				Assert.fail("createIfNotExist must refuse after PREPARE stop");
+			} catch (IOException expected) {
+				logger.info("stopped create gate ok", expected);
+			}
+			Assert.assertTrue(storeDir.isDirectory());
+		} finally {
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	/**
+	 * T-R.11⑥: lease release failure → Handler Redis ERROR (not swallowed).
+	 */
+	@Test
+	public void testPrepareFailureReturnsRedisError() throws Exception {
+		DefaultRedisKeeperServer redisKeeperServer = (DefaultRedisKeeperServer) createRedisKeeperServer();
+		redisKeeperServer.initialize();
+		redisKeeperServer.start();
+		ReplicationStoreManager manager = null;
+		try {
+			redisKeeperServer.setRedisKeeperServerState(
+					new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 0)));
+			Assert.assertTrue(redisKeeperServer.getReplicationStore().checkOk());
+
+			manager = spy(redisKeeperServer.getReplicationStoreManager());
+			doThrow(new IOException("inject-prepare-stop-fail")).when(manager).stop();
+			redisKeeperServer.setReplicationStoreManager(manager);
+
+			String resp = invokeKeeperCommand(redisKeeperServer, "setstate", "PREPARE", "127.0.0.1", "6379");
+			Assert.assertTrue("expect Redis ERROR, got: " + resp, resp.startsWith("-"));
+			Assert.assertTrue(resp.contains("inject-prepare-stop-fail") || resp.contains("lease release failed")
+					|| resp.contains("stop replicationStoreManager failed"));
+		} finally {
+			if (manager != null) {
+				doCallRealMethod().when(manager).stop();
+			}
+			redisKeeperServer.stop();
+			redisKeeperServer.dispose();
+		}
+	}
+
+	private String invokeKeeperCommand(RedisKeeperServer server, String... args) throws Exception {
+		EmbeddedChannel channel = new EmbeddedChannel();
+		DefaultRedisClient client = new DefaultRedisClient(channel, server);
+		keeperCommandHandler.handle(args, client);
+		Object outbound = channel.readOutbound();
+		Assert.assertNotNull(outbound);
+		Assert.assertTrue(outbound instanceof ByteBuf);
+		ByteBuf buf = (ByteBuf) outbound;
+		try {
+			return ByteBufUtils.readToString(buf.duplicate());
+		} finally {
+			buf.release();
+		}
+	}
+
+	private String invokeInfoCommand(RedisKeeperServer server, String section) throws Exception {
+		EmbeddedChannel channel = new EmbeddedChannel();
+		new InfoHandler().handle(new String[]{section}, new DefaultRedisClient(channel, server));
+		Object outbound = channel.readOutbound();
+		Assert.assertNotNull(outbound);
+		Assert.assertTrue(outbound instanceof ByteBuf);
+		ByteBuf buf = (ByteBuf) outbound;
+		try {
+			String raw = ByteBufUtils.readToString(buf.duplicate());
+			Assert.assertFalse("INFO must not return Redis ERROR: " + raw, raw.startsWith("-"));
+			Assert.assertTrue(raw.startsWith("$"));
+			int idx = raw.indexOf("\r\n");
+			return raw.substring(idx + 2, raw.length() - 2);
+		} finally {
+			buf.release();
 		}
 	}
 
@@ -288,6 +791,36 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 	}
 
 	@Test
+	public void dumpExecuteFailClearsRdbDumperSoNextSlaveCanDump() throws Exception {
+		RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
+		redisKeeperServer.initialize();
+
+		RedisMasterNewRdbDumper failingDumper = spy(new RedisMasterNewRdbDumper(
+				mock(RedisMaster.class), redisKeeperServer, false, false,
+				mock(NioEventLoopGroup.class), mock(ScheduledExecutorService.class),
+				mock(KeeperResourceManager.class)));
+		doThrow(new IOException("prepareNewRdb fail")).when(failingDumper).startRdbOnlyReplication();
+
+		redisKeeperServer.setRdbDumper(failingDumper);
+		failingDumper.execute();
+
+		assertNull(redisKeeperServer.rdbDumper());
+		assertTrue(failingDumper.future().isDone());
+		assertFalse(failingDumper.future().isSuccess());
+
+		RdbDumper nextDumper = mock(RdbDumper.class);
+		when(nextDumper.tryRordb()).thenReturn(false);
+		redisKeeperServer.setRdbDumper(nextDumper);
+
+		RedisSlave slave2 = mock(RedisSlave.class);
+		when(slave2.isOpen()).thenReturn(true);
+		redisKeeperServer.fullSyncToSlave(slave2);
+
+		verify(nextDumper).tryFullSync(slave2);
+		verify(slave2, never()).waitForRdbDumping();
+	}
+
+	@Test
 	public void testReqFsyncSeq() throws Exception {
 		((TestKeeperConfig)keeperConfig).setMaxLoadingSlaves(1);
 		RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
@@ -335,6 +868,28 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 				return false;
 			}
 		});
+	}
+
+	private static final String H3N_REPL_ID = "0123456789012345678901234567890123456789";
+
+	private TestKeeperConfig keeperConfigKeepSeconds(long seconds) {
+		TestKeeperConfig config = new TestKeeperConfig();
+		config.setReplKeepSecondsAfterDown(seconds);
+		return config;
+	}
+
+	private DefaultRedisKeeperServer newKeeper(TestKeeperConfig config, KeeperMeta keeperMeta) throws Exception {
+		return (DefaultRedisKeeperServer) createRedisKeeperServer(getReplId().id(), keeperMeta, config,
+				getReplicationStoreManagerBaseDir(keeperMeta));
+	}
+
+	private void seedNonFresh(RedisKeeperServer server) throws IOException {
+		server.getReplicationStore().psyncContinueFrom(H3N_REPL_ID, 1);
+		Assert.assertFalse(server.getReplicationStore().isFresh());
+	}
+
+	private void waitUntilStoreExpired(ReplicationStore store) throws Exception {
+		waitConditionUntilTimeOut(() -> System.currentTimeMillis() - store.lastReplDataUpdatedAt() > 0);
 	}
 
 	@Test

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.core.protocal.cmd;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.netty.commands.NettyClient;
+import com.ctrip.xpipe.redis.core.exception.RedisRuntimeException;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.RdbBulkStringParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOp;
@@ -50,6 +51,8 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 			return psync;
 		} else {
 			XsyncRequest xsync = new XsyncRequest();
+			// T-H3.CP1.2: do not catch getGtidSet — fail getRequest → setFailure → psyncFail reconnect.
+			// Never PSYNC ? -1 / empty GTID because of File IO.
 			Pair<GtidSet, GtidSet> gtidSets = currentReplicationStore.getGtidSet();
 			GtidSet gtidSet = gtidSets.getKey().union(gtidSets.getValue());
 			GtidSet lost = gtidSets.getValue();
@@ -103,7 +106,9 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 			currentReplicationStore.psyncContinueFrom(replId, beginOffset);
 			super.doOnKeeperContinue(replId, beginOffset);
 		} catch (IOException e) {
+			// T-H2.F1: do not swallow — fail psync → dumpFail/disconnect; avoid READING_COMMANDS + appendCommands on broken store
 			getLogger().error("[doOnKeeperContinue]" + replId + ":" + beginOffset, e);
+			throw e;
 		}
 	}
 
@@ -170,7 +175,9 @@ public abstract class AbstractReplicationStoreGapAllowedSync extends AbstractGap
 			inOutPayloadReplicationStore.setRdbStore(rdbStore);
 			super.beginReadRdb(eofType);
 		} catch (IOException e) {
+			// T-H3.CP6.5: do not swallow — fail psync → setFailure → dumpFail disconnect
 			getLogger().error("[beginReadRdb]" + syncReply.getReplId() + "," + syncReply.getReplOff(), e);
+			throw new RedisRuntimeException("[beginReadRdb]", e);
 		}
 	}
 	

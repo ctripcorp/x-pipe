@@ -82,7 +82,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         redisSlave.sendMessage(Unpooled.wrappedBuffer(randomString(10).getBytes()));
 
         //should fail
-        shouldThrowException(() -> redisSlave.onCommand(null, 0L, mock(DefaultReferenceFileRegion.class)));
+        shouldThrowException(() -> redisSlave.onCommand(mock(DefaultReferenceFileRegion.class)));
         shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), new OffsetReplicationProgress(0L)));
         shouldThrowException(() -> redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L)));
 
@@ -90,7 +90,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         //all should fail
         shouldThrowException(() -> redisSlave.sendMessage(randomString(10).getBytes()));
         shouldThrowException(() -> redisSlave.sendMessage(Unpooled.wrappedBuffer(randomString(10).getBytes())));
-        shouldThrowException(() -> redisSlave.onCommand(null, 0L, mock(DefaultReferenceFileRegion.class)));
+        shouldThrowException(() -> redisSlave.onCommand(mock(DefaultReferenceFileRegion.class)));
         shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), new OffsetReplicationProgress(0L)));
         shouldThrowException(() -> redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L)));
 

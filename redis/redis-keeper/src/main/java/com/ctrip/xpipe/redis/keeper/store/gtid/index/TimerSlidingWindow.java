@@ -4,6 +4,7 @@ import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.monitor.CommandStoreDelay;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetNotifyingCommandWriter;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -41,10 +42,13 @@ public class TimerSlidingWindow implements AutoCloseable {
     private final RateEstimator rateEstimator = new RateEstimator(TAU_MILLIS);
 
     private volatile ScheduledFuture<?> delayFlushFuture;
-    private long firstByteNano = -1;                  // 首字节纳秒时间，-1 表示窗口空
-    private volatile int currentWindowThreshold;
-
     private volatile long scheduledDeadlineNano = -1;
+
+    /** 串行化 window 聚合/刷盘，避免 delayFlush 与 backlogEndOffset 等路径并发消费同一 CompositeByteBuf */
+    private final Object windowLock = new Object();
+
+    /** Set under windowLock. After close returns, write / delayFlush must not hit commandWriter. */
+    private boolean closed;
 
 
     public TimerSlidingWindow(KeeperConfig keeperConfig, CommandWriter commandWriter,
@@ -56,7 +60,6 @@ public class TimerSlidingWindow implements AutoCloseable {
         this.commandWriter = commandWriter;
         this.commandStoreDelay = commandStoreDelay;
         this.offsetNotifier = offsetNotifier;
-        this.currentWindowThreshold = keeperConfig.getCmdBatchWriteSize();
     }
 
     public int write(ByteBuf data) throws IOException {
@@ -66,59 +69,38 @@ public class TimerSlidingWindow implements AutoCloseable {
     public int write(ByteBuf data,boolean buildIndex) throws IOException {
         int dataSize = data.readableBytes();
         long now = System.nanoTime();
-        int windowSize = window.readableBytes();
-
 
         // 1. 更新速率估计（EWMA，抗尖峰）
         rateEstimator.update(dataSize);
         double avgRate = rateEstimator.getRate();  // 单位：bytes/s
         if (avgRate <= keeperConfig.getCmdBatchLowRateBps()) {
-            if (windowSize > 0) {
-                flushBuffer();
+            synchronized (windowLock) {
+                if (!ensureWritableLocked()) {
+                    return 0;
+                }
+                flushRemainingLocked();
+                flushSingleBuffer(data);
+                return dataSize;
             }
-            flushSingleBuffer(data);
-            return dataSize;
         }
 
-        boolean wasEmpty = windowSize == 0;
+        synchronized (windowLock) {
+            if (!ensureWritableLocked()) {
+                return 0;
+            }
+            int windowSize = window.readableBytes();
+            boolean wasEmpty = windowSize == 0;
 
-        if(wasEmpty) {
-            firstByteNano = now;          // 记录首字节到达时间
-        }
+            appendToWindow(data, buildIndex, dataSize);
+            windowSize += dataSize;
 
-        if (buildIndex) {
-            data.retain();
-            window.addComponent(true, data);
-        } else {
-            ByteBuf slice = data.retainedSlice();
-            window.addComponent(true, slice);
-            data.skipBytes(dataSize);
-        }
-
-        windowSize += dataSize;
-
-
-        if (!wasEmpty) {
-            // ----- 主动检查最大驻留时间 -----
-            long residentNanos = now - firstByteNano;
-            long maxResidentNanos = TimeUnit.MILLISECONDS.toNanos(
-                    keeperConfig.getCmdBatchFlushIntervalMillis());
-            if (residentNanos >= maxResidentNanos) {
-                flushBuffer();            // 立即同步刷盘，摆脱定时器依赖
+            if (shouldFlushWindow(wasEmpty, now, windowSize)) {
+                flushRemainingLocked();
                 return windowSize;
             }
+
+            scheduleDelayFlushIfAbsent();
         }
-
-
-        // ----- 检查字节阈值 -----
-        currentWindowThreshold = keeperConfig.getCmdBatchWriteSize();
-        if (windowSize >= currentWindowThreshold) {
-            flushBuffer();
-            return windowSize;
-        }
-
-        // ----- 未触发刷盘，安排兜底定时器 -----
-        scheduleDelayFlush();
         return dataSize;
     }
 
@@ -141,16 +123,49 @@ public class TimerSlidingWindow implements AutoCloseable {
             }
         }    }
 
+    /** 未刷盘字节快照；调用方不得假定与后续操作原子一致 */
     public int bufferSize(){
-        return window.readableBytes();
+        CompositeByteBuf current = window;
+        return current == null ? 0 : current.readableBytes();
     }
 
+    /**
+     * T-H3.CP6.3 / spec §3.3.6: mark closed → cancel pending delayFlush → release window.
+     * Does not flush remaining bytes — caller flushes first. Same mutex as write / delayFlush:
+     * in-flight delayFlush finishes or sees closed and no-ops; after return, no more commandWriter hits.
+     */
     @Override
     public void close() throws IOException {
+        synchronized (windowLock) {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            cancelDelayFlush();
+            releaseWindowLocked();
+        }
     }
 
     // ==================== 内部实现 ====================
 
+    private void appendToWindow(ByteBuf data, boolean buildIndex, int dataSize) {
+        if (buildIndex) {
+            data.retain();
+            window.addComponent(true, data);
+        } else {
+            ByteBuf slice = data.retainedSlice();
+            window.addComponent(true, slice);
+            data.skipBytes(dataSize);
+        }
+    }
+
+    private boolean shouldFlushWindow(boolean wasEmpty, long now, int windowSize) {
+        if (windowSize >= keeperConfig.getCmdBatchWriteSize()) {
+            return true;
+        }
+        // 窗口内后续写入：若已超过首次 schedule 的 deadline，立即刷盘
+        return !wasEmpty && scheduledDeadlineNano > 0 && now >= scheduledDeadlineNano;
+    }
 
     /** 直接落盘单条数据，不经过聚合窗口 */
     private void flushSingleBuffer(ByteBuf data) throws IOException {
@@ -158,58 +173,93 @@ public class TimerSlidingWindow implements AutoCloseable {
         commandWriter.write(data);
         long offset = commandWriter.totalLength() - 1;
         commandStoreDelay.endWrite(offset);
-        offsetNotifier.offsetIncreased(offset);
+        if (!(commandWriter instanceof OffsetNotifyingCommandWriter)) {
+            offsetNotifier.offsetIncreased(offset);
+        }
     }
 
-
-
-    /** 将聚合窗口中的数据批量写入磁盘 */
+    /** 将聚合窗口中的数据批量写入磁盘（唯一刷盘入口） */
     private void flushBuffer() throws IOException {
-        int windowSize = window.readableBytes();
+        synchronized (windowLock) {
+            if (closed) {
+                return;
+            }
+            flushRemainingLocked();
+        }
+    }
 
-        if (windowSize == 0) return;
+    /** Caller holds {@link #windowLock}. */
+    private void flushRemainingLocked() throws IOException {
+        if (window == null) {
+            cancelDelayFlush();
+            return;
+        }
+        int windowSize = window.readableBytes();
+        if (windowSize == 0) {
+            cancelDelayFlush();
+            return;
+        }
 
         commandStoreDelay.beginWrite();
 
         int wrote = commandWriter.write(window);
-        if(wrote != windowSize){
-            logger.warn("[flushBuffer] window size {}.write size {}",windowSize,wrote);
+        if (wrote != windowSize) {
+            logger.warn("[flushBuffer] window size {}.write size {}", windowSize, wrote);
         }
         long offset = commandWriter.totalLength() - 1;
         commandStoreDelay.endWrite(offset);
-        offsetNotifier.offsetIncreased(offset);
+        if (!(commandWriter instanceof OffsetNotifyingCommandWriter)) {
+            offsetNotifier.offsetIncreased(offset);
+        }
 
-        // 释放并重建窗口
         try {
             window.release();
         } catch (Throwable t) {
             logger.warn("[release] failed to release window buffer", t);
-        }finally {
+        } finally {
             window = ByteBufAllocator.DEFAULT.compositeBuffer(1024);
+            cancelDelayFlush();
         }
-        firstByteNano = -1;        // 窗口已空
-        cancelDelayFlush();
     }
 
-    /** 基于首字节时间安排最大驻留兜底刷盘 */
-    private void scheduleDelayFlush() {
-        if (firstByteNano <= 0) return;   // 窗口空，无需调度
+    /** Caller holds {@link #windowLock}. */
+    private void releaseWindowLocked() {
+        CompositeByteBuf buf = window;
+        window = null;
+        if (buf == null) {
+            return;
+        }
+        try {
+            if (buf.refCnt() > 0) {
+                buf.release();
+            }
+        } catch (Throwable t) {
+            logger.warn("[close][release window failed]", t);
+        }
+    }
 
-        long flushIntervalMillis = keeperConfig.getCmdBatchFlushIntervalMillis();
-        long newDeadlineNano = firstByteNano + TimeUnit.MILLISECONDS.toNanos(flushIntervalMillis);
+    /** Caller holds {@link #windowLock}. Already closed → log and skip, do not throw. */
+    private boolean ensureWritableLocked() {
+        if (closed) {
+            logger.info("[write][closed]");
+            return false;
+        }
+        return true;
+    }
 
-        long currentDeadline = scheduledDeadlineNano;
-        if (currentDeadline > 0 && newDeadlineNano >= currentDeadline) {
+    /** 窗口有数据且尚无 pending 定时刷盘时，安排一次兜底刷盘 */
+    private void scheduleDelayFlushIfAbsent() {
+        if (closed || window == null || window.readableBytes() == 0) {
+            return;
+        }
+        ScheduledFuture<?> future = delayFlushFuture;
+        if (future != null && !future.isDone()) {
             return;
         }
 
-        cancelDelayFlush();
-        scheduledDeadlineNano = newDeadlineNano;
-
-
-        long delayNanos = newDeadlineNano - System.nanoTime();
-        long delayMillis = Math.max(TimeUnit.NANOSECONDS.toMillis(delayNanos), 1);
-
+        long flushIntervalMillis = keeperConfig.getCmdBatchFlushIntervalMillis();
+        scheduledDeadlineNano = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(flushIntervalMillis);
+        long delayMillis = Math.max(flushIntervalMillis, 1);
         delayFlushFuture = eventLoop.schedule(this::delayFlush, delayMillis, TimeUnit.MILLISECONDS);
     }
 
@@ -220,7 +270,7 @@ public class TimerSlidingWindow implements AutoCloseable {
             future.cancel(false);
         }
         this.delayFlushFuture = null;
-        this.scheduledDeadlineNano = -1;   // 清空截止时间记录
+        this.scheduledDeadlineNano = -1;
     }
 
     /** 定时器回调：若数据仍存在且已超时，执行刷盘 */
@@ -229,9 +279,6 @@ public class TimerSlidingWindow implements AutoCloseable {
             flushBuffer();
         } catch (IOException e) {
             logger.error("[delayFlush] failed to flush buffer", e);
-        } finally {
-            this.delayFlushFuture = null;
-            this.scheduledDeadlineNano = -1;   // 清空截止时间记录
         }
     }
 

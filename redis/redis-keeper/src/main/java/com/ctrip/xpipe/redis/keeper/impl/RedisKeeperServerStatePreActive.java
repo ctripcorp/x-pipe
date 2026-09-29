@@ -37,6 +37,12 @@ public class RedisKeeperServerStatePreActive extends AbstractRedisKeeperServerSt
 	}
 
 	@Override
+	public void becomePrepare(Endpoint masterAddress) {
+		logger.info("[becomePrepare]{}", masterAddress);
+		doBecomePrepare(masterAddress);
+	}
+
+	@Override
 	public void setPromotionState(PROMOTION_STATE promotionState, Object promitionInfo) throws IOException {
 		throw new UnsupportedOperationException();
 	}

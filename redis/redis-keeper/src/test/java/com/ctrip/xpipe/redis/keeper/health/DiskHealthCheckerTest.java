@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.health;
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
@@ -13,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -33,7 +35,7 @@ public class DiskHealthCheckerTest extends AbstractRedisKeeperTest {
     @Before
     public void setupDiskHealthCheckerTest() {
         this.checker = new DiskHealthChecker(keeperContainerConfig);
-        Mockito.when(keeperContainerConfig.checkRoundBeforeMarkDown()).thenReturn(checkRound);
+        Mockito.lenient().when(keeperContainerConfig.checkRoundBeforeMarkDown()).thenReturn(checkRound);
     }
 
     @Test
@@ -93,6 +95,19 @@ public class DiskHealthCheckerTest extends AbstractRedisKeeperTest {
         diskInfo.available = true;
         checker.setResult(diskInfo);
         Assert.assertEquals(HealthState.HEALTHY, checker.getState());
+    }
+
+    @Test
+    public void testCheckLocalPathAvailable() {
+        String storePath = getTestFileDir();
+        Mockito.when(keeperContainerConfig.getReplicationStoreDir()).thenReturn(storePath);
+
+        checker.check();
+
+        Assert.assertTrue(checker.getResult().available);
+        File probe = new File(new File(storePath, "disk_check"), FoundationService.DEFAULT.getHostName());
+        Assert.assertTrue(probe.isFile());
+        Assert.assertFalse(new File(storePath, "foo").exists());
     }
 
 }
