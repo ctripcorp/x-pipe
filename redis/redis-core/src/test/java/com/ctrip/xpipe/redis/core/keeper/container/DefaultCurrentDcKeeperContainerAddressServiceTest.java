@@ -9,6 +9,7 @@ import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingServer;
 import org.apache.zookeeper.CreateMode;
@@ -18,6 +19,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -228,6 +230,7 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
         try {
             probe.start();
             started = true;
+            waitUntilInitialRebuildDone(probe);
             probe.hold = true;
             probe.submitRebuild();
             Assert.assertTrue(probe.entered.await(5, TimeUnit.SECONDS));
@@ -263,6 +266,7 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
             started = true;
             register(POD_A, "10.0.0.1");
             waitConditionUntilTimeOut(() -> "10.0.0.1".equals(probe.getIpByHostname(POD_A)), 3000);
+            waitUntilInitialRebuildDone(probe);
 
             probe.hold = true;
             probe.submitRebuild();
@@ -302,7 +306,7 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
             fast.start();
             started = true;
             waitConditionUntilTimeOut(() -> "10.0.0.5".equals(fast.getIpByHostname(POD_A)), 3000);
-            waitConditionUntilTimeOut(fast::rebuildExecutorIdle, 3000);
+            waitUntilInitialRebuildDone(fast);
 
             Map<String, String> stale = new HashMap<>();
             stale.put(POD_A, "1.1.1.1");
@@ -315,6 +319,100 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
                 fast.stop();
             }
         }
+    }
+
+    /**
+     * CuratorCache.start() 是异步的，start 之前已存在的节点要靠后台加载 + initialized 回调进映射。
+     */
+    @Test
+    public void testNodesRegisteredBeforeStartAreLoaded() throws Exception {
+        register(POD_A, "10.0.0.5");
+        register(POD_B, "10.0.0.6");
+
+        DefaultCurrentDcKeeperContainerAddressService late = new DefaultCurrentDcKeeperContainerAddressService(zkClient);
+        late.initialize();
+        boolean started = false;
+        try {
+            late.start();
+            started = true;
+            waitConditionUntilTimeOut(late::cacheInitialized, 3000);
+            waitConditionUntilTimeOut(() -> "10.0.0.5".equals(late.getIpByHostname(POD_A))
+                    && "10.0.0.6".equals(late.getIpByHostname(POD_B)), 3000);
+        } finally {
+            if (started) {
+                late.stop();
+            }
+        }
+    }
+
+    /**
+     * 递归 CuratorCache 会把注册根节点自身也放进 storage。即使根节点上恰好有合法的地址 JSON，
+     * 根节点名也不能被当成 hostname。
+     */
+    @Test
+    public void testRegisterRootNodeIsNotTreatedAsHostname() throws Exception {
+        String root = MetaZkConfig.getKeeperContainerRegisterPath();
+        register(POD_A, "10.0.0.5");
+        zkClient.get().setData().forPath(root, Codec.DEFAULT.encodeAsBytes(new KeeperContainerAddressInfo("9.9.9.9")));
+
+        waitConditionUntilTimeOut(() -> service.currentChildren().stream()
+                .anyMatch(child -> root.equals(child.getPath()) && child.getStat().getVersion() > 0), 3000);
+        waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A)), 3000);
+
+        service.rebuild();
+        Assert.assertEquals(Collections.singletonMap(POD_A, "10.0.0.5"), service.getAllHostnameToIp());
+    }
+
+    /**
+     * spec §5.4 要求实测：CuratorCache 在 SUSPENDED / LOST 期间不清空 storage，映射继续可用；
+     * 断连期间跑 rebuild（定时兜底路径）读到的仍是断连前快照，不会把映射冲空。
+     * 重连后 persistent watch 重新挂上：旧 session 的临时节点被服务端过期清理后从映射移除，新注册能被感知。
+     */
+    @Test
+    public void testMappingSurvivesSuspendedAndLostThenRecoversAfterReconnect() throws Exception {
+        register(POD_A, "10.0.0.5");
+        waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A)), 3000);
+
+        CountDownLatch suspended = new CountDownLatch(1);
+        CountDownLatch lost = new CountDownLatch(1);
+        CountDownLatch reconnected = new CountDownLatch(1);
+        zkClient.get().getConnectionStateListenable().addListener((client, state) -> {
+            if (state == ConnectionState.SUSPENDED) {
+                suspended.countDown();
+            } else if (state == ConnectionState.LOST) {
+                lost.countDown();
+            } else if (state == ConnectionState.RECONNECTED) {
+                reconnected.countDown();
+            }
+        });
+
+        zkServer.stop();
+        Assert.assertTrue("未进入 SUSPENDED", suspended.await(15, TimeUnit.SECONDS));
+        assertMappingKeptWhileDisconnected("SUSPENDED", POD_A, "10.0.0.5");
+        Assert.assertTrue("未进入 LOST", lost.await(30, TimeUnit.SECONDS));
+        assertMappingKeptWhileDisconnected("LOST", POD_A, "10.0.0.5");
+
+        zkServer.restart();
+        Assert.assertTrue("未重连", reconnected.await(30, TimeUnit.SECONDS));
+        // 旧 session 已过期，其临时节点由服务端清理；重连后 cache 复查已缓存路径并移除它
+        waitConditionUntilTimeOut(() -> null == service.getIpByHostname(POD_A), 30000);
+
+        register(POD_A, "10.0.0.9");
+        waitConditionUntilTimeOut(() -> "10.0.0.9".equals(service.getIpByHostname(POD_A)), 5000);
+    }
+
+    private void assertMappingKeptWhileDisconnected(String state, String hostname, String ip) {
+        Assert.assertEquals(state + " 期间 cache storage 不应被清空", ip, ipInSnapshot(service, hostname));
+        service.rebuild();
+        Assert.assertEquals(state + " 期间 rebuild 不应冲空映射", ip, service.getIpByHostname(hostname));
+    }
+
+    /**
+     * 等首次加载的 initialized 回调投递完、且那次 rebuild 跑完。
+     * 否则晚到的 initialized 会在计数窗口里多投递一次，或在打过期值之后把映射修回去。
+     */
+    private void waitUntilInitialRebuildDone(DefaultCurrentDcKeeperContainerAddressService target) throws Exception {
+        waitConditionUntilTimeOut(() -> target.cacheInitialized() && target.rebuildExecutorIdle(), 3000);
     }
 
     private void waitUntilWatchQuiescent(HoldingAddressService probe, String ip) throws Exception {

@@ -11,9 +11,9 @@ import com.ctrip.xpipe.zk.ZkClient;
 import com.ctrip.xpipe.zk.ZkUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.curator.framework.recipes.cache.CuratorCache;
+import org.apache.curator.framework.recipes.cache.CuratorCacheListener;
+import org.apache.curator.utils.ZKPaths;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,12 +25,21 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * watch 本机房 ZK 的 keepercontainer 注册路径，维护 hostname → IP 的单向映射。
  * <p>
- * 缓存刷新采用全量重建：rebuild 在执行时读取 PathChildrenCache 的当前快照重算映射表。
+ * 缓存刷新采用全量重建：rebuild 在执行时读取 CuratorCache 的当前快照重算映射表。
  * watch 回调与定时兜底只把重建投递到独立单线程池，不在回调线程里计算。
+ * CuratorCache 的 listener 跑在 per-client 共享的 runSafe 线程上，回调里做计算会拖慢
+ * 同一 CuratorFramework 上的所有 recipe，所以这里只投递。
+ * <p>
+ * CuratorCache 默认递归，storage 里既有注册根节点自身，也可能有更深层节点；
+ * rebuild 只认注册根的直接子节点，节点名即 hostname。
+ * <p>
+ * CuratorCache 不监听 SUSPENDED/LOST，断连期间 storage 不清空，映射据此继续可用；
+ * 重连后由 PersistentWatcher 重新挂 watch 并逐个复查已缓存路径，已消失的节点在那时移除。
  * <p>
  * 另有一个定时任务做兜底全量重建，覆盖 watch 事件丢失与 session 重连后事件补发不全的情况，
  * 因此不需要单独监听连接状态。这个模式与 metaserver 维护集群成员列表的做法一致。
@@ -47,7 +56,10 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
     private final ZkClient zkClient;
     private final long refreshIntervalMilli;
 
-    private PathChildrenCache containersCache;
+    private volatile String registerPath;
+    private volatile CuratorCache containersCache;
+    /** CuratorCache 首次加载完成。只供单测等待，业务不依赖它。 */
+    private volatile boolean cacheInitialized;
     private ScheduledExecutorService scheduled;
     private ScheduledFuture<?> refreshFuture;
 
@@ -79,16 +91,19 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
     protected void doStart() throws Exception {
         CuratorFramework client = zkClient.get();
         String registerPath = MetaZkConfig.getKeeperContainerRegisterPath();
+        this.registerPath = registerPath;
+        this.cacheInitialized = false;
 
         rebuildExecutor = newRebuildExecutor();
         try {
-            containersCache = new PathChildrenCache(client, registerPath, true,
-                    XpipeThreadFactory.create("KeeperContainerAddressCache"));
-            containersCache.getListenable().addListener(new ContainersChanged());
-            // BUILD_INITIAL_CACHE 只把子节点放进 PathChildrenCache。映射由后面这次投递异步重算，
-            // doStart 不等它完成。
-            containersCache.start(PathChildrenCache.StartMode.BUILD_INITIAL_CACHE);
-            submitRebuild();
+            // 不传 Options 即递归：Id 之后注册结构是 {root}/{hostname}/latch-xxx 两层。
+            containersCache = CuratorCache.builder(client, registerPath)
+                    .withExceptionHandler(e -> logger.error("[containersCache][error]{}", registerPath, e))
+                    .build();
+            containersCache.listenable().addListener(new ContainersChanged());
+            // start 是异步的：先挂 persistent watch，再后台加载节点。加载完成后 initialized 回调投递 rebuild，
+            // doStart 不等它完成，也不因 ZK 暂时不可用而失败。
+            containersCache.start();
 
             scheduled = Executors.newScheduledThreadPool(1,
                     XpipeThreadFactory.create("KeeperContainerAddressRefresh"));
@@ -187,16 +202,18 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
      */
     @VisibleForTesting
     protected synchronized void rebuild() {
-        PathChildrenCache cache = containersCache;
+        CuratorCache cache = containersCache;
         if (null == cache) return;
 
-        List<ChildData> children = cache.getCurrentData();
+        List<ChildData> children = cache.stream().toList();
         Map<String, String> freshHostnameToIp = new HashMap<>();
 
         for (ChildData child : children) {
+            // 先按路径层级过滤再解 data：根节点自身的 data 不是地址 JSON，不能进 ipOf 刷错误日志
             String hostname = hostnameOf(child);
+            if (null == hostname) continue;
             String ip = ipOf(child);
-            if (null == hostname || null == ip) continue;
+            if (null == ip) continue;
 
             // 正向映射可信：hostname 取自 ZK 子节点名，每个容器只写自己的节点，不会串。
             freshHostnameToIp.put(hostname, ip);
@@ -216,12 +233,17 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
     /** 单测读取 watch 快照，确认事件已经进 cache、且发生在 rebuild 读快照之前。 */
     @VisibleForTesting
     protected List<ChildData> currentChildren() {
-        PathChildrenCache cache = containersCache;
+        CuratorCache cache = containersCache;
         if (cache == null) {
             return Collections.emptyList();
         }
-        List<ChildData> children = cache.getCurrentData();
-        return children == null ? Collections.emptyList() : children;
+        return cache.stream().collect(Collectors.toList());
+    }
+
+    /** 单测等首次加载完成，避免 initialized 回调晚到、在计数窗口里多投递一次 rebuild。 */
+    @VisibleForTesting
+    protected boolean cacheInitialized() {
+        return cacheInitialized;
     }
 
     /** 单测把映射打成过期值，验证定时兜底会从 ZK 快照重建回来。 */
@@ -242,12 +264,16 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
                 && executor.getTaskCount() == executor.getCompletedTaskCount();
     }
 
+    /**
+     * 只认注册根的直接子节点。递归 cache 里的根节点自身、以及更深层节点一律返回 null。
+     */
     private String hostnameOf(ChildData child) {
         String path = child.getPath();
         if (null == path) return null;
-        int index = path.lastIndexOf('/');
-        if (index < 0 || index == path.length() - 1) return null;
-        return path.substring(index + 1);
+        ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
+        if (!pathAndNode.getPath().equals(registerPath)) return null;
+        String node = pathAndNode.getNode();
+        return node.isEmpty() ? null : node;
     }
 
     private String ipOf(ChildData child) {
@@ -273,12 +299,23 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
         return 0;
     }
 
-    private class ContainersChanged implements PathChildrenCacheListener {
+    /**
+     * 跑在 CuratorFramework 的 runSafe 共享线程上，只投递不计算。
+     */
+    private class ContainersChanged implements CuratorCacheListener {
 
         @Override
-        public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) {
-            logger.info("[childEvent]{}, {}", event.getType(), ZkUtils.toString(event.getData()));
+        public void event(Type type, ChildData oldData, ChildData data) {
+            logger.info("[cacheEvent]{}, {}", type, ZkUtils.toString(data != null ? data : oldData));
             submitRebuild();
+        }
+
+        @Override
+        public void initialized() {
+            submitRebuild();
+            // 置位放在投递之后：单测看到 true 时这次 rebuild 已进池，rebuildExecutorIdle 能等到它跑完
+            cacheInitialized = true;
+            logger.info("[cacheInitialized]{}", registerPath);
         }
     }
 }
