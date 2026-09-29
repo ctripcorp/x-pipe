@@ -13,8 +13,12 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.CuratorCache;
 import org.apache.curator.framework.recipes.cache.CuratorCacheListener;
+import org.apache.curator.framework.recipes.locks.LockInternals;
+import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
+import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
 import org.apache.curator.utils.ZKPaths;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -35,8 +39,14 @@ import java.util.stream.Collectors;
  * CuratorCache 的 listener 跑在 per-client 共享的 runSafe 线程上，回调里做计算会拖慢
  * 同一 CuratorFramework 上的所有 recipe，所以这里只投递。
  * <p>
- * CuratorCache 默认递归，storage 里既有注册根节点自身，也可能有更深层节点；
- * rebuild 只认注册根的直接子节点，节点名即 hostname。
+ * 注册结构是两层：{@code {root}/{hostname}/_c_<uuid>-latch-<seq>}。hostname 由父节点名承载，
+ * 每个 pod 通过 LeaderLatch 在其下创建一个临时顺序子节点，节点 data 是 {@link KeeperContainerAddressInfo} JSON。
+ * 同一 hostname 下有多个子节点时（滚动替换期间新旧 pod 并存）按 seq 排序取首节点，
+ * 即最早注册、仍存活的那个 pod（spec D-I1）。
+ * <p>
+ * CuratorCache 默认递归，storage 里既有注册根节点自身，也有 hostname 父节点与更深层节点；
+ * rebuild 只认「根 → hostname → latch 子节点」这一层级的节点，其余一律忽略。
+ * 旧的一层结构（hostname 节点自身带地址 data）不再解析（spec D-I4）。
  * <p>
  * CuratorCache 不监听 SUSPENDED/LOST，断连期间 storage 不清空，映射据此继续可用；
  * 重连后由 PersistentWatcher 重新挂 watch 并逐个复查已缓存路径，已消失的节点在那时移除。
@@ -52,6 +62,12 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
     /** 1 个在跑 + 1 个排队，其余提交由 DiscardPolicy 丢掉。 */
     private static final int REBUILD_POOL_SIZE = 1;
     private static final int REBUILD_QUEUE_CAPACITY = 1;
+
+    /** 与 LeaderLatch 私有常量 LOCK_NAME 一致；子节点名形如 {@code _c_<uuid>-latch-0000000001}。 */
+    private static final String LATCH_NODE_NAME = "latch-";
+
+    /** 与 LeaderLatch 内部排序一致：只比较 {@link #LATCH_NODE_NAME} 之后的 seq，忽略 protection 前缀。 */
+    private static final LockInternalsSorter LATCH_SORTER = StandardLockInternalsDriver::standardFixForSorting;
 
     private final ZkClient zkClient;
     private final long refreshIntervalMilli;
@@ -205,19 +221,17 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
         CuratorCache cache = containersCache;
         if (null == cache) return;
 
-        List<ChildData> children = cache.stream().toList();
         Map<String, String> freshHostnameToIp = new HashMap<>();
+        groupLatchNodesByHostname(cache.stream().toList()).forEach((hostname, latchNodes) -> {
+            // 只看首节点：首节点 data 坏了也不回落到次节点。次节点是更晚注册的 pod，
+            // 可能尚未就绪（与 D-I1 放弃「取末」同一理由）；解析不到时调用方走拒绝路径，失败是干净的。
+            ChildData first = firstLatchNode(latchNodes);
+            String ip = ipOf(first);
+            if (null == ip) return;
 
-        for (ChildData child : children) {
-            // 先按路径层级过滤再解 data：根节点自身的 data 不是地址 JSON，不能进 ipOf 刷错误日志
-            String hostname = hostnameOf(child);
-            if (null == hostname) continue;
-            String ip = ipOf(child);
-            if (null == ip) continue;
-
-            // 正向映射可信：hostname 取自 ZK 子节点名，每个容器只写自己的节点，不会串。
+            // 正向映射可信：hostname 取自 ZK 父节点名，每个 pod 只写自己的 latch 子节点，不会串。
             freshHostnameToIp.put(hostname, ip);
-        }
+        });
 
         // 监听的是注册根路径，任一容器的增删改都会触发全量重建，因此重复内容很常见
         // （扩缩容时一批 pod 逐个上下线，以及定时兜底与 watch 事件叠加）。
@@ -265,15 +279,52 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
     }
 
     /**
-     * 只认注册根的直接子节点。递归 cache 里的根节点自身、以及更深层节点一律返回 null。
+     * 按 hostname 分组 latch 子节点。只按路径层级与节点名过滤，不解 data：
+     * 根节点、hostname 父节点自身的 data 都不是地址 JSON，不能进 ipOf 刷错误日志。
+     * 没有 latch 子节点的 hostname 不会出现在结果里，因而不产生映射。
      */
-    private String hostnameOf(ChildData child) {
+    private Map<String, List<ChildData>> groupLatchNodesByHostname(List<ChildData> children) {
+        Map<String, List<ChildData>> grouped = new HashMap<>();
+        for (ChildData child : children) {
+            String hostname = hostnameOfLatchNode(child);
+            if (null == hostname) continue;
+            grouped.computeIfAbsent(hostname, k -> new ArrayList<>()).add(child);
+        }
+        return grouped;
+    }
+
+    /**
+     * 只认 {@code {registerPath}/{hostname}/...latch-...} 这一层级，返回 hostname；其余节点返回 null。
+     * <p>
+     * 节点名不含 {@link #LATCH_NODE_NAME} 的子节点必须排除：{@link LockInternals#getSortedChildren}
+     * 对这类名字按全名比较，可能排到真正的 latch 节点前面被误取为首节点。
+     */
+    private String hostnameOfLatchNode(ChildData child) {
         String path = child.getPath();
         if (null == path) return null;
-        ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
-        if (!pathAndNode.getPath().equals(registerPath)) return null;
-        String node = pathAndNode.getNode();
-        return node.isEmpty() ? null : node;
+        ZKPaths.PathAndNode latch = ZKPaths.getPathAndNode(path);
+        if (!latch.getNode().contains(LATCH_NODE_NAME)) return null;
+        ZKPaths.PathAndNode host = ZKPaths.getPathAndNode(latch.getPath());
+        if (!host.getPath().equals(registerPath)) return null;
+        String hostname = host.getNode();
+        return hostname.isEmpty() ? null : hostname;
+    }
+
+    /**
+     * 同一 hostname 下按 seq 排序取首节点。排序规则与 LeaderLatch 一致，
+     * 写法沿用 {@code DefaultApplierElectorManager.sortChildData}。latchNodes 非空。
+     */
+    private ChildData firstLatchNode(List<ChildData> latchNodes) {
+        if (latchNodes.size() == 1) {
+            return latchNodes.getFirst();
+        }
+        // 同一父节点下节点名唯一，可直接按名字回查
+        Map<String, ChildData> byName = new HashMap<>();
+        for (ChildData latchNode : latchNodes) {
+            byName.put(ZKPaths.getNodeFromPath(latchNode.getPath()), latchNode);
+        }
+        List<String> sorted = LockInternals.getSortedChildren(LATCH_NODE_NAME, LATCH_SORTER, new ArrayList<>(byName.keySet()));
+        return byName.get(sorted.getFirst());
     }
 
     private String ipOf(ChildData child) {

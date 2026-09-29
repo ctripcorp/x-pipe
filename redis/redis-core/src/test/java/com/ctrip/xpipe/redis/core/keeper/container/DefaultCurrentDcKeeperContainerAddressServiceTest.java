@@ -9,11 +9,12 @@ import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.TestingServer;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -34,6 +35,8 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
     private TestingServer zkServer;
     private DefaultZkClient zkClient;
     private DefaultCurrentDcKeeperContainerAddressService service;
+    /** hostname -> 最近一次 register 创建的 latch 子节点路径，供 setData / delete 定位。 */
+    private final Map<String, String> latchPaths = new HashMap<>();
 
     @Before
     public void beforeDefaultCurrentDcKeeperContainerAddressServiceTest() throws Exception {
@@ -77,9 +80,9 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
     }
 
     /**
-     * pod 重建后 hostname 不变，所以真实流程是同名节点先随旧 session 消失、
-     * 再由新 pod 重新创建，事件序列是 CHILD_REMOVED 后跟 CHILD_ADDED，
-     * 而不是单个 CHILD_UPDATED。两者的最终状态都必须收敛到新 IP。
+     * pod 重建后 hostname 不变，真实流程是旧 pod 的 latch 子节点随 session 消失、
+     * 新 pod 在同一 hostname 父节点下创建新的 latch 子节点，事件序列是 NODE_DELETED 后跟 NODE_CREATED，
+     * 而不是单个 NODE_CHANGED。两者的最终状态都必须收敛到新 IP。
      */
     @Test
     public void testPodRecreateKeepsHostnameAndSwitchesIp() throws Exception {
@@ -103,6 +106,23 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
         delete(POD_A);
 
         waitConditionUntilTimeOut(() -> null == service.getIpByHostname(POD_A), 3000);
+        // hostname 父节点是容器节点，要等 ZK 定期回收；它还在时也不能产生映射
+        Assert.assertNotNull(zkClient.get().checkExists().forPath(path(POD_A)));
+    }
+
+    /**
+     * hostname 父节点存在但下面没有 latch 子节点（容器节点尚未被 ZK 回收）时不产生映射，
+     * 也不影响其余 hostname。
+     */
+    @Test
+    public void testHostnameWithoutLatchNodesHasNoMapping() throws Exception {
+        zkClient.get().create().creatingParentContainersIfNeeded().withMode(CreateMode.CONTAINER)
+                .forPath(path(POD_A));
+        register(POD_B, "10.0.0.6");
+
+        waitConditionUntilTimeOut(() -> "10.0.0.6".equals(service.getIpByHostname(POD_B)), 3000);
+        service.rebuild();
+        Assert.assertEquals(Collections.singletonMap(POD_B, "10.0.0.6"), service.getAllHostnameToIp());
     }
 
     @Test
@@ -131,9 +151,7 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
 
     @Test
     public void testMalformedNodeDataIgnored() throws Exception {
-        CuratorFramework client = zkClient.get();
-        client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL)
-                .forPath(path("bad-pod"), "not-a-json".getBytes());
+        registerRaw("bad-pod", "not-a-json".getBytes());
         register(POD_A, "10.0.0.5");
 
         // 坏节点不能拖垮整批解析
@@ -142,24 +160,111 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
     }
 
     /**
-     * 正向映射不可能一对多：hostname 是 ZK 节点名，同名节点只能存在一个，
-     * 重复 create 会被 ZK 以 NodeExists 拒绝。
+     * 首节点 data 坏时该 hostname 不产生映射，不回落到次节点（次节点是更晚注册、可能未就绪的 pod），
+     * 且不影响其余 hostname。
      */
     @Test
-    public void testHostnameIsStructurallyUnique() throws Exception {
-        register(POD_A, "10.0.0.5");
-        waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A)), 3000);
+    public void testMalformedFirstLatchNodeDoesNotFallBackToNext() throws Exception {
+        registerRaw(POD_A, "not-a-json".getBytes());
+        register(POD_A, "10.0.0.9");
+        register(POD_B, "10.0.0.6");
 
-        try {
-            register(POD_A, "10.0.0.9");
-            Assert.fail("同名节点重复注册应被 ZK 拒绝");
-        } catch (KeeperException.NodeExistsException expected) {
-            // 正是期望的行为
-        }
+        waitConditionUntilTimeOut(() -> "10.0.0.6".equals(service.getIpByHostname(POD_B)), 3000);
+        waitConditionUntilTimeOut(() -> latchNodesInSnapshot(service, POD_A) == 2, 3000);
+        service.rebuild();
+        Assert.assertNull(service.getIpByHostname(POD_A));
+        Assert.assertEquals(Collections.singletonMap(POD_B, "10.0.0.6"), service.getAllHostnameToIp());
+    }
 
-        Assert.assertEquals(1,
-                zkClient.get().getChildren().forPath(MetaZkConfig.getKeeperContainerRegisterPath()).size());
+    /**
+     * 同一 hostname 下多个 pod 并存（滚动替换）：取 seq 最小的首节点；首节点消失后落到次节点。
+     */
+    @Test
+    public void testMultipleLatchNodesResolveToFirst() throws Exception {
+        String first = register(POD_A, "10.0.0.5");
+        register(POD_A, "10.0.0.9");
+
+        waitConditionUntilTimeOut(() -> latchNodesInSnapshot(service, POD_A) == 2, 3000);
+        service.rebuild();
+        Assert.assertEquals("取首节点，不因新 pod 注册而切换", "10.0.0.5", service.getIpByHostname(POD_A));
+
+        zkClient.get().delete().forPath(first);
+        waitConditionUntilTimeOut(() -> "10.0.0.9".equals(service.getIpByHostname(POD_A)), 3000);
+    }
+
+    /**
+     * 排序只看 latch- 之后的 seq，不看 protection 前缀。构造「全名字典序与 seq 顺序相反」的两个节点：
+     * seq 小的节点前缀是 _c_zzz，seq 大的是 _c_aaa，按全名排会误取后者。
+     */
+    @Test
+    public void testLatchNodesSortedBySequenceNotFullName() throws Exception {
+        createSequential(POD_A, "_c_zzz-latch-", "10.0.0.5");
+        createSequential(POD_A, "_c_aaa-latch-", "10.0.0.9");
+
+        waitConditionUntilTimeOut(() -> latchNodesInSnapshot(service, POD_A) == 2, 3000);
+        service.rebuild();
         Assert.assertEquals("10.0.0.5", service.getIpByHostname(POD_A));
+    }
+
+    /**
+     * hostname 父节点下名字不含 latch- 的子节点不参与排序。名为 "0" 的节点按全名比较会排在
+     * "0000000001" 之前，不过滤就会被误取为首节点。
+     */
+    @Test
+    public void testNonLatchChildIgnored() throws Exception {
+        register(POD_A, "10.0.0.5");
+        zkClient.get().create().withMode(CreateMode.EPHEMERAL)
+                .forPath(ZKPaths.makePath(path(POD_A), "0"),
+                        Codec.DEFAULT.encodeAsBytes(new KeeperContainerAddressInfo("9.9.9.9")));
+
+        waitConditionUntilTimeOut(() -> service.currentChildren().stream()
+                .anyMatch(child -> child.getPath().endsWith(POD_A + "/0")), 3000);
+        service.rebuild();
+        Assert.assertEquals("10.0.0.5", service.getIpByHostname(POD_A));
+    }
+
+    /**
+     * D-I4：旧的一层结构（hostname 节点自身带地址 data、无 latch 子节点）不再解析。
+     */
+    @Test
+    public void testLegacyFlatNodeIsNotParsed() throws Exception {
+        zkClient.get().create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL)
+                .forPath(path("legacy-pod"), Codec.DEFAULT.encodeAsBytes(new KeeperContainerAddressInfo("10.0.0.7")));
+        register(POD_A, "10.0.0.5");
+
+        waitConditionUntilTimeOut(() -> service.currentChildren().stream()
+                .anyMatch(child -> path("legacy-pod").equals(child.getPath())), 3000);
+        waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A)), 3000);
+        service.rebuild();
+        Assert.assertEquals(Collections.singletonMap(POD_A, "10.0.0.5"), service.getAllHostnameToIp());
+    }
+
+    /**
+     * 用真实 LeaderLatch 注册，固定消费侧与 LeaderLatch 节点格式（protection 前缀、latch- 名、id 作 data）的契约。
+     */
+    @Test
+    public void testResolvesRealLeaderLatchNodes() throws Exception {
+        LeaderLatch older = new LeaderLatch(zkClient.get(), path(POD_A),
+                Codec.DEFAULT.encode(new KeeperContainerAddressInfo("10.0.0.5")));
+        LeaderLatch newer = new LeaderLatch(zkClient.get(), path(POD_A),
+                Codec.DEFAULT.encode(new KeeperContainerAddressInfo("10.0.0.9")));
+        try {
+            older.start();
+            // 等 older 的节点建好再启动 newer，保证 seq 顺序确定
+            waitConditionUntilTimeOut(() -> older.getOurPath() != null, 3000);
+            newer.start();
+            waitConditionUntilTimeOut(() -> newer.getOurPath() != null, 3000);
+
+            waitConditionUntilTimeOut(() -> latchNodesInSnapshot(service, POD_A) == 2, 3000);
+            service.rebuild();
+            Assert.assertEquals("10.0.0.5", service.getIpByHostname(POD_A));
+
+            older.close();
+            waitConditionUntilTimeOut(() -> "10.0.0.9".equals(service.getIpByHostname(POD_A)), 3000);
+        } finally {
+            closeQuietly(older);
+            closeQuietly(newer);
+        }
     }
 
     @Test
@@ -178,21 +283,21 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
     }
 
     /**
-     * 节点的绝对路径是 /{namespace}/keepercontainers/{hostname}，但代码里只出现后两段：
+     * latch 节点的绝对路径是 /{namespace}/keepercontainers/{hostname}/{latch}，但代码里不出现 namespace：
      * namespace 由 curator 在 CuratorFrameworkFactory.builder().namespace(...) 上统一挂载，
      * 读写路径与 ChildData.getPath() 都是剥离 namespace 后的相对路径。
-     * hostname 则是 watch 路径下的子节点名，由 rebuild 从 ChildData 的路径末段取回。
+     * hostname 则是 latch 子节点的父节点名，由 rebuild 从 ChildData 的路径倒数第二段取回。
      * 这个分工是 hostname 解析正确性的前提，用测试固定下来。
      */
     @Test
-    public void testNamespaceIsTransparentAndHostnameComesFromChildNodeName() throws Exception {
-        register(POD_A, "10.0.0.5");
+    public void testNamespaceIsTransparentAndHostnameComesFromParentNodeName() throws Exception {
+        String latchPath = register(POD_A, "10.0.0.5");
         waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A)), 3000);
 
         // 相对路径下能读到节点
-        Assert.assertNotNull(zkClient.get().checkExists().forPath(path(POD_A)));
-        // 且 curator 视角的路径不含 namespace 前缀
-        Assert.assertEquals("/keepercontainers/" + POD_A, path(POD_A));
+        Assert.assertNotNull(zkClient.get().checkExists().forPath(latchPath));
+        // 且 curator 视角的路径不含 namespace 前缀，hostname 是 latch 节点的父节点
+        Assert.assertEquals("/keepercontainers/" + POD_A, ZKPaths.getPathAndNode(latchPath).getPath());
 
         // 换一个原生 client 直连，验证节点真实落在 namespace 之下
         try (CuratorFramework rawClient = CuratorFrameworkFactory.builder()
@@ -203,7 +308,7 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
             rawClient.blockUntilConnected(5, TimeUnit.SECONDS);
 
             String namespace = new DefaultZkConfig(zkServer.getConnectString()).getZkNamespace();
-            String absolutePath = "/" + namespace + "/keepercontainers/" + POD_A;
+            String absolutePath = "/" + namespace + latchPath;
             Assert.assertNotNull("节点应落在 namespace 之下: " + absolutePath,
                     rawClient.checkExists().forPath(absolutePath));
         }
@@ -437,10 +542,24 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
         Assert.fail("watch 没有在超时前稳定到 " + ip + ", submits=" + probe.submitsWhileHolding.get());
     }
 
+    /** 快照里该 hostname 下的 latch 子节点数，用来确认事件已进 cache 再手动 rebuild。 */
+    private long latchNodesInSnapshot(DefaultCurrentDcKeeperContainerAddressService target, String hostname) {
+        return target.currentChildren().stream().filter(child -> isLatchNodeOf(child, hostname)).count();
+    }
+
+    private boolean isLatchNodeOf(ChildData child, String hostname) {
+        String path = child.getPath();
+        if (path == null) {
+            return false;
+        }
+        ZKPaths.PathAndNode pathAndNode = ZKPaths.getPathAndNode(path);
+        return path(hostname).equals(pathAndNode.getPath()) && pathAndNode.getNode().contains("latch-");
+    }
+
+    /** 只用于单 latch 子节点场景。 */
     private String ipInSnapshot(DefaultCurrentDcKeeperContainerAddressService target, String hostname) {
         for (ChildData child : target.currentChildren()) {
-            String path = child.getPath();
-            if (path == null || !path.endsWith("/" + hostname)) {
+            if (!isLatchNodeOf(child, hostname)) {
                 continue;
             }
             byte[] data = child.getData();
@@ -458,18 +577,44 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
         return MetaZkConfig.getKeeperContainerRegisterPath() + "/" + hostname;
     }
 
-    private void register(String hostname, String ip) throws Exception {
-        zkClient.get().create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL)
-                .forPath(path(hostname), Codec.DEFAULT.encodeAsBytes(new KeeperContainerAddressInfo(ip)));
+    /** 按 LeaderLatch 的建节点方式注册：容器父节点 + protection + 临时顺序 latch- 子节点。返回实际路径。 */
+    private String register(String hostname, String ip) throws Exception {
+        return registerRaw(hostname, Codec.DEFAULT.encodeAsBytes(new KeeperContainerAddressInfo(ip)));
+    }
+
+    private String registerRaw(String hostname, byte[] data) throws Exception {
+        String created = zkClient.get().create().creatingParentContainersIfNeeded().withProtection()
+                .withMode(CreateMode.EPHEMERAL_SEQUENTIAL)
+                .forPath(ZKPaths.makePath(path(hostname), "latch-"), data);
+        latchPaths.put(hostname, created);
+        return created;
+    }
+
+    /** 不带 protection，节点名前缀由调用方指定，用来构造排序场景。 */
+    private void createSequential(String hostname, String nodePrefix, String ip) throws Exception {
+        zkClient.get().create().creatingParentContainersIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL)
+                .forPath(ZKPaths.makePath(path(hostname), nodePrefix),
+                        Codec.DEFAULT.encodeAsBytes(new KeeperContainerAddressInfo(ip)));
     }
 
     private void setData(String hostname, String ip) throws Exception {
         zkClient.get().setData()
-                .forPath(path(hostname), Codec.DEFAULT.encodeAsBytes(new KeeperContainerAddressInfo(ip)));
+                .forPath(latchPaths.get(hostname), Codec.DEFAULT.encodeAsBytes(new KeeperContainerAddressInfo(ip)));
     }
 
     private void delete(String hostname) throws Exception {
-        zkClient.get().delete().forPath(path(hostname));
+        zkClient.get().delete().forPath(latchPaths.remove(hostname));
+    }
+
+    private void closeQuietly(LeaderLatch latch) {
+        if (latch.getState() != LeaderLatch.State.STARTED) {
+            return;
+        }
+        try {
+            latch.close();
+        } catch (Exception e) {
+            logger.warn("[closeQuietly]{}", latch.getOurPath(), e);
+        }
     }
 
     /**
