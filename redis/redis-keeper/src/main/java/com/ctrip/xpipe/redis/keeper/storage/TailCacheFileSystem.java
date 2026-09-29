@@ -2203,19 +2203,20 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
 
     @Override
-    public CompletableFuture<Void> close(AsyncFile file) {
+    public CompletableFuture<Void> close(AsyncFile file, boolean noFlush) {
         if (!file.canCloseByUser) {
             throw new IllegalStateException("close is not allowed for: " + file.path);
         }
         return closeInternal(file,
                 () -> delegate.closeSync(file),
                 f -> asyncFileFlushPendingWriteAndAwait(f, false),
-                () -> restoreBackingFsAndAwait(file));
+                () -> restoreBackingFsAndAwait(file),
+                noFlush);
     }
 
     private <T extends AbstractStorageFile> CompletableFuture<Void> closeInternal(T file,
             java.util.function.Supplier<List<FileChannel>> fsClose, java.util.function.Consumer<T> flush,
-            java.util.function.Supplier<Boolean> restoreBackingFs) {
+            java.util.function.Supplier<Boolean> restoreBackingFs, boolean noFlush) {
         if (file.closed) {
             return CompletableFuture.completedFuture(null);
         }
@@ -2228,6 +2229,8 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         final String id = file.ioKey;
         if (!noFs) {
             awaitInFlightIo(id, file.path, false);
+        }
+        if (!noFs && !noFlush) {
             try {
                 if (!restoreBackingFs.get()) {
                     logger.warn("failed to restore backing FS while closing {}, falling back to NO_FS close",
@@ -2245,7 +2248,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 flush.accept(file);
             }
         }
-        if (noFs && file.canWrite()) {
+        if ((noFs || noFlush) && file.canWrite()) {
             FileCacheEntry entry = file.getCacheEntry();
             if (entry != null && (entry.fsInconsistent || entry.isCacheDirty(file.isAtomicReplace()) || entry.isFsyncDirty())) {
                 logger.warn("{} may have data loss", file.path);
@@ -3064,7 +3067,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
 
 
     @Override
-    public CompletableFuture<Void> close(AsyncSegmentFile file) {
+    public CompletableFuture<Void> close(AsyncSegmentFile file, boolean noFlush) {
         for (AsyncIndexFile indexFile : file.currentIndexFiles.values()) {
             if (indexFile.noSpaceFailure != null) {
                 file.markNoSpace(indexFile.noSpaceFailure);
@@ -3072,7 +3075,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
         }
         return closeInternal(file, () -> delegate.closeSync(file), f -> segmentFlushPendingWriteAndAwait(f, false),
-                () -> restoreBackingFsAndAwait(file));
+                () -> restoreBackingFsAndAwait(file), noFlush);
     }
 
     @Override

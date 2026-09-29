@@ -110,6 +110,10 @@ public interface AsyncFileSystem {
     }
     // If the FS op fails, the caller must retry.
     default CompletableFuture<Void> close(AsyncFile file) {
+        return close(file, false);
+    }
+
+    default CompletableFuture<Void> close(AsyncFile file, boolean noFlush) {
         throw new UnsupportedOperationException();
     }
     // Detaches channels without closing them and returns the list for the caller to close
@@ -270,6 +274,10 @@ public interface AsyncFileSystem {
     }
     // If the FS op fails, the caller must retry.
     default CompletableFuture<Void> close(AsyncSegmentFile file) {
+        return close(file, false);
+    }
+
+    default CompletableFuture<Void> close(AsyncSegmentFile file, boolean noFlush) {
         throw new UnsupportedOperationException();
     }
     // Same detach semantics as closeSync(AsyncFile).

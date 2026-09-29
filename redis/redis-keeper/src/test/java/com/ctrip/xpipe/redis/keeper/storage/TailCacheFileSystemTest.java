@@ -553,6 +553,96 @@ public class TailCacheFileSystemTest {
     }
 
     // =========================================================================
+    // B2. close(file, noFlush)
+    // =========================================================================
+
+    @Test
+    public void testCloseNoFlushSkipsFlush() throws Exception {
+        // 50 < writeBatchBytes(128), so the write only lands in cache. A noFlush close must drop it
+        // instead of writing it back, and must not fsync either.
+        String p = path("close_noflush_file");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        writeTcfSync(writer, new byte[50]);
+        FileCacheEntry entry = writer.getCacheEntry();
+        assertEquals(50, entry.cacheEndOffset);
+        assertEquals(0, entry.writtenToFsOffset);
+        delegate.reset();
+
+        tcf.close(writer, true).get(5, TimeUnit.SECONDS);
+        awaitAll();
+
+        assertEquals("noFlush close must not write back", 0, delegate.fileWriteCount);
+        assertEquals("noFlush close must not fsync", 0, delegate.fileFsyncCount);
+        assertEquals("the channel is still detached and closed", 1, delegate.fileCloseCount);
+        assertTrue(writer.closed);
+        assertEquals("unflushed cache is dropped", 0, readFileSync(p).length);
+        assertEquals("cache memory released", 0, tcf.getGlobalCommittedBytes());
+    }
+
+    @Test
+    public void testCloseNoFlushFalseFlushesLikeSingleArgClose() throws Exception {
+        // The single-arg close delegates to noFlush=false, so both must persist the pending cache.
+        String pDefault = path("close_default_file");
+        AsyncFile defaultWriter = tcf.open(pDefault, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        writeTcfSync(defaultWriter, new byte[]{1, 2, 3});
+        delegate.reset();
+        tcf.close(defaultWriter).get(5, TimeUnit.SECONDS);
+        awaitAll();
+        int defaultWrites = delegate.fileWriteCount;
+        assertTrue("single-arg close flushes", defaultWrites > 0);
+        assertArrayEquals(new byte[]{1, 2, 3}, readFileSync(pDefault));
+
+        String pExplicit = path("close_noflush_false_file");
+        AsyncFile explicitWriter = tcf.open(pExplicit, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        writeTcfSync(explicitWriter, new byte[]{1, 2, 3});
+        delegate.reset();
+        tcf.close(explicitWriter, false).get(5, TimeUnit.SECONDS);
+        awaitAll();
+        assertEquals("noFlush=false behaves exactly like the single-arg close",
+                defaultWrites, delegate.fileWriteCount);
+        assertArrayEquals(new byte[]{1, 2, 3}, readFileSync(pExplicit));
+    }
+
+    @Test
+    public void testCloseNoFlushStillAwaitsInFlightIo() throws Exception {
+        // noFlush drops the flush but keeps the IO barrier: detaching the channel while a write is
+        // still running would race with it.
+        FaultyDelegate faulty = newFaultyDelegate();
+        TailCacheFileSystem hangTcf = newTcf(faulty, baseConfig());
+        String p = path("close_noflush_await");
+        AsyncFile writer = hangTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+
+        faulty.hangOn(Op.FILE_WRITE);
+        // 200 >= writeBatchBytes(128) → an async delegate write is submitted and registered in-flight.
+        // write() returns as soon as the data is cached, so the IO is still running here.
+        hangTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+
+        java.util.concurrent.CompletableFuture<Void> closeDone =
+                java.util.concurrent.CompletableFuture.runAsync(() -> {
+                    try {
+                        hangTcf.close(writer, true).get(10, TimeUnit.SECONDS);
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e);
+                    }
+                });
+        try {
+            closeDone.get(500, TimeUnit.MILLISECONDS);
+            fail("noFlush close must not return while a write is still in flight");
+        } catch (java.util.concurrent.TimeoutException expected) {
+            // still parked on the in-flight write
+        }
+
+        faulty.release();
+        closeDone.get(10, TimeUnit.SECONDS);
+        awaitAll();
+
+        assertEquals("only the in-flight write, no extra flush from close", 1, faulty.fileWriteCount);
+        assertEquals("noFlush close must not fsync", 0, faulty.fileFsyncCount);
+        assertEquals("the awaited write completed before the channel was detached",
+                200, readFileSync(p).length);
+    }
+
+    // =========================================================================
     // C. AsyncSegmentFile cache operations
     // =========================================================================
 
@@ -603,6 +693,26 @@ public class TailCacheFileSystemTest {
         } finally {
             tcf.close(reader).get(5, TimeUnit.SECONDS);
         }
+    }
+
+    @Test
+    public void testSegmentCloseNoFlushSkipsFlush() throws Exception {
+        String dir = path("segdir_noflush");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        tcf.write(writer, bufOf(new byte[]{10, 20, 30})).get(5, TimeUnit.SECONDS);
+        FileCacheEntry entry = writer.getCacheEntry();
+        assertEquals(3, entry.cacheEndOffset);
+        assertEquals(0, entry.writtenToFsOffset);
+        delegate.reset();
+
+        tcf.close(writer, true).get(5, TimeUnit.SECONDS);
+        awaitAll();
+
+        assertEquals("noFlush close must not write back", 0, delegate.segWriteCount);
+        assertEquals("noFlush close must not fsync", 0, delegate.segFsyncCount);
+        assertTrue(writer.closed);
+        assertEquals("unflushed cache is dropped", 0, Files.size(Paths.get(dir, SEG_PREFIX + "0")));
     }
 
     @Test
