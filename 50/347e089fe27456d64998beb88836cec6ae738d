@@ -1,0 +1,26 @@
+core/src/main/java/com/ctrip/xpipe/cluster/RebuildableLeaderLatch.java
+  s_d5bc2078a97f9f::t_bd46c4fe8ac23e 1-208
+core/src/test/java/com/ctrip/xpipe/AllTests.java
+  s_d5bc2078a97f9f::t_58f2bf6d654f9b 4
+  s_d5bc2078a97f9f::t_982955ab97ff0e 102-103
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/KeeperContainerZkRegistrar.java
+  s_d5bc2078a97f9f::t_8621607c8a0a05 5,34-35,43,67-68,80,98
+core/src/test/java/com/ctrip/xpipe/cluster/RebuildableLeaderLatchTest.java
+  s_d5bc2078a97f9f::t_87394713e5edbe 1-297
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "50347e089fe27456d64998beb88836cec6ae738d",
+  "prompts": {},
+  "sessions": {
+    "s_d5bc2078a97f9f": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_77864921-35f3-425d-b285-868bab37882e",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
