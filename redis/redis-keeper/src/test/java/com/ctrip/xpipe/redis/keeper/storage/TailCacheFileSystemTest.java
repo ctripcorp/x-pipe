@@ -348,6 +348,228 @@ public class TailCacheFileSystemTest {
         }
     }
 
+    // =========================================================================
+    // B1. undurable bytes accounting and the per-file drain guard
+    // =========================================================================
+
+    private TailCacheFileSystemConfig boundedUndurableConfig() {
+        // Per-file budget of 4 chunks; writeBatchBytes stays at 128 from baseConfig unless overridden.
+        return baseConfig().setPerFileCacheLimits(4 * CHUNK_SIZE, 1, CHUNK_SIZE);
+    }
+
+    @Test
+    public void testUnDurableBytesCountsWrittenButNotFsynced() throws Exception {
+        // writeBatchBytes(128) makes the write reach the delegate, but the delegate's fsync interval
+        // is effectively infinite, so the bytes are on the channel and not durable. They are not
+        // recoverable from disk and tail-cache eviction refuses to drop them, so they must count.
+        String p = path("undurable_accounting");
+        AsyncFile writer = tcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        try {
+            FileCacheEntry entry = writer.getCacheEntry();
+            assertEquals("an empty entry owes nothing", 0, entry.unDurableBytes());
+
+            writeTcfSync(writer, new byte[128]);
+            awaitAll();
+            assertEquals(128, entry.writtenToFsOffset);
+            assertEquals(128, entry.pendingFsyncBytes);
+            assertFalse("nothing left to write back", entry.isCacheDirty(false));
+            assertTrue(entry.isFsyncDirty());
+            assertEquals(0, entry.durableFsOffset());
+            assertEquals("written but not fsynced still counts", 128, entry.unDurableBytes());
+
+            tcf.fsync(writer).get(5, TimeUnit.SECONDS);
+            awaitAll();
+            assertEquals(0, entry.pendingFsyncBytes);
+            assertEquals(128, entry.durableFsOffset());
+            assertEquals(0, entry.unDurableBytes());
+
+            // 50 < writeBatchBytes, so this one only sits in cache.
+            writeTcfSync(writer, new byte[50]);
+            assertEquals("the cache tail past the durable point counts", 50, entry.unDurableBytes());
+        } finally {
+            tcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testWriteFlushesWhenUndurableCacheExceedsPerFileLimit() throws Exception {
+        // writeBatchBytes is far above the payloads, so batching never flushes on its own and the
+        // undurable tail is only bounded by the guard.
+        TailCacheFileSystem boundedTcf = newTcf(boundedUndurableConfig().setWriteBatchBytes(1024 * 1024));
+        String p = path("undurable_limit_flush");
+        AsyncFile writer = boundedTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        try {
+            FileCacheEntry entry = writer.getCacheEntry();
+            delegate.reset();
+            // 5 chunks accumulate: the guard checks before appending, so 4*CHUNK_SIZE is still allowed.
+            for (int i = 0; i < 5; i++) {
+                boundedTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            }
+            awaitAll();
+            assertEquals(5 * CHUNK_SIZE, entry.cacheEndOffset);
+            assertEquals(0, entry.writtenToFsOffset);
+            assertEquals(5 * CHUNK_SIZE, entry.unDurableBytes());
+            assertEquals("batching never triggered", 0, delegate.fileWriteCount);
+
+            // 5*CHUNK_SIZE > 4*CHUNK_SIZE → drain before caching anything new.
+            boundedTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            assertEquals("the guard wrote the whole undurable tail once", 1, delegate.fileWriteCount);
+            assertEquals(5 * CHUNK_SIZE, delegate.fileWrittenData.get(0).length);
+            assertEquals("and fsynced it", 1, delegate.fileFsyncCount);
+            assertEquals(5 * CHUNK_SIZE, readFileSync(p).length);
+            assertEquals(6 * CHUNK_SIZE, entry.cacheEndOffset);
+            assertEquals(5 * CHUNK_SIZE, entry.writtenToFsOffset);
+            assertEquals("only the new payload is undurable again", CHUNK_SIZE, entry.unDurableBytes());
+        } finally {
+            boundedTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testWriteFsyncsWhenPendingFsyncExceedsPerFileLimit() throws Exception {
+        // Every write reaches the delegate (writeBatchBytes=128) so the cache is never "dirty", yet
+        // nothing is fsynced. Counting pendingFsyncBytes is what lets the guard notice and fsync.
+        TailCacheFileSystem boundedTcf = newTcf(boundedUndurableConfig());
+        String p = path("undurable_limit_fsync");
+        AsyncFile writer = boundedTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        try {
+            FileCacheEntry entry = writer.getCacheEntry();
+            for (int i = 0; i < 3; i++) {
+                boundedTcf.write(writer, bufOf(new byte[128])).get(5, TimeUnit.SECONDS);
+                awaitAll();
+            }
+            assertEquals(384, entry.cacheEndOffset);
+            assertEquals(384, entry.writtenToFsOffset);
+            assertEquals(384, entry.pendingFsyncBytes);
+            assertFalse("the cache owes no write back", entry.isCacheDirty(false));
+            assertEquals(384, entry.unDurableBytes());
+            delegate.reset();
+
+            // 384 > 4*CHUNK_SIZE(256) → drain. There is nothing to write, only to fsync.
+            boundedTcf.write(writer, bufOf(new byte[128])).get(5, TimeUnit.SECONDS);
+            awaitAll();
+
+            assertEquals("the guard fsynced", 1, delegate.fileFsyncCount);
+            assertEquals("the only write is the new payload's own batch", 1, delegate.fileWriteCount);
+            assertEquals(128, delegate.fileWrittenData.get(0).length);
+            assertEquals(512, entry.cacheEndOffset);
+            assertEquals(512, entry.writtenToFsOffset);
+            assertEquals("back within budget", 128, entry.unDurableBytes());
+        } finally {
+            boundedTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testWriteRefusedWhenUndurableDrainFails() throws Exception {
+        // The drain is the only thing keeping the cache bounded, so a failing one must not be
+        // papered over the way the regular prepare is: the payload is rejected, not cached.
+        FaultyDelegate faulty = newFaultyDelegate();
+        TailCacheFileSystem boundedTcf = newTcf(faulty,
+                boundedUndurableConfig().setWriteBatchBytes(1024 * 1024));
+        String p = path("undurable_limit_fail");
+        AsyncFile writer = boundedTcf.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        try {
+            FileCacheEntry entry = writer.getCacheEntry();
+            for (int i = 0; i < 5; i++) {
+                boundedTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            }
+            awaitAll();
+            assertEquals(5 * CHUNK_SIZE, entry.cacheEndOffset);
+
+            faulty.failOn(new IOException("boom"), Op.FILE_WRITE);
+            for (int attempt = 1; attempt <= 2; attempt++) {
+                try {
+                    boundedTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+                    fail("attempt " + attempt + " must be refused instead of growing the cache");
+                } catch (Exception expected) {
+                    // the drain could not make room
+                }
+                assertEquals("the payload was not cached", 5 * CHUNK_SIZE, entry.cacheEndOffset);
+                assertEquals(0, entry.writtenToFsOffset);
+            }
+
+            // Once the backing FS recovers the same write goes through.
+            faulty.release();
+            boundedTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            awaitAll();
+            assertEquals(6 * CHUNK_SIZE, entry.cacheEndOffset);
+            assertEquals(5 * CHUNK_SIZE, entry.writtenToFsOffset);
+        } finally {
+            faulty.release();
+            boundedTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testFullCacheKeepsItsOwnCapInsteadOfDraining() throws Exception {
+        // FULL_CACHE holds the whole file in memory by definition, and appendToChunkedCache already
+        // caps it at maxCacheSizePerFileBytes, so undurable bytes can never exceed the budget and the
+        // drain guard has nothing to do. What bounds this mode is the hard cap, not a flush: filling
+        // the budget must stay purely in memory, and overflowing it must be refused.
+        TailCacheFileSystem boundedTcf = newTcf(boundedUndurableConfig().setWriteBatchBytes(1024 * 1024));
+        String p = path("undurable_limit_full_cache");
+        AsyncFile writer = boundedTcf.open(p, AbstractStorageFile.OpenMode.WRITE,
+                AbstractStorageFile.ReplaceMode.NORMAL, false, null,
+                AbstractStorageFile.CacheMode.FULL_CACHE).get();
+        try {
+            FileCacheEntry entry = writer.getCacheEntry();
+            delegate.reset();
+            // Fill the per-file budget of 4 chunks exactly; none of it is flushed.
+            for (int i = 0; i < 4; i++) {
+                boundedTcf.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            }
+            awaitAll();
+            assertEquals(4 * CHUNK_SIZE, entry.cacheEndOffset);
+            assertEquals(4 * CHUNK_SIZE, entry.unDurableBytes());
+            assertEquals("no drain write", 0, delegate.fileWriteCount);
+            assertEquals("no drain fsync", 0, delegate.fileFsyncCount);
+
+            // One byte past the cap is rejected outright rather than drained to make room.
+            try {
+                boundedTcf.write(writer, bufOf(new byte[1])).get(5, TimeUnit.SECONDS);
+                fail("expected CacheFileTooLargeException");
+            } catch (Exception e) {
+                assertTrue(e instanceof CacheFileTooLargeException
+                        || e.getCause() instanceof CacheFileTooLargeException);
+            }
+            assertEquals(4 * CHUNK_SIZE, entry.cacheEndOffset);
+            assertEquals(0, delegate.fileWriteCount);
+            assertEquals(0, delegate.fileFsyncCount);
+        } finally {
+            boundedTcf.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    public void testNoFsWriteSkipsUndurableDrain() throws Exception {
+        // Under NO_FS the backing FS is off limits, so the guard must not try to drain; unbounded
+        // growth is the documented trade-off of that mode.
+        TailCacheFileSystem noFsBounded = newTcf(boundedUndurableConfig()
+                .setBackingFsMode(TailCacheFileSystemConfig.BackingFsMode.NO_FS));
+        String p = path("undurable_limit_nofs");
+        AsyncFile writer = noFsBounded.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();
+        try {
+            FileCacheEntry entry = writer.getCacheEntry();
+            delegate.reset();
+            for (int i = 0; i < 8; i++) {
+                noFsBounded.write(writer, bufOf(new byte[(int) CHUNK_SIZE])).get(5, TimeUnit.SECONDS);
+            }
+            awaitAll();
+
+            assertEquals(8 * CHUNK_SIZE, entry.cacheEndOffset);
+            assertEquals("well past the per-file budget, and that is fine here",
+                    8 * CHUNK_SIZE, entry.unDurableBytes());
+            assertEquals("no drain attempt", 0, delegate.fileWriteCount);
+            assertEquals(0, delegate.fileFsyncCount);
+            assertFalse(Files.exists(Paths.get(p)));
+        } finally {
+            noFsBounded.close(writer).get(5, TimeUnit.SECONDS);
+        }
+    }
+
     @Test
     public void testAtomicPreferTmpRejectedUnlessReadOpen() {
         String p = path("prefer_tmp_write_rejected");

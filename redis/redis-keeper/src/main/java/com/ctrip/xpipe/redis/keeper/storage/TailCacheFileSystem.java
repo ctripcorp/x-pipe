@@ -399,7 +399,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (lastAppendNanos > threshold) return;
 
         // Check durableFsOffset > first chunk end
-        long durableFsOffset = entry.writtenToFsOffset - entry.pendingFsyncBytes;
+        long durableFsOffset = entry.durableFsOffset();
         long firstChunkEnd = (entry.cacheStartOffset / chunkSize + 1) * chunkSize;
         if (durableFsOffset <= firstChunkEnd) return;
 
@@ -1694,6 +1694,18 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
         }
 
+        // prevent cache from growing too large
+        if (useCache && !noFs && file.cacheMode == CacheMode.TAIL_CACHE
+                && entry.unDurableBytes() > maxCacheSizePerFileBytes) {
+            try {
+                prepareBackingFsForWrite(file, true, restoreBackingFs);
+                flushPendingWriteAndAwait(file, fsWrite, fsFsync, true);
+            } catch (RuntimeException e) {
+                data.release();
+                throw e;
+            }
+        }
+
         if (useCache) {
             try {
                 initCacheAndAppend.run();
@@ -1709,41 +1721,21 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         }
         file.lastModified = System.currentTimeMillis();
         if (!noFs) {
-            boolean prepareFailed = false;
-            Exception prepareError = null;
+            final boolean requirePrepare = !useCache || file.isAtomicReplace() || entry.fsInconsistent;
             try {
-                if (hasInFlightIo(id)) {
-                    if (!useCache || file.isAtomicReplace() || entry.fsInconsistent) {
-                        awaitInFlightIo(id, file.path, false);
-                    } else {
-                        data.release();
-                        return CompletableFuture.completedFuture(writeSize);
-                    }
-                }
-                if (!restoreBackingFs.get()) {
-                    prepareFailed = true;
-                }
-            } catch (Exception e) {
-                prepareFailed = true;
-                prepareError = e;
-            }
-            if (prepareFailed) {
-                data.release();
-                if (useCache && !file.isAtomicReplace()) {
-                    if (prepareError != null) {
-                        logger.warn("failed to prepare backing FS for {}, data remains in cache", file.path, prepareError);
-                    } else {
-                        logger.warn("failed to prepare backing FS for {}, data remains in cache", file.path);
-                    }
+                if (!prepareBackingFsForWrite(file, requirePrepare, restoreBackingFs)) {
+                    data.release();
                     return CompletableFuture.completedFuture(writeSize);
                 }
-                if (prepareError != null) {
-                    if (prepareError instanceof OperationNotExecutedException) {
-                        throw (OperationNotExecutedException) prepareError;
-                    }
-                    throw new OperationNotExecutedException(file.path, prepareError);
+            } catch (RuntimeException e) {
+                data.release();
+                // A cached append does not require the backing FS to be reachable: keep the data in
+                // cache and report success. Everything else has to surface the failure.
+                if (useCache && !file.isAtomicReplace()) {
+                    logger.warn("failed to prepare backing FS for {}, data remains in cache", file.path, e);
+                    return CompletableFuture.completedFuture(writeSize);
                 }
-                throw new OperationNotExecutedException(file.path);
+                throw e;
             }
 
             if (!useCache && entry != null && entry.isInitialized()) {
@@ -1755,6 +1747,9 @@ public class TailCacheFileSystem implements AsyncFileSystem {
                 }
                 entry.reset();
             }
+        } else {
+            data.release();
+            return CompletableFuture.completedFuture(writeSize);
         }
 
         final ByteBuf writeBuf;
@@ -1792,7 +1787,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             }
             atomicIoGen = 0;
         }
-        if (!writeBuf.isReadable() || noFs) {
+        if (!writeBuf.isReadable()) {
             writeBuf.release();
             return CompletableFuture.completedFuture(writeSize);
         }
@@ -1824,6 +1819,41 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return ioFuture;
         }
         return CompletableFuture.completedFuture(writeSize);
+    }
+
+    /**
+     * Makes the backing FS touchable for a write: awaits outstanding IO, then repairs FS consistency
+     *
+     * @param requirePrepare whether the prepare has to happen even if IO is already in flight. When
+     *        false, an in-flight IO short-circuits the whole thing and this returns false.
+     * @return true once the backing FS is ready, false only for the short-circuit above.
+     * @throws OperationNotExecutedException if the backing FS could not be prepared, including when
+     *         the wait timed out.
+     */
+    private boolean prepareBackingFsForWrite(AbstractStorageFile file, boolean requirePrepare,
+            java.util.function.Supplier<Boolean> restoreBackingFs) {
+        final String id = file.ioKey;
+        Exception error = null;
+        try {
+            if (hasInFlightIo(id)) {
+                if (!requirePrepare) {
+                    return false;
+                }
+                awaitInFlightIo(id, file.path, false);
+            }
+            if (restoreBackingFs.get()) {
+                return true;
+            }
+        } catch (Exception e) {
+            error = e;
+        }
+        if (error instanceof OperationNotExecutedException) {
+            throw (OperationNotExecutedException) error;
+        }
+        if (error != null) {
+            throw new OperationNotExecutedException(file.path, error);
+        }
+        throw new OperationNotExecutedException(file.path);
     }
 
     private boolean useCache(AbstractStorageFile file, boolean noCache) {
@@ -1970,7 +2000,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
         if (maxEvictable <= 0) return;
         Pair<Integer, Long> decision = decideEvictionPolicy(fileKey, maxEvictable, newChunks);
         long minEvict = decision.getKey();
-        long durableFsOffset = Math.max(0, entry.writtenToFsOffset - entry.pendingFsyncBytes);
+        long durableFsOffset = entry.durableFsOffset();
         long expireBeforeNanos = nowNanos - TimeUnit.MILLISECONDS.toNanos(decision.getValue());
         int evicted = 0;
         long index = entry.cacheStartOffset / chunkSize;

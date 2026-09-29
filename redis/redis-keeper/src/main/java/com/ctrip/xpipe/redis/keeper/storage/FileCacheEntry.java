@@ -177,6 +177,17 @@ class FileCacheEntry {
         return pendingFsyncBytes > 0;
     }
 
+    long durableFsOffset() {
+        return Math.max(0, writtenToFsOffset - pendingFsyncBytes);
+    }
+
+    long unDurableBytes() {
+        if (!isInitialized()) {
+            return 0;
+        }
+        return Math.max(0, cacheEndOffset - durableFsOffset());
+    }
+
     void appendToChunkedCache(ByteBuf data, long nowNanos, long chunkSize) {
         long chunkIdx = cacheEndOffset / chunkSize;
         int inChunk = (int) (cacheEndOffset % chunkSize);
