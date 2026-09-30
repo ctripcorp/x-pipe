@@ -15,6 +15,10 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * <b>按 {@link HostPort} 查找的方法，入参是 meta 地址</b>：redis 与物理机 keeper 为 {@code IP:port}，
+ * 容器 keeper 为 {@code hostname:port}，不接受容器的网络 IP。持有网络地址的调用方需先自行翻译
+ * （如 console 的 {@code DefaultProxyChainAnalyzer} 经 {@code CrossDcKeeperContainerAddressService.findHostnamesByIp}）。
+ *
  * @author wenchao.meng
  *         <p>
  *         Mar 31, 2017
@@ -27,14 +31,28 @@ public interface MetaCache {
 
     XpipeMeta getDividedXpipeMeta(int partIndex);
 
+    /**
+     * @param hostPort meta 地址（容器 keeper 为 {@code hostname:port}，见类注释）
+     * @return 未命中返回 null
+     */
     XpipeMetaManager.MetaDesc findMetaDesc(HostPort hostPort);
 
     String getXmlFormatDividedXpipeMeta(int partIndex);
 
+    /**
+     * @param hostPort meta 地址（容器 keeper 为 {@code hostname:port}，见类注释）
+     */
     boolean inBackupDc(HostPort hostPort);
 
+    /**
+     * @param hostPort meta 地址（容器 keeper 为 {@code hostname:port}，见类注释）
+     */
     HostPort findMasterInSameShard(HostPort hostPort);
 
+    /**
+     * @param hostPort meta 地址（容器 keeper 为 {@code hostname:port}，见类注释）
+     * @return {@code (cluster, shard)}；未命中返回 null
+     */
     Pair<String, String> findClusterShard(HostPort hostPort);
 
     String getSentinelMonitorName(String clusterId, String shardId);
@@ -61,6 +79,9 @@ public interface MetaCache {
 
     Map<String, List<RedisMeta>> getAllInstance(String cluster);
 
+    /**
+     * @param hostPort meta 地址（容器 keeper 为 {@code hostname:port}，见类注释）
+     */
     String getDc(HostPort hostPort);
 
     String getDcByIpAndClusterShard(String hostIp, Pair<String, String> clusterShard);
@@ -86,8 +107,14 @@ public interface MetaCache {
 
     String getActiveDc(String clusterId);
 
+    /**
+     * @param hostPort meta 地址（容器 keeper 为 {@code hostname:port}，见类注释）
+     */
     String getActiveDc(HostPort hostPort);
 
+    /**
+     * @param hostPort meta 地址（容器 keeper 为 {@code hostname:port}，见类注释）
+     */
     ClusterType getAzGroupType(HostPort hostPort);
 
     long getLastUpdateTime();
@@ -96,6 +123,10 @@ public interface MetaCache {
 
     ClusterType getClusterType(String clusterId);
 
+    /**
+     * @param src 链路源端网络地址（端口为随机端口）
+     * @param dst 链路目的端 meta 地址（容器 keeper 为 {@code hostname:port}，见类注释）
+     */
     boolean isMetaChain(HostPort src, HostPort dst);
 
     Map<Long, String> dcShardIds(String clusterId, String dcId);
