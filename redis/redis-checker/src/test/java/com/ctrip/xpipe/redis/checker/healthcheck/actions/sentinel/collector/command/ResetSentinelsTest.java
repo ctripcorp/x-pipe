@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.command;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
@@ -29,6 +30,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 
 import static org.mockito.Mockito.*;
@@ -55,11 +57,14 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
     @Mock
     private CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService;
 
+    @Mock
+    private EventMonitor eventMonitor;
+
     @Before
     public void init() throws Exception {
         resetSentinels = new ResetSentinels(new SentinelHelloCollectContext(), metaCache,
                 keyedObjectPool, scheduled, resetExecutor, sentinelManager, checkerConfig, currentDcKeeperContainerAddressService);
-        resetSentinels.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()).setScheduled(scheduled);
+        resetSentinels.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()).setScheduled(scheduled).setEventMonitor(eventMonitor);
     }
 
     @After
@@ -606,7 +611,8 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
             Assert.fail();
         }
 
-        verify(metaCache, times(5)).getKeeperOfDcClusterShard(anyString(),anyString(),anyString());
+        // 分片 keeper 每轮只解析一次，不随 sentinel 数量增加
+        verify(metaCache, times(1)).getKeeperOfDcClusterShard(anyString(),anyString(),anyString());
         verify(sentinelManager, times(5)).slaves(any(), anyString());
         verify(sentinelManager, never()).reset(any(), anyString());
     }
@@ -745,7 +751,8 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
             Assert.assertTrue(th.getCause().getCause().getMessage().contains("lost slaves"));
         }
 
-        verify(metaCache, times(5)).getKeeperOfDcClusterShard(anyString(),anyString(),anyString());
+        // 分片 keeper 每轮只解析一次，不随 sentinel 数量增加
+        verify(metaCache, times(1)).getKeeperOfDcClusterShard(anyString(),anyString(),anyString());
         verify(sentinelManager, times(5)).slaves(any(), anyString());
         verify(sentinelManager, never()).reset(any(), anyString());
 
@@ -870,7 +877,8 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
             Assert.assertTrue(th.getCause().getCause().getMessage().contains("info replication master"));
         }
 
-        verify(metaCache, times(5)).getKeeperOfDcClusterShard(anyString(),anyString(),anyString());
+        // 分片 keeper 每轮只解析一次，不随 sentinel 数量增加
+        verify(metaCache, times(1)).getKeeperOfDcClusterShard(anyString(),anyString(),anyString());
         verify(sentinelManager, times(5)).slaves(any(), anyString());
         verify(sentinelManager, never()).reset(any(), anyString());
     }
@@ -1937,6 +1945,84 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
 
         verify(sentinelManager, times(1)).reset(any(), any());
         master.stop();
+    }
+
+    private static final String KEEPER_HOSTNAME = "kc-pod-1";
+
+    @Test
+    public void containerKeeperUnresolvedSkipsResetAndAlerts() throws Exception {
+        // 容器 keeper 与 master 断开：sentinel 仍记着它，master slave 列表里没有它
+        prepareContainerKeeperRound();
+        when(currentDcKeeperContainerAddressService.getIpByHostname(KEEPER_HOSTNAME)).thenReturn(null);
+
+        try {
+            resetSentinels.checkResetCommands().execute().get(5000, TimeUnit.MILLISECONDS);
+            Assert.fail("chain should stop when keeper ip unresolved");
+        } catch (ExecutionException e) {
+            // 链路异常被 CommandChainException 包装，按消息确认停在 keeper 解析
+            Assert.assertTrue(String.valueOf(e.getCause()), String.valueOf(e.getCause().getMessage()).contains("keeper container ip unresolved"));
+        }
+
+        verify(eventMonitor, times(1)).logAlertEvent(ResetSentinels.ALERT_SENTINEL_RESET_KEEPER_UNRESOLVED);
+        verify(sentinelManager, never()).reset(any(), any());
+    }
+
+    @Test
+    public void containerKeeperResolvedIsTreatedAsKeeper() throws Exception {
+        prepareContainerKeeperRound();
+        when(currentDcKeeperContainerAddressService.getIpByHostname(KEEPER_HOSTNAME)).thenReturn(LOCAL_HOST);
+
+        // 解析后按 IP 认出 keeper，不产生 invalid slave，不走 checkMaster（master 端口无监听，若走到会失败）
+        try {
+            resetSentinels.checkResetCommands().execute().get(5000, TimeUnit.MILLISECONDS);
+        } catch (Throwable th) {
+            Assert.fail("unexpected failure: " + th);
+        }
+
+        verify(eventMonitor, never()).logAlertEvent(anyString());
+        verify(sentinelManager, never()).reset(any(), any());
+    }
+
+    /** 3 个 sentinel 均汇报 slave [6380, 容器 keeper 8000]；meta 中 8000 为容器 keeper，master 端口无监听 */
+    private void prepareContainerKeeperRound() throws Exception {
+        RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
+        when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(3, 2));
+
+        KeeperMeta containerKeeper = keeperMeta("0.0.0.0", 8000);
+        containerKeeper.setHostname(KEEPER_HOSTNAME);
+        when(metaCache.getKeeperOfDcClusterShard(anyString(), anyString(), anyString())).thenReturn(Lists.newArrayList(containerKeeper));
+
+        HostPort master = new HostPort(LOCAL_HOST, randomPort());
+        Set<SentinelHello> hellos = new HashSet<>();
+        for (int port = 5000; port < 5003; port++) {
+            SentinelHello hello = new SentinelHello(new HostPort(LOCAL_HOST, port), master, "cluster+shard+activeDc");
+            Sentinel sentinel = new Sentinel(hello.getSentinelAddr().toString(), LOCAL_HOST, port);
+            when(sentinelManager.slaves(sentinel, hello.getMonitorName()))
+                    .thenReturn(slavesCommand(new HostPort(LOCAL_HOST, 6380), new HostPort(LOCAL_HOST, 8000)));
+            hellos.add(hello);
+        }
+
+        resetSentinels.setContext(new SentinelHelloCollectContext().setToCheckReset(hellos).setSentinelMonitorName("cluster+shard+activeDc")
+                .setInfo(instance.getCheckInfo()).setTrueMasterInfo(new Pair<>(master, new ArrayList<>()))
+                .setShardInstances(Lists.newArrayList(master, new HostPort(LOCAL_HOST, 6380))));
+    }
+
+    private AbstractCommand<List<HostPort>> slavesCommand(HostPort... slaves) {
+        return new AbstractCommand<List<HostPort>>() {
+            @Override
+            protected void doExecute() {
+                future().setSuccess(Lists.newArrayList(slaves));
+            }
+
+            @Override
+            protected void doReset() {
+            }
+
+            @Override
+            public String getName() {
+                return "slaves";
+            }
+        };
     }
 
 }

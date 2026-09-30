@@ -846,13 +846,18 @@ public class KeeperContainerServiceImpl extends AbstractConsoleService<Keepercon
     return findContainer(hostname, ip, port) != null;
   }
 
+  /**
+   * 双轨健康探测：物理机用登记 IP 探测；容器经地址服务反查 IP 后探测，反查不到抛出。
+   * 物理机分支不判空，空 IP 由探测失败返回 unhealthy。
+   */
   protected boolean keeperContainerIsHealthy(String hostname, String ip, int port, String dcName) {
     String kcIp = ip;
     if (!StringUtil.isEmpty(hostname)) {
       kcIp = keeperContainerAddressService.getIpByHostname(dcName, hostname);
-    }
-    if (!StringUtil.isEmpty(kcIp)) {
-      throw new XpipeRuntimeException("keeper container ip of hostname: " + hostname + " not found");
+      if (StringUtil.isEmpty(kcIp)) {
+        throw new XpipeRuntimeException(String.format("keeper container ip of hostname: %s in dc: %s not found",
+                hostname, dcName));
+      }
     }
     return checkIpAndPort(kcIp, port);
   }

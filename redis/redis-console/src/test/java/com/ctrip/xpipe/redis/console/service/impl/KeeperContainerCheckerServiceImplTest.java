@@ -321,7 +321,7 @@ public class KeeperContainerCheckerServiceImplTest extends AbstractServiceImplTe
         try {
             keeperContainerService.updateKeeperContainerByInfoModel(keeper);
         } catch (Throwable th) {
-            Assert.assertEquals("Keeper container with IP: 128.0.0.1 does not exists", th.getMessage());
+            Assert.assertEquals("Keeper container with IP: 128.0.0.1 does not exist", th.getMessage());
         }
     }
 
