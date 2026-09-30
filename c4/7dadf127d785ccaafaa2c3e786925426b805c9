@@ -1,0 +1,19 @@
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/KeeperSingleDcRestart.java
+  s_f27d758b6af3c9::t_8c7903e795b608 27-29,58-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "c47dadf127d785ccaafaa2c3e786925426b805c9",
+  "prompts": {},
+  "sessions": {
+    "s_f27d758b6af3c9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fbfea91a-0cb7-4e0c-ba5b-07f5b34f5156",
+        "model": "deepseek/deepseek-flash"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
