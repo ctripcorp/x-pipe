@@ -182,6 +182,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public long getKeeperContainerAddressRefreshIntervalMilli() {
+        return consoleConfigBean.getKeeperContainerAddressRefreshIntervalMilli();
+    }
+
+    @Override
     public Set<String> getAlertWhileList() {
         return commonConfigBean.getAlertWhileList();
     }

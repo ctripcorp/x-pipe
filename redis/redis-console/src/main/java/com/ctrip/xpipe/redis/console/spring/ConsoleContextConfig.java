@@ -187,11 +187,6 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	}
 
 	@Bean
-	public KeeperContainerCheckerService keeperContainerService() {
-		return new DefaultKeeperContainerService();
-	}
-
-	@Bean
 	@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
 	public MetaSynchronizer metaSynchronizer(ConsoleConfig consoleConfig, ConsoleLeaderElector leaderElector,
 											 MetaCache metaCache, RedisService redisService, ShardService shardService,

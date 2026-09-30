@@ -53,6 +53,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	int getAzGroupCacheRefreshInterval();
 
+	long getKeeperContainerAddressRefreshIntervalMilli();
+
 	Set<String> getAlertWhileList();
 
 	int getQuorum();
