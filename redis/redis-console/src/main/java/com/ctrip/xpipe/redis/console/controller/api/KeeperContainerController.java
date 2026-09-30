@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -145,6 +146,15 @@ public class KeeperContainerController extends AbstractConsoleController{
     @RequestMapping(value = "/keepercontainer/address/all", method = RequestMethod.GET)
     public Map<String, String> getAllKeeperContainerHostnameToIpMap() {
         return keeperContainerAddressService.getAllHostnameToIp();
+    }
+
+    /**
+     * 本机房地址快照（存活正向 / tombstone + 剩余毫秒 / 存活反向），供远端机房 console 周期拉取（spec §8.3）。
+     * 字面路径优先于 {@code /address/{hostname}} 匹配。只读内存；每个远端 console 实例每个周期调一次，不打入口日志。
+     */
+    @RequestMapping(value = "/keepercontainer/address/snapshot", method = RequestMethod.GET)
+    public KeeperContainerAddressSnapshot getKeeperContainerAddressSnapshot() {
+        return keeperContainerAddressService.getAddressSnapshot();
     }
 
 }

@@ -24,6 +24,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHeal
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
 import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -423,6 +424,20 @@ public class ConsoleServiceManager implements RemoteCheckerManager {
             return Collections.emptyMap();
         }
         return service.getAllKeeperContainerHostnameToIp();
+    }
+
+    /**
+     * 拉取指定机房 console 的 keepercontainer 地址快照（spec §8.3）。
+     * <p>
+     * 返回非 null 或抛异常：未知机房、HTTP 失败、响应体为空都抛出，不返回空快照。
+     * 调用方据此区分「拉取失败，保留上一份」与「远端确实没有容器」（spec §8.2 D-J2）。
+     */
+    public KeeperContainerAddressSnapshot getKeeperContainerAddressSnapshot(String dcId) {
+        KeeperContainerAddressSnapshot snapshot = getServiceByDc(dcId).getKeeperContainerAddressSnapshot();
+        if (null == snapshot) {
+            throw new XpipeRuntimeException("empty keepercontainer address snapshot from dc " + dcId);
+        }
+        return snapshot;
     }
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();

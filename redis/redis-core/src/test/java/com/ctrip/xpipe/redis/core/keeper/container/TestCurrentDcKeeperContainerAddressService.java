@@ -49,4 +49,12 @@ public class TestCurrentDcKeeperContainerAddressService extends AbstractLifecycl
                 .min(String::compareTo)
                 .orElse(null);
     }
+
+    /** 不含 tombstone；反向与 {@link #getHostnameByIp} 同一规则。 */
+    @Override
+    public KeeperContainerAddressSnapshot getAddressSnapshot() {
+        Map<String, String> ipToHostname = new HashMap<>();
+        hostnameToIp.forEach((hostname, ip) -> ipToHostname.merge(ip, hostname, (a, b) -> a.compareTo(b) <= 0 ? a : b));
+        return new KeeperContainerAddressSnapshot(new HashMap<>(hostnameToIp), new HashMap<>(), ipToHostname);
+    }
 }

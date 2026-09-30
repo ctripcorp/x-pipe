@@ -359,6 +359,83 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
     }
 
     /**
+     * 导出快照与逐个查询一致（spec §8.3）：正向只含首节点；tombstone 单列、不进存活正向；
+     * 反向覆盖次节点 IP、不含 tombstone IP；存活 ∪ tombstone 等于批量正向。
+     */
+    @Test
+    public void testAddressSnapshotMatchesLookups() throws Exception {
+        long retention = TimeUnit.MINUTES.toMillis(10);
+        ClockedAddressService clocked = startClocked(retention);
+        register(POD_A, "10.0.0.5");
+        register(POD_A, "10.0.0.9");
+        register(POD_B, "10.0.0.6");
+        waitConditionUntilTimeOut(() -> POD_A.equals(clocked.getHostnameByIp("10.0.0.9"))
+                && POD_B.equals(clocked.getHostnameByIp("10.0.0.6")), 3000);
+
+        delete(POD_B);
+        waitConditionUntilTimeOut(() -> null == clocked.getHostnameByIp("10.0.0.6"), 3000);
+
+        KeeperContainerAddressSnapshot exported = clocked.getAddressSnapshot();
+        Assert.assertEquals(Collections.singletonMap(POD_A, "10.0.0.5"), exported.getLiveHostnameToIp());
+        Assert.assertEquals("时钟冻结，剩余保留期等于完整保留期",
+                Collections.singletonMap(POD_B, new KeeperContainerAddressSnapshot.TombstoneEntry("10.0.0.6", retention)),
+                exported.getTombstones());
+        Map<String, String> expectedReverse = new HashMap<>();
+        expectedReverse.put("10.0.0.5", POD_A);
+        expectedReverse.put("10.0.0.9", POD_A);
+        Assert.assertEquals("反向覆盖次节点、不含 tombstone IP", expectedReverse, exported.getLiveIpToHostname());
+
+        exported.getLiveHostnameToIp().forEach((hostname, ip) -> Assert.assertEquals(ip, clocked.getIpByHostname(hostname)));
+        exported.getTombstones().forEach((hostname, tombstone) ->
+                Assert.assertEquals(tombstone.getIp(), clocked.getIpByHostname(hostname)));
+        exported.getLiveIpToHostname().forEach((ip, hostname) -> Assert.assertEquals(hostname, clocked.getHostnameByIp(ip)));
+        Map<String, String> merged = new HashMap<>(exported.getLiveHostnameToIp());
+        exported.getTombstones().forEach((hostname, tombstone) -> merged.put(hostname, tombstone.getIp()));
+        Assert.assertEquals(clocked.getAllHostnameToIp(), merged);
+
+        // 导出的是副本，改动不影响内部状态
+        exported.getLiveHostnameToIp().clear();
+        exported.getLiveIpToHostname().clear();
+        Assert.assertEquals("10.0.0.5", clocked.getIpByHostname(POD_A));
+        Assert.assertEquals(POD_A, clocked.getHostnameByIp("10.0.0.9"));
+    }
+
+    /**
+     * 剩余毫秒随时钟递减、向下取整；不足 1ms 时本地仍可见但不导出（接收方不会延长保留期）；到期后两边都不可见。
+     */
+    @Test
+    public void testAddressSnapshotTombstoneRemainingMillis() throws Exception {
+        long retention = TimeUnit.MINUTES.toMillis(10);
+        ClockedAddressService clocked = startClocked(retention);
+        register(POD_A, "10.0.0.5");
+        waitConditionUntilTimeOut(() -> POD_A.equals(clocked.getHostnameByIp("10.0.0.5")), 3000);
+        delete(POD_A);
+        waitConditionUntilTimeOut(() -> null == clocked.getHostnameByIp("10.0.0.5"), 3000);
+
+        long elapsed = TimeUnit.MINUTES.toMillis(3);
+        clocked.advanceMillis(elapsed);
+        Assert.assertEquals(retention - elapsed, exportedRemainingMillis(clocked, POD_A));
+
+        clocked.advanceMillis(retention - elapsed - 1);
+        Assert.assertEquals(1L, exportedRemainingMillis(clocked, POD_A));
+
+        clocked.advanceNanos(TimeUnit.MICROSECONDS.toNanos(500));
+        Assert.assertEquals("剩 0.5ms，本地仍未到期", "10.0.0.5", clocked.getIpByHostname(POD_A));
+        Assert.assertTrue("不足 1ms 不导出", clocked.getAddressSnapshot().getTombstones().isEmpty());
+
+        clocked.advanceNanos(TimeUnit.MICROSECONDS.toNanos(500));
+        Assert.assertNull(clocked.getIpByHostname(POD_A));
+        Assert.assertTrue("到期后 rebuild 前也不导出", clocked.getAddressSnapshot().getTombstones().isEmpty());
+        Assert.assertEquals("rebuild 前到期项仍在内部快照里", Collections.singleton(POD_A), clocked.tombstoneHostnames());
+    }
+
+    private long exportedRemainingMillis(DefaultCurrentDcKeeperContainerAddressService target, String hostname) {
+        KeeperContainerAddressSnapshot.TombstoneEntry tombstone = target.getAddressSnapshot().getTombstones().get(hostname);
+        Assert.assertNotNull("tombstone 应被导出: " + hostname, tombstone);
+        return tombstone.getRemainingMillis();
+    }
+
+    /**
      * hostname 恢复存活后丢弃 tombstone：之后即使过了原保留期，也按存活映射解析。
      */
     @Test
@@ -772,7 +849,11 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
         }
 
         private void advanceMillis(long millis) {
-            nowNanos.addAndGet(TimeUnit.MILLISECONDS.toNanos(millis));
+            advanceNanos(TimeUnit.MILLISECONDS.toNanos(millis));
+        }
+
+        private void advanceNanos(long nanos) {
+            nowNanos.addAndGet(nanos);
         }
 
         @Override

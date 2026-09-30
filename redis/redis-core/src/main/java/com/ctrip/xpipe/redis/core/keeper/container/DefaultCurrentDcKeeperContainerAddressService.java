@@ -236,6 +236,25 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
     }
 
     /**
+     * 从同一份 {@link AddressSnapshot} 导出，三部分互相一致。tombstone 的 nanoTime 到期时刻换算为剩余毫秒（向下取整），
+     * 已到期与不足 1ms 的不导出：接收方按剩余毫秒在本地到期，向下取整保证不会延长保留期。
+     */
+    @Override
+    public KeeperContainerAddressSnapshot getAddressSnapshot() {
+        AddressSnapshot current = snapshot;
+        long now = nowNanos();
+        Map<String, KeeperContainerAddressSnapshot.TombstoneEntry> tombstones = new HashMap<>();
+        current.tombstones().forEach((hostname, tombstone) -> {
+            long remainingMillis = tombstone.remainingMillis(now);
+            if (remainingMillis > 0) {
+                tombstones.put(hostname, new KeeperContainerAddressSnapshot.TombstoneEntry(tombstone.ip(), remainingMillis));
+            }
+        });
+        return new KeeperContainerAddressSnapshot(new HashMap<>(current.liveHostnameToIp()), tombstones,
+                new HashMap<>(current.liveIpToHostname()));
+    }
+
+    /**
      * 只投递，不在调用线程计算。池已关闭或尚未创建时直接返回。
      * <p>
      * 丢弃是否安全见 {@link #rebuildExecutor}：这里不能改成「提交时抓快照」。
@@ -456,6 +475,11 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
     private record Tombstone(String ip, long expireAtNanos) {
         boolean expired(long nowNanos) {
             return nowNanos - expireAtNanos >= 0;
+        }
+
+        /** 剩余保留毫秒，向下取整；已到期时 ≤ 0。 */
+        long remainingMillis(long nowNanos) {
+            return TimeUnit.NANOSECONDS.toMillis(expireAtNanos - nowNanos);
         }
     }
 

@@ -51,4 +51,15 @@ public interface CurrentDcKeeperContainerAddressService extends Lifecycle {
      * 无存活 pod 持有该 IP 时返回 null（不回落到 tombstone）
      */
     String getHostnameByIp(String ip);
+
+    /**
+     * 导出当前地址映射的完整快照，供远端机房 console 批量拉取（spec §8.3）
+     * <p>
+     * 三部分出自同一份内部快照：按快照里的规则查询（正向先存活后 tombstone、反向只认存活），
+     * 与在本机房逐个调 {@link #getIpByHostname} / {@link #getHostnameByIp} 结果一致。
+     * tombstone 只含未到期项，剩余保留期按毫秒向下取整，不足 1ms 的不导出。
+     *
+     * @return 新建的快照，与内部状态不共享 map
+     */
+    KeeperContainerAddressSnapshot getAddressSnapshot();
 }
