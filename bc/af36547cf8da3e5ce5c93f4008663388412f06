@@ -1,0 +1,27 @@
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdAction.java
+  s_9f61b3a8669d28::t_0e2ef4843d2c1c 45-64,77,80-81,85-92,94-99
+  s_9f61b3a8669d28::t_d745427b3b530b 11
+  s_9f61b3a8669d28::t_05c5d022dd9e6e 148-158
+  s_9f61b3a8669d28::t_f46cf3edfab5e0 93
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/inforeplid/InfoReplIdActionTest.java
+  s_9f61b3a8669d28::t_1507a1c4a3f159 27
+  s_9f61b3a8669d28::t_7b233b080d8072 286,288-305,307,310-311,313,315,318-339
+  s_9f61b3a8669d28::t_84a02f8dbfc3d0 233-240
+  s_9f61b3a8669d28::t_f421ba548ce229 287,306,308-309,312,314,316-317
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "bcaf36547cf8da3e5ce5c93f4008663388412f06",
+  "prompts": {},
+  "sessions": {
+    "s_9f61b3a8669d28": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "155ce38a-ac9f-4193-9a35-bffb46f89020",
+        "model": "ep-s52bpjk9"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
