@@ -1,0 +1,38 @@
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/KeeperContainerServiceImplHealthCheckTest.java
+  s_20e4fb4052140b::t_ccb699cf3ce003 1-106
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/KeeperContainerCheckerServiceImplTest.java
+  s_20e4fb4052140b::t_56e8e886e88bf1 324
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/KeeperContainerServiceImpl.java
+  s_20e4fb4052140b::t_0be2fa132411b4 864-867,872-875
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/collector/command/ResetSentinels.java
+  s_20e4fb4052140b::t_52b64e087d72f5 25
+  s_20e4fb4052140b::t_0c7f73aab9d41f 49-54
+  s_20e4fb4052140b::t_463a12de6571a3 357-363,367-370,372-377,379,381-393
+  s_20e4fb4052140b::t_f0a62658573a4a 5
+  s_20e4fb4052140b::t_85b19939f326da 507-512
+  s_20e4fb4052140b::t_ee48c5b9fe0f81 243-244,246-251,253-254
+  s_20e4fb4052140b::t_fd14b62ee73e3c 255-268
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/collector/command/ResetSentinelsTest.java
+  s_20e4fb4052140b::t_b426c191c296eb 614-615,754-755,880-881
+  s_20e4fb4052140b::t_dc6e7f4d35bdc1 1962-1963
+  s_20e4fb4052140b::t_bd54d99d692e2d 33
+  s_20e4fb4052140b::t_ca4aaa5f16bba1 60-62,67
+  s_20e4fb4052140b::t_42c55de8ae7cdc 3
+  s_20e4fb4052140b::t_5499bce9daef28 1950-1961,1964-2027
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "df4274cba8d89c62481eb4215c990f3c14f9dcad",
+  "prompts": {},
+  "sessions": {
+    "s_20e4fb4052140b": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_18b19a63-aab3-4674-84b4-3b5a6644186f",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
