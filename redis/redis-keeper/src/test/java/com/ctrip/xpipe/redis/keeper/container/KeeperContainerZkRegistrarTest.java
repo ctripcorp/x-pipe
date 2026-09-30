@@ -166,7 +166,10 @@ public class KeeperContainerZkRegistrarTest extends AbstractTest {
 
         b.stop();
         waitConditionUntilTimeOut(() -> latchChildren().isEmpty(), 3000);
-        waitConditionUntilTimeOut(() -> null == consumer.getIpByHostname(HOSTNAME), 3000);
+        // 存活判定看反向：两个 pod 都退出后 IP 不再归属；正向保留 last-known IP（tombstone，spec §5.7）
+        waitConditionUntilTimeOut(() -> null == consumer.getHostnameByIp(IP_B), 3000);
+        Assert.assertNull(consumer.getHostnameByIp(IP_A));
+        Assert.assertEquals(IP_B, consumer.getIpByHostname(HOSTNAME));
     }
 
     /**

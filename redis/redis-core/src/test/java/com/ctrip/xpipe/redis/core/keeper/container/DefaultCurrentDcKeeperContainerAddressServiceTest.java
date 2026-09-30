@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractTest {
 
@@ -37,6 +38,8 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
     private DefaultCurrentDcKeeperContainerAddressService service;
     /** hostname -> 最近一次 register 创建的 latch 子节点路径，供 setData / delete 定位。 */
     private final Map<String, String> latchPaths = new HashMap<>();
+    /** 可拨时钟的实例，由 {@link #startClocked} 创建、@After 关闭。 */
+    private ClockedAddressService clocked;
 
     @Before
     public void beforeDefaultCurrentDcKeeperContainerAddressServiceTest() throws Exception {
@@ -53,6 +56,9 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
     @After
     public void afterDefaultCurrentDcKeeperContainerAddressServiceTest() throws Exception {
         try {
+            if (clocked != null) {
+                clocked.stop();
+            }
             service.stop();
             zkClient.stop();
         } finally {
@@ -87,26 +93,31 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
     @Test
     public void testPodRecreateKeepsHostnameAndSwitchesIp() throws Exception {
         register(POD_A, "10.0.0.5");
-        waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A)), 3000);
+        waitConditionUntilTimeOut(() -> POD_A.equals(service.getHostnameByIp("10.0.0.5")), 3000);
 
         delete(POD_A);
-        // 节点消失到新节点建立之间存在窗口，此时解析不到是正确行为：
-        // 宁可让调用方拿到 null 走拒绝路径，也不能返回已失效的旧 IP
-        waitConditionUntilTimeOut(() -> null == service.getIpByHostname(POD_A), 3000);
+        // 节点消失到新节点建立之间：正向由 tombstone 给出 last-known IP，误发命令由容器端 hostname 校验挡住；
+        // 反向只认存活节点，旧 IP 立即失去归属
+        waitConditionUntilTimeOut(() -> null == service.getHostnameByIp("10.0.0.5"), 3000);
+        Assert.assertEquals("10.0.0.5", service.getIpByHostname(POD_A));
 
         register(POD_A, "10.0.0.9");
         waitConditionUntilTimeOut(() -> "10.0.0.9".equals(service.getIpByHostname(POD_A)), 3000);
+        Assert.assertEquals(POD_A, service.getHostnameByIp("10.0.0.9"));
+        Assert.assertTrue("hostname 恢复存活后 tombstone 应被丢弃", service.tombstoneHostnames().isEmpty());
     }
 
     @Test
     public void testNodeRemoved() throws Exception {
         register(POD_A, "10.0.0.5");
-        waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A)), 3000);
+        waitConditionUntilTimeOut(() -> POD_A.equals(service.getHostnameByIp("10.0.0.5")), 3000);
 
         delete(POD_A);
 
-        waitConditionUntilTimeOut(() -> null == service.getIpByHostname(POD_A), 3000);
-        // hostname 父节点是容器节点，要等 ZK 定期回收；它还在时也不能产生映射
+        waitConditionUntilTimeOut(() -> null == service.getHostnameByIp("10.0.0.5"), 3000);
+        Assert.assertEquals("失去存活映射后转为 tombstone", "10.0.0.5", service.getIpByHostname(POD_A));
+        Assert.assertEquals(Collections.singleton(POD_A), service.tombstoneHostnames());
+        // hostname 父节点是容器节点，要等 ZK 定期回收；它还在时也不能产生存活映射
         Assert.assertNotNull(zkClient.get().checkExists().forPath(path(POD_A)));
     }
 
@@ -135,8 +146,10 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
 
         // 单个容器下线不影响其他容器
         delete(POD_A);
-        waitConditionUntilTimeOut(() -> null == service.getIpByHostname(POD_A), 3000);
+        waitConditionUntilTimeOut(() -> null == service.getHostnameByIp("10.0.0.5"), 3000);
         Assert.assertEquals("10.0.0.6", service.getIpByHostname(POD_B));
+        Assert.assertEquals(POD_B, service.getHostnameByIp("10.0.0.6"));
+        Assert.assertEquals(Collections.singleton(POD_A), service.tombstoneHostnames());
     }
 
     @Test
@@ -174,6 +187,10 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
         service.rebuild();
         Assert.assertNull(service.getIpByHostname(POD_A));
         Assert.assertEquals(Collections.singletonMap(POD_B, "10.0.0.6"), service.getAllHostnameToIp());
+        // 从未有过存活正向映射，不产生 tombstone
+        Assert.assertTrue(service.tombstoneHostnames().isEmpty());
+        // 反向覆盖全部存活子节点：次节点 data 完好，其 IP 仍归属 POD_A
+        Assert.assertEquals(POD_A, service.getHostnameByIp("10.0.0.9"));
     }
 
     /**
@@ -187,9 +204,14 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
         waitConditionUntilTimeOut(() -> latchNodesInSnapshot(service, POD_A) == 2, 3000);
         service.rebuild();
         Assert.assertEquals("取首节点，不因新 pod 注册而切换", "10.0.0.5", service.getIpByHostname(POD_A));
+        // 反向覆盖全部存活子节点，不止首节点
+        Assert.assertEquals(POD_A, service.getHostnameByIp("10.0.0.5"));
+        Assert.assertEquals(POD_A, service.getHostnameByIp("10.0.0.9"));
 
         zkClient.get().delete().forPath(first);
         waitConditionUntilTimeOut(() -> "10.0.0.9".equals(service.getIpByHostname(POD_A)), 3000);
+        Assert.assertNull("已消失 pod 的 IP 不再归属", service.getHostnameByIp("10.0.0.5"));
+        Assert.assertTrue("hostname 仍有存活映射，首节点换人不产生 tombstone", service.tombstoneHostnames().isEmpty());
     }
 
     /**
@@ -279,6 +301,115 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
 
         // 两个正向映射都应保留，误发命令由容器端 hostname 自校验拦下
         Assert.assertEquals("10.0.0.5", service.getIpByHostname(POD_A));
+        Assert.assertEquals("10.0.0.5", service.getIpByHostname(POD_B));
+    }
+
+    /**
+     * 同 IP 命中多个 hostname 时反向按 hostname 字典序取首，与注册先后无关。
+     */
+    @Test
+    public void testReverseLookupPicksSmallestHostnameWhenIpShared() throws Exception {
+        // 字典序大的先注册，确认结果不取决于注册顺序或遍历顺序
+        register(POD_B, "10.0.0.5");
+        register(POD_A, "10.0.0.5");
+
+        waitConditionUntilTimeOut(() -> "10.0.0.5".equals(service.getIpByHostname(POD_A))
+                && "10.0.0.5".equals(service.getIpByHostname(POD_B)), 3000);
+        Assert.assertEquals(POD_A, service.getHostnameByIp("10.0.0.5"));
+
+        delete(POD_A);
+        waitConditionUntilTimeOut(() -> POD_B.equals(service.getHostnameByIp("10.0.0.5")), 3000);
+
+        Assert.assertNull(service.getHostnameByIp("10.0.0.99"));
+        Assert.assertNull(service.getHostnameByIp(null));
+        Assert.assertNull(service.getHostnameByIp(""));
+    }
+
+    /**
+     * tombstone 到期精确失效：读路径按到期时间过滤，不依赖下一次 rebuild；rebuild 再把它清出快照。
+     * getAllHostnameToIp 与逐个 getIpByHostname 一致，保留期内包含 tombstone（T-I.27）。
+     */
+    @Test
+    public void testTombstoneExpiresAfterRetention() throws Exception {
+        long retention = TimeUnit.MINUTES.toMillis(10);
+        ClockedAddressService clocked = startClocked(retention);
+        register(POD_A, "10.0.0.5");
+        register(POD_B, "10.0.0.6");
+        waitConditionUntilTimeOut(() -> POD_A.equals(clocked.getHostnameByIp("10.0.0.5"))
+                && POD_B.equals(clocked.getHostnameByIp("10.0.0.6")), 3000);
+
+        delete(POD_A);
+        waitConditionUntilTimeOut(() -> null == clocked.getHostnameByIp("10.0.0.5"), 3000);
+        Map<String, String> expected = new HashMap<>();
+        expected.put(POD_A, "10.0.0.5");
+        expected.put(POD_B, "10.0.0.6");
+        Assert.assertEquals("保留期内批量结果含 tombstone", expected, clocked.getAllHostnameToIp());
+
+        clocked.advanceMillis(retention - 1);
+        Assert.assertEquals("10.0.0.5", clocked.getIpByHostname(POD_A));
+        clocked.rebuild();
+        Assert.assertEquals("未到期的 tombstone 不被 rebuild 清掉", Collections.singleton(POD_A), clocked.tombstoneHostnames());
+
+        clocked.advanceMillis(2);
+        Assert.assertNull("到期后读路径立即不可见", clocked.getIpByHostname(POD_A));
+        Assert.assertEquals(Collections.singletonMap(POD_B, "10.0.0.6"), clocked.getAllHostnameToIp());
+        clocked.rebuild();
+        Assert.assertTrue("到期后 rebuild 清出快照", clocked.tombstoneHostnames().isEmpty());
+        Assert.assertEquals("10.0.0.6", clocked.getIpByHostname(POD_B));
+    }
+
+    /**
+     * hostname 恢复存活后丢弃 tombstone：之后即使过了原保留期，也按存活映射解析。
+     */
+    @Test
+    public void testTombstoneDroppedWhenHostnameComesBack() throws Exception {
+        long retention = TimeUnit.MINUTES.toMillis(10);
+        ClockedAddressService clocked = startClocked(retention);
+        register(POD_A, "10.0.0.5");
+        waitConditionUntilTimeOut(() -> POD_A.equals(clocked.getHostnameByIp("10.0.0.5")), 3000);
+
+        delete(POD_A);
+        waitConditionUntilTimeOut(() -> null == clocked.getHostnameByIp("10.0.0.5"), 3000);
+        Assert.assertEquals(Collections.singleton(POD_A), clocked.tombstoneHostnames());
+
+        register(POD_A, "10.0.0.9");
+        waitConditionUntilTimeOut(() -> "10.0.0.9".equals(clocked.getIpByHostname(POD_A)), 3000);
+        Assert.assertTrue(clocked.tombstoneHostnames().isEmpty());
+
+        clocked.advanceMillis(retention * 2);
+        clocked.rebuild();
+        Assert.assertEquals("10.0.0.9", clocked.getIpByHostname(POD_A));
+    }
+
+    /**
+     * 首节点 data 变坏同样算失去存活映射：正向转为 tombstone 给出 last-known IP，反向不再认该 IP。
+     */
+    @Test
+    public void testUnparseableFirstLatchNodeAlsoLeavesTombstone() throws Exception {
+        register(POD_A, "10.0.0.5");
+        waitConditionUntilTimeOut(() -> POD_A.equals(service.getHostnameByIp("10.0.0.5")), 3000);
+
+        zkClient.get().setData().forPath(latchPaths.get(POD_A), "not-a-json".getBytes());
+        waitConditionUntilTimeOut(() -> null == service.getHostnameByIp("10.0.0.5"), 3000);
+        Assert.assertEquals("10.0.0.5", service.getIpByHostname(POD_A));
+        Assert.assertEquals(Collections.singleton(POD_A), service.tombstoneHostnames());
+    }
+
+    /**
+     * D-I3 残留风险的现状固定：保留期内 IP 被别的 pod 占用时，正向仍返回旧 hostname 的 tombstone IP（不做即刻失效），
+     * 反向只认存活节点，指向新的持有者。
+     */
+    @Test
+    public void testIpReusedDuringTombstone() throws Exception {
+        register(POD_A, "10.0.0.5");
+        waitConditionUntilTimeOut(() -> POD_A.equals(service.getHostnameByIp("10.0.0.5")), 3000);
+
+        delete(POD_A);
+        waitConditionUntilTimeOut(() -> null == service.getHostnameByIp("10.0.0.5"), 3000);
+
+        register(POD_B, "10.0.0.5");
+        waitConditionUntilTimeOut(() -> POD_B.equals(service.getHostnameByIp("10.0.0.5")), 3000);
+        Assert.assertEquals("tombstone 不因 IP 被复用而失效（D-I3）", "10.0.0.5", service.getIpByHostname(POD_A));
         Assert.assertEquals("10.0.0.5", service.getIpByHostname(POD_B));
     }
 
@@ -499,8 +630,10 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
 
         zkServer.restart();
         Assert.assertTrue("未重连", reconnected.await(30, TimeUnit.SECONDS));
-        // 旧 session 已过期，其临时节点由服务端清理；重连后 cache 复查已缓存路径并移除它
-        waitConditionUntilTimeOut(() -> null == service.getIpByHostname(POD_A), 30000);
+        // 旧 session 已过期，其临时节点由服务端清理；重连后 cache 复查已缓存路径并移除它。
+        // 存活映射随之消失，但 tombstone 兜住 pod 重新注册前的窗口（spec §5.7 附带收益）
+        waitConditionUntilTimeOut(() -> null == service.getHostnameByIp("10.0.0.5"), 30000);
+        Assert.assertEquals("10.0.0.5", service.getIpByHostname(POD_A));
 
         register(POD_A, "10.0.0.9");
         waitConditionUntilTimeOut(() -> "10.0.0.9".equals(service.getIpByHostname(POD_A)), 5000);
@@ -614,6 +747,37 @@ public class DefaultCurrentDcKeeperContainerAddressServiceTest extends AbstractT
             latch.close();
         } catch (Exception e) {
             logger.warn("[closeQuietly]{}", latch.getOurPath(), e);
+        }
+    }
+
+    private ClockedAddressService startClocked(long tombstoneRetentionMilli) throws Exception {
+        ClockedAddressService created = new ClockedAddressService(zkClient, tombstoneRetentionMilli);
+        created.initialize();
+        created.start();
+        clocked = created;
+        waitUntilInitialRebuildDone(created);
+        return created;
+    }
+
+    /**
+     * 时钟冻结、只随 {@link #advanceMillis} 前进，验证 tombstone 到期边界而不用真等，也不受用例实际耗时干扰。
+     * 定时周期拉得很长，rebuild 只由 watch 事件与用例手动触发。
+     */
+    private static final class ClockedAddressService extends DefaultCurrentDcKeeperContainerAddressService {
+
+        private final AtomicLong nowNanos = new AtomicLong(System.nanoTime());
+
+        private ClockedAddressService(ZkClient zkClient, long tombstoneRetentionMilli) {
+            super(zkClient, TimeUnit.MINUTES.toMillis(10), tombstoneRetentionMilli);
+        }
+
+        private void advanceMillis(long millis) {
+            nowNanos.addAndGet(TimeUnit.MILLISECONDS.toNanos(millis));
+        }
+
+        @Override
+        protected long nowNanos() {
+            return nowNanos.get();
         }
     }
 

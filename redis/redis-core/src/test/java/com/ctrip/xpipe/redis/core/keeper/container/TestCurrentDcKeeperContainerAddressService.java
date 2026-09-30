@@ -38,4 +38,15 @@ public class TestCurrentDcKeeperContainerAddressService extends AbstractLifecycl
     public Map<String, String> getAllHostnameToIp() {
         return new HashMap<>(hostnameToIp);
     }
+
+    /** 不模拟 tombstone：塞进来的映射都视为存活。同 IP 多 hostname 与生产实现一致，取字典序最小者。 */
+    @Override
+    public String getHostnameByIp(String ip) {
+        if (null == ip || ip.isEmpty()) return null;
+        return hostnameToIp.entrySet().stream()
+                .filter(entry -> ip.equals(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .min(String::compareTo)
+                .orElse(null);
+    }
 }
