@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.container;
 
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
+import com.ctrip.xpipe.cluster.LeaderLatchProbeStatus;
 import com.ctrip.xpipe.cluster.RebuildableLeaderLatch;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressInfo;
@@ -32,20 +33,32 @@ import com.ctrip.xpipe.zk.ZkClient;
  * pod 重建与进程重启，运行中不会变。
  * <p>
  * LeaderLatch 没有定时器兜底，回调遇到未处理的返回码会停摆（spec §5.6 的 A/B/C/D），
- * 所以只经 {@link RebuildableLeaderLatch} 持有，重建能力由它提供；断链探测在 Ig 接入。
+ * 所以只经 {@link RebuildableLeaderLatch} 持有，重建与断链探测都由它提供：节点丢失或不归属本 session
+ * 连续满 30s 即自动重建。运维入口（状态查询、手工重置）见 {@link KeeperContainerRegistrationController}。
  */
 public class KeeperContainerZkRegistrar extends AbstractLifecycle implements TopElement {
 
     private final ZkClient zkClient;
     private final String hostName;
     private final String ip;
+    private final long probeIntervalMilli;
+    private final long unhealthyThresholdMilli;
 
     private volatile RebuildableLeaderLatch latch;
 
     public KeeperContainerZkRegistrar(ZkClient zkClient, String hostName, String ip) {
+        this(zkClient, hostName, ip, RebuildableLeaderLatch.DEFAULT_PROBE_INTERVAL_MILLI,
+                RebuildableLeaderLatch.DEFAULT_UNHEALTHY_THRESHOLD_MILLI);
+    }
+
+    @VisibleForTesting
+    protected KeeperContainerZkRegistrar(ZkClient zkClient, String hostName, String ip,
+                                         long probeIntervalMilli, long unhealthyThresholdMilli) {
         this.zkClient = zkClient;
         this.hostName = hostName;
         this.ip = ip;
+        this.probeIntervalMilli = probeIntervalMilli;
+        this.unhealthyThresholdMilli = unhealthyThresholdMilli;
     }
 
     @Override
@@ -64,7 +77,8 @@ public class KeeperContainerZkRegistrar extends AbstractLifecycle implements Top
     protected void doStart() throws Exception {
         String path = path();
         String id = Codec.DEFAULT.encode(new KeeperContainerAddressInfo(ip));
-        RebuildableLeaderLatch current = new RebuildableLeaderLatch(zkClient.get(), path, id);
+        RebuildableLeaderLatch current = new RebuildableLeaderLatch(zkClient.get(), path, id,
+                RebuildableLeaderLatch.sharedProbeScheduler(), probeIntervalMilli, unhealthyThresholdMilli);
         // 先赋值再 start：start 即使抛异常，内部 latch 也可能已置为 STARTED，doStop 要能 close 掉它
         this.latch = current;
         try {
@@ -90,6 +104,24 @@ public class KeeperContainerZkRegistrar extends AbstractLifecycle implements Top
             // 停止时节点可能已随 session 消失，或 latch 未成功 start，关不掉不影响停止流程
             logger.info("[doStop][close fail]{}", path(), th);
         }
+    }
+
+    /** 最近一次断链探测结果；未 start 或已 stop 时为 null。 */
+    public LeaderLatchProbeStatus probeStatus() {
+        RebuildableLeaderLatch current = this.latch;
+        return null == current ? null : current.getProbeStatus();
+    }
+
+    /**
+     * 手工重置注册（spec §5.6 Ih）。最近一次探测不是 UNHEALTHY 时必须带 force：
+     * 重建会删掉本 pod 的节点再以更大 seq 重建，同 hostname 下若有其他 pod，消费方会立即改为解析到对方。
+     */
+    public RebuildableLeaderLatch.ManualRebuildResult reset(boolean force, String reason) {
+        RebuildableLeaderLatch current = this.latch;
+        if (null == current) {
+            return RebuildableLeaderLatch.ManualRebuildResult.NOT_RUNNING;
+        }
+        return current.manualRebuild(force, reason);
     }
 
     /** 本进程 latch 子节点的完整路径，未建好或已关闭时为 null。 */
