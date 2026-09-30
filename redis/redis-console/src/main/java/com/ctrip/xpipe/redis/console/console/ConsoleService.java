@@ -64,10 +64,6 @@ public interface ConsoleService extends CheckerService {
 
     List<SentinelClusterBeaconRouteItem> getSentinelClusterBeaconRoute(String clusterName);
 
-    String resolveKeeperContainerIp(String hostname);
-
-    Map<String, String> getAllKeeperContainerHostnameToIp();
-
     /**
      * 拉取目标 console 所在机房的 keepercontainer 地址快照。失败直接抛出，不吞成空快照。
      */

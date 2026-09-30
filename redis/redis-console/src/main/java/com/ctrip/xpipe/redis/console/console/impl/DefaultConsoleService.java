@@ -101,10 +101,6 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String beaconClusterUrl;
 
-    private final String resolveKeeperContainerIpUrl;
-
-    private final String getAllKeeperContainerHostnameToIpMapUrl;
-
     private final String keeperContainerAddressSnapshotUrl;
 
     private static final ParameterizedTypeReference<List<SentinelBeaconUsageItem>> beaconUsageTypeDef =
@@ -118,9 +114,6 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private static final ParameterizedTypeReference<Map<String, Pair<HostPort, Long>>> crossMasterDelayDef =
             new ParameterizedTypeReference<Map<String, Pair<HostPort, Long>>>(){};
-    
-    private static final ParameterizedTypeReference<Map<String, String>> hostnameToIpMapTypeDef =
-            new ParameterizedTypeReference<Map<String, String>>(){};
 
     public DefaultConsoleService(String address) {
         this.address = address;
@@ -152,8 +145,6 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         sentinelBeaconPostMigrateUrl = String.format("%s%s", this.address, SENTINEL_BEACON_POST_MIGRATE_PATH);
         beaconUsageUrl = String.format("%s%s", this.address, BEACON_USAGE_PATH);
         beaconClusterUrl = String.format("%s%s", this.address, BEACON_CLUSTER_PATH);
-        resolveKeeperContainerIpUrl = String.format("%s/api/keepercontainer/address/{hostname}", this.address);
-        getAllKeeperContainerHostnameToIpMapUrl = String.format("%s/api/keepercontainer/address/all", this.address);
         keeperContainerAddressSnapshotUrl = String.format("%s/api/keepercontainer/address/snapshot", this.address);
         sentinelMigrationRestTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(
                 SENTINEL_BEACON_MIGRATE_MAX_CONN,
@@ -315,36 +306,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         return response.getBody();
     }
 
-    @Override
-    public String resolveKeeperContainerIp(String hostname) {
-        try {
-            RetMessage result = restTemplate.getForObject(
-                    resolveKeeperContainerIpUrl, RetMessage.class, hostname);
-            if (result != null && result.getState() == RetMessage.SUCCESS_STATE) {
-                return result.getMessage();
-            }
-            logger.warn("[resolveKeeperContainerIp] fail: hostname={}, result={}", hostname, result);
-            return null;
-        } catch (Exception e) {
-            logger.error("[resolveKeeperContainerIp] hostname={}", hostname, e);
-            return null;
-        }
-    }
-
-    @Override
-    public Map<String, String> getAllKeeperContainerHostnameToIp() {
-        try {
-            ResponseEntity<Map<String, String>> response = restTemplate.exchange(
-                    getAllKeeperContainerHostnameToIpMapUrl, HttpMethod.GET, null, hostnameToIpMapTypeDef);
-            return response.getBody() != null ? response.getBody() : Collections.emptyMap();
-        } catch (Exception e) {
-            logger.error("[getAllKeeperContainerHostnameToIpMap]", e);
-            return Collections.emptyMap();
-        }
-    }
-
     /**
-     * 与上面两个方法不同，失败不吞成空结果：远端快照缓存要区分「拉取失败保留旧快照」与「远端确实为空」（spec §8.2 D-J2）。
+     * 失败不吞成空结果：远端快照缓存要区分「拉取失败保留旧快照」与「远端确实为空」（spec §8.2 D-J2）。
      * 超时沿用 {@link AbstractService} 默认 RestTemplate。
      */
     @Override

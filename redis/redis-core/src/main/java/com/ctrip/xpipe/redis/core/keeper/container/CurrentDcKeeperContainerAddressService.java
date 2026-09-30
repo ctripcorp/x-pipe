@@ -17,7 +17,7 @@ import java.util.Map;
  * </ul>
  * <p>
  * console、metaserver、checker 各自装配一份，watch 的都是本机房那套 ZK；跨机房解析不走这里，
- * 而是转发给目标机房的 console。
+ * 而是由 console 周期拉取各远端机房的 {@link #getAddressSnapshot()} 后在本地查询（keeper-dynamic-ip spec §8.5）。
  * <p>
  * 只解析 IP、不返回端口：容器管理面端口与 keeper 实例端口是两套语义（前者固定 8080，
  * 后者从 6380 起递增），端口该取哪个由调用方按自身场景决定，本服务不做假设。

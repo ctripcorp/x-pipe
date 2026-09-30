@@ -1,98 +1,120 @@
 package com.ctrip.xpipe.redis.console.service.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.service.CrossDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
+import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
- * 跨机房 hostname → IP 解析服务实现
- * <p>
- * 本机房：直接使用 CurrentDcKeeperContainerAddressService
- * 其他机房：通过 ConsoleServiceManager 调用目标机房的 console API
+ * 跨机房 keepercontainer 地址查询门面（keeper-dynamic-ip spec §8.5），无状态、只读内存：
+ * <ul>
+ *     <li>本机房：{@link CurrentDcKeeperContainerAddressService}</li>
+ *     <li>远端机房：{@link RemoteDcKeeperContainerAddressCache} 的快照</li>
+ * </ul>
+ * 不知道机房的两个查询由缓存在同一份快照内完成，门面只拼接本机房结果，不遍历机房。
  */
 @Service
 public class DefaultCrossDcKeeperContainerAddressService implements CrossDcKeeperContainerAddressService {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultCrossDcKeeperContainerAddressService.class);
 
-    private final String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
+    private final CurrentDcKeeperContainerAddressService currentDcAddressService;
+
+    private final RemoteDcKeeperContainerAddressCache remoteDcAddressCache;
+
+    private final String currentDc;
 
     @Autowired
-    private CurrentDcKeeperContainerAddressService currentDcAddressService;
+    public DefaultCrossDcKeeperContainerAddressService(CurrentDcKeeperContainerAddressService currentDcAddressService,
+                                                       RemoteDcKeeperContainerAddressCache remoteDcAddressCache) {
+        this(currentDcAddressService, remoteDcAddressCache, FoundationService.DEFAULT.getDataCenter());
+    }
 
-    @Autowired
-    private ConsoleServiceManager consoleServiceManager;
-
+    @VisibleForTesting
+    DefaultCrossDcKeeperContainerAddressService(CurrentDcKeeperContainerAddressService currentDcAddressService,
+                                                RemoteDcKeeperContainerAddressCache remoteDcAddressCache,
+                                                String currentDc) {
+        this.currentDcAddressService = currentDcAddressService;
+        this.remoteDcAddressCache = remoteDcAddressCache;
+        this.currentDc = currentDc.toUpperCase();
+    }
 
     @Override
     public String getIpByHostname(String dcId, String hostname) {
-        if (hostname == null || hostname.isEmpty()) {
+        if (StringUtil.isEmpty(hostname)) {
             return null;
         }
-
-        if (dcId == null || dcId.isEmpty()) {
+        if (StringUtil.isEmpty(dcId)) {
             logger.warn("[getIpByHostname] dcId is empty, hostname: {}", hostname);
             return null;
         }
-
-        // 本机房：直接使用本地缓存
-        if (currentDc.equalsIgnoreCase(dcId)) {
+        if (isCurrentDc(dcId)) {
             return currentDcAddressService.getIpByHostname(hostname);
         }
-
-        // 跨机房：通过 ConsoleServiceManager 调用目标机房的 console
-        try {
-            return consoleServiceManager.resolveKeeperContainerIp(dcId, hostname);
-        } catch (Exception e) {
-            logger.error("[getIpByHostname] failed to resolve hostname from dc={}, hostname={}", dcId, hostname, e);
-            return null;
-        }
+        return remoteDcAddressCache.getIpByHostname(dcId, hostname);
     }
 
     @Override
     public Map<String, String> getAllHostnameToIp(String dcId) {
-        if (dcId == null || dcId.isEmpty()) {
-            logger.warn("[getAllHostnameToIpMap] dcId is empty");
+        if (StringUtil.isEmpty(dcId)) {
+            logger.warn("[getAllHostnameToIp] dcId is empty");
             return Collections.emptyMap();
         }
-
-        // 本机房：直接从本地缓存获取
-        if (currentDc.equalsIgnoreCase(dcId)) {
+        if (isCurrentDc(dcId)) {
             return currentDcAddressService.getAllHostnameToIp();
         }
-
-        // 跨机房：通过 ConsoleServiceManager 调用目标机房的 console
-        try {
-            return consoleServiceManager.getAllKeeperContainerHostnameToIpMap(dcId);
-        } catch (Exception e) {
-            logger.error("[getAllHostnameToIpMap] failed to get hostname map from dc={}", dcId, e);
-            return Collections.emptyMap();
-        }
+        return remoteDcAddressCache.getAllHostnameToIp(dcId);
     }
 
     @Override
     public String getIpByHostname(String hostname) {
-        if (hostname == null || hostname.isEmpty()) {
+        if (StringUtil.isEmpty(hostname)) {
             return null;
         }
 
-        // 先查本机房
         String ip = currentDcAddressService.getIpByHostname(hostname);
-        if (ip != null) {
-            logger.debug("[getIpByHostname] found in local dc, hostname={}, ip={}", hostname, ip);
+        if (null != ip) {
             return ip;
         }
 
-        // 本机房没有，并发查询所有其他机房
-        logger.info("[getIpByHostname] not found in local dc, broadcasting to all dcs, hostname={}", hostname);
-        return consoleServiceManager.broadcastResolveKeeperContainerIp(hostname);
+        List<Pair<String, String>> remote = remoteDcAddressCache.findIpsByHostname(hostname);
+        if (remote.isEmpty()) {
+            return null;
+        }
+        if (remote.size() > 1) {
+            // hostname 全局唯一是前提（spec §8.8），多机房命中说明前提被打破，按字典序取首
+            logger.warn("[getIpByHostname] hostname {} found in multiple dcs {}, use {}", hostname, remote, remote.get(0));
+        }
+        return remote.get(0).getValue();
+    }
+
+    @Override
+    public List<Pair<String, String>> findHostnamesByIp(String ip) {
+        if (StringUtil.isEmpty(ip)) {
+            return new ArrayList<>();
+        }
+
+        List<Pair<String, String>> result = new ArrayList<>();
+        String localHostname = currentDcAddressService.getHostnameByIp(ip);
+        if (null != localHostname) {
+            result.add(Pair.of(currentDc, localHostname));
+        }
+        result.addAll(remoteDcAddressCache.findHostnamesByIp(ip));
+        return result;
+    }
+
+    private boolean isCurrentDc(String dcId) {
+        return currentDc.equalsIgnoreCase(dcId);
     }
 }

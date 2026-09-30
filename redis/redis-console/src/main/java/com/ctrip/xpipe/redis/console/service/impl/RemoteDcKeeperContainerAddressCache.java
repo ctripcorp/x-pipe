@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
@@ -174,9 +175,40 @@ public class RemoteDcKeeperContainerAddressCache {
         return null == snapshot ? null : snapshot.liveIpToHostname().get(ip);
     }
 
-    /** 当前持有快照的远端机房（大写），按机房名字典序。 */
-    public List<String> getCachedDcs() {
-        return snapshots.keySet().stream().sorted().collect(Collectors.toList());
+    /**
+     * 不知道机房时按 hostname 查各远端机房：返回全部命中的 {@code (dc, ip)}，按机房名字典序。
+     * 规则同 {@link #getIpByHostname(String, String)}，tombstone 到期判定共用同一个 now。
+     * 只读一次快照 map，结果不会跨两次发布拼接（spec §8.5）。
+     */
+    public List<Pair<String, String>> findIpsByHostname(String hostname) {
+        if (isEmpty(hostname)) return new ArrayList<>();
+        Map<String, RemoteSnapshot> current = snapshots;
+        long now = nowNanos();
+        List<Pair<String, String>> result = new ArrayList<>();
+        for (String dc : sortedDcs(current)) {
+            String ip = current.get(dc).ipByHostname(hostname, now);
+            if (null != ip) result.add(Pair.of(dc, ip));
+        }
+        return result;
+    }
+
+    /**
+     * 不知道机房时按 IP 查各远端机房：只查存活反向，返回全部命中的 {@code (dc, hostname)}，按机房名字典序。
+     * 各机房 pod IP 段可能重叠，由调用方按上下文消歧。只读一次快照 map（spec §8.5）。
+     */
+    public List<Pair<String, String>> findHostnamesByIp(String ip) {
+        if (isEmpty(ip)) return new ArrayList<>();
+        Map<String, RemoteSnapshot> current = snapshots;
+        List<Pair<String, String>> result = new ArrayList<>();
+        for (String dc : sortedDcs(current)) {
+            String hostname = current.get(dc).liveIpToHostname().get(ip);
+            if (null != hostname) result.add(Pair.of(dc, hostname));
+        }
+        return result;
+    }
+
+    private static List<String> sortedDcs(Map<String, RemoteSnapshot> current) {
+        return current.keySet().stream().sorted().collect(Collectors.toList());
     }
 
     /** 周期任务兜住异常并打 ERROR；DynamicDelayPeriodTask 自身也会兜，但只打 INFO。 */

@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot.TombstoneEntry;
+import com.ctrip.xpipe.tuple.Pair;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,6 +41,8 @@ public class RemoteDcKeeperContainerAddressCacheTest extends AbstractConsoleTest
     private static final String CURRENT_DC = "JQ";
     private static final String DC_OY = "OY";
     private static final String DC_RB = "RB";
+    /** 字典序排在 OY / RB 之前，验证跨机房查询按机房名排序而非按配置顺序。 */
+    private static final String DC_FRA = "FRA";
 
     private static final long FETCH_TIMEOUT_MILLI = 300;
 
@@ -106,7 +109,9 @@ public class RemoteDcKeeperContainerAddressCacheTest extends AbstractConsoleTest
         Assert.assertNull(cache.getHostnameByIp(DC_OY, "10.0.0.1"));
         Assert.assertEquals("10.0.0.2", cache.getIpByHostname("oy", "h2"));
 
-        Assert.assertEquals(Arrays.asList(DC_OY, DC_RB), cache.getCachedDcs());
+        // 远端机房每轮各拉一次，本机房不拉取
+        verify(consoleServiceManager, times(2)).getKeeperContainerAddressSnapshot(DC_OY);
+        verify(consoleServiceManager, times(2)).getKeeperContainerAddressSnapshot(DC_RB);
         verify(consoleServiceManager, never()).getKeeperContainerAddressSnapshot(CURRENT_DC);
     }
 
@@ -131,9 +136,9 @@ public class RemoteDcKeeperContainerAddressCacheTest extends AbstractConsoleTest
                 .thenThrow(new XpipeRuntimeException("mock http fail"));
         cache.refresh();
 
-        Assert.assertEquals(Collections.singletonList(DC_RB), cache.getCachedDcs());
         Assert.assertNull(cache.getIpByHostname(DC_OY, "h1"));
         Assert.assertTrue(cache.getAllHostnameToIp(DC_OY).isEmpty());
+        Assert.assertTrue(cache.findIpsByHostname("h1").isEmpty());
     }
 
     @Test
@@ -145,9 +150,11 @@ public class RemoteDcKeeperContainerAddressCacheTest extends AbstractConsoleTest
         domains(CURRENT_DC, DC_OY);
         cache.refresh();
 
-        Assert.assertEquals(Collections.singletonList(DC_OY), cache.getCachedDcs());
         Assert.assertNull(cache.getIpByHostname(DC_RB, "h1"));
         Assert.assertNull(cache.getHostnameByIp(DC_RB, "10.0.0.1"));
+        // 跨机房查询同样看不到已移除机房
+        Assert.assertTrue(cache.findIpsByHostname("h1").isEmpty());
+        Assert.assertTrue(cache.findHostnamesByIp("10.0.0.1").isEmpty());
     }
 
     @Test
@@ -194,6 +201,46 @@ public class RemoteDcKeeperContainerAddressCacheTest extends AbstractConsoleTest
         // 查询不跨机房
         Assert.assertNull(cache.getIpByHostname(DC_RB, "h1"));
         Assert.assertNull(cache.getIpByHostname(CURRENT_DC, "h1"));
+    }
+
+    // ---------------- Jc：跨机房查询（T-J.9） ----------------
+
+    @Test
+    public void testFindIpsByHostnameSortedByDcAndTombstoneRules() {
+        domains(CURRENT_DC, DC_RB, DC_OY, DC_FRA);
+        // RB 存活、OY 为 tombstone、FRA 无该 hostname
+        remote(DC_RB, snapshot(map("h1", "10.0.1.1"), Collections.emptyMap(), map("10.0.1.1", "h1")));
+        remote(DC_OY, snapshot(Collections.emptyMap(), tombstone("h1", "10.0.2.1", 1000), Collections.emptyMap()));
+        remote(DC_FRA, snapshot(map("h9", "10.0.3.1"), Collections.emptyMap(), map("10.0.3.1", "h9")));
+        cache.refresh();
+
+        Assert.assertEquals(Arrays.asList(Pair.of(DC_OY, "10.0.2.1"), Pair.of(DC_RB, "10.0.1.1")),
+                cache.findIpsByHostname("h1"));
+
+        // tombstone 到期后只剩存活命中
+        clock.addAndGet(TimeUnit.MILLISECONDS.toNanos(1000));
+        Assert.assertEquals(Collections.singletonList(Pair.of(DC_RB, "10.0.1.1")), cache.findIpsByHostname("h1"));
+
+        Assert.assertTrue(cache.findIpsByHostname("absent").isEmpty());
+        Assert.assertTrue(cache.findIpsByHostname(null).isEmpty());
+        Assert.assertTrue(cache.findIpsByHostname("").isEmpty());
+    }
+
+    @Test
+    public void testFindHostnamesByIpReturnsAllLiveCandidatesSortedByDc() {
+        domains(CURRENT_DC, DC_RB, DC_OY, DC_FRA);
+        remote(DC_RB, snapshot(map("hR", "10.0.0.1"), Collections.emptyMap(), map("10.0.0.1", "hR")));
+        // OY：10.0.0.1 是次节点 pod IP，只在反向索引里
+        remote(DC_OY, snapshot(map("hO", "10.0.0.9"), Collections.emptyMap(),
+                map("10.0.0.9", "hO", "10.0.0.1", "hO")));
+        // FRA：10.0.0.1 只作为 tombstone 存在，不参与反查
+        remote(DC_FRA, snapshot(Collections.emptyMap(), tombstone("hF", "10.0.0.1", 60_000), Collections.emptyMap()));
+        cache.refresh();
+
+        Assert.assertEquals(Arrays.asList(Pair.of(DC_OY, "hO"), Pair.of(DC_RB, "hR")),
+                cache.findHostnamesByIp("10.0.0.1"));
+        Assert.assertTrue(cache.findHostnamesByIp("10.9.9.9").isEmpty());
+        Assert.assertTrue(cache.findHostnamesByIp(null).isEmpty());
     }
 
     // ---------------- Jb2：刷新任务与 IP 重叠告警（T-J.18） ----------------
