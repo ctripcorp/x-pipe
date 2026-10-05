@@ -1,0 +1,19 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/StorageUtil.java
+  s_cdeff3c1c0ec63::t_5b9e300fa4ceec 134,142,151,157-176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "4aaa232cd01df04c92b238842a2d54475db7bd92",
+  "prompts": {},
+  "sessions": {
+    "s_cdeff3c1c0ec63": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "50dc767d-db91-4b29-a85e-8b9feaaa8132",
+        "model": "default"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
