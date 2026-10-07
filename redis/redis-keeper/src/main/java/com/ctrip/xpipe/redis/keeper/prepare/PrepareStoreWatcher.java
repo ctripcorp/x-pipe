@@ -346,7 +346,20 @@ public class PrepareStoreWatcher {
 	}
 
 	/**
-	 * 占槽者换店：断 slave + 释放。本轮不重建，新店由请求侧 {@code getCurrent()} 打开。
+	 * 占槽者换店：断 slave + 释放。<b>本轮不重建</b>，新店由消费者按需打开。
+	 * <p>
+	 * 谁负责打开：这一层只放掉旧店 —— 真正的开店者是【消费者】：
+	 * <ul>
+	 *   <li>{@code GapAllowSyncHandler} —— slave / comparator 发 PSYNC 时经
+	 *       {@code getReplicationStore() → createIfNotExist()} 打开只读店</li>
+	 *   <li>{@code PrepareCmdParser} —— {@code pubsub.parse} 开启时打开（默认关）</li>
+	 * </ul>
+	 * 这是有意的"按需开店"：没有消费者时观察者本来也无事可做，所以不打开是正确的，
+	 * 而不是缺陷。相关断言见 {@code PrepareStoreWatcherTest}（换店后 {@code getOpenedStore()
+	 * == null}，直到请求侧取店）。
+	 * <p>
+	 * 注意：【只读命令】（{@code ROLE} / {@code KINFO} / {@code GTIDX}）已不再具备开店能力
+	 * —— 它们改用 {@code getOpenedStore()}，不得触发 store 构造（见各自 handler）。
 	 */
 	private void releaseSwitchedStore(ReplicationStore current, String latestDir) throws IOException {
 		logger.info("[storeSwitched]latest.store.dir current={} latest={} {}",

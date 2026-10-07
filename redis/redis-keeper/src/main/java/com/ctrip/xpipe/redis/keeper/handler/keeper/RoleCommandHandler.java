@@ -51,9 +51,13 @@ public class RoleCommandHandler extends AbstractCommandHandler {
 			result[3] = MASTER_STATE.REDIS_REPL_NONE.getDesc();
 			result[4] = prepareReplOffset(redisKeeperServer);
 		} else {
-			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+			// 只读命令不得触发 store 构造：getReplicationStore() 会经由 getCurrent() 做
+			// mkdir(baseDir) + 以 READ_WRITE 打开共享目录（TFS 模式下即取得写租约）。
+			// 没有已打开的 store 时，与 PREPARE 分支一致，偏移报 -1。
+			ReplicationStore opened = redisKeeperServer.getOpenedStore();
 			result[3] = redisMaster == null ? MASTER_STATE.REDIS_REPL_NONE.getDesc(): redisMaster.getMasterState().getDesc();
-			result[4] = replicationStore.getMetaStore().getCurrentReplStage() == null ? -1L: replicationStore.getCurReplStageReplOff();
+			result[4] = (opened == null || opened.getMetaStore().getCurrentReplStage() == null)
+					? -1L: opened.getCurReplStageReplOff();
 		}
 		redisClient.sendMessage(ParserManager.parse(result));
 	}

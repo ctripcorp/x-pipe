@@ -12,6 +12,8 @@ import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.KeeperMasterCheckNotAsExpectedException;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.api.command.Command;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,7 @@ public class KeeperMasterProcessJob extends AbstractCommand<Void> implements Req
 	private List<KeeperMeta> keepers;
 	private RouteMeta routeForActiveKeeper;
 	private Map<KeeperMeta, KeeperState> keeperRoles;
+	private Command<?> changeJob;
 
 
 	public KeeperMasterProcessJob(Long clusterId,
@@ -73,11 +76,26 @@ public class KeeperMasterProcessJob extends AbstractCommand<Void> implements Req
 		return "KeeperMasterProcessJob";
 	}
 
+	/**
+	 * Replace the state change step. A TFS shard must use {@link TfsKeeperStateChangeJob} (release the old
+	 * slot holder before granting a new one); the default {@link KeeperStateChangeJob} sends ACTIVE first.
+	 */
+	public KeeperMasterProcessJob setChangeJob(Command<?> changeJob) {
+		this.changeJob = changeJob;
+		return this;
+	}
+
+	@VisibleForTesting
+	public Command<?> getChangeJob() {
+		return changeJob;
+	}
+
 	@Override
 	protected void doExecute() throws CommandExecutionException {
 		SequenceCommandChain chain = new SequenceCommandChain(false);
 		KeeperMasterCheckJob checkJob = new KeeperMasterCheckJob(clusterDbId, shardDbId, dcMetaCache, activeKeeperMaster, clientPool, executors, scheduled);
-		KeeperStateChangeJob changeJob = new KeeperStateChangeJob(keepers, activeKeeperMaster, routeForActiveKeeper,
+		Command<?> changeJob = this.changeJob != null ? this.changeJob
+				: new KeeperStateChangeJob(keepers, activeKeeperMaster, routeForActiveKeeper,
 				clientPool, KeeperStateChangeJob.DEFAULT_DELAY_BASE_MILLI, KeeperStateChangeJob.DEFAULT_RETRY_TIMES,
 				scheduled, executors, keeperRoles);
 

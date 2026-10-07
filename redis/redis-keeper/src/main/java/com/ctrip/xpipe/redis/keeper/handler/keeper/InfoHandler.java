@@ -331,7 +331,7 @@ public class InfoHandler extends AbstractCommandHandler {
 			sb.append(getHeader());
 			sb.append("role:" + Server.SERVER_ROLE.SLAVE + RedisProtocol.CRLF);
 			sb.append(RedisProtocol.KEEPER_ROLE_PREFIX + ":" + redisKeeperServer.role() + RedisProtocol.CRLF);
-			sb.append("state:" + KeeperState.PREPARE + RedisProtocol.CRLF);
+			sb.append("state:" + redisKeeperServer.getRedisKeeperServerState().keeperState() + RedisProtocol.CRLF);
 
 			RedisMaster redisMaster = redisKeeperServer.getRedisMaster();
 			Endpoint master = redisMaster != null ? redisMaster.masterEndPoint()
@@ -440,9 +440,20 @@ public class InfoHandler extends AbstractCommandHandler {
 		}
 	}
 
+	/**
+	 * Store-less view: PREPARE, or a TFS keeper that is not the slot holder and has no opened store
+	 * (UNKNOWN after boot). {@code getReplicationStore()} would otherwise open — or create() — the
+	 * shared store. ACTIVE / BACKUP own the store: keep the normal path, so a holder whose store failed
+	 * to open still fails INFO and gets corrected, instead of reporting a healthy store-less state.
+	 */
 	private static boolean isPrepare(RedisKeeperServer keeperServer) {
 		RedisKeeperServerState state = keeperServer.getRedisKeeperServerState();
-		return state != null && KeeperState.PREPARE == state.keeperState();
+		KeeperState keeperState = state == null ? null : state.keeperState();
+		if (KeeperState.PREPARE == keeperState) {
+			return true;
+		}
+		return keeperServer.isTfsMode() && keeperServer.getOpenedStore() == null
+				&& keeperState != KeeperState.ACTIVE && keeperState != KeeperState.BACKUP;
 	}
 
 	@Override

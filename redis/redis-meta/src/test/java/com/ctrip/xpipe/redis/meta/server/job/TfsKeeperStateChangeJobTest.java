@@ -193,6 +193,68 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
         Assert.assertEquals(newTfs.getPort() + ":ACTIVE", callOrder.get(2));
     }
 
+    /**
+     * TFS active → BM active: the old TFS active stays slot holder (BACKUP) and keeps writing. A PREPARE failure
+     * on another TFS keeper must not ForceCloseDir: TFS ForceCloseDir is dir-wide and would evict the holder.
+     */
+    @Test
+    public void testPrepareFailOnNonHolderKeepsSlotHolderWithoutForceClose() throws Exception {
+        callOrder.clear();
+        KeeperMeta oldTfs = keeper("127.0.0.1", 7111, 2L, true).setPriority(5);
+        KeeperMeta newBm = keeper("127.0.0.1", 7112, 1L, false);
+        KeeperMeta otherTfs = keeper("127.0.0.1", 7113, 3L, false).setPriority(1);
+        List<KeeperMeta> keepers = new LinkedList<>();
+        keepers.add(oldTfs);
+        keepers.add(newBm);
+        keepers.add(otherTfs);
+
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(newBm, keepers, dcMetaCache);
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(oldTfs));
+        Assert.assertEquals(KeeperState.PREPARE, roles.get(otherTfs));
+        startKeeperServer(oldTfs.getPort());
+        startKeeperServer(newBm.getPort());
+        startKeeperServer(otherTfs.getPort(), true);
+
+        AtomicBoolean forceCloseCalled = new AtomicBoolean(false);
+        TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, keepers, oldTfs,
+                new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
+                dcMetaCache, config, scheduled, executors, roles);
+        job.setTfsGateway((fsId, dirPath, podIp) -> {
+            forceCloseCalled.set(true);
+            return true;
+        });
+        Assert.assertFalse(job.mayForceCloseOnPrepareFailure());
+        job.execute().get(TfsCommandConstants.TFS_STEP_TIMEOUT_MILLI * 5L, TimeUnit.MILLISECONDS);
+
+        Assert.assertFalse("dir-wide ForceCloseDir would fence the writing slot holder", forceCloseCalled.get());
+        Assert.assertEquals(otherTfs.getPort() + ":PREPARE", callOrder.get(0));
+        Assert.assertTrue(callOrder.contains(newBm.getPort() + ":ACTIVE"));
+        Assert.assertTrue(callOrder.contains(oldTfs.getPort() + ":BACKUP"));
+    }
+
+    @Test
+    public void testSlotHolderChangeKeepsForceCloseFallback() throws Exception {
+        KeeperMeta oldTfs = keeper("127.0.0.1", 7121, 2L, true);
+        KeeperMeta newTfs = keeper("127.0.0.1", 7122, 2L, false);
+        List<KeeperMeta> keepers = new LinkedList<>();
+        keepers.add(oldTfs);
+        keepers.add(newTfs);
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(newTfs, keepers, dcMetaCache);
+
+        TfsKeeperStateChangeJob holderChanges = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, keepers, oldTfs,
+                new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
+                dcMetaCache, config, scheduled, executors, roles);
+        Assert.assertTrue(holderChanges.mayForceCloseOnPrepareFailure());
+
+        TfsKeeperStateChangeJob unknownPrevious = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, keepers, null,
+                new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
+                dcMetaCache, config, scheduled, executors, roles);
+        Assert.assertTrue("unknown previous active keeps the old fence behavior",
+                unknownPrevious.mayForceCloseOnPrepareFailure());
+
+        Assert.assertFalse(unknownPrevious.disableForceCloseOnPrepareFailure().mayForceCloseOnPrepareFailure());
+    }
+
     @Test
     public void testBmActiveTfsBackupSwapReleasesOldSlotBeforeNewBackup() throws Exception {
         callOrder.clear();

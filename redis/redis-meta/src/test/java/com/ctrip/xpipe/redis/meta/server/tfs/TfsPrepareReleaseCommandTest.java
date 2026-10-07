@@ -93,6 +93,31 @@ public class TfsPrepareReleaseCommandTest extends AbstractMetaServerTest {
         Assert.assertFalse(forceCloseCalled.get());
     }
 
+    @Test
+    public void testPrepareFailWithoutForceCloseSkipsGateway() throws Exception {
+        KeeperMeta target = keeper("127.0.0.1", 7105);
+        KeeperMeta newActive = keeper("127.0.0.1", 7106);
+
+        startServer(target.getPort(), new AbstractIoActionFactory() {
+            @Override
+            protected byte[] getToWrite(Object readResult) {
+                return "-ERR prepare failed\r\n".getBytes();
+            }
+        });
+
+        AtomicBoolean forceCloseCalled = new AtomicBoolean(false);
+        TfsGateway gateway = (fsId, dirPath, podIp) -> {
+            forceCloseCalled.set(true);
+            return true;
+        };
+
+        new TfsPrepareReleaseCommand(shardContext, target, newActive, getXpipeNettyClientKeyedObjectPool(), dcMetaCache, config,
+                scheduled, executors, gateway).setForceCloseOnFailure(false).execute()
+                .get(2000, TimeUnit.MILLISECONDS);
+
+        Assert.assertFalse(forceCloseCalled.get());
+    }
+
     private KeeperMeta keeper(String ip, int port) {
         KeeperMeta keeperMeta = new KeeperMeta();
         keeperMeta.setIp(ip);

@@ -65,6 +65,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private volatile boolean readOnly;
 
+    /** TFS: the store dir is shared by every keeper of the shard; only the slot holder may mutate it. */
+    private volatile boolean sharedStore;
+
+    /** Slot holder flag, granted by the keeper state machine (ACTIVE / BACKUP). Ignored for a private store. */
+    private volatile boolean storeWriteOwner;
+
+    static final String NOT_STORE_WRITE_OWNER_MSG = "not store write owner";
+
     private volatile KeeperPubSubParseHook pubSubParseHook;
 
     private final KeeperConfig keeperConfig;
@@ -236,6 +244,10 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             return getCurrent();
         }
 
+        // Shared store, not the slot holder: never open RW or create(). Fail loudly instead of
+        // returning null so callers (INFO / PSYNC / searcher ...) cannot mistake it for "fresh".
+        checkStoreWriteOwner();
+
         // STOPPING / stop / dispose: refuse reopen / self-heal. Initialized-but-never-started still allowed
         // (isPositivelyStopped distinguishes Stoppable.PHASE_NAME_END from Initializable.PHASE_NAME_END).
         if (refuseOpenOrCreate()) {
@@ -260,6 +272,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     public synchronized ReplicationStore create() throws IOException {
 
         checkNotReadOnly();
+        checkStoreWriteOwner();
         if (!getLifecycleState().isInitialized()) {
             throw new ReplicationStoreManagerStateException("can not create", toString(), getLifecycleState().getPhaseName());
         }
@@ -369,7 +382,13 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
      * @throws IOException
      */
     private Properties loadMeta() throws IOException {
-        AsyncFile asyncFile = getOrOpenManagerMetaFile();
+        return parseMeta(getOrOpenManagerMetaFile());
+    }
+
+    /**
+     * 从<b>已打开</b>的句柄读 size → read → parse。不负责 open / close，也不碰 {@code currentMeta} 缓存。
+     */
+    private Properties parseMeta(AsyncFile asyncFile) throws IOException {
         long size = AsyncFileSystemHelper.await(() -> asyncFileSystem.size(asyncFile),
                 "stat manager meta " + metaFile.getAbsolutePath());
         if (size > Integer.MAX_VALUE) {
@@ -450,12 +469,27 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         return currentMeta.get();
     }
 
+    /**
+     * <b>⚠️ 这个方法可能取得写租约。</b>{@code currentStore == null} 时它不只构造 store 对象，
+     * 还会：{@code mkdir(baseDir)}、以 {@code READ_WRITE} 打开共享的 store_manager_meta、
+     * 再写打开 store 目录 —— 对 TFS 模式即"取得共享目录的写租约"。
+     * <p>
+     * 共享 store（TFS）由写权闸门约束：非占槽者（未被授予 {@link #setStoreWriteOwner}）在非只读模式下
+     * 这里返回 {@code null}、不开店；只读模式照常只读打开。只读命令、观察者等不需要开店的路径
+     * 仍应使用 {@link #getOpenedStore()}，它从不触发 FS。
+     */
     @Override
     public synchronized ReplicationStore getCurrent() throws IOException {
 
         if (currentStore.get() == null) {
             if (refuseOpenOrCreate()) {
                 logger.info("[getCurrent][stopping/stopped][skip reopen]{}", this);
+                return null;
+            }
+            // Shared store: a non-holder must not open RW (lease + recoverIndex + rdb cleanup).
+            // Read-only mode is fine: it only reads.
+            if (!readOnly && !mayWriteStore()) {
+                logger.debug("[getCurrent][not store write owner][skip open]{}", this);
                 return null;
             }
             Properties meta = currentMeta();
@@ -497,6 +531,29 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         }
 
         gcCount.incrementAndGet();
+
+        // 没有已打开的 store 时【整个返回】，连上半段的目录清理也不做。
+        //
+        // 为什么可以跳过目录清理：非 latest 目录只可能由调过 create() 的 keeper 产生
+        // （换代遗留 / create() 中途失败留下的空目录），而它必然 currentStore != null，
+        // 所以它不会跳过 —— 垃圾仍有占槽者清理。反过来，没有 store 的 keeper
+        // （PREPARE / 未分配角色）本来就不该在【共享】baseDir 上执行删除。
+        //
+        // 这一条同时关掉两个与角色无关的获取入口：
+        //   - :595 的 currentMeta(true) → loadMeta() → getOrOpenManagerMetaFile()
+        //         会 mkdir(baseDir) + 以 READ_WRITE 打开共享的 store_manager_meta
+        //   - 末尾的 getCurrent() 会构造并写打开 store 目录
+        // 两者都是"每 2 秒一次"的抢占机会。
+        if (currentStore.get() == null) {
+            logger.debug("[gc][no store opened, skip]{}", this);
+            return;
+        }
+        // Ownership revoked while a store is still open (PREPARE in progress): no deletes.
+        if (!mayWriteStore()) {
+            logger.debug("[gc][not store write owner, skip]{}", this);
+            return;
+        }
+
         Properties meta = currentMeta(true);
         if (meta != null) {
             final String currentDirName = meta.getProperty(LATEST_STORE_DIR);
@@ -548,6 +605,12 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             logger.warn("[destroy][releaseCurrentStore]", e);
         } finally {
             closeManagerMetaFile();
+        }
+        // Shared store: removing one keeper must not delete the shard's data that the other
+        // keepers (and the slot holder) still use. Whole-shard cleanup is not this keeper's call.
+        if (sharedStore) {
+            logger.info("[destroy][shared store, keep baseDir]{}", baseDir);
+            return;
         }
         AsyncFileSystemHelper.await(() -> asyncFileSystem.rmdir(this.baseDir.getAbsolutePath(), true),
                 "rmdir replication store manager baseDir " + baseDir);
@@ -621,6 +684,39 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         if (readOnly) {
             throw new IllegalStateException(READ_ONLY_STORE_MSG);
         }
+    }
+
+    /**
+     * Whether this manager may touch the shared dir in write mode (open RW / create / gc / destroy).
+     * Read-only mode never writes, so it does not need ownership.
+     */
+    private boolean mayWriteStore() {
+        return !sharedStore || storeWriteOwner;
+    }
+
+    private void checkStoreWriteOwner() {
+        if (!mayWriteStore()) {
+            throw new IllegalStateException(NOT_STORE_WRITE_OWNER_MSG + ": " + this);
+        }
+    }
+
+    @Override
+    public void setSharedStore(boolean sharedStore) {
+        this.sharedStore = sharedStore;
+        logger.info("[setSharedStore]{} {}", sharedStore, this);
+    }
+
+    @Override
+    public void setStoreWriteOwner(boolean owner) {
+        if (this.storeWriteOwner != owner) {
+            logger.info("[setStoreWriteOwner]{} {}", owner, this);
+        }
+        this.storeWriteOwner = owner;
+    }
+
+    @Override
+    public boolean isStoreWriteOwner() {
+        return mayWriteStore();
     }
 
     public long getGcCount() {

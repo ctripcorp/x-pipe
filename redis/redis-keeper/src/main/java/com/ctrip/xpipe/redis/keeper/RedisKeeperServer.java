@@ -90,6 +90,13 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	}
 
 	/**
+	 * Become the writer of a shared (TFS) store. Called on SETSTATE ACTIVE / BACKUP before the store is
+	 * opened. No-op for a private store.
+	 */
+	default void acquireStoreWriteOwnership() {
+	}
+
+	/**
 	 * Watcher periodic snapshot. Command thread read-only; {@code null} if watch is off or store not opened (D11).
 	 */
 	default PrepareWatchSnapshot getPrepareWatchSnapshot() {
