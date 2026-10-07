@@ -69,6 +69,9 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 		DefaultRedisKeeperServer server = startActiveServer(watchConfig(true), true);
 		try {
 			ReplicationStore storeBefore = server.getReplicationStore();
+			// The holder has a cmd chain (as after its first psync). A read-only open of a store without one keeps
+			// no store at all (doc/keeper-tfs-bugfix-prefix-null.md), so seed it to observe the reopen.
+			((DefaultReplicationStore) storeBefore).psyncContinueFrom("000000000000000000000000000000000000000A", 1);
 			File dirBefore = ((DefaultReplicationStore) storeBefore).getBaseDir();
 			DefaultReplicationStoreManager manager =
 					spy((DefaultReplicationStoreManager) server.getReplicationStoreManager());
@@ -89,10 +92,8 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 			Assert.assertEquals(dirBefore.getName(), manager.reloadLatestStoreDir());
 			Assert.assertSame(opened, manager.getOpenedStore());
 			CommandStore cmdStore = ((DefaultReplicationStore) opened).getCommandStore();
-			if (cmdStore != null) {
-				Assert.assertTrue("read-only open must use ReadOnlyCommandStore, got " + cmdStore.getClass(),
-						cmdStore instanceof ReadOnlyCommandStore);
-			}
+			Assert.assertTrue("read-only open must use ReadOnlyCommandStore, got " + cmdStore,
+					cmdStore instanceof ReadOnlyCommandStore);
 			verify(manager, never()).create();
 		} finally {
 			stopQuietly(server);

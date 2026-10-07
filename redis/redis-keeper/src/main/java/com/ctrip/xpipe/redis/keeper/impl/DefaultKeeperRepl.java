@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.core.store.ReplStage;
 
@@ -14,14 +15,17 @@ import java.io.IOException;
  */
 public class DefaultKeeperRepl implements KeeperRepl {
 
+	// replicationStore may be null: a read-only store without a cmd chain is not kept, and a store can be
+	// released between a sync handler's doHandle and its executor. Null stages make the caller take its
+	// existing "replicationstore fresh" branch instead of NPE.
 	@Override
 	public ReplStage preStage() {
-		return replicationStore.getMetaStore().getPreReplStage();
+		return replicationStore == null ? null : replicationStore.getMetaStore().getPreReplStage();
 	}
 
 	@Override
 	public ReplStage currentStage() {
-		return replicationStore.getMetaStore().getCurrentReplStage();
+		return replicationStore == null ? null : replicationStore.getMetaStore().getCurrentReplStage();
 	}
 
 	private ReplicationStore replicationStore;
@@ -48,7 +52,7 @@ public class DefaultKeeperRepl implements KeeperRepl {
 
 	@Override
 	public long getEndOffset() {
-		return replicationStore.getCurReplStageReplOff();
+		return replicationStore == null ? ReplicationStoreMeta.DEFAULT_END_OFFSET : replicationStore.getCurReplStageReplOff();
 	}
 
 	@Override

@@ -499,7 +499,23 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                     logger.info("[getCurrent][latest]{}", latestStoreDir);
                     if (AsyncFileSystemHelper.await(() -> asyncFileSystem.exists(latestStoreDir.getAbsolutePath()),
                             "check latest store dir exists " + latestStoreDir.getAbsolutePath())) {
-                        currentStore.set(createReplicationStore(latestStoreDir, keeperConfig, keeperRunid, keeperMonitor, syncRateManager));
+                        ReplicationStore opened = createReplicationStore(latestStoreDir, keeperConfig, keeperRunid,
+                                keeperMonitor, syncRateManager);
+                        if (readOnly && hasNoCmdChain(opened)) {
+                            // The holder published latest.store.dir before it wrote cmdFilePrefix (create() →
+                            // recordLatestStore → ... → psyncContinueFrom). A read-only store reads the prefix once
+                            // at construction and has no path to attach a cmdStore later, so it would stay
+                            // byte-less forever and NPE on addCommandsListener once the prefix shows up. Don't
+                            // keep it: null means "nothing readable yet", the consumer retries and reopens.
+                            logger.info("[getCurrent][readonly][no cmd chain yet, discard]{}", latestStoreDir);
+                            try {
+                                opened.close();
+                            } catch (IOException e) {
+                                logger.warn("[getCurrent][readonly][discard close]{}", latestStoreDir, e);
+                            }
+                            return null;
+                        }
+                        currentStore.set(opened);
                     }
                 }
             }
@@ -692,6 +708,11 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
      */
     private boolean mayWriteStore() {
         return !sharedStore || storeWriteOwner;
+    }
+
+    /** Read-only only: {@code cmdStore == null} iff meta has no {@code cmdFilePrefix} at construction. */
+    private static boolean hasNoCmdChain(ReplicationStore store) {
+        return store instanceof DefaultReplicationStore && ((DefaultReplicationStore) store).getCommandStore() == null;
     }
 
     private void checkStoreWriteOwner() {
