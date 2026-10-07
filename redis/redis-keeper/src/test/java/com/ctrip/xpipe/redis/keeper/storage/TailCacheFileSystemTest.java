@@ -865,6 +865,69 @@ public class TailCacheFileSystemTest {
     }
 
     // =========================================================================
+    // B3. close releases cache memory (keeper-tfs-m6 Phase A). A close that does not reach
+    // onCacheClose leaks chunks. The helpers are also used by the T-A.1 / T-A.2 assertions folded
+    // into testSegmentCloseNoFlushSkipsFlush and testHungDiskCloseUnderAsyncFailsBounded.
+    // =========================================================================
+
+    private static List<ByteBuf> chunkBuffers(FileCacheEntry... entries) {
+        List<ByteBuf> buffers = new ArrayList<>();
+        for (FileCacheEntry entry : entries) {
+            for (CacheChunk chunk : entry.chunks.values()) {
+                buffers.add(chunk.buffer);
+            }
+        }
+        assertFalse("test setup must have cached chunks", buffers.isEmpty());
+        return buffers;
+    }
+
+    private static void assertCacheReleased(TailCacheFileSystem fs, List<ByteBuf> pinned,
+            FileCacheEntry... entries) {
+        for (FileCacheEntry entry : entries) {
+            assertTrue("chunks dropped", entry.chunks.isEmpty());
+            assertEquals("chunk bytes dropped", 0, entry.bodySizeBytes);
+        }
+        for (ByteBuf buf : pinned) {
+            assertEquals("chunk buffer freed", 0, buf.refCnt());
+        }
+        assertEquals("tracker committed returned", 0, fs.getGlobalCommittedBytes());
+    }
+
+    // T-A.3
+    @Test
+    public void testSegmentFlushCloseAfterDirRemovedReleasesOnNoSuchFile() throws Exception {
+        // gc removed the directory under a still-dirty cmd segment (spec §1). The flush close sees
+        // NoSuchFile (StaleStateException, not retryable) for both the segment and its index, logs
+        // data lost and still releases. EIO → ONE → retry is covered by
+        // TailCacheFileSystemModeAndRetryTest#testSegmentCloseIndexFlushTimeoutOrEioLeavesOpenAndRetrySucceeds.
+        // Local POSIX keeps an unlinked inode writable, so ENOENT is injected, not produced by rmdir.
+        FaultyDelegate faulty = newFaultyDelegate();
+        TailCacheFileSystem fs = newTcf(faulty, baseConfig());
+        String dir = path("removed_dir_seg");
+        Files.createDirectories(Paths.get(dir));
+        AsyncSegmentFile writer = fs.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
+        // Both below writeBatchBytes(128): cache only, flushed by close.
+        fs.write(writer, bufOf(new byte[30])).get(5, TimeUnit.SECONDS);
+        AsyncFile idx = fs.getCurrentIndexFiles(writer, INDEX_PREFIXES).get(5, TimeUnit.SECONDS)
+                .getValue().get(IDX_PREFIX);
+        fs.write(idx, bufOf(new byte[20])).get(5, TimeUnit.SECONDS);
+        SegmentFileCacheEntry segEntry = (SegmentFileCacheEntry) writer.getCacheEntry();
+        FileCacheEntry idxEntry = idx.getCacheEntry();
+        List<ByteBuf> pinned = chunkBuffers(segEntry, idxEntry);
+
+        deleteRecursively(new File(dir));
+        faulty.failOn(new java.nio.file.NoSuchFileException(dir), Op.SEG_WRITE, Op.FILE_WRITE);
+        fs.close(writer).get(5, TimeUnit.SECONDS);
+        awaitAll();
+
+        assertEquals("segment and index flushes both reached the delegate", 2, faulty.failureHits.get());
+        assertTrue(writer.closed);
+        assertEquals(0, segEntry.refCount);
+        assertCacheReleased(fs, pinned, segEntry, idxEntry);
+        assertFalse("close must not recreate the removed directory", Files.exists(Paths.get(dir)));
+    }
+
+    // =========================================================================
     // C. AsyncSegmentFile cache operations
     // =========================================================================
 
@@ -923,18 +986,29 @@ public class TailCacheFileSystemTest {
         Files.createDirectories(Paths.get(dir));
         AsyncSegmentFile writer = tcf.open(dir, SEG_PREFIX, INDEX_PREFIXES, true, null).get();
         tcf.write(writer, bufOf(new byte[]{10, 20, 30})).get(5, TimeUnit.SECONDS);
-        FileCacheEntry entry = writer.getCacheEntry();
+        AsyncFile idx = tcf.getCurrentIndexFiles(writer, INDEX_PREFIXES).get(5, TimeUnit.SECONDS)
+                .getValue().get(IDX_PREFIX);
+        tcf.write(idx, bufOf(new byte[]{1, 2})).get(5, TimeUnit.SECONDS);
+        SegmentFileCacheEntry entry = (SegmentFileCacheEntry) writer.getCacheEntry();
+        FileCacheEntry idxEntry = idx.getCacheEntry();
         assertEquals(3, entry.cacheEndOffset);
         assertEquals(0, entry.writtenToFsOffset);
+        assertTrue(idxEntry.isCacheDirty(false));
+        List<ByteBuf> pinned = chunkBuffers(entry, idxEntry);
         delegate.reset();
 
         tcf.close(writer, true).get(5, TimeUnit.SECONDS);
         awaitAll();
 
         assertEquals("noFlush close must not write back", 0, delegate.segWriteCount);
+        assertEquals("noFlush close must not write the index back", 0, delegate.fileWriteCount);
         assertEquals("noFlush close must not fsync", 0, delegate.segFsyncCount);
         assertTrue(writer.closed);
         assertEquals("unflushed cache is dropped", 0, Files.size(Paths.get(dir, SEG_PREFIX + "0")));
+        // keeper-tfs-m6 T-A.1: segment and index cache are both released.
+        assertEquals(0, entry.refCount);
+        assertTrue("index entries detached", entry.indexFiles.isEmpty());
+        assertCacheReleased(tcf, pinned, entry, idxEntry);
     }
 
     @Test
@@ -1905,6 +1979,8 @@ public class TailCacheFileSystemTest {
 
         faulty.hangOn(Op.FILE_WRITE);
         hangTcf.write(writer, bufOf(new byte[200])).get(5, TimeUnit.SECONDS);
+        FileCacheEntry entry = writer.getCacheEntry();
+        List<ByteBuf> pinned = chunkBuffers(entry);
 
         long start = System.nanoTime();
         try {
@@ -1918,10 +1994,27 @@ public class TailCacheFileSystemTest {
                 elapsedMs < BOUNDED_MS);
         assertFalse("close did not complete, so the handle is still open", writer.closed);
 
+        // keeper-tfs-m6 T-A.2: noFlush keeps the in-flight barrier, so it fails the same way, and
+        // the skipped onCacheClose leaves the cache pinned until a later retry.
+        try {
+            hangTcf.close(writer, true);
+            fail("noFlush close must also throw while the write is wedged");
+        } catch (OperationNotExecutedException expected) {
+            // thrown synchronously by awaitInFlightIo
+        }
+        assertFalse(writer.closed);
+        assertEquals("entry not released", 1, entry.refCount);
+        assertTrue("cache memory still held", hangTcf.getGlobalCommittedBytes() > 0);
+
         faulty.release();
-        // Once the disk recovers the same handle can still be closed normally.
+        // Once the disk recovers the same handle can still be closed normally, and the cache is
+        // released. noFlush close after the in-flight write finishes is covered by
+        // testCloseNoFlushStillAwaitsInFlightIo.
         hangTcf.close(writer).get(5, TimeUnit.SECONDS);
+        awaitAll();
         assertTrue(writer.closed);
+        assertEquals(0, entry.refCount);
+        assertCacheReleased(hangTcf, pinned, entry);
     }
 
     @Test
@@ -3846,6 +3939,8 @@ public class TailCacheFileSystemTest {
         private volatile Set<Op> faulty = Collections.emptySet();
         private volatile CountDownLatch gate;
         private volatile IOException failure;
+        // How many times an injected failure was thrown; proves a path actually reached the delegate.
+        final java.util.concurrent.atomic.AtomicInteger failureHits = new java.util.concurrent.atomic.AtomicInteger();
 
         FaultyDelegate(ExecutorService ioExecutor) {
             super(ioExecutor);
@@ -3880,6 +3975,7 @@ public class TailCacheFileSystemTest {
             }
             IOException f = failure;
             if (f != null) {
+                failureHits.incrementAndGet();
                 throw StorageUtil.wrapIOException(f);
             }
             CountDownLatch g = gate;
