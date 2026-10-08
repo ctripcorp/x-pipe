@@ -1,0 +1,44 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/container/KeeperContainerZkRegistrarTest.java
+  s_1a64a48b8580e3::t_5be90518314819 169-172
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/keeper/container/DefaultCurrentDcKeeperContainerAddressServiceTest.java
+  s_1a64a48b8580e3::t_8829636dbbed39 149,151-152
+  s_1a64a48b8580e3::t_885d764318d54a 207-209,213-214
+  s_1a64a48b8580e3::t_223fd30fa171e2 633-636
+  s_1a64a48b8580e3::t_058810c49cbb36 763-764,768,775,780
+  s_1a64a48b8580e3::t_93b3ad9c201b7f 308-415
+  s_1a64a48b8580e3::t_2b33355a705fc4 190-193
+  s_1a64a48b8580e3::t_a98d6d7ff6685d 29
+  s_1a64a48b8580e3::t_83e82ba9e7e67d 41-42
+  s_1a64a48b8580e3::t_1bb16a1de9cfbb 96,99-102,106-107,113,117-120
+  s_1a64a48b8580e3::t_d17bb2708d8b04 59-61
+  s_1a64a48b8580e3::t_41b0d5085655c3 753-762,765-767,769-774,776-779,781-783
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/keeper/container/DefaultCurrentDcKeeperContainerAddressService.java
+  s_1a64a48b8580e3::t_834bc94884a246 270-271,274-287,290-293,297-298,302-337
+  s_1a64a48b8580e3::t_a710d587c055fc 58-68
+  s_1a64a48b8580e3::t_568c4b816c96d8 24,27
+  s_1a64a48b8580e3::t_de9a64bc8d8dd8 93
+  s_1a64a48b8580e3::t_fc547434bf2f39 113-114,116,123-127,130
+  s_1a64a48b8580e3::t_0011bb103d4107 204-205,211-215,220-235
+  s_1a64a48b8580e3::t_0df4c185a37350 454-475
+  s_1a64a48b8580e3::t_ba2f61f281d34a 356-363,365-366
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/keeper/container/TestCurrentDcKeeperContainerAddressService.java
+  s_1a64a48b8580e3::t_29636fc0f1495a 41-51
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/keeper/container/CurrentDcKeeperContainerAddressService.java
+  s_1a64a48b8580e3::t_ddd5ac48fed1e7 8,10-17,31-32,39-40,45-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "df22ab1d2facf4df34f7a78941c1652cce4b46ea",
+  "prompts": {},
+  "sessions": {
+    "s_1a64a48b8580e3": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_f015341e-7d3e-4707-8ab7-76b9de318602",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

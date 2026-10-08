@@ -1,0 +1,38 @@
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/DefaultCrossDcKeeperContainerAddressServiceTest.java
+  s_e20784b54ea836::t_2ce8dd53c7f573 1-212
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/RemoteDcKeeperContainerAddressCacheTest.java
+  s_e20784b54ea836::t_46f02474fd3831 44-45
+  s_e20784b54ea836::t_de384e93beca91 11
+  s_e20784b54ea836::t_259f48651ac0b6 141
+  s_e20784b54ea836::t_b6e6cafa66b851 206-245
+  s_e20784b54ea836::t_ad1a9db1230216 155-157
+  s_e20784b54ea836::t_e588d2e4253514 112-114
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/DefaultCrossDcKeeperContainerAddressService.java
+  s_e20784b54ea836::t_8a0f450631eaf9 6-8,14,16,20-25,32,34-36,39-42,44-51,55,58,62,65,70-71,74,77,82,87,91-118
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/CrossDcKeeperContainerAddressService.java
+  s_e20784b54ea836::t_b1b4d56df67f06 56
+  s_e20784b54ea836::t_82c812e4219306 3-5,9-12,14,16-17,22,24,26,31-32,34-35,40,42,45,48-55,57-58
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/RemoteDcKeeperContainerAddressCache.java
+  s_e20784b54ea836::t_bf473398f8cf4d 178-211
+  s_e20784b54ea836::t_9ab09d96e19ff2 9
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/keeper/container/CurrentDcKeeperContainerAddressService.java
+  s_e20784b54ea836::t_c098fcad05e83d 20
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/impl/DefaultConsoleService.java
+  s_e20784b54ea836::t_ee546b6031c57d 310
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "8cbf36e340b00f6fd49b6e2db103e271026d20b8",
+  "prompts": {},
+  "sessions": {
+    "s_e20784b54ea836": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_189b0bb6-ccbf-4a97-876f-51fe876adf65",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
