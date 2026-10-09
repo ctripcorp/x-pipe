@@ -75,7 +75,7 @@ class KeeperReplIdCommand extends AbstractCommand<Triple<String, String, String>
                 .anyMatch(keeper -> {
                     String metaKeeperIp = StringUtil.isEmpty(keeper.getHostname()) ? keeper.getIp() :
                             currentDcKeeperContainerAddressService.getIpByHostname(keeper.getHostname());
-                    return metaKeeperIp != null && masterHost.equals(keeper.getIp()) && masterPort == keeper.getPort();
+                    return masterHost.equals(metaKeeperIp) && masterPort == keeper.getPort();
                 });
         if (!keeperInMeta) {
             getLogger().info("[doExecute][keeper not in meta] {} master={}:{}",

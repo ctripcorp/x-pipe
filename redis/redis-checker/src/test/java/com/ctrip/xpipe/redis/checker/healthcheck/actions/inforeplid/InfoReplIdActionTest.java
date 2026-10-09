@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * InfoReplId 的链式检查：两条 INFO 命令按序执行，五个终止分支、编号新旧、以及 stop 后的丢弃。
+ * 容器 keeper 的 meta ip 是占位值，slave 的 master_host 必须与 hostname 反查后的 IP 比对。
  *
  * 测试只替换 session 的异步回调边界（{@link RedisSession#infoReplication}）并显式触发回调，
  * 命令、链、推进逻辑全部走真实实现；不依赖真实网络与真实定时。
@@ -49,6 +50,8 @@ public class InfoReplIdActionTest {
 
     private static final HostPort REDIS = new HostPort("10.0.1.1", 6379);
     private static final HostPort KEEPER = new HostPort("10.0.2.1", 6380);
+    private static final String CONTAINER_HOSTNAME = "pod-0";
+    private static final String PLACEHOLDER_IP = "0.0.0.0";
 
     private static final String SLAVE_REPL_ID = "replid-slave";
     private static final String KEEPER_REPL_ID = "replid-keeper";
@@ -205,6 +208,64 @@ public class InfoReplIdActionTest {
         // 监听方按具体类型分支：KeeperNotInMetaException 要告警，不能被链异常包住
         assertFailure(KeeperNotInMetaException.class, null);
         Mockito.verifyNoInteractions(keeperSession);
+    }
+
+    @Test
+    public void containerKeeperMatchedByResolvedIp() {
+        String resolvedIp = "10.0.0.2";
+        stubContainerKeeper(resolvedIp);
+
+        runCheck(redisInfo(SLAVE_REPL_ID, null, resolvedIp, KEEPER.getPort()),
+                redisInfo(SLAVE_REPL_ID, null, null, -1));
+
+        Assert.assertTrue(verifyNotified().isSuccess());
+    }
+
+    @Test
+    public void containerKeeperUnresolvedIpIsNotInMeta() {
+        Mockito.when(currentDcKeeperContainerAddressService.getIpByHostname(CONTAINER_HOSTNAME)).thenReturn(null);
+        Mockito.when(metaCache.getKeeperOfDcClusterShard(DC_ID, CLUSTER_ID, SHARD_ID))
+                .thenReturn(Collections.singletonList(containerKeeper()));
+
+        runSlave(redisInfo(SLAVE_REPL_ID, null, "10.0.0.2", KEEPER.getPort()));
+
+        assertFailure(KeeperNotInMetaException.class, null);
+        Mockito.verifyNoInteractions(keeperSession);
+    }
+
+    @Test
+    public void containerKeeperNotMatchedWhenSlaveHostDiffersFromResolvedIp() {
+        Mockito.when(currentDcKeeperContainerAddressService.getIpByHostname(CONTAINER_HOSTNAME)).thenReturn("10.0.0.2");
+        Mockito.when(metaCache.getKeeperOfDcClusterShard(DC_ID, CLUSTER_ID, SHARD_ID))
+                .thenReturn(Collections.singletonList(containerKeeper()));
+
+        runSlave(redisInfo(SLAVE_REPL_ID, null, "10.0.0.9", KEEPER.getPort()));
+
+        assertFailure(KeeperNotInMetaException.class, null);
+        Mockito.verifyNoInteractions(keeperSession);
+    }
+
+    @Test
+    public void containerKeeperNotMatchedByPlaceholderIp() {
+        Mockito.when(currentDcKeeperContainerAddressService.getIpByHostname(CONTAINER_HOSTNAME)).thenReturn("10.0.0.2");
+        Mockito.when(metaCache.getKeeperOfDcClusterShard(DC_ID, CLUSTER_ID, SHARD_ID))
+                .thenReturn(Collections.singletonList(containerKeeper()));
+
+        runSlave(redisInfo(SLAVE_REPL_ID, null, PLACEHOLDER_IP, KEEPER.getPort()));
+
+        assertFailure(KeeperNotInMetaException.class, null);
+        Mockito.verifyNoInteractions(keeperSession);
+    }
+
+    @Test
+    public void containerKeeperMatchedAfterResolvedIpChanged() {
+        String resolvedIp = "10.0.0.3";
+        stubContainerKeeper(resolvedIp);
+
+        runCheck(redisInfo(SLAVE_REPL_ID, null, resolvedIp, KEEPER.getPort()),
+                redisInfo(SLAVE_REPL_ID, null, null, -1));
+
+        Assert.assertTrue(verifyNotified().isSuccess());
     }
 
     @Test
@@ -415,6 +476,18 @@ public class InfoReplIdActionTest {
         DefaultCommandFuture<Triple<String, String, String>> result = new DefaultCommandFuture<>();
         result.setSuccess(new Triple<>("a", "a", null));
         return result;
+    }
+
+    private KeeperMeta containerKeeper() {
+        return new KeeperMeta().setIp(PLACEHOLDER_IP).setPort(KEEPER.getPort()).setHostname(CONTAINER_HOSTNAME);
+    }
+
+    private void stubContainerKeeper(String resolvedIp) {
+        Mockito.when(currentDcKeeperContainerAddressService.getIpByHostname(CONTAINER_HOSTNAME)).thenReturn(resolvedIp);
+        Mockito.when(metaCache.getKeeperOfDcClusterShard(DC_ID, CLUSTER_ID, SHARD_ID))
+                .thenReturn(Collections.singletonList(containerKeeper()));
+        Mockito.when(crossRegionKeeperSessionManager.findOrCreateSession(new HostPort(resolvedIp, KEEPER.getPort())))
+                .thenReturn(keeperSession);
     }
 
     /** 一轮完整检查：只有 stage 1 完成后，链才会发起 stage 2。 */
