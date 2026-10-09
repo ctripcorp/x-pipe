@@ -121,26 +121,29 @@ public class DefaultKeeperAdvancedServiceGetNewKeepersTest {
     @Test
     public void testGetNewKeepersInheritsReplacedKeeperPriority() {
         ShardModel shardModel = shardModelWithKeepers(
-                keeper(SRC_IP, 6380, 1L).setKeeperPriority(3),
+                keeper(SRC_IP, 6380, SRC_KEEPER_CONTAINER_ID).setKeeperPriority(3),
                 keeper("10.0.0.2", 6381, 2L).setKeeperPriority(1));
 
-        when(keeperContainerService.find(2L)).thenReturn(new KeepercontainerTbl().setKeepercontainerId(2L).setAzId(1L));
-
-        KeeperBasicInfo selected = new KeeperBasicInfo();
-        selected.setHost(TARGET_IP);
-        selected.setPort(6383);
-        selected.setKeeperContainerId(4L);
-        doReturn(Lists.newArrayList(selected)).when(keeperAdvancedService)
-                .findBestKeepersByKeeperContainer(eq(TARGET_IP), anyInt(), any(), eq(1));
+        when(keeperContainerService.find(2L)).thenReturn(physicalContainer(2L, "10.0.0.2"));
+        when(keeperContainerService.find(TARGET_KEEPER_CONTAINER_ID))
+                .thenReturn(physicalContainer(TARGET_KEEPER_CONTAINER_ID, TARGET_IP));
+        when(redisService.findAllKeepersByKeeperContainerId(anyLong())).thenReturn(Collections.emptyList());
 
         List<RedisTbl> newKeepers = keeperAdvancedService.getNewKeepers(
-                DC_NAME, CLUSTER_NAME, shardModel, SRC_IP, TARGET_IP);
+                DC_NAME, CLUSTER_NAME, shardModel, SRC_KEEPER_CONTAINER_ID, TARGET_KEEPER_CONTAINER_ID);
 
         RedisTbl migrated = newKeepers.stream()
-                .filter(keeper -> TARGET_IP.equals(keeper.getRedisIp()))
+                .filter(keeper -> TARGET_KEEPER_CONTAINER_ID == keeper.getKeepercontainerId())
                 .findFirst().orElse(null);
         Assert.assertNotNull(migrated);
+        Assert.assertEquals(TARGET_IP, migrated.getRedisIp());
         Assert.assertEquals(3, migrated.getKeeperPriority());
+
+        RedisTbl remaining = newKeepers.stream()
+                .filter(keeper -> keeper.getKeepercontainerId() == 2L)
+                .findFirst().orElse(null);
+        Assert.assertNotNull(remaining);
+        Assert.assertEquals(1, remaining.getKeeperPriority());
     }
 
     private ShardModel shardModelWithKeepers(RedisTbl... keepers) {
