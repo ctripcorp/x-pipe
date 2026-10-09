@@ -228,11 +228,15 @@ public class ComparatorStageTwoAcceptanceTest extends AbstractTest {
         String collector = readMain("report", "CompareMetricsCollector.java");
         Assert.assertTrue(collector.contains("writeBinMultiDataPoint"));
         Assert.assertFalse(collector.contains("logger.error"));
-        Assert.assertEquals(1, count(collector, "new MetricData("));
+        // Hickwall: comparedBytes + CompareReporter{name=mismatch}; both from the periodic collector only
+        Assert.assertEquals(2, count(collector, "new MetricData("));
         Assert.assertEquals(1, count(collector, "new MetricData(METRIC_COMPARED_BYTES"));
+        Assert.assertEquals(1, count(collector, "new MetricData(METRIC_COMPARE_REPORTER"));
         Assert.assertFalse(collector.contains("new MetricData(\""));
         String writeCompared = methodBody(collector, "private void writeComparedBytes");
         Assert.assertTrue(writeCompared.contains("new MetricData(METRIC_COMPARED_BYTES"));
+        String writeMismatch = methodBody(collector, "private void writeMismatch");
+        Assert.assertTrue(writeMismatch.contains("new MetricData(METRIC_COMPARE_REPORTER"));
         walkMain(text -> {
             if (text.contains("class CompareMetricsCollector")) {
                 return;
