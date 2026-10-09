@@ -1,0 +1,59 @@
+core/src/main/java/com/ctrip/xpipe/cluster/LeaderLatchProbeStatus.java
+  s_d29eacd2cafd3c::t_7ba0e9ec1c2c49 1-161
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/KeeperContainerRegistrationController.java
+  s_d29eacd2cafd3c::t_e1f93baeb4c149 1-86
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/KeeperContainerZkRegistrar.java
+  s_d29eacd2cafd3c::t_b360ef0dc0afd0 107-108,96,52-53,109-110,112-119,121-126
+  s_8b522ee3c6b7a9::t_ecd770cbfa19e3 34,39,78-79,83,85-86,88,95,99,101-102,104-105,127-129,131,54
+  s_d5bc2078a97f9f::t_8621607c8a0a05 6,35,47,82,94,130,111,120
+  s_d29eacd2cafd3c::t_26bc1135c50b4a 5
+  s_d29eacd2cafd3c::t_cc2f4d20dc75c6 36-37,44-45,50-51,55-56,60-61
+  s_d29eacd2cafd3c::t_a891649a7a2d1c 80-81
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/container/KeeperContainerRegistrationControllerTest.java
+  s_d29eacd2cafd3c::t_f8331c9b78033c 1-198
+core/src/test/java/com/ctrip/xpipe/cluster/RebuildableLeaderLatchProbeTest.java
+  s_d29eacd2cafd3c::t_b87cfae59815f8 1-4,6-23,25,27-51,53-74,78-257,325-343,349-350,366-419
+  s_d29eacd2cafd3c::t_a97c44817a92e6 5
+  s_d29eacd2cafd3c::t_3623af5a443718 24,26
+  s_d29eacd2cafd3c::t_eccdb0fd016e3c 52
+  s_d29eacd2cafd3c::t_7b7a4d5d1ec3c4 75-77
+  s_d29eacd2cafd3c::t_6b302a3f521033 258-324
+  s_d29eacd2cafd3c::t_df2ae64685d28d 344-348,351-365
+core/src/main/java/com/ctrip/xpipe/cluster/RebuildableLeaderLatch.java
+  s_d5bc2078a97f9f::t_bd46c4fe8ac23e 1-3,5-7,9,12-16,19,21,23-24,26-33,48-49,52-53,56-63,67-70,83-87,90-91,93-96,100,109-114,125-128,132-141,146-179,182-192,225-234,239-264,270-277,279-285,415-422,424-442,38,42,46,66,73,82,99,102,105,116-117,124,196,198,202,204,206,222-224,268-269,295-297,302,308,312,316,321-322,342-345,348,370-371,374,378,387-389,401-403,408-410,413-414
+  s_d29eacd2cafd3c::t_4219146f14723f 108,193-195,286-287,4,8,10-11,17-18,20,22,25,34-37,39-41,43-45,47,50-51,54-55,64-65,71-72,74-81,88-89,92,97-98,101,103-104,106-107,115,118-123,129-131,142-145,180-181,197,199-201,203,205,207-221,235-238,265-267,278,288-294,298-301,303-307,309-311,313-315,317-320,323-341,346-347,349-369,372-373,375-377,379-386,390-400,404-407,411-412,423
+core/src/test/java/com/ctrip/xpipe/zk/BlackholeTcpProxy.java
+  s_d29eacd2cafd3c::t_d8d243ea88adde 1-128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "9beb35f3b272d7dbeca3f170015eae809b130958",
+  "prompts": {},
+  "sessions": {
+    "s_8b522ee3c6b7a9": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_8f29db6f-b6a7-4262-b729-1763ff200dd5",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_d29eacd2cafd3c": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_52b90e3f-11fb-46ad-ac1b-d1290edc54f6",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_d5bc2078a97f9f": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_77864921-35f3-425d-b285-868bab37882e",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

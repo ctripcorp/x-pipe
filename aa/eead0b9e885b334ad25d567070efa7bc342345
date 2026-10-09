@@ -1,0 +1,84 @@
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/CrossDcKeeperContainerAddressService.java
+  s_e20784b54ea836::t_82c812e4219306 3-5,9-12,14,16-17,22,24,26,31-32,34-35,40,42,45,48-55,57-58
+  s_e20784b54ea836::t_b1b4d56df67f06 56
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/ConsoleService.java
+  s_083d5f777497aa::t_9e2953733aa58f 11
+  s_083d5f777497aa::t_f93d439ad5cc5a 67-71
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/impl/DefaultConsoleService.java
+  s_083d5f777497aa::t_50029de95e857a 15
+  s_083d5f777497aa::t_99df6b79f84592 104
+  s_083d5f777497aa::t_93e97beb65b21e 105,309,311-317
+  s_083d5f777497aa::t_69992e99e54a7d 148
+  s_e20784b54ea836::t_ee546b6031c57d 310
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/DefaultCrossDcKeeperContainerAddressService.java
+  s_e20784b54ea836::t_8a0f450631eaf9 89-118
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/impl/RemoteDcKeeperContainerAddressCache.java
+  s_81577b14c02ee0::t_7c00693a12e2b2 1-8,10-52,56-130,135-150,152-177,212-213,216,220-224,226-395,178,182,191,193-195,198,206,208-209
+  s_81577b14c02ee0::t_da188165cc96fd 53-55
+  s_81577b14c02ee0::t_7d07ed9123edc0 131-134
+  s_81577b14c02ee0::t_d1fc01db97f8ac 151
+  s_81577b14c02ee0::t_81424fb8d2df7c 214-215,217-219
+  s_81577b14c02ee0::t_808957a688c1e6 225
+  s_e20784b54ea836::t_9ab09d96e19ff2 9
+  s_e20784b54ea836::t_bf473398f8cf4d 179-181,183-190,192,196-197,199-205,207,210-211
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/keeper/container/CurrentDcKeeperContainerAddressService.java
+  s_1a64a48b8580e3::t_ddd5ac48fed1e7 8,10-17,31-32,39-40,47,49-51,53
+  s_083d5f777497aa::t_3976ea7d06f549 45-46,48,52,54-64
+  s_e20784b54ea836::t_c098fcad05e83d 20
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/DefaultCrossDcKeeperContainerAddressServiceTest.java
+  s_e20784b54ea836::t_2ce8dd53c7f573 1-212
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/console/impl/ConsoleServiceManager.java
+  s_083d5f777497aa::t_a239e08646aff0 27
+  s_083d5f777497aa::t_b0b9837415657f 411-424
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/impl/RemoteDcKeeperContainerAddressCacheTest.java
+  s_81577b14c02ee0::t_d0bdd867478d4e 1-10,12-27,29-43,46-111,115-140,142-154,158-203,246-248,265,267,273-275,278-284,288,293-386,207-208,215-216,219,223,227-229,238-239,244-245
+  s_81577b14c02ee0::t_d2299342eed45f 28
+  s_e20784b54ea836::t_b6e6cafa66b851 204-205,206,209-214,217-218,220-222,224-226,230-237,240-243
+  s_81577b14c02ee0::t_93964746c4b95a 249-264,268-272,276-277,285-286,289-292
+  s_81577b14c02ee0::t_c3adafed2a51c0 266
+  s_81577b14c02ee0::t_21bc8c4dd8f3ba 287
+  s_e20784b54ea836::t_de384e93beca91 11
+  s_e20784b54ea836::t_46f02474fd3831 44-45
+  s_e20784b54ea836::t_e588d2e4253514 112-114
+  s_e20784b54ea836::t_ad1a9db1230216 141,155-157
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "aaeead0b9e885b334ad25d567070efa7bc342345",
+  "prompts": {},
+  "sessions": {
+    "s_083d5f777497aa": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_0dffa1d6-abdf-4c60-88dd-a9d60cade90b",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_1a64a48b8580e3": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_f015341e-7d3e-4707-8ab7-76b9de318602",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_81577b14c02ee0": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_d03cfe3e-1c90-4296-abb3-fc646eae6273",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_e20784b54ea836": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_189b0bb6-ccbf-4a97-876f-51fe876adf65",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
