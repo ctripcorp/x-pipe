@@ -276,9 +276,20 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		return this.lastResetElectionTime;
 	}
 
+	/**
+	 * HTTP ops entry: never open or create the store (getCurrentReplicationStore() → createIfNotExist() would).
+	 * Releasing the rdb writes meta, so a read-only store is refused too.
+	 */
 	@Override
 	public void releaseRdb() throws IOException {
-		getCurrentReplicationStore().releaseRdb();
+		ReplicationStore store = getOpenedStore();
+		if (store == null || !store.checkOk()) {
+			throw new IllegalStateException("store not opened: " + this);
+		}
+		if (isReadOnlyStore()) {
+			throw new IllegalStateException("read-only store, release rdb unsupported: " + this);
+		}
+		store.releaseRdb();
 	}
 
 	@Override

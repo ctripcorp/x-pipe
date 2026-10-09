@@ -97,14 +97,14 @@ public class DefaultRedisKeeperServerSharedStoreTest extends AbstractRedisKeeper
 			try {
 				keeper.releaseRdb();
 				Assert.fail("releaseRdb must not open the shared store");
-			} catch (RuntimeException expected) {
-				logger.info("[testOpsEntriesOnUnknownDoNotCreateStore][releaseRdb] {}", expected.getMessage());
+			} catch (IllegalStateException expected) {
+				Assert.assertTrue(expected.getMessage(), expected.getMessage().startsWith("store not opened"));
 			}
 			try {
 				keeper.createCmdKeySearcher("uuid", 1, 2).execute().get(5, java.util.concurrent.TimeUnit.SECONDS);
 				Assert.fail("gtid key search must not open the shared store");
 			} catch (java.util.concurrent.ExecutionException expected) {
-				logger.info("[testOpsEntriesOnUnknownDoNotCreateStore][search] {}", expected.getMessage());
+				Assert.assertEquals("store not opened", expected.getCause().getMessage());
 			}
 
 			Assert.assertNull(keeper.getOpenedStore());
@@ -112,6 +112,86 @@ public class DefaultRedisKeeperServerSharedStoreTest extends AbstractRedisKeeper
 					"store_manager_meta.properties").exists());
 		} finally {
 			stopQuietly(keeper);
+		}
+	}
+
+	/**
+	 * Gtid key search on the slot holder whose store is closed: getReplicationStore() would see
+	 * getCurrent() == null and create() a new UUID dir, switching latest.store.dir. The search must fail instead.
+	 */
+	@Test
+	public void testSearchOnClosedStoreDoesNotCreateStore() throws Exception {
+		DefaultRedisKeeperServer holder = startTfsKeeper();
+		try {
+			becomeActive(holder);
+			ReplicationStore store = holder.getReplicationStore();
+			File managerDir = holder.getReplicationStoreManager().getBaseDir();
+			byte[] metaBefore = managerMeta(managerDir);
+			String[] dirsBefore = managerDir.list();
+			store.close();
+
+			try {
+				holder.createCmdKeySearcher("uuid", 1, 2).execute().get(5, java.util.concurrent.TimeUnit.SECONDS);
+				Assert.fail("search on a closed store must fail");
+			} catch (java.util.concurrent.ExecutionException expected) {
+				Assert.assertEquals("store not opened", expected.getCause().getMessage());
+			}
+
+			Assert.assertSame("search must not replace the store", store, holder.getOpenedStore());
+			Assert.assertArrayEquals("latest.store.dir unchanged", metaBefore, managerMeta(managerDir));
+			Assert.assertEquals("no new UUID dir", sorted(dirsBefore), sorted(managerDir.list()));
+		} finally {
+			stopQuietly(holder);
+		}
+	}
+
+	/**
+	 * Holder whose store was released (currentStore == null, the state release / create leave behind): HTTP ops
+	 * entries fail instead of reopening the store on the ops thread.
+	 */
+	@Test
+	public void testOpsEntriesOnReleasedStoreDoNotReopen() throws Exception {
+		DefaultRedisKeeperServer holder = startTfsKeeper();
+		try {
+			becomeActive(holder);
+			holder.getReplicationStore();
+			File managerDir = holder.getReplicationStoreManager().getBaseDir();
+			byte[] metaBefore = managerMeta(managerDir);
+			String[] dirsBefore = managerDir.list();
+			holder.getReplicationStoreManager().releaseCurrentStore();
+			Assert.assertTrue(holder.getReplicationStoreManager().isStoreWriteOwner());
+
+			try {
+				holder.releaseRdb();
+				Assert.fail("releaseRdb must not reopen the store");
+			} catch (IllegalStateException expected) {
+				Assert.assertTrue(expected.getMessage(), expected.getMessage().startsWith("store not opened"));
+			}
+			try {
+				holder.createCmdKeySearcher("uuid", 1, 2).execute().get(5, java.util.concurrent.TimeUnit.SECONDS);
+				Assert.fail("search must not reopen the store");
+			} catch (java.util.concurrent.ExecutionException expected) {
+				Assert.assertEquals("store not opened", expected.getCause().getMessage());
+			}
+
+			Assert.assertNull("ops entries must not reopen the store", holder.getOpenedStore());
+			Assert.assertArrayEquals("latest.store.dir unchanged", metaBefore, managerMeta(managerDir));
+			Assert.assertEquals("no new UUID dir", sorted(dirsBefore), sorted(managerDir.list()));
+		} finally {
+			stopQuietly(holder);
+		}
+	}
+
+	@Test
+	public void testReleaseRdbOnOpenedStore() throws Exception {
+		DefaultRedisKeeperServer holder = startTfsKeeper();
+		try {
+			becomeActive(holder);
+			ReplicationStore store = holder.getReplicationStore();
+			holder.releaseRdb();
+			Assert.assertSame(store, holder.getOpenedStore());
+		} finally {
+			stopQuietly(holder);
 		}
 	}
 
