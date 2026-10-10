@@ -25,7 +25,8 @@ import java.util.function.Supplier;
  * 周期指标出口（spec D36 ② / §4.8.3 / T-RP.3）。
  * <p>
  * 挂 {@link AbstractSpringConfigContext#SCHEDULED_EXECUTOR}，每轮兜 {@code Throwable}。
- * Hickwall <b>只</b>打 {@code comparedBytes}；其它计数进 CAT Event 与 {@code /api/status}。
+ * Hickwall 打 {@code comparedBytes}（累计值）与 {@code CompareReporter{name=mismatch}}（本轮新增失配数）；
+ * 其它计数进 CAT Event 与 {@code /api/status}。
  * 禁止在比对循环 / {@link CompareReporter} 回调里逐次 write。
  * {@code MetricProxy} 不可用（非携程、无 Hickwall）降级为 {@link DummyMetricProxy}，
  * 只 WARN，不抛、不刷 ERROR。
@@ -33,6 +34,11 @@ import java.util.function.Supplier;
 public class CompareMetricsCollector {
 
     public static final String METRIC_COMPARED_BYTES = "comparedBytes";
+
+    /** Measurement {@code fx.xpipe.CompareReporter}, same type as the CAT event. */
+    public static final String METRIC_COMPARE_REPORTER = DefaultCompareReporter.MONITOR_TYPE;
+
+    public static final String TAG_NAME = "name";
 
     private static final Logger logger = LoggerFactory.getLogger(CompareMetricsCollector.class);
 
@@ -102,7 +108,24 @@ public class CompareMetricsCollector {
         long now = System.currentTimeMillis();
         for (ShardCompareTask task : tasks.values()) {
             writeComparedBytes(proxy, task, now);
+            writeMismatch(proxy, task, now);
         }
+    }
+
+    /**
+     * Mismatches since the last round (an increment, summed with {@code sum_over_time} like the CAT event).
+     * Tags: source (added by the proxy), dc, cluster, shard, name=mismatch.
+     */
+    private void writeMismatch(MetricProxy proxy, ShardCompareTask task, long now) {
+        ShardComparator cmp = task.getComparator();
+        if (cmp == null) {
+            return;
+        }
+        MetricData data = new MetricData(METRIC_COMPARE_REPORTER, dcName, cmp.getCluster(), cmp.getShard());
+        data.addTag(TAG_NAME, DefaultCompareReporter.EVENT_MISMATCH);
+        data.setTimestampMilli(now);
+        data.setValue(cmp.takeMismatchDelta());
+        write(proxy, data);
     }
 
     private void writeComparedBytes(MetricProxy proxy, ShardCompareTask task, long now) {

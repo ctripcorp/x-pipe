@@ -287,6 +287,11 @@ public class PrepareStoreWatcher {
 
 		reloadStoreMeta(current);
 		ReadOnlyCommandStore cmdStore = readOnlyCmdStore(current);
+		String metaPrefix = metaCmdFilePrefix(current);
+		if (cmdChainChanged(cmdStore, metaPrefix)) {
+			releaseChainChangedStore(current, cmdStore.getCommandFileNamePrefix(), metaPrefix);
+			return true;
+		}
 		if (cmdStore == null) {
 			refreshSnapshot();
 			return true;
@@ -346,18 +351,57 @@ public class PrepareStoreWatcher {
 	}
 
 	/**
-	 * 占槽者换店：断 slave + 释放。本轮不重建，新店由请求侧 {@code getCurrent()} 打开。
+	 * 占槽者换店：断 slave + 释放。<b>本轮不重建</b>，新店由消费者按需打开。
+	 * <p>
+	 * 谁负责打开：这一层只放掉旧店 —— 真正的开店者是【消费者】：
+	 * <ul>
+	 *   <li>{@code GapAllowSyncHandler} —— slave / comparator 发 PSYNC 时经
+	 *       {@code getReplicationStore() → createIfNotExist()} 打开只读店</li>
+	 *   <li>{@code PrepareCmdParser} —— {@code pubsub.parse} 开启时打开（默认关）</li>
+	 * </ul>
+	 * 这是有意的"按需开店"：没有消费者时观察者本来也无事可做，所以不打开是正确的，
+	 * 而不是缺陷。相关断言见 {@code PrepareStoreWatcherTest}（换店后 {@code getOpenedStore()
+	 * == null}，直到请求侧取店）。
+	 * <p>
+	 * 注意：【只读命令】（{@code ROLE} / {@code KINFO} / {@code GTIDX}）已不再具备开店能力
+	 * —— 它们改用 {@code getOpenedStore()}，不得触发 store 构造（见各自 handler）。
 	 */
 	private void releaseSwitchedStore(ReplicationStore current, String latestDir) throws IOException {
 		logger.info("[storeSwitched]latest.store.dir current={} latest={} {}",
 				storeDirName(current), latestDir, this);
+		releaseStore("latest.store.dir");
+	}
+
+	/**
+	 * 同一店内 cmd 链被换掉（meta 的 {@code cmdFilePrefix} 与只读 cmdStore 锚定的不一致）。写端约定只在 fresh 店上
+	 * 写前缀（换链一律新建店），这里是防御：只读 cmdStore 的前缀在构造时固定，不能原地换锚 —— 新旧链 offset
+	 * 不连续，正在读的 slave 必须重新 PSYNC。按换店处理：断 slave + 释放，消费者重开时按新前缀构造。
+	 */
+	private void releaseChainChangedStore(ReplicationStore current, String anchoredPrefix, String metaPrefix)
+			throws IOException {
+		logger.warn("[cmdChainChanged]store={} anchored={} meta={} {}",
+				storeDirName(current), anchoredPrefix, metaPrefix, this);
+		releaseStore("cmdFilePrefix");
+	}
+
+	private void releaseStore(String reason) throws IOException {
 		storeSwitchedCount.incrementAndGet();
-		changeListener.onStoreChanged("latest.store.dir");
+		changeListener.onStoreChanged(reason);
 		manager.releaseCurrentStore();
 		this.boundStore = null;
 		this.snapshot = null;
 		// 店都没了，旧店上的定位计时没有意义
 		clearLocateMiss();
+	}
+
+	/** Same-dir chain replacement: meta now names a different cmdFilePrefix than the one the read-only chain reads. */
+	private static boolean cmdChainChanged(ReadOnlyCommandStore cmdStore, String metaPrefix) {
+		return cmdStore != null && metaPrefix != null && !metaPrefix.equals(cmdStore.getCommandFileNamePrefix());
+	}
+
+	private static String metaCmdFilePrefix(ReplicationStore store) {
+		MetaStore metaStore = store.getMetaStore();
+		return metaStore == null ? null : metaStore.dupReplicationStoreMeta().getCmdFilePrefix();
 	}
 
 	/**

@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStore;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
 import org.junit.Before;
@@ -19,6 +20,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -116,6 +118,111 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 		}
 	}
 
+	/**
+	 * Full sync on the holder: create() publishes the new store B at once, the prefix only lands at confirmRdb after the
+	 * RDB transfer. Old store A is released; during the window consumers get no store (never a cmdStore-less one);
+	 * once B has its chain the next open reads B.
+	 */
+	@Test
+	public void testFullSyncStoreSwitchWaitsForNewChain() throws Exception {
+		AsyncFileSystem fs = createTestAsyncFileSystem();
+		File base = new File(getTestFileDir());
+		String runid = randomKeeperRunid();
+		DefaultReplicationStoreManager occupying = newManager(fs, base, runid);
+		DefaultReplicationStoreManager watching = newManager(fs, base, runid);
+		List<String> changes = new ArrayList<>();
+		PrepareStoreWatcher watcher = newWatcher(watching, changes::add);
+		try {
+			LifecycleHelper.initializeIfPossible(occupying);
+			LifecycleHelper.startIfPossible(occupying);
+			DefaultReplicationStore storeA = (DefaultReplicationStore) occupying.create();
+			seedCommands(storeA);
+
+			LifecycleHelper.initializeIfPossible(watching);
+			watching.setReadOnly(true);
+			LifecycleHelper.startIfPossible(watching);
+			Assert.assertEquals(storeA.getBaseDir(), ((DefaultReplicationStore) watching.getCurrent()).getBaseDir());
+			driveOpenPhaseAction(watcher);
+
+			// full sync starts: new store published, no cmd chain until the RDB is confirmed
+			DefaultReplicationStore storeB = (DefaultReplicationStore) occupying.create();
+			driveOpenPhaseAction(watcher);
+
+			Assert.assertEquals(Arrays.asList("latest.store.dir"), changes);
+			Assert.assertNull("old store released", watching.getOpenedStore());
+			Assert.assertNull("window: no readable store yet", watching.getCurrent());
+			Assert.assertNull(watching.getOpenedStore());
+
+			// RDB confirmed: chain appears in B
+			seedCommands(storeB);
+			DefaultReplicationStore opened = (DefaultReplicationStore) watching.getCurrent();
+			Assert.assertEquals(storeB.getBaseDir(), opened.getBaseDir());
+			Assert.assertTrue(opened.getCommandStore() instanceof ReadOnlyCommandStore);
+			Assert.assertEquals(storeB.getMetaStore().dupReplicationStoreMeta().getCmdFilePrefix(),
+					((ReadOnlyCommandStore) opened.getCommandStore()).getCommandFileNamePrefix());
+
+			driveOpenPhaseAction(watcher);
+			Assert.assertSame(opened, watching.getOpenedStore());
+			Assert.assertEquals(1, watcher.getStoreSwitchedCount());
+		} finally {
+			watcher.stop();
+			stopDispose(watching);
+			stopDispose(occupying);
+			fs.shutdown();
+		}
+	}
+
+	/**
+	 * Defensive: the cmd chain is replaced inside the same store dir (writer convention says it never is). The
+	 * read-only chain is anchored to the old prefix, so the watcher must release the store like a store switch.
+	 */
+	@Test
+	public void testSameDirCmdChainChangeReleasesStore() throws Exception {
+		AsyncFileSystem fs = createTestAsyncFileSystem();
+		File base = new File(getTestFileDir());
+		String runid = randomKeeperRunid();
+		DefaultReplicationStoreManager occupying = newManager(fs, base, runid);
+		DefaultReplicationStoreManager watching = newManager(fs, base, runid);
+		List<String> changes = new ArrayList<>();
+		PrepareStoreWatcher watcher = newWatcher(watching, changes::add);
+		try {
+			LifecycleHelper.initializeIfPossible(occupying);
+			LifecycleHelper.startIfPossible(occupying);
+			DefaultReplicationStore writable = (DefaultReplicationStore) occupying.create();
+			seedCommands(writable);
+			String oldPrefix = writable.getMetaStore().dupReplicationStoreMeta().getCmdFilePrefix();
+
+			LifecycleHelper.initializeIfPossible(watching);
+			watching.setReadOnly(true);
+			LifecycleHelper.startIfPossible(watching);
+			DefaultReplicationStore readOnly = (DefaultReplicationStore) watching.getCurrent();
+			Assert.assertEquals(oldPrefix, ((ReadOnlyCommandStore) readOnly.getCommandStore()).getCommandFileNamePrefix());
+			driveOpenPhaseAction(watcher);
+			Assert.assertSame(readOnly, watching.getOpenedStore());
+
+			// new chain in the same dir
+			seedCommands(writable);
+			String newPrefix = writable.getMetaStore().dupReplicationStoreMeta().getCmdFilePrefix();
+			Assert.assertNotEquals(oldPrefix, newPrefix);
+			Assert.assertEquals(readOnly.getBaseDir(), writable.getBaseDir());
+
+			driveOpenPhaseAction(watcher);
+
+			Assert.assertEquals(Arrays.asList("cmdFilePrefix"), changes);
+			Assert.assertNull("stale-chain store released", watching.getOpenedStore());
+			Assert.assertNull(watcher.getSnapshot());
+			Assert.assertEquals(1, watcher.getStoreSwitchedCount());
+
+			DefaultReplicationStore reopened = (DefaultReplicationStore) watching.getCurrent();
+			Assert.assertEquals(newPrefix, ((ReadOnlyCommandStore) reopened.getCommandStore()).getCommandFileNamePrefix());
+		} finally {
+			watcher.stop();
+			stopDispose(watching);
+			stopDispose(occupying);
+			fs.shutdown();
+		}
+	}
+
 	@Test
 	public void testDoesNotOpenWhenNotYetOpened() throws Exception {
 		AsyncFileSystem fs = createTestAsyncFileSystem();
@@ -196,8 +303,12 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 		}
 	}
 
+	/**
+	 * doc/keeper-tfs-bugfix-prefix-null.md: while the holder has not written cmdFilePrefix, a read-only open keeps
+	 * no store (it could never get a cmdStore). After the prefix lands, the consumer's next open gets a readable store.
+	 */
 	@Test
-	public void testReloadsMetaWhenOpenedWhileFresh() throws Exception {
+	public void testNoStoreWhileFreshThenOpensAfterChain() throws Exception {
 		AsyncFileSystem fs = createTestAsyncFileSystem();
 		File base = new File(getTestFileDir());
 		String runid = randomKeeperRunid();
@@ -212,16 +323,22 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 			LifecycleHelper.initializeIfPossible(watching);
 			watching.setReadOnly(true);
 			LifecycleHelper.startIfPossible(watching);
-			Assert.assertNull(((DefaultReplicationStore) watching.getCurrent()).getMetaStore().getCurrentReplStage());
+			Assert.assertNull("no cmd chain yet: nothing readable", watching.getCurrent());
+			Assert.assertNull(watching.getOpenedStore());
 
 			driveOpenPhaseAction(watcher);
-			Assert.assertNull(watching.getOpenedStore().getMetaStore().getCurrentReplStage());
+			Assert.assertNull("watcher never opens a store by itself", watching.getOpenedStore());
 
 			writable.psyncContinueFrom(REPL_ID, 1);
-			Assert.assertNull(watching.getOpenedStore().getMetaStore().getCurrentReplStage());
+
+			// consumer (slave PSYNC / PrepareCmdParser) retries and now gets a store with a read-only cmd chain
+			DefaultReplicationStore opened = (DefaultReplicationStore) watching.getCurrent();
+			Assert.assertNotNull(opened);
+			Assert.assertTrue(opened.getCommandStore() instanceof com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStore);
+			Assert.assertEquals(REPL_ID, opened.getMetaStore().getCurrentReplStage().getReplId());
 
 			driveOpenPhaseAction(watcher);
-			Assert.assertEquals(REPL_ID, watching.getOpenedStore().getMetaStore().getCurrentReplStage().getReplId());
+			Assert.assertSame(opened, watching.getOpenedStore());
 			Assert.assertEquals(0, watcher.getStoreSwitchedCount());
 		} finally {
 			watcher.stop();

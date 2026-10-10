@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.DefaultRedisOpParserManager;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.CommandFile;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReader;
 import io.netty.buffer.ByteBuf;
@@ -24,9 +25,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -51,6 +57,83 @@ public class GtidCommandSearcherTest extends AbstractTest {
 
     private GtidCommandSearcher searcher;
     private StreamCommandReader readerSpy;
+
+    @Mock
+    private ReplicationStore store;
+
+    /** Query path never opens or creates the store: getReplicationStore() would createIfNotExist(). */
+    @Test
+    public void testNoOpenedStoreFailsWithoutOpening() throws Exception {
+        when(redisKeeperServer.getOpenedStore()).thenReturn(null);
+
+        Throwable cause = executeAndGetFailure();
+
+        Assert.assertEquals(GtidCommandSearcher.STORE_NOT_OPENED, cause.getMessage());
+        verify(redisKeeperServer, never()).getReplicationStore();
+    }
+
+    /** A closed store must not be "healed": createIfNotExist() would create() a new UUID dir. */
+    @Test
+    public void testClosedStoreFailsWithoutCreate() throws Exception {
+        when(redisKeeperServer.getOpenedStore()).thenReturn(store);
+        when(store.checkOk()).thenReturn(false);
+
+        Throwable cause = executeAndGetFailure();
+
+        Assert.assertEquals(GtidCommandSearcher.STORE_NOT_OPENED, cause.getMessage());
+        verify(redisKeeperServer, never()).getReplicationStore();
+        verify(store, never()).locateCmdSegment(anyString(), anyLong(), anyLong());
+    }
+
+    @Test
+    public void testReadOnlyStoreFailsWithoutLocate() throws Exception {
+        when(redisKeeperServer.getOpenedStore()).thenReturn(store);
+        when(store.checkOk()).thenReturn(true);
+        when(redisKeeperServer.isReadOnlyStore()).thenReturn(true);
+
+        Throwable cause = executeAndGetFailure();
+
+        Assert.assertEquals(GtidCommandSearcher.READ_ONLY_STORE, cause.getMessage());
+        verify(store, never()).locateCmdSegment(anyString(), anyLong(), anyLong());
+        verify(store, never()).retainCommands(any());
+    }
+
+    /** No cmd chain yet (cmdStore null): empty result, not an NPE in locateCmdSegment. */
+    @Test
+    public void testFreshStoreReturnsEmpty() throws Exception {
+        when(redisKeeperServer.getOpenedStore()).thenReturn(store);
+        when(store.checkOk()).thenReturn(true);
+        when(store.isFresh()).thenReturn(true);
+
+        List<CmdKeyItem> result = searcher.execute().get(5, TimeUnit.SECONDS);
+
+        Assert.assertTrue(result.isEmpty());
+        verify(store, never()).locateCmdSegment(anyString(), anyLong(), anyLong());
+    }
+
+    @Test
+    public void testOpenedStoreIsSearched() throws Exception {
+        when(redisKeeperServer.getOpenedStore()).thenReturn(store);
+        when(store.checkOk()).thenReturn(true);
+        when(store.isFresh()).thenReturn(false);
+        when(store.locateCmdSegment(TEST_UUID, BEG_GNO, END_GNO)).thenReturn(Collections.emptyList());
+
+        List<CmdKeyItem> result = searcher.execute().get(5, TimeUnit.SECONDS);
+
+        Assert.assertTrue(result.isEmpty());
+        verify(store).locateCmdSegment(TEST_UUID, BEG_GNO, END_GNO);
+        verify(redisKeeperServer, never()).getReplicationStore();
+    }
+
+    private Throwable executeAndGetFailure() throws Exception {
+        try {
+            searcher.execute().get(5, TimeUnit.SECONDS);
+            Assert.fail("search must fail");
+            return null;
+        } catch (ExecutionException e) {
+            return e.getCause();
+        }
+    }
 
     @Before
     public void setUp() {

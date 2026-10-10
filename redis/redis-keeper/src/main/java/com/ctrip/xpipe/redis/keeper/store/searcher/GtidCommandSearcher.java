@@ -41,6 +41,10 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
 
     private static final Logger logger = LoggerFactory.getLogger(GtidCommandSearcher.class);
 
+    static final String STORE_NOT_OPENED = "store not opened";
+
+    static final String READ_ONLY_STORE = "read-only store, gtid search unsupported";
+
     private String currentUUID;
 
     private long currentGno;
@@ -61,7 +65,23 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
 
     @Override
     protected void doExecute() throws Throwable {
-        ReplicationStore store = this.redisKeeperServer.getReplicationStore();
+        // Query only: never open or create the store. getReplicationStore() → createIfNotExist() would,
+        // and on a closed store it would create() a new UUID dir and switch latest.store.dir.
+        ReplicationStore store = this.redisKeeperServer.getOpenedStore();
+        if (store == null || !store.checkOk()) {
+            future().setFailure(new XpipeRuntimeException(STORE_NOT_OPENED));
+            return;
+        }
+        // PREPARE read-only store has no gtid index: locateCmdSegment / retainCommands are unsupported
+        if (this.redisKeeperServer.isReadOnlyStore()) {
+            future().setFailure(new XpipeRuntimeException(READ_ONLY_STORE));
+            return;
+        }
+        // no cmd chain yet (cmdStore is null): nothing to search
+        if (store.isFresh()) {
+            future().setSuccess(Collections.emptyList());
+            return;
+        }
         CommandsGuarantee guarantee = null;
         cmdKeyItems = new ArrayList<>();
         try {

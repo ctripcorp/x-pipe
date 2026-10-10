@@ -56,6 +56,7 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
     /** Null in production (Factory per ForceCloseDir, D23). Tests inject via {@link #setTfsGateway}. */
     private TfsGateway tfsGateway;
     private Command<?> activeSuccessCommand;
+    private boolean forceCloseOnPrepareFailure = true;
 
     public TfsKeeperStateChangeJob(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers,
                                    KeeperMeta previousActiveKeeper,
@@ -131,10 +132,12 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
         if (!prepareTfsKeepers.isEmpty()) {
             getLogger().info("[tfsKeeperStateChange][prepare release target PREPARE]cluster_{},shard_{},count={},keepers={}",
                     shardContext.getClusterDbId(), shardContext.getShardDbId(), prepareTfsKeepers.size(), prepareTfsKeepers);
+            boolean forceClose = mayForceCloseOnPrepareFailure();
             ParallelCommandChain prepareChain = new ParallelCommandChain(executor);
             for (KeeperMeta prepareKeeper : prepareTfsKeepers) {
                 prepareChain.add(new TfsPrepareReleaseCommand(shardContext, prepareKeeper, newActive, clientPool,
-                        dcMetaCache, metaServerConfig, scheduled, executor, tfsGateway));
+                        dcMetaCache, metaServerConfig, scheduled, executor, tfsGateway)
+                        .setForceCloseOnFailure(forceClose));
             }
             chain.add(prepareChain);
         }
@@ -177,6 +180,50 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
     private KeeperMeta findNewActiveKeeper() {
         for (KeeperMeta keeperMeta : surviveKeepers) {
             if (KeeperState.ACTIVE == resolveKeeperState(keeperMeta)) {
+                return keeperMeta;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Turn off the ForceCloseDir fallback for this job. Used by the 30s correction path, which re-applies the
+     * current assignment: the slot holder there is normally the keeper already writing.
+     */
+    public TfsKeeperStateChangeJob disableForceCloseOnPrepareFailure() {
+        this.forceCloseOnPrepareFailure = false;
+        return this;
+    }
+
+    /**
+     * ForceCloseDir has no pod scope (TFS ForceCloseDirRequest has only fs_id + dir_path; x-pipe's pod_ip is
+     * dropped): it evicts and blacklists every current lease holder under the dir. If the slot holder stays the
+     * same keeper, that keeper is the one holding the leases and would be fenced off while it keeps writing.
+     * So fall back to ForceCloseDir only when the slot holder changes. Unknown previous active keeps the old
+     * behavior (fence).
+     */
+    @VisibleForTesting
+    public boolean mayForceCloseOnPrepareFailure() {
+        if (!forceCloseOnPrepareFailure) {
+            return false;
+        }
+        return !slotHolderKept();
+    }
+
+    private boolean slotHolderKept() {
+        if (previousActiveKeeper == null || !TfsKeeperUtils.isTfsKeeper(previousActiveKeeper, dcMetaCache)) {
+            return false;
+        }
+        KeeperMeta newSlotHolder = findNewSlotHolder();
+        return newSlotHolder != null && MetaUtils.same(newSlotHolder, previousActiveKeeper);
+    }
+
+    /** The TFS keeper that writes the shared store after this job: TFS ACTIVE, or the TFS BACKUP slot holder. */
+    private KeeperMeta findNewSlotHolder() {
+        for (KeeperMeta keeperMeta : surviveKeepers) {
+            KeeperState state = resolveKeeperState(keeperMeta);
+            if ((state == KeeperState.ACTIVE || state == KeeperState.BACKUP)
+                    && TfsKeeperUtils.isTfsKeeper(keeperMeta, dcMetaCache)) {
                 return keeperMeta;
             }
         }

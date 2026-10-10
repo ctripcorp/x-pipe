@@ -40,8 +40,9 @@ public class CompareMetricsCollectorTest extends AbstractTest {
                 scheduled, new ComparatorConfig(), "jq", () -> proxy);
         collector.reportOnce();
 
-        Assert.assertEquals(1, proxy.points.size());
-        MetricData point = proxy.points.get(0);
+        List<MetricData> compared = proxy.of(CompareMetricsCollector.METRIC_COMPARED_BYTES);
+        Assert.assertEquals("task without comparator writes nothing", 1, compared.size());
+        MetricData point = compared.get(0);
         Assert.assertEquals(CompareMetricsCollector.METRIC_COMPARED_BYTES, point.getMetricType());
         Assert.assertEquals(4.0, point.getValue(), 0.0);
         Assert.assertEquals("c1", point.getClusterName());
@@ -62,7 +63,8 @@ public class CompareMetricsCollectorTest extends AbstractTest {
             CompareMetricsCollector collector = new CompareMetricsCollector(manager,
                     scheduled, new ComparatorConfig(), "jq", () -> proxy);
             collector.reportOnce();
-            Assert.assertEquals(1, proxy.writes);
+            // comparedBytes and mismatch: a throw on the first write does not skip the second
+            Assert.assertEquals(2, proxy.writes);
         } finally {
             scheduled.shutdownNow();
         }
@@ -104,7 +106,7 @@ public class CompareMetricsCollectorTest extends AbstractTest {
         Assert.assertTrue(collector.contains("SCHEDULED_EXECUTOR"));
         Assert.assertTrue(collector.contains("scheduleWithFixedDelay"));
         Assert.assertFalse(collector.contains("logger.error"));
-        Assert.assertFalse(collector.contains("mismatchCount"));
+        // mismatch is reported (CompareReporter{name=mismatch}); the other counters stay out of Hickwall
         Assert.assertFalse(collector.contains("compareLost"));
         Assert.assertFalse(collector.contains("realignCount"));
         Assert.assertFalse(collector.contains("streamReconnectCount"));
@@ -112,6 +114,99 @@ public class CompareMetricsCollectorTest extends AbstractTest {
         Assert.assertFalse(collector.contains("shardsAssigned"));
         Assert.assertFalse(collector.contains("streamsRunning"));
         Assert.assertFalse(collector.contains("lagBytes"));
+    }
+
+    /** Each point is the round's increment, so sum_over_time gives the mismatch count, like the CAT event. */
+    @Test
+    public void testMismatchReportedAsPerRoundDelta() {
+        RecordingProxy proxy = new RecordingProxy();
+        ScheduledExecutorService scheduled = Executors.newSingleThreadScheduledExecutor();
+        try {
+            ShardCompareTaskManager manager = emptyManager(scheduled);
+            FakeLane a = new FakeLane("10.0.0.1:6380", 100, 32, 0);
+            FakeLane b = new FakeLane("10.0.0.2:6380", 100, 32, 0);
+            ShardComparator cmp = new ShardComparator("c1", "s1", Arrays.asList(a, b),
+                    new ComparatorConfig(), CompareReporter.NOOP);
+            manager.putTask(bound(cmp, a, b));
+            CompareMetricsCollector collector = new CompareMetricsCollector(manager,
+                    scheduled, new ComparatorConfig(), "jq", () -> proxy);
+
+            mismatchOnce(cmp, a, b);
+            mismatchOnce(cmp, a, b);
+            collector.reportOnce();
+            MetricData first = single(proxy.of(CompareMetricsCollector.METRIC_COMPARE_REPORTER));
+            Assert.assertEquals(2.0, first.getValue(), 0.0);
+            Assert.assertEquals("mismatch", first.getTags().get(CompareMetricsCollector.TAG_NAME));
+            Assert.assertEquals("jq", first.getDcName());
+            Assert.assertEquals("c1", first.getClusterName());
+            Assert.assertEquals("s1", first.getShardName());
+
+            proxy.points.clear();
+            collector.reportOnce();
+            Assert.assertEquals("no new mismatch", 0.0,
+                    single(proxy.of(CompareMetricsCollector.METRIC_COMPARE_REPORTER)).getValue(), 0.0);
+
+            proxy.points.clear();
+            mismatchOnce(cmp, a, b);
+            collector.reportOnce();
+            Assert.assertEquals(1.0, single(proxy.of(CompareMetricsCollector.METRIC_COMPARE_REPORTER)).getValue(), 0.0);
+            Assert.assertEquals("status count stays cumulative", 3L, cmp.getMismatchCount());
+        } finally {
+            scheduled.shutdownNow();
+        }
+    }
+
+    /** A rebound task gets a new comparator whose count restarts at 0: never report a negative delta. */
+    @Test
+    public void testReboundComparatorStartsFromZero() {
+        RecordingProxy proxy = new RecordingProxy();
+        ScheduledExecutorService scheduled = Executors.newSingleThreadScheduledExecutor();
+        try {
+            ShardCompareTaskManager manager = emptyManager(scheduled);
+            FakeLane a = new FakeLane("10.0.0.1:6380", 100, 32, 0);
+            FakeLane b = new FakeLane("10.0.0.2:6380", 100, 32, 0);
+            ShardComparator old = new ShardComparator("c1", "s1", Arrays.asList(a, b),
+                    new ComparatorConfig(), CompareReporter.NOOP);
+            mismatchOnce(old, a, b);
+            mismatchOnce(old, a, b);
+            manager.putTask(bound(old, a, b));
+            CompareMetricsCollector collector = new CompareMetricsCollector(manager,
+                    scheduled, new ComparatorConfig(), "jq", () -> proxy);
+            collector.reportOnce();
+
+            FakeLane c = new FakeLane("10.0.0.1:6380", 100, 32, 0);
+            FakeLane d = new FakeLane("10.0.0.2:6380", 100, 32, 0);
+            ShardComparator rebound = new ShardComparator("c1", "s1", Arrays.asList(c, d),
+                    new ComparatorConfig(), CompareReporter.NOOP);
+            mismatchOnce(rebound, c, d);
+            manager.putTask(bound(rebound, c, d));
+            proxy.points.clear();
+            collector.reportOnce();
+
+            Assert.assertEquals(1.0, single(proxy.of(CompareMetricsCollector.METRIC_COMPARE_REPORTER)).getValue(), 0.0);
+        } finally {
+            scheduled.shutdownNow();
+        }
+    }
+
+    private static void mismatchOnce(ShardComparator cmp, FakeLane a, FakeLane b) {
+        a.write(new byte[]{1});
+        b.write(new byte[]{2});
+        Assert.assertEquals(ShardComparator.CompareOnceResult.MISMATCH, cmp.compareOnce());
+    }
+
+    private static ShardCompareTask bound(ShardComparator cmp, FakeLane a, FakeLane b) {
+        ShardCompareTask task = new ShardCompareTask(10L, cmp.getCluster(), cmp.getShard());
+        Map<String, CompareLane> streams = new LinkedHashMap<>();
+        streams.put(a.getAddress(), a);
+        streams.put(b.getAddress(), b);
+        task.bind(cmp, streams);
+        return task;
+    }
+
+    private static MetricData single(List<MetricData> points) {
+        Assert.assertEquals(points.toString(), 1, points.size());
+        return points.get(0);
     }
 
     private static ShardCompareTask comparedTask(String cluster, String shard, long dbId) {
@@ -176,6 +271,16 @@ public class CompareMetricsCollectorTest extends AbstractTest {
 
     static final class RecordingProxy implements MetricProxy {
         final List<MetricData> points = new ArrayList<>();
+
+        List<MetricData> of(String metricType) {
+            List<MetricData> result = new ArrayList<>();
+            for (MetricData point : points) {
+                if (metricType.equals(point.getMetricType())) {
+                    result.add(point);
+                }
+            }
+            return result;
+        }
 
         @Override
         public void writeBinMultiDataPoint(MetricData data) {
