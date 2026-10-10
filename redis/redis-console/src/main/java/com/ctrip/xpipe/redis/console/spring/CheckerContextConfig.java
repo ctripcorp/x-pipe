@@ -34,13 +34,10 @@ import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
 import com.ctrip.xpipe.redis.console.service.meta.impl.BeaconMetaServiceImpl;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
 import com.ctrip.xpipe.redis.core.config.ConsoleCommonConfig;
-import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
-import com.ctrip.xpipe.redis.core.keeper.container.DefaultCurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import com.ctrip.xpipe.zk.ZkClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
@@ -179,12 +176,6 @@ public class CheckerContextConfig {
     @Lazy
     public SentinelManager sentinelManager() {
         return new DefaultSentinelManager();
-    }
-
-    @Bean
-    @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-    public CurrentDcKeeperContainerAddressService keeperContainerAddressService(ZkClient zkClient) {
-        return new DefaultCurrentDcKeeperContainerAddressService(zkClient);
     }
 
     @Bean

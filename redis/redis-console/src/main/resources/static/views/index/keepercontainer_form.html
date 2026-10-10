@@ -35,13 +35,13 @@
                         </textarea>
                     </div>
                 </div>
-                <!-- hostname 由容器注册时写入，portal 只做展示，不允许编辑 -->
+                <!-- hostname 创建时可填写；修改时作为稳定身份只展示，不允许编辑 -->
                 <div class="form-group">
                     <label class="col-sm-4 control-label no-padding-right"> hostname </label>
                     <div class="col-sm-6">
                         <textarea rows="1" style="width: 330px;"
                                   ng-model="keepercontainer.keepercontainerHostName"
-                                  ng-disabled="true">
+                                  ng-disabled="operateType == 'update'">
 
                         </textarea>
                     </div>

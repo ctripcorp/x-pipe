@@ -82,11 +82,14 @@ public class DefaultKeeperContainerService extends AbstractService implements Ke
     }
 
     @Override
-    public boolean setKeeperContainerDiskIOLimit(String keeperContainerIp, int keeperContainerPort, int limitInByte) {
-        HostPort address = new HostPort(keeperContainerIp, keeperContainerPort);
-        Boolean rst = restTemplate.postForObject("http://{ip}:{port}/keepers/limit/totalIO?limit={limit}",
-                null, Boolean.class, address.getHost(), address.getPort(), limitInByte);
-        return null != rst && rst;
+    public boolean setKeeperContainerDiskIOLimit(String dcName, String keeperContainerIp, String hostname,
+                                                 int keeperContainerPort, int limitInByte) {
+        HostPort address = resolveAddress(dcName, keeperContainerIp, hostname, keeperContainerPort);
+        HttpEntity<Void> requestEntity = new HttpEntity<>(buildHeadersWithHostname(hostname));
+        Boolean rst = restTemplate.exchange("http://{ip}:{port}/keepers/limit/totalIO?limit={limit}",
+                HttpMethod.POST, requestEntity, Boolean.class,
+                address.getHost(), address.getPort(), limitInByte).getBody();
+        return Boolean.TRUE.equals(rst);
     }
 
     @Override

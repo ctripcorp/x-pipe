@@ -71,7 +71,9 @@ public class KeeperContainerDiskIOLimitDispatcher extends AbstractSiteLeaderInte
                 EventMonitor.DEFAULT.logEvent(ALERT_EVENT, "unknownLimit");
             } else {
                 try {
-                    keeperContainerService.setKeeperContainerDiskIOLimit(keepercontainer.getIp(), keepercontainer.getPort(), megaByte2Byte(limit));
+                    keeperContainerService.setKeeperContainerDiskIOLimit(
+                            FoundationService.DEFAULT.getDataCenter(), keepercontainer.getIp(), keepercontainer.getHostname(),
+                            keepercontainer.getPort(), megaByte2Byte(limit));
                     EventMonitor.DEFAULT.logEvent(ALERT_EVENT, "success");
                 } catch (Throwable th) {
                     logger.warn("[doAction][fail] {}", keepercontainer, th);

@@ -14,7 +14,11 @@ public interface KeeperContainerCheckerService {
 
     KeeperDiskInfo getKeeperDiskInfo(String keeperContainerIp) throws RestClientException;
 
-    boolean setKeeperContainerDiskIOLimit(String keeperContainerIp, int keeperContainerPort, int limitInByte);
+    /**
+     * 设置 KeeperContainer IO 限流。hostname 非空时按机房解析实时 IP，并携带目标 hostname 校验头。
+     */
+    boolean setKeeperContainerDiskIOLimit(String dcName, String keeperContainerIp, String hostname,
+                                          int keeperContainerPort, int limitInByte);
 
     List<KeeperInstanceMeta> getAllKeepers(String keeperContainerIp);
 
