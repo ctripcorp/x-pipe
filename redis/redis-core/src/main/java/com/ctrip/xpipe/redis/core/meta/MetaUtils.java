@@ -43,42 +43,24 @@ public class MetaUtils {
 			return false;
 		}
 		
-		// 对于KeeperMeta: IP有值优先用IP比对,IP为空或0.0.0.0时用hostname比对
+		// 容器 Keeper 使用稳定的 hostname 作为身份，物理机 Keeper 继续使用 IP。
 		if(instanceNode1 instanceof KeeperMeta && instanceNode2 instanceof KeeperMeta) {
 			KeeperMeta keeper1 = (KeeperMeta) instanceNode1;
 			KeeperMeta keeper2 = (KeeperMeta) instanceNode2;
-			
-			String ip1 = keeper1.getIp();
-			String ip2 = keeper2.getIp();
-			
-			// 判断是否为有效的IP地址(非空且非0.0.0.0)
-			boolean hasValidIp1 = !StringUtil.isEmpty(ip1) && !"0.0.0.0".equals(ip1);
-			boolean hasValidIp2 = !StringUtil.isEmpty(ip2) && !"0.0.0.0".equals(ip2);
-			
-			// 如果两个都有有效IP,按IP比对
-			if(hasValidIp1 && hasValidIp2) {
-				if(!ObjectUtils.equals(ip1, ip2)){
-					return false;
-				}
-				if(!ObjectUtils.equals(instanceNode1.getPort(), instanceNode2.getPort())){
-					return false;
-				}
-				return true;
+
+			boolean hasHostname1 = !StringUtil.isEmpty(keeper1.getHostname());
+			boolean hasHostname2 = !StringUtil.isEmpty(keeper2.getHostname());
+			if (hasHostname1 != hasHostname2) {
+				return false;
 			}
-			
-			// 如果两个都没有有效IP,用hostname比对
-			if(!hasValidIp1 && !hasValidIp2) {
-				if(!ObjectUtils.equals(keeper1.getHostname(), keeper2.getHostname())){
-					return false;
-				}
-				if(!ObjectUtils.equals(instanceNode1.getPort(), instanceNode2.getPort())){
-					return false;
-				}
-				return true;
+
+			if (hasHostname1) {
+				return ObjectUtils.equals(keeper1.getHostname(), keeper2.getHostname())
+						&& ObjectUtils.equals(keeper1.getPort(), keeper2.getPort());
 			}
-			
-			// 一个有IP一个没有,不相等
-			return false;
+
+			return ObjectUtils.equals(keeper1.getIp(), keeper2.getIp())
+					&& ObjectUtils.equals(keeper1.getPort(), keeper2.getPort());
 		}
 		
 		// 其他类型保持原有逻辑

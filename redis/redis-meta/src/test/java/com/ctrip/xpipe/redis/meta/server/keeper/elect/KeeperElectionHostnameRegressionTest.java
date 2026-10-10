@@ -72,7 +72,7 @@ public class KeeperElectionHostnameRegressionTest extends AbstractKeeperElectorM
         // 创建带hostname的容器keeper
         KeeperMeta keeper1 = new KeeperMeta()
                 .setId("runid1")
-                .setIp("0.0.0.0")
+                .setIp("10.2.3.15")
                 .setPort(6380)
                 .setHostname("pod-a-0")
                 .setKeeperContainerId(1L)
@@ -80,7 +80,7 @@ public class KeeperElectionHostnameRegressionTest extends AbstractKeeperElectorM
 
         KeeperMeta keeper2 = new KeeperMeta()
                 .setId("runid2")
-                .setIp("0.0.0.0")
+                .setIp("10.2.3.15")
                 .setPort(6380)
                 .setHostname("pod-b-0")
                 .setKeeperContainerId(2L)
@@ -88,7 +88,7 @@ public class KeeperElectionHostnameRegressionTest extends AbstractKeeperElectorM
 
         KeeperMeta keeper3 = new KeeperMeta()
                 .setId("runid3")
-                .setIp("0.0.0.0")
+                .setIp("10.2.3.15")
                 .setPort(6380)
                 .setHostname("pod-c-0")
                 .setKeeperContainerId(3L)
@@ -116,7 +116,7 @@ public class KeeperElectionHostnameRegressionTest extends AbstractKeeperElectorM
                         if (k.getHostname() == null || k.getHostname().isEmpty()) {
                             return false;
                         }
-                        if (!k.getIp().equals("0.0.0.0")) {
+                        if (k.getIp() == null || "0.0.0.0".equals(k.getIp())) {
                             return false;
                         }
                     }
@@ -144,10 +144,10 @@ public class KeeperElectionHostnameRegressionTest extends AbstractKeeperElectorM
                 .setKeeperContainerId(1L)
                 .setPriority(100);
 
-        // 容器keeper (IP为0.0.0.0, 有hostname)
+        // 容器keeper (携带运行时真实IP和hostname)
         KeeperMeta containerKeeper = new KeeperMeta()
                 .setId("runid-container")
-                .setIp("0.0.0.0")
+                .setIp("10.2.3.15")
                 .setPort(6380)
                 .setHostname("pod-x-0")
                 .setKeeperContainerId(2L)
@@ -184,7 +184,7 @@ public class KeeperElectionHostnameRegressionTest extends AbstractKeeperElectorM
     public void testKeeperMetaSerializationPreservesHostname() {
         KeeperMeta original = new KeeperMeta()
                 .setId("runid-test")
-                .setIp("0.0.0.0")
+                .setIp("10.2.3.15")
                 .setPort(6380)
                 .setHostname("pod-test-0")
                 .setKeeperContainerId(1L)
@@ -198,7 +198,7 @@ public class KeeperElectionHostnameRegressionTest extends AbstractKeeperElectorM
 
         // 验证关键字段
         assert deserialized.getHostname().equals("pod-test-0") : "hostname should be preserved";
-        assert deserialized.getIp().equals("0.0.0.0") : "ip should be preserved";
+        assert deserialized.getIp().equals("10.2.3.15") : "ip should be preserved";
         assert deserialized.getPort().equals(6380) : "port should be preserved";
         assert deserialized.getId().equals("runid-test") : "id should be preserved";
         assert deserialized.getKeeperContainerId().equals(1L) : "keeperContainerId should be preserved";

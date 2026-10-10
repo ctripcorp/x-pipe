@@ -375,13 +375,12 @@ public class CurrentMeta implements Releasable {
 		List<KeeperMeta> keeperMetas = new ArrayList<>();
 		if (surviveKeepers != null) {
 			for (KeeperMeta surviveKeeper : surviveKeepers) {
-				// 仍然新建对象返回，避免把 currentMeta 内的实例暴露给调用方；
-				// keeperContainerId 是容器 keeper 的定位依据，不能在这里丢掉
+				// 新建精简对象返回，避免把 currentMeta 内的实例暴露给调用方。
 				keeperMetas.add(new KeeperMeta()
 						.setIp(surviveKeeper.getIp())
+						.setHostname(surviveKeeper.getHostname())
 						.setPort(surviveKeeper.getPort())
-						.setActive(surviveKeeper.getActive())
-						.setKeeperContainerId(surviveKeeper.getKeeperContainerId()));
+						.setActive(surviveKeeper.getActive()));
 			}
 		}
 		return keeperMetas;

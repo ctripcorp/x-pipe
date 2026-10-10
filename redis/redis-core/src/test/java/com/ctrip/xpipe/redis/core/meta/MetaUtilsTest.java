@@ -76,4 +76,31 @@ public class MetaUtilsTest extends AbstractTest {
         
         Assert.assertTrue(MetaUtils.same(keeper1, keeper2));
     }
+
+    @Test
+    public void testHostnameTakesPrecedenceOverDifferentIps() {
+        KeeperMeta keeper1 = new KeeperMeta().setIp("10.0.0.1").setPort(6380).setHostname("pod-a-0");
+        KeeperMeta keeper2 = new KeeperMeta().setIp("10.0.0.2").setPort(6380).setHostname("pod-a-0");
+
+        Assert.assertTrue(MetaUtils.same(keeper1, keeper2));
+        Assert.assertTrue(MetaUtils.same(keeper2, keeper1));
+    }
+
+    @Test
+    public void testDifferentHostnamesDoNotFallBackToSameIp() {
+        KeeperMeta keeper1 = new KeeperMeta().setIp("10.0.0.1").setPort(6380).setHostname("pod-a-0");
+        KeeperMeta keeper2 = new KeeperMeta().setIp("10.0.0.1").setPort(6380).setHostname("pod-b-0");
+
+        Assert.assertFalse(MetaUtils.same(keeper1, keeper2));
+        Assert.assertFalse(MetaUtils.same(keeper2, keeper1));
+    }
+
+    @Test
+    public void testOnlyOneHostnameNeverFallsBackToIp() {
+        KeeperMeta containerKeeper = new KeeperMeta().setIp("10.0.0.1").setPort(6380).setHostname("pod-a-0");
+        KeeperMeta physicalKeeper = new KeeperMeta().setIp("10.0.0.1").setPort(6380);
+
+        Assert.assertFalse(MetaUtils.same(containerKeeper, physicalKeeper));
+        Assert.assertFalse(MetaUtils.same(physicalKeeper, containerKeeper));
+    }
 }

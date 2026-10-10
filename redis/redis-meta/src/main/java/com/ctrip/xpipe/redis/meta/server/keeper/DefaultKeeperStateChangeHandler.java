@@ -10,20 +10,24 @@ import com.ctrip.xpipe.concurrent.KeyedOneThreadTaskExecutor;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.netty.commands.NettyClient;
-import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.entity.ApplierMeta;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.meta.server.MetaServerStateChangeHandler;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
-import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperRoleAssigner;
 import com.ctrip.xpipe.redis.meta.server.job.ApplierStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.job.DefaultSlaveOfJob;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.job.TfsKeeperStateChangeJob;
-import com.ctrip.xpipe.redis.meta.server.tfs.TfsKeeperUtils;
+import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperRoleAssigner;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcService;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsKeeperUtils;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OsUtils;
@@ -71,6 +75,9 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 
 	@Autowired
 	private MetaServerConfig metaServerConfig;
+
+	@Autowired
+	private CurrentDcKeeperContainerAddressService keeperContainerAddressService;
 
 	@Override
 	protected void doInitialize() throws Exception {
@@ -195,7 +202,8 @@ public class DefaultKeeperStateChangeHandler extends AbstractLifecycle implement
 		if (TfsKeeperUtils.shardHasTfsKeeper(union, dcMetaCache)) {
 			KeeperMeta previousActive = currentMetaManager.getPreviousActiveKeeper(clusterDbId, shardDbId);
 			return new TfsKeeperStateChangeJob(clusterDbId, shardDbId, surviveKeepers, previousActive, master,
-					routeMeta, clientPool, dcMetaCache, metaServerConfig, scheduled, executors, keeperRoles, union);
+					routeMeta, clientPool, dcMetaCache, metaServerConfig, scheduled, executors, keeperRoles, union,
+					keeperContainerAddressService);
 		}
 		return new KeeperStateChangeJob(surviveKeepers, master, routeMeta, clientPool, KeeperStateChangeJob.DEFAULT_DELAY_BASE_MILLI,
 				KeeperStateChangeJob.DEFAULT_RETRY_TIMES, scheduled, executors, keeperRoles);

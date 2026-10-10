@@ -3,8 +3,8 @@ package com.ctrip.xpipe.redis.meta.server.meta;
 import com.ctrip.xpipe.api.lifecycle.Releasable;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.*;
-import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
@@ -101,6 +101,43 @@ public class CurrentMetaTest extends AbstractMetaServerTest {
 		result = currentMeta.setSurviveKeepers(clusterDbId, shardDbId, surviveKeepers3, keeperMeta3);
 		Assert.assertEquals(true, result);
 		Assert.assertEquals(keeperMeta3, currentMeta.getKeeperActive(clusterDbId, shardDbId));
+	}
+
+	@Test
+	public void testGetOneWaySurviveKeepersCopiesRuntimeAddressAndHostname() {
+		KeeperMeta activeKeeper = new KeeperMeta()
+				.setIp("10.2.3.15")
+				.setHostname("keeper-pod-a-0")
+				.setPort(6380)
+				.setKeeperContainerId(1001L)
+				.setActive(true);
+		currentMeta.setSurviveKeepers(clusterDbId, shardDbId,
+				Collections.singletonList(activeKeeper), activeKeeper);
+
+		List<KeeperMeta> result = currentMeta.getOneWaySurviveKeepers(clusterDbId, shardDbId);
+
+		Assert.assertEquals(1, result.size());
+		KeeperMeta copied = result.get(0);
+		Assert.assertEquals("10.2.3.15", copied.getIp());
+		Assert.assertEquals("keeper-pod-a-0", copied.getHostname());
+		Assert.assertEquals(Integer.valueOf(6380), copied.getPort());
+		Assert.assertNull(copied.getKeeperContainerId());
+		Assert.assertTrue(copied.isActive());
+		Assert.assertNotSame(activeKeeper, copied);
+	}
+
+	@Test
+	public void testContainerKeeperIpChangeUpdatesCurrentMeta() {
+		KeeperMeta oldKeeper = new KeeperMeta().setIp("10.2.3.15").setHostname("keeper-pod-a-0")
+				.setPort(6380).setActive(true);
+		Assert.assertTrue(currentMeta.setSurviveKeepers(clusterDbId, shardDbId,
+				Collections.singletonList(oldKeeper), oldKeeper));
+
+		KeeperMeta rebuiltKeeper = new KeeperMeta().setIp("10.2.7.26").setHostname("keeper-pod-a-0")
+				.setPort(6380).setActive(true);
+		Assert.assertTrue(currentMeta.setSurviveKeepers(clusterDbId, shardDbId,
+				Collections.singletonList(rebuiltKeeper), rebuiltKeeper));
+		Assert.assertEquals("10.2.7.26", currentMeta.getKeeperActive(clusterDbId, shardDbId).getIp());
 	}
 
 	@Test
