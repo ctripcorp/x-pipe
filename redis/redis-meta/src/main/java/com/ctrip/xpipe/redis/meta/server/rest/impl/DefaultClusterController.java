@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.meta.server.rest.impl;
 
 
 import com.ctrip.xpipe.codec.JsonCodec;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServers;
 import com.ctrip.xpipe.redis.meta.server.cluster.CurrentClusterServer;
@@ -48,6 +50,9 @@ public class DefaultClusterController implements ClusterApi{
 	
 	@Autowired
 	private ZkClient zkClient;
+
+	@Autowired
+	private CurrentDcKeeperContainerAddressService keeperContainerAddressService;
 
 	@RequestMapping(path = "/serverid", method = RequestMethod.GET, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)
 	@Override
@@ -109,6 +114,13 @@ public class DefaultClusterController implements ClusterApi{
 						clusterServers.allClusterServerInfos(),
 						slotManager.allSlotsInfo()
 						));
+	}
+
+	@RequestMapping(path = PATH_KEEPER_CONTAINER_ADDRESS_SNAPSHOT, method = RequestMethod.GET,
+			produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+	@Override
+	public KeeperContainerAddressSnapshot getKeeperContainerAddressSnapshot() {
+		return keeperContainerAddressService.getAddressSnapshot();
 	}
 
 	@RequestMapping(path = "/refresh", method = RequestMethod.POST, produces= MediaType.APPLICATION_JSON_UTF8_VALUE)

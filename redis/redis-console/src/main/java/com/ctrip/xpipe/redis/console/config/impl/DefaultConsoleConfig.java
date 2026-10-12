@@ -731,6 +731,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
         return dataCenterConfigBean.getZkNameSpace();
     }
 
+    @Override
+    public String getKeeperContainerZkNameSpace() {
+        return dataCenterConfigBean.getKeeperContainerZkNameSpace();
+    }
+
     public void onChange(String key, String oldValue, String newValue) {
 
         for(ConfigKeyListener listener : listenersSet) {
