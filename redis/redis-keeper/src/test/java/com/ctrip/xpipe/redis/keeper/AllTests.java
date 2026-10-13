@@ -28,6 +28,7 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.impl.FixSyncRateManagerTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.ProgressiveSyncRateLimiterTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystemTest;
+import com.ctrip.xpipe.redis.keeper.storage.DeferredHandleCloserTest;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTest;
@@ -160,6 +161,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         AsyncFileSystemHelperTest.class,
         AsyncTFSBasedFileSystemTest.class,
+        DeferredHandleCloserTest.class,
         TailCacheFileSystemTest.class,
 
         XsyncForKeeperAndKeeperTest.class,
