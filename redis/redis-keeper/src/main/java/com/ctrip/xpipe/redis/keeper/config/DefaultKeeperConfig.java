@@ -401,6 +401,12 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 		return getLongProperty(KEY_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES, defaultAsyncTailCacheMaxSizeBytes());
 	}
 
+	@Override
+	public long getUnclosedHandleFlushRetryWindowMilli() {
+		return getLongProperty(KEY_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI,
+				DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI);
+	}
+
 	static long defaultAsyncTailCacheMaxSizeBytes() {
 		long maxDirect = PlatformDependent.maxDirectMemory();
 		if (maxDirect <= 0) {

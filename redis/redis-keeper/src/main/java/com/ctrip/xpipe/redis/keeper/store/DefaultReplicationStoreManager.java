@@ -433,7 +433,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         }
         AsyncFile toClose = managerMetaAsyncFile;
         managerMetaAsyncFile = null;
-        AsyncFileSystemHelper.closeHandle(asyncFileSystem, toClose,
+        AsyncFileSystemHelper.closeHandle(asyncFileSystem, toClose, replId,
                 "close manager meta " + metaFile.getAbsolutePath());
     }
 

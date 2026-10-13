@@ -168,7 +168,7 @@ public class AsyncFileSystemHelperTest extends AbstractTest {
             return CompletableFuture.completedFuture(null);
         });
 
-        AsyncFileSystemHelper.closeHandle(fs, file, "close retry ok");
+        AsyncFileSystemHelper.closeHandle(fs, file, null, "close retry ok");
         Assert.assertEquals(2, closeCalls.get());
         verify(fs, times(2)).close(file);
     }
@@ -179,7 +179,7 @@ public class AsyncFileSystemHelperTest extends AbstractTest {
         AsyncFile file = mock(AsyncFile.class);
         when(fs.close(any(AsyncFile.class))).thenThrow(new OperationNotExecutedException("still dirty"));
 
-        AsyncFileSystemHelper.closeHandle(fs, file, "close retry skip");
+        AsyncFileSystemHelper.closeHandle(fs, file, null, "close retry skip");
         verify(fs, times(2)).close(file);
     }
 
@@ -193,7 +193,7 @@ public class AsyncFileSystemHelperTest extends AbstractTest {
         Thread closer = new Thread(() -> {
             try {
                 AsyncFileSystemHelper.runWithIoTimeout(50, () ->
-                        AsyncFileSystemHelper.closeHandle(fs, file, "slow close"));
+                        AsyncFileSystemHelper.closeHandle(fs, file, null, "slow close"));
             } catch (IOException e) {
                 Assert.fail("closeHandle must not throw: " + e);
             }
@@ -213,7 +213,7 @@ public class AsyncFileSystemHelperTest extends AbstractTest {
         when(fs.close(any(AsyncFile.class))).thenReturn(closeFuture);
 
         long start = System.nanoTime();
-        AsyncFileSystemHelper.closeReadHandle(fs, file, "read close no await");
+        AsyncFileSystemHelper.closeReadHandle(fs, file, null, "read close no await");
         Assert.assertTrue("closeReadHandle must return without awaiting",
                 TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) < 200);
         Assert.assertFalse(closeFuture.isCancelled());
@@ -233,7 +233,7 @@ public class AsyncFileSystemHelperTest extends AbstractTest {
             return CompletableFuture.completedFuture(null);
         });
 
-        AsyncFileSystemHelper.closeReadHandle(fs, file, "read close retry");
+        AsyncFileSystemHelper.closeReadHandle(fs, file, null, "read close retry");
         Assert.assertEquals(2, closeCalls.get());
         verify(fs, times(2)).close(file);
     }

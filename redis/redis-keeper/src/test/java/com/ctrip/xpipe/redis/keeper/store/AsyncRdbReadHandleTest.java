@@ -36,7 +36,7 @@ public class AsyncRdbReadHandleTest extends AbstractRedisKeeperTest {
         AsyncFile readFile = AsyncFileSystemHelper.awaitOpen(fs,
                 fs.open(path.getAbsolutePath(), AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, true, getReplId().toString()),
                 "open read");
-        AsyncRdbReadHandle handle = new AsyncRdbReadHandle(fs, readFile, path.getAbsolutePath());
+        AsyncRdbReadHandle handle = new AsyncRdbReadHandle(fs, readFile, path.getAbsolutePath(), null);
         AsyncRdbReferenceFileRegion region = handle.read(0, 4);
 
         handle.close();
@@ -84,7 +84,7 @@ public class AsyncRdbReadHandleTest extends AbstractRedisKeeperTest {
         AsyncFile readFile = AsyncFileSystemHelper.awaitOpen(fs,
                 fs.open(path.getAbsolutePath(), AbstractStorageFile.OpenMode.READ, AbstractStorageFile.ReplaceMode.NORMAL, true, getReplId().toString()),
                 "open read");
-        AsyncRdbReadHandle handle = new AsyncRdbReadHandle(fs, readFile, path.getAbsolutePath());
+        AsyncRdbReadHandle handle = new AsyncRdbReadHandle(fs, readFile, path.getAbsolutePath(), null);
         handle.close();
         Assert.assertTrue(handle.isFileClosed());
         Assert.assertEquals(0, handle.pendingRefs());

@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.container;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.DeferredHandleCloser;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -32,6 +33,9 @@ public class ContainerResourceManager {
 
     private volatile AsyncFileSystem asyncFileSystem;
 
+    // keeper-tfs-m6 §2.4: container level, outlives every keeper; guarded by this.
+    private DeferredHandleCloser deferredHandleCloser;
+
     public boolean isPortFree(int port) {
         return runningPorts.contains(port);
     }
@@ -51,16 +55,35 @@ public class ContainerResourceManager {
         }
         synchronized (this) {
             if (asyncFileSystem == null) {
-                asyncFileSystem = createAsyncFileSystem(keeperConfig);
+                AsyncFileSystem created = createAsyncFileSystem(keeperConfig);
+                DeferredHandleCloser closer = new DeferredHandleCloser(created,
+                        keeperConfig::getUnclosedHandleFlushRetryWindowMilli);
+                // Registered before the FS is published, so no close on it can miss the closer.
+                DeferredHandleCloser.register(created, closer);
+                deferredHandleCloser = closer;
+                asyncFileSystem = created;
             }
             return asyncFileSystem;
         }
     }
 
+    /**
+     * Stops the deferred closer before the FS (spec §2.4): retries must not run against an FS that
+     * is shutting down; handles still pending are logged by the closer and left to the FS shutdown.
+     */
     public synchronized void shutdownAsyncFileSystem() {
         if (asyncFileSystem != null) {
-            asyncFileSystem.shutdown();
-            asyncFileSystem = null;
+            try {
+                if (deferredHandleCloser != null) {
+                    deferredHandleCloser.shutdown();
+                }
+            } catch (Throwable t) {
+                logger.error("[shutdownAsyncFileSystem] deferred closer shutdown failed", t);
+            } finally {
+                deferredHandleCloser = null;
+                asyncFileSystem.shutdown();
+                asyncFileSystem = null;
+            }
         }
     }
 

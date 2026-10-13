@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
@@ -25,16 +26,20 @@ public class AsyncRdbReadHandle implements Closeable {
 
     private final String tag;
 
+    // Keeper owning the rdb store; passed to the deferred closer if the close fails.
+    private final ReplId replId;
+
     private final AtomicLong reference = new AtomicLong();
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     private final AtomicBoolean fileClosed = new AtomicBoolean(false);
 
-    public AsyncRdbReadHandle(AsyncFileSystem asyncFileSystem, AsyncFile asyncFile, String tag) {
+    public AsyncRdbReadHandle(AsyncFileSystem asyncFileSystem, AsyncFile asyncFile, String tag, ReplId replId) {
         this.asyncFileSystem = asyncFileSystem;
         this.asyncFile = asyncFile;
         this.tag = tag;
+        this.replId = replId;
     }
 
     public AsyncFileSystem getAsyncFileSystem() {
@@ -72,7 +77,7 @@ public class AsyncRdbReadHandle implements Closeable {
             return;
         }
         logger.info("[tryCloseFile][doClose]{}", tag);
-        AsyncFileSystemHelper.closeReadHandle(asyncFileSystem, asyncFile, "close rdb read " + tag);
+        AsyncFileSystemHelper.closeReadHandle(asyncFileSystem, asyncFile, replId, "close rdb read " + tag);
     }
 
     boolean isMarkedClosed() {

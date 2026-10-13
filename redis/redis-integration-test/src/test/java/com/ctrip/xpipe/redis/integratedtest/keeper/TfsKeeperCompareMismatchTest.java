@@ -174,7 +174,8 @@ public class TfsKeeperCompareMismatchTest extends AbstractTfsKeeperIntegrated {
 					payload.length, operation);
 			AsyncFileSystemHelper.await(fs.fsync(writer), "fsync " + operation);
 		} finally {
-			AsyncFileSystemHelper.closeHandle(fs, writer, "close " + operation);
+			AsyncFileSystemHelper.closeHandle(fs, writer, activeCommandStore.getFileSystemReplId(),
+					"close " + operation);
 		}
 	}
 

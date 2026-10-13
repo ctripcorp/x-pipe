@@ -307,7 +307,7 @@ public class IndexReader implements Closeable {
             }
             return new IndexReader(fs, baseDir, cmdPrefix, offsets.get(0), tenant);
         } finally {
-            AsyncFileSystemHelper.closeReadHandle(fs, tempSeg, "close temp read segment");
+            AsyncFileSystemHelper.closeReadHandle(fs, tempSeg, tenant, "close temp read segment");
         }
     }
 
@@ -359,6 +359,6 @@ public class IndexReader implements Closeable {
 
     @Override
     public void close() throws IOException {
-        AsyncFileSystemHelper.closeReadHandle(fs, readSeg, "close read segment");
+        AsyncFileSystemHelper.closeReadHandle(fs, readSeg, tenant, "close read segment");
     }
 }

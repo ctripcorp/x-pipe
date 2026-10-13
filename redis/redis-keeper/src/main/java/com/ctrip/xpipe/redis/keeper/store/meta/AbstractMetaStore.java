@@ -164,7 +164,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 			if (closed || metaAsyncFile == null) {
 				return;
 			}
-			AsyncFileSystemHelper.closeHandle(asyncFileSystem, metaAsyncFile,
+			AsyncFileSystemHelper.closeHandle(asyncFileSystem, metaAsyncFile, fileSystemReplId,
 					"close read-only meta for cycle " + metaV2File().getAbsolutePath());
 			metaAsyncFile = null;
 		}
@@ -212,7 +212,7 @@ public abstract class AbstractMetaStore implements MetaStore{
 			}
 			closed = true;
 			if (metaAsyncFile != null) {
-				AsyncFileSystemHelper.closeHandle(asyncFileSystem, metaAsyncFile,
+				AsyncFileSystemHelper.closeHandle(asyncFileSystem, metaAsyncFile, fileSystemReplId,
 						"close meta file " + metaV2File().getAbsolutePath());
 				metaAsyncFile = null;
 			}

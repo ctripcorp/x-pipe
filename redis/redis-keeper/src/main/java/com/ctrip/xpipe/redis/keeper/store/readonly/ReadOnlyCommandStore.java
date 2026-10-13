@@ -384,7 +384,7 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 			return;
 		}
 		this.asyncSegmentFile = null;
-		AsyncFileSystemHelper.closeHandle(asyncFileSystem, handle, operation);
+		AsyncFileSystemHelper.closeHandle(asyncFileSystem, handle, fileSystemReplId, operation);
 	}
 
 	private AsyncSegmentFile openSharedHandle() throws IOException {

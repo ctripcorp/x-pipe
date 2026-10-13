@@ -460,7 +460,7 @@ public class DeferredHandleCloserTest {
     }
 
     /** Captures scheduled retries; runNext advances the clock by the task's delay and runs it. */
-    private static final class ManualScheduler {
+    static final class ManualScheduler {
         final ScheduledExecutorService executor = mock(ScheduledExecutorService.class);
         final Deque<Object[]> tasks = new ArrayDeque<>();
         final List<Long> delays = new ArrayList<>();

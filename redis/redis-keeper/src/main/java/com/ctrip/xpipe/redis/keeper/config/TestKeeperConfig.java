@@ -36,6 +36,7 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 
 	private int prepareWatchReopenIntervalMilli = DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI;
 	private int prepareWatchCloseHoldMilli = DEFAULT_PREPARE_WATCH_CLOSE_HOLD_MILLI;
+	private long unclosedHandleFlushRetryWindowMilli = DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI;
 	private boolean prepareStoreWatchEnabled = false;
 	private boolean pubsubParseEnabled = false;
 	
@@ -532,5 +533,15 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public long getAsyncTailCacheMaxSizeBytes() {
 		return DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR;
+	}
+
+	@Override
+	public long getUnclosedHandleFlushRetryWindowMilli() {
+		return unclosedHandleFlushRetryWindowMilli;
+	}
+
+	public TestKeeperConfig setUnclosedHandleFlushRetryWindowMilli(long unclosedHandleFlushRetryWindowMilli) {
+		this.unclosedHandleFlushRetryWindowMilli = unclosedHandleFlushRetryWindowMilli;
+		return this;
 	}
 }

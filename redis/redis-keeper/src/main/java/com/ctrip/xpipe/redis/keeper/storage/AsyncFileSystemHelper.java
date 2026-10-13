@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.storage;
 
 import com.ctrip.xpipe.api.monitor.EventMonitor;
+import com.ctrip.xpipe.redis.core.store.ReplId;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +34,8 @@ public final class AsyncFileSystemHelper {
     public static final String CASE_CLOSE_TIMEOUT = "CloseTimeout";
     public static final String CASE_CLOSE_REJECTED = "CloseRejected";
     public static final String CASE_CLOSE_FAIL = "CloseFail";
+    /** keeper-tfs-m6: a failed close handed to {@link DeferredHandleCloser}. */
+    public static final String CASE_CLOSE_DEFERRED = "CloseDeferred";
     /** Phase H1: OperationNotExecutedException retried once at await entry. */
     public static final String CASE_NOT_EXECUTED_RETRY = "NotExecutedRetry";
     public static final String CASE_NOT_EXECUTED = "NotExecuted";
@@ -157,33 +161,42 @@ public final class AsyncFileSystemHelper {
     }
 
     /**
-     * Best-effort close for <b>write</b> handles (spec §3.9.4b).
+     * Close for <b>write</b> handles (spec §3.9.4b, keeper-tfs-m6 §2.2).
      * <ul>
-     *   <li>{@link OperationNotExecutedException} (sync, before future): retry close once; still fail → skip</li>
-     *   <li>Returned future: await with the same IO timeout as {@link #await}; on timeout do <b>not</b>
-     *       cancel — hang {@code whenComplete} to log late failure</li>
-     *   <li>Future completed with {@link RejectedExecutionException}: retry close once / skip</li>
+     *   <li>{@link OperationNotExecutedException} (sync, before future): retry close once</li>
+     *   <li>Returned future: await with the same IO timeout as {@link #await}; on timeout / interrupt do
+     *       <b>not</b> cancel — a late failure is deferred once the close has finished</li>
+     *   <li>Future completed with {@link RejectedExecutionException}: retry close once</li>
+     *   <li>Any other failure: the handle goes to the FS's {@link DeferredHandleCloser}, which owns it from
+     *       then on; {@link IllegalStateException} / {@link IllegalArgumentException} are programming errors
+     *       and are not deferred; an FS without a closer keeps the old skip</li>
      * </ul>
      * Never throws to caller (lease / Lifecycle preferred over perfect close).
+     *
+     * @param replId keeper the handle belongs to, for the deferred closer; may be null
+     * @return true when closed (or nothing to close); false when the close did not complete: deferred,
+     * skipped, still pending in the closer, or timed out / interrupted
      */
-    public static void closeHandle(AsyncFileSystem fs, AbstractStorageFile file, String operation) {
+    public static boolean closeHandle(AsyncFileSystem fs, AbstractStorageFile file, ReplId replId,
+                                      String operation) {
         if (fs == null || file == null) {
-            return;
+            return true;
         }
-        CompletableFuture<Void> closeFuture = invokeCloseWithOneRetry(fs, file, operation);
+        CompletableFuture<Void> closeFuture = invokeCloseWithOneRetry(fs, file, replId, operation);
         if (closeFuture == null) {
-            return;
+            return false;
         }
-        awaitCloseFuture(fs, file, closeFuture, operation, true);
+        return awaitCloseFuture(fs, file, replId, closeFuture, operation, true);
     }
 
     /**
-     * Best-effort close for <b>read</b> handles and abandon late-close (spec §3.9.4b).
-     * Invokes close (with one {@link OperationNotExecutedException} retry) then observes the future
-     * via {@code whenComplete} — <b>does not await</b>. Never throws.
+     * Close for <b>read</b> handles (spec §3.9.4b). Invokes close (with one
+     * {@link OperationNotExecutedException} retry) then observes the future via {@code whenComplete} —
+     * <b>does not await</b>. Failures are deferred as in {@link #closeHandle}. Never throws.
      */
-    public static void closeReadHandle(AsyncFileSystem fs, AbstractStorageFile file, String operation) {
-        closeWithoutAwait(fs, file, operation, CloseObserveMode.READ);
+    public static void closeReadHandle(AsyncFileSystem fs, AbstractStorageFile file, ReplId replId,
+                                       String operation) {
+        closeWithoutAwait(fs, file, replId, operation, CloseObserveMode.READ);
     }
 
     private static long currentTimeoutMillis() {
@@ -244,7 +257,8 @@ public final class AsyncFileSystemHelper {
             if (file == null) {
                 return;
             }
-            closeWithoutAwait(fs, file, operation, CloseObserveMode.ABANDON);
+            // keeper-tfs-m6 T-P2.0: the open entry has no ReplId until P5, so the closer shows "unknown".
+            closeWithoutAwait(fs, file, null, operation, CloseObserveMode.ABANDON);
         });
     }
 
@@ -253,23 +267,23 @@ public final class AsyncFileSystemHelper {
         ABANDON
     }
 
-    private static void closeWithoutAwait(AsyncFileSystem fs, AbstractStorageFile file, String operation,
-                                          CloseObserveMode mode) {
+    private static void closeWithoutAwait(AsyncFileSystem fs, AbstractStorageFile file, ReplId replId,
+                                          String operation, CloseObserveMode mode) {
         if (fs == null || file == null) {
             return;
         }
-        CompletableFuture<Void> closeFuture = invokeCloseWithOneRetry(fs, file, operation);
+        CompletableFuture<Void> closeFuture = invokeCloseWithOneRetry(fs, file, replId, operation);
         if (closeFuture == null) {
             if (mode == CloseObserveMode.ABANDON) {
                 logCase(CASE_ABANDON_CLOSE_FAIL);
-                logger.warn("[awaitOpen][abandon][close-skip] {}", operation);
+                logger.warn("[awaitOpen][abandon][close-not-done] {}", operation);
             }
             return;
         }
-        observeCloseFuture(fs, file, closeFuture, operation, mode, true);
+        observeCloseFuture(fs, file, replId, closeFuture, operation, mode, true);
     }
 
-    private static void observeCloseFuture(AsyncFileSystem fs, AbstractStorageFile file,
+    private static void observeCloseFuture(AsyncFileSystem fs, AbstractStorageFile file, ReplId replId,
                                            CompletableFuture<Void> closeFuture, String operation,
                                            CloseObserveMode mode, boolean allowRejectedRetry) {
         closeFuture.whenComplete((ignored, err) -> {
@@ -285,29 +299,37 @@ public final class AsyncFileSystemHelper {
             if (allowRejectedRetry && isRejectedExecution(err)) {
                 logCase(CASE_CLOSE_REJECTED);
                 logger.warn("[closeReadHandle][rejected][retry] {}", operation, err);
-                CompletableFuture<Void> retryFuture = invokeCloseWithOneRetry(fs, file, operation);
+                CompletableFuture<Void> retryFuture = invokeCloseWithOneRetry(fs, file, replId, operation);
                 if (retryFuture == null) {
                     if (mode == CloseObserveMode.ABANDON) {
                         logCase(CASE_ABANDON_CLOSE_FAIL);
-                        logger.warn("[awaitOpen][abandon][close-skip] {}", operation);
+                        logger.warn("[awaitOpen][abandon][close-not-done] {}", operation);
                     }
                     return;
                 }
-                observeCloseFuture(fs, file, retryFuture, operation, mode, false);
+                observeCloseFuture(fs, file, replId, retryFuture, operation, mode, false);
                 return;
             }
             if (mode == CloseObserveMode.ABANDON) {
-                logCase(CASE_ABANDON_CLOSE_FAIL);
-                logger.error("[awaitOpen][abandon][close-fail] {}", operation, err);
+                closeFailed(fs, file, replId, operation, "abandon-fail", CASE_ABANDON_CLOSE_FAIL, err);
             } else {
-                logCase(CASE_CLOSE_FAIL);
-                logger.error("[closeReadHandle][fail] {}", operation, err);
+                closeFailed(fs, file, replId, operation, "read-fail", CASE_CLOSE_FAIL, err);
             }
         });
     }
 
+    /**
+     * Returns null when no close is in progress afterwards: the handle is still pending in the
+     * deferred closer, or this close failed and went through {@link #closeFailed}.
+     */
     private static CompletableFuture<Void> invokeCloseWithOneRetry(AsyncFileSystem fs, AbstractStorageFile file,
-                                                                   String operation) {
+                                                                   ReplId replId, String operation) {
+        DeferredHandleCloser closer = DeferredHandleCloser.of(fs);
+        if (closer != null && closer.isPending(file)) {
+            // Owned by the closer: a second close here would race its retry (double releaseEntry).
+            logger.warn("[closeHandle][pending] repl_id={} {}", DeferredHandle.replIdText(replId), operation);
+            return null;
+        }
         try {
             return doFsClose(fs, file);
         } catch (OperationNotExecutedException first) {
@@ -315,19 +337,54 @@ public final class AsyncFileSystemHelper {
             try {
                 return doFsClose(fs, file);
             } catch (OperationNotExecutedException second) {
-                logCase(CASE_CLOSE_NOT_EXECUTED);
-                logger.warn("[closeHandle][not-executed][skip] {}", operation, second);
+                closeFailed(fs, file, replId, operation, "not-executed", CASE_CLOSE_NOT_EXECUTED, second);
                 return null;
             } catch (Throwable t) {
-                logCase(CASE_CLOSE_FAIL);
-                logger.error("[closeHandle][retry-fail] {}", operation, t);
+                closeFailed(fs, file, replId, operation, "retry-fail", CASE_CLOSE_FAIL, t);
                 return null;
             }
         } catch (Throwable t) {
-            logCase(CASE_CLOSE_FAIL);
-            logger.error("[closeHandle][sync-fail] {}", operation, t);
+            closeFailed(fs, file, replId, operation, "sync-fail", CASE_CLOSE_FAIL, t);
             return null;
         }
+    }
+
+    /**
+     * Terminal close failure (keeper-tfs-m6 §2.2): hand the handle to the FS's deferred closer, which
+     * keeps retrying until the cache entry is released. Only called once no close of {@code file} is
+     * running, so the closer gets sole ownership.
+     */
+    private static void closeFailed(AsyncFileSystem fs, AbstractStorageFile file, ReplId replId, String operation,
+                                    String reason, String eventCase, Throwable failure) {
+        logCase(eventCase);
+        Throwable cause = failure instanceof CompletionException && failure.getCause() != null
+                ? failure.getCause() : failure;
+        String replIdText = DeferredHandle.replIdText(replId);
+        if (cause instanceof IllegalStateException || cause instanceof IllegalArgumentException) {
+            // Programming error such as "close is not allowed"; retrying cannot succeed.
+            logger.error("[closeHandle][{}][not-deferred] repl_id={} {}", reason, replIdText, operation, cause);
+            return;
+        }
+        DeferredHandleCloser closer = DeferredHandleCloser.of(fs);
+        if (closer == null) {
+            logger.error("[closeHandle][{}][skip] no deferred closer, repl_id={} {}", reason, replIdText,
+                    operation, cause);
+            return;
+        }
+        // defer() logs the cause with its stack trace, and logs ERROR itself when it rejects after shutdown.
+        if (closer.defer(file, replId, operation, cause)) {
+            logCase(CASE_CLOSE_DEFERRED);
+            logger.warn("[closeHandle][{}][deferred] repl_id={} {}", reason, replIdText, operation);
+        }
+    }
+
+    private static void deferOnLateFailure(AsyncFileSystem fs, AbstractStorageFile file, ReplId replId,
+                                           CompletableFuture<Void> closeFuture, String operation) {
+        closeFuture.whenComplete((ignored, err) -> {
+            if (err != null) {
+                closeFailed(fs, file, replId, operation, "late-fail", CASE_CLOSE_FAIL, err);
+            }
+        });
     }
 
     private static CompletableFuture<Void> doFsClose(AsyncFileSystem fs, AbstractStorageFile file) {
@@ -340,48 +397,39 @@ public final class AsyncFileSystemHelper {
         throw new IllegalArgumentException("unsupported storage file type: " + file.getClass().getName());
     }
 
-    private static void awaitCloseFuture(AsyncFileSystem fs, AbstractStorageFile file,
-                                         CompletableFuture<Void> closeFuture, String operation,
-                                         boolean allowRejectedRetry) {
+    private static boolean awaitCloseFuture(AsyncFileSystem fs, AbstractStorageFile file, ReplId replId,
+                                            CompletableFuture<Void> closeFuture, String operation,
+                                            boolean allowRejectedRetry) {
         try {
             closeFuture.get(currentTimeoutMillis(), TimeUnit.MILLISECONDS);
+            return true;
         } catch (TimeoutException e) {
             logCase(CASE_CLOSE_TIMEOUT);
             logger.warn("[closeHandle][timeout] {}", operation);
             // Do not cancel: TailCache may still release the write slot when the task runs.
-            closeFuture.whenComplete((ignored, err) -> {
-                if (err != null) {
-                    logCase(CASE_CLOSE_FAIL);
-                    logger.error("[closeHandle][late-fail] {}", operation, err);
-                }
-            });
+            deferOnLateFailure(fs, file, replId, closeFuture, operation);
+            return false;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             logCase(CASE_INTERRUPTED);
             logger.warn("[closeHandle][interrupted] {}", operation);
-            closeFuture.whenComplete((ignored, err) -> {
-                if (err != null) {
-                    logCase(CASE_CLOSE_FAIL);
-                    logger.error("[closeHandle][late-fail] {}", operation, err);
-                }
-            });
+            deferOnLateFailure(fs, file, replId, closeFuture, operation);
+            return false;
         } catch (ExecutionException e) {
             Throwable cause = e.getCause() != null ? e.getCause() : e;
             if (allowRejectedRetry && isRejectedExecution(cause)) {
                 logCase(CASE_CLOSE_REJECTED);
                 logger.warn("[closeHandle][rejected][retry] {}", operation, cause);
-                CompletableFuture<Void> retryFuture = invokeCloseWithOneRetry(fs, file, operation);
-                if (retryFuture != null) {
-                    // Second await: no further RejectedExecution retry (avoid loops).
-                    awaitCloseFuture(fs, file, retryFuture, operation, false);
-                }
-                return;
+                CompletableFuture<Void> retryFuture = invokeCloseWithOneRetry(fs, file, replId, operation);
+                // Second await: no further RejectedExecution retry (avoid loops).
+                return retryFuture != null && awaitCloseFuture(fs, file, replId, retryFuture, operation, false);
             }
-            logCase(CASE_CLOSE_FAIL);
-            logger.error("[closeHandle][fail] {}", operation, cause);
+            closeFailed(fs, file, replId, operation, "fail", CASE_CLOSE_FAIL, cause);
+            return false;
         } catch (Throwable t) {
-            logCase(CASE_CLOSE_FAIL);
-            logger.error("[closeHandle][unexpected] {}", operation, t);
+            // e.g. CancellationException: the future is done, so no close of the file is running.
+            closeFailed(fs, file, replId, operation, "unexpected", CASE_CLOSE_FAIL, t);
+            return false;
         }
     }
 
