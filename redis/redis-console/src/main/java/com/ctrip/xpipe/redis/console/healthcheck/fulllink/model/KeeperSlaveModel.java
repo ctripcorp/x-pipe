@@ -30,8 +30,15 @@ public class KeeperSlaveModel {
         this.host = stringMap.get(SLAVE_IP);
         this.port = Integer.parseInt(stringMap.get(SLAVE_PORT));
         this.state = stringMap.get(SLAVE_STATE);
-        this.offset = Long.parseLong(stringMap.get(SLAVE_OFFSET));
+        this.offset = parseOffset(stringMap.get(SLAVE_OFFSET));
         this.remotePort = Long.parseLong(stringMap.get(SLAVE_REMOTE_PORT));
+    }
+
+    private static long parseOffset(String offset) {
+        if (offset == null || offset.trim().isEmpty() || "null".equalsIgnoreCase(offset.trim())) {
+            return -1L;
+        }
+        return Long.parseLong(offset);
     }
 
     public String getHost() {

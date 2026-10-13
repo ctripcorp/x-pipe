@@ -13,11 +13,7 @@ import org.unidal.dal.jdbc.DalException;
 import org.unidal.lookup.ContainerLoader;
 
 import javax.annotation.PostConstruct;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author shyin
@@ -134,14 +130,22 @@ public class RedisDao extends AbstractXpipeConsoleDAO {
     }
 
     private void checkRedisNotExist(RedisTbl redisTbl) {
+        boolean containerKeeper = XPipeConsoleConstant.ROLE_KEEPER.equals(redisTbl.getRedisRole())
+                && !redisTbl.getHostName().isEmpty();
         RedisTbl otherRedis = queryHandler.handleQuery(new DalQuery<RedisTbl>() {
             @Override
             public RedisTbl doQuery() throws DalException {
-                return redisTblDao.findWithIpPort(redisTbl.getRedisIp(), redisTbl.getRedisPort(), RedisTblEntity.READSET_IP_AND_PORT);
+                if (containerKeeper) {
+                    return redisTblDao.findWithHostNamePort(redisTbl.getHostName(), redisTbl.getRedisPort(),
+                            RedisTblEntity.READSET_IP_AND_PORT);
+                }
+                return redisTblDao.findWithIpPort(redisTbl.getRedisIp(), redisTbl.getRedisPort(),
+                        RedisTblEntity.READSET_IP_AND_PORT);
             }
         });
         if(otherRedis != null) {
-            throw new IllegalArgumentException("Redis already exists, " + otherRedis.getRedisIp() + ":" + otherRedis.getRedisPort());
+            String host = containerKeeper ? otherRedis.getHostName() : otherRedis.getRedisIp();
+            throw new IllegalArgumentException("Redis already exists, " + host + ":" + otherRedis.getRedisPort());
         }
     }
 
