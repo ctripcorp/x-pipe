@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 public class CompareMetricsCollector {
 
     public static final String METRIC_COMPARED_BYTES = "comparedBytes";
+    public static final String METRIC_MISMATCH = "mismatch";
 
     private static final Logger logger = LoggerFactory.getLogger(CompareMetricsCollector.class);
 
@@ -102,6 +103,7 @@ public class CompareMetricsCollector {
         long now = System.currentTimeMillis();
         for (ShardCompareTask task : tasks.values()) {
             writeComparedBytes(proxy, task, now);
+            writeMismatch(proxy, task, now);
         }
     }
 
@@ -113,6 +115,21 @@ public class CompareMetricsCollector {
         MetricData data = new MetricData(METRIC_COMPARED_BYTES, dcName, cmp.getCluster(), cmp.getShard());
         data.setTimestampMilli(now);
         data.setValue(cmp.getComparedBytes());
+        write(proxy, data);
+    }
+
+    /**
+     * Mismatches since the last round (an increment, summed with {@code sum_over_time} like the CAT event).
+     * Tags: source (added by the proxy), dc, cluster, shard, name=mismatch.
+     */
+    private void writeMismatch(MetricProxy proxy, ShardCompareTask task, long now) {
+        ShardComparator cmp = task.getComparator();
+        if (cmp == null) {
+            return;
+        }
+        MetricData data = new MetricData(METRIC_MISMATCH, dcName, cmp.getCluster(), cmp.getShard());
+        data.setTimestampMilli(now);
+        data.setValue(cmp.getMismatchCount());
         write(proxy, data);
     }
 
