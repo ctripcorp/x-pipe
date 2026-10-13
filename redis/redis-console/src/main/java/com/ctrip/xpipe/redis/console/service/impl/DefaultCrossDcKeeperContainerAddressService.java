@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.service.impl;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.redis.console.service.CrossDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -75,6 +76,14 @@ public class DefaultCrossDcKeeperContainerAddressService implements CrossDcKeepe
             return currentDcAddressService.getAllHostnameToIp();
         }
         return remoteDcAddressCache.getAllHostnameToIp(dcId);
+    }
+
+    @Override
+    public Map<String, KeeperContainerAddressSnapshot> getAllAddressSnapshots() {
+        Map<String, KeeperContainerAddressSnapshot> result =
+                new java.util.TreeMap<>(remoteDcAddressCache.getAllAddressSnapshots());
+        result.put(currentDc, currentDcAddressService.getAddressSnapshot());
+        return result;
     }
 
     @Override

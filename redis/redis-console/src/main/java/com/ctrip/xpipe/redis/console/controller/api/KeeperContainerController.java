@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.KeeperRestElectionModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
+import com.ctrip.xpipe.redis.console.service.CrossDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
@@ -43,6 +44,9 @@ public class KeeperContainerController extends AbstractConsoleController{
 
     @Autowired
     CurrentDcKeeperContainerAddressService keeperContainerAddressService;
+
+    @Autowired
+    CrossDcKeeperContainerAddressService crossDcKeeperContainerAddressService;
 
     @RequestMapping(value = "/keepercontainer/overload/info/all", method = RequestMethod.GET)
     public List<MigrationKeeperContainerDetailModel> getAllReadyToMigrateKeeperContainers() {
@@ -146,6 +150,12 @@ public class KeeperContainerController extends AbstractConsoleController{
     @RequestMapping(value = "/keepercontainer/address/all", method = RequestMethod.GET)
     public Map<String, String> getAllKeeperContainerHostnameToIpMap() {
         return keeperContainerAddressService.getAllHostnameToIp();
+    }
+
+    /** 所有机房完整地址快照，按 DC 分组；远端数据来自本地周期快照缓存。 */
+    @RequestMapping(value = "/keepercontainer/address/snapshot/global", method = RequestMethod.GET)
+    public Map<String, KeeperContainerAddressSnapshot> getGlobalKeeperContainerAddressSnapshot() {
+        return crossDcKeeperContainerAddressService.getAllAddressSnapshots();
     }
 
     /**

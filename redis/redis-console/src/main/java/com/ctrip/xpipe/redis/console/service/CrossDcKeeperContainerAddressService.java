@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.service;
 
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
 import com.ctrip.xpipe.tuple.Pair;
 
 import java.util.List;
@@ -35,6 +36,11 @@ public interface CrossDcKeeperContainerAddressService {
      * @return hostname → IP 映射；无数据返回空 Map
      */
     Map<String, String> getAllHostnameToIp(String dcId);
+
+    /**
+     * 获取所有已缓存机房的完整地址快照，key 为大写 DC ID。
+     */
+    Map<String, KeeperContainerAddressSnapshot> getAllAddressSnapshots();
 
     /**
      * 不知道机房时解析 hostname 对应的 IP

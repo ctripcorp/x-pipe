@@ -18,23 +18,8 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.spring.AbstractSpringConfigContext.GLOBAL_EXECUTOR;
@@ -166,6 +151,15 @@ public class RemoteDcKeeperContainerAddressCache {
         if (isEmpty(dcId)) return new HashMap<>();
         RemoteSnapshot snapshot = snapshots.get(dcId.toUpperCase());
         return null == snapshot ? new HashMap<>() : snapshot.allHostnameToIp(nowNanos());
+    }
+
+    /** 所有已成功拉取的远端机房完整地址快照，按机房名字典序返回副本。 */
+    public Map<String, KeeperContainerAddressSnapshot> getAllAddressSnapshots() {
+        Map<String, RemoteSnapshot> current = snapshots;
+        long now = nowNanos();
+        Map<String, KeeperContainerAddressSnapshot> result = new TreeMap<>();
+        current.forEach((dc, snapshot) -> result.put(dc, snapshot.toAddressSnapshot(now)));
+        return result;
     }
 
     /** 远端机房的 IP → hostname，只查存活反向索引，不回落 tombstone。 */
@@ -382,6 +376,19 @@ public class RemoteDcKeeperContainerAddressCache {
                 }
             });
             return all;
+        }
+
+        KeeperContainerAddressSnapshot toAddressSnapshot(long nowNanos) {
+            Map<String, KeeperContainerAddressSnapshot.TombstoneEntry> exportedTombstones = new HashMap<>();
+            tombstones.forEach((hostname, tombstone) -> {
+                long remainingMillis = TimeUnit.NANOSECONDS.toMillis(tombstone.expireAtNanos() - nowNanos);
+                if (remainingMillis > 0) {
+                    exportedTombstones.put(hostname,
+                            new KeeperContainerAddressSnapshot.TombstoneEntry(tombstone.ip(), remainingMillis));
+                }
+            });
+            return new KeeperContainerAddressSnapshot(new HashMap<>(liveHostnameToIp), exportedTombstones,
+                    new HashMap<>(liveIpToHostname));
         }
 
         private static Map<String, String> copyNonNull(Map<String, String> source) {
