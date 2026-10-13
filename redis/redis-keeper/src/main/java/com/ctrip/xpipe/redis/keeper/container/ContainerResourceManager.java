@@ -33,8 +33,9 @@ public class ContainerResourceManager {
 
     private volatile AsyncFileSystem asyncFileSystem;
 
-    // keeper-tfs-m6 §2.4: container level, outlives every keeper; guarded by this.
+    // keeper-tfs-m6 §2.4: container level, outlives every keeper; both guarded by this.
     private DeferredHandleCloser deferredHandleCloser;
+    private UnclosedHandleMetricReporter unclosedHandleMetricReporter;
 
     public boolean isPortFree(int port) {
         return runningPorts.contains(port);
@@ -61,10 +62,17 @@ public class ContainerResourceManager {
                 // Registered before the FS is published, so no close on it can miss the closer.
                 DeferredHandleCloser.register(created, closer);
                 deferredHandleCloser = closer;
+                unclosedHandleMetricReporter = new UnclosedHandleMetricReporter(closer);
+                unclosedHandleMetricReporter.start();
                 asyncFileSystem = created;
             }
             return asyncFileSystem;
         }
+    }
+
+    /** The container FS's deferred closer; null until the FS is created or after it is shut down. */
+    public synchronized DeferredHandleCloser getDeferredHandleCloser() {
+        return deferredHandleCloser;
     }
 
     /**
@@ -74,6 +82,10 @@ public class ContainerResourceManager {
     public synchronized void shutdownAsyncFileSystem() {
         if (asyncFileSystem != null) {
             try {
+                if (unclosedHandleMetricReporter != null) {
+                    unclosedHandleMetricReporter.stop();
+                    unclosedHandleMetricReporter = null;
+                }
                 if (deferredHandleCloser != null) {
                     deferredHandleCloser.shutdown();
                 }

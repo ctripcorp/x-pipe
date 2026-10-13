@@ -371,7 +371,8 @@ public final class AsyncFileSystemHelper {
                     operation, cause);
             return;
         }
-        // defer() logs the cause with its stack trace, and logs ERROR itself when it rejects after shutdown.
+        // defer() logs the entry with repl_id, fileKey and the cause type / message, and logs ERROR itself
+        // when it rejects after shutdown.
         if (closer.defer(file, replId, operation, cause)) {
             logCase(CASE_CLOSE_DEFERRED);
             logger.warn("[closeHandle][{}][deferred] repl_id={} {}", reason, replIdText, operation);

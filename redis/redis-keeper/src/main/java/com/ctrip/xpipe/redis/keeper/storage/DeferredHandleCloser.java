@@ -43,6 +43,8 @@ public final class DeferredHandleCloser {
     static final long CLOSE_AWAIT_TIMEOUT_MILLIS = 30_000L;
     static final long SHUTDOWN_AWAIT_MILLIS = 30_000L;
     static final long DEFAULT_FLUSH_WINDOW_MILLIS = 300_000L;
+    // spec §8: a failing handle logs its retry failure at most once per minute.
+    static final long RETRY_FAILURE_LOG_INTERVAL_MILLIS = 60_000L;
 
     private static final Map<AsyncFileSystem, DeferredHandleCloser> REGISTRY =
             Collections.synchronizedMap(new IdentityHashMap<>());
@@ -95,24 +97,27 @@ public final class DeferredHandleCloser {
      */
     public boolean defer(AbstractStorageFile file, ReplId replId, String operation, Throwable cause) {
         long window = readFlushWindowMillis();
+        long now = clock.getAsLong();
         DeferredHandle handle;
         synchronized (lock) {
             if (shutdown) {
-                logger.error("[deferred-closer][rejected][shutdown] repl_id={} fileKey={} {}",
-                        DeferredHandle.replIdText(replId), DeferredHandle.displayKey(file.getKey()), operation, cause);
+                logger.error("[deferred-closer][rejected][shutdown] repl_id={} fileKey={} operation={} cause: {}",
+                        DeferredHandle.replIdText(replId), DeferredHandle.displayKey(file.getKey()), operation,
+                        DeferredHandle.errorSummary(cause));
                 return false;
             }
             DeferredHandle existing = byFile.get(file);
             if (existing != null) {
-                logger.warn("[deferred-closer][duplicate] {}", existing);
+                logger.warn("[deferred-closer][duplicate] {}", existing.describe(now));
                 return true;
             }
-            handle = new DeferredHandle(fs, file, replId, operation, cause, clock.getAsLong(), window);
+            handle = new DeferredHandle(fs, file, replId, operation, cause, now, window);
             byFile.put(file, handle);
             byKey.computeIfAbsent(file.getKey(), k -> new ArrayList<>(1)).add(handle);
         }
         long delay = backoffMillis(handle.getBackoffFailures());
-        logger.warn("[deferred-closer][deferred] {} first retry in {}ms", handle, delay, cause);
+        logger.warn("[deferred-closer][deferred] {} first retry in {}ms, cause: {}", handle.describe(now), delay,
+                DeferredHandle.errorSummary(cause));
         schedule(handle, delay);
         return true;
     }
@@ -197,7 +202,12 @@ public final class DeferredHandleCloser {
         }
         List<DeferredHandle> leftover = snapshot();
         if (!leftover.isEmpty()) {
-            logger.error("[deferred-closer][shutdown] {} handles left unclosed: {}", leftover.size(), leftover);
+            long now = clock.getAsLong();
+            StringBuilder details = new StringBuilder();
+            for (DeferredHandle handle : leftover) {
+                details.append("\n  ").append(handle.describe(now));
+            }
+            logger.error("[deferred-closer][shutdown] {} handles left unclosed:{}", leftover.size(), details);
         }
         return leftover;
     }
@@ -223,7 +233,7 @@ public final class DeferredHandleCloser {
             executor.schedule(() -> runAttempt(handle), delayMillis, TimeUnit.MILLISECONDS);
         } catch (RejectedExecutionException e) {
             // Only after shutdown: the handle stays registered and is reported as left over.
-            logger.warn("[deferred-closer][schedule-rejected] {}", handle, e);
+            logger.warn("[deferred-closer][schedule-rejected] {}", handle.describe(clock.getAsLong()));
         }
     }
 
@@ -232,8 +242,8 @@ public final class DeferredHandleCloser {
             attempt(handle);
         } catch (Throwable t) {
             // attempt() handles close failures itself; this keeps a bookkeeping bug from dropping
-            // the handle.
-            logger.error("[deferred-closer][unexpected] {}", handle, t);
+            // the handle. A bug, so the stack trace is kept.
+            logger.error("[deferred-closer][unexpected] {}", handle.describe(clock.getAsLong()), t);
             schedule(handle, MAX_BACKOFF_MILLIS);
         }
     }
@@ -243,25 +253,30 @@ public final class DeferredHandleCloser {
         if (handle.currentMode() == DeferredHandle.CloseMode.FLUSH && now >= handle.getFlushDeadlineMillis()) {
             handle.markDegraded();
             logger.error("[deferred-closer][degrade-no-flush] flush window passed, unflushed data will be dropped: {}",
-                    handle);
+                    handle.describe(now));
         }
         boolean noFlush = handle.currentMode() == DeferredHandle.CloseMode.NO_FLUSH;
         Throwable failure;
         try {
             awaitClose(invokeClose(handle.file, noFlush));
             dequeue(handle);
-            logger.info("[deferred-closer][closed] {} age={}ms", handle, now - handle.getFirstFailureTimeMillis());
+            logger.info("[deferred-closer][closed] {}", handle.describe(now));
             return;
         } catch (IllegalStateException | IllegalArgumentException e) {
-            // Programming error such as "close is not allowed"; retrying cannot succeed.
+            // Programming error such as "close is not allowed"; retrying cannot succeed. A bug, so the
+            // stack trace is kept.
             dequeue(handle);
-            logger.error("[deferred-closer][drop] {}", handle, e);
+            logger.error("[deferred-closer][drop] {}", handle.describe(now), e);
             return;
         } catch (Throwable t) {
             failure = t;
         }
         long delay = backoffMillis(handle.recordFailure(failure));
-        logger.warn("[deferred-closer][retry-fail] {} next retry in {}ms", handle, delay, failure);
+        // Expected IO failure repeated on every retry: type and message only, rate limited (spec §8).
+        if (handle.tryLogRetryFailure(now, RETRY_FAILURE_LOG_INTERVAL_MILLIS)) {
+            logger.warn("[deferred-closer][retry-fail] {} next retry in {}ms, cause: {}", handle.describe(now), delay,
+                    DeferredHandle.errorSummary(failure));
+        }
         schedule(handle, delay);
     }
 

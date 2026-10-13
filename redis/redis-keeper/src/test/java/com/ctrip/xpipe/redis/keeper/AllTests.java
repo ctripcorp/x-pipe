@@ -27,6 +27,8 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.RateLimitTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.FixSyncRateManagerTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.ProgressiveSyncRateLimiterTest;
 import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManagerTest;
+import com.ctrip.xpipe.redis.keeper.container.KeeperContainerControllerUnclosedHandlesTest;
+import com.ctrip.xpipe.redis.keeper.container.UnclosedHandleMetricReporterTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperDeferredCloseTest;
 import com.ctrip.xpipe.redis.keeper.storage.StoreCloseUnclosedHandleTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperTest;
@@ -166,6 +168,8 @@ import org.junit.runners.Suite.SuiteClasses;
         AsyncFileSystemHelperDeferredCloseTest.class,
         StoreCloseUnclosedHandleTest.class,
         ContainerResourceManagerTest.class,
+        UnclosedHandleMetricReporterTest.class,
+        KeeperContainerControllerUnclosedHandlesTest.class,
         AsyncTFSBasedFileSystemTest.class,
         DeferredHandleCloserTest.class,
         TailCacheFileSystemTest.class,

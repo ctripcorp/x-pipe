@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.keeper.storage;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.LogEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -368,6 +370,78 @@ public class DeferredHandleCloserTest {
         assertEquals(other, snapshot.get(0).getReplId());
         assertNull(snapshot.get(1).getReplId());
         assertTrue(snapshot.get(1).toString().contains("repl_id=" + DeferredHandle.UNKNOWN_REPL_ID));
+    }
+
+    // ---- P8 (spec §8): log content and rate limit ----
+
+    @Test
+    public void testEntryLogsCarryReplIdAndFileKeyAndNoStackForCloseFailures() {
+        AsyncFile writer = file("/data/repl-1/meta.v2.json", AbstractStorageFile.OpenMode.WRITE);
+        String entry = "repl_id=" + REPL_ID + " fileKey=f|/data/repl-1/meta.v2.json write=true";
+        try (LogCapture logs = new LogCapture(DeferredHandleCloser.class)) {
+            closer.defer(writer, REPL_ID, "close meta", new OperationNotExecutedException("helper"));
+            // Fails at +1s, +3s, +7s, +15s (flush) and +31s (degraded); closes at +32s.
+            failNextCloses(5);
+            for (int i = 0; i < 6; i++) {
+                scheduler.runNext();
+            }
+            assertEquals(0, closer.count());
+
+            LogEvent deferred = single(logs, "[deferred-closer][deferred]");
+            assertEquals(Level.WARN, deferred.getLevel());
+            assertTrue(LogCapture.message(deferred), LogCapture.message(deferred).contains(entry));
+            assertTrue(LogCapture.message(deferred).contains("cause: OperationNotExecutedException: operation was not executed for: helper"));
+            assertNull("no stack for the deferred cause", deferred.getThrown());
+
+            LogEvent retryFail = single(logs, "[deferred-closer][retry-fail]");
+            assertEquals(Level.WARN, retryFail.getLevel());
+            assertTrue(LogCapture.message(retryFail).contains(entry + " attempts=1 "));
+            assertTrue(LogCapture.message(retryFail).contains("cause: OperationNotExecutedException: operation was not executed for: injected-0"));
+            assertNull("no stack for retry failures", retryFail.getThrown());
+
+            LogEvent degraded = single(logs, "[deferred-closer][degrade-no-flush]");
+            assertEquals(Level.ERROR, degraded.getLevel());
+            assertTrue(LogCapture.message(degraded).contains(entry + " attempts=4 age=31000ms mode=NO_FLUSH"));
+
+            LogEvent closed = single(logs, "[deferred-closer][closed]");
+            assertEquals(Level.INFO, closed.getLevel());
+            assertTrue(LogCapture.message(closed).contains(entry + " attempts=5 age=32000ms mode=NO_FLUSH"));
+        }
+    }
+
+    @Test
+    public void testRetryFailureLogIsRateLimitedPerMinute() {
+        AsyncFile reader = file("/data/repl-1/rdb", AbstractStorageFile.OpenMode.READ);
+        try (LogCapture logs = new LogCapture(DeferredHandleCloser.class)) {
+            closer.defer(reader, REPL_ID, "close rdb reader", new OperationNotExecutedException("helper"));
+            // Failures at +1s, +3s, +7s, +15s, +31s, +61s, +91s, +121s, +151s, +181s.
+            failNextCloses(10);
+            for (int i = 0; i < 10; i++) {
+                scheduler.runNext();
+            }
+            assertEquals(10, closer.findPending(reader.getKey()).getAttempts());
+            List<String> logged = new ArrayList<>();
+            for (LogEvent event : logs.withTag("[deferred-closer][retry-fail]")) {
+                String message = LogCapture.message(event);
+                logged.add(message.substring(message.indexOf("attempts="), message.indexOf(" age=")));
+            }
+            // +1s first, then the first failure at least 60s after the last logged one.
+            assertEquals(Arrays.asList("attempts=1", "attempts=6", "attempts=8", "attempts=10"), logged);
+        }
+    }
+
+    @Test
+    public void testErrorSummaryHasTypeAndMessageOnly() {
+        assertEquals("IOException: Input/output error",
+                DeferredHandle.errorSummary(new IOException("Input/output error")));
+        assertEquals("IllegalStateException: null", DeferredHandle.errorSummary(new IllegalStateException()));
+        assertNull(DeferredHandle.errorSummary(null));
+    }
+
+    private static LogEvent single(LogCapture logs, String tag) {
+        List<LogEvent> events = logs.withTag(tag);
+        assertEquals("events tagged " + tag, 1, events.size());
+        return events.get(0);
     }
 
     // ---- real TailCache: memory release ----

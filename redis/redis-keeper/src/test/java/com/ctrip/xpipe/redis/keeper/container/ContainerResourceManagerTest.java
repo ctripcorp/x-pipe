@@ -23,10 +23,15 @@ public class ContainerResourceManagerTest {
         assertSame("one FS per container", fs, manager.getAsyncFileSystem());
         DeferredHandleCloser closer = DeferredHandleCloser.of(fs);
         assertNotNull("closer registered with the container FS", closer);
+        assertSame("exposed for the unclosed-handles API", closer, manager.getDeferredHandleCloser());
+        assertNotNull("metric reporter started with the closer",
+                ReflectionTestUtils.getField(manager, "unclosedHandleMetricReporter"));
         assertEquals(0, closer.count());
 
         manager.shutdownAsyncFileSystem();
         assertNull("closer unregistered on shutdown", DeferredHandleCloser.of(fs));
+        assertNull(manager.getDeferredHandleCloser());
+        assertNull("metric reporter stopped", ReflectionTestUtils.getField(manager, "unclosedHandleMetricReporter"));
         assertNotSame("FS dropped and recreated on demand", fs, manager.getAsyncFileSystem());
         manager.shutdownAsyncFileSystem();
     }

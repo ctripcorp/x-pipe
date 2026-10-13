@@ -17,6 +17,7 @@ public final class DeferredHandle {
     private static final char KEY_SEPARATOR = '\0';
     private static final char KEY_SEPARATOR_DISPLAY = '|';
     static final String UNKNOWN_REPL_ID = "unknown";
+    private static final long NEVER_LOGGED = -1L;
 
     final AsyncFileSystem fs;
     final AbstractStorageFile file;
@@ -34,6 +35,8 @@ public final class DeferredHandle {
     // Consecutive failures in the current close mode, the Helper's failure included. Drives the
     // backoff and is reset when the handle degrades to noFlush.
     private volatile int backoffFailures;
+    // Time of the last logged retry failure, NEVER_LOGGED before the first; worker only.
+    private long lastRetryFailureLogMillis = NEVER_LOGGED;
 
     DeferredHandle(AsyncFileSystem fs, AbstractStorageFile file, ReplId replId, String operation, Throwable cause,
                    long nowMillis, long flushWindowMillis) {
@@ -69,6 +72,11 @@ public final class DeferredHandle {
     /** May be null when the caller had none; see {@link #replIdText(ReplId)}. */
     public ReplId getReplId() {
         return replId;
+    }
+
+    /** ReplId for display, {@code unknown} when null. */
+    public String getReplIdText() {
+        return replIdText(replId);
     }
 
     static String replIdText(ReplId replId) {
@@ -125,6 +133,33 @@ public final class DeferredHandle {
 
     void setNextRetryTimeMillis(long nextRetryTimeMillis) {
         this.nextRetryTimeMillis = nextRetryTimeMillis;
+    }
+
+    /**
+     * Rate limit of the retry failure log (spec §8): true for the first failure and then at most once
+     * per {@code intervalMillis}; a true result counts as logged.
+     */
+    boolean tryLogRetryFailure(long nowMillis, long intervalMillis) {
+        if (lastRetryFailureLogMillis != NEVER_LOGGED && nowMillis - lastRetryFailureLogMillis < intervalMillis) {
+            return false;
+        }
+        lastRetryFailureLogMillis = nowMillis;
+        return true;
+    }
+
+    /** {@code Type: message} without the stack trace, for the expected close failures (spec §8). */
+    static String errorSummary(Throwable error) {
+        if (error == null) {
+            return null;
+        }
+        return error.getClass().getSimpleName() + ": " + error.getMessage();
+    }
+
+    /** Log form of the entry (spec §8), with the age at {@code nowMillis}. */
+    String describe(long nowMillis) {
+        return "repl_id=" + replIdText(replId) + " fileKey=" + getDisplayKey() + " write=" + write
+                + " attempts=" + attempts + " age=" + (nowMillis - firstFailureTimeMillis) + "ms mode=" + currentMode()
+                + " operation=" + operation;
     }
 
     @Override
