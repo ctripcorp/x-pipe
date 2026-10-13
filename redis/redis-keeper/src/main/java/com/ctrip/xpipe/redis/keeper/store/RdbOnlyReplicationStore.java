@@ -28,6 +28,12 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 		this.dumpedRdbStore = dumpedRdbStore;
 		metaStore = new MetaStore() {
 
+			// Holds no resources; keeps the former no-op close().
+			@Override
+			public boolean close(boolean ignoreCloseFail) {
+				return true;
+			}
+
 			@Override
 			public ReplStage getPreReplStage() {
 				throw new UnsupportedOperationException();

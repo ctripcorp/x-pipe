@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStore;
 import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubParseHook;
 import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStore;
+import com.ctrip.xpipe.api.utils.IOSupplier;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
@@ -1293,62 +1294,62 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		}
 	}
 
+	/**
+	 * keeper-tfs-m6 §3.1: closes every part even if an earlier one fails. Any failure is thrown (the first,
+	 * with the rest suppressed); otherwise returns whether cmd and meta closed their write handles.
+	 */
 	@Override
-	public void close() throws IOException {
-
-		if (cmpAndSetClosed()) {
-			getLogger().info("[close]{}", this);
-			IOException firstError = null;
-			firstError = closeQuietly(rdbStoreRef.get(), "rdb", firstError);
-			firstError = closeQuietly(rordbStoreRef.get(), "rordb", firstError);
-			for (RdbStore previous : previousRdbStores.keySet()) {
-				firstError = closeQuietly(previous, "previousRdb", firstError);
-			}
-			previousRdbStores.clear();
-
-			if (cmdStore != null) {
-				try {
-					cmdStore.close();
-				} catch (IOException e) {
-					getLogger().error("[close][cmdStore]" + cmdStore, e);
-					if (firstError == null) {
-						firstError = e;
-					}
-				}
-			}
-
-			if (metaStore != null) {
-				try {
-					metaStore.close();
-				} catch (IOException e) {
-					getLogger().error("[close][metaStore]" + metaStore, e);
-					if (firstError == null) {
-						firstError = e;
-					}
-				}
-			}
-			if (firstError != null) {
-				throw firstError;
-			}
-		}else{
+	public boolean close(boolean ignoreCloseFail) throws IOException {
+		if (!cmpAndSetClosed()) {
 			getLogger().warn("[close][already closed!]{}", this);
+			return true;
 		}
+		getLogger().info("[close]{}", this);
+		boolean allClosed = true;
+		List<IOException> errors = new ArrayList<>();
+		for (Pair<String, IOSupplier<Boolean>> part : partsInCloseOrder(ignoreCloseFail)) {
+			try {
+				allClosed &= part.getValue().get();
+			} catch (Throwable t) {
+				getLogger().error("[close][{}]{}", part.getKey(), this, t);
+				errors.add(t instanceof IOException ? (IOException) t : new IOException("close " + part.getKey() + " failed", t));
+			}
+		}
+		previousRdbStores.clear();
+		if (!errors.isEmpty()) {
+			IOException first = errors.getFirst();
+			errors.subList(1, errors.size()).forEach(first::addSuppressed);
+			throw first;
+		}
+		return allClosed;
 	}
 
-	private IOException closeQuietly(RdbStore rdbStore, String tag, IOException firstError) {
-		if (rdbStore == null) {
-			return firstError;
+	/** rdb handles are never reported (§3.1), so rdb parts always count as closed. */
+	private List<Pair<String, IOSupplier<Boolean>>> partsInCloseOrder(boolean ignoreCloseFail) {
+		List<Pair<String, IOSupplier<Boolean>>> parts = new ArrayList<>();
+		addRdbPart(parts, "rdb", rdbStoreRef.get());
+		addRdbPart(parts, "rordb", rordbStoreRef.get());
+		for (RdbStore previous : previousRdbStores.keySet()) {
+			addRdbPart(parts, "previousRdb", previous);
 		}
-		try {
-			rdbStore.close();
-		} catch (IOException e) {
-			getLogger().error("[close][" + tag + "]" + rdbStore, e);
-			return firstError != null ? firstError : e;
-		} catch (Exception e) {
-			getLogger().error("[close][" + tag + "]" + rdbStore, e);
-			return firstError != null ? firstError : new IOException("close " + tag + " failed", e);
+		CommandStore cmd = cmdStore;
+		if (cmd != null) {
+			parts.add(Pair.from("cmdStore", () -> cmd.close(ignoreCloseFail)));
 		}
-		return firstError;
+		MetaStore meta = metaStore;
+		if (meta != null) {
+			parts.add(Pair.from("metaStore", () -> meta.close(ignoreCloseFail)));
+		}
+		return parts;
+	}
+
+	private static void addRdbPart(List<Pair<String, IOSupplier<Boolean>>> parts, String tag, RdbStore rdbStore) {
+		if (rdbStore != null) {
+			parts.add(Pair.from(tag, () -> {
+				rdbStore.close();
+				return true;
+			}));
+		}
 	}
 
 	@Override

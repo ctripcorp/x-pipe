@@ -376,23 +376,27 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     /**
      * T-H3.CP6.3 / spec §3.3.6: stepwise best-effort. Any step failure must not skip later
      * steps; must always {@code closeHandle(asyncSegmentFile)}.
+     * <p>keeper-tfs-m6 §3.1: returns false, after all steps are done, when the write segment was left to
+     * the deferred closer and {@code ignoreCloseFail} is false. A repeated close returns true.
      */
     @Override
-    public void close() throws IOException {
+    public boolean close(boolean ignoreCloseFail) {
         if (!cmpAndSetClosed()) {
             getLogger().warn("[close][already closed]{}", this);
-            return;
+            return true;
         }
         getLogger().info("[close]{}", this);
+        boolean segmentClosed;
         try {
             closeQuietly(timerSlidingWindow, "timerSlidingWindow");
             closeQuietly(cmdWriter, "cmdWriter");
             // Terminal close (AbstractStore); index AsyncFile released with segment below.
             closeQuietly(indexStore, "indexStore");
         } finally {
-            AsyncFileSystemHelper.closeHandle(asyncFileSystem, asyncSegmentFile, fileSystemReplId,
+            segmentClosed = AsyncFileSystemHelper.closeHandle(asyncFileSystem, asyncSegmentFile, fileSystemReplId,
                     "close command segment " + fileNamePrefix);
         }
+        return segmentClosed || ignoreCloseFail;
     }
 
     private void closeQuietly(AutoCloseable closeable, String name) {

@@ -103,4 +103,21 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	void flushSlidingWindow();
 
+	/**
+	 * Close the replication store; its cmd / meta results are combined.
+	 *
+	 * @param ignoreCloseFail when true, write handles that could not be closed (left for asynchronous
+	 *                        close) do not count and the result is always true
+	 * @return false only when {@code !ignoreCloseFail} and some write handle was not closed; other
+	 * failures are thrown
+	 */
+	default boolean close(boolean ignoreCloseFail) throws IOException {
+		// Must not delegate to close(): close() delegates here.
+		throw new UnsupportedOperationException("close(boolean) not supported: " + getClass().getName());
+	}
+
+	@Override
+	default void close() throws IOException {
+		close(true);
+	}
 }

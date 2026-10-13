@@ -197,9 +197,20 @@ public interface MetaStore extends Closeable {
 
 	/**
 	 * Release async file handles held by this MetaStore.
-	 * Default no-op for implementations that do not hold resources.
+	 *
+	 * @param ignoreCloseFail when true, a handle that could not be closed (left for asynchronous close)
+	 *                        does not count and the result is always true
+	 * @return false only when {@code !ignoreCloseFail} and the write handle was not closed; other
+	 * failures are thrown
 	 */
+	default boolean close(boolean ignoreCloseFail) throws IOException {
+		// Must not delegate to close(): close() delegates here.
+		throw new UnsupportedOperationException("close(boolean) not supported: " + getClass().getName());
+	}
+
+	@Override
 	default void close() throws IOException {
+		close(true);
 	}
 
 	/**

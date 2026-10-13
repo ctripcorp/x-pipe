@@ -154,16 +154,24 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 		}
 	}
 
+	/** Holds only a read handle, which is never reported (keeper-tfs-m6 §3.1): always true. */
 	@Override
-	public void close() {
+	public boolean close(boolean ignoreCloseFail) {
 		if (!cmpAndSetClosed()) {
 			logger.warn("[close][already closed]{}", this);
-			return;
+			return true;
 		}
 		logger.info("[close]{}", this);
 		synchronized (handleLock) {
 			closeHandleLocked("close read-only command segment " + fileNamePrefix);
 		}
+		return true;
+	}
+
+	/** Narrows the interface default to no checked exception for existing callers. */
+	@Override
+	public void close() {
+		close(true);
 	}
 
 	/**

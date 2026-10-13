@@ -204,18 +204,25 @@ public abstract class AbstractMetaStore implements MetaStore{
 		}
 	}
 
+	/**
+	 * keeper-tfs-m6 §3.1: returns false when the write {@code meta.v2.json} handle was left to the
+	 * deferred closer and {@code ignoreCloseFail} is false; the read-only handle is never reported.
+	 */
 	@Override
-	public void close() throws IOException {
+	public boolean close(boolean ignoreCloseFail) {
 		synchronized (metaRef) {
 			if (closed) {
-				return;
+				return true;
 			}
 			closed = true;
-			if (metaAsyncFile != null) {
-				AsyncFileSystemHelper.closeHandle(asyncFileSystem, metaAsyncFile, fileSystemReplId,
-						"close meta file " + metaV2File().getAbsolutePath());
-				metaAsyncFile = null;
+			if (metaAsyncFile == null) {
+				return true;
 			}
+			AsyncFile toClose = metaAsyncFile;
+			metaAsyncFile = null;
+			boolean handleClosed = AsyncFileSystemHelper.closeHandle(asyncFileSystem, toClose, fileSystemReplId,
+					"close meta file " + metaV2File().getAbsolutePath());
+			return handleClosed || readOnly || ignoreCloseFail;
 		}
 	}
 

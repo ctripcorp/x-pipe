@@ -235,7 +235,7 @@ public class AsyncFileSystemHelperDeferredCloseTest extends AbstractRedisKeeperT
                 .doThrow(new OperationNotExecutedException("in-flight"))
                 .doCallRealMethod()
                 .when(realFs).close(any(AsyncFile.class), anyBoolean());
-        store.close();
+        assertFalse("deferred meta write handle is reported", store.close(false));
 
         // Keeper removed: nothing holds the store any more; only the container-level closer has the handle.
         store = null;
