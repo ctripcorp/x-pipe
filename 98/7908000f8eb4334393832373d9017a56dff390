@@ -1,0 +1,35 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/searcher/GtidCommandSearcherTest.java
+  s_8ff7c583ab5a07::t_ddf3f27510826d 11
+  s_8ff7c583ab5a07::t_a8769532da99b5 34-35
+  s_8ff7c583ab5a07::t_5e7bf9c57c2a42 61-137
+  s_8ff7c583ab5a07::t_9803d970ac2899 28,30-31
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/searcher/GtidCommandSearcher.java
+  s_8ff7c583ab5a07::t_1e81363b26bd06 68-69,72-75,77-80,82-84
+  s_8ff7c583ab5a07::t_e0a10946364671 44-46
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerPrepareWatchTest.java
+  s_8ff7c583ab5a07::t_e057a97a1cd40b 124-130
+  s_8ff7c583ab5a07::t_66d041bfe267d9 140-145
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_8ff7c583ab5a07::t_f0abceac9a9edc 279-282,285-292
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerSharedStoreTest.java
+  s_8ff7c583ab5a07::t_36be213a2e397b 118-147
+  s_8ff7c583ab5a07::t_d4df0cfbecd507 148-197
+  s_8ff7c583ab5a07::t_60b1aac276ba0e 100-101
+  s_8ff7c583ab5a07::t_ed288ad27bbd76 107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "987908000f8eb4334393832373d9017a56dff390",
+  "prompts": {},
+  "sessions": {
+    "s_8ff7c583ab5a07": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b53869e6-d61d-4ca0-83aa-02907f9f87c8",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
