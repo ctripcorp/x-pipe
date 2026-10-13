@@ -1,0 +1,37 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/keeper/container/DefaultCurrentDcKeeperContainerAddressService.java
+  s_51eda43cee240a::t_56474ad1d63f8b 217-218
+  s_51eda43cee240a::t_ecef7d380eba9c 228-229
+  s_51eda43cee240a::t_6451897e8d0eda 88-91
+  s_51eda43cee240a::t_d15aa47227c2ad 188-189
+  s_51eda43cee240a::t_c563a7757fdcbe 8
+  s_51eda43cee240a::t_9db43c561b1052 18,22,26,32-33,43-46,54-63,83-87,92-107,109-111,113-124,137-141,161-165,168-182,185-186,216,219-227,230-233,236-244,281
+  s_51eda43cee240a::t_e6a4e10f8eaecf 166-167
+  s_51eda43cee240a::t_a210d5e983dc21 234-235
+pom.xml
+  s_51eda43cee240a::t_a8fd6c7198872e 27
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/keeper/container/DefaultCurrentDcKeeperContainerAddressServiceTest.java
+  s_51eda43cee240a::t_26a1112a7dc5f0 320-341
+  s_51eda43cee240a::t_97e0a4473eaa2d 394
+  s_51eda43cee240a::t_c1421e00edd9f1 220-270,272,274,277-280,282-319,342-358
+  s_51eda43cee240a::t_8a9658070083ae 271,273,275-276,281
+  s_51eda43cee240a::t_ed469b915a5b9b 11,21-23,25
+  s_51eda43cee240a::t_3d603ee6c55b4d 6
+  s_51eda43cee240a::t_444fb7586b2eb2 402
+  s_51eda43cee240a::t_7779bc18a5cf8c 376-393,395-401,403-417
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "5e345546bedee9b2629ee29672feab40038baa41",
+  "prompts": {},
+  "sessions": {
+    "s_51eda43cee240a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8043c12a-bf08-48cd-ae9d-57157b2fa6cc",
+        "model": "grok-4.7"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+core/src/test/java/com/ctrip/xpipe/cluster/RebuildableLeaderLatchProbeTest.java
+  s_d29eacd2cafd3c::t_a97c44817a92e6 5
+  s_d29eacd2cafd3c::t_6b302a3f521033 258-324
+  s_d29eacd2cafd3c::t_df2ae64685d28d 344-348,351-365
+  s_d29eacd2cafd3c::t_eccdb0fd016e3c 52
+  s_d29eacd2cafd3c::t_3623af5a443718 24,26
+  s_d29eacd2cafd3c::t_b87cfae59815f8 1-4,6-23,25,27-51,53-74,78-257,325-343,349-350,366-419
+  s_d29eacd2cafd3c::t_7b7a4d5d1ec3c4 75-77
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/KeeperContainerRegistrationController.java
+  s_d29eacd2cafd3c::t_e1f93baeb4c149 1-86
+core/src/main/java/com/ctrip/xpipe/cluster/RebuildableLeaderLatch.java
+  s_d29eacd2cafd3c::t_4219146f14723f 4,8,10-11,17-18,20,22,25,34-47,50-51,54-55,64-66,71-82,88-89,92,97-99,101-107,115-124,129-131,142-145,180-181,196-224,235-238,265-269,278,288-414,423
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/KeeperContainerZkRegistrar.java
+  s_d29eacd2cafd3c::t_cc2f4d20dc75c6 36-37,44-45,50-56,60-61
+  s_d29eacd2cafd3c::t_26bc1135c50b4a 5
+  s_d29eacd2cafd3c::t_b360ef0dc0afd0 109-126
+  s_d29eacd2cafd3c::t_a891649a7a2d1c 80-81
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/container/KeeperContainerRegistrationControllerTest.java
+  s_d29eacd2cafd3c::t_f8331c9b78033c 1-198
+core/src/test/java/com/ctrip/xpipe/zk/BlackholeTcpProxy.java
+  s_d29eacd2cafd3c::t_d8d243ea88adde 1-128
+core/src/main/java/com/ctrip/xpipe/cluster/LeaderLatchProbeStatus.java
+  s_d29eacd2cafd3c::t_7ba0e9ec1c2c49 1-161
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "a025f00bd783c536579dd99d93968f76d6bed047",
+  "prompts": {},
+  "sessions": {
+    "s_d29eacd2cafd3c": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_52b90e3f-11fb-46ad-ac1b-d1290edc54f6",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
