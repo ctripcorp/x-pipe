@@ -1,19 +1,17 @@
 package com.ctrip.xpipe.redis.keeper.container;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.core.keeper.container.HostNameVerification;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -28,14 +26,17 @@ import java.util.function.Supplier;
 public class HostNameVerifyFilter implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(HostNameVerifyFilter.class);
+    private static final String EVENT_TYPE = "KeeperContainer.Http.Hostname";
 
     public static final String MISMATCH_MESSAGE_TEMPLATE =
             "request targets keepercontainer(%s) but this is (%s), refresh address cache and retry";
 
     private final Supplier<String> localHostName;
+    private final Supplier<String> localIp;
 
-    public HostNameVerifyFilter(Supplier<String> localHostName) {
+    public HostNameVerifyFilter(Supplier<String> localHostName, Supplier<String> localIp) {
         this.localHostName = localHostName;
+        this.localIp = localIp;
     }
 
     @Override
@@ -55,8 +56,12 @@ public class HostNameVerifyFilter implements Filter {
             return;
         }
 
+        String clientIp = request.getRemoteAddr();
         String local = localHostName.get();
+        String currentLocalIp = localIp.get();
         if (StringUtil.isEmpty(local)) {
+            EventMonitor.DEFAULT.logError(EVENT_TYPE, target,
+                    createNameValuePairs(local, target, clientIp, currentLocalIp));
             // 本机 hostname 取不到时无法判断，放行而非拒绝：宁可漏掉一次校验，
             // 也不要因为身份探测失败让整台容器的管理面全部不可用
             logger.warn("[doFilter][local hostname unavailable, skip verify]target:{}", target);
@@ -65,13 +70,26 @@ public class HostNameVerifyFilter implements Filter {
         }
 
         if (target.equalsIgnoreCase(local)) {
+            EventMonitor.DEFAULT.logEvent(EVENT_TYPE, target,
+                    createNameValuePairs(local, target, clientIp, currentLocalIp));
             chain.doFilter(request, response);
             return;
         }
 
+        EventMonitor.DEFAULT.logError(EVENT_TYPE, target,
+                createNameValuePairs(local, target, clientIp, currentLocalIp));
         String message = String.format(MISMATCH_MESSAGE_TEMPLATE, target, local);
         logger.warn("[doFilter][hostname mismatch]{} {}", request.getRequestURI(), message);
         response.sendError(HostNameVerification.SC_MISDIRECTED_REQUEST, message);
+    }
+
+    private Map<String, String> createNameValuePairs(String local, String target, String clientIp, String localIp) {
+        Map<String, String> nameValuePairs = new HashMap<>();
+        nameValuePairs.put("local", null == local ? "" : local);
+        nameValuePairs.put("target", target);
+        nameValuePairs.put("clientIp", null == clientIp ? "" : clientIp);
+        nameValuePairs.put("localIp", null == localIp ? "" : localIp);
+        return nameValuePairs;
     }
 
     @Override

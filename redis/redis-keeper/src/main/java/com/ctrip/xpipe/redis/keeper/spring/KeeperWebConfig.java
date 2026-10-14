@@ -21,7 +21,9 @@ public class KeeperWebConfig extends AbstractWebConfig {
     @Bean
     public FilterRegistrationBean<HostNameVerifyFilter> hostNameVerifyFilter() {
         FilterRegistrationBean<HostNameVerifyFilter> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setFilter(new HostNameVerifyFilter(() -> FoundationService.DEFAULT.getHostName()));
+        registrationBean.setFilter(new HostNameVerifyFilter(
+                () -> FoundationService.DEFAULT.getHostName(),
+                () -> FoundationService.DEFAULT.getLocalIp()));
         // 显式列出 /keepers 自身：addKeeper（POST /keepers）与 list（GET /keepers）直接映射在
         // 该路径上，而 addKeeper 正是要防误伤的写操作。Servlet 的 /keepers/* 按规范也覆盖无斜杠
         // 的 /keepers，但这层保护不值得依赖容器实现细节。

@@ -12,13 +12,14 @@ import org.springframework.mock.web.MockHttpServletResponse;
 public class HostNameVerifyFilterTest extends AbstractTest {
 
     private static final String LOCAL_HOST_NAME = "keepercontainer-pod-a-0";
+    private static final String LOCAL_IP = "10.0.0.1";
 
     private HostNameVerifyFilter filter;
     private MockHttpServletResponse response;
 
     @Before
     public void beforeHostNameVerifyFilterTest() {
-        filter = new HostNameVerifyFilter(() -> LOCAL_HOST_NAME);
+        filter = new HostNameVerifyFilter(() -> LOCAL_HOST_NAME, () -> LOCAL_IP);
         response = new MockHttpServletResponse();
     }
 
@@ -69,7 +70,7 @@ public class HostNameVerifyFilterTest extends AbstractTest {
     @Test
     public void testUnavailableLocalHostNamePassesThrough() throws Exception {
         // 本机 hostname 探测失败时放行：不能因为身份取不到就让整台容器的管理面瘫掉
-        filter = new HostNameVerifyFilter(() -> null);
+        filter = new HostNameVerifyFilter(() -> null, () -> LOCAL_IP);
         MockFilterChain chain = doFilter("keepercontainer-pod-b-0");
 
         Assert.assertNotNull(chain.getRequest());
