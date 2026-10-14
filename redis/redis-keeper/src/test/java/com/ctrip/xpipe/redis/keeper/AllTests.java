@@ -30,6 +30,7 @@ import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManagerTest;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerControllerUnclosedHandlesTest;
 import com.ctrip.xpipe.redis.keeper.container.UnclosedHandleMetricReporterTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperDeferredCloseTest;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperReopenReportTest;
 import com.ctrip.xpipe.redis.keeper.storage.StoreCloseUnclosedHandleTest;
 import com.ctrip.xpipe.redis.keeper.storage.ReplicationStoreManagerStopReleaseFailureTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperTest;
@@ -167,6 +168,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
         AsyncFileSystemHelperTest.class,
         AsyncFileSystemHelperDeferredCloseTest.class,
+        AsyncFileSystemHelperReopenReportTest.class,
         StoreCloseUnclosedHandleTest.class,
         ReplicationStoreManagerStopReleaseFailureTest.class,
         ContainerResourceManagerTest.class,

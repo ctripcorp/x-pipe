@@ -111,7 +111,7 @@ public final class DeferredHandleCloser {
                 logger.warn("[deferred-closer][duplicate] {}", existing.describe(now));
                 return true;
             }
-            handle = new DeferredHandle(fs, file, replId, operation, cause, now, window);
+            handle = new DeferredHandle(fs, file, replId, operation, cause, now, window, clock);
             byFile.put(file, handle);
             byKey.computeIfAbsent(file.getKey(), k -> new ArrayList<>(1)).add(handle);
         }

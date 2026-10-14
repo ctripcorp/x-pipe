@@ -2,6 +2,8 @@ package com.ctrip.xpipe.redis.keeper.storage;
 
 import com.ctrip.xpipe.redis.core.store.ReplId;
 
+import java.util.function.LongSupplier;
+
 /**
  * A file handle whose close failed and that {@link DeferredHandleCloser} keeps retrying
  * (keeper-tfs-m6 spec §2.1). Fixed fields are set on defer; the mutable ones are written only by
@@ -21,6 +23,8 @@ public final class DeferredHandle {
 
     final AsyncFileSystem fs;
     final AbstractStorageFile file;
+    // Same clock as the owning closer: all time fields below are in its domain.
+    private final LongSupplier clock;
     // Passed in by the close caller; FS file objects do not carry it.
     private final ReplId replId;
     private final boolean write;
@@ -39,9 +43,10 @@ public final class DeferredHandle {
     private long lastRetryFailureLogMillis = NEVER_LOGGED;
 
     DeferredHandle(AsyncFileSystem fs, AbstractStorageFile file, ReplId replId, String operation, Throwable cause,
-                   long nowMillis, long flushWindowMillis) {
+                   long nowMillis, long flushWindowMillis, LongSupplier clock) {
         this.fs = fs;
         this.file = file;
+        this.clock = clock;
         this.replId = replId;
         this.write = file.canWrite();
         this.operation = operation;
@@ -155,7 +160,12 @@ public final class DeferredHandle {
         return error.getClass().getSimpleName() + ": " + error.getMessage();
     }
 
-    /** Log form of the entry (spec §8), with the age at {@code nowMillis}. */
+    /** Log form of the entry (spec §8), with the age as of now. */
+    String describe() {
+        return describe(clock.getAsLong());
+    }
+
+    /** Same, for callers that already read the clock. */
     String describe(long nowMillis) {
         return "repl_id=" + replIdText(replId) + " fileKey=" + getDisplayKey() + " write=" + write
                 + " attempts=" + attempts + " age=" + (nowMillis - firstFailureTimeMillis) + "ms mode=" + currentMode()

@@ -36,6 +36,8 @@ public final class AsyncFileSystemHelper {
     public static final String CASE_CLOSE_FAIL = "CloseFail";
     /** keeper-tfs-m6: a failed close handed to {@link DeferredHandleCloser}. */
     public static final String CASE_CLOSE_DEFERRED = "CloseDeferred";
+    /** keeper-tfs-m6: a file was opened while a handle of the same file is still pending close. */
+    public static final String CASE_REOPEN_PENDING_CLOSE = "ReopenPendingClose";
     /** Phase H1: OperationNotExecutedException retried once at await entry. */
     public static final String CASE_NOT_EXECUTED_RETRY = "NotExecutedRetry";
     public static final String CASE_NOT_EXECUTED = "NotExecuted";
@@ -137,8 +139,10 @@ public final class AsyncFileSystemHelper {
     public static <T extends AbstractStorageFile> T awaitOpen(AsyncFileSystem fs, CompletableFuture<T> future,
                                                               String operation) throws IOException {
         // Already-started future: cannot re-invoke; ONE sync would have escaped before this call.
-        return doAwait(future, operation, currentTimeoutMillis(), TimeUnit.MILLISECONDS,
+        T file = doAwait(future, operation, currentTimeoutMillis(), TimeUnit.MILLISECONDS,
                 () -> abandonOpen(fs, future, operation));
+        reportReopenOfPendingFile(fs, file, operation);
+        return file;
     }
 
     /**
@@ -157,6 +161,29 @@ public final class AsyncFileSystemHelper {
                 logCase(CASE_NOT_EXECUTED);
                 throw second;
             }
+        }
+    }
+
+    /**
+     * Report an open that reuses the per-key state (TailCache entry, {@code FileEntry}, segment dir
+     * state) a handle pending close left behind (keeper-tfs-m6 §4). Observability only: the open is
+     * not refused, the FS keeps its own {@code writer already open} exclusion.
+     */
+    private static void reportReopenOfPendingFile(AsyncFileSystem fs, AbstractStorageFile file, String operation) {
+        if (fs == null || file == null) {
+            return;
+        }
+        try {
+            DeferredHandleCloser closer = DeferredHandleCloser.of(fs);
+            DeferredHandle pending = closer == null ? null : closer.findPending(file.getKey());
+            if (pending == null) {
+                return;
+            }
+            logCase(CASE_REOPEN_PENDING_CLOSE);
+            logger.warn("[awaitOpen][reopen-pending-close] {} open: {}", pending.describe(), operation);
+        } catch (Throwable t) {
+            // Must never fail an open that already succeeded.
+            logger.warn("[awaitOpen][report-reopen] {}", operation, t);
         }
     }
 
@@ -257,7 +284,7 @@ public final class AsyncFileSystemHelper {
             if (file == null) {
                 return;
             }
-            // keeper-tfs-m6 T-P2.0: the open entry has no ReplId until P5, so the closer shows "unknown".
+            // No ReplId at hand here, so the closer shows "unknown"; operation carries the path.
             closeWithoutAwait(fs, file, null, operation, CloseObserveMode.ABANDON);
         });
     }
