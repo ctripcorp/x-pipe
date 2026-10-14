@@ -5,6 +5,7 @@ import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.redis.core.meta.MetaZkConfig;
+import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.zk.ZkClient;
@@ -265,7 +266,8 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
             }
         });
         return new KeeperContainerAddressSnapshot(new HashMap<>(current.liveHostnameToIp()), tombstones,
-                new HashMap<>(current.liveIpToHostname()), current.createTimeMillis());
+                new HashMap<>(current.liveIpToHostname()),
+                current.createTimeMillis() <= 0 ? "" : DateTimeUtils.timeAsString(current.createTimeMillis()));
     }
 
     /**

@@ -1,5 +1,7 @@
 package com.ctrip.xpipe.redis.core.keeper.container;
 
+import com.ctrip.xpipe.utils.DateTimeUtils;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -17,7 +19,7 @@ import java.util.Objects;
  * tombstone 用剩余毫秒而非到期时刻：导出方的到期时刻基于 {@code System.nanoTime()}，跨 JVM 没有意义；
  * 也不用墙钟，避免依赖两端时钟一致。接收方按「收到时刻 + 剩余毫秒」在本地到期，误差为一次请求的网络耗时。
  * <p>
- * {@code createTimeMillis} 是内部缓存快照被创建并发布的墙钟时间；远端接收后原样保留。
+ * {@code createTime} 是内部缓存快照被创建并发布的时间；远端接收后原样保留。
  * 可变 Java Bean，便于 Jackson 序列化；导出方每次新建实例，不与内部状态共享 map。
  */
 public class KeeperContainerAddressSnapshot {
@@ -28,7 +30,7 @@ public class KeeperContainerAddressSnapshot {
 
     private Map<String, String> liveIpToHostname = new HashMap<>();
 
-    private long createTimeMillis;
+    private String createTime = "";
 
     public KeeperContainerAddressSnapshot() {
     }
@@ -36,17 +38,17 @@ public class KeeperContainerAddressSnapshot {
     public KeeperContainerAddressSnapshot(Map<String, String> liveHostnameToIp,
                                           Map<String, TombstoneEntry> tombstones,
                                           Map<String, String> liveIpToHostname) {
-        this(liveHostnameToIp, tombstones, liveIpToHostname, System.currentTimeMillis());
+        this(liveHostnameToIp, tombstones, liveIpToHostname, DateTimeUtils.currentTimeAsString());
     }
 
     public KeeperContainerAddressSnapshot(Map<String, String> liveHostnameToIp,
                                           Map<String, TombstoneEntry> tombstones,
                                           Map<String, String> liveIpToHostname,
-                                          long createTimeMillis) {
+                                          String createTime) {
         setLiveHostnameToIp(liveHostnameToIp);
         setTombstones(tombstones);
         setLiveIpToHostname(liveIpToHostname);
-        this.createTimeMillis = createTimeMillis;
+        setCreateTime(createTime);
     }
 
     public Map<String, String> getLiveHostnameToIp() {
@@ -74,12 +76,12 @@ public class KeeperContainerAddressSnapshot {
         this.liveIpToHostname = null == liveIpToHostname ? new HashMap<>() : liveIpToHostname;
     }
 
-    public long getCreateTimeMillis() {
-        return createTimeMillis;
+    public String getCreateTime() {
+        return createTime;
     }
 
-    public void setCreateTimeMillis(long createTimeMillis) {
-        this.createTimeMillis = createTimeMillis;
+    public void setCreateTime(String createTime) {
+        this.createTime = null == createTime ? "" : createTime;
     }
 
     @Override
@@ -87,15 +89,15 @@ public class KeeperContainerAddressSnapshot {
         if (this == o) return true;
         if (!(o instanceof KeeperContainerAddressSnapshot)) return false;
         KeeperContainerAddressSnapshot that = (KeeperContainerAddressSnapshot) o;
-        return createTimeMillis == that.createTimeMillis
-                && liveHostnameToIp.equals(that.liveHostnameToIp)
+        return liveHostnameToIp.equals(that.liveHostnameToIp)
                 && tombstones.equals(that.tombstones)
-                && liveIpToHostname.equals(that.liveIpToHostname);
+                && liveIpToHostname.equals(that.liveIpToHostname)
+                && createTime.equals(that.createTime);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(liveHostnameToIp, tombstones, liveIpToHostname, createTimeMillis);
+        return Objects.hash(liveHostnameToIp, tombstones, liveIpToHostname, createTime);
     }
 
     @Override
@@ -103,7 +105,7 @@ public class KeeperContainerAddressSnapshot {
         return "KeeperContainerAddressSnapshot{live=" + liveHostnameToIp
                 + ", tombstones=" + tombstones
                 + ", liveIpToHostname=" + liveIpToHostname
-                + ", createTimeMillis=" + createTimeMillis + '}';
+                + ", createTime='" + createTime + "'}";
     }
 
     /**
