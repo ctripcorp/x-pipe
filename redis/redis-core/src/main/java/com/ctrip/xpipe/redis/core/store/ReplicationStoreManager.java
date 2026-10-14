@@ -35,9 +35,20 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	/**
 	 * Close current store and clear the in-memory reference only (PREPARE lease release).
 	 * Does <b>not</b> destroy files or change {@code latest.store.dir}.
-	 * Invoked by {@code doStop} / {@code doDispose}.
 	 */
-	void releaseCurrentStore() throws IOException;
+	default void releaseCurrentStore() throws IOException {
+		releaseCurrentStore(true);
+	}
+
+	/** @return see {@link ReplicationStore#close(boolean)} */
+	default boolean releaseCurrentStore(boolean ignoreCloseFail) throws IOException {
+		throw new UnsupportedOperationException("releaseCurrentStore(boolean) not supported: " + getClass().getName());
+	}
+
+	/** Return and clear whether the latest {@code stop()} failed to release (or left write handles unclosed). */
+	default boolean takeStopReleaseFailed() {
+		return false;
+	}
 
 	/**
 	 * Switch this manager between production and read-only mode.

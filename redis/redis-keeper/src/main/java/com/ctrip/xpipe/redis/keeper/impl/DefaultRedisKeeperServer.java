@@ -815,7 +815,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	 * PREPARE lease release (spec §3.8 / T-R.4):
 	 * stopAndDisposeMaster → setState PREPARE (reject new slave sync) → closeSlaves →
 	 * {@code replicationStoreManager.stop()} (cancel GC → best-effort flush → releaseCurrentStore).
-	 * Exceptions from lease release propagate to {@link com.ctrip.xpipe.redis.keeper.handler.keeper.KeeperCommandHandler}
+	 * Exceptions from lease release, and failures recorded by {@code Manager.stop()} (thrown after the watch
+	 * starts), propagate to {@link com.ctrip.xpipe.redis.keeper.handler.keeper.KeeperCommandHandler}
 	 * as Redis ERROR (Metaserver ForceCloseDir). Read-only watch start (m5 D7/D4) never changes the reply.
 	 */
 	@Override
@@ -842,6 +843,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				}
 			});
 			startPrepareWatchIfEnabled();
+			if (replicationStoreManager.takeStopReleaseFailed()) {
+				throw new XpipeRuntimeException("[doBecomePrepare] lease release incomplete");
+			}
 			logger.info("[doBecomePrepare][done]");
 		} catch (Exception e) {
 			logger.error("[doBecomePrepare]", e);

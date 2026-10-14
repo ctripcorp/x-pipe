@@ -22,6 +22,8 @@ import org.junit.Test;
 import java.io.File;
 
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -184,6 +186,73 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 		} finally {
 			stopQuietly(server);
 		}
+	}
+
+	@Test
+	public void testDeferredWriteHandleRepliesErrorAndStillStartsWatch() throws Exception {
+		DefaultRedisKeeperServer server = startActiveServer(watchConfig(true), true);
+		try {
+			DefaultReplicationStoreManager manager = spyWithDeferredRelease(server);
+
+			String resp = invokeKeeperCommand(server, "setstate", "PREPARE", "127.0.0.1", "6379");
+			Assert.assertTrue(resp, resp.startsWith("-"));
+			Assert.assertEquals(KeeperState.PREPARE, server.getRedisKeeperServerState().keeperState());
+			Assert.assertNull("production store released", manager.getOpenedStore());
+			Assert.assertTrue(manager.isReadOnly());
+			Assert.assertTrue(manager.getLifecycleState().isStarted());
+			Assert.assertNotNull(server.getPrepareWatcher());
+		} finally {
+			stopQuietly(server);
+		}
+	}
+
+	@Test
+	public void testDeferredWriteHandleWithWatchDisabledRepliesErrorAndStopsManager() throws Exception {
+		DefaultRedisKeeperServer server = startActiveServer(watchConfig(false), true);
+		try {
+			spyWithDeferredRelease(server);
+
+			String resp = invokeKeeperCommand(server, "setstate", "PREPARE", "127.0.0.1", "6379");
+			Assert.assertTrue(resp, resp.startsWith("-"));
+			assertPrepareGateClosed(server);
+		} finally {
+			stopQuietly(server);
+		}
+	}
+
+	@Test
+	public void testLeaveWatchReleaseFailureDoesNotFailNextPrepare() throws Exception {
+		DefaultRedisKeeperServer server = startActiveServer(watchConfig(true), true);
+		try {
+			DefaultReplicationStoreManager manager =
+					spy((DefaultReplicationStoreManager) server.getReplicationStoreManager());
+			server.setReplicationStoreManager(manager);
+			becomePrepare(server);
+			doAnswer(inv -> {
+				inv.callRealMethod();
+				return false;
+			}).when(manager).releaseCurrentStore(false);
+			server.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", 0));
+			Assert.assertEquals(KeeperState.ACTIVE, server.getRedisKeeperServerState().keeperState());
+			doCallRealMethod().when(manager).releaseCurrentStore(false);
+
+			String resp = invokeKeeperCommand(server, "setstate", "PREPARE", "127.0.0.1", "6379");
+			Assert.assertEquals("+" + RedisProtocol.OK + "\r\n", resp);
+			Assert.assertNotNull(server.getPrepareWatcher());
+		} finally {
+			stopQuietly(server);
+		}
+	}
+
+	private DefaultReplicationStoreManager spyWithDeferredRelease(DefaultRedisKeeperServer server) throws Exception {
+		DefaultReplicationStoreManager manager =
+				spy((DefaultReplicationStoreManager) server.getReplicationStoreManager());
+		doAnswer(inv -> {
+			inv.callRealMethod();
+			return false;
+		}).when(manager).releaseCurrentStore(false);
+		server.setReplicationStoreManager(manager);
+		return manager;
 	}
 
 	private DefaultRedisKeeperServer startActiveServer(TestKeeperConfig config, boolean tfsMode) throws Exception {

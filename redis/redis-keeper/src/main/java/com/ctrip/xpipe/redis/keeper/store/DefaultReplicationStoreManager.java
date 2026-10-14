@@ -31,6 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -91,6 +92,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     /** Long-lived handle for {@link #META_FILE}; lazy open, closed on stop/dispose (Phase S / T-S.5). */
     private AsyncFile managerMetaAsyncFile;
+
+    private final AtomicBoolean stopReleaseFailed = new AtomicBoolean();
 
     /**
      * Permanent gate after {@link #destroy()}: unlike stop (lazy reopen on start), destroy must never
@@ -161,19 +164,26 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
      * {@code releaseCurrentStore} failures are swallowed (align {@link #doDispose}): prefer reaching
      * Lifecycle STOPPED over propagating — {@link com.ctrip.xpipe.lifecycle.AbstractLifecycle#stop}
      * rollback would leave STARTED with GC/store/meta already torn down. Manager-meta close is in
-     * {@code finally}. TODO: surface unclosed FS handles to ForceCloseDir when close semantics are clear.
+     * {@code finally}. Failures are recorded for {@link #takeStopReleaseFailed()}.
      */
     @Override
     protected void doStop() throws Exception {
         cancelGcFuture();
         flushStoreBestEffort();
+        boolean storeReleased = false;
         try {
-            releaseCurrentStore();
+            storeReleased = releaseCurrentStore(false);
         } catch (Exception e) {
             logger.warn("[doStop][releaseCurrentStore]", e);
         } finally {
-            closeManagerMetaFile();
+            boolean metaClosed = closeManagerMetaFile();
+            stopReleaseFailed.set(!storeReleased || !metaClosed);
         }
+    }
+
+    @Override
+    public boolean takeStopReleaseFailed() {
+        return stopReleaseFailed.getAndSet(false);
     }
 
     @Override
@@ -215,14 +225,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     }
 
     @Override
-    public synchronized void releaseCurrentStore() throws IOException {
-        logger.info("[releaseCurrentStore]{}", this);
+    public synchronized boolean releaseCurrentStore(boolean ignoreCloseFail) throws IOException {
+        logger.info("[releaseCurrentStore][ignoreCloseFail={}]{}", ignoreCloseFail, this);
         ReplicationStore replicationStore = currentStore.get();
         if (replicationStore == null) {
-            return;
+            return true;
         }
         try {
-            replicationStore.close();
+            return replicationStore.close(ignoreCloseFail);
         } finally {
             // Always drop the lease reference so PREPARE cannot reopen via getCurrent.
             currentStore.set(null);
@@ -426,15 +436,18 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
      * Idempotent close of manager-meta handle. Decoupled from {@link #releaseCurrentStore()};
      * called from stop/dispose/destroy. Must not reopen until lifecycle leaves stopped
      * ({@link #getOrOpenManagerMetaFile()} gated).
+     *
+     * @return false only when a write handle was left for asynchronous close
      */
-    private synchronized void closeManagerMetaFile() {
+    private synchronized boolean closeManagerMetaFile() {
         if (managerMetaAsyncFile == null) {
-            return;
+            return true;
         }
         AsyncFile toClose = managerMetaAsyncFile;
         managerMetaAsyncFile = null;
-        AsyncFileSystemHelper.closeHandle(asyncFileSystem, toClose, replId,
+        boolean closed = AsyncFileSystemHelper.closeHandle(asyncFileSystem, toClose, replId,
                 "close manager meta " + metaFile.getAbsolutePath());
+        return closed || readOnly;
     }
 
     private Properties currentMeta() throws IOException {

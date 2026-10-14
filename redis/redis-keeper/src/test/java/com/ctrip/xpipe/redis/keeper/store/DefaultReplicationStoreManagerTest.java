@@ -620,12 +620,13 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 				eq(AbstractStorageFile.OpenMode.READ_WRITE), eq(AbstractStorageFile.ReplaceMode.ATOMIC), eq(true), eq(getReplId().toString()));
 
 		DefaultReplicationStoreManager manager = spy(real);
-		doThrow(new IOException("injected releaseCurrentStore fail")).when(manager).releaseCurrentStore();
+		doThrow(new IOException("injected releaseCurrentStore fail")).when(manager).releaseCurrentStore(false);
 		clearInvocations(fileSystem);
 		LifecycleHelper.stopIfPossible(manager);
 		Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
 		// releaseCurrentStore is stubbed: the only close in doStop finally is manager-meta.
 		verify(fileSystem, atLeastOnce()).close(any(AsyncFile.class));
+		Assert.assertTrue(manager.takeStopReleaseFailed());
 		try {
 			LifecycleHelper.disposeIfPossible(manager);
 		} catch (Throwable ignore) {
