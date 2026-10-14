@@ -46,8 +46,11 @@ public class Production extends AbstractProfile {
 
     @Bean
     public CurrentDcKeeperContainerAddressService keeperContainerAddressService(
+            ConsoleConfig consoleConfig,
             @Qualifier(KEEPER_CONTAINER_ZK_CLIENT) ZkClient zkClient) {
-        return new DefaultCurrentDcKeeperContainerAddressService(zkClient);
+        return new DefaultCurrentDcKeeperContainerAddressService(zkClient,
+                consoleConfig::getKeeperContainerAddressMaxRemovedPercent,
+                consoleConfig::getKeeperContainerAddressMinRemovedHostnames);
     }
 
 }

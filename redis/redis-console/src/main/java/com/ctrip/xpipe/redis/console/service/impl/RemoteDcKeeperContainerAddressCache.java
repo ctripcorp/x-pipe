@@ -343,7 +343,8 @@ public class RemoteDcKeeperContainerAddressCache {
      */
     private record RemoteSnapshot(Map<String, String> liveHostnameToIp,
                                   Map<String, RemoteTombstone> tombstones,
-                                  Map<String, String> liveIpToHostname) {
+                                  Map<String, String> liveIpToHostname,
+                                  long createTimeMillis) {
 
         static RemoteSnapshot from(KeeperContainerAddressSnapshot raw, long receivedNanos) {
             Map<String, String> live = copyNonNull(raw.getLiveHostnameToIp());
@@ -358,7 +359,7 @@ public class RemoteDcKeeperContainerAddressCache {
                 tombstones.put(hostname, new RemoteTombstone(entry.getIp(), expireAt));
             });
             return new RemoteSnapshot(live, Collections.unmodifiableMap(tombstones),
-                    copyNonNull(raw.getLiveIpToHostname()));
+                    copyNonNull(raw.getLiveIpToHostname()), raw.getCreateTimeMillis());
         }
 
         String ipByHostname(String hostname, long nowNanos) {
@@ -388,7 +389,7 @@ public class RemoteDcKeeperContainerAddressCache {
                 }
             });
             return new KeeperContainerAddressSnapshot(new HashMap<>(liveHostnameToIp), exportedTombstones,
-                    new HashMap<>(liveIpToHostname));
+                    new HashMap<>(liveIpToHostname), createTimeMillis);
         }
 
         private static Map<String, String> copyNonNull(Map<String, String> source) {

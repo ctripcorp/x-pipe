@@ -18,19 +18,9 @@ import org.apache.curator.framework.recipes.locks.LockInternalsSorter;
 import org.apache.curator.framework.recipes.locks.StandardLockInternalsDriver;
 import org.apache.curator.utils.ZKPaths;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
 /**
@@ -71,6 +61,8 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
         implements CurrentDcKeeperContainerAddressService, TopElement {
 
     private static final long DEFAULT_REFRESH_INTERVAL_MILLI = 30 * 1000L;
+    private static final int DEFAULT_MAX_REMOVED_PERCENT = 50;
+    private static final int DEFAULT_MIN_REMOVED_HOSTNAMES = 5;
 
     /**
      * hostname 从 ZK 消失后 last-known IP 的保留时长。依据是「发现 pod 消失并完成 forceCloseDir」的时间上界，
@@ -91,6 +83,8 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
     private final ZkClient zkClient;
     private final long refreshIntervalMilli;
     private final long tombstoneRetentionNanos;
+    private final IntSupplier maxRemovedPercentSupplier;
+    private final IntSupplier minRemovedHostnamesSupplier;
 
     private volatile String registerPath;
     private volatile CuratorCache containersCache;
@@ -116,7 +110,16 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
     private volatile AddressSnapshot snapshot = AddressSnapshot.EMPTY;
 
     public DefaultCurrentDcKeeperContainerAddressService(ZkClient zkClient) {
-        this(zkClient, DEFAULT_REFRESH_INTERVAL_MILLI);
+        this(zkClient,
+                () -> DEFAULT_MAX_REMOVED_PERCENT,
+                () -> DEFAULT_MIN_REMOVED_HOSTNAMES);
+    }
+
+    public DefaultCurrentDcKeeperContainerAddressService(ZkClient zkClient,
+                                                         IntSupplier maxRemovedPercentSupplier,
+                                                         IntSupplier minRemovedHostnamesSupplier) {
+        this(zkClient, DEFAULT_REFRESH_INTERVAL_MILLI, DEFAULT_TOMBSTONE_RETENTION_MILLI,
+                maxRemovedPercentSupplier, minRemovedHostnamesSupplier);
     }
 
     public DefaultCurrentDcKeeperContainerAddressService(ZkClient zkClient, long refreshIntervalMilli) {
@@ -125,9 +128,20 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
 
     public DefaultCurrentDcKeeperContainerAddressService(ZkClient zkClient, long refreshIntervalMilli,
                                                          long tombstoneRetentionMilli) {
+        this(zkClient, refreshIntervalMilli, tombstoneRetentionMilli,
+                () -> DEFAULT_MAX_REMOVED_PERCENT,
+                () -> DEFAULT_MIN_REMOVED_HOSTNAMES);
+    }
+
+    public DefaultCurrentDcKeeperContainerAddressService(ZkClient zkClient, long refreshIntervalMilli,
+                                                         long tombstoneRetentionMilli,
+                                                         IntSupplier maxRemovedPercentSupplier,
+                                                         IntSupplier minRemovedHostnamesSupplier) {
         this.zkClient = zkClient;
         this.refreshIntervalMilli = refreshIntervalMilli;
         this.tombstoneRetentionNanos = TimeUnit.MILLISECONDS.toNanos(tombstoneRetentionMilli);
+        this.maxRemovedPercentSupplier = maxRemovedPercentSupplier;
+        this.minRemovedHostnamesSupplier = minRemovedHostnamesSupplier;
     }
 
     @Override
@@ -251,7 +265,7 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
             }
         });
         return new KeeperContainerAddressSnapshot(new HashMap<>(current.liveHostnameToIp()), tombstones,
-                new HashMap<>(current.liveIpToHostname()));
+                new HashMap<>(current.liveIpToHostname()), current.createTimeMillis());
     }
 
     /**
@@ -307,21 +321,57 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
         });
 
         AddressSnapshot previous = snapshot;
-        AddressSnapshot fresh = new AddressSnapshot(freshLive,
-                refreshTombstones(previous, freshLive, nowNanos()), freshIpToHostname);
-
-        // 监听的是注册根路径，任一容器的增删改都会触发全量重建，因此重复内容很常见
-        // （扩缩容时一批 pod 逐个上下线，以及定时兜底与 watch 事件叠加）。
-        // 内容无变化时直接返回，省掉一次 volatile 写与旧 map 的提前失效。
-        // 沿用下来的 tombstone 到期时间不变，所以 tombstone 无增减时 equals 成立。
-        if (fresh.equals(previous)) {
+        if (tooManyHostnamesRemoved(previous.liveHostnameToIp(), freshLive)) {
             return;
         }
+        Map<String, Tombstone> freshTombstones = refreshTombstones(previous, freshLive, nowNanos());
+
+        // 三份映射内容都未变化时继续沿用原快照及其创建时间。初始 EMPTY 的创建时间为 0，
+        // 首次成功 rebuild 即使结果为空也要发布一份带创建时间的有效快照。
+        boolean contentUnchanged = freshLive.equals(previous.liveHostnameToIp())
+                && freshTombstones.equals(previous.tombstones())
+                && freshIpToHostname.equals(previous.liveIpToHostname());
+        if (contentUnchanged && previous.createTimeMillis() > 0) {
+            return;
+        }
+
+        AddressSnapshot fresh = new AddressSnapshot(freshLive, freshTombstones, freshIpToHostname,
+                System.currentTimeMillis());
 
         if (!freshLive.equals(previous.liveHostnameToIp())) {
             logger.info("[rebuild]{} -> {}", previous.liveHostnameToIp(), freshLive);
         }
         this.snapshot = fresh;
+    }
+
+    /**
+     * 单次全量重建丢失的存活 hostname 数量和比例同时超过阈值时，保留上一份完整快照。
+     * 阈值按每次 rebuild 动态读取；最大删除比例为负数表示关闭保护。
+     */
+    private boolean tooManyHostnamesRemoved(Map<String, String> previousLive,
+                                            Map<String, String> freshLive) {
+        int maxRemovedPercent = maxRemovedPercentSupplier.getAsInt();
+        if (maxRemovedPercent < 0 || previousLive.isEmpty()) {
+            return false;
+        }
+
+        int removedCount = 0;
+        for (String hostname : previousLive.keySet()) {
+            if (!freshLive.containsKey(hostname)) {
+                removedCount++;
+            }
+        }
+
+        int minRemovedHostnames = minRemovedHostnamesSupplier.getAsInt();
+        boolean countExceeded = removedCount > minRemovedHostnames;
+        boolean percentExceeded = removedCount * 100L > previousLive.size() * (long) maxRemovedPercent;
+        if (!countExceeded || !percentExceeded) {
+            return false;
+        }
+
+        logger.warn("[rebuild][reject][too many hostnames removed] oldSize:{}, candidateSize:{}, removed:{}, minRemoved:{}, maxRemovedPercent:{}",
+                previousLive.size(), freshLive.size(), removedCount, minRemovedHostnames, maxRemovedPercent);
+        return true;
     }
 
     /**
@@ -376,7 +426,8 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
     @VisibleForTesting
     protected synchronized void overwriteHostnameToIp(Map<String, String> hostnameToIp) {
         AddressSnapshot current = snapshot;
-        this.snapshot = new AddressSnapshot(new HashMap<>(hostnameToIp), current.tombstones(), current.liveIpToHostname());
+        this.snapshot = new AddressSnapshot(new HashMap<>(hostnameToIp), current.tombstones(),
+                current.liveIpToHostname(), current.createTimeMillis());
     }
 
     /** 单测确认到期 tombstone 已被 rebuild 清出快照，而不只是被读路径过滤。 */
@@ -489,12 +540,14 @@ public class DefaultCurrentDcKeeperContainerAddressService extends AbstractLifec
      * @param liveHostnameToIp 存活正向映射，hostname → 首节点 IP
      * @param tombstones       失去存活映射的 hostname → last-known IP，与 liveHostnameToIp 的 key 不相交
      * @param liveIpToHostname 存活反向索引，全部存活 latch 子节点 IP → hostname
+     * @param createTimeMillis 快照创建并发布的墙钟时间
      */
     private record AddressSnapshot(Map<String, String> liveHostnameToIp,
                                    Map<String, Tombstone> tombstones,
-                                   Map<String, String> liveIpToHostname) {
+                                   Map<String, String> liveIpToHostname,
+                                   long createTimeMillis) {
         static final AddressSnapshot EMPTY =
-                new AddressSnapshot(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
+                new AddressSnapshot(Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap(), 0L);
     }
 
     /**

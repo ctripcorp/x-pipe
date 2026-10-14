@@ -60,6 +60,14 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	long getKeeperContainerAddressRefreshIntervalMilli();
 
+	default int getKeeperContainerAddressMaxRemovedPercent() {
+		return 50;
+	}
+
+	default int getKeeperContainerAddressMinRemovedHostnames() {
+		return 5;
+	}
+
 	Set<String> getAlertWhileList();
 
 	int getQuorum();
