@@ -1,17 +1,16 @@
 package com.ctrip.xpipe.redis.console.resources;
 
-import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.monitor.CatTransactionMonitor;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.checker.model.ProxyTunnelInfo;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisWithAzInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.DcClusterCreateInfo;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCheckRuleCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisWithAzInfo;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.core.console.ConsoleCheckerPath;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -35,7 +34,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 
 @Service
 public class ConsolePortalService extends AbstractService {
@@ -208,6 +206,14 @@ public class ConsolePortalService extends AbstractService {
         ResponseEntity<List<ClusterTbl>> resp = exchange(comp.toUri(),
                 HttpMethod.GET, null,
                 new ParameterizedTypeReference<List<ClusterTbl>>(){}, "findAllClusters");
+        return resp.getBody();
+    }
+
+    public List<AzGroupClusterEntity> getAllAzGroupClusters() {
+        UriComponents comp = UriComponentsBuilder.fromHttpUrl(config.getConsoleNoDbDomain() +
+                AbstractConsoleController.API_PREFIX + "/clusters/az-group-clusters/all").build();
+        ResponseEntity<List<AzGroupClusterEntity>> resp = exchange(comp.toUri(), HttpMethod.GET, null,
+                new ParameterizedTypeReference<List<AzGroupClusterEntity>>(){}, "getAllAzGroupClusters");
         return resp.getBody();
     }
 
