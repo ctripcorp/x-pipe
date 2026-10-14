@@ -132,7 +132,8 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
     }
 
 
-    private String resolveAddress() {
+    @Override
+    public String resolveAddress() {
         String ip = keeperContainerMeta.getIp();
         String hostname = keeperContainerMeta.getHostname();
 
