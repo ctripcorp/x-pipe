@@ -15,8 +15,6 @@ import com.ctrip.xpipe.redis.checker.model.CheckerRole;
 import com.ctrip.xpipe.redis.checker.model.CheckerStatus;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResult;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
-import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
-import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,9 +61,6 @@ public class CheckerStatusController {
     @Autowired
     private StabilityHolder siteStability;
 
-    @Autowired
-    private CurrentDcKeeperContainerAddressService keeperContainerAddressService;
-
     @Value("${server.port:8080}")
     private int serverPort;
 
@@ -102,11 +97,6 @@ public class CheckerStatusController {
             allCheckClusters.add(instance.getCheckInfo().getClusterId())
         );
         return allCheckClusters;
-    }
-
-    @GetMapping("/keepercontainer/address/snapshot")
-    public KeeperContainerAddressSnapshot getKeeperContainerAddressSnapshot() {
-        return keeperContainerAddressService.getAddressSnapshot();
     }
 
     @GetMapping("/stable")

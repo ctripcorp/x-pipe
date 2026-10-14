@@ -152,19 +152,16 @@ public class KeeperContainerController extends AbstractConsoleController{
         return keeperContainerAddressService.getAllHostnameToIp();
     }
 
-    /** 所有机房完整地址快照，按 DC 分组；远端数据来自本地周期快照缓存。 */
-    @RequestMapping(value = "/keepercontainer/address/snapshot/global", method = RequestMethod.GET)
-    public Map<String, KeeperContainerAddressSnapshot> getGlobalKeeperContainerAddressSnapshot() {
-        return crossDcKeeperContainerAddressService.getAllAddressSnapshots();
-    }
-
-    /**
-     * 本机房地址快照（存活正向 / tombstone + 剩余毫秒 / 存活反向），供远端机房 console 周期拉取（spec §8.3）。
-     * 字面路径优先于 {@code /address/{hostname}} 匹配。只读内存；每个远端 console 实例每个周期调一次，不打入口日志。
-     */
-    @RequestMapping(value = "/keepercontainer/address/snapshot", method = RequestMethod.GET)
+    /** 本机房完整地址快照，供远端机房 Console 周期拉取。 */
+    @GetMapping(KEEPER_CONTAINER_ADDRESS_SNAPSHOT_PATH)
     public KeeperContainerAddressSnapshot getKeeperContainerAddressSnapshot() {
         return keeperContainerAddressService.getAddressSnapshot();
+    }
+
+    /** 所有机房完整地址快照，按 DC 分组；远端数据来自本地周期快照缓存。 */
+    @GetMapping(KEEPER_CONTAINER_ADDRESS_SNAPSHOT_PATH + "/global")
+    public Map<String, KeeperContainerAddressSnapshot> getGlobalKeeperContainerAddressSnapshot() {
+        return crossDcKeeperContainerAddressService.getAllAddressSnapshots();
     }
 
 }
