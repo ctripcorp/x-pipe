@@ -895,10 +895,30 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			logger.info("[doReenterFromPrepare][done]");
 		} catch (Exception e) {
 			logger.error("[doReenterFromPrepare]", e);
+			rollbackReenterQuietly();
 			if (e instanceof RuntimeException) {
 				throw (RuntimeException) e;
 			}
 			throw new XpipeRuntimeException("[doReenterFromPrepare] reopen store failed", e);
+		}
+	}
+
+	/**
+	 * Roll back the {@code startIfPossible} of {@link #doReenterFromPrepare} (spec §5.2.2 / T-P7.1): otherwise
+	 * the Manager stays STARTED and non-read-only, and GC {@code getCurrent()} reopens a writable store in the
+	 * background while the Keeper is still PREPARE. Skipped once the state switch already happened — the Keeper
+	 * is ACTIVE/BACKUP by then and must keep its Manager. Watch is not restored; recovery is the next SETSTATE.
+	 */
+	private void rollbackReenterQuietly() {
+		RedisKeeperServerState state = this.redisKeeperServerState;
+		if (state == null || KeeperState.PREPARE != state.keeperState()) {
+			logger.info("[rollbackReenter][state already switched][skip]{}", state);
+			return;
+		}
+		try {
+			LifecycleHelper.stopIfPossible(replicationStoreManager);
+		} catch (Throwable th) {
+			logger.error("[rollbackReenter][stop manager]{}", this, th);
 		}
 	}
 

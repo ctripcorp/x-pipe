@@ -244,6 +244,94 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 		}
 	}
 
+	/** T-P7.2: reopen failure ⇒ Redis ERROR, Manager rolled back to STOPPED so GC cannot reopen; next SETSTATE succeeds. */
+	@Test
+	public void testReenterFailureStopsManagerAndNextSetStateSucceeds() throws Exception {
+		DefaultRedisKeeperServer server = startActiveServer(watchConfig(true), true);
+		try {
+			becomePrepare(server);
+			DefaultReplicationStoreManager manager =
+					spy((DefaultReplicationStoreManager) server.getReplicationStoreManager());
+			server.setReplicationStoreManager(manager);
+			doThrow(new IllegalStateException("writer already open")).when(manager).createIfNotExist();
+
+			String resp = invokeKeeperCommand(server, "setstate", "ACTIVE", "127.0.0.1", "6379");
+
+			Assert.assertTrue(resp, resp.startsWith("-"));
+			Assert.assertTrue(resp, resp.contains("writer already open"));
+			Assert.assertEquals(KeeperState.PREPARE, server.getRedisKeeperServerState().keeperState());
+			Assert.assertTrue("reenter failure must roll back the Manager start",
+					manager.getLifecycleState().isPositivelyStopped());
+			Assert.assertNull(manager.getOpenedStore());
+			Assert.assertNull("gc getCurrent must not reopen a writable store under PREPARE", manager.getCurrent());
+			Assert.assertNull(server.getPrepareWatcher());
+
+			doCallRealMethod().when(manager).createIfNotExist();
+			String retry = invokeKeeperCommand(server, "setstate", "ACTIVE", "127.0.0.1", "6379");
+
+			Assert.assertEquals("+" + RedisProtocol.OK + "\r\n", retry);
+			Assert.assertEquals(KeeperState.ACTIVE, server.getRedisKeeperServerState().keeperState());
+			Assert.assertTrue(manager.getLifecycleState().isStarted());
+			Assert.assertNotNull(server.getReplicationStore());
+		} finally {
+			stopQuietly(server);
+		}
+	}
+
+	/**
+	 * T-P7.2: {@code start} failure makes the rollback a no-op (lifecycle already rolled the phase back), and it
+	 * need not run — {@code leavePrepareWatch} stopped the Manager first, so reopen stays refused.
+	 */
+	@Test
+	public void testReenterStartFailureLeavesManagerStoppedWithoutRollback() throws Exception {
+		DefaultRedisKeeperServer server = startActiveServer(watchConfig(true), true);
+		try {
+			becomePrepare(server);
+			DefaultReplicationStoreManager manager =
+					spy((DefaultReplicationStoreManager) server.getReplicationStoreManager());
+			server.setReplicationStoreManager(manager);
+			doThrow(new RuntimeException("inject-start")).when(manager).start();
+
+			String resp = invokeKeeperCommand(server, "setstate", "ACTIVE", "127.0.0.1", "6379");
+
+			Assert.assertTrue(resp, resp.startsWith("-"));
+			Assert.assertEquals(KeeperState.PREPARE, server.getRedisKeeperServerState().keeperState());
+			Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
+			Assert.assertNull("stopped Manager must refuse reopen", manager.getCurrent());
+			verify(manager, never()).createIfNotExist();
+		} finally {
+			stopQuietly(server);
+		}
+	}
+
+	/** T-P7.2: the rollback is skipped once the state switch already happened — an ACTIVE keeper keeps its Manager. */
+	@Test
+	public void testReenterFailureAfterStateSwitchKeepsManagerStarted() throws Exception {
+		DefaultRedisKeeperServer server = startActiveServer(watchConfig(true), true);
+		try {
+			becomePrepare(server);
+			DefaultReplicationStoreManager manager =
+					spy((DefaultReplicationStoreManager) server.getReplicationStoreManager());
+			server.setReplicationStoreManager(manager);
+			doThrow(new IllegalStateException("inject-after-switch")).when(manager).createIfNotExist();
+			server.setRedisKeeperServerState(
+					new RedisKeeperServerStateActive(server, new DefaultEndPoint("127.0.0.1", 0)));
+
+			try {
+				server.doReenterFromPrepare(new DefaultEndPoint("127.0.0.1", 0), true);
+				Assert.fail("reopen must fail");
+			} catch (IllegalStateException expected) {
+				Assert.assertEquals("inject-after-switch", expected.getMessage());
+			}
+
+			Assert.assertEquals(KeeperState.ACTIVE, server.getRedisKeeperServerState().keeperState());
+			Assert.assertTrue("rollback must not stop the Manager of an ACTIVE keeper",
+					manager.getLifecycleState().isStarted());
+		} finally {
+			stopQuietly(server);
+		}
+	}
+
 	private DefaultReplicationStoreManager spyWithDeferredRelease(DefaultRedisKeeperServer server) throws Exception {
 		DefaultReplicationStoreManager manager =
 				spy((DefaultReplicationStoreManager) server.getReplicationStoreManager());
