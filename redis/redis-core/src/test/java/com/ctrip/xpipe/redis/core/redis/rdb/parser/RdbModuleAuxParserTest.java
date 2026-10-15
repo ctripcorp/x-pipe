@@ -18,6 +18,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import static com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbModuleAuxDataBytes.redisSearchModuleAuxRdbBytes;
 
 /**
  * MODULE_AUX (247) consume/skip tests for Applier RDB full sync.
@@ -143,6 +146,44 @@ public class RdbModuleAuxParserTest extends AbstractTest implements RdbParseList
     }
 
     @Test
+    public void testParseRealRedisSearchRdbWithModuleAux() {
+        // Real Redis 8.10 + RediSearch dump (blog_idx MODULE_AUX + HASH docs), captured as byte[].
+        Assert.assertTrue(containsSubsequence(redisSearchModuleAuxRdbBytes, new byte[]{
+                (byte) RdbConstant.REDIS_RDB_OP_CODE_MODULE_AUX,
+                (byte) RdbConstant.REDIS_RDB_LEN_64BITLEN
+        }));
+
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(redisSearchModuleAuxRdbBytes);
+        while (!parser.isFinish()) {
+            parser.read(byteBuf);
+        }
+
+        Assert.assertTrue(parser.isFinish());
+        // EOF 后剩余 8 字节 CRC，DefaultRdbParser 不消费（与 DefaultRdbParserTest 一致）
+        Assert.assertEquals(8, byteBuf.readableBytes());
+        Assert.assertEquals("8.10.0", context.getAux("redis-ver"));
+        Assert.assertEquals(0, context.getDbId());
+
+        List<String> ops = redisOps.stream().map(RedisOp::toString).collect(Collectors.toList());
+        Assert.assertTrue(ops.contains("SELECT 0"));
+        Assert.assertTrue(ops.stream().anyMatch(op -> op.startsWith("HSET blog:")));
+        // MODULE_AUX is skipped: no FT.* op, but subsequent hash keys still parsed
+        Assert.assertTrue(ops.stream().noneMatch(op -> op.startsWith("FT.")));
+    }
+
+    @Test
+    public void testParseRealRedisSearchRdbWithModuleAuxChunked() {
+        ByteBuf byteBuf = Unpooled.wrappedBuffer(redisSearchModuleAuxRdbBytes);
+        while (!parser.isFinish() && byteBuf.isReadable()) {
+            parser.read(byteBuf.readSlice(1));
+        }
+
+        Assert.assertTrue(parser.isFinish());
+        Assert.assertEquals(8, byteBuf.readableBytes());
+        Assert.assertTrue(redisOps.stream().map(RedisOp::toString).anyMatch(op -> op.startsWith("HSET blog:")));
+    }
+
+    @Test
     public void testModuleAuxStandalone64BitModuleId() throws Exception {
         DefaultRdbParseContext ctx = new DefaultRdbParseContext();
         RdbModuleAuxParser auxParser = new RdbModuleAuxParser(ctx);
@@ -234,14 +275,10 @@ public class RdbModuleAuxParserTest extends AbstractTest implements RdbParseList
     }
 
     private static boolean containsSubsequence(byte[] haystack, byte[] needle) {
-        outer:
         for (int i = 0; i <= haystack.length - needle.length; i++) {
-            for (int j = 0; j < needle.length; j++) {
-                if (haystack[i + j] != needle[j]) {
-                    continue outer;
-                }
+            if (Arrays.equals(haystack, i, i + needle.length, needle, 0, needle.length)) {
+                return true;
             }
-            return true;
         }
         return false;
     }
