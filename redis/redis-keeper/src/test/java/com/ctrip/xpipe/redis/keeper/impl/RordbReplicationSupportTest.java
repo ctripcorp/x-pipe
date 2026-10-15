@@ -152,6 +152,7 @@ public class RordbReplicationSupportTest extends AbstractRedisKeeperContextTest 
 
         redisKeeperServer.setRedisKeeperServerState(
                 new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", redisServer.getPort())));
+        redisKeeperServer.getReplicationStoreManager().createIfNotExist();
         redisKeeperServer.reconnectMaster();
 
         waitConditionUntilTimeOut(() -> redisKeeperServer.getRedisMaster().getMasterState() == MASTER_STATE.REDIS_REPL_CONNECTED);

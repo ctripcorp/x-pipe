@@ -11,6 +11,7 @@ import com.ctrip.xpipe.redis.core.protocal.GapAllowedSyncObserver;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.store.XSyncContinue;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.exception.RedisSlavePromotionException;
@@ -64,7 +65,10 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	
 	Set<RedisSlave> slaves();
 		
+	/** 读路径：只打开已存在的店，不建店。建店用 {@link #getReplicationStoreManager()}。 */
 	ReplicationStore getReplicationStore();
+
+	ReplicationStoreManager getReplicationStoreManager();
 
 	/**
 	 * Whether the store manager is in PREPARE read-only watch mode (D12).
@@ -126,7 +130,19 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	 * (role is unset; must not {@code getCurrent}/{@code create} for a write lease).
 	 */
 	void resetReplAfterLongTimeDown();
-	
+
+	/**
+	 * 进写角色（ACTIVE / BACKUP）前离开只读模式。非只读时 no-op。
+	 * <p>
+	 * TFS boot 时 manager 以 {@code readOnly=true} 启动（boot 只读打开，不取写租约）；
+	 * 要变成写者必须先翻回 false。而 {@code setReadOnly} 的守卫要求 manager 未 started 且
+	 * {@code currentStore == null}，所以实现里需要先 stop（顺带放掉 boot 时只读打开的店）。
+	 * <p>
+	 * 非 TFS 在 boot 时已是 {@code readOnly=false}，本方法恒为 no-op。
+	 */
+	default void leaveReadOnlyForWrite() {
+	}
+
 	void stopAndDisposeMaster();
 	
 	RedisMaster getRedisMaster();

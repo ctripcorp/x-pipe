@@ -301,6 +301,10 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				currentKeeperMeta, baseDir, keeperMonitor, scheduled);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		replicationStoreManager.initialize();
+		// TFS：store 目录被同 shard 所有 keeper 共享。boot 以只读模式打开 —— 不取写租约、
+		// 不 recoverIndex 截断、不删 rdb；写权由进 ACTIVE/BACKUP 时的 leaveReadOnlyForWrite() 换取。
+		// 非 TFS 目录私有，保持 false（非 TFS 不会有 PREPARE，readOnly 不会再被置位）。
+		replicationStoreManager.setReadOnly(tfsMode);
 
 
 		try {
@@ -392,7 +396,37 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			logger.info("[resetReplAfterLongTimeDown][fail]", th);
 		}
 	}
-	
+
+	/**
+	 * 进写角色前离开只读模式（TFS boot 时 manager 以 readOnly=true 启动）。
+	 * <p>
+	 * {@code setReadOnly(false)} 的守卫要求 manager <b>未 started</b> 且 {@code currentStore == null}，
+	 * 所以先 stop（顺带放掉 boot 时只读打开的店），翻完再 start 把 GC 拉起来。
+	 * <p>
+	 * 非只读时 no-op —— ACTIVE↔BACKUP 互切时 readOnly 已是 false 且 currentStore != null，
+	 * 无条件调用会抛 IllegalStateException。非 TFS 恒为 no-op。
+	 */
+	@Override
+	public void leaveReadOnlyForWrite() {
+		ReplicationStoreManager manager = this.replicationStoreManager;
+		if (manager == null || !manager.isReadOnly()) {
+			return;
+		}
+		try {
+			if (manager.getLifecycleState().canStop()) {
+				manager.stop();
+			} else {
+				manager.releaseCurrentStore();
+			}
+			resetReadOnlyIfStopped();
+			LifecycleHelper.startIfPossible(manager);
+		} catch (Exception e) {
+			// 失败即抛：让 SETSTATE 回 -ERR，由 MetaServer 重试，而不是留下"报 ACTIVE 但只读"。
+			throw new XpipeRuntimeException("[leaveReadOnlyForWrite] leave read-only failed", e);
+		}
+		logger.info("[leaveReadOnlyForWrite][done]{}", this);
+	}
+
 	private RedisKeeperServerState initKeeperServerState() {
 		
 		try {
@@ -688,13 +722,25 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 			throw new RedisKeeperServerStateException(toString(), getLifecycleState().getPhaseName());
 		}
-		if (redisKeeperServerState != null && KeeperState.PREPARE == redisKeeperServerState.keeperState()
-				&& !replicationStoreManager.isReadOnly()) {
+
+		// TFS：共享目录下只有写者（ACTIVE / BACKUP）和观察者（PREPARE）能拿店
+		KeeperState keeperState = redisKeeperServerState == null ? null : redisKeeperServerState.keeperState();
+		if (tfsMode
+				&& KeeperState.ACTIVE !=	 keeperState && KeeperState.BACKUP != keeperState
+				&& KeeperState.PREPARE != keeperState) {
+			throw new RedisKeeperServerStateException(toString(), String.valueOf(keeperState));
+		}
+		if (KeeperState.PREPARE == keeperState && !replicationStoreManager.isReadOnly()) {
 			throw new RedisKeeperServerStateException(toString(), "PREPARE");
 		}
-		
+
+		// 读路径只打开已存在的店，不建店；建店见 getReplicationStoreManager().createIfNotExist()
 		try {
-			return replicationStoreManager.createIfNotExist();
+			ReplicationStore replicationStore = replicationStoreManager.getCurrent();
+			if (replicationStore == null) {
+				throw new RedisKeeperServerStateException(toString(), "no store");
+			}
+			return replicationStore;
 		} catch (IOException e) {
 			logger.error("[getCurrentReplicationStore]" + this, e);
 			throw new XpipeRuntimeException("[getCurrentReplicationStore]" + this, e);
@@ -1473,7 +1519,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		};
 	}
 
-	@VisibleForTesting
+	@Override
 	public ReplicationStoreManager getReplicationStoreManager() {
 		return replicationStoreManager;
 	}
