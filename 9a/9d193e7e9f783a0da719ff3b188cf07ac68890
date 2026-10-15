@@ -1,0 +1,39 @@
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/redis/rdb/parser/RdbModuleAuxParserTest.java
+  s_280af76603b907::t_92fbd616a0b75e 1-17,19-26,32-46,48-61,63-75,77-79,91-99,176-179,182-185,187,189,191-203,227-233,247-265
+  s_280af76603b907::t_def4f47fd3fe57 18,27-31,47,62,76,80-90,100-175,180-181,186,188,190,204-226,234-246
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/redis/rdb/AllRdbTests.java
+  s_280af76603b907::t_bd3587ec857482 8,23
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/redis/rdb/parser/RdbModuleAuxParser.java
+  s_280af76603b907::t_9fe71de62d9413 57
+  s_280af76603b907::t_da074d8cd75690 36-37,70-71,146,150,170-173,178-183,188,218-219
+  s_280af76603b907::t_84fd46d9924e23 4-5,13-22,25,28-35,38-45,48-54,58-59,64-69,72-80,83-90,94-102,104-134,136-145,147-149,151-156,158-162,165-169,174-177,184-187,189-202,207-217,220-227
+  s_280af76603b907::t_c82142ccb33246 81-82,91,93,103
+  s_280af76603b907::t_cb466d41a9dbeb 135,163-164
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/redis/rdb/RdbConstant.java
+  s_280af76603b907::t_5ea726832157a6 89,91,94
+  s_280af76603b907::t_fdae787659cfc9 4-5,15-18,22,24-35,41-42,51-52,54,58-61,67-88,96,108-122
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/redis/rdb/parser/RdbModuleParser.java
+  s_280af76603b907::t_50bc57602060a8 25-26,51,73,81,88,92,96,104,160,162
+  s_280af76603b907::t_dea3748ec43c27 143
+  s_280af76603b907::t_f002dddc54ec80 107,112-113,116,120,124
+  s_280af76603b907::t_a8c3731e530d2b 4
+  s_280af76603b907::t_d9b5b094f763b4 139-142,147,149-152,157
+  s_280af76603b907::t_d260ab18cea31f 106,133-134
+  s_280af76603b907::t_4120ec427ccd87 75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.49-trip",
+  "base_commit_sha": "9a9d193e7e9f783a0da719ff3b188cf07ac68890",
+  "prompts": {},
+  "sessions": {
+    "s_280af76603b907": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7788eac2-4204-45e5-9904-ceaafeed9891",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}
