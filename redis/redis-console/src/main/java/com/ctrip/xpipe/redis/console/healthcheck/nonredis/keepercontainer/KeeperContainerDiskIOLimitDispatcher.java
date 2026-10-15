@@ -2,12 +2,12 @@ package com.ctrip.xpipe.redis.console.healthcheck.nonredis.keepercontainer;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
-import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.console.AbstractSiteLeaderIntervalAction;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -71,7 +71,9 @@ public class KeeperContainerDiskIOLimitDispatcher extends AbstractSiteLeaderInte
                 EventMonitor.DEFAULT.logEvent(ALERT_EVENT, "unknownLimit");
             } else {
                 try {
-                    keeperContainerService.setKeeperContainerDiskIOLimit(keepercontainer.getIp(), keepercontainer.getPort(), megaByte2Byte(limit));
+                    keeperContainerService.setKeeperContainerDiskIOLimit(
+                            FoundationService.DEFAULT.getDataCenter(), keepercontainer.getIp(), keepercontainer.getHostname(),
+                            keepercontainer.getPort(), megaByte2Byte(limit));
                     EventMonitor.DEFAULT.logEvent(ALERT_EVENT, "success");
                 } catch (Throwable th) {
                     logger.warn("[doAction][fail] {}", keepercontainer, th);

@@ -4,7 +4,7 @@
 		<span> > </span>
 		<span>{{srcKeepercontainer.dcName}}</span>
 		<span> > </span>
-		<a>{{srcKeepercontainer.addr.host}}:{{srcKeepercontainer.addr.port}}</a>
+		<a>{{keeperContainerAddr(srcKeepercontainer)}}</a>
 	</h3>
 
 	<div class="panel panel-primary">
@@ -29,7 +29,7 @@
 								   allow_single_deselect=true
 								   ng-model="targetKeeperContainer"
 								   class="md-no-underline color-white radius-border-fat no-margin" placeholder="目标Keeper Container">
-							<md-option ng-repeat="availableKeeperContainer in availableKeeperContainers" value="{{availableKeeperContainer.addr.host}}:{{availableKeeperContainer.addr.port}}">{{availableKeeperContainer.addr.host}}:{{availableKeeperContainer.addr.port}}</md-option>
+							<md-option ng-repeat="availableKeeperContainer in availableKeeperContainers" value="{{keeperContainerAddr(availableKeeperContainer)}}">{{keeperContainerAddr(availableKeeperContainer)}}</md-option>
 						</md-select>
 					</span>
 				</div>

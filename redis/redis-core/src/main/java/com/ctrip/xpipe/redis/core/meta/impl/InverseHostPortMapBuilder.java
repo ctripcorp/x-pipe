@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.XpipeMetaManager;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ public class InverseHostPortMapBuilder {
                     }
 
                     for(KeeperMeta keeperMeta : shardMeta.getKeepers()){
-                        result.put(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()),
+                        result.put(new HostPort(StringUtil.isEmpty(keeperMeta.getHostname()) ? keeperMeta.getIp() : keeperMeta.getHostname(), keeperMeta.getPort()),
                                 new XpipeMetaManager.MetaDesc(dcMeta, clusterMeta, shardMeta, keeperMeta));
                     }
                 });

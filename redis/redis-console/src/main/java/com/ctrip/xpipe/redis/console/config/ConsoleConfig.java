@@ -23,6 +23,11 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 
 	String getDatasource();
 
+	/**
+	 * KeeperContainer 注册树所在的 ZK namespace；未单独配置时回退到 Console 原 namespace。
+	 */
+	String getKeeperContainerZkNameSpace();
+
 	int getConsoleNotifyRetryTimes();
 
 	int getConsoleNotifyRetryInterval();
@@ -52,6 +57,16 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	int getCacheRefreshInterval();
 
 	int getAzGroupCacheRefreshInterval();
+
+	long getKeeperContainerAddressRefreshIntervalMilli();
+
+	default int getKeeperContainerAddressMaxRemovedPercent() {
+		return 50;
+	}
+
+	default int getKeeperContainerAddressMinRemovedHostnames() {
+		return 5;
+	}
 
 	Set<String> getAlertWhileList();
 

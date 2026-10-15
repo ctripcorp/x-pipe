@@ -17,7 +17,6 @@ import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Triple;
@@ -28,13 +27,12 @@ import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.cluster.ClusterType.HETERO;
 
+
 /**
  * @author lishanglin
  * date 2021/3/16
  */
 public abstract class AbstractMetaCache implements MetaCache {
-
-    protected int DEFAULT_KEEPER_NUMBERS = 3 * 10000;
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -43,14 +41,6 @@ public abstract class AbstractMetaCache implements MetaCache {
     protected Pair<XpipeMeta, XpipeMetaManager> meta;
 
     protected Map<String, Triple<String, String, Long>> monitor2ClusterShard;
-
-    protected Set<HostPort> allKeepers;
-
-    protected Map<String, String> allKeeperContainersDcMap;
-
-    protected Map<String, String> allApplierContainersDcMap;
-
-    protected int allKeeperSize = DEFAULT_KEEPER_NUMBERS;
 
     protected long lastUpdateTime = 0;
 
@@ -86,8 +76,6 @@ public abstract class AbstractMetaCache implements MetaCache {
         Pair<XpipeMeta, XpipeMetaManager> meta = new Pair<>(xpipeMeta, new DefaultXpipeMetaManager(xpipeMeta));
         AbstractMetaCache.this.meta = meta;
         monitor2ClusterShard = Maps.newHashMap();
-        allKeeperSize = allKeepers == null ? DEFAULT_KEEPER_NUMBERS : allKeepers.size();
-        allKeepers = null;
         lastUpdateTime = System.currentTimeMillis();
     }
 
@@ -375,81 +363,6 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     @Override
-    public Set<HostPort> getAllKeepers(){
-        XpipeMeta xpipeMeta = getXpipeMeta();
-        if (allKeepers == null) {
-            synchronized (this) {
-                if (allKeepers == null) {
-                    Set<HostPort> localKeepers = Sets.newHashSetWithExpectedSize(allKeeperSize);
-                    xpipeMeta.getDcs().forEach((dcName, dcMeta) -> {
-                        dcMeta.getClusters().forEach((clusterName, clusterMeta) -> {
-                            clusterMeta.getShards().forEach((shardName, shardMeta) -> {
-                                shardMeta.getKeepers().forEach(keeperMeta -> {
-                                    localKeepers.add(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()));
-                                });
-                            });
-                        });
-                    });
-                    allKeepers = localKeepers;
-                }
-            }
-        }
-
-        return allKeepers;
-    }
-
-    @Override
-    public String getDcByIpAndPeerClusterShard(String hostIp, Pair<String, String> peerClusterShard) {
-        if (getAllKeeperContainersDcMap().containsKey(hostIp)) {
-            return getAllKeeperContainersDcMap().get(hostIp);
-        }
-
-        if (getAllKeeperContainersDcMap().containsKey(hostIp)) {
-            return getAllKeeperContainersDcMap().get(hostIp);
-        }
-
-        return getDcByIpAndClusterShard(hostIp, peerClusterShard);
-    }
-
-    @Override
-    public Map<String, String> getAllKeeperContainersDcMap(){
-        XpipeMeta xpipeMeta = getXpipeMeta();
-        if (allKeeperContainersDcMap == null) {
-            synchronized (this) {
-                if (allKeeperContainersDcMap == null) {
-                    Map<String, String> tempKeeperContainersDcMap = Maps.newLinkedHashMapWithExpectedSize(allKeeperSize);
-                    xpipeMeta.getDcs().forEach((dcName, dcMeta)->{
-                        dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
-                            tempKeeperContainersDcMap.put(keeperContainerMeta.getIp(), dcName);
-                        });
-                    });
-                    allKeeperContainersDcMap = tempKeeperContainersDcMap;
-                }
-            }
-        }
-        return allKeeperContainersDcMap;
-    }
-
-    @Override
-    public Map<String, String> getAllApplierContainersDcMap(){
-        XpipeMeta xpipeMeta = getXpipeMeta();
-        if (allApplierContainersDcMap == null) {
-            synchronized (this) {
-                if (allApplierContainersDcMap == null) {
-                    Map<String, String> tempApplierContainersDcMap = Maps.newLinkedHashMapWithExpectedSize(allKeeperSize);
-                    xpipeMeta.getDcs().forEach((dcName, dcMeta)->{
-                        dcMeta.getApplierContainers().forEach(applierContainerMeta -> {
-                            tempApplierContainersDcMap.put(applierContainerMeta.getIp(), dcName);
-                        });
-                    });
-                    allApplierContainersDcMap = tempApplierContainersDcMap;
-                }
-            }
-        }
-        return allApplierContainersDcMap;
-    }
-
-    @Override
     public String getSentinelMonitorName(String clusterId, String shardId) {
 
         XpipeMetaManager xpipeMetaManager = meta.getValue();
@@ -502,6 +415,21 @@ public abstract class AbstractMetaCache implements MetaCache {
         ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
         if (null == shardMeta) return Collections.emptyList();
         return shardMeta.getKeepers();
+    }
+
+    @Override
+    public Map<KeeperMeta, String> getKeeper2DcOfClusterShard(String cluster, String shard) {
+        Map<KeeperMeta, String> keepers = new HashMap<>();
+        XpipeMetaManager xpipeMetaManager = meta.getValue();
+        xpipeMetaManager.doGetDcs().forEach(dc -> {
+            ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
+            if (shardMeta != null) {
+                shardMeta.getKeepers().forEach(keeperMeta -> {
+                    keepers.put(keeperMeta, dc);
+                });
+            }
+        });
+        return keepers;
     }
 
     @Override

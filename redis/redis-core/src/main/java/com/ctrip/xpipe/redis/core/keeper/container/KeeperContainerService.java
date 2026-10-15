@@ -12,6 +12,9 @@ import java.util.List;
  */
 public interface KeeperContainerService {
 
+	/** 返回当前 KeeperContainer 的实际访问 IP；容器形态会实时按 hostname 反查。 */
+	String resolveAddress();
+
 	KeeperInstanceMeta infoPort(int port);
 
 	void addKeeper(KeeperTransMeta keeperTransMeta);

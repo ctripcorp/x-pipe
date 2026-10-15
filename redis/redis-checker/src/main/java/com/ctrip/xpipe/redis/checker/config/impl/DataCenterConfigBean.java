@@ -17,6 +17,8 @@ public class DataCenterConfigBean extends AbstractConfigBean {
 
     public static final String KEY_ZK_NAMESPACE  = "zk.namespace";
 
+    public static final String KEY_KEEPER_CONTAINER_ZK_NAMESPACE = "keeper.container.zk.namespace";
+
     public static final String KEY_METASERVERS = "metaservers";
 
     public static final String KEY_CREDIS_SERVEICE_ADDRESS = "credis.service.address";
@@ -57,6 +59,10 @@ public class DataCenterConfigBean extends AbstractConfigBean {
 
     public String getZkNameSpace(){
         return getProperty(KEY_ZK_NAMESPACE, zkNameSpace.get() == null ? ZkConfig.DEFAULT_ZK_NAMESPACE:zkNameSpace.get());
+    }
+
+    public String getKeeperContainerZkNameSpace() {
+        return getProperty(KEY_KEEPER_CONTAINER_ZK_NAMESPACE, getZkNameSpace());
     }
 
     public Map<String,String> getMetaservers() {

@@ -8,8 +8,8 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
-import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.MetaComparator;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
@@ -26,11 +26,7 @@ import com.ctrip.xpipe.utils.OsUtils;
 import com.google.common.collect.Lists;
 import org.junit.*;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -80,6 +76,26 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
     @After
     public void afterDefaultKeeperManagerTest() {
         executors.shutdownNow();
+    }
+
+    @Test
+    public void testGetKeepersSubtractionMatchesContainerByHostname() {
+        KeeperMeta configured = new KeeperMeta().setIp("0.0.0.0").setPort(6380).setHostname("keeper-pod-a-0");
+        KeeperMeta survived = new KeeperMeta().setIp("10.2.3.15").setPort(6380).setHostname("keeper-pod-a-0");
+
+        Assert.assertTrue(manager.getKeepersSubtraction(
+                Collections.singletonList(configured), Collections.singletonList(survived)).isEmpty());
+        Assert.assertTrue(manager.getKeepersSubtraction(
+                Collections.singletonList(survived), Collections.singletonList(configured)).isEmpty());
+    }
+
+    @Test
+    public void testGetKeepersSubtractionDoesNotMatchMixedIdentityModes() {
+        KeeperMeta containerKeeper = new KeeperMeta().setIp("10.2.3.15").setPort(6380).setHostname("keeper-pod-a-0");
+        KeeperMeta physicalKeeper = new KeeperMeta().setIp("10.2.3.15").setPort(6380);
+
+        Assert.assertEquals(Collections.singletonList(containerKeeper), manager.getKeepersSubtraction(
+                Collections.singletonList(containerKeeper), Collections.singletonList(physicalKeeper)));
     }
 
     @Test

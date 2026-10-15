@@ -63,7 +63,7 @@ angular
         },
         get_all_keepers: {
             method: 'GET',
-            url: '/console/keepercontainer/keepers/:ip',
+            url: '/console/keepercontainer/keepers/:keeperContainerId',
             isArray: true
         },
         get_overload_keepercontainer_migration_process: {
@@ -90,11 +90,11 @@ angular
         },
         reset_election:{
             method:'POST',
-            url:'/api/keepers/election/reset/:ip/:port/:shardId'
+            url:'/api/keepers/election/reset'
         },
         release_rdb:{
             method:'POST',
-            url:'/api/keepers/release/rdb/:ip/:port/:shardId'
+            url:'/api/keepers/release/rdb'
         }
     });
 
@@ -213,10 +213,12 @@ angular
         return d.promise;
     }
 
-    function addKeepercontainer(addr, dcName, orgName, azName, active, diskType, tag, logicalBuId) {
+    function addKeepercontainer(ip, keepercontainerHostName, port, dcName, orgName, azName, active, diskType, tag, logicalBuId) {
         var d = $q.defer();
         resource.add_keepercontainer({}, {
-                    addr : addr,
+                    ip : ip,
+                    keepercontainerHostName : keepercontainerHostName,
+                    port : port,
                     dcName : dcName,
                     orgName : orgName,
                     azName : azName,
@@ -233,10 +235,13 @@ angular
         return d.promise;
     }
 
-    function updateKeepercontainer(addr, dcName, orgName, azName, active, diskType, tag, logicalBuId) {
+    function updateKeepercontainer(ip, keepercontainerHostName, port, dcName, orgName, azName, active, diskType, tag, logicalBuId) {
         var d = $q.defer();
         resource.update_keepercontainer({}, {
-                    addr : addr,
+                    ip : ip,
+                    // hostname 是容器化 KC 的稳定标识，后端按它做双轨定位，必须回传
+                    keepercontainerHostName : keepercontainerHostName,
+                    port : port,
                     dcName : dcName,
                     orgName : orgName,
                     azName : azName,
@@ -275,10 +280,10 @@ angular
         return d.promise;
     }
 
-    function getAllKeepers(ip) {
+    function getAllKeepers(keeperContainerId) {
         var d = $q.defer();
         resource.get_all_keepers({
-                ip:ip
+                keeperContainerId:keeperContainerId
             },
             function (result) {
                 d.resolve(result);
@@ -322,10 +327,14 @@ angular
         return d.promise;
     }
 
-    function resetElection(ip, port, shardId) {
+    // 后端是 @RequestBody KeeperRestElectionModel，参数必须放在请求体里（第二个参数），不能拼进 URL；
+    // 容器 keeper 需要 hostname 才能定位，ip 可能已随 pod 重建变化
+    function resetElection(dcName, ip, hostname, port, shardId) {
         var d = $q.defer();
-        resource.reset_election({
+        resource.reset_election({}, {
+                dcName:dcName,
                 ip:ip,
+                hostname:hostname,
                 port:port,
                 shardId:shardId
             },
@@ -337,10 +346,12 @@ angular
         return d.promise;
     }
 
-    function releaseRdb(ip, port, shardId) {
+    function releaseRdb(dcName, ip, hostname, port, shardId) {
         var d = $q.defer();
-        resource.release_rdb({
+        resource.release_rdb({}, {
+                dcName:dcName,
                 ip:ip,
+                hostname:hostname,
                 port:port,
                 shardId:shardId
             },

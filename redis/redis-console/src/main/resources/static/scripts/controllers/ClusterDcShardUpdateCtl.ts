@@ -51,6 +51,7 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
     $scope.submitUpdates = submitUpdates;
     $scope.keeperContainerDisplayLabel = keeperContainerDisplayLabel;
     $scope.keeperMediumLabel = keeperMediumLabel;
+    $scope.keeperAddr = keeperAddr;
     $scope.onKeeperContainerChanged = onKeeperContainerChanged;
 
     $scope.hasRedisMaster = false;
@@ -111,10 +112,23 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
         return isTfsDiskType(diskType) ? 'TFS' : 'BM';
     }
 
+    /**
+     * 容器 KC 的 keepercontainerIp 是占位值，所有 pod 看起来一样，
+     * 因此有 hostname 时展示成 hostname(ip)，让用户能区分选的是哪个容器
+     */
+    function keeperContainerAddrLabel(keeperContainer) {
+        var ip = keeperContainer.keepercontainerIp;
+        var hostName = keeperContainer.keepercontainerHostName;
+        if (!hostName) {
+            return ip || '';
+        }
+        return ip ? hostName + '(' + ip + ')' : hostName;
+    }
+
     function keeperContainerDisplayLabel(keeperContainer) {
         var diskType = keeperContainer.keepercontainerDiskType || '';
         var load = keeperContainer.count != null ? keeperContainer.count : 0;
-        return keeperContainer.keepercontainerIp + ':' + keeperContainer.keepercontainerPort
+        return keeperContainerAddrLabel(keeperContainer) + ':' + keeperContainer.keepercontainerPort
             + ' [' + mediumTag(diskType) + '/' + diskType + '] '
             + (keeperContainer.azName || '') + ' (' + load + ')';
     }
@@ -131,6 +145,34 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
         if (keeper && keeper.keepercontainerId) {
             keeper.keeperPriority = defaultPriorityForContainer(keeper.keepercontainerId);
         }
+    }
+
+    /**
+     * 按选中的 KeeperContainer 回填 keeper 地址。
+     * 必须同时写 redisIp 和 hostName：容器 KC 的 ip 是占位值，hostname 才是稳定标识，
+     * 只写 ip 会导致落库后无法定位实例。以下拉选中的容器为唯一来源，
+     * 这样用户改过下拉之后地址也不会和容器错配
+     */
+    function applyKeeperContainerAddress(keeper) {
+        var keeperContainer = $scope.keeperContainerMap
+                && $scope.keeperContainerMap[parseInt(keeper.keepercontainerId)];
+        if (!keeperContainer) {
+            return false;
+        }
+        keeper.redisIp = keeperContainer.keepercontainerIp;
+        keeper.hostName = keeperContainer.keepercontainerHostName || '';
+        return true;
+    }
+
+    /**
+     * 容器 keeper 的 redis_ip 是占位值，hostname 才是稳定标识，
+     * 与后端 ipOrHostname() 口径一致：hostname 非空用 hostname，否则回退 ip
+     */
+    function keeperAddr(keeper) {
+        if (!keeper) {
+            return '';
+        }
+        return keeper.hostName || keeper.redisIp || '';
     }
 
     function keeperMediumLabel(keeper) {
@@ -333,14 +375,10 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
             if (!validKeeper($scope.toCreateFirstKeeper)){
                 $scope.createKeeperErrorMsg = "valid form content please check";
                 return;
+            }else if (!applyKeeperContainerAddress($scope.toCreateFirstKeeper)) {
+                $scope.createKeeperErrorMsg = "keeper container not found, please reselect";
+                return;
             }else {
-           	 var keeperContainerId = $scope.toCreateFirstKeeper.keepercontainerId;
-           	 for(var i = 0 ; i != $scope.keeperContainers.length; ++i) {
-           		 if($scope.keeperContainers[i].keepercontainerId === parseInt(keeperContainerId)) {
-           			 $scope.toCreateFirstKeeper.redisIp = $scope.keeperContainers[i].keepercontainerIp;
-           			 break;
-           		 }
-           	 }
                 shard.keepers.push($scope.toCreateFirstKeeper);
             }
 
@@ -348,14 +386,10 @@ function ClusterDcShardUpdateCtl($rootScope, $scope, $stateParams, $window, $loc
             if (!validKeeper(otherKeeper)){
                 $scope.createKeeperErrorMsg = "valid form content please check";
                 return;
+            }else if (!applyKeeperContainerAddress(otherKeeper)) {
+                $scope.createKeeperErrorMsg = "keeper container not found, please reselect";
+                return;
             }else {
-           	 var keeperContainerId = otherKeeper.keepercontainerId;
-           	 for(var i = 0 ; i != $scope.keeperContainers.length; ++i) {
-           		 if($scope.keeperContainers[i].keepercontainerId === parseInt(keeperContainerId)) {
-           			 otherKeeper.redisIp = $scope.keeperContainers[i].keepercontainerIp;
-           			 break;
-           		 }
-           	 }
                 shard.keepers.push(otherKeeper);
             }
         });

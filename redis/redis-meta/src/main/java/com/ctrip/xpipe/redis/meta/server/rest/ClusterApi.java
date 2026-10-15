@@ -5,8 +5,8 @@ import com.ctrip.xpipe.redis.meta.server.cluster.ClusterServerInfo;
 
 /**
  * @author wenchao.meng
- *
- * Jul 29, 2016
+ *         <p>
+ *         Jul 29, 2016
  */
 public interface ClusterApi{
 

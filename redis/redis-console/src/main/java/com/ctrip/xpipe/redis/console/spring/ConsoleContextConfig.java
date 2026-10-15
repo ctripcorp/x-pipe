@@ -3,7 +3,6 @@ package com.ctrip.xpipe.redis.console.spring;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.sso.LogoutHandler;
 import com.ctrip.xpipe.api.sso.UserInfoHolder;
-import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.checker.PersistenceCache;
 import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
@@ -11,7 +10,6 @@ import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.DataCenterConfigBean;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
-import com.ctrip.xpipe.redis.checker.impl.DefaultKeeperContainerService;
 import com.ctrip.xpipe.redis.checker.impl.TestMetaCache;
 import com.ctrip.xpipe.redis.checker.resource.DefaultCheckerConsoleService;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
@@ -186,11 +184,6 @@ public class ConsoleContextConfig implements XPipeMvcRegistrations {
 	@Bean
 	public FoundationService foundationService() {
 		return FoundationService.DEFAULT;
-	}
-
-	@Bean
-	public KeeperContainerCheckerService keeperContainerService() {
-		return new DefaultKeeperContainerService();
 	}
 
 	@Bean

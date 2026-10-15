@@ -35,6 +35,7 @@ function FullLinkHealthCheckCtl($rootScope, $scope, $window, $stateParams, Healt
     $scope.releaseRdbErr = null;
     $scope.getResetElectionErr = getResetElectionErr;
     $scope.getReleaseRdbErr = getReleaseRdbErr;
+    $scope.keeperMetaAddr = keeperMetaAddr;
 
     redisRoleHealthCheck();
     shardCheckerGroupHealthCheck();
@@ -84,9 +85,10 @@ function FullLinkHealthCheckCtl($rootScope, $scope, $window, $stateParams, Healt
     }
 
     let rdbTimer = null;
-    function releaseRdb(ip, port) {
+    // 传整个 keeper，避免再出现漏传 hostname 的情况；host 是后端反查后的真实 ip
+    function releaseRdb(keeper) {
         $scope.disableReleaseRdb = true;
-        KeeperContainerService.releaseRdb(ip, port, $stateParams.shardId).then(function (response) {
+        KeeperContainerService.releaseRdb($stateParams.currentDcName, keeper.host, keeper.hostname, keeper.port, $stateParams.shardId).then(function (response) {
             if (response.state != 0) {
                 $scope.disableReleaseRdb = false;
                 $scope.releaseRdbErr = response.message;
@@ -108,9 +110,9 @@ function FullLinkHealthCheckCtl($rootScope, $scope, $window, $stateParams, Healt
     }
 
     let timer = null;
-    function resetElection(ip, port) {
+    function resetElection(keeper) {
         $scope.disableResetElection = true;
-        KeeperContainerService.resetElection(ip, port, $stateParams.shardId).then(function (response) {
+        KeeperContainerService.resetElection($stateParams.currentDcName, keeper.host, keeper.hostname, keeper.port, $stateParams.shardId).then(function (response) {
             if (response.state != 0) {
                 $scope.disableResetElection = false;
                 $scope.resetElectionErr = response.message;
@@ -129,6 +131,21 @@ function FullLinkHealthCheckCtl($rootScope, $scope, $window, $stateParams, Healt
             $scope.resetElectionErr = "Status Code:" + error.status + " " + error.statusText + "\n" + error.data.exception;
             $('#resetElectionErr').modal('show');
         })
+    }
+
+    /**
+     * meta 区块（SurviveKeepers / shardMeta.keepers）里的 KeeperMeta 展示成 hostname(ip):port。
+     * 这里的 ip 是 meta 原始值，容器场景下是占位值，没有做反查，所以 hostname 放在前面；
+     * 注意 KeeperMeta 的字段是 hostname，与 redis_tbl 的 hostName 大小写不同
+     */
+    function keeperMetaAddr(keeperMeta) {
+        if (!keeperMeta) {
+            return '';
+        }
+        var addr = keeperMeta.hostname
+                ? (keeperMeta.ip ? keeperMeta.hostname + '(' + keeperMeta.ip + ')' : keeperMeta.hostname)
+                : (keeperMeta.ip || '');
+        return addr + ':' + keeperMeta.port;
     }
 
     function getResetElectionErr() {

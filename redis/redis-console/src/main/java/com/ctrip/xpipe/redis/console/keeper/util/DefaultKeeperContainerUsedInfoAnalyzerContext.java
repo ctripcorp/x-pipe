@@ -4,7 +4,7 @@ import com.ctrip.xpipe.monitor.CatEventMonitor;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShard;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
-import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
+import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.KeeperUsedInfo;
 import com.ctrip.xpipe.redis.console.keeper.entity.IPPairData;
 import com.ctrip.xpipe.redis.console.keeper.handler.KeeperContainerFilterChain;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
@@ -13,24 +13,25 @@ import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperContainerUsedInfoAnalyzerContext {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultKeeperContainerUsedInfoAnalyzerContext.class);
-    private Map<String, Map<String , IPPairData>> ipPairMap = new HashMap<>();
+    private Map<Long, Map<Long, IPPairData>> containerPairMap = new HashMap<>();
     private Map<DcClusterShardKeeper, KeeperUsedInfo> allDetailInfo = new HashMap<>();
 
     private PriorityQueue<KeeperContainerUsedInfoModel> minInputFlowKeeperContainers;
 
     private PriorityQueue<KeeperContainerUsedInfoModel> minPeerDataKeeperContainers;
 
-    private Map<String, List<MigrationKeeperContainerDetailModel>> migrationPlansMap = new HashMap<>();
+    private Map<Long, List<MigrationKeeperContainerDetailModel>> migrationPlansMap = new HashMap<>();
 
-    private Set<String> problemKeeperContainer = new HashSet<>();
+    private Set<Long> problemKeeperContainer = new HashSet<>();
 
-    private Map<String, KeeperContainerUsedInfoModel> srcModelsMap;
+    private Map<Long, KeeperContainerUsedInfoModel> srcModelsMap;
 
     private KeeperContainerFilterChain filterChain;
 
@@ -48,18 +49,22 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
 
     @Override
     public void addMigrationPlan(KeeperContainerUsedInfoModel src, KeeperContainerUsedInfoModel target, boolean switchActive, boolean keeperPairOverload, String cause, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> dcClusterShard, KeeperContainerUsedInfoModel srcPair) {
-        if (!migrationPlansMap.containsKey(src.getKeeperIp())) {
-            migrationPlansMap.put(src.getKeeperIp(), new ArrayList<>());
+        Long srcContainerId = src.getKeeperContainerId();
+        Long targetContainerId = target.getKeeperContainerId();
+        
+        if (!migrationPlansMap.containsKey(srcContainerId)) {
+            migrationPlansMap.put(srcContainerId, new ArrayList<>());
         }
-        if (migrationPlansMap.get(src.getKeeperIp()).stream().noneMatch(list -> list.isKeeperPairOverload() == keeperPairOverload && list.isSwitchActive() == switchActive && list.getTargetKeeperContainer() != null && target.getKeeperIp().equals(list.getTargetKeeperContainer().getKeeperIp()) && StringUtils.equals(cause, list.getCause()))) {
+        if (migrationPlansMap.get(srcContainerId).stream().noneMatch(list -> list.isKeeperPairOverload() == keeperPairOverload && list.isSwitchActive() == switchActive && list.getTargetKeeperContainer() != null && targetContainerId.equals(list.getTargetKeeperContainer().getKeeperContainerId()) && StringUtils.equals(cause, list.getCause()))) {
             MigrationKeeperContainerDetailModel model = new MigrationKeeperContainerDetailModel(
-                    srcModelsMap.get(src.getKeeperIp()), srcModelsMap.get(target.getKeeperIp()), switchActive, keeperPairOverload, cause, new ArrayList<>());
+                    srcModelsMap.get(srcContainerId), srcModelsMap.get(targetContainerId), switchActive, keeperPairOverload, cause, new ArrayList<>());
             if (keeperPairOverload) {
-                model.setSrcOverLoadKeeperPairIp(srcPair.getKeeperIp());
+                // 这个字段是给页面展示用的地址标识（物理机 IP / 容器 hostname），不是 id
+                model.setSrcOverLoadKeeperPairIp(srcPair.ipOrHostname());
             }
-            migrationPlansMap.get(src.getKeeperIp()).add(model);
+            migrationPlansMap.get(srcContainerId).add(model);
         }
-        MigrationKeeperContainerDetailModel model = migrationPlansMap.get(src.getKeeperIp()).stream().filter(list -> list.isKeeperPairOverload() == keeperPairOverload && list.isSwitchActive() == switchActive && list.getTargetKeeperContainer() != null && target.getKeeperIp().equals(list.getTargetKeeperContainer().getKeeperIp()) && StringUtils.equals(cause, list.getCause())).findFirst().get();
+        MigrationKeeperContainerDetailModel model = migrationPlansMap.get(srcContainerId).stream().filter(list -> list.isKeeperPairOverload() == keeperPairOverload && list.isSwitchActive() == switchActive && list.getTargetKeeperContainer() != null && targetContainerId.equals(list.getTargetKeeperContainer().getKeeperContainerId()) && StringUtils.equals(cause, list.getCause())).findFirst().get();
         model.addReadyToMigrateShard(dcClusterShard.getKey());
 
         if (!keeperPairOverload) {
@@ -67,7 +72,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
             target.setActiveInputFlow(target.getActiveInputFlow() + dcClusterShard.getValue().getInputFlow()).setActiveRedisUsedMemory(target.getActiveRedisUsedMemory() + dcClusterShard.getValue().getPeerData());
         }
         if (!switchActive) {
-            updateMigrateIpPair(src.getKeeperIp(), srcPair.getKeeperIp(), target.getKeeperIp(), dcClusterShard);
+            updateMigrateContainerPair(srcContainerId, srcPair.getKeeperContainerId(), targetContainerId, dcClusterShard);
         }
     }
 
@@ -78,20 +83,21 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
 
     @Override
     public void addResourceLackPlan(KeeperContainerUsedInfoModel src, String srcOverLoadKeeperPairIp, String cause) {
-        if (!migrationPlansMap.containsKey(src.getKeeperIp())) {
-            migrationPlansMap.put(src.getKeeperIp(), new ArrayList<>());
+        Long srcContainerId = src.getKeeperContainerId();
+        if (!migrationPlansMap.containsKey(srcContainerId)) {
+            migrationPlansMap.put(srcContainerId, new ArrayList<>());
         }
-        MigrationKeeperContainerDetailModel model = new MigrationKeeperContainerDetailModel(srcModelsMap.get(src.getKeeperIp()), null, false, false, cause, new ArrayList<>())
+        MigrationKeeperContainerDetailModel model = new MigrationKeeperContainerDetailModel(srcModelsMap.get(srcContainerId), null, false, false, cause, new ArrayList<>())
                 .setUpdateTime(new Date(System.currentTimeMillis() + 8 * 60 * 60 * 1000));
         if (srcOverLoadKeeperPairIp != null) {
             model.setSrcOverLoadKeeperPairIp(srcOverLoadKeeperPairIp);
         }
-        migrationPlansMap.get(src.getKeeperIp()).add(model);
+        migrationPlansMap.get(srcContainerId).add(model);
     }
-
+    
     @Override
-    public boolean isProblemKeeperContainer(String keeperContainerIp) {
-        return problemKeeperContainer.contains(keeperContainerIp);
+    public boolean isProblemKeeperContainerById(Long keeperContainerId) {
+        return problemKeeperContainer.contains(keeperContainerId);
     }
 
     @Override
@@ -101,7 +107,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
         minPeerDataKeeperContainers = new PriorityQueue<>(usedInfoMap.size(),
                 (keeper1, keeper2) -> (int)((keeper2.getRedisUsedMemoryStandard() - keeper2.getTotalRedisUsedMemory()) - (keeper1.getRedisUsedMemoryStandard() - keeper1.getTotalRedisUsedMemory())));
         usedInfoMap.forEach(model -> {
-             if (!problemKeeperContainer.contains(model.getKeeperIp())
+             if (!problemKeeperContainer.contains(model.getKeeperContainerId())
                      && filterChain.isKeeperContainerUseful(model)) {
                 minPeerDataKeeperContainers.add(model);
                 minInputFlowKeeperContainers.add(model);
@@ -125,6 +131,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
         if (srcKeeper == null || srcKeeperPair == null) {
             return null;
         }
+        Long srcKeeperPairId = srcKeeperPair.getKeeperContainerId();
         PriorityQueue<KeeperContainerUsedInfoModel> queue = isPeerDataOverload ? minPeerDataKeeperContainers : minInputFlowKeeperContainers;
         Queue<KeeperContainerUsedInfoModel> temp = new LinkedList<>();
         while (!queue.isEmpty()) {
@@ -132,7 +139,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
             if ((Objects.equals(srcKeeper.getOrg(), target.getOrg()))
                     && (Objects.equals(srcKeeper.getAz(), target.getAz()))
                     && (Objects.equals(srcKeeper.getTag(), target.getTag()))
-                    && !Objects.equals(target.getKeeperIp(), srcKeeperPair.getKeeperIp())
+                    && !Objects.equals(target.getKeeperContainerId(), srcKeeperPairId)
                     && ((!isMigrateShardBackUp && filterChain.canMigrate(dcClusterShard, srcKeeperPair, target, this))
                     || (isMigrateShardBackUp && !filterChain.isMigrateKeeperPairOverload(dcClusterShard, srcKeeperPair, target, this)))) {
                 return target;
@@ -146,9 +153,9 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
     }
 
     @Override
-    public void initKeeperPairData(List<KeeperContainerUsedInfoModel> usedInfoMap, Map<String, KeeperContainerUsedInfoModel> srcModelsMap) {
+    public void initKeeperPairData(List<KeeperContainerUsedInfoModel> usedInfoMap, Map<Long, KeeperContainerUsedInfoModel> srcModelsMap) {
         this.srcModelsMap = srcModelsMap;
-        ipPairMap.clear();
+        containerPairMap.clear();
         allDetailInfo.clear();
         for (KeeperContainerUsedInfoModel infoModel : usedInfoMap) {
             if (infoModel.getDetailInfo() != null) {
@@ -158,12 +165,12 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
         for (Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> entry : allDetailInfo.entrySet()) {
             if (!entry.getKey().isActive()) continue;
             KeeperUsedInfo activeKeeperUsedInfo = entry.getValue();
-            String backUpKeeperIp = getBackUpKeeperIp(entry.getKey());
-            if (backUpKeeperIp == null) {
+            Long backUpKeeperContainerId = getBackUpKeeperContainerId(entry.getKey());
+            if (backUpKeeperContainerId == null) {
                 getProblemKeeperContainer(entry);
                 continue;
             }
-            addIpPair(activeKeeperUsedInfo.getKeeperIP(), backUpKeeperIp, entry);
+            addContainerPair(activeKeeperUsedInfo.getKeeperContainerId(), backUpKeeperContainerId, entry);
         }
     }
 
@@ -177,11 +184,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
                     if (entry.getKey().getShardId().equals(shardMeta.getId())) {
                         List<KeeperMeta> keepers = shardMeta.getKeepers();
                         if (keepers.size() == 2) {
-                            if (keepers.get(0).getIp().equals(entry.getValue().getKeeperIP())) {
-                                problemKeeperContainer.add(keepers.get(1).getIp());
-                            } else {
-                                problemKeeperContainer.add(keepers.get(0).getIp());
-                            }
+                            markProblemKeeperContainer(entry, keepers);
                         }
                     }
                 });
@@ -189,57 +192,78 @@ public class DefaultKeeperContainerUsedInfoAnalyzerContext implements KeeperCont
         });
     }
 
+    /**
+     * active keeper 有数据上报但配对的 backup 没有，说明 backup 所在的 keeperContainer 有问题，
+     * 把它标记出来，后续不再作为迁移目标。
+     * <p>
+     * 两个 keeper 里取与 active 不同的那一个；任一 id 缺失时无法判定是哪一个，
+     * 此时宁可放弃标记也不能瞎猜——猜错会把健康的 active 容器拉黑。
+     */
+    private void markProblemKeeperContainer(Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> entry, List<KeeperMeta> keepers) {
+        Long activeContainerId = entry.getValue().getKeeperContainerId();
+        Long firstContainerId = keepers.get(0).getKeeperContainerId();
+        Long secondContainerId = keepers.get(1).getKeeperContainerId();
+
+        if (activeContainerId == null || firstContainerId == null || secondContainerId == null) {
+            logger.warn("[markProblemKeeperContainer][keeperContainerId missing] {}, activeId:{}, keeperIds:[{}, {}]",
+                    entry.getKey(), activeContainerId, firstContainerId, secondContainerId);
+            return;
+        }
+
+        Long problemContainerId = activeContainerId.equals(firstContainerId) ? secondContainerId : firstContainerId;
+        problemKeeperContainer.add(problemContainerId);
+    }
+
     @Override
-    public String getBackUpKeeperIp(DcClusterShard activeKeeper) {
+    public Long getBackUpKeeperContainerId(DcClusterShard activeKeeper) {
         KeeperUsedInfo backUpKeeperUsedInfo = allDetailInfo.get(new DcClusterShardKeeper(activeKeeper, false));
         if (backUpKeeperUsedInfo == null) {
             CatEventMonitor.DEFAULT.logEvent(KEEPER_NO_BACKUP, activeKeeper.toString());
             return null;
         }
-        return backUpKeeperUsedInfo.getKeeperIP();
+        return backUpKeeperUsedInfo.getKeeperContainerId();
     }
 
     @Override
-    public List<String> getAllPairsIP(String ip) {
-        List<String> ipPairs = new ArrayList<>();
-        if (ipPairMap.containsKey(ip)) {
-            ipPairs.addAll(ipPairMap.get(ip).keySet());
+    public List<Long> getAllPairsContainerId(Long containerId) {
+        List<Long> pairIds = new ArrayList<>();
+        if (containerPairMap.containsKey(containerId)) {
+            pairIds.addAll(containerPairMap.get(containerId).keySet());
         }
-        return ipPairs;
+        return pairIds;
     }
 
     @Override
-    public IPPairData getIPPairData(String ip1, String ip2) {
-        if (ipPairMap.containsKey(ip1) && ipPairMap.get(ip1).containsKey(ip2)) {
-            return ipPairMap.get(ip1).get(ip2);
+    public IPPairData getContainerPairData(Long containerId1, Long containerId2) {
+        if (containerPairMap.containsKey(containerId1) && containerPairMap.get(containerId1).containsKey(containerId2)) {
+            return containerPairMap.get(containerId1).get(containerId2);
         }
-        if (ipPairMap.containsKey(ip2) && ipPairMap.get(ip2).containsKey(ip1)) {
-            return ipPairMap.get(ip2).get(ip1);
+        if (containerPairMap.containsKey(containerId2) && containerPairMap.get(containerId2).containsKey(containerId1)) {
+            return containerPairMap.get(containerId2).get(containerId1);
         }
         return null;
     }
-
-    @Override
-    public void updateMigrateIpPair(String srcKeeperIp, String srcKeeperIpPair, String targetKeeperIp, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> migrateDcClusterShard) {
-        removeIpPair(srcKeeperIp, srcKeeperIpPair, migrateDcClusterShard);
-        addIpPair(srcKeeperIpPair, targetKeeperIp, migrateDcClusterShard);
+    
+    public void updateMigrateContainerPair(Long srcKeeperContainerId, Long srcKeeperPairContainerId, Long targetKeeperContainerId, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> migrateDcClusterShard) {
+        removeContainerPair(srcKeeperContainerId, srcKeeperPairContainerId, migrateDcClusterShard);
+        addContainerPair(srcKeeperPairContainerId, targetKeeperContainerId, migrateDcClusterShard);
     }
 
-    private void addIpPair(String ip1, String ip2, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> migrateDcClusterShard) {
-        ipPairMap.computeIfAbsent(ip1, k -> new HashMap<>());
-        ipPairMap.get(ip1).computeIfAbsent(ip2, k -> new IPPairData());
-        ipPairMap.get(ip1).get(ip2).addDcClusterShard(migrateDcClusterShard);
-        ipPairMap.computeIfAbsent(ip2, k -> new HashMap<>());
-        ipPairMap.get(ip2).computeIfAbsent(ip1, k -> new IPPairData());
-        ipPairMap.get(ip2).get(ip1).addDcClusterShard(migrateDcClusterShard);
+    private void addContainerPair(Long containerId1, Long containerId2, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> migrateDcClusterShard) {
+        containerPairMap.computeIfAbsent(containerId1, k -> new HashMap<>());
+        containerPairMap.get(containerId1).computeIfAbsent(containerId2, k -> new IPPairData());
+        containerPairMap.get(containerId1).get(containerId2).addDcClusterShard(migrateDcClusterShard);
+        containerPairMap.computeIfAbsent(containerId2, k -> new HashMap<>());
+        containerPairMap.get(containerId2).computeIfAbsent(containerId1, k -> new IPPairData());
+        containerPairMap.get(containerId2).get(containerId1).addDcClusterShard(migrateDcClusterShard);
     }
 
-    private void removeIpPair(String ip1, String ip2, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> migrateDcClusterShard) {
-        if (ipPairMap.containsKey(ip1) && ipPairMap.get(ip1).containsKey(ip2)) {
-            ipPairMap.get(ip1).get(ip2).removeDcClusterShard(migrateDcClusterShard);
+    private void removeContainerPair(Long containerId1, Long containerId2, Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> migrateDcClusterShard) {
+        if (containerPairMap.containsKey(containerId1) && containerPairMap.get(containerId1).containsKey(containerId2)) {
+            containerPairMap.get(containerId1).get(containerId2).removeDcClusterShard(migrateDcClusterShard);
         }
-        if (ipPairMap.containsKey(ip2) && ipPairMap.get(ip2).containsKey(ip1)) {
-            ipPairMap.get(ip2).get(ip1).removeDcClusterShard(migrateDcClusterShard);
+        if (containerPairMap.containsKey(containerId2) && containerPairMap.get(containerId2).containsKey(containerId1)) {
+            containerPairMap.get(containerId2).get(containerId1).removeDcClusterShard(migrateDcClusterShard);
         }
     }
 

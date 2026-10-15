@@ -172,6 +172,7 @@ create table REDIS_TBL
 	run_id varchar(128) not null,
 	dc_cluster_shard_id bigint not null,
 	redis_ip varchar(40) not null,
+	host_name varchar(128) not null default '',
 	redis_port int not null,
 	redis_role varchar(12) not null default 'redis',
 	keeper_active tinyint(1) not null default 0,
@@ -184,7 +185,7 @@ create table REDIS_TBL
 	deleted tinyint(1) not null default 0,
     deleted_at int not null default 0,
     az_id bigint(20) unsigned NOT NULL DEFAULT 0,
-    UNIQUE KEY `ip_port_deleted_at` (`redis_ip`,`redis_port`, `deleted_at`)
+    UNIQUE KEY `ip_port_hostname_deleted_at` (`redis_ip`,`redis_port`,`host_name`,`deleted_at`)
 );
 
 
@@ -197,6 +198,7 @@ create table KEEPERCONTAINER_TBL
     az_id bigint(20) unsigned NOT NULL DEFAULT 0,
 	keepercontainer_ip varchar(40) not null,
 	keepercontainer_port int not null,
+	keepercontainer_host_name varchar(128) not null default '',
 	keepercontainer_active tinyint(1) not null default 1,
     DataChange_LastTime timestamp default CURRENT_TIMESTAMP,
 	deleted tinyint(1) not null default 0,

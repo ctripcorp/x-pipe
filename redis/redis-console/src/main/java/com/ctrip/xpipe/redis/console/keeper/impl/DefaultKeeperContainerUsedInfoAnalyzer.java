@@ -8,11 +8,11 @@ import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
 import com.ctrip.xpipe.redis.console.keeper.command.AbstractGetAllDcCommand;
 import com.ctrip.xpipe.redis.console.keeper.command.KeeperContainerInfoGetCommand;
 import com.ctrip.xpipe.redis.console.keeper.command.MigrationKeeperContainerDetailInfoGetCommand;
-import com.ctrip.xpipe.redis.console.keeper.KeeperContainerUsedInfoAnalyzer;
-import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -40,7 +40,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     @Resource(name = AbstractSpringConfigContext.GLOBAL_EXECUTOR)
     private Executor executors;
 
-    private Map<String, Map<String, KeeperContainerUsedInfoModel>> dcKeeperContainerUsedInfoMap = new ConcurrentHashMap<>();
+    private Map<String, Map<Long, KeeperContainerUsedInfoModel>> dcKeeperContainerUsedInfoMap = new ConcurrentHashMap<>();
 
     private Map<String, List<MigrationKeeperContainerDetailModel>> dcKeeperContainerMigrationResultMap = new ConcurrentHashMap<>();
 
@@ -55,7 +55,7 @@ public class DefaultKeeperContainerUsedInfoAnalyzer extends AbstractService impl
     }
 
     @Override
-    public void updateKeeperContainerUsedInfo(String dcName, Map<String, KeeperContainerUsedInfoModel> modelMap) {
+    public void updateKeeperContainerUsedInfo(String dcName, Map<Long, KeeperContainerUsedInfoModel> modelMap) {
         modelMap.values().forEach(model -> model.setUpdateTime(DateTimeUtils.currentTimeAsString()));
         dcKeeperContainerUsedInfoMap.put(dcName, modelMap);
         if (modelMap.isEmpty()) return;

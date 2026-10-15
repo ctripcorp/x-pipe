@@ -73,6 +73,8 @@
 	</entity>
 	<entity name="keeperContainer" implements="java.io.Serializable">
 		<attribute name="id" value-type="Long" />
+		<!-- 容器化后的 pod 身份；物理机容器为空串。为空则用 ip 寻址，非空则经 ZK 反查实时 IP -->
+		<attribute name="hostname" value-type="String" />
 	</entity>
 	<entity name="applierContainer" implements="java.io.Serializable">
 		<attribute name="id" value-type="Long" />
@@ -85,6 +87,9 @@
 		<attribute name="active" primitive="true" />
 		<attribute name="keeperContainerId" value-type="Long" />
 		<attribute name="offset" value-type="Long" />
+		<!-- 所在 keepercontainer 的 pod hostname；物理机为空串。不承担 IP 传递，
+		     仅用于消费方经 ZK 反查实时 IP，以及 console 按 hostname + keeperContainerId 定位 DB 行 -->
+		<attribute name="hostname" value-type="String" />
 		<snippet>
 			public boolean isMaster(){
 			return m_master == null || m_master.trim().length() == 0;

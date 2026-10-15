@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.CrossRegionKeeperSessionManager;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -33,6 +34,9 @@ public class InfoReplIdActionFactory implements RedisHealthCheckActionFactory<In
     @Resource(name = PING_INFO_REPLID_SCHEDULED)
     private ScheduledExecutorService scheduled;
 
+    @Autowired
+    private CurrentDcKeeperContainerAddressService addressService;
+
     @Resource(name = PING_INFO_REPLID_EXECUTORS)
     private ExecutorService executors;
 
@@ -41,7 +45,7 @@ public class InfoReplIdActionFactory implements RedisHealthCheckActionFactory<In
     @Override
     public InfoReplIdAction create(RedisHealthCheckInstance instance) {
         InfoReplIdAction action = new InfoReplIdAction(scheduled, instance, executors,
-                crossRegionKeeperSessionManager, metaCache);
+                crossRegionKeeperSessionManager, metaCache, addressService);
         collectors.forEach(c -> {
             if (c.supportInstance(instance)) {
                 action.addListener(c.createInfoReplIdActionListener());

@@ -10,6 +10,7 @@ import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderElector;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.ConsoleService;
 import com.ctrip.xpipe.redis.console.exception.NotEnoughResultsException;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -157,5 +158,43 @@ public class ConsoleServiceManagerTest extends AbstractConsoleTest{
         // bad DC skipped, only good DC's host survives, no exception thrown
         Assert.assertEquals(1, result.size());
         Assert.assertTrue(result.containsKey(hp));
+    }
+
+    /**
+     * 快照拉取返回非 null 或抛出：空响应体与 HTTP 失败都不能吞成空快照，否则远端缓存会把「拉取失败」当成「远端为空」覆盖掉旧快照。
+     */
+    @Test
+    public void getKeeperContainerAddressSnapshot_failureIsNotSwallowed() throws Exception {
+        ConsoleService ok = mock(ConsoleService.class);
+        ConsoleService empty = mock(ConsoleService.class);
+        ConsoleService bad = mock(ConsoleService.class);
+        KeeperContainerAddressSnapshot snapshot = new KeeperContainerAddressSnapshot(
+                Collections.singletonMap("pod-a", "10.0.0.5"), new HashMap<>(), Collections.singletonMap("10.0.0.5", "pod-a"));
+        when(ok.getKeeperContainerAddressSnapshot()).thenReturn(snapshot);
+        when(empty.getKeeperContainerAddressSnapshot()).thenReturn(null);
+        when(bad.getKeeperContainerAddressSnapshot()).thenThrow(new RuntimeException("dc down"));
+
+        ConsoleServiceManager manager = new ConsoleServiceManager(consoleConfig, consoleLeaderElector);
+        Field servicesField = ConsoleServiceManager.class.getDeclaredField("services");
+        servicesField.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<String, ConsoleService> services = (Map<String, ConsoleService>) servicesField.get(manager);
+        services.put("JQ", ok);
+        services.put("OY", empty);
+        services.put("RB", bad);
+
+        Assert.assertSame(snapshot, manager.getKeeperContainerAddressSnapshot("jq"));
+        try {
+            manager.getKeeperContainerAddressSnapshot("oy");
+            Assert.fail("空响应体应抛出");
+        } catch (XpipeRuntimeException expected) {
+            Assert.assertTrue(expected.getMessage().contains("oy"));
+        }
+        try {
+            manager.getKeeperContainerAddressSnapshot("rb");
+            Assert.fail("HTTP 失败应抛出");
+        } catch (RuntimeException expected) {
+            Assert.assertEquals("dc down", expected.getMessage());
+        }
     }
 }

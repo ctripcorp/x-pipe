@@ -1,13 +1,14 @@
 package com.ctrip.xpipe.redis.console.keeper.impl;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
-import com.ctrip.xpipe.cache.TimeBoundCache;
-import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleLeaderAware;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
@@ -33,13 +34,20 @@ public class KeeperContainerDiskInfoCollector implements ConsoleLeaderAware {
     @Autowired
     private KeeperContainerCheckerService keeperContainerCheckerService;
 
+    @Autowired
+    private CurrentDcKeeperContainerAddressService keeperContainerAddressService;
+
     private ScheduledExecutorService scheduled;
 
     private DynamicDelayPeriodTask refreshTask;
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter().toUpperCase();
 
-    private Map<String, KeeperDiskInfo> keeperContainerDiskInfoCache;
+    /**
+     * 按 keepercontainer_id 存，不按 IP：容器形态下 meta 里的 ip 是占位值（所有 pod 共用），
+     * 按 IP 做 key 会让所有 pod 的磁盘信息互相覆盖。
+     */
+    private Map<Long, KeeperDiskInfo> keeperContainerDiskInfoCache;
 
     private static final Logger logger = LoggerFactory.getLogger(KeeperContainerDiskInfoCollector.class);
 
@@ -52,20 +60,34 @@ public class KeeperContainerDiskInfoCollector implements ConsoleLeaderAware {
     }
 
     private void refresh() {
-        Map<String, KeeperDiskInfo> result = new HashMap<>();
+        Map<Long, KeeperDiskInfo> result = new HashMap<>();
         for (KeeperContainerMeta keeperContainer : metaCache.getXpipeMeta().findDc(currentDc).getKeeperContainers()) {
+            Long keeperContainerId = keeperContainer.getId();
+            if (keeperContainerId == null) {
+                logger.warn("[refresh] keeperContainerId is null, ip: {}, hostname: {}", keeperContainer.getIp(), keeperContainer.getHostname());
+                continue;
+            }
+            // 只处理本机房，所以用本机房的 ZK 缓存解析即可
+            String ip = StringUtil.isEmpty(keeperContainer.getHostname())
+                    ? keeperContainer.getIp()
+                    : keeperContainerAddressService.getIpByHostname(keeperContainer.getHostname());
+            if (StringUtil.isEmpty(ip)) {
+                logger.warn("[refresh] cannot resolve ip, keeperContainerId: {}, hostname: {}", keeperContainerId, keeperContainer.getHostname());
+                result.put(keeperContainerId, new KeeperDiskInfo());
+                continue;
+            }
             try {
-                result.put(keeperContainer.getIp(), keeperContainerCheckerService.getKeeperDiskInfo(keeperContainer.getIp()));
+                result.put(keeperContainerId, keeperContainerCheckerService.getKeeperDiskInfo(ip));
             } catch (Throwable th) {
-                result.put(keeperContainer.getIp(), new KeeperDiskInfo());
-                logger.error("[getCurrentDcAllKeeperContainerDiskInfo] getKeeperDiskInfo error, keeperIp: {}", keeperContainer.getIp(), th);
+                result.put(keeperContainerId, new KeeperDiskInfo());
+                logger.error("[getCurrentDcAllKeeperContainerDiskInfo] getKeeperDiskInfo error, keeperContainerId: {}, keeperIp: {}", keeperContainerId, ip, th);
             }
         }
         keeperContainerDiskInfoCache = result;
     }
 
-    public KeeperDiskInfo getKeeperDiskInfo(String ip) {
-        return keeperContainerDiskInfoCache.get(ip);
+    public KeeperDiskInfo getKeeperDiskInfo(long keeperContainerId) {
+        return keeperContainerDiskInfoCache.get(keeperContainerId);
     }
 
     @Override

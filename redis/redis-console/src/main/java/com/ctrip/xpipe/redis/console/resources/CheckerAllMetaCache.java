@@ -75,7 +75,6 @@ public class CheckerAllMetaCache extends AbstractMetaCache implements MetaCache,
     //Release memory
     void cleanMetaCache() {
         this.meta = null;
-        this.allKeepers = null;
         this.monitor2ClusterShard = null;
     }
 

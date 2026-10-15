@@ -26,6 +26,7 @@ public class KeepercontainerMetaServiceImpl extends AbstractMetaService implemen
 			keeperContainerMeta.setId(keepercontainer.getKeepercontainerId());
 			keeperContainerMeta.setIp(keepercontainer.getKeepercontainerIp());
 			keeperContainerMeta.setPort(keepercontainer.getKeepercontainerPort());
+			keeperContainerMeta.setHostname(keepercontainer.getKeepercontainerHostName());
 			keeperContainerMeta.setDiskType(keepercontainer.getKeepercontainerDiskType());
 			keeperContainerMeta.setTag(keepercontainer.getTag());
 			keeperContainerMeta.setParent(dcMeta);

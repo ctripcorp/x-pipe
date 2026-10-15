@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.tuple.Pair;
 
@@ -62,6 +63,11 @@ public interface ConsoleService extends CheckerService {
     List<SentinelBeaconUsageItem> getSentinelBeaconUsage(String system, boolean includeClusters);
 
     List<SentinelClusterBeaconRouteItem> getSentinelClusterBeaconRoute(String clusterName);
+
+    /**
+     * 拉取目标 console 所在机房的 keepercontainer 地址快照。失败直接抛出，不吞成空快照。
+     */
+    KeeperContainerAddressSnapshot getKeeperContainerAddressSnapshot();
 
     class ShardCheckerHealthCheckModels extends ArrayList<ShardCheckerHealthCheckModel> {}
 

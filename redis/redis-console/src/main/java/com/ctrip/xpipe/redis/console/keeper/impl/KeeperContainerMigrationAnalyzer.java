@@ -8,6 +8,6 @@ import java.util.Map;
 
 public interface KeeperContainerMigrationAnalyzer {
 
-    List<MigrationKeeperContainerDetailModel> getMigrationPlans(Map<String, KeeperContainerUsedInfoModel> modelsMap);
+    List<MigrationKeeperContainerDetailModel> getMigrationPlans(Map<Long, KeeperContainerUsedInfoModel> modelsMap);
 
 }

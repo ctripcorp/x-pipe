@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelBeaconUsageItem;
 import com.ctrip.xpipe.redis.console.controller.api.vo.SentinelClusterBeaconRouteItem;
 import com.ctrip.xpipe.redis.console.healthcheck.fulllink.model.ShardCheckerHealthCheckModel;
 import com.ctrip.xpipe.redis.console.model.consoleportal.UnhealthyInfoModel;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
 import com.ctrip.xpipe.redis.core.metaserver.model.ShardAllMetaModel;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.spring.RestTemplateFactory;
@@ -100,6 +101,8 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
 
     private final String beaconClusterUrl;
 
+    private final String keeperContainerAddressSnapshotUrl;
+
     private static final ParameterizedTypeReference<List<SentinelBeaconUsageItem>> beaconUsageTypeDef =
             new ParameterizedTypeReference<List<SentinelBeaconUsageItem>>(){};
 
@@ -142,6 +145,7 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         sentinelBeaconPostMigrateUrl = String.format("%s%s", this.address, SENTINEL_BEACON_POST_MIGRATE_PATH);
         beaconUsageUrl = String.format("%s%s", this.address, BEACON_USAGE_PATH);
         beaconClusterUrl = String.format("%s%s", this.address, BEACON_CLUSTER_PATH);
+        keeperContainerAddressSnapshotUrl = String.format("%s/api/keepercontainer/address/snapshot", this.address);
         sentinelMigrationRestTemplate = RestTemplateFactory.createCommonsHttpRestTemplate(
                 SENTINEL_BEACON_MIGRATE_MAX_CONN,
                 SENTINEL_BEACON_MIGRATE_MAX_CONN * 4,
@@ -300,6 +304,15 @@ public class DefaultConsoleService extends AbstractService implements ConsoleSer
         ResponseEntity<List<SentinelClusterBeaconRouteItem>> response = restTemplate.exchange(
                 beaconClusterUrl, HttpMethod.GET, null, clusterBeaconRouteTypeDef, clusterName);
         return response.getBody();
+    }
+
+    /**
+     * 失败不吞成空结果：远端快照缓存要区分「拉取失败保留旧快照」与「远端确实为空」（spec §8.2 D-J2）。
+     * 超时沿用 {@link AbstractService} 默认 RestTemplate。
+     */
+    @Override
+    public KeeperContainerAddressSnapshot getKeeperContainerAddressSnapshot() {
+        return restTemplate.getForObject(keeperContainerAddressSnapshotUrl, KeeperContainerAddressSnapshot.class);
     }
 
     @Override

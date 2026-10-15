@@ -9,7 +9,6 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.model.RedisCheckRuleTbl;
-import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -49,9 +48,6 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     @Autowired
     private DcMetaService dcMetaService;
-
-    @Autowired
-    private ClusterService clusterService;
 
     @Autowired
     protected ConsoleConfig consoleConfig;
@@ -123,8 +119,6 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         clusterParts = null;
         meta = null;
         monitor2ClusterShard = null;
-        allKeepers = null;
-        allKeeperSize = DEFAULT_KEEPER_NUMBERS;
     }
 
     public void startLoadMeta() {

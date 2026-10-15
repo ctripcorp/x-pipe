@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
 import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,9 +52,9 @@ public class KeeperContainerDcController extends AbstractConsoleController {
     String clusterName = getShardClusterName(shardModel);
 
     List<KeeperBasicInfo> bestKeepers =
-        keeperAdvancedService.findBestKeepers(dcName, KEEPER_PORT_DEFAULT, (ip, port) -> {
+        keeperAdvancedService.findBestKeepers(dcName, KEEPER_PORT_DEFAULT, (containerKey, port) -> {
 
-          if (shardModel != null && existOnConsole(ip, port, shardModel.getKeepers())) {
+          if (shardModel != null && existOnConsole(containerKey, port, shardModel.getKeepers())) {
             return false;
           }
           return true;
@@ -63,14 +64,24 @@ public class KeeperContainerDcController extends AbstractConsoleController {
 
     bestKeepers
         .forEach(keeperSelected -> result.add(new RedisTbl().setKeepercontainerId(keeperSelected.getKeeperContainerId())
-            .setRedisIp(keeperSelected.getHost()).setRedisPort(keeperSelected.getPort())));
+            .setRedisIp(keeperSelected.getHost()).setRedisPort(keeperSelected.getPort())
+            .setHostName(null == keeperSelected.getHostName() ? "" : keeperSelected.getHostName())));
     return result;
   }
 
-  private boolean existOnConsole(String keepercontainerIp, int port, List<RedisTbl> keepers) {
+  /**
+   * @param containerKey 容器标识，物理机是 IP、pod 是 hostname，与分配逻辑的端口记账键一致。
+   *                     容器 keeper 的 redis_ip 统一为占位值，只比 IP 会漏判已占用的地址。
+   */
+  private boolean existOnConsole(String containerKey, int port, List<RedisTbl> keepers) {
 
     for (RedisTbl redisTbl : keepers) {
-      if (redisTbl.getRedisIp().equalsIgnoreCase(keepercontainerIp) && redisTbl.getRedisPort() == port) {
+      if (redisTbl.getRedisPort() != port) {
+        continue;
+      }
+      String existingKey = StringUtil.isEmpty(redisTbl.getHostName())
+              ? redisTbl.getRedisIp() : redisTbl.getHostName();
+      if (null != existingKey && existingKey.equalsIgnoreCase(containerKey)) {
         return true;
       }
     }

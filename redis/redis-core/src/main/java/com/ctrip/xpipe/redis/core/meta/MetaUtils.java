@@ -43,6 +43,27 @@ public class MetaUtils {
 			return false;
 		}
 		
+		// 容器 Keeper 使用稳定的 hostname 作为身份，物理机 Keeper 继续使用 IP。
+		if(instanceNode1 instanceof KeeperMeta && instanceNode2 instanceof KeeperMeta) {
+			KeeperMeta keeper1 = (KeeperMeta) instanceNode1;
+			KeeperMeta keeper2 = (KeeperMeta) instanceNode2;
+
+			boolean hasHostname1 = !StringUtil.isEmpty(keeper1.getHostname());
+			boolean hasHostname2 = !StringUtil.isEmpty(keeper2.getHostname());
+			if (hasHostname1 != hasHostname2) {
+				return false;
+			}
+
+			if (hasHostname1) {
+				return ObjectUtils.equals(keeper1.getHostname(), keeper2.getHostname())
+						&& ObjectUtils.equals(keeper1.getPort(), keeper2.getPort());
+			}
+
+			return ObjectUtils.equals(keeper1.getIp(), keeper2.getIp())
+					&& ObjectUtils.equals(keeper1.getPort(), keeper2.getPort());
+		}
+		
+		// 其他类型保持原有逻辑
 		if(!ObjectUtils.equals( instanceNode1.getIp(), instanceNode2.getIp())){
 			return false;
 		}
