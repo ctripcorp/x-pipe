@@ -1,0 +1,25 @@
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/redis/rdb/parser/RdbModuleAuxParserTest.java
+  s_280af76603b907::t_c63dfdfe7fb3c2 149-160,164-181,183-185
+  s_280af76603b907::t_a88c857fec47b1 21-22
+  s_280af76603b907::t_b3f1d3ae864545 161-163,182
+  s_280af76603b907::t_f39d55b5a1ab44 279-280
+  s_280af76603b907::t_431b689f64b6a9 23
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/redis/rdb/parser/RdbModuleAuxDataBytes.java
+  s_280af76603b907::t_3cbee014c9b567 1-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.49-trip",
+  "base_commit_sha": "f641e8767b3056828e38f361c909d6d619e2e10e",
+  "prompts": {},
+  "sessions": {
+    "s_280af76603b907": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7788eac2-4204-45e5-9904-ceaafeed9891",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}
