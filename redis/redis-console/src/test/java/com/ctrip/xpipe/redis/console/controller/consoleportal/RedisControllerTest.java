@@ -132,6 +132,7 @@ public class RedisControllerTest extends AbstractConsoleIntegrationTest {
 
     @Override
     protected String prepareDatas() throws IOException {
-        return prepareDatasFromFile("src/test/resources/migrate-keeper-test.sql");
+        return prepareDatasFromFile("src/test/resources/migrate-keeper-test.sql")
+                + prepareDatasFromFile("src/test/resources/keepercontainer-unique-addresses.sql");
     }
 }

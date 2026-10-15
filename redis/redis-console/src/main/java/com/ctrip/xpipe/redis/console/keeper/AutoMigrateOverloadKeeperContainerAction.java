@@ -75,7 +75,7 @@ public class AutoMigrateOverloadKeeperContainerAction extends AbstractCrossDcInt
             List<DcClusterShard> migrateShards = migrationKeeperContainerDetailModel.getMigrateShards();
             if (CollectionUtils.isEmpty(migrateShards)) continue;
 
-            String srcKeeperContainerIp = migrationKeeperContainerDetailModel.getSrcKeeperContainer().getKeeperIp();
+            long srcKeeperContainerId = migrationKeeperContainerDetailModel.getSrcKeeperContainer().getKeeperContainerId();
             Iterator<DcClusterShard> iterator= migrateShards.iterator();
             while (iterator.hasNext()) {
                 DcClusterShard migrateShard = iterator.next();
@@ -88,15 +88,15 @@ public class AutoMigrateOverloadKeeperContainerAction extends AbstractCrossDcInt
                         migrateShard.getClusterId(), migrateShard.getShardId(), false, null);
 
                 if (!shardModelService.migrateBackupKeeper(migrateShard.getDcId(), migrateShard.getClusterId(), shardModel,
-                        migrationKeeperContainerDetailModel.getTargetKeeperContainer().getKeeperIp(), srcKeeperContainerIp)) {
+                        migrationKeeperContainerDetailModel.getTargetKeeperContainer().getKeeperContainerId(), srcKeeperContainerId)) {
                     logger.warn("[migrateAllKeepers] migrate shard keepers failed, shard: {}", migrateShard);
-                    alertForKeeperMigrationFail(migrateShard, srcKeeperContainerIp,
-                            migrationKeeperContainerDetailModel.getTargetKeeperContainer().getKeeperIp());
+                    alertForKeeperMigrationFail(migrateShard, migrationKeeperContainerDetailModel.getSrcKeeperContainer().ipOrHostname(),
+                            migrationKeeperContainerDetailModel.getTargetKeeperContainer().ipOrHostname());
                     continue;
                 }
 
-                alertForKeeperMigrationSuccess(migrateShard, srcKeeperContainerIp,
-                        migrationKeeperContainerDetailModel.getTargetKeeperContainer().getKeeperIp());
+                alertForKeeperMigrationSuccess(migrateShard, migrationKeeperContainerDetailModel.getSrcKeeperContainer().ipOrHostname(),
+                        migrationKeeperContainerDetailModel.getTargetKeeperContainer().ipOrHostname());
                 migrationKeeperContainerDetailModel.migrateKeeperCompleteCountIncrease();
                 iterator.remove();
             }

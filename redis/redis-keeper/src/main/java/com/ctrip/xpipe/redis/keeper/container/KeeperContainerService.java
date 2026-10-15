@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.container;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.lifecycle.TopElement;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
@@ -40,7 +41,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
@@ -111,6 +115,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
 
     public RedisKeeperServer add(KeeperTransMeta keeperTransMeta) {
         KeeperMeta keeperMeta = keeperTransMeta.getKeeperMeta();
+        fillContainerKeeperIp(keeperMeta);
         enrichKeeperMetaFromKeeperTransMeta(keeperMeta, keeperTransMeta);
 
         String keeperServerKey = assembleKeeperServerKey(keeperTransMeta);
@@ -323,6 +328,24 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
         if (redisKeeperServer != null) {
             containerResourceManager.releasePort(redisKeeperServer.getListeningPort());
         }
+    }
+
+    private void fillContainerKeeperIp(KeeperMeta keeperMeta) {
+        if (!StringUtils.hasText(keeperMeta.getHostname())) {
+            return;
+        }
+
+        String localIp = getLocalIp();
+        if (!StringUtils.hasText(localIp) || "0.0.0.0".equals(localIp)) {
+            throw new RedisKeeperRuntimeException("invalid local ip for container keeper: " + localIp
+                    + ", hostname: " + keeperMeta.getHostname());
+        }
+        keeperMeta.setIp(localIp);
+    }
+
+    @VisibleForTesting
+    protected String getLocalIp() {
+        return FoundationService.DEFAULT.getLocalIp();
     }
 
     private RedisKeeperServer doAdd(KeeperTransMeta keeperTransMeta, KeeperMeta keeperMeta) throws Exception {

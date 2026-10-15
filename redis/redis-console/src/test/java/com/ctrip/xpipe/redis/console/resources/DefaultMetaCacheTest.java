@@ -79,9 +79,7 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertFalse(metaCache.getIsLeader().get());
         Assert.assertNull(metaCache.getFuture());
         Assert.assertNull(metaCache.meta);
-        Assert.assertEquals(metaCache.DEFAULT_KEEPER_NUMBERS, metaCache.allKeeperSize);
         Assert.assertEquals(0, metaCache.lastUpdateTime);
-        Assert.assertNull(metaCache.allKeepers);
 
         metaCache.isleader();
         Assert.assertTrue(metaCache.getIsLeader().get());
@@ -134,18 +132,6 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertTrue(redises.contains(new HostPort("127.0.0.2", 8101)));
         Assert.assertTrue(redises.contains(new HostPort("10.0.0.2", 6379)));
         Assert.assertTrue(redises.contains(new HostPort("10.0.0.2", 6479)));
-    }
-
-    @Test
-    public void testGetAllKeepers() {
-        Set<HostPort> allKeepers = metaCache.getAllKeepers();
-        Assert.assertEquals(6, allKeepers.size());
-        Assert.assertEquals(Sets.newHashSet(new HostPort("127.0.0.1", 6000),
-                new HostPort("127.0.0.1", 6001),
-                new HostPort("127.0.0.1", 6100),
-                new HostPort("127.0.0.1", 6101),
-                new HostPort("127.0.0.2", 6100),
-                new HostPort("127.0.0.2", 6101)), allKeepers);
     }
 
     @Test
@@ -248,27 +234,6 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         return clusterMeta;
     }
 
-
-
-    @Test
-    public void testGetAllKeeperContainersDcMap() {
-        Map<String, String> allKeeperContainersDcMap = metaCache.getAllKeeperContainersDcMap();
-        Assert.assertEquals("jq", allKeeperContainersDcMap.get("1.1.1.1"));
-        Assert.assertEquals("jq", allKeeperContainersDcMap.get("1.1.1.2"));
-        Assert.assertEquals("oy", allKeeperContainersDcMap.get("1.1.1.3"));
-        Assert.assertEquals("oy", allKeeperContainersDcMap.get("1.1.1.4"));
-        Assert.assertEquals(4, allKeeperContainersDcMap.size());
-    }
-
-    @Test
-    public void testGetAllApplierContainersDcMap() {
-        Map<String, String> allKeeperContainersDcMap = metaCache.getAllApplierContainersDcMap();
-        Assert.assertEquals("jq", allKeeperContainersDcMap.get("1.1.1.11"));
-        Assert.assertEquals("jq", allKeeperContainersDcMap.get("1.1.1.12"));
-        Assert.assertEquals("oy", allKeeperContainersDcMap.get("1.1.1.13"));
-        Assert.assertEquals("oy", allKeeperContainersDcMap.get("1.1.1.14"));
-        Assert.assertEquals(4, allKeeperContainersDcMap.size());
-    }
 
 
     @Test

@@ -24,7 +24,7 @@
         <maven.source.skip>true</maven.source.skip>
         <framework-parent.version>1.23.0</framework-parent.version>
         <commons-io.version>2.4</commons-io.version>
-        <curator.version>5.7.0</curator.version>
+        <curator.version>5.9.0</curator.version>
         <zookeeper.version>3.8.2</zookeeper.version>
         <coveralls-maven-plugin.version>4.3.0</coveralls-maven-plugin.version>
         <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>

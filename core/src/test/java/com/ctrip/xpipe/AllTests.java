@@ -2,6 +2,7 @@ package com.ctrip.xpipe;
 
 import com.ctrip.xpipe.api.sso.SsoConfigTest;
 import com.ctrip.xpipe.foundation.DefaultFoundationServiceTest;
+import com.ctrip.xpipe.cluster.RebuildableLeaderLatchTest;
 import com.ctrip.xpipe.command.*;
 import com.ctrip.xpipe.concurrent.*;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPortTest;
@@ -100,7 +101,8 @@ import org.junit.runners.Suite.SuiteClasses;
         MdcUtilTest.class,
         GtidSetTest.class,
         EncryptUtilsTest.class,
-        ByteUtilTest.class
+        ByteUtilTest.class,
+        RebuildableLeaderLatchTest.class
 })
 public class AllTests {
 

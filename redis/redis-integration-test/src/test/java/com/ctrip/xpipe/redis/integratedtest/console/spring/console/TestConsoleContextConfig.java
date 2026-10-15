@@ -49,7 +49,8 @@ import org.springframework.context.annotation.*;
                 @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = {
                         com.ctrip.xpipe.redis.console.spring.CheckerContextConfig.class,
                         com.ctrip.xpipe.redis.console.spring.ConsoleCheckerContextConfig.class,
-                        com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.class
+                        com.ctrip.xpipe.redis.console.spring.ConsoleContextConfig.class,
+                        com.ctrip.xpipe.redis.console.spring.FiremanServletScanConfig.class
                 })
         }
 )

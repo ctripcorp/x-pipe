@@ -17,7 +17,9 @@
         <table ng-table="tableParams" show-filter="true" class="table table-striped table-hover">
             <tr ng-repeat="info in $data">
                 <td data-title="'id'" filter="{ 'info.id': 'text'}">{{info.id}}</td>
-                <td data-title="'address'" filter="{ 'addr.host': 'text'}">{{info.addr.host}}:{{info.addr.port}}</td>
+                <td data-title="'ip'" filter="{ ip: 'text'}" sortable="'ip'">{{info.ip}}</td>
+                <td data-title="'hostname'" filter="{ keepercontainerHostName: 'text'}" sortable="'keepercontainerHostName'">{{info.keepercontainerHostName}}</td>
+                <td data-title="'port'" filter="{ port: 'text'}" sortable="'port'">{{info.port}}</td>
                 <td data-title="'dc'" filter="{ dcName: 'text'}" sortable="'dcName'">{{info.dcName}}</td>
                 <td data-title="'org'" filter="{ orgName: 'text'}" sortable="'orgName'">{{info.orgName}}</td>
                 <td data-title="'active'" filter="{ active: 'text'}">{{info.active}}</td>
@@ -33,7 +35,7 @@
                 <td data-title="'操作'" >
                     <a href="/#/keeper_migration?keepercontainer={{info.id}}" class="btn btn-warning btn-xs" type="button">迁移</a>&nbsp;
                     <a href="/#/keepercontainer_form?id={{info.id}}&type=update" class="btn btn-warning btn-xs" type="button">修改</a>&nbsp;
-                    <a href="/#/keepercontainer_keeper_overall?ip={{info.addr.host}}" class="btn btn-warning btn-xs" type="button">详情</a>
+                    <a href="/#/keepercontainer_keeper_overall?keeperContainerId={{info.id}}" class="btn btn-warning btn-xs" type="button">详情</a>
                 </td>
             </tr>
         </table>

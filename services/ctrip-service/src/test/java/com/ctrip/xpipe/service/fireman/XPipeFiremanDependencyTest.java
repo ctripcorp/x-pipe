@@ -24,5 +24,6 @@ public class XPipeFiremanDependencyTest {
         Assert.assertNotNull(dependency);
         Assert.assertTrue(dependency instanceof XPipeFiremanDependency);
         Assert.assertEquals(XPipeFiremanDependency.Environment.getInstance().getDatabaseDomainName(), dependency.getDatabaseDomainName());
+        Assert.assertTrue(dependency.openAvailableCheckTask());
     }
 }

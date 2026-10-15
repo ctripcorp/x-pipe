@@ -129,7 +129,7 @@
                                     </span>
                                 </div>
                             </td>
-                            <td ng-bind="keeper.redisIp">
+                            <td ng-bind="keeperAddr(keeper)">
                             </td>
                             <td ng-bind="keeper.redisPort">
                             </td>
@@ -222,7 +222,7 @@
                                 <span class="label label-success" ng-if="keeper.keeperActive">
                                     active</span>  Keeper
                             </td>
-                            <td ng-bind="keeper.redisIp">
+                            <td ng-bind="keeperAddr(keeper)">
                             </td>
                             <td ng-bind="keeper.redisPort">
                             </td>

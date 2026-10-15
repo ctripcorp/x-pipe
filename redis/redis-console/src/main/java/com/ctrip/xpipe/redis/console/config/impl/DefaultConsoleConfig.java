@@ -182,6 +182,21 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public long getKeeperContainerAddressRefreshIntervalMilli() {
+        return consoleConfigBean.getKeeperContainerAddressRefreshIntervalMilli();
+    }
+
+    @Override
+    public int getKeeperContainerAddressMaxRemovedPercent() {
+        return consoleConfigBean.getKeeperContainerAddressMaxRemovedPercent();
+    }
+
+    @Override
+    public int getKeeperContainerAddressMinRemovedHostnames() {
+        return consoleConfigBean.getKeeperContainerAddressMinRemovedHostnames();
+    }
+
+    @Override
     public Set<String> getAlertWhileList() {
         return commonConfigBean.getAlertWhileList();
     }
@@ -724,6 +739,11 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     @Override
     public String getZkNameSpace() {
         return dataCenterConfigBean.getZkNameSpace();
+    }
+
+    @Override
+    public String getKeeperContainerZkNameSpace() {
+        return dataCenterConfigBean.getKeeperContainerZkNameSpace();
     }
 
     public void onChange(String key, String oldValue, String newValue) {

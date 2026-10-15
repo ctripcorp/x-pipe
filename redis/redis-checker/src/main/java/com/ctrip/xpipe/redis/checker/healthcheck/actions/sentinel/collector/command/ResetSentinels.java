@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.com
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.ParallelCommandChain;
 import com.ctrip.xpipe.command.SequenceCommandChain;
@@ -14,10 +15,14 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelInvalidSlaves;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.MasterSlavesInfo;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.exception.SentinelsException;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.pojo.RedisInfo;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
+import com.ctrip.xpipe.utils.StringUtil;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -35,16 +40,23 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
     private ScheduledExecutorService scheduled;
     private ExecutorService resetExecutor;
     private CheckerConfig checkerConfig;
+    private CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService;
     private Map<HostPort, List<HostPort>> allSentinels = new ConcurrentHashMap<>();
     private Map<HostPort, List<HostPort>> availableSentinels = new ConcurrentHashMap<>();
     private Map<HostPort, SentinelInvalidSlaves> problemSentinels = new ConcurrentHashMap<>();
     private Map<HostPort, SentinelInvalidSlaves> shouldResetSentinels = new ConcurrentHashMap<>();
     private List<HostPort> masterSlaves = new ArrayList<>();
+    /** 本轮分片 keeper 的网络地址，在 checkSentinelsSlaves 中解析一次，之后由各 CheckSentinelSlaves 只读 */
+    private volatile Set<HostPort> metaKeepers = new HashSet<>();
+    private EventMonitor eventMonitor = EventMonitor.DEFAULT;
+
+    /** 容器 keeper 解析不到 IP、本轮跳过 reset 的告警事件名。只传事件名，明细见 WARN 日志。 */
+    static final String ALERT_SENTINEL_RESET_KEEPER_UNRESOLVED = "SENTINEL_RESET_KEEPER_UNRESOLVED";
 
     public ResetSentinels(SentinelHelloCollectContext context, MetaCache metaCache,
                           XpipeNettyClientKeyedObjectPool keyedObjectPool,
                           ScheduledExecutorService scheduled, ExecutorService resetExecutor, SentinelManager sentinelManager,
-                          CheckerConfig checkerConfig) {
+                          CheckerConfig checkerConfig, CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService) {
         super(context);
         this.metaCache = metaCache;
         this.keyedObjectPool = keyedObjectPool;
@@ -52,6 +64,7 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         this.resetExecutor = resetExecutor;
         this.sentinelManager = sentinelManager;
         this.checkerConfig = checkerConfig;
+        this.currentDcKeeperContainerAddressService = currentDcKeeperContainerAddressService;
     }
 
     @Override
@@ -227,22 +240,32 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
                 if (overHalfSentinelsLostSlaves()) {
                     logger.warn("[{}-{}][reset]over half sentinels lost slaves: {}, ignore reset", LOG_TITLE, context.getSentinelMonitorName(), allSentinels);
                     future().setFailure(new SentinelsException("over half sentinels unavailable"));
-                } else {
-                    ParallelCommandChain checkCommands = new ParallelCommandChain(resetExecutor, false);
-                    for (Map.Entry<HostPort, List<HostPort>> entry : allSentinels.entrySet()) {
-                        HostPort sentinelAddr = entry.getKey();
-                        List<HostPort> slaves = entry.getValue();
-                        CheckSentinelSlaves checkSentinel = new CheckSentinelSlaves(slaves);
-                        checkSentinel.future().addListener(checkSentinelFuture -> {
-                            SentinelInvalidSlaves invalidSlaves = checkSentinelFuture.get();
-                            if (invalidSlaves.hasInvalidSlaves())
-                                problemSentinels.put(sentinelAddr, invalidSlaves);
-                        });
-                        checkCommands.add(checkSentinel);
-                    }
-
-                    checkCommands.execute().addListener(future -> future().setSuccess());
+                    return;
                 }
+
+                // 每轮只解析一次；任一容器 keeper 解析不到 IP 时无法区分 keeper 与 unknown slave，本轮不 reset
+                Set<HostPort> keepers = resolveMetaKeepers();
+                if (keepers == null) {
+                    eventMonitor.logAlertEvent(ALERT_SENTINEL_RESET_KEEPER_UNRESOLVED);
+                    future().setFailure(new SentinelsException("keeper container ip unresolved"));
+                    return;
+                }
+                metaKeepers = keepers;
+
+                ParallelCommandChain checkCommands = new ParallelCommandChain(resetExecutor, false);
+                for (Map.Entry<HostPort, List<HostPort>> entry : allSentinels.entrySet()) {
+                    HostPort sentinelAddr = entry.getKey();
+                    List<HostPort> slaves = entry.getValue();
+                    CheckSentinelSlaves checkSentinel = new CheckSentinelSlaves(slaves);
+                    checkSentinel.future().addListener(checkSentinelFuture -> {
+                        SentinelInvalidSlaves invalidSlaves = checkSentinelFuture.get();
+                        if (invalidSlaves.hasInvalidSlaves())
+                            problemSentinels.put(sentinelAddr, invalidSlaves);
+                    });
+                    checkCommands.add(checkSentinel);
+                }
+
+                checkCommands.execute().addListener(future -> future().setSuccess());
             }
 
             @Override
@@ -331,11 +354,43 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
         return availableSentinels.size() < checkerConfig.getDefaultSentinelQuorumConfig().getQuorum();
     }
 
+    /**
+     * 解析分片 keeper 的网络地址：物理机用 meta IP，容器经本机房地址服务解析 hostname。
+     * ResetSentinels 只在 active 机房 checker 上运行，本机房地址服务即可覆盖（spec §2.8）。
+     *
+     * @return 地址集合；不支持 keeper 的集群类型返回空集合；任一容器 keeper 解析不到 IP 返回 null
+     */
+    Set<HostPort> resolveMetaKeepers() {
+        if (!context.getInfo().getClusterType().supportKeeper())
+            return new HashSet<>();
+
+        List<KeeperMeta> keeperMetas = metaCache.getKeeperOfDcClusterShard(context.getInfo().getActiveDc(), context.getInfo().getClusterId(), context.getInfo().getShardId());
+        Set<HostPort> result = new HashSet<>();
+        List<String> unresolved = new ArrayList<>();
+        for (KeeperMeta keeperMeta : keeperMetas) {
+            if (StringUtil.isEmpty(keeperMeta.getHostname())) {
+                result.add(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()));
+                continue;
+            }
+            String containerIp = currentDcKeeperContainerAddressService.getIpByHostname(keeperMeta.getHostname());
+            if (StringUtil.isEmpty(containerIp)) {
+                unresolved.add(keeperMeta.getHostname() + ":" + keeperMeta.getPort());
+            } else {
+                result.add(new HostPort(containerIp, keeperMeta.getPort()));
+            }
+        }
+        if (!unresolved.isEmpty()) {
+            logger.warn("[{}-{}][reset]keeper container ip unresolved: {}, skip reset", LOG_TITLE, context.getSentinelMonitorName(), unresolved);
+            return null;
+        }
+        return result;
+    }
+
     private Set<HostPort> tooManyKeepers(List<HostPort> slaves) {
         if (!context.getInfo().getClusterType().supportKeeper())
             return new HashSet<>();
 
-        Set<HostPort> allKeepers = metaCache.getAllKeepers();
+        Set<HostPort> allKeepers = metaKeepers;
         Set<HostPort> keepers = new HashSet<>();
         for (HostPort currentSlave : slaves) {
             if (allKeepers.contains(currentSlave)) {
@@ -446,6 +501,12 @@ public class ResetSentinels extends AbstractSentinelHelloCollectCommand {
 
     ResetSentinels setScheduled(ScheduledExecutorService scheduled) {
         this.scheduled = scheduled;
+        return this;
+    }
+
+    @VisibleForTesting
+    ResetSentinels setEventMonitor(EventMonitor eventMonitor) {
+        this.eventMonitor = eventMonitor;
         return this;
     }
 

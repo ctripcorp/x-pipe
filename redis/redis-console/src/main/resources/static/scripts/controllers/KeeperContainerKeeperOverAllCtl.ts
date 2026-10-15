@@ -7,7 +7,7 @@ function KeeperContainerKeeperOverAllCtl($rootScope, $scope, $window, $statePara
     $scope.originData = []
 
     $scope.tableParams = new NgTableParams({}, {});
-    KeeperContainerService.getAllKeepers($stateParams.ip).then(function (response) {
+    KeeperContainerService.getAllKeepers($stateParams.keeperContainerId).then(function (response) {
         if (Array.isArray(response))  {
             $scope.originData = response
             $scope.tableParams = new NgTableParams({
@@ -21,8 +21,8 @@ function KeeperContainerKeeperOverAllCtl($rootScope, $scope, $window, $statePara
         }
     })
 
-    $scope.getIp = function () {
-        return $stateParams.keepercontainerIp;
+    $scope.getKeeperContainerId = function () {
+        return $stateParams.keeperContainerId;
     }
 
 }

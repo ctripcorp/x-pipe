@@ -65,7 +65,7 @@ public class DeleteKeeperCommand extends AbstractKeeperCommand<Void>{
 
 	@Override
 	protected Command<Void> createCheckStateCommand() {
-		return new DeleteCheckPortCommand(keeperTransMeta.getKeeperMeta());
+		return new DeleteCheckPortCommand(getKeeperMetaForCheck());
 	}
 
 	@Override

@@ -22,7 +22,6 @@ import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
 import com.ctrip.xpipe.redis.console.service.impl.DefaultRedisInfoService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.spring.AbstractProfile;
-import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.context.annotation.*;
 
 /**
@@ -32,7 +31,6 @@ import org.springframework.context.annotation.*;
 @Configuration
 @EnableAspectJAutoProxy
 @ComponentScan(basePackages = {"com.ctrip.xpipe.service", "com.ctrip.xpipe.redis.console", "com.ctrip.xpipe.redis.checker"})
-@ServletComponentScan("com.ctrip.framework.fireman")
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE_CHECKER)
 public class ConsoleCheckerContextConfig extends ConsoleContextConfig {
 

@@ -13,16 +13,14 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeObjectPoolFromKeyed;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RouteMeta;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaUtils;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractKeeperCommand.KeeperSetStateCommand;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
-import com.ctrip.xpipe.redis.meta.server.tfs.TfsCommandConstants;
-import com.ctrip.xpipe.redis.meta.server.tfs.TfsGateway;
-import com.ctrip.xpipe.redis.meta.server.tfs.TfsKeeperUtils;
-import com.ctrip.xpipe.redis.meta.server.tfs.TfsPrepareReleaseCommand;
-import com.ctrip.xpipe.redis.meta.server.tfs.TfsShardContext;
+import com.ctrip.xpipe.redis.meta.server.tfs.*;
 import com.ctrip.xpipe.retry.RetryDelay;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -49,6 +47,7 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
     private final RouteMeta routeForActiveKeeper;
     private final SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool;
     private final DcMetaCache dcMetaCache;
+    private final CurrentDcKeeperContainerAddressService keeperContainerAddressService;
     private final MetaServerConfig metaServerConfig;
     private final ScheduledExecutorService scheduled;
     private final Executor executor;
@@ -68,7 +67,7 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
                                    Executor executor,
                                    Map<KeeperMeta, KeeperState> keeperRoles) {
         this(clusterDbId, shardDbId, surviveKeepers, previousActiveKeeper, activeKeeperMaster, routeForActiveKeeper,
-                clientPool, dcMetaCache, metaServerConfig, scheduled, executor, keeperRoles, surviveKeepers);
+                clientPool, dcMetaCache, metaServerConfig, scheduled, executor, keeperRoles, surviveKeepers, null);
     }
 
     /**
@@ -86,6 +85,22 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
                                    Executor executor,
                                    Map<KeeperMeta, KeeperState> keeperRoles,
                                    List<KeeperMeta> unionKeepers) {
+        this(clusterDbId, shardDbId, surviveKeepers, previousActiveKeeper, activeKeeperMaster, routeForActiveKeeper,
+                clientPool, dcMetaCache, metaServerConfig, scheduled, executor, keeperRoles, unionKeepers, null);
+    }
+
+    public TfsKeeperStateChangeJob(Long clusterDbId, Long shardDbId, List<KeeperMeta> surviveKeepers,
+                                   KeeperMeta previousActiveKeeper,
+                                   Pair<String, Integer> activeKeeperMaster,
+                                   RouteMeta routeForActiveKeeper,
+                                   SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool,
+                                   DcMetaCache dcMetaCache,
+                                   MetaServerConfig metaServerConfig,
+                                   ScheduledExecutorService scheduled,
+                                   Executor executor,
+                                   Map<KeeperMeta, KeeperState> keeperRoles,
+                                   List<KeeperMeta> unionKeepers,
+                                   CurrentDcKeeperContainerAddressService keeperContainerAddressService) {
         this.shardContext = new TfsShardContext(clusterDbId, shardDbId);
         this.surviveKeepers = new LinkedList<>(surviveKeepers);
         this.unionKeepers = unionKeepers == null ? this.surviveKeepers : new LinkedList<>(unionKeepers);
@@ -98,6 +113,7 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
         this.scheduled = scheduled;
         this.executor = executor;
         this.keeperRoles = keeperRoles;
+        this.keeperContainerAddressService = keeperContainerAddressService;
     }
 
     @VisibleForTesting
@@ -121,6 +137,7 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
             future().setFailure(new Exception("can not find active keeper:" + surviveKeepers));
             return;
         }
+        newActive = resolveKeeperAddress(newActive);
 
         getLogger().info("[tfsKeeperStateChange]cluster_{},shard_{},newActive={},previousActive={}",
                 shardContext.getClusterDbId(), shardContext.getShardDbId(), newActive, previousActiveKeeper);
@@ -195,7 +212,7 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
             if (!TfsKeeperUtils.isTfsKeeper(keeperMeta, dcMetaCache)) {
                 continue;
             }
-            result.add(keeperMeta);
+            result.add(resolveKeeperAddress(keeperMeta));
         }
         return result;
     }
@@ -210,14 +227,43 @@ public class TfsKeeperStateChangeJob extends AbstractCommand<Void> implements Re
     }
 
     private Command<?> createKeeperSetStateCommand(KeeperMeta keeper, Pair<String, Integer> masterAddress) {
+        KeeperMeta resolvedKeeper = resolveKeeperAddress(keeper);
         SimpleObjectPool<NettyClient> pool = new XpipeObjectPoolFromKeyed<>(clientPool,
-                new DefaultEndPoint(keeper.getIp(), keeper.getPort()));
-        KeeperState keeperState = resolveKeeperState(keeper);
+                new DefaultEndPoint(resolvedKeeper.getIp(), resolvedKeeper.getPort()));
+        KeeperState keeperState = resolveKeeperState(resolvedKeeper);
         KeeperSetStateCommand command = new KeeperSetStateCommand(pool, keeperState, masterAddress,
                 KeeperState.ACTIVE == keeperState ? routeForActiveKeeper : null, scheduled);
         command.setCommandTimeoutMilli(TfsCommandConstants.TFS_STEP_TIMEOUT_MILLI);
         return CommandRetryWrapper.buildCountRetry(TfsCommandConstants.TFS_STEP_RETRY_TIMES,
                 new RetryDelay(TfsCommandConstants.TFS_STEP_TIMEOUT_MILLI), command, scheduled);
+    }
+
+    private KeeperMeta resolveKeeperAddress(KeeperMeta keeper) {
+        if (!invalidIp(keeper.getIp())) {
+            return keeper;
+        }
+
+        String hostname = keeper.getHostname();
+        if (StringUtil.isEmpty(hostname)) {
+            throw new IllegalStateException("invalid keeper ip and empty hostname: " + keeper);
+        }
+        if (keeperContainerAddressService == null) {
+            throw new IllegalStateException("CurrentDcKeeperContainerAddressService not configured, cannot resolve hostname: "
+                    + hostname);
+        }
+
+        String resolvedIp = keeperContainerAddressService.getIpByHostname(hostname);
+        if (invalidIp(resolvedIp)) {
+            throw new IllegalStateException("no valid keepercontainer ip for hostname: " + hostname);
+        }
+
+        KeeperMeta resolved = MetaCloneFacade.INSTANCE.clone(keeper);
+        resolved.setIp(resolvedIp);
+        return resolved;
+    }
+
+    private boolean invalidIp(String ip) {
+        return StringUtil.isEmpty(ip) || "0.0.0.0".equals(ip);
     }
 
     private KeeperState resolveKeeperState(KeeperMeta keeper) {

@@ -28,8 +28,20 @@
                     <label class="col-sm-4 control-label no-padding-right"> ip </label>
                     <div class="col-sm-6">
                         <textarea rows="1" style="width: 330px;"
-                                  ng-model="keepercontainer.addr.host"
-                                  ng-required="true"
+                                  ng-model="keepercontainer.ip"
+                                  ng-required="operateType == 'create' && !keepercontainer.keepercontainerHostName"
+                                  ng-disabled="operateType == 'update'">
+
+                        </textarea>
+                    </div>
+                </div>
+                <!-- 创建时 IP 和 hostname 至少填写一个；修改时作为稳定身份只展示，不允许编辑 -->
+                <div class="form-group">
+                    <label class="col-sm-4 control-label no-padding-right"> hostname </label>
+                    <div class="col-sm-6">
+                        <textarea rows="1" style="width: 330px;"
+                                  ng-model="keepercontainer.keepercontainerHostName"
+                                  ng-required="operateType == 'create' && !keepercontainer.ip"
                                   ng-disabled="operateType == 'update'">
 
                         </textarea>
@@ -40,7 +52,7 @@
 
                     <div class="col-sm-6">
                         <textarea rows="1" style="width: 330px;"
-                                  ng-model="keepercontainer.addr.port"
+                                  ng-model="keepercontainer.port"
                                   ng-required="true"
                                   ng-disabled="operateType == 'update'">
 

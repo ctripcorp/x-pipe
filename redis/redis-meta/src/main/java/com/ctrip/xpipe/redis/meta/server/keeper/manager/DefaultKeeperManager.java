@@ -8,7 +8,10 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.api.pool.SimpleKeyedObjectPool;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.cluster.Hints;
-import com.ctrip.xpipe.command.*;
+import com.ctrip.xpipe.command.CausalChain;
+import com.ctrip.xpipe.command.CausalCommand;
+import com.ctrip.xpipe.command.CommandTimeoutException;
+import com.ctrip.xpipe.command.SequenceCommandChain;
 import com.ctrip.xpipe.concurrent.DefaultExecutorFactory;
 import com.ctrip.xpipe.concurrent.KeyedOneThreadMutexableTaskExecutor;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
@@ -16,11 +19,7 @@ import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
-import com.ctrip.xpipe.redis.core.meta.KeeperIndexState;
-import com.ctrip.xpipe.redis.core.meta.KeeperState;
-import com.ctrip.xpipe.redis.core.meta.MetaComparator;
-import com.ctrip.xpipe.redis.core.meta.MetaComparatorVisitor;
-import com.ctrip.xpipe.redis.core.meta.MetaUtils;
+import com.ctrip.xpipe.redis.core.meta.*;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
 import com.ctrip.xpipe.redis.core.meta.comparator.ShardMetaComparator;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
@@ -29,7 +28,6 @@ import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.exception.KeeperStateInCorrectException;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperIndexChangeJob;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperMasterProcessJob;
-import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperRoleAssigner;
@@ -38,7 +36,6 @@ import com.ctrip.xpipe.redis.meta.server.meta.DcMetaCache;
 import com.ctrip.xpipe.redis.meta.server.spring.MetaServerContextConfig;
 import com.ctrip.xpipe.spring.AbstractSpringConfigContext;
 import com.ctrip.xpipe.tuple.Pair;
-import com.ctrip.xpipe.utils.ObjectUtils;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +44,10 @@ import org.springframework.web.client.ResourceAccessException;
 
 import javax.annotation.Resource;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wenchao.meng
@@ -175,8 +175,7 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		for (KeeperMeta allOne : allKeepers) {
 			boolean exist = false;
 			for (KeeperMeta subtractKeeper : subtractKeepers) {
-				if (ObjectUtils.equals(subtractKeeper.getIp(), allOne.getIp())
-						&& ObjectUtils.equals(subtractKeeper.getPort(), allOne.getPort())) {
+				if (MetaUtils.same(subtractKeeper, allOne)) {
 					exist = true;
 					break;
 				}

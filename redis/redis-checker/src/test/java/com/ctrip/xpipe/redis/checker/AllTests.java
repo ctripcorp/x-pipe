@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.checker.alert.message.subscriber.AlertEntityDelaySu
 import com.ctrip.xpipe.redis.checker.alert.message.subscriber.AlertRecoverySubscriberTest;
 import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBeanTest;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfigTest;
+import com.ctrip.xpipe.redis.checker.spring.FiremanServletScanConditionTest;
 import com.ctrip.xpipe.redis.checker.controller.CheckerHealthControllerTest;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessageTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedisConfigCheckRuleActionFactoryTest;
@@ -97,6 +98,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRouteChooserTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.DefaultDcMetaChangeManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperMetaChangeManagerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultCrossRegionKeeperSessionManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultKeeperSessionManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityInspectorTest;
 import com.ctrip.xpipe.redis.checker.impl.*;
@@ -110,6 +113,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses(value = {
         CommonConfigBeanTest.class,
         DefaultCheckerDbConfigTest.class,
+        FiremanServletScanConditionTest.class,
         ClusterStatusTest.class,
 
         DefaultSentinelHelloCollectorTest.class,
@@ -228,6 +232,8 @@ import org.junit.runners.Suite;
         KeeperCapabilityRefreshManagerTest.class,
         KeeperMetaChangeManagerTest.class,
         DefaultKeeperSessionManagerTest.class,
+        DefaultCrossRegionKeeperSessionManagerTest.class,
+        InfoReplIdActionTest.class,
 
         DefaultOuterClientAggregatorTest.class,
         DefaultDelayPingActionCollectorTest.class,

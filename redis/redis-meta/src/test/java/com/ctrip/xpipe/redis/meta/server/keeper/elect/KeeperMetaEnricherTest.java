@@ -21,6 +21,23 @@ public class KeeperMetaEnricherTest {
     private DcMetaCache dcMetaCache;
 
     @Test
+    public void testEnrichMatchesContainerByHostnameAndPreservesRuntimeIp() {
+        KeeperMeta survive = new KeeperMeta().setIp("10.2.3.15").setPort(6380)
+                .setHostname("keeper-pod-a-0").setKeeperContainerId(99L);
+        KeeperMeta fromMeta = new KeeperMeta().setIp("0.0.0.0").setPort(6380)
+                .setHostname("keeper-pod-a-0").setKeeperContainerId(1L).setPriority(5);
+        when(dcMetaCache.getShardKeepers(1L, 1L)).thenReturn(Collections.singletonList(fromMeta));
+
+        KeeperMeta enriched = KeeperMetaEnricher.enrich(dcMetaCache, 1L, 1L,
+                Collections.singletonList(survive)).get(0);
+
+        Assert.assertEquals("10.2.3.15", enriched.getIp());
+        Assert.assertEquals("keeper-pod-a-0", enriched.getHostname());
+        Assert.assertEquals(Long.valueOf(1L), enriched.getKeeperContainerId());
+        Assert.assertEquals(Integer.valueOf(5), enriched.getPriority());
+    }
+
+    @Test
     public void testEnrichMatchMissFillsDefaultPriority() {
         KeeperMeta survive = keeper(6000, 1L, null);
         when(dcMetaCache.getShardKeepers(1L, 1L)).thenReturn(Collections.emptyList());

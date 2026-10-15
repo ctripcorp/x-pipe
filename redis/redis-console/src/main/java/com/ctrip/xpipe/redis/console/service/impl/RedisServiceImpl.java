@@ -105,6 +105,30 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
     }
 
     @Override
+    public List<RedisTbl> findAllRedisWithSameHostName(String hostName) {
+        if (StringUtil.isEmpty(hostName)) return Collections.emptyList();
+
+        return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
+            @Override
+            public List<RedisTbl> doQuery() throws DalException {
+                return dao.findByHostName(hostName, RedisTblEntity.READSET_IP_AND_PORT);
+            }
+        });
+    }
+
+    @Override
+    public List<RedisTbl> findAllKeepersByKeeperContainerId(long keeperContainerId) {
+        return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
+            @Override
+            public List<RedisTbl> doQuery() throws DalException {
+                // 用 REDIS_MSG_INFO 而非 IP_AND_PORT：除端口记账外，keeper 详情展示还需要
+                // role / keeper_active / master / dc_cluster_shard_id
+                return dao.findAllKeepersByKeepercontainerId(keeperContainerId, RedisTblEntity.READSET_REDIS_MSG_INFO);
+            }
+        });
+    }
+
+    @Override
     public List<RedisTbl> findAllRedisByIp(String ip) {
         return queryHandler.handleQuery(new DalQuery<List<RedisTbl>>() {
             @Override
@@ -238,6 +262,8 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         keepers.forEach(keeperBasicInfo -> {
             RedisTbl keeper = createRedisTbl(new Pair<>(keeperBasicInfo.getHost(), keeperBasicInfo.getPort()), XPipeConsoleConstant.ROLE_KEEPER);
             keeper.setKeepercontainerId(keeperBasicInfo.getKeeperContainerId());
+            // 容器 keeper 的身份在 hostName 上，redis_ip 只是占位；物理机为空串
+            keeper.setHostName(null == keeperBasicInfo.getHostName() ? "" : keeperBasicInfo.getHostName());
             keeper.setDcClusterShardId(dcClusterShardTbl.getDcClusterShardId());
             KeepercontainerTbl keepercontainer = keeperContainerService.find(keeperBasicInfo.getKeeperContainerId());
             if (keepercontainer != null) {
@@ -578,6 +604,9 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
             }
             proto.setId(redis.getId()).setRedisIp(redis.getRedisIp()).setRedisPort(redis.getRedisPort())
                     .setKeeperActive(redis.isKeeperActive()).setKeepercontainerId(redis.getKeepercontainerId());
+            // 容器 keeper 的 redis_ip 是占位值，hostname 才是稳定标识，必须与 ip 一并落库；
+            // 物理机与 keepercontainer 写入口径一致，用空串而非 null
+            proto.setHostName(redis.getHostName() == null ? "" : redis.getHostName());
 
             Long azId = redis.getAzId();
             proto.setAzId(azId != null && azId > 0 ? azId : 0L);
@@ -643,18 +672,27 @@ public class RedisServiceImpl extends AbstractConsoleService<RedisTblDao> implem
         Set<Long> keepercontainerAvialableZones = new HashSet<>();
         for (RedisTbl keeper : keepers) {
             KeepercontainerTbl keepercontainer = keeperContainerService.find(keeper.getKeepercontainerId());
-            if (!keeper.getRedisIp().equals(keepercontainer.getKeepercontainerIp())) {
+            // 身份校验分两轨：容器比 hostname，物理机比 IP。
+            // 容器的 redis_ip 与 keepercontainer_ip 都是占位值 0.0.0.0，比 IP 恒成立，校验会失去意义
+            boolean podKeeper = !StringUtil.isEmpty(keeper.getHostName());
+            if (podKeeper) {
+                if (!keeper.getHostName().equals(keepercontainer.getKeepercontainerHostName())) {
+                    throw new BadRequestException("Keeper's hostname should be equal to keepercontainer's hostname");
+                }
+            } else if (!keeper.getRedisIp().equals(keepercontainer.getKeepercontainerIp())) {
                 throw new BadRequestException("Keeper's ip should be equal to keepercontainer's ip");
             }
             if(keepercontainer.getAzId() != 0 && !keepercontainerAvialableZones.add(keepercontainer.getAzId())) {
                 logger.error("Keepers in the same available zone {}", keepercontainer.getAzId());
             }
 
-            // port check
+            // port check：同样要换键，否则所有 pod 因共享 0.0.0.0 会被判为端口互相冲突
             RedisTbl redisWithSameConfiguration = queryHandler.handleQuery(new DalQuery<RedisTbl>() {
                 @Override
                 public RedisTbl doQuery() throws DalException {
-                    return dao.findWithIpPort(keeper.getRedisIp(), keeper.getRedisPort(), RedisTblEntity.READSET_FULL);
+                    return podKeeper
+                            ? dao.findWithHostNamePort(keeper.getHostName(), keeper.getRedisPort(), RedisTblEntity.READSET_FULL)
+                            : dao.findWithIpPort(keeper.getRedisIp(), keeper.getRedisPort(), RedisTblEntity.READSET_FULL);
                 }
             });
             if (null != redisWithSameConfiguration

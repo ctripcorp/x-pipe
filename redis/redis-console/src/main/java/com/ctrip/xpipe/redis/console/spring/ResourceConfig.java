@@ -100,6 +100,20 @@ public class ResourceConfig extends AbstractRedisConfigContext {
         return scheduled;
     }
 
+    @Bean(name = PING_INFO_REPLID_EXECUTORS)
+    public ExecutorService getInfoReplIdExecturos() {
+        return DefaultExecutorFactory.createAllowCoreTimeoutAbortPolicy("XPipe-InfoReplId-").createExecutorService();
+    }
+
+    @Bean(name = PING_INFO_REPLID_SCHEDULED)
+    public ScheduledExecutorService getInfoReplIdScheduled() {
+        ScheduledExecutorService scheduled = Executors.newScheduledThreadPool(Math.min(OsUtils.getCpuCount(), 4),
+                XpipeThreadFactory.create("XPipe-InfoReplId-Scheduled-"));
+        ((ScheduledThreadPoolExecutor)scheduled).setRemoveOnCancelPolicy(true);
+        ((ScheduledThreadPoolExecutor)scheduled).setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+        return scheduled;
+    }
+
     @Bean(name = HELLO_CHECK_EXECUTORS)
     public ExecutorService getHelloCheckExecturos() {
         return DefaultExecutorFactory.createAllowCoreTimeoutAbortPolicy("XPipe-HelloCheck-").createExecutorService();

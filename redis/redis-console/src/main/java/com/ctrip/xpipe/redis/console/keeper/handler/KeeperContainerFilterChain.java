@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 public class KeeperContainerFilterChain {
@@ -37,7 +38,7 @@ public class KeeperContainerFilterChain {
                                                KeeperContainerUsedInfoModel keeperContainer1,
                                                KeeperContainerUsedInfoModel keeperContainer2,
                                                KeeperContainerUsedInfoAnalyzerContext analyzerUtil) {
-        if (keeperContainer1.getKeeperIp().equals(keeperContainer2.getKeeperIp())) {
+        if (isSameKeeperContainer(keeperContainer1, keeperContainer2)) {
             return true;
         }
         return !new KeeperPairOverloadHandler(analyzerUtil, keeperContainer1, keeperContainer2, config)
@@ -47,7 +48,7 @@ public class KeeperContainerFilterChain {
     public boolean isKeeperContainerPairOverload(KeeperContainerUsedInfoModel keeperContainer1,
                                                  KeeperContainerUsedInfoModel keeperContainer2,
                                                  IPPairData ipPairData) {
-        if (keeperContainer1.getKeeperIp().equals(keeperContainer2.getKeeperIp())) {
+        if (isSameKeeperContainer(keeperContainer1, keeperContainer2)) {
             return true;
         }
         return new KeeperContainerPairOverloadHandler(keeperContainer1, keeperContainer2, config, ipPairData).handle(null);
@@ -55,6 +56,18 @@ public class KeeperContainerFilterChain {
 
     public boolean isDataOverLoad(KeeperContainerUsedInfoModel model) {
         return !new KeeperContainerOverloadHandler().handle(model);
+    }
+
+    /**
+     * 一对 keeper 落在同一个 keeperContainer 上就没有容灾意义，直接按超载处理。
+     * <p>
+     * 用 keeperContainerId 判定而不是 IP：容器形态下所有 pod 的 IP 都是同一个占位值，
+     * 按 IP 比会把两个不同的 pod 误判成同一台。id 缺失时同样返回 true，
+     * 宁可拒绝迁移也不要迁到一个无法定位的容器上。
+     */
+    private boolean isSameKeeperContainer(KeeperContainerUsedInfoModel keeperContainer1,
+                                          KeeperContainerUsedInfoModel keeperContainer2) {
+        return Objects.equals(keeperContainer1.getKeeperContainerId(), keeperContainer2.getKeeperContainerId());
     }
 
     @VisibleForTesting

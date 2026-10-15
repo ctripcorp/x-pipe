@@ -9,6 +9,11 @@ function KeepercontainerUsedInfoCtl($rootScope, $scope, $window, $stateParams, K
     $scope.tableParams = new NgTableParams({}, {});
     KeeperContainerService.getAllKeepercontainerUsedInfo().then(function (response) {
         if (Array.isArray(response))  {
+            // 与后端 KeeperContainerUsedInfoModel.ipOrHostname() 保持一致：
+            // 容器化 KC 以 hostname 为稳定标识，hostname 为空的物理机才回退到 ip
+            response.forEach(function (row) {
+                row.address = row.hostName || row.keeperIp;
+            });
             $scope.originData = response;
 
             KeeperContainerService.getAllInfos().then(function (anotherResponse) {
@@ -18,8 +23,10 @@ function KeepercontainerUsedInfoCtl($rootScope, $scope, $window, $stateParams, K
                         var anotherData = responses[1];
 
                         originData.forEach(function (row) {
+                            // 按 keepercontainer_id 关联：usedinfo 的 keeperIp 来自运行时 meta，
+                            // infos/all 的 ip 来自 DB，容器化后两者可能不一致，不能用 ip 做 join
                             var matchingData = anotherData.find(function (d) {
-                                return d.addr.host === row.keeperIp;
+                                return d.id === row.keeperContainerId;
                             });
                             if (matchingData) {
                                 Object.assign(row, matchingData);

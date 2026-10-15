@@ -7,11 +7,14 @@ import com.ctrip.xpipe.api.retry.RetryPolicy;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.command.CommandRetryWrapper;
 import com.ctrip.xpipe.exception.ErrorMessage;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerException;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerService;
+import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.retry.RetryDelay;
+import com.ctrip.xpipe.utils.StringUtil;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -83,6 +86,17 @@ public abstract class AbstractKeeperCommand<V> extends AbstractCommand<V>{
 
 	protected RetryPolicy createRetryPolicy() {
 		return new RetryDelay(checkIntervalMilli); 
+	}
+
+	protected KeeperMeta getKeeperMetaForCheck() {
+		KeeperMeta keeperMeta = keeperTransMeta.getKeeperMeta();
+		String resolvedIp = keeperContainerService.resolveAddress();
+		if (StringUtil.isEmpty(resolvedIp) || resolvedIp.equals(keeperMeta.getIp())) {
+			return keeperMeta;
+		}
+		KeeperMeta resolved = MetaCloneFacade.INSTANCE.clone(keeperMeta);
+		resolved.setIp(resolvedIp);
+		return resolved;
 	}
 
 	protected abstract Command<V> createCheckStateCommand();

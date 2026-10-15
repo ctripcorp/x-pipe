@@ -164,4 +164,24 @@ public class RedisMetaServiceImplTest extends AbstractTest {
                 RedisTblEntity.READSET_REDIS_META_INFO.getFields().contains(RedisTblEntity.KEEPER_PRIORITY));
     }
 
+    @Test
+    public void testGetKeeperMetaWithHostName() {
+        RedisTbl redisTbl = new RedisTbl()
+                .setRunId("keeper-run-id")
+                .setRedisIp("0.0.0.0")
+                .setRedisPort(6380)
+                .setHostName("pod-abc-0")
+                .setKeeperActive(true)
+                .setKeepercontainerId(11L)
+                .setKeeperPriority(1);
+
+        KeeperMeta keeperMeta = redisMetaService.getKeeperMeta(shardMeta, redisTbl);
+
+        Assert.assertEquals("0.0.0.0", keeperMeta.getIp());
+        Assert.assertEquals("pod-abc-0", keeperMeta.getHostname());
+        Assert.assertEquals(6380, keeperMeta.getPort().intValue());
+        Assert.assertTrue(keeperMeta.getActive());
+        Assert.assertEquals(Long.valueOf(11L), keeperMeta.getKeeperContainerId());
+    }
+
 }

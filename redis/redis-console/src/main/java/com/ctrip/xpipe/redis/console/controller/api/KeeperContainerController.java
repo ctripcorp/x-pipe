@@ -12,7 +12,10 @@ import com.ctrip.xpipe.redis.console.model.ConfigModel;
 import com.ctrip.xpipe.redis.console.model.KeeperRestElectionModel;
 import com.ctrip.xpipe.redis.console.model.MigrationKeeperContainerDetailModel;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
-import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
+import com.ctrip.xpipe.redis.console.service.CrossDcKeeperContainerAddressService;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerCheckerService;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
+import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerAddressSnapshot;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +41,12 @@ public class KeeperContainerController extends AbstractConsoleController{
 
     @Autowired
     KeeperContainerCheckerService keeperContainerService;
+
+    @Autowired
+    CurrentDcKeeperContainerAddressService keeperContainerAddressService;
+
+    @Autowired
+    CrossDcKeeperContainerAddressService crossDcKeeperContainerAddressService;
 
     @RequestMapping(value = "/keepercontainer/overload/info/all", method = RequestMethod.GET)
     public List<MigrationKeeperContainerDetailModel> getAllReadyToMigrateKeeperContainers() {
@@ -107,7 +116,7 @@ public class KeeperContainerController extends AbstractConsoleController{
     @RequestMapping(value = "/keepers/election/reset", method = RequestMethod.POST)
     public RetMessage resetElection(@RequestBody KeeperRestElectionModel model){
         try {
-            keeperContainerService.resetKeeper(model.getIp(), Long.parseLong(model.getShardId()));
+            keeperContainerService.resetKeeper(model.getDcName(), model.getIp(), model.getHostname(), Long.parseLong(model.getShardId()));
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
@@ -117,13 +126,42 @@ public class KeeperContainerController extends AbstractConsoleController{
     @RequestMapping(value = "/keepers/release/rdb", method = RequestMethod.POST)
     public RetMessage releaseRdb(@RequestBody KeeperRestElectionModel model){
         try {
-            keeperContainerService.releaseRdb(model.getIp(), Integer.parseInt(model.getPort()), Long.parseLong(model.getShardId()));
+            keeperContainerService.releaseRdb(model.getDcName(), model.getIp(), model.getHostname(), Integer.parseInt(model.getPort()), Long.parseLong(model.getShardId()));
             return RetMessage.createSuccessMessage();
         } catch (Exception e) {
             return RetMessage.createFailMessage(e.getMessage());
         }
     }
 
+    @RequestMapping(value = "/keepercontainer/address/{hostname}", method = RequestMethod.GET)
+    public RetMessage resolveKeeperContainerIp(@PathVariable String hostname) {
+        try {
+            String ip = keeperContainerAddressService.getIpByHostname(hostname);
+            if (ip != null) {
+                return RetMessage.createSuccessMessage(ip);
+            } else {
+                return RetMessage.createFailMessage("hostname not found: " + hostname);
+            }
+        } catch (Exception e) {
+            return RetMessage.createFailMessage(e.getMessage());
+        }
+    }
 
+    @RequestMapping(value = "/keepercontainer/address/all", method = RequestMethod.GET)
+    public Map<String, String> getAllKeeperContainerHostnameToIpMap() {
+        return keeperContainerAddressService.getAllHostnameToIp();
+    }
+
+    /** 本机房完整地址快照，供远端机房 Console 周期拉取。 */
+    @GetMapping(KEEPER_CONTAINER_ADDRESS_SNAPSHOT_PATH)
+    public KeeperContainerAddressSnapshot getKeeperContainerAddressSnapshot() {
+        return keeperContainerAddressService.getAddressSnapshot();
+    }
+
+    /** 所有机房完整地址快照，按 DC 分组；远端数据来自本地周期快照缓存。 */
+    @GetMapping(KEEPER_CONTAINER_ADDRESS_SNAPSHOT_PATH + "/global")
+    public Map<String, KeeperContainerAddressSnapshot> getGlobalKeeperContainerAddressSnapshot() {
+        return crossDcKeeperContainerAddressService.getAllAddressSnapshots();
+    }
 
 }

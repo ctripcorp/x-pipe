@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.meta.server.job;
 
 import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
 import com.ctrip.xpipe.redis.meta.server.config.UnitTestServerConfig;
@@ -19,12 +20,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -36,6 +32,9 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
 
     @Mock
     private DcMetaCache dcMetaCache;
+
+    @Mock
+    private CurrentDcKeeperContainerAddressService addressService;
 
     private UnitTestServerConfig config;
     private final List<String> callOrder = Collections.synchronizedList(new ArrayList<>());
@@ -357,7 +356,9 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
         callOrder.clear();
         KeeperMeta bm = keeper("127.0.0.1", 7201, 1L, true).setPriority(1);
         KeeperMeta slotTfs = keeper("127.0.0.1", 7202, 3L, false).setPriority(2);
-        KeeperMeta metaOnlyOldSlot = keeper("127.0.0.1", 7203, 2L, false).setPriority(1);
+        KeeperMeta metaOnlyOldSlot = keeper("0.0.0.0", 7203, 2L, false)
+                .setHostname("keeper-pod-old-0").setPriority(1);
+        when(addressService.getIpByHostname("keeper-pod-old-0")).thenReturn("127.0.0.1");
         List<KeeperMeta> survive = new LinkedList<>();
         survive.add(bm);
         survive.add(slotTfs);
@@ -373,15 +374,41 @@ public class TfsKeeperStateChangeJobTest extends AbstractMetaServerTest {
 
         TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, survive, null,
                 new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
-                dcMetaCache, config, scheduled, executors, roles, union);
+                dcMetaCache, config, scheduled, executors, roles, union, addressService);
         job.execute().get(5000, TimeUnit.MILLISECONDS);
 
+        org.mockito.Mockito.verify(addressService).getIpByHostname("keeper-pod-old-0");
+        Assert.assertEquals("0.0.0.0", metaOnlyOldSlot.getIp());
         Assert.assertEquals(metaOnlyOldSlot.getPort() + ":PREPARE", callOrder.get(0));
         Assert.assertEquals(bm.getPort() + ":ACTIVE", callOrder.get(1));
         Assert.assertTrue(callOrder.contains(slotTfs.getPort() + ":BACKUP"));
         Assert.assertFalse(callOrder.contains(metaOnlyOldSlot.getPort() + ":BACKUP"));
         Assert.assertFalse(callOrder.contains(metaOnlyOldSlot.getPort() + ":ACTIVE"));
         Assert.assertEquals(3, callOrder.size());
+    }
+
+    @Test
+    public void testInvalidKeeperIpFailsWhenHostnameCannotBeResolved() throws Exception {
+        KeeperMeta bm = keeper("127.0.0.1", 7231, 1L, true).setPriority(1);
+        KeeperMeta slotTfs = keeper("127.0.0.1", 7232, 3L, false).setPriority(2);
+        KeeperMeta unresolved = keeper("0.0.0.0", 7233, 2L, false)
+                .setHostname("keeper-pod-missing-0").setPriority(1);
+        List<KeeperMeta> survive = Arrays.asList(bm, slotTfs);
+        List<KeeperMeta> union = TfsKeeperUtils.mergeByIpPort(survive, Arrays.asList(bm, slotTfs, unresolved));
+        Map<KeeperMeta, KeeperState> roles = KeeperRoleAssigner.assignRoles(bm, union, dcMetaCache);
+        when(addressService.getIpByHostname("keeper-pod-missing-0")).thenReturn(null);
+
+        TfsKeeperStateChangeJob job = new TfsKeeperStateChangeJob(CLUSTER_DB_ID, SHARD_DB_ID, survive, null,
+                new Pair<>("localhost", randomPort()), null, getXpipeNettyClientKeyedObjectPool(),
+                dcMetaCache, config, scheduled, executors, roles, union, addressService);
+
+        try {
+            job.execute().get(5000, TimeUnit.MILLISECONDS);
+            Assert.fail("unresolved keeper address should fail the job");
+        } catch (java.util.concurrent.ExecutionException expected) {
+            Assert.assertTrue(expected.getCause() instanceof IllegalStateException);
+            Assert.assertTrue(expected.getCause().getMessage().contains("keeper-pod-missing-0"));
+        }
     }
 
     @Test

@@ -32,10 +32,29 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
 
     getAllOverloadKeepercontainer();
 
+    /**
+     * 容器化后 keeperIp 不足以标识 KC，与后端 KeeperContainerUsedInfoModel.ipOrHostname() 对齐：
+     * hostname 非空用 hostname，否则回退 ip。落成字段是为了让 ng-table 的过滤和排序作用在展示值上
+     */
+    function fillDisplayAddress(containers) {
+        containers.forEach(function (container) {
+            container.srcAddress = addressOf(container.srcKeeperContainer);
+            container.targetAddress = addressOf(container.targetKeeperContainer);
+        });
+    }
+
+    function addressOf(keeperContainer) {
+        if (!keeperContainer) {
+            return '';
+        }
+        return keeperContainer.hostName || keeperContainer.keeperIp || '';
+    }
+
     function getAllOverloadKeepercontainer() {
         KeeperContainerService.getAllOverloadKeepercontainer()
             .then(function (result) {
                 if (Array.isArray(result)) $scope.overloadKeeperContainer = result;
+                fillDisplayAddress($scope.overloadKeeperContainer);
                 $scope.overloadKeeperContainer.forEach(function (container) {
                     switch (container.cause) {
                         case 'BOTH':
@@ -136,6 +155,7 @@ function KeepercontainerOverloadCtl($rootScope, $scope, $window, $stateParams, K
                 .then(function (result) {
                     if (result == null) return;
                     $scope.migratingKeeperContainers = result;
+                    fillDisplayAddress($scope.migratingKeeperContainers);
                     syncShowMigrateDetail();
                     checkMigratingKeeperContainers();
                     $scope.migratingTableParams = new NgTableParams({

@@ -1,6 +1,8 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
 import com.ctrip.xpipe.api.migration.auto.MonitorService;
+import com.ctrip.xpipe.redis.console.model.ClusterTbl;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.console.AbstractConsoleTest;
 import com.ctrip.xpipe.redis.console.migration.auto.MonitorManager;
@@ -19,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -33,8 +36,12 @@ public class BeaconRouteControllerTest extends AbstractConsoleTest {
     @Mock
     private MonitorService monitorService;
 
+    @Mock
+    private ClusterService clusterService;
+
     @Test
     public void shouldReturnSentinelRouteForClusterAndOrg() {
+        Mockito.when(clusterService.find(any())).thenReturn(new ClusterTbl().setClusterName("cluster-a"));
         Mockito.when(monitorManager.get(eq(1L), eq("cluster-a"), Mockito.isNull(), eq(BeaconRouteType.SENTINEL)))
                 .thenReturn(monitorService);
         Mockito.when(monitorService.getName()).thenReturn("beacon-a");

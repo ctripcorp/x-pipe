@@ -61,8 +61,13 @@ public class BeaconRouteController extends AbstractConsoleController {
     public Map<String, String> getSentinelBeaconRoute(@RequestParam("clusterName") String clusterName,
                                                        @RequestParam("orgId") long orgId,
                                                        @RequestParam(name = "routeType", required = false) String routeType) {
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        if (clusterTbl == null) {
+            return new HashMap<>();
+        }
+
         BeaconRouteType selectedRouteType = parseRouteType(routeType);
-        MonitorService service = monitorManager.get(orgId, clusterName, null, selectedRouteType);
+        MonitorService service = monitorManager.get(orgId, clusterTbl.getClusterName(), null, selectedRouteType);
         if (service == null) {
             return Collections.emptyMap();
         }
@@ -84,10 +89,15 @@ public class BeaconRouteController extends AbstractConsoleController {
                                                   @RequestParam("clusterType") String clusterType,
                                                   @RequestParam(name = "dc", required = false) String dc,
                                                   @RequestParam(name = "routeType", required = false) String routeType) {
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        if (clusterTbl == null) {
+            return new HashMap<>();
+        }
+
         BeaconRouteType selectedRouteType = parseRouteType(routeType);
         ClusterType type = ClusterType.lookup(clusterType);
         String anchorDc = (dc == null || dc.isEmpty()) ? FoundationService.DEFAULT.getDataCenter() : dc;
-        int metaHash = beaconManager.computeClusterMetaHash(clusterName, anchorDc, type, selectedRouteType);
+        int metaHash = beaconManager.computeClusterMetaHash(clusterTbl.getClusterName(), anchorDc, type, selectedRouteType);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("clusterName", clusterName);
         result.put("clusterType", type.name());
@@ -145,20 +155,33 @@ public class BeaconRouteController extends AbstractConsoleController {
     @GetMapping("/sentinel/cluster/{clusterName}")
     public Map<String, RestResponse<List<SentinelClusterBeaconRouteItem>>> getSentinelClusterBeaconRoute(
             @PathVariable String clusterName) {
-        if (consoleServiceManager == null) {
-            return groupLocalByDc(monitorManager.getSentinelClusterRoutes(clusterName));
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        if (clusterTbl == null) {
+            return new HashMap<>();
         }
-        return consoleServiceManager.getAllConsoleSentinelClusterBeaconRoute(clusterName);
+
+        if (consoleServiceManager == null) {
+            return groupLocalByDc(monitorManager.getSentinelClusterRoutes(clusterTbl.getClusterName()));
+        }
+        return consoleServiceManager.getAllConsoleSentinelClusterBeaconRoute(clusterTbl.getClusterName());
     }
 
     @GetMapping("/sentinel/cluster/{clusterName}/local")
     public List<SentinelClusterBeaconRouteItem> getSentinelClusterBeaconRouteLocal(@PathVariable String clusterName) {
-        return monitorManager.getSentinelClusterRoutes(clusterName);
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        if (clusterTbl == null) {
+            return new ArrayList<>();
+        }
+        return monitorManager.getSentinelClusterRoutes(clusterTbl.getClusterName());
     }
 
     @GetMapping("/dr/cluster/{clusterName}")
     public RestResponse<Map<String, DRClusterBeaconRouteItem>> getDRClusterBeaconRoute(@PathVariable String clusterName) {
-        return RestResponse.success(monitorManager.getDRClusterRoutes(clusterName));
+        ClusterTbl clusterTbl = clusterService.find(clusterName);
+        if (clusterTbl == null) {
+            return RestResponse.fail("cluster not found: " + clusterName);
+        }
+        return RestResponse.success(monitorManager.getDRClusterRoutes(clusterTbl.getClusterName()));
     }
 
     private Map<String, RestResponse<List<SentinelClusterBeaconRouteItem>>> groupLocalByDc(List<SentinelClusterBeaconRouteItem> localData) {
