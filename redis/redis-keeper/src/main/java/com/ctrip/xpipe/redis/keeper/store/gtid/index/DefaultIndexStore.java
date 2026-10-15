@@ -555,7 +555,7 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
             int cmdCount = 0;
             while (true) {
                 int chunkLen = asyncCommandStore.getAsyncWriteMaxBytes();
-                ByteBuf byteBuf = AsyncFileSystemHelper.await(() -> fs.read(readSeg, chunkLen), "read cmd for rebuild");
+                ByteBuf byteBuf = AsyncFileSystemHelper.awaitRead(() -> fs.read(readSeg, chunkLen), "read cmd for rebuild");
                 if (byteBuf == null || !byteBuf.isReadable()) {
                     if (byteBuf != null) {
                         byteBuf.release();

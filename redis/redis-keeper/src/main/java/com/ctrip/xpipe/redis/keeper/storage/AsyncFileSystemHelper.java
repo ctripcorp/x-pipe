@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.util.ReferenceCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,6 +122,47 @@ public final class AsyncFileSystemHelper {
     public static <T> T await(CompletableFuture<T> future, String operation, long timeout, TimeUnit unit)
             throws IOException {
         return doAwait(future, operation, timeout, unit, () -> future.cancel(false));
+    }
+
+    /**
+     * {@link #await(FsCall, String)} for reference-counted results such as {@code ByteBuf} (keeper-tfs-m6 §6).
+     * On timeout / interrupt the future is not cancelled (cancel would drop the late buffer unreleased);
+     * the late result is released when the read completes.
+     */
+    public static <T extends ReferenceCounted> T awaitRead(FsCall<T> call, String operation) throws IOException {
+        try {
+            return awaitReadFuture(call.call(), operation);
+        } catch (OperationNotExecutedException first) {
+            logger.warn("[awaitRead][not-executed][retry] {}", operation, first);
+            logCase(CASE_NOT_EXECUTED_RETRY);
+            try {
+                return awaitReadFuture(call.call(), operation);
+            } catch (OperationNotExecutedException second) {
+                logCase(CASE_NOT_EXECUTED);
+                throw second;
+            }
+        }
+    }
+
+    private static <T extends ReferenceCounted> T awaitReadFuture(CompletableFuture<T> future, String operation)
+            throws IOException {
+        return doAwait(future, operation, currentTimeoutMillis(), TimeUnit.MILLISECONDS,
+                () -> releaseLateRead(future, operation));
+    }
+
+    /** The caller has given up; also covers a read that completed right after the timeout. */
+    private static void releaseLateRead(CompletableFuture<? extends ReferenceCounted> future, String operation) {
+        future.whenComplete((result, err) -> {
+            if (result == null) {
+                return;
+            }
+            try {
+                result.release();
+                logger.info("[awaitRead][late-release] {}", operation);
+            } catch (Throwable t) {
+                logger.warn("[awaitRead][late-release-fail] {}", operation, t);
+            }
+        });
     }
 
     /**
@@ -529,7 +571,7 @@ public final class AsyncFileSystemHelper {
 
     public static byte[] readAllBytes(AsyncFileSystem fs, AsyncFile file, long size, long offset, String operation)
             throws IOException {
-        ByteBuf buf = await(() -> fs.read(file, size, offset), operation);
+        ByteBuf buf = awaitRead(() -> fs.read(file, size, offset), operation);
         try {
             if (buf.readableBytes() != size) {
                 logCase(CASE_SHORT_READ);

@@ -4,6 +4,8 @@ import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.DeferredHandleCloser;
+import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemConfig;
 import org.junit.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -45,5 +47,41 @@ public class ContainerResourceManagerTest {
         assertEquals(300_000L, config.getUnclosedHandleFlushRetryWindowMilli());
         assertEquals(1_000L, config.setUnclosedHandleFlushRetryWindowMilli(1_000L)
                 .getUnclosedHandleFlushRetryWindowMilli());
+    }
+
+    /** keeper-tfs-m6 P9 (spec §7). */
+    @Test
+    public void testPerFileCacheLimitInjectedFromConfig() {
+        assertEquals("keeper.async.tail.cache.max.size.per.file.bytes",
+                KeeperConfig.KEY_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES);
+        assertEquals(100L * 1024 * 1024, KeeperConfig.DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES);
+
+        TestKeeperConfig config = new TestKeeperConfig();
+        assertEquals(100L * 1024 * 1024, config.getAsyncTailCacheMaxSizePerFileBytes());
+        TailCacheFileSystem defaultFs = (TailCacheFileSystem) ContainerResourceManager.createAsyncFileSystem(config);
+        try {
+            assertEquals(100L * 1024 * 1024, defaultFs.getMaxCacheSizePerFileBytes());
+        } finally {
+            defaultFs.shutdown();
+        }
+
+        TailCacheFileSystemConfig defaults = new TailCacheFileSystemConfig();
+        config.setAsyncTailCacheMaxSizePerFileBytes(8L * 1024 * 1024);
+        TailCacheFileSystem fs = (TailCacheFileSystem) ContainerResourceManager.createAsyncFileSystem(config);
+        try {
+            assertEquals(8L * 1024 * 1024, fs.getMaxCacheSizePerFileBytes());
+            assertEquals("retain chunks untouched", defaults.getMinRetainChunks(), fs.getMinRetainChunks());
+            assertEquals("chunk size untouched", defaults.getChunkSize(), fs.getChunkSize());
+            assertEquals("global cap still injected", config.getAsyncTailCacheMaxSizeBytes(), fs.getMaxCacheSizeBytes());
+        } finally {
+            fs.shutdown();
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidPerFileCacheLimitFailsFsCreation() {
+        // Below minRetainChunks * chunkSize (1MB).
+        ContainerResourceManager.createAsyncFileSystem(
+                new TestKeeperConfig().setAsyncTailCacheMaxSizePerFileBytes(1024));
     }
 }

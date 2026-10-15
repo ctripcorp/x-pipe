@@ -69,7 +69,7 @@ public class GtidSetWrapper {
         if (size < Long.BYTES) {
             return false;
         }
-        ByteBuf lenBuf = AsyncFileSystemHelper.await(() -> fs.read(file, Long.BYTES, 0), "read v1 header len");
+        ByteBuf lenBuf = AsyncFileSystemHelper.awaitRead(() -> fs.read(file, Long.BYTES, 0), "read v1 header len");
         try {
             long gtidLen = lenBuf.readLong();
             return gtidLen >= 0 && size >= Long.BYTES + gtidLen;
@@ -83,7 +83,7 @@ public class GtidSetWrapper {
         if (size < 16) {
             return false;
         }
-        ByteBuf headerBuf = AsyncFileSystemHelper.await(() -> fs.read(file, 16, 0), "read v2 header prefix");
+        ByteBuf headerBuf = AsyncFileSystemHelper.awaitRead(() -> fs.read(file, 16, 0), "read v2 header prefix");
         try {
             if (headerBuf.readInt() != MAGIC) {
                 return false;
@@ -101,7 +101,7 @@ public class GtidSetWrapper {
         if (size < Long.BYTES) {
             throw new IllegalStateException("index file too small for v1 header");
         }
-        ByteBuf buf = AsyncFileSystemHelper.await(() -> fs.read(file, Long.BYTES, 0), "read gtid set v1 length");
+        ByteBuf buf = AsyncFileSystemHelper.awaitRead(() -> fs.read(file, Long.BYTES, 0), "read gtid set v1 length");
         try {
             long gtidLength = buf.readLong();
             if (gtidLength == 0) {
@@ -133,7 +133,7 @@ public class GtidSetWrapper {
         if (size < 16) {
             throw new IOException("Index file too small");
         }
-        ByteBuf headerBuf = AsyncFileSystemHelper.await(() -> fs.read(file, 16, 0), "read gtid set v2 header");
+        ByteBuf headerBuf = AsyncFileSystemHelper.awaitRead(() -> fs.read(file, 16, 0), "read gtid set v2 header");
         try {
             if (headerBuf.readInt() != MAGIC) {
                 throw new IllegalStateException("Not a valid v2 index file (bad magic)");
@@ -158,11 +158,11 @@ public class GtidSetWrapper {
         if (size < 4) {
             return 0L;
         }
-        ByteBuf magicBuf = AsyncFileSystemHelper.await(() -> fs.read(file, 4, 0), "read index magic");
+        ByteBuf magicBuf = AsyncFileSystemHelper.awaitRead(() -> fs.read(file, 4, 0), "read index magic");
         try {
             int firstInt = magicBuf.readInt();
             if (firstInt == MAGIC) {
-                ByteBuf lenBuf = AsyncFileSystemHelper.await(() -> fs.read(file, Long.BYTES, 8), "read v2 gtid length");
+                ByteBuf lenBuf = AsyncFileSystemHelper.awaitRead(() -> fs.read(file, Long.BYTES, 8), "read v2 gtid length");
                 try {
                     long gtidLen = lenBuf.readLong();
                     return 16 + gtidLen;
@@ -170,7 +170,7 @@ public class GtidSetWrapper {
                     lenBuf.release();
                 }
             }
-            ByteBuf lenBuf = AsyncFileSystemHelper.await(() -> fs.read(file, Long.BYTES, 0), "read v1 gtid length");
+            ByteBuf lenBuf = AsyncFileSystemHelper.awaitRead(() -> fs.read(file, Long.BYTES, 0), "read v1 gtid length");
             try {
                 long gtidLen = lenBuf.readLong();
                 return 8 + gtidLen;
@@ -184,7 +184,7 @@ public class GtidSetWrapper {
 
     public IndexEntry recover(AsyncFileSystem fs, AsyncFile indexFile) throws IOException {
         GtidSet recoverGtidSet = readGtidSet(fs, indexFile);
-        ByteBuf lenBuf = AsyncFileSystemHelper.await(() -> fs.read(indexFile, Long.BYTES, 0), "read v1 header len");
+        ByteBuf lenBuf = AsyncFileSystemHelper.awaitRead(() -> fs.read(indexFile, Long.BYTES, 0), "read v1 header len");
         long gtidLength;
         try {
             gtidLength = lenBuf.readLong();
@@ -197,7 +197,7 @@ public class GtidSetWrapper {
         long pos = headerEnd;
         while (fileSize - pos >= IndexEntry.SEGMENT_LENGTH) {
             final long readPos = pos;
-            ByteBuf entryBuf = AsyncFileSystemHelper.await(() -> fs.read(indexFile, IndexEntry.SEGMENT_LENGTH, readPos),
+            ByteBuf entryBuf = AsyncFileSystemHelper.awaitRead(() -> fs.read(indexFile, IndexEntry.SEGMENT_LENGTH, readPos),
                     "read index v1 entry");
             try {
                 IndexEntry item = IndexEntry.fromBuffer(entryBuf);

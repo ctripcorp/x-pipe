@@ -365,7 +365,7 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 				return null;
 			}
 			try {
-				return AsyncFileSystemHelper.await(
+				return AsyncFileSystemHelper.awaitRead(
 						() -> asyncFileSystem.read(asyncSegmentFile, length, offset),
 						"read read-only command " + fileNamePrefix);
 			} catch (SegmentOffsetBeforeFirstException e) {

@@ -102,6 +102,8 @@ public class ContainerResourceManager {
     public static AsyncFileSystem createAsyncFileSystem(KeeperConfig keeperConfig) {
         TailCacheFileSystemConfig cacheConfig = new TailCacheFileSystemConfig()
                 .setMaxCacheSizeBytes(keeperConfig.getAsyncTailCacheMaxSizeBytes());
+        cacheConfig.setPerFileCacheLimits(keeperConfig.getAsyncTailCacheMaxSizePerFileBytes(),
+                cacheConfig.getMinRetainChunks(), cacheConfig.getChunkSize());
         return createAsyncFileSystem(keeperConfig.getAsyncIoThreads(), keeperConfig.getAsyncFsyncIntervalBytes(),
                 keeperConfig.getAsyncFsyncIntervalMillis(), cacheConfig);
     }
@@ -121,8 +123,10 @@ public class ContainerResourceManager {
         if (cacheConfig == null) {
             throw new IllegalArgumentException("cacheConfig must not be null");
         }
-        logger.info("[createAsyncFileSystem]ioThreads={}, fsyncIntervalBytes={}, fsyncIntervalMillis={}, maxCacheSizeBytes={}",
-                ioThreads, fsyncIntervalBytes, fsyncIntervalMillis, cacheConfig.getMaxCacheSizeBytes());
+        logger.info("[createAsyncFileSystem]ioThreads={}, fsyncIntervalBytes={}, fsyncIntervalMillis={}, "
+                        + "maxCacheSizeBytes={}, maxCacheSizePerFileBytes={}",
+                ioThreads, fsyncIntervalBytes, fsyncIntervalMillis, cacheConfig.getMaxCacheSizeBytes(),
+                cacheConfig.getMaxCacheSizePerFileBytes());
         ExecutorService ioExecutor = Executors.newFixedThreadPool(ioThreads,
                 XpipeThreadFactory.create("keeper-async-io"));
         AsyncTFSBasedFileSystem backing = new AsyncTFSBasedFileSystem(ioExecutor, fsyncIntervalBytes,

@@ -213,7 +213,7 @@ public class IndexWriterV2 {
         long pos = headerEnd;
         while (indexSize - pos >= IndexEntry.SEGMENT_LENGTH_V2) {
             final long readPos = pos;
-            ByteBuf buf = AsyncFileSystemHelper.await(() -> fs.read(indexV2File, IndexEntry.SEGMENT_LENGTH_V2, readPos),
+            ByteBuf buf = AsyncFileSystemHelper.awaitRead(() -> fs.read(indexV2File, IndexEntry.SEGMENT_LENGTH_V2, readPos),
                     "read index v2 entry");
             IndexEntry indexEntry;
             try {
@@ -292,7 +292,7 @@ public class IndexWriterV2 {
         long pos = headerEnd;
         while (indexSize - pos >= IndexEntry.SEGMENT_LENGTH_V2) {
             final long readPos = pos;
-            ByteBuf buf = AsyncFileSystemHelper.await(() -> fs.read(readIndexV2, IndexEntry.SEGMENT_LENGTH_V2, readPos),
+            ByteBuf buf = AsyncFileSystemHelper.awaitRead(() -> fs.read(readIndexV2, IndexEntry.SEGMENT_LENGTH_V2, readPos),
                     "read zone entry");
             try {
                 IndexEntry indexEntry = IndexEntry.fromBufferV2(buf);

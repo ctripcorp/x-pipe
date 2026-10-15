@@ -83,7 +83,7 @@ public class IndexWriter {
     }
 
     private long readV1HeaderEnd(AsyncFile indexFile) throws IOException {
-        ByteBuf lenBuf = AsyncFileSystemHelper.await(() -> fs.read(indexFile, Long.BYTES, 0), "read v1 header len");
+        ByteBuf lenBuf = AsyncFileSystemHelper.awaitRead(() -> fs.read(indexFile, Long.BYTES, 0), "read v1 header len");
         try {
             return Long.BYTES + lenBuf.readLong();
         } finally {
@@ -96,7 +96,7 @@ public class IndexWriter {
         if (preIndex < headerEnd) {
             return null;
         }
-        ByteBuf buf = AsyncFileSystemHelper.await(() -> fs.read(indexFile, IndexEntry.SEGMENT_LENGTH, preIndex),
+        ByteBuf buf = AsyncFileSystemHelper.awaitRead(() -> fs.read(indexFile, IndexEntry.SEGMENT_LENGTH, preIndex),
                 "read previous index entry");
         try {
             IndexEntry result = IndexEntry.fromBuffer(buf);

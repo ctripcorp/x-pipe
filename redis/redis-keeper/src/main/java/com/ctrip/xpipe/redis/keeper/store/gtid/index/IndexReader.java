@@ -76,7 +76,7 @@ public class IndexReader implements Closeable {
     }
 
     protected long headerEndPosition() throws IOException {
-        ByteBuf lenBuf = AsyncFileSystemHelper.await(() -> fs.read(indexFile, Long.BYTES, 0), "read v1 header length");
+        ByteBuf lenBuf = AsyncFileSystemHelper.awaitRead(() -> fs.read(indexFile, Long.BYTES, 0), "read v1 header length");
         try {
             long gtidLength = lenBuf.readLong();
             return Long.BYTES + gtidLength;
@@ -129,7 +129,7 @@ public class IndexReader implements Closeable {
         long pos = headerEndPosition();
         while (size - pos >= getSegmentLength()) {
             final long readPos = pos;
-            ByteBuf buf = AsyncFileSystemHelper.await(() -> fs.read(indexFile, getSegmentLength(), readPos), "read index entry");
+            ByteBuf buf = AsyncFileSystemHelper.awaitRead(() -> fs.read(indexFile, getSegmentLength(), readPos), "read index entry");
             try {
                 IndexEntry item = decodeEntry(buf.nioBuffer());
                 if (item == null) {

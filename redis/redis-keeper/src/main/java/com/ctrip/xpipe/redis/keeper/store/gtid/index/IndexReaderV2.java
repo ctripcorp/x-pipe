@@ -91,7 +91,7 @@ public class IndexReaderV2 extends IndexReader {
         long pos = headerEndPosition();
         while (size - pos >= getSegmentLength()) {
             final long readPos = pos;
-            ByteBuf buf = AsyncFileSystemHelper.await(() -> fs.read(indexFile, getSegmentLength(), readPos), "read index v2 entry");
+            ByteBuf buf = AsyncFileSystemHelper.awaitRead(() -> fs.read(indexFile, getSegmentLength(), readPos), "read index v2 entry");
             try {
                 IndexEntry item = decodeEntry(buf.nioBuffer());
                 if (item == null) {
