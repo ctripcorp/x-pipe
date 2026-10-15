@@ -81,6 +81,11 @@ public class ConsoleConfigBean extends AbstractConfigBean {
     public static final String KEY_CONSOLE_KEEPER_DEFAULT_PRIORITY_BM = "console.keeper.default.priority.bm";
 
     public static final String KEY_CONSOLE_KEEPER_DEFAULT_PRIORITY_TFS = "console.keeper.default.priority.tfs";
+    public static final String KEY_KEEPER_CONTAINER_ADDRESS_REFRESH_INTERVAL_MILLI = "console.keepercontainer.address.refresh.interval.milli";
+    public static final String KEY_KEEPER_CONTAINER_ADDRESS_MAX_REMOVED_PERCENT =
+            "keepercontainer.address.local.max.removed.percent";
+    public static final String KEY_KEEPER_CONTAINER_ADDRESS_MIN_REMOVED_HOSTNAMES =
+            "keepercontainer.address.local.min.removed.hostnames";
 
     private FoundationService foundationService;
 
@@ -130,6 +135,19 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     public int getAzGroupCacheRefreshInterval() {
         return getIntProperty(KEY_AZ_GROUP_CACHE_REFERSH_INTERVAL, 60000);
+    }
+
+    /** 远端机房 keepercontainer 地址快照的刷新间隔，与 proxy chain analyzer 周期一致（keeper-dynamic-ip spec §8.4）。 */
+    public long getKeeperContainerAddressRefreshIntervalMilli() {
+        return getLongProperty(KEY_KEEPER_CONTAINER_ADDRESS_REFRESH_INTERVAL_MILLI, 30000L);
+    }
+
+    public int getKeeperContainerAddressMaxRemovedPercent() {
+        return getIntProperty(KEY_KEEPER_CONTAINER_ADDRESS_MAX_REMOVED_PERCENT, 50);
+    }
+
+    public int getKeeperContainerAddressMinRemovedHostnames() {
+        return getIntProperty(KEY_KEEPER_CONTAINER_ADDRESS_MIN_REMOVED_HOSTNAMES, 5);
     }
 
     public long getMigrationTimeoutMilli() {

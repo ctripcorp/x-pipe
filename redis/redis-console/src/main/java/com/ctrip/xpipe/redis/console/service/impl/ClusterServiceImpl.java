@@ -2398,7 +2398,8 @@ public class ClusterServiceImpl extends AbstractConsoleService<ClusterTblDao> im
 			List<RedisTbl> newKeepers = new ArrayList<>();
 			newKeeperBasicInfos.forEach(keeperBasicInfo -> newKeepers.add(new RedisTbl()
 					.setKeepercontainerId(keeperBasicInfo.getKeeperContainerId())
-					.setRedisIp(keeperBasicInfo.getHost()).setRedisPort(keeperBasicInfo.getPort())));
+					.setRedisIp(keeperBasicInfo.getHost()).setRedisPort(keeperBasicInfo.getPort())
+					.setHostName(null == keeperBasicInfo.getHostName() ? "" : keeperBasicInfo.getHostName())));
 			shardModel.setKeepers(newKeepers);
 
 			try {

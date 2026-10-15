@@ -17,6 +17,17 @@ public interface RedisService {
 
 	List<RedisTbl> findAllRedisWithSameIP(String ip);
 
+	/**
+	 * 按 pod hostname 查同一容器上的实例。容器 keeper 的 redis_ip 统一是 0.0.0.0，
+	 * 用 findAllRedisWithSameIP 会把所有 pod 归并成同一台机器，端口记账因此必须换键。
+	 */
+	List<RedisTbl> findAllRedisWithSameHostName(String hostName);
+
+	/**
+	 * 按 keepercontainer_id 查询该容器上的所有 keeper 实例端口
+	 */
+	List<RedisTbl> findAllKeepersByKeeperContainerId(long keeperContainerId);
+
 	List<RedisTbl> findAllRedisByIp(String ip);
 
 	List<RedisTbl> findAllByDcClusterShard(long dcClusterShardId);

@@ -95,7 +95,7 @@ public class AddKeeperCommand extends AbstractKeeperCommand<SlaveRole>{
 
 	@Override
 	protected Command<SlaveRole> createCheckStateCommand() {
-		return new CheckStateCommand(keeperTransMeta.getKeeperMeta(), scheduled, clientKeyedObjectPool);
+		return new CheckStateCommand(getKeeperMetaForCheck(), scheduled, clientKeyedObjectPool);
 	}
 
 	@Override

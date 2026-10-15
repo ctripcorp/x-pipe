@@ -20,6 +20,7 @@ public class AbstractController {
 	protected Joiner joiner = Joiner.on(",");
 
 	public static final String API_PREFIX = "/api";
+	public static final String KEEPER_CONTAINER_ADDRESS_SNAPSHOT_PATH = "/keepercontainer/address/snapshot";
 	public static final String META_API_TYPE = "MetaUpdate";
 
 	public static final String CLUSTER_NAME_PATH_VARIABLE = "{clusterName:.+}";

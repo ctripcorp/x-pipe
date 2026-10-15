@@ -6,13 +6,18 @@ import com.ctrip.xpipe.redis.console.dao.RedisDao;
 import com.ctrip.xpipe.redis.console.exception.BadRequestException;
 import com.ctrip.xpipe.redis.console.model.*;
 import com.ctrip.xpipe.redis.console.notifier.ClusterMetaModifiedNotifier;
-import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.service.AbstractConsoleService;
+import com.ctrip.xpipe.redis.console.service.KeeperAdvancedService;
+import com.ctrip.xpipe.redis.console.service.KeeperBasicInfo;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.FileUtils;
 import com.google.common.collect.Lists;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.unidal.dal.jdbc.DalException;
@@ -70,6 +75,16 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         if (null != tmpNotifier) redisService.notifier = tmpNotifier;
     }
 
+    /**
+     * 基础夹具中的 Redis/Keeper 已占用 6379～8015；两个物理 KeeperContainer 又共用 127.0.0.1，
+     * 因此为插入场景显式分配互不冲突的端口，避免测试目标被默认端口选择细节干扰。
+     */
+    private void assignUnusedPorts(List<KeeperBasicInfo> keepers) {
+        for (int i = 0; i < keepers.size(); i++) {
+            keepers.get(i).setPort(10000 + i);
+        }
+    }
+
     @Test
     public void testFindAllRedisesByDcClusterName(){
 
@@ -116,6 +131,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         redisService.deleteKeepers(dcName, clusterName, shardName);
 
         List<KeeperBasicInfo> newKeepers = keeperAdvancedService.findBestKeepers(dcName, clusterName);
+        assignUnusedPorts(newKeepers);
 
         Assert.assertEquals(2, newKeepers.size());
 
@@ -369,6 +385,7 @@ public class RedisServiceImplTest extends AbstractServiceImplTest {
         CyclicBarrier barrier = new CyclicBarrier(threadCnt);
         CountDownLatch latch = new CountDownLatch(threadCnt);
         List<KeeperBasicInfo> bestKeepers = keeperAdvancedService.findBestKeepers(dcName, clusterName);
+        assignUnusedPorts(bestKeepers);
         logger.info("[addKeeperConcurrentlyTest] addKeepers {}", bestKeepers);
 
         IntStream.range(0, threadCnt).forEach(i -> {

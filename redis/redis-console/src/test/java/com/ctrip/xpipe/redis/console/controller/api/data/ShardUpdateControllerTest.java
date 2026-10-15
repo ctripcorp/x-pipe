@@ -1,14 +1,9 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckFailException;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisCreateInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.RegionInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.RegionShardsCreateInfo;
-import com.ctrip.xpipe.redis.console.controller.api.data.meta.ShardCreateInfo;
+import com.ctrip.xpipe.redis.console.AbstractConsoleIntegrationTest;
+import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.model.ShardTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
@@ -21,6 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -263,6 +259,11 @@ public class ShardUpdateControllerTest extends AbstractConsoleIntegrationTest {
         ClusterCreateInfo current = clusterUpdateController.getCluster(clusterName);
         Assert.assertEquals("oy", current.getDcs().get(0));
         Assert.assertEquals("jq", current.getDcs().get(1));
+    }
+
+    @Override
+    protected String prepareDatas() throws IOException {
+        return prepareDatasFromFile("src/test/resources/keepercontainer-unique-addresses.sql");
     }
 
     private List<RedisCreateInfo> createInfo(List<String> activeDcRedis, List<String> backupDcRedis) {

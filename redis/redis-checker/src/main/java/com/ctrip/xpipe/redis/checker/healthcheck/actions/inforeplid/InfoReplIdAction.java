@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.CrossRegionKeeperSessionManager;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.unidal.tuple.Triple;
@@ -50,12 +51,15 @@ public class InfoReplIdAction extends AbstractHealthCheckAction<RedisHealthCheck
     /** Stamp of the newest check whose result has been published. */
     private final AtomicLong publishedCheck = new AtomicLong();
 
+    private CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService;
+
     public InfoReplIdAction(ScheduledExecutorService scheduled, RedisHealthCheckInstance instance,
                             ExecutorService executors, CrossRegionKeeperSessionManager crossRegionKeeperSessionManager,
-                            MetaCache metaCache) {
+                            MetaCache metaCache, CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService) {
         super(scheduled, instance, executors);
         this.crossRegionKeeperSessionManager = crossRegionKeeperSessionManager;
         this.metaCache = metaCache;
+        this.currentDcKeeperContainerAddressService = currentDcKeeperContainerAddressService;
     }
 
     @Override
@@ -64,7 +68,7 @@ public class InfoReplIdAction extends AbstractHealthCheckAction<RedisHealthCheck
 
         SessionInfoCommand slaveInfo = new SessionInfoCommand(instance.getRedisSession());
         KeeperReplIdCommand keeperReplId = new KeeperReplIdCommand(instance, slaveInfo.future(),
-                crossRegionKeeperSessionManager, metaCache, executors);
+                crossRegionKeeperSessionManager, currentDcKeeperContainerAddressService, metaCache, executors);
 
         SequenceCommandChain chain = new ExecutorSequenceCommandChain(executors);
         chain.add(slaveInfo);

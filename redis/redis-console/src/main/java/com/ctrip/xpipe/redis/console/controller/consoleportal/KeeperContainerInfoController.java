@@ -140,11 +140,12 @@ public class KeeperContainerInfoController extends AbstractConsoleController {
         }
     }
 
-    @RequestMapping(value = "/keepercontainer/keepers/{ip}")
-    public List<KeeperMsgModel> getLocateKeeperContainerByIpAndPort(@PathVariable String ip) {
+    @RequestMapping(value = "/keepercontainer/keepers/{keeperContainerId}")
+    public List<KeeperMsgModel> getKeepersByKeeperContainerId(@PathVariable long keeperContainerId) {
         try {
-            return keeperContainerService.getAllKeepers(ip);
+            return keeperContainerService.getAllKeepers(keeperContainerId);
         } catch (Exception e) {
+            logger.error("[getKeepersByKeeperContainerId] keeperContainerId: {}", keeperContainerId, e);
             return Collections.emptyList();
         }
     }

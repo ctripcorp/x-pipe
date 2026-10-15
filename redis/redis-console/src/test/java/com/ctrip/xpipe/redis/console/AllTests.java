@@ -224,6 +224,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DcMetaSynchronizerTest.class,
         RedisMetaSynchronizerTest.class,
         ConsoleServiceManagerTest.class,
+        RemoteDcKeeperContainerAddressCacheTest.class,
         ChangeConfigTest.class,
         NettyKeyedPoolClientFactoryTest.class,
         UnhealthyClusterCheckerTest.class,

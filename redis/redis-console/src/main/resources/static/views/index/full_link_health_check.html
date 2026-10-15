@@ -100,15 +100,16 @@
                                 <div ng-show="showErrMsg && !keeper.errs=={}" class="md-body-1" style="width: 100%; display: inline-block; word-break: break-all;">{{keeper.errs}}</div>
                                 <div  style="white-space: nowrap;">
                                     <span>{{keeper.host}}:{{keeper.port}}</span>
+                                    <span ng-if="keeper.hostname" style="margin-left: 20px;">{{keeper.hostname}}</span>
                                     <span style="margin-left: 20px;">{{keeper.state}}</span>
                                     <span style="margin-left: 20px;">{{keeper.masterReplOffset}}</span>
                                 </div>
                             </md-card-title-text>
                             <md-card-actions layout="row" layout-align="end center">
-                                <md-button class="md-raised" ng-disabled="getDisableResetElection()" ng-click="resetElection(keeper.host, keeper.port)">reset Election</md-button>
+                                <md-button class="md-raised" ng-disabled="getDisableResetElection()" ng-click="resetElection(keeper)">reset Election</md-button>
                             </md-card-actions>
                             <md-card-actions layout="row" layout-align="end center">
-                                <md-button class="md-raised" ng-disabled="getDisableReleaseRdb()" ng-click="releaseRdb(keeper.host, keeper.port)">release rdb</md-button>
+                                <md-button class="md-raised" ng-disabled="getDisableReleaseRdb()" ng-click="releaseRdb(keeper)">release rdb</md-button>
                             </md-card-actions>
                         </md-card-title>
                         <md-card-content>
@@ -226,7 +227,7 @@
                         <div  style="white-space: nowrap; display: inline-block;">
                             <span>SurviveKeepers:</span>
                             <div ng-repeat="surviveKeeper in shardAllMeta.shardCurrentMeta.surviveKeepers" style="white-space: nowrap; display: inline-block;">
-                                <span style="margin-left: 20px;">{{surviveKeeper.ip}}:{{surviveKeeper.port}}</span>
+                                <span style="margin-left: 20px;">{{keeperMetaAddr(surviveKeeper)}}</span>
                                 <span style="margin-left: 5px;" ng-if="surviveKeeper.active">Active</span>
                                 <span style="margin-left: 5px;" ng-if="!surviveKeeper.active">BackUp</span>
                             </div>
@@ -263,7 +264,7 @@
                         <div  style="white-space: nowrap;">
                             <span>Keepers:</span>
                             <div ng-repeat="keeper in shardAllMeta.shardCurrentMeta.shardMeta.keepers" style="white-space: nowrap; display: inline-block;">
-                                <span style="margin-left: 20px;">{{keeper.ip}}:{{keeper.port}}</span>
+                                <span style="margin-left: 20px;">{{keeperMetaAddr(keeper)}}</span>
                             </div>
                         </div>
                     </md-card-content>

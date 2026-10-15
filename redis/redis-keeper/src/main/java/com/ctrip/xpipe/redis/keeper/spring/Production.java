@@ -1,11 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.spring;
 
 
+import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.kafka.KafkaService;
 import com.ctrip.xpipe.redis.core.metaserver.MetaServerKeeperService;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultMetaServerKeeperService;
 import com.ctrip.xpipe.redis.keeper.config.*;
 import com.ctrip.xpipe.redis.keeper.container.KeeperContainerService;
+import com.ctrip.xpipe.redis.keeper.container.KeeperContainerZkRegistrar;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucket;
@@ -31,6 +33,18 @@ public class Production extends AbstractProfile{
 		ZkClient client = getZkClient(keeperConfig.getZkNameSpace(), keeperConfig.getZkConnectionString());
 		keeperConfig.addListener(client);
 		return client;
+	}
+
+	/**
+	 * 注册自身 hostname 与 IP，供 console/metaserver/checker 反查容器地址。
+	 * 不手动 initialize/start：本类实现了 Lifecycle 与 TopElement，
+	 * 由 SpringComponentRegistry 统一托管，重复调用会撞上生命周期状态机。
+	 * ZkClient 的 order 是 HIGHEST_PRECEDENCE，一定先于本组件启动。
+	 */
+	@Bean
+	public KeeperContainerZkRegistrar getKeeperContainerZkRegistrar(ZkClient zkClient) {
+		FoundationService foundation = FoundationService.DEFAULT;
+		return new KeeperContainerZkRegistrar(zkClient, foundation.getHostName(), foundation.getLocalIp());
 	}
 	
 	@Bean

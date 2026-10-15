@@ -68,4 +68,12 @@ public interface MetaServerConfig extends CoreConfig {
 
 	String getTfsDirPathTemplate();
 
+	default int getKeeperContainerAddressMaxRemovedPercent() {
+		return 50;
+	}
+
+	default int getKeeperContainerAddressMinRemovedHostnames() {
+		return 5;
+	}
+
 }

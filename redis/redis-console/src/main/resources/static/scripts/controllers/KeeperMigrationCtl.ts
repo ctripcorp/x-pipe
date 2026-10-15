@@ -24,6 +24,7 @@ function KeeperMigrationCtl($rootScope, $scope, $window, $stateParams, KeeperCon
 	$scope.preMigrateKeepers = preMigrateKeepers;
 	$scope.doMigrateKeepers = doMigrateKeepers;
 	$scope.gotoClusterHickwall = gotoClusterHickwall;
+	$scope.keeperContainerAddr = keeperContainerAddr;
 
 	init();
 
@@ -56,6 +57,18 @@ function KeeperMigrationCtl($rootScope, $scope, $window, $stateParams, KeeperCon
             });
 	}
 
+	/**
+	 * 容器化后 hostname 才是 KeeperContainer 的稳定标识，ip 可能随 pod 重建变化甚至为空，
+	 * 因此优先展示 hostname，没有 hostname 的物理机再回退到 ip
+	 */
+	function keeperContainerAddr(keeperContainer) {
+	    if (!keeperContainer) {
+	        return '';
+	    }
+	    var host = keeperContainer.keepercontainerHostName || keeperContainer.ip;
+	    return host ? host + ':' + keeperContainer.port : '';
+	}
+
 	function preMigrateKeepers() {
 	    $('#migrateKeepersConfirm').modal('show');
 	}
@@ -66,9 +79,8 @@ function KeeperMigrationCtl($rootScope, $scope, $window, $stateParams, KeeperCon
         });
 
         $scope.availableKeeperContainers.forEach(function(keeperContainer){
-            var keeperHost = keeperContainer.addr.host + ":" + keeperContainer.addr.port;
-
-            if (keeperHost == $scope.targetKeeperContainer) {
+            // 与下拉项 value 保持同一套展示规则（hostname 优先），否则选中项匹配不上
+            if (keeperContainerAddr(keeperContainer) == $scope.targetKeeperContainer) {
                 $scope.targetKeeperContainer = keeperContainer;
             }
         });

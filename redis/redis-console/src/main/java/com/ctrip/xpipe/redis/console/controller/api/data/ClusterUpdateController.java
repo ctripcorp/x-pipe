@@ -9,10 +9,12 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.*;
 import com.ctrip.xpipe.redis.console.dto.*;
+import com.ctrip.xpipe.redis.console.entity.AzGroupClusterEntity;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.model.DcTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
+import com.ctrip.xpipe.redis.console.repository.AzGroupClusterRepository;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.DcService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
@@ -48,6 +50,14 @@ public class ClusterUpdateController extends AbstractController {
 
     @Autowired
     private ConsoleConfig config;
+
+    @Autowired
+    private AzGroupClusterRepository azGroupClusterRepository;
+
+    @GetMapping(value = "/clusters/az-group-clusters/all")
+    public List<AzGroupClusterEntity> getAllAzGroupClusters() {
+        return azGroupClusterRepository.selectAll();
+    }
 
 
     @PostMapping(value = "/clusters")

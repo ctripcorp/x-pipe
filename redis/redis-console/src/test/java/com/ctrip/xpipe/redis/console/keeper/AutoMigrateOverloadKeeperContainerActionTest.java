@@ -11,7 +11,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -50,7 +49,7 @@ public class AutoMigrateOverloadKeeperContainerActionTest {
                 .thenReturn(shardModel);
 
         // 修改第二个mock配置，使用Mockito.any()来匹配任何对象
-        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(), Mockito.any(), Mockito.anyString(), Mockito.anyString()))
+        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(), Mockito.any(), Mockito.anyLong(), Mockito.anyLong()))
                 .thenReturn(true);
 
         ReflectionTestUtils.setField(action, "shardModelService", shardModelService);
@@ -60,10 +59,10 @@ public class AutoMigrateOverloadKeeperContainerActionTest {
 
     @Test
     public void testMigrateAllKeepersSuccess() {
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14);
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 13, 13);
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5);
-        KeeperContainerUsedInfoModel model4 = new KeeperContainerUsedInfoModel("4.4.4.4", "jq", 6, 6);
+        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14).setKeeperContainerId(1L);
+        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 13, 13).setKeeperContainerId(2L);
+        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5).setKeeperContainerId(3L);
+        KeeperContainerUsedInfoModel model4 = new KeeperContainerUsedInfoModel("4.4.4.4", "jq", 6, 6).setKeeperContainerId(4L);
 
         List<MigrationKeeperContainerDetailModel> readyToMigrationKeeperContainers = new ArrayList<>();
         List<DcClusterShard> migrationShards1 = new ArrayList<>();
@@ -91,10 +90,10 @@ public class AutoMigrateOverloadKeeperContainerActionTest {
 
     @Test
     public void testMigrateAllKeepersFail() {
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14);
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 13, 13);
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5);
-        KeeperContainerUsedInfoModel model4 = new KeeperContainerUsedInfoModel("4.4.4.4", "jq", 6, 6);
+        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14).setKeeperContainerId(1L);
+        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 13, 13).setKeeperContainerId(2L);
+        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5).setKeeperContainerId(3L);
+        KeeperContainerUsedInfoModel model4 = new KeeperContainerUsedInfoModel("4.4.4.4", "jq", 6, 6).setKeeperContainerId(4L);
 
         List<MigrationKeeperContainerDetailModel> readyToMigrationKeeperContainers = new ArrayList<>();
         List<DcClusterShard> migrationShards1 = new ArrayList<>();
@@ -114,7 +113,7 @@ public class AutoMigrateOverloadKeeperContainerActionTest {
                 .setSrcKeeperContainer(model2).setTargetKeeperContainer(model4).setMigrateKeeperCount(4).setMigrateShards(migrationShards2);
         readyToMigrationKeeperContainers.add(migrationKeeperContainerDetailModel2);
 
-        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(),  any(), Mockito.anyString(), Mockito.anyString())).thenReturn(false);
+        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(),  any(), Mockito.anyLong(), Mockito.anyLong())).thenReturn(false);
         action.migrateAllKeepers(readyToMigrationKeeperContainers);
 
         Assert.assertEquals(0, migrationKeeperContainerDetailModel1.getMigrateKeeperCompleteCount());
@@ -123,10 +122,10 @@ public class AutoMigrateOverloadKeeperContainerActionTest {
 
     @Test
     public void testMigrateAllKeepersWithSameShard() {
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14);
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 13, 13);
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5);
-        KeeperContainerUsedInfoModel model4 = new KeeperContainerUsedInfoModel("4.4.4.4", "jq", 6, 6);
+        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14).setKeeperContainerId(1L);
+        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 13, 13).setKeeperContainerId(2L);
+        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5).setKeeperContainerId(3L);
+        KeeperContainerUsedInfoModel model4 = new KeeperContainerUsedInfoModel("4.4.4.4", "jq", 6, 6).setKeeperContainerId(4L);
 
         List<MigrationKeeperContainerDetailModel> readyToMigrationKeeperContainers = new ArrayList<>();
         List<DcClusterShard> migrationShards1 = new ArrayList<>();
@@ -149,10 +148,10 @@ public class AutoMigrateOverloadKeeperContainerActionTest {
 
     @Test
     public void testMigrateAllKeepersWithEmptyShard() {
-        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14);
-        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 13, 13);
-        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5);
-        KeeperContainerUsedInfoModel model4 = new KeeperContainerUsedInfoModel("4.4.4.4", "jq", 6, 6);
+        KeeperContainerUsedInfoModel model1 = new KeeperContainerUsedInfoModel("1.1.1.1", "jq", 14, 14).setKeeperContainerId(1L);
+        KeeperContainerUsedInfoModel model2 = new KeeperContainerUsedInfoModel("2.2.2.2", "jq", 13, 13).setKeeperContainerId(2L);
+        KeeperContainerUsedInfoModel model3 = new KeeperContainerUsedInfoModel("3.3.3.3", "jq", 5, 5).setKeeperContainerId(3L);
+        KeeperContainerUsedInfoModel model4 = new KeeperContainerUsedInfoModel("4.4.4.4", "jq", 6, 6).setKeeperContainerId(4L);
 
         List<MigrationKeeperContainerDetailModel> readyToMigrationKeeperContainers = new ArrayList<>();
         List<DcClusterShard> migrationShards1 = new ArrayList<>();

@@ -2,7 +2,7 @@ package com.ctrip.xpipe.redis.console.keeper.handler;
 
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
-import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.*;
+import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel.KeeperUsedInfo;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.keeper.entity.IPPairData;
 import com.ctrip.xpipe.redis.console.keeper.util.KeeperContainerUsedInfoAnalyzerContext;
@@ -30,11 +30,11 @@ public class KeeperPairOverloadHandler extends AbstractHandler<Map.Entry<DcClust
     @Override
     protected boolean doNextHandler(Map.Entry<DcClusterShardKeeper, KeeperUsedInfo> keeperUsedInfoEntry) {
         double keeperPairOverLoadFactor = config.getKeeperPairOverLoadFactor();
-        IPPairData longLongPair = analyzerContext.getIPPairData(keeperContainer1.getKeeperIp(), keeperContainer2.getKeeperIp());
+        IPPairData containerPairData = analyzerContext.getContainerPairData(keeperContainer1.getKeeperContainerId(), keeperContainer2.getKeeperContainerId());
         long pairInputFlow = 0, pairPeerData = 0;
-        if (longLongPair != null) {
-            pairInputFlow = longLongPair.getInputFlow();
-            pairPeerData = longLongPair.getPeerData();
+        if (containerPairData != null) {
+            pairInputFlow = containerPairData.getInputFlow();
+            pairPeerData = containerPairData.getPeerData();
         }
         KeeperContainerOverloadStandardModel minStandardModel = new KeeperContainerOverloadStandardModel()
                 .setFlowOverload((long) (Math.min(keeperContainer1.getInputFlowStandard(), keeperContainer2.getInputFlowStandard()) * keeperPairOverLoadFactor))

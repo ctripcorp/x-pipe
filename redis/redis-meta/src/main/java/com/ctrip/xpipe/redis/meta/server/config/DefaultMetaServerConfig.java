@@ -17,8 +17,10 @@ import com.ctrip.xpipe.utils.IpUtils;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.google.common.collect.Maps;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -70,6 +72,12 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	public static final String KEY_TFS_GATEWAY_APP_ID = "metaserver.tfs.gateway.app.id";
 
 	public static final String KEY_TFS_DIR_PATH_TEMPLATE = "metaserver.tfs.dir_path.template";
+
+	public static final String KEY_KEEPER_CONTAINER_ADDRESS_MAX_REMOVED_PERCENT =
+			"keepercontainer.address.local.max.removed.percent";
+
+	public static final String KEY_KEEPER_CONTAINER_ADDRESS_MIN_REMOVED_HOSTNAMES =
+			"keepercontainer.address.local.min.removed.hostnames";
 
 	public static final String DEFAULT_TFS_GATEWAY_HOST = "mock://tfs-gateway";
 
@@ -253,6 +261,16 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public String getTfsDirPathTemplate() {
 		return getProperty(KEY_TFS_DIR_PATH_TEMPLATE, DEFAULT_TFS_DIR_PATH_TEMPLATE);
+	}
+
+	@Override
+	public int getKeeperContainerAddressMaxRemovedPercent() {
+		return getIntProperty(KEY_KEEPER_CONTAINER_ADDRESS_MAX_REMOVED_PERCENT, 50);
+	}
+
+	@Override
+	public int getKeeperContainerAddressMinRemovedHostnames() {
+		return getIntProperty(KEY_KEEPER_CONTAINER_ADDRESS_MIN_REMOVED_HOSTNAMES, 5);
 	}
 
 	public void setDefaultServerPort(int defaultServerPort) {

@@ -4,6 +4,7 @@ public class KeeperMsgModel {
 
     private String ip;
     private int port;
+    private String hostname;
     private String clusterName;
     private String shardName;
     private boolean active;
@@ -40,6 +41,14 @@ public class KeeperMsgModel {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
+
+    public void setHostname(String hostname) {
+        this.hostname = hostname;
     }
 
     public String getClusterName() {

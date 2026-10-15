@@ -2,12 +2,14 @@ package com.ctrip.xpipe.redis.meta.server.spring;
 
 
 import com.ctrip.xpipe.lifecycle.SpringComponentLifecycleManager;
-import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierStateController;
-import com.ctrip.xpipe.redis.meta.server.keeper.applier.manager.DefaultApplierStateController;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
+import com.ctrip.xpipe.redis.core.keeper.container.DefaultCurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.meta.server.config.DefaultMetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.config.MetaServerConfig;
 import com.ctrip.xpipe.redis.meta.server.job.ConsoleNotifycationTask;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.ApplierStateController;
+import com.ctrip.xpipe.redis.meta.server.keeper.applier.manager.DefaultApplierStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.multidc.MultiDcNotifier;
 import com.ctrip.xpipe.redis.meta.server.redis.RedisStateManager;
@@ -70,5 +72,13 @@ public class Production extends AbstractProfile{
 	@Bean
 	public RedisStateManager getRedisStateManager(){
 		return new DefaultRedisStateManager();
+	}
+
+	@Bean
+	public CurrentDcKeeperContainerAddressService keeperContainerAddressService(
+			ZkClient zkClient, MetaServerConfig metaServerConfig) {
+		return new DefaultCurrentDcKeeperContainerAddressService(zkClient,
+				metaServerConfig::getKeeperContainerAddressMaxRemovedPercent,
+				metaServerConfig::getKeeperContainerAddressMinRemovedHostnames);
 	}
 }

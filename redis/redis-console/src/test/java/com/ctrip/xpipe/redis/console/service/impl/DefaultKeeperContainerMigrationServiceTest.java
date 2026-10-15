@@ -39,9 +39,9 @@ public class DefaultKeeperContainerMigrationServiceTest {
         ShardModel shardModel = new ShardModel();
         Mockito.when(shardModelService.getShardModel(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyBoolean(),  Mockito.anyObject()))
                 .thenReturn(shardModel);
-        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(),  Mockito.any(), Mockito.anyString(), Mockito.anyString()))
+        Mockito.when(shardModelService.migrateBackupKeeper(Mockito.anyString(), Mockito.anyString(), Mockito.any(), Mockito.anyLong(), Mockito.anyLong()))
                 .thenReturn(true);
-        Mockito.when(shardModelService.switchActiveKeeper(Mockito.anyString(), Mockito.anyString(), Mockito.any()))
+        Mockito.when(shardModelService.switchActiveKeeper(Mockito.anyString(), Mockito.any(), Mockito.anyLong(), Mockito.anyLong()))
                 .thenReturn(true);
     }
 
@@ -51,6 +51,7 @@ public class DefaultKeeperContainerMigrationServiceTest {
 
         MigrationKeeperContainerDetailModel model = new MigrationKeeperContainerDetailModel();
         KeeperContainerUsedInfoModel src = new KeeperContainerUsedInfoModel()
+                        .setKeeperContainerId(1L)
                         .setKeeperIp("1.1.1.1").setDcName("jq").setTotalInputFlow(300 * 1024 * 1024L)
                         .setTotalRedisUsedMemory(500 * 1024 * 1024 * 1024L);
         Map<DcClusterShardKeeper, KeeperContainerUsedInfoModel.KeeperUsedInfo> detailInfo = Maps.newHashMap();
@@ -61,6 +62,7 @@ public class DefaultKeeperContainerMigrationServiceTest {
         src.setDetailInfo(detailInfo);
 
         KeeperContainerUsedInfoModel target = new KeeperContainerUsedInfoModel()
+                        .setKeeperContainerId(2L)
                         .setKeeperIp("2.2.2.2").setDcName("jq").setTotalInputFlow(300 * 1024 * 1024L)
                         .setTotalRedisUsedMemory(500 * 1024 * 1024 * 1024L);
         Map<DcClusterShardKeeper, KeeperContainerUsedInfoModel.KeeperUsedInfo> detailInfo2 = Maps.newHashMap();

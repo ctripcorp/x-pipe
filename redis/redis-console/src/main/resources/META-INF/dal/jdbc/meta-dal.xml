@@ -1146,6 +1146,7 @@
 		<member name="id" field="id" value-type="Long" length="20" nullable="true" key="true" auto-increment="true" />
 		<member name="count" value-type="long" select-expr="COUNT(rt.id) count" all="false"/>
 		<member name="az-id" field="az_id" value-type="Long" />
+		<member name="host-name" field="host_name" value-type="String" />
 		<member name="keepercontainer-disk-type" value-type="String" all="false"/>
 		<var name="key-id" value-type="Long" key-member="id" />
 
@@ -1162,6 +1163,7 @@
 		<readsets>
 			<readset name="IP-AND-PORT">
 				<member name='redis-ip'/>
+				<member name="host-name"/>
 				<member name="redis-port"/>
 			</readset>
 			<readset name="REDIS-MSG-INFO">
@@ -1183,6 +1185,7 @@
 				<member name="keepercontainer-id"/>
 				<member name="keeper-priority"/>
 				<member name="az-id"/>
+				<member name="host-name"/>
 				<member name="create-time"/>
 			</readset>
 			<readset name="CONTAINER_ID">
@@ -1349,6 +1352,45 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='redis-ip' /> = ${redis-ip}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<!--
+				容器 keeper 的 redis_ip 全是 0.0.0.0，按 IP 记账会把所有 pod 当成同一台机器，
+				因此端口记账与端口判重都要有一套按 host_name 的对应查询。
+			-->
+			<query name='find-by-host-name' type='SELECT' multiple="true">
+				<param name='host-name'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='host-name' /> = ${host-name}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='find-all-keepers-by-keepercontainer-id' type='SELECT' multiple="true">
+				<param name='keeper-container-id'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='keepercontainer-id' /> = ${keeper-container-id}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name='find-with-host-name-port' type='SELECT' multiple="false">
+				<param name='host-name'/>
+				<param name='redis-port'/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='host-name' /> = ${host-name}
+					AND <FIELD name='redis-port' /> = ${redis-port}
 					AND <FIELD name='deleted'/> = 0
 					]]>
 				</statement>
@@ -1765,12 +1807,14 @@
 			<readset name="KEEPER_COUNT">
 				<member name='keepercontainer-id'/>
 				<member name='keepercontainer-ip'/>
+				<member name='keepercontainer-host-name'/>
 				<member name="count"/>
 			</readset>
 
 			<readset name="KEEPER_COUNT_BY_CLUSTER">
 				<member name='keepercontainer-id'/>
 				<member name='keepercontainer-ip'/>
+				<member name='keepercontainer-host-name'/>
 				<member name='keepercontainer-port'/>
 				<member name="keepercontainer-active"/>
 				<member name="az-id"/>
@@ -1782,6 +1826,7 @@
 			<readset name="CONTAINER_ADDRESS">
 				<member name='keepercontainer-id'/>
 				<member name='keepercontainer-ip'/>
+				<member name='keepercontainer-host-name'/>
 				<member name='keepercontainer-port'/>
 			</readset>
 
@@ -1944,6 +1989,30 @@
 					SELECT <FIELDS/>
 					FROM <TABLE/>
 					WHERE <FIELD name='keepercontainer-ip'/> = ${keepercontainer-ip}
+					AND <FIELD name='keepercontainer-port'/> = ${keepercontainer-port}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-by-hostname" type="SELECT" multiple="false">
+				<param name="keepercontainer-host-name"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='keepercontainer-host-name'/> = ${keepercontainer-host-name}
+					AND <FIELD name='deleted'/> = 0
+					]]>
+				</statement>
+			</query>
+			<query name="find-by-hostname-port" type="SELECT" multiple="false">
+				<param name="keepercontainer-host-name"/>
+				<param name="keepercontainer-port"/>
+				<statement>
+					<![CDATA[
+					SELECT <FIELDS/>
+					FROM <TABLE/>
+					WHERE <FIELD name='keepercontainer-host-name'/> = ${keepercontainer-host-name}
 					AND <FIELD name='keepercontainer-port'/> = ${keepercontainer-port}
 					AND <FIELD name='deleted'/> = 0
 					]]>

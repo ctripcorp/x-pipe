@@ -67,27 +67,7 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public Set<HostPort> getAllKeepers() {
-        return null;
-    }
-
-    @Override
-    public String getDcByIpAndPeerClusterShard(String hostIp, Pair<String, String> peerClusterShard) {
-        return null;
-    }
-
-    @Override
-    public Map<String, String> getAllKeeperContainersDcMap() {
-        return null;
-    }
-
-    @Override
     public Pair<String, String> findClusterShard(HostPort hostPort) {
-        return null;
-    }
-
-    @Override
-    public Map<String, String> getAllApplierContainersDcMap() {
         return null;
     }
 
@@ -211,6 +191,11 @@ public class TestMetaCache implements MetaCache {
     @Override
     public List<KeeperMeta> getKeeperOfDcClusterShard(String dc, String cluster, String shard) {
         return null;
+    }
+
+    @Override
+    public Map<KeeperMeta, String> getKeeper2DcOfClusterShard(String cluster, String shard) {
+        return Map.of();
     }
 
     @Override

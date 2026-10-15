@@ -36,6 +36,15 @@ public class MetaZkConfig {
 		return System.getProperty("zkLeaderLatchRootPath", "/keepers");
 	}
 
+	/**
+	 * keepercontainer 自注册的根路径。每个 keepercontainer 启动时在该路径下创建以自身
+	 * hostname 命名的临时节点，节点数据带自探测的实时 IP，供 console/metaserver/checker
+	 * watch 后做 hostname 与 IP 的互查。
+	 */
+	public static String getKeeperContainerRegisterPath() {
+		return System.getProperty("zkKeeperContainerRegisterPath", "/keepercontainers");
+	}
+
 	public static String getApplierZkLeaderLatchRootPath() {
 		return System.getProperty("applierZkLeaderLatchRootPath", "/appliers");
 	}

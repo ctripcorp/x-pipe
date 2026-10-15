@@ -6,7 +6,6 @@ import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
-import com.ctrip.xpipe.redis.checker.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.model.DcClusterShardKeeper;
 import com.ctrip.xpipe.redis.checker.model.KeeperContainerUsedInfoModel;
@@ -18,6 +17,8 @@ import com.ctrip.xpipe.redis.console.keeper.entity.CheckerReportSituation;
 import com.ctrip.xpipe.redis.console.keeper.entity.DcCheckerReportMsg;
 import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.OrganizationTbl;
+import com.ctrip.xpipe.redis.console.service.CrossDcKeeperContainerAddressService;
+import com.ctrip.xpipe.redis.console.service.KeeperContainerCheckerService;
 import com.ctrip.xpipe.redis.console.service.KeeperContainerService;
 import com.ctrip.xpipe.redis.console.service.OrganizationService;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -25,6 +26,7 @@ import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DateTimeUtils;
+import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import com.ctrip.xpipe.utils.job.DynamicDelayPeriodTask;
 import org.slf4j.Logger;
@@ -70,6 +72,9 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
 
     @Autowired
     private KeeperContainerDiskInfoCollector keeperContainerDiskInfoCollector;
+
+    @Autowired
+    private CrossDcKeeperContainerAddressService keeperContainerAddressService;
 
     private ScheduledExecutorService scheduled;
 
@@ -133,7 +138,7 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         dcCheckerReportSituationMap = tmpDcCheckerReportSituationMap;
         if (allRedisMasterMsg.isEmpty()) return;
 
-        Map<String, KeeperContainerUsedInfoModel> modelMap = generateKeeperContainerUsedInfoModels(allRedisMasterMsg, dcName);
+        Map<Long, KeeperContainerUsedInfoModel> modelMap = generateKeeperContainerUsedInfoModels(allRedisMasterMsg, dcName);
         reportKeeperData(modelMap);
         keeperContainerUsedInfoAnalyzer.updateKeeperContainerUsedInfo(dcName, modelMap);
     }
@@ -164,8 +169,8 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         }
     }
 
-    protected Map<String, KeeperContainerUsedInfoModel> generateKeeperContainerUsedInfoModels(Map<HostPort, RedisMsg> redisMsgMap, String selectedDcName) {
-        Map<String, KeeperContainerUsedInfoModel> result = new HashMap<>();
+    protected Map<Long, KeeperContainerUsedInfoModel> generateKeeperContainerUsedInfoModels(Map<HostPort, RedisMsg> redisMsgMap, String selectedDcName) {
+        Map<Long, KeeperContainerUsedInfoModel> result = new HashMap<>();
         Map<String, Object> checkedCluster = new HashMap<>();
         for (DcMeta dcMeta : metaCache.getXpipeMeta().getDcs().values()) {
             for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
@@ -196,8 +201,14 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
             }
             if (selectedDcName.equals(dcMeta.getId())) {
                 dcMeta.getKeeperContainers().forEach(keeperContainerMeta -> {
-                    if (!result.containsKey(keeperContainerMeta.getIp())) {
-                        result.put(keeperContainerMeta.getIp(),  getKeeperBasicModel(keeperContainerMeta.getIp(), dcMeta.getId()));
+                    Long keeperContainerId = keeperContainerMeta.getId();
+                    if (!isValidKeeperContainerId(keeperContainerId)) {
+                        logger.warn("[generateKeeperContainerUsedInfoModels] invalid keeperContainerId:{} for keeperContainer: ip={}, hostname={}",
+                                keeperContainerId, keeperContainerMeta.getIp(), keeperContainerMeta.getHostname());
+                        return;
+                    }
+                    if (!result.containsKey(keeperContainerId)) {
+                        result.put(keeperContainerId, getKeeperBasicModel(keeperContainerId, keeperContainerMeta.getIp(), keeperContainerMeta.getHostname(), dcMeta.getId()));
                     }
                 });
             }
@@ -205,14 +216,22 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         return result;
     }
 
-    private void generateKeeperMsg(String dc, String cluster, String shard, List<KeeperMeta> keeperMetas, Map<String, KeeperContainerUsedInfoModel> result, RedisMsg redisMsg) {
+    private void generateKeeperMsg(String dc, String cluster, String shard, List<KeeperMeta> keeperMetas, Map<Long, KeeperContainerUsedInfoModel> result, RedisMsg redisMsg) {
         for (KeeperMeta keeperMeta : keeperMetas) {
-            if (!result.containsKey(keeperMeta.getIp())) {
-                result.put(keeperMeta.getIp(), getKeeperBasicModel(keeperMeta.getIp(), dc));
+            Long keeperContainerId = keeperMeta.getKeeperContainerId();
+            if (!isValidKeeperContainerId(keeperContainerId)) {
+                logger.warn("[generateKeeperMsg] invalid keeperContainerId:{} for keeper: {}-{}-{}, ip={}, hostname={}",
+                        keeperContainerId, dc, cluster, shard, keeperMeta.getIp(), keeperMeta.getHostname());
+                continue;
             }
-            KeeperContainerUsedInfoModel model = result.get(keeperMeta.getIp());
+            
+            if (!result.containsKey(keeperContainerId)) {
+                result.put(keeperContainerId, getKeeperBasicModel(keeperContainerId, keeperMeta.getIp(), keeperMeta.getHostname(), dc));
+            }
+            
+            KeeperContainerUsedInfoModel model = result.get(keeperContainerId);
             DcClusterShardKeeper dcClusterShardKeeper = new DcClusterShardKeeper(dc, cluster, shard, keeperMeta.getActive(), keeperMeta.getPort());
-            KeeperContainerUsedInfoModel.KeeperUsedInfo keeperUsedInfo = new KeeperContainerUsedInfoModel.KeeperUsedInfo(redisMsg.getUsedMemory(), redisMsg.getInPutFlow(), keeperMeta.getIp());
+            KeeperContainerUsedInfoModel.KeeperUsedInfo keeperUsedInfo = new KeeperContainerUsedInfoModel.KeeperUsedInfo(redisMsg.getUsedMemory(), redisMsg.getInPutFlow(), keeperMeta.getIp(), keeperContainerId);
             model.getDetailInfo().put(dcClusterShardKeeper, keeperUsedInfo);
             if (dcClusterShardKeeper.isActive()) {
                 model.setActiveKeeperCount(model.getActiveKeeperCount() + 1)
@@ -243,9 +262,38 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         return null;
     }
 
-    private KeeperContainerUsedInfoModel getKeeperBasicModel(String ip, String dcName) {
-        KeeperContainerUsedInfoModel model = new KeeperContainerUsedInfoModel(ip, dcName, 0, 0);
-        KeepercontainerTbl keepercontainerTbl = keeperContainerService.find(ip);
+    /**
+     * keeper 行的 keepercontainer_id 在 DB 里可为 NULL，经 DAL 的 primitive long 映射后读出来是 0，
+     * 所以判空必须连 0 一起拦。否则这些"无主"keeper 会被聚合到 id=0 这个并不存在的容器上，
+     * 流量与数据被累加成一个虚构的超载容器，进而产出无意义的迁移计划和资源不足告警。
+     */
+    private boolean isValidKeeperContainerId(Long keeperContainerId) {
+        return keeperContainerId != null && keeperContainerId > 0;
+    }
+
+    private KeeperContainerUsedInfoModel getKeeperBasicModel(long keeperContainerId, String ip, String hostname, String dcName) {
+        KeepercontainerTbl keepercontainerTbl = keeperContainerService.find(keeperContainerId);
+
+        // keepercontainer 表才是容器身份的权威来源。传入的 ip/hostname 来自调用点（keeper 行或 keeperContainer 行），
+        // 同一个容器可能先由 generateKeeperMsg 建、也可能先由 dcMeta.getKeeperContainers() 建，
+        // 两边数据漂移时展示字段会变成"先到先得"，这里统一收敛到 DB 行，查不到才退回调用点给的值。
+        String containerIp = keepercontainerTbl == null ? ip : keepercontainerTbl.getKeepercontainerIp();
+        String containerHostname = keepercontainerTbl == null ? hostname : keepercontainerTbl.getKeepercontainerHostName();
+        // 容器形态下登记的 ip 只是占位值，对外展示、指标上报、磁盘查询都要用反查到的实时 IP
+        String resolvedIp = resolveIp(containerIp, containerHostname, dcName);
+
+        KeeperContainerUsedInfoModel model = new KeeperContainerUsedInfoModel(resolvedIp, dcName, 0, 0);
+        // keeperContainerId 是 model 的唯一标识（equals/hashCode 与整条 analyze 链路都依赖它），
+        // 必须在任何提前返回之前落定，且只能来自 meta，不能靠 ip/hostname 反查 DB 得到，
+        // 否则 DB 查不到时 id 为 null，会让 analyze 链路拿到无法定位的 model
+        model.setKeeperContainerId(keeperContainerId)
+                .setHostName(containerHostname)
+                .setDetailInfo(new HashMap<>());
+
+        if (keepercontainerTbl == null) {
+            logger.warn("[getKeeperBasicModel] keepercontainer not found for id: {}, ip: {}, hostname: {}", keeperContainerId, ip, hostname);
+            return model;
+        }
 
         OrganizationTbl organizationTbl = organizationService.getOrganization(keepercontainerTbl.getKeepercontainerOrgId());
         if (organizationTbl != null) {
@@ -253,9 +301,9 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         }
         model.setTag(keepercontainerTbl.getTag());
         try {
-            KeeperDiskInfo keeperDiskInfo = keeperContainerDiskInfoCollector.getKeeperDiskInfo(ip);
-            if (keeperDiskInfo == null) {
-                keeperDiskInfo = keeperContainerCheckerService.getKeeperDiskInfo(ip);
+            KeeperDiskInfo keeperDiskInfo = keeperContainerDiskInfoCollector.getKeeperDiskInfo(keeperContainerId);
+            if (keeperDiskInfo == null && resolvedIp != null) {
+                keeperDiskInfo = keeperContainerCheckerService.getKeeperDiskInfo(resolvedIp);
             }
             if  (keeperDiskInfo != null && keeperDiskInfo.available && keeperDiskInfo.spaceUsageInfo != null) {
                 model.setDiskAvailable(true)
@@ -265,16 +313,35 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
                 model.setDiskAvailable(false).setKeeperContainerHealth(false);
             }
         } catch (Throwable th){
-            logger.error("[KeeperContainerUsedInfoModel] getKeeperDiskInfo error, keeperIp: {}", ip, th);
+            logger.error("[KeeperContainerUsedInfoModel] getKeeperDiskInfo error, keeperContainerId: {}, keeperIp: {}", keeperContainerId, resolvedIp, th);
         }
-        model.setDetailInfo(new HashMap<>())
-                .setActiveKeeperCount(0)
+        model.setActiveKeeperCount(0)
                 .setTotalKeeperCount(0)
                 .setActiveInputFlow(0)
                 .setActiveRedisUsedMemory(0)
                 .setTotalInputFlow(0)
                 .setTotalRedisUsedMemory(0);
         return model;
+    }
+
+    /**
+     * 物理机直接用登记的 IP；容器经 ZK 反查实时 IP。
+     * <p>
+     * 这里必须用跨机房版本：本 collector 除 currentDc 外还会为 extraSyncDC 生成数据，
+     * 而 CurrentDcKeeperContainerAddressService 只 watch 本机房那套 ZK。
+     * <p>
+     * 反查不到时返回 null 而不是回退到占位 IP：占位值（DB 默认 0.0.0.0）在所有 pod 之间重复，
+     * 拿它去发请求或上报指标只会产生互相串台的脏数据，宁可显式缺失。
+     */
+    private String resolveIp(String ip, String hostname, String dcName) {
+        if (StringUtil.isEmpty(hostname)) {
+            return ip;
+        }
+        String resolvedIp = keeperContainerAddressService.getIpByHostname(dcName, hostname);
+        if (resolvedIp == null) {
+            logger.warn("[resolveIp] failed to resolve hostname: {} in dc: {}", hostname, dcName);
+        }
+        return resolvedIp;
     }
 
     public void reportClusterData(String clusterName, RedisMsg clusterAllRedisMsg, String dcName) {
@@ -293,8 +360,8 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         }
     }
 
-    public void reportKeeperData(Map<String, KeeperContainerUsedInfoModel> modelMap) {
-        for (Map.Entry<String, KeeperContainerUsedInfoModel> model : modelMap.entrySet()) {
+    public void reportKeeperData(Map<Long, KeeperContainerUsedInfoModel> modelMap) {
+        for (Map.Entry<Long, KeeperContainerUsedInfoModel> model : modelMap.entrySet()) {
             reportKeeperData(model.getValue(), DATA_TYPE, true);
             reportKeeperData(model.getValue(), DATA_TYPE, false);
             reportKeeperData(model.getValue(), TRAFFIC_TYPE, true);
@@ -319,7 +386,14 @@ public class KeeperContainerUsedInfoMsgCollector extends AbstractService impleme
         }
         data.addTag("dc", model.getDcName());
         data.addTag("org", model.getOrg() == null ? "common" : model.getOrg());
-        data.addTag("ip", model.getKeeperIp());
+        // 容器反查不到实时 IP 时 keeperIp 为空，此时由 hostname 承担身份，不上报空 ip tag
+        if (!StringUtil.isEmpty(model.getKeeperIp())) {
+            data.addTag("ip", model.getKeeperIp());
+        }
+        // 容器形态下同时上报hostname,便于前端展示和问题定位
+        if (!StringUtil.isEmpty(model.getHostName())) {
+            data.addTag("hostname", model.getHostName());
+        }
         data.addTag("active", active ? "1" : "0");
         data.setTimestampMilli(System.currentTimeMillis());
         try {

@@ -1,8 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api.data;
 
 import com.ctrip.xpipe.cluster.ClusterType;
-import com.ctrip.xpipe.endpoint.HostPort;
-import com.ctrip.xpipe.redis.checker.controller.result.GenericRetMessage;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.annotation.ClusterTypeLimit;
@@ -12,6 +10,7 @@ import com.ctrip.xpipe.redis.console.model.KeepercontainerTbl;
 import com.ctrip.xpipe.redis.console.model.RedisTbl;
 import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,13 +36,13 @@ public class KeeperUpdateController extends AbstractConsoleController {
   private KeeperAdvancedService keeperAdvancedService;
 
   @Autowired
-  private KeeperService keeperService;
-
-  @Autowired
   private KeeperContainerService keeperContainerService;
 
   @Autowired
   protected ClusterService clusterService;
+
+  @Autowired
+  private CrossDcKeeperContainerAddressService keeperContainerAddressService;
 
   @ClusterTypeLimit(value = {ClusterType.ONE_WAY, ClusterType.HETERO})
   @RequestMapping(value = "/keepers/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.GET)
@@ -57,18 +56,37 @@ public class KeeperUpdateController extends AbstractConsoleController {
     List<RedisTbl> keeperTbls = null;
     try {
       keeperTbls = redisService.findKeepersByDcClusterShard(dcId, clusterId, shardId);
-      result = formatToIpPort(keeperTbls);
+      result = formatToIpPort(keeperTbls, dcId);
     } catch (ResourceNotFoundException e) {
       logger.error("[getKeepers]", e);
     }
     return result;
   }
 
-  private List<String> formatToIpPort(List<RedisTbl> keeperTbls) {
+  private List<String> formatToIpPort(List<RedisTbl> keeperTbls, String dc) {
 
     List<String> result = new LinkedList<>();
-    keeperTbls.forEach(redisTbl -> result.add(String.format("%s:%d", redisTbl.getRedisIp(), redisTbl.getRedisPort())));
+    keeperTbls.forEach(redisTbl -> result.add(String.format("%s:%d", getKeeperRealIp(redisTbl, dc), redisTbl.getRedisPort())));
     return result;
+  }
+
+  private String getKeeperRealIp(RedisTbl keeper, String dc) {
+    String realIp = StringUtil.isEmpty(keeper.getHostName()) ? keeper.getRedisIp() : keeperContainerAddressService.getIpByHostname(dc, keeper.getHostName());
+    return StringUtil.isEmpty(realIp) ? keeper.getHostName() : realIp;
+  }
+
+  /**
+   * 简单的日志输出格式：有 IP 用 IP，没有 IP 用 hostname
+   */
+  private String keepersToSimpleString(List<RedisTbl> keepers) {
+    List<String> result = new LinkedList<>();
+    for (RedisTbl keeper : keepers) {
+      String addr = StringUtil.isEmpty(keeper.getRedisIp()) 
+          ? keeper.getHostName() 
+          : keeper.getRedisIp();
+      result.add(String.format("%s:%d", addr, keeper.getRedisPort()));
+    }
+    return result.toString();
   }
 
   @RequestMapping(value = "/keepers/{dcId}/" + CLUSTER_ID_PATH_VARIABLE + "/" + SHARD_ID_PATH_VARIABLE, method = RequestMethod.POST)
@@ -81,7 +99,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
     try {
       List<RedisTbl> keepers = redisService.findKeepersByDcClusterShard(dcId, clusterId, shardId);
       if (keepers.size() > 0) {
-        return RetMessage.createSuccessMessage("alread has keepers:" + formatToIpPort(keepers));
+        return RetMessage.createSuccessMessage("alread has keepers:" + keepersToSimpleString(keepers));
       }
     } catch (ResourceNotFoundException e) {
       logger.info("[addKeepers][not found]{}, {}, {}", dcId, clusterId, shardId);
@@ -122,7 +140,7 @@ public class KeeperUpdateController extends AbstractConsoleController {
 
       String message = null;
       if (redisTbls.size() > 0) {
-        message = String.format("deleted:%s", formatToIpPort(redisTbls).toString());
+        message = String.format("deleted:%s", keepersToSimpleString(redisTbls));
       } else {
         message = "success, but already no keepers";
       }
@@ -130,18 +148,6 @@ public class KeeperUpdateController extends AbstractConsoleController {
     } catch (Throwable th) {
       logger.error("[deleteKeepers]", th);
       return RetMessage.createFailMessage(th.getMessage());
-    }
-  }
-
-  @RequestMapping(value = "/keepers/check", method = RequestMethod.POST)
-  public RetMessage isKeeper(@RequestBody HostPort hostPort) {
-    logger.debug("[isKeeper] check {} keeper or not", hostPort);
-    try {
-        boolean result = keeperService.isKeeper(hostPort);
-        return GenericRetMessage.createGenericRetMessage(result);
-    } catch (Throwable th) {
-        logger.error("[isKeeper]{}", th);
-        return RetMessage.createFailMessage(th.getMessage());
     }
   }
 
@@ -178,10 +184,13 @@ public class KeeperUpdateController extends AbstractConsoleController {
     }
   }
 
-  @RequestMapping(value = "/keepercontainer/{keepercontaierIp}/{keepercontainerPort}", method = RequestMethod.DELETE)
-  public RetMessage deleteKeepercontainer(@PathVariable String keepercontaierIp, @PathVariable Integer keepercontainerPort) {
+  @RequestMapping(value = "/keepercontainer/{keepercontaierIp}/{keepercontainerPort}/{keepercontainerHostName}", method = RequestMethod.DELETE)
+  public RetMessage deleteKeepercontainer(@PathVariable String keepercontaierIp, @PathVariable Integer keepercontainerPort, @PathVariable(required = false) String keepercontainerHostName) {
     try {
-      keeperContainerService.deleteKeeperContainer(keepercontaierIp,keepercontainerPort);
+      if (StringUtil.isEmpty(keepercontainerHostName))
+        keeperContainerService.deleteKeeperContainer(keepercontaierIp, keepercontainerPort);
+      else
+        keeperContainerService.deleteKeeperContainerByHostname(keepercontainerHostName, keepercontainerPort);
       return RetMessage.createSuccessMessage();
     } catch (Throwable th) {
       logger.error("[deleteKeepercontainer][fail] {}:{}", keepercontaierIp, keepercontainerPort, th);

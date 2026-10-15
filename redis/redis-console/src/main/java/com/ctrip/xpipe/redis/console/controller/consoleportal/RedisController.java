@@ -1,14 +1,11 @@
 package com.ctrip.xpipe.redis.console.controller.consoleportal;
 
+import com.ctrip.xpipe.redis.console.cache.AzCache;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.RedisWithAzInfo;
-import com.ctrip.xpipe.redis.console.model.AzTbl;
-import com.ctrip.xpipe.redis.console.model.ClusterTbl;
-import com.ctrip.xpipe.redis.console.model.MigrationKeeperModel;
-import com.ctrip.xpipe.redis.console.model.RedisTbl;
-import com.ctrip.xpipe.redis.console.model.ShardModel;
-import com.ctrip.xpipe.redis.console.cache.AzCache;
-import com.ctrip.xpipe.redis.console.service.*;
+import com.ctrip.xpipe.redis.console.model.*;
+import com.ctrip.xpipe.redis.console.service.ClusterService;
+import com.ctrip.xpipe.redis.console.service.RedisService;
 import com.ctrip.xpipe.redis.console.service.exception.ResourceNotFoundException;
 import com.ctrip.xpipe.redis.console.service.model.ShardModelService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,10 +89,10 @@ public class RedisController extends AbstractConsoleController {
                     .getAllShardModel(model.getSrcKeeperContainer().getDcName(), clusterTbl.getClusterName());
 
             for (ShardModel shardModel : allShardModel) {
+                long srcKeeperContainerId = model.getSrcKeeperContainer().getId();
+                long targetKeeperContainerId = (model.getTargetKeeperContainer() == null) ? 0 : model.getTargetKeeperContainer().getId();
                 if (!shardModelService.migrateBackupKeeper(model.getSrcKeeperContainer().getDcName(),
-                        clusterTbl.getClusterName(), shardModel, model.getSrcKeeperContainer().getAddr().getHost(),
-                        (model.getTargetKeeperContainer() == null || model.getTargetKeeperContainer().getAddr() == null)
-                                ? null : model.getTargetKeeperContainer().getAddr().getHost())) {
+                        clusterTbl.getClusterName(), shardModel, srcKeeperContainerId, targetKeeperContainerId)) {
                     continue;
                 }
                 if (model.getMaxMigrationKeeperNum() != 0 && (++count) >= model.getMaxMigrationKeeperNum()) {
