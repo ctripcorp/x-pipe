@@ -1,0 +1,42 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/DeferredHandleCloser.java
+  s_bfe79ad4e679ba::t_24cc51677d3b45 114
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/DeferredHandle.java
+  s_bfe79ad4e679ba::t_a25a2d99cfbc43 163-168
+  s_bfe79ad4e679ba::t_029b625352e39d 46,49
+  s_bfe79ad4e679ba::t_f8abd29f5162c9 5-6
+  s_bfe79ad4e679ba::t_d473580a4838f3 26-27
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelperReopenReportTest.java
+  s_bfe79ad4e679ba::t_6a1a70b58d50af 1-38,40-82,84-105,107-118,120-122,125,127,132-144,146-167,170-177,179-219,221-265
+  s_bfe79ad4e679ba::t_c82d38dd9a4efc 83,106,123,145,168,220
+  s_bfe79ad4e679ba::t_49ba4bf2e5e45a 169
+  s_bfe79ad4e679ba::t_01967cbfe688f4 178
+  s_bfe79ad4e679ba::t_ca6e00225003ad 39
+  s_bfe79ad4e679ba::t_d8b004a75c9619 119,124,126,128-131
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_bfe79ad4e679ba::t_a1abd19c0502e6 171
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelper.java
+  s_bfe79ad4e679ba::t_9f22f37e87fad8 167,171,174,187
+  s_bfe79ad4e679ba::t_b182b2c319d730 142,144-145,172-173,176-177,184,186
+  s_bfe79ad4e679ba::t_35b0143e7379f8 183
+  s_bfe79ad4e679ba::t_bee18d62317e3e 287
+  s_bfe79ad4e679ba::t_e8721566040a76 39-40
+  s_bfe79ad4e679ba::t_24797cbc666b6f 168-170
+  s_bfe79ad4e679ba::t_9bf133dedfdbeb 185
+  s_bfe79ad4e679ba::t_0a58b110cd227f 178-182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.49-trip",
+  "base_commit_sha": "3b6fdafde783b6b31f90217cad321b4029e6b385",
+  "prompts": {},
+  "sessions": {
+    "s_bfe79ad4e679ba": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_dd7ed310-1bde-4688-8c59-f2e32d690411",
+        "model": "claude-opus-5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

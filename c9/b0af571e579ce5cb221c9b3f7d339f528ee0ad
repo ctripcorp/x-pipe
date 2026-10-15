@@ -1,0 +1,42 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManagerTest.java
+  s_9e4e96683b8611::t_b55b9336f60978 629
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/ReplicationStoreManagerStopReleaseFailureTest.java
+  s_9e4e96683b8611::t_65e2f2e2e8e62d 156
+  s_9e4e96683b8611::t_b6b481c7b3d533 136,142,152,161,172
+  s_9e4e96683b8611::t_4750611bd55dc7 1-11,13-60,62-63,68-93,95-99,102-104,106-111,113-118,120-126,128,130-135,137-141,143-151,153-155,157-160,162-171,173-175
+  s_9e4e96683b8611::t_bead5bb39ff356 12
+  s_9e4e96683b8611::t_a7028407281020 61,64-67
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java
+  s_9e4e96683b8611::t_9958424d9d661f 34
+  s_9e4e96683b8611::t_d57d8653835f42 228-229,232,235
+  s_9e4e96683b8611::t_81c2dc6f4919e1 439,442,444,448
+  s_9e4e96683b8611::t_9bd442e147ad23 184
+  s_9e4e96683b8611::t_6a13fe1b54db1e 440
+  s_9e4e96683b8611::t_7dbb713c3a96a9 450
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_9e4e96683b8611::t_03356c411d2e14 846-847
+  s_9e4e96683b8611::t_2f442b48fef0af 818-819
+  s_9e4e96683b8611::t_3f504b143fda42 848
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_9e4e96683b8611::t_02970341eb7db3 34
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/ReplicationStoreManager.java
+  s_9e4e96683b8611::t_106b1863959e2d 39-42,44-47,51
+  s_9e4e96683b8611::t_49d4262e1329ce 48-50
+  s_9e4e96683b8611::t_9be9a97c1b5de7 43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.49-trip",
+  "base_commit_sha": "c9b0af571e579ce5cb221c9b3f7d339f528ee0ad",
+  "prompts": {},
+  "sessions": {
+    "s_9e4e96683b8611": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_9713aa58-fce4-4955-9206-aafdfda77a70",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
