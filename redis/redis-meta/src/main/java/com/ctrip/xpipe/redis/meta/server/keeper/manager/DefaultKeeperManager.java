@@ -30,6 +30,8 @@ import com.ctrip.xpipe.redis.meta.server.exception.KeeperStateInCorrectException
 import com.ctrip.xpipe.redis.meta.server.job.KeeperIndexChangeJob;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperMasterProcessJob;
 import com.ctrip.xpipe.redis.meta.server.job.KeeperStateChangeJob;
+import com.ctrip.xpipe.redis.meta.server.job.TfsKeeperStateChangeJob;
+import com.ctrip.xpipe.redis.meta.server.tfs.TfsKeeperUtils;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperManager;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.elect.KeeperRoleAssigner;
@@ -566,8 +568,25 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 		}
 		RouteMeta routeMeta = currentMetaManager.getClusterRouteByDcId(dstDcId, clusterDbId);
 
-		return new KeeperMasterProcessJob(clusterDbId, shardDbId, keepers, routeMeta, metaCache, master,
-				clientPool, scheduled, executors, keeperRoles);
+		KeeperMasterProcessJob job = new KeeperMasterProcessJob(clusterDbId, shardDbId, keepers, routeMeta, metaCache,
+				master, clientPool, scheduled, executors, keeperRoles);
+
+		// TFS: correction may move the slot holder (e.g. BM active, holder's priority changed). Use the TFS
+		// job so a keeper that must leave the slot gets PREPARE (ForceCloseDir on failure) before the new
+		// holder gets BACKUP. Roles and targets stay on survive, the same set the align checker expects:
+		// - survive∪meta roles can pick an unreachable meta-only keeper as holder; live TFS keepers would
+		//   then get PREPARE, never match the checker's survive roles, and correction would loop forever;
+		// - unreachable meta-only keepers would get ForceCloseDir on every 30s round.
+		// Releasing a holder that left survive stays with keeperActiveElected.
+		// No ForceCloseDir here: it is dir-wide in TFS (no pod scope), so a PREPARE timeout on any keeper
+		// would evict the slot holder that correction keeps in place. PREPARE stays a cooperative release.
+		if (TfsKeeperUtils.shardHasTfsKeeper(keepers, metaCache)) {
+			job.setChangeJob(new TfsKeeperStateChangeJob(clusterDbId, shardDbId, keepers,
+					currentMetaManager.getPreviousActiveKeeper(clusterDbId, shardDbId), master, routeMeta, clientPool,
+					metaCache, config, scheduled, executors, keeperRoles, keepers)
+					.disableForceCloseOnPrepareFailure());
+		}
+		return job;
 	}
 
 	@VisibleForTesting

@@ -15,6 +15,8 @@ import com.ctrip.xpipe.redis.core.meta.comparator.DcMetaComparator;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.redis.meta.server.AbstractMetaServerTest;
+import com.ctrip.xpipe.redis.meta.server.job.KeeperMasterProcessJob;
+import com.ctrip.xpipe.redis.meta.server.job.TfsKeeperStateChangeJob;
 import com.ctrip.xpipe.redis.meta.server.keeper.KeeperStateController;
 import com.ctrip.xpipe.redis.meta.server.keeper.manager.DefaultKeeperManager.ActiveKeeperInfoChecker;
 import com.ctrip.xpipe.redis.meta.server.meta.CurrentMetaManager;
@@ -287,6 +289,60 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
         Assert.assertNull(manager.resolveKeeperRoles(clusterDbId, shardDbId, survive));
         Assert.assertNull(manager.createKeeperMasterProcessJob(clusterDbId, shardDbId, survive,
                 new Pair<>("127.0.0.1", 6379)));
+    }
+
+    @Test
+    public void testCreateKeeperMasterProcessJobUsesTfsJobForTfsShard() {
+        KeeperMeta bm = keeperForDisk(6200, 1L, 1, true);
+        KeeperMeta tfsHolder = keeperForDisk(6201, 2L, 5, false);
+        KeeperMeta tfsOther = keeperForDisk(6202, 3L, 1, false);
+        List<KeeperMeta> survive = Arrays.asList(bm, tfsHolder, tfsOther);
+
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(bm);
+        when(currentMetaManager.getSurviveKeepers(clusterDbId, shardDbId)).thenReturn(survive);
+        when(dcMetaCache.getKeeperContainer(any(KeeperMeta.class))).thenAnswer(invocation -> {
+            KeeperMeta keeperMeta = invocation.getArgument(0);
+            KeeperContainerMeta containerMeta = new KeeperContainerMeta();
+            containerMeta.setId(keeperMeta.getKeeperContainerId());
+            containerMeta.setDiskType(keeperMeta.getKeeperContainerId() >= 2L ? "tfs-1" : "DEFAULT");
+            return containerMeta;
+        });
+
+        KeeperMasterProcessJob job = manager.createKeeperMasterProcessJob(clusterDbId, shardDbId, survive,
+                new Pair<>("127.0.0.1", 6379));
+
+        Assert.assertNotNull(job);
+        Assert.assertTrue("TFS shard correction must release before grant",
+                job.getChangeJob() instanceof TfsKeeperStateChangeJob);
+        Assert.assertFalse("correction must not ForceCloseDir: dir-wide, would fence the kept slot holder",
+                ((TfsKeeperStateChangeJob) job.getChangeJob()).mayForceCloseOnPrepareFailure());
+
+        // correction roles must equal what the align checker expects, or correction never converges
+        Map<KeeperMeta, KeeperState> roles = manager.resolveKeeperRoles(clusterDbId, shardDbId, survive);
+        Assert.assertEquals(KeeperState.BACKUP, roles.get(tfsHolder));
+        Assert.assertEquals(KeeperState.PREPARE, roles.get(tfsOther));
+        Assert.assertEquals(manager.resolveExpectedNonActiveState(tfsHolder, clusterDbId, shardDbId), roles.get(tfsHolder));
+        Assert.assertEquals(manager.resolveExpectedNonActiveState(tfsOther, clusterDbId, shardDbId), roles.get(tfsOther));
+    }
+
+    @Test
+    public void testCreateKeeperMasterProcessJobKeepsDefaultJobForBmShard() {
+        KeeperMeta active = keeperForDisk(6300, 1L, 1, true);
+        KeeperMeta backup = keeperForDisk(6301, 1L, 1, false);
+        List<KeeperMeta> survive = Arrays.asList(active, backup);
+
+        when(currentMetaManager.getKeeperActive(clusterDbId, shardDbId)).thenReturn(active);
+        when(dcMetaCache.getKeeperContainer(any(KeeperMeta.class))).thenAnswer(invocation -> {
+            KeeperContainerMeta containerMeta = new KeeperContainerMeta();
+            containerMeta.setDiskType("DEFAULT");
+            return containerMeta;
+        });
+
+        KeeperMasterProcessJob job = manager.createKeeperMasterProcessJob(clusterDbId, shardDbId, survive,
+                new Pair<>("127.0.0.1", 6379));
+
+        Assert.assertNotNull(job);
+        Assert.assertNull("BM-only shard keeps KeeperStateChangeJob", job.getChangeJob());
     }
 
     @Test

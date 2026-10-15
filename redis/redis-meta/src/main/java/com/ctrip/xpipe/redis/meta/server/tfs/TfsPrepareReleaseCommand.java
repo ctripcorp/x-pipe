@@ -35,6 +35,7 @@ public class TfsPrepareReleaseCommand extends AbstractCommand<Void> {
     private final ScheduledExecutorService scheduled;
     private final Executor executor;
     private final TfsGateway tfsGateway;
+    private boolean forceCloseOnFailure = true;
 
     public TfsPrepareReleaseCommand(TfsShardContext shardContext, KeeperMeta oldTfsActive, KeeperMeta newActive,
                                     SimpleKeyedObjectPool<Endpoint, NettyClient> clientPool,
@@ -56,6 +57,16 @@ public class TfsPrepareReleaseCommand extends AbstractCommand<Void> {
         this.scheduled = scheduled;
         this.executor = executor;
         this.tfsGateway = tfsGateway;
+    }
+
+    /**
+     * Whether a failed PREPARE falls back to ForceCloseDir. ForceCloseDir has no pod scope: TFS evicts and
+     * blacklists every current lease holder under the dir, i.e. also the slot holder that keeps writing.
+     * So it may only run when the slot holder is about to change; otherwise PREPARE failure is just logged.
+     */
+    public TfsPrepareReleaseCommand setForceCloseOnFailure(boolean forceCloseOnFailure) {
+        this.forceCloseOnFailure = forceCloseOnFailure;
+        return this;
     }
 
     @Override
@@ -80,6 +91,12 @@ public class TfsPrepareReleaseCommand extends AbstractCommand<Void> {
                     getLogger().info("[prepareRelease][ok, skip force close]cluster_{},shard_{},{},reply={}",
                             shardContext.getClusterDbId(), shardContext.getShardDbId(), oldTfsActive,
                             commandFuture.getNow());
+                    future().setSuccess(null);
+                    return;
+                }
+                if (!forceCloseOnFailure) {
+                    getLogger().warn("[prepareRelease][prepare fail, slot holder kept, skip dir-wide force close]cluster_{},shard_{},{}",
+                            shardContext.getClusterDbId(), shardContext.getShardDbId(), oldTfsActive, commandFuture.cause());
                     future().setSuccess(null);
                     return;
                 }

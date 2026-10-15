@@ -107,8 +107,11 @@ public class GtidxHandler extends AbstractCommandHandler {
 
             gtidSet.compensate(uuid,startGno,endGno);
             if(isLost(args[1])) {
-                ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
-                MetaStore metaStore = replicationStore.getMetaStore();
+                ReplicationStore opened = redisKeeperServer.getOpenedStore();
+                if (opened == null) {
+                    return new CommandBulkStringParser("ERR store not opened").format();
+                }
+                MetaStore metaStore = opened.getMetaStore();
                 long removeCnt = metaStore.removeLost(gtidSet);
                 return new LongParser(removeCnt).format();
             }
@@ -145,13 +148,16 @@ public class GtidxHandler extends AbstractCommandHandler {
 
             gtidSet.compensate(uuid,startGno,endGno);
             if(isExecuted(args[1])) {
-                ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
-                Pair<GtidSet, GtidSet> currentGtidSet = replicationStore.getGtidSet();
+                ReplicationStore opened = redisKeeperServer.getOpenedStore();
+                if (opened == null) {
+                    return new CommandBulkStringParser("ERR store not opened").format();
+                }
+                Pair<GtidSet, GtidSet> currentGtidSet = opened.getGtidSet();
                 GtidSet serverGtidSet = currentGtidSet.getKey().union(currentGtidSet.getValue());
                 GtidSet increased = gtidSet.subtract(serverGtidSet);
                 if (increased.isEmpty()) return new LongParser(0).format();
 
-                MetaStore metaStore = replicationStore.getMetaStore();
+                MetaStore metaStore = opened.getMetaStore();
                 long addCount = metaStore.increaseExecuted(increased);
                 return new LongParser(addCount).format();
             }

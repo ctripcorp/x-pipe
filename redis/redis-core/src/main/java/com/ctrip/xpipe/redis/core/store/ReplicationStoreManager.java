@@ -75,4 +75,24 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	 */
 	void closeReadOnlyMetaHandle();
 
+	/**
+	 * Mark the store dir as shared by several keepers (TFS). A shared store may only be opened for
+	 * write, created, gc'ed or destroyed by the keeper that MetaServer made the slot holder; see
+	 * {@link #setStoreWriteOwner(boolean)}. Must be set before the manager is used. Default: private.
+	 */
+	default void setSharedStore(boolean sharedStore) {
+	}
+
+	/**
+	 * Grant / revoke write ownership of a shared store. No-op for a private store, which is always
+	 * owned by its only keeper. Revoking does not close an opened store: lease release still goes
+	 * through {@link #releaseCurrentStore()}.
+	 */
+	default void setStoreWriteOwner(boolean owner) {
+	}
+
+	default boolean isStoreWriteOwner() {
+		return true;
+	}
+
 }

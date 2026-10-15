@@ -85,6 +85,9 @@ public final class ShardComparator {
 
     private long mismatchCount;
 
+    /** Part of {@code mismatchCount} already handed out by {@link #takeMismatchDelta()}; collector thread only. */
+    private long reportedMismatchCount;
+
     private long compareLostCount;
 
     private long realignCount;
@@ -440,6 +443,14 @@ public final class ShardComparator {
     public long getComparedBytes() { return comparedBytes; }
 
     public long getMismatchCount() { return mismatchCount; }
+
+    /** Mismatches since the previous call (the first call returns all so far). For the periodic metric only. */
+    public long takeMismatchDelta() {
+        long total = mismatchCount;
+        long delta = total - reportedMismatchCount;
+        reportedMismatchCount = total;
+        return delta;
+    }
 
     public long getCompareLostCount() { return compareLostCount; }
 

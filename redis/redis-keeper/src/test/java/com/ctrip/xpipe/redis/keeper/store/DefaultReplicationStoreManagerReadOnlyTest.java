@@ -192,6 +192,66 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 		}
 	}
 
+	/**
+	 * doc/keeper-tfs-bugfix-prefix-null.md: the holder publishes latest.store.dir before cmdFilePrefix. A read-only
+	 * open in that window must not keep a store whose cmdStore can never appear.
+	 */
+	@Test
+	public void testNoStoreWhenCmdChainAbsent() throws Exception {
+		AsyncFileSystem fs = createTestAsyncFileSystem();
+		DefaultReplicationStoreManager holder = newManager(fs);
+		DefaultReplicationStoreManager watcher = newManager(fs);
+		try {
+			LifecycleHelper.initializeIfPossible(holder);
+			File storeDir = storeBaseDir(holder.create());
+			File metaFile = new File(storeDir, "meta.v2.json");
+			byte[] metaBefore = java.nio.file.Files.readAllBytes(metaFile.toPath());
+
+			LifecycleHelper.initializeIfPossible(watcher);
+			watcher.setReadOnly(true);
+
+			Assert.assertNull(watcher.getCurrent());
+			Assert.assertNull(watcher.createIfNotExist());
+			Assert.assertNull("no store object kept", watcher.getOpenedStore());
+			Assert.assertArrayEquals("read-only discard must not touch meta",
+					metaBefore, java.nio.file.Files.readAllBytes(metaFile.toPath()));
+		} finally {
+			LifecycleHelper.disposeIfPossible(watcher);
+			LifecycleHelper.disposeIfPossible(holder);
+		}
+	}
+
+	/** Once the holder writes the prefix, the next read-only open gets a readable store (no permanent null). */
+	@Test
+	public void testStoreAppearsAfterChainCreated() throws Exception {
+		AsyncFileSystem fs = createTestAsyncFileSystem();
+		DefaultReplicationStoreManager holder = newManager(fs);
+		DefaultReplicationStoreManager watcher = newManager(fs);
+		try {
+			LifecycleHelper.initializeIfPossible(holder);
+			DefaultReplicationStore writable = (DefaultReplicationStore) holder.create();
+			LifecycleHelper.initializeIfPossible(watcher);
+			watcher.setReadOnly(true);
+			Assert.assertNull("no chain yet", watcher.getCurrent());
+
+			writable.psyncContinueFrom("000000000000000000000000000000000000000A", 1);
+
+			DefaultReplicationStore readOnly = (DefaultReplicationStore) watcher.getCurrent();
+			Assert.assertNotNull(readOnly);
+			Assert.assertTrue(readOnly.getCommandStore() instanceof com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStore);
+			Assert.assertSame(readOnly, watcher.getOpenedStore());
+			Assert.assertEquals(0, readOnly.getCommandStore().totalLength());
+
+			// before the fix: NPE "this.cmdStore is null" on the PSYNC / PrepareCmdParser path
+			com.ctrip.xpipe.redis.core.store.CommandsListener listener = mock(com.ctrip.xpipe.redis.core.store.CommandsListener.class);
+			when(listener.isOpen()).thenReturn(false);
+			readOnly.addCommandsListener(new com.ctrip.xpipe.redis.core.store.BacklogOffsetReplicationProgress(0), listener);
+		} finally {
+			LifecycleHelper.disposeIfPossible(watcher);
+			LifecycleHelper.disposeIfPossible(holder);
+		}
+	}
+
 	private DefaultReplicationStoreManager newManager(AsyncFileSystem fs) {
 		return new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()),

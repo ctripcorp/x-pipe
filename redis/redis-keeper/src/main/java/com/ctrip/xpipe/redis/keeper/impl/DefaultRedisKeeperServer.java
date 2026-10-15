@@ -276,9 +276,20 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		return this.lastResetElectionTime;
 	}
 
+	/**
+	 * HTTP ops entry: never open or create the store (getCurrentReplicationStore() → createIfNotExist() would).
+	 * Releasing the rdb writes meta, so a read-only store is refused too.
+	 */
 	@Override
 	public void releaseRdb() throws IOException {
-		getCurrentReplicationStore().releaseRdb();
+		ReplicationStore store = getOpenedStore();
+		if (store == null || !store.checkOk()) {
+			throw new IllegalStateException("store not opened: " + this);
+		}
+		if (isReadOnlyStore()) {
+			throw new IllegalStateException("read-only store, release rdb unsupported: " + this);
+		}
+		store.releaseRdb();
 	}
 
 	@Override
@@ -300,6 +311,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		replicationStoreManager = createReplicationStoreManager(ckStore,masterEventLoopGroup,keeperConfig, clusterId, shardId, replId,
 				currentKeeperMeta, baseDir, keeperMonitor, scheduled);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
+		// TFS: {baseDir} is shared by every keeper of the shard. Nobody owns it until MetaServer says so.
+		replicationStoreManager.setSharedStore(tfsMode);
 		replicationStoreManager.initialize();
 
 
@@ -394,11 +407,31 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 	
 	private RedisKeeperServerState initKeeperServerState() {
-		
+
+		// TFS：store 目录被同 shard 所有 keeper 共享，其中持久化的 keeperState 属于【上一任占槽者】，
+		// 推不出本 keeper 的角色；而 getCurrent() 会写打开共享目录（取租约、recoverIndex 截断、删 rdb）。
+		// 所以 boot 不开店，停在 UNKNOWN，等 MetaServer SETSTATE：
+		// ACTIVE/BACKUP → doBecome* 取得写权后再开店并重建索引；PREPARE → 只读观察。
+		if (tfsMode) {
+			logger.info("[initKeeperServerState][tfs][shared store, wait for setstate]{}", this);
+			return new RedisKeeperServerStateUnknown(this);
+		}
+
 		try {
+			// ⚠️ 这里的 getCurrent() 是【有意保留】的（非 TFS：目录私有），不要改成只读读法。
+			//
+			// 它做两件事：(1) 读持久化的 keeperState；(2) 让 store 完成 initialize()
+			// —— 即 refCount 0→1 的【全量扫描】，据此重建内存里的 index / 已执行 GTID 状态。
+			//
+			// (2) 是承重的：试过把这里换成"只读读一次 keeperState"（另外构造一个临时只读店、
+			// 读完即关，不设置 currentStore），结果 XsyncForKeeperTest.testKeeperConnectRedis
+			// 稳定失败 3/3（已执行 GTID 少最后 3 条，622096 vs 622099），而基线 3/3 通过。
+			// 也就是说：boot 必须让【当前这个 store】完成 initialize()，而不是另开一个临时的。
+			//
+			// 目录私有，这里写打开不会与别的 keeper 冲突；TFS 已在上面提前返回。
 			ReplicationStore replicationStore = replicationStoreManager.getCurrent();
 			if(replicationStore == null){
-				return new RedisKeeperServerStateUnknown(this);  
+				return new RedisKeeperServerStateUnknown(this);
 			}
 			KeeperState keeperState = replicationStore.getMetaStore().dupReplicationStoreMeta().getKeeperState();
 			if(keeperState == null){
@@ -744,6 +777,23 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		return replicationStoreManager != null && replicationStoreManager.isReadOnly();
 	}
 
+	/**
+	 * The only place a keeper becomes the shared-store writer. Called on SETSTATE ACTIVE / BACKUP
+	 * before the store is opened; a slot-holder marker check from MetaServer belongs here too.
+	 */
+	@Override
+	public void acquireStoreWriteOwnership() {
+		setStoreWriteOwner(true);
+	}
+
+	private void setStoreWriteOwner(boolean owner) {
+		// null before doInitialize (state can be set on an uninitialized server)
+		ReplicationStoreManager manager = this.replicationStoreManager;
+		if (manager != null) {
+			manager.setStoreWriteOwner(owner);
+		}
+	}
+
 	@Override
 	public boolean isTfsMode() {
 		return tfsMode;
@@ -864,6 +914,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		logger.info("[doReenterFromPrepare][active={}]{}", becomeActive, masterAddress);
 		try {
 			leavePrepareWatch();
+			// Become the slot holder before opening RW (MetaServer sent ACTIVE/BACKUP to us only).
+			acquireStoreWriteOwnership();
 			LifecycleHelper.startIfPossible(replicationStoreManager);
 			// Prefer getCurrent → latest.store.dir; create() only when no latest exists.
 			ReplicationStore store = replicationStoreManager.createIfNotExist();
@@ -1043,6 +1095,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 				RedisKeeperServerState previous = DefaultRedisKeeperServer.this.redisKeeperServerState;
 				logger.info("[setRedisKeeperServerState]{}, {}->{}", this, previous, redisKeeperServerState);
+
+				// Write ownership follows the state: ACTIVE/BACKUP own the store, everything else does not.
+				// doBecome* already acquired before opening the store; this keeps direct setState in sync.
+				KeeperState target = redisKeeperServerState.keeperState();
+				setStoreWriteOwner(target == KeeperState.ACTIVE || target == KeeperState.BACKUP);
 
 				// 降级（ACTIVE → 非 ACTIVE）前关闭所有 slave：停止旧 keeper 上正在进行的全量，
 				// 避免与新 ACTIVE keeper 上的全量同时进行（跨 keeper 双跑），新 keeper 重新按 IP 串行全量

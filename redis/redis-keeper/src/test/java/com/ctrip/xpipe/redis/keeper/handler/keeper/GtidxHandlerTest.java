@@ -73,7 +73,9 @@ public class GtidxHandlerTest extends AbstractRedisKeeperTest {
         replicationStore = replicationStoreManager.create();
 
         Mockito.when(redisClient.getRedisServer()).thenReturn(redisKeeperServer);
-        Mockito.when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
+        // gtidx 不再用 getReplicationStore()（它会经由 getCurrent() mkdir + 写打开共享目录）。
+        // 只读 / meta 写命令一律取【已打开】的 store。
+        Mockito.when(redisKeeperServer.getOpenedStore()).thenReturn(replicationStore);
 
         SimpleObjectPool<NettyClient> clientPool = NettyPoolUtil.createNettyPool(new DefaultEndPoint("127.0.0.1", 1234));
         gasync = new DefaultGapAllowedSync(clientPool, new DefaultEndPoint("127.0.0.1", 1234), replicationStoreManager, scheduled, DEFAULT_XSYNC_MAXGAP);

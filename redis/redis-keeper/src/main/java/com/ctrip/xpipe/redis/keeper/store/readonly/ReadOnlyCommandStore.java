@@ -677,7 +677,8 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 		return baseDir;
 	}
 
-	String getCommandFileNamePrefix() {
+	/** The cmdFilePrefix this read-only chain is anchored to (fixed at construction). */
+	public String getCommandFileNamePrefix() {
 		return fileNamePrefix;
 	}
 

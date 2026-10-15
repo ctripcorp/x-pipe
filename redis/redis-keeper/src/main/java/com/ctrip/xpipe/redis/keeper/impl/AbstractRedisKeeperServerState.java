@@ -137,6 +137,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	protected void doBecomeBackup(Endpoint masterAddress){
 		
 		logger.info("[doBecomeBackup]{}", this);
+		redisKeeperServer.acquireStoreWriteOwnership();
 		redisKeeperServer.resetReplAfterLongTimeDown();
 		try{
 			redisKeeperServer.getReplicationStore().getMetaStore().becomeBackup();
@@ -150,6 +151,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	protected void doBecomeActive(Endpoint masterAddress){
 		
 		logger.info("[doBecomeActive]{}", this);
+		redisKeeperServer.acquireStoreWriteOwnership();
 		try{
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
 			replicationStore.getMetaStore().becomeActive();

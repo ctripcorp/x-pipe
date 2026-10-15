@@ -20,6 +20,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doThrow;
@@ -69,6 +71,9 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 		DefaultRedisKeeperServer server = startActiveServer(watchConfig(true), true);
 		try {
 			ReplicationStore storeBefore = server.getReplicationStore();
+			// The holder has a cmd chain (as after its first psync). A read-only open of a store without one keeps
+			// no store at all (doc/keeper-tfs-bugfix-prefix-null.md), so seed it to observe the reopen.
+			((DefaultReplicationStore) storeBefore).psyncContinueFrom("000000000000000000000000000000000000000A", 1);
 			File dirBefore = ((DefaultReplicationStore) storeBefore).getBaseDir();
 			DefaultReplicationStoreManager manager =
 					spy((DefaultReplicationStoreManager) server.getReplicationStoreManager());
@@ -89,11 +94,55 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 			Assert.assertEquals(dirBefore.getName(), manager.reloadLatestStoreDir());
 			Assert.assertSame(opened, manager.getOpenedStore());
 			CommandStore cmdStore = ((DefaultReplicationStore) opened).getCommandStore();
-			if (cmdStore != null) {
-				Assert.assertTrue("read-only open must use ReadOnlyCommandStore, got " + cmdStore.getClass(),
-						cmdStore instanceof ReadOnlyCommandStore);
-			}
+			Assert.assertTrue("read-only open must use ReadOnlyCommandStore, got " + cmdStore,
+					cmdStore instanceof ReadOnlyCommandStore);
 			verify(manager, never()).create();
+		} finally {
+			stopQuietly(server);
+		}
+	}
+
+	/** Gtid key search in PREPARE (read-only) must not open the store as a side effect. */
+	@Test
+	public void testSearchInReadOnlyPrepareDoesNotOpenStore() throws Exception {
+		DefaultRedisKeeperServer server = startActiveServer(watchConfig(true), true);
+		try {
+			ReplicationStore storeBefore = server.getReplicationStore();
+			((DefaultReplicationStore) storeBefore).psyncContinueFrom("000000000000000000000000000000000000000A", 1);
+
+			becomePrepare(server);
+			Assert.assertTrue(server.getReplicationStoreManager().isReadOnly());
+			Assert.assertNull("PREPARE released the store", server.getOpenedStore());
+
+			try {
+				server.createCmdKeySearcher("uuid", 1, 2).execute().get(5, TimeUnit.SECONDS);
+				Assert.fail("search with no opened store must fail");
+			} catch (ExecutionException expected) {
+				Assert.assertEquals("store not opened", expected.getCause().getMessage());
+			}
+			Assert.assertNull("search must not open the read-only store", server.getOpenedStore());
+			try {
+				server.releaseRdb();
+				Assert.fail("releaseRdb with no opened store must fail");
+			} catch (IllegalStateException expected) {
+				Assert.assertTrue(expected.getMessage(), expected.getMessage().startsWith("store not opened"));
+			}
+			Assert.assertNull("releaseRdb must not open the read-only store", server.getOpenedStore());
+
+			ReplicationStore opened = server.getReplicationStore();
+			Assert.assertNotNull(opened);
+			try {
+				server.createCmdKeySearcher("uuid", 1, 2).execute().get(5, TimeUnit.SECONDS);
+				Assert.fail("search on a read-only store must fail");
+			} catch (ExecutionException expected) {
+				Assert.assertEquals("read-only store, gtid search unsupported", expected.getCause().getMessage());
+			}
+			try {
+				server.releaseRdb();
+				Assert.fail("releaseRdb on a read-only store must fail");
+			} catch (IllegalStateException expected) {
+				Assert.assertTrue(expected.getMessage(), expected.getMessage().startsWith("read-only store"));
+			}
 		} finally {
 			stopQuietly(server);
 		}
