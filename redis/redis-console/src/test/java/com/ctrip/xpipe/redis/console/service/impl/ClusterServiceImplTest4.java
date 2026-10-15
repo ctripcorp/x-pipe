@@ -36,7 +36,8 @@ public class ClusterServiceImplTest4 extends AbstractConsoleIntegrationTest {
     @Override
     public String prepareDatas() {
         try {
-            return prepareDatasFromFile("src/test/resources/cluster-service-impl-test4.sql");
+            return prepareDatasFromFile("src/test/resources/cluster-service-impl-test4.sql")
+                    + prepareDatasFromFile("src/test/resources/keepercontainer-unique-addresses.sql");
         } catch (Exception e) {
             logger.error("[ClusterServiceImplTest3]prepare data error for path", e);
         }
