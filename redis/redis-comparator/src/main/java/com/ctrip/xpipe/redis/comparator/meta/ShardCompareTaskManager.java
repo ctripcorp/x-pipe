@@ -60,6 +60,11 @@ public class ShardCompareTaskManager {
 
     public static final String EVENT_COMPARE_THREAD_WARN = "compareThreadWarn";
 
+    public static final String EVENT_KEEPER_HOSTNAME_UNRESOLVED = "keeperHostnameUnresolved";
+
+    /** 容器 Keeper 在 meta 中的占位 IP（Console 登记默认值），不可用于建流。 */
+    static final String PLACEHOLDER_IP = "0.0.0.0";
+
     public static final String TASK_SCHEDULED = "comparatorTaskScheduled";
 
     private static final Logger logger = LoggerFactory.getLogger(ShardCompareTaskManager.class);
@@ -172,8 +177,11 @@ public class ShardCompareTaskManager {
             throw new IllegalStateException(e);
         }
         Map<Long, KeeperContainerMeta> containers = metaService.indexKeeperContainers(dcMeta);
+        // D50 ③④：有容器 TFS Keeper 才拉地址表；失败直接抛出，本轮不进锁、不拆任务
+        Map<String, String> hostnameToIp = hasHostnameTfsKeeper(dcMeta, containers)
+                ? metaService.getKeeperContainerAddress() : Collections.emptyMap();
         watchCache.invalidateAll();
-        Map<Long, DesiredShard> desired = collectDesired(dcMeta, containers);
+        Map<Long, DesiredShard> desired = collectDesired(dcMeta, containers, hostnameToIp);
         long epoch;
         synchronized (refreshLock) {
             if (stopped) {
@@ -196,7 +204,27 @@ public class ShardCompareTaskManager {
         }
     }
 
-    private Map<Long, DesiredShard> collectDesired(DcMeta dcMeta, Map<Long, KeeperContainerMeta> containers) {
+    private boolean hasHostnameTfsKeeper(DcMeta dcMeta, Map<Long, KeeperContainerMeta> containers) {
+        if (dcMeta == null || dcMeta.getClusters() == null) {
+            return false;
+        }
+        for (ClusterMeta cluster : dcMeta.getClusters().values()) {
+            if (cluster == null || cluster.getShards() == null) {
+                continue;
+            }
+            for (ShardMeta shard : cluster.getShards().values()) {
+                for (KeeperMeta keeper : metaService.listTfsKeepers(shard, containers)) {
+                    if (!StringUtil.isEmpty(keeper.getHostname())) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private Map<Long, DesiredShard> collectDesired(DcMeta dcMeta, Map<Long, KeeperContainerMeta> containers,
+                                                   Map<String, String> hostnameToIp) {
         Map<Long, DesiredShard> desired = new LinkedHashMap<>();
         if (dcMeta == null || dcMeta.getClusters() == null) {
             return desired;
@@ -224,7 +252,7 @@ public class ShardCompareTaskManager {
                 }
                 DesiredShard desiredShard = new DesiredShard(dbId, clusterId, shard.getId());
                 for (KeeperMeta keeper : tfsKeepers) {
-                    Endpoint endpoint = endpointOf(keeper);
+                    Endpoint endpoint = endpointOf(clusterId, shard.getId(), keeper, hostnameToIp);
                     if (endpoint == null) {
                         continue;
                     }
@@ -432,11 +460,31 @@ public class ShardCompareTaskManager {
         }
     }
 
-    private static Endpoint endpointOf(KeeperMeta keeper) {
-        if (keeper == null || StringUtil.isEmpty(keeper.getIp()) || keeper.getPort() == null || keeper.getPort() <= 0) {
+    /**
+     * D50 ②：hostname 非空 → 地址表 IP（查不到不回落 meta IP，容器 meta IP 是占位）；
+     * hostname 为空 → meta IP，空或占位视为无地址。端口恒取 meta。
+     */
+    private Endpoint endpointOf(String cluster, String shard, KeeperMeta keeper, Map<String, String> hostnameToIp) {
+        if (keeper == null || keeper.getPort() == null || keeper.getPort() <= 0) {
             return null;
         }
-        return new DefaultEndPoint(keeper.getIp(), keeper.getPort());
+        String hostname = keeper.getHostname();
+        String ip;
+        if (!StringUtil.isEmpty(hostname)) {
+            ip = hostnameToIp == null ? null : hostnameToIp.get(hostname);
+            if (StringUtil.isEmpty(ip)) {
+                logger.warn("[hostnameUnresolved] cluster={} shard={} hostname={} port={}",
+                        cluster, shard, hostname, keeper.getPort());
+                safeLog(EVENT_KEEPER_HOSTNAME_UNRESOLVED);
+                return null;
+            }
+        } else {
+            ip = keeper.getIp();
+        }
+        if (StringUtil.isEmpty(ip) || PLACEHOLDER_IP.equals(ip)) {
+            return null;
+        }
+        return new DefaultEndPoint(ip, keeper.getPort());
     }
 
     private static String addressOf(Endpoint endpoint) {

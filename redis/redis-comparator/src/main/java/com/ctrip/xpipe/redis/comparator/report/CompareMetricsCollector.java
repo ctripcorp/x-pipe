@@ -25,7 +25,7 @@ import java.util.function.Supplier;
  * 周期指标出口（spec D36 ② / §4.8.3 / T-RP.3）。
  * <p>
  * 挂 {@link AbstractSpringConfigContext#SCHEDULED_EXECUTOR}，每轮兜 {@code Throwable}。
- * Hickwall <b>只</b>打 {@code comparedBytes}；其它计数进 CAT Event 与 {@code /api/status}。
+ * Hickwall <b>只</b>打 {@code comparedBytes} 与 {@code mismatch}（累计值，v1.82）；其它计数进 CAT Event 与 {@code /api/status}。
  * 禁止在比对循环 / {@link CompareReporter} 回调里逐次 write。
  * {@code MetricProxy} 不可用（非携程、无 Hickwall）降级为 {@link DummyMetricProxy}，
  * 只 WARN，不抛、不刷 ERROR。
@@ -119,8 +119,9 @@ public class CompareMetricsCollector {
     }
 
     /**
-     * Mismatches since the last round (an increment, summed with {@code sum_over_time} like the CAT event).
-     * Tags: source (added by the proxy), dc, cluster, shard, name=mismatch.
+     * 失配累计值（spec D36 ② / v1.82）：直接取 {@link ShardComparator#getMismatchCount()}，自比对器创建起单调不减，
+     * 不做差；任务重建后从 0 开始。看板按增长取值（{@code increase} / {@code delta}），不要用 {@code sum_over_time}。
+     * Tags：source（由 proxy 补）、dc、cluster、shard。
      */
     private void writeMismatch(MetricProxy proxy, ShardCompareTask task, long now) {
         ShardComparator cmp = task.getComparator();

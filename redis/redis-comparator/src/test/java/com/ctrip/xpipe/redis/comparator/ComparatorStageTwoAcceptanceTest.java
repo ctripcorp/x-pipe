@@ -228,11 +228,18 @@ public class ComparatorStageTwoAcceptanceTest extends AbstractTest {
         String collector = readMain("report", "CompareMetricsCollector.java");
         Assert.assertTrue(collector.contains("writeBinMultiDataPoint"));
         Assert.assertFalse(collector.contains("logger.error"));
-        Assert.assertEquals(1, count(collector, "new MetricData("));
+        // v1.82：Hickwall 只允许 comparedBytes + mismatch 两种
+        Assert.assertEquals("mismatch", CompareMetricsCollector.METRIC_MISMATCH);
+        Assert.assertEquals(2, count(collector, "new MetricData("));
         Assert.assertEquals(1, count(collector, "new MetricData(METRIC_COMPARED_BYTES"));
+        Assert.assertEquals(1, count(collector, "new MetricData(METRIC_MISMATCH"));
         Assert.assertFalse(collector.contains("new MetricData(\""));
         String writeCompared = methodBody(collector, "private void writeComparedBytes");
         Assert.assertTrue(writeCompared.contains("new MetricData(METRIC_COMPARED_BYTES"));
+        String writeMismatch = methodBody(collector, "private void writeMismatch");
+        Assert.assertTrue(writeMismatch.contains("new MetricData(METRIC_MISMATCH"));
+        // 累计值：直接取 getMismatchCount()，不做差
+        Assert.assertTrue(writeMismatch.contains("setValue(cmp.getMismatchCount())"));
         walkMain(text -> {
             if (text.contains("class CompareMetricsCollector")) {
                 return;

@@ -14,6 +14,7 @@ import com.ctrip.xpipe.redis.core.service.AbstractService;
 import com.ctrip.xpipe.redis.core.transform.DefaultSaxParser;
 import com.ctrip.xpipe.utils.StringUtil;
 import com.ctrip.xpipe.utils.VisibleForTesting;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -42,6 +43,12 @@ public class ComparatorMetaService extends AbstractService {
     public static final String ACCEPT_ENCODING_LZ4 = "lz4";
 
     public static final String QUERY_FORMAT = "format";
+
+    /** Console {@code KeeperContainerController#getAllKeeperContainerHostnameToIpMap}（D50）。 */
+    public static final String PATH_GET_KEEPER_CONTAINER_ADDRESS = "/api/keepercontainer/address/all";
+
+    private static final ParameterizedTypeReference<Map<String, String>> HOSTNAME_TO_IP_TYPE =
+            new ParameterizedTypeReference<Map<String, String>>() {};
 
     private final ComparatorConfig config;
 
@@ -129,6 +136,33 @@ public class ComparatorMetaService extends AbstractService {
             }
         }
         return tfsKeepers;
+    }
+
+    /**
+     * 本机房容器 Keeper 地址表（D50）：{@code GET /api/keepercontainer/address/all}，hostname → IP。
+     * Console 侧读内存地址服务，只覆盖 Console 所在机房，故 {@code console.address} 须为本机房 Console。
+     * 传输异常 / 非 200 原样抛出；空 body 与空 Map 视为失败（Console 地址缓存首轮未加载完的典型表现），
+     * 调用方据此整轮放弃，不拆已有任务。
+     */
+    public Map<String, String> getKeeperContainerAddress() {
+        String console = config.getConsoleAddress();
+        if (StringUtil.isEmpty(console)) {
+            throw new IllegalStateException("console.address is empty");
+        }
+        ResponseEntity<Map<String, String>> response;
+        try {
+            response = restTemplate.exchange(console + PATH_GET_KEEPER_CONTAINER_ADDRESS, HttpMethod.GET,
+                    null, HOSTNAME_TO_IP_TYPE);
+        } catch (RuntimeException e) {
+            logger.error("[getKeeperContainerAddress] fetch failed, console={}", console, e);
+            throw e;
+        }
+        Map<String, String> hostnameToIp = response.getBody();
+        if (hostnameToIp == null || hostnameToIp.isEmpty()) {
+            logger.error("[getKeeperContainerAddress] empty address map, console={}", console);
+            throw new RedisRuntimeException("empty keeper container address, console=" + console);
+        }
+        return hostnameToIp;
     }
 
     private XpipeMeta fetchXpipeMeta(String console, String dcName) throws SAXException, IOException {

@@ -417,6 +417,140 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
         }
     }
 
+    /** T-KH.4 / AC-14c ①：容器 Keeper 用地址表 IP + meta 端口建流，不用占位 IP。 */
+    @Test
+    public void testPodKeeperResolvedViaAddressMap() throws Exception {
+        StubMeta meta = twoPodsMine();
+        FakeFactory factory = new FakeFactory();
+        ShardCompareTaskManager manager = manager(meta, allReady(), factory, allMineAssigner());
+        try {
+            manager.refresh();
+
+            Assert.assertEquals(1, meta.addressCalls);
+            Assert.assertNotNull(manager.taskOf(MINE));
+            Assert.assertEquals(2, factory.opens.size());
+            Assert.assertTrue(factory.opens.contains("10.1.0.1:6380"));
+            Assert.assertTrue(factory.opens.contains("10.1.0.2:6380"));
+            Assert.assertTrue(manager.taskOf(MINE).getStreams().containsKey("10.1.0.1:6380"));
+        } finally {
+            manager.stop();
+        }
+    }
+
+    /** AC-14c ①②：查不到的 hostname 跳过并打点、不回落占位 IP；物理机 Keeper 沿用 meta IP。 */
+    @Test
+    public void testUnresolvedHostnameSkippedPhysicalKept() throws Exception {
+        StubMeta meta = new StubMeta();
+        ClusterMeta cluster = new ClusterMeta("c1");
+        addShard(meta.dc, cluster, MINE, "mixed",
+                podKeeper("pod-a", 6380),
+                podKeeper("pod-gone", 6381),
+                keeper("tfs", "10.0.0.9", 6382));
+        meta.dc.addCluster(cluster);
+        meta.address.put("pod-a", "10.1.0.1");
+        FakeFactory factory = new FakeFactory();
+        RecordingMonitor monitor = new RecordingMonitor();
+        ShardCompareTaskManager manager = manager(meta, allReady(), factory, allMineAssigner(), monitor);
+        try {
+            manager.refresh();
+
+            Assert.assertEquals(2, factory.opens.size());
+            Assert.assertTrue(factory.opens.contains("10.1.0.1:6380"));
+            Assert.assertTrue(factory.opens.contains("10.0.0.9:6382"));
+            for (String open : factory.opens) {
+                Assert.assertFalse(open, open.startsWith(ShardCompareTaskManager.PLACEHOLDER_IP));
+            }
+            Assert.assertTrue(monitor.events.contains(ShardCompareTaskManager.MONITOR_TYPE + "/"
+                    + ShardCompareTaskManager.EVENT_KEEPER_HOSTNAME_UNRESOLVED));
+        } finally {
+            manager.stop();
+        }
+    }
+
+    /** AC-14c ②③：纯物理机轮次不请求地址接口；无 hostname 的占位 / 空 IP 不建流。 */
+    @Test
+    public void testPhysicalOnlyNoAddressCallAndPlaceholderIpSkipped() throws Exception {
+        StubMeta meta = new StubMeta();
+        ClusterMeta cluster = new ClusterMeta("c1");
+        addShard(meta.dc, cluster, MINE, "physical",
+                keeper("tfs", "10.0.0.1", 6380),
+                keeper("tfs", "10.0.0.2", 6380),
+                keeper("tfs", ShardCompareTaskManager.PLACEHOLDER_IP, 6381),
+                keeper("tfs", "", 6382));
+        meta.dc.addCluster(cluster);
+        FakeFactory factory = new FakeFactory();
+        ShardCompareTaskManager manager = manager(meta, allReady(), factory, allMineAssigner());
+        try {
+            manager.refresh();
+
+            Assert.assertEquals(0, meta.addressCalls);
+            Assert.assertEquals(2, factory.opens.size());
+            Assert.assertTrue(factory.opens.contains("10.0.0.1:6380"));
+            Assert.assertTrue(factory.opens.contains("10.0.0.2:6380"));
+        } finally {
+            manager.stop();
+        }
+    }
+
+    /** AC-14c ④：地址接口失败时本轮整体放弃，已有任务与 lane 原样保留。 */
+    @Test
+    public void testAddressFailureKeepsExistingTasks() throws Exception {
+        StubMeta meta = twoPodsMine();
+        FakeFactory factory = new FakeFactory();
+        ShardCompareTaskManager manager = manager(meta, allReady(), factory, allMineAssigner());
+        try {
+            manager.refresh();
+            ShardCompareTaskManager.ShardCompareTask task = manager.taskOf(MINE);
+            CompareLane laneA = task.getStreams().get("10.1.0.1:6380");
+            ShardComparator cmp = task.getComparator();
+
+            meta.addressFail = new IllegalStateException("console down");
+            try {
+                manager.refresh();
+                Assert.fail();
+            } catch (IllegalStateException e) {
+                Assert.assertEquals("console down", e.getMessage());
+            }
+
+            Assert.assertSame(task, manager.taskOf(MINE));
+            Assert.assertSame(cmp, manager.taskOf(MINE).getComparator());
+            Assert.assertSame(laneA, manager.taskOf(MINE).getStreams().get("10.1.0.1:6380"));
+            Assert.assertEquals(2, manager.taskOf(MINE).getStreams().size());
+            Assert.assertTrue(factory.closes.isEmpty());
+            Assert.assertTrue(factory.releases.isEmpty());
+            Assert.assertEquals(2, factory.opens.size());
+        } finally {
+            manager.stop();
+        }
+    }
+
+    /** AC-14c ⑤：同 hostname 换 IP 后只替换该路 lane，其余 lane 与比对器不重建。 */
+    @Test
+    public void testHostnameIpChangeReplacesOnlyThatLane() throws Exception {
+        StubMeta meta = twoPodsMine();
+        FakeFactory factory = new FakeFactory();
+        ShardCompareTaskManager manager = manager(meta, allReady(), factory, allMineAssigner());
+        try {
+            manager.refresh();
+            CompareLane laneB = manager.taskOf(MINE).getStreams().get("10.1.0.2:6380");
+            ShardComparator cmp = manager.taskOf(MINE).getComparator();
+
+            meta.address.put("pod-a", "10.1.0.9");
+            manager.refresh();
+
+            Assert.assertEquals(Collections.singletonList("10.1.0.1:6380"), factory.closes);
+            Assert.assertEquals(3, factory.opens.size());
+            Assert.assertEquals("10.1.0.9:6380", factory.opens.get(2));
+            Map<String, CompareLane> streams = manager.taskOf(MINE).getStreams();
+            Assert.assertEquals(2, streams.size());
+            Assert.assertTrue(streams.containsKey("10.1.0.9:6380"));
+            Assert.assertSame(laneB, streams.get("10.1.0.2:6380"));
+            Assert.assertSame(cmp, manager.taskOf(MINE).getComparator());
+        } finally {
+            manager.stop();
+        }
+    }
+
     private ShardCompareTaskManager manager(StubMeta meta, FakeWatchCache cache, FakeFactory factory,
                                             CompareTaskAssigner assigner) {
         return manager(meta, cache, factory, assigner, new RecordingMonitor());
@@ -473,11 +607,13 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
             dc.addKeeperContainer(new KeeperContainerMeta()
                     .setId(spec.containerId)
                     .setDiskType(spec.diskType)
-                    .setIp(spec.ip));
+                    .setIp(spec.ip)
+                    .setHostname(spec.hostname));
             shard.addKeeper(new KeeperMeta()
                     .setKeeperContainerId(spec.containerId)
                     .setIp(spec.ip)
-                    .setPort(spec.port));
+                    .setPort(spec.port)
+                    .setHostname(spec.hostname));
         }
         cluster.addShard(shard);
     }
@@ -486,14 +622,46 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
         return new KeeperSpec(diskType, ip, port);
     }
 
+    /** 容器 Keeper：meta 只有 hostname，IP 为 Console 登记占位值。 */
+    private static KeeperSpec podKeeper(String hostname, int port) {
+        return new KeeperSpec("tfs", ShardCompareTaskManager.PLACEHOLDER_IP, port, hostname);
+    }
+
+    private static StubMeta twoPodsMine() {
+        StubMeta meta = new StubMeta();
+        ClusterMeta cluster = new ClusterMeta("c1");
+        addShard(meta.dc, cluster, MINE, "two-pods",
+                podKeeper("pod-a", 6380),
+                podKeeper("pod-b", 6380));
+        meta.dc.addCluster(cluster);
+        meta.address.put("pod-a", "10.1.0.1");
+        meta.address.put("pod-b", "10.1.0.2");
+        return meta;
+    }
+
     static final class StubMeta extends ComparatorMetaService {
 
         DcMeta dc = new DcMeta("jq");
 
         RuntimeException fail;
 
+        final Map<String, String> address = new HashMap<>();
+
+        RuntimeException addressFail;
+
+        int addressCalls;
+
         StubMeta() {
             super(new ComparatorConfig());
+        }
+
+        @Override
+        public Map<String, String> getKeeperContainerAddress() {
+            addressCalls++;
+            if (addressFail != null) {
+                throw addressFail;
+            }
+            return new HashMap<>(address);
         }
 
         @Override
@@ -519,10 +687,17 @@ public class ShardCompareTaskManagerTest extends AbstractTest {
 
         final int port;
 
+        final String hostname;
+
         KeeperSpec(String diskType, String ip, int port) {
+            this(diskType, ip, port, null);
+        }
+
+        KeeperSpec(String diskType, String ip, int port, String hostname) {
             this.diskType = diskType;
             this.ip = ip;
             this.port = port;
+            this.hostname = hostname;
         }
     }
 

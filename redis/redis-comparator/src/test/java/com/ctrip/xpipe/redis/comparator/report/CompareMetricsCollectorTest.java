@@ -27,26 +27,57 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public class CompareMetricsCollectorTest extends AbstractTest {
 
+    /** AC-22 ①（v1.82）：每分片只写 comparedBytes + mismatch 两点；无比对器的任务不写。 */
     @Test
-    public void testWritesOnlyComparedBytes() {
+    public void testWritesComparedBytesAndMismatchOnly() {
         RecordingProxy proxy = new RecordingProxy();
         ScheduledExecutorService scheduled = Executors.newSingleThreadScheduledExecutor();
         ShardCompareTaskManager manager = emptyManager(scheduled);
         try {
-        manager.putTask(comparedTask("c1", "s1", 10L));
-        manager.putTask(new ShardCompareTask(11L, "c2", "s2"));
+            manager.putTask(comparedTask("c1", "s1", 10L));
+            manager.putTask(new ShardCompareTask(11L, "c2", "s2"));
 
-        CompareMetricsCollector collector = new CompareMetricsCollector(manager,
-                scheduled, new ComparatorConfig(), "jq", () -> proxy);
-        collector.reportOnce();
+            CompareMetricsCollector collector = new CompareMetricsCollector(manager,
+                    scheduled, new ComparatorConfig(), "jq", () -> proxy);
+            collector.reportOnce();
 
-        Assert.assertEquals(1, proxy.points.size());
-        MetricData point = proxy.points.get(0);
-        Assert.assertEquals(CompareMetricsCollector.METRIC_COMPARED_BYTES, point.getMetricType());
-        Assert.assertEquals(4.0, point.getValue(), 0.0);
-        Assert.assertEquals("c1", point.getClusterName());
-        Assert.assertEquals("s1", point.getShardName());
-        Assert.assertEquals("jq", point.getDcName());
+            Assert.assertEquals(2, proxy.points.size());
+            MetricData compared = proxy.points.get(0);
+            Assert.assertEquals(CompareMetricsCollector.METRIC_COMPARED_BYTES, compared.getMetricType());
+            Assert.assertEquals(4.0, compared.getValue(), 0.0);
+            assertTags(compared, "c1", "s1");
+            MetricData mismatch = proxy.points.get(1);
+            Assert.assertEquals(CompareMetricsCollector.METRIC_MISMATCH, mismatch.getMetricType());
+            Assert.assertEquals(0.0, mismatch.getValue(), 0.0);
+            assertTags(mismatch, "c1", "s1");
+        } finally {
+            scheduled.shutdownNow();
+        }
+    }
+
+    /** AC-22 ①（v1.82）：mismatch 上报累计值，下一轮无新失配时不归零、不做差。 */
+    @Test
+    public void testMismatchReportsCumulativeValue() {
+        RecordingProxy proxy = new RecordingProxy();
+        ScheduledExecutorService scheduled = Executors.newSingleThreadScheduledExecutor();
+        ShardCompareTaskManager manager = emptyManager(scheduled);
+        try {
+            ShardCompareTask task = mismatchedTask("c1", "s1", 10L);
+            manager.putTask(task);
+            CompareMetricsCollector collector = new CompareMetricsCollector(manager,
+                    scheduled, new ComparatorConfig(), "jq", () -> proxy);
+
+            collector.reportOnce();
+            collector.reportOnce();
+
+            List<Double> values = new ArrayList<>();
+            for (MetricData point : proxy.points) {
+                if (CompareMetricsCollector.METRIC_MISMATCH.equals(point.getMetricType())) {
+                    values.add(point.getValue());
+                }
+            }
+            Assert.assertEquals(Arrays.asList(1.0, 1.0), values);
+            Assert.assertEquals(1L, task.getComparator().getMismatchCount());
         } finally {
             scheduled.shutdownNow();
         }
@@ -62,7 +93,8 @@ public class CompareMetricsCollectorTest extends AbstractTest {
             CompareMetricsCollector collector = new CompareMetricsCollector(manager,
                     scheduled, new ComparatorConfig(), "jq", () -> proxy);
             collector.reportOnce();
-            Assert.assertEquals(1, proxy.writes);
+            // comparedBytes 抛错后 mismatch 仍照写：两点各自兜异常
+            Assert.assertEquals(2, proxy.writes);
         } finally {
             scheduled.shutdownNow();
         }
@@ -128,6 +160,28 @@ public class CompareMetricsCollectorTest extends AbstractTest {
         streams.put(b.getAddress(), b);
         task.bind(cmp, streams);
         return task;
+    }
+
+    private static ShardCompareTask mismatchedTask(String cluster, String shard, long dbId) {
+        FakeLane a = new FakeLane("10.0.0.1:6380", 100, 32, 0);
+        FakeLane b = new FakeLane("10.0.0.2:6380", 100, 32, 0);
+        a.write(new byte[]{1, 2, 3, 4});
+        b.write(new byte[]{1, 2, 9, 4});
+        ShardComparator cmp = new ShardComparator(cluster, shard, Arrays.asList(a, b),
+                new ComparatorConfig(), CompareReporter.NOOP);
+        Assert.assertEquals(ShardComparator.CompareOnceResult.MISMATCH, cmp.compareOnce());
+        ShardCompareTask task = new ShardCompareTask(dbId, cluster, shard);
+        Map<String, CompareLane> streams = new LinkedHashMap<>();
+        streams.put(a.getAddress(), a);
+        streams.put(b.getAddress(), b);
+        task.bind(cmp, streams);
+        return task;
+    }
+
+    private static void assertTags(MetricData point, String cluster, String shard) {
+        Assert.assertEquals(cluster, point.getClusterName());
+        Assert.assertEquals(shard, point.getShardName());
+        Assert.assertEquals("jq", point.getDcName());
     }
 
     private static ShardCompareTaskManager emptyManager(ScheduledExecutorService scheduled) {

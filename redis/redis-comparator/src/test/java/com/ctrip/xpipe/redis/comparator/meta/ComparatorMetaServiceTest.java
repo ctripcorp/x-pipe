@@ -207,6 +207,89 @@ public class ComparatorMetaServiceTest extends AbstractTest {
         Assert.assertTrue(text.contains("PATH_GET_DC_ALL_META"));
     }
 
+    /** T-KH.3 / AC-14c ⑥：容器 Keeper 地址表正常解析，路径与 Console 一致。 */
+    @Test
+    public void testKeeperContainerAddressParses() throws Exception {
+        webServer.enqueue(jsonResponse("{\"pod-a\":\"10.1.0.1\",\"pod-b\":\"10.1.0.2\"}"));
+
+        Map<String, String> address = service().getKeeperContainerAddress();
+
+        Assert.assertEquals(2, address.size());
+        Assert.assertEquals("10.1.0.1", address.get("pod-a"));
+        Assert.assertEquals("10.1.0.2", address.get("pod-b"));
+        RecordedRequest req = webServer.takeRequest();
+        Assert.assertEquals("GET", req.getMethod());
+        Assert.assertEquals(ComparatorMetaService.PATH_GET_KEEPER_CONTAINER_ADDRESS, req.getPath());
+        Assert.assertEquals("/api/keepercontainer/address/all", req.getPath());
+    }
+
+    /** AC-14c ④：空 Map 视为失败（Console 地址缓存未加载完）。 */
+    @Test
+    public void testKeeperContainerAddressEmptyMapThrows() {
+        webServer.enqueue(jsonResponse("{}"));
+        try {
+            service().getKeeperContainerAddress();
+            Assert.fail();
+        } catch (RedisRuntimeException e) {
+            Assert.assertTrue(e.getMessage().contains("empty"));
+        }
+    }
+
+    @Test
+    public void testKeeperContainerAddressEmptyBodyThrowsNotNpe() {
+        webServer.enqueue(new MockResponse().setResponseCode(200)
+                .setHeader(HttpHeaders.CONTENT_TYPE, "application/json").setBody(""));
+        try {
+            service().getKeeperContainerAddress();
+            Assert.fail();
+        } catch (RedisRuntimeException e) {
+            Assert.assertTrue(e.getMessage().contains("empty"));
+        } catch (NullPointerException e) {
+            Assert.fail("empty body must not throw NPE");
+        }
+    }
+
+    @Test
+    public void testKeeperContainerAddressNon200Throws() {
+        webServer.enqueue(new MockResponse().setResponseCode(500).setBody("boom"));
+        try {
+            service().getKeeperContainerAddress();
+            Assert.fail();
+        } catch (HttpStatusCodeException e) {
+            Assert.assertEquals(500, e.getRawStatusCode());
+        }
+    }
+
+    @Test
+    public void testKeeperContainerAddressReadTimeoutThrows() {
+        webServer.enqueue(jsonResponse("{\"pod-a\":\"10.1.0.1\"}").setBodyDelay(1, TimeUnit.SECONDS));
+        ComparatorMetaService fast = new ComparatorMetaService(
+                new ConsoleAddressConfig(console), new StubFoundation(),
+                0, 10, 200, 200);
+        try {
+            fast.getKeeperContainerAddress();
+            Assert.fail();
+        } catch (ResourceAccessException e) {
+            Assert.assertNotNull(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testKeeperContainerAddressEmptyConsoleThrows() {
+        try {
+            new ComparatorMetaService(new ConsoleAddressConfig(""), new StubFoundation()).getKeeperContainerAddress();
+            Assert.fail();
+        } catch (IllegalStateException e) {
+            Assert.assertTrue(e.getMessage().contains("console.address"));
+        }
+    }
+
+    private static MockResponse jsonResponse(String body) {
+        return new MockResponse()
+                .setHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                .setBody(body);
+    }
+
     private ComparatorMetaService service() {
         return new ComparatorMetaService(new ConsoleAddressConfig(console), new StubFoundation());
     }
