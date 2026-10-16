@@ -3,7 +3,7 @@ package com.ctrip.xpipe.redis.keeper;
 import com.ctrip.xpipe.api.codec.Codec;
 import com.ctrip.xpipe.api.observer.Observable;
 import com.ctrip.xpipe.api.observer.Observer;
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.payload.ByteArrayWritableByteChannel;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
@@ -23,8 +23,16 @@ import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.NoneKeepersMonitorManager.NoneKeeperMonitor;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemConfig;
+import com.ctrip.xpipe.redis.keeper.store.AbstractCommandStore;
+import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.store.AsyncCommandStore;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
+import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.core.store.OffsetReplicationProgress;
 import io.netty.channel.ChannelFuture;
 import org.junit.BeforeClass;
@@ -36,6 +44,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
+import java.util.function.IntSupplier;
 
 /**
  * @author wenchao.meng
@@ -48,6 +58,59 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		System.setProperty("DisableLoadProxyAgentJar", "true");
 	}
 
+	// 单测里 AsyncFileSystem 采用 JVM 级共享 + JVM 退出统一 shutdown 的策略。
+	// TailCache 使用 createTestAsyncFileSystem（chunkSize=1KiB）以覆盖多 chunk 路径。
+	//
+	// 背景：生产链路上 FS.shutdown 由 ContainerResourceManager 在所有 keeper server dispose
+	// 完成之后调用；单测里若在 @After 中 shutdown FS，会与「keeper server / RSM 未完全 dispose、
+	// 其 gc scheduler 仍在跑」赛跑（例如 DefaultRedisKeeperServer.doDispose 前置 ckStore /
+	// leaderElector dispose 抛异常，导致 replicationStoreManager.dispose() 被跳过，gc 线程
+	// 泄漏到后续测试），触发 AsyncTFSBasedFileSystem.exists() 的
+	// CompletableFuture.supplyAsync(..., terminatedExecutor) → RejectedExecutionException。
+	//
+	// 让 FS 与 JVM 同生共死后，遗留 gc 线程再触发时 ioExecutor 仍是 RUNNING，最多打点无害
+	// 的 IO 结果，不会再有 rejected。真正的 keeper server / RSM 泄漏问题独立追踪，与 FS 无关。
+	private static volatile AsyncFileSystem sharedTestAsyncFileSystem;
+
+	/** Smaller than production 1MiB so modest writes exercise multi-chunk TailCache paths. */
+	protected static final long TEST_TAIL_CACHE_CHUNK_SIZE = 1024L;
+
+	public static TailCacheFileSystemConfig testTailCacheConfig() {
+		TailCacheFileSystemConfig config = new TailCacheFileSystemConfig();
+		return config.setPerFileCacheLimits(config.getMaxCacheSizePerFileBytes(), config.getMinRetainChunks(),
+				TEST_TAIL_CACHE_CHUNK_SIZE);
+	}
+
+	public static AsyncFileSystem createTestAsyncFileSystem() {
+		return createTestAsyncFileSystem(new TestKeeperConfig());
+	}
+
+	public static AsyncFileSystem createTestAsyncFileSystem(KeeperConfig keeperConfig) {
+		return ContainerResourceManager.createAsyncFileSystem(keeperConfig.getAsyncIoThreads(),
+				keeperConfig.getAsyncFsyncIntervalBytes(), keeperConfig.getAsyncFsyncIntervalMillis(),
+				testTailCacheConfig());
+	}
+
+	protected AsyncFileSystem asyncFileSystem() {
+		AsyncFileSystem fs = sharedTestAsyncFileSystem;
+		if (fs != null) {
+			return fs;
+		}
+		synchronized (AbstractRedisKeeperTest.class) {
+			if (sharedTestAsyncFileSystem == null) {
+				AsyncFileSystem created = createTestAsyncFileSystem();
+				Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+					try {
+						created.shutdown();
+					} catch (Throwable ignore) {
+					}
+				}, "keeper-test-async-fs-shutdown"));
+				sharedTestAsyncFileSystem = created;
+			}
+			return sharedTestAsyncFileSystem;
+		}
+	}
+
 	protected ClusterId getClusterId() {
 		return new ClusterId(currentTestName()  + "-", 0L);
 	}
@@ -58,6 +121,48 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected ReplId getReplId() {
 		return new ReplId(currentTestName() + "-", 0L);
+	}
+
+	protected DefaultCommandStore createDefaultCommandStore(File file, int maxFileSize,
+			CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,
+			RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter) throws IOException {
+		return createDefaultCommandStore(null, getKeeperConfig(), file, maxFileSize, () -> false, () -> 12 * 3600,
+				3600 * 1000, () -> 20, AbstractCommandStore.DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				cmdReaderWriterFactory, keeperMonitor, redisOpParser, gtidCmdFilter, true);
+	}
+
+	protected DefaultCommandStore createDefaultCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file,
+			int maxFileSize, BooleanSupplier recordWrongStreamConfig,
+			IntSupplier maxTimeSecondKeeperCmdFileAfterModified, int minTimeMilliToGcAfterModified,
+			IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
+			BooleanSupplier commandOffsetNotifyCoalescingEnabled,
+			CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,
+			RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex) throws IOException {
+		return new DefaultCommandStore(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig,
+				maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled, cmdReaderWriterFactory,
+				keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, 0L, asyncFileSystem(),
+				() -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId());
+	}
+
+	protected DefaultCommandStore createDefaultCommandStore(CKStore ckStore, KeeperConfig keeperConfig, File file,
+			int maxFileSize, BooleanSupplier recordWrongStreamConfig,
+			IntSupplier maxTimeSecondKeeperCmdFileAfterModified, int minTimeMilliToGcAfterModified,
+			IntSupplier fileNumToKeep, long commandReaderFlyingThreshold,
+			BooleanSupplier commandOffsetNotifyCoalescingEnabled,
+			CommandReaderWriterFactory cmdReaderWriterFactory, KeeperMonitor keeperMonitor,
+			RedisOpParser redisOpParser, GtidCmdFilter gtidCmdFilter, boolean buildIndex,
+			IntSupplier asyncWriteMaxBytes) throws IOException {
+		return new DefaultCommandStore(ckStore, keeperConfig, file, maxFileSize, recordWrongStreamConfig,
+				maxTimeSecondKeeperCmdFileAfterModified, minTimeMilliToGcAfterModified, fileNumToKeep,
+				commandReaderFlyingThreshold, commandOffsetNotifyCoalescingEnabled, cmdReaderWriterFactory,
+				keeperMonitor, redisOpParser, gtidCmdFilter, buildIndex, 0L, asyncFileSystem(), asyncWriteMaxBytes, getReplId());
+	}
+
+	protected DefaultReplicationStore createDefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
+			KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOpParser) throws IOException {
+		return new DefaultReplicationStore(null, baseDir, config, keeperRunid, new OffsetCommandReaderWriterFactory(),
+				keeperMonitor, syncRateManager, redisOpParser, null, asyncFileSystem(), getReplId());
 	}
 
 	protected ShardId getShardId() {
@@ -111,7 +216,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected ReplicationStoreManager createReplicationStoreManager(ReplId replId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
 		
-		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, replId, keeperRunid, storeDir, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), createRedisOpParser());
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, replId, keeperRunid, storeDir, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), createRedisOpParser(), null, asyncFileSystem());
 
 		replicationStoreManager.addObserver(new Observer() {
 			
@@ -185,7 +290,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			}
 
 			@Override
-			public void onFileData(DefaultReferenceFileRegion referenceFileRegion) throws IOException {
+			public void onFileData(ReferenceFileRegion referenceFileRegion) throws IOException {
 				if (referenceFileRegion == null) {
 					latch.countDown();
 					return;
@@ -248,10 +353,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 					}
 
 					@Override
-					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
+					public ChannelFuture onCommand(Object cmd) {
 						
 						try {
-							byte [] message = readFileChannelInfoMessageAsBytes((DefaultReferenceFileRegion) cmd);
+							byte [] message = readFileChannelInfoMessageAsBytes((ReferenceFileRegion) cmd);
 							baous.write(message);
 						} catch (IOException e) {
 							logger.error("[onCommand]" + cmd, e);
@@ -269,9 +374,10 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 		int lastSize = baous.size();
 		long equalCount = 0;
-		while (true) {
+		long deadline = System.currentTimeMillis() + 10000;
+		while (System.currentTimeMillis() < deadline) {
 			int currentSize = baous.size();
-			if(expectedLen >= 0 && currentSize >= expectedLen){
+			if (expectedLen >= 0 && currentSize >= expectedLen) {
 				break;
 			}
 			if (currentSize != lastSize) {
@@ -280,7 +386,8 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 			} else {
 				equalCount++;
 			}
-			if (equalCount > 100) {
+			// Stall detection only applies when expected length is unknown.
+			if (expectedLen < 0 && equalCount > 100) {
 				break;
 			}
 			sleep(10);
@@ -288,7 +395,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		return new String(baous.toByteArray());
 	}
 
-	protected byte[] readFileChannelInfoMessageAsBytes(DefaultReferenceFileRegion referenceFileRegion) {
+	protected byte[] readFileChannelInfoMessageAsBytes(ReferenceFileRegion referenceFileRegion) {
 
 		try {
 			ByteArrayWritableByteChannel bach = new ByteArrayWritableByteChannel(); 
@@ -299,7 +406,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 		}
 	}
 
-	protected String readFileChannelInfoMessageAsString(DefaultReferenceFileRegion referenceFileRegion) {
+	protected String readFileChannelInfoMessageAsString(ReferenceFileRegion referenceFileRegion) {
 
 		return new String(readFileChannelInfoMessageAsBytes(referenceFileRegion), Codec.defaultCharset);
 	}

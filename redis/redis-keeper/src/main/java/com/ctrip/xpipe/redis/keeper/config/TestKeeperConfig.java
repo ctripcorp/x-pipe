@@ -33,6 +33,13 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private int cmdBatchLowRateBps = -1;
 
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
+
+	private int prepareWatchReopenIntervalMilli = DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI;
+	private int prepareWatchCloseHoldMilli = DEFAULT_PREPARE_WATCH_CLOSE_HOLD_MILLI;
+	private long unclosedHandleFlushRetryWindowMilli = DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI;
+	private long asyncTailCacheMaxSizePerFileBytes = DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES;
+	private boolean prepareStoreWatchEnabled = false;
+	private boolean pubsubParseEnabled = false;
 	
 	
 	public TestKeeperConfig(){
@@ -157,9 +164,16 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return commandReaderFlyingThreshold;
 	}
 
+	private boolean commandOffsetNotifyCoalescingEnabled = true;
+
 	@Override
 	public boolean isCommandOffsetNotifyCoalescingEnabled() {
-		return true;
+		return commandOffsetNotifyCoalescingEnabled;
+	}
+
+	public TestKeeperConfig setCommandOffsetNotifyCoalescingEnabled(boolean commandOffsetNotifyCoalescingEnabled) {
+		this.commandOffsetNotifyCoalescingEnabled = commandOffsetNotifyCoalescingEnabled;
+		return this;
 	}
 
 	@Override
@@ -359,6 +373,46 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	}
 
 	@Override
+	public boolean isPrepareStoreWatchEnabled() {
+		return prepareStoreWatchEnabled;
+	}
+
+	public TestKeeperConfig setPrepareStoreWatchEnabled(boolean prepareStoreWatchEnabled) {
+		this.prepareStoreWatchEnabled = prepareStoreWatchEnabled;
+		return this;
+	}
+
+	@Override
+	public int getPrepareWatchReopenIntervalMilli() {
+		return prepareWatchReopenIntervalMilli;
+	}
+
+	public TestKeeperConfig setPrepareWatchReopenIntervalMilli(int prepareWatchReopenIntervalMilli) {
+		this.prepareWatchReopenIntervalMilli = prepareWatchReopenIntervalMilli;
+		return this;
+	}
+
+	@Override
+	public int getPrepareWatchCloseHoldMilli() {
+		return prepareWatchCloseHoldMilli;
+	}
+
+	public TestKeeperConfig setPrepareWatchCloseHoldMilli(int prepareWatchCloseHoldMilli) {
+		this.prepareWatchCloseHoldMilli = prepareWatchCloseHoldMilli;
+		return this;
+	}
+
+	@Override
+	public boolean isPubsubParseEnabled() {
+		return pubsubParseEnabled;
+	}
+
+	public TestKeeperConfig setPubsubParseEnabled(boolean pubsubParseEnabled) {
+		this.pubsubParseEnabled = pubsubParseEnabled;
+		return this;
+	}
+
+	@Override
 	public boolean stopWriteCk() {
 		return false;
 	}
@@ -455,5 +509,50 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public int getBlockSizeThreshold() {
 		return blockSizeThreshold;
+	}
+
+	@Override
+	public int getAsyncWriteMaxBytes() {
+		return 65536;
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalBytes() {
+		return DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES;
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalMillis() {
+		return DEFAULT_ASYNC_FSYNC_INTERVAL_MILLIS;
+	}
+
+	@Override
+	public int getAsyncIoThreads() {
+		return DEFAULT_ASYNC_IO_THREADS;
+	}
+
+	@Override
+	public long getAsyncTailCacheMaxSizeBytes() {
+		return DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR;
+	}
+
+	@Override
+	public long getAsyncTailCacheMaxSizePerFileBytes() {
+		return asyncTailCacheMaxSizePerFileBytes;
+	}
+
+	public TestKeeperConfig setAsyncTailCacheMaxSizePerFileBytes(long asyncTailCacheMaxSizePerFileBytes) {
+		this.asyncTailCacheMaxSizePerFileBytes = asyncTailCacheMaxSizePerFileBytes;
+		return this;
+	}
+
+	@Override
+	public long getUnclosedHandleFlushRetryWindowMilli() {
+		return unclosedHandleFlushRetryWindowMilli;
+	}
+
+	public TestKeeperConfig setUnclosedHandleFlushRetryWindowMilli(long unclosedHandleFlushRetryWindowMilli) {
+		this.unclosedHandleFlushRetryWindowMilli = unclosedHandleFlushRetryWindowMilli;
+		return this;
 	}
 }

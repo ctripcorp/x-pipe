@@ -115,6 +115,7 @@ public class KeeperSingleDc extends AbstractKeeperIntegratedSingleDc{
 	private RedisMeta createSlave(String masterIp, Integer masterPort) {
 		
 		RedisMeta slave = new RedisMeta();
+		slave.setIp("127.0.0.1");
 		slave.setMaster(String.format("%s:%d", masterIp, masterPort));
 		slave.setPort(randomPort());		
 		return slave;

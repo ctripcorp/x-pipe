@@ -32,8 +32,6 @@ import static org.mockito.Mockito.*;
  */
 public class KeeperCmdFileMissTest extends AbstractKeeperIntegratedSingleDc {
 
-    private RedisKeeperServer originActiveKeeperServer;
-
     private RedisKeeperServer spyActiveKeeperServer;
 
     @Override
@@ -45,21 +43,20 @@ public class KeeperCmdFileMissTest extends AbstractKeeperIntegratedSingleDc {
         return keeperConfig;
     }
 
+    /**
+     * Return a Mockito spy for the active keeper and let {@code startKeeper → add()} own
+     * initialize/start/stop. Do <b>not</b> start the pre-spy instance: mockito-core subclass
+     * spies are a different object that shallow-copies {@code lifecycleState}; starting the
+     * original binds the listen port while the registry only stops the spy → port leak /
+     * {@code BindException} in later AllKeeperTest cases.
+     */
     @Override
     protected RedisKeeperServer createRedisKeeperServer(KeeperMeta keeperMeta, File baseDir, KeeperConfig keeperConfig,
                                                         LeaderElectorManager leaderElectorManager,
                                                         KeepersMonitorManager keeperMonitorManager, SyncRateManager syncRateManager) {
         RedisKeeperServer keeperServer = super.createRedisKeeperServer(keeperMeta, baseDir, keeperConfig, leaderElectorManager, keeperMonitorManager, syncRateManager);
         if (keeperMeta.equals(getKeeperActive())) {
-            originActiveKeeperServer = keeperServer;
             spyActiveKeeperServer = spy(keeperServer);
-            try {
-                originActiveKeeperServer.initialize();
-                originActiveKeeperServer.start();
-            } catch (Exception e) {
-                logger.info("[createRedisKeeperServer] init fail", e);
-            }
-
             return spyActiveKeeperServer;
         }
 
@@ -71,8 +68,11 @@ public class KeeperCmdFileMissTest extends AbstractKeeperIntegratedSingleDc {
         sendMessageToMasterAndTestSlaveRedis(512);
         RedisMeta slave = getRedisSlaves().iterator().next();
 
+        DefaultReplicationStore realStore = (DefaultReplicationStore) spyActiveKeeperServer.getReplicationStore();
+        int originRdbDumpCnt = realStore.getRdbUpdateCount();
+
         doAnswer(serverParams -> {
-            ReplicationStore replicationStore = originActiveKeeperServer.getReplicationStore();
+            ReplicationStore replicationStore = (ReplicationStore) serverParams.callRealMethod();
             ReplicationStore spyReplicationStore = spy(replicationStore);
             doAnswer(storeParams -> {
                 replicationStore.gc();
@@ -83,8 +83,6 @@ public class KeeperCmdFileMissTest extends AbstractKeeperIntegratedSingleDc {
 
             return spyReplicationStore;
         }).when(spyActiveKeeperServer).getReplicationStore();
-
-        int originRdbDumpCnt = ((DefaultReplicationStore)originActiveKeeperServer.getReplicationStore()).getRdbUpdateCount();
 
         SimpleObjectPool<NettyClient> slaveClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(slave.getIp(), slave.getPort()));
         new SlaveOfCommand(slaveClientPool, scheduled).execute().get();
@@ -103,8 +101,7 @@ public class KeeperCmdFileMissTest extends AbstractKeeperIntegratedSingleDc {
             }
         }, 30000, 2000);
 
-        int currentRdbDumpCnt = ((DefaultReplicationStore)originActiveKeeperServer.getReplicationStore()).getRdbUpdateCount();
-        Assert.assertEquals(originRdbDumpCnt, currentRdbDumpCnt);
+        Assert.assertEquals(originRdbDumpCnt, realStore.getRdbUpdateCount());
     }
 
 }

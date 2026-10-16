@@ -71,4 +71,20 @@ public class ConfigHandlerTest extends AbstractFakeRedisTest {
         Assert.assertFalse(cfgGet.execute().get(CONFIG_GET_TIMEOUT_SECONDS, TimeUnit.SECONDS));
     }
 
+    @Test
+    public void testConfigGetPrepareWatchOffWhenActive() throws Exception {
+        SimpleObjectPool<NettyClient> clientPool = getXpipeNettyClientKeyedObjectPool()
+                .getKeyPool(new DefaultEndPoint("127.0.0.1", keeperServer.getListeningPort()));
+        ConfigGetCommand<Boolean> cfgGet = new ConfigGetCommand.ConfigGetPrepareWatch(clientPool, scheduled);
+        Assert.assertFalse(cfgGet.execute().get(CONFIG_GET_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testConfigGetPubsubParseOffByDefault() throws Exception {
+        SimpleObjectPool<NettyClient> clientPool = getXpipeNettyClientKeyedObjectPool()
+                .getKeyPool(new DefaultEndPoint("127.0.0.1", keeperServer.getListeningPort()));
+        ConfigGetCommand<Boolean> cfgGet = new ConfigGetCommand.ConfigGetPubsubParse(clientPool, scheduled);
+        Assert.assertFalse(cfgGet.execute().get(CONFIG_GET_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+    }
+
 }

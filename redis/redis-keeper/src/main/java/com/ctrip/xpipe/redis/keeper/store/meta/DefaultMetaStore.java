@@ -4,6 +4,8 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.store.*;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.ObjectUtils;
 
 import java.io.File;
@@ -16,8 +18,13 @@ import java.util.Objects;
  * Dec 4, 2016
  */
 public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter {
-	public DefaultMetaStore(File baseDir, String keeperRunid) {
-		super(baseDir, keeperRunid);
+	public DefaultMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId) {
+		this(baseDir, keeperRunid, asyncFileSystem, fileSystemReplId, false);
+	}
+
+	public DefaultMetaStore(File baseDir, String keeperRunid, AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId,
+							boolean readOnly) {
+		super(baseDir, keeperRunid, asyncFileSystem, fileSystemReplId, readOnly);
 	}
 
 	@Override
@@ -119,10 +126,11 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 	}
 
 	@Override
-	public ReplicationStoreMeta rdbConfirm(String replId, long beginOffset, String gtidSet, String rdbFile, RdbStore.Type type,
-										 EofType eofType, String cmdFilePrefix) throws IOException {
+	public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareRdbConfirm(String replId, long beginOffset, String gtidSet, String rdbFile, RdbStore.Type type,
+												  EofType eofType, String cmdFilePrefix) {
 		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			ReplicationStoreMeta expected = metaRef.get();
+			ReplicationStoreMeta metaDup = new ReplicationStoreMeta(expected);
 
 			if (RdbStore.Type.NORMAL.equals(type)) {
 				metaDup.setRdbFile(rdbFile);
@@ -144,11 +152,19 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 			metaDup.setBeginOffset(beginOffset);
 			metaDup.setCmdFilePrefix(cmdFilePrefix);
 			clearReplicationId2(metaDup);
-
-			saveMeta(metaDup);
-			return metaDup;
+			return Pair.from(expected, metaDup);
 		}
+	}
 
+	@Override
+	public ReplicationStoreMeta rdbConfirm(String replId, long beginOffset, String gtidSet, String rdbFile, RdbStore.Type type,
+										 EofType eofType, String cmdFilePrefix) throws IOException {
+		synchronized (metaRef) {
+			Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
+					prepareRdbConfirm(replId, beginOffset, gtidSet, rdbFile, type, eofType, cmdFilePrefix);
+			saveMeta(prepared.getValue());
+			return prepared.getValue();
+		}
 	}
 
 	@Override
@@ -187,17 +203,26 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 	}
 
 	@Override
-	public ReplicationStoreMeta continueFromOffset(String replId, long beginOffset, String cmdFilePrefix) throws IOException {
+	public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareContinueFromOffset(String replId, long beginOffset, String cmdFilePrefix) {
 		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			ReplicationStoreMeta expected = metaRef.get();
+			ReplicationStoreMeta metaDup = new ReplicationStoreMeta(expected);
 
 			metaDup.setReplId(replId);
 			metaDup.setBeginOffset(beginOffset);
 			metaDup.setCmdFilePrefix(cmdFilePrefix);
 			clearRdb(metaDup);
+			return Pair.from(expected, metaDup);
+		}
+	}
 
-			saveMeta(metaDup);
-			return metaDup;
+	@Override
+	public ReplicationStoreMeta continueFromOffset(String replId, long beginOffset, String cmdFilePrefix) throws IOException {
+		synchronized (metaRef) {
+			Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
+					prepareContinueFromOffset(replId, beginOffset, cmdFilePrefix);
+			saveMeta(prepared.getValue());
+			return prepared.getValue();
 		}
 	}
 
@@ -266,10 +291,11 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 	}
 
 	@Override
-	public ReplicationStoreMeta rdbConfirmPsync(String replId, long beginReplOffset, long backlogOff, String rdbFile,
-												RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException {
+	public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareRdbConfirmPsync(String replId, long beginReplOffset, long backlogOff, String rdbFile,
+													   RdbStore.Type type, EofType eofType, String cmdFilePrefix) {
 		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			ReplicationStoreMeta expected = metaRef.get();
+			ReplicationStoreMeta metaDup = new ReplicationStoreMeta(expected);
 
 			metaDup.setPrevReplStage(null);
 			metaDup.setCurReplStage(new ReplStage(replId, beginReplOffset, backlogOff));
@@ -291,18 +317,27 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 			}
 
 			metaDup.setCmdFilePrefix(cmdFilePrefix);
-
 			clearGapAllowObseleteFields(metaDup);
-
-			saveMeta(metaDup);
-			return metaDup;
+			return Pair.from(expected, metaDup);
 		}
 	}
 
 	@Override
-	public ReplicationStoreMeta psyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String cmdFilePrefix) throws IOException {
+	public ReplicationStoreMeta rdbConfirmPsync(String replId, long beginReplOffset, long backlogOff, String rdbFile,
+												RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException {
 		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
+					prepareRdbConfirmPsync(replId, beginReplOffset, backlogOff, rdbFile, type, eofType, cmdFilePrefix);
+			saveMeta(prepared.getValue());
+			return prepared.getValue();
+		}
+	}
+
+	@Override
+	public Pair<ReplicationStoreMeta, ReplicationStoreMeta> preparePsyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String cmdFilePrefix) {
+		synchronized (metaRef) {
+			ReplicationStoreMeta expected = metaRef.get();
+			ReplicationStoreMeta metaDup = new ReplicationStoreMeta(expected);
 
 			metaDup.setPrevReplStage(null);
 			metaDup.setCurReplStage(new ReplStage(replId, beginReplOffset, backlogOff));
@@ -313,16 +348,25 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 
 			clearRdb(metaDup);
 			clearRordb(metaDup);
-
-			saveMeta(metaDup);
-			return metaDup;
+			return Pair.from(expected, metaDup);
 		}
 	}
 
 	@Override
-	public ReplicationStoreMeta psyncContinue(String newReplId, long backlogOff) throws IOException {
+	public ReplicationStoreMeta psyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String cmdFilePrefix) throws IOException {
 		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
+					preparePsyncContinueFrom(replId, beginReplOffset, backlogOff, cmdFilePrefix);
+			saveMeta(prepared.getValue());
+			return prepared.getValue();
+		}
+	}
+
+	@Override
+	public Pair<ReplicationStoreMeta, ReplicationStoreMeta> preparePsyncContinue(String newReplId, long backlogOff) {
+		synchronized (metaRef) {
+			ReplicationStoreMeta expected = metaRef.get();
+			ReplicationStoreMeta metaDup = new ReplicationStoreMeta(expected);
 
 			ReplStage curReplStage = metaDup.getCurReplStage();
 			if (curReplStage.getProto() != ReplStage.ReplProto.PSYNC) {
@@ -330,10 +374,9 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 			}
 
 			String currentReplId = curReplStage.getReplId();
-
-			if(ObjectUtils.equals(currentReplId, newReplId)){
+			if (ObjectUtils.equals(currentReplId, newReplId)) {
 				logger.info("[shiftReplicationId][repidEqual]{}", newReplId);
-				return metaDup;
+				return null;
 			}
 
 			// backlogOff - curReplStage.beginOffsetBacklog == secondReplidOffset - replStage.beginOffsetRepl
@@ -343,15 +386,27 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 			curReplStage.setSecondReplIdOffset(secondReplidOffset);
 			curReplStage.updateReplId(newReplId);
 
-			saveMeta(metaDup);
-			return metaDup;
+			return Pair.from(expected, metaDup);
 		}
 	}
 
 	@Override
-	public ReplicationStoreMeta switchToPsync(String replId, long beginReplOffset, long backlogOff) throws IOException {
+	public ReplicationStoreMeta psyncContinue(String newReplId, long backlogOff) throws IOException {
 		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = preparePsyncContinue(newReplId, backlogOff);
+			if (prepared == null) {
+				return dupReplicationStoreMeta();
+			}
+			saveMeta(prepared.getValue());
+			return prepared.getValue();
+		}
+	}
+
+	@Override
+	public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareSwitchToPsync(String replId, long beginReplOffset, long backlogOff) {
+		synchronized (metaRef) {
+			ReplicationStoreMeta expected = metaRef.get();
+			ReplicationStoreMeta metaDup = new ReplicationStoreMeta(expected);
 
 			ReplStage curReplStage = metaDup.getCurReplStage();
 			if (curReplStage.getProto() != ReplStage.ReplProto.XSYNC) {
@@ -364,17 +419,27 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 			metaDup.setPrevReplStage(curReplStage);
 			metaDup.setCurReplStage(newReplStage);
 
-			saveMeta(metaDup);
-			return metaDup;
+			return Pair.from(expected, metaDup);
 		}
 	}
 
 	@Override
-	public ReplicationStoreMeta rdbConfirmXsync(String replId, long beginReplOffset, long beginOffsetBacklog, String masterUuid,
-												GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile,
-												RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException {
+	public ReplicationStoreMeta switchToPsync(String replId, long beginReplOffset, long backlogOff) throws IOException {
 		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
+					prepareSwitchToPsync(replId, beginReplOffset, backlogOff);
+			saveMeta(prepared.getValue());
+			return prepared.getValue();
+		}
+	}
+
+	@Override
+	public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareRdbConfirmXsync(String replId, long beginReplOffset, long beginOffsetBacklog, String masterUuid,
+													   GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile,
+													   RdbStore.Type type, EofType eofType, String cmdFilePrefix) {
+		synchronized (metaRef) {
+			ReplicationStoreMeta expected = metaRef.get();
+			ReplicationStoreMeta metaDup = new ReplicationStoreMeta(expected);
 
 			metaDup.setPrevReplStage(null);
 			metaDup.setCurReplStage(new ReplStage(replId, beginReplOffset, beginOffsetBacklog, masterUuid, gtidLost, gtidExecuted));
@@ -396,11 +461,21 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 			}
 
 			metaDup.setCmdFilePrefix(cmdFilePrefix);
-
 			clearGapAllowObseleteFields(metaDup);
+			return Pair.from(expected, metaDup);
+		}
+	}
 
-			saveMeta(metaDup);
-			return metaDup;
+	@Override
+	public ReplicationStoreMeta rdbConfirmXsync(String replId, long beginReplOffset, long beginOffsetBacklog, String masterUuid,
+												GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile,
+												RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException {
+		synchronized (metaRef) {
+			Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
+					prepareRdbConfirmXsync(replId, beginReplOffset, beginOffsetBacklog, masterUuid,
+							gtidLost, gtidExecuted, rdbFile, type, eofType, cmdFilePrefix);
+			saveMeta(prepared.getValue());
+			return prepared.getValue();
 		}
 	}
 
@@ -521,10 +596,11 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 	}
 
 	@Override
-	public ReplicationStoreMeta xsyncContinueFrom(String replId, long beginReplOffset, long beginOffsetBacklog, String masterUuid,
-											  GtidSet gtidLost, GtidSet gtidExecuted, String cmdFilePrefix) throws IOException {
+	public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareXsyncContinueFrom(String replId, long beginReplOffset, long beginOffsetBacklog, String masterUuid,
+											  GtidSet gtidLost, GtidSet gtidExecuted, String cmdFilePrefix) {
 		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			ReplicationStoreMeta expected = metaRef.get();
+			ReplicationStoreMeta metaDup = new ReplicationStoreMeta(expected);
 
 			metaDup.setPrevReplStage(null);
 			metaDup.setCurReplStage(new ReplStage(replId, beginReplOffset, beginOffsetBacklog, masterUuid, gtidLost, gtidExecuted));
@@ -535,18 +611,27 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 
 			clearRdb(metaDup);
 			clearRordb(metaDup);
-
-			saveMeta(metaDup);
-
-			return metaDup;
+			return Pair.from(expected, metaDup);
 		}
 	}
 
 	@Override
-	public ReplicationStoreMeta switchToXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid,
-											  GtidSet gtidCont, GtidSet gtidLost) throws IOException {
+	public ReplicationStoreMeta xsyncContinueFrom(String replId, long beginReplOffset, long beginOffsetBacklog, String masterUuid,
+											  GtidSet gtidLost, GtidSet gtidExecuted, String cmdFilePrefix) throws IOException {
 		synchronized (metaRef) {
-			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
+					prepareXsyncContinueFrom(replId, beginReplOffset, beginOffsetBacklog, masterUuid, gtidLost, gtidExecuted, cmdFilePrefix);
+			saveMeta(prepared.getValue());
+			return prepared.getValue();
+		}
+	}
+
+	@Override
+	public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareSwitchToXsync(String replId, long beginReplOffset, long backlogOff,
+																				 String masterUuid, GtidSet gtidCont, GtidSet gtidLost) {
+		synchronized (metaRef) {
+			ReplicationStoreMeta expected = metaRef.get();
+			ReplicationStoreMeta metaDup = new ReplicationStoreMeta(expected);
 
 			ReplStage curReplStage = metaDup.getCurReplStage();
 			if (curReplStage.getProto() != ReplStage.ReplProto.PSYNC) {
@@ -559,8 +644,18 @@ public class DefaultMetaStore extends AbstractMetaStore implements GtidCmdFilter
 			metaDup.setPrevReplStage(curReplStage);
 			metaDup.setCurReplStage(newReplStage);
 
-			saveMeta(metaDup);
-			return metaDup;
+			return Pair.from(expected, metaDup);
+		}
+	}
+
+	@Override
+	public ReplicationStoreMeta switchToXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid,
+											  GtidSet gtidCont, GtidSet gtidLost) throws IOException {
+		synchronized (metaRef) {
+			Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
+					prepareSwitchToXsync(replId, beginReplOffset, backlogOff, masterUuid, gtidCont, gtidLost);
+			saveMeta(prepared.getValue());
+			return prepared.getValue();
 		}
 	}
 

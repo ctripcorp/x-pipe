@@ -23,6 +23,7 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -177,6 +178,15 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		@Override
 		public void endWriteRdb() {
 
+		}
+	}
+
+	@After
+	public void afterGapAllowedSyncTest() throws Exception {
+		if (replicationStoreManager != null) {
+			LifecycleHelper.stopIfPossible(replicationStoreManager);
+			LifecycleHelper.disposeIfPossible(replicationStoreManager);
+			replicationStoreManager = null;
 		}
 	}
 
