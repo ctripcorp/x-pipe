@@ -27,6 +27,7 @@ import com.ctrip.xpipe.redis.console.controller.consoleportal.migration.Exclusiv
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.availablezone.RedisVacantAzCheckerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone.KeeperAvailableZoneCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.SentinelBeaconClusterMonitorCheckTest;
@@ -268,6 +269,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultSentinelBalanceServiceTest.class,
 
         KeeperAvailableZoneCheckTest.class,
+        RedisVacantAzCheckerTest.class,
         AbnormalClusterStatusMonitorTest.class,
         OperatingShardMonitorTest.class,
         RedisConfigCheckMonitorTest.class,

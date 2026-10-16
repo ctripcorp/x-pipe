@@ -722,6 +722,16 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public Set<String> getRedisVacantAzCheckDcs() {
+        return consoleConfigBean.getRedisVacantAzCheckDcs();
+    }
+
+    @Override
+    public int getRedisVacantAzCheckIntervalMilli() {
+        return consoleConfigBean.getRedisVacantAzCheckIntervalMilli();
+    }
+
+    @Override
     public void addListener(ConfigKeyListener listener) {
         this.listenersSet.add(listener);
     }

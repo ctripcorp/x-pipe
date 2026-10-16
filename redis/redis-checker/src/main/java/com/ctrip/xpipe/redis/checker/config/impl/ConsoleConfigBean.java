@@ -87,6 +87,10 @@ public class ConsoleConfigBean extends AbstractConfigBean {
     public static final String KEY_KEEPER_CONTAINER_ADDRESS_MIN_REMOVED_HOSTNAMES =
             "keepercontainer.address.local.min.removed.hostnames";
 
+    public static final String KEY_REDIS_VACANT_AZ_CHECK_DCS = "console.redis.vacant.az.check.dcs";
+
+    public static final String KEY_REDIS_VACANT_AZ_CHECK_INTERVAL_MILLI = "console.redis.vacant.az.check.interval.milli";
+
     private FoundationService foundationService;
 
     @Autowired
@@ -253,5 +257,13 @@ public class ConsoleConfigBean extends AbstractConfigBean {
 
     public int getKeeperDefaultPriorityTfs() {
         return getIntProperty(KEY_CONSOLE_KEEPER_DEFAULT_PRIORITY_TFS, 0);
+    }
+
+    public Set<String> getRedisVacantAzCheckDcs() {
+        return getSplitStringSet(getProperty(KEY_REDIS_VACANT_AZ_CHECK_DCS, ""));
+    }
+
+    public int getRedisVacantAzCheckIntervalMilli() {
+        return getIntProperty(KEY_REDIS_VACANT_AZ_CHECK_INTERVAL_MILLI, 5 * 60 * 1000);
     }
 }
