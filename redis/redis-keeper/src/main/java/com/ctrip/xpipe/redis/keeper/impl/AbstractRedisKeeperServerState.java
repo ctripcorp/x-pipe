@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.impl;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyEnabled;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.meta.ShardStatus;
@@ -135,26 +136,38 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	}
 	
 	protected void doBecomeBackup(Endpoint masterAddress){
-		
+
 		logger.info("[doBecomeBackup]{}", this);
+		redisKeeperServer.leaveReadOnlyForWrite();
 		redisKeeperServer.resetReplAfterLongTimeDown();
 		try{
-			redisKeeperServer.getReplicationStore().getMetaStore().becomeBackup();
+			redisKeeperServer.getReplicationStoreManager().createIfNotExist().getMetaStore().becomeBackup();
 		}catch(Exception e){
-			logger.error("[activedoBecomeBackupToBackup]" + this, e);
+			// 不吞：让 SETSTATE 回 -ERR，由 MetaServer 重试
+			logger.error("[doBecomeBackup]" + this + "," + masterAddress, e);
+			if (e instanceof RuntimeException) {
+				throw (RuntimeException) e;
+			}
+			throw new XpipeRuntimeException("[doBecomeBackup] become backup failed", e);
 		}
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateBackup(redisKeeperServer, masterAddress));
 		reconnectMaster();
 	}
 
 	protected void doBecomeActive(Endpoint masterAddress){
-		
+
 		logger.info("[doBecomeActive]{}", this);
+		redisKeeperServer.leaveReadOnlyForWrite();
 		try{
-			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+			ReplicationStore replicationStore = redisKeeperServer.getReplicationStoreManager().createIfNotExist();
 			replicationStore.getMetaStore().becomeActive();
 		}catch(Exception e){
+			// 不吞：同上
 			logger.error("[doBecomeActive]" + this + "," + masterAddress, e);
+			if (e instanceof RuntimeException) {
+				throw (RuntimeException) e;
+			}
+			throw new XpipeRuntimeException("[doBecomeActive] become active failed", e);
 		}
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, masterAddress));
 		reconnectMaster();

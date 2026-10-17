@@ -223,6 +223,9 @@ public class KeeperStageOneAcceptanceTest extends AbstractRedisKeeperContextTest
 		DefaultRedisKeeperServer server = (DefaultRedisKeeperServer) createRedisKeeperServer(config, tfsMode);
 		server.initialize();
 		server.start();
+		// 模拟 doBecomeActive：写路径建店 + 打标
+		server.leaveReadOnlyForWrite();
+		server.getReplicationStoreManager().createIfNotExist().getMetaStore().becomeActive();
 		server.setRedisKeeperServerState(
 				new RedisKeeperServerStateActive(server, new DefaultEndPoint("127.0.0.1", 0)));
 		Assert.assertTrue(server.getReplicationStore().checkOk());
