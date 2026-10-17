@@ -1,0 +1,100 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java
+  s_8ff7c583ab5a07::t_8b2059dda34bd0 69-76
+  s_8ff7c583ab5a07::t_cf903251bd223b 257-260
+  s_8ff7c583ab5a07::t_08dd3c72a9e9a1 285
+  s_f27d758b6af3c9::t_096843d51db560 395-401
+  s_f27d758b6af3c9::t_98ef7fd8dff93c 485,487-489,493
+  s_8ff7c583ab5a07::t_6bebf4a5296fb1 486,490-492
+  s_8ff7c583ab5a07::t_654ac01965ae4f 502-507
+  s_8ff7c583ab5a07::t_65a8d81e54f7c4 564-568
+  s_8ff7c583ab5a07::t_8b054bf215e43f 622-627
+  s_8ff7c583ab5a07::t_07f684bb24064a 702-707,710-734
+  s_8ff7c583ab5a07::t_2f1bc265f63917 708-709
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManagerSharedStoreTest.java
+  s_8ff7c583ab5a07::t_2208a7a4e6a459 1-152
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/handler/keeper/RoleCommandHandler.java
+  s_f27d758b6af3c9::t_56910630044763 54-57,59-60
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/handler/keeper/GtidxHandler.java
+  s_f27d758b6af3c9::t_b376c2c2797c65 110-114
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/RedisKeeperServer.java
+  s_8ff7c583ab5a07::t_1827075dbcc0c7 93-98
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_8ff7c583ab5a07::t_41ea521def4606 303-304
+  s_f27d758b6af3c9::t_90cc42fbb50327 399
+  s_8ff7c583ab5a07::t_5555c8cbe8bd0b 400-408,410
+  s_f27d758b6af3c9::t_675a1a4f3b1c78 411-419
+  s_8ff7c583ab5a07::t_be03b9144b617c 420,910-911
+  s_f27d758b6af3c9::t_cf74e0e8d73641 423
+  s_8ff7c583ab5a07::t_6094c08333ad9e 769-774,784-785
+  s_8ff7c583ab5a07::t_a4aad00c8eaf94 775-783
+  s_8ff7c583ab5a07::t_0820f6bd4895d1 1112-1114,1116
+  s_8ff7c583ab5a07::t_cea2a70fa13323 1115
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/job/TfsKeeperStateChangeJob.java
+  s_8ff7c583ab5a07::t_9be2e5c31063b9 58
+  s_8ff7c583ab5a07::t_daf7b280bf15d6 152,156-157
+  s_8ff7c583ab5a07::t_878903ee4e63d5 207-222,224-249
+  s_8ff7c583ab5a07::t_954ad1a1bd4417 223
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/job/KeeperMasterProcessJob.java
+  s_8ff7c583ab5a07::t_30b433ae5f9b7e 15-16,38
+  s_8ff7c583ab5a07::t_13ef733354f31d 79-88,90-92,97-98
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/handler/keeper/KinfoCommandHandler.java
+  s_f27d758b6af3c9::t_a43376640800e7 9
+  s_f27d758b6af3c9::t_85591701f01203 31-41
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/prepare/PrepareStoreWatcher.java
+  s_f27d758b6af3c9::t_37a58ad31d4c20 349-362
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsPrepareReleaseCommand.java
+  s_8ff7c583ab5a07::t_c6e6f672c0edaa 38
+  s_8ff7c583ab5a07::t_10b2518b21bf58 62-71
+  s_8ff7c583ab5a07::t_4f346de81a747f 97-102
+redis/redis-meta/src/main/java/com/ctrip/xpipe/redis/meta/server/keeper/manager/DefaultKeeperManager.java
+  s_8ff7c583ab5a07::t_25fe8c7f6c287a 31-32
+  s_8ff7c583ab5a07::t_eb2d9736a7e4af 570-572,583-584,587-588
+  s_8ff7c583ab5a07::t_accf39aa864214 573-579,582
+  s_8ff7c583ab5a07::t_c283e1f8475b0e 580-581,585-586
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/handler/keeper/GtidxHandlerTest.java
+  s_f27d758b6af3c9::t_af84327b17d5b6 76-78
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/job/TfsKeeperStateChangeJobTest.java
+  s_8ff7c583ab5a07::t_86815afe7e8c27 195-234,236-255
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerSharedStoreTest.java
+  s_8ff7c583ab5a07::t_54c6b1469b813b 1-99,102-106,108-114,118-200,206-221
+  s_8ff7c583ab5a07::t_d4df0cfbecd507 115-117
+  s_8ff7c583ab5a07::t_29387937b6d4a2 201-205
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/handler/keeper/InfoHandler.java
+  s_8ff7c583ab5a07::t_85cb4ed2c0b202 334
+  s_8ff7c583ab5a07::t_3f34cc5dc96b93 443,448,453-454
+  s_8ff7c583ab5a07::t_54ba6183484ffc 444-447,451-452,455-456
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/AbstractRedisKeeperServerState.java
+  s_8ff7c583ab5a07::t_e3d16bda1820e7 140
+  s_8ff7c583ab5a07::t_155b9426d13f25 154
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/keeper/manager/DefaultKeeperManagerTest.java
+  s_8ff7c583ab5a07::t_c5bef01cc9c7cc 18-19
+  s_8ff7c583ab5a07::t_05c414ae407f74 311-313,316-317,319-332,342-363
+  s_8ff7c583ab5a07::t_72210ac908f36d 314-315,318,335-341
+  s_8ff7c583ab5a07::t_d1dff62e9e40a1 333-334
+redis/redis-meta/src/test/java/com/ctrip/xpipe/redis/meta/server/tfs/TfsPrepareReleaseCommandTest.java
+  s_8ff7c583ab5a07::t_9701b570744868 96-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.50-trip",
+  "base_commit_sha": "9044dfee62ff9759557aa1c33a6fabae8eb83551",
+  "prompts": {},
+  "sessions": {
+    "s_8ff7c583ab5a07": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b53869e6-d61d-4ca0-83aa-02907f9f87c8",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    },
+    "s_f27d758b6af3c9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fbfea91a-0cb7-4e0c-ba5b-07f5b34f5156",
+        "model": "deepseek/deepseek-flash"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}
