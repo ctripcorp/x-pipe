@@ -40,7 +40,7 @@ public class GapAllowRedisSlaveTest extends AbstractRedisKeeperTest {
     public void beforeGapAllowRedisSlaveTest() {
         when(channel.closeFuture()).thenReturn(new DefaultChannelPromise(channel));
         when(channel.remoteAddress()).thenReturn(localhostInetAdress(randomPort()));
-        when(redisKeeperServer.getKeeperRepl()).thenReturn(keeperRepl);
+        when(redisKeeperServer.getOrCreateKeeperRepl()).thenReturn(keeperRepl);
 
         RedisClient redisClient = new DefaultRedisClient(channel, redisKeeperServer);
         redisSlave = new TestableGapAllowRedisSlave(redisClient);

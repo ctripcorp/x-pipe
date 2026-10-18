@@ -96,7 +96,7 @@ public class RedisKeeperServerStateActive extends AbstractRedisKeeperServerState
 	@SuppressWarnings("deprecation")
 	public RedisMeta masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) throws IOException {
 		
-		ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+		ReplicationStore replicationStore = redisKeeperServer.getOrCreateReplicationStore();
 		replicationStore.getMetaStore().masterChanged(keeperOffset, newMasterEndpoint, newMasterRunid, newMasterReplOffset);
 		
 		RedisMeta redisMeta = new RedisMeta();

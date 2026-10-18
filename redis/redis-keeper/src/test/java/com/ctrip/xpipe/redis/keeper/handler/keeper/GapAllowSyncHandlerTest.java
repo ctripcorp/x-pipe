@@ -79,7 +79,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     @Before
     public void setupGapAllowSyncHandlerTest() {
         keeperStats = new DefaultKeeperStats("repl_1", scheduled);
-        Mockito.when(keeperServer.getKeeperRepl()).thenReturn(keeperRepl);
+        Mockito.when(keeperServer.getOrCreateKeeperRepl()).thenReturn(keeperRepl);
         Mockito.when(keeperServer.getKeeperMonitor()).thenReturn(keeperMonitor);
         Mockito.when(keeperMonitor.getKeeperStats()).thenReturn(keeperStats);
         Mockito.when(keeperConfig.getReplicationStoreMaxCommandsToTransferBeforeCreateRdb()).thenReturn(1000L);
@@ -304,9 +304,9 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     @Test
     public void testAwaitOffset() throws Exception {
         ReplStage replStage = new ReplStage("test-repl-id1", 1, 1);
-        Mockito.when(keeperServer.getKeeperRepl()).thenReturn(keeperRepl);
+        Mockito.when(keeperServer.getOrCreateKeeperRepl()).thenReturn(keeperRepl);
         Mockito.when(keeperRepl.backlogEndOffset()).thenReturn(99L);
-        Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
+        Mockito.when(keeperServer.getOrCreateReplicationStore()).thenReturn(store);
         Mockito.when(store.awaitCommandsOffset(anyLong(), anyInt())).thenReturn(true);
 
         GapAllowSyncHandler.SyncRequest syncRequest = GapAllowSyncHandler.SyncRequest.psync("test-repl-id1", 100);
@@ -325,8 +325,8 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     @Test
     public void testAwaitGtidset() throws Exception {
         ReplStage replStage = new ReplStage("test-repl-id1", 1, 1, "A", new GtidSet(""), new GtidSet(""));
-        Mockito.when(keeperServer.getKeeperRepl()).thenReturn(keeperRepl);
-        Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
+        Mockito.when(keeperServer.getOrCreateKeeperRepl()).thenReturn(keeperRepl);
+        Mockito.when(keeperServer.getOrCreateReplicationStore()).thenReturn(store);
         Mockito.when(store.getGtidSet()).thenReturn(new Pair<>(new GtidSet("A:1-10"), new GtidSet("")));
 
         GapAllowSyncHandler.SyncRequest syncRequest = GapAllowSyncHandler.SyncRequest.xsync("test-repl-id1", "A:1-10", 10, "");
@@ -341,8 +341,8 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     @Test
     public void testFullSync_lostNotIncreased() throws Exception {
         ReplStage replStage = new ReplStage("test-repl-id1", 1, 1, "A", new GtidSet(""), new GtidSet(""));
-        Mockito.when(keeperServer.getKeeperRepl()).thenReturn(keeperRepl);
-        Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
+        Mockito.when(keeperServer.getOrCreateKeeperRepl()).thenReturn(keeperRepl);
+        Mockito.when(keeperServer.getOrCreateReplicationStore()).thenReturn(store);
         Mockito.when(keeperServer.getKeeperConfig()).thenReturn(keeperConfig);
         Mockito.when(keeperRepl.currentStage()).thenReturn(replStage);
         Mockito.when(store.getGtidSet()).thenReturn(new Pair<>(new GtidSet("A:1-10"), new GtidSet("")));
@@ -360,8 +360,8 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     @Test
     public void testLostGap_partialSync() throws Exception {
         ReplStage replStage = new ReplStage("test-repl-id1", 1, 1, "A", new GtidSet(""), new GtidSet(""));
-        Mockito.when(keeperServer.getKeeperRepl()).thenReturn(keeperRepl);
-        Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
+        Mockito.when(keeperServer.getOrCreateKeeperRepl()).thenReturn(keeperRepl);
+        Mockito.when(keeperServer.getOrCreateReplicationStore()).thenReturn(store);
         Mockito.when(keeperServer.getKeeperConfig()).thenReturn(keeperConfig);
         Mockito.when(keeperRepl.currentStage()).thenReturn(replStage);
         Mockito.when(store.getGtidSet()).thenReturn(new Pair<>(new GtidSet("A:1-10"), new GtidSet("")));
@@ -376,8 +376,8 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     @Test
     public void testKeeperLostGap0_FullSync() throws Exception {
         ReplStage replStage = new ReplStage("test-repl-id1", 1, 1, "A", new GtidSet("B:1-10"), new GtidSet(""));
-        Mockito.when(keeperServer.getKeeperRepl()).thenReturn(keeperRepl);
-        Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
+        Mockito.when(keeperServer.getOrCreateKeeperRepl()).thenReturn(keeperRepl);
+        Mockito.when(keeperServer.getOrCreateReplicationStore()).thenReturn(store);
         Mockito.when(keeperServer.getKeeperConfig()).thenReturn(keeperConfig);
         Mockito.when(keeperRepl.currentStage()).thenReturn(replStage);
         Mockito.when(store.getGtidSet()).thenReturn(new Pair<>(new GtidSet("A:1-10"), new GtidSet("B:1-10")));
@@ -391,8 +391,8 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     @Test
     public void testEmptySlaveXsync_FullSync() throws Exception {
         ReplStage replStage = new ReplStage("test-repl-id1", 1, 1, "A", new GtidSet(""), new GtidSet(""));
-        Mockito.when(keeperServer.getKeeperRepl()).thenReturn(keeperRepl);
-        Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
+        Mockito.when(keeperServer.getOrCreateKeeperRepl()).thenReturn(keeperRepl);
+        Mockito.when(keeperServer.getOrCreateReplicationStore()).thenReturn(store);
         Mockito.when(keeperServer.getKeeperConfig()).thenReturn(keeperConfig);
         Mockito.when(keeperRepl.currentStage()).thenReturn(replStage);
         Mockito.when(store.getGtidSet()).thenReturn(new Pair<>(new GtidSet("cbd32d3e09d7d81574cc934b5c477312d9b03ca1:1-2191784636"), new GtidSet("")));
@@ -451,7 +451,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     public void testFreshStoreErrorsOnCommandThreadWithoutBecomeSlave() throws Exception {
         Mockito.when(keeperServer.getRedisKeeperServerState()).thenReturn(keeperServerState);
         Mockito.when(keeperServerState.psync(redisClient, new String[]{"?", "-4"})).thenReturn(true);
-        Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
+        Mockito.when(keeperServer.getOrCreateReplicationStore()).thenReturn(store);
         Mockito.when(store.isFresh()).thenReturn(true);
 
         handler.doHandle(new String[]{"?", "-4"}, redisClient);
@@ -465,7 +465,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
     public void testNullStoreTreatedAsFreshOnCommandThread() throws Exception {
         Mockito.when(keeperServer.getRedisKeeperServerState()).thenReturn(keeperServerState);
         Mockito.when(keeperServerState.psync(redisClient, new String[]{"?", "-4"})).thenReturn(true);
-        Mockito.when(keeperServer.getReplicationStore()).thenReturn(null);
+        Mockito.when(keeperServer.getOrCreateReplicationStore()).thenReturn(null);
 
         handler.doHandle(new String[]{"?", "-4"}, redisClient);
 
@@ -476,7 +476,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
 
     @Test
     public void testNonFreshStoreOpensOnCommandThreadThenPsyncExecutor() throws Exception {
-        Mockito.when(keeperServer.getReplicationStore()).thenReturn(store);
+        Mockito.when(keeperServer.getOrCreateReplicationStore()).thenReturn(store);
         Mockito.when(store.isFresh()).thenReturn(false);
         Mockito.when(keeperServer.getRedisKeeperServerState()).thenReturn(keeperServerState);
         Mockito.when(keeperServerState.psync(redisClient, new String[]{"?", "-4"})).thenReturn(true);
@@ -488,7 +488,7 @@ public class GapAllowSyncHandlerTest extends AbstractTest {
 
         handler.doHandle(new String[]{"?", "-4"}, redisClient);
 
-        Mockito.verify(keeperServer).getReplicationStore();
+        Mockito.verify(keeperServer).getOrCreateReplicationStore();
         Mockito.verify(store).isFresh();
         Mockito.verify(gapAllowSlave).processPsyncSequentially(any(Runnable.class));
     }

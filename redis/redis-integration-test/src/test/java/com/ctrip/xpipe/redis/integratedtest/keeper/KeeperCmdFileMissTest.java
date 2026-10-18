@@ -82,7 +82,7 @@ public class KeeperCmdFileMissTest extends AbstractKeeperIntegratedSingleDc {
             }).when(spyReplicationStore).addCommandsListener(any(), any());
 
             return spyReplicationStore;
-        }).when(spyActiveKeeperServer).getReplicationStore();
+        }).when(spyActiveKeeperServer).getOrCreateReplicationStore();
 
         SimpleObjectPool<NettyClient> slaveClientPool = NettyPoolUtil.createNettyPoolWithGlobalResource(new DefaultEndPoint(slave.getIp(), slave.getPort()));
         new SlaveOfCommand(slaveClientPool, scheduled).execute().get();

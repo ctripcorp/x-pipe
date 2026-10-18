@@ -139,7 +139,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		logger.info("[doBecomeBackup]{}", this);
 		redisKeeperServer.resetReplAfterLongTimeDown();
 		try{
-			redisKeeperServer.getReplicationStore().getMetaStore().becomeBackup();
+			redisKeeperServer.getOrCreateReplicationStore().getMetaStore().becomeBackup();
 		}catch(Exception e){
 			logger.error("[activedoBecomeBackupToBackup]" + this, e);
 		}
@@ -151,7 +151,7 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		
 		logger.info("[doBecomeActive]{}", this);
 		try{
-			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+			ReplicationStore replicationStore = redisKeeperServer.getOrCreateReplicationStore();
 			replicationStore.getMetaStore().becomeActive();
 		}catch(Exception e){
 			logger.error("[doBecomeActive]" + this + "," + masterAddress, e);

@@ -38,6 +38,12 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	
 	KeeperRepl getKeeperRepl();
 
+	/**
+	 * {@link KeeperRepl} over {@link #getOrCreateReplicationStore()}. Data sync and state transition paths only
+	 * (m6 spec §9).
+	 */
+	KeeperRepl getOrCreateKeeperRepl();
+
 	GtidCommandSearcher createCmdKeySearcher(String uuid, long begGno, long endGno);
 
 	XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception;
@@ -65,6 +71,13 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	Set<RedisSlave> slaves();
 		
 	ReplicationStore getReplicationStore();
+
+	/**
+	 * Current store, reopening {@code latest.store.dir} or creating a new store when none is open
+	 * ({@code Manager.createIfNotExist()}). Throws in PREPARE unless the manager is read-only.
+	 * Data sync and state transition paths only; queries must not construct a store (m6 spec §9).
+	 */
+	ReplicationStore getOrCreateReplicationStore();
 
 	/**
 	 * Whether the store manager is in PREPARE read-only watch mode (D12).

@@ -53,7 +53,7 @@ public class PsyncKeeperServerStateObserverTest extends AbstractRedisKeeperTest 
         when(redisClient.getRedisServer()).thenReturn(redisKeeperServer);
         when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(keeperServerState);
         when(keeperServerState.psync(redisClient, new String[]{"?", "-1"})).thenReturn(true);
-        when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
+        when(redisKeeperServer.getOrCreateReplicationStore()).thenReturn(replicationStore);
         when(replicationStore.isFresh()).thenReturn(true);
         doAnswer(invocation -> {
             Runnable task = invocation.getArgument(0, Runnable.class);

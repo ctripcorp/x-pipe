@@ -184,7 +184,7 @@ public class KeeperHandleReworkAcceptanceTest extends AbstractRedisKeeperContext
 
 			RedisSlave slave = mock(RedisSlave.class);
 			when(slave.isOpen()).thenReturn(true);
-			when(server.getKeeperRepl()).thenReturn(new DefaultKeeperRepl(opened));
+			when(server.getOrCreateKeeperRepl()).thenReturn(new DefaultKeeperRepl(opened));
 			when(server.getKeeperConfig()).thenReturn(watchKeeperConfig);
 			long expected = new DefaultKeeperRepl(opened).getEndOffset() + 1;
 			Assert.assertEquals(expected, cmdTailProbe.probeOffset(server, slave));

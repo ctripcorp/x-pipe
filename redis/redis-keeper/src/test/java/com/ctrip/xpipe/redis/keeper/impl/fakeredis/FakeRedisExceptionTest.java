@@ -67,7 +67,7 @@ public class FakeRedisExceptionTest extends AbstractFakeRedisTest {
 			public void readAuxEnd(RdbStore rdbStore, Map<String, String> auxMap) {
 				super.readAuxEnd(rdbStore, auxMap);
 				try {
-					writeToRdb(getCurrentReplicationStore());
+					writeToRdb(getOrCreateReplicationStore());
 				} catch (IOException e) {
 					logger.error("[beginWriteRdb][test]", e);
 				}

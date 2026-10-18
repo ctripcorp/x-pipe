@@ -42,7 +42,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 return;
             }
 
-            ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+            ReplicationStore replicationStore = redisKeeperServer.getOrCreateReplicationStore();
             if (replicationStore == null || (redisKeeperServer.rdbDumper() == null && replicationStore.isFresh())) {
                 redisClient.sendMessage(new RedisErrorParser(new NoMasterlinkRedisError("Can't SYNC while replicationstore fresh")).format());
                 return;
@@ -103,7 +103,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
     protected abstract SyncRequest parseRequest(final String[] args, RedisSlave redisSlave);
 
     protected SyncAction  anaRequest(SyncRequest request, RedisKeeperServer redisKeeperServer, RedisSlave slave) throws Exception {
-        KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
+        KeeperRepl keeperRepl = redisKeeperServer.getOrCreateKeeperRepl();
         KeeperConfig keeperConfig = redisKeeperServer.getKeeperConfig();
 
         ReplStage preStage = keeperRepl.preStage();
@@ -149,7 +149,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 return SyncAction.full("wait fail");
             }
 
-            keeperRepl = redisKeeperServer.getKeeperRepl();
+            keeperRepl = redisKeeperServer.getOrCreateKeeperRepl();
             curStage = keeperRepl.currentStage();
             if (request.proto == ReplStage.ReplProto.PSYNC) {
                 return anaPSync(request, curStage, keeperRepl, keeperConfig);
@@ -204,11 +204,11 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                 return false;
             }
             long reqBacklogOffset = curStage.replOffset2BacklogOffset(request.offset);
-            long backlogEnd = redisKeeperServer.getKeeperRepl().backlogEndOffset();
+            long backlogEnd = redisKeeperServer.getOrCreateKeeperRepl().backlogEndOffset();
             if (reqBacklogOffset <= backlogEnd + 1) return true;
 
             try {
-                ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+                ReplicationStore replicationStore = redisKeeperServer.getOrCreateReplicationStore();
 
                 logger.info("[waitForOffset][begin wait] {}", request);
                 boolean result = replicationStore.awaitCommandsOffset(reqBacklogOffset - 1, timeoutMill);
@@ -226,7 +226,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
             return false;
         } else if (request.proto == ReplStage.ReplProto.XSYNC
                 && ("*".equals(request.replId) || curStage.getReplId().equalsIgnoreCase(request.replId))) {
-            GtidSet backlogGtidSet = redisKeeperServer.getReplicationStore().getGtidSet().getKey();
+            GtidSet backlogGtidSet = redisKeeperServer.getOrCreateReplicationStore().getGtidSet().getKey();
             GtidSet slaveGtidSet = request.slaveGtidSet;
             String masterUuid = curStage.getMasterUuid();
             long masterLastGno = backlogGtidSet.contains(masterUuid) ? backlogGtidSet.getUUIDSet(masterUuid).getLastGno() : 0;
@@ -240,7 +240,7 @@ public abstract class GapAllowSyncHandler extends AbstractCommandHandler {
                     logger.info("[waitForGtidset] {} > {}", slaveGtidSet, backlogGtidSet);
                     checkTime--;
                     Thread.sleep(checkInterval);
-                    backlogGtidSet = redisKeeperServer.getReplicationStore().getGtidSet().getKey();
+                    backlogGtidSet = redisKeeperServer.getOrCreateReplicationStore().getGtidSet().getKey();
                     masterLastGno = backlogGtidSet.contains(masterUuid) ? backlogGtidSet.getUUIDSet(masterUuid).getLastGno() : 0;
                 }
             } catch (Exception e) {

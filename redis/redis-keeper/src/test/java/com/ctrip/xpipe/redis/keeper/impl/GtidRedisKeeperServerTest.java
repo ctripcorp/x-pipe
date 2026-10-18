@@ -67,7 +67,7 @@ public class GtidRedisKeeperServerTest extends AbstractFakeRedisTest implements 
         keeperServer.initialize();
         keeperServer.start();
 
-        ReplicationStore replicationStore = keeperServer.getCurrentReplicationStore();
+        ReplicationStore replicationStore = keeperServer.getOrCreateReplicationStore();
         keeperServer.getRedisKeeperServerState().becomeActive(new DefaultEndPoint("127.0.0.1", fakeRedisServer.getPort()));
 
         waitConditionUntilTimeOut(() -> MASTER_STATE.REDIS_REPL_CONNECTED.equals(keeperServer.getRedisMaster().getMasterState()));

@@ -278,7 +278,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void releaseRdb() throws IOException {
-		getCurrentReplicationStore().releaseRdb();
+		getReplicationStore().releaseRdb();
 	}
 
 	@Override
@@ -323,17 +323,17 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public XSyncContinue locateContinueGtidSet(GtidSet gtidSet) throws Exception {
-		return getCurrentReplicationStore().locateContinueGtidSet(gtidSet);
+		return getOrCreateReplicationStore().locateContinueGtidSet(gtidSet);
 	}
 
 	@Override
 	public XSyncContinue locateContinueGtidSetWithFallbackToEnd(GtidSet gtidSet) throws Exception {
-		return getCurrentReplicationStore().locateContinueGtidSetWithFallbackToEnd(gtidSet);
+		return getOrCreateReplicationStore().locateContinueGtidSetWithFallbackToEnd(gtidSet);
 	}
 
 	@Override
 	public XSyncContinue locateTailOfCmd() {
-		return getCurrentReplicationStore().locateTailOfCmd();
+		return getOrCreateReplicationStore().locateTailOfCmd();
 	}
 
 	@Override
@@ -343,19 +343,19 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void switchToPSync(String replId, long offset) throws IOException {
-		getCurrentReplicationStore().switchToPSync(replId, offset);
+		getOrCreateReplicationStore().switchToPSync(replId, offset);
 		closeSlaves("toPSync " + replId + ":" + offset);
 	}
 
 	@Override
 	public void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
-		getCurrentReplicationStore().switchToXSync(replId, replOff, masterUuid, gtidCont, gtidLost);
+		getOrCreateReplicationStore().switchToXSync(replId, replOff, masterUuid, gtidCont, gtidLost);
 		closeSlaves("toXSync " + gtidCont);
 	}
 
 	@Override
 	public boolean increaseLost(GtidSet lost, RedisSlave from) throws IOException {
-		if (getCurrentReplicationStore().increaseLost(lost)) {
+		if (getOrCreateReplicationStore().increaseLost(lost)) {
 			logger.info("[increaseLost] resync with master & slaves");
 			keeperRedisMaster.reconnect();
 			closeSlavesExcept("increaseLost", from);
@@ -678,11 +678,16 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public KeeperRepl getKeeperRepl() {
 		
-		return new DefaultKeeperRepl(getCurrentReplicationStore());
+		return new DefaultKeeperRepl(getOrCreateReplicationStore());
 	}
-	
-	
-	protected ReplicationStore getCurrentReplicationStore(){
+
+	@Override
+	public KeeperRepl getOrCreateKeeperRepl() {
+		return new DefaultKeeperRepl(getOrCreateReplicationStore());
+	}
+
+	@Override
+	public ReplicationStore getOrCreateReplicationStore(){
 
 		if(!getLifecycleState().isInitialized()){
 
@@ -696,8 +701,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		try {
 			return replicationStoreManager.createIfNotExist();
 		} catch (IOException e) {
-			logger.error("[getCurrentReplicationStore]" + this, e);
-			throw new XpipeRuntimeException("[getCurrentReplicationStore]" + this, e);
+			logger.error("[getOrCreateReplicationStore]" + this, e);
+			throw new XpipeRuntimeException("[getOrCreateReplicationStore]" + this, e);
 		}
 	}
 
@@ -736,7 +741,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
    public ReplicationStore getReplicationStore() {
-	   return getCurrentReplicationStore();
+	   return getOrCreateReplicationStore();
    }
 
 	@Override
@@ -1191,7 +1196,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			logger.info("[fullSyncToSlave][dumper null]{}", redisSlave);
 			if (!freshRdbNeeded) {
 				FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
-				FULLSYNC_FAIL_CAUSE failCause = getCurrentReplicationStore().fullSyncIfPossible(fullSyncListener, tryRordb);
+				FULLSYNC_FAIL_CAUSE failCause = getOrCreateReplicationStore().fullSyncIfPossible(fullSyncListener, tryRordb);
 				if (null == failCause) {
 					return;
 				} else if (FULLSYNC_PROGRESS_NOT_SUPPORTED.equals(failCause)) {
@@ -1365,7 +1370,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void onXContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) {
-		getCurrentReplicationStore().resetStateForContinue();
+		getOrCreateReplicationStore().resetStateForContinue();
 	}
 
 	@Override

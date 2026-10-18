@@ -242,7 +242,7 @@ public class DefaultRedisSlave implements RedisSlave {
 
 	@Override
 	public Long processedBacklogOffset() {
-		return getRedisServer().getReplicationStore().getMetaStore().replOffsetToBacklogOffset(getAck());
+		return getRedisServer().getOrCreateReplicationStore().getMetaStore().replOffsetToBacklogOffset(getAck());
 	}
 
 	@Override
@@ -261,7 +261,7 @@ public class DefaultRedisSlave implements RedisSlave {
 	}
 
 	protected String buildMarkBeforeFsync(ReplicationProgress<?> rdbProgress) {
-		return StringUtil.join(" ", FULL_SYNC, getRedisServer().getKeeperRepl().replId(),
+		return StringUtil.join(" ", FULL_SYNC, getRedisServer().getOrCreateKeeperRepl().replId(),
 				rdbProgress.getProgress().toString());
 	}
 	
@@ -374,7 +374,7 @@ public class DefaultRedisSlave implements RedisSlave {
 				}
 				getLogger().info("[beginWriteCommands]{}, {}", this, progress);
 				slaveState = SLAVE_STATE.REDIS_REPL_ONLINE;
-				getRedisServer().getReplicationStore().addCommandsListener(progress, this);
+				getRedisServer().getOrCreateReplicationStore().addCommandsListener(progress, this);
 			} else {
 				getLogger().warn("[beginWriteCommands][already writing]{}, {}", this, progress);
 			}

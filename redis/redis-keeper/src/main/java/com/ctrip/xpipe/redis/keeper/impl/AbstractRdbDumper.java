@@ -158,7 +158,7 @@ public abstract class AbstractRdbDumper extends AbstractCommand<Void> implements
 
 	@VisibleForTesting void doFullSyncOrGiveUp(RedisSlave redisSlave) throws IOException {
 		FullSyncListener fullSyncListener = new DefaultFullSyncListener(redisSlave);
-		FULLSYNC_FAIL_CAUSE failCause = redisKeeperServer.getReplicationStore().fullSyncIfPossible(fullSyncListener);
+		FULLSYNC_FAIL_CAUSE failCause = redisKeeperServer.getOrCreateReplicationStore().fullSyncIfPossible(fullSyncListener);
 		if (null != failCause) {
 			throw new IllegalStateException("[tryFullSync][rdb dumping, but can not full sync] " + failCause);
 		}
