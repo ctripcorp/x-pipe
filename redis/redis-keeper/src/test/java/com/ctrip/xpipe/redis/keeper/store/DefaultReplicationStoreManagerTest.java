@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
@@ -448,6 +449,52 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			try {
 				fs.shutdown();
 			} catch (Throwable ignore) {
+			}
+		}
+	}
+
+	/**
+	 * m6 spec §9.3 (T-P11.4): gc only gcs the opened store and never reopens {@code latest.store.dir},
+	 * even while the Manager is still STARTED.
+	 */
+	@Test
+	public void testGcOnlyGcsOpenedStoreAndNeverReopens() throws Exception {
+		AsyncFileSystem fs = createTestAsyncFileSystem();
+		AtomicInteger constructed = new AtomicInteger();
+		AtomicReference<ReplicationStore> spied = new AtomicReference<>();
+		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
+				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()),
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs) {
+			@Override
+			protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig,
+					String keeperRunid, KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
+				constructed.incrementAndGet();
+				ReplicationStore store = spy(super.createReplicationStore(storeBaseDir, keeperConfig, keeperRunid,
+						keeperMonitor, syncRateManager));
+				spied.set(store);
+				return store;
+			}
+		};
+		try {
+			LifecycleHelper.initializeIfPossible(manager);
+			LifecycleHelper.startIfPossible(manager);
+			manager.createIfNotExist();
+			Assert.assertEquals(1, constructed.get());
+
+			manager.gc();
+			verify(spied.get()).gc();
+
+			manager.releaseCurrentStore();
+			Assert.assertTrue(manager.getLifecycleState().isStarted());
+			manager.gc();
+			Assert.assertEquals("gc must not reopen latest.store.dir", 1, constructed.get());
+			Assert.assertNull(manager.getOpenedStore());
+		} finally {
+			LifecycleHelper.disposeIfPossible(manager);
+			try {
+				fs.shutdown();
+			} catch (Throwable ignore) {
+				// test FS teardown only
 			}
 		}
 	}

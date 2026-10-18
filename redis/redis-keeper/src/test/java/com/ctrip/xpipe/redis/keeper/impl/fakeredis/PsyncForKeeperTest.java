@@ -4,7 +4,9 @@ import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.store.ReplId;
+import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
+import com.ctrip.xpipe.redis.keeper.KeeperRepl;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -129,20 +131,27 @@ public class PsyncForKeeperTest extends AbstractFakeRedisTest {
 
 
     private void waitKeeperSyncWithRedis(RedisKeeperServer keeperServer) throws Exception {
-        waitConditionUntilTimeOut(() -> keeperServer.getKeeperRepl().currentStage() != null && keeperServer.getKeeperRepl().getEndOffset() == fakeRedisServer.getRdbOffset() + fakeRedisServer.getCommandsLength());
+        waitConditionUntilTimeOut(() -> {
+            // get semantics: null while the store is being replaced by a refullsync
+            KeeperRepl keeperRepl = keeperServer.getKeeperRepl();
+            return keeperRepl != null && keeperRepl.currentStage() != null
+                    && keeperRepl.getEndOffset() == fakeRedisServer.getRdbOffset() + fakeRedisServer.getCommandsLength();
+        });
     }
 
     private void waitCmdNotContinueWithRdb(RedisKeeperServer keeperServer) throws Exception {
         waitConditionUntilTimeOut(() -> {
-            if (null == keeperServer.getKeeperRepl().replId()) return false;
+            // get semantics: null until the sync path has created / opened the store
+            ReplicationStore store = keeperServer.getReplicationStore();
+            if (null == store || null == keeperServer.getKeeperRepl().replId()) return false;
             try {
-                keeperServer.getReplicationStore().gc();
+                store.gc();
             } catch (Exception e) {
                 logger.info("[testEmptyKeeperStartAndPartialSync] gc fail", e);
             }
 
-            long firstAvailableOffset = keeperServer.getReplicationStore().firstAvailableOffset();
-            Long rdbOffset = keeperServer.getReplicationStore().getMetaStore().dupReplicationStoreMeta().getRdbLastOffset();
+            long firstAvailableOffset = store.firstAvailableOffset();
+            Long rdbOffset = store.getMetaStore().dupReplicationStoreMeta().getRdbLastOffset();
             return null == rdbOffset || firstAvailableOffset > rdbOffset + 1;
         }, 5000, 1000);
     }

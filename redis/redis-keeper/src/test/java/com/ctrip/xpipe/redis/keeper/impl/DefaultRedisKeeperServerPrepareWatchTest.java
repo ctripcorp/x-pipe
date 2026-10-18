@@ -85,7 +85,9 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 			Assert.assertNull(server.getPrepareCmdParser());
 			verify(manager, never()).create();
 
-			ReplicationStore opened = server.getReplicationStore();
+			Assert.assertNull("get semantics must not open the read-only store", server.getReplicationStore());
+			// request-side data path (read-only createIfNotExist degrades to getCurrent)
+			ReplicationStore opened = server.getOrCreateReplicationStore();
 			Assert.assertNotNull(opened);
 			Assert.assertEquals(dirBefore, ((DefaultReplicationStore) opened).getBaseDir());
 			Assert.assertEquals(dirBefore.getName(), manager.reloadLatestStoreDir());
@@ -178,11 +180,12 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 			Assert.assertFalse(manager.isReadOnly());
 			Assert.assertNull(server.getPrepareWatcher());
 			try {
-				server.getReplicationStore();
-				Assert.fail("PREPARE without read-only must still refuse getReplicationStore");
+				server.getOrCreateReplicationStore();
+				Assert.fail("PREPARE without read-only must still refuse getOrCreateReplicationStore");
 			} catch (RedisKeeperServerStateException expected) {
 				Assert.assertTrue(expected.getMessage().contains("PREPARE"));
 			}
+			Assert.assertNull(server.getReplicationStore());
 		} finally {
 			stopQuietly(server);
 		}
@@ -349,7 +352,7 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 		server.start();
 		server.setRedisKeeperServerState(
 				new RedisKeeperServerStateActive(server, new DefaultEndPoint("127.0.0.1", 0)));
-		Assert.assertTrue(server.getReplicationStore().checkOk());
+		Assert.assertTrue(server.getOrCreateReplicationStore().checkOk());
 		return server;
 	}
 
@@ -370,11 +373,12 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 		Assert.assertFalse(server.getReplicationStoreManager().isReadOnly());
 		Assert.assertTrue(server.getReplicationStoreManager().getLifecycleState().isPositivelyStopped());
 		try {
-			server.getReplicationStore();
-			Assert.fail("PREPARE must refuse getReplicationStore");
+			server.getOrCreateReplicationStore();
+			Assert.fail("PREPARE must refuse getOrCreateReplicationStore");
 		} catch (RedisKeeperServerStateException expected) {
 			Assert.assertTrue(expected.getMessage().contains("PREPARE"));
 		}
+		Assert.assertNull("PREPARE released the store, get must not reopen", server.getReplicationStore());
 	}
 
 	private String invokeKeeperCommand(RedisKeeperServer server, String... args) throws Exception {

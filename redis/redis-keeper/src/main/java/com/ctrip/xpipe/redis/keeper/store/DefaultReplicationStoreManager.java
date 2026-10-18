@@ -542,9 +542,9 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             }
         }
 
-        // gc current ReplicationStore
-        ReplicationStore replicationStore = getCurrent();
-        if (replicationStore != null) {
+        // gc the opened store only: GC must never reopen latest.store.dir (m6 spec §9.3)
+        ReplicationStore replicationStore = currentStore.get();
+        if (replicationStore != null && replicationStore.checkOk()) {
             replicationStore.gc();
         }
     }

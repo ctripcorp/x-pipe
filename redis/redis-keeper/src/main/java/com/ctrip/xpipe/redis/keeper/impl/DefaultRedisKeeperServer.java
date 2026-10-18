@@ -278,7 +278,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void releaseRdb() throws IOException {
-		getReplicationStore().releaseRdb();
+		// get semantics (m6 spec §9.3): no opened store means no rdb to release
+		ReplicationStore replicationStore = getReplicationStore();
+		if (replicationStore == null) {
+			logger.info("[releaseRdb][{}]{}, skip", replId, ERR_REPLICATION_STORE_NOT_OPENED);
+			return;
+		}
+		replicationStore.releaseRdb();
 	}
 
 	@Override
@@ -677,8 +683,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	
 	@Override
 	public KeeperRepl getKeeperRepl() {
-		
-		return new DefaultKeeperRepl(getOrCreateReplicationStore());
+		ReplicationStore replicationStore = getReplicationStore();
+		return replicationStore == null ? null : new DefaultKeeperRepl(replicationStore);
 	}
 
 	@Override
@@ -740,9 +746,15 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		return slaves;
 	}
 
-   public ReplicationStore getReplicationStore() {
-	   return getOrCreateReplicationStore();
-   }
+	/**
+	 * get semantics (m6 spec §9.2): opened store only, no lock / FS IO / construction. Lock-free read of the
+	 * Manager's {@code currentStore}; the returned store may be released concurrently afterwards (same as before).
+	 */
+	@Override
+	public ReplicationStore getReplicationStore() {
+		ReplicationStore opened = getOpenedStore();
+		return opened != null && opened.checkOk() ? opened : null;
+	}
 
 	@Override
 	public boolean isReadOnlyStore() {

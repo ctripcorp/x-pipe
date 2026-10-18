@@ -93,6 +93,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultReplicationStoreManagerReadOnlyTest.class,
         DefaultRedisKeeperServerTest.class,
         DefaultRedisKeeperServerPrepareWatchTest.class,
+        DefaultRedisKeeperServerStoreGetSemanticsTest.class,
         DefaultReplicationStoreTest.class,
         DefaultReplicationStoreReadOnlyTest.class,
         GapAllowedReplicationStoreTest.class,

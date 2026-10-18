@@ -51,9 +51,11 @@ public class RoleCommandHandler extends AbstractCommandHandler {
 			result[3] = MASTER_STATE.REDIS_REPL_NONE.getDesc();
 			result[4] = prepareReplOffset(redisKeeperServer);
 		} else {
+			// get semantics (m6 spec §9.3): never constructs a store; offset -1 when none is opened
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
 			result[3] = redisMaster == null ? MASTER_STATE.REDIS_REPL_NONE.getDesc(): redisMaster.getMasterState().getDesc();
-			result[4] = replicationStore.getMetaStore().getCurrentReplStage() == null ? -1L: replicationStore.getCurReplStageReplOff();
+			result[4] = replicationStore == null || replicationStore.getMetaStore().getCurrentReplStage() == null
+					? -1L : replicationStore.getCurReplStageReplOff();
 		}
 		redisClient.sendMessage(ParserManager.parse(result));
 	}

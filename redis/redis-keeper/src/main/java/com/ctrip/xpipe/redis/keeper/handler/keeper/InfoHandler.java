@@ -12,6 +12,7 @@ import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreMeta;
 import com.ctrip.xpipe.redis.keeper.*;
 import com.ctrip.xpipe.redis.keeper.handler.AbstractCommandHandler;
+import com.ctrip.xpipe.redis.keeper.impl.DefaultKeeperRepl;
 import com.ctrip.xpipe.redis.keeper.monitor.KeeperStats;
 import com.ctrip.xpipe.redis.keeper.monitor.MasterStats;
 import com.ctrip.xpipe.redis.keeper.monitor.ReplicationStoreStats;
@@ -244,9 +245,8 @@ public class InfoHandler extends AbstractCommandHandler {
 			}
 
 			StringBuilder sb = new StringBuilder();
+			// get semantics (m6 spec §9.3): never constructs a store; null when none is opened
 			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
-			long slaveReplOffset = replicationStore.getCurReplStageReplOff();
-			KeeperRepl keeperRepl = redisKeeperServer.getKeeperRepl();
 			sb.append(getHeader());
 			sb.append("role:" + Server.SERVER_ROLE.SLAVE + RedisProtocol.CRLF);
 			sb.append(RedisProtocol.KEEPER_ROLE_PREFIX + ":" + redisKeeperServer.role() + RedisProtocol.CRLF);
@@ -263,6 +263,15 @@ public class InfoHandler extends AbstractCommandHandler {
 				 */
 				sb.append("master_link_status:up" +  RedisProtocol.CRLF );
 			}
+			if (replicationStore == null) {
+				// No opened store: omit every store-derived field instead of reporting defaults
+				sb.append("slave_priority:0" + RedisProtocol.CRLF);
+				appendConnectedSlaves(sb, redisKeeperServer);
+				return sb.toString();
+			}
+			long slaveReplOffset = replicationStore.getCurReplStageReplOff();
+			// Same store as above, so all fields come from one snapshot of the opened store
+			KeeperRepl keeperRepl = new DefaultKeeperRepl(replicationStore);
 			/**
 			 * To make sure keeper is the least option to be the new master when master is down
 			 */
@@ -423,9 +432,14 @@ public class InfoHandler extends AbstractCommandHandler {
 				sb.append("prev_repl:" + RedisProtocol.CRLF);
 				return sb.toString();
 			}
-			ReplStage curStage = keeperServer.getReplicationStore().getMetaStore().getCurrentReplStage();
-			ReplStage preStage = keeperServer.getReplicationStore().getMetaStore().getPreReplStage();
-			Pair<GtidSet, GtidSet> gtidSetPair = keeperServer.getReplicationStore().getGtidSet();
+			// get semantics (m6 spec §9.3): every gtid field depends on the store, so header only when none is opened
+			ReplicationStore replicationStore = keeperServer.getReplicationStore();
+			if (replicationStore == null) {
+				return sb.toString();
+			}
+			ReplStage curStage = replicationStore.getMetaStore().getCurrentReplStage();
+			ReplStage preStage = replicationStore.getMetaStore().getPreReplStage();
+			Pair<GtidSet, GtidSet> gtidSetPair = replicationStore.getGtidSet();
 			sb.append("gtid_master_uuid:" + curStage.getMasterUuid() + RedisProtocol.CRLF);
 			sb.append("gtid_executed:" + gtidSetPair.getKey() + RedisProtocol.CRLF);
 			sb.append("gtid_lost:" + gtidSetPair.getValue() + RedisProtocol.CRLF);

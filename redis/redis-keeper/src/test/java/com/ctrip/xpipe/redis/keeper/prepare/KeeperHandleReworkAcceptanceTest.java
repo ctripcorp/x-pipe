@@ -107,7 +107,8 @@ public class KeeperHandleReworkAcceptanceTest extends AbstractRedisKeeperContext
 			now.set(0);
 			watcher.setClock(now::get);
 
-			Assert.assertNotNull(server.getReplicationStore());
+			// request-side data path opens the read-only store (get semantics never opens it)
+			Assert.assertNotNull(server.getOrCreateReplicationStore());
 			watcher.pollOnce();
 			Assert.assertEquals(PrepareStoreWatcher.Phase.OPEN, watcher.getPhase());
 
@@ -328,7 +329,7 @@ public class KeeperHandleReworkAcceptanceTest extends AbstractRedisKeeperContext
 		server.start();
 		server.setRedisKeeperServerState(
 				new RedisKeeperServerStateActive(server, new DefaultEndPoint("127.0.0.1", 0)));
-		Assert.assertTrue(server.getReplicationStore().checkOk());
+		Assert.assertTrue(server.getOrCreateReplicationStore().checkOk());
 		return server;
 	}
 

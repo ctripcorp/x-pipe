@@ -35,7 +35,10 @@ import java.util.Set;
 public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, Destroyable{
 	
 	int getListeningPort();
-	
+
+	/**
+	 * {@link KeeperRepl} over {@link #getReplicationStore()} (get semantics); {@code null} when no store is opened.
+	 */
 	KeeperRepl getKeeperRepl();
 
 	/**
@@ -70,7 +73,15 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	
 	Set<RedisSlave> slaves();
 		
+	/**
+	 * get semantics (m6 spec §9.2): the already-opened store if it is {@code checkOk()}, otherwise {@code null}.
+	 * Never reopens / creates a store, never does FS IO, never throws for PREPARE. Queries and ops entries
+	 * use this; data sync and state transition use {@link #getOrCreateReplicationStore()}.
+	 */
 	ReplicationStore getReplicationStore();
+
+	/** Error message for get-semantics entries that need a store while none is opened (m6 spec §9.3). */
+	String ERR_REPLICATION_STORE_NOT_OPENED = "replication store not opened";
 
 	/**
 	 * Current store, reopening {@code latest.store.dir} or creating a new store when none is open
@@ -95,8 +106,8 @@ public interface RedisKeeperServer extends RedisServer, GapAllowedSyncObserver, 
 	}
 
 	/**
-	 * Already-opened store pointer. No lock, no FS; {@code null} if none is open.
-	 * INFO / ROLE on the command thread must use this instead of {@link #getReplicationStore()} (D10 / D11).
+	 * Already-opened store pointer. No lock, no FS; {@code null} if none is open. Unlike
+	 * {@link #getReplicationStore()} it does not filter {@code checkOk()} (PREPARE INFO / ROLE, D10 / D11).
 	 */
 	default ReplicationStore getOpenedStore() {
 		return null;

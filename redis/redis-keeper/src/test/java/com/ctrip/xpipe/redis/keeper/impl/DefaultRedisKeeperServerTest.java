@@ -74,35 +74,38 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		RedisKeeperServer redisKeeperServer = createRedisKeeperServer();
 
 		try{
-			redisKeeperServer.getReplicationStore();
+			redisKeeperServer.getOrCreateReplicationStore();
 			Assert.fail();
 		}catch (Exception e){
 			logger.info("error", e);
 		}
+		Assert.assertNull("get semantics never throws", redisKeeperServer.getReplicationStore());
 		redisKeeperServer.initialize();
-		redisKeeperServer.getReplicationStore();
+		redisKeeperServer.getOrCreateReplicationStore();
 
 		redisKeeperServer.start();
-		redisKeeperServer.getReplicationStore();
+		Assert.assertNotNull(redisKeeperServer.getReplicationStore());
 
 		// Server.stop → Manager.stop: releaseCurrentStore + isPositivelyStopped refuse reopen
 		redisKeeperServer.stop();
 		try {
-			redisKeeperServer.getReplicationStore();
+			redisKeeperServer.getOrCreateReplicationStore();
 			Assert.fail();
 		} catch (Exception e) {
 			logger.info("after stop", e);
 		}
+		Assert.assertNull("store released by stop, get must not reopen", redisKeeperServer.getReplicationStore());
 
 		redisKeeperServer.dispose();
 
 		logger.info("after dispose");
 		try{
-			redisKeeperServer.getReplicationStore();
+			redisKeeperServer.getOrCreateReplicationStore();
 			Assert.fail();
 		}catch (Exception e){
 			logger.info("{}", e);
 		}
+		Assert.assertNull(redisKeeperServer.getReplicationStore());
 	}
 
 	/**
@@ -117,7 +120,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		try {
 			redisKeeperServer.setRedisKeeperServerState(
 					new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 0)));
-			ReplicationStore storeBefore = redisKeeperServer.getReplicationStore();
+			ReplicationStore storeBefore = redisKeeperServer.getOrCreateReplicationStore();
 			Assert.assertTrue(storeBefore.checkOk());
 
 			ReplicationStoreManager manager = spy(redisKeeperServer.getReplicationStoreManager());
@@ -302,7 +305,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		try {
 			redisKeeperServer.setRedisKeeperServerState(
 					new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 0)));
-			Assert.assertTrue(redisKeeperServer.getReplicationStore().checkOk());
+			Assert.assertTrue(redisKeeperServer.getOrCreateReplicationStore().checkOk());
 
 			String setResp = invokeKeeperCommand(redisKeeperServer, "setstate", "PREPARE", "127.0.0.1", String.valueOf(randomPort()));
 			Assert.assertEquals("+" + RedisProtocol.OK + "\r\n", setResp);
@@ -332,7 +335,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 			waitConditionUntilTimeOut(() -> fakeMaster.getConnected() == 1);
 			Assert.assertNotNull(redisKeeperServer.getRedisMaster());
 
-			ReplicationStore storeBefore = redisKeeperServer.getReplicationStore();
+			ReplicationStore storeBefore = redisKeeperServer.getOrCreateReplicationStore();
 			File storeDir = new File(storeBefore.toString().substring("ReplicationStore:".length()));
 			Assert.assertTrue(storeDir.isDirectory());
 
@@ -355,11 +358,12 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 			Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
 			Assert.assertTrue("PREPARE must not destroy latest.store.dir", storeDir.isDirectory());
 			try {
-				redisKeeperServer.getReplicationStore();
-				Assert.fail("PREPARE must refuse getReplicationStore");
+				redisKeeperServer.getOrCreateReplicationStore();
+				Assert.fail("PREPARE must refuse getOrCreateReplicationStore");
 			} catch (Exception expected) {
 				logger.info("prepare gate ok", expected);
 			}
+			Assert.assertNull("PREPARE released the store, get must not reopen", redisKeeperServer.getReplicationStore());
 		} finally {
 			redisKeeperServer.stop();
 			redisKeeperServer.dispose();
@@ -378,18 +382,19 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		try {
 			Endpoint master = new DefaultEndPoint("127.0.0.1", 0);
 			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, master));
-			Assert.assertTrue(redisKeeperServer.getReplicationStore().checkOk());
+			Assert.assertTrue(redisKeeperServer.getOrCreateReplicationStore().checkOk());
 
 			String setResp = invokeKeeperCommand(redisKeeperServer, "setstate", "PREPARE", "10.0.0.1", "6380");
 			Assert.assertEquals("+" + RedisProtocol.OK + "\r\n", setResp);
 			Assert.assertEquals(KeeperState.PREPARE, redisKeeperServer.getRedisKeeperServerState().keeperState());
 
 			try {
-				redisKeeperServer.getReplicationStore();
-				Assert.fail("PREPARE must refuse getReplicationStore");
+				redisKeeperServer.getOrCreateReplicationStore();
+				Assert.fail("PREPARE must refuse getOrCreateReplicationStore");
 			} catch (Exception expected) {
 				logger.info("prepare gate ok", expected);
 			}
+			Assert.assertNull("PREPARE released the store, get must not reopen", redisKeeperServer.getReplicationStore());
 
 			EmbeddedChannel roleChannel = new EmbeddedChannel();
 			new RoleCommandHandler().handle(new String[0], new DefaultRedisClient(roleChannel, redisKeeperServer));
@@ -450,7 +455,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		try {
 			Endpoint master = new DefaultEndPoint("127.0.0.1", 0);
 			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, master));
-			ReplicationStore storeBefore = redisKeeperServer.getReplicationStore();
+			ReplicationStore storeBefore = redisKeeperServer.getOrCreateReplicationStore();
 			storeBefore.getMetaStore().becomeActive();
 			String latestStoreId = storeBefore.toString();
 			String replIdBefore = storeBefore.getMetaStore().getReplId();
@@ -460,11 +465,12 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 			Assert.assertEquals(KeeperState.PREPARE, redisKeeperServer.getRedisKeeperServerState().keeperState());
 			Assert.assertTrue(redisKeeperServer.getReplicationStoreManager().getLifecycleState().isPositivelyStopped());
 			try {
-				redisKeeperServer.getReplicationStore();
-				Assert.fail("PREPARE must refuse getReplicationStore");
+				redisKeeperServer.getOrCreateReplicationStore();
+				Assert.fail("PREPARE must refuse getOrCreateReplicationStore");
 			} catch (Exception expected) {
 				logger.info("prepare gate ok", expected);
 			}
+			Assert.assertNull("PREPARE released the store, get must not reopen", redisKeeperServer.getReplicationStore());
 
 			redisKeeperServer.getRedisKeeperServerState()
 					.becomeActive(new DefaultEndPoint("127.0.0.1", randomPort()));
@@ -493,7 +499,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		try {
 			Endpoint master = new DefaultEndPoint("127.0.0.1", 0);
 			redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, master));
-			ReplicationStore store = redisKeeperServer.getReplicationStore();
+			ReplicationStore store = redisKeeperServer.getOrCreateReplicationStore();
 			File storeDir = new File(store.toString().substring("ReplicationStore:".length()));
 			Assert.assertTrue(storeDir.isDirectory());
 
@@ -528,7 +534,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		try {
 			redisKeeperServer.setRedisKeeperServerState(
 					new RedisKeeperServerStateActive(redisKeeperServer, new DefaultEndPoint("127.0.0.1", 0)));
-			Assert.assertTrue(redisKeeperServer.getReplicationStore().checkOk());
+			Assert.assertTrue(redisKeeperServer.getOrCreateReplicationStore().checkOk());
 
 			manager = spy(redisKeeperServer.getReplicationStoreManager());
 			doThrow(new IOException("inject-prepare-stop-fail")).when(manager).stop();
@@ -733,7 +739,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 		Assert.assertEquals(KeeperState.UNKNOWN, redisKeeperServer.getRedisKeeperServerState().keeperState());
 
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer));
-		redisKeeperServer.getReplicationStore().getMetaStore().becomeActive();
+		redisKeeperServer.getOrCreateReplicationStore().getMetaStore().becomeActive();
 		redisKeeperServer.dispose();
 
 
@@ -884,7 +890,7 @@ public class DefaultRedisKeeperServerTest extends AbstractRedisKeeperContextTest
 	}
 
 	private void seedNonFresh(RedisKeeperServer server) throws IOException {
-		server.getReplicationStore().psyncContinueFrom(H3N_REPL_ID, 1);
+		server.getOrCreateReplicationStore().psyncContinueFrom(H3N_REPL_ID, 1);
 		Assert.assertFalse(server.getReplicationStore().isFresh());
 	}
 

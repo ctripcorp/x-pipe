@@ -73,11 +73,12 @@ public class KeeperStageOneAcceptanceTest extends AbstractRedisKeeperContextTest
 			Assert.assertEquals(0, countThreads("prepare-watch"));
 			Assert.assertEquals(0, countThreads("prepare-cmd-parser"));
 			try {
-				server.getReplicationStore();
-				Assert.fail("PREPARE with defaults must refuse getReplicationStore");
+				server.getOrCreateReplicationStore();
+				Assert.fail("PREPARE with defaults must refuse getOrCreateReplicationStore");
 			} catch (RedisKeeperServerStateException expected) {
 				Assert.assertTrue(expected.getMessage().contains("PREPARE"));
 			}
+			Assert.assertNull(server.getReplicationStore());
 		} finally {
 			stopQuietly(server);
 		}
@@ -209,11 +210,12 @@ public class KeeperStageOneAcceptanceTest extends AbstractRedisKeeperContextTest
 			Assert.assertFalse(manager.isReadOnly());
 			Assert.assertNull(server.getPrepareWatcher());
 			try {
-				server.getReplicationStore();
-				Assert.fail("PREPARE without read-only must still refuse getReplicationStore");
+				server.getOrCreateReplicationStore();
+				Assert.fail("PREPARE without read-only must still refuse getOrCreateReplicationStore");
 			} catch (RedisKeeperServerStateException expected) {
 				Assert.assertTrue(expected.getMessage().contains("PREPARE"));
 			}
+			Assert.assertNull(server.getReplicationStore());
 		} finally {
 			stopQuietly(server);
 		}
@@ -225,7 +227,7 @@ public class KeeperStageOneAcceptanceTest extends AbstractRedisKeeperContextTest
 		server.start();
 		server.setRedisKeeperServerState(
 				new RedisKeeperServerStateActive(server, new DefaultEndPoint("127.0.0.1", 0)));
-		Assert.assertTrue(server.getReplicationStore().checkOk());
+		Assert.assertTrue(server.getOrCreateReplicationStore().checkOk());
 		return server;
 	}
 
