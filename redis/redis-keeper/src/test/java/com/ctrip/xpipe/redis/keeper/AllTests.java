@@ -50,6 +50,7 @@ import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.prepare.KeeperHandleReworkAcceptanceTest;
 import com.ctrip.xpipe.redis.keeper.prepare.PrepareCmdParserChainRebuiltTest;
 import com.ctrip.xpipe.redis.keeper.prepare.PrepareCmdParserTest;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcherCmdPrefixTest;
 import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcherLocateMissTest;
 import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcherPhaseTest;
 import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcherTest;
@@ -96,6 +97,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultRedisKeeperServerStoreGetSemanticsTest.class,
         DefaultReplicationStoreTest.class,
         DefaultReplicationStoreReadOnlyTest.class,
+        DefaultReplicationStoreReadOnlyCmdOpenTest.class,
         GapAllowedReplicationStoreTest.class,
         DefaultRdbStoreTest.class,
 
@@ -108,6 +110,7 @@ import org.junit.runners.Suite.SuiteClasses;
         PrepareStoreWatcherTest.class,
         PrepareStoreWatcherPhaseTest.class,
         PrepareStoreWatcherLocateMissTest.class,
+        PrepareStoreWatcherCmdPrefixTest.class,
         KeeperHandleReworkAcceptanceTest.class,
         PrepareCmdParserTest.class,
         PrepareCmdParserChainRebuiltTest.class,

@@ -79,7 +79,7 @@ public class PrepareCmdParser {
 	}
 
 	@VisibleForTesting
-	long getAttachCount() {
+	public long getAttachCount() {
 		return attachCount.get();
 	}
 
@@ -99,7 +99,8 @@ public class PrepareCmdParser {
 				if (!running) {
 					break;
 				}
-				if (store == null) {
+				// fresh: cmd store not built yet
+				if (store == null || store.isFresh()) {
 					sleepQuietly(KeeperPubSubConstants.PREPARE_CMD_PARSER_RETRY_MILLI);
 					continue;
 				}

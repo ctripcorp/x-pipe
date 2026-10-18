@@ -66,6 +66,10 @@ public class PrepareStoreWatcher {
 	 */
 	private static final long NO_LOCATE_MISS = -1L;
 
+	static final String STORE_SWITCH_REASON_LATEST_DIR = "latest.store.dir";
+
+	static final String STORE_SWITCH_REASON_CMD_PREFIX = "cmdFilePrefix";
+
 	/**
 	 * 只读句柄的相位（D48）。
 	 */
@@ -131,6 +135,9 @@ public class PrepareStoreWatcher {
 	 */
 	private volatile RuntimeException failNextPoll;
 
+	/** Guarded by {@code this}; never reset. */
+	private boolean stopped;
+
 	public PrepareStoreWatcher(ReplicationStoreManager manager, KeeperConfig keeperConfig,
 							   PrepareStoreChangeListener changeListener) {
 		this.manager = Objects.requireNonNull(manager, "manager");
@@ -141,6 +148,10 @@ public class PrepareStoreWatcher {
 	}
 
 	public synchronized void start() {
+		if (stopped) {
+			logger.warn("[start][already stopped][skip]{}", this);
+			return;
+		}
 		if (scheduled != null) {
 			return;
 		}
@@ -152,7 +163,16 @@ public class PrepareStoreWatcher {
 				WATCH_TICK_MILLI, reopenIntervalMilli(), closeHoldMilli(), this);
 	}
 
+	/** Waits for an in-flight reopen. */
 	public synchronized void stop() {
+		stopped = true;
+		cancelScheduledPoll();
+		logger.info("[stop]{}", this);
+	}
+
+	/** Test only: stops scheduling without setting {@code stopped}. */
+	@VisibleForTesting
+	synchronized void cancelScheduledPoll() {
 		if (watchFuture != null) {
 			watchFuture.cancel(true);
 			watchFuture = null;
@@ -161,7 +181,6 @@ public class PrepareStoreWatcher {
 			scheduled.shutdownNow();
 			scheduled = null;
 		}
-		logger.info("[stop]{}", this);
 	}
 
 	/**
@@ -269,11 +288,16 @@ public class PrepareStoreWatcher {
 	}
 
 	/**
-	 * 静置窗口已过，做本轮该做的事：换店判定 → reload meta → open + 观察 → 段不连续的二分。
+	 * 静置窗口已过，做本轮该做的事：换店判定 → reload meta → 补建 cmdStore → open + 观察 → 段不连续的二分。
+	 * Runs under {@code this} so a poll after {@link #stop()} does nothing (keeper-tfs-m6 §10.3).
 	 *
 	 * @return 是否可以进开相；{@code false} 表示句柄仍未打开，需要继续静置后重试
 	 */
-	private boolean reopenReadOnlyHandles(long now) throws IOException {
+	private synchronized boolean reopenReadOnlyHandles(long now) throws IOException {
+		if (stopped) {
+			logger.info("[reopenReadOnlyHandles][stopped][skip]{}", this);
+			return false;
+		}
 		String latestDir = manager.reloadLatestStoreDir();
 		ReplicationStore current = manager.getOpenedStore();
 		if (current == null) {
@@ -281,12 +305,26 @@ public class PrepareStoreWatcher {
 			return true;
 		}
 		if (latestDir != null && !sameStoreDir(current, latestDir)) {
-			releaseSwitchedStore(current, latestDir);
+			releaseSwitchedStore(current, STORE_SWITCH_REASON_LATEST_DIR, "latest=" + latestDir);
 			return true;
 		}
 
 		reloadStoreMeta(current);
+		String metaCmdPrefix = metaCmdFilePrefix(current);
 		ReadOnlyCommandStore cmdStore = readOnlyCmdStore(current);
+		if (cmdStore != null && metaCmdPrefix != null && !metaCmdPrefix.equals(cmdStore.getFileNamePrefix())) {
+			// X -> Y is not part of the protocol: switch the store instead of replacing in place
+			releaseSwitchedStore(current, STORE_SWITCH_REASON_CMD_PREFIX,
+					"prefix=" + cmdStore.getFileNamePrefix() + " meta=" + metaCmdPrefix);
+			return true;
+		}
+		if (cmdStore == null && metaCmdPrefix != null) {
+			cmdStore = openCmdStore((DefaultReplicationStore) current, metaCmdPrefix);
+			if (cmdStore == null) {
+				closeReadOnlyHandles();
+				return false;
+			}
+		}
 		if (cmdStore == null) {
 			refreshSnapshot();
 			return true;
@@ -345,14 +383,32 @@ public class PrepareStoreWatcher {
 		this.locateMissSinceMillis = NO_LOCATE_MISS;
 	}
 
+	/** @return the opened cmd store, or {@code null} if opening failed */
+	private ReadOnlyCommandStore openCmdStore(DefaultReplicationStore store, String cmdFilePrefix) {
+		try {
+			return store.openReadOnlyCommandStore(cmdFilePrefix);
+		} catch (Throwable th) {
+			logger.warn("[openCmdStore][fail] prefix={} {}", cmdFilePrefix, this, th);
+			return null;
+		}
+	}
+
+	private static String metaCmdFilePrefix(ReplicationStore store) {
+		if (!(store instanceof DefaultReplicationStore)) {
+			return null;
+		}
+		MetaStore metaStore = store.getMetaStore();
+		ReplicationStoreMeta meta = metaStore == null ? null : metaStore.dupReplicationStoreMeta();
+		return meta == null ? null : meta.getCmdFilePrefix();
+	}
+
 	/**
 	 * 占槽者换店：断 slave + 释放。本轮不重建，新店由请求侧 {@code getCurrent()} 打开。
 	 */
-	private void releaseSwitchedStore(ReplicationStore current, String latestDir) throws IOException {
-		logger.info("[storeSwitched]latest.store.dir current={} latest={} {}",
-				storeDirName(current), latestDir, this);
+	private void releaseSwitchedStore(ReplicationStore current, String reason, String detail) throws IOException {
+		logger.info("[storeSwitched]{} current={} {} {}", reason, storeDirName(current), detail, this);
 		storeSwitchedCount.incrementAndGet();
-		changeListener.onStoreChanged("latest.store.dir");
+		changeListener.onStoreChanged(reason);
 		manager.releaseCurrentStore();
 		this.boundStore = null;
 		this.snapshot = null;

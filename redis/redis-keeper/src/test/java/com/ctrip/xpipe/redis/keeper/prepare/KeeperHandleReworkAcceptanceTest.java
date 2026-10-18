@@ -102,7 +102,8 @@ public class KeeperHandleReworkAcceptanceTest extends AbstractRedisKeeperContext
 			server.getRedisKeeperServerState().becomePrepare(new DefaultEndPoint("127.0.0.1", randomPort()));
 			PrepareStoreWatcher watcher = server.getPrepareWatcher();
 			Assert.assertNotNull(watcher);
-			watcher.stop();
+			// stop() would make pollOnce a no-op
+			watcher.cancelScheduledPoll();
 			waitConditionUntilTimeOut(() -> countPrepareWatchThreads() == 0);
 			now.set(0);
 			watcher.setClock(now::get);

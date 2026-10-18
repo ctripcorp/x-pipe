@@ -1,9 +1,11 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.RedisProtocol;
+import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryGapAllowedSync;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperContextTest;
@@ -11,15 +13,20 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.RedisSlave;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.handler.keeper.KeeperCommandHandler;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareCmdParser;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcher;
+import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStore;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
@@ -37,6 +44,12 @@ import static org.mockito.Mockito.when;
 public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeeperContextTest {
 
 	private static final int PREPARE_ACTIVE_ROUNDS = 3;
+
+	private static final String PREPARE_REPL_ID = "000000000000000000000000000000000000000A";
+
+	private static final byte[] PING = "*1\r\n$4\r\nPING\r\n".getBytes(StandardCharsets.US_ASCII);
+
+	private static final int WATCH_CYCLE_WAIT_MILLI = 6 * PrepareStoreWatcher.WATCH_TICK_MILLI;
 
 	private final KeeperCommandHandler keeperCommandHandler = new KeeperCommandHandler();
 
@@ -333,6 +346,75 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 		} finally {
 			stopQuietly(server);
 		}
+	}
+
+	/** keeper-tfs-m6 T-P12.6 */
+	@Test
+	public void testPrepareOnFreshStoreServesCmdAfterInPlaceBuild() throws Exception {
+		TestKeeperConfig config = watchConfig(true);
+		config.setPubsubParseEnabled(true);
+		DefaultRedisKeeperServer server = startActiveServer(config, true);
+		DefaultReplicationStoreManager occupying = null;
+		try {
+			DefaultReplicationStore activeStore = (DefaultReplicationStore) server.getReplicationStore();
+			Assert.assertTrue(activeStore.isFresh());
+			File dir = activeStore.getBaseDir();
+			becomePrepare(server);
+			DefaultReplicationStoreManager manager =
+					(DefaultReplicationStoreManager) server.getReplicationStoreManager();
+			waitConditionUntilTimeOut(() -> manager.getOpenedStore() != null, WATCH_CYCLE_WAIT_MILLI);
+			DefaultReplicationStore opened = (DefaultReplicationStore) manager.getOpenedStore();
+			Assert.assertEquals(dir, opened.getBaseDir());
+			Assert.assertNull(opened.getCommandStore());
+			Assert.assertTrue(opened.isFresh());
+
+			occupying = new DefaultReplicationStoreManager(config, manager.getReplId(), server.getKeeperRunid(),
+					manager.getBaseDir().getParentFile(), createkeeperMonitor(), mock(SyncRateManager.class),
+					createRedisOpParser(), null, asyncFileSystem());
+			LifecycleHelper.initializeIfPossible(occupying);
+			LifecycleHelper.startIfPossible(occupying);
+			Assert.assertEquals(manager.getBaseDir(), occupying.getBaseDir());
+			DefaultReplicationStore writable = (DefaultReplicationStore) occupying.getCurrent();
+			Assert.assertNotNull("occupying must reopen the latest store " + manager.getCurrentMetaCache(), writable);
+			Assert.assertEquals(dir, writable.getBaseDir());
+			writable.psyncContinueFrom(PREPARE_REPL_ID, 1);
+			writable.appendCommands(Unpooled.wrappedBuffer(PING));
+
+			waitConditionUntilTimeOut(() -> opened.getCommandStore() != null && !opened.isFresh(),
+					WATCH_CYCLE_WAIT_MILLI);
+			Assert.assertSame("built in place, no store switch", opened, manager.getOpenedStore());
+			PrepareCmdParser parser = server.getPrepareCmdParser();
+			waitConditionUntilTimeOut(() -> parser.getAttachCount() >= 1, WATCH_CYCLE_WAIT_MILLI);
+
+			InMemoryGapAllowedSync slaveSync = new InMemoryGapAllowedSync("127.0.0.1", server.getListeningPort(),
+					PREPARE_REPL_ID, 1, scheduled);
+			slaveSync.execute();
+			waitConditionUntilTimeOut(() -> slaveSync.getCommands().length >= PING.length, WATCH_CYCLE_WAIT_MILLI);
+			Assert.assertEquals(0, slaveSync.getFullSyncCnt());
+			Assert.assertEquals(1, server.slaves().size());
+
+			writable.appendCommands(Unpooled.wrappedBuffer(PING));
+			waitConditionUntilTimeOut(() -> slaveSync.getCommands().length >= 2 * PING.length,
+					WATCH_CYCLE_WAIT_MILLI);
+			Assert.assertArrayEquals(concat(PING, PING), slaveSync.getCommands());
+			Assert.assertEquals("slave must not be disconnected", 1, server.slaves().size());
+			Assert.assertFalse(slaveSync.future().isDone());
+			Assert.assertSame(opened, manager.getOpenedStore());
+			Assert.assertEquals(1, parser.getAttachCount());
+		} finally {
+			stopQuietly(server);
+			if (occupying != null) {
+				LifecycleHelper.stopIfPossible(occupying);
+				LifecycleHelper.disposeIfPossible(occupying);
+			}
+		}
+	}
+
+	private static byte[] concat(byte[] a, byte[] b) {
+		byte[] out = new byte[a.length + b.length];
+		System.arraycopy(a, 0, out, 0, a.length);
+		System.arraycopy(b, 0, out, a.length, b.length);
+		return out;
 	}
 
 	private DefaultReplicationStoreManager spyWithDeferredRelease(DefaultRedisKeeperServer server) throws Exception {

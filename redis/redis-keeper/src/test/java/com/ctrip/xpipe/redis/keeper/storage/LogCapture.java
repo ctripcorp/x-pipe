@@ -12,13 +12,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /** Captures the log events of one class's logger for assertions on content and stack traces. */
-final class LogCapture implements AutoCloseable {
+public final class LogCapture implements AutoCloseable {
 
     private final Logger logger;
     private final AbstractAppender appender;
     final List<LogEvent> events = new CopyOnWriteArrayList<>();
 
-    LogCapture(Class<?> loggerClass) {
+    public LogCapture(Class<?> loggerClass) {
         logger = (Logger) LogManager.getLogger(loggerClass);
         appender = new AbstractAppender("capture-" + loggerClass.getSimpleName(), null, null, true,
                 Property.EMPTY_ARRAY) {
@@ -31,13 +31,17 @@ final class LogCapture implements AutoCloseable {
         logger.addAppender(appender);
     }
 
+    public List<LogEvent> atLeast(Level level) {
+        return events.stream().filter(e -> e.getLevel().isMoreSpecificThan(level)).collect(Collectors.toList());
+    }
+
     /** Events whose message contains {@code tag}, e.g. {@code [retry-fail]}. */
-    List<LogEvent> withTag(String tag) {
+    public List<LogEvent> withTag(String tag) {
         return events.stream().filter(e -> e.getMessage().getFormattedMessage().contains(tag))
                 .collect(Collectors.toList());
     }
 
-    static String message(LogEvent event) {
+    public static String message(LogEvent event) {
         return event.getMessage().getFormattedMessage();
     }
 

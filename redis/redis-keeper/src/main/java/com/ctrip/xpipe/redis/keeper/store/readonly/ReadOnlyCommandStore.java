@@ -689,6 +689,10 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 		return fileNamePrefix;
 	}
 
+	public String getFileNamePrefix() {
+		return fileNamePrefix;
+	}
+
 	ReplId getFileSystemReplId() {
 		return fileSystemReplId;
 	}

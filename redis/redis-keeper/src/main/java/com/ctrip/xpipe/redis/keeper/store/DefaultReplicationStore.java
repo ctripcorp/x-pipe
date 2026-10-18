@@ -56,7 +56,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private ConcurrentMap<RdbStore, Boolean> previousRdbStores = new ConcurrentHashMap<>();
 
-	protected CommandStore cmdStore;
+	protected volatile CommandStore cmdStore;
 
 	protected MetaStore metaStore;
 
@@ -343,6 +343,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public void xsyncContinueFrom(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException {
+		checkNotReadOnly();
 		makeSureOpen();
 
 		getLogger().info("[xsyncContinueFrom] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}", replId, replOff, masterUuid, gtidCont);
@@ -752,6 +753,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public void continueFromOffset(String replId, long continueOffset) throws IOException{
+		checkNotReadOnly();
 		makeSureOpen();
 
 		getLogger().info("[continueFromOffset] {}:{}", replId, continueOffset);
@@ -767,6 +769,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public void psyncContinueFrom(String replId, long replOff) throws IOException{
+		checkNotReadOnly();
 		makeSureOpen();
 
 		getLogger().info("[psyncContinueFrom] {}:{}", replId, replOff);
@@ -856,12 +859,16 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 												KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
 												KeeperMonitor keeperMonitor, GtidCmdFilter gtidCmdFilter) throws IOException {
 		if (readOnly) {
-			ReadOnlyCommandStore readOnlyStore = new ReadOnlyCommandStore(
-					new File(baseDir, replMeta.getCmdFilePrefix()), asyncFileSystem, fileSystemReplId);
-			initializeCommandStore(readOnlyStore);
-			return readOnlyStore;
+			return createReadOnlyCommandStore(replMeta.getCmdFilePrefix());
 		}
 		return createCommandStore(baseDir, replMeta, cmdFileSize, config, cmdReaderWriterFactory, keeperMonitor, gtidCmdFilter);
+	}
+
+	private ReadOnlyCommandStore createReadOnlyCommandStore(String cmdFilePrefix) throws IOException {
+		ReadOnlyCommandStore readOnlyStore = new ReadOnlyCommandStore(
+				new File(baseDir, cmdFilePrefix), asyncFileSystem, fileSystemReplId);
+		initializeCommandStore(readOnlyStore);
+		return readOnlyStore;
 	}
 
 	protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
@@ -1204,7 +1211,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public boolean isFresh() {
 		if (readOnly) {
-			return metaStore == null || metaStore.getCurrentReplStage() == null;
+			return metaStore == null || metaStore.getCurrentReplStage() == null || cmdStore == null;
 		}
 		return metaStore == null || metaStore.isFresh();
 	}
@@ -1259,6 +1266,21 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	public CommandStore getCommandStore() {
 		return cmdStore;
+	}
+
+	/** Read-only only: builds and publishes the cmd store while it is still null. Does FS IO. */
+	public ReadOnlyCommandStore openReadOnlyCommandStore(String cmdFilePrefix) throws IOException {
+		if (!readOnly) {
+			throw new IllegalStateException("not a read only store: " + this);
+		}
+		makeSureOpen();
+		if (cmdStore != null) {
+			throw new IllegalStateException("cmd store already opened: " + this);
+		}
+		ReadOnlyCommandStore opened = createReadOnlyCommandStore(cmdFilePrefix);
+		this.cmdStore = opened;
+		getLogger().info("[openReadOnlyCommandStore] prefix={}, {}", cmdFilePrefix, this);
+		return opened;
 	}
 
 	@Override

@@ -2,22 +2,27 @@ package com.ctrip.xpipe.redis.keeper.prepare;
 
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
+import com.ctrip.xpipe.redis.keeper.config.KeeperPubSubConstants;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.LogCapture;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.apache.logging.log4j.Level;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.mockito.Mockito.mock;
 
@@ -136,6 +141,74 @@ public class PrepareCmdParserTest extends AbstractRedisKeeperTest {
 			stopDispose(occupying);
 			fs.shutdown();
 		}
+	}
+
+	/** keeper-tfs-m6 T-P12.5 (parser) */
+	@Test
+	public void testFreshStoreRetriesQuietlyAndAttachesAfterInPlaceBuild() throws Exception {
+		AsyncFileSystem fs = createTestAsyncFileSystem();
+		File base = new File(getTestFileDir());
+		String runid = randomKeeperRunid();
+		DefaultReplicationStoreManager occupying = newManager(fs, base, runid);
+		DefaultReplicationStoreManager watching = newManager(fs, base, runid);
+		List<String> received = new CopyOnWriteArrayList<>();
+		PrepareCmdParser parser = new PrepareCmdParser(watching, createRedisOpParser(),
+				(channel, message) -> received.add(channel + ":" + message));
+		AtomicLong now = new AtomicLong();
+		PrepareStoreWatcher watcher = new PrepareStoreWatcher(watching, keeperConfig,
+				PrepareStoreChangeListener.NOOP);
+		watcher.setClock(now::get);
+		try (LogCapture parserLogs = new LogCapture(PrepareCmdParser.class)) {
+			LifecycleHelper.initializeIfPossible(occupying);
+			LifecycleHelper.startIfPossible(occupying);
+			DefaultReplicationStore writable = (DefaultReplicationStore) occupying.create();
+
+			LifecycleHelper.initializeIfPossible(watching);
+			watching.setReadOnly(true);
+			LifecycleHelper.startIfPossible(watching);
+			parser.start();
+			waitConditionUntilTimeOut(() -> watching.getOpenedStore() != null);
+			DefaultReplicationStore opened = (DefaultReplicationStore) watching.getOpenedStore();
+			Thread.sleep(3 * KeeperPubSubConstants.PREPARE_CMD_PARSER_RETRY_MILLI);
+			Assert.assertEquals(0, parser.getAttachCount());
+
+			writable.psyncContinueFrom(REPL_ID, 1);
+			writable.appendCommands(Unpooled.wrappedBuffer("*1\r\n$4\r\nPING\r\n".getBytes(StandardCharsets.US_ASCII)));
+			Thread.sleep(3 * KeeperPubSubConstants.PREPARE_CMD_PARSER_RETRY_MILLI);
+			Assert.assertEquals("meta not reloaded yet: still fresh", 0, parser.getAttachCount());
+
+			driveWatcherCycle(watcher, now);
+			Assert.assertSame(opened, watching.getOpenedStore());
+			Assert.assertNotNull(opened.getCommandStore());
+			waitConditionUntilTimeOut(() -> parser.getAttachCount() >= 1);
+
+			writable.appendCommands(publishBuf("delay", "t1"));
+			waitConditionUntilTimeOut(() -> {
+				try {
+					driveWatcherCycle(watcher, now);
+				} catch (IOException e) {
+					throw new IllegalStateException(e);
+				}
+				return received.contains("delay:t1");
+			}, WATCH_CYCLE_WAIT_MILLI);
+			Assert.assertEquals(1, parser.getAttachCount());
+			Assert.assertTrue("fresh store must be retried without WARN: " + parserLogs.atLeast(Level.WARN),
+					parserLogs.atLeast(Level.WARN).isEmpty());
+		} finally {
+			parser.stop();
+			watcher.stop();
+			stopDispose(watching);
+			stopDispose(occupying);
+			fs.shutdown();
+		}
+	}
+
+	private void driveWatcherCycle(PrepareStoreWatcher watcher, AtomicLong now) throws IOException {
+		watcher.pollOnce();
+		now.addAndGet(keeperConfig.getPrepareWatchReopenIntervalMilli());
+		watcher.pollOnce();
+		now.addAndGet(keeperConfig.getPrepareWatchCloseHoldMilli());
+		watcher.pollOnce();
 	}
 
 	@Test
