@@ -1,0 +1,39 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerTest.java
+  s_a6917757cccb14::t_3ebe9977beef5f 83,120,305,331,382,454,497,532,700,738,747,832,890-892
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/RordbReplicationSupportTest.java
+  s_a6917757cccb14::t_3ebe9977beef5f 155
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerPrepareWatchTest.java
+  s_a6917757cccb14::t_d3741d10d6d095 193
+  s_a6917757cccb14::t_3ebe9977beef5f 194-195
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_a6917757cccb14::t_b76f5f02f9cde4 726,737
+  s_a6917757cccb14::t_3ebe9977beef5f 304-307,399-429,725,727-733,736,1522
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/RedisKeeperServer.java
+  s_a6917757cccb14::t_39c87931ebb4c7 68
+  s_a6917757cccb14::t_3ebe9977beef5f 14,71-72,133-145
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/KeeperStageOneAcceptanceTest.java
+  s_a6917757cccb14::t_765fe9d0d94b39 226
+  s_a6917757cccb14::t_3ebe9977beef5f 227-228
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/prepare/KeeperHandleReworkAcceptanceTest.java
+  s_a6917757cccb14::t_5217b2596c0d22 329
+  s_a6917757cccb14::t_3ebe9977beef5f 330-331
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/AbstractRedisKeeperServerState.java
+  s_a6917757cccb14::t_e1e21ac1b7316f 146,165
+  s_a6917757cccb14::t_3ebe9977beef5f 6,139,141,144,147-151,158,160,162,167-170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.49-trip",
+  "base_commit_sha": "53d839cb6b7c5993727c6d7984aad12761261648",
+  "prompts": {},
+  "sessions": {
+    "s_a6917757cccb14": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "37772381-a70b-4586-9779-e8a9be6760ce",
+        "model": "deepseek-v4-1-flash-260910"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}

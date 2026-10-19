@@ -1,0 +1,34 @@
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/report/CompareMetricsCollector.java
+  s_2430076925b43a::t_88294fcfb69b46 28
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/ComparatorStageTwoAcceptanceTest.java
+  s_2430076925b43a::t_2f825f36f1d94d 231-233,235,239-242
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/meta/ComparatorMetaServiceTest.java
+  s_2430076925b43a::t_23f0080c2f3ef2 210-292
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/report/CompareMetricsCollectorTest.java
+  s_2430076925b43a::t_ac9e3b98c7a827 165-186
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/meta/ShardCompareTaskManager.java
+  s_2430076925b43a::t_a04fe26e0b28a3 63-67
+  s_2430076925b43a::t_56d5afa43548f5 463-484,487
+redis/redis-comparator/src/main/java/com/ctrip/xpipe/redis/comparator/meta/ComparatorMetaService.java
+  s_2430076925b43a::t_57af59be5a55f2 17
+redis/redis-comparator/src/test/java/com/ctrip/xpipe/redis/comparator/meta/ShardCompareTaskManagerTest.java
+  s_2430076925b43a::t_276f8e22ff40a3 420-502,504-553
+  s_2430076925b43a::t_bb5ccd462f2aed 503
+  s_2430076925b43a::t_8e9878f4189c33 610-611,615-616,625-639
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.50-trip",
+  "base_commit_sha": "103b5fd324564567d25a071aba60032ac7acf6d9",
+  "prompts": {},
+  "sessions": {
+    "s_2430076925b43a": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_a945f9f3-2aa1-4889-a23d-74d43c74a7af",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

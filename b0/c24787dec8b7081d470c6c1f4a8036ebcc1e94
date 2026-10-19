@@ -1,0 +1,63 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/PsyncKeeperServerStateObserverTest.java
+  s_3153893024acdb::t_9c23775d26d930 56
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisSlave.java
+  s_3153893024acdb::t_264f185b6bb3ab 245,377
+  s_3153893024acdb::t_2f19cca9c86eac 264
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/GapAllowRedisSlaveTest.java
+  s_3153893024acdb::t_322331417e25a9 43
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/prepare/KeeperHandleReworkAcceptanceTest.java
+  s_3153893024acdb::t_2dd95d2ba237ec 187
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/GapAllowRedisSlave.java
+  s_3153893024acdb::t_2cd64b3b3cfad4 32,51
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/RedisKeeperServer.java
+  s_3153893024acdb::t_eeb34d8efeb73f 41-46
+  s_3153893024acdb::t_441771c314dd01 76-81
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/handler/keeper/GapAllowSyncHandlerTest.java
+  s_3153893024acdb::t_a3337d30a77b3c 491
+  s_3153893024acdb::t_030e1b5d00db50 309,328-329,344-345,363-364,379-380,394-395,454,468,479
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisMaster.java
+  s_3153893024acdb::t_4156c49238d4cd 133
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/RedisKeeperServerStateActive.java
+  s_3153893024acdb::t_858bd0abdadea3 99
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/fakeredis/FakeRedisExceptionTest.java
+  s_3153893024acdb::t_80b2776a65b548 70
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/GapAllowedRdbonlyRedisMasterReplicationTest.java
+  s_3153893024acdb::t_f6b1e2134f7200 73
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/AbstractRedisKeeperServerState.java
+  s_3153893024acdb::t_52b9cab7e76090 142,154
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/KeeperCmdFileMissTest.java
+  s_3153893024acdb::t_95d1d9343f6336 85
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/handler/keeper/GapAllowSyncHandler.java
+  s_3153893024acdb::t_1f18f29f87575f 106,152,207
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/RdbonlyRedisMasterReplicationTest.java
+  s_3153893024acdb::t_3c4c4d7e1b3c2e 69
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/RedisPromotor.java
+  s_3153893024acdb::t_aeafca0b74230d 165
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/AbstractRdbDumper.java
+  s_3153893024acdb::t_5454f034c46cfa 161
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServer.java
+  s_3153893024acdb::t_00bbd31d43bc93 326,331,336,346,352,358,1199,1373
+  s_3153893024acdb::t_f8b47c4739a365 744
+  s_3153893024acdb::t_4cfaffd87e80ea 281
+  s_3153893024acdb::t_d2269adb021482 681,683-690
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/GtidRedisKeeperServerTest.java
+  s_3153893024acdb::t_fb9b4ad6248e1e 70
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/handler/keeper/SyncHandlerTest.java
+  s_3153893024acdb::t_1062c170aa8bc8 50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.50-trip",
+  "base_commit_sha": "b0c24787dec8b7081d470c6c1f4a8036ebcc1e94",
+  "prompts": {},
+  "sessions": {
+    "s_3153893024acdb": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_acfec257-ac40-4fcd-87cc-07b04906af74",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

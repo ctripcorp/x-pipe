@@ -1,0 +1,52 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/DefaultIndexStore.java
+  s_5f4829068e97b8::t_d858e061695a07 558
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/BlockReader.java
+  s_5f4829068e97b8::t_148093dc6082ac 30
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReaderV2.java
+  s_5f4829068e97b8::t_afc33c1e6603b7 94
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelperReadTimeoutTest.java
+  s_5f4829068e97b8::t_b21c47800a5992 1-26,28-192,194-201,203-220,222-249,251-292
+  s_5f4829068e97b8::t_c93eae1cfe5205 250
+  s_5f4829068e97b8::t_231062c440ce9b 193,202,221
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/container/ContainerResourceManagerTest.java
+  s_5f4829068e97b8::t_3cf82c6c6c53f3 7-8
+  s_5f4829068e97b8::t_09cbbda4fb470c 83
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriterV2.java
+  s_5f4829068e97b8::t_5b2e30f4781551 216,295
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/ContainerResourceManager.java
+  s_5f4829068e97b8::t_2958ca6005a20d 126-129
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelper.java
+  s_5f4829068e97b8::t_b7b6f2452d4778 128-130,153
+  s_5f4829068e97b8::t_30a7096c52d572 574
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexReader.java
+  s_5f4829068e97b8::t_689222fdc3a87a 79,132
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  s_5f4829068e97b8::t_d29a01f4baac10 40
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/GtidSetWrapper.java
+  s_5f4829068e97b8::t_f2e4f83bb26844 72,86,104,136,161,165,173,187,200
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/readonly/ReadOnlyCommandStore.java
+  s_5f4829068e97b8::t_75b409dfba1565 368
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java
+  s_5f4829068e97b8::t_7f978e0cbf25da 405-409
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/gtid/index/IndexWriter.java
+  s_5f4829068e97b8::t_1f84d2e40f8c42 86,99
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperConfig.java
+  s_5f4829068e97b8::t_548fec06821c99 185-186
+  s_5f4829068e97b8::t_f3a9f175285c8e 184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.49-trip",
+  "base_commit_sha": "2f98c2435a1eab714e8739491a6f45919f7f0bb7",
+  "prompts": {},
+  "sessions": {
+    "s_5f4829068e97b8": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_b752cb92-e994-4c43-86e5-fb3a27e50901",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

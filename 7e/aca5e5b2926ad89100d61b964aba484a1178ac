@@ -1,0 +1,147 @@
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/config/impl/CommonConfigBeanTest.java
+  s_6214cd8dd182e4::t_2b7d4b0e0466a9 12,79-124
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/migration/command/ReactorMigrationCommandBuilderImplAddSentinelTest.java
+  s_6214cd8dd182e4::t_9f3bfde0da7b0d 1-79
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/controller/api/ChangeConfigTest.java
+  s_6214cd8dd182e4::t_b9ccd1f6cdf867 175-187,196-210
+  s_6214cd8dd182e4::t_b11f3ccdbf4fc8 166-167
+  s_6214cd8dd182e4::t_a72019a7f4cf84 188-195
+  s_6214cd8dd182e4::t_6b6597e48b699e 53-55
+  s_6214cd8dd182e4::t_1f11575c261a2f 6,13-16,25,28-32
+  s_6214cd8dd182e4::t_0402a0c90a9d97 71-72
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/clusteractions/beacon/SentinelBeaconMigrationController.java
+  s_6214cd8dd182e4::t_84a4874bfb62d7 50
+  s_6214cd8dd182e4::t_9d3c25b8f3dc5c 41
+  s_6214cd8dd182e4::t_78e34b4ee6dce7 36-40
+  s_6214cd8dd182e4::t_968b51e86a3d56 10-11,25-26,28,30,42,51
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/notifier/SentinelBeaconClusterMonitorNotifier.java
+  s_6214cd8dd182e4::t_57835693e01b47 60-62
+  s_6214cd8dd182e4::t_0426f24ce4159b 53-54,56-59
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/status/migration/MigrationPublishState.java
+  s_6214cd8dd182e4::t_89a73501485b59 40
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/config/HealthCheckConfig.java
+  s_6214cd8dd182e4::t_f85ef3c539de3f 33-34
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/config/impl/BeaconSentinelGrayTestConfigs.java
+  s_6214cd8dd182e4::t_66e5f6516da8b8 1-56
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/AllTests.java
+  s_6214cd8dd182e4::t_85ffff8a274eaa 210
+  s_6214cd8dd182e4::t_9b43cc83e300c3 12
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/config/impl/DefaultConsoleConfigTest.java
+  s_6214cd8dd182e4::t_2d2be2a516eb73 128
+  s_6214cd8dd182e4::t_5fb8260e8d95de 127,133-134
+  s_6214cd8dd182e4::t_8132ccfea5882a 6,20,22
+  s_6214cd8dd182e4::t_a4387dbe070f27 124-126,129-132,135-180
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/allleader/SentinelMonitorsCheck.java
+  s_6214cd8dd182e4::t_ee3765a4208fc8 89,96
+  s_6214cd8dd182e4::t_9dc08a224c1d2b 12
+  s_6214cd8dd182e4::t_418cf5556b132f 117-121
+  s_6214cd8dd182e4::t_69cc4ff6180ad8 122
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/beacon/BeaconSentinelMetaUtil.java
+  s_6214cd8dd182e4::t_d403cac459d680 32-50
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/auto/DefaultMonitorManager.java
+  s_6214cd8dd182e4::t_1898faea71074b 163-164
+  s_6214cd8dd182e4::t_d3904e2fd72a97 229,232-233
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/service/migration/impl/MigrationServiceImplSentinelBeaconTest.java
+  s_6214cd8dd182e4::t_5b09f2761283d2 190-191
+  s_6214cd8dd182e4::t_f61752aa9b81a3 74,86
+  s_6214cd8dd182e4::t_8e6c8e4db84f90 9-10,23,25,27,30,32-33,42-43,52,55,65-66,73,85,97,118-182,185-189,192-205
+  s_6214cd8dd182e4::t_667bcd37e83653 56
+  s_6214cd8dd182e4::t_7baf2c04765208 98
+  s_6214cd8dd182e4::t_d23da9cd02f9b6 183-184,206
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/config/AbstractHealthCheckConfig.java
+  s_6214cd8dd182e4::t_f51832a3e581f7 75-78
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/beacon/BeaconSentinelMetaUtilTest.java
+  s_6214cd8dd182e4::t_5c537ba5c83ec9 29-37
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/config/impl/DefaultConsoleConfig.java
+  s_6214cd8dd182e4::t_17225438dc3bbb 424-431,433-435,440-441
+  s_6214cd8dd182e4::t_ea26529532c524 432,436-439
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/controller/api/ChangeConfig.java
+  s_6214cd8dd182e4::t_d3f10e23017cc5 229-232
+  s_6214cd8dd182e4::t_0e0d41ff583feb 234,237
+  s_6214cd8dd182e4::t_23c94f758e435a 50-52
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/migration/MigrationService.java
+  s_6214cd8dd182e4::t_105c83a67e338a 111
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/service/migration/impl/MigrationServiceImpl.java
+  s_6214cd8dd182e4::t_877d4078d6ad53 907-913,919
+  s_6214cd8dd182e4::t_d4e58b14a9fcea 972
+  s_6214cd8dd182e4::t_7f10c4ff82e6db 991-992
+  s_6214cd8dd182e4::t_5d40631e5c47c1 902,906
+  s_6214cd8dd182e4::t_b45d55e45e3d35 949
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/clusteractions/beacon/SentinelBeaconMigrationControllerTest.java
+  s_6214cd8dd182e4::t_439473781ba1ec 82-96
+  s_6214cd8dd182e4::t_3b7f97dcd45b35 10,25-27,37
+  s_6214cd8dd182e4::t_8a36304e948135 42-43
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/beacon/DefaultMonitorManagerTest.java
+  s_6214cd8dd182e4::t_371a4b8c17b56f 196-197,200,210-211
+  s_6214cd8dd182e4::t_7a42f45bdf7b1b 181-182,284-285
+  s_6214cd8dd182e4::t_5695755d72557e 193-195,198-199,201-209,212-213
+  s_6214cd8dd182e4::t_bffe8e2ee34810 82-83
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/SentinelHelloCheckActionTest.java
+  s_6214cd8dd182e4::t_7beda6fb3766ee 167
+  s_6214cd8dd182e4::t_adb37355cd1fd1 36-38
+  s_6214cd8dd182e4::t_396e84146e66bc 172
+  s_6214cd8dd182e4::t_aecac4c73a4518 9
+  s_6214cd8dd182e4::t_c6a0811bbd2e14 166,168-171,173-181
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/command/ReactorMigrationCommandBuilderImpl.java
+  s_6214cd8dd182e4::t_71b2cdb3e63e4d 113-115
+  s_6214cd8dd182e4::t_b055fb9f3da6ed 5,10
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/config/impl/CommonConfigBean.java
+  s_6214cd8dd182e4::t_50327d2c794ddf 3,10,14-15,17
+  s_6214cd8dd182e4::t_94486fb9f75759 19,21
+  s_6214cd8dd182e4::t_6ba3884a0c5fe7 78
+  s_6214cd8dd182e4::t_1aaa076ece1ba6 223-224,235-248,250-252,254-256,258,260-262,271-273
+  s_6214cd8dd182e4::t_ed4de84cf7f6a1 87-88
+  s_6214cd8dd182e4::t_b002c2bb0c2adc 225-234,259,263-270,279-286
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/SentinelHelloCheckAction.java
+  s_6214cd8dd182e4::t_df13b4ac71ca2d 6,13-14
+  s_6214cd8dd182e4::t_2a0dba4c29c0fe 265-269
+  s_6214cd8dd182e4::t_35952ed97b9e0f 264,270,272
+  s_6214cd8dd182e4::t_670ede44bc84d9 271,273
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/notifier/SentinelBeaconClusterMonitorNotifierTest.java
+  s_6214cd8dd182e4::t_8e3b2ded432737 44-45
+  s_6214cd8dd182e4::t_df88625379f8be 80-82,84-86,102-105
+  s_6214cd8dd182e4::t_c9906fc515e2ab 83,87-101
+  s_6214cd8dd182e4::t_35e23b5f922ecb 60-61
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/healthcheck/config/CompositeHealthCheckConfig.java
+  s_6214cd8dd182e4::t_7460bd768f15e2 75-78
+redis/redis-checker/src/main/java/com/ctrip/xpipe/redis/checker/config/CheckerConfig.java
+  s_6214cd8dd182e4::t_ac9ff2d7c183d5 101-104
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/migration/status/migration/MigrationPublishStatTest.java
+  s_6214cd8dd182e4::t_bd6317c0ee2e86 217-251
+  s_6214cd8dd182e4::t_8e7e712aba171c 26
+  s_6214cd8dd182e4::t_0c24ad9b0573ff 187
+  s_6214cd8dd182e4::t_3514ec64db1141 53
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/allleader/DefaultSentinelMonitorsCheckTest.java
+  s_6214cd8dd182e4::t_36b6081fddc4d5 272
+  s_6214cd8dd182e4::t_fc9afa34a6b6ed 310
+  s_6214cd8dd182e4::t_a1a9e2e22351d7 184,196
+  s_6214cd8dd182e4::t_377e0ae97ff693 306
+  s_6214cd8dd182e4::t_8ee01656d571a0 316-375
+  s_6214cd8dd182e4::t_8366f9017fb789 22-25
+  s_6214cd8dd182e4::t_d171bc9d3ba472 234
+  s_6214cd8dd182e4::t_8761b59004a1fe 30-31
+redis/redis-console/src/main/java/com/ctrip/xpipe/redis/console/migration/status/migration/MigrationPreMigratingState.java
+  s_6214cd8dd182e4::t_a966ac341c3659 25-26
+redis/redis-console/src/test/java/com/ctrip/xpipe/redis/console/migration/status/migration/MigrationPreMigratingStateTest.java
+  s_6214cd8dd182e4::t_649218589dc6a3 23
+  s_6214cd8dd182e4::t_a2736dc5deeca7 24
+  s_6214cd8dd182e4::t_d3479880f14e22 56
+  s_6214cd8dd182e4::t_1c438e86244a98 66-79
+  s_6214cd8dd182e4::t_dd8f47a2498ab7 55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.50-trip",
+  "base_commit_sha": "7eaca5e5b2926ad89100d61b964aba484a1178ac",
+  "prompts": {},
+  "sessions": {
+    "s_6214cd8dd182e4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8dc82600-8125-4133-99d6-82b52071917a",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}

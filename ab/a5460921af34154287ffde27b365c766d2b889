@@ -1,0 +1,33 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/keeper/container/DefaultCurrentDcKeeperContainerAddressService.java
+  s_c433cd0942b663::t_f962d8edc5a83b 42-49
+  s_c433cd0942b663::t_1ce01784f46885 225-232,234
+  s_c433cd0942b663::t_79ac21a3435572 16-18,21
+  s_c433cd0942b663::t_3cc61cd175f875 66-71
+  s_c433cd0942b663::t_0337f1e5266f30 282-300,302,305-318,320-326
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/keeper/container/DefaultCurrentDcKeeperContainerAddressServiceTest.java
+  s_c433cd0942b663::t_d6e55e75aa0664 545-559,562
+  s_c433cd0942b663::t_733ee104580aab 580-597,602,606-617
+  s_c433cd0942b663::t_8d544fba47be8b 311
+  s_c433cd0942b663::t_16e290fe966497 109-125
+  s_c433cd0942b663::t_5e11a573c3de82 83-85
+  s_c433cd0942b663::t_125ecbcecfc343 38-39
+  s_c433cd0942b663::t_48c3ed7886b2d2 154,163-197,200-214,216-236,238-240,242-250,252-266
+  s_c433cd0942b663::t_9bd6628afe7982 286,289,293-294,298-300
+  s_c433cd0942b663::t_aeae62a50fa88c 12,16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "aba5460921af34154287ffde27b365c766d2b889",
+  "prompts": {},
+  "sessions": {
+    "s_c433cd0942b663": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_ce012e7a-1c9e-4f04-af4e-81cec1f79ddf",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

@@ -1,0 +1,70 @@
+pom.xml
+  s_51eda43cee240a::t_a8fd6c7198872e 27
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/keeper/container/DefaultCurrentDcKeeperContainerAddressService.java
+  s_c433cd0942b663::t_f962d8edc5a83b 31
+  s_7a032df8fa7547::t_e1d9f1bf123dd0 34
+  s_51eda43cee240a::t_9db43c561b1052 42,64,66,68,136,159-160,210-211,18,22,26,33,43-45,55-56,58-60,62,83-84,91,93-98,100,102-107,109,114,116-124,137-140,162,164,168-170,172,175-179,186,216,220-221,233,236-238,240-242,281
+  s_1a64a48b8580e3::t_834bc94884a246 204,99
+  s_c433cd0942b663::t_0337f1e5266f30 214-215,57,163,185
+  s_1a64a48b8580e3::t_0df4c185a37350 274,111,173,181,225,231,243
+  s_7a032df8fa7547::t_206e4c713c2fa0 275,46,54,61,63,92,101,110,113,115,141,161,165,171,174,180,182,222,226,232,239,244
+  s_51eda43cee240a::t_c563a7757fdcbe 8
+  s_51eda43cee240a::t_a210d5e983dc21 166,188,217,228,234-235
+  s_51eda43cee240a::t_e6a4e10f8eaecf 167
+  s_51eda43cee240a::t_d15aa47227c2ad 189
+  s_51eda43cee240a::t_56474ad1d63f8b 218
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/keeper/container/DefaultCurrentDcKeeperContainerAddressServiceTest.java
+  s_c433cd0942b663::t_16e290fe966497 102
+  s_c433cd0942b663::t_48c3ed7886b2d2 140-142,145-146,148
+  s_1a64a48b8580e3::t_93b3ad9c201b7f 174-177
+  s_c433cd0942b663::t_d6e55e75aa0664 218-219
+  s_c433cd0942b663::t_733ee104580aab 361-362,228,261,301
+  s_51eda43cee240a::t_7779bc18a5cf8c 375,220,222,234,237,240,248-252,255,266,270,274,279,290-293,306,311,316-319,332,335,338,340-341,347,351,355,357-358,376-393,395-401,403-417
+  s_51eda43cee240a::t_3d603ee6c55b4d 6
+  s_51eda43cee240a::t_ed469b915a5b9b 11,21-23,25
+  s_51eda43cee240a::t_c1421e00edd9f1 221,223-227,229-233,235-236,238-239,241-247,253-254,256-260,262-265,267-269,272,277-278,280,282-289,294-300,302-304,307-310,312-315,342-343,346,348-350,352-354,356
+  s_51eda43cee240a::t_8a9658070083ae 271,273,275-276,281
+  s_51eda43cee240a::t_26a1112a7dc5f0 320-331,333-334,336-337,339
+  s_51eda43cee240a::t_97e0a4473eaa2d 394
+  s_51eda43cee240a::t_444fb7586b2eb2 402
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.45-trip",
+  "base_commit_sha": "aa06320f7767fe79ba290ac14dc13afb4504ef88",
+  "prompts": {},
+  "sessions": {
+    "s_1a64a48b8580e3": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_f015341e-7d3e-4707-8ab7-76b9de318602",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_51eda43cee240a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8043c12a-bf08-48cd-ae9d-57157b2fa6cc",
+        "model": "grok-4.7"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_7a032df8fa7547": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_a5fb0844-46b1-4b21-b9e3-853361b2df29",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_c433cd0942b663": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_ce012e7a-1c9e-4f04-af4e-81cec1f79ddf",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/MetaStore.java
+  s_ba330b4b4eddce::t_dc3ef1c051cf39 200-204,206-211,213
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/StoreCloseUnclosedHandleTest.java
+  s_ba330b4b4eddce::t_a8ca47bf484e9a 1-6,8-34,37-106,108-112,115,117-120,156-165,167-185,187-196,198-201,203-211,213-215,217-219,223-228,230-241
+  s_ba330b4b4eddce::t_a8caec20c527ac 7
+  s_ba330b4b4eddce::t_3a2d4363196c6a 35-36,107,113-114,116,121-155,166,186,197,202,212,216,220-222,229
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/CommandStore.java
+  s_ba330b4b4eddce::t_98c56e1de8ce4a 92-109
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStore.java
+  s_ba330b4b4eddce::t_af839807c6958a 22,1297-1300,1302-1303,1305-1319,1321-1322,1324,1327-1331,1333,1335-1337,1339-1342,1346-1351
+  s_ba330b4b4eddce::t_bff940d4393c1c 1332,1338,1343-1345
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/ReplicationStore.java
+  s_ba330b4b4eddce::t_98c56e1de8ce4a 106-122
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java
+  s_ba330b4b4eddce::t_8e7af51e94d23f 208-210,212,215,218-219,221-225
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_ba330b4b4eddce::t_ddf01d659fd209 389,396
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/readonly/ReadOnlyCommandStore.java
+  s_ba330b4b4eddce::t_fe1374689a8065 157,159,162,168-174
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelperDeferredCloseTest.java
+  s_ba330b4b4eddce::t_3a2d4363196c6a 238
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/RdbOnlyReplicationStore.java
+  s_ba330b4b4eddce::t_04a65bd78281e9 31-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.49-trip",
+  "base_commit_sha": "afbb6ea1dd631d15d4a2e699bb46ea9d21d34880",
+  "prompts": {},
+  "sessions": {
+    "s_ba330b4b4eddce": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_d7241b03-b994-4859-a127-f4809f0ceed8",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
