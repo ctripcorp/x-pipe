@@ -1,0 +1,60 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/prepare/PrepareStoreWatcherTest.java
+  s_8ff7c583ab5a07::t_772c4695aab544 14
+  s_8ff7c583ab5a07::t_136023c20576d5 23
+  s_8ff7c583ab5a07::t_f05828abc987c8 121-225
+  s_8ff7c583ab5a07::t_8e7c5935a7741f 306-309,311
+  s_8ff7c583ab5a07::t_0eb9118fe37ce5 326-327,330,333-338,341
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/impl/DefaultKeeperRepl.java
+  s_8ff7c583ab5a07::t_194b78f16d4dbb 5
+  s_8ff7c583ab5a07::t_cf53ab860971d6 18-20,23,28
+  s_8ff7c583ab5a07::t_ddf123bb490cb3 55
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultKeeperReplTest.java
+  s_8ff7c583ab5a07::t_d263b153f4efb1 1-20
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/prepare/PrepareStoreWatcher.java
+  s_f27d758b6af3c9::t_37a58ad31d4c20 354-367
+  s_8ff7c583ab5a07::t_3226da52a04be8 290-294
+  s_8ff7c583ab5a07::t_d57644c96cf802 399
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java
+  s_8ff7c583ab5a07::t_8b2059dda34bd0 69-76
+  s_8ff7c583ab5a07::t_cf903251bd223b 257-260
+  s_8ff7c583ab5a07::t_08dd3c72a9e9a1 285
+  s_f27d758b6af3c9::t_096843d51db560 395-401
+  s_f27d758b6af3c9::t_98ef7fd8dff93c 485,487-489,493
+  s_8ff7c583ab5a07::t_6bebf4a5296fb1 486,490-492
+  s_8ff7c583ab5a07::t_654ac01965ae4f 502-507
+  s_8ff7c583ab5a07::t_65a8d81e54f7c4 580-584
+  s_8ff7c583ab5a07::t_8b054bf215e43f 638-643
+  s_8ff7c583ab5a07::t_07f684bb24064a 718-723,731-755,729-730
+  s_8ff7c583ab5a07::t_2f1bc265f63917 724-725,726-728
+  s_8ff7c583ab5a07::t_61dc19aa604c6a 515-516,518-531
+  s_8ff7c583ab5a07::t_3cb2bde758bd1e 517
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerPrepareWatchTest.java
+  s_8ff7c583ab5a07::t_8a3a5bcd80bbc5 74-76
+  s_8ff7c583ab5a07::t_d33ee8ab5730c4 97-98
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManagerReadOnlyTest.java
+  s_8ff7c583ab5a07::t_86a8d4809cbd01 195-254
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.50-trip",
+  "base_commit_sha": "fbfb1d6fd4bfe303dd60538a4b8f3b8696453312",
+  "prompts": {},
+  "sessions": {
+    "s_8ff7c583ab5a07": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b53869e6-d61d-4ca0-83aa-02907f9f87c8",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    },
+    "s_f27d758b6af3c9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fbfea91a-0cb7-4e0c-ba5b-07f5b34f5156",
+        "model": "deepseek/deepseek-flash"
+      },
+      "human_author": "TB <b.tian@trip.com>"
+    }
+  }
+}

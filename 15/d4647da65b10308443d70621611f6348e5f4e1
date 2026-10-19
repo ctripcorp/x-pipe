@@ -1,0 +1,73 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/prepare/PrepareStoreWatcherCmdPrefixTest.java
+  s_f65d152e0b57bb::t_da3060ad84883d 42,257
+  s_f65d152e0b57bb::t_77257745e9fedc 1-41,43-256,258-355
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreReadOnlyCmdOpenTest.java
+  s_f65d152e0b57bb::t_48a0f08a116861 31,48,70,77,81-84,86,88,90,94,102-107,113,119,121-122,126,128,148-156
+  s_f65d152e0b57bb::t_93624278509c09 124-125,127,129-133
+  s_f65d152e0b57bb::t_ead30f1cf7539a 1-30,32-47,49-69,71-76,78-80,85,87,89,91-93,95-101,108-112,114-118,120,123,134-147,157-193
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/prepare/KeeperHandleReworkAcceptanceTest.java
+  s_f65d152e0b57bb::t_0e9702eed4159b 106
+  s_f65d152e0b57bb::t_da3060ad84883d 105
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/readonly/ReadOnlyCommandStore.java
+  s_f65d152e0b57bb::t_f24fe95196641d 692-695
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerPrepareWatchTest.java
+  s_f65d152e0b57bb::t_191e4e1f6fb96f 16-18,23,29
+  s_f65d152e0b57bb::t_4e6deb332cbb3f 351
+  s_f65d152e0b57bb::t_b2020699f8dcad 352-370,372-375,377,379-419
+  s_f65d152e0b57bb::t_ca7c52527313ac 371
+  s_f65d152e0b57bb::t_67256847ec278c 376,378
+  s_f65d152e0b57bb::t_8c3db2439311cf 4,8
+  s_f65d152e0b57bb::t_90aa82b6549b2b 48-53
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStore.java
+  s_f65d152e0b57bb::t_9e6f2b6708bfdf 1214
+  s_f65d152e0b57bb::t_3f94ea4c824022 756
+  s_f65d152e0b57bb::t_4f4b0e826d541f 59
+  s_f65d152e0b57bb::t_096b48a8dfb7ee 1284-1285
+  s_f65d152e0b57bb::t_00a0de4a4c7998 772
+  s_f65d152e0b57bb::t_6b47db46177100 346
+  s_f65d152e0b57bb::t_6e8b1499f51cc4 862,867-871
+  s_f65d152e0b57bb::t_dc922f981a1cbf 1271-1283
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/LogCapture.java
+  s_f65d152e0b57bb::t_bb19e559768161 44
+  s_f65d152e0b57bb::t_8cd3e2ed096b43 15,21
+  s_f65d152e0b57bb::t_bf21dbb0328f95 34-37
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/prepare/PrepareStoreWatcher.java
+  s_f65d152e0b57bb::t_da3060ad84883d 138,166,173,292
+  s_f65d152e0b57bb::t_fb01f53fca3fc5 296,298-300,308,319-320,327
+  s_f65d152e0b57bb::t_f3cb07d105be3d 291
+  s_f65d152e0b57bb::t_299746909301f8 297
+  s_f65d152e0b57bb::t_3b065e1d5c3049 397,399,403-404,408-409,411
+  s_f65d152e0b57bb::t_7b80abc8914db7 151-154
+  s_f65d152e0b57bb::t_4c628626c22994 313,315-318,321-326
+  s_f65d152e0b57bb::t_acc952228dc25f 69-72
+  s_f65d152e0b57bb::t_95f3fd79162aba 168-172,174-175
+  s_f65d152e0b57bb::t_47dced54f83bf6 139-140
+  s_f65d152e0b57bb::t_1ca03a7c9a9724 386-396,398,400-402
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/prepare/PrepareCmdParserTest.java
+  s_f65d152e0b57bb::t_da3060ad84883d 146
+  s_f65d152e0b57bb::t_c4195ca30e8cd2 147-213
+  s_f65d152e0b57bb::t_3e48d11a4288b3 5,9,14,20,25
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_f65d152e0b57bb::t_657f071c723f80 100
+  s_f65d152e0b57bb::t_a165e523aa7f5c 53
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/prepare/PrepareCmdParser.java
+  s_f65d152e0b57bb::t_da3060ad84883d 102
+  s_f65d152e0b57bb::t_5883b7563efd34 82
+  s_f65d152e0b57bb::t_1bbadab010e027 103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.50-trip",
+  "base_commit_sha": "15d4647da65b10308443d70621611f6348e5f4e1",
+  "prompts": {},
+  "sessions": {
+    "s_f65d152e0b57bb": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_8695c83d-65bd-4136-bbc7-27a066f599a4",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
