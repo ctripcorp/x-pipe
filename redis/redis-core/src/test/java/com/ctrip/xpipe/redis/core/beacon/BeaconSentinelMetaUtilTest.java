@@ -26,6 +26,15 @@ public class BeaconSentinelMetaUtilTest {
         ClusterMeta singleDc = new ClusterMeta("cluster1");
         singleDc.setType(ClusterType.SINGLE_DC.name());
         Assert.assertEquals(ClusterType.SINGLE_DC, BeaconSentinelMetaUtil.resolveEffectiveClusterType(singleDc));
+
+        DcMeta dcMeta = new DcMeta("jq");
+        dcMeta.addCluster(hetero);
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        xpipeMeta.addDc(dcMeta);
+        Assert.assertEquals(ClusterType.ONE_WAY,
+                BeaconSentinelMetaUtil.resolveEffectiveClusterType(xpipeMeta, "JQ", "cluster1"));
+        Assert.assertNull(BeaconSentinelMetaUtil.resolveEffectiveClusterType(xpipeMeta, "jq", "missing"));
+        Assert.assertNull(BeaconSentinelMetaUtil.findClusterMeta(null, "jq", "cluster1"));
     }
 
     @Test

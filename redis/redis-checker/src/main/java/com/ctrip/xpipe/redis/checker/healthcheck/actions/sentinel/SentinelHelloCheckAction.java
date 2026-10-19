@@ -3,16 +3,18 @@ package com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.monitor.Task;
 import com.ctrip.xpipe.api.monitor.TransactionMonitor;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
 import com.ctrip.xpipe.redis.checker.healthcheck.leader.AbstractLeaderAwareHealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
+import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -259,8 +261,16 @@ public class SentinelHelloCheckAction extends AbstractLeaderAwareHealthCheckActi
 
     boolean supportSentinelHealthCheck(HealthCheckInstance checkInstance) {
         CheckInfo checkInfo = checkInstance.getCheckInfo();
-        return checkInstance.getHealthCheckConfig().supportSentinelHealthCheck(checkInfo.getClusterType(), checkInfo.getClusterId())
-                && !checkInstance.getHealthCheckConfig().supportSentinelBeacon(checkInfo.getClusterOrgId(), checkInfo.getClusterId());
+        String idc = checkInfo.getActiveDc();
+        ClusterType clusterType = metaCache == null ? null
+                : BeaconSentinelMetaUtil.resolveEffectiveClusterType(metaCache.getXpipeMeta(), idc,
+                checkInfo.getClusterId());
+        if (clusterType == null) {
+            clusterType = checkInfo.getClusterType();
+        }
+        return checkInstance.getHealthCheckConfig().supportSentinelHealthCheck(clusterType, checkInfo.getClusterId())
+                && !checkInstance.getHealthCheckConfig().supportSentinelBeacon(checkInfo.getClusterOrgId(),
+                checkInfo.getClusterId(), idc, clusterType);
     }
 
     @Override

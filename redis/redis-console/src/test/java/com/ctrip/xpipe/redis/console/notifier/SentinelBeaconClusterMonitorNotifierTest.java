@@ -41,7 +41,8 @@ public class SentinelBeaconClusterMonitorNotifierTest {
     @Before
     public void setup() {
         notifier = new SentinelBeaconClusterMonitorNotifier(beaconManager, metaCache, consoleConfig, checkerDbConfig);
-        Mockito.when(consoleConfig.supportSentinelBeacon(1L, CLUSTER)).thenReturn(true);
+        Mockito.when(consoleConfig.supportSentinelBeacon(Mockito.eq(1L), Mockito.eq(CLUSTER),
+                Mockito.anyString(), Mockito.any(ClusterType.class))).thenReturn(true);
         Mockito.when(metaCache.getClusterType(CLUSTER)).thenReturn(ClusterType.SINGLE_DC);
 
         ClusterMeta clusterMeta = new ClusterMeta(CLUSTER);
@@ -56,7 +57,8 @@ public class SentinelBeaconClusterMonitorNotifierTest {
 
     @Test
     public void needNotifyShouldReturnFalseWhenSentinelBeaconDisabled() {
-        Mockito.when(consoleConfig.supportSentinelBeacon(1L, CLUSTER)).thenReturn(false);
+        Mockito.when(consoleConfig.supportSentinelBeacon(Mockito.eq(1L), Mockito.eq(CLUSTER),
+                Mockito.anyString(), Mockito.any(ClusterType.class))).thenReturn(false);
         Assert.assertFalse(notifier.needNotify(CLUSTER, DC, 1L));
     }
 
@@ -74,5 +76,31 @@ public class SentinelBeaconClusterMonitorNotifierTest {
 
         Mockito.verify(beaconManager).unregisterCluster(CLUSTER, DC, ClusterType.SINGLE_DC, 1,
                 BeaconRouteType.SENTINEL);
+    }
+
+    @Test
+    public void needNotifyShouldRespectIdcGray() {
+        Mockito.when(checkerDbConfig.shouldSentinelCheck(CLUSTER)).thenReturn(true);
+        Mockito.when(consoleConfig.supportSentinelBeacon(Mockito.eq(1L), Mockito.eq(CLUSTER),
+                Mockito.anyString(), Mockito.any(ClusterType.class)))
+                .thenAnswer(invocation -> DC.equalsIgnoreCase(invocation.getArgument(2, String.class)));
+
+        ClusterMeta jqCluster = new ClusterMeta(CLUSTER);
+        jqCluster.setType(ClusterType.LOCAL_DC.name());
+        jqCluster.setDcs("jq,oy");
+        ClusterMeta oyCluster = new ClusterMeta(CLUSTER);
+        oyCluster.setType(ClusterType.LOCAL_DC.name());
+        oyCluster.setDcs("jq,oy");
+        DcMeta jqDc = new DcMeta(DC);
+        jqDc.addCluster(jqCluster);
+        DcMeta oyDc = new DcMeta("oy");
+        oyDc.addCluster(oyCluster);
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        xpipeMeta.addDc(jqDc);
+        xpipeMeta.addDc(oyDc);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        Assert.assertTrue(notifier.needNotify(CLUSTER, DC, 1L));
+        Assert.assertFalse(notifier.needNotify(CLUSTER, "oy", 1L));
     }
 }

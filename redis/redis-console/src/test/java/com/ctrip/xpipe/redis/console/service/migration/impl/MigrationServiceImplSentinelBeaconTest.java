@@ -6,6 +6,8 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.BeaconManager;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.BeaconSentinelGrayTestConfigs;
+import com.ctrip.xpipe.redis.console.migration.model.MigrationCluster;
 import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
@@ -18,11 +20,17 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -31,6 +39,8 @@ public class MigrationServiceImplSentinelBeaconTest {
 
     private static final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
     private static final String CLUSTER = "cluster1";
+    private static final String FROM_DC = "SHARB";
+    private static final String DEST_DC = "SHAXY";
 
     @Mock
     private MetaCache metaCache;
@@ -39,14 +49,11 @@ public class MigrationServiceImplSentinelBeaconTest {
     @Mock
     private ConsoleConfig config;
     @Mock
-    private XpipeMeta xpipeMeta;
-    @Mock
-    private DcMeta dcMeta;
-    @Mock
-    private ClusterMeta clusterMeta;
+    private MigrationCluster migrationCluster;
 
     private MigrationServiceImpl migrationService;
-    private Map<String, ClusterMeta> clusters;
+    private Map<String, DcMeta> dcs;
+    private XpipeMeta realXpipeMeta;
 
     @Before
     public void setup() {
@@ -55,21 +62,16 @@ public class MigrationServiceImplSentinelBeaconTest {
         ReflectionTestUtils.setField(migrationService, "beaconManager", beaconManager);
         ReflectionTestUtils.setField(migrationService, "config", config);
 
-        clusters = new HashMap<>();
-        Map<String, DcMeta> dcs = new HashMap<>();
-        dcs.put(CURRENT_DC, dcMeta);
-
+        dcs = new HashMap<>();
+        XpipeMeta xpipeMeta = mock(XpipeMeta.class);
         when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
         when(xpipeMeta.getDcs()).thenReturn(dcs);
-        when(dcMeta.getClusters()).thenReturn(clusters);
     }
 
     @Test
     public void shouldSkipWhenClusterNotInGray() {
-        clusters.put(CLUSTER, clusterMeta);
-        when(clusterMeta.getOrgId()).thenReturn(10);
-        when(clusterMeta.getAzGroupType()).thenReturn(ClusterType.ONE_WAY.toString());
-        when(config.supportSentinelBeacon(10L, CLUSTER)).thenReturn(false);
+        putClusterInDc(CURRENT_DC, ClusterType.ONE_WAY);
+        when(config.supportSentinelBeacon(eq(10L), eq(CLUSTER), anyString(), any(ClusterType.class))).thenReturn(false);
 
         RetMessage retMessage = migrationService.preMigrateSentinelBeacon(CLUSTER);
 
@@ -80,10 +82,8 @@ public class MigrationServiceImplSentinelBeaconTest {
 
     @Test
     public void shouldUnregisterInPreMigrateWhenEnabled() {
-        clusters.put(CLUSTER, clusterMeta);
-        when(clusterMeta.getOrgId()).thenReturn(10);
-        when(clusterMeta.getAzGroupType()).thenReturn(ClusterType.ONE_WAY.toString());
-        when(config.supportSentinelBeacon(10L, CLUSTER)).thenReturn(true);
+        putClusterInDc(CURRENT_DC, ClusterType.ONE_WAY);
+        when(config.supportSentinelBeacon(eq(10L), eq(CLUSTER), anyString(), any(ClusterType.class))).thenReturn(true);
 
         RetMessage retMessage = migrationService.preMigrateSentinelBeacon(CLUSTER);
 
@@ -94,11 +94,8 @@ public class MigrationServiceImplSentinelBeaconTest {
 
     @Test
     public void shouldRegisterInPostMigrateWhenEnabled() {
-        clusters.put(CLUSTER, clusterMeta);
-        when(clusterMeta.getOrgId()).thenReturn(10);
-        when(clusterMeta.getAzGroupType()).thenReturn("");
-        when(clusterMeta.getType()).thenReturn(ClusterType.SINGLE_DC.toString());
-        when(config.supportSentinelBeacon(10L, CLUSTER)).thenReturn(true);
+        putClusterInDc(CURRENT_DC, ClusterType.SINGLE_DC);
+        when(config.supportSentinelBeacon(eq(10L), eq(CLUSTER), anyString(), any(ClusterType.class))).thenReturn(true);
 
         Map<String, HostPort> shardMasters = new HashMap<>();
         shardMasters.put("shard1", new HostPort("127.0.0.1", 6379));
@@ -117,5 +114,95 @@ public class MigrationServiceImplSentinelBeaconTest {
         assertEquals(RetMessage.FAIL_STATE, retMessage.getState());
         assertTrue(retMessage.getMessage().contains("not found"));
         verifyNoInteractions(beaconManager);
+    }
+
+    @Test
+    public void shouldMigrateOnlyWhenTargetDcInIdcGray() {
+        installIdcGrayConfig(FROM_DC);
+        putRealClusterInDc(FROM_DC);
+        putRealClusterInDc(DEST_DC);
+        when(migrationCluster.clusterName()).thenReturn(CLUSTER);
+
+        assertTrue(migrationService.shouldMigrateSentinelBeacon(migrationCluster, FROM_DC));
+        assertFalse(migrationService.shouldMigrateSentinelBeacon(migrationCluster, DEST_DC));
+    }
+
+    @Test
+    public void preMigrateShouldUnregisterFromDcWhenOnlyFromDcInIdcGray() {
+        installIdcGrayConfig(FROM_DC);
+        putRealClusterInDc(FROM_DC);
+        putRealClusterInDc(DEST_DC);
+        when(migrationCluster.clusterName()).thenReturn(CLUSTER);
+        when(migrationCluster.fromDc()).thenReturn(FROM_DC);
+
+        RetMessage retMessage = migrationService.preMigrateSentinelBeacon(migrationCluster);
+
+        assertEquals(RetMessage.SUCCESS_STATE, retMessage.getState());
+        verify(beaconManager).unregisterCluster(eq(CLUSTER), eq(FROM_DC), eq(ClusterType.ONE_WAY), eq(10),
+                eq(BeaconRouteType.SENTINEL));
+    }
+
+    @Test
+    public void postMigrateShouldSkipWhenDestDcNotInIdcGray() {
+        installIdcGrayConfig(FROM_DC);
+        putRealClusterInDc(FROM_DC);
+        putRealClusterInDc(DEST_DC);
+        when(migrationCluster.clusterName()).thenReturn(CLUSTER);
+        when(migrationCluster.destDc()).thenReturn(DEST_DC);
+
+        Map<String, HostPort> shardMasters = Collections.singletonMap("shard1", new HostPort("127.0.0.1", 6379));
+        RetMessage retMessage = migrationService.postMigrateSentinelBeacon(migrationCluster, shardMasters);
+
+        assertEquals(RetMessage.SUCCESS_STATE, retMessage.getState());
+        assertTrue(retMessage.getMessage().contains("skipped"));
+        verifyNoInteractions(beaconManager);
+    }
+
+    @Test
+    public void postMigrateShouldRegisterWhenDestDcInIdcGray() {
+        installIdcGrayConfig(DEST_DC);
+        putRealClusterInDc(FROM_DC);
+        putRealClusterInDc(DEST_DC);
+        when(migrationCluster.clusterName()).thenReturn(CLUSTER);
+        when(migrationCluster.destDc()).thenReturn(DEST_DC);
+
+        Map<String, HostPort> shardMasters = Collections.singletonMap("shard1", new HostPort("127.0.0.1", 6379));
+        RetMessage retMessage = migrationService.postMigrateSentinelBeacon(migrationCluster, shardMasters);
+
+        assertEquals(RetMessage.SUCCESS_STATE, retMessage.getState());
+        verify(beaconManager).registerCluster(eq(CLUSTER), eq(DEST_DC), eq(ClusterType.ONE_WAY), eq(10),
+                eq(BeaconRouteType.SENTINEL), eq(shardMasters));
+    }
+
+    private void installIdcGrayConfig(String grayDc) {
+        Map<String, Set<String>> idcGray = new HashMap<>();
+        idcGray.put(grayDc.toLowerCase(), new HashSet<>(Collections.singletonList(ClusterType.ONE_WAY.name())));
+        ConsoleConfig idcConfig = BeaconSentinelGrayTestConfigs.withIdcClusterTypes(idcGray);
+        ReflectionTestUtils.setField(migrationService, "config", idcConfig);
+
+        realXpipeMeta = new XpipeMeta();
+        when(metaCache.getXpipeMeta()).thenReturn(realXpipeMeta);
+    }
+
+    private void putClusterInDc(String dc, ClusterType clusterType) {
+        ClusterMeta clusterMeta = mock(ClusterMeta.class);
+        when(clusterMeta.getOrgId()).thenReturn(10);
+        when(clusterMeta.getType()).thenReturn(clusterType.toString());
+        when(clusterMeta.getAzGroupType()).thenReturn("");
+        DcMeta dcMeta = mock(DcMeta.class);
+        Map<String, ClusterMeta> clusters = new HashMap<>();
+        clusters.put(CLUSTER, clusterMeta);
+        when(dcMeta.getClusters()).thenReturn(clusters);
+        dcs.put(dc, dcMeta);
+    }
+
+    private void putRealClusterInDc(String dc) {
+        ClusterMeta clusterMeta = new ClusterMeta(CLUSTER)
+                .setOrgId(10)
+                .setType(ClusterType.ONE_WAY.name())
+                .setActiveDc(dc);
+        DcMeta dcMeta = new DcMeta(dc);
+        dcMeta.addCluster(clusterMeta);
+        realXpipeMeta.addDc(dcMeta);
     }
 }

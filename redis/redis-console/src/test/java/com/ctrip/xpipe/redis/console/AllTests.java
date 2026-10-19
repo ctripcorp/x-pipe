@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.checker.DefaultCheckerManagerTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
+import com.ctrip.xpipe.redis.console.migration.command.ReactorMigrationCommandBuilderImplAddSentinelTest;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManagerTest;
 import com.ctrip.xpipe.redis.console.controller.api.BeaconRouteControllerTest;
 import com.ctrip.xpipe.redis.console.controller.api.checker.ConsoleCheckerControllerDcAllMetaTest;
@@ -206,6 +207,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultMigrationEventManagerTest.class,
         MigrationServiceImplPaginationTest.class,
         MigrationServiceImplSentinelBeaconTest.class,
+        ReactorMigrationCommandBuilderImplAddSentinelTest.class,
         MigrationServiceImplHeteroPreCheckTest.class,
         SentinelConfigCheckTest.class,
         DelayServiceTest.class,

@@ -37,7 +37,7 @@ public class MigrationPublishState extends AbstractMigrationPublishState impleme
 	@Override
 	public void doAction() {
 		// Beacon online should be triggered before publish and not block DR flow.
-		if (getHolder().getMigrationService().shouldMigrateSentinelBeacon(getHolder())) {
+		if (getHolder().getMigrationService().shouldMigrateSentinelBeacon(getHolder(), getHolder().destDc())) {
 			getHolder().getMigrationService().postMigrateSentinelBeaconAsync(getHolder(), buildShardMasters());
 		} else {
 			logger.info("[doAction][{}] no beacon", getHolder().clusterName());

@@ -19,12 +19,15 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.unidal.tuple.Triple;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 public class DefaultSentinelMonitorsCheckTest {
+
+    private static final String CURRENT_DC = FoundationService.DEFAULT.getDataCenter();
 
     @InjectMocks
     private SentinelMonitorsCheck checker;
@@ -178,7 +181,7 @@ public class DefaultSentinelMonitorsCheckTest {
         when(config.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(null);
         checker.checkSentinel(new SentinelMeta().setClusterType("one_way").setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),
-                new HostPort("127.0.0.1", 5000));
+                new HostPort("127.0.0.1", 5000), CURRENT_DC);
         verify(alertManager, atLeastOnce()).alert(eq(null), eq(null), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
         verify(sentinelManager, atLeastOnce()).removeSentinelMonitor(any(), any());
     }
@@ -190,7 +193,7 @@ public class DefaultSentinelMonitorsCheckTest {
         when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(new Triple<>("cluster", "shard",1L));
         checker.setMetaCache(metaCache);
         checker.checkSentinel(new SentinelMeta().setClusterType("one_way").setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002").setId(1L),
-                new HostPort("127.0.0.1", 5000));
+                new HostPort("127.0.0.1", 5000), CURRENT_DC);
         verify(alertManager, never()).alert(eq(null), eq(null), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
         verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
     }
@@ -228,7 +231,7 @@ public class DefaultSentinelMonitorsCheckTest {
         when(config.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(new Triple<>(cluster, shard,1L));
         checker.checkSentinel(new SentinelMeta().setClusterType("one_way").setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002").setId(3L),
-                new HostPort("127.0.0.1", 5000));
+                new HostPort("127.0.0.1", 5000), CURRENT_DC);
         verify(alertManager).alert(eq(cluster), eq(shard), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
         verify(sentinelManager).removeSentinelMonitor(any(), any());
     }
@@ -266,7 +269,7 @@ public class DefaultSentinelMonitorsCheckTest {
         when(config.supportSentinelHealthCheck(any(),any())).thenReturn(true);
         when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(null);
         checker.checkSentinel(new SentinelMeta().setClusterType("one_way").setAddress("127.0.0.1:5000,127.0.0.1:5001,127.0.0.1:5002"),
-                new HostPort("127.0.0.1", 5000));
+                new HostPort("127.0.0.1", 5000), CURRENT_DC);
         verify(alertManager).alert(eq(cluster), eq(shard), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
         verify(sentinelManager).removeSentinelMonitor(any(), any());
     }
@@ -300,14 +303,74 @@ public class DefaultSentinelMonitorsCheckTest {
             }
         });
         when(config.supportSentinelHealthCheck(any(), any())).thenReturn(true);
-        when(config.supportSentinelBeacon(anyLong(), anyString())).thenReturn(true);
+        when(config.supportSentinelBeacon(anyLong(), anyString(), anyString(), any())).thenReturn(true);
         when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(new Triple<>(cluster, shard, 1L));
 
         checker.checkSentinel(new SentinelMeta().setClusterType("one_way").setAddress("127.0.0.1:5000").setId(1L),
-                new HostPort("127.0.0.1", 5000));
+                new HostPort("127.0.0.1", 5000), CURRENT_DC);
 
         verify(sentinelManager).removeSentinelMonitor(any(), any());
         verify(alertManager).alert(eq(cluster), eq(shard), eq(null), eq(ALERT_TYPE.SENTINEL_MONITOR_INCONSIS), anyString());
+    }
+
+    @Test
+    public void shouldRemoveOnlyWhenCheckDcInIdcGray() throws Exception {
+        String cluster = "idc-gray-cluster";
+        String shard = "test-shard";
+        String grayDc = CURRENT_DC;
+        String nonGrayDc = "other-dc";
+        String monitorName = SentinelUtil.getSentinelMonitorName(cluster, shard, grayDc);
+        String result = "sentinel_masters:1\n" +
+                "sentinel_tilt:0\n" +
+                "sentinel_running_scripts:0\n" +
+                "sentinel_scripts_queue_length:0\n" +
+                "master0:name=" + monitorName + ",status=ok,address=10.5.109.151:6447,slaves=2,sentinels=5";
+
+        when(sentinelManager.infoSentinel(any())).thenReturn(new AbstractCommand<String>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(result);
+            }
+
+            @Override
+            protected void doReset() {
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(config.supportSentinelHealthCheck(any(), any())).thenReturn(false);
+        when(config.supportSentinelBeacon(anyLong(), anyString(), anyString(), any()))
+                .thenAnswer(invocation -> grayDc.equalsIgnoreCase(invocation.getArgument(2, String.class)));
+        when(metaCache.findClusterShardBySentinelMonitor(any())).thenReturn(new Triple<>(cluster, shard, 1L));
+
+        checker.checkSentinel(new SentinelMeta().setClusterType("one_way").setAddress("127.0.0.1:5000").setId(1L),
+                new HostPort("127.0.0.1", 5000), grayDc);
+        verify(sentinelManager, times(1)).removeSentinelMonitor(any(), any());
+
+        reset(sentinelManager, alertManager);
+        when(sentinelManager.infoSentinel(any())).thenReturn(new AbstractCommand<String>() {
+            @Override
+            protected void doExecute() throws Throwable {
+                future().setSuccess(result);
+            }
+
+            @Override
+            protected void doReset() {
+            }
+
+            @Override
+            public String getName() {
+                return null;
+            }
+        });
+        when(alertManager.shouldAlert(any())).thenReturn(true);
+
+        checker.checkSentinel(new SentinelMeta().setClusterType("one_way").setAddress("127.0.0.1:5000").setId(1L),
+                new HostPort("127.0.0.1", 5000), nonGrayDc);
+        verify(sentinelManager, never()).removeSentinelMonitor(any(), any());
     }
 
 }

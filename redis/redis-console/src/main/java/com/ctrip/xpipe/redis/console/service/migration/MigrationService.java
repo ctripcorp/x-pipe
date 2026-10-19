@@ -108,6 +108,6 @@ public interface MigrationService {
 
     void postMigrateSentinelBeaconAsync(MigrationCluster migrationCluster, Map<String, HostPort> shardMasters);
 
-    boolean shouldMigrateSentinelBeacon(MigrationCluster migrationCluster);
+    boolean shouldMigrateSentinelBeacon(MigrationCluster migrationCluster, String dc);
 
 }

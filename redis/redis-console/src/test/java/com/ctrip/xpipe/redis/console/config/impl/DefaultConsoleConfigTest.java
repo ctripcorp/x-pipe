@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.console.config.impl;
 import com.ctrip.xpipe.api.config.Config;
 import com.ctrip.xpipe.api.config.ConfigChangeListener;
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.config.impl.CheckConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
 import com.ctrip.xpipe.redis.checker.config.impl.ConsoleConfigBean;
@@ -16,7 +17,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -116,6 +119,63 @@ public class DefaultConsoleConfigTest extends AbstractConsoleTest {
         properties.put(CheckConfigBean.KEY_KEEPER_CAPABILITY_REFRESH_INTERVAL_MILLI, "1234");
         Assert.assertEquals(1234, checkConfigBean.getKeeperCapabilityRefreshIntervalMilli());
         Assert.assertEquals(1234, consoleConfig.getKeeperCapabilityRefreshIntervalMilli());
+    }
+
+    @Test
+    public void testSupportSentinelBeaconByIdcClusterType() {
+        Map<String, Set<String>> idcClusterTypes = new HashMap<>();
+        idcClusterTypes.put("jq", new HashSet<>(Collections.singletonList("one_way")));
+        DefaultConsoleConfig config = BeaconSentinelGrayTestConfigs.withIdcClusterTypes(idcClusterTypes);
+
+        Assert.assertTrue(config.supportSentinelBeacon(1L, "other-cluster", "JQ", ClusterType.ONE_WAY));
+        Assert.assertFalse(config.supportSentinelBeacon(1L, "other-cluster", "jq", ClusterType.SINGLE_DC));
+        Assert.assertFalse(config.supportSentinelBeacon(1L, "other-cluster", "oy", ClusterType.ONE_WAY));
+        // HETERO must be resolved to azGroupType before matching
+        Assert.assertFalse(config.supportSentinelBeacon(1L, "other-cluster", "jq", ClusterType.HETERO));
+    }
+
+    @Test
+    public void testSupportSentinelBeaconUnionOfGrayRules() {
+        Map<String, Set<String>> idcClusterTypes = new HashMap<>();
+        idcClusterTypes.put("jq", Collections.singleton(ClusterType.LOCAL_DC.name()));
+        DefaultConsoleConfig config = new DefaultConsoleConfig(checkConfigBean,
+                new ConsoleConfigBean(FoundationService.DEFAULT),
+                new DataCenterConfigBean(),
+                new StubCommonConfigBean(Collections.singleton("gray-cluster"),
+                        Collections.singleton(9L), idcClusterTypes));
+
+        Assert.assertTrue(config.supportSentinelBeacon(1L, "gray-cluster", "oy", ClusterType.ONE_WAY));
+        Assert.assertTrue(config.supportSentinelBeacon(9L, "other-cluster", "oy", ClusterType.ONE_WAY));
+        Assert.assertTrue(config.supportSentinelBeacon(1L, "other-cluster", "jq", ClusterType.LOCAL_DC));
+        Assert.assertFalse(config.supportSentinelBeacon(1L, "other-cluster", "oy", ClusterType.ONE_WAY));
+    }
+
+    private static class StubCommonConfigBean extends CommonConfigBean {
+
+        private final Set<String> grayClusters;
+        private final Set<Long> grayBus;
+        private final Map<String, Set<String>> idcClusterTypes;
+
+        StubCommonConfigBean(Set<String> grayClusters, Set<Long> grayBus, Map<String, Set<String>> idcClusterTypes) {
+            this.grayClusters = grayClusters;
+            this.grayBus = grayBus;
+            this.idcClusterTypes = idcClusterTypes;
+        }
+
+        @Override
+        public Set<String> getBeaconSentinelGrayClusters() {
+            return grayClusters;
+        }
+
+        @Override
+        public Set<Long> getBeaconSentinelGrayBus() {
+            return grayBus;
+        }
+
+        @Override
+        public Map<String, Set<String>> getBeaconSentinelGrayIdcClusterTypes() {
+            return idcClusterTypes;
+        }
     }
 
     private static class TestableCheckConfigBean extends CheckConfigBean {

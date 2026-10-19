@@ -20,7 +20,8 @@ public class MigrationPreMigratingStateTest extends AbstractMigrationStateTest {
     @Before
     public void beforeMigrationPreMigratingStateTest() {
         preMigratingState = new MigrationPreMigratingState(migrationCluster);
-        when(migrationCluster.getMigrationService().shouldMigrateSentinelBeacon(migrationCluster)).thenReturn(true);
+        when(migrationCluster.getMigrationService().shouldMigrateSentinelBeacon(eq(migrationCluster), nullable(String.class)))
+                .thenReturn(true);
     }
 
     @Test
@@ -51,7 +52,8 @@ public class MigrationPreMigratingStateTest extends AbstractMigrationStateTest {
 
     @Test
     public void shouldSkipWhenSentinelBeaconNotInGray() {
-        when(migrationCluster.getMigrationService().shouldMigrateSentinelBeacon(migrationCluster)).thenReturn(false);
+        when(migrationCluster.getMigrationService().shouldMigrateSentinelBeacon(eq(migrationCluster), nullable(String.class)))
+                .thenReturn(false);
 
         preMigratingState.getStateActionState().tryAction();
 
@@ -60,5 +62,19 @@ public class MigrationPreMigratingStateTest extends AbstractMigrationStateTest {
         verify(migrationCluster.getMigrationService(), never()).preMigrateSentinelBeacon(eq(migrationCluster));
         verify(migrationCluster).updateStat(isA(MigrationMigratingState.class));
         verify(migrationCluster).process();
+    }
+
+    @Test
+    public void shouldJudgeByFromDc() {
+        when(migrationCluster.fromDc()).thenReturn("SHARB");
+        when(migrationCluster.getMigrationService().shouldMigrateSentinelBeacon(eq(migrationCluster), eq("SHARB")))
+                .thenReturn(true);
+        when(migrationCluster.getMigrationService().preMigrateSentinelBeacon(migrationCluster))
+                .thenReturn(RetMessage.createSuccessMessage("ok"));
+
+        preMigratingState.getStateActionState().tryAction();
+
+        verify(migrationCluster.getMigrationService()).shouldMigrateSentinelBeacon(migrationCluster, "SHARB");
+        verify(migrationCluster.getMigrationService()).preMigrateSentinelBeacon(migrationCluster);
     }
 }

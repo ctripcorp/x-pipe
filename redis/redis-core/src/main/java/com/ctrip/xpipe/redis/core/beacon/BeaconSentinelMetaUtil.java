@@ -29,6 +29,25 @@ public final class BeaconSentinelMetaUtil {
         return clusterType;
     }
 
+    public static ClusterType resolveEffectiveClusterType(XpipeMeta xpipeMeta, String dc, String clusterName) {
+        ClusterMeta clusterMeta = findClusterMeta(xpipeMeta, dc, clusterName);
+        if (clusterMeta == null) {
+            return null;
+        }
+        return resolveEffectiveClusterType(clusterMeta);
+    }
+
+    public static ClusterMeta findClusterMeta(XpipeMeta xpipeMeta, String dc, String clusterName) {
+        if (StringUtil.isEmpty(clusterName)) {
+            return null;
+        }
+        DcMeta dcMeta = findDcMeta(xpipeMeta, dc);
+        if (dcMeta == null || dcMeta.getClusters() == null) {
+            return null;
+        }
+        return dcMeta.getClusters().get(clusterName);
+    }
+
     public static boolean isSentinelManagedClusterType(ClusterType clusterType) {
         return clusterType == ClusterType.ONE_WAY
                 || clusterType == ClusterType.SINGLE_DC

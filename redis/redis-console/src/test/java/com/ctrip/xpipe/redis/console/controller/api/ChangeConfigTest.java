@@ -3,12 +3,17 @@ package com.ctrip.xpipe.redis.console.controller.api;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
+import com.ctrip.xpipe.redis.console.config.impl.BeaconSentinelGrayTestConfigs;
 import com.ctrip.xpipe.redis.console.model.ClusterTbl;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.model.BeaconCheckConfigRequest;
 import com.ctrip.xpipe.redis.console.service.BeaconCheckConfigService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
+import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
+import com.ctrip.xpipe.redis.core.entity.DcMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,8 +22,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(MockitoJUnitRunner.Silent.class)
@@ -39,6 +50,9 @@ public class ChangeConfigTest {
     @Mock
     private BeaconMetaService beaconMetaService;
 
+    @Mock
+    private MetaCache metaCache;
+
     @InjectMocks
     private ChangeConfig controller;
 
@@ -54,7 +68,8 @@ public class ChangeConfigTest {
         clusterTbl.setClusterOrgId(1L);
         clusterTbl.setClusterType(ClusterType.SINGLE_DC.name());
         Mockito.when(clusterService.find(clusterName)).thenReturn(clusterTbl);
-        Mockito.when(consoleConfig.supportSentinelBeacon(1L, clusterName)).thenReturn(true);
+        Mockito.when(consoleConfig.supportSentinelBeacon(Mockito.eq(1L), Mockito.eq(clusterName),
+                Mockito.anyString(), Mockito.any(ClusterType.class))).thenReturn(true);
         Mockito.when(consoleConfig.getConfigDefaultRestoreHours()).thenReturn(configDefaultRestoreHours);
         Mockito.when(consoleConfig.getHealthCheckSuspendMinutes()).thenReturn(noAlarmMinutesForClusterUpdate);
     }
@@ -148,12 +163,49 @@ public class ChangeConfigTest {
 
     @Test
     public void testStopBeaconCheckRejectsNonSentinelBeaconCluster() throws Exception {
-        Mockito.when(consoleConfig.supportSentinelBeacon(1L, clusterName)).thenReturn(false);
+        Mockito.when(consoleConfig.supportSentinelBeacon(Mockito.eq(1L), Mockito.eq(clusterName),
+                Mockito.anyString(), Mockito.any(ClusterType.class))).thenReturn(false);
         BeaconCheckConfigRequest request = new BeaconCheckConfigRequest()
                 .setClusterName(clusterName).setDc("jq").setShards(java.util.Collections.singletonList("shard1"));
         RetMessage result = controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, request);
         Assert.assertEquals(RetMessage.FAIL_STATE, result.getState());
         Assert.assertEquals("cluster cluster1 is not managed by beacon sentinel mode", result.getMessage());
+    }
+
+    @Test
+    public void testStopBeaconCheckRespectsIdcGrayConfig() throws Exception {
+        ClusterTbl clusterTbl = new ClusterTbl();
+        clusterTbl.setClusterOrgId(1L);
+        clusterTbl.setClusterType(ClusterType.ONE_WAY.name());
+        Mockito.when(clusterService.find(clusterName)).thenReturn(clusterTbl);
+
+        Map<String, Set<String>> idcGray = new HashMap<>();
+        idcGray.put("jq", new HashSet<>(Collections.singletonList(ClusterType.ONE_WAY.name())));
+        ConsoleConfig idcConfig = BeaconSentinelGrayTestConfigs.withIdcClusterTypes(idcGray);
+        ReflectionTestUtils.setField(controller, "consoleConfig", idcConfig);
+
+        XpipeMeta xpipeMeta = new XpipeMeta();
+        DcMeta jqDc = new DcMeta("jq");
+        jqDc.addCluster(new ClusterMeta(clusterName)
+                .setOrgId(1).setType(ClusterType.ONE_WAY.name()).setActiveDc("jq"));
+        DcMeta oyDc = new DcMeta("oy");
+        oyDc.addCluster(new ClusterMeta(clusterName)
+                .setOrgId(1).setType(ClusterType.ONE_WAY.name()).setActiveDc("jq"));
+        xpipeMeta.addDc(jqDc);
+        xpipeMeta.addDc(oyDc);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+
+        BeaconCheckConfigRequest jqRequest = new BeaconCheckConfigRequest()
+                .setClusterName(clusterName).setDc("jq").setShards(Collections.singletonList("shard1"));
+        RetMessage jqResult = controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, jqRequest);
+        Assert.assertEquals(RetMessage.SUCCESS_STATE, jqResult.getState());
+        Mockito.verify(beaconCheckConfigService).stopBeaconCheck(clusterName, "jq", jqRequest.getShards(), 30);
+
+        BeaconCheckConfigRequest oyRequest = new BeaconCheckConfigRequest()
+                .setClusterName(clusterName).setDc("oy").setShards(Collections.singletonList("shard1"));
+        RetMessage oyResult = controller.stopBeaconCheck(Mockito.mock(HttpServletRequest.class), 30, oyRequest);
+        Assert.assertEquals(RetMessage.FAIL_STATE, oyResult.getState());
+        Assert.assertEquals("cluster cluster1 is not managed by beacon sentinel mode", oyResult.getMessage());
     }
 
 }

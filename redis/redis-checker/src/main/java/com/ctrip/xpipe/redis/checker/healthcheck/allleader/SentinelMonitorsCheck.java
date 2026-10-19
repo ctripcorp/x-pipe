@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.checker.alert.ALERT_TYPE;
 import com.ctrip.xpipe.redis.checker.alert.AlertManager;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.allleader.sentinel.SentinelMonitors;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.entity.SentinelMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -85,14 +86,14 @@ public class SentinelMonitorsCheck extends AbstractAllCheckerLeaderTask {
             for(SentinelMeta sentinelMeta: sentinelMetas) {
                 List<HostPort> sentinels = IpUtils.parseAsHostPorts(sentinelMeta.getAddress());
                 for(HostPort hostPort: sentinels) {
-                    checkSentinel(sentinelMeta, hostPort);
+                    checkSentinel(sentinelMeta, hostPort, dcMeta.getId());
                 }
             }
         }
     }
     
     
-    public void checkSentinel(SentinelMeta sentinelMeta, HostPort sentinelHostPort) {
+    public void checkSentinel(SentinelMeta sentinelMeta, HostPort sentinelHostPort, String dcId) {
         Sentinel sentinel = new Sentinel(sentinelHostPort.toString(), sentinelHostPort.getHost(), sentinelHostPort.getPort());
         String infoSentinel = sentinelManager.infoSentinel(sentinel).
                 execute().getOrHandle(LONG_SENTINEL_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS, throwable -> {
@@ -113,10 +114,16 @@ public class SentinelMonitorsCheck extends AbstractAllCheckerLeaderTask {
         
         for(String monitorName: sentinelMonitors.getMonitors()) {
             SentinelUtil.SentinelInfo sentinelInfo = SentinelUtil.SentinelInfo.fromMonitorName(monitorName);
-            ClusterType clusterType = ClusterType.lookup(sentinelMeta.getClusterType());
+            ClusterType clusterType = metaCache == null ? null
+                    : BeaconSentinelMetaUtil.resolveEffectiveClusterType(metaCache.getXpipeMeta(), dcId,
+                    sentinelInfo.getClusterName());
+            if (clusterType == null) {
+                clusterType = ClusterType.lookup(sentinelMeta.getClusterType());
+            }
             boolean supportSentinelHealthCheck = config.supportSentinelHealthCheck(clusterType, sentinelInfo.getClusterName());
             int clusterOrgId = getClusterOrgId(sentinelInfo.getClusterName());
-            boolean supportSentinelBeacon = config.supportSentinelBeacon(clusterOrgId, sentinelInfo.getClusterName());
+            boolean supportSentinelBeacon = config.supportSentinelBeacon(clusterOrgId, sentinelInfo.getClusterName(),
+                    dcId, clusterType);
             if (!supportSentinelHealthCheck && !supportSentinelBeacon) {
                 continue;
             }

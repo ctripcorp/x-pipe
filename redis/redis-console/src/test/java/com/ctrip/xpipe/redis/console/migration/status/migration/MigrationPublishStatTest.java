@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -49,7 +50,7 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 		when(migrationCluster.getRedisService()).thenReturn(redisService);
 		when(migrationCluster.getMigrationService()).thenReturn(migrationService);
 		when(migrationCluster.getMigrationShards()).thenReturn(Collections.emptyList());
-		when(migrationService.shouldMigrateSentinelBeacon(migrationCluster)).thenReturn(true);
+		when(migrationService.shouldMigrateSentinelBeacon(eq(migrationCluster), nullable(String.class))).thenReturn(true);
 		
 	}
 
@@ -183,7 +184,7 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 
 	@Test
 	public void publishSuccessShouldSkipPostMigrateSentinelBeaconAsyncWhenNotInGray() {
-		when(migrationService.shouldMigrateSentinelBeacon(migrationCluster)).thenReturn(false);
+		when(migrationService.shouldMigrateSentinelBeacon(eq(migrationCluster), nullable(String.class))).thenReturn(false);
 
 		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
 		stat.setPublishService(new AbstractOuterClientService() {
@@ -212,5 +213,40 @@ public class MigrationPublishStatTest extends AbstractConsoleTest {
 		stat.getStateActionState().tryAction();
 		sleep(50);
 		verify(migrationService, never()).postMigrateSentinelBeaconAsync(eq(migrationCluster), anyMap());
+	}
+
+	@Test
+	public void shouldJudgePostMigrateByDestDc() {
+		when(migrationCluster.destDc()).thenReturn("SHAXY");
+		when(migrationService.shouldMigrateSentinelBeacon(eq(migrationCluster), eq("SHAXY"))).thenReturn(true);
+
+		MigrationPublishState stat = new MigrationPublishState(migrationCluster);
+		stat.setPublishService(new AbstractOuterClientService() {
+			@Override
+			public DcMeta getOutClientDcMeta(String dc) throws Exception {
+				return null;
+			}
+
+			@Override
+			public MigrationPublishResult doMigrationPublish(String clusterName, String shardName, String primaryDcName,
+														 InetSocketAddress newMaster) {
+				MigrationPublishResult result = new MigrationPublishResult();
+				result.setSuccess(true);
+				return result;
+			}
+
+			@Override
+			public MigrationPublishResult doMigrationPublish(String clusterName, String primaryDcName,
+														 List<InetSocketAddress> newMasters) {
+				MigrationPublishResult result = new MigrationPublishResult();
+				result.setSuccess(true);
+				return result;
+			}
+		});
+
+		stat.getStateActionState().tryAction();
+		sleep(50);
+		verify(migrationService).shouldMigrateSentinelBeacon(migrationCluster, "SHAXY");
+		verify(migrationService).postMigrateSentinelBeaconAsync(eq(migrationCluster), anyMap());
 	}
 }
