@@ -182,6 +182,22 @@ public class TailCacheFileSystemModeAndRetryTest {
     // -------------------------------------------------------------------------
 
     @Test
+    public void testAtomicReplaceWriteReturnsIoFuture() throws Exception {
+        String p = path("atomic-write-future");
+        AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE,
+                AbstractStorageFile.ReplaceMode.ATOMIC, false, null).get();
+        delegate.hang(Op.FILE_WRITE);
+
+        CompletableFuture<Long> write = fs.write(writer, buf(bytes(1, 2, 3), true));
+        delegate.awaitEntered();
+        assertFalse("atomic replace write must wait for backing IO", write.isDone());
+
+        delegate.releaseFault();
+        assertEquals(3L, (long) write.get(5, TimeUnit.SECONDS));
+        fs.close(writer).get(5, TimeUnit.SECONDS);
+    }
+
+    @Test
     public void testAsyncNoFsAsyncDrainsPriorInFlightWriteWithoutLossOrDuplication() throws Exception {
         String p = path("switch-inflight");
         AsyncFile writer = fs.open(p, AbstractStorageFile.OpenMode.WRITE, AbstractStorageFile.ReplaceMode.NORMAL, false, null).get();

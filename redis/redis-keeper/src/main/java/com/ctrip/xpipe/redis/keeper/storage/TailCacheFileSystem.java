@@ -1815,7 +1815,7 @@ public class TailCacheFileSystem implements AsyncFileSystem {
             return writeSize;
         }, writeBuf);
         registerInFlight(id, ioFuture);
-        if (!useCache) {
+        if (!useCache || file.isAtomicReplace()) {
             return ioFuture;
         }
         return CompletableFuture.completedFuture(writeSize);
