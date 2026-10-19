@@ -1,0 +1,23 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/beacon/BeaconSentinelMetaUtil.java
+  s_6214cd8dd182e4::t_2e0f47b11c409b 25-27
+redis/redis-checker/src/test/java/com/ctrip/xpipe/redis/checker/healthcheck/actions/sentinel/SentinelHelloCheckActionTest.java
+  s_6214cd8dd182e4::t_8ab25f940b7188 432,439
+redis/redis-core/src/test/java/com/ctrip/xpipe/redis/core/beacon/BeaconSentinelMetaUtilTest.java
+  s_6214cd8dd182e4::t_161956eba632ca 38-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.50-trip",
+  "base_commit_sha": "879b0abc7f5d45eda8b28254a52c2fe826816563",
+  "prompts": {},
+  "sessions": {
+    "s_6214cd8dd182e4": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8dc82600-8125-4133-99d6-82b52071917a",
+        "model": "default"
+      },
+      "human_author": "hany_li <hany_li@trip.com>"
+    }
+  }
+}
