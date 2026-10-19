@@ -22,6 +22,9 @@ public final class BeaconSentinelMetaUtil {
     }
 
     public static ClusterType resolveEffectiveClusterType(ClusterMeta clusterMeta) {
+        if (clusterMeta == null || StringUtil.isEmpty(clusterMeta.getType())) {
+            return null;
+        }
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
         if (clusterType == ClusterType.HETERO && !StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
             return ClusterType.lookup(clusterMeta.getAzGroupType());

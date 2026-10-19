@@ -35,6 +35,10 @@ public class BeaconSentinelMetaUtilTest {
                 BeaconSentinelMetaUtil.resolveEffectiveClusterType(xpipeMeta, "JQ", "cluster1"));
         Assert.assertNull(BeaconSentinelMetaUtil.resolveEffectiveClusterType(xpipeMeta, "jq", "missing"));
         Assert.assertNull(BeaconSentinelMetaUtil.findClusterMeta(null, "jq", "cluster1"));
+
+        ClusterMeta noType = new ClusterMeta("cluster1");
+        Assert.assertNull(BeaconSentinelMetaUtil.resolveEffectiveClusterType(noType));
+        Assert.assertNull(BeaconSentinelMetaUtil.resolveEffectiveClusterType(null));
     }
 
     @Test

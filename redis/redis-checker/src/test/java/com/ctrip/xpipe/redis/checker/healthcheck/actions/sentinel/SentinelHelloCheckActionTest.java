@@ -429,12 +429,14 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
 
         ClusterMeta activeDcClusterMeta = new ClusterMeta();
         activeDcClusterMeta.setId(clusterName);
+        activeDcClusterMeta.setType(ClusterType.ONE_WAY.name());
         activeDcClusterMeta.setActiveDc("dc1");
         activeDcClusterMeta.addShard(activeDcShard1Meta);
         activeDcClusterMeta.addShard(activeDcShard2Meta);
         activeDcClusterMeta.addShard(activeDcShard3Meta);
         ClusterMeta backupDcClusterMeta = new ClusterMeta();
         backupDcClusterMeta.setId(clusterName);
+        backupDcClusterMeta.setType(ClusterType.ONE_WAY.name());
         backupDcClusterMeta.setActiveDc("dc1");
         backupDcClusterMeta.addShard(backupDcShard1Meta);
         backupDcClusterMeta.addShard(backupDcShard2Meta);
