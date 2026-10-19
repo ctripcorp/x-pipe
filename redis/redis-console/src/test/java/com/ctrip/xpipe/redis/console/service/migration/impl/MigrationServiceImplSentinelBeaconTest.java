@@ -64,8 +64,9 @@ public class MigrationServiceImplSentinelBeaconTest {
 
         dcs = new HashMap<>();
         XpipeMeta xpipeMeta = mock(XpipeMeta.class);
-        when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
-        when(xpipeMeta.getDcs()).thenReturn(dcs);
+        // overridden by installIdcGrayConfig in IDC-gray cases
+        lenient().when(metaCache.getXpipeMeta()).thenReturn(xpipeMeta);
+        lenient().when(xpipeMeta.getDcs()).thenReturn(dcs);
     }
 
     @Test
@@ -185,10 +186,10 @@ public class MigrationServiceImplSentinelBeaconTest {
     }
 
     private void putClusterInDc(String dc, ClusterType clusterType) {
-        ClusterMeta clusterMeta = mock(ClusterMeta.class);
-        when(clusterMeta.getOrgId()).thenReturn(10);
-        when(clusterMeta.getType()).thenReturn(clusterType.toString());
-        when(clusterMeta.getAzGroupType()).thenReturn("");
+        ClusterMeta clusterMeta = new ClusterMeta(CLUSTER)
+                .setOrgId(10)
+                .setType(clusterType.name())
+                .setActiveDc(dc);
         DcMeta dcMeta = mock(DcMeta.class);
         Map<String, ClusterMeta> clusters = new HashMap<>();
         clusters.put(CLUSTER, clusterMeta);
