@@ -1,0 +1,21 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystemModeAndRetryTest.java
+  s_a296cb0e130548::t_05bfc2c3b417b0 185-199
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/TailCacheFileSystem.java
+  s_a296cb0e130548::t_5f15e4b5880e3a 1818
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.50-trip",
+  "base_commit_sha": "c47b7228d05fb078de8fb2b77fc2e121c61e0fc4",
+  "prompts": {},
+  "sessions": {
+    "s_a296cb0e130548": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9607a011-6f8c-45b6-9f91-92bdd73319f6",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "chenan.zhang <chenanzhang@trip.com>"
+    }
+  }
+}
