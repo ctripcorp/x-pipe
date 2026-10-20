@@ -82,10 +82,9 @@ public class RedisVacantAzChecker extends AbstractCrossDcIntervalAction {
                 }
             }
         }
-        if (vacantCount <= 0) {
-            return;
+        if (vacantCount > 0) {
+            eventMonitor.logEvent(REDIS_VACANT_AZ_EVENT_TYPE, dcMeta.getId(), vacantCount);
         }
-        eventMonitor.logEvent(REDIS_VACANT_AZ_EVENT_TYPE, dcMeta.getId(), vacantCount);
     }
 
     private boolean isVacantAz(RedisMeta redisMeta) {
