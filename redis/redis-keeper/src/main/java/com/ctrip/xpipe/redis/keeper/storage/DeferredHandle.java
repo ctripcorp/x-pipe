@@ -152,14 +152,6 @@ public final class DeferredHandle {
         return true;
     }
 
-    /** {@code Type: message} without the stack trace, for the expected close failures (spec §8). */
-    static String errorSummary(Throwable error) {
-        if (error == null) {
-            return null;
-        }
-        return error.getClass().getSimpleName() + ": " + error.getMessage();
-    }
-
     /** Log form of the entry (spec §8), with the age as of now. */
     String describe() {
         return describe(clock.getAsLong());

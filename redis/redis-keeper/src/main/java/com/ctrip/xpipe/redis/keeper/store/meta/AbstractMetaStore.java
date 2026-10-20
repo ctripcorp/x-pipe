@@ -102,10 +102,12 @@ public abstract class AbstractMetaStore implements MetaStore{
 	protected void saveMetaToFileV2(File file, ReplicationStoreMeta replicationStoreMeta) throws IOException {
 		checkNotReadOnly();
 		logger.info("[saveMetaToFileV2]{}, {}", file, replicationStoreMeta);
-		byte[] data = Codec.DEFAULT.encode(replicationStoreMeta).getBytes(StandardCharsets.UTF_8);
+		byte[] data = encodeMeta(replicationStoreMeta);
 		AsyncFile asyncFile = getOrOpenMetaFile();
+		ReplicationStoreMeta committed = metaRef.get();
+		// keeper-tfs-m6 §11.5
 		AsyncFileSystemHelper.writeAllBytes(asyncFileSystem, asyncFile, data,
-				"write meta " + file.getAbsolutePath());
+				committed == null ? null : encodeMeta(committed), "write meta " + file.getAbsolutePath());
 	}
 
 	protected ReplicationStoreMeta loadMetaFromFileV2(File file) throws IOException {
@@ -272,6 +274,26 @@ public abstract class AbstractMetaStore implements MetaStore{
 			saveMetaToFileV2(new File(baseDir, META_V2_FILE), newMeta);
 			metaRef.set(newMeta);
 		}
+	}
+
+	@Override
+	public void flushMeta() throws IOException {
+		if (readOnly) {
+			return;
+		}
+		synchronized (metaRef) {
+			AsyncFile asyncFile = metaAsyncFile;
+			ReplicationStoreMeta meta = metaRef.get();
+			if (closed || asyncFile == null || meta == null) {
+				return;
+			}
+			AsyncFileSystemHelper.writeAllBytes(asyncFileSystem, asyncFile, encodeMeta(meta),
+					"flush meta " + metaV2File().getAbsolutePath());
+		}
+	}
+
+	private static byte[] encodeMeta(ReplicationStoreMeta meta) {
+		return Codec.DEFAULT.encode(meta).getBytes(StandardCharsets.UTF_8);
 	}
 
 	@Override

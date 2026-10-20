@@ -16,6 +16,7 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.storage.AbstractStorageFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Assert;
@@ -23,8 +24,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import org.springframework.test.util.ReflectionTestUtils;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -499,6 +504,43 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		}
 	}
 
+
+	@Test
+	public void testGcTrustsInMemoryManagerMeta() throws Exception {
+		AsyncFileSystem fs = spy(createTestAsyncFileSystem());
+		TestKeeperConfig config = new TestKeeperConfig();
+		config.setReplicationStoreGcIntervalSeconds(3600);
+		config.setMinTimeMilliToGcAfterCreate(0);
+		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
+				config, getReplId(), randomKeeperRunid(), new File(getTestFileDir()),
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+		try {
+			LifecycleHelper.initializeIfPossible(manager);
+			LifecycleHelper.startIfPossible(manager);
+			DefaultReplicationStore store = (DefaultReplicationStore) manager.create();
+			String latest = manager.getCurrentMetaCache().getProperty("latest.store.dir");
+
+			Properties unpublished = new Properties();
+			unpublished.setProperty("latest.store.dir", "unpublished-" + UUID.randomUUID());
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			unpublished.store(out, null);
+			AsyncFile managerMeta = (AsyncFile) ReflectionTestUtils.getField(manager, "managerMetaAsyncFile");
+			AsyncFileSystemHelper.writeAllBytes(fs, managerMeta, out.toByteArray(), "write unpublished manager meta");
+			sleep(20);
+
+			clearInvocations(fs);
+			manager.gc();
+			verify(fs, never()).size(any(AsyncFile.class));
+			verify(fs, never()).read(any(AsyncFile.class), anyLong(), anyLong());
+			Assert.assertEquals(latest, manager.getCurrentMetaCache().getProperty("latest.store.dir"));
+			Assert.assertTrue("current store dir kept", store.getBaseDir().isDirectory());
+			Assert.assertTrue(store.checkOk());
+		} finally {
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
+			fs.shutdown();
+		}
+	}
 
 	/**
 	 * Concurrent create + gc on the owning Manager. One Manager per baseDir (production + T-S.5

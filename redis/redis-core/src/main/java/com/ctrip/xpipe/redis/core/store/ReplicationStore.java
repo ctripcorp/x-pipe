@@ -120,4 +120,8 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	default void close() throws IOException {
 		close(true);
 	}
+
+	/** keeper-tfs-m6 §11.2 */
+	default void flushMeta() throws IOException {
+	}
 }

@@ -65,6 +65,14 @@ public class ExceptionUtils {
 		return false;
 	}
 
+	/** {@code SimpleClassName: message}, for logging expected failures without a stack trace. */
+	public static String getTypeAndMessage(Throwable throwable) {
+		if (throwable == null) {
+			return null;
+		}
+		return throwable.getClass().getSimpleName() + ": " + throwable.getMessage();
+	}
+
 	public static boolean isStackTraceUnnecessary(Throwable throwable) {
 		return ExceptionUtils.getRootCause(throwable) instanceof CommandTimeoutException
 				|| throwable instanceof ResourceAccessException;

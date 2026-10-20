@@ -349,29 +349,32 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         ((DefaultReplicationStore) store).setPubSubParseHook(hook);
     }
 
-    void recordLatestStore(String storeDir) throws IOException {
+    synchronized void recordLatestStore(String storeDir) throws IOException {
         checkNotReadOnly();
-        Properties meta = currentMeta();
+        Properties meta = new Properties();
+        meta.putAll(currentMeta());
         meta.setProperty(LATEST_STORE_DIR, storeDir);
         saveMeta(meta);
     }
 
-    /**
-     * @param meta
-     * @throws IOException
-     */
-    private void saveMeta(Properties meta) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        meta.store(out, null);
-        byte[] data = out.toByteArray();
+    private synchronized void saveMeta(Properties meta) throws IOException {
+        byte[] data = encodeMeta(meta);
 
         AsyncFile asyncFile = getOrOpenManagerMetaFile();
+        Properties committed = currentMeta.get();
+        // keeper-tfs-m6 §11.5
         AsyncFileSystemHelper.writeAllBytes(asyncFileSystem, asyncFile, data,
-                "write manager meta " + metaFile.getAbsolutePath());
+                committed == null ? null : encodeMeta(committed), "write manager meta " + metaFile.getAbsolutePath());
 
         logger.info("[saveMeta][before]{}", currentMeta.get());
         currentMeta.set(meta);
         logger.info("[saveMeta][after]{}", currentMeta.get());
+    }
+
+    private static byte[] encodeMeta(Properties meta) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        meta.store(out, null);
+        return out.toByteArray();
     }
 
     /**
@@ -510,7 +513,8 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         }
 
         gcCount.incrementAndGet();
-        Properties meta = currentMeta(true);
+        // keeper-tfs-m6 §11.5: no force load
+        Properties meta = currentMeta();
         if (meta != null) {
             final String currentDirName = meta.getProperty(LATEST_STORE_DIR);
             List<String> children = AsyncFileSystemHelper.await(() -> asyncFileSystem.list(baseDir.getAbsolutePath()),

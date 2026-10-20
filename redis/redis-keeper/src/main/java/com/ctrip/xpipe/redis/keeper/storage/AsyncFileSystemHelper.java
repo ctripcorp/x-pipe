@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.storage;
 
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import io.netty.buffer.ByteBuf;
@@ -290,7 +291,7 @@ public final class AsyncFileSystemHelper {
                 return;
             }
             Throwable cause = err instanceof CompletionException && err.getCause() != null ? err.getCause() : err;
-            logger.warn("[await][late-fail] {} cause: {}", operation, DeferredHandle.errorSummary(cause));
+            logger.warn("[await][late-fail] {} cause: {}", operation, ExceptionUtils.getTypeAndMessage(cause));
         });
     }
 
@@ -578,6 +579,28 @@ public final class AsyncFileSystemHelper {
             }
         }
         throw new IllegalStateException("unreachable writeAllBytes retry loop: " + operation);
+    }
+
+    /** keeper-tfs-m6 §11.5: on failure write {@code rollbackData} once, then throw the original failure. */
+    public static void writeAllBytes(AsyncFileSystem fs, AsyncFile file, byte[] data, byte[] rollbackData,
+                                     String operation) throws IOException {
+        try {
+            writeAllBytes(fs, file, data, operation);
+        } catch (Throwable th) {
+            if (rollbackData != null) {
+                rollbackQuietly(fs, file, rollbackData, operation);
+            }
+            throw th;
+        }
+    }
+
+    private static void rollbackQuietly(AsyncFileSystem fs, AsyncFile file, byte[] rollbackData, String operation) {
+        try {
+            writeAllBytes(fs, file, rollbackData, "rollback " + operation);
+            logger.info("[writeAllBytes][rollback] {}", operation);
+        } catch (Throwable th) {
+            logger.warn("[writeAllBytes][rollback-fail] {} cause: {}", operation, ExceptionUtils.getTypeAndMessage(th));
+        }
     }
 
     public static byte[] readAllBytes(AsyncFileSystem fs, AsyncFile file, long size, long offset, String operation)

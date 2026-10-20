@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
@@ -1286,6 +1287,25 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public boolean checkOk() {
 		return !isClosed();
+	}
+
+	@Override
+	public void flushMeta() {
+		if (readOnly || isClosed()) {
+			return;
+		}
+		MetaStore meta = metaStore;
+		if (meta == null) {
+			return;
+		}
+		String path = new File(baseDir, MetaStore.META_V2_FILE).getAbsolutePath();
+		try {
+			meta.flushMeta();
+			getLogger().debug("[flushMeta][ok] repl_id={} path={}", fileSystemReplId, path);
+		} catch (Throwable th) {
+			getLogger().warn("[flushMeta][fail] repl_id={} path={} cause: {}", fileSystemReplId, path,
+					ExceptionUtils.getTypeAndMessage(th));
+		}
 	}
 
 	@Override

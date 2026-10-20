@@ -3964,9 +3964,33 @@ public class TailCacheFileSystemTest {
             faulty = Collections.emptySet();
             failure = null;
             gate = null;
+            scripted.clear();
             if (g != null) {
                 g.countDown();
             }
+        }
+
+        private final java.util.concurrent.ConcurrentLinkedQueue<IOException> scripted =
+                new java.util.concurrent.ConcurrentLinkedQueue<>();
+        private volatile Op scriptedOp;
+        private volatile String scriptedPath;
+
+        void failNext(Op op, String path, IOException... failures) {
+            scripted.clear();
+            scriptedOp = op;
+            scriptedPath = path;
+            scripted.addAll(Arrays.asList(failures));
+        }
+
+        private void fault(Op op, String path) {
+            if (op == scriptedOp && java.util.Objects.equals(path, scriptedPath)) {
+                IOException f = scripted.poll();
+                if (f != null) {
+                    failureHits.incrementAndGet();
+                    throw StorageUtil.wrapIOException(f);
+                }
+            }
+            fault(op);
         }
 
         private void fault(Op op) {
@@ -3995,9 +4019,9 @@ public class TailCacheFileSystemTest {
 
         // Release the buffer the real writeSync would have released, so an injected failure does
         // not look like a leak.
-        private void faultWrite(Op op, ByteBuf data) {
+        private void faultWrite(Op op, String path, ByteBuf data) {
             try {
-                fault(op);
+                fault(op, path);
             } catch (RuntimeException e) {
                 data.release();
                 throw e;
@@ -4006,13 +4030,13 @@ public class TailCacheFileSystemTest {
 
         @Override
         public long writeSync(AsyncFile file, ByteBuf data) {
-            faultWrite(Op.FILE_WRITE, data);
+            faultWrite(Op.FILE_WRITE, file.path, data);
             return super.writeSync(file, data);
         }
 
         @Override
         public long writeSync(AsyncSegmentFile file, ByteBuf data) {
-            faultWrite(Op.SEG_WRITE, data);
+            faultWrite(Op.SEG_WRITE, file.path, data);
             return super.writeSync(file, data);
         }
 
@@ -4036,7 +4060,7 @@ public class TailCacheFileSystemTest {
 
         @Override
         public boolean mkdirSync(String path, boolean recursive) {
-            fault(Op.MKDIR);
+            fault(Op.MKDIR, path);
             return super.mkdirSync(path, recursive);
         }
 

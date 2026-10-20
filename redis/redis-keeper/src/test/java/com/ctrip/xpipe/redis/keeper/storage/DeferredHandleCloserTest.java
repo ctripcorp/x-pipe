@@ -430,13 +430,6 @@ public class DeferredHandleCloserTest {
         }
     }
 
-    @Test
-    public void testErrorSummaryHasTypeAndMessageOnly() {
-        assertEquals("IOException: Input/output error",
-                DeferredHandle.errorSummary(new IOException("Input/output error")));
-        assertEquals("IllegalStateException: null", DeferredHandle.errorSummary(new IllegalStateException()));
-        assertNull(DeferredHandle.errorSummary(null));
-    }
 
     private static LogEvent single(LogCapture logs, String tag) {
         List<LogEvent> events = logs.withTag(tag);

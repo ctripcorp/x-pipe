@@ -429,6 +429,92 @@ public class AsyncFileSystemHelperTest extends AbstractTest {
         data.release();
     }
 
+    private static java.util.List<byte[]> scriptWrites(AsyncFileSystem fs, String... failures) {
+        java.util.List<byte[]> written = new java.util.concurrent.CopyOnWriteArrayList<>();
+        AtomicInteger calls = new AtomicInteger();
+        when(fs.write(any(AsyncFile.class), any(io.netty.buffer.ByteBuf.class))).thenAnswer(invocation -> {
+            io.netty.buffer.ByteBuf buf = invocation.getArgument(1);
+            byte[] bytes = new byte[buf.readableBytes()];
+            buf.readBytes(bytes);
+            buf.release();
+            written.add(bytes);
+            int i = calls.getAndIncrement();
+            if (i < failures.length && failures[i] != null) {
+                return CompletableFuture.failedFuture(new IOException(failures[i]));
+            }
+            return CompletableFuture.completedFuture((long) bytes.length);
+        });
+        return written;
+    }
+
+    @Test
+    public void writeAllBytesWithRollbackDoesNotRollbackOnSuccess() throws Exception {
+        AsyncFileSystem fs = mock(AsyncFileSystem.class);
+        java.util.List<byte[]> written = scriptWrites(fs);
+        AsyncFileSystemHelper.writeAllBytes(fs, mock(AsyncFile.class), new byte[]{2}, new byte[]{1}, "write meta ok");
+        Assert.assertEquals(1, written.size());
+        Assert.assertArrayEquals(new byte[]{2}, written.get(0));
+    }
+
+    @Test
+    public void writeAllBytesWithRollbackWritesRollbackDataAndThrowsOriginal() {
+        AsyncFileSystem fs = mock(AsyncFileSystem.class);
+        java.util.List<byte[]> written = scriptWrites(fs, "original-eio");
+        try (LogCapture logs = new LogCapture(AsyncFileSystemHelper.class)) {
+            AsyncFileSystemHelper.writeAllBytes(fs, mock(AsyncFile.class), new byte[]{2}, new byte[]{1}, "write meta /m");
+            Assert.fail("expected IOException");
+        } catch (IOException e) {
+            Assert.assertTrue(e.getMessage() + " / " + e.getCause(), String.valueOf(e.getCause()).contains("original-eio")
+                    || e.getMessage().contains("original-eio"));
+        }
+        Assert.assertEquals(2, written.size());
+        Assert.assertArrayEquals(new byte[]{1}, written.get(1));
+    }
+
+    @Test
+    public void writeAllBytesWithRollbackFailureKeepsOriginalAndWarnsWithoutStack() {
+        AsyncFileSystem fs = mock(AsyncFileSystem.class);
+        java.util.List<byte[]> written = scriptWrites(fs, "original-eio", "rollback-eio");
+        try (LogCapture logs = new LogCapture(AsyncFileSystemHelper.class)) {
+            try {
+                AsyncFileSystemHelper.writeAllBytes(fs, mock(AsyncFile.class), new byte[]{2}, new byte[]{1}, "write meta /m");
+                Assert.fail("expected IOException");
+            } catch (IOException e) {
+                Assert.assertFalse(String.valueOf(e.getCause()).contains("rollback-eio") || e.getMessage().contains("rollback-eio"));
+            }
+            java.util.List<org.apache.logging.log4j.core.LogEvent> warns = logs.withTag("[writeAllBytes][rollback-fail]");
+            Assert.assertEquals(1, warns.size());
+            String message = LogCapture.message(warns.get(0));
+            Assert.assertTrue(message, message.contains("write meta /m") && message.contains("IOException: rollback-eio"));
+            Assert.assertNull(warns.get(0).getThrown());
+        }
+        Assert.assertEquals(2, written.size());
+    }
+
+    @Test
+    public void writeAllBytesWithNullRollbackDataOnlyThrows() {
+        AsyncFileSystem fs = mock(AsyncFileSystem.class);
+        java.util.List<byte[]> written = scriptWrites(fs, "original-eio");
+        try {
+            AsyncFileSystemHelper.writeAllBytes(fs, mock(AsyncFile.class), new byte[]{2}, null, "write meta /m");
+            Assert.fail("expected IOException");
+        } catch (IOException expected) {
+        }
+        Assert.assertEquals(1, written.size());
+    }
+
+    @Test
+    public void writeAllBytesWithoutRollbackDataParamNeverRollsBack() {
+        AsyncFileSystem fs = mock(AsyncFileSystem.class);
+        java.util.List<byte[]> written = scriptWrites(fs, "original-eio");
+        try {
+            AsyncFileSystemHelper.writeAllBytes(fs, mock(AsyncFile.class), new byte[]{2}, "write meta /m");
+            Assert.fail("expected IOException");
+        } catch (IOException expected) {
+        }
+        Assert.assertEquals(1, written.size());
+    }
+
     @Test
     public void writeAllBytesRetriesOnceOnSyncIllegalStateThenSucceeds() throws Exception {
         AsyncFileSystem fs = mock(AsyncFileSystem.class);

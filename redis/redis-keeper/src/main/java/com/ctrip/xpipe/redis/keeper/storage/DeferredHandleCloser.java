@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.storage;
 
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
 import org.slf4j.Logger;
@@ -103,7 +104,7 @@ public final class DeferredHandleCloser {
             if (shutdown) {
                 logger.error("[deferred-closer][rejected][shutdown] repl_id={} fileKey={} operation={} cause: {}",
                         DeferredHandle.replIdText(replId), DeferredHandle.displayKey(file.getKey()), operation,
-                        DeferredHandle.errorSummary(cause));
+                        ExceptionUtils.getTypeAndMessage(cause));
                 return false;
             }
             DeferredHandle existing = byFile.get(file);
@@ -117,7 +118,7 @@ public final class DeferredHandleCloser {
         }
         long delay = backoffMillis(handle.getBackoffFailures());
         logger.warn("[deferred-closer][deferred] {} first retry in {}ms, cause: {}", handle.describe(now), delay,
-                DeferredHandle.errorSummary(cause));
+                ExceptionUtils.getTypeAndMessage(cause));
         schedule(handle, delay);
         return true;
     }
@@ -275,7 +276,7 @@ public final class DeferredHandleCloser {
         // Expected IO failure repeated on every retry: type and message only, rate limited (spec §8).
         if (handle.tryLogRetryFailure(now, RETRY_FAILURE_LOG_INTERVAL_MILLIS)) {
             logger.warn("[deferred-closer][retry-fail] {} next retry in {}ms, cause: {}", handle.describe(now), delay,
-                    DeferredHandle.errorSummary(failure));
+                    ExceptionUtils.getTypeAndMessage(failure));
         }
         schedule(handle, delay);
     }

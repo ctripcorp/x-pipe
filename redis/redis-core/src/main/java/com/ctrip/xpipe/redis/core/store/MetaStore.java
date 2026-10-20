@@ -213,6 +213,10 @@ public interface MetaStore extends Closeable {
 		close(true);
 	}
 
+	/** keeper-tfs-m6 §11.2 */
+	default void flushMeta() throws IOException {
+	}
+
 	/**
 	 * Close handles and delete persisted meta files.
 	 * Default implementation only releases handles.
