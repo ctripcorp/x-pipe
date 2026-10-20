@@ -23,7 +23,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
-import java.util.Map;
 
 import static com.ctrip.xpipe.redis.console.healthcheck.availablezone.RedisVacantAzChecker.REDIS_VACANT_AZ_EVENT_TYPE;
 import static org.junit.Assert.assertEquals;
@@ -53,9 +52,6 @@ public class RedisVacantAzCheckerTest {
     @Captor
     private ArgumentCaptor<String> nameCaptor;
 
-    @Captor
-    private ArgumentCaptor<Map<String, String>> tagsCaptor;
-
     @Before
     public void setUp() {
         ReflectionTestUtils.setField(checker, "consoleConfig", consoleConfig);
@@ -65,18 +61,12 @@ public class RedisVacantAzCheckerTest {
     }
 
     @Test
-    public void testReportVacantAzRedisOnly() {
+    public void testReportOneEventPerProblematicDc() {
         checker.doAction();
 
-        verify(eventMonitor, times(1)).logEvent(typeCaptor.capture(), nameCaptor.capture(), tagsCaptor.capture());
+        verify(eventMonitor, times(1)).logEvent(typeCaptor.capture(), nameCaptor.capture());
         assertEquals(REDIS_VACANT_AZ_EVENT_TYPE, typeCaptor.getValue());
-        assertEquals("cluster1", nameCaptor.getValue());
-        Map<String, String> tags = tagsCaptor.getValue();
-        assertEquals("SGP-ALI", tags.get("dc"));
-        assertEquals("cluster1", tags.get("cluster"));
-        assertEquals("shard1", tags.get("shard"));
-        assertEquals("10.0.0.1", tags.get("ip"));
-        assertEquals("6379", tags.get("port"));
+        assertEquals("SGP-ALI", nameCaptor.getValue());
     }
 
     @Test
@@ -85,7 +75,7 @@ public class RedisVacantAzCheckerTest {
 
         checker.doAction();
 
-        verify(eventMonitor, never()).logEvent(Mockito.anyString(), Mockito.anyString(), Mockito.anyMap());
+        verify(eventMonitor, never()).logEvent(Mockito.anyString(), Mockito.anyString());
     }
 
     @Test
@@ -94,7 +84,7 @@ public class RedisVacantAzCheckerTest {
 
         checker.doAction();
 
-        verify(eventMonitor, never()).logEvent(Mockito.anyString(), Mockito.anyString(), Mockito.anyMap());
+        verify(eventMonitor, never()).logEvent(Mockito.anyString(), Mockito.anyString());
     }
 
     private XpipeMeta mockXpipeMeta() {
@@ -114,8 +104,9 @@ public class RedisVacantAzCheckerTest {
         shardMeta.addRedis(withAz);
 
         if (withVacantAz) {
-            RedisMeta vacant = new RedisMeta().setIp("10.0.0.1").setPort(6379);
-            shardMeta.addRedis(vacant);
+            // multiple vacant redis in one dc should still produce one event
+            shardMeta.addRedis(new RedisMeta().setIp("10.0.0.1").setPort(6379));
+            shardMeta.addRedis(new RedisMeta().setIp("10.0.0.4").setPort(6380));
         }
 
         // keeper without az should be ignored

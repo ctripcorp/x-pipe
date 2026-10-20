@@ -15,14 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-/**
- * Detect redis instances without AZ in configured DCs and report via Cat Event + clog warn.
- */
 @Component
 public class RedisVacantAzChecker extends AbstractCrossDcIntervalAction {
 
@@ -79,7 +74,8 @@ public class RedisVacantAzChecker extends AbstractCrossDcIntervalAction {
                 }
                 for (RedisMeta redisMeta : shardMeta.getRedises()) {
                     if (isVacantAz(redisMeta)) {
-                        reportVacantAz(dcMeta.getId(), clusterMeta.getId(), shardMeta.getId(), redisMeta);
+                        eventMonitor.logEvent(REDIS_VACANT_AZ_EVENT_TYPE, dcMeta.getId());
+                        return;
                     }
                 }
             }
@@ -88,22 +84,6 @@ public class RedisVacantAzChecker extends AbstractCrossDcIntervalAction {
 
     private boolean isVacantAz(RedisMeta redisMeta) {
         return redisMeta != null && StringUtil.isEmpty(redisMeta.getAz());
-    }
-
-    private void reportVacantAz(String dc, String clusterName, String shardName, RedisMeta redisMeta) {
-        String ip = redisMeta.getIp();
-        Integer port = redisMeta.getPort();
-
-        Map<String, String> tags = new HashMap<>();
-        tags.put("dc", dc == null ? "" : dc);
-        tags.put("cluster", clusterName == null ? "" : clusterName);
-        tags.put("shard", shardName == null ? "" : shardName);
-        tags.put("ip", ip == null ? "" : ip);
-        tags.put("port", port == null ? "" : String.valueOf(port));
-        eventMonitor.logEvent(REDIS_VACANT_AZ_EVENT_TYPE, clusterName, tags);
-
-        logger.warn("[doAction] redis vacant az, dc={}, cluster={}, shard={}, ip={}, port={}",
-                dc, clusterName, shardName, ip, port);
     }
 
     @Override
