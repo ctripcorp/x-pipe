@@ -36,6 +36,7 @@ import com.ctrip.xpipe.redis.keeper.storage.ReplicationStoreManagerStopReleaseFa
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperTimeoutNoCancelTest;
 import com.ctrip.xpipe.redis.keeper.storage.MetaWriteFailureRestoreTest;
 import com.ctrip.xpipe.redis.keeper.storage.AbstractMetaStoreFlushTest;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractMetaStoreSizeIfMatchTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystemTest;
 import com.ctrip.xpipe.redis.keeper.storage.DeferredHandleCloserTest;
@@ -181,7 +182,9 @@ import org.junit.runners.Suite.SuiteClasses;
         AsyncFileSystemHelperTimeoutNoCancelTest.class,
         MetaWriteFailureRestoreTest.class,
         AbstractMetaStoreFlushTest.class,
+        AbstractMetaStoreSizeIfMatchTest.class,
         DefaultReplicationStoreManagerMetaFlushTest.class,
+        DefaultReplicationStoreRdbSizeAlignTest.class,
         ContainerResourceManagerTest.class,
         UnclosedHandleMetricReporterTest.class,
         KeeperContainerControllerUnclosedHandlesTest.class,

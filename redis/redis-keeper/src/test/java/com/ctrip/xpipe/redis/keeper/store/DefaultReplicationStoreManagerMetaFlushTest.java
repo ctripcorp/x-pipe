@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.*;
@@ -192,6 +193,15 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         assertSame(published, manager.getOpenedStore());
         assertEquals(dir, latestDir());
         assertNotEquals("cache and TFS hold the unpublished dir", dir, readViaHandle());
+
+        config.setMinTimeMilliToGcAfterCreate(0);
+        sleep(5);
+        AsyncFile handle = managerHandle();
+        clearInvocations(fs);
+        manager.gc();
+        verify(fs, never()).read(same(handle), anyLong(), anyLong());
+        assertEquals(dir, latestDir());
+        assertTrue("gc keeps the published store dir", new File(manager.getBaseDir(), dir).isDirectory());
 
         manager.flushMetaPeriodically();
         assertEquals(dir, readViaHandle());

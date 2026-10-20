@@ -49,6 +49,8 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	private final static Logger logger = LoggerFactory.getLogger(DefaultReplicationStore.class);
 
+	private static final long UNKNOWN_RDB_FILE_SIZE = -1L;
+
 	private File baseDir;
 
 	protected AtomicReference<RdbStore> rdbStoreRef = new AtomicReference<>();
@@ -1299,12 +1301,75 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 			return;
 		}
 		String path = new File(baseDir, MetaStore.META_V2_FILE).getAbsolutePath();
+
+		try {
+			alignRdbFileSizeIfNeeded();
+		} catch (Throwable th) {
+			getLogger().warn("[flushMeta][alignRdbSize][fail] repl_id={} file={} cause: {}", fileSystemReplId,
+					path, ExceptionUtils.getTypeAndMessage(th));
+		}
+
+		try {
+			alignRordbFileSizeIfNeeded();
+		} catch (Throwable th) {
+			getLogger().warn("[flushMeta][alignRordbSize][fail] repl_id={} file={} cause: {}", fileSystemReplId,
+					path, ExceptionUtils.getTypeAndMessage(th));
+		}
+
 		try {
 			meta.flushMeta();
 			getLogger().debug("[flushMeta][ok] repl_id={} path={}", fileSystemReplId, path);
 		} catch (Throwable th) {
 			getLogger().warn("[flushMeta][fail] repl_id={} path={} cause: {}", fileSystemReplId, path,
 					ExceptionUtils.getTypeAndMessage(th));
+		}
+	}
+
+	private void alignRdbFileSizeIfNeeded() throws IOException {
+		RdbStore rdbStore = rdbStoreRef.get();
+		if (rdbStore == null) {
+			return;
+		}
+		String rdbFileName = rdbStore.getRdbFile().getName();
+		ReplicationStoreMeta meta = metaStore.dupReplicationStoreMeta();
+		if (meta == null || meta.getRdbFileSize() != UNKNOWN_RDB_FILE_SIZE || !rdbFileName.equals(meta.getRdbFile())) {
+			return;
+		}
+		// keeper-tfs-m6 §11.6: checkOk() is also true while writing
+		if (rdbStore.isWriting() || !rdbStore.checkOk()) {
+			return;
+		}
+		long len = rdbStore.rdbFileLength();
+		if (len <= 0) {
+			return;
+		}
+		boolean written = metaStore.setRdbFileSizeIfMatch(rdbFileName, len);
+		if (written) {
+			getLogger().info("[flushMeta][alignRdbSize] repl_id={} file={} size={}", fileSystemReplId, rdbFileName, len);
+		}
+	}
+
+	private void alignRordbFileSizeIfNeeded() throws IOException {
+		RdbStore rordbStore = rordbStoreRef.get();
+		if (rordbStore == null) {
+			return;
+		}
+		String rordbFileName = rordbStore.getRdbFile().getName();
+		ReplicationStoreMeta meta = metaStore.dupReplicationStoreMeta();
+		if (meta == null || meta.getRordbFileSize() != UNKNOWN_RDB_FILE_SIZE
+				|| !rordbFileName.equals(meta.getRordbFile())) {
+			return;
+		}
+		if (rordbStore.isWriting() || !rordbStore.checkOk()) {
+			return;
+		}
+		long len = rordbStore.rdbFileLength();
+		if (len <= 0) {
+			return;
+		}
+		boolean written = metaStore.setRordbFileSizeIfMatch(rordbFileName, len);
+		if (written) {
+			getLogger().info("[flushMeta][alignRordbSize] repl_id={} file={} size={}", fileSystemReplId, rordbFileName, len);
 		}
 	}
 

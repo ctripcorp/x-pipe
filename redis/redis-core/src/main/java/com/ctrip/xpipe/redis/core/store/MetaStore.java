@@ -98,6 +98,14 @@ public interface MetaStore extends Closeable {
 
 	void setRordbFileSize(long rordbFileSize) throws IOException;
 
+	default boolean setRdbFileSizeIfMatch(String rdbFile, long size) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
+	default boolean setRordbFileSizeIfMatch(String rordbFile, long size) throws IOException {
+		throw new UnsupportedOperationException();
+	}
+
 	@Deprecated
 	void masterChanged(long keeperOffset, DefaultEndPoint newMasterEndpoint, String newMasterRunid, long newMasterReplOffset) throws IOException;
 
@@ -213,7 +221,6 @@ public interface MetaStore extends Closeable {
 		close(true);
 	}
 
-	/** keeper-tfs-m6 §11.2 */
 	default void flushMeta() throws IOException {
 	}
 

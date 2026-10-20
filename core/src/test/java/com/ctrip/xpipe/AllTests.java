@@ -8,6 +8,7 @@ import com.ctrip.xpipe.concurrent.*;
 import com.ctrip.xpipe.endpoint.ClusterShardHostPortTest;
 import com.ctrip.xpipe.endpoint.DefaultEndPointTest;
 import com.ctrip.xpipe.endpoint.TestAbstractLifecycle;
+import com.ctrip.xpipe.exception.ExceptionUtilsTest;
 import com.ctrip.xpipe.gtid.GtidSetTest;
 import com.ctrip.xpipe.lifecycle.*;
 import com.ctrip.xpipe.netty.NettyPoolUtilTest;
@@ -102,7 +103,8 @@ import org.junit.runners.Suite.SuiteClasses;
         GtidSetTest.class,
         EncryptUtilsTest.class,
         ByteUtilTest.class,
-        RebuildableLeaderLatchTest.class
+        RebuildableLeaderLatchTest.class,
+        ExceptionUtilsTest.class
 })
 public class AllTests {
 

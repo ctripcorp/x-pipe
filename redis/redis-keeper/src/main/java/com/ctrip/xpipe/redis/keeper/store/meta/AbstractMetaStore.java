@@ -360,8 +360,35 @@ public abstract class AbstractMetaStore implements MetaStore{
 			}
 		}
 	}
-	
-	
+
+	@Override
+	public boolean setRdbFileSizeIfMatch(String rdbFile, long size) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta meta = metaRef.get();
+			if (meta == null || meta.getRdbFileSize() != -1 || !Objects.equals(meta.getRdbFile(), rdbFile)) {
+				return false;
+			}
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			metaDup.setRdbFileSize(size);
+			saveMeta(metaDup);
+			return true;
+		}
+	}
+
+	@Override
+	public boolean setRordbFileSizeIfMatch(String rordbFile, long size) throws IOException {
+		synchronized (metaRef) {
+			ReplicationStoreMeta meta = metaRef.get();
+			if (meta == null || meta.getRordbFileSize() != -1 || !Objects.equals(meta.getRordbFile(), rordbFile)) {
+				return false;
+			}
+			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
+			metaDup.setRordbFileSize(size);
+			saveMeta(metaDup);
+			return true;
+		}
+	}
+
 	private void setKeeperState(KeeperState keeperState) throws IOException {
 		synchronized (metaRef) {
 			ReplicationStoreMeta metaDup = dupReplicationStoreMeta();
