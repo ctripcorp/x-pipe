@@ -52,6 +52,9 @@ public class RedisVacantAzCheckerTest {
     @Captor
     private ArgumentCaptor<String> nameCaptor;
 
+    @Captor
+    private ArgumentCaptor<Long> countCaptor;
+
     @Before
     public void setUp() {
         ReflectionTestUtils.setField(checker, "consoleConfig", consoleConfig);
@@ -64,9 +67,10 @@ public class RedisVacantAzCheckerTest {
     public void testReportOneEventPerProblematicDc() {
         checker.doAction();
 
-        verify(eventMonitor, times(1)).logEvent(typeCaptor.capture(), nameCaptor.capture());
+        verify(eventMonitor, times(1)).logEvent(typeCaptor.capture(), nameCaptor.capture(), countCaptor.capture());
         assertEquals(REDIS_VACANT_AZ_EVENT_TYPE, typeCaptor.getValue());
         assertEquals("SGP-ALI", nameCaptor.getValue());
+        assertEquals(Long.valueOf(2L), countCaptor.getValue());
     }
 
     @Test
@@ -75,7 +79,7 @@ public class RedisVacantAzCheckerTest {
 
         checker.doAction();
 
-        verify(eventMonitor, never()).logEvent(Mockito.anyString(), Mockito.anyString());
+        verify(eventMonitor, never()).logEvent(Mockito.anyString(), Mockito.anyString(), Mockito.anyLong());
     }
 
     @Test
@@ -84,7 +88,7 @@ public class RedisVacantAzCheckerTest {
 
         checker.doAction();
 
-        verify(eventMonitor, never()).logEvent(Mockito.anyString(), Mockito.anyString());
+        verify(eventMonitor, never()).logEvent(Mockito.anyString(), Mockito.anyString(), Mockito.anyLong());
     }
 
     private XpipeMeta mockXpipeMeta() {

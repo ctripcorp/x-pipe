@@ -64,6 +64,7 @@ public class RedisVacantAzChecker extends AbstractCrossDcIntervalAction {
     }
 
     private void checkDc(DcMeta dcMeta) {
+        int vacantCount = 0;
         for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
             if (clusterMeta == null || clusterMeta.getShards() == null) {
                 continue;
@@ -74,12 +75,16 @@ public class RedisVacantAzChecker extends AbstractCrossDcIntervalAction {
                 }
                 for (RedisMeta redisMeta : shardMeta.getRedises()) {
                     if (isVacantAz(redisMeta)) {
-                        eventMonitor.logEvent(REDIS_VACANT_AZ_EVENT_TYPE, dcMeta.getId());
-                        return;
+                        vacantCount++;
                     }
                 }
             }
         }
+        if (vacantCount <= 0) {
+            return;
+        }
+        logger.debug("[checkDc] dc={} vacant az redis count={}", dcMeta.getId(), vacantCount);
+        eventMonitor.logEvent(REDIS_VACANT_AZ_EVENT_TYPE, dcMeta.getId(), vacantCount);
     }
 
     private boolean isVacantAz(RedisMeta redisMeta) {
