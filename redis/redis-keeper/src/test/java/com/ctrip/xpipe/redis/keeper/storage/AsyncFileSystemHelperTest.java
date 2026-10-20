@@ -144,7 +144,7 @@ public class AsyncFileSystemHelperTest extends AbstractTest {
     }
 
     @Test
-    public void awaitTimeoutCancelsFuture() throws Exception {
+    public void awaitTimeoutDoesNotCancelFuture() throws Exception {
         CompletableFuture<Long> future = new CompletableFuture<>();
         try {
             AsyncFileSystemHelper.runWithIoTimeout(50, () ->
@@ -153,7 +153,7 @@ public class AsyncFileSystemHelperTest extends AbstractTest {
         } catch (IOException e) {
             Assert.assertTrue(e.getMessage().contains("timeout"));
         }
-        Assert.assertTrue(future.isCancelled());
+        Assert.assertFalse("keeper-tfs-m6 §6: timed-out FS future is not cancelled", future.isCancelled());
     }
 
     @Test
@@ -424,7 +424,7 @@ public class AsyncFileSystemHelperTest extends AbstractTest {
             Assert.assertTrue(e.getMessage().contains("timeout"));
         }
         verify(fs, times(1)).write(any(AsyncFile.class), any(io.netty.buffer.ByteBuf.class));
-        Assert.assertTrue("timeout still cancels write future", hung.isCancelled());
+        Assert.assertFalse("keeper-tfs-m6 §6: timed-out write future is not cancelled", hung.isCancelled());
         Assert.assertEquals("guard retain dropped; FS still holds in-flight buf", 1, data.refCnt());
         data.release();
     }

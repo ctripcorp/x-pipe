@@ -121,7 +121,7 @@ public final class AsyncFileSystemHelper {
 
     public static <T> T await(CompletableFuture<T> future, String operation, long timeout, TimeUnit unit)
             throws IOException {
-        return doAwait(future, operation, timeout, unit, () -> future.cancel(false));
+        return doAwait(future, operation, timeout, unit, () -> logLateFailure(future, operation));
     }
 
     /**
@@ -280,7 +280,18 @@ public final class AsyncFileSystemHelper {
 
     private static <T> T awaitFuture(CompletableFuture<T> future, String operation) throws IOException {
         return doAwait(future, operation, currentTimeoutMillis(), TimeUnit.MILLISECONDS,
-                () -> future.cancel(false));
+                () -> logLateFailure(future, operation));
+    }
+
+    // keeper-tfs-m6 §6: never cancel; cancel drops TailCache's in-flight registration
+    private static void logLateFailure(CompletableFuture<?> future, String operation) {
+        future.whenComplete((ignored, err) -> {
+            if (err == null) {
+                return;
+            }
+            Throwable cause = err instanceof CompletionException && err.getCause() != null ? err.getCause() : err;
+            logger.warn("[await][late-fail] {} cause: {}", operation, DeferredHandle.errorSummary(cause));
+        });
     }
 
     private static <T> T doAwait(CompletableFuture<T> future, String operation, long timeout, TimeUnit unit,
@@ -288,7 +299,7 @@ public final class AsyncFileSystemHelper {
         try {
             return future.get(timeout, unit);
         } catch (InterruptedException e) {
-            // Same reclaim path as TimeoutException (Important #2 / T-S.8): awaitOpen→abandon; await→cancel.
+            // Same as TimeoutException (T-S.8)
             onTimeout.accept();
             Thread.currentThread().interrupt();
             logCase(CASE_INTERRUPTED);

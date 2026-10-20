@@ -24,7 +24,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/** keeper-tfs-m6 P9 (spec §6): late read buffers are released; write awaits still cancel. */
+/** keeper-tfs-m6 §6 */
 public class AsyncFileSystemHelperReadTimeoutTest {
 
     private static final ReplId REPL_ID = ReplId.from(9L);
@@ -150,7 +150,7 @@ public class AsyncFileSystemHelperReadTimeoutTest {
     }
 
     @Test
-    public void testWriteTimeoutStillCancels() throws Exception {
+    public void testWriteTimeoutDoesNotCancel() throws Exception {
         AsyncFileSystem fs = mock(AsyncFileSystem.class);
         AsyncFile writer = file("/data/repl-9/meta.v2.json", AbstractStorageFile.OpenMode.WRITE);
         CompletableFuture<Long> writeFuture = new CompletableFuture<>();
@@ -162,7 +162,7 @@ public class AsyncFileSystemHelperReadTimeoutTest {
             fail("write must time out");
         } catch (IOException expected) {
         }
-        assertTrue("write-type await still cancels", writeFuture.isCancelled());
+        assertFalse("write-type await does not cancel either", writeFuture.isCancelled());
     }
 
     // ---- real TailCache: read hangs on disk ----
