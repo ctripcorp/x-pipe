@@ -421,6 +421,25 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public boolean supportSentinelBeacon(long orgId, String clusterName, String idc, ClusterType clusterType) {
+        if (supportSentinelBeacon(orgId, clusterName)) {
+            return true;
+        }
+        return matchBeaconSentinelGrayIdcClusterType(idc, clusterType);
+    }
+
+    private boolean matchBeaconSentinelGrayIdcClusterType(String idc, ClusterType clusterType) {
+        if (StringUtil.isEmpty(idc) || clusterType == null || clusterType == ClusterType.HETERO) {
+            return false;
+        }
+        Set<String> types = commonConfigBean.getBeaconSentinelGrayIdcClusterTypes().get(idc.toLowerCase());
+        if (types == null || types.isEmpty()) {
+            return false;
+        }
+        return types.stream().anyMatch(type -> type.equalsIgnoreCase(clusterType.name()));
+    }
+
+    @Override
     public void register(List<String> keys, ConfigChangeListener configListener) {
         for(String key : keys) {
             listeners.putIfAbsent(key, new LinkedList<>());
@@ -719,6 +738,16 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     @Override
     public int getKeeperDefaultPriorityTfs() {
         return consoleConfigBean.getKeeperDefaultPriorityTfs();
+    }
+
+    @Override
+    public Set<String> getRedisVacantAzCheckDcs() {
+        return consoleConfigBean.getRedisVacantAzCheckDcs();
+    }
+
+    @Override
+    public int getRedisVacantAzCheckIntervalMilli() {
+        return consoleConfigBean.getRedisVacantAzCheckIntervalMilli();
     }
 
     @Override

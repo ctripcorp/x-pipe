@@ -7,6 +7,8 @@ import com.ctrip.xpipe.redis.checker.healthcheck.CheckInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.ClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,15 +22,24 @@ public class SentinelBeaconMigrationController implements SentinelBeaconMetaCont
 
     private final CheckerDbConfig checkerDbConfig;
 
+    private final MetaCache metaCache;
+
     @Autowired
-    public SentinelBeaconMigrationController(CheckerDbConfig checkerDbConfig) {
+    public SentinelBeaconMigrationController(CheckerDbConfig checkerDbConfig, MetaCache metaCache) {
         this.checkerDbConfig = checkerDbConfig;
+        this.metaCache = metaCache;
     }
 
     @Override
     public boolean shouldCheck(ClusterHealthCheckInstance instance) {
         CheckInfo checkInfo = instance.getCheckInfo();
-        if (checkInfo.getClusterType() == ClusterType.ONE_WAY && !CURRENT_DC.equalsIgnoreCase(checkInfo.getActiveDc()))
+        ClusterType clusterType = metaCache == null ? null
+                : BeaconSentinelMetaUtil.resolveEffectiveClusterType(metaCache.getXpipeMeta(),
+                checkInfo.getActiveDc(), checkInfo.getClusterId());
+        if (clusterType == null) {
+            clusterType = checkInfo.getClusterType();
+        }
+        if (clusterType == ClusterType.ONE_WAY && !CURRENT_DC.equalsIgnoreCase(checkInfo.getActiveDc()))
             return false;
 
         HealthCheckConfig healthCheckConfig = instance.getHealthCheckConfig();
@@ -36,7 +47,8 @@ public class SentinelBeaconMigrationController implements SentinelBeaconMetaCont
             logger.debug("[shouldCheck][{}][skip] health check config unavailable", checkInfo.getClusterId());
             return false;
         }
-        if (!healthCheckConfig.supportSentinelBeacon(checkInfo.getClusterOrgId(), checkInfo.getClusterId())) {
+        if (!healthCheckConfig.supportSentinelBeacon(checkInfo.getClusterOrgId(), checkInfo.getClusterId(),
+                checkInfo.getActiveDc(), clusterType)) {
             return false;
         }
 

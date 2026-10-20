@@ -30,6 +30,8 @@ public interface HealthCheckConfig {
 
     boolean supportSentinelBeacon(long clusterOrgId, String clusterName);
 
+    boolean supportSentinelBeacon(long clusterOrgId, String clusterName, String idc, ClusterType clusterType);
+
     boolean supportCollectInfo(ClusterType clusterType);
 
     boolean isReachable(String srcDc, String dstDc);

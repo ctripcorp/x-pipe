@@ -98,6 +98,10 @@ public interface CheckerConfig {
         return supportSentinelBeacon(-1, clusterName);
     }
 
+    default boolean supportSentinelBeacon(long orgId, String clusterName, String idc, ClusterType clusterType) {
+        return supportSentinelBeacon(orgId, clusterName);
+    }
+
     void register(List<String> keys, ConfigChangeListener configListener);
 
     String sentinelCheckDowngradeStrategy();

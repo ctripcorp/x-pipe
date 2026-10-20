@@ -72,6 +72,11 @@ public abstract class AbstractHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public boolean supportSentinelBeacon(long clusterOrgId, String clusterName, String idc, ClusterType clusterType) {
+        return checkerConfig.supportSentinelBeacon(clusterOrgId, clusterName, idc, clusterType);
+    }
+
+    @Override
     public boolean supportCollectInfo(ClusterType clusterType) {
         return checkerConfig.supportCollectInfo(clusterType);
     }

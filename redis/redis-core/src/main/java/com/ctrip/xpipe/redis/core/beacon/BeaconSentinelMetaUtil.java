@@ -22,11 +22,33 @@ public final class BeaconSentinelMetaUtil {
     }
 
     public static ClusterType resolveEffectiveClusterType(ClusterMeta clusterMeta) {
+        if (clusterMeta == null || StringUtil.isEmpty(clusterMeta.getType())) {
+            return null;
+        }
         ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
         if (clusterType == ClusterType.HETERO && !StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
             return ClusterType.lookup(clusterMeta.getAzGroupType());
         }
         return clusterType;
+    }
+
+    public static ClusterType resolveEffectiveClusterType(XpipeMeta xpipeMeta, String dc, String clusterName) {
+        ClusterMeta clusterMeta = findClusterMeta(xpipeMeta, dc, clusterName);
+        if (clusterMeta == null) {
+            return null;
+        }
+        return resolveEffectiveClusterType(clusterMeta);
+    }
+
+    public static ClusterMeta findClusterMeta(XpipeMeta xpipeMeta, String dc, String clusterName) {
+        if (StringUtil.isEmpty(clusterName)) {
+            return null;
+        }
+        DcMeta dcMeta = findDcMeta(xpipeMeta, dc);
+        if (dcMeta == null || dcMeta.getClusters() == null) {
+            return null;
+        }
+        return dcMeta.getClusters().get(clusterName);
     }
 
     public static boolean isSentinelManagedClusterType(ClusterType clusterType) {

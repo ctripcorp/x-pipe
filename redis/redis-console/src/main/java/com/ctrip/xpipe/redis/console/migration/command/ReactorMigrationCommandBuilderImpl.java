@@ -2,10 +2,12 @@ package com.ctrip.xpipe.redis.console.migration.command;
 
 import com.ctrip.xpipe.api.command.Command;
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.command.AbstractCommand;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.migration.MigrationResources;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.DcMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -108,7 +110,9 @@ public class ReactorMigrationCommandBuilderImpl implements MigrationCommandBuild
         try {
             ClusterMeta clusterMeta = getClusterMeta(dcName, clusterName);
             if (clusterMeta != null && clusterMeta.getOrgId() != null) {
-                return config.supportSentinelBeacon(clusterMeta.getOrgId(), clusterName) ? Boolean.FALSE : Boolean.TRUE;
+                ClusterType clusterType = BeaconSentinelMetaUtil.resolveEffectiveClusterType(clusterMeta);
+                return config.supportSentinelBeacon(clusterMeta.getOrgId(), clusterName, dcName, clusterType)
+                        ? Boolean.FALSE : Boolean.TRUE;
             }
         } catch (Exception e) {
             logger.warn("[addSentinelRequestValue][find cluster org fail]{}, {}", dcName, clusterName, e);

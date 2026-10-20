@@ -5,6 +5,7 @@ import com.ctrip.xpipe.redis.core.redis.rdb.encoding.StreamListpackTest;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.AuxOnlyRdbParserTest;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.DefaultRdbParserTest;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbAuxParserTest;
+import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbModuleAuxParserTest;
 import com.ctrip.xpipe.redis.core.redis.rdb.parser.RdbStringParserTest;
 import com.ctrip.xpipe.redis.core.redis.rdb.encoding.ZiplistTest;
 import org.junit.runner.RunWith;
@@ -19,6 +20,7 @@ import org.junit.runners.Suite;
         DefaultRdbParserTest.class,
         AuxOnlyRdbParserTest.class,
         RdbAuxParserTest.class,
+        RdbModuleAuxParserTest.class,
         RdbStringParserTest.class,
 
         ZiplistTest.class,

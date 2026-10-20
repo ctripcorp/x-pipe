@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.checker.DefaultCheckerManagerTest;
 import com.ctrip.xpipe.redis.console.cluster.ConsoleCrossDcServerTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
+import com.ctrip.xpipe.redis.console.migration.command.ReactorMigrationCommandBuilderImplAddSentinelTest;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManagerTest;
 import com.ctrip.xpipe.redis.console.controller.api.BeaconRouteControllerTest;
 import com.ctrip.xpipe.redis.console.controller.api.checker.ConsoleCheckerControllerDcAllMetaTest;
@@ -27,6 +28,7 @@ import com.ctrip.xpipe.redis.console.controller.consoleportal.migration.Exclusiv
 import com.ctrip.xpipe.redis.console.dao.*;
 import com.ctrip.xpipe.redis.console.election.CrossDcLeaderElectionActionTest;
 import com.ctrip.xpipe.redis.console.healthcheck.NettyKeyedPoolClientFactoryTest;
+import com.ctrip.xpipe.redis.console.healthcheck.availablezone.RedisVacantAzCheckerTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.availablezone.KeeperAvailableZoneCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.BeaconClusterMonitorCheckTest;
 import com.ctrip.xpipe.redis.console.healthcheck.nonredis.beacon.SentinelBeaconClusterMonitorCheckTest;
@@ -205,6 +207,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultMigrationEventManagerTest.class,
         MigrationServiceImplPaginationTest.class,
         MigrationServiceImplSentinelBeaconTest.class,
+        ReactorMigrationCommandBuilderImplAddSentinelTest.class,
         MigrationServiceImplHeteroPreCheckTest.class,
         SentinelConfigCheckTest.class,
         DelayServiceTest.class,
@@ -268,6 +271,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultSentinelBalanceServiceTest.class,
 
         KeeperAvailableZoneCheckTest.class,
+        RedisVacantAzCheckerTest.class,
         AbnormalClusterStatusMonitorTest.class,
         OperatingShardMonitorTest.class,
         RedisConfigCheckMonitorTest.class,

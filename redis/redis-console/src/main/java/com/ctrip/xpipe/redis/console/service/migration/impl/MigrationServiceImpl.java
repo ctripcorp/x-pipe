@@ -40,6 +40,7 @@ import com.ctrip.xpipe.redis.console.service.migration.MigrationService;
 import com.ctrip.xpipe.redis.console.service.migration.exception.*;
 import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSupport;
 import com.ctrip.xpipe.redis.core.beacon.BeaconRouteType;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.DateTimeUtils;
@@ -898,18 +899,24 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     @Override
-    public boolean shouldMigrateSentinelBeacon(MigrationCluster migrationCluster) {
+    public boolean shouldMigrateSentinelBeacon(MigrationCluster migrationCluster, String dc) {
         if (migrationCluster == null || StringUtil.isEmpty(migrationCluster.clusterName())) {
             return false;
         }
-        String clusterName = migrationCluster.clusterName();
-        ClusterMeta clusterMeta = getCurrentDcClusterMeta(clusterName);
+        return isSentinelMigrationEnabledForDc(migrationCluster.clusterName(), dc);
+    }
+
+    private boolean isSentinelMigrationEnabledForDc(String clusterName, String dc) {
+        if (StringUtil.isEmpty(dc) || metaCache == null) {
+            return false;
+        }
+        ClusterMeta clusterMeta = BeaconSentinelMetaUtil.findClusterMeta(metaCache.getXpipeMeta(), dc, clusterName);
         if (clusterMeta == null) {
             return false;
         }
         int orgId = resolveSentinelOrgId(clusterMeta);
         ClusterType clusterType = resolveSentinelClusterType(clusterMeta);
-        return isSentinelMigrationEnabled(clusterName, orgId, clusterType);
+        return isSentinelMigrationEnabled(clusterName, orgId, clusterType, dc);
     }
 
     private RetMessage migrateSentinelBeaconByDc(String clusterName, String dc, boolean preMigrate) {
@@ -939,7 +946,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         }
         int orgId = resolveSentinelOrgId(clusterMeta);
         ClusterType clusterType = resolveSentinelClusterType(clusterMeta);
-        if (!isSentinelMigrationEnabled(clusterName, orgId, clusterType)) {
+        if (!isSentinelMigrationEnabled(clusterName, orgId, clusterType, targetDc)) {
             return RetMessage.createSuccessMessage("sentinel beacon migration skipped");
         }
         if (beaconManager == null) {
@@ -962,13 +969,7 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
     }
 
     private ClusterType resolveSentinelClusterType(ClusterMeta clusterMeta) {
-        if (clusterMeta == null) {
-            return null;
-        }
-        if (!StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
-            return ClusterType.lookup(clusterMeta.getAzGroupType());
-        }
-        return ClusterType.lookup(clusterMeta.getType());
+        return BeaconSentinelMetaUtil.resolveEffectiveClusterType(clusterMeta);
     }
 
     private int resolveSentinelOrgId(ClusterMeta clusterMeta) {
@@ -976,10 +977,6 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
             return clusterMeta.getOrgId();
         }
         return -1;
-    }
-
-    private ClusterMeta getCurrentDcClusterMeta(String clusterName) {
-        return getClusterMetaInDc(clusterName, CURRENT_DC);
     }
 
     private ClusterMeta getClusterMetaInDc(String clusterName, String dc) {
@@ -991,8 +988,8 @@ public class MigrationServiceImpl extends AbstractConsoleService<MigrationEventT
         return metaCache.getXpipeMeta().getDcs().get(dc).getClusters().get(clusterName);
     }
 
-    private boolean isSentinelMigrationEnabled(String clusterName, int orgId, ClusterType clusterType) {
-        if (!config.supportSentinelBeacon(orgId, clusterName)) {
+    private boolean isSentinelMigrationEnabled(String clusterName, int orgId, ClusterType clusterType, String dc) {
+        if (!config.supportSentinelBeacon(orgId, clusterName, dc, clusterType)) {
             return false;
         }
         return clusterType == ClusterType.ONE_WAY

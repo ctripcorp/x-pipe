@@ -6,6 +6,8 @@ import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.config.CheckerDbConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
+import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
@@ -31,7 +33,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHelloCheckAction.HELLO_CHANNEL;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 /**
@@ -156,6 +160,23 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
         instance.getCheckInfo().setStatus(ClusterStatus.Migrating.name());
         Assert.assertFalse(action.shouldCheck(instance));
         verify(action, never()).processSentinelHellos();
+    }
+
+    @Test
+    public void supportSentinelHealthCheckShouldRespectIdcGray() {
+        when(metaCache.getXpipeMeta()).thenReturn(null);
+        HealthCheckConfig healthCheckConfig = mock(HealthCheckConfig.class);
+        when(healthCheckConfig.supportSentinelHealthCheck(any(), any())).thenReturn(true);
+        when(healthCheckConfig.supportSentinelBeacon(anyLong(), anyString(), anyString(), any()))
+                .thenAnswer(invocation -> "dc1".equalsIgnoreCase(invocation.getArgument(2, String.class)));
+        ((DefaultClusterHealthCheckInstance) instance).setHealthCheckConfig(healthCheckConfig);
+
+        // activeDc=dc1 is in IDC gray → legacy hello health-check disabled
+        Assert.assertFalse(action.supportSentinelHealthCheck(instance));
+
+        when(healthCheckConfig.supportSentinelBeacon(anyLong(), anyString(), anyString(), any()))
+                .thenAnswer(invocation -> "oy".equalsIgnoreCase(invocation.getArgument(2, String.class)));
+        Assert.assertTrue(action.supportSentinelHealthCheck(instance));
     }
 
     @Test
@@ -408,12 +429,14 @@ public class SentinelHelloCheckActionTest extends AbstractCheckerTest {
 
         ClusterMeta activeDcClusterMeta = new ClusterMeta();
         activeDcClusterMeta.setId(clusterName);
+        activeDcClusterMeta.setType(ClusterType.ONE_WAY.name());
         activeDcClusterMeta.setActiveDc("dc1");
         activeDcClusterMeta.addShard(activeDcShard1Meta);
         activeDcClusterMeta.addShard(activeDcShard2Meta);
         activeDcClusterMeta.addShard(activeDcShard3Meta);
         ClusterMeta backupDcClusterMeta = new ClusterMeta();
         backupDcClusterMeta.setId(clusterName);
+        backupDcClusterMeta.setType(ClusterType.ONE_WAY.name());
         backupDcClusterMeta.setActiveDc("dc1");
         backupDcClusterMeta.addShard(backupDcShard1Meta);
         backupDcClusterMeta.addShard(backupDcShard2Meta);

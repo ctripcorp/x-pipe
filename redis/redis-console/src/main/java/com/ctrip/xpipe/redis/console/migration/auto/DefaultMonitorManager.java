@@ -143,10 +143,7 @@ public class DefaultMonitorManager implements MonitorManager {
                     continue;
                 }
 
-                ClusterType clusterType = ClusterType.lookup(clusterMeta.getType());
-                if (!StringUtil.isEmpty(clusterMeta.getAzGroupType())) {
-                    clusterType = ClusterType.lookup(clusterMeta.getAzGroupType());
-                }
+                ClusterType clusterType = BeaconSentinelMetaUtil.resolveEffectiveClusterType(clusterMeta);
                 if (routeType == BeaconRouteType.SENTINEL && !BeaconSentinelMetaUtil.isSentinelManagedClusterType(clusterType)) {
                     continue;
                 }
@@ -163,7 +160,8 @@ public class DefaultMonitorManager implements MonitorManager {
                     if (!clusterType.supportMultiActiveDC() && !dcMeta.getId().equalsIgnoreCase(clusterMeta.getActiveDc())) {
                         continue;
                     }
-                    if (!config.supportSentinelBeacon(clusterMeta.getOrgId(), clusterMeta.getId())) {
+                    if (!config.supportSentinelBeacon(clusterMeta.getOrgId(), clusterMeta.getId(),
+                            dcMeta.getId(), clusterType)) {
                         continue;
                     }
                 }
@@ -228,11 +226,11 @@ public class DefaultMonitorManager implements MonitorManager {
             }
 
             ClusterMeta clusterMeta = dcMeta.getClusters().get(clusterName);
-            ClusterType clusterType = ClusterType.lookup(!StringUtil.isEmpty(clusterMeta.getAzGroupType())
-                    ? clusterMeta.getAzGroupType() : clusterMeta.getType());
+            ClusterType clusterType = BeaconSentinelMetaUtil.resolveEffectiveClusterType(clusterMeta);
             BeaconSystem beaconSystem = BeaconSentinelMetaUtil.resolveBeaconSystemByRouteType(clusterType, BeaconRouteType.SENTINEL);
             MonitorService monitorService = get(clusterMeta.getOrgId(), clusterMeta.getId(), dcMeta.getZone(), BeaconRouteType.SENTINEL);
-            boolean managedByBeacon = config.supportSentinelBeacon(clusterMeta.getOrgId(), clusterMeta.getId());
+            boolean managedByBeacon = config.supportSentinelBeacon(clusterMeta.getOrgId(), clusterMeta.getId(),
+                    dcMeta.getId(), clusterType);
 
             result.add(new SentinelClusterBeaconRouteItem(beaconSystem, dcMeta, clusterMeta, monitorService, managedByBeacon));
         }

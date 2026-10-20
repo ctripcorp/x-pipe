@@ -199,4 +199,8 @@ public interface ConsoleConfig extends CoreConfig, CheckerConfig, AlertConfig {
 	int getKeeperDefaultPriorityBm();
 
 	int getKeeperDefaultPriorityTfs();
+
+	Set<String> getRedisVacantAzCheckDcs();
+
+	int getRedisVacantAzCheckIntervalMilli();
 }

@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.console.controller.api;
 
+import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.redis.checker.controller.result.RetMessage;
 import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.controller.AbstractConsoleController;
@@ -11,6 +12,8 @@ import com.ctrip.xpipe.redis.console.service.BeaconCheckConfigService;
 import com.ctrip.xpipe.redis.console.service.ClusterService;
 import com.ctrip.xpipe.redis.console.service.ConfigService;
 import com.ctrip.xpipe.redis.console.service.meta.BeaconMetaService;
+import com.ctrip.xpipe.redis.core.beacon.BeaconSentinelMetaUtil;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -43,6 +46,9 @@ public class ChangeConfig extends AbstractConsoleController{
 
     @Autowired
     private BeaconMetaService beaconMetaService;
+
+    @Autowired
+    private MetaCache metaCache;
 
     @RequestMapping(value = "/config/sentinel_auto_process/start", method = RequestMethod.POST)
     public void startSentinelAutoProcess(HttpServletRequest request,
@@ -219,10 +225,16 @@ public class ChangeConfig extends AbstractConsoleController{
         if (cluster == null) {
             throw new IllegalArgumentException(String.format("cluster %s not found", clusterName));
         }
-        if (!consoleConfig.supportSentinelBeacon(cluster.getClusterOrgId(), clusterName)) {
+        String dc = beaconCheckConfigRequest.getDc();
+        ClusterType clusterType = metaCache == null ? null
+                : BeaconSentinelMetaUtil.resolveEffectiveClusterType(metaCache.getXpipeMeta(), dc, clusterName);
+        if (clusterType == null) {
+            clusterType = ClusterType.lookup(cluster.getClusterType());
+        }
+        if (!consoleConfig.supportSentinelBeacon(cluster.getClusterOrgId(), clusterName, dc, clusterType)) {
             throw new IllegalArgumentException(String.format("cluster %s is not managed by beacon sentinel mode", clusterName));
         }
-        beaconMetaService.validateSentinelBeaconOperatingDc(clusterName, beaconCheckConfigRequest.getDc());
+        beaconMetaService.validateSentinelBeaconOperatingDc(clusterName, dc);
     }
 
     private void checkClusterName(String clusterName) {

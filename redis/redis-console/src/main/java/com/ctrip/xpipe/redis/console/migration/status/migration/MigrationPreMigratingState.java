@@ -22,7 +22,8 @@ public class MigrationPreMigratingState extends AbstractMigrationState {
     @Override
     protected void doAction() {
         MigrationCluster migrationCluster = getHolder();
-        if (!migrationCluster.getMigrationService().shouldMigrateSentinelBeacon(migrationCluster)) {
+        if (!migrationCluster.getMigrationService().shouldMigrateSentinelBeacon(migrationCluster,
+                migrationCluster.fromDc())) {
             migrationCluster.updateStepResultForAllShards(ShardMigrationStep.PRE_MIGRATING, true,
                     LogUtils.info("skip"));
             updateAndProcess(nextAfterSuccess());

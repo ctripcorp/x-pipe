@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.ClusterInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultClusterInstanceInfo;
 import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,6 +22,9 @@ public class SentinelBeaconMigrationControllerTest {
     @Mock
     private CheckerDbConfig checkerDbConfig;
 
+    @Mock
+    private MetaCache metaCache;
+
     private SentinelBeaconMigrationController controller;
 
     private ClusterHealthCheckInstance instance;
@@ -30,12 +34,13 @@ public class SentinelBeaconMigrationControllerTest {
 
     @Before
     public void setup() {
-        controller = new SentinelBeaconMigrationController(checkerDbConfig);
+        controller = new SentinelBeaconMigrationController(checkerDbConfig, metaCache);
         instance = Mockito.mock(ClusterHealthCheckInstance.class);
         ClusterInstanceInfo info = new DefaultClusterInstanceInfo("cluster1", "jq", ClusterType.ONE_WAY, 1, "20201030");
         Mockito.when(instance.getCheckInfo()).thenReturn(info);
         Mockito.when(instance.getHealthCheckConfig()).thenReturn(healthCheckConfig);
-        Mockito.when(healthCheckConfig.supportSentinelBeacon(1, "cluster1")).thenReturn(true);
+        Mockito.when(healthCheckConfig.supportSentinelBeacon(Mockito.eq(1L), Mockito.eq("cluster1"),
+                Mockito.anyString(), Mockito.any(ClusterType.class))).thenReturn(true);
         Mockito.when(checkerDbConfig.shouldSentinelCheck("cluster1")).thenReturn(true);
         Mockito.when(checkerDbConfig.isSentinelAutoProcess()).thenReturn(true);
     }
@@ -73,5 +78,20 @@ public class SentinelBeaconMigrationControllerTest {
     @Test
     public void shouldCheckWhenClusterNotOnMigration() {
         Assert.assertTrue(controller.shouldCheck(instance));
+    }
+
+    @Test
+    public void shouldCheckOnlyWhenActiveDcInIdcGray() {
+        Mockito.when(healthCheckConfig.supportSentinelBeacon(Mockito.eq(1L), Mockito.eq("cluster1"),
+                Mockito.anyString(), Mockito.any(ClusterType.class)))
+                .thenAnswer(invocation -> "jq".equalsIgnoreCase(invocation.getArgument(2, String.class)));
+
+        ClusterInstanceInfo grayDc = new DefaultClusterInstanceInfo("cluster1", "jq", ClusterType.SINGLE_DC, 1, "20201030");
+        Mockito.when(instance.getCheckInfo()).thenReturn(grayDc);
+        Assert.assertTrue(controller.shouldCheck(instance));
+
+        ClusterInstanceInfo nonGrayDc = new DefaultClusterInstanceInfo("cluster1", "oy", ClusterType.SINGLE_DC, 1, "20201030");
+        Mockito.when(instance.getCheckInfo()).thenReturn(nonGrayDc);
+        Assert.assertFalse(controller.shouldCheck(instance));
     }
 }

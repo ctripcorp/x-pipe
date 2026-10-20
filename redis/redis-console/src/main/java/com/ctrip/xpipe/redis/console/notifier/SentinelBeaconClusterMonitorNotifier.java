@@ -48,14 +48,18 @@ public class SentinelBeaconClusterMonitorNotifier implements BeaconRouteClusterM
             logger.info("[needNotify][{}][skip] sentinel check excluded", clusterName);
             return false;
         }
-        if (!consoleConfig.supportSentinelBeacon(orgId, clusterName)) {
-            return false;
-        }
         Set<String> interestedDcs = interestedDcs(clusterName);
         if (StringUtil.isEmpty(dc)) {
-            return !interestedDcs.isEmpty();
+            return interestedDcs.stream().anyMatch(interestedDc ->
+                    supportSentinelBeaconForDc(clusterName, interestedDc, orgId));
         }
-        return interestedDcs.contains(dc);
+        return interestedDcs.contains(dc) && supportSentinelBeaconForDc(clusterName, dc, orgId);
+    }
+
+    private boolean supportSentinelBeaconForDc(String clusterName, String dc, long orgId) {
+        ClusterType clusterType = BeaconSentinelMetaUtil.resolveEffectiveClusterType(
+                metaCache.getXpipeMeta(), dc, clusterName);
+        return consoleConfig.supportSentinelBeacon(orgId, clusterName, dc, clusterType);
     }
 
     @Override

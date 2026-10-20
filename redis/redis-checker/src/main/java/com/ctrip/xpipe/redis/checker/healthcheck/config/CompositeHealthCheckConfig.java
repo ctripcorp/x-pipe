@@ -72,6 +72,11 @@ public class CompositeHealthCheckConfig implements HealthCheckConfig {
     }
 
     @Override
+    public boolean supportSentinelBeacon(long clusterOrgId, String clusterName, String idc, ClusterType clusterType) {
+        return config.supportSentinelBeacon(clusterOrgId, clusterName, idc, clusterType);
+    }
+
+    @Override
     public boolean supportCollectInfo(ClusterType clusterType) {
         return config.supportCollectInfo(clusterType);
     }

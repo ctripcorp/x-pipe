@@ -1,17 +1,24 @@
 package com.ctrip.xpipe.redis.checker.config.impl;
 
+import com.ctrip.xpipe.api.codec.GenericTypeReference;
 import com.ctrip.xpipe.api.config.ConfigProvider;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.codec.JsonCodec;
 import com.ctrip.xpipe.config.AbstractConfigBean;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
+import com.ctrip.xpipe.utils.StringUtil;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -68,6 +75,7 @@ public class CommonConfigBean extends AbstractConfigBean {
     public static final String KEY_BEACON_SHOULD_COMPUTE_EXTRA_IN_HASH = "beacon.should.compute.extra.in.hash";
     public static final String KEY_BEACON_SENTINEL_GRAY_CLUSTERS = "beacon.sentinel.gray.clusters";
     public static final String KEY_BEACON_SENTINEL_GRAY_BU = "beacon.sentinel.gray.bu";
+    public static final String KEY_BEACON_SENTINEL_GRAY_IDC_CLUSTER_TYPES = "beacon.sentinel.gray.idc.cluster.types";
 
     public static final String KEY_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI =
             "console.abnormal.cluster.status.monitor.interval.milli";
@@ -75,6 +83,8 @@ public class CommonConfigBean extends AbstractConfigBean {
     private static final long DEFAULT_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI = 60 * 1000L;
 
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
+
+    private final AtomicReference<CachedIdcClusterTypes> beaconSentinelGrayIdcClusterTypesCache = new AtomicReference<>();
 
     public CommonConfigBean() {
         super(ConfigProvider.DEFAULT.getOrCreateConfig(ConfigProvider.COMMON_CONFIG));
@@ -210,9 +220,70 @@ public class CommonConfigBean extends AbstractConfigBean {
         return result;
     }
 
+    public Map<String, Set<String>> getBeaconSentinelGrayIdcClusterTypes() {
+        String property = getProperty(KEY_BEACON_SENTINEL_GRAY_IDC_CLUSTER_TYPES, "{}");
+        CachedIdcClusterTypes cached = beaconSentinelGrayIdcClusterTypesCache.get();
+        if (cached != null && Objects.equals(cached.raw, property)) {
+            return cached.parsed;
+        }
+        Map<String, Set<String>> parsed = parseBeaconSentinelGrayIdcClusterTypes(property);
+        beaconSentinelGrayIdcClusterTypesCache.set(new CachedIdcClusterTypes(property, parsed));
+        return parsed;
+    }
+
+    private Map<String, Set<String>> parseBeaconSentinelGrayIdcClusterTypes(String property) {
+        if (StringUtil.isEmpty(property)) {
+            return Collections.emptyMap();
+        }
+        try {
+            Map<String, List<String>> raw = JsonCodec.INSTANCE.decode(property,
+                    new GenericTypeReference<Map<String, List<String>>>() {});
+            if (raw == null || raw.isEmpty()) {
+                return Collections.emptyMap();
+            }
+            Map<String, Set<String>> result = new HashMap<>();
+            raw.forEach((idc, types) -> {
+                if (StringUtil.isEmpty(idc)) {
+                    return;
+                }
+                Set<String> parsedTypes = new HashSet<>();
+                if (types != null) {
+                    types.forEach(type -> {
+                        if (!StringUtil.isEmpty(type)) {
+                            parsedTypes.add(type.trim().toUpperCase());
+                        }
+                    });
+                }
+                result.put(idc.trim().toLowerCase(), Collections.unmodifiableSet(parsedTypes));
+            });
+            return Collections.unmodifiableMap(result);
+        } catch (Exception e) {
+            logger.warn("[getBeaconSentinelGrayIdcClusterTypes] invalid config {}", property, e);
+            return Collections.emptyMap();
+        }
+    }
+
+    @Override
+    public void onChange(String key, String oldValue, String newValue) {
+        super.onChange(key, oldValue, newValue);
+        if (KEY_BEACON_SENTINEL_GRAY_IDC_CLUSTER_TYPES.equals(key)) {
+            beaconSentinelGrayIdcClusterTypesCache.set(null);
+        }
+    }
+
     public long getAbnormalClusterStatusMonitorIntervalMilli() {
         return getLongProperty(KEY_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI,
                 DEFAULT_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI);
+    }
+
+    private static final class CachedIdcClusterTypes {
+        private final String raw;
+        private final Map<String, Set<String>> parsed;
+
+        private CachedIdcClusterTypes(String raw, Map<String, Set<String>> parsed) {
+            this.raw = raw;
+            this.parsed = parsed;
+        }
     }
 
 }
