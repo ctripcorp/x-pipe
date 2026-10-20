@@ -1,0 +1,52 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/impl/DefaultRedisKeeperServerPrepareWatchTest.java
+  s_c6e5738ac76b45::t_1731d718da1ef7 420-477
+  s_c6e5738ac76b45::t_fcd341098ecb1b 22-24
+  s_c6e5738ac76b45::t_fb78a88e7917c6 31-32,34,36
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  s_c6e5738ac76b45::t_7a26fb1c076f91 559-568
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java
+  s_c6e5738ac76b45::t_25cddbe5bb3a1b 154-155
+  s_c6e5738ac76b45::t_682b99e67bdc56 4
+  s_c6e5738ac76b45::t_d34e69a77e0cd5 588
+  s_c6e5738ac76b45::t_36dc9ebcae84a9 221
+  s_c6e5738ac76b45::t_b932a1a57f4537 239
+  s_c6e5738ac76b45::t_9cb8f220b75748 306-307
+  s_c6e5738ac76b45::t_e73f56bcc013e0 80-81
+  s_c6e5738ac76b45::t_f4b7e794b83da7 340,418
+  s_c6e5738ac76b45::t_697083cc7edcb5 173,183,185-186
+  s_c6e5738ac76b45::t_455997486b063b 263
+  s_c6e5738ac76b45::t_5db39e6d8d1242 191
+  s_c6e5738ac76b45::t_ce8ad62676655c 284
+  s_c6e5738ac76b45::t_ee63139e4688f2 78-79,82-88
+  s_c6e5738ac76b45::t_4f558629e98797 170-172,174-182,184,187-190,192-220,222-238,240-248
+  s_c6e5738ac76b45::t_f0cd3651203d95 160
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperConfig.java
+  s_c6e5738ac76b45::t_ca52cdc1e0b7e7 42-43
+  s_c6e5738ac76b45::t_00f75b4387df33 194-195
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java
+  s_c6e5738ac76b45::t_9142d79c0635e5 416-420
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManagerMetaFlushTest.java
+  s_c6e5738ac76b45::t_e7ca02bb87b69b 37
+  s_c6e5738ac76b45::t_d772dde0b7d967 1-36,38-157,162-165,169-356,358-363,365-434,440-476
+  s_c6e5738ac76b45::t_7b6c4e2fbb5424 158-161,166-168
+  s_c6e5738ac76b45::t_94c4561f1097d8 435-439
+  s_c6e5738ac76b45::t_1c073285b1fd1a 357,364
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_c6e5738ac76b45::t_502c9dd5efe695 184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.50-trip",
+  "base_commit_sha": "4880e6ff1b60cd1e43502aae42f781cf764eb692",
+  "prompts": {},
+  "sessions": {
+    "s_c6e5738ac76b45": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_34bc2d40-5edc-46c7-86f2-45060cebb8b3",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
