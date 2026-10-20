@@ -175,6 +175,9 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
                 synchronized (this) {
                     XpipeMeta xpipeMeta = createXpipeMeta(dcMetas, redisCheckRuleMetas);
+                    if (fillKeeperIpInCache) {
+                        xpipeMeta = checkerKeeperIpFiller.fill(xpipeMeta);
+                    }
                     refreshMetaParts(xpipeMeta);
                     refreshMeta(xpipeMeta);
                 }
@@ -252,12 +255,23 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         return localStrategy;
     }
 
+    @Autowired
+    private CheckerKeeperIpFiller checkerKeeperIpFiller;
+
+    /**
+     * CONSOLE_CHECKER 模式下开启：loadCache 时把容器 Keeper 的 hostname 解析为 IP 写入缓存，
+     * 使同进程嵌入 Checker 组件直接拿到真实 IP（该模式下 ConsoleCheckerController 不加载，不经过出口填充）。
+     * CONSOLE 模式保持 false，Console 自身缓存保留占位 IP。
+     */
+    @VisibleForTesting
+    public boolean fillKeeperIpInCache = false;
+
     @Override
     public synchronized XpipeMeta getDividedXpipeMeta(int partIndex) {
         if (null == meta || null == clusterParts) throw new DataNotFoundException("data not ready");
         if (partIndex >= clusterParts.size()) throw new DataNotFoundException("no part " + partIndex);
 
-        return createDividedMeta(getXpipeMeta(), clusterParts.get(partIndex));
+        return checkerKeeperIpFiller.fill(createDividedMeta(getXpipeMeta(), clusterParts.get(partIndex)));
     }
 
     @Override

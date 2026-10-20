@@ -26,6 +26,7 @@ import com.ctrip.xpipe.redis.console.healthcheck.nonredis.cluster.ClusterHealthM
 import com.ctrip.xpipe.redis.console.healthcheck.stability.NetworkStabilityHolder;
 import com.ctrip.xpipe.redis.console.healthcheck.stability.NetworkStabilityInspector;
 import com.ctrip.xpipe.redis.console.keeper.impl.KeeperContainerUsedInfoMsgCollector;
+import com.ctrip.xpipe.redis.console.resources.CheckerKeeperIpFiller;
 import com.ctrip.xpipe.redis.console.service.CrossMasterDelayService;
 import com.ctrip.xpipe.redis.console.service.DelayService;
 import com.ctrip.xpipe.redis.console.service.impl.AlertEventService;
@@ -63,6 +64,9 @@ public class ConsoleCheckerController extends AbstractConsoleController {
 
     @Autowired
     private MetaCache metaCache;
+
+    @Autowired
+    private CheckerKeeperIpFiller checkerKeeperIpFiller;
 
     @Autowired
     private CheckerManager checkerManager;
@@ -113,7 +117,7 @@ public class ConsoleCheckerController extends AbstractConsoleController {
 
     @GetMapping(ConsoleCheckerPath.PATH_GET_ALL_META)
     public byte[] getDividedMeta(@RequestParam(value="format", required = false) String format) {
-        XpipeMeta xpipeMeta = metaCache.getXpipeMeta();
+        XpipeMeta xpipeMeta = checkerKeeperIpFiller.fill(metaCache.getXpipeMeta());
         return (format != null && format.equals("xml"))? xpipeMeta.toString().getBytes() : coder.encodeAsBytes(xpipeMeta);
     }
 
