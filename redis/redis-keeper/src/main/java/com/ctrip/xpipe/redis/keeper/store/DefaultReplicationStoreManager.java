@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
+import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
@@ -74,6 +75,17 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private ScheduledFuture<?> gcFuture;
 
+    static final long META_FLUSH_CHECK_PERIOD_MILLI = 10_000L;
+
+    private volatile long metaFlushCheckPeriodMilli = META_FLUSH_CHECK_PERIOD_MILLI;
+
+    private volatile ScheduledFuture<?> metaFlushFuture;
+
+    private volatile long lastMetaFlushMilli;
+
+    /** Directory name of {@link #currentStore}; published / cleared together with it under the monitor. */
+    private String currentStoreDirName;
+
     private ScheduledExecutorService scheduled;
 
     private final KeeperMonitor keeperMonitor;
@@ -139,13 +151,13 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     }
 
     /**
-     * Start Manager GC. PREPARE → ACTIVE/BACKUP (Phase Rc) re-enters via {@code start()} again.
-     * Read-only mode skips GC (D7b).
+     * Start Manager GC and meta flush. PREPARE → ACTIVE/BACKUP (Phase Rc) re-enters via {@code start()} again.
+     * Read-only mode skips both (D7b).
      */
     @Override
     protected void doStart() throws Exception {
         if (readOnly) {
-            logger.info("[doStart][readOnly][skip gc]{}", this);
+            logger.info("[doStart][readOnly][skip gc and meta flush]{}", this);
             return;
         }
         gcFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
@@ -155,6 +167,85 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                 gc();
             }
         }, keeperConfig.getReplicationStoreGcIntervalSeconds(), keeperConfig.getReplicationStoreGcIntervalSeconds(), TimeUnit.SECONDS);
+
+        // keeper-tfs-m6 §11.2
+        lastMetaFlushMilli = System.currentTimeMillis();
+        long checkPeriod = metaFlushCheckPeriodMilli;
+        metaFlushFuture = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+
+            @Override
+            protected void doRun() throws Exception {
+                checkAndFlushMeta();
+            }
+        }, checkPeriod, checkPeriod, TimeUnit.MILLISECONDS);
+    }
+
+    /** Takes effect on the next {@code start()}. */
+    @VisibleForTesting
+    public void setMetaFlushCheckPeriodMilli(long metaFlushCheckPeriodMilli) {
+        this.metaFlushCheckPeriodMilli = metaFlushCheckPeriodMilli;
+    }
+
+    private void checkAndFlushMeta() {
+        long interval = keeperConfig.getMetaFlushIntervalMilli();
+        if (interval <= 0) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastMetaFlushMilli < interval) {
+            return;
+        }
+        lastMetaFlushMilli = now;
+        flushMetaPeriodically();
+    }
+
+    void flushMetaPeriodically() {
+        ReplicationStore store = flushManagerMeta();
+        if (store == null || !store.checkOk()) {
+            return;
+        }
+        try {
+            store.flushMeta();
+        } catch (Throwable th) {
+            logger.warn("[flushMetaPeriodically][store meta fail] repl_id={} store={} cause: {}", replId, store,
+                    ExceptionUtils.getTypeAndMessage(th));
+        }
+    }
+
+    /**
+     * Rewrites manager meta from {@code currentStore} through the already-open handle only.
+     *
+     * @return {@code currentStore} read under the monitor, or null when the whole tick must be skipped
+     */
+    synchronized ReplicationStore flushManagerMeta() {
+        if (readOnly || !getLifecycleState().isStarted() || managerMetaDestroyed) {
+            return null;
+        }
+        ReplicationStore store = currentStore.get();
+        if (store == null || !store.checkOk()) {
+            return null;
+        }
+        AsyncFile asyncFile = managerMetaAsyncFile;
+        if (asyncFile == null || currentStoreDirName == null) {
+            return store;
+        }
+        String path = metaFile.getAbsolutePath();
+        try {
+            Properties meta = new Properties();
+            Properties committed = currentMeta.get();
+            if (committed != null) {
+                meta.putAll(committed);
+            }
+            meta.setProperty(LATEST_STORE_DIR, currentStoreDirName);
+            AsyncFileSystemHelper.writeAllBytes(asyncFileSystem, asyncFile, encodeMeta(meta),
+                    "flush manager meta " + path);
+            currentMeta.set(meta);
+            logger.debug("[flushManagerMeta][ok] repl_id={} path={}", replId, path);
+        } catch (Throwable th) {
+            logger.warn("[flushManagerMeta][fail] repl_id={} path={} cause: {}", replId, path,
+                    ExceptionUtils.getTypeAndMessage(th));
+        }
+        return store;
     }
 
     /**
@@ -169,6 +260,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     @Override
     protected void doStop() throws Exception {
         cancelGcFuture();
+        cancelMetaFlushFuture();
         flushStoreBestEffort();
         boolean storeReleased = false;
         try {
@@ -189,6 +281,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     @Override
     protected void doDispose() throws Exception {
         cancelGcFuture();
+        cancelMetaFlushFuture();
         try {
             releaseCurrentStore();
         } catch (Exception e) {
@@ -205,6 +298,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         if (gcFuture != null) {
             gcFuture.cancel(true);
             gcFuture = null;
+        }
+    }
+
+    private void cancelMetaFlushFuture() {
+        ScheduledFuture<?> future = metaFlushFuture;
+        metaFlushFuture = null;
+        if (future != null) {
+            future.cancel(true);
         }
     }
 
@@ -236,6 +337,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         } finally {
             // Always drop the lease reference so PREPARE cannot reopen via getCurrent.
             currentStore.set(null);
+            currentStoreDirName = null;
         }
     }
 
@@ -313,6 +415,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         }
 
         currentStore.set(replicationStore);
+        currentStoreDirName = storeBaseDir.getName();
 
         notifyObservers(new NodeAdded<ReplicationStore>(replicationStore));
         return currentStore.get();
@@ -482,6 +585,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
                     if (AsyncFileSystemHelper.await(() -> asyncFileSystem.exists(latestStoreDir.getAbsolutePath()),
                             "check latest store dir exists " + latestStoreDir.getAbsolutePath())) {
                         currentStore.set(createReplicationStore(latestStoreDir, keeperConfig, keeperRunid, keeperMonitor, syncRateManager));
+                        currentStoreDirName = latestStoreDir.getName();
                     }
                 }
             }

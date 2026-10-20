@@ -413,6 +413,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 				DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI);
 	}
 
+	@Override
+	public long getMetaFlushIntervalMilli() {
+		return getLongProperty(KEY_META_FLUSH_INTERVAL_MILLI, DEFAULT_META_FLUSH_INTERVAL_MILLI);
+	}
+
 	static long defaultAsyncTailCacheMaxSizeBytes() {
 		long maxDirect = PlatformDependent.maxDirectMemory();
 		if (maxDirect <= 0) {

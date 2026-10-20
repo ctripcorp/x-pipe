@@ -181,6 +181,7 @@ import org.junit.runners.Suite.SuiteClasses;
         AsyncFileSystemHelperTimeoutNoCancelTest.class,
         MetaWriteFailureRestoreTest.class,
         AbstractMetaStoreFlushTest.class,
+        DefaultReplicationStoreManagerMetaFlushTest.class,
         ContainerResourceManagerTest.class,
         UnclosedHandleMetricReporterTest.class,
         KeeperContainerControllerUnclosedHandlesTest.class,

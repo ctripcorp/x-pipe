@@ -19,14 +19,21 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
 import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStore;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import org.springframework.test.util.ReflectionTestUtils;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Properties;
 
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
@@ -408,6 +415,64 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 				LifecycleHelper.disposeIfPossible(occupying);
 			}
 		}
+	}
+
+	/** keeper-tfs-m6 T-P13.7 */
+	@Test
+	public void testMetaFlushRunsOnlyWhileWritable() throws Exception {
+		TestKeeperConfig config = watchConfig(true);
+		config.setMetaFlushIntervalMilli(50);
+		DefaultRedisKeeperServer server = (DefaultRedisKeeperServer) createRedisKeeperServer(config, true);
+		server.initialize();
+		DefaultReplicationStoreManager manager = (DefaultReplicationStoreManager) server.getReplicationStoreManager();
+		manager.setMetaFlushCheckPeriodMilli(20);
+		DefaultEndPoint master = new DefaultEndPoint("127.0.0.1", 0);
+		try {
+			server.start();
+			server.setRedisKeeperServerState(new RedisKeeperServerStateActive(server, master));
+			String dir = ((DefaultReplicationStore) server.getOrCreateReplicationStore()).getBaseDir().getName();
+			assertPeriodicFlushRestoresManagerMeta(manager, dir);
+
+			becomePrepare(server);
+			Assert.assertTrue(manager.isReadOnly());
+			Assert.assertTrue(manager.getLifecycleState().isStarted());
+			Assert.assertNull(ReflectionTestUtils.getField(manager, "metaFlushFuture"));
+			Object lastFlush = ReflectionTestUtils.getField(manager, "lastMetaFlushMilli");
+			sleep(200);
+			Assert.assertEquals("no tick while read-only", lastFlush,
+					ReflectionTestUtils.getField(manager, "lastMetaFlushMilli"));
+
+			server.getRedisKeeperServerState().becomeActive(master);
+			Assert.assertFalse(manager.isReadOnly());
+			Assert.assertNotNull(ReflectionTestUtils.getField(manager, "metaFlushFuture"));
+			Assert.assertEquals(dir,
+					((DefaultReplicationStore) server.getOrCreateReplicationStore()).getBaseDir().getName());
+			assertPeriodicFlushRestoresManagerMeta(manager, dir);
+		} finally {
+			stopQuietly(server);
+		}
+	}
+
+	private void assertPeriodicFlushRestoresManagerMeta(DefaultReplicationStoreManager manager, String dir)
+			throws Exception {
+		AsyncFile handle = (AsyncFile) ReflectionTestUtils.getField(manager, "managerMetaAsyncFile");
+		Assert.assertNotNull(handle);
+		Properties stale = new Properties();
+		stale.setProperty("latest.store.dir", "stale");
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		stale.store(out, null);
+		AsyncFileSystemHelper.writeAllBytes(asyncFileSystem(), handle, out.toByteArray(), "test write manager meta");
+		waitConditionUntilTimeOut(() -> {
+			try {
+				long size = AsyncFileSystemHelper.await(() -> asyncFileSystem().size(handle), "size");
+				Properties meta = new Properties();
+				meta.load(new ByteArrayInputStream(
+						AsyncFileSystemHelper.readAllBytes(asyncFileSystem(), handle, size, 0, "read")));
+				return dir.equals(meta.getProperty("latest.store.dir"));
+			} catch (IOException e) {
+				throw new IllegalStateException(e);
+			}
+		}, 2000);
 	}
 
 	private static byte[] concat(byte[] a, byte[] b) {
