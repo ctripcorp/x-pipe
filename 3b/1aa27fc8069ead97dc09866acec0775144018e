@@ -1,0 +1,28 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/MetaStore.java
+  s_5c7b1020bf488b::t_b7f750823dba5a 101-108
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java
+  s_5c7b1020bf488b::t_80a08ece6c21dc 363-391
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AbstractMetaStoreSizeIfMatchTest.java
+  s_5c7b1020bf488b::t_6b6dbacbe82dd4 1-16,18-54,67-68,70-76,78-84,86-91,93-100,102-108,110-116,118-123,125-148,157-159,161-167
+  s_5c7b1020bf488b::t_e363d52b2e9fea 17,55-66,69,77,85,92,101,109,117,124,149-153,155-156,160
+  s_5c7b1020bf488b::t_23f08d7fe4f87d 154
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStore.java
+  s_5c7b1020bf488b::t_9183ae0220ea28 1302-1316,1326-1330,1332-1349,1351-1360
+  s_5c7b1020bf488b::t_ba1bfd1e89b8bd 1331,1350
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.50-trip",
+  "base_commit_sha": "3b1aa27fc8069ead97dc09866acec0775144018e",
+  "prompts": {},
+  "sessions": {
+    "s_5c7b1020bf488b": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_b1dd4258-cd7a-46f8-883f-1c2418bbf2b2",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
