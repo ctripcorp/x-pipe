@@ -80,6 +80,10 @@ public class CommonConfigBean extends AbstractConfigBean {
     public static final String KEY_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI =
             "console.abnormal.cluster.status.monitor.interval.milli";
 
+    public static final String KEY_REDIS_VACANT_AZ_CHECK_DCS = "console.redis.vacant.az.check.dcs";
+
+    public static final String KEY_REDIS_VACANT_AZ_CHECK_INTERVAL_MILLI = "console.redis.vacant.az.check.interval.milli";
+
     private static final long DEFAULT_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI = 60 * 1000L;
 
     private String defaultRouteChooseStrategyType = RouteChooseStrategyFactory.RouteStrategyType.CRC32_HASH.name();
@@ -274,6 +278,14 @@ public class CommonConfigBean extends AbstractConfigBean {
     public long getAbnormalClusterStatusMonitorIntervalMilli() {
         return getLongProperty(KEY_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI,
                 DEFAULT_ABNORMAL_CLUSTER_STATUS_MONITOR_INTERVAL_MILLI);
+    }
+
+    public Set<String> getRedisVacantAzCheckDcs() {
+        return getSplitStringSet(getProperty(KEY_REDIS_VACANT_AZ_CHECK_DCS, ""));
+    }
+
+    public int getRedisVacantAzCheckIntervalMilli() {
+        return getIntProperty(KEY_REDIS_VACANT_AZ_CHECK_INTERVAL_MILLI, 5 * 60 * 1000);
     }
 
     private static final class CachedIdcClusterTypes {
