@@ -310,7 +310,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     }
 
     /**
-     * Best-effort cmd sliding-window / index flush before close. Failures are WARN-only
+     * Best-effort index flush before close. Failures are WARN-only
      * (lease release preferred over perfect durability; ForceCloseDir as fallback).
      */
     private void flushStoreBestEffort() {

@@ -32,7 +32,6 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException;
 	boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
 	long getCurReplStageReplOff();
-	long getCurReplStageReplOffWithFlush();
 	boolean increaseLost(GtidSet lost) throws IOException;
 
 	/**
@@ -79,13 +78,9 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	long backlogEndOffset();
 
 	/**
-	 * Flush pending cmd / index data that may still sit in memory (e.g. sliding window,
-	 * unflushed index entries). Prefer this over relying on {@link #backlogEndOffset()}
-	 * side effects when the intent is durability before close / PREPARE.
+	 * Flush index data that may still sit in memory (unflushed index entries) before close / PREPARE.
 	 */
 	void flushPendingData() throws IOException;
-
-	long backlogEndOffsetWithFlush();
 
 	GtidSet getEndGtidSet();
 
@@ -100,8 +95,6 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	boolean gc() throws IOException;
 
 	void resetStateForContinue();
-
-	void flushSlidingWindow();
 
 	/**
 	 * Close the replication store; its cmd / meta results are combined.

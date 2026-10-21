@@ -77,14 +77,6 @@ public class CoalescingOffsetNotifier {
         }
     }
 
-    public synchronized void flush() {
-        if (closed) {
-            return;
-        }
-        notifyPending();
-        cancelScheduled();
-    }
-
     public synchronized void close() {
         if (closed) {
             return;

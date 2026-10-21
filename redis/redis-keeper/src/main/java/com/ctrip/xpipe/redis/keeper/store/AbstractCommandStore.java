@@ -184,12 +184,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     }
 
     @Override
-    public int getPendingSize(){
-        return 0;
-    }
-
-
-    @Override
     public CommandWriter getCommandWriter() {
         return cmdWriter;
     }
@@ -197,17 +191,8 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     @Override
     public void flushPendingData() throws IOException {
         makeSureOpen();
-        flushSlidingWindow();
         if (indexStore != null) {
             indexStore.flushWriter();
-        }
-    }
-
-    @Override
-    public void flushSlidingWindow() throws IOException{
-        CoalescingOffsetNotifier coalescer = offsetNotifyCoalescer;
-        if (coalescer != null) {
-            coalescer.flush();
         }
     }
 
@@ -321,7 +306,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     public void rotateFileIfNecessary() throws IOException {
         if(cmdWriter.needRotate()) {
-            flushSlidingWindow();
             if(!buildIndex) {
                 cmdWriter.doRotate();
                 return;
@@ -752,7 +736,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         if (buildIndex) {
             return;
         }
-        flushSlidingWindow();
         if (indexStore != null) {
             indexStore.closeWriter();
         }
@@ -768,7 +751,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
     public synchronized void switchToPsync(String replId, long offset) throws IOException {
         if(!buildIndex)return;
         buildIndex = false;
-        flushSlidingWindow();
         if(indexStore != null) {
             indexStore.closeWriter();
         }

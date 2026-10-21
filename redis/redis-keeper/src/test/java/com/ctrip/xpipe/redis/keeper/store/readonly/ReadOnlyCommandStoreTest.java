@@ -264,7 +264,6 @@ public class ReadOnlyCommandStoreTest {
 
 	@Test
 	public void testEmptyImplementationsDoNotThrow() throws Exception {
-		store.flushSlidingWindow();
 		store.flushPendingData();
 		store.attachRateLimiter(SyncRateLimiter.UNLIMITED);
 	}
@@ -295,7 +294,7 @@ public class ReadOnlyCommandStoreTest {
 	}
 
 	@Test
-	public void testAll32MethodsCovered() throws Exception {
+	public void testAll31MethodsCovered() throws Exception {
 		AtomicInteger covered = new AtomicInteger();
 		store.initialize();
 		covered.incrementAndGet(); // initialize
@@ -315,8 +314,6 @@ public class ReadOnlyCommandStoreTest {
 		covered.incrementAndGet();
 		store.getCommandsLastUpdatedAt();
 		covered.incrementAndGet();
-		store.flushSlidingWindow();
-		covered.incrementAndGet();
 		store.flushPendingData();
 		covered.incrementAndGet();
 		store.attachRateLimiter(SyncRateLimiter.UNLIMITED);
@@ -329,7 +326,7 @@ public class ReadOnlyCommandStoreTest {
 		covered.incrementAndGet();
 		store.close();
 		covered.incrementAndGet();
-		Assert.assertEquals(32, covered.get());
+		Assert.assertEquals(31, covered.get());
 	}
 
 	@Test

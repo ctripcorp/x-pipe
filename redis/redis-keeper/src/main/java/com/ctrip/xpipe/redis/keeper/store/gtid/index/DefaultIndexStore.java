@@ -395,11 +395,8 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
     @Override
     public boolean checkOffset(long offset) {
         long cmdFileLen = getCurrentCmdFileLen();
-        int pendingSize = getPendingSize();
-        long logicOffset = cmdFileLen + pendingSize;
-        if (-1 != logicOffset && logicOffset != offset) {
-            logger.info("[checkOffset][mismatch] nextCmdBegin:{} cmdFileLen{},pendingSize {}", offset, cmdFileLen,
-                    pendingSize);
+        if (-1 != cmdFileLen && cmdFileLen != offset) {
+            logger.info("[checkOffset][mismatch] nextCmdBegin:{} cmdFileLen:{}", offset, cmdFileLen);
             return false;
         }
         return true;
@@ -836,13 +833,6 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
             return commandWriterCallback.getCmdFileLen();
         }
         return -1L;
-    }
-
-    public int getPendingSize() {
-        if (commandWriterCallback != null) {
-            return commandWriterCallback.getPendingSize();
-        }
-        return 0;
     }
 
     public IndexWriterV2 getIndexWriterV2() {

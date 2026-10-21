@@ -462,10 +462,6 @@ public class ReadOnlyCommandStore extends AbstractStore implements CommandStore 
 	}
 
 	@Override
-	public void flushSlidingWindow() {
-	}
-
-	@Override
 	public void flushPendingData() {
 	}
 

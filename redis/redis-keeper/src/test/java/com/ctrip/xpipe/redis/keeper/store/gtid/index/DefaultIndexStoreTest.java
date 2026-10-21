@@ -138,7 +138,6 @@ public class DefaultIndexStoreTest {
         when(writer.getFileContext()).thenReturn(commandFileContext);
         when(commandWriterCallback.getCommandWriter()).thenReturn(writer);
         when(writer.needRotate()).thenReturn(false);
-        when(commandWriterCallback.getPendingSize()).thenReturn(0);
         bindWriterLengthMocks();
         bindWriteCommandToFs();
 

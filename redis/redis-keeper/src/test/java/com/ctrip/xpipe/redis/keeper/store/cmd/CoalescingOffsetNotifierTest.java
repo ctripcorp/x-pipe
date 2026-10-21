@@ -170,22 +170,6 @@ public class CoalescingOffsetNotifierTest {
     }
 
     @Test
-    public void testFlushNotifiesPendingAndCancelsTimer() {
-        CoalescingOffsetNotifier coalescer = create(scheduler.executor);
-
-        coalescer.flush();
-        assertTrue(notifier.offsets.isEmpty());
-
-        coalescer.onWritten(10, 9);
-        coalescer.flush();
-        assertEquals(Collections.singletonList(9L), notifier.offsets);
-        verify(scheduler.futures.get(0)).cancel(false);
-
-        coalescer.flush();
-        assertEquals(Collections.singletonList(9L), notifier.offsets);
-    }
-
-    @Test
     public void testCloseNotifiesPendingThenIgnoresEverything() {
         CoalescingOffsetNotifier coalescer = create(scheduler.executor);
 
@@ -195,7 +179,6 @@ public class CoalescingOffsetNotifierTest {
         verify(scheduler.futures.get(0)).cancel(false);
 
         coalescer.onWritten(200, 209);
-        coalescer.flush();
         coalescer.close();
         // late callback of the cancelled timer
         scheduler.runNext();

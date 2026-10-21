@@ -324,7 +324,6 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		byte[] oldSeg = new byte[2000];
 		Arrays.fill(oldSeg, (byte) 'A');
 		commandStore.appendCommands(Unpooled.wrappedBuffer(oldSeg));
-		commandStore.flushSlidingWindow();
 		Assert.assertEquals(2000L, commandStore.totalLength());
 
 		OffsetNotifier notifier = (OffsetNotifier) ReflectionTestUtils.getField(commandStore, "offsetNotifier");
@@ -356,7 +355,6 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		byte[] newTail = new byte[8000];
 		Arrays.fill(newTail, (byte) 'B');
 		commandStore.appendCommands(Unpooled.wrappedBuffer(newTail));
-		commandStore.flushSlidingWindow();
 
 		long writerStart = fs.getCurrentSegmentStartOffset(writerHandle);
 		long writerSegSize = fs.sizeOfSegment(writerHandle, writerStart).get(5, TimeUnit.SECONDS);

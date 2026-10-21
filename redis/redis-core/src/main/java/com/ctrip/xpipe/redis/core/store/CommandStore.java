@@ -82,10 +82,8 @@ public interface CommandStore extends Initializable, Closeable, Destroyable {
 
 	void resetStateForContinue();
 
-	void flushSlidingWindow() throws IOException;
-
 	/**
-	 * Flush pending cmd bytes (sliding window) and index writers if present.
+	 * Flush index writers if present; cmd bytes are never buffered by the store.
 	 * Explicit durability API — do not abuse {@link #totalLength()} / backlog helpers for this.
 	 */
 	void flushPendingData() throws IOException;

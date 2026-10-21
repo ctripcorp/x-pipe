@@ -262,15 +262,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	}
 
 	@Override
-	public long getCurReplStageReplOffWithFlush() {
-		ReplStage curStage = metaStore.getCurrentReplStage();
-		long backlogEndOffset = backlogEndOffsetWithFlush();
-		if (getLogger().isDebugEnabled()) {
-			getLogger().debug("getCurReplStageReplOff: {}, {}, {}", curStage.getBegOffsetRepl(), backlogEndOffset, curStage.getBegOffsetBacklog());
-		}
-		return curStage.getBegOffsetRepl() - 1 + backlogEndOffset - curStage.getBegOffsetBacklog();	}
-
-	@Override
 	public boolean increaseLost(GtidSet lost) throws IOException {
 		getLogger().info("[increaseLost] {}", lost);
 
@@ -290,7 +281,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		makeSureOpen();
 		getLogger().info("[psyncContinue] newReplId:{}", newReplId);
 		if (newReplId == null) return;
-		long backlogEnd = backlogEndOffsetWithFlush();
+		long backlogEnd = backlogEndOffset();
 
 		// T-H2.B2: already PSYNC — prepare → Cmd switchToPsync (no-op) → saveMeta(CAS); no Index restore
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = metaStore.preparePsyncContinue(newReplId, backlogEnd);
@@ -322,7 +313,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		// T-H2.B2 / T-H3.CP4: XSYNC→PSYNC — prepare → Cmd switchToPsync (close Index) → saveMeta(CAS);
 		// meta fail → restoreXsyncIndex (buildIndex only, no openWriter)
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
-				metaStore.prepareSwitchToPsync(replId, replOff + 1, backlogEndOffsetWithFlush());
+				metaStore.prepareSwitchToPsync(replId, replOff + 1, backlogEndOffset());
 		try {
 			cmdStore.switchToPsync(replId, replOff);
 			if (!metaStore.saveMeta(prepared.getKey(), prepared.getValue())) {
@@ -359,7 +350,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		// T-H2.A3: prepare → createCmd → switchToXSync → saveMeta(CAS); no RDB storeRef
 		// T-H3.CP5b: Helper already retried leaf IO; do not retry commitContinueNewCmdThenMeta here
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = metaStore.prepareXsyncContinueFrom(
-				replId, replOff + 1, backlogEndOffsetWithFlush(), masterUuid, gtidLost, gtidExecuted, cmdFilePrefix);
+				replId, replOff + 1, backlogEndOffset(), masterUuid, gtidLost, gtidExecuted, cmdFilePrefix);
 		this.cmdStore = commitContinueNewCmdThenMeta(replId, -1L, true, gtidEmpty, prepared.getKey(), prepared.getValue());
 	}
 
@@ -372,7 +363,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 		// T-H2.B1: prepare → Cmd switchToXSync (Index) → saveMeta(CAS); meta fail → roll Index back to PSYNC
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared = metaStore.prepareSwitchToXsync(
-				replId, replOff + 1, backlogEndOffsetWithFlush(), masterUuid, gtidCont, gtidLost);
+				replId, replOff + 1, backlogEndOffset(), masterUuid, gtidCont, gtidLost);
 		boolean cmdSwitched = false;
 		try {
 			cmdStore.switchToXSync(new GtidSet(GtidSet.EMPTY_GTIDSET));
@@ -404,7 +395,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		getLogger().info("[xsyncContinue] replId:{}, replOff:{}, masterUuid:{}, gtidCont:{}", replId, replOff, masterUuid, gtidCont);
 		// T-H3.CP3: rebind before getIndexGtidSet — unbound writers would read empty tip header
 		cmdStore.rebindIndexWritersIfUnbound();
-		return metaStore.xsyncContinue(replId,replOff+1, backlogEndOffsetWithFlush(),masterUuid,gtidCont,cmdStore.getIndexGtidSet());
+		return metaStore.xsyncContinue(replId,replOff+1, backlogEndOffset(),masterUuid,gtidCont,cmdStore.getIndexGtidSet());
 	}
 
 	@Override
@@ -521,7 +512,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
 
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared;
-		long rdbNextByte = backlogEndOffsetWithFlush();
+		long rdbNextByte = backlogEndOffset();
 		if (rdbStore.getReplProto() == ReplStage.ReplProto.XSYNC) {
 			prepared = metaStore.prepareRdbConfirmXsync(rdbStore.getReplId(), rdbStore.getRdbOffset() + 1, rdbNextByte,
 					rdbStore.getMasterUuid(), new GtidSet(rdbStore.getGtidLost()), new GtidSet(rdbStore.getGtidSet()),
@@ -673,7 +664,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 			UPDATE_RDB_RESULT result;
 			long rdbContBacklogOffset;
-			long backlogEnd = backlogEndOffsetWithFlush();
+			long backlogEnd = backlogEndOffset();
 			if (replProto == ReplStage.ReplProto.PSYNC) {
 				result = metaStore.checkReplIdAndUpdateRdbInfoPsync(dumpedRdbFile.getName(),
 						rdbType, eofType, rdbOffset, rdbReplId, backlogBeginOffset(), backlogEnd);
@@ -781,7 +772,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		String cmdFilePrefix = "cmd_" + UUID.randomUUID().toString() + "_";
 		// T-H2.A2: prepare → createCmd(+switchToPsync) → saveMeta(CAS); no RDB storeRef
 		Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepared =
-				metaStore.preparePsyncContinueFrom(replId, replOff, backlogEndOffsetWithFlush(), cmdFilePrefix);
+				metaStore.preparePsyncContinueFrom(replId, replOff, backlogEndOffset(), cmdFilePrefix);
 		this.cmdStore = commitContinueNewCmdThenMeta(replId, replOff, false, null,
 				prepared.getKey(), prepared.getValue());
 	}
@@ -979,14 +970,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		if (cmdStore != null) {
 			cmdStore.flushPendingData();
 		}
-	}
-
-	@Override
-	public long backlogEndOffsetWithFlush() {
-		makeSureOpen();
-		if (null == cmdStore) return ReplicationStoreMeta.DEFAULT_END_OFFSET;
-		flushSlidingWindow();
-		return cmdStore.totalLength();
 	}
 
 	@Override
@@ -1557,17 +1540,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	@Override
 	public void resetStateForContinue() {
 		cmdStore.resetStateForContinue();
-	}
-
-	@Override
-	public void flushSlidingWindow() {
-		if(cmdStore != null) {
-			try {
-				cmdStore.flushSlidingWindow();
-			} catch (IOException e) {
-				throw new XpipeRuntimeException("flushSlidingWindow", e);
-			}
-		}
 	}
 
 	protected Logger getLogger() {
