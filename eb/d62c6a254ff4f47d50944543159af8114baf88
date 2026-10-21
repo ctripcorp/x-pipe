@@ -1,0 +1,41 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/CoalescingOffsetNotifier.java
+  s_3ac1e743ba2b5b::t_f397a9fc482c8e 44
+  s_3ac1e743ba2b5b::t_f28d9b75c23d30 16
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultCommandStoreTest.java
+  s_3ac1e743ba2b5b::t_807ea5196d322d 934
+  s_3ac1e743ba2b5b::t_7aa2254f3273f1 1045-1047,1051
+  s_3ac1e743ba2b5b::t_e8597353f3f57d 21
+  s_3ac1e743ba2b5b::t_edf24b13fc3b9b 933,938,940
+  s_3ac1e743ba2b5b::t_cf2408145c4225 824-851,855-881,885
+  s_3ac1e743ba2b5b::t_7bc807e40f87b4 999
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/readonly/ReadOnlyCommandStoreTest.java
+  s_3ac1e743ba2b5b::t_7d83bb6aa4b3c3 357
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/OffsetCommandWriter.java
+  s_3ac1e743ba2b5b::t_7f4f81916734c1 24
+redis/redis-integration-test/src/test/java/com/ctrip/xpipe/redis/integratedtest/keeper/KeeperPsync2Continue.java
+  s_3ac1e743ba2b5b::t_c222e290d21286 33-34
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AbstractCommandStore.java
+  s_3ac1e743ba2b5b::t_6fdbd261a4545b 103
+  s_3ac1e743ba2b5b::t_a5a87dc0e9ef58 285,287-288,290-294,296-299
+  s_3ac1e743ba2b5b::t_2460f0bbd269af 224-227
+  s_3ac1e743ba2b5b::t_d903f8ea2a022b 16
+  s_3ac1e743ba2b5b::t_694dfbd317e470 386
+  s_3ac1e743ba2b5b::t_0357bd1dffcb0b 208-210
+  s_3ac1e743ba2b5b::t_3d472c1c4c50de 397-408
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.51-trip",
+  "base_commit_sha": "ebd62c6a254ff4f47d50944543159af8114baf88",
+  "prompts": {},
+  "sessions": {
+    "s_3ac1e743ba2b5b": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_b6d81220-fb37-4553-a400-979bd18f8a57",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
