@@ -1,0 +1,33 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  s_3ac1e743ba2b5b::t_0bf4b35964a250 168-190
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/CoalescingOffsetNotifier.java
+  s_3ac1e743ba2b5b::t_957989d8bc9c89 1-157
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java
+  s_3ac1e743ba2b5b::t_ce5b75d6722b68 32-33
+  s_3ac1e743ba2b5b::t_f62329e9eb36d1 175-183
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfigTest.java
+  s_3ac1e743ba2b5b::t_ac993bd82b6d9b 132-186
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_3ac1e743ba2b5b::t_e3326ffaf27325 47,165
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperConfig.java
+  s_3ac1e743ba2b5b::t_820cf7dcdfd148 81-86
+  s_3ac1e743ba2b5b::t_b359066f49e674 46-47
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/cmd/CoalescingOffsetNotifierTest.java
+  s_3ac1e743ba2b5b::t_2d20cd8ebf1996 1-301
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.51-trip",
+  "base_commit_sha": "73e2a0924a07a3f6632f1d4cbe4d5142dcba7c86",
+  "prompts": {},
+  "sessions": {
+    "s_3ac1e743ba2b5b": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_b6d81220-fb37-4553-a400-979bd18f8a57",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
