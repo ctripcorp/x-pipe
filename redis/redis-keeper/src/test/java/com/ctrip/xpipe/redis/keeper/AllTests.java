@@ -44,6 +44,7 @@ import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTransactionBatchTest;
+import com.ctrip.xpipe.redis.keeper.store.cmd.CoalescingOffsetNotifierTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.IndexEntryTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReaderTest;
@@ -161,6 +162,7 @@ import org.junit.runners.Suite.SuiteClasses;
         CKStoreTest.class,
         CKStoreTransactionBatchTest.class,
         TimerSlidingWindowTest.class,
+        CoalescingOffsetNotifierTest.class,
 
         DiskHealthCheckerTest.class,
         DiskReadWriteCheckJobTest.class,

@@ -129,6 +129,62 @@ public class DefaultKeeperConfigTest extends AbstractRedisKeeperTest{
 	}
 
 	@Test
+	public void testCommandOffsetNotifyThresholdDefaults() {
+		String bytesKey = DefaultKeeperConfig.KEY_COMMAND_OFFSET_NOTIFY_BYTES_THRESHOLD;
+		String timeKey = DefaultKeeperConfig.KEY_COMMAND_OFFSET_NOTIFY_TIME_MILLI_THRESHOLD;
+		String oldBytes = System.getProperty(bytesKey);
+		String oldTime = System.getProperty(timeKey);
+		try {
+			System.clearProperty(bytesKey);
+			System.clearProperty(timeKey);
+			KeeperConfig keeperConfig = new DefaultKeeperConfig();
+			Assert.assertEquals(4096, keeperConfig.getCommandOffsetNotifyBytesThreshold());
+			Assert.assertEquals(1, keeperConfig.getCommandOffsetNotifyTimeMilliThreshold());
+
+			KeeperConfig testConfig = new TestKeeperConfig();
+			Assert.assertEquals(KeeperConfig.DEFAULT_COMMAND_OFFSET_NOTIFY_BYTES_THRESHOLD,
+					testConfig.getCommandOffsetNotifyBytesThreshold());
+			Assert.assertEquals(KeeperConfig.DEFAULT_COMMAND_OFFSET_NOTIFY_TIME_MILLI_THRESHOLD,
+					testConfig.getCommandOffsetNotifyTimeMilliThreshold());
+		} finally {
+			restoreProperty(bytesKey, oldBytes);
+			restoreProperty(timeKey, oldTime);
+		}
+	}
+
+	@Test
+	public void testCommandOffsetNotifyThresholdOverride() {
+		String bytesKey = DefaultKeeperConfig.KEY_COMMAND_OFFSET_NOTIFY_BYTES_THRESHOLD;
+		String timeKey = DefaultKeeperConfig.KEY_COMMAND_OFFSET_NOTIFY_TIME_MILLI_THRESHOLD;
+		String oldBytes = System.getProperty(bytesKey);
+		String oldTime = System.getProperty(timeKey);
+		try {
+			System.setProperty(bytesKey, "8192");
+			System.setProperty(timeKey, "5");
+			KeeperConfig keeperConfig = new DefaultKeeperConfig();
+			Assert.assertEquals(8192, keeperConfig.getCommandOffsetNotifyBytesThreshold());
+			Assert.assertEquals(5, keeperConfig.getCommandOffsetNotifyTimeMilliThreshold());
+
+			TestKeeperConfig testConfig = new TestKeeperConfig()
+					.setCommandOffsetNotifyBytesThreshold(100)
+					.setCommandOffsetNotifyTimeMilliThreshold(7);
+			Assert.assertEquals(100, testConfig.getCommandOffsetNotifyBytesThreshold());
+			Assert.assertEquals(7, testConfig.getCommandOffsetNotifyTimeMilliThreshold());
+		} finally {
+			restoreProperty(bytesKey, oldBytes);
+			restoreProperty(timeKey, oldTime);
+		}
+	}
+
+	private static void restoreProperty(String key, String oldValue) {
+		if (oldValue == null) {
+			System.clearProperty(key);
+		} else {
+			System.setProperty(key, oldValue);
+		}
+	}
+
+	@Test
 	public void testCommandOffsetNotifyCoalescingConfig() {
 		String key = DefaultKeeperConfig.KEY_COMMAND_OFFSET_NOTIFY_COALESCING_ENABLED;
 		String oldValue = System.getProperty(key);

@@ -165,6 +165,29 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return commandReaderFlyingThreshold;
 	}
 
+	private volatile int commandOffsetNotifyBytesThreshold = DEFAULT_COMMAND_OFFSET_NOTIFY_BYTES_THRESHOLD;
+	private volatile int commandOffsetNotifyTimeMilliThreshold = DEFAULT_COMMAND_OFFSET_NOTIFY_TIME_MILLI_THRESHOLD;
+
+	@Override
+	public int getCommandOffsetNotifyBytesThreshold() {
+		return commandOffsetNotifyBytesThreshold;
+	}
+
+	public TestKeeperConfig setCommandOffsetNotifyBytesThreshold(int commandOffsetNotifyBytesThreshold) {
+		this.commandOffsetNotifyBytesThreshold = commandOffsetNotifyBytesThreshold;
+		return this;
+	}
+
+	@Override
+	public int getCommandOffsetNotifyTimeMilliThreshold() {
+		return commandOffsetNotifyTimeMilliThreshold;
+	}
+
+	public TestKeeperConfig setCommandOffsetNotifyTimeMilliThreshold(int commandOffsetNotifyTimeMilliThreshold) {
+		this.commandOffsetNotifyTimeMilliThreshold = commandOffsetNotifyTimeMilliThreshold;
+		return this;
+	}
+
 	private boolean commandOffsetNotifyCoalescingEnabled = true;
 
 	@Override

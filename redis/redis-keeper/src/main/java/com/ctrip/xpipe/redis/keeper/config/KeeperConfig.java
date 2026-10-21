@@ -43,6 +43,8 @@ public interface KeeperConfig extends CoreConfig{
 	long DEFAULT_META_FLUSH_INTERVAL_MILLI = 3L * 60 * 1000;
 	int DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI = 5000;
 	int DEFAULT_PREPARE_WATCH_CLOSE_HOLD_MILLI = 1000;
+	int DEFAULT_COMMAND_OFFSET_NOTIFY_BYTES_THRESHOLD = 4 * 1024;
+	int DEFAULT_COMMAND_OFFSET_NOTIFY_TIME_MILLI_THRESHOLD = 1;
 
 
 	int getMetaServerConnectTimeout();
@@ -75,6 +77,12 @@ public interface KeeperConfig extends CoreConfig{
 	int getReplicationStoreMinTimeMilliToGcAfterCreate();
 
 	long getCommandReaderFlyingThreshold();
+
+	/** pending bytes that trigger an immediate command offset notify when coalescing */
+	int getCommandOffsetNotifyBytesThreshold();
+
+	/** max delay (ms) of a coalesced command offset notify */
+	int getCommandOffsetNotifyTimeMilliThreshold();
 
 	boolean isCommandOffsetNotifyCoalescingEnabled();
 
