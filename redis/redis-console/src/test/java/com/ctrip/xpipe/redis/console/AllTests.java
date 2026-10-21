@@ -11,8 +11,8 @@ import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleConfigTest;
 import com.ctrip.xpipe.redis.console.config.impl.DefaultConsoleDbConfigTest;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManagerTest;
 import com.ctrip.xpipe.redis.console.controller.api.BeaconRouteControllerTest;
-import com.ctrip.xpipe.redis.console.controller.api.checker.ConsoleCheckerControllerDcAllMetaTest;
 import com.ctrip.xpipe.redis.console.controller.api.ChangeConfigTest;
+import com.ctrip.xpipe.redis.console.controller.api.checker.ConsoleCheckerControllerDcAllMetaTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.*;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.CheckPrepareRequestTest;
 import com.ctrip.xpipe.redis.console.controller.api.data.meta.ClusterCreateInfoTest;
@@ -83,6 +83,7 @@ import com.ctrip.xpipe.redis.console.service.migration.support.HeteroMigrationSu
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderCrossRegionAzGroupTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderHeteroMigrationTest;
 import com.ctrip.xpipe.redis.console.service.vo.DcMetaBuilderTest;
+import com.ctrip.xpipe.redis.console.spring.KeeperContainerAddressAssemblyTest;
 import com.ctrip.xpipe.redis.console.spring.XPipeHandlerMethodCommandTest;
 import com.ctrip.xpipe.redis.core.metaserver.impl.DefaultReactorMetaServerConsoleServiceEmptyBodyTest;
 import org.junit.runner.RunWith;
@@ -221,6 +222,8 @@ import org.junit.runners.Suite.SuiteClasses;
         DcClusterServiceImplTest.class,
         CrossMasterDelayServiceTest.class,
         DefaultMetaCacheTest.class,
+        CheckerKeeperIpFillerTest.class,
+        KeeperContainerAddressAssemblyTest.class,
         DcMetaSynchronizerTest.class,
         RedisMetaSynchronizerTest.class,
         ConsoleServiceManagerTest.class,

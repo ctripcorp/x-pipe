@@ -19,6 +19,11 @@ import java.util.Set;
  * 容器 keeper 为 {@code hostname:port}，不接受容器的网络 IP。持有网络地址的调用方需先自行翻译
  * （如 console 的 {@code DefaultProxyChainAnalyzer} 经 {@code CrossDcKeeperContainerAddressService.findHostnamesByIp}）。
  *
+ * <p><b>容器 keeper 的 {@code ip} 字段</b>：DB 与 Console 自身缓存中是占位值 {@code 0.0.0.0}；
+ * Console 下发给 Checker 时在接口出口将其填充为真实网络 IP（copy-on-write，不影响 Console 缓存），
+ * Checker 不再 watch ZK 反查，读 {@code keeperMeta.getIp()} 即为可直连地址。
+ * 该填充不改变本接口按 HostPort 查找的上述约定。
+ *
  * @author wenchao.meng
  *         <p>
  *         Mar 31, 2017

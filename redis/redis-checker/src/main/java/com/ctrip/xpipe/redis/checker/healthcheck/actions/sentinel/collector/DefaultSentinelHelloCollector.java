@@ -24,7 +24,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelLeakyB
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.collector.command.*;
 import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatus;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
-import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.OsUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
@@ -77,9 +76,6 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
 
     @Resource(name = SENTINEL_KEYED_NETTY_CLIENT_POOL)
     private XpipeNettyClientKeyedObjectPool keyedObjectPool;
-
-    @Autowired
-    private CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService;
 
     private SentinelLeakyBucket leakyBucket;
 
@@ -262,7 +258,7 @@ public class DefaultSentinelHelloCollector implements SentinelHelloCollector {
             chain.add(new AnalyseHellos(context, checkerConfig));
             chain.add(new AcquireLeakyBucket(context, leakyBucket));
             chain.add(new DeleteSentinels(context, sentinelManager));
-            chain.add(new ResetSentinels(context, metaCache, keyedObjectPool, scheduled, resetExecutor, sentinelManager, checkerConfig, currentDcKeeperContainerAddressService));
+            chain.add(new ResetSentinels(context, metaCache, keyedObjectPool, scheduled, resetExecutor, sentinelManager, checkerConfig));
             chain.add(new AddSentinels(context, sentinelManager, checkerConfig));
             chain.add(new SetSentinels(context, sentinelManager));
         }
