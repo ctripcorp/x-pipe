@@ -44,7 +44,7 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
         DeferredHandleCloser.register(realFs, closer);
         manager = new DefaultReplicationStoreManager(new TestKeeperConfig(), getReplId(), randomKeeperRunid(),
                 new File(getTestFileDir()), createkeeperMonitor(), mock(SyncRateManager.class),
-                createRedisOpParser(), null, realFs);
+                createRedisOpParser(), realFs);
         LifecycleHelper.initializeIfPossible(manager);
         LifecycleHelper.startIfPossible(manager);
         store = manager.create();

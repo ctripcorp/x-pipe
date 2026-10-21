@@ -195,7 +195,7 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 	private DefaultReplicationStoreManager newManager(AsyncFileSystem fs) {
 		return new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()),
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 	}
 
 	private static void assertReadOnlyStore(ThrowingRunnable action) throws Exception {

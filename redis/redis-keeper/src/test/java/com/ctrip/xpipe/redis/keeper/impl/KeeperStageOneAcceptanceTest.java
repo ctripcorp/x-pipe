@@ -237,7 +237,7 @@ public class KeeperStageOneAcceptanceTest extends AbstractRedisKeeperContextTest
 		config.setMinTimeMilliToGcAfterCreate(60_000);
 		return new DefaultReplicationStoreManager(
 				config, getReplId(), runid, base,
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 	}
 
 	private void seedCommands(DefaultReplicationStore store) throws Exception {

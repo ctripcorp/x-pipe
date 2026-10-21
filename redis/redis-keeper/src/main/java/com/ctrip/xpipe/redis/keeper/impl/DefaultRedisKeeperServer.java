@@ -237,10 +237,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	protected ReplicationStoreManager createReplicationStoreManager(CKStore ckStore,NioEventLoopGroup masterEventLoopGroup, KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
-																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor,
-																	ScheduledExecutorService scheduled) {
+																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor) {
 		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(this.ckStore, masterEventLoopGroup, keeperConfig, replId,
-				currentKeeperMeta.getId(), baseDir, keeperMonitor, syncRateManager, redisOpParser, scheduled, asyncFileSystem);
+				currentKeeperMeta.getId(), baseDir, keeperMonitor, syncRateManager, redisOpParser, asyncFileSystem);
 		if (pubSubParseHook != null) {
 			manager.setPubSubParseHook(pubSubParseHook);
 		}
@@ -304,7 +303,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		masterConfigEventLoopGroup = new NioEventLoopGroup(DEFAULT_MASTER_CONFIG_EVENT_LOOP_SIZE, KeeperReplIdAwareThreadFactory.create(replId, "masterConfig-" + threadPoolName));
 
 		replicationStoreManager = createReplicationStoreManager(ckStore,masterEventLoopGroup,keeperConfig, clusterId, shardId, replId,
-				currentKeeperMeta, baseDir, keeperMonitor, scheduled);
+				currentKeeperMeta, baseDir, keeperMonitor);
 		replicationStoreManager.addObserver(new ReplicationStoreManagerListener());
 		replicationStoreManager.initialize();
 

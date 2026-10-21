@@ -23,8 +23,13 @@ import com.ctrip.xpipe.tuple.Pair;
 import org.junit.Assert;
 import redis.clients.jedis.Jedis;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author wenchao.meng
@@ -173,30 +178,47 @@ public abstract class AbstractKeeperIntegrated extends AbstractIntegratedTest{
 	 * PING sits in the socket buffer and never gets forwarded before a zero-wait assertion fires.
 	 * Poll each side fresh per iteration so a moving master (auto PING) still converges when the
 	 * chain is caught up momentarily.
+	 * <p>
+	 * Once a poll sees every slave equal to master, return without re-reading: master sends PING
+	 * asynchronously, so a second non-atomic "master then slaves" read can observe master ahead by
+	 * one PING (14 bytes) that the keeper has not forwarded yet. Only on timeout, assert on the last
+	 * snapshot observed during the wait for a readable Expected/Actual failure.
 	 */
 	protected void assertReplOffset(RedisMeta master) throws Exception {
+		AtomicReference<Map<RedisMeta, Long>> lastSlaveOffsets = new AtomicReference<>();
+		AtomicLong lastMasterOffset = new AtomicLong(-1);
 		try {
 			waitConditionUntilTimeOut(() -> {
 				try {
 					long masterOffset = getOffset(master.getIp(), master.getPort(), true);
+					Map<RedisMeta, Long> slaveOffsets = new LinkedHashMap<>();
+					boolean allEqual = true;
 					for (RedisMeta slave : getRedisSlaves()) {
 						long slaveOffset = getOffset(slave.getIp(), slave.getPort(), false);
-						if (slaveOffset != masterOffset) return false;
+						slaveOffsets.put(slave, slaveOffset);
+						if (slaveOffset != masterOffset) allEqual = false;
 					}
-					return true;
+					lastMasterOffset.set(masterOffset);
+					lastSlaveOffsets.set(slaveOffsets);
+					return allEqual;
 				} catch (Exception e) {
 					logger.warn("[assertReplOffset] info failed, master={}", master, e);
 					return false;
 				}
 			}, 30000, 100);
-		} catch (java.util.concurrent.TimeoutException ignore) {
-			// fall through to strict assert below for a readable Expected/Actual failure
+			logger.info("[assertReplOffset][converged] master {}:{} offset: {}", master.getIp(), master.getPort(),
+					lastMasterOffset.get());
+			return;
+		} catch (TimeoutException timeout) {
+			logger.warn("[assertReplOffset][timeout] master {}:{}, last master offset: {}, last slave offsets: {}",
+					master.getIp(), master.getPort(), lastMasterOffset.get(), lastSlaveOffsets.get());
 		}
-		long masterOffset = getOffset(master.getIp(), master.getPort(), true);
-		for (RedisMeta slave : getRedisSlaves()) {
-			long slaveOffset = getOffset(slave.getIp(), slave.getPort(), false);
-			logger.info("slave {}:{} repl offset: {}", slave.getIp(), slave.getPort(), slaveOffset);
-			Assert.assertEquals(masterOffset, slaveOffset);
+		Map<RedisMeta, Long> slaveOffsets = lastSlaveOffsets.get();
+		Assert.assertNotNull("[assertReplOffset] no successful offset poll for master " + master, slaveOffsets);
+		for (Map.Entry<RedisMeta, Long> entry : slaveOffsets.entrySet()) {
+			RedisMeta slave = entry.getKey();
+			Assert.assertEquals("slave " + slave.getIp() + ":" + slave.getPort() + " repl offset",
+					lastMasterOffset.get(), entry.getValue().longValue());
 		}
 	}
 

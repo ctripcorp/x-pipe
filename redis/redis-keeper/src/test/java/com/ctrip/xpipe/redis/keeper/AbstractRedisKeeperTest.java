@@ -162,7 +162,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 	protected DefaultReplicationStore createDefaultReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
 			KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOpParser) throws IOException {
 		return new DefaultReplicationStore(null, baseDir, config, keeperRunid, new OffsetCommandReaderWriterFactory(),
-				keeperMonitor, syncRateManager, redisOpParser, null, asyncFileSystem(), getReplId());
+				keeperMonitor, syncRateManager, redisOpParser, asyncFileSystem(), getReplId());
 	}
 
 	protected ShardId getShardId() {
@@ -216,7 +216,7 @@ public class AbstractRedisKeeperTest extends AbstractRedisTest {
 
 	protected ReplicationStoreManager createReplicationStoreManager(ReplId replId, String keeperRunid, KeeperConfig keeperConfig, File storeDir) {
 		
-		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, replId, keeperRunid, storeDir, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), createRedisOpParser(), null, asyncFileSystem());
+		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(keeperConfig, replId, keeperRunid, storeDir, createkeeperMonitor(), Mockito.mock(SyncRateManager.class), createRedisOpParser(), asyncFileSystem());
 
 		replicationStoreManager.addObserver(new Observer() {
 			

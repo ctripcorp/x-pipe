@@ -73,7 +73,7 @@ public class KeeperPubSubParseHookTest extends AbstractRedisKeeperTest {
 				(channel, message) -> received.add(channel + ":" + message));
 		manager = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()),
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null,
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(),
 				fs = createTestAsyncFileSystem());
 		manager.setPubSubParseHook(hook);
 		LifecycleHelper.initializeIfPossible(manager);
@@ -199,7 +199,7 @@ public class KeeperPubSubParseHookTest extends AbstractRedisKeeperTest {
 		fs = createTestAsyncFileSystem();
 		manager = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()),
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 		LifecycleHelper.initializeIfPossible(manager);
 		LifecycleHelper.startIfPossible(manager);
 		DefaultReplicationStore store = (DefaultReplicationStore) manager.create();

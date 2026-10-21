@@ -367,7 +367,7 @@ public class MetaWriteFailureRestoreTest extends AbstractRedisKeeperTest {
         config.setReplicationStoreGcIntervalSeconds(3600);
         DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(config, getReplId(),
                 randomKeeperRunid(), baseDir, createkeeperMonitor(), mock(SyncRateManager.class),
-                createRedisOpParser(), null, fileSystem) {
+                createRedisOpParser(), fileSystem) {
             @Override
             protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig,
                     String keeperRunid, KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) {

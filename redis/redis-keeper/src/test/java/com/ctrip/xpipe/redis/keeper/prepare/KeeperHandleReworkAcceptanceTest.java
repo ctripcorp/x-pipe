@@ -380,7 +380,7 @@ public class KeeperHandleReworkAcceptanceTest extends AbstractRedisKeeperContext
 	private DefaultReplicationStoreManager newManager(AsyncFileSystem fs, File base, String runid) {
 		return new DefaultReplicationStoreManager(
 				watchKeeperConfig, getReplId(), runid, base,
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 	}
 
 	private static ReadOnlyCommandStore cmdStore(DefaultReplicationStore store) {

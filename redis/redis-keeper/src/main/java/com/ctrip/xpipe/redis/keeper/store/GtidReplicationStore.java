@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * @author lishanglin
@@ -29,52 +28,52 @@ public class GtidReplicationStore extends DefaultReplicationStore {
 
     public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager,
-                                ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+                                AsyncFileSystem asyncFileSystem,
                                 ReplId fileSystemReplId) throws IOException {
-        this(baseDir, config, keeperRunid, keeperMonitor, redisOpParser, syncRateManager, commandNotifyScheduler,
+        this(baseDir, config, keeperRunid, keeperMonitor, redisOpParser, syncRateManager,
                 asyncFileSystem, fileSystemReplId, false);
     }
 
     public GtidReplicationStore(File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager,
-                                ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+                                AsyncFileSystem asyncFileSystem,
                                 ReplId fileSystemReplId, boolean readOnly) throws IOException {
         super(null, null, baseDir, config, keeperRunid,
                 new OffsetCommandReaderWriterFactory(),
-                keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem, fileSystemReplId, readOnly);
+                keeperMonitor, syncRateManager, redisOpParser, asyncFileSystem, fileSystemReplId, readOnly);
     }
 
     public GtidReplicationStore(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager,
-                                ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+                                AsyncFileSystem asyncFileSystem,
                                 ReplId fileSystemReplId) throws IOException {
         this(ckStore, masterEventLoopGroup, baseDir, config, keeperRunid, keeperMonitor, redisOpParser, syncRateManager,
-                commandNotifyScheduler, asyncFileSystem, fileSystemReplId, false);
+                asyncFileSystem, fileSystemReplId, false);
     }
 
     public GtidReplicationStore(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager,
-                                ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+                                AsyncFileSystem asyncFileSystem,
                                 ReplId fileSystemReplId, boolean readOnly) throws IOException {
         super(ckStore, masterEventLoopGroup, baseDir, config, keeperRunid,
                 new OffsetCommandReaderWriterFactory(),
-                keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem, fileSystemReplId, readOnly);
+                keeperMonitor, syncRateManager, redisOpParser, asyncFileSystem, fileSystemReplId, readOnly);
     }
 
     public GtidReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager,
-                                ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+                                AsyncFileSystem asyncFileSystem,
                                 ReplId fileSystemReplId) throws IOException {
         this(ckStore, null, baseDir, config, keeperRunid, keeperMonitor, redisOpParser, syncRateManager,
-                commandNotifyScheduler, asyncFileSystem, fileSystemReplId, false);
+                asyncFileSystem, fileSystemReplId, false);
     }
 
     public GtidReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
                                 KeeperMonitor keeperMonitor, RedisOpParser redisOpParser, SyncRateManager syncRateManager,
-                                ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+                                AsyncFileSystem asyncFileSystem,
                                 ReplId fileSystemReplId, boolean readOnly) throws IOException {
         this(ckStore, null, baseDir, config, keeperRunid, keeperMonitor, redisOpParser, syncRateManager,
-                commandNotifyScheduler, asyncFileSystem, fileSystemReplId, readOnly);
+                asyncFileSystem, fileSystemReplId, readOnly);
     }
 
     @Override

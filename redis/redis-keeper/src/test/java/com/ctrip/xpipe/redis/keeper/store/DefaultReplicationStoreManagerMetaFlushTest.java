@@ -412,7 +412,7 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
     private DefaultReplicationStoreManager newManager(KeeperConfig keeperConfig, AsyncFileSystem fileSystem) throws Exception {
         DefaultReplicationStoreManager m = new DefaultReplicationStoreManager(keeperConfig, getReplId(),
                 randomKeeperRunid(), baseDir, createkeeperMonitor(), mock(SyncRateManager.class),
-                createRedisOpParser(), null, fileSystem) {
+                createRedisOpParser(), fileSystem) {
             @Override
             protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig kc, String runid,
                     KeeperMonitor monitor, SyncRateManager rateManager) throws IOException {

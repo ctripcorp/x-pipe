@@ -174,7 +174,7 @@ public class AbstractMetaStoreFlushTest extends AbstractRedisKeeperTest {
 
         DefaultReplicationStore readOnly = new DefaultReplicationStore(null, baseDir, config, runid,
                 new OffsetCommandReaderWriterFactory(), createkeeperMonitor(), mock(SyncRateManager.class),
-                createRedisOpParser(), null, fs, getReplId(), true);
+                createRedisOpParser(), fs, getReplId(), true);
         MetaStore readOnlyMeta = swapMetaStore(readOnly);
         try {
             readOnly.flushMeta();

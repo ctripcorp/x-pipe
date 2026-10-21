@@ -100,8 +100,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     private final AsyncFileSystem asyncFileSystem;
 
-    private final ScheduledExecutorService commandNotifyScheduler;
-
     /** Long-lived handle for {@link #META_FILE}; lazy open, closed on stop/dispose (Phase S / T-S.5). */
     private AsyncFile managerMetaAsyncFile;
 
@@ -116,7 +114,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
                                           SyncRateManager syncRateManager, RedisOpParser redisOpParser,
-                                          ScheduledExecutorService commandNotifyScheduler,
                                           AsyncFileSystem asyncFileSystem) {
         super(MoreExecutors.directExecutor());
         this.replId = replId;
@@ -126,16 +123,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         this.keeperBaseDir = baseDir;
         this.redisOpParser = redisOpParser;
         this.syncRateManager = syncRateManager;
-        this.commandNotifyScheduler = commandNotifyScheduler;
         this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
     }
 
     public DefaultReplicationStoreManager(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
                                           SyncRateManager syncRateManager, RedisOpParser redisOpParser,
-                                          ScheduledExecutorService commandNotifyScheduler,
                                           AsyncFileSystem asyncFileSystem) {
-        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, commandNotifyScheduler, asyncFileSystem);
+        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, asyncFileSystem);
         this.ckStore = ckStore;
         this.masterEventLoopGroup = masterEventLoopGroup;
     }
@@ -438,7 +433,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig, String keeperRunid,
                                                       KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
         ReplicationStore replicationStore = new GtidReplicationStore(this.ckStore, this.masterEventLoopGroup, storeBaseDir, keeperConfig, keeperRunid, keeperMonitor, redisOpParser,
-                syncRateManager, commandNotifyScheduler, asyncFileSystem, replId, this.readOnly);
+                syncRateManager, asyncFileSystem, replId, this.readOnly);
         bindPubSubParseHook(replicationStore);
         return replicationStore;
     }

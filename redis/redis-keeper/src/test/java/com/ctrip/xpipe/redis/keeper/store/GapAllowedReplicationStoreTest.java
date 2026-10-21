@@ -86,7 +86,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
 		redisOpParser = new GeneralRedisOpParser(redisOpParserManager);
 		baseDir = new File(getTestFileDir());
-		store = new GtidReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem(), getReplId());
+		store = new GtidReplicationStore(baseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class), asyncFileSystem(), getReplId());
 	}
 
 	@Test
@@ -308,7 +308,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
 		try {
 			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
-					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+					redisOpParser, Mockito.mock(SyncRateManager.class), fileSystem, getReplId());
 
 			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.XSYNC,
 					new GtidSet(masterUuidC + ":1-100"), masterUuidA);
@@ -363,7 +363,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		File caseDir = new File(baseDir, "h2a1-create-cmd-fail");
 		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
 		store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
-				redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem(), getReplId()) {
+				redisOpParser, Mockito.mock(SyncRateManager.class), asyncFileSystem(), getReplId()) {
 			@Override
 			protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
 													  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
@@ -415,7 +415,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
 		try {
 			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
-					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+					redisOpParser, Mockito.mock(SyncRateManager.class), fileSystem, getReplId());
 
 			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
 			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
@@ -486,7 +486,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
 		try {
 			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
-					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+					redisOpParser, Mockito.mock(SyncRateManager.class), fileSystem, getReplId());
 
 			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
 			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
@@ -555,7 +555,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
 		try {
 			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
-					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+					redisOpParser, Mockito.mock(SyncRateManager.class), fileSystem, getReplId());
 
 			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
 			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
@@ -629,7 +629,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
 		try {
 			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
-					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+					redisOpParser, Mockito.mock(SyncRateManager.class), fileSystem, getReplId());
 
 			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
 			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
@@ -707,7 +707,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
 		try {
 			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
-					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+					redisOpParser, Mockito.mock(SyncRateManager.class), fileSystem, getReplId());
 
 			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.XSYNC,
 					new GtidSet(GtidSet.EMPTY_GTIDSET), masterUuidA);
@@ -767,7 +767,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		File caseDir = new File(baseDir, "h2a3-xsync-index-fail");
 		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
 		store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
-				redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem(), getReplId()) {
+				redisOpParser, Mockito.mock(SyncRateManager.class), asyncFileSystem(), getReplId()) {
 			@Override
 			protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
 													  KeeperConfig config, CommandReaderWriterFactory cmdReaderWriterFactory,
@@ -835,7 +835,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
 		try {
 			store = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), randomKeeperRunid(), createkeeperMonitor(),
-					redisOpParser, Mockito.mock(SyncRateManager.class), null, fileSystem, getReplId());
+					redisOpParser, Mockito.mock(SyncRateManager.class), fileSystem, getReplId());
 
 			RdbStore rdbStore = store.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, masterUuidA);
 			rdbStore.updateRdbType(RdbStore.Type.NORMAL);
@@ -1035,7 +1035,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		Assert.assertTrue(caseDir.mkdirs() || caseDir.isDirectory());
 		String keeperRunid = randomKeeperRunid();
 		GtidReplicationStore seed = new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), keeperRunid,
-				createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem(), getReplId());
+				createkeeperMonitor(), redisOpParser, Mockito.mock(SyncRateManager.class), asyncFileSystem(), getReplId());
 		RdbStore seedRdb = seed.prepareRdb(replidA, 10000, new LenEofType(100), ReplStage.ReplProto.PSYNC, null, null);
 		seedRdb.updateRdbType(RdbStore.Type.NORMAL);
 		seedRdb.updateRdbGtidSet(GtidSet.EMPTY_GTIDSET);
@@ -1046,7 +1046,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		AtomicReference<RdbStore> createdRdb = new AtomicReference<>();
 		try {
 			new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(),
-					redisOpParser, Mockito.mock(SyncRateManager.class), null, asyncFileSystem(), getReplId()) {
+					redisOpParser, Mockito.mock(SyncRateManager.class), asyncFileSystem(), getReplId()) {
 				@Override
 				protected MetaStore createMetaStore(File baseDir, String keeperRunid) throws IOException {
 					MetaStore created = super.createMetaStore(baseDir, keeperRunid);
@@ -1151,7 +1151,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 		AtomicBoolean failRecoverOnce = new AtomicBoolean(true);
 		try {
 			new GtidReplicationStore(caseDir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(),
-					redisOpParser, Mockito.mock(SyncRateManager.class), null, fs, getReplId()) {
+					redisOpParser, Mockito.mock(SyncRateManager.class), fs, getReplId()) {
 				@Override
 				protected void initializeCommandStore(CommandStore cmdStore) throws IOException {
 					if (failRecoverOnce.getAndSet(false)) {
@@ -1186,7 +1186,7 @@ public class GapAllowedReplicationStoreTest extends AbstractRedisKeeperTest{
 
 	private GtidReplicationStore openGtidStore(File dir, String keeperRunid, AsyncFileSystem fs) throws IOException {
 		return new GtidReplicationStore(dir, new DefaultKeeperConfig(), keeperRunid, createkeeperMonitor(),
-				redisOpParser, Mockito.mock(SyncRateManager.class), null, fs, getReplId());
+				redisOpParser, Mockito.mock(SyncRateManager.class), fs, getReplId());
 	}
 
 	private void seedXsyncThenClose(File dir, String keeperRunid, AsyncFileSystem fs) throws IOException {

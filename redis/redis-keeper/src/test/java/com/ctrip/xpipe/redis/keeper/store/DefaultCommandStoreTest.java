@@ -879,6 +879,142 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		Mockito.verifyNoMoreInteractions(coalescer);
 	}
 
+	/** spec §13.21: writer 只负责写，绕过 onlyAppendCommand 直接写 writer 不会唤醒 reader。 */
+	@Test
+	public void testWriterDoesNotNotifyOffset() throws Exception {
+		openCommandStore(createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, maxFileSize, () -> false,
+				() -> 3600, 0, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> false,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, false,
+				() -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES));
+
+		Assert.assertEquals(10, commandStore.getCommandWriter().write(Unpooled.wrappedBuffer(new byte[10])));
+		Assert.assertEquals(10, commandStore.totalLength());
+		Assert.assertFalse("writer must not notify", commandStore.awaitCommandsOffset(9, 50));
+
+		Assert.assertEquals(1, commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[1])));
+		Assert.assertTrue("onlyAppendCommand notifies the end offset", commandStore.awaitCommandsOffset(10, 0));
+	}
+
+	/** spec §13.21: 有 master event loop 但开关关闭时，每次写入立即通知，不走定时。 */
+	@Test
+	public void testCoalescingDisabledNotifiesEachWriteWithMasterEventLoop() throws Exception {
+		NioEventLoopGroup masterEventLoopGroup = new NioEventLoopGroup(1);
+		try {
+			TestKeeperConfig keeperConfig = new TestKeeperConfig()
+					.setCommandOffsetNotifyBytesThreshold(1 << 20)
+					.setCommandOffsetNotifyTimeMilliThreshold(60000);
+			openCoalescingCommandStore(masterEventLoopGroup, keeperConfig, () -> false);
+
+			Assert.assertEquals(10, commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[10])));
+			Assert.assertTrue(commandStore.awaitCommandsOffset(9, 0));
+			Assert.assertEquals(5, commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[5])));
+			Assert.assertTrue(commandStore.awaitCommandsOffset(14, 0));
+		} finally {
+			closeCommandStore();
+			masterEventLoopGroup.shutdownGracefully(0, 1, TimeUnit.SECONDS).syncUninterruptibly();
+		}
+	}
+
+	/** spec §13.21: 运行期修改开关与两个阈值，下一次写入即生效（阈值从 keeperConfig 每次读取）。 */
+	@Test
+	public void testSwitchAndThresholdsTakeEffectOnNextWrite() throws Exception {
+		NioEventLoopGroup masterEventLoopGroup = new NioEventLoopGroup(1);
+		try {
+			TestKeeperConfig keeperConfig = new TestKeeperConfig()
+					.setCommandOffsetNotifyBytesThreshold(1 << 20)
+					.setCommandOffsetNotifyTimeMilliThreshold(60000);
+			AtomicBoolean enabled = new AtomicBoolean(true);
+			openCoalescingCommandStore(masterEventLoopGroup, keeperConfig, enabled::get);
+
+			// 不足 bytes 阈值、time 阈值 60s：不通知
+			commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[10]));
+			Assert.assertFalse(commandStore.awaitCommandsOffset(9, 100));
+
+			// 调小 bytes 阈值：下一次写入累计 pending 达到阈值，立即通知，并取消 60s 的定时
+			keeperConfig.setCommandOffsetNotifyBytesThreshold(8);
+			commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[1]));
+			Assert.assertTrue(commandStore.awaitCommandsOffset(10, 0));
+
+			// bytes 阈值调回、time 阈值调小：下一次写入按新 time 阈值排定时
+			keeperConfig.setCommandOffsetNotifyBytesThreshold(1 << 20);
+			keeperConfig.setCommandOffsetNotifyTimeMilliThreshold(50);
+			commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[1]));
+			Assert.assertTrue("timer with new time threshold", commandStore.awaitCommandsOffset(11, 5000));
+
+			// 关闭开关：下一次写入立即通知
+			keeperConfig.setCommandOffsetNotifyTimeMilliThreshold(60000);
+			enabled.set(false);
+			commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[1]));
+			Assert.assertTrue(commandStore.awaitCommandsOffset(12, 0));
+		} finally {
+			closeCommandStore();
+			masterEventLoopGroup.shutdownGracefully(0, 1, TimeUnit.SECONDS).syncUninterruptibly();
+		}
+	}
+
+	/** spec §13.22 / §15.2: close 先发出 pending 通知，再关闭 cmdWriter。 */
+	@Test
+	public void testCloseNotifiesPendingBeforeClosingWriter() throws Exception {
+		NioEventLoopGroup masterEventLoopGroup = new NioEventLoopGroup(1);
+		try {
+			TestKeeperConfig keeperConfig = new TestKeeperConfig()
+					.setCommandOffsetNotifyBytesThreshold(1 << 20)
+					.setCommandOffsetNotifyTimeMilliThreshold(60000);
+			openCoalescingCommandStore(masterEventLoopGroup, keeperConfig, () -> true);
+
+			commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[10]));
+			Assert.assertFalse(commandStore.awaitCommandsOffset(9, 50));
+
+			OffsetNotifier notifier = (OffsetNotifier) ReflectionTestUtils.getField(commandStore, "offsetNotifier");
+			CommandWriter realWriter = commandStore.getCommandWriter();
+			CommandWriter closeObserver = Mockito.mock(CommandWriter.class);
+			AtomicBoolean notifiedBeforeWriterClose = new AtomicBoolean(false);
+			Mockito.doAnswer(inv -> {
+				notifiedBeforeWriterClose.set(notifier.await(9, 0));
+				realWriter.close();
+				return null;
+			}).when(closeObserver).close();
+			ReflectionTestUtils.setField(commandStore, "cmdWriter", closeObserver);
+
+			closeCommandStore();
+
+			Mockito.verify(closeObserver).close();
+			Assert.assertTrue("pending offset must be notified before cmdWriter close", notifiedBeforeWriterClose.get());
+		} finally {
+			closeCommandStore();
+			masterEventLoopGroup.shutdownGracefully(0, 1, TimeUnit.SECONDS).syncUninterruptibly();
+		}
+	}
+
+	/** spec §13.22: master event loop 已关闭、schedule 被拒时，写入照常成功并立即通知。 */
+	@Test
+	public void testScheduleRejectedStillWritesAndNotifies() throws Exception {
+		NioEventLoopGroup masterEventLoopGroup = new NioEventLoopGroup(1);
+		try {
+			TestKeeperConfig keeperConfig = new TestKeeperConfig()
+					.setCommandOffsetNotifyBytesThreshold(1 << 20)
+					.setCommandOffsetNotifyTimeMilliThreshold(60000);
+			openCoalescingCommandStore(masterEventLoopGroup, keeperConfig, () -> true);
+			masterEventLoopGroup.shutdownGracefully(0, 1, TimeUnit.SECONDS).syncUninterruptibly();
+
+			Assert.assertEquals(10, commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[10])));
+			Assert.assertEquals(10, commandStore.totalLength());
+			Assert.assertTrue("rejected schedule falls back to immediate notify", commandStore.awaitCommandsOffset(9, 0));
+		} finally {
+			closeCommandStore();
+			masterEventLoopGroup.shutdownGracefully(0, 1, TimeUnit.SECONDS).syncUninterruptibly();
+		}
+	}
+
+	private void openCoalescingCommandStore(NioEventLoopGroup masterEventLoopGroup, TestKeeperConfig keeperConfig,
+											BooleanSupplier coalescingEnabled) throws IOException {
+		openCommandStore(new DefaultCommandStore(ckStore, masterEventLoopGroup, keeperConfig,
+				commandTemplate, maxFileSize, () -> false, () -> 3600, 0, () -> 20,
+				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, coalescingEnabled,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, false,
+				0L, asyncFileSystem(), () -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId()));
+	}
+
 	/**
 	 * T-H3.CP6.3: cmdWriter / indexStore close failures must not skip
 	 * {@code closeHandle(asyncSegmentFile)}.

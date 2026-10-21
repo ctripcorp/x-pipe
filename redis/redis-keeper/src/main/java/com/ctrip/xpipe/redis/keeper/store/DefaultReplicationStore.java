@@ -39,7 +39,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntSupplier;
@@ -85,8 +84,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	protected NioEventLoopGroup masterEventLoopGroup;
 
-	protected ScheduledExecutorService commandNotifyScheduler;
-
 	protected final AsyncFileSystem asyncFileSystem;
 
 	protected final ReplId fileSystemReplId;
@@ -102,34 +99,34 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
 								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
-								   ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+								   AsyncFileSystem asyncFileSystem,
 								   ReplId fileSystemReplId) throws IOException {
 		this(ckStore, baseDir, config, keeperRunid, cmdReaderWriterFactory, keeperMonitor, syncRateManager, redisOp,
-				commandNotifyScheduler, asyncFileSystem, fileSystemReplId, false);
+				asyncFileSystem, fileSystemReplId, false);
 	}
 
 	public DefaultReplicationStore(CKStore ckStore, File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
 								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
-								   ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+								   AsyncFileSystem asyncFileSystem,
 								   ReplId fileSystemReplId, boolean readOnly) throws IOException {
 		this(ckStore, null, baseDir, config, keeperRunid, cmdReaderWriterFactory, keeperMonitor, syncRateManager, redisOp,
-				commandNotifyScheduler, asyncFileSystem, fileSystemReplId, readOnly);
+				asyncFileSystem, fileSystemReplId, readOnly);
 	}
 
 	public DefaultReplicationStore(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
 								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
-								   ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+								   AsyncFileSystem asyncFileSystem,
 								   ReplId fileSystemReplId) throws IOException {
 		this(ckStore, masterEventLoopGroup, baseDir, config, keeperRunid, cmdReaderWriterFactory, keeperMonitor, syncRateManager, redisOp,
-				commandNotifyScheduler, asyncFileSystem, fileSystemReplId, false);
+				asyncFileSystem, fileSystemReplId, false);
 	}
 
 	public DefaultReplicationStore(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, File baseDir, KeeperConfig config, String keeperRunid,
 								   CommandReaderWriterFactory cmdReaderWriterFactory,
 								   KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
-								   ScheduledExecutorService commandNotifyScheduler, AsyncFileSystem asyncFileSystem,
+								   AsyncFileSystem asyncFileSystem,
 								   ReplId fileSystemReplId, boolean readOnly) throws IOException {
 		this.baseDir = baseDir;
 		this.cmdFileSize = config.getReplicationStoreCommandFileSize();
@@ -141,7 +138,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 		this.redisOpParser = redisOp;
 		this.ckStore = ckStore;
 		this.masterEventLoopGroup = masterEventLoopGroup;
-		this.commandNotifyScheduler = commandNotifyScheduler;
 		this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
 		this.fileSystemReplId = Objects.requireNonNull(fileSystemReplId, "fileSystemReplId");
 		this.asyncWriteMaxBytes = config::getAsyncWriteMaxBytes;
@@ -187,7 +183,7 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 									  KeeperMonitor keeperMonitor, SyncRateManager syncRateManager, RedisOpParser redisOp,
 									  AsyncFileSystem asyncFileSystem, ReplId fileSystemReplId, boolean readOnly
 	) throws IOException {
-		this(null,baseDir, config,keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp, null, asyncFileSystem, fileSystemReplId, readOnly);
+		this(null,baseDir, config,keeperRunid, new OffsetCommandReaderWriterFactory(), keeperMonitor, syncRateManager, redisOp, asyncFileSystem, fileSystemReplId, readOnly);
 	}
 
 

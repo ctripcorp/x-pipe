@@ -189,7 +189,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		AsyncFileSystem fs = spy(createTestAsyncFileSystem());
 		DefaultReplicationStoreManager real = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()),
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 		LifecycleHelper.initializeIfPossible(real);
 		LifecycleHelper.startIfPossible(real);
 		DefaultReplicationStoreManager manager = spy(real);
@@ -225,7 +225,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		File managerBase = new File(getTestFileDir());
 		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), managerBase,
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 		LifecycleHelper.initializeIfPossible(manager);
 		LifecycleHelper.startIfPossible(manager);
 		try {
@@ -281,7 +281,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		String keeperRunid = randomKeeperRunid();
 		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
 				keeperConfig, replId, keeperRunid, managerBase,
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 		LifecycleHelper.initializeIfPossible(manager);
 		LifecycleHelper.startIfPossible(manager);
 		try {
@@ -326,7 +326,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			LifecycleHelper.disposeIfPossible(manager);
 			DefaultReplicationStoreManager recovered = new DefaultReplicationStoreManager(
 					keeperConfig, replId, keeperRunid, managerBase,
-					createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+					createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 			LifecycleHelper.initializeIfPossible(recovered);
 			try {
 				Assert.assertEquals(oldStoreDir, storeBaseDir(recovered.getCurrent()));
@@ -355,7 +355,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		AtomicBoolean failConstruct = new AtomicBoolean(false);
 		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
 				keeperConfig, replId, keeperRunid, managerBase,
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs) {
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs) {
 			@Override
 			protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig,
 					String keeperRunid, KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
@@ -389,7 +389,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			LifecycleHelper.disposeIfPossible(manager);
 			DefaultReplicationStoreManager recovered = new DefaultReplicationStoreManager(
 					keeperConfig, replId, keeperRunid, managerBase,
-					createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+					createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 			LifecycleHelper.initializeIfPossible(recovered);
 			try {
 				Assert.assertEquals(oldStoreDir, storeBaseDir(recovered.getCurrent()));
@@ -431,7 +431,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		AsyncFileSystem fs = spy(createTestAsyncFileSystem());
 		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()),
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 		try {
 			LifecycleHelper.initializeIfPossible(manager);
 			LifecycleHelper.startIfPossible(manager);
@@ -469,7 +469,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		AtomicReference<ReplicationStore> spied = new AtomicReference<>();
 		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()),
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs) {
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs) {
 			@Override
 			protected ReplicationStore createReplicationStore(File storeBaseDir, KeeperConfig keeperConfig,
 					String keeperRunid, KeeperMonitor keeperMonitor, SyncRateManager syncRateManager) throws IOException {
@@ -513,7 +513,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		config.setMinTimeMilliToGcAfterCreate(0);
 		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
 				config, getReplId(), randomKeeperRunid(), new File(getTestFileDir()),
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 		try {
 			LifecycleHelper.initializeIfPossible(manager);
 			LifecycleHelper.startIfPossible(manager);
@@ -635,7 +635,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
 		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
-				mock(SyncRateManager.class), createRedisOpParser(), null, fileSystem);
+				mock(SyncRateManager.class), createRedisOpParser(), fileSystem);
 		try {
 			LifecycleHelper.initializeIfPossible(replicationStoreManager);
 			LifecycleHelper.startIfPossible(replicationStoreManager);
@@ -673,7 +673,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
 		DefaultReplicationStoreManager replicationStoreManager = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
-				mock(SyncRateManager.class), createRedisOpParser(), null, fileSystem);
+				mock(SyncRateManager.class), createRedisOpParser(), fileSystem);
 
 		try {
 			LifecycleHelper.initializeIfPossible(replicationStoreManager);
@@ -701,7 +701,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
 		DefaultReplicationStoreManager real = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
-				mock(SyncRateManager.class), createRedisOpParser(), null, fileSystem);
+				mock(SyncRateManager.class), createRedisOpParser(), fileSystem);
 		LifecycleHelper.initializeIfPossible(real);
 		LifecycleHelper.startIfPossible(real);
 		real.create();
@@ -734,7 +734,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
 		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
-				mock(SyncRateManager.class), createRedisOpParser(), null, fileSystem);
+				mock(SyncRateManager.class), createRedisOpParser(), fileSystem);
 		try {
 			LifecycleHelper.initializeIfPossible(manager);
 			LifecycleHelper.startIfPossible(manager);
@@ -776,7 +776,7 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		AsyncFileSystem fileSystem = spy(createTestAsyncFileSystem());
 		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()), createkeeperMonitor(),
-				mock(SyncRateManager.class), createRedisOpParser(), null, fileSystem);
+				mock(SyncRateManager.class), createRedisOpParser(), fileSystem);
 		try {
 			LifecycleHelper.initializeIfPossible(manager);
 			LifecycleHelper.startIfPossible(manager);

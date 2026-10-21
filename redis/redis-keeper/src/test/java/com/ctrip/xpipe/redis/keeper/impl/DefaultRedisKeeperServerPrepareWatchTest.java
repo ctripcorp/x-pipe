@@ -377,7 +377,7 @@ public class DefaultRedisKeeperServerPrepareWatchTest extends AbstractRedisKeepe
 
 			occupying = new DefaultReplicationStoreManager(config, manager.getReplId(), server.getKeeperRunid(),
 					manager.getBaseDir().getParentFile(), createkeeperMonitor(), mock(SyncRateManager.class),
-					createRedisOpParser(), null, asyncFileSystem());
+					createRedisOpParser(), asyncFileSystem());
 			LifecycleHelper.initializeIfPossible(occupying);
 			LifecycleHelper.startIfPossible(occupying);
 			Assert.assertEquals(manager.getBaseDir(), occupying.getBaseDir());

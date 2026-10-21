@@ -19,6 +19,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStatsTest;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultMasterStatsTest;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultReplicationStoreStatsTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.GapAllowedSyncTest;
+import com.ctrip.xpipe.redis.keeper.protocal.cmd.PartialOnlyGapAllowedSyncTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucketTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucketTest;
@@ -45,6 +46,7 @@ import com.ctrip.xpipe.redis.keeper.store.*;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTransactionBatchTest;
 import com.ctrip.xpipe.redis.keeper.store.cmd.CoalescingOffsetNotifierTest;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.IndexEntryTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReaderTest;
@@ -81,6 +83,7 @@ import org.junit.runners.Suite.SuiteClasses;
         FakeRedisHalfRdbServerFail.class,
         PsyncTest.class,
         GapAllowedSyncTest.class,
+        PartialOnlyGapAllowedSyncTest.class,
         DefaultRedisClientTest.class,
         CommandHandlerManagerTest.class,
         RedisKeeperServerStateBackupTest.class,
@@ -161,6 +164,7 @@ import org.junit.runners.Suite.SuiteClasses;
         CKStoreTest.class,
         CKStoreTransactionBatchTest.class,
         CoalescingOffsetNotifierTest.class,
+        OffsetCommandReaderTest.class,
 
         DiskHealthCheckerTest.class,
         DiskReadWriteCheckJobTest.class,

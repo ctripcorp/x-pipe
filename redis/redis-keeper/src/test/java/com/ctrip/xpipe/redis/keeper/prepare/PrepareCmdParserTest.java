@@ -249,7 +249,7 @@ public class PrepareCmdParserTest extends AbstractRedisKeeperTest {
 	private DefaultReplicationStoreManager newManager(AsyncFileSystem fs, File base, String runid) {
 		return new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), runid, base,
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 	}
 
 	private static ByteBuf publishBuf(String channel, String message) {

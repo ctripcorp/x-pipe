@@ -339,7 +339,7 @@ public class PrepareStoreWatcherTest extends AbstractRedisKeeperTest {
 	private DefaultReplicationStoreManager newManager(AsyncFileSystem fs, File base, String runid) {
 		return new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), runid, base,
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 	}
 
 	private void seedCommands(DefaultReplicationStore store) throws Exception {

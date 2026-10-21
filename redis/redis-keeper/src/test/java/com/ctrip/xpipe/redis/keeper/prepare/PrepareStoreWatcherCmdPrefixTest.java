@@ -337,7 +337,7 @@ public class PrepareStoreWatcherCmdPrefixTest extends AbstractRedisKeeperTest {
 
 	private DefaultReplicationStoreManager newManager(File base, String runid) {
 		return new DefaultReplicationStoreManager(keeperConfig, getReplId(), runid, base,
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, fs);
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), fs);
 	}
 
 	private void stopDispose(DefaultReplicationStoreManager manager) {

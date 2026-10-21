@@ -15,6 +15,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractGapAllowedSync;
 import com.ctrip.xpipe.redis.core.protocal.cmd.DefaultGapAllowedSync;
 import com.ctrip.xpipe.redis.core.protocal.protocal.EofType;
 import com.ctrip.xpipe.redis.core.protocal.protocal.LenEofType;
+import com.ctrip.xpipe.redis.core.protocal.protocal.RequestStringParser;
 import com.ctrip.xpipe.redis.core.redis.RunidGenerator;
 import com.ctrip.xpipe.redis.core.redis.rdb.RdbConstant;
 import com.ctrip.xpipe.redis.core.store.*;
@@ -30,6 +31,7 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Map;
 
@@ -519,6 +521,30 @@ public class GapAllowedSyncTest extends AbstractRedisKeeperTest{
 		replStageAssertXsync(prevReplStage);
 
 		Assert.assertEquals(replicationStore.backlogEndOffset(), originBacklogEndOffset+cmdLenP);
+	}
+
+	/** spec §13.23: PSYNC 请求的 offset 由写入返回后的 totalLength() 推出，不需要 flush。 */
+	@Test
+	public void testPsyncRequestOffsetFollowsTotalLengthAfterWrite() throws XpipeException, IOException, InterruptedException {
+		//	X(A), P(B) → 请求 PSYNC B <replOffP + cmdLenP + 1>
+		long replOffP = 200000000;
+		int cmdLenP = 1000;
+
+		setupReplicationStoreXP(uuidA, replIdA, 100000000, 1, 100,
+				uuidB, replIdB, replOffP, 1, 100, cmdLenP);
+		assertPsyncRequest(replIdB, replOffP + cmdLenP + 1);
+
+		int moreLen = 500;
+		long backlogEndBefore = replicationStore.backlogEndOffset();
+		replicationStore.appendCommands(Unpooled.wrappedBuffer(generateVanillaCommands(moreLen)));
+		Assert.assertEquals(backlogEndBefore + moreLen, replicationStore.backlogEndOffset());
+		assertPsyncRequest(replIdB, replOffP + cmdLenP + moreLen + 1);
+	}
+
+	private void assertPsyncRequest(String replId, long replOff) {
+		String expected = new RequestStringParser(GapAllowedSync.PSYNC, replId, String.valueOf(replOff))
+				.format().toString(StandardCharsets.UTF_8);
+		Assert.assertEquals(expected, gasync.getRequest().toString(StandardCharsets.UTF_8));
 	}
 
 	@Test

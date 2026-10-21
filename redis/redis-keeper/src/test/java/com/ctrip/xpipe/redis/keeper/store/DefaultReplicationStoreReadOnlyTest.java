@@ -51,7 +51,7 @@ public class DefaultReplicationStoreReadOnlyTest extends AbstractRedisKeeperTest
 
 		AtomicBoolean gtidCreateCalled = new AtomicBoolean(false);
 		GtidReplicationStore readOnly = new GtidReplicationStore(baseDir, new DefaultKeeperConfig(), runid,
-				createkeeperMonitor(), createRedisOpParser(), mock(SyncRateManager.class), null,
+				createkeeperMonitor(), createRedisOpParser(), mock(SyncRateManager.class),
 				asyncFileSystem(), getReplId(), true) {
 			@Override
 			protected CommandStore createCommandStore(File baseDir, ReplicationStoreMeta replMeta, int cmdFileSize,
@@ -77,7 +77,7 @@ public class DefaultReplicationStoreReadOnlyTest extends AbstractRedisKeeperTest
 	public void testManagerGetCurrentOpensReadOnlyCommandStore() throws Exception {
 		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(
 				keeperConfig, getReplId(), randomKeeperRunid(), new File(getTestFileDir()),
-				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), null, asyncFileSystem());
+				createkeeperMonitor(), mock(SyncRateManager.class), createRedisOpParser(), asyncFileSystem());
 		LifecycleHelper.initializeIfPossible(manager);
 		LifecycleHelper.startIfPossible(manager);
 		try {
@@ -105,7 +105,7 @@ public class DefaultReplicationStoreReadOnlyTest extends AbstractRedisKeeperTest
 	public void testReadOnlyWriteEntriesThrow() throws Exception {
 		GtidReplicationStore store = new GtidReplicationStore(new File(getTestFileDir()), new DefaultKeeperConfig(),
 				randomKeeperRunid(), createkeeperMonitor(), createRedisOpParser(), mock(SyncRateManager.class),
-				null, asyncFileSystem(), getReplId(), true);
+				asyncFileSystem(), getReplId(), true);
 		try {
 			assertReadOnlyStore(() -> store.appendCommands(Unpooled.wrappedBuffer(new byte[]{1})));
 			assertReadOnlyStore(() -> store.prepareRdb(REPL_ID, 0, new LenEofType(1)));
@@ -126,7 +126,7 @@ public class DefaultReplicationStoreReadOnlyTest extends AbstractRedisKeeperTest
 
 	private void seedWritableStore(File baseDir, String runid) throws Exception {
 		GtidReplicationStore writable = new GtidReplicationStore(baseDir, new DefaultKeeperConfig(), runid,
-				createkeeperMonitor(), createRedisOpParser(), mock(SyncRateManager.class), null,
+				createkeeperMonitor(), createRedisOpParser(), mock(SyncRateManager.class),
 				asyncFileSystem(), getReplId());
 		try {
 			RdbStore rdbStore = writable.prepareRdb(REPL_ID, 0, new LenEofType(8), ReplStage.ReplProto.PSYNC,
