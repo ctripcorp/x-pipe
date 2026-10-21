@@ -1,0 +1,57 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreRdbSizeAlignTest.java
+  s_df64104649b936::t_0f45f8be758efa 153,160
+  s_df64104649b936::t_5ce50e12105ae7 217
+  s_df64104649b936::t_798aa8f646140a 1-152,154-159,161-179,182-183,186-216,218-303
+  s_df64104649b936::t_4b8567dc943e68 180-181,184-185
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AbstractMetaStoreSizeIfMatchTest.java
+  s_df64104649b936::t_ae4496416b3b45 3
+  s_5c7b1020bf488b::t_e363d52b2e9fea 15,52-63,66,74,82,89,98,106,114,121,146-150,152-153,211
+  s_5c7b1020bf488b::t_6b6dbacbe82dd4 1-2,4-14,16-17,19-51,64-65,67-73,75-81,83-88,90-97,99-105,107-113,115-120,122-145,154-155,210,212-218
+  s_df64104649b936::t_36d37a14064f59 18
+  s_df64104649b936::t_10a744952950b8 156-209
+  s_5c7b1020bf488b::t_23f08d7fe4f87d 151
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_df64104649b936::t_d764c039da1a82 185,187
+core/src/test/java/com/ctrip/xpipe/AllTests.java
+  s_df64104649b936::t_6ba8bece60f6e8 106-107
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/MetaStore.java
+  s_5c7b1020bf488b::t_b7f750823dba5a 101-108
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/meta/AbstractMetaStore.java
+  s_5c7b1020bf488b::t_80a08ece6c21dc 363-391
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStore.java
+  s_df64104649b936::t_064a08c1060995 52-53
+  s_5c7b1020bf488b::t_9183ae0220ea28 1304-1318,1328-1332,1340-1354,1364-1372
+  s_df64104649b936::t_4ba6d5e1fe7c21 1339
+  s_df64104649b936::t_a0efe5e1c60041 1357-1362
+  s_df64104649b936::t_742d4310d4dfa5 1363
+  s_df64104649b936::t_de593ee6acca36 1338
+  s_df64104649b936::t_3fd6b328750042 1333-1337
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManagerMetaFlushTest.java
+  s_df64104649b936::t_02b5de6e834bd2 197-203,205
+  s_df64104649b936::t_3eff14e89843b1 204
+  s_df64104649b936::t_1f2427e78bf7d7 42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.50-trip",
+  "base_commit_sha": "9b3ea897d711849da92c662ff6ddf794473686b3",
+  "prompts": {},
+  "sessions": {
+    "s_5c7b1020bf488b": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_b1dd4258-cd7a-46f8-883f-1c2418bbf2b2",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    },
+    "s_df64104649b936": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_dd54e9ec-d22c-4a7d-a476-ed0664795980",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": null
+    }
+  }
+}
