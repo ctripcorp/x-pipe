@@ -1,0 +1,31 @@
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/protocal/cmd/AbstractReplicationStoreGapAllowedSync.java
+  s_067f4f9201fae0::t_6aa1d1fe2dc07a 50
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreTest.java
+  s_067f4f9201fae0::t_b6d78ad79bc34a 667-668,673-675,677,679,683-684,689-692,694,697-702,704-706
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStoreManager.java
+  s_067f4f9201fae0::t_558a143883bd14 313
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/DefaultReplicationStore.java
+  s_067f4f9201fae0::t_d677346f774455 284,316,353,366,398,515,667,775
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/CommandStore.java
+  s_067f4f9201fae0::t_591a3879895532 86
+redis/redis-core/src/main/java/com/ctrip/xpipe/redis/core/store/ReplicationStore.java
+  s_067f4f9201fae0::t_92d3daff2816fc 81
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/readonly/ReadOnlyCommandStoreTest.java
+  s_067f4f9201fae0::t_4026702db6c20d 297,329
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.51-trip",
+  "base_commit_sha": "1292cf89b236fb1a29f5d03e7a4d72045bfe400c",
+  "prompts": {},
+  "sessions": {
+    "s_067f4f9201fae0": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_c30b3d08-2bdc-4146-8bc1-4fdb1313ac29",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
