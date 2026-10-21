@@ -8,7 +8,6 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
 import com.ctrip.xpipe.redis.keeper.store.AsyncCommandStore;
-import com.ctrip.xpipe.utils.OffsetNotifier;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +21,7 @@ import java.util.Objects;
  * @author lishanglin
  * date 2022/4/15
  */
-public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingCommandWriter {
+public class OffsetCommandWriter implements CommandWriter {
 
     private CommandStore cmdStore;
 
@@ -31,8 +30,6 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
     private int maxFileSize;
 
     private Logger delayTraceLogger;
-
-    private volatile OffsetNotifier offsetNotifier;
 
     private volatile boolean initialized;
 
@@ -75,7 +72,6 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
                 throw e;
             }
             wrote += chunkLength;
-            notifyOffset(expectedEndOffset);
         }
 
         if(delayTraceLogger.isDebugEnabled()){
@@ -93,13 +89,6 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
 
     private int nextChunkLength(int readableBytes) {
         return Math.min(readableBytes, asyncCommandStore.getAsyncWriteMaxBytes());
-    }
-
-    private void notifyOffset(long offset) {
-        OffsetNotifier notifier = offsetNotifier;
-        if (notifier != null) {
-            notifier.offsetIncreased(offset);
-        }
     }
 
     @Override
@@ -154,11 +143,6 @@ public class OffsetCommandWriter implements CommandWriter, OffsetNotifyingComman
     @Override
     public void close() throws IOException {
         // segment 句柄由 CommandStore.close() 统一 fs.close(seg)
-    }
-
-    @Override
-    public void setOffsetNotifier(OffsetNotifier offsetNotifier) {
-        this.offsetNotifier = offsetNotifier;
     }
 
     private AsyncFileSystem asyncFileSystem() {

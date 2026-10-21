@@ -354,7 +354,7 @@ public class ReadOnlyCommandStoreTest {
 		File source = new File("src/main/java/com/ctrip/xpipe/redis/keeper/store/readonly/ReadOnlyCommandStore.java");
 		Assert.assertTrue("source missing: " + source.getAbsolutePath(), source.isFile());
 		String text = stripComments(new String(Files.readAllBytes(source.toPath()), StandardCharsets.UTF_8));
-		for (String forbidden : Arrays.asList("cmdWriter", "OffsetNotifier", "TimerSlidingWindow", "IndexStore")) {
+		for (String forbidden : Arrays.asList("cmdWriter", "OffsetNotifier", "CoalescingOffsetNotifier", "IndexStore")) {
 			Assert.assertFalse("ReadOnlyCommandStore must not reference " + forbidden, text.contains(forbidden));
 		}
 		Assert.assertFalse(text.contains("extends AbstractCommandStore"));

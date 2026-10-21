@@ -13,17 +13,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntSupplier;
 
 /**
- * Coalesces command offset notifications so that readers waiting on the command store
- * are woken up once per bytes threshold or time threshold instead of once per write
- * (keeper-tfs-m6 spec §15.2).
- *
- * <p>Thresholds and the enable switch are read on every call, so runtime changes take
- * effect on the next write. Without a scheduler, or with coalescing disabled, every write
- * notifies immediately.</p>
- *
- * <p>Synchronization: all state is guarded by this object's monitor. Writes and timer
- * callbacks run on the master event loop; {@link #flush()} / {@link #close()} may come
- * from other threads.</p>
+ * Coalesces command offset notifications by bytes / time threshold. All state is guarded by this monitor.
  */
 public class CoalescingOffsetNotifier {
 
@@ -51,9 +41,7 @@ public class CoalescingOffsetNotifier {
 
     private ScheduledFuture<?> scheduledFuture;
 
-    /**
-     * @param scheduler timer host for delayed notify; null disables coalescing
-     */
+    /** @param scheduler null disables coalescing */
     public CoalescingOffsetNotifier(OffsetNotifier offsetNotifier, IntSupplier bytesThreshold,
                                     IntSupplier timeMilliThreshold, BooleanSupplier coalescingEnabled,
                                     ScheduledExecutorService scheduler) {
@@ -64,9 +52,6 @@ public class CoalescingOffsetNotifier {
         this.scheduler = scheduler;
     }
 
-    /**
-     * Called after {@code wroteBytes} have been written and are visible up to {@code endOffset}.
-     */
     public synchronized void onWritten(int wroteBytes, long endOffset) {
         if (closed || wroteBytes <= 0) {
             return;
@@ -92,7 +77,6 @@ public class CoalescingOffsetNotifier {
         }
     }
 
-    /** Notifies pending offset immediately, if any. */
     public synchronized void flush() {
         if (closed) {
             return;
@@ -101,7 +85,6 @@ public class CoalescingOffsetNotifier {
         cancelScheduled();
     }
 
-    /** Notifies pending offset and cancels the timer; later calls and timer callbacks are no-ops. */
     public synchronized void close() {
         if (closed) {
             return;

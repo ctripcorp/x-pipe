@@ -30,9 +30,8 @@ public class KeeperPsync2Continue extends AbstractKeeperIntegratedSingleDc {
 			logger.info(remarkableMessage("round:{}"), i);
 			RedisMeta slaveToPromote = slaves.get(0);
 
-			// Promote only after the candidate has the current master's backlog.
-			// Async PING can still sit in TimerSlidingWindow; lifting a lagging replica
-			// makes Keeper PSYNC ahead and forces FULLRESYNC (fullSyncCount 3→7).
+			// Promote only after the candidate has the current master's backlog, otherwise Keeper PSYNC
+			// runs ahead and forces FULLRESYNC.
 			waitSlavesReplOffsetCatchUp(redisMaster, Collections.singletonList(slaveToPromote));
 
 			xslaveof(activeKeeper.getIp(), activeKeeper.getPort(), redisMaster);

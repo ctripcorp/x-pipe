@@ -48,7 +48,6 @@ import com.ctrip.xpipe.redis.keeper.store.cmd.CoalescingOffsetNotifierTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.IndexEntryTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReaderTest;
-import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindowTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreReadOnlyTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
@@ -161,7 +160,6 @@ import org.junit.runners.Suite.SuiteClasses;
         StreamCommandReaderTest.class,
         CKStoreTest.class,
         CKStoreTransactionBatchTest.class,
-        TimerSlidingWindowTest.class,
         CoalescingOffsetNotifierTest.class,
 
         DiskHealthCheckerTest.class,

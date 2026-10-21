@@ -18,13 +18,12 @@ import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReader;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
-import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindow;
+import com.ctrip.xpipe.redis.keeper.store.cmd.CoalescingOffsetNotifier;
 import com.ctrip.xpipe.utils.OffsetNotifier;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.After;
 import org.junit.Assert;
@@ -88,8 +87,6 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	@Mock
 	private CKStore ckStore;
 
-	@Mock
-	private NioEventLoopGroup nioEventLoopGroup;
 
 	private AtomicInteger failed = new AtomicInteger(0);
 
@@ -824,17 +821,68 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	}
 
 	@Test
-	public void testIndexOffsetCorrectnessWithRotationAndFlush() throws Exception {
-		writeCmdWithRotation(true);
+	public void testIndexOffsetCorrectnessWithRotation() throws Exception {
+		writeCmdWithRotation();
 	}
 
 	@Test
-	public void testIndexOffsetCorrectnessWithRotationAndNoFlush() throws Exception {
-		writeCmdWithRotation(false);
+	public void testCoalescedNotifyWakesReaderByTimerOnMasterEventLoop() throws Exception {
+		NioEventLoopGroup masterEventLoopGroup = new NioEventLoopGroup(1);
+		try {
+			TestKeeperConfig keeperConfig = new TestKeeperConfig()
+					.setCommandOffsetNotifyBytesThreshold(1 << 20)
+					.setCommandOffsetNotifyTimeMilliThreshold(300);
+			openCommandStore(new DefaultCommandStore(ckStore, masterEventLoopGroup, keeperConfig,
+					commandTemplate, maxFileSize, () -> false, () -> 3600, 0, () -> 20,
+					DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+					commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, false,
+					0L, asyncFileSystem(), () -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId()));
+
+			long begin = System.nanoTime();
+			Assert.assertEquals(10, commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[10])));
+			Assert.assertEquals(10, commandStore.totalLength());
+
+			Assert.assertFalse("below bytes threshold must not notify at once", commandStore.awaitCommandsOffset(9, 50));
+			Assert.assertTrue("timer on master event loop must notify", commandStore.awaitCommandsOffset(9, 5000));
+			Assert.assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin) >= 250);
+		} finally {
+			closeCommandStore();
+			masterEventLoopGroup.shutdownGracefully(0, 1, TimeUnit.SECONDS).syncUninterruptibly();
+		}
+	}
+
+	@Test
+	public void testMultiChunkWriteNotifiesOnceAndFailedWriteDoesNot() throws Exception {
+		int chunkBytes = 16;
+		openCommandStore(createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, maxFileSize, () -> false,
+				() -> 3600, 0, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, false, () -> chunkBytes));
+		CoalescingOffsetNotifier coalescer = Mockito.mock(CoalescingOffsetNotifier.class);
+		ReflectionTestUtils.setField(commandStore, "offsetNotifyCoalescer", coalescer);
+
+		int length = chunkBytes * 6 + 5;
+		Assert.assertEquals(length, commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[length])));
+		Assert.assertEquals(length, commandStore.totalLength());
+		Mockito.verify(coalescer, Mockito.times(1)).onWritten(length, length - 1);
+		Mockito.verifyNoMoreInteractions(coalescer);
+
+		CommandWriter realWriter = commandStore.getCommandWriter();
+		CommandWriter failingWriter = Mockito.mock(CommandWriter.class);
+		Mockito.when(failingWriter.write(Mockito.any(ByteBuf.class))).thenThrow(new IOException("inject write fail"));
+		ReflectionTestUtils.setField(commandStore, "cmdWriter", failingWriter);
+		try {
+			commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[10]));
+			Assert.fail("write failure must propagate");
+		} catch (IOException expected) {
+			Assert.assertEquals("inject write fail", expected.getMessage());
+		} finally {
+			ReflectionTestUtils.setField(commandStore, "cmdWriter", realWriter);
+		}
+		Mockito.verifyNoMoreInteractions(coalescer);
 	}
 
 	/**
-	 * T-H3.CP6.3: window / cmdWriter / indexStore close failures must not skip
+	 * T-H3.CP6.3: cmdWriter / indexStore close failures must not skip
 	 * {@code closeHandle(asyncSegmentFile)}.
 	 */
 	@Test
@@ -848,29 +896,23 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		AsyncSegmentFile segment = commandStore.getAsyncSegmentFile();
 		Assert.assertNotNull(segment);
 
-		TimerSlidingWindow realWindow = (TimerSlidingWindow) ReflectionTestUtils.getField(commandStore, "timerSlidingWindow");
 		IndexStore realIndex = (IndexStore) ReflectionTestUtils.getField(commandStore, "indexStore");
 		CommandWriter realWriter = commandStore.getCommandWriter();
 
-		TimerSlidingWindow failingWindow = Mockito.mock(TimerSlidingWindow.class);
 		IndexStore failingIndex = Mockito.mock(IndexStore.class);
 		CommandWriter failingWriter = Mockito.mock(CommandWriter.class);
-		Mockito.doThrow(new IOException("window boom")).when(failingWindow).close();
 		Mockito.doThrow(new IOException("index boom")).when(failingIndex).close();
 		Mockito.doThrow(new IOException("writer boom")).when(failingWriter).close();
 
-		ReflectionTestUtils.setField(commandStore, "timerSlidingWindow", failingWindow);
 		ReflectionTestUtils.setField(commandStore, "cmdWriter", failingWriter);
 		ReflectionTestUtils.setField(commandStore, "indexStore", failingIndex);
 
 		try {
 			commandStore.close();
-			Mockito.verify(failingWindow).close();
 			Mockito.verify(failingWriter).close();
 			Mockito.verify(failingIndex).close();
 			Mockito.verify(spyFs, Mockito.atLeastOnce()).close(segment);
 		} finally {
-			closeQuietly(realWindow);
 			closeQuietly(realIndex);
 			closeQuietly(realWriter);
 			commandStore = null;
@@ -888,18 +930,14 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		}
 	}
 
-	private void writeCmdWithRotation(boolean flush) throws Exception {
-		// 1. 构造一个启用索引、滑动窗口、且 maxFileSize 很小的 CommandStore
+	private void writeCmdWithRotation() throws Exception {
+		// 1. index-enabled CommandStore with a small maxFileSize
 		int smallMaxFileSize = 300;
 		failed.set(0);
 		Mockito.when(gtidCmdFilter.gtidSetContains(anyString(), anyLong())).thenReturn(false);
-		TestKeeperConfig keeperConfig = createRotationTestKeeperConfig(flush);
-		EventLoop mockEventLoop = Mockito.mock(EventLoop.class);
-		Mockito.when(mockEventLoop.inEventLoop()).thenReturn(true);
-		Mockito.when(nioEventLoopGroup.next()).thenReturn(mockEventLoop);
+		TestKeeperConfig keeperConfig = new TestKeeperConfig();
 
-		// 传入 nioEventLoopGroup 才会创建 TimerSlidingWindow —— 本用例依赖滑动窗口
-		openCommandStore(new DefaultCommandStore(ckStore, nioEventLoopGroup, keeperConfig,
+		openCommandStore(new DefaultCommandStore(ckStore, keeperConfig,
 				commandTemplate, smallMaxFileSize, () -> false, () -> 3600, 0, () -> 20,
 				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
 				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true,
@@ -946,7 +984,6 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			// 记录预期偏移（写入前的全局偏移）
 			long expectedStart = globalOffset.get();
 
-			// 写入命令（内部会走滑动窗口，可能不立即落盘）
 			commandStore.appendCommands(cmdBuf);
 
 			// 记录命令信息
@@ -959,21 +996,11 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			globalOffset.addAndGet(cmdBytes.length);
 			gno++;
 
-			// 与索引侧 StreamCommandReader.currentOffset 一致；totalLength() 不含滑动窗口 pending
+			Assert.assertEquals(globalOffset.get(), commandStore.totalLength());
 			if (globalOffset.get() >= smallMaxFileSize) {
-				commandStore.flushSlidingWindow();
 				commandStore.rotateFileIfNecessary();
 				rotated = true;
 			}
-		}
-		int recordsBeforeRotation = records.size();
-
-		// no-flush 场景：滚动完成后再 mock，仅拦截滚动后的 flush
-		if (!flush) {
-			DefaultCommandStore store = this.commandStore;
-			CommandStore spy = Mockito.spy(store);
-			Mockito.doNothing().when(spy).flushSlidingWindow();
-			this.commandStore = (DefaultCommandStore) spy;
 		}
 
 		// 3. 滚动后继续写入几条命令，验证新文件的偏移也正确
@@ -998,9 +1025,6 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			gno++;
 		}
 
-		// 确保最终所有数据落盘（close 前会 flush）
-		commandStore.flushSlidingWindow();
-
 		// 4. 验证每条命令的索引偏移与文件内容匹配
 		for (int i = 0; i < records.size(); i++) {
 			CmdRecord rec = records.get(i);
@@ -1018,39 +1042,15 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			Assert.assertEquals("Start offset mismatch for " + rec.gtid,
 					rec.expectedStartOffset, startBacklogOffset);
 
-			// flush 场景校验全部；no-flush 仅校验滚动后仍在窗口内的命令（滚动前已落盘）
-			if (flush || i >= recordsBeforeRotation) {
-				byte[] fileData = readFileRange(commandStore, startBacklogOffset, endBacklogOffset);
-				if (!Arrays.equals(rec.rawBytes, fileData)) {
-					failed.addAndGet(1);
-				}
+			byte[] fileData = readFileRange(commandStore, startBacklogOffset, endBacklogOffset);
+			if (!Arrays.equals(rec.rawBytes, fileData)) {
+				failed.addAndGet(1);
 			}
 		}
 
-		if(flush){
-			Assert.assertTrue("flush Failed to read expected bytes",failed.get() == 0);
-		}else {
-			Assert.assertTrue("no flush Failed to read expected bytes", failed.get() > 0);
-		}
+		Assert.assertEquals("Failed to read expected bytes", 0, failed.get());
 
 		failed.set(0);
-	}
-
-	/**
-	 * no-flush 场景需禁用 TimerSlidingWindow 按时间的自动刷盘（默认 4ms），
-	 * 否则整包跑时写入间隔变长会在 mock flushSlidingWindow 之前落盘，导致 failed==0 误判。
-	 * batch 阈值保持默认即可，旋转条件用 globalOffset 而非 totalLength()。
-	 */
-	private TestKeeperConfig createRotationTestKeeperConfig(boolean flush) {
-		if (flush) {
-			return new TestKeeperConfig();
-		}
-		return new TestKeeperConfig() {
-			@Override
-			public long getCmdBatchFlushIntervalMillis() {
-				return 3_600_000L;
-			}
-		};
 	}
 
 	// 辅助方法：写入 RESP Bulk String

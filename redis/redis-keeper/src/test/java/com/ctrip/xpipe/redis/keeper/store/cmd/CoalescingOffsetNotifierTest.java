@@ -25,9 +25,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * keeper-tfs-m6 P15a (spec §15.2): {@link CoalescingOffsetNotifier} thresholds, switch, flush / close and failure handling.
- */
 public class CoalescingOffsetNotifierTest {
 
     private static final int BYTES_THRESHOLD = 100;
@@ -71,7 +68,7 @@ public class CoalescingOffsetNotifierTest {
         assertEquals(Collections.singletonList(99L), notifier.offsets);
         verify(scheduler.futures.get(0)).cancel(false);
 
-        // a late callback of the cancelled timer has nothing to notify
+        // late callback of the cancelled timer
         scheduler.runNext();
         assertEquals(Collections.singletonList(99L), notifier.offsets);
     }
@@ -90,7 +87,6 @@ public class CoalescingOffsetNotifierTest {
         scheduler.runNext();
         assertEquals(Collections.singletonList(29L), notifier.offsets);
 
-        // timer slot is released: the next write schedules again
         coalescer.onWritten(10, 39);
         assertEquals(1, scheduler.tasks.size());
         scheduler.runNext();
@@ -145,7 +141,6 @@ public class CoalescingOffsetNotifierTest {
     public void testRuntimeSwitchAndThresholdChangeTakeEffectOnNextCall() {
         CoalescingOffsetNotifier coalescer = create(scheduler.executor);
 
-        // pending under coalescing, then switch off: next write flushes everything and cancels the timer
         coalescer.onWritten(10, 9);
         assertEquals(1, scheduler.tasks.size());
         enabled.set(false);
@@ -155,19 +150,16 @@ public class CoalescingOffsetNotifierTest {
         scheduler.runNext();
         assertEquals(Collections.singletonList(19L), notifier.offsets);
 
-        // switch on again with a new time threshold
         enabled.set(true);
         timeThreshold.set(7);
         coalescer.onWritten(10, 29);
         assertEquals(Long.valueOf(7), scheduler.delays.get(scheduler.delays.size() - 1));
         assertEquals(Collections.singletonList(19L), notifier.offsets);
 
-        // lowering bytes threshold makes the next write notify at once
         bytesThreshold.set(15);
         coalescer.onWritten(10, 39);
         assertEquals(Arrays.asList(19L, 39L), notifier.offsets);
 
-        // non-positive thresholds are clamped to 1
         bytesThreshold.set(BYTES_THRESHOLD);
         timeThreshold.set(0);
         coalescer.onWritten(10, 49);
@@ -229,7 +221,6 @@ public class CoalescingOffsetNotifierTest {
         scheduler.runNext();
         assertEquals(Arrays.asList(9L, 19L, 29L), notifier.offsets);
 
-        // timer slot released after a failed timer notify
         coalescer.onWritten(10, 39);
         assertEquals(1, scheduler.tasks.size());
     }

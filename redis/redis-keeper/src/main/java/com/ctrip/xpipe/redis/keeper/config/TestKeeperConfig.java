@@ -30,7 +30,6 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private boolean readV2 = true;
 	private int indexZoneConsecutiveThreshold = 8192;
 	private int blockSizeThreshold = 8192;
-	private int cmdBatchLowRateBps = -1;
 
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
 
@@ -469,26 +468,6 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public boolean isRedisRateLimitEnabled() {
 		return true;
-	}
-
-	@Override
-	public int getCmdBatchWriteSize() {
-		return 4096;
-	}
-
-	@Override
-	public long getCmdBatchFlushIntervalMillis() {
-		return 4;
-	}
-
-	public TestKeeperConfig setCmdBatchLowRateBps(int cmdBatchLowRateBps){
-		this.cmdBatchLowRateBps = cmdBatchLowRateBps;
-		return this;
-	}
-
-	@Override
-	public int getCmdBatchLowRateBps() {
-		return cmdBatchLowRateBps;
 	}
 
 	public TestKeeperConfig setDualWrite(boolean dualWrite){

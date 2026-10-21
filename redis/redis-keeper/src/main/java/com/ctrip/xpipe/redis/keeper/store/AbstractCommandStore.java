@@ -13,9 +13,8 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
-import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetNotifyingCommandWriter;
+import com.ctrip.xpipe.redis.keeper.store.cmd.CoalescingOffsetNotifier;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStore;
-import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindow;
 import com.ctrip.xpipe.redis.keeper.util.KeeperLogger;
 import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.OffsetNotifier;
@@ -101,7 +100,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     private KeeperConfig keeperConfig;
 
-    private TimerSlidingWindow timerSlidingWindow;
+    private CoalescingOffsetNotifier offsetNotifyCoalescer;
 
     protected final AsyncFileSystem asyncFileSystem;
 
@@ -186,9 +185,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     @Override
     public int getPendingSize(){
-        if(timerSlidingWindow != null){
-            return timerSlidingWindow.bufferSize();
-        }
         return 0;
     }
 
@@ -209,8 +205,9 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
     @Override
     public void flushSlidingWindow() throws IOException{
-        if(timerSlidingWindow != null){
-            timerSlidingWindow.flushAll();
+        CoalescingOffsetNotifier coalescer = offsetNotifyCoalescer;
+        if (coalescer != null) {
+            coalescer.flush();
         }
     }
 
@@ -224,14 +221,12 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
             cmdWriter.initialize();
             offsetNotifier = new OffsetNotifier(cmdWriter.totalLength() - 1);
-            if (cmdWriter instanceof OffsetNotifyingCommandWriter) {
-                ((OffsetNotifyingCommandWriter) cmdWriter).setOffsetNotifier(offsetNotifier);
-            }
+            offsetNotifyCoalescer = new CoalescingOffsetNotifier(offsetNotifier,
+                    this::commandOffsetNotifyBytesThreshold, this::commandOffsetNotifyTimeMilliThreshold,
+                    commandOffsetNotifyCoalescingEnabled,
+                    masterEventLoopGroup == null ? null : masterEventLoopGroup.next());
             if(buildIndex) {
                 indexStore.openWriter(cmdWriter);
-            }
-            if(this.masterEventLoopGroup != null) {
-                this.timerSlidingWindow = new TimerSlidingWindow(keeperConfig, cmdWriter, commandStoreDelay, offsetNotifier, masterEventLoopGroup);
             }
         }
     }
@@ -279,14 +274,6 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         if (null != rateLimiter) rateLimiter.acquire(byteBuf.readableBytes());
 
-        if(timerSlidingWindow != null && commandOffsetNotifyCoalescingEnabled.getAsBoolean()){
-            return timerSlidingWindow.write(byteBuf,buildIndex);
-        }
-
-        if(timerSlidingWindow != null) {
-            timerSlidingWindow.flushAll();
-        }
-
         commandStoreDelay.beginWrite();
 
         int wrote = cmdWriter.write(byteBuf);
@@ -295,13 +282,21 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
 
         commandStoreDelay.endWrite(offset);
 
-        if (!(cmdWriter instanceof OffsetNotifyingCommandWriter)) {
-            offsetNotifier.offsetIncreased(offset);
-        }
-
-
+        offsetNotifyCoalescer.onWritten(wrote, offset);
 
         return wrote;
+    }
+
+    private int commandOffsetNotifyBytesThreshold() {
+        KeeperConfig config = keeperConfig;
+        return config == null ? KeeperConfig.DEFAULT_COMMAND_OFFSET_NOTIFY_BYTES_THRESHOLD
+                : config.getCommandOffsetNotifyBytesThreshold();
+    }
+
+    private int commandOffsetNotifyTimeMilliThreshold() {
+        KeeperConfig config = keeperConfig;
+        return config == null ? KeeperConfig.DEFAULT_COMMAND_OFFSET_NOTIFY_TIME_MILLI_THRESHOLD
+                : config.getCommandOffsetNotifyTimeMilliThreshold();
     }
 
     private int appendCommandsWithIndex(ByteBuf byteBuf) throws IOException {
@@ -388,7 +383,7 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
         getLogger().info("[close]{}", this);
         boolean segmentClosed;
         try {
-            closeQuietly(timerSlidingWindow, "timerSlidingWindow");
+            closeOffsetNotifyCoalescerQuietly();
             closeQuietly(cmdWriter, "cmdWriter");
             // Terminal close (AbstractStore); index AsyncFile released with segment below.
             closeQuietly(indexStore, "indexStore");
@@ -397,6 +392,18 @@ public abstract class AbstractCommandStore extends AbstractStore implements Comm
                     "close command segment " + fileNamePrefix);
         }
         return segmentClosed || ignoreCloseFail;
+    }
+
+    private void closeOffsetNotifyCoalescerQuietly() {
+        CoalescingOffsetNotifier coalescer = offsetNotifyCoalescer;
+        if (coalescer == null) {
+            return;
+        }
+        try {
+            coalescer.close();
+        } catch (Throwable t) {
+            getLogger().error("[close][offsetNotifyCoalescer failed]{}", this, t);
+        }
     }
 
     private void closeQuietly(AutoCloseable closeable, String name) {

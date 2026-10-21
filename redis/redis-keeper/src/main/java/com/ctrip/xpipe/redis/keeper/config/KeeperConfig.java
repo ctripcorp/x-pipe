@@ -14,9 +14,6 @@ public interface KeeperConfig extends CoreConfig{
 	String KEY_LEAKY_BUCKET_INIT_SIZE = "leaky.bucket.init.size";
 
 	String KEY_STOP_WRITE_CK = "keeper.stop.write.ck";
-	String KEY_CMD_BATCH_WRITE_SIZE = "keeper.cmd.batch.write.size";
-	String KEY_CMD_BATCH_FLUSH_INTERVAL_MILLIS = "keeper.cmd.batch.flush.interva.millis";
-	String KEY_CMD_BATCH_LOW_RATE_BPS = "keeper.cmd.batch.low.rate.bps";
 	String KEY_BLOCK_SIZE_THRESHOLD = "keeper.block.size.threshold";
 	String KEY_ASYNC_WRITE_MAX_BYTES = "keeper.async.write.max.bytes";
 	String KEY_ASYNC_FSYNC_INTERVAL_BYTES = "keeper.async.fsync.interval.bytes";
@@ -78,10 +75,8 @@ public interface KeeperConfig extends CoreConfig{
 
 	long getCommandReaderFlyingThreshold();
 
-	/** pending bytes that trigger an immediate command offset notify when coalescing */
 	int getCommandOffsetNotifyBytesThreshold();
 
-	/** max delay (ms) of a coalesced command offset notify */
 	int getCommandOffsetNotifyTimeMilliThreshold();
 
 	boolean isCommandOffsetNotifyCoalescingEnabled();
@@ -161,12 +156,6 @@ public interface KeeperConfig extends CoreConfig{
 	int getRedisRateDecreaseCheckRounds();
 
 	boolean isRedisRateLimitEnabled();
-
-	int getCmdBatchWriteSize();
-
-	long getCmdBatchFlushIntervalMillis();
-
-	int getCmdBatchLowRateBps();
 
 	boolean dualWrite();
 

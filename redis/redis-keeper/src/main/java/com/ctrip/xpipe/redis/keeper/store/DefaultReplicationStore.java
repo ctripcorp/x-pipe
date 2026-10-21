@@ -966,11 +966,6 @@ public class DefaultReplicationStore extends AbstractStore implements Replicatio
 
 	@Override
 	public long backlogEndOffset() {
-		// 不刷盘：本方法是热路径读取（getCurReplStageReplOff / DefaultKeeperRepl.getEndOffset /
-		// lockAndCheckIfFullSyncPossible / GapAllowSyncHandler / InfoHandler）。
-		// TimerSlidingWindow.flushAll() 会 submit 到唯一的 master event loop 并阻塞等待，
-		// 在这里刷盘等于让每次读取都在复制热线程上做一次跨线程往返。
-		// 需要精确（已刷盘）值的调用方请用 backlogEndOffsetWithFlush()。
 		makeSureOpen();
 		if (null == cmdStore) {
 			return ReplicationStoreMeta.DEFAULT_END_OFFSET;
