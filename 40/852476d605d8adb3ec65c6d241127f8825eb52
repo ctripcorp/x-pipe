@@ -1,0 +1,42 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystemChannelFactoryTest.java
+  s_7a2713335af784::t_5b4277d429bca5 1-282
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFile.java
+  s_7a2713335af784::t_ff8f4c8801eb9a 63
+  s_7a2713335af784::t_4450f1e750ad07 52
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_7a2713335af784::t_8e0438a82394b6 718
+  s_7a2713335af784::t_540c4e44e02960 104
+  s_7a2713335af784::t_86529dba1efcb2 232
+  s_7a2713335af784::t_427dc589cd6fbd 691-692
+  s_7a2713335af784::t_bd3f32163447d5 152-153
+  s_7a2713335af784::t_4fe5b81c81ca51 18,20
+  s_7a2713335af784::t_a025344854102a 1017-1018
+  s_7a2713335af784::t_82dcc423d130b8 56-57,59-64
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_7a2713335af784::t_b500e19442d6f0 42
+  s_7a2713335af784::t_157497da0da5bb 201
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncSegmentFile.java
+  s_7a2713335af784::t_167916b36bdc66 17
+  s_7a2713335af784::t_60380ad05c062c 64-65
+  s_7a2713335af784::t_eaabeabfb7f813 154
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AbstractStorageFile.java
+  s_7a2713335af784::t_8da169455ed0ed 67-69
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/FileChannelFactory.java
+  s_7a2713335af784::t_c69eb378e28c1e 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.51-trip",
+  "base_commit_sha": "40852476d605d8adb3ec65c6d241127f8825eb52",
+  "prompts": {},
+  "sessions": {
+    "s_7a2713335af784": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_938c05f2-e71c-43c5-9374-8837c2a55d42",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
