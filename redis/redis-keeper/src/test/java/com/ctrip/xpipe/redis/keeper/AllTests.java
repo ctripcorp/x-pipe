@@ -42,6 +42,7 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystemChannelFactoryTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystemTest;
 import com.ctrip.xpipe.redis.keeper.storage.DeferredHandleCloserTest;
+import com.ctrip.xpipe.redis.keeper.storage.FileFaultInjectorTest;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTest;
@@ -199,6 +200,7 @@ import org.junit.runners.Suite.SuiteClasses;
         KeeperContainerControllerUnclosedHandlesTest.class,
         AsyncTFSBasedFileSystemTest.class,
         AsyncTFSBasedFileSystemChannelFactoryTest.class,
+        FileFaultInjectorTest.class,
         DeferredHandleCloserTest.class,
         TailCacheFileSystemTest.class,
 
