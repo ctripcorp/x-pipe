@@ -3,7 +3,9 @@ package com.ctrip.xpipe.redis.keeper.container;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.DebugFileChannelFactory;
 import com.ctrip.xpipe.redis.keeper.storage.DeferredHandleCloser;
+import com.ctrip.xpipe.redis.keeper.storage.FileChannelFactory;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemConfig;
 import org.junit.Test;
@@ -76,6 +78,52 @@ public class ContainerResourceManagerTest {
         } finally {
             fs.shutdown();
         }
+    }
+
+    /** keeper-tfs-m6 §17.3: the factory is chosen once from keeper.fs.debug.enabled. */
+    @Test
+    public void testChannelFactoryChosenByDebugSwitch() {
+        assertSame(FileChannelFactory.DEFAULT, ContainerResourceManager.createChannelFactory(new TestKeeperConfig()));
+
+        long before = refreshThreads();
+        FileChannelFactory debug = ContainerResourceManager.createChannelFactory(
+                new TestKeeperConfig().setFsDebugEnabled(true));
+        try {
+            assertTrue(debug instanceof DebugFileChannelFactory);
+            assertEquals("injector refresh started", before + 1, refreshThreads());
+        } finally {
+            debug.close();
+        }
+        assertTrue("factory close stops the refresh", awaitRefreshThreads(before));
+    }
+
+    /** keeper-tfs-m6 §17.3: the FS shutdown closes the injector it was created with. */
+    @Test
+    public void testFsShutdownClosesInjector() throws Exception {
+        long before = refreshThreads();
+        AsyncFileSystem fs = ContainerResourceManager.createAsyncFileSystem(
+                new TestKeeperConfig().setFsDebugEnabled(true));
+        assertEquals(before + 1, refreshThreads());
+        fs.shutdown();
+        assertTrue("refresh thread stopped by FS shutdown", awaitRefreshThreads(before));
+    }
+
+    private static long refreshThreads() {
+        return Thread.getAllStackTraces().keySet().stream()
+                .filter(t -> t.isAlive() && t.getName().contains("keeper-fs-fault-refresh")).count();
+    }
+
+    private static boolean awaitRefreshThreads(long expected) {
+        long deadline = System.currentTimeMillis() + 2000;
+        while (refreshThreads() != expected && System.currentTimeMillis() < deadline) {
+            try {
+                Thread.sleep(20);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        return refreshThreads() == expected;
     }
 
     @Test(expected = IllegalArgumentException.class)

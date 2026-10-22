@@ -14,4 +14,8 @@ public interface FileChannelFactory {
     FileChannelFactory DEFAULT = (path, options) -> FileChannel.open(path, options);
 
     FileChannel open(Path path, Set<? extends OpenOption> options) throws IOException;
+
+    /** Called once by the owning FS on shutdown; releases resources the factory holds. */
+    default void close() {
+    }
 }

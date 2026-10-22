@@ -176,6 +176,55 @@ public class DefaultKeeperConfigTest extends AbstractRedisKeeperTest{
 		}
 	}
 
+	/** keeper-tfs-m6 §17.3. */
+	@Test
+	public void testFsDebugConfig() {
+		String[] keys = {KeeperConfig.KEY_FS_DEBUG_ENABLED, KeeperConfig.KEY_FS_DEBUG_FAULT_EIO,
+				KeeperConfig.KEY_FS_DEBUG_FAULT_DELAY_MILLI, KeeperConfig.KEY_FS_DEBUG_FAULT_OPS,
+				KeeperConfig.KEY_FS_DEBUG_FAULT_PATH_CONTAINS};
+		String[] old = new String[keys.length];
+		for (int i = 0; i < keys.length; i++) {
+			old[i] = System.getProperty(keys[i]);
+		}
+		try {
+			for (String key : keys) {
+				System.clearProperty(key);
+			}
+			KeeperConfig defaults = new DefaultKeeperConfig();
+			Assert.assertFalse(defaults.isFsDebugEnabled());
+			Assert.assertFalse(defaults.isFsDebugFaultEio());
+			Assert.assertEquals(0L, defaults.getFsDebugFaultDelayMilli());
+			Assert.assertEquals("", defaults.getFsDebugFaultOps());
+			Assert.assertEquals("", defaults.getFsDebugFaultPathContains());
+
+			System.setProperty(keys[0], "true");
+			System.setProperty(keys[1], "true");
+			System.setProperty(keys[2], "1500");
+			System.setProperty(keys[3], "READ,WRITE");
+			System.setProperty(keys[4], "replA");
+			KeeperConfig overridden = new DefaultKeeperConfig();
+			Assert.assertTrue(overridden.isFsDebugEnabled());
+			Assert.assertTrue(overridden.isFsDebugFaultEio());
+			Assert.assertEquals(1500L, overridden.getFsDebugFaultDelayMilli());
+			Assert.assertEquals("READ,WRITE", overridden.getFsDebugFaultOps());
+			Assert.assertEquals("replA", overridden.getFsDebugFaultPathContains());
+
+			TestKeeperConfig testConfig = new TestKeeperConfig();
+			Assert.assertFalse(testConfig.isFsDebugEnabled());
+			Assert.assertEquals("", testConfig.getFsDebugFaultOps());
+			testConfig.setFsDebugEnabled(true).setFsDebugFaultEio(true).setFsDebugFaultDelayMilli(5)
+					.setFsDebugFaultOps("*").setFsDebugFaultPathContains("p");
+			Assert.assertTrue(testConfig.isFsDebugEnabled() && testConfig.isFsDebugFaultEio());
+			Assert.assertEquals(5L, testConfig.getFsDebugFaultDelayMilli());
+			Assert.assertEquals("*", testConfig.getFsDebugFaultOps());
+			Assert.assertEquals("p", testConfig.getFsDebugFaultPathContains());
+		} finally {
+			for (int i = 0; i < keys.length; i++) {
+				restoreProperty(keys[i], old[i]);
+			}
+		}
+	}
+
 	private static void restoreProperty(String key, String oldValue) {
 		if (oldValue == null) {
 			System.clearProperty(key);

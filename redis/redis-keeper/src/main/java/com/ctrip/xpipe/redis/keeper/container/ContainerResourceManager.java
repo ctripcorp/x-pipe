@@ -3,7 +3,11 @@ package com.ctrip.xpipe.redis.keeper.container;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.DebugFileChannelConfig;
+import com.ctrip.xpipe.redis.keeper.storage.DebugFileChannelFactory;
 import com.ctrip.xpipe.redis.keeper.storage.DeferredHandleCloser;
+import com.ctrip.xpipe.redis.keeper.storage.FileChannelFactory;
+import com.ctrip.xpipe.redis.keeper.storage.FileFaultInjector;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemConfig;
 import com.ctrip.xpipe.utils.XpipeThreadFactory;
@@ -105,7 +109,19 @@ public class ContainerResourceManager {
         cacheConfig.setPerFileCacheLimits(keeperConfig.getAsyncTailCacheMaxSizePerFileBytes(),
                 cacheConfig.getMinRetainChunks(), cacheConfig.getChunkSize());
         return createAsyncFileSystem(keeperConfig.getAsyncIoThreads(), keeperConfig.getAsyncFsyncIntervalBytes(),
-                keeperConfig.getAsyncFsyncIntervalMillis(), cacheConfig);
+                keeperConfig.getAsyncFsyncIntervalMillis(), cacheConfig, createChannelFactory(keeperConfig));
+    }
+
+    // keeper-tfs-m6 §17.3: decided once at FS creation. The injector is started here and closed by
+    // the FS shutdown through FileChannelFactory#close.
+    static FileChannelFactory createChannelFactory(KeeperConfig keeperConfig) {
+        if (!keeperConfig.isFsDebugEnabled()) {
+            return FileChannelFactory.DEFAULT;
+        }
+        logger.warn("[createAsyncFileSystem] debug file channel enabled");
+        FileFaultInjector injector = new FileFaultInjector(new KeeperDebugFileChannelConfig(keeperConfig));
+        injector.start();
+        return new DebugFileChannelFactory(injector);
     }
 
     public static AsyncFileSystem createAsyncFileSystem(int ioThreads, long fsyncIntervalBytes) {
@@ -120,17 +136,57 @@ public class ContainerResourceManager {
 
     public static AsyncFileSystem createAsyncFileSystem(int ioThreads, long fsyncIntervalBytes,
             long fsyncIntervalMillis, TailCacheFileSystemConfig cacheConfig) {
-        if (cacheConfig == null) {
-            throw new IllegalArgumentException("cacheConfig must not be null");
+        return createAsyncFileSystem(ioThreads, fsyncIntervalBytes, fsyncIntervalMillis, cacheConfig,
+                FileChannelFactory.DEFAULT);
+    }
+
+    private static AsyncFileSystem createAsyncFileSystem(int ioThreads, long fsyncIntervalBytes,
+            long fsyncIntervalMillis, TailCacheFileSystemConfig cacheConfig, FileChannelFactory channelFactory) {
+        try {
+            if (cacheConfig == null) {
+                throw new IllegalArgumentException("cacheConfig must not be null");
+            }
+            logger.info("[createAsyncFileSystem]ioThreads={}, fsyncIntervalBytes={}, fsyncIntervalMillis={}, "
+                            + "maxCacheSizeBytes={}, maxCacheSizePerFileBytes={}",
+                    ioThreads, fsyncIntervalBytes, fsyncIntervalMillis, cacheConfig.getMaxCacheSizeBytes(),
+                    cacheConfig.getMaxCacheSizePerFileBytes());
+            ExecutorService ioExecutor = Executors.newFixedThreadPool(ioThreads,
+                    XpipeThreadFactory.create("keeper-async-io"));
+            AsyncTFSBasedFileSystem backing = new AsyncTFSBasedFileSystem(ioExecutor, fsyncIntervalBytes,
+                    fsyncIntervalMillis, channelFactory);
+            return new TailCacheFileSystem(backing, cacheConfig, ioExecutor);
+        } catch (RuntimeException e) {
+            // No FS owns the factory yet, so its shutdown would never close it.
+            channelFactory.close();
+            throw e;
         }
-        logger.info("[createAsyncFileSystem]ioThreads={}, fsyncIntervalBytes={}, fsyncIntervalMillis={}, "
-                        + "maxCacheSizeBytes={}, maxCacheSizePerFileBytes={}",
-                ioThreads, fsyncIntervalBytes, fsyncIntervalMillis, cacheConfig.getMaxCacheSizeBytes(),
-                cacheConfig.getMaxCacheSizePerFileBytes());
-        ExecutorService ioExecutor = Executors.newFixedThreadPool(ioThreads,
-                XpipeThreadFactory.create("keeper-async-io"));
-        AsyncTFSBasedFileSystem backing = new AsyncTFSBasedFileSystem(ioExecutor, fsyncIntervalBytes,
-                fsyncIntervalMillis);
-        return new TailCacheFileSystem(backing, cacheConfig, ioExecutor);
+    }
+
+    private static final class KeeperDebugFileChannelConfig implements DebugFileChannelConfig {
+        private final KeeperConfig keeperConfig;
+
+        KeeperDebugFileChannelConfig(KeeperConfig keeperConfig) {
+            this.keeperConfig = keeperConfig;
+        }
+
+        @Override
+        public boolean isEio() {
+            return keeperConfig.isFsDebugFaultEio();
+        }
+
+        @Override
+        public long getDelayMilli() {
+            return keeperConfig.getFsDebugFaultDelayMilli();
+        }
+
+        @Override
+        public String getOps() {
+            return keeperConfig.getFsDebugFaultOps();
+        }
+
+        @Override
+        public String getPathContains() {
+            return keeperConfig.getFsDebugFaultPathContains();
+        }
     }
 }

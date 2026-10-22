@@ -87,6 +87,11 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     @Override
     public void shutdown() {
         ioExecutor.shutdown();
+        try {
+            channelFactory.close();
+        } catch (Throwable t) {
+            logger.error("[shutdown] close channel factory failed", t);
+        }
     }
 
     private Object lockFor(String key) {

@@ -415,6 +415,31 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 		return getLongProperty(KEY_META_FLUSH_INTERVAL_MILLI, DEFAULT_META_FLUSH_INTERVAL_MILLI);
 	}
 
+	@Override
+	public boolean isFsDebugEnabled() {
+		return getBooleanProperty(KEY_FS_DEBUG_ENABLED, false);
+	}
+
+	@Override
+	public boolean isFsDebugFaultEio() {
+		return getBooleanProperty(KEY_FS_DEBUG_FAULT_EIO, false);
+	}
+
+	@Override
+	public long getFsDebugFaultDelayMilli() {
+		return getLongProperty(KEY_FS_DEBUG_FAULT_DELAY_MILLI, 0L);
+	}
+
+	@Override
+	public String getFsDebugFaultOps() {
+		return getProperty(KEY_FS_DEBUG_FAULT_OPS, "");
+	}
+
+	@Override
+	public String getFsDebugFaultPathContains() {
+		return getProperty(KEY_FS_DEBUG_FAULT_PATH_CONTAINS, "");
+	}
+
 	static long defaultAsyncTailCacheMaxSizeBytes() {
 		long maxDirect = PlatformDependent.maxDirectMemory();
 		if (maxDirect <= 0) {

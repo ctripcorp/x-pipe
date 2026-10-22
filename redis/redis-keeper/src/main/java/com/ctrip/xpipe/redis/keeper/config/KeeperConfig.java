@@ -38,6 +38,12 @@ public interface KeeperConfig extends CoreConfig{
 	long DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI = 5L * 60 * 1000;
 	String KEY_META_FLUSH_INTERVAL_MILLI = "keeper.meta.flush.interval.milli";
 	long DEFAULT_META_FLUSH_INTERVAL_MILLI = 3L * 60 * 1000;
+	// keeper-tfs-m6 §17.3: debug file channel fault injection.
+	String KEY_FS_DEBUG_ENABLED = "keeper.fs.debug.enabled";
+	String KEY_FS_DEBUG_FAULT_EIO = "keeper.fs.debug.fault.eio";
+	String KEY_FS_DEBUG_FAULT_DELAY_MILLI = "keeper.fs.debug.fault.delay.milli";
+	String KEY_FS_DEBUG_FAULT_OPS = "keeper.fs.debug.fault.ops";
+	String KEY_FS_DEBUG_FAULT_PATH_CONTAINS = "keeper.fs.debug.fault.path.contains";
 	int DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI = 5000;
 	int DEFAULT_PREPARE_WATCH_CLOSE_HOLD_MILLI = 1000;
 	int DEFAULT_COMMAND_OFFSET_NOTIFY_BYTES_THRESHOLD = 4 * 1024;
@@ -190,4 +196,17 @@ public interface KeeperConfig extends CoreConfig{
 	long getUnclosedHandleFlushRetryWindowMilli();
 	/** keeper-tfs-m6 §11.2: periodic meta flush interval; read on every check, ≤ 0 disables. */
 	long getMetaFlushIntervalMilli();
+
+	/** keeper-tfs-m6 §17.3: use the debug file channel; read at FS creation only. Default false. */
+	boolean isFsDebugEnabled();
+
+	/** keeper-tfs-m6 §17.3: injected faults, reloaded by the injector every second. */
+	boolean isFsDebugFaultEio();
+
+	long getFsDebugFaultDelayMilli();
+
+	/** Comma separated OPEN / READ / WRITE / FORCE, "*" for all; default empty injects nothing. */
+	String getFsDebugFaultOps();
+
+	String getFsDebugFaultPathContains();
 }

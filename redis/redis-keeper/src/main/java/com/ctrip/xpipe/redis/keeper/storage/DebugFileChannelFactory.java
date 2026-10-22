@@ -11,8 +11,8 @@ import com.ctrip.xpipe.redis.keeper.storage.FileFaultInjector.Category;
 
 /**
  * Opens {@link DebugFileChannel}s for a debug-mode keeper (keeper-tfs-m6 §17.3). The open itself is
- * injected as {@link Category#OPEN}; when it fails no file is opened. The injector's lifecycle
- * (start / close) belongs to whoever creates the factory.
+ * injected as {@link Category#OPEN}; when it fails no file is opened. The creator starts the
+ * injector; {@link #close()} (called by the FS on shutdown) closes it.
  */
 public class DebugFileChannelFactory implements FileChannelFactory {
 
@@ -31,5 +31,10 @@ public class DebugFileChannelFactory implements FileChannelFactory {
         String pathString = path.toString();
         injector.inject(Category.OPEN, pathString);
         return new DebugFileChannel(FileChannelFactory.DEFAULT.open(path, options), pathString, injector);
+    }
+
+    @Override
+    public void close() {
+        injector.close();
     }
 }

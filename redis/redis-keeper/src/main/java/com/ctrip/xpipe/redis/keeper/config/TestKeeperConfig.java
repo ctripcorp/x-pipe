@@ -38,6 +38,11 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private long unclosedHandleFlushRetryWindowMilli = DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI;
 	private long asyncTailCacheMaxSizePerFileBytes = DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES;
 	private volatile long metaFlushIntervalMilli = DEFAULT_META_FLUSH_INTERVAL_MILLI;
+	private boolean fsDebugEnabled = false;
+	private volatile boolean fsDebugFaultEio = false;
+	private volatile long fsDebugFaultDelayMilli = 0;
+	private volatile String fsDebugFaultOps = "";
+	private volatile String fsDebugFaultPathContains = "";
 	private boolean prepareStoreWatchEnabled = false;
 	private boolean pubsubParseEnabled = false;
 	
@@ -566,6 +571,56 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 
 	public TestKeeperConfig setMetaFlushIntervalMilli(long metaFlushIntervalMilli) {
 		this.metaFlushIntervalMilli = metaFlushIntervalMilli;
+		return this;
+	}
+
+	@Override
+	public boolean isFsDebugEnabled() {
+		return fsDebugEnabled;
+	}
+
+	public TestKeeperConfig setFsDebugEnabled(boolean fsDebugEnabled) {
+		this.fsDebugEnabled = fsDebugEnabled;
+		return this;
+	}
+
+	@Override
+	public boolean isFsDebugFaultEio() {
+		return fsDebugFaultEio;
+	}
+
+	public TestKeeperConfig setFsDebugFaultEio(boolean fsDebugFaultEio) {
+		this.fsDebugFaultEio = fsDebugFaultEio;
+		return this;
+	}
+
+	@Override
+	public long getFsDebugFaultDelayMilli() {
+		return fsDebugFaultDelayMilli;
+	}
+
+	public TestKeeperConfig setFsDebugFaultDelayMilli(long fsDebugFaultDelayMilli) {
+		this.fsDebugFaultDelayMilli = fsDebugFaultDelayMilli;
+		return this;
+	}
+
+	@Override
+	public String getFsDebugFaultOps() {
+		return fsDebugFaultOps;
+	}
+
+	public TestKeeperConfig setFsDebugFaultOps(String fsDebugFaultOps) {
+		this.fsDebugFaultOps = fsDebugFaultOps;
+		return this;
+	}
+
+	@Override
+	public String getFsDebugFaultPathContains() {
+		return fsDebugFaultPathContains;
+	}
+
+	public TestKeeperConfig setFsDebugFaultPathContains(String fsDebugFaultPathContains) {
+		this.fsDebugFaultPathContains = fsDebugFaultPathContains;
 		return this;
 	}
 }
