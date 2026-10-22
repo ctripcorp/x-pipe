@@ -40,7 +40,13 @@ public class AsyncTFSBasedFileSystemTest {
         tempDir = Files.createTempDirectory("tfs-test-");
         ioExecutor = Executors.newCachedThreadPool();
         // fsyncIntervalMillis * 1_000_000 must not overflow Long.MAX_VALUE
-        fs = new AsyncTFSBasedFileSystem(ioExecutor, Long.MAX_VALUE / 2, Long.MAX_VALUE / 2_000_000L);
+        fs = new AsyncTFSBasedFileSystem(ioExecutor, Long.MAX_VALUE / 2, Long.MAX_VALUE / 2_000_000L,
+                channelFactory());
+    }
+
+    // Overridden to rerun the whole suite through another channel factory.
+    protected FileChannelFactory channelFactory() {
+        return FileChannelFactory.DEFAULT;
     }
 
     @After

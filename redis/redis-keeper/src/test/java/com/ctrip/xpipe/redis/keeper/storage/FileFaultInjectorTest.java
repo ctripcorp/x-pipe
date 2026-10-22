@@ -23,7 +23,7 @@ public class FileFaultInjectorTest {
     private static final String PATH = "/data/keeper/replA/cmd_0";
     private static final String OTHER_PATH = "/data/keeper/replB/cmd_0";
 
-    private MutableConfig config;
+    private MutableDebugFileChannelConfig config;
     private CountingConfig counting;
     private FileFaultInjector injector;
     private LogCapture logs;
@@ -32,7 +32,7 @@ public class FileFaultInjectorTest {
     // the refresh thread itself is covered by testStartedInjectorRefreshesUntilClosed.
     @Before
     public void setUp() {
-        config = new MutableConfig();
+        config = new MutableDebugFileChannelConfig();
         counting = new CountingConfig(config);
         logs = new LogCapture(FileFaultInjector.class);
         injector = new FileFaultInjector(counting);
@@ -328,35 +328,4 @@ public class FileFaultInjectorTest {
         }
     }
 
-    private static final class MutableConfig implements DebugFileChannelConfig {
-        volatile boolean eio;
-        volatile long delayMilli;
-        volatile String ops = FileFaultInjector.ALL_OPS;
-        volatile String pathContains = "";
-        volatile RuntimeException failure;
-
-        @Override
-        public boolean isEio() {
-            RuntimeException f = failure;
-            if (f != null) {
-                throw f;
-            }
-            return eio;
-        }
-
-        @Override
-        public long getDelayMilli() {
-            return delayMilli;
-        }
-
-        @Override
-        public String getOps() {
-            return ops;
-        }
-
-        @Override
-        public String getPathContains() {
-            return pathContains;
-        }
-    }
 }
