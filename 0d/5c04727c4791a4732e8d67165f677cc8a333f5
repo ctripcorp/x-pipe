@@ -1,0 +1,48 @@
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/KeeperConfig.java
+  s_7a2713335af784::t_a1cc7bdf1e9081 41-46
+  s_7a2713335af784::t_9e31de930a5aa7 199-211
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncTFSBasedFileSystem.java
+  s_7a2713335af784::t_95d7e6242fcf98 90-94
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfigTest.java
+  s_7a2713335af784::t_27c9337a6adc13 179-227
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/container/ContainerResourceManagerTest.java
+  s_7a2713335af784::t_2486cd6e8c6b3f 88,93,97,103,106,108,111-113,116-126
+  s_7a2713335af784::t_2beb18ece84208 83-87,89-92,94-96,98-102,104-105,107,109-110,114-115,127-128
+  s_7a2713335af784::t_c9197c45a314c3 6,8
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/DebugFileChannelEndToEndTest.java
+  s_7a2713335af784::t_fc8eaf24ff7ef4 1-218
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_7a2713335af784::t_422fd8b458b152 45
+  s_7a2713335af784::t_09726b954a694b 209
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/DebugFileChannelFactory.java
+  s_7a2713335af784::t_4e6accc28392fa 14-15
+  s_7a2713335af784::t_b0262404a0e118 35-39
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/DefaultKeeperConfig.java
+  s_7a2713335af784::t_f3efcc59f82b86 418-442
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/FileChannelFactory.java
+  s_7a2713335af784::t_694ad3a8076006 17-20
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/container/ContainerResourceManager.java
+  s_7a2713335af784::t_72ae9c8babb155 112-124
+  s_7a2713335af784::t_fff9c8b67d3d2f 145-159,161-189
+  s_7a2713335af784::t_d2f79c49b5116a 139-144,160
+  s_7a2713335af784::t_d8f95a239e3ac9 6-7,9-10
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/config/TestKeeperConfig.java
+  s_7a2713335af784::t_45278fb6c239c7 576-625
+  s_7a2713335af784::t_7a2d3aab6f06cf 41-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.51-trip",
+  "base_commit_sha": "0d5c04727c4791a4732e8d67165f677cc8a333f5",
+  "prompts": {},
+  "sessions": {
+    "s_7a2713335af784": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_938c05f2-e71c-43c5-9374-8837c2a55d42",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
