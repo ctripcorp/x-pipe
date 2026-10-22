@@ -47,7 +47,9 @@ import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTransactionBatchTest;
 import com.ctrip.xpipe.redis.keeper.store.cmd.CoalescingOffsetNotifierTest;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderTest;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.BlockEntryTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStoreTest;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.IndexWriterBlockReleaseTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.IndexEntryTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreReadOnlyTest;
@@ -159,6 +161,8 @@ import org.junit.runners.Suite.SuiteClasses;
         GtidCommandSearcherTest.class,
 
         DefaultIndexStoreTest.class,
+        BlockEntryTest.class,
+        IndexWriterBlockReleaseTest.class,
         IndexEntryTest.class,
         StreamCommandReaderTest.class,
         CKStoreTest.class,

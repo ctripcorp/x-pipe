@@ -20,9 +20,9 @@ import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX_
 
 /**
  * Pure index write logic — AsyncFile handles are injected by IndexStore and owned by the segment.
- * No resource close; call {@link #flush()} to persist pending index/block before rotate or switch.
+ * Call {@link #flush()} to persist pending index/block before rotate or switch.
  */
-public class IndexWriterV2 {
+public class IndexWriterV2 implements AutoCloseable {
 
     private static final Logger log = LoggerFactory.getLogger(IndexWriterV2.class);
 
@@ -39,6 +39,7 @@ public class IndexWriterV2 {
     private GtidSetWrapper gtidSetWrapper;
     private AsyncFile indexV2File;
     private AsyncFile blockV2File;
+    private volatile boolean closed;
 
     private long zoneStart = -1L, zoneEnd = 0L;
     private int zoneCmdCount = 0;
@@ -61,12 +62,14 @@ public class IndexWriterV2 {
     }
 
     public void init(AsyncFile indexV2File, AsyncFile blockV2File) throws IOException {
+        ensureOpen();
         this.indexV2File = indexV2File;
         this.blockV2File = blockV2File;
         ensureHeaderIfEmpty();
     }
 
     void ensureHeaderIfEmpty() throws IOException {
+        ensureOpen();
         if (indexV2File == null) {
             return;
         }
@@ -77,6 +80,7 @@ public class IndexWriterV2 {
 
     public void appendGtid(String uuid, long gno, long offset, List<Integer> cmdLengths) throws IOException {
         synchronized (writeLock) {
+            ensureOpen();
             clearPendingZone();
             int totalLen = 0;
             for (int len : cmdLengths) {
@@ -100,6 +104,7 @@ public class IndexWriterV2 {
 
     public void appendNonGtid(long offset, List<Integer> cmdLengths) throws IOException {
         synchronized (writeLock) {
+            ensureOpen();
             int commandCount = cmdLengths.size();
             int totalLen = 0;
             for (int len : cmdLengths) {
@@ -121,6 +126,7 @@ public class IndexWriterV2 {
     /** Persist pending GTID/ZONE index entries; does not close any file handle. */
     public void flush() throws IOException {
         synchronized (writeLock) {
+            ensureOpen();
             flushUnlocked();
         }
     }
@@ -171,9 +177,34 @@ public class IndexWriterV2 {
         currentGtidEntry.setCmdEndOffset(gtidCmdEndOffset);
         currentGtidEntry.saveToDiskV2(fs, indexV2File, currentBlock, blockV2File);
         gtidSetWrapper.compensate(currentGtidEntry);
-        currentBlock = null;
+        releaseCurrentBlock();
         currentGtidEntry = null;
         cmdBytesSinceLastIndex = 0L;
+    }
+
+    @Override
+    public void close() {
+        synchronized (writeLock) {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            releaseCurrentBlock();
+        }
+    }
+
+    private void ensureOpen() {
+        if (closed) {
+            throw new IllegalStateException("IndexWriterV2 is closed");
+        }
+    }
+
+    private void releaseCurrentBlock() {
+        BlockEntry block = currentBlock;
+        currentBlock = null;
+        if (block != null) {
+            block.close();
+        }
     }
 
     public GtidSet getGtidSet() {
@@ -187,12 +218,13 @@ public class IndexWriterV2 {
     }
 
     void recoverIndex(AsyncFile indexV2File, AsyncFile blockV2File) throws IOException {
+        ensureOpen();
         resetReadPosition(indexV2File, blockV2File);
 
         String cmdPrefix = cmdStore.getCommandFileNamePrefix();
         if (!GtidSetWrapper.isV2HeaderComplete(fs, indexV2File)) {
             this.gtidSetWrapper = new GtidSetWrapper(new GtidSet(""));
-            currentBlock = null;
+            releaseCurrentBlock();
             currentGtidEntry = null;
             log.info("[recoverIndex] incomplete v2 header, rebuild from cmd offset 0");
             store.buildIndexFromCmdFile(0, INDEX_V2 + cmdPrefix, BLOCK_V2 + cmdPrefix, 0, 0);
@@ -253,7 +285,7 @@ public class IndexWriterV2 {
         }
 
         this.gtidSetWrapper = new GtidSetWrapper(recoverGtidSet);
-        currentBlock = null;
+        releaseCurrentBlock();
         currentGtidEntry = null;
 
         log.info("[recoverIndex] rebuildStart={}, lastValidIndexPos={}, lastValidBlockPos={}, cmdSize={}",

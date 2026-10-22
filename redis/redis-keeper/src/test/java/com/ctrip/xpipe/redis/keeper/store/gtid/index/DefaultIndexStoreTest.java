@@ -21,6 +21,7 @@ import com.ctrip.xpipe.tuple.Pair;
 import com.ctrip.xpipe.utils.DefaultControllableFile;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -2098,6 +2099,102 @@ public class DefaultIndexStoreTest {
 
         Assert.assertTrue(indexV2File(CMD_PREFIX, lastRollSegmentStart).exists());
         Assert.assertFalse(indexV2File(CMD_PREFIX, oldestSegStart).exists());
+    }
+
+    @Test
+    public void testWriterBlocksReleasedOnRotate() throws Exception {
+        String uuid = "b1f566ef50a85e1119f17f9b746728b48609a2ab";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+        Object oldV1 = getField(defaultIndexStore, "indexWriter");
+        Object oldV2 = getField(defaultIndexStore, "indexWriterV2");
+        ByteBuf v1Cache = writerBlockCache("indexWriter");
+        ByteBuf v2Cache = writerBlockCache("indexWriterV2");
+
+        switchCmdSegment("");
+
+        Assert.assertEquals(0, v1Cache.refCnt());
+        Assert.assertEquals(0, v2Cache.refCnt());
+        assertWriterClosed(oldV1, true);
+        assertWriterClosed(oldV2, true);
+        assertWriterClosed(getField(defaultIndexStore, "indexWriter"), false);
+        assertWriterClosed(getField(defaultIndexStore, "indexWriterV2"), false);
+    }
+
+    @Test
+    public void testWriterBlocksReleasedOnClose() throws Exception {
+        String uuid = "b2f566ef50a85e1119f17f9b746728b48609a2ab";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+        Object oldV1 = getField(defaultIndexStore, "indexWriter");
+        Object oldV2 = getField(defaultIndexStore, "indexWriterV2");
+        ByteBuf v1Cache = writerBlockCache("indexWriter");
+        ByteBuf v2Cache = writerBlockCache("indexWriterV2");
+
+        defaultIndexStore.close();
+
+        Assert.assertEquals(0, v1Cache.refCnt());
+        Assert.assertEquals(0, v2Cache.refCnt());
+        assertWriterClosed(oldV1, true);
+        assertWriterClosed(oldV2, true);
+        Assert.assertNull(getField(defaultIndexStore, "indexWriter"));
+        Assert.assertNull(getField(defaultIndexStore, "indexWriterV2"));
+    }
+
+    @Test
+    public void testUnbindReleasesPendingBlocksAfterSnapshot() throws Exception {
+        String uuid = "b3f566ef50a85e1119f17f9b746728b48609a2ab";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+        ByteBuf v1Cache = writerBlockCache("indexWriter");
+        ByteBuf v2Cache = writerBlockCache("indexWriterV2");
+        Assert.assertTrue(v2Cache.readableBytes() > 0);
+        Object oldV1 = getField(defaultIndexStore, "indexWriter");
+        Object oldV2 = getField(defaultIndexStore, "indexWriterV2");
+
+        ReflectionTestUtils.invokeMethod(defaultIndexStore, "unbindIndexWritersAfterRotateFailure");
+
+        Assert.assertEquals(0, v1Cache.refCnt());
+        Assert.assertEquals(0, v2Cache.refCnt());
+        assertWriterClosed(oldV1, true);
+        assertWriterClosed(oldV2, true);
+        Assert.assertNull(getField(defaultIndexStore, "indexWriter"));
+        Assert.assertNull(getField(defaultIndexStore, "indexWriterV2"));
+        GtidSet snapshot = (GtidSet) getField(defaultIndexStore, "continueGtidSetSnapshot");
+        Assert.assertTrue(new GtidSet(uuid + ":1").isContainedWithin(snapshot));
+    }
+
+    @Test
+    public void testReplacedWriterBlocksReleasedOnSwitch() throws Exception {
+        String uuid = "b4f566ef50a85e1119f17f9b746728b48609a2ab";
+        defaultIndexStore.write(createGtidCommand(uuid + ":1", "SET", "k", "v1"));
+        Object oldV1 = getField(defaultIndexStore, "indexWriter");
+        Object oldV2 = getField(defaultIndexStore, "indexWriterV2");
+        ByteBuf v1Cache = writerBlockCache("indexWriter");
+        ByteBuf v2Cache = writerBlockCache("indexWriterV2");
+
+        defaultIndexStore.doSwitchCmdFile();
+
+        Assert.assertNotSame(oldV1, getField(defaultIndexStore, "indexWriter"));
+        Assert.assertNotSame(oldV2, getField(defaultIndexStore, "indexWriterV2"));
+        Assert.assertEquals(0, v1Cache.refCnt());
+        Assert.assertEquals(0, v2Cache.refCnt());
+        assertWriterClosed(oldV1, true);
+        assertWriterClosed(oldV2, true);
+        assertWriterClosed(getField(defaultIndexStore, "indexWriter"), false);
+        assertWriterClosed(getField(defaultIndexStore, "indexWriterV2"), false);
+    }
+
+    private static void assertWriterClosed(Object writer, boolean expected) {
+        Assert.assertNotNull(writer);
+        Assert.assertEquals(expected, ReflectionTestUtils.getField(writer, "closed"));
+    }
+
+    private ByteBuf writerBlockCache(String writerField) throws Exception {
+        Object writer = getField(defaultIndexStore, writerField);
+        Assert.assertNotNull(writer);
+        BlockEntry block = (BlockEntry) ReflectionTestUtils.getField(writer, "currentBlock");
+        Assert.assertNotNull(block);
+        ByteBuf cache = (ByteBuf) ReflectionTestUtils.getField(block, "blockCache");
+        Assert.assertEquals(1, cache.refCnt());
+        return cache;
     }
 
     /**

@@ -1,10 +1,13 @@
 package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 public class BlockEntryTest {
@@ -182,6 +185,58 @@ public class BlockEntryTest {
                 assertEquals(fresh.getPendingBytes(), reused.getPendingBytes());
             }
         }
+    }
+
+    @Test
+    public void testCacheIsUnpooledHeap() throws Exception {
+        try (BlockEntry entry = new BlockEntry(UUID, 0, 0, 1)) {
+            assertUnpooledHeap(cache(entry));
+            entry.append(UUID, 1, 1 << 30);
+            entry.append(UUID, 2, (1 << 30) + (1 << 29));
+            ByteBuf copied = entry.copyPending();
+            try {
+                assertUnpooledHeap(copied);
+            } finally {
+                copied.release();
+            }
+
+            ByteBuf grown = cache(entry);
+            assertTrue(grown.capacity() > 5);
+            entry.reset(UUID, 10, 0);
+            assertEquals(0, grown.refCnt());
+            assertUnpooledHeap(cache(entry));
+
+            entry.append(UUID, 11, 10);
+            ByteBuf drained = entry.drainToByteBuf();
+            try {
+                assertUnpooledHeap(drained);
+                assertUnpooledHeap(cache(entry));
+            } finally {
+                drained.release();
+            }
+        }
+    }
+
+    @Test
+    public void testCloseReleasesCacheAndIsIdempotent() throws Exception {
+        BlockEntry entry = new BlockEntry(UUID, 0, 0);
+        entry.append(UUID, 1, 10);
+        ByteBuf cache = cache(entry);
+        assertEquals(1, cache.refCnt());
+
+        entry.close();
+        entry.close();
+
+        assertEquals(0, cache.refCnt());
+    }
+
+    private static ByteBuf cache(BlockEntry entry) {
+        return (ByteBuf) ReflectionTestUtils.getField(entry, "blockCache");
+    }
+
+    private static void assertUnpooledHeap(ByteBuf buf) {
+        assertFalse(buf.isDirect());
+        assertSame(UnpooledByteBufAllocator.DEFAULT, buf.alloc());
     }
 
     @Test(expected = IllegalStateException.class)

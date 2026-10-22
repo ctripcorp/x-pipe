@@ -14,9 +14,9 @@ import static com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex.INDEX;
 
 /**
  * Pure index write logic — AsyncFile handles are injected by IndexStore and owned by the segment.
- * No resource close; call {@link #flush()} to persist pending index/block before rotate or switch.
+ * Call {@link #flush()} to persist pending index/block before rotate or switch.
  */
-public class IndexWriter {
+public class IndexWriter implements AutoCloseable {
 
     private final DefaultIndexStore store;
     private final AsyncCommandStore cmdStore;
@@ -27,6 +27,7 @@ public class IndexWriter {
     private GtidSetWrapper gtidSetWrapper;
     private AsyncFile indexFile;
     private AsyncFile blockFile;
+    private volatile boolean closed;
 
     public IndexWriter(GtidSet gtidSet, DefaultIndexStore store) {
         this.store = store;
@@ -36,12 +37,14 @@ public class IndexWriter {
     }
 
     public void init(AsyncFile indexFile, AsyncFile blockFile) throws IOException {
+        ensureOpen();
         this.indexFile = indexFile;
         this.blockFile = blockFile;
         ensureHeaderIfEmpty();
     }
 
     void ensureHeaderIfEmpty() throws IOException {
+        ensureOpen();
         if (indexFile == null) {
             return;
         }
@@ -51,6 +54,7 @@ public class IndexWriter {
     }
 
     void recoverIndex(AsyncFile indexFile, AsyncFile blockFile) throws IOException {
+        ensureOpen();
         AsyncFileSystemHelper.await(() -> fs.position(indexFile, 0), "position index v1 to start for recover");
         AsyncFileSystemHelper.await(() -> fs.position(blockFile, 0), "position block v1 to start for recover");
 
@@ -73,7 +77,7 @@ public class IndexWriter {
         if (index != null) {
             long indexSize = index.getPosition() + IndexEntry.SEGMENT_LENGTH;
             long blockTruncate = index.getBlockEndOffset() >= 0 ? index.getBlockEndOffset() : blockSize;
-            currentBlock = null;
+            releaseCurrentBlock();
             this.indexEntry = null;
             store.buildIndexFromCmdFile(index.getCmdStartOffset(), INDEX + cmdPrefix, BLOCK + cmdPrefix, indexSize, blockTruncate);
         } else {
@@ -110,6 +114,7 @@ public class IndexWriter {
     }
 
     public void append(String uuid, long gno, int commandOffset) throws IOException {
+        ensureOpen();
         if (currentBlock == null) {
             createNewBlock(uuid, gno, commandOffset);
         } else if (currentBlock.needChangeBlock(uuid, gno)) {
@@ -123,12 +128,36 @@ public class IndexWriter {
      * Distinct from {@link #saveIndexEntry()} which checkpoints without ending the current block.
      */
     public void flush() throws IOException {
+        ensureOpen();
         if (indexEntry == null || currentBlock == null) {
             return;
         }
         saveIndexEntry();
         gtidSetWrapper.compensate(indexEntry);
+        releaseCurrentBlock();
+    }
+
+    @Override
+    public void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
+        releaseCurrentBlock();
+    }
+
+    private void ensureOpen() {
+        if (closed) {
+            throw new IllegalStateException("IndexWriter is closed");
+        }
+    }
+
+    private void releaseCurrentBlock() {
+        BlockEntry block = currentBlock;
         currentBlock = null;
+        if (block != null) {
+            block.close();
+        }
     }
 
     private void createNewBlock(String uuid, long gno, int commandOffset) throws IOException {
@@ -154,6 +183,7 @@ public class IndexWriter {
      * {@code currentBlock} while retaining {@code indexEntry} for GtidSet compensate.
      */
     public void saveIndexEntry() throws IOException {
+        ensureOpen();
         if (indexEntry == null || currentBlock == null) {
             return;
         }

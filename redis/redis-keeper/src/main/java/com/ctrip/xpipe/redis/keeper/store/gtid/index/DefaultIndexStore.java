@@ -142,6 +142,17 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
         openWritersWithHandles(getWriteIndexHandles(keeperConfig.dualWrite()), startGtidSet);
     }
 
+    private void closeAndDropWriters() {
+        if (this.indexWriter != null) {
+            this.indexWriter.close();
+            this.indexWriter = null;
+        }
+        if (this.indexWriterV2 != null) {
+            this.indexWriterV2.close();
+            this.indexWriterV2 = null;
+        }
+    }
+
     private void openWritersWithHandles(Map<String, AsyncFile> writeHandles, GtidSet headerGtidSet) throws IOException {
         String prefix = asyncCommandStore.getCommandFileNamePrefix();
         List<String> prefixes = writerIndexPrefixes(keeperConfig.dualWrite());
@@ -154,12 +165,18 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
 
             GtidSet v2HeaderGtidSet = headerGtidSet;
             if (keeperConfig.dualWrite()) {
+                if (this.indexWriter != null) {
+                    this.indexWriter.close();
+                }
                 this.indexWriter = new IndexWriter(headerGtidSet.clone(), this);
                 AsyncFile readIndex = readHandles.get(INDEX + prefix);
                 if (readIndex != null && indexFileNeedsRecover(readIndex)) {
                     indexWriter.recoverIndex(readIndex, readHandles.get(BLOCK + prefix));
                 }
                 v2HeaderGtidSet = this.indexWriter.getGtidSet();
+            }
+            if (this.indexWriterV2 != null) {
+                this.indexWriterV2.close();
             }
             this.indexWriterV2 = new IndexWriterV2(v2HeaderGtidSet.clone(), this,
                     keeperConfig.getIndexZoneConsecutiveThreshold(),
@@ -302,8 +319,7 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
         this.continueGtidSetSnapshot = live.clone();
         logger.info("[unbindIndexWritersAfterRotateFailure] snapshot continueGtidSet={} replId={}",
                 continueGtidSetSnapshot, replId);
-        this.indexWriter = null;
-        this.indexWriterV2 = null;
+        closeAndDropWriters();
     }
 
     private static void rethrowRotateFailure(Exception failure, Exception first) throws IOException {
@@ -797,8 +813,7 @@ public class DefaultIndexStore extends AbstractStore implements IndexStore, Stre
             }
             flushWriterBestEffortOnClose();
         } finally {
-            this.indexWriter = null;
-            this.indexWriterV2 = null;
+            closeAndDropWriters();
             this.streamCommandReader = null;
         }
     }

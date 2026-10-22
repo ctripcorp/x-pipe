@@ -3,6 +3,7 @@ package com.ctrip.xpipe.redis.keeper.store.gtid.index;
 import com.ctrip.xpipe.utils.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 
 /**
  * In-memory replacement for {@link BlockWriter} (spec §3.7.4).
@@ -42,13 +43,13 @@ public class BlockEntry implements AutoCloseable {
     }
 
     public BlockEntry(String uuid, long gno, int cmdOffset, int blockMaxSize) {
-        this(uuid, gno, cmdOffset, blockMaxSize, ByteBufAllocator.DEFAULT);
+        this(uuid, gno, cmdOffset, blockMaxSize, UnpooledByteBufAllocator.DEFAULT);
     }
 
     public BlockEntry(String uuid, long gno, int cmdOffset, int blockMaxSize, ByteBufAllocator allocator) {
         this.blockMaxSize = blockMaxSize;
         this.allocator = allocator;
-        this.blockCache = allocator.buffer(blockMaxSize * MAX_VARINT_BYTES);
+        this.blockCache = allocator.heapBuffer(blockMaxSize * MAX_VARINT_BYTES);
         reset(uuid, gno, cmdOffset);
     }
 
@@ -67,7 +68,7 @@ public class BlockEntry implements AutoCloseable {
         int initialCapacity = blockMaxSize * MAX_VARINT_BYTES;
         if (blockCache.capacity() > initialCapacity) {
             blockCache.release();
-            blockCache = allocator.buffer(initialCapacity);
+            blockCache = allocator.heapBuffer(initialCapacity);
         } else {
             blockCache.clear();
         }
@@ -124,7 +125,7 @@ public class BlockEntry implements AutoCloseable {
     public ByteBuf drainToByteBuf() {
         ensureOpen();
         ByteBuf out = blockCache;
-        blockCache = allocator.buffer(blockMaxSize * MAX_VARINT_BYTES);
+        blockCache = allocator.heapBuffer(blockMaxSize * MAX_VARINT_BYTES);
         return out;
     }
 
