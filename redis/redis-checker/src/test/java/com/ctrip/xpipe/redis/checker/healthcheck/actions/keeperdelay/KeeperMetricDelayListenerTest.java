@@ -7,6 +7,7 @@ import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperInstanceInfo;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
@@ -74,7 +75,7 @@ public class KeeperMetricDelayListenerTest {
         Assert.assertEquals(KEEPER, point.getHostPort());
         Assert.assertEquals(1234.567, point.getValue(), 0.0);
         Assert.assertEquals(RECV_TIME_MILLI, point.getTimestampMilli());
-        Assert.assertEquals(new HashSet<>(Arrays.asList("type", "isNew", "crossDc", "crossRegion")),
+        Assert.assertEquals(new HashSet<>(Arrays.asList("type", "isNew", "crossDc", "crossRegion", "role")),
                 point.getTags().keySet());
         Assert.assertEquals("keeper", point.getTags().get("type"));
         Assert.assertEquals("0", point.getTags().get("isNew"));
@@ -83,6 +84,23 @@ public class KeeperMetricDelayListenerTest {
         Assert.assertNull(point.getTags().get("state"));
         Assert.assertNull(point.getTags().get("srcShardId"));
         verify(metaCache).isCrossRegion(ACTIVE_DC, KEEPER_DC);
+    }
+
+    /** role 来自 INFO replication 采到的实时状态；未采到时打 unknown 而非漏 tag。 */
+    @Test
+    public void testRoleTagFollowsKeeperState() {
+        listener.onAction(context(1000L, KeeperState.ACTIVE));
+        Assert.assertEquals("active", capturedPoint.get().getTags().get("role"));
+
+        listener.onAction(context(1000L, KeeperState.BACKUP));
+        Assert.assertEquals("backup", capturedPoint.get().getTags().get("role"));
+
+        // PREPARE 等过渡态既非 active 也非 backup，原样打出
+        listener.onAction(context(1000L, KeeperState.PREPARE));
+        Assert.assertEquals("prepare", capturedPoint.get().getTags().get("role"));
+
+        listener.onAction(context(1000L, null));
+        Assert.assertEquals("unknown", capturedPoint.get().getTags().get("role"));
     }
 
     @Test
@@ -125,7 +143,11 @@ public class KeeperMetricDelayListenerTest {
     }
 
     private KeeperDelayActionContext context(long delayNanos) {
-        KeeperDelayActionContext context = new KeeperDelayActionContext(instance, delayNanos);
+        return context(delayNanos, null);
+    }
+
+    private KeeperDelayActionContext context(long delayNanos, KeeperState keeperState) {
+        KeeperDelayActionContext context = new KeeperDelayActionContext(instance, delayNanos, keeperState);
         ReflectionTestUtils.setField(context, "recvTimeMilli", RECV_TIME_MILLI);
         return context;
     }

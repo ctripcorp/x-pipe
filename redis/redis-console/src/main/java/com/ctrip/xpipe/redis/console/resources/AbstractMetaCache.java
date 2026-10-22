@@ -417,6 +417,24 @@ public abstract class AbstractMetaCache implements MetaCache {
         return shardMeta.getKeepers();
     }
 
+    /**
+     * {@code doGetKeeperContainer} 在 dc / container 不存在时抛 {@link IllegalArgumentException}，
+     * 这里按「查不到」处理：调用方（打点）不应因 meta 不全而失败。
+     */
+    @Override
+    public String getKeeperDiskType(String dc, KeeperMeta keeperMeta) {
+        if (null == dc || null == keeperMeta || null == keeperMeta.getKeeperContainerId()) {
+            return null;
+        }
+        try {
+            KeeperContainerMeta containerMeta = meta.getValue().getKeeperContainer(dc, keeperMeta);
+            return null == containerMeta ? null : containerMeta.getDiskType();
+        } catch (RuntimeException e) {
+            logger.debug("[getKeeperDiskType] unfound container, dc={}, keeper={}", dc, keeperMeta, e);
+            return null;
+        }
+    }
+
     @Override
     public Map<KeeperMeta, String> getKeeper2DcOfClusterShard(String cluster, String shard) {
         Map<KeeperMeta, String> keepers = new HashMap<>();

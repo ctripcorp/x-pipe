@@ -72,6 +72,13 @@ public interface MetaCache {
 
     List<KeeperMeta> getKeeperOfDcClusterShard(String dc, String cluster, String shard);
 
+    /**
+     * Keeper 所属 KeeperContainer 的磁盘类型（静态配置，非实时状态）。
+     *
+     * @return 未命中 keeper 或其 container 时返回 null
+     */
+    String getKeeperDiskType(String dc, KeeperMeta keeperMeta);
+
     Map<KeeperMeta, String> getKeeper2DcOfClusterShard(String cluster, String shard);
 
     List<RedisMeta> getSlavesOfDcClusterShard(String dc, String cluster, String shard);

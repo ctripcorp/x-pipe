@@ -194,6 +194,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public String getKeeperDiskType(String dc, KeeperMeta keeperMeta) {
+        return null;
+    }
+
+    @Override
     public Map<KeeperMeta, String> getKeeper2DcOfClusterShard(String cluster, String shard) {
         return Map.of();
     }
