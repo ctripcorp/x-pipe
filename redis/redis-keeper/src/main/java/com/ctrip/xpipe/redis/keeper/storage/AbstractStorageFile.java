@@ -64,6 +64,9 @@ public abstract class AbstractStorageFile {
     // IO key for inFlight serialization.
     final String ioKey;
 
+    // Set by the FS right after construction, before the file is published to other threads.
+    FileChannelFactory channelFactory = FileChannelFactory.DEFAULT;
+
     FileCacheEntry getCacheEntry() {
         return cacheEntry;
     }

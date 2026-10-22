@@ -15,7 +15,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -51,7 +53,15 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
 
     private final Object[] openCloseLocks = new Object[LOCK_STRIPES];
 
+    private final FileChannelFactory channelFactory;
+
     public AsyncTFSBasedFileSystem(ExecutorService ioExecutor, long fsyncIntervalBytes, long fsyncIntervalMillis) {
+        this(ioExecutor, fsyncIntervalBytes, fsyncIntervalMillis, FileChannelFactory.DEFAULT);
+    }
+
+    public AsyncTFSBasedFileSystem(ExecutorService ioExecutor, long fsyncIntervalBytes, long fsyncIntervalMillis,
+            FileChannelFactory channelFactory) {
+        this.channelFactory = Objects.requireNonNull(channelFactory, "channelFactory");
         this.ioExecutor = ioExecutor;
         this.fsyncIntervalBytes = fsyncIntervalBytes;
         this.fsyncIntervalNanos = fsyncIntervalMillis * 1_000_000L;
@@ -91,6 +101,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
             AbstractStorageFile.OpenMode openMode, AbstractStorageFile.ReplaceMode replaceMode,
             boolean lenient, String tenant, boolean noFs) {
         AsyncFile file = new AsyncFile(path, replaceMode, openMode, key, ioKey, lenient);
+        file.channelFactory = channelFactory;
         file.needPrepare = noFs;
         return file;
     }
@@ -138,8 +149,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
                     logger.info("valid tmp file {} left behind, recovery deferred to the first writer", tmpPath);
                     return false;
                 }
-                try (FileChannel fileCh = FileChannel.open(filePath,
-                        StandardOpenOption.WRITE, StandardOpenOption.CREATE)) {
+                try (FileChannel fileCh = channelFactory.open(filePath,
+                        EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE))) {
                     ByteBuf dataBuf = readFully(tmpCh, expectedLen, TMP_HEADER_BYTES, 0);
                     try {
                         int dataRead = dataBuf.readableBytes();
@@ -218,7 +229,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
         }
         FileChannel tmpCh;
         try {
-            tmpCh = FileChannel.open(tmpPath, StandardOpenOption.READ);
+            tmpCh = channelFactory.open(tmpPath, EnumSet.of(StandardOpenOption.READ));
         } catch (NoSuchFileException e) {
             logger.info("tmp file {} is gone between exists and open, using the target file {}",
                     tmpPath, filePath);
@@ -677,7 +688,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     private long atomicReplaceWrite(AsyncFile file, ByteBuf data) throws IOException {
         long length = data.readableBytes();
         Path tmpPath = getTmpPath(file.path);
-        try (FileChannel tmpCh = FileChannel.open(tmpPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+        try (FileChannel tmpCh = channelFactory.open(tmpPath, EnumSet.of(StandardOpenOption.WRITE,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING))) {
             ByteBuf lenBuf = Unpooled.buffer(TMP_HEADER_BYTES);
             try {
                 lenBuf.writeLong(length);
@@ -703,6 +715,7 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     public AsyncSegmentFile openSync(String path, String prefix, String key, String ioKey,
             List<String> indexPrefixes, boolean write, String tenant, boolean noFs) {
         AsyncSegmentFile file = new AsyncSegmentFile(path, prefix, indexPrefixes, key, ioKey, write);
+        file.channelFactory = channelFactory;
         file.needPrepare = noFs;
         return file;
     }
@@ -1001,8 +1014,8 @@ public class AsyncTFSBasedFileSystem implements AsyncFileSystem {
     // cannot cover the range. Returns false if dataSupplier returns null or IO fails.
     private boolean rewriteRangeSync(Path path, long baseOffset, long written,
             java.util.function.LongFunction<ByteBuf> dataSupplier, String logLabel) {
-        try (FileChannel ch = FileChannel.open(path,
-                StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.READ)) {
+        try (FileChannel ch = channelFactory.open(path,
+                EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.READ))) {
             long diskEnd = baseOffset + ch.size();
             long logicalFrom = written <= baseOffset ? baseOffset : Math.min(written, diskEnd);
             long physicalFrom = logicalFrom - baseOffset;

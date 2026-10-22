@@ -39,6 +39,7 @@ import com.ctrip.xpipe.redis.keeper.storage.MetaWriteFailureRestoreTest;
 import com.ctrip.xpipe.redis.keeper.storage.AbstractMetaStoreFlushTest;
 import com.ctrip.xpipe.redis.keeper.storage.AbstractMetaStoreSizeIfMatchTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperTest;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystemChannelFactoryTest;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystemTest;
 import com.ctrip.xpipe.redis.keeper.storage.DeferredHandleCloserTest;
 import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemTest;
@@ -197,6 +198,7 @@ import org.junit.runners.Suite.SuiteClasses;
         UnclosedHandleMetricReporterTest.class,
         KeeperContainerControllerUnclosedHandlesTest.class,
         AsyncTFSBasedFileSystemTest.class,
+        AsyncTFSBasedFileSystemChannelFactoryTest.class,
         DeferredHandleCloserTest.class,
         TailCacheFileSystemTest.class,
 

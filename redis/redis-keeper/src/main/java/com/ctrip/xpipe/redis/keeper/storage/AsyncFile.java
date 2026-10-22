@@ -49,7 +49,7 @@ public class AsyncFile extends AbstractStorageFile {
                 // exists (content still only in tmp). Leave channel null; IO retries open or
                 // treats a still-missing target as empty.
                 try {
-                    newChannel = FileChannel.open(Paths.get(path), StandardOpenOption.READ);
+                    newChannel = channelFactory.open(Paths.get(path), EnumSet.of(StandardOpenOption.READ));
                 } catch (NoSuchFileException e) {
                     if (preferTmp()) {
                         return -1;
@@ -60,7 +60,7 @@ public class AsyncFile extends AbstractStorageFile {
                 Set<? extends OpenOption> options = openMode == OpenMode.WRITE
                         ? EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE)
                         : EnumSet.of(StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-                newChannel = FileChannel.open(Paths.get(path), options);
+                newChannel = channelFactory.open(Paths.get(path), options);
                 offset = newChannel.size();
                 newChannel.position(offset);
             }

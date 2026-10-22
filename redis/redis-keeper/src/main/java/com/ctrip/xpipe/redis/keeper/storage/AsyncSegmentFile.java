@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,15 +61,15 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         try {
             long logicalOffset = -1;
             if (canWrite()) {
-                newChannel = FileChannel.open(segmentPath(startOffset),
-                        StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+                newChannel = channelFactory.open(segmentPath(startOffset),
+                        EnumSet.of(StandardOpenOption.WRITE, StandardOpenOption.CREATE));
                 long physicalSize = newChannel.size();
                 newChannel.position(physicalSize);
                 logicalOffset = startOffset + physicalSize;
             } else {
                 // java don't support CREATE option for read mode
-                newChannel = FileChannel.open(segmentPath(startOffset),
-                        StandardOpenOption.READ);
+                newChannel = channelFactory.open(segmentPath(startOffset),
+                        EnumSet.of(StandardOpenOption.READ));
             }
 
             synchronized (this) {
@@ -150,6 +151,7 @@ public class AsyncSegmentFile extends AbstractStorageFile {
         String fileName = indexPrefix + startOffset;
         AsyncIndexFile af = new AsyncIndexFile(key, ioKey, absolutePathOf(fileName), indexPrefix, startOffset,
                 canWrite() ? OpenMode.READ_WRITE : OpenMode.READ);
+        af.channelFactory = channelFactory;
         af.needPrepare = needPrepare || noFs;
         tryBindIndexFileCacheEntry(af);
         currentIndexFiles.put(indexPrefix, af);
