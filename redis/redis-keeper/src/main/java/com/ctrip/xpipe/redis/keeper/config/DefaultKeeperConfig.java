@@ -8,6 +8,7 @@ import com.ctrip.xpipe.config.DefaultFileConfig;
 import com.ctrip.xpipe.config.DefaultPropertyConfig;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
+import io.netty.util.internal.PlatformDependent;
 
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP_CROSSREGION;
@@ -28,6 +29,8 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public static final String KEY_REPLICATION_STORE_MAX_LWM_DISTANCE_TO_TRANSFER_BEFORE_CREATE_RDB = "replicationstore.max.lwm.distance.to.transfer";
 	public static final String KEY_REPLICATION_STORE_COMMANDFILE_RETAIN_TIMEOUT_MILLI = "replicationstore.commandfile.retain.timeout.milli";
 	public static final String KEY_COMMAND_READER_FLYING_THRESHOLD = "command.reader.flying.threshold";
+	public static final String KEY_COMMAND_OFFSET_NOTIFY_BYTES_THRESHOLD = "command.offset.notify.bytes.threshold";
+	public static final String KEY_COMMAND_OFFSET_NOTIFY_TIME_MILLI_THRESHOLD = "command.offset.notify.time.milli.threshold";
 	public static final String KEY_COMMAND_OFFSET_NOTIFY_COALESCING_ENABLED = "command.offset.notify.coalescing.enabled";
 	private static final String KEY_COMMAND_INDEX_BYTES_INTERVAL = "command.index.bytes.interval";
 	public static final String KEY_RDB_DUMP_MIN_INTERVAL = "rdbdump.min.interval";
@@ -70,6 +73,11 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
     private static String KEY_APPLIER_NETTY_RECV_BUFFER_SIZE = "applier.netty.recv.buffer.size";
 
 	private static String KEY_RECORD_WRONG_STREAM = "keeper.record.wrong.stream";
+
+	public static final String KEY_PREPARE_STORE_WATCH_ENABLED = "keeper.prepare.store.watch.enabled";
+	public static final String KEY_PREPARE_WATCH_REOPEN_INTERVAL_MILLI = "keeper.prepare.watch.reopen.interval.milli";
+	public static final String KEY_PREPARE_WATCH_CLOSE_HOLD_MILLI = "keeper.prepare.watch.close.hold.milli";
+	public static final String KEY_PUBSUB_PARSE_ENABLED = "keeper.pubsub.parse.enabled";
 
 	private static String KEY_REDIS_RATE_LIMITE_MIN = "redis.rate.limit.min";
 	private static String KEY_REDIS_RATE_LIMITE_MAX = "redis.rate.limit.max";
@@ -161,6 +169,16 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public long getCommandReaderFlyingThreshold() {
 		return getLongProperty(KEY_COMMAND_READER_FLYING_THRESHOLD, (long) (1 << 15));
+	}
+
+	@Override
+	public int getCommandOffsetNotifyBytesThreshold() {
+		return getIntProperty(KEY_COMMAND_OFFSET_NOTIFY_BYTES_THRESHOLD, DEFAULT_COMMAND_OFFSET_NOTIFY_BYTES_THRESHOLD);
+	}
+
+	@Override
+	public int getCommandOffsetNotifyTimeMilliThreshold() {
+		return getIntProperty(KEY_COMMAND_OFFSET_NOTIFY_TIME_MILLI_THRESHOLD, DEFAULT_COMMAND_OFFSET_NOTIFY_TIME_MILLI_THRESHOLD);
 	}
 
 	@Override
@@ -277,6 +295,26 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	}
 
 	@Override
+	public boolean isPrepareStoreWatchEnabled() {
+		return getBooleanProperty(KEY_PREPARE_STORE_WATCH_ENABLED, false);
+	}
+
+	@Override
+	public int getPrepareWatchReopenIntervalMilli() {
+		return getIntProperty(KEY_PREPARE_WATCH_REOPEN_INTERVAL_MILLI, DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI);
+	}
+
+	@Override
+	public int getPrepareWatchCloseHoldMilli() {
+		return getIntProperty(KEY_PREPARE_WATCH_CLOSE_HOLD_MILLI, DEFAULT_PREPARE_WATCH_CLOSE_HOLD_MILLI);
+	}
+
+	@Override
+	public boolean isPubsubParseEnabled() {
+		return getBooleanProperty(KEY_PUBSUB_PARSE_ENABLED, false);
+	}
+
+	@Override
 	public boolean stopWriteCk() {
 		return getBooleanProperty(KEY_STOP_WRITE_CK, false);
 	}
@@ -312,21 +350,6 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	}
 
 	@Override
-	public int getCmdBatchWriteSize() {
-		return getIntProperty(KEY_CMD_BATCH_WRITE_SIZE,4096);
-	}
-
-	@Override
-	public long getCmdBatchFlushIntervalMillis() {
-		return getLongProperty(KEY_CMD_BATCH_FLUSH_INTERVAL_MILLIS,2l);
-	}
-
-	@Override
-	public int getCmdBatchLowRateBps() {
-		return getIntProperty(KEY_CMD_BATCH_LOW_RATE_BPS,524288);
-	}
-
-	@Override
 	public boolean dualWrite() {
 		return getBooleanProperty(KEY_INDEX_DUAL_WRITE, true);
 	}
@@ -349,5 +372,80 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public int getBlockSizeThreshold() {
 		return getIntProperty(KEY_BLOCK_SIZE_THRESHOLD, 8192);
+	}
+
+	public int getAsyncWriteMaxBytes() {
+		return getIntProperty(KEY_ASYNC_WRITE_MAX_BYTES, 65536);
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalBytes() {
+		return getLongProperty(KEY_ASYNC_FSYNC_INTERVAL_BYTES, DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES);
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalMillis() {
+		return getLongProperty(KEY_ASYNC_FSYNC_INTERVAL_MILLIS, DEFAULT_ASYNC_FSYNC_INTERVAL_MILLIS);
+	}
+
+	@Override
+	public int getAsyncIoThreads() {
+		return getIntProperty(KEY_ASYNC_IO_THREADS, DEFAULT_ASYNC_IO_THREADS);
+	}
+
+	@Override
+	public long getAsyncTailCacheMaxSizeBytes() {
+		return getLongProperty(KEY_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES, defaultAsyncTailCacheMaxSizeBytes());
+	}
+
+	@Override
+	public long getAsyncTailCacheMaxSizePerFileBytes() {
+		return getLongProperty(KEY_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES,
+				DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES);
+	}
+
+	@Override
+	public long getUnclosedHandleFlushRetryWindowMilli() {
+		return getLongProperty(KEY_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI,
+				DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI);
+	}
+
+	@Override
+	public long getMetaFlushIntervalMilli() {
+		return getLongProperty(KEY_META_FLUSH_INTERVAL_MILLI, DEFAULT_META_FLUSH_INTERVAL_MILLI);
+	}
+
+	@Override
+	public boolean isFsDebugEnabled() {
+		return getBooleanProperty(KEY_FS_DEBUG_ENABLED, false);
+	}
+
+	@Override
+	public boolean isFsDebugFaultEio() {
+		return getBooleanProperty(KEY_FS_DEBUG_FAULT_EIO, false);
+	}
+
+	@Override
+	public long getFsDebugFaultDelayMilli() {
+		return getLongProperty(KEY_FS_DEBUG_FAULT_DELAY_MILLI, 0L);
+	}
+
+	@Override
+	public String getFsDebugFaultOps() {
+		return getProperty(KEY_FS_DEBUG_FAULT_OPS, "");
+	}
+
+	@Override
+	public String getFsDebugFaultPathContains() {
+		return getProperty(KEY_FS_DEBUG_FAULT_PATH_CONTAINS, "");
+	}
+
+	static long defaultAsyncTailCacheMaxSizeBytes() {
+		long maxDirect = PlatformDependent.maxDirectMemory();
+		if (maxDirect <= 0) {
+			return DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR;
+		}
+		long sized = (long) (maxDirect * DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_RATIO);
+		return Math.max(DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR, sized);
 	}
 }

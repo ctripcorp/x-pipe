@@ -231,7 +231,6 @@ public class KeeperCrossRegionFsyncSerialTest extends AbstractKeeperIntegratedSi
         TestKeeperConfig config = (TestKeeperConfig) activeServer.getKeeperConfig();
         // 调小 maxTransfer：任何待传增量命令都会命中「too much to transfer」→ 回落全量
         config.setReplicationStoreMaxCommandsToTransferBeforeCreateRdb(100);
-        config.setCmdBatchLowRateBps(100);
 
         int count = 2;
         int i = 0;

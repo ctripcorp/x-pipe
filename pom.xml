@@ -283,6 +283,11 @@
             </dependency>
             <dependency>
                 <groupId>com.ctrip.framework.xpipe.redis</groupId>
+                <artifactId>redis-comparator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.ctrip.framework.xpipe.redis</groupId>
                 <artifactId>redis-console</artifactId>
                 <version>${project.version}</version>
             </dependency>

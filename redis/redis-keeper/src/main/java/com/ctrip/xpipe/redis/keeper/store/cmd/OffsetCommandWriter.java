@@ -1,20 +1,21 @@
 package com.ctrip.xpipe.redis.keeper.store.cmd;
 
-import com.ctrip.xpipe.netty.ByteBufUtils;
 import com.ctrip.xpipe.redis.core.store.CommandFile;
 import com.ctrip.xpipe.redis.core.store.CommandStore;
 import com.ctrip.xpipe.redis.core.store.CommandWriter;
 import com.ctrip.xpipe.redis.core.store.CommandFileContext;
-import com.ctrip.xpipe.tuple.Pair;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
+import com.ctrip.xpipe.redis.keeper.store.AsyncCommandStore;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * @author lishanglin
@@ -22,32 +23,33 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class OffsetCommandWriter implements CommandWriter {
 
-    private AtomicReference<CommandFileContext> cmdFileCtxRef = new AtomicReference<>();
-
     private CommandStore cmdStore;
+
+    private AsyncCommandStore asyncCommandStore;
 
     private int maxFileSize;
 
     private Logger delayTraceLogger;
+
+    private volatile boolean initialized;
 
     private static final Logger logger = LoggerFactory.getLogger(OffsetCommandWriter.class);
 
     public OffsetCommandWriter(CommandStore cmdStore, int maxFileSize,
                                Logger delayTraceLogger) {
         this.cmdStore = cmdStore;
+        this.asyncCommandStore = (AsyncCommandStore) Objects.requireNonNull(cmdStore, "cmdStore");
         this.maxFileSize = maxFileSize;
         this.delayTraceLogger = delayTraceLogger;
     }
 
     @Override
     public void initialize() throws IOException {
-        if (null != cmdFileCtxRef.get()) return;
+        if (initialized) return;
 
-        CommandFile latestCommandFile = cmdStore.findLatestFile();
-        CommandFileContext cmdFileCtx = new CommandFileContext(latestCommandFile);
-        if (cmdFileCtxRef.compareAndSet(null, cmdFileCtx)) {
-            logger.info("[initialize] write to {}", latestCommandFile.getFile().getName());
-        }
+        long startOffset = currentSegmentStartOffset();
+        initialized = true;
+        logger.info("[initialize] write from segment start offset {}", startOffset);
     }
 
     @Override
@@ -56,16 +58,28 @@ public class OffsetCommandWriter implements CommandWriter {
             delayTraceLogger.debug("[appendCommands][begin]{}");
         }
 
-        CommandFileContext cmdFileCtx = cmdFileCtxRef.get();
-        int wrote = ByteBufUtils.writeByteBufToFileChannel(byteBuf, cmdFileCtx.getChannel(), delayTraceLogger);
+        int wrote = 0;
+        while (byteBuf.isReadable()) {
+            int chunkLength = nextChunkLength(byteBuf.readableBytes());
+            ByteBuf chunk = byteBuf.readRetainedSlice(chunkLength);
 
-        cmdFileCtx.advanceFileLength(wrote);
-
-        if(delayTraceLogger.isDebugEnabled()){
-            logger.debug("[appendCommands]{}, {}, {}", cmdFileCtx, byteBuf.readableBytes(), cmdFileCtx.fileLength());
+            long expectedEndOffset = totalLength() + chunkLength - 1;
+            try {
+                AsyncFileSystemHelper.writeAndAwait(asyncFileSystem(), asyncSegmentFile(), chunk, chunkLength,
+                        "write command segment offset " + expectedEndOffset);
+            } catch (IOException e) {
+                logger.error("[asyncWrite][fail][offset={}]", expectedEndOffset, e);
+                throw e;
+            }
+            wrote += chunkLength;
         }
 
-        long offset = cmdFileCtx.totalLength() - 1;
+        if(delayTraceLogger.isDebugEnabled()){
+            logger.debug("[appendCommands][segmentStartOffset={}] fileLength={}",
+                    currentSegmentStartOffset(), fileLength());
+        }
+
+        long offset = totalLength() - 1;
         if(delayTraceLogger.isDebugEnabled()){
             delayTraceLogger.debug("[appendCommands][ end ]{}", offset + 1);
         }
@@ -73,69 +87,102 @@ public class OffsetCommandWriter implements CommandWriter {
         return wrote;
     }
 
+    private int nextChunkLength(int readableBytes) {
+        return Math.min(readableBytes, asyncCommandStore.getAsyncWriteMaxBytes());
+    }
+
     @Override
-    public boolean needRotate() {
-        CommandFileContext curCmdFileCtx = cmdFileCtxRef.get();
-        return curCmdFileCtx.fileLength() >= maxFileSize;
+    public boolean needRotate() throws IOException {
+        return currentSegmentSize() >= maxFileSize;
     }
 
     @Override
     public void doRotate() throws IOException {
-        CommandFileContext curCmdFileCtx = cmdFileCtxRef.get();
-        CommandFile newCommandFile = cmdStore.newCommandFile(totalLength());
-        File newFile = newCommandFile.getFile();
-        long newStartOffset = newCommandFile.getStartOffset();
-        logger.info("Rotate to {},filelength {},totallength {},newStartOffset {}", newFile.getName(),curCmdFileCtx.fileLength(),totalLength(),newStartOffset);
-
-        synchronized (this) {
-            CommandFileContext newCmdFileCtx = new CommandFileContext(newStartOffset, newFile);
-            newCmdFileCtx.createIfNotExist();
-            cmdFileCtxRef.set(newCmdFileCtx);
-
-            curCmdFileCtx.close();
-        }
+        logger.info("Rotate command segment at offset {}", totalLength());
+        AsyncFileSystemHelper.await(() -> asyncFileSystem().roll(asyncSegmentFile()), "roll command segment");
     }
 
     @Override
     public synchronized long totalLength() {
-        return cmdFileCtxRef.get().totalLength();
+        try {
+            long startOffset = currentSegmentStartOffset();
+            return startOffset + segmentSizeAt(startOffset);
+        } catch (IOException e) {
+            throw new IllegalStateException("failed to query command segment total length", e);
+        }
     }
 
     @Override
     public long fileLength() {
-        return cmdFileCtxRef.get().fileLength();
+        try {
+            return currentSegmentSize();
+        } catch (IOException e) {
+            throw new IllegalStateException("failed to query command segment file length", e);
+        }
     }
 
     @Override
     public long getFileLastModified() {
-        return cmdFileCtxRef.get().getLastModified();
+        try {
+            return AsyncFileSystemHelper.await(() -> asyncFileSystem().lastModified(asyncSegmentFile()),
+                    "lastModified command segment");
+        } catch (IOException e) {
+            throw new IllegalStateException("failed to query command segment lastModified", e);
+        }
     }
 
     @Override
     public CommandFileContext getFileContext() {
-        return cmdFileCtxRef.get();
+        try {
+            return new CommandFileContext(currentCommandFile());
+        } catch (IOException e) {
+            throw new IllegalStateException("failed to build command file context", e);
+        }
     }
 
     @Override
     public void close() throws IOException {
-        CommandFileContext cmdFileCtx = cmdFileCtxRef.get();
-        if (null != cmdFileCtx) {
-            cmdFileCtx.close();
+        // segment 句柄由 CommandStore.close() 统一 fs.close(seg)
+    }
+
+    private AsyncFileSystem asyncFileSystem() {
+        return asyncCommandStore.getAsyncFileSystem();
+    }
+
+    private AsyncSegmentFile asyncSegmentFile() {
+        return asyncCommandStore.getAsyncSegmentFile();
+    }
+
+    private long currentSegmentStartOffset() {
+        long startOffset = asyncFileSystem().getCurrentSegmentStartOffset(asyncSegmentFile());
+        if (startOffset >= 0) {
+            return startOffset;
         }
+        // FS may return -1 when write channel is temporarily closed; fall back to latest segment.
+        List<Long> segmentOffsets = asyncFileSystem().list(asyncSegmentFile());
+        if (segmentOffsets.isEmpty()) {
+            return 0;
+        }
+        return segmentOffsets.get(segmentOffsets.size() - 1);
     }
 
-    protected CommandStore getCommandStore() {
-        return cmdStore;
+    private long currentSegmentSize() throws IOException {
+        return segmentSizeAt(currentSegmentStartOffset());
     }
 
-    protected Pair<CommandFile, Long> getWritePosition() throws IOException {
-        CommandFileContext commandFileContext = cmdFileCtxRef.get();
-        return Pair.of(commandFileContext.getCommandFile(), commandFileContext.getChannel().position());
+    private long segmentSizeAt(long startOffset) throws IOException {
+        if (0 == startOffset) {
+            return AsyncFileSystemHelper.await(() -> asyncFileSystem().size(asyncSegmentFile()),
+                    "sizeOfSegment");
+        }
+        return AsyncFileSystemHelper.await(() -> asyncFileSystem().sizeOfSegment(asyncSegmentFile(), startOffset),
+                "sizeOfSegment start " + startOffset);
     }
 
-    protected int getMaxFileSize() {
-        return maxFileSize;
+    private CommandFile currentCommandFile() {
+        long startOffset = currentSegmentStartOffset();
+        File file = new File(asyncCommandStore.getCommandBaseDir(),
+                asyncCommandStore.getCommandFileNamePrefix() + startOffset);
+        return new CommandFile(file, startOffset);
     }
-
-
 }

@@ -28,6 +28,12 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 		this.dumpedRdbStore = dumpedRdbStore;
 		metaStore = new MetaStore() {
 
+			// Holds no resources; keeps the former no-op close().
+			@Override
+			public boolean close(boolean ignoreCloseFail) {
+				return true;
+			}
+
 			@Override
 			public ReplStage getPreReplStage() {
 				throw new UnsupportedOperationException();
@@ -41,6 +47,17 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			@Override
 			public ReplicationStoreMeta rdbConfirm(String replId, long beginOffset, String gtidSet, String rdbFile,
 												   RdbStore.Type type, EofType eofType, String cmdFilePrefix) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareRdbConfirm(String replId, long beginOffset, String gtidSet, String rdbFile,
+														 RdbStore.Type type, EofType eofType, String cmdFilePrefix) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public boolean saveMeta(ReplicationStoreMeta expectedOld, ReplicationStoreMeta newMeta) throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
@@ -138,6 +155,11 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareContinueFromOffset(String replId, long beginOffset, String cmdFilePrefix) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta checkReplIdAndUpdateRdbInfo(String rdbFile, EofType eofType, long masterOffset, String expectedReplId)
 					throws IOException {
 				throw new UnsupportedOperationException();
@@ -178,7 +200,18 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareRdbConfirmPsync(String replId, long beginReplOffset, long backlogOff, String rdbFile,
+															  RdbStore.Type type, EofType eofType, String cmdFilePrefix) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta psyncContinueFrom(String replId, long beginOffset, long backlogOff, String cmdFilePrefix) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> preparePsyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String cmdFilePrefix) {
 				throw new UnsupportedOperationException();
 			}
 
@@ -188,7 +221,17 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> preparePsyncContinue(String newReplId, long backlogOff) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta switchToPsync(String replId, long replOff, long backlogOff) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareSwitchToPsync(String replId, long beginReplOffset, long backlogOff) {
 				throw new UnsupportedOperationException();
 			}
 
@@ -198,12 +241,31 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 			}
 
 			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareRdbConfirmXsync(String replId, long beginReplOffset, long backlogOff, String masterUuid,
+															  GtidSet gtidLost, GtidSet gtidExecuted, String rdbFile, RdbStore.Type type,
+															  EofType eofType, String cmdFilePrefix) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public ReplicationStoreMeta xsyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String masterUuid, GtidSet gtidLost, GtidSet gtidExecuted, String cmdFilePrefix) throws IOException {
 				throw new UnsupportedOperationException();
 			}
 
 			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareXsyncContinueFrom(String replId, long beginReplOffset, long backlogOff, String masterUuid,
+															   GtidSet gtidLost, GtidSet gtidExecuted, String cmdFilePrefix) {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
 			public boolean xsyncContinue(String replId, long replOff, long backlogOff, String masterUuid, GtidSet gtidCont, GtidSet gtidIndexed) throws IOException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Pair<ReplicationStoreMeta, ReplicationStoreMeta> prepareSwitchToXsync(String replId, long beginReplOffset, long backlogOff,
+																						 String masterUuid, GtidSet gtidCont, GtidSet gtidLost) {
 				throw new UnsupportedOperationException();
 			}
 
@@ -320,11 +382,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public long getCurReplStageReplOffWithFlush() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public Pair<GtidSet, GtidSet> getGtidSet() {
 		throw new UnsupportedOperationException();
 	}
@@ -395,8 +452,8 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public long backlogEndOffsetWithFlush() {
-		throw new UnsupportedOperationException();
+	public void flushPendingData() {
+		// no cmd / index pending
 	}
 
 	@Override
@@ -411,11 +468,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 
 	@Override
 	public void resetStateForContinue() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void flushSlidingWindow() {
 		throw new UnsupportedOperationException();
 	}
 
@@ -440,17 +492,7 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	}
 
 	@Override
-	public GtidSet getBeginGtidSet() throws IOException {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public GtidSet getEndGtidSet() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public boolean supportGtidSet() {
 		throw new UnsupportedOperationException();
 	}
 
@@ -467,11 +509,6 @@ public class RdbOnlyReplicationStore implements ReplicationStore {
 	@Override
 	public boolean checkOk() {
 		return dumpedRdbStore.checkOk();
-	}
-
-	@Override
-	public long beginOffsetWhenCreated() {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override

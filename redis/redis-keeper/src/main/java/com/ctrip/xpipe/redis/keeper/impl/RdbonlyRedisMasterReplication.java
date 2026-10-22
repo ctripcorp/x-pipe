@@ -119,6 +119,8 @@ public class RdbonlyRedisMasterReplication extends AbstractRedisMasterReplicatio
 
 	@Override
 	protected void psyncFail(Throwable cause) {
+		// Rdbonly: session teardown via dumpFail → dumper → releaseResource → stop/disconnect.
+		// Do not disconnect here (unlike Default long-lived replication).
 	}
 
 	@Override

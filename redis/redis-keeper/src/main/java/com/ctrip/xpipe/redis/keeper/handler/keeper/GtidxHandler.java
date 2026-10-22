@@ -81,6 +81,13 @@ public class GtidxHandler extends AbstractCommandHandler {
             }
             return null;
         }
+
+        /** Same "ERR ..." bulk-string convention as the other gtidx errors (m6 spec §9.3). */
+        protected ByteBuf storeNotOpened(RedisKeeperServer redisKeeperServer) {
+            logger.info("[gtidx][{}][{}]{}", name(), redisKeeperServer.getReplId(),
+                    RedisKeeperServer.ERR_REPLICATION_STORE_NOT_OPENED);
+            return new CommandBulkStringParser("ERR " + RedisKeeperServer.ERR_REPLICATION_STORE_NOT_OPENED).format();
+        }
     }
 
     private class GtidxRemove extends AbstractGtidxSection{
@@ -108,6 +115,9 @@ public class GtidxHandler extends AbstractCommandHandler {
             gtidSet.compensate(uuid,startGno,endGno);
             if(isLost(args[1])) {
                 ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+                if (replicationStore == null) {
+                    return storeNotOpened(redisKeeperServer);
+                }
                 MetaStore metaStore = replicationStore.getMetaStore();
                 long removeCnt = metaStore.removeLost(gtidSet);
                 return new LongParser(removeCnt).format();
@@ -146,6 +156,9 @@ public class GtidxHandler extends AbstractCommandHandler {
             gtidSet.compensate(uuid,startGno,endGno);
             if(isExecuted(args[1])) {
                 ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+                if (replicationStore == null) {
+                    return storeNotOpened(redisKeeperServer);
+                }
                 Pair<GtidSet, GtidSet> currentGtidSet = replicationStore.getGtidSet();
                 GtidSet serverGtidSet = currentGtidSet.getKey().union(currentGtidSet.getValue());
                 GtidSet increased = gtidSet.subtract(serverGtidSet);

@@ -47,7 +47,7 @@ public class SyncHandlerTest extends AbstractFakeRedisTest {
 
     @Test
     public void testRedisServerDisposedRedisClientConnect() throws Exception {
-        Mockito.doThrow(new RedisKeeperServerStateException("redisKeeperServer","disposed")).when(redisKeeperServer).getReplicationStore();
+        Mockito.doThrow(new RedisKeeperServerStateException("redisKeeperServer","disposed")).when(redisKeeperServer).getOrCreateReplicationStore();
         commandHandlerManager.handle(new String[] {"psync"},redisClient);
         sleep(1000);
         Mockito.verify(redisClient,Mockito.times(1)).close();

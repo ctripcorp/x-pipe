@@ -13,6 +13,7 @@ import com.ctrip.xpipe.redis.keeper.config.ReplDelayConfigCache;
 import com.ctrip.xpipe.redis.keeper.exception.RedisKeeperRuntimeException;
 import com.ctrip.xpipe.redis.keeper.monitor.KeepersMonitorManager;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,6 +57,7 @@ public class KeeperContainerServiceLocalIpTest extends AbstractTest {
         when(keeperContainerConfig.getReplicationStoreDir()).thenReturn(System.getProperty("user.dir"));
         when(keeperContainerConfig.isTfsMode()).thenReturn(false);
         when(containerResourceManager.applyPort(anyInt())).thenReturn(true);
+        when(containerResourceManager.getAsyncFileSystem()).thenReturn(mock(AsyncFileSystem.class));
     }
 
     @Test

@@ -1,7 +1,10 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.RedisMeta;
 import com.ctrip.xpipe.redis.core.protocal.MASTER_STATE;
+import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
@@ -59,6 +62,14 @@ public class PartialSyncForKeeperTest extends AbstractKeeperIntegratedMultiDc {
                 return  false;
             }
         });
+
+        // simulate metaserver: point oy redis slaves to the new active keeper.
+        // the demoted keeper closes its slaves on downgrade and, as BACKUP, holds their psync forever
+        for (RedisMeta slave : getRedisSlaves("oy")) {
+            new SlaveOfCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(
+                    new DefaultEndPoint(slave.getIp(), slave.getPort())),
+                    oyKeeperMeta2.getIp(), oyKeeperMeta2.getPort(), scheduled).execute().get();
+        }
 
         sendMessageToMasterAndTestSlaveRedis(10);
         Assert.assertEquals(originRdbDumpCnt, replicationStore.getRdbUpdateCount()); // no need full data for redis request psync

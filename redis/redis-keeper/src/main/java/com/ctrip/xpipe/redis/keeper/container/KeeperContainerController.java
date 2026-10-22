@@ -7,6 +7,7 @@ import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.container.resp.RestResp;
+import com.ctrip.xpipe.redis.keeper.container.resp.UnclosedHandlesResp;
 import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucket;
 import com.ctrip.xpipe.redis.keeper.ratelimit.SyncRateManager;
 import com.ctrip.xpipe.redis.keeper.store.searcher.CmdKeyItem;
@@ -36,6 +37,9 @@ public class KeeperContainerController extends AbstractController {
 
     @Autowired
     private SyncRateManager syncRateManager;
+
+    @Autowired
+    private ContainerResourceManager containerResourceManager;
 
     @PostMapping("/limit/totalIO")
     public boolean setTotalIOLimit(@RequestParam int limit) {
@@ -105,6 +109,13 @@ public class KeeperContainerController extends AbstractController {
     @GetMapping(value = "/disk")
     public KeeperDiskInfo infoDisk() {
         return keeperContainerService.infoDisk();
+    }
+
+    /** keeper-tfs-m6 §8: handles whose close failed and are retried in the background. */
+    @GetMapping(value = "/unclosed-handles")
+    public UnclosedHandlesResp unclosedHandles() {
+        logger.info("[unclosedHandles]");
+        return UnclosedHandlesResp.from(containerResourceManager.getDeferredHandleCloser(), System.currentTimeMillis());
     }
 
     @PostMapping("/election/reset" )

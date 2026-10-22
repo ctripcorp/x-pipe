@@ -32,7 +32,6 @@ public interface ReplicationStore extends Closeable, Destroyable {
 	void switchToXSync(String replId, long replOff, String masterUuid, GtidSet gtidCont, GtidSet gtidLost) throws IOException;
 	boolean xsyncContinue(String replId, long replOff, String masterUuid, GtidSet gtidCont) throws IOException;
 	long getCurReplStageReplOff();
-	long getCurReplStageReplOffWithFlush();
 	boolean increaseLost(GtidSet lost) throws IOException;
 
 	/**
@@ -78,15 +77,12 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	long backlogEndOffset();
 
-	long backlogEndOffsetWithFlush();
-
-	GtidSet getBeginGtidSet() throws IOException;
+	/**
+	 * Flush index data that may still sit in memory (unflushed index entries) before close / PREPARE.
+	 */
+	void flushPendingData() throws IOException;
 
 	GtidSet getEndGtidSet();
-
-	boolean supportGtidSet();
-
-	long beginOffsetWhenCreated();
 
 	long lastReplDataUpdatedAt();
 
@@ -100,6 +96,25 @@ public interface ReplicationStore extends Closeable, Destroyable {
 
 	void resetStateForContinue();
 
-	void flushSlidingWindow();
+	/**
+	 * Close the replication store; its cmd / meta results are combined.
+	 *
+	 * @param ignoreCloseFail when true, write handles that could not be closed (left for asynchronous
+	 *                        close) do not count and the result is always true
+	 * @return false only when {@code !ignoreCloseFail} and some write handle was not closed; other
+	 * failures are thrown
+	 */
+	default boolean close(boolean ignoreCloseFail) throws IOException {
+		// Must not delegate to close(): close() delegates here.
+		throw new UnsupportedOperationException("close(boolean) not supported: " + getClass().getName());
+	}
 
+	@Override
+	default void close() throws IOException {
+		close(true);
+	}
+
+	/** keeper-tfs-m6 §11.2 */
+	default void flushMeta() throws IOException {
+	}
 }

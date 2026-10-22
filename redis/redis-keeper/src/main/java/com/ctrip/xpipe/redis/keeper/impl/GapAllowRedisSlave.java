@@ -29,7 +29,7 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
         // TODO: init end backlog offset in RdbStore on proto switch
         if (rdbProgress instanceof BacklogOffsetReplicationProgress) {
             long rdbContBacklogOffset = ((BacklogOffsetReplicationProgress) rdbProgress).getProgress();
-            KeeperRepl keeperRepl = getRedisServer().getKeeperRepl();
+            KeeperRepl keeperRepl = getRedisServer().getOrCreateKeeperRepl();
             ReplStage curStage = keeperRepl.currentStage();
             ReplStage preStage = keeperRepl.preStage();
 
@@ -48,7 +48,7 @@ public class GapAllowRedisSlave extends DefaultRedisSlave {
         if (rdbProgress instanceof BacklogOffsetReplicationProgress) {
             long rdbContBacklogOffset = ((BacklogOffsetReplicationProgress) rdbProgress).getProgress();
             GtidSet rdbGtidExecuted = ((BacklogOffsetReplicationProgress) rdbProgress).getRdbGtidExecuted();
-            KeeperRepl keeperRepl = getRedisServer().getKeeperRepl();
+            KeeperRepl keeperRepl = getRedisServer().getOrCreateKeeperRepl();
             ReplStage curStage = keeperRepl.currentStage();
             ReplStage preStage = keeperRepl.preStage();
 

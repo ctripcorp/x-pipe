@@ -30,9 +30,21 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	private boolean readV2 = true;
 	private int indexZoneConsecutiveThreshold = 8192;
 	private int blockSizeThreshold = 8192;
-	private int cmdBatchLowRateBps = -1;
 
 	private String zkAddress = System.getProperty("zkAddress", "localhost:2181");
+
+	private int prepareWatchReopenIntervalMilli = DEFAULT_PREPARE_WATCH_REOPEN_INTERVAL_MILLI;
+	private int prepareWatchCloseHoldMilli = DEFAULT_PREPARE_WATCH_CLOSE_HOLD_MILLI;
+	private long unclosedHandleFlushRetryWindowMilli = DEFAULT_UNCLOSED_HANDLE_FLUSH_RETRY_WINDOW_MILLI;
+	private long asyncTailCacheMaxSizePerFileBytes = DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_PER_FILE_BYTES;
+	private volatile long metaFlushIntervalMilli = DEFAULT_META_FLUSH_INTERVAL_MILLI;
+	private boolean fsDebugEnabled = false;
+	private volatile boolean fsDebugFaultEio = false;
+	private volatile long fsDebugFaultDelayMilli = 0;
+	private volatile String fsDebugFaultOps = "";
+	private volatile String fsDebugFaultPathContains = "";
+	private boolean prepareStoreWatchEnabled = false;
+	private boolean pubsubParseEnabled = false;
 	
 	
 	public TestKeeperConfig(){
@@ -157,9 +169,39 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 		return commandReaderFlyingThreshold;
 	}
 
+	private volatile int commandOffsetNotifyBytesThreshold = DEFAULT_COMMAND_OFFSET_NOTIFY_BYTES_THRESHOLD;
+	private volatile int commandOffsetNotifyTimeMilliThreshold = DEFAULT_COMMAND_OFFSET_NOTIFY_TIME_MILLI_THRESHOLD;
+
+	@Override
+	public int getCommandOffsetNotifyBytesThreshold() {
+		return commandOffsetNotifyBytesThreshold;
+	}
+
+	public TestKeeperConfig setCommandOffsetNotifyBytesThreshold(int commandOffsetNotifyBytesThreshold) {
+		this.commandOffsetNotifyBytesThreshold = commandOffsetNotifyBytesThreshold;
+		return this;
+	}
+
+	@Override
+	public int getCommandOffsetNotifyTimeMilliThreshold() {
+		return commandOffsetNotifyTimeMilliThreshold;
+	}
+
+	public TestKeeperConfig setCommandOffsetNotifyTimeMilliThreshold(int commandOffsetNotifyTimeMilliThreshold) {
+		this.commandOffsetNotifyTimeMilliThreshold = commandOffsetNotifyTimeMilliThreshold;
+		return this;
+	}
+
+	private boolean commandOffsetNotifyCoalescingEnabled = true;
+
 	@Override
 	public boolean isCommandOffsetNotifyCoalescingEnabled() {
-		return true;
+		return commandOffsetNotifyCoalescingEnabled;
+	}
+
+	public TestKeeperConfig setCommandOffsetNotifyCoalescingEnabled(boolean commandOffsetNotifyCoalescingEnabled) {
+		this.commandOffsetNotifyCoalescingEnabled = commandOffsetNotifyCoalescingEnabled;
+		return this;
 	}
 
 	@Override
@@ -359,6 +401,46 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	}
 
 	@Override
+	public boolean isPrepareStoreWatchEnabled() {
+		return prepareStoreWatchEnabled;
+	}
+
+	public TestKeeperConfig setPrepareStoreWatchEnabled(boolean prepareStoreWatchEnabled) {
+		this.prepareStoreWatchEnabled = prepareStoreWatchEnabled;
+		return this;
+	}
+
+	@Override
+	public int getPrepareWatchReopenIntervalMilli() {
+		return prepareWatchReopenIntervalMilli;
+	}
+
+	public TestKeeperConfig setPrepareWatchReopenIntervalMilli(int prepareWatchReopenIntervalMilli) {
+		this.prepareWatchReopenIntervalMilli = prepareWatchReopenIntervalMilli;
+		return this;
+	}
+
+	@Override
+	public int getPrepareWatchCloseHoldMilli() {
+		return prepareWatchCloseHoldMilli;
+	}
+
+	public TestKeeperConfig setPrepareWatchCloseHoldMilli(int prepareWatchCloseHoldMilli) {
+		this.prepareWatchCloseHoldMilli = prepareWatchCloseHoldMilli;
+		return this;
+	}
+
+	@Override
+	public boolean isPubsubParseEnabled() {
+		return pubsubParseEnabled;
+	}
+
+	public TestKeeperConfig setPubsubParseEnabled(boolean pubsubParseEnabled) {
+		this.pubsubParseEnabled = pubsubParseEnabled;
+		return this;
+	}
+
+	@Override
 	public boolean stopWriteCk() {
 		return false;
 	}
@@ -391,26 +473,6 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public boolean isRedisRateLimitEnabled() {
 		return true;
-	}
-
-	@Override
-	public int getCmdBatchWriteSize() {
-		return 4096;
-	}
-
-	@Override
-	public long getCmdBatchFlushIntervalMillis() {
-		return 4;
-	}
-
-	public TestKeeperConfig setCmdBatchLowRateBps(int cmdBatchLowRateBps){
-		this.cmdBatchLowRateBps = cmdBatchLowRateBps;
-		return this;
-	}
-
-	@Override
-	public int getCmdBatchLowRateBps() {
-		return cmdBatchLowRateBps;
 	}
 
 	public TestKeeperConfig setDualWrite(boolean dualWrite){
@@ -455,5 +517,110 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 	@Override
 	public int getBlockSizeThreshold() {
 		return blockSizeThreshold;
+	}
+
+	@Override
+	public int getAsyncWriteMaxBytes() {
+		return 65536;
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalBytes() {
+		return DEFAULT_ASYNC_FSYNC_INTERVAL_BYTES;
+	}
+
+	@Override
+	public long getAsyncFsyncIntervalMillis() {
+		return DEFAULT_ASYNC_FSYNC_INTERVAL_MILLIS;
+	}
+
+	@Override
+	public int getAsyncIoThreads() {
+		return DEFAULT_ASYNC_IO_THREADS;
+	}
+
+	@Override
+	public long getAsyncTailCacheMaxSizeBytes() {
+		return DEFAULT_ASYNC_TAIL_CACHE_MAX_SIZE_BYTES_FLOOR;
+	}
+
+	@Override
+	public long getAsyncTailCacheMaxSizePerFileBytes() {
+		return asyncTailCacheMaxSizePerFileBytes;
+	}
+
+	public TestKeeperConfig setAsyncTailCacheMaxSizePerFileBytes(long asyncTailCacheMaxSizePerFileBytes) {
+		this.asyncTailCacheMaxSizePerFileBytes = asyncTailCacheMaxSizePerFileBytes;
+		return this;
+	}
+
+	@Override
+	public long getUnclosedHandleFlushRetryWindowMilli() {
+		return unclosedHandleFlushRetryWindowMilli;
+	}
+
+	public TestKeeperConfig setUnclosedHandleFlushRetryWindowMilli(long unclosedHandleFlushRetryWindowMilli) {
+		this.unclosedHandleFlushRetryWindowMilli = unclosedHandleFlushRetryWindowMilli;
+		return this;
+	}
+
+	@Override
+	public long getMetaFlushIntervalMilli() {
+		return metaFlushIntervalMilli;
+	}
+
+	public TestKeeperConfig setMetaFlushIntervalMilli(long metaFlushIntervalMilli) {
+		this.metaFlushIntervalMilli = metaFlushIntervalMilli;
+		return this;
+	}
+
+	@Override
+	public boolean isFsDebugEnabled() {
+		return fsDebugEnabled;
+	}
+
+	public TestKeeperConfig setFsDebugEnabled(boolean fsDebugEnabled) {
+		this.fsDebugEnabled = fsDebugEnabled;
+		return this;
+	}
+
+	@Override
+	public boolean isFsDebugFaultEio() {
+		return fsDebugFaultEio;
+	}
+
+	public TestKeeperConfig setFsDebugFaultEio(boolean fsDebugFaultEio) {
+		this.fsDebugFaultEio = fsDebugFaultEio;
+		return this;
+	}
+
+	@Override
+	public long getFsDebugFaultDelayMilli() {
+		return fsDebugFaultDelayMilli;
+	}
+
+	public TestKeeperConfig setFsDebugFaultDelayMilli(long fsDebugFaultDelayMilli) {
+		this.fsDebugFaultDelayMilli = fsDebugFaultDelayMilli;
+		return this;
+	}
+
+	@Override
+	public String getFsDebugFaultOps() {
+		return fsDebugFaultOps;
+	}
+
+	public TestKeeperConfig setFsDebugFaultOps(String fsDebugFaultOps) {
+		this.fsDebugFaultOps = fsDebugFaultOps;
+		return this;
+	}
+
+	@Override
+	public String getFsDebugFaultPathContains() {
+		return fsDebugFaultPathContains;
+	}
+
+	public TestKeeperConfig setFsDebugFaultPathContains(String fsDebugFaultPathContains) {
+		this.fsDebugFaultPathContains = fsDebugFaultPathContains;
+		return this;
 	}
 }

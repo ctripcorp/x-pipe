@@ -6,6 +6,8 @@ import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Collections;
+
 /**
  * @author wenchao.meng
  *
@@ -27,6 +29,10 @@ public class KeeperPsync2Continue extends AbstractKeeperIntegratedSingleDc {
 
 			logger.info(remarkableMessage("round:{}"), i);
 			RedisMeta slaveToPromote = slaves.get(0);
+
+			// Promote only after the candidate has the current master's backlog, otherwise Keeper PSYNC
+			// runs ahead and forces FULLRESYNC.
+			waitSlavesReplOffsetCatchUp(redisMaster, Collections.singletonList(slaveToPromote));
 
 			xslaveof(activeKeeper.getIp(), activeKeeper.getPort(), redisMaster);
 			xslaveof(null, 0, slaveToPromote);
