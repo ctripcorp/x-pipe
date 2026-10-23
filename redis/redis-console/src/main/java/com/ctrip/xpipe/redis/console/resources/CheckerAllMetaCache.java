@@ -47,6 +47,8 @@ public class CheckerAllMetaCache extends AbstractMetaCache implements MetaCache,
                 logger.debug("[loadMeta] start");
                 XpipeMeta xpipeMeta = checkerConsoleService.getXpipeAllMeta(config.getConsoleAddress());
                 checkMeta(xpipeMeta, config.maxRemovedDcsCnt(), config.maxRemovedClustersPercent());
+                // Console 已把容器的实时 IP 填入 KeeperContainerMeta，这里据此补齐容器 Keeper 自身的 IP
+                resolveContainerKeeperIp(xpipeMeta);
                 refreshMeta(xpipeMeta);
             }
         } catch (Throwable th) {

@@ -12,13 +12,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.allleader.SentinelMonitorsCheck
 import com.ctrip.xpipe.redis.checker.impl.CheckerRedisInfoManager;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerMode;
 import com.ctrip.xpipe.redis.checker.spring.ConsoleServerModeCondition;
-import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.dao.ClusterDao;
 import com.ctrip.xpipe.redis.console.dao.ConfigDao;
 import com.ctrip.xpipe.redis.console.dao.RedisDao;
-import com.ctrip.xpipe.redis.console.resources.ConsoleMetaCacheWithoutDB;
-import com.ctrip.xpipe.redis.console.resources.ConsolePortalService;
-import com.ctrip.xpipe.redis.console.resources.DefaultMetaCache;
 import com.ctrip.xpipe.redis.console.resources.DefaultPersistenceCache;
 import com.ctrip.xpipe.redis.console.service.DcClusterShardService;
 import com.ctrip.xpipe.redis.console.service.RedisInfoService;
@@ -88,22 +84,6 @@ public class ConsoleCheckerContextConfig extends ConsoleContextConfig {
     @Bean
     public FoundationService foundationService() {
         return FoundationService.DEFAULT;
-    }
-
-    /**
-     * CONSOLE_CHECKER 模式：嵌入 Checker 直接用 Console 的 MetaCache，不经 ConsoleCheckerController 出口填充。
-     * 在 loadCache 时就地填充容器 Keeper IP，使同进程 Checker 组件拿到真实 IP。
-     */
-    @Bean
-    @Override
-    @Lazy
-    @Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
-    public MetaCache metaCache(ConsolePortalService consolePortalService, ConsoleConfig config) {
-        DefaultMetaCache cache = config.disableDb()
-                ? new ConsoleMetaCacheWithoutDB(consolePortalService, config)
-                : new DefaultMetaCache();
-        cache.fillKeeperIpInCache = true;
-        return cache;
     }
 
     @Bean

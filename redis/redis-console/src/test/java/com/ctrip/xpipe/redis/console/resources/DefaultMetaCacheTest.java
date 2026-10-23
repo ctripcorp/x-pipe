@@ -40,9 +40,6 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
     private DcMetaService dcMetaService;
 
     @Mock
-    private CheckerKeeperIpFiller checkerKeeperIpFiller;
-
-    @Mock
     private DcService dcService;
 
     @Mock
@@ -68,8 +65,6 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         MockitoAnnotations.initMocks(this);
         metaCache.setMeta(Pair.of(getXpipeMeta(), xpipeMetaManager));
         metaCache.setMonitor2ClusterShard(Maps.newHashMap());
-        // default: filler returns input unchanged (identity), so existing tests see no difference
-        when(checkerKeeperIpFiller.fill(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -503,26 +498,6 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         Assert.assertTrue(regionDcs.contains("oy"));
         verify(consoleServiceManager, times(1)).dcsInCurrentRegion();
 
-    }
-
-    @Test
-    public void testGetDividedXpipeMetaAppliesFiller() {
-        when(consoleConfig.getClusterDividedParts()).thenReturn(3);
-        metaCache.refreshMetaParts(metaCache.getXpipeMeta());
-
-        // mock filler to return a distinct XpipeMeta with a sentinel version
-        XpipeMeta filled = new XpipeMeta();
-        filled.setVersion(12345L);
-        when(checkerKeeperIpFiller.fill(any())).thenReturn(filled);
-
-        XpipeMeta result = metaCache.getDividedXpipeMeta(0);
-        Assert.assertEquals(Long.valueOf(12345L), result.getVersion());
-        verify(checkerKeeperIpFiller, times(1)).fill(any());
-    }
-
-    @Test
-    public void testFillKeeperIpInCacheFlagOffByDefault() {
-        Assert.assertFalse("CONSOLE mode must keep fillKeeperIpInCache=false", metaCache.fillKeeperIpInCache);
     }
 
     protected String getXpipeMetaConfigFile() {

@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.model.RedisCheckRuleTbl;
+import com.ctrip.xpipe.redis.console.service.CrossDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -58,6 +59,10 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     @Autowired
     private RouteChooseStrategyFactory routeChooseStrategyFactory;
+
+    /** 容器 KeeperContainer 的 hostname→IP 来源；缺失时跳过填充，不影响 Meta 加载。 */
+    @Autowired(required = false)
+    private CrossDcKeeperContainerAddressService keeperContainerAddressService;
 
     private RouteChooseStrategy strategy = null;
 
@@ -175,9 +180,6 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
                 synchronized (this) {
                     XpipeMeta xpipeMeta = createXpipeMeta(dcMetas, redisCheckRuleMetas);
-                    if (fillKeeperIpInCache) {
-                        xpipeMeta = checkerKeeperIpFiller.fill(xpipeMeta);
-                    }
                     refreshMetaParts(xpipeMeta);
                     refreshMeta(xpipeMeta);
                 }
@@ -255,23 +257,22 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         return localStrategy;
     }
 
-    @Autowired
-    private CheckerKeeperIpFiller checkerKeeperIpFiller;
+    @Override
+    protected CrossDcKeeperContainerAddressService keeperContainerAddressService() {
+        return keeperContainerAddressService;
+    }
 
-    /**
-     * CONSOLE_CHECKER 模式下开启：loadCache 时把容器 Keeper 的 hostname 解析为 IP 写入缓存，
-     * 使同进程嵌入 Checker 组件直接拿到真实 IP（该模式下 ConsoleCheckerController 不加载，不经过出口填充）。
-     * CONSOLE 模式保持 false，Console 自身缓存保留占位 IP。
-     */
     @VisibleForTesting
-    public boolean fillKeeperIpInCache = false;
+    public void setKeeperContainerAddressService(CrossDcKeeperContainerAddressService addressService) {
+        this.keeperContainerAddressService = addressService;
+    }
 
     @Override
     public synchronized XpipeMeta getDividedXpipeMeta(int partIndex) {
         if (null == meta || null == clusterParts) throw new DataNotFoundException("data not ready");
         if (partIndex >= clusterParts.size()) throw new DataNotFoundException("no part " + partIndex);
 
-        return checkerKeeperIpFiller.fill(createDividedMeta(getXpipeMeta(), clusterParts.get(partIndex)));
+        return createDividedMeta(getXpipeMeta(), clusterParts.get(partIndex));
     }
 
     @Override
