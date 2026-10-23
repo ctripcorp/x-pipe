@@ -6,6 +6,7 @@ import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperInstanceInfo;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.ServicesUtil;
 import org.slf4j.Logger;
@@ -25,6 +26,8 @@ public class KeeperMetricDelayListener implements KeeperDelayActionListener {
     private static final String TAG_TYPE_KEEPER = "keeper";
 
     private static final String TAG_IS_NEW_NO = "0";
+
+    private static final String TAG_ROLE_UNKNOWN = "unknown";
 
     @Autowired
     private FoundationService foundationService;
@@ -47,7 +50,16 @@ public class KeeperMetricDelayListener implements KeeperDelayActionListener {
         data.addTag("crossDc", String.valueOf(
                 !foundationService.getDataCenter().equalsIgnoreCase(info.getDcId())));
         data.addTag("crossRegion", String.valueOf(metaCache.isCrossRegion(info.getActiveDc(), info.getDcId())));
+        data.addTag("role", role(context.getKeeperState()));
         return data;
+    }
+
+    /**
+     * ACTIVE / BACKUP 之外还有 PREPARE、PRE_ACTIVE 等过渡态，它们既非 active 也非 backup，
+     * 原样打出比归到两者任一更忠实。
+     */
+    private String role(KeeperState state) {
+        return null == state ? TAG_ROLE_UNKNOWN : state.name().toLowerCase();
     }
 
     @Override

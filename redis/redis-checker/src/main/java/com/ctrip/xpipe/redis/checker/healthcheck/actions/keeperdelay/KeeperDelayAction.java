@@ -7,7 +7,10 @@ import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.HealthStatus;
 import com.ctrip.xpipe.redis.checker.healthcheck.capability.KeeperCapabilityCache;
+import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStateCache;
+import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
@@ -15,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
 
@@ -27,12 +31,18 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
 
     private final CheckerConfig checkerConfig;
     private final KeeperCapabilityCache capabilityCache;
+    private final KeeperStateCache keeperStateCache;
     private final AtomicReference<KeeperDelayActionContext> context = new AtomicReference<>(INIT_CONTEXT);
+    /** 最近一次 INFO 的结果；采集失败置 null，不再声称知道角色。 */
+    private final AtomicReference<KeeperState> keeperState = new AtomicReference<>();
+    /** 已发出的 INFO 采集序号，用于丢弃晚到的响应。 */
+    private final AtomicLong keeperStateAttempt = new AtomicLong();
     private final LongSupplier expireInterval;
     private final String[] subscribeChannels;
     private final Object subscriptionLock = new Object();
     private RedisSession.SubscribeCallback callback;
     private long subscriptionGeneration;
+    private long keeperStateAttemptApplied;
     private boolean contextInitialized;
     private boolean expired;
     private boolean subscriptionRequested;
@@ -40,10 +50,12 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
 
     public KeeperDelayAction(ScheduledExecutorService scheduled, KeeperHealthCheckInstance instance,
                              ExecutorService executors, FoundationService foundationService,
-                             CheckerConfig checkerConfig, KeeperCapabilityCache capabilityCache) {
+                             CheckerConfig checkerConfig, KeeperCapabilityCache capabilityCache,
+                             KeeperStateCache keeperStateCache) {
         super(scheduled, instance, executors);
         this.checkerConfig = checkerConfig;
         this.capabilityCache = capabilityCache;
+        this.keeperStateCache = keeperStateCache;
         String currentDc = foundationService.getDataCenter();
         this.expireInterval = () -> {
             DelayConfig delayConfig = instance.getHealthCheckConfig().getDelayConfig(
@@ -57,6 +69,7 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
 
     @Override
     protected void doTask() {
+        long generation;
         synchronized (subscriptionLock) {
             if (stoppingOrStopped) {
                 return;
@@ -79,6 +92,60 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
                 subscriptionRequested = true;
             }
             instance.getRedisSession().subscribeIfAbsent(callback, subscribeChannels);
+            generation = subscriptionGeneration;
+        }
+        // 在锁外发起：INFO 的回调要抢同一把锁，若在锁内发出，一个就地完成的失败回调会让
+        // netty 线程在这里等锁
+        requestKeeperState(generation);
+    }
+
+    /**
+     * 发起一次 {@code KEEPER GETSTATE} 取实时 ACTIVE / BACKUP。异步发出、回调里才写值，
+     * 因此不会在 {@link #subscriptionLock} 上等待网络；本轮上报用的仍是上一轮采到的状态。
+     *
+     * <p>不用 {@code INFO replication}：那条命令每次回整段 replication 文本（connected_slaves、
+     * repl_backlog、gtid 等几十行），按检查周期逐 Keeper 发送时解析与分配开销都显著；本命令的响应
+     * 只是一个状态字符串。当初选 INFO 是为了同时拿 {@code master_host}，而磁盘类型改查 meta 后
+     * 已不需要它。
+     */
+    private void requestKeeperState(long generation) {
+        long attempt = keeperStateAttempt.incrementAndGet();
+        instance.getRedisSession().keeperGetState(new Callbackable<KeeperState>() {
+            @Override
+            public void success(KeeperState state) {
+                onKeeperState(generation, attempt, state);
+            }
+
+            @Override
+            public void fail(Throwable throwable) {
+                logger.debug("[requestKeeperState][{}] keeper getstate failed",
+                        instance.getCheckInfo().getHostPort(), throwable);
+                // 问不通就别再声称知道它的角色；命令有超时兜底，这个回调一定会到
+                onKeeperState(generation, attempt, null);
+            }
+        });
+    }
+
+    /**
+     * @param attempt 本次采集的序号。晚到的响应不得覆盖更新的结果 —— 一次超时的失败回调可能排在
+     *                下一轮的成功回调之后，若不比较序号就会把刚采到的状态抹成 unknown。
+     *                generation 挡不住这种情况：同一轮订阅内它是不变的。
+     */
+    private void onKeeperState(long generation, long attempt, KeeperState state) {
+        synchronized (subscriptionLock) {
+            if (stoppingOrStopped || generation != subscriptionGeneration || !getLifecycleState().isStarted()) {
+                return;
+            }
+            if (attempt <= keeperStateAttemptApplied) {
+                return;
+            }
+            keeperStateAttemptApplied = attempt;
+            keeperState.set(state);
+            if (null == state) {
+                keeperStateCache.remove(instance.getCheckInfo().getHostPort());
+            } else {
+                keeperStateCache.update(instance.getCheckInfo().getHostPort(), state);
+            }
         }
     }
 
@@ -95,7 +162,7 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
                         DateTimeUtils.timeAsString(current.getRecvTimeMilli()));
             }
             if (checkerConfig.isKeeperDelayCheckEnabled()) {
-                notifyListeners(new KeeperDelayActionContext(instance, SAMPLE_LOST));
+                notifyListeners(new KeeperDelayActionContext(instance, SAMPLE_LOST, keeperState.get()));
             }
             return;
         }
@@ -107,6 +174,7 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
             logger.info("[expire][{}] recovery", instance.getCheckInfo().getHostPort());
         }
         if (checkerConfig.isKeeperDelayCheckEnabled()) {
+            // 原样转发，保留样本到达时的 recvTimeMilli（打点以它为时间戳）
             notifyListeners(current);
         }
     }
@@ -127,7 +195,7 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
                 return;
             }
             context.set(new KeeperDelayActionContext(instance,
-                    System.nanoTime() - Long.parseLong(message, 16)));
+                    System.nanoTime() - Long.parseLong(message, 16), keeperState.get()));
         }
     }
 
@@ -139,6 +207,11 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
         context.set(INIT_CONTEXT);
         contextInitialized = false;
         expired = false;
+        // 门禁关闭或降级后不再采集，陈旧的 ACTIVE 标记必须撤掉，否则打点侧会据此误判链路磁盘类型
+        keeperState.set(null);
+        // 同时放行后续采集：恢复订阅后的首次响应序号必然大于此处记录的值
+        keeperStateAttemptApplied = keeperStateAttempt.get();
+        keeperStateCache.remove(instance.getCheckInfo().getHostPort());
         if (shouldClose) {
             instance.getRedisSession().closeSubscribedChannel(subscribeChannels);
         }

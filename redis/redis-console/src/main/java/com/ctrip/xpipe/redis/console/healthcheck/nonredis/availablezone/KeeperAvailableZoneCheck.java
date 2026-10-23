@@ -52,14 +52,22 @@ public class KeeperAvailableZoneCheck extends AbstractCrossDcIntervalAction {
     }
 
 
+    /**
+     * 按 keepercontainer_id 关联 Keeper 与其所在容器，不用 IP：容器 Keeper 的 {@code redis_ip} 与
+     * {@code keepercontainer_ip} 都是占位值 {@code 0.0.0.0}，以 IP 为键会把全部 pod 归并成一台机器，
+     * 可用区判定因此恒成立 —— 对容器形态是静默失效的。
+     */
     private List<DcClusterShard> findKeeperInSameAvailableZones(DcMeta dcMeta, List<KeeperContainerMeta> keeperContainers) {
         List<DcClusterShard> clusterShards = new ArrayList<>();
-        Map<String, Long> keeperConatainerAvailableMap = new HashMap<>();
+        Map<Long, Long> keeperConatainerAvailableMap = new HashMap<>();
 
         keeperContainers.forEach(keeperContainerMeta ->{
-            logger.debug("[findKeeperInSameAvailableZones][{}]:keeperContainer {}:{} is from available zone {}",
-                    dcMeta.getId(), keeperContainerMeta.getIp(), keeperContainerMeta.getPort(), keeperContainerMeta.getAzId());
-            keeperConatainerAvailableMap.put(keeperContainerMeta.getIp(), keeperContainerMeta.getAzId());
+            logger.debug("[findKeeperInSameAvailableZones][{}]:keeperContainer {}:{}(id {}) is from available zone {}",
+                    dcMeta.getId(), keeperContainerMeta.getIp(), keeperContainerMeta.getPort(),
+                    keeperContainerMeta.getId(), keeperContainerMeta.getAzId());
+            if (null != keeperContainerMeta.getId()) {
+                keeperConatainerAvailableMap.put(keeperContainerMeta.getId(), keeperContainerMeta.getAzId());
+            }
         });
 
         for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
@@ -76,15 +84,25 @@ public class KeeperAvailableZoneCheck extends AbstractCrossDcIntervalAction {
         return clusterShards;
     }
 
-    private boolean isDcClusterShardInDifferentAvailableZones(DcMeta dcMeta, ClusterMeta clusterMeta, ShardMeta shardMeta, Map<String, Long> keeperConatainerAvailableMap) {
+    private boolean isDcClusterShardInDifferentAvailableZones(DcMeta dcMeta, ClusterMeta clusterMeta, ShardMeta shardMeta, Map<Long, Long> keeperConatainerAvailableMap) {
         List<KeeperMeta> keepers = shardMeta.getKeepers();
         if(keepers == null || keepers.size() == 0) return true;
 
         Set<Long> resultSet = new HashSet<>();
         for (KeeperMeta keeper : keepers) {
-            logger.debug("[isDcClusterShardInDifferentAvailableZones][{}][{}][{}]:keeper {}:{} is in available zone {}",
-                    dcMeta.getId(), clusterMeta.getId(), shardMeta.getId(), keeper.getIp(), keeper.getPort(), keeperConatainerAvailableMap.get(keeper.getIp()));
-            if (!resultSet.add(keeperConatainerAvailableMap.get(keeper.getIp()))) {
+            Long azId = keeperConatainerAvailableMap.get(keeper.getKeeperContainerId());
+            logger.debug("[isDcClusterShardInDifferentAvailableZones][{}][{}][{}]:keeper {}:{}(container {}) is in available zone {}",
+                    dcMeta.getId(), clusterMeta.getId(), shardMeta.getId(), keeper.getIp(), keeper.getPort(),
+                    keeper.getKeeperContainerId(), azId);
+            // 可用区未知（容器不在本 dc 的 keeperContainers 里，或 DB 未配 az）无从判断，
+            // 不能当作一个真实可用区参与去重，否则两个未知就会被误判为「在同一可用区」
+            if (null == azId) {
+                logger.info("[isDcClusterShardInDifferentAvailableZones][{}][{}][{}] unknown available zone, keeper {}:{}, container {}",
+                        dcMeta.getId(), clusterMeta.getId(), shardMeta.getId(), keeper.getIp(), keeper.getPort(),
+                        keeper.getKeeperContainerId());
+                continue;
+            }
+            if (!resultSet.add(azId)) {
                 return false;
             }
         }

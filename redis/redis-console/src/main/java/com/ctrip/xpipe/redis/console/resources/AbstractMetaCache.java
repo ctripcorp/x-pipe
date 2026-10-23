@@ -1,11 +1,14 @@
 package com.ctrip.xpipe.redis.console.resources;
 
 import com.ctrip.xpipe.api.foundation.FoundationService;
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.console.constant.XPipeConsoleConstant;
 import com.ctrip.xpipe.redis.console.exception.LoadConsoleMetaException;
 import com.ctrip.xpipe.redis.console.exception.TooManyClustersRemovedException;
 import com.ctrip.xpipe.redis.console.exception.TooManyDcsRemovedException;
+import com.ctrip.xpipe.redis.console.service.CrossDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.exception.MasterNotFoundException;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
@@ -42,9 +45,22 @@ public abstract class AbstractMetaCache implements MetaCache {
 
     protected Map<String, Triple<String, String, Long>> monitor2ClusterShard;
 
+    /**
+     * KeeperContainer 按 {@code keepercontainer_id} 建索引，随 Meta 一同换新。
+     * {@code keepercontainer_id} 是 DB 自增主键，全局唯一，故不按 dc 分层。
+     */
+    protected volatile Map<Long, KeeperContainerMeta> keeperContainerById = Collections.emptyMap();
+
     protected long lastUpdateTime = 0;
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
+
+    /**
+     * 容器 Keeper 地址未解析出来，name 为容器 hostname。
+     * Console 侧（hostname 反查不到实时 IP）与 Checker 侧（补不到所属 KeeperContainer 的 IP）共用，
+     * 两者是同一条链路的上下游，合并观测即可。
+     */
+    private static final String KEEPER_IP_UNRESOLVED_EVENT = "keepercontainer.ip.unresolved";
 
     @Override
     public XpipeMeta getXpipeMeta() {
@@ -74,15 +90,99 @@ public abstract class AbstractMetaCache implements MetaCache {
 
     protected void refreshMeta(XpipeMeta xpipeMeta) {
         Pair<XpipeMeta, XpipeMetaManager> meta = new Pair<>(xpipeMeta, new DefaultXpipeMetaManager(xpipeMeta));
+        // 先于 meta 发布：索引建好再换引用，读到新 meta 时索引必然已就绪
+        keeperContainerById = indexKeeperContainers(xpipeMeta);
         AbstractMetaCache.this.meta = meta;
         monitor2ClusterShard = Maps.newHashMap();
         lastUpdateTime = System.currentTimeMillis();
+    }
+
+    private Map<Long, KeeperContainerMeta> indexKeeperContainers(XpipeMeta xpipeMeta) {
+        if (null == xpipeMeta || null == xpipeMeta.getDcs()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, KeeperContainerMeta> index = new HashMap<>();
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            if (null == dcMeta.getKeeperContainers()) {
+                continue;
+            }
+            for (KeeperContainerMeta containerMeta : dcMeta.getKeeperContainers()) {
+                if (null != containerMeta.getId()) {
+                    index.put(containerMeta.getId(), containerMeta);
+                }
+            }
+        }
+        return index;
+    }
+
+    /**
+     * 存入本地缓存前，把容器 Keeper 的 IP 从其所属 KeeperContainer 补齐 —— Console 已在 Meta 里填好
+     * 容器的实时 IP（见 {@link #fillContainerKeeperIp}），Keeper 自身的 {@code redis_ip} 仍是占位值。
+     *
+     * <p>按 {@code keepercontainer_id} 关联，不用 IP：容器 Keeper 与其容器的 IP 都是占位
+     * {@code 0.0.0.0}，以 IP 为键会把所有 pod 归并成一台机器。
+     *
+     * <p>容器形态只看 Keeper 的 {@code hostname} 是否有值；物理机 hostname 为空，IP 原样保留。
+     * 补不到地址的容器 Keeper 保留占位 IP 并打点，便于量化这类实例。
+     */
+    protected void resolveContainerKeeperIp(XpipeMeta xpipeMeta) {
+        if (null == xpipeMeta || null == xpipeMeta.getDcs()) {
+            return;
+        }
+
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            Map<Long, String> containerIpById = containerIpById(dcMeta);
+            // 一个容器上可承载多个 Keeper，补不到时按 hostname 去重，避免同一容器刷出成片打点
+            Set<String> unresolved = new LinkedHashSet<>();
+            for (ClusterMeta clusterMeta : dcMeta.getClusters().values()) {
+                for (ShardMeta shardMeta : clusterMeta.getShards().values()) {
+                    for (KeeperMeta keeperMeta : shardMeta.getKeepers()) {
+                        resolveContainerKeeperIp(dcMeta, clusterMeta, shardMeta, keeperMeta, containerIpById, unresolved);
+                    }
+                }
+            }
+            unresolved.forEach(hostname ->
+                    EventMonitor.DEFAULT.logEvent(KEEPER_IP_UNRESOLVED_EVENT, hostname));
+        }
+    }
+
+    private Map<Long, String> containerIpById(DcMeta dcMeta) {
+        Map<Long, String> containerIpById = new HashMap<>();
+        if (null == dcMeta.getKeeperContainers()) {
+            return containerIpById;
+        }
+        for (KeeperContainerMeta containerMeta : dcMeta.getKeeperContainers()) {
+            if (null != containerMeta.getId()) {
+                containerIpById.put(containerMeta.getId(), containerMeta.getIp());
+            }
+        }
+        return containerIpById;
+    }
+
+    private void resolveContainerKeeperIp(DcMeta dcMeta, ClusterMeta clusterMeta, ShardMeta shardMeta,
+                                          KeeperMeta keeperMeta, Map<Long, String> containerIpById,
+                                          Set<String> unresolved) {
+        if (StringUtil.isEmpty(keeperMeta.getHostname())) {
+            return;
+        }
+
+        String ip = containerIpById.get(keeperMeta.getKeeperContainerId());
+        if (StringUtil.isEmpty(ip) || XPipeConsoleConstant.DEFAULT_IP.equals(ip)) {
+            // 日志保留 cluster/shard/port 等定位信息；打点只用 hostname，端口对同一容器恒定
+            logger.warn("[resolveContainerKeeperIp][{}][{}][{}] unresolved keeper {}:{}, container {}, ip {}",
+                    dcMeta.getId(), clusterMeta.getId(), shardMeta.getId(), keeperMeta.getHostname(),
+                    keeperMeta.getPort(), keeperMeta.getKeeperContainerId(), ip);
+            unresolved.add(keeperMeta.getHostname());
+            return;
+        }
+        keeperMeta.setIp(ip);
     }
 
     protected XpipeMeta createXpipeMeta(List<DcMeta> dcMetas, List<RedisCheckRuleMeta> redisCheckRuleMetas){
 
         XpipeMeta xpipeMeta = new XpipeMeta();
         for (DcMeta dcMeta : dcMetas) {
+            fillContainerKeeperIp(dcMeta);
             xpipeMeta.addDc(dcMeta);
         }
 
@@ -93,6 +193,91 @@ public abstract class AbstractMetaCache implements MetaCache {
         }
         xpipeMeta.setVersion(System.currentTimeMillis());
         return xpipeMeta;
+    }
+
+    /**
+     * 把容器 KeeperContainer 的实时 IP 就地写入 {@link KeeperContainerMeta#setIp}，使下发给 Checker /
+     * MetaServer 的 Meta 自带可直连地址，消费方不必各自反查 ZK。
+     *
+     * <p>就地改写是安全的：每轮 {@code loadCache} 都从 DB 重建 DcMeta，这里拿到的对象还未发布。
+     *
+     * <p>容器形态只看 {@code hostname} 是否有值 —— 与 {@code MetaUtils.theSame}、
+     * {@code DefaultKeeperAdvancedService.isPodContainer} 口径一致；物理机 hostname 为空，IP 原样保留。
+     *
+     * <p>best-effort：远端机房读快照，console 首次刷新完成前查不到，失败的容器保留占位 IP
+     * （DB 默认 {@code 0.0.0.0}），因此消费方仍须容忍占位值。
+     *
+     * <p>先按 hostname 筛出该机房的容器 KeeperContainer：没有容器就不必取地址缓存（纯物理机机房的
+     * 常态）；有容器却取不到缓存才是异常，必须打点暴露，不能静默跳过。
+     */
+    private void fillContainerKeeperIp(DcMeta dcMeta) {
+        if (null == dcMeta || null == dcMeta.getKeeperContainers() || dcMeta.getKeeperContainers().isEmpty()) {
+            return;
+        }
+
+        List<KeeperContainerMeta> containers = new ArrayList<>();
+        for (KeeperContainerMeta containerMeta : dcMeta.getKeeperContainers()) {
+            if (!StringUtil.isEmpty(containerMeta.getHostname())) {
+                containers.add(containerMeta);
+            }
+        }
+        if (containers.isEmpty()) {
+            return;
+        }
+
+        // 同一 hostname 可对应多条 keepercontainer 记录（端口不同），去重后再打点
+        Set<String> unresolved = new LinkedHashSet<>();
+
+        CrossDcKeeperContainerAddressService addressService = keeperContainerAddressService();
+        Map<String, String> hostnameToIp = null == addressService
+                ? Collections.emptyMap()
+                : resolveHostnameToIp(addressService, dcMeta.getId());
+        if (hostnameToIp.isEmpty()) {
+            // 地址服务缺失或该机房缓存未就绪：这批容器一个都填不上，全量上报而非静默返回
+            logger.warn("[fillContainerKeeperIp][{}] no address cache, {} container keepers unresolved",
+                    dcMeta.getId(), containers.size());
+            containers.forEach(containerMeta -> unresolved.add(containerMeta.getHostname()));
+            reportUnresolvedContainers(dcMeta.getId(), unresolved);
+            return;
+        }
+
+        for (KeeperContainerMeta containerMeta : containers) {
+            String ip = hostnameToIp.get(containerMeta.getHostname());
+            if (StringUtil.isEmpty(ip)) {
+                unresolved.add(containerMeta.getHostname());
+                continue;
+            }
+            containerMeta.setIp(ip);
+        }
+
+        reportUnresolvedContainers(dcMeta.getId(), unresolved);
+    }
+
+    private void reportUnresolvedContainers(String dcId, Set<String> unresolved) {
+        if (unresolved.isEmpty()) {
+            return;
+        }
+        logger.warn("[fillContainerKeeperIp][{}] unresolved keeper containers: {}", dcId, unresolved);
+        unresolved.forEach(hostname -> EventMonitor.DEFAULT.logEvent(KEEPER_IP_UNRESOLVED_EVENT, hostname));
+    }
+
+    /** 解析失败不得使整轮 Meta 加载失败：降级为空表，容器保留占位 IP。 */
+    private Map<String, String> resolveHostnameToIp(CrossDcKeeperContainerAddressService addressService, String dcId) {
+        try {
+            Map<String, String> map = addressService.getAllHostnameToIp(dcId);
+            return null == map ? Collections.emptyMap() : map;
+        } catch (Throwable t) {
+            logger.error("[fillContainerKeeperIp][{}] failed to resolve hostname to ip", dcId, t);
+            return Collections.emptyMap();
+        }
+    }
+
+    /**
+     * 子类按部署形态提供地址来源；无地址服务时返回 null，填充整体跳过
+     * （如无 DB 的 Checker 侧缓存，其 Meta 由 Console 下发时已填好）。
+     */
+    protected CrossDcKeeperContainerAddressService keeperContainerAddressService() {
+        return null;
     }
 
     @Override
@@ -415,6 +600,43 @@ public abstract class AbstractMetaCache implements MetaCache {
         ShardMeta shardMeta = xpipeMetaManager.doGetShardMeta(dc, cluster, shard);
         if (null == shardMeta) return Collections.emptyList();
         return shardMeta.getKeepers();
+    }
+
+    /** 直接走缓存里的 Meta 对象树，不经 {@code doGetShardMeta} 的深拷贝。 */
+    @Override
+    public List<KeeperMeta> getKeeperOfDcClusterShardRef(String dc, String cluster, String shard) {
+        XpipeMeta xpipeMeta = getXpipeMeta();
+        if (null == xpipeMeta || null == dc || null == cluster || null == shard) {
+            return Collections.emptyList();
+        }
+        DcMeta dcMeta = xpipeMeta.findDc(dc);
+        if (null == dcMeta) {
+            return Collections.emptyList();
+        }
+        ClusterMeta clusterMeta = dcMeta.findCluster(cluster);
+        if (null == clusterMeta) {
+            return Collections.emptyList();
+        }
+        ShardMeta shardMeta = clusterMeta.findShard(shard);
+        if (null == shardMeta || null == shardMeta.getKeepers()) {
+            return Collections.emptyList();
+        }
+        return shardMeta.getKeepers();
+    }
+
+    /**
+     * {@code doGetKeeperContainer} 在 dc / container 不存在时抛 {@link IllegalArgumentException}，
+     * 这里按「查不到」处理：调用方（打点）不应因 meta 不全而失败。
+     */
+    @Override
+    public String getKeeperDiskType(KeeperMeta keeperMeta) {
+        if (null == keeperMeta || null == keeperMeta.getKeeperContainerId()) {
+            return null;
+        }
+        // 走随 Meta 预建的 id 索引：避免 doGetKeeperContainer 的线性扫描与整对象深拷贝 ——
+        // 该方法在每个跨机房 redis 的延迟打点上都会被调用
+        KeeperContainerMeta containerMeta = keeperContainerById.get(keeperMeta.getKeeperContainerId());
+        return null == containerMeta ? null : containerMeta.getDiskType();
     }
 
     @Override

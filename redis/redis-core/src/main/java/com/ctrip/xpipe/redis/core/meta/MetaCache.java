@@ -19,6 +19,11 @@ import java.util.Set;
  * 容器 keeper 为 {@code hostname:port}，不接受容器的网络 IP。持有网络地址的调用方需先自行翻译
  * （如 console 的 {@code DefaultProxyChainAnalyzer} 经 {@code CrossDcKeeperContainerAddressService.findHostnamesByIp}）。
  *
+ * <p><b>容器 keeper 的 {@code ip} 字段</b>：DB 与 Console 自身缓存中是占位值 {@code 0.0.0.0}；
+ * Console 下发给 Checker 时在接口出口将其填充为真实网络 IP（copy-on-write，不影响 Console 缓存），
+ * Checker 不再 watch ZK 反查，读 {@code keeperMeta.getIp()} 即为可直连地址。
+ * 该填充不改变本接口按 HostPort 查找的上述约定。
+ *
  * @author wenchao.meng
  *         <p>
  *         Mar 31, 2017
@@ -66,6 +71,27 @@ public interface MetaCache {
     List<RedisMeta> getRedisOfDcClusterShard(String dc, String cluster, String shard);
 
     List<KeeperMeta> getKeeperOfDcClusterShard(String dc, String cluster, String shard);
+
+    /**
+     * Keeper 所属 KeeperContainer 的磁盘类型（静态配置，非实时状态）。
+     * 按 {@code keepercontainer_id} 查询，该 id 是 DB 自增主键、全局唯一，故无需 dc 参数。
+     *
+     * @return 未命中 keeper 或其 container 时返回 null
+     */
+    String getKeeperDiskType(KeeperMeta keeperMeta);
+
+    /**
+     * 按分片取 Keeper 列表，<b>返回缓存中的对象引用，不拷贝</b>。
+     *
+     * <p>调用方只读，不得修改返回的列表及其中的 {@link KeeperMeta}。需要可改副本时用
+     * {@link #getKeeperOfDcClusterShard}，后者对整个分片深拷贝。
+     *
+     * <p>存在的理由：延迟打点等高频路径每个周期都要按分片取 Keeper，深拷贝分片（含全部
+     * redis / keeper / applier）产生的短命对象会显著抬高分配速率与 GC 开销。
+     *
+     * @return 未命中返回空列表
+     */
+    List<KeeperMeta> getKeeperOfDcClusterShardRef(String dc, String cluster, String shard);
 
     Map<KeeperMeta, String> getKeeper2DcOfClusterShard(String cluster, String shard);
 

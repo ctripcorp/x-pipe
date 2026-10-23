@@ -4,7 +4,8 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
@@ -12,6 +13,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.capability.KeeperCapabilityCach
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStateCache;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import org.junit.After;
 import org.junit.Assert;
@@ -24,11 +26,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -51,6 +49,7 @@ public class KeeperDelayActionTest {
     @Mock private CheckerConfig checkerConfig;
     @Mock private FoundationService foundationService;
     @Mock private KeeperCapabilityCache capabilityCache;
+    @Mock private KeeperStateCache keeperStateCache;
     @Mock private ScheduledExecutorService scheduled;
     @Mock private ScheduledFuture<Object> scheduledFuture;
     @Mock private ExecutorService executors;
@@ -86,7 +85,7 @@ public class KeeperDelayActionTest {
         when(listener.supportInstance(instance)).thenReturn(true);
 
         action = new KeeperDelayAction(scheduled, instance, executors, foundationService,
-                checkerConfig, capabilityCache);
+                checkerConfig, capabilityCache, keeperStateCache);
         action.addListener(listener);
         action.initialize();
         action.start();

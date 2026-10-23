@@ -10,8 +10,8 @@ import org.springframework.context.annotation.Profile;
 /**
  * console 测试上下文的 {@link CurrentDcKeeperContainerAddressService}。
  * <p>
- * 生产上由 {@link Production}（production profile）装配，依赖 ZkClient；测试上下文没有 ZK，用内存实现顶上。
- * checker 测试上下文的同类 bean 在 {@code AbstractCheckerIntegrationTest} 里，不进 console 测试上下文。
+ * 生产上由 {@link ConsoleContextConfig}（CONSOLE / CONSOLE_CHECKER 经继承）装配，依赖 ZkClient；
+ * 测试上下文没有 ZK，用内存实现顶上。CHECKER 模式不装配该 Bean。
  */
 @Configuration
 @Profile(AbstractProfile.PROFILE_NAME_TEST)

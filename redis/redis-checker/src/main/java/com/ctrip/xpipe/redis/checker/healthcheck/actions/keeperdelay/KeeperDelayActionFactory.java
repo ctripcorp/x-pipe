@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.capability.KeeperCapabilityCache;
+import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStateCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -37,6 +38,9 @@ public class KeeperDelayActionFactory implements KeeperHealthCheckActionFactory<
     private KeeperCapabilityCache capabilityCache;
 
     @Autowired
+    private KeeperStateCache keeperStateCache;
+
+    @Autowired
     private KeeperDelayActionController controller;
 
     @Autowired(required = false)
@@ -44,8 +48,8 @@ public class KeeperDelayActionFactory implements KeeperHealthCheckActionFactory<
 
     @Override
     public KeeperDelayAction create(KeeperHealthCheckInstance instance) {
-        KeeperDelayAction action = new KeeperDelayAction(
-                scheduled, instance, executors, foundationService, checkerConfig, capabilityCache);
+        KeeperDelayAction action = new KeeperDelayAction(scheduled, instance, executors, foundationService,
+                checkerConfig, capabilityCache, keeperStateCache);
         for (KeeperDelayActionListener listener : listeners) {
             if (listener.supportInstance(instance)) {
                 action.addListener(listener);

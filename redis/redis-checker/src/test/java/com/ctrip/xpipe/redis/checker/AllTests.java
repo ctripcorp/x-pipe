@@ -12,7 +12,6 @@ import com.ctrip.xpipe.redis.checker.alert.message.subscriber.AlertEntityDelaySu
 import com.ctrip.xpipe.redis.checker.alert.message.subscriber.AlertRecoverySubscriberTest;
 import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBeanTest;
 import com.ctrip.xpipe.redis.checker.config.impl.DefaultCheckerDbConfigTest;
-import com.ctrip.xpipe.redis.checker.spring.FiremanServletScanConditionTest;
 import com.ctrip.xpipe.redis.checker.controller.CheckerHealthControllerTest;
 import com.ctrip.xpipe.redis.checker.controller.result.ActionContextRetMessageTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedisConfigCheckRuleActionFactoryTest;
@@ -20,9 +19,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.crdtredisconf.CRDTRedis
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.CRDTDelayActionControllerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.MetricDelayListenerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperDelayActionTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperDelayCheckAcceptanceTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperMetricDelayListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.CRDTDelayPingActionCollectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultAggregatorPullServiceTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.DefaultDelayPingActionCollectorTest;
@@ -34,6 +31,9 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.Def
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.handler.TestAbstractHealthEventHandlerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.OuterClientServiceProcessorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.route.DefaultRouteHealthEventProcessorTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperDelayActionTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperDelayCheckAcceptanceTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperMetricDelayListenerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContextTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRuleTest;
@@ -95,10 +95,11 @@ import com.ctrip.xpipe.redis.checker.healthcheck.factory.HealthCheckEndpointFact
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckInstanceManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultHealthCheckerMockTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRouteChooserTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStateCacheTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStoreTypeResolverTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.DefaultDcMetaChangeManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelectorTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperMetaChangeManagerTest;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultCrossRegionKeeperSessionManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultKeeperSessionManagerTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.stability.StabilityInspectorTest;
@@ -106,6 +107,7 @@ import com.ctrip.xpipe.redis.checker.impl.*;
 import com.ctrip.xpipe.redis.checker.migration.status.ClusterStatusTest;
 import com.ctrip.xpipe.redis.checker.model.HealthCheckResultSerializeTest;
 import com.ctrip.xpipe.redis.checker.resource.DefaultCheckerConsoleServiceTest;
+import com.ctrip.xpipe.redis.checker.spring.FiremanServletScanConditionTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -230,6 +232,8 @@ import org.junit.runners.Suite;
         KeeperCheckSelectorTest.class,
         KeeperCapabilityCacheTest.class,
         KeeperCapabilityRefreshManagerTest.class,
+        KeeperStateCacheTest.class,
+        KeeperStoreTypeResolverTest.class,
         KeeperMetaChangeManagerTest.class,
         DefaultKeeperSessionManagerTest.class,
         DefaultCrossRegionKeeperSessionManagerTest.class,

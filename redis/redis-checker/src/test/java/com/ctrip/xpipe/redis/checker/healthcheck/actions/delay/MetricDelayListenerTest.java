@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.checker.AbstractCheckerTest;
 import com.ctrip.xpipe.redis.checker.config.impl.CommonConfigBean;
 import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultRedisInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStoreTypeResolver;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +32,8 @@ public class MetricDelayListenerTest extends AbstractCheckerTest {
 
     private CommonConfigBean commonConfigBean;
 
+    private KeeperStoreTypeResolver keeperStoreTypeResolver;
+
     private RedisHealthCheckInstance instance;
 
     private AtomicReference<MetricData> capturedPoint;
@@ -42,9 +45,12 @@ public class MetricDelayListenerTest extends AbstractCheckerTest {
         commonConfigBean = Mockito.mock(CommonConfigBean.class);
         capturedPoint = new AtomicReference<>();
 
+        keeperStoreTypeResolver = Mockito.mock(KeeperStoreTypeResolver.class);
+
         ReflectionTestUtils.setField(listener, "proxy", proxy);
         ReflectionTestUtils.setField(listener, "commonConfigBean", commonConfigBean);
         ReflectionTestUtils.setField(listener, "foundationService", FoundationService.DEFAULT);
+        ReflectionTestUtils.setField(listener, "keeperStoreTypeResolver", keeperStoreTypeResolver);
 
         Mockito.when(commonConfigBean.getDelayMetricNewInstanceMinutes()).thenReturn(WINDOW_MINUTES);
 
@@ -147,13 +153,59 @@ public class MetricDelayListenerTest extends AbstractCheckerTest {
         Assert.assertEquals(info.getHostPort(), point.getHostPort());
         Assert.assertEquals(1234.567, point.getValue(), 0.0);
         Assert.assertEquals(recvTime, point.getTimestampMilli());
-        Assert.assertEquals(new HashSet<>(Arrays.asList("type", "isNew", "crossDc", "crossRegion")),
+        Assert.assertEquals(new HashSet<>(Arrays.asList("type", "isNew", "crossDc", "crossRegion", "role")),
                 point.getTags().keySet());
         Assert.assertEquals("redis", point.getTags().get("type"));
         Assert.assertEquals("0", point.getTags().get("isNew"));
         Assert.assertEquals("false", point.getTags().get("crossDc"));
         Assert.assertEquals("false", point.getTags().get("crossRegion"));
         Assert.assertNull(point.getTags().get("srcShardId"));
+    }
+
+    /** redis 侧 role 取自 meta 的 isMaster，取值域与 keeper 的 active/backup 不同。 */
+    @Test
+    public void testRoleTagFollowsMasterFlag() {
+        DefaultRedisInstanceInfo info = (DefaultRedisInstanceInfo) instance.getCheckInfo();
+
+        info.isMaster(true);
+        listener.onAction(new DelayActionContext(instance, 1000L));
+        Assert.assertEquals("master", capturedPoint.get().getTags().get("role"));
+
+        info.isMaster(false);
+        listener.onAction(new DelayActionContext(instance, 1000L));
+        Assert.assertEquals("slave", capturedPoint.get().getTags().get("role"));
+    }
+
+    @Test
+    public void testKeeperStoreTypeTagFromResolver() {
+        Mockito.when(keeperStoreTypeResolver.resolve(Mockito.any())).thenReturn("10");
+
+        listener.onAction(new DelayActionContext(instance, 1000L));
+
+        Assert.assertEquals("10", capturedPoint.get().getTags().get("keeperStoreType"));
+    }
+
+    /** 解析不出组合时只是少一个 tag，延迟本身照常上报。 */
+    @Test
+    public void testKeeperStoreTypeTagOmittedWhenUnresolved() {
+        Mockito.when(keeperStoreTypeResolver.resolve(Mockito.any())).thenReturn(null);
+
+        listener.onAction(new DelayActionContext(instance, 1000L));
+
+        Assert.assertNotNull(capturedPoint.get());
+        Assert.assertNull(capturedPoint.get().getTags().get("keeperStoreType"));
+    }
+
+    /** onAction 会吞异常，解析失败若放任抛出就会连 delay 主指标一起丢掉。 */
+    @Test
+    public void testResolverFailureStillReportsDelay() {
+        Mockito.when(keeperStoreTypeResolver.resolve(Mockito.any()))
+                .thenThrow(new RuntimeException("expected"));
+
+        listener.onAction(new DelayActionContext(instance, 1000L));
+
+        Assert.assertNotNull("delay 必须照常上报", capturedPoint.get());
+        Assert.assertNull(capturedPoint.get().getTags().get("keeperStoreType"));
     }
 
     @Test

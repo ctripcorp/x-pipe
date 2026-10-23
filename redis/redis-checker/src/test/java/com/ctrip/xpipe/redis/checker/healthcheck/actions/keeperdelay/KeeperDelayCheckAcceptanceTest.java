@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay;
 
+import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.api.pool.SimpleObjectPool;
@@ -18,11 +19,13 @@ import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
+import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStateCache;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelector;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultKeeperSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractConfigCommand.REDIS_CONFIG_TYPE;
 import org.junit.After;
@@ -82,6 +85,7 @@ public class KeeperDelayCheckAcceptanceTest {
     private DefaultKeeperHealthCheckInstance instance;
     private KeeperCapabilityCache capabilityCache;
     private KeeperCapabilityRefreshManager refreshManager;
+    private KeeperStateCache keeperStateCache;
     private KeeperDelayAction action;
     private final List<MetricData> points = new ArrayList<>();
 
@@ -112,6 +116,7 @@ public class KeeperDelayCheckAcceptanceTest {
         }).when(proxy).writeBinMultiDataPoint(any(MetricData.class));
 
         capabilityCache = new KeeperCapabilityCache();
+        keeperStateCache = new KeeperStateCache(checkerConfig);
         refreshManager = newRefreshManager();
         action = newAction(instance);
         refreshManager.start();
@@ -150,6 +155,117 @@ public class KeeperDelayCheckAcceptanceTest {
         Assert.assertEquals("Keeper 链路不发 publish", 0, session.publishCount);
         Assert.assertEquals("check 周期不得发 CONFIG GET", 1, session.configCount(PREPARE_WATCH));
         Assert.assertEquals(1, session.configCount(PUBSUB_PARSE));
+    }
+
+    /** INFO replication 采到的实时状态要一路到达 role tag，并同时可供 redis 打点侧查询。 */
+    @Test
+    public void keeperStateFromInfoReachesRoleTagAndSharedCache() {
+        refreshTick();
+        answerCapability(true, true);
+
+        driveCheck(action);
+        Assert.assertNull("首轮 INFO 还没回，缓存里不该有条目", keeperStateCache.isActive(TFS_KEEPER));
+        session.deliverKeeperState("ACTIVE");
+        session.deliver(Long.toHexString(System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(2)));
+
+        driveCheck(action);
+
+        Assert.assertEquals(1, points.size());
+        Assert.assertEquals("active", points.get(0).getTags().get("role"));
+        Assert.assertEquals(Boolean.TRUE, keeperStateCache.isActive(TFS_KEEPER));
+
+        // 降级为 BACKUP：role 与共享缓存都要跟着翻转
+        session.deliverKeeperState("BACKUP");
+        session.deliver(Long.toHexString(System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(2)));
+        driveCheck(action);
+
+        Assert.assertEquals(2, points.size());
+        Assert.assertEquals("backup", points.get(1).getTags().get("role"));
+        Assert.assertEquals(Boolean.FALSE, keeperStateCache.isActive(TFS_KEEPER));
+        Assert.assertEquals("角色采集须走 KEEPER GETSTATE，不得用整段 INFO replication",
+                0, session.infoCount);
+    }
+
+    /** 未采到状态时 role 打 unknown，不能让打点失败或漏 tag。 */
+    @Test
+    public void missingKeeperStateReportsUnknownRole() {
+        refreshTick();
+        answerCapability(true, true);
+
+        driveCheck(action);
+        session.deliver(Long.toHexString(System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(2)));
+        driveCheck(action);
+
+        Assert.assertEquals(1, points.size());
+        Assert.assertEquals("unknown", points.get(0).getTags().get("role"));
+        Assert.assertNull(keeperStateCache.isActive(TFS_KEEPER));
+    }
+
+    /** INFO 失败后不得继续声称知道角色：role 退回 unknown，共享缓存条目撤掉。 */
+    @Test
+    public void infoFailureClearsKeeperStateToUnknown() {
+        refreshTick();
+        answerCapability(true, true);
+
+        driveCheck(action);
+        session.deliverKeeperState("ACTIVE");
+        session.deliver(Long.toHexString(System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(2)));
+        driveCheck(action);
+        Assert.assertEquals("active", points.get(0).getTags().get("role"));
+        Assert.assertEquals(Boolean.TRUE, keeperStateCache.isActive(TFS_KEEPER));
+
+        session.failKeeperState();
+        session.deliver(Long.toHexString(System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(2)));
+        driveCheck(action);
+
+        Assert.assertEquals(2, points.size());
+        Assert.assertEquals("unknown", points.get(1).getTags().get("role"));
+        Assert.assertNull(keeperStateCache.isActive(TFS_KEEPER));
+    }
+
+    /**
+     * 一次超时的失败回调可能排在下一轮的成功回调之后；若不比较采集序号，它会把刚采到的
+     * ACTIVE 抹成 unknown。
+     */
+    @Test
+    public void lateInfoFailureDoesNotClobberNewerSuccess() {
+        refreshTick();
+        answerCapability(true, true);
+
+        driveCheck(action);
+        Callbackable<KeeperState> stale = session.pendingStateCallback();
+
+        // 下一轮的 INFO 先成功返回
+        driveCheck(action);
+        session.deliverKeeperState("ACTIVE");
+        Assert.assertEquals(Boolean.TRUE, keeperStateCache.isActive(TFS_KEEPER));
+
+        // 上一轮的失败回调姗姗来迟
+        stale.fail(new RuntimeException("getstate timeout"));
+
+        Assert.assertEquals("晚到的失败不得覆盖更新的结果",
+                Boolean.TRUE, keeperStateCache.isActive(TFS_KEEPER));
+        session.deliver(Long.toHexString(System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(2)));
+        driveCheck(action);
+        Assert.assertEquals("active", points.get(points.size() - 1).getTags().get("role"));
+    }
+
+    /** capability 降级后停止采集，陈旧的 ACTIVE 标记必须从共享缓存里撤掉。 */
+    @Test
+    public void capabilityDowngradeEvictsStaleKeeperState() {
+        refreshTick();
+        answerCapability(true, true);
+        driveCheck(action);
+        session.deliverKeeperState("ACTIVE");
+        session.deliver(Long.toHexString(System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(2)));
+        driveCheck(action);
+        Assert.assertEquals(Boolean.TRUE, keeperStateCache.isActive(TFS_KEEPER));
+
+        refreshTick();
+        answerCapability(true, false);
+        driveCheck(action);
+
+        Assert.assertNull("降级后不得残留 ACTIVE", keeperStateCache.isActive(TFS_KEEPER));
     }
 
     @Test
@@ -347,7 +463,7 @@ public class KeeperDelayCheckAcceptanceTest {
         ReflectionTestUtils.setField(listener, "metaCache", metaCache);
         ReflectionTestUtils.setField(listener, "proxy", proxy);
         KeeperDelayAction created = new KeeperDelayAction(scheduled, target, executors, foundationService,
-                checkerConfig, capabilityCache);
+                checkerConfig, capabilityCache, keeperStateCache);
         created.addController(new KeeperDelayActionController());
         created.addListener(listener);
         target.register(created);
@@ -439,19 +555,54 @@ public class KeeperDelayCheckAcceptanceTest {
         return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
     }
 
-    /** 只替换网络出口：CONFIG GET / SUBSCRIBE 的回调由用例手工驱动。 */
+    /** 只替换网络出口：CONFIG GET / SUBSCRIBE / INFO 的回调由用例手工驱动。 */
     private static final class ControlledSession extends RedisSession {
 
         private final Map<String, List<Callbackable<String>>> configCallbacks = new HashMap<>();
         private final Map<String, Integer> configCounts = new HashMap<>();
         private final Set<SubscribeCallback> callbacks = new LinkedHashSet<>();
+        private final List<Callbackable<KeeperState>> stateCallbacks = new ArrayList<>();
         private int closeCount;
         private int publishCount;
+        private int infoCount;
 
         @Override
         public synchronized void ConfigGet(Callbackable<String> callback, String key) {
             configCounts.put(key, configCount(key) + 1);
             configCallbacks.computeIfAbsent(key, unused -> new ArrayList<>()).add(callback);
+        }
+
+        @Override
+        public synchronized void keeperGetState(Callbackable<KeeperState> callback) {
+            stateCallbacks.add(callback);
+        }
+
+        /** 角色采集不得退回 INFO replication：那条命令每次回整段文本，按周期发送开销过大。 */
+        @Override
+        public synchronized CommandFuture<String> infoReplication(Callbackable<String> callback) {
+            infoCount++;
+            return null;
+        }
+
+        private synchronized void deliverKeeperState(String state) {
+            KeeperState parsed = KeeperState.valueOf(state);
+            takeStateCallbacks().forEach(callback -> callback.success(parsed));
+        }
+
+        private synchronized void failKeeperState() {
+            takeStateCallbacks().forEach(callback -> callback.fail(new RuntimeException("getstate timeout")));
+        }
+
+        private synchronized List<Callbackable<KeeperState>> takeStateCallbacks() {
+            List<Callbackable<KeeperState>> pending = new ArrayList<>(stateCallbacks);
+            stateCallbacks.clear();
+            return pending;
+        }
+
+        /** 留住回调不回放，供用例构造「晚到的响应」。 */
+        private synchronized Callbackable<KeeperState> pendingStateCallback() {
+            Assert.assertFalse("no pending getstate", stateCallbacks.isEmpty());
+            return stateCallbacks.remove(0);
         }
 
         @Override
