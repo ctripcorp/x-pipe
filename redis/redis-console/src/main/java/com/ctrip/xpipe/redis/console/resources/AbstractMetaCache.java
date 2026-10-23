@@ -602,6 +602,28 @@ public abstract class AbstractMetaCache implements MetaCache {
         return shardMeta.getKeepers();
     }
 
+    /** 直接走缓存里的 Meta 对象树，不经 {@code doGetShardMeta} 的深拷贝。 */
+    @Override
+    public List<KeeperMeta> getKeeperOfDcClusterShardRef(String dc, String cluster, String shard) {
+        XpipeMeta xpipeMeta = getXpipeMeta();
+        if (null == xpipeMeta || null == dc || null == cluster || null == shard) {
+            return Collections.emptyList();
+        }
+        DcMeta dcMeta = xpipeMeta.findDc(dc);
+        if (null == dcMeta) {
+            return Collections.emptyList();
+        }
+        ClusterMeta clusterMeta = dcMeta.findCluster(cluster);
+        if (null == clusterMeta) {
+            return Collections.emptyList();
+        }
+        ShardMeta shardMeta = clusterMeta.findShard(shard);
+        if (null == shardMeta || null == shardMeta.getKeepers()) {
+            return Collections.emptyList();
+        }
+        return shardMeta.getKeepers();
+    }
+
     /**
      * {@code doGetKeeperContainer} 在 dc / container 不存在时抛 {@link IllegalArgumentException}，
      * 这里按「查不到」处理：调用方（打点）不应因 meta 不全而失败。

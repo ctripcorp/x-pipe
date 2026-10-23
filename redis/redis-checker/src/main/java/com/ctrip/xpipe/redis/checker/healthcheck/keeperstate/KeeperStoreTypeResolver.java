@@ -81,7 +81,7 @@ public class KeeperStoreTypeResolver {
 
     private String resolveBit(String dcId, RedisInstanceInfo info) {
         List<KeeperMeta> keepers =
-                metaCache.getKeeperOfDcClusterShard(dcId, info.getClusterId(), info.getShardId());
+                metaCache.getKeeperOfDcClusterShardRef(dcId, info.getClusterId(), info.getShardId());
         if (null == keepers || keepers.isEmpty()) {
             return LOCAL;
         }

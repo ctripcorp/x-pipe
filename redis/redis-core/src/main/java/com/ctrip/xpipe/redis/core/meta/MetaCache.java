@@ -80,6 +80,19 @@ public interface MetaCache {
      */
     String getKeeperDiskType(KeeperMeta keeperMeta);
 
+    /**
+     * 按分片取 Keeper 列表，<b>返回缓存中的对象引用，不拷贝</b>。
+     *
+     * <p>调用方只读，不得修改返回的列表及其中的 {@link KeeperMeta}。需要可改副本时用
+     * {@link #getKeeperOfDcClusterShard}，后者对整个分片深拷贝。
+     *
+     * <p>存在的理由：延迟打点等高频路径每个周期都要按分片取 Keeper，深拷贝分片（含全部
+     * redis / keeper / applier）产生的短命对象会显著抬高分配速率与 GC 开销。
+     *
+     * @return 未命中返回空列表
+     */
+    List<KeeperMeta> getKeeperOfDcClusterShardRef(String dc, String cluster, String shard);
+
     Map<KeeperMeta, String> getKeeper2DcOfClusterShard(String cluster, String shard);
 
     List<RedisMeta> getSlavesOfDcClusterShard(String dc, String cluster, String shard);

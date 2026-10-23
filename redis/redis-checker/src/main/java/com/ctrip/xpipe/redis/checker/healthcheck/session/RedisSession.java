@@ -8,6 +8,7 @@ import com.ctrip.xpipe.api.pool.SimpleObjectPool;
 import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.protocal.LoggableRedisCommand;
 import com.ctrip.xpipe.redis.core.protocal.cmd.*;
 import com.ctrip.xpipe.redis.core.protocal.cmd.pubsub.*;
@@ -294,6 +295,27 @@ public class RedisSession {
                     callback.fail(commandFuture.cause());
                 } else {
                     callback.success(commandFuture.get());
+                }
+            }
+        });
+    }
+
+    /**
+     * {@code KEEPER GETSTATE}：响应只有一个状态字符串，远小于 {@code INFO replication} 的整段文本，
+     * 适合按检查周期高频取 Keeper 的 ACTIVE / BACKUP。
+     */
+    public void keeperGetState(Callbackable<KeeperState> callback) {
+        AbstractKeeperCommand.KeeperGetStateCommand command =
+                new AbstractKeeperCommand.KeeperGetStateCommand(clientPool, scheduled);
+        command.setCommandTimeoutMilli(commandTimeOut);
+        silentCommand(command);
+        command.execute().addListener(new CommandFutureListener<KeeperState>() {
+            @Override
+            public void operationComplete(CommandFuture<KeeperState> commandFuture) {
+                if (!commandFuture.isSuccess()) {
+                    callback.fail(commandFuture.cause());
+                } else {
+                    callback.success(commandFuture.getNow());
                 }
             }
         });

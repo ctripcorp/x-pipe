@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStateCache;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
-import com.ctrip.xpipe.redis.core.protocal.cmd.InfoResultExtractor;
 import com.ctrip.xpipe.utils.DateTimeUtils;
 import com.ctrip.xpipe.utils.VisibleForTesting;
 import org.slf4j.Logger;
@@ -101,22 +100,27 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
     }
 
     /**
-     * 发起一次 INFO replication 取实时 ACTIVE / BACKUP。异步发出、回调里才写值，
+     * 发起一次 {@code KEEPER GETSTATE} 取实时 ACTIVE / BACKUP。异步发出、回调里才写值，
      * 因此不会在 {@link #subscriptionLock} 上等待网络；本轮上报用的仍是上一轮采到的状态。
+     *
+     * <p>不用 {@code INFO replication}：那条命令每次回整段 replication 文本（connected_slaves、
+     * repl_backlog、gtid 等几十行），按检查周期逐 Keeper 发送时解析与分配开销都显著；本命令的响应
+     * 只是一个状态字符串。当初选 INFO 是为了同时拿 {@code master_host}，而磁盘类型改查 meta 后
+     * 已不需要它。
      */
     private void requestKeeperState(long generation) {
         long attempt = keeperStateAttempt.incrementAndGet();
-        instance.getRedisSession().infoReplication(new Callbackable<String>() {
+        instance.getRedisSession().keeperGetState(new Callbackable<KeeperState>() {
             @Override
-            public void success(String info) {
-                onKeeperState(generation, attempt, parseKeeperState(info));
+            public void success(KeeperState state) {
+                onKeeperState(generation, attempt, state);
             }
 
             @Override
             public void fail(Throwable throwable) {
-                logger.debug("[requestKeeperState][{}] info replication failed",
+                logger.debug("[requestKeeperState][{}] keeper getstate failed",
                         instance.getCheckInfo().getHostPort(), throwable);
-                // 问不通就别再声称知道它的角色；INFO 有命令超时兜底，这个回调一定会到
+                // 问不通就别再声称知道它的角色；命令有超时兜底，这个回调一定会到
                 onKeeperState(generation, attempt, null);
             }
         });
@@ -142,21 +146,6 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
             } else {
                 keeperStateCache.update(instance.getCheckInfo().getHostPort(), state);
             }
-        }
-    }
-
-    /** Keeper 回的 {@code state:} 取值域是 {@link KeeperState}，但未知值不应让采集抛异常。 */
-    private KeeperState parseKeeperState(String info) {
-        String raw = new InfoResultExtractor(info).getKeeperState();
-        if (null == raw) {
-            return null;
-        }
-        try {
-            return KeeperState.valueOf(raw.trim());
-        } catch (IllegalArgumentException e) {
-            logger.info("[parseKeeperState][{}] unknown keeper state: {}",
-                    instance.getCheckInfo().getHostPort(), raw);
-            return null;
         }
     }
 

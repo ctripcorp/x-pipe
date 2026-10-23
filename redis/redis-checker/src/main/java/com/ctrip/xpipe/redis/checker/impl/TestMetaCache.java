@@ -199,6 +199,11 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
+    public List<KeeperMeta> getKeeperOfDcClusterShardRef(String dc, String cluster, String shard) {
+        return Collections.emptyList();
+    }
+
+    @Override
     public Map<KeeperMeta, String> getKeeper2DcOfClusterShard(String cluster, String shard) {
         return Map.of();
     }

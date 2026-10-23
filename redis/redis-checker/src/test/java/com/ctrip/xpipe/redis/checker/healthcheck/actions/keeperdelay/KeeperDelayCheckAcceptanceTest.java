@@ -25,6 +25,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultKeeperSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractConfigCommand.REDIS_CONFIG_TYPE;
 import org.junit.After;
@@ -181,6 +182,8 @@ public class KeeperDelayCheckAcceptanceTest {
         Assert.assertEquals(2, points.size());
         Assert.assertEquals("backup", points.get(1).getTags().get("role"));
         Assert.assertEquals(Boolean.FALSE, keeperStateCache.isActive(TFS_KEEPER));
+        Assert.assertEquals("角色采集须走 KEEPER GETSTATE，不得用整段 INFO replication",
+                0, session.infoCount);
     }
 
     /** 未采到状态时 role 打 unknown，不能让打点失败或漏 tag。 */
@@ -230,7 +233,7 @@ public class KeeperDelayCheckAcceptanceTest {
         answerCapability(true, true);
 
         driveCheck(action);
-        Callbackable<String> stale = session.pendingInfoCallback();
+        Callbackable<KeeperState> stale = session.pendingStateCallback();
 
         // 下一轮的 INFO 先成功返回
         driveCheck(action);
@@ -238,7 +241,7 @@ public class KeeperDelayCheckAcceptanceTest {
         Assert.assertEquals(Boolean.TRUE, keeperStateCache.isActive(TFS_KEEPER));
 
         // 上一轮的失败回调姗姗来迟
-        stale.fail(new RuntimeException("info timeout"));
+        stale.fail(new RuntimeException("getstate timeout"));
 
         Assert.assertEquals("晚到的失败不得覆盖更新的结果",
                 Boolean.TRUE, keeperStateCache.isActive(TFS_KEEPER));
@@ -558,9 +561,10 @@ public class KeeperDelayCheckAcceptanceTest {
         private final Map<String, List<Callbackable<String>>> configCallbacks = new HashMap<>();
         private final Map<String, Integer> configCounts = new HashMap<>();
         private final Set<SubscribeCallback> callbacks = new LinkedHashSet<>();
-        private final List<Callbackable<String>> infoCallbacks = new ArrayList<>();
+        private final List<Callbackable<KeeperState>> stateCallbacks = new ArrayList<>();
         private int closeCount;
         private int publishCount;
+        private int infoCount;
 
         @Override
         public synchronized void ConfigGet(Callbackable<String> callback, String key) {
@@ -569,30 +573,36 @@ public class KeeperDelayCheckAcceptanceTest {
         }
 
         @Override
+        public synchronized void keeperGetState(Callbackable<KeeperState> callback) {
+            stateCallbacks.add(callback);
+        }
+
+        /** 角色采集不得退回 INFO replication：那条命令每次回整段文本，按周期发送开销过大。 */
+        @Override
         public synchronized CommandFuture<String> infoReplication(Callbackable<String> callback) {
-            infoCallbacks.add(callback);
+            infoCount++;
             return null;
         }
 
-        /** 回放一次 INFO replication 响应，只含本用例关心的 state 字段。 */
         private synchronized void deliverKeeperState(String state) {
-            takeInfoCallbacks().forEach(callback -> callback.success("# Replication\r\nstate:" + state + "\r\n"));
+            KeeperState parsed = KeeperState.valueOf(state);
+            takeStateCallbacks().forEach(callback -> callback.success(parsed));
         }
 
         private synchronized void failKeeperState() {
-            takeInfoCallbacks().forEach(callback -> callback.fail(new RuntimeException("info timeout")));
+            takeStateCallbacks().forEach(callback -> callback.fail(new RuntimeException("getstate timeout")));
         }
 
-        private synchronized List<Callbackable<String>> takeInfoCallbacks() {
-            List<Callbackable<String>> pending = new ArrayList<>(infoCallbacks);
-            infoCallbacks.clear();
+        private synchronized List<Callbackable<KeeperState>> takeStateCallbacks() {
+            List<Callbackable<KeeperState>> pending = new ArrayList<>(stateCallbacks);
+            stateCallbacks.clear();
             return pending;
         }
 
         /** 留住回调不回放，供用例构造「晚到的响应」。 */
-        private synchronized Callbackable<String> pendingInfoCallback() {
-            Assert.assertFalse("no pending INFO", infoCallbacks.isEmpty());
-            return infoCallbacks.remove(0);
+        private synchronized Callbackable<KeeperState> pendingStateCallback() {
+            Assert.assertFalse("no pending getstate", stateCallbacks.isEmpty());
+            return stateCallbacks.remove(0);
         }
 
         @Override

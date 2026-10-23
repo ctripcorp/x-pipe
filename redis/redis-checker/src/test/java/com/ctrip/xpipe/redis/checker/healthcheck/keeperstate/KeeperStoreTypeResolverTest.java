@@ -49,7 +49,7 @@ public class KeeperStoreTypeResolverTest {
     public void testActiveDcInstanceGetsNoTag() {
         Assert.assertNull(resolver.resolve(info(ACTIVE_DC, false)));
         Assert.assertNull(resolver.resolve(null));
-        verify(metaCache, never()).getKeeperOfDcClusterShard(anyString(), anyString(), anyString());
+        verify(metaCache, never()).getKeeperOfDcClusterShardRef(anyString(), anyString(), anyString());
     }
 
     /**
@@ -67,7 +67,7 @@ public class KeeperStoreTypeResolverTest {
                 new HostPort("10.1.0.2", 6379), null, ClusterType.ONE_WAY);
         Assert.assertNull(resolver.resolve(noActiveDc));
 
-        verify(metaCache, never()).getKeeperOfDcClusterShard(anyString(), anyString(), anyString());
+        verify(metaCache, never()).getKeeperOfDcClusterShardRef(anyString(), anyString(), anyString());
     }
 
     /** 两端都只有本地盘 Keeper：不该去问实时状态。 */
@@ -92,9 +92,9 @@ public class KeeperStoreTypeResolverTest {
 
     @Test
     public void testNoKeeperAtAllReadsAsLocal() {
-        when(metaCache.getKeeperOfDcClusterShard(ACTIVE_DC, CLUSTER, SHARD))
+        when(metaCache.getKeeperOfDcClusterShardRef(ACTIVE_DC, CLUSTER, SHARD))
                 .thenReturn(Collections.emptyList());
-        when(metaCache.getKeeperOfDcClusterShard(BACKUP_DC, CLUSTER, SHARD)).thenReturn(null);
+        when(metaCache.getKeeperOfDcClusterShardRef(BACKUP_DC, CLUSTER, SHARD)).thenReturn(Collections.emptyList());
 
         Assert.assertEquals("00", resolver.resolve(info(BACKUP_DC, false)));
     }
@@ -163,12 +163,12 @@ public class KeeperStoreTypeResolverTest {
         givenKeepers(ACTIVE_DC, ACTIVE_DC_TFS);
 
         Assert.assertEquals("10", resolver.resolve(info(BACKUP_DC, true)));
-        verify(metaCache, never()).getKeeperOfDcClusterShard(eq(BACKUP_DC), anyString(), anyString());
+        verify(metaCache, never()).getKeeperOfDcClusterShardRef(eq(BACKUP_DC), anyString(), anyString());
         verify(keeperStateCache, never()).isActive(any());
     }
 
     private void givenKeepers(String dcId, KeeperMeta... keepers) {
-        when(metaCache.getKeeperOfDcClusterShard(dcId, CLUSTER, SHARD)).thenReturn(Arrays.asList(keepers));
+        when(metaCache.getKeeperOfDcClusterShardRef(dcId, CLUSTER, SHARD)).thenReturn(Arrays.asList(keepers));
         for (KeeperMeta keeper : keepers) {
             boolean tfs = keeper == ACTIVE_DC_TFS || keeper == BACKUP_DC_TFS;
             when(metaCache.getKeeperDiskType(keeper)).thenReturn(tfs ? "tfs" : "local");
