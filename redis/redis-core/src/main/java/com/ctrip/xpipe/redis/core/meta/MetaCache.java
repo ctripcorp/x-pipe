@@ -74,10 +74,11 @@ public interface MetaCache {
 
     /**
      * Keeper 所属 KeeperContainer 的磁盘类型（静态配置，非实时状态）。
+     * 按 {@code keepercontainer_id} 查询，该 id 是 DB 自增主键、全局唯一，故无需 dc 参数。
      *
      * @return 未命中 keeper 或其 container 时返回 null
      */
-    String getKeeperDiskType(String dc, KeeperMeta keeperMeta);
+    String getKeeperDiskType(KeeperMeta keeperMeta);
 
     Map<KeeperMeta, String> getKeeper2DcOfClusterShard(String cluster, String shard);
 

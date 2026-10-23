@@ -88,7 +88,7 @@ public class KeeperStoreTypeResolver {
 
         List<KeeperMeta> tfsKeepers = new ArrayList<>();
         for (KeeperMeta keeper : keepers) {
-            if (KeeperDiskTypeUtils.isTfs(metaCache.getKeeperDiskType(dcId, keeper))) {
+            if (KeeperDiskTypeUtils.isTfs(metaCache.getKeeperDiskType(keeper))) {
                 tfsKeepers.add(keeper);
             }
         }

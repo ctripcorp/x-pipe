@@ -45,6 +45,12 @@ public abstract class AbstractMetaCache implements MetaCache {
 
     protected Map<String, Triple<String, String, Long>> monitor2ClusterShard;
 
+    /**
+     * KeeperContainer 按 {@code keepercontainer_id} 建索引，随 Meta 一同换新。
+     * {@code keepercontainer_id} 是 DB 自增主键，全局唯一，故不按 dc 分层。
+     */
+    protected volatile Map<Long, KeeperContainerMeta> keeperContainerById = Collections.emptyMap();
+
     protected long lastUpdateTime = 0;
 
     private static final String currentDc = FoundationService.DEFAULT.getDataCenter();
@@ -84,9 +90,29 @@ public abstract class AbstractMetaCache implements MetaCache {
 
     protected void refreshMeta(XpipeMeta xpipeMeta) {
         Pair<XpipeMeta, XpipeMetaManager> meta = new Pair<>(xpipeMeta, new DefaultXpipeMetaManager(xpipeMeta));
+        // 先于 meta 发布：索引建好再换引用，读到新 meta 时索引必然已就绪
+        keeperContainerById = indexKeeperContainers(xpipeMeta);
         AbstractMetaCache.this.meta = meta;
         monitor2ClusterShard = Maps.newHashMap();
         lastUpdateTime = System.currentTimeMillis();
+    }
+
+    private Map<Long, KeeperContainerMeta> indexKeeperContainers(XpipeMeta xpipeMeta) {
+        if (null == xpipeMeta || null == xpipeMeta.getDcs()) {
+            return Collections.emptyMap();
+        }
+        Map<Long, KeeperContainerMeta> index = new HashMap<>();
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            if (null == dcMeta.getKeeperContainers()) {
+                continue;
+            }
+            for (KeeperContainerMeta containerMeta : dcMeta.getKeeperContainers()) {
+                if (null != containerMeta.getId()) {
+                    index.put(containerMeta.getId(), containerMeta);
+                }
+            }
+        }
+        return index;
     }
 
     /**
@@ -581,17 +607,14 @@ public abstract class AbstractMetaCache implements MetaCache {
      * 这里按「查不到」处理：调用方（打点）不应因 meta 不全而失败。
      */
     @Override
-    public String getKeeperDiskType(String dc, KeeperMeta keeperMeta) {
-        if (null == dc || null == keeperMeta || null == keeperMeta.getKeeperContainerId()) {
+    public String getKeeperDiskType(KeeperMeta keeperMeta) {
+        if (null == keeperMeta || null == keeperMeta.getKeeperContainerId()) {
             return null;
         }
-        try {
-            KeeperContainerMeta containerMeta = meta.getValue().getKeeperContainer(dc, keeperMeta);
-            return null == containerMeta ? null : containerMeta.getDiskType();
-        } catch (RuntimeException e) {
-            logger.debug("[getKeeperDiskType] unfound container, dc={}, keeper={}", dc, keeperMeta, e);
-            return null;
-        }
+        // 走随 Meta 预建的 id 索引：避免 doGetKeeperContainer 的线性扫描与整对象深拷贝 ——
+        // 该方法在每个跨机房 redis 的延迟打点上都会被调用
+        KeeperContainerMeta containerMeta = keeperContainerById.get(keeperMeta.getKeeperContainerId());
+        return null == containerMeta ? null : containerMeta.getDiskType();
     }
 
     @Override

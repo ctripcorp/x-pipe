@@ -194,7 +194,7 @@ public class TestMetaCache implements MetaCache {
     }
 
     @Override
-    public String getKeeperDiskType(String dc, KeeperMeta keeperMeta) {
+    public String getKeeperDiskType(KeeperMeta keeperMeta) {
         return null;
     }
 

@@ -96,36 +96,60 @@ public class DefaultMetaCacheTest extends AbstractRedisTest {
         metaCache.getCurrentDcConsoleRoutes();
     }
 
+    /** 查询走 refreshMeta 时预建的 id 索引，不再经 XpipeMetaManager 线性扫描。 */
     @Test
     public void testGetKeeperDiskType() {
+        metaCache.refreshMeta(metaWithContainer(7L, "tfs-ssd"));
+
         KeeperMeta keeper = new KeeperMeta().setIp("10.0.0.1").setPort(6380);
         keeper.setKeeperContainerId(7L);
-        KeeperContainerMeta container = new KeeperContainerMeta().setId(7L).setDiskType("tfs-ssd");
-        when(xpipeMetaManager.getKeeperContainer("jq", keeper)).thenReturn(container);
 
-        Assert.assertEquals("tfs-ssd", metaCache.getKeeperDiskType("jq", keeper));
+        Assert.assertEquals("tfs-ssd", metaCache.getKeeperDiskType(keeper));
+        verify(xpipeMetaManager, never()).getKeeperContainer(anyString(), any());
     }
 
     @Test
     public void testGetKeeperDiskTypeMissingInput() {
+        metaCache.refreshMeta(metaWithContainer(7L, "tfs-ssd"));
         KeeperMeta withoutContainer = new KeeperMeta().setIp("10.0.0.1").setPort(6380);
 
-        Assert.assertNull(metaCache.getKeeperDiskType(null, withoutContainer));
-        Assert.assertNull(metaCache.getKeeperDiskType("jq", null));
-        // 没有 containerId 无从查起，不该去问 meta manager
-        Assert.assertNull(metaCache.getKeeperDiskType("jq", withoutContainer));
+        // 没有 containerId 无从查起
+        Assert.assertNull(metaCache.getKeeperDiskType(withoutContainer));
+        Assert.assertNull(metaCache.getKeeperDiskType(null));
         verify(xpipeMetaManager, never()).getKeeperContainer(anyString(), any());
     }
 
-    /** container 查不到时 doGetKeeperContainer 抛 IllegalArgumentException，打点侧不该因此失败。 */
+    /** 索引里没有该 container 时返回 null，打点侧不该因此失败。 */
     @Test
-    public void testGetKeeperDiskTypeSwallowsLookupFailure() {
+    public void testGetKeeperDiskTypeUnknownContainer() {
+        metaCache.refreshMeta(metaWithContainer(7L, "tfs-ssd"));
+
         KeeperMeta keeper = new KeeperMeta().setIp("10.0.0.1").setPort(6380);
         keeper.setKeeperContainerId(404L);
-        when(xpipeMetaManager.getKeeperContainer("jq", keeper))
-                .thenThrow(new IllegalArgumentException("unfound keepercontainer"));
 
-        Assert.assertNull(metaCache.getKeeperDiskType("jq", keeper));
+        Assert.assertNull(metaCache.getKeeperDiskType(keeper));
+    }
+
+    /** 索引随 Meta 换新：上一轮的 container 不应残留。 */
+    @Test
+    public void testKeeperContainerIndexRefreshedWithMeta() {
+        metaCache.refreshMeta(metaWithContainer(7L, "tfs-ssd"));
+        KeeperMeta keeper = new KeeperMeta().setIp("10.0.0.1").setPort(6380);
+        keeper.setKeeperContainerId(7L);
+        Assert.assertEquals("tfs-ssd", metaCache.getKeeperDiskType(keeper));
+
+        metaCache.refreshMeta(metaWithContainer(8L, "local"));
+        Assert.assertNull("旧 container 不得残留", metaCache.getKeeperDiskType(keeper));
+
+        keeper.setKeeperContainerId(8L);
+        Assert.assertEquals("local", metaCache.getKeeperDiskType(keeper));
+    }
+
+    private XpipeMeta metaWithContainer(Long containerId, String diskType) {
+        KeeperContainerMeta container = new KeeperContainerMeta().setId(containerId).setDiskType(diskType);
+        DcMeta dcMeta = new DcMeta().setId("jq");
+        dcMeta.addKeeperContainer(container);
+        return new XpipeMeta().addDc(dcMeta);
     }
 
     @Test

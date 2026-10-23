@@ -171,7 +171,7 @@ public class KeeperStoreTypeResolverTest {
         when(metaCache.getKeeperOfDcClusterShard(dcId, CLUSTER, SHARD)).thenReturn(Arrays.asList(keepers));
         for (KeeperMeta keeper : keepers) {
             boolean tfs = keeper == ACTIVE_DC_TFS || keeper == BACKUP_DC_TFS;
-            when(metaCache.getKeeperDiskType(dcId, keeper)).thenReturn(tfs ? "tfs" : "local");
+            when(metaCache.getKeeperDiskType(keeper)).thenReturn(tfs ? "tfs" : "local");
         }
     }
 
