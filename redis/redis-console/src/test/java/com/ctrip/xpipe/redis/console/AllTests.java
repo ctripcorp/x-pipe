@@ -224,6 +224,7 @@ import org.junit.runners.Suite.SuiteClasses;
         CrossMasterDelayServiceTest.class,
         DefaultMetaCacheTest.class,
         ContainerKeeperIpResolveTest.class,
+        MetaCacheAddressServiceCycleTest.class,
         KeeperContainerAddressAssemblyTest.class,
         DcMetaSynchronizerTest.class,
         RedisMetaSynchronizerTest.class,
