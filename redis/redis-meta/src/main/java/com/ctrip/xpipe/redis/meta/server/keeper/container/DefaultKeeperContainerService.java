@@ -80,6 +80,20 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
     }
 
     @Override
+    public void releaseKeeper(KeeperTransMeta keeperTransMeta) {
+        try {
+            long clusterDbId = null == keeperTransMeta.getClusterDbId() ? 1:keeperTransMeta.getClusterDbId();
+            long shardDbId = null == keeperTransMeta.getShardDbId() ? 1:keeperTransMeta.getShardDbId();
+            String ip = resolveAddress();
+            restTemplate.exchange("http://{ip}:{port}/keepers/clusters/{clusterId}/shards/{shardId}/release",
+                    HttpMethod.PUT, new HttpEntity<Object>(keeperTransMeta, createHeaders()), Void.class,
+                    ip, keeperContainerMeta.getPort(), clusterDbId, shardDbId);
+        } catch (HttpStatusCodeException ex) {
+            throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);
+        }
+    }
+
+    @Override
     public void startKeeper(KeeperTransMeta keeperTransMeta) {
         try {
             String ip = resolveAddress();

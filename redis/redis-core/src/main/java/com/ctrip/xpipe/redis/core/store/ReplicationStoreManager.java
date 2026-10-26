@@ -33,6 +33,13 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	ReplId getReplId();
 
 	/**
+	 * Close the current store and the manager-meta file, permanently refusing reopen on this instance.
+	 * Unlike {@link #destroy()}, never deletes {@link #getBaseDir()} — for a shared TFS store, the
+	 * directory outlives this keeper instance. {@code destroy()} is {@code release()} followed by rmdir.
+	 */
+	void release() throws Exception;
+
+	/**
 	 * Close current store and clear the in-memory reference only (PREPARE lease release).
 	 * Does <b>not</b> destroy files or change {@code latest.store.dir}.
 	 */
@@ -85,5 +92,13 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	 * request-side accessors stay FS-free while the handle is closed.
 	 */
 	void closeReadOnlyMetaHandle();
+
+	/**
+	 * Open (read-only, no mkdir/create) the manager meta file as a liveness probe, with no effect on
+	 * the cached meta or {@code latest.store.dir} — unlike {@link #reloadLatestStoreDir()}, which is
+	 * PrepareStoreWatcher's D48 protocol only. Throws if the file can't be opened (fenced/EIO on a
+	 * TFS lease collapses here, same as a permanently-destroyed or stopped manager).
+	 */
+	void verifyMetaFileOpenable() throws IOException;
 
 }

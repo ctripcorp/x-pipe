@@ -23,6 +23,12 @@ public interface KeeperContainerService {
 	
 	void removeKeeper(KeeperTransMeta keeperTransMeta);
 
+	/**
+	 * Like {@link #removeKeeper(KeeperTransMeta)}, but never deletes the replication store — for a
+	 * shared TFS store that must outlive this keeper instance.
+	 */
+	void releaseKeeper(KeeperTransMeta keeperTransMeta);
+
 	void startKeeper(KeeperTransMeta keeperTransMeta);
 
 	void stopKeeper(KeeperTransMeta keeperTransMeta);

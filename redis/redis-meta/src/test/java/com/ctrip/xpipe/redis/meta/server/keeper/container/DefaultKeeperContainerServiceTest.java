@@ -70,6 +70,19 @@ public class DefaultKeeperContainerServiceTest extends AbstractMetaServerTest {
     }
 
     @Test
+    public void testReleaseKeeper() throws Exception {
+        this.webServer.enqueue(new MockResponse());
+
+        KeeperTransMeta meta = mockKeeperMeta();
+        this.service.releaseKeeper(meta);
+        RecordedRequest request = this.webServer.takeRequest();
+
+        Assert.assertEquals(HttpMethod.PUT.toString(), request.getMethod());
+        Assert.assertEquals(String.format("/keepers/clusters/%s/shards/%s/release", meta.getClusterDbId(), meta.getShardDbId()), request.getPath());
+        Assert.assertEquals(meta, Codec.DEFAULT.decode(request.getBody().readByteArray(), KeeperTransMeta.class));
+    }
+
+    @Test
     public void testResolveByHostname() throws Exception {
         // 准备 mock addressService
         CurrentDcKeeperContainerAddressService addressService = mock(CurrentDcKeeperContainerAddressService.class);

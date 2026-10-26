@@ -12,9 +12,11 @@ import com.ctrip.xpipe.lifecycle.AbstractLifecycle;
 import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.keeper.container.KeeperContainerErrorCode;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.ReplId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperResourceManager;
@@ -308,6 +310,10 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
         }
 
         try {
+            // decide destroy-vs-release before deRegister: the state/meta checks need the server
+            // still live, and deRegister stops the manager, which would make them fail regardless.
+            boolean destroy = shouldDestroy(keeperServer);
+
             // 1. stop and dispose keeper server
             deRegister(keeperServer);
 
@@ -315,11 +321,72 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
             removeKeeperCache(keeperServerKey);
 
             // 3. clean external resources, such as replication stores
-            keeperServer.destroy();
+            if (destroy) {
+                keeperServer.destroy();
+            } else {
+                keeperServer.release();
+            }
         } catch (Throwable ex) {
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
                             String.format("Remove keeper failed for %s", replId)), ex);
+        }
+    }
+
+    /**
+     * Last-line self-defense against a wrong destroy decision upstream: a BM keeper's store is
+     * always private, so it always destroys. A TFS keeper only destroys its shared store when it
+     * actually held it — ACTIVE/BACKUP, not PREPARE, PRE_ACTIVE, PRE_BACKUP or UNKNOWN — and can
+     * still open the manager meta file (fenced/EIO or already-torn-down otherwise). Anything less
+     * certain releases instead.
+     */
+    private boolean shouldDestroy(RedisKeeperServer keeperServer) {
+        if (!keeperServer.isTfsMode()) {
+            return true;
+        }
+
+        RedisKeeperServerState state = keeperServer.getRedisKeeperServerState();
+        KeeperState keeperState = state == null ? null : state.keeperState();
+        if (keeperState == null || !(keeperState.isActive() || keeperState.isBackup())) {
+            logger.info("[shouldDestroy][not active/backup, release instead]{}, state={}", keeperServer.getReplId(), keeperState);
+            return false;
+        }
+
+        try {
+            keeperServer.getReplicationStoreManager().verifyMetaFileOpenable();
+            return true;
+        } catch (Throwable th) {
+            logger.warn("[shouldDestroy][meta file not openable, release instead]{}", keeperServer.getReplId(), th);
+            return false;
+        }
+    }
+
+    /**
+     * Like {@link #remove(ReplId)}, but never deletes the replication store — for a shared TFS store
+     * that must outlive this keeper instance (e.g. migration, non-holder keepers).
+     */
+    public void release(ReplId replId) {
+        String keeperServerKey = replId.toString();
+
+        RedisKeeperServer keeperServer = redisKeeperServers.get(keeperServerKey);
+
+        if (keeperServer == null) {
+            return;
+        }
+
+        try {
+            // 1. stop and dispose keeper server
+            deRegister(keeperServer);
+
+            // 2. remove keeper
+            removeKeeperCache(keeperServerKey);
+
+            // 3. close external resources without deleting them
+            keeperServer.release();
+        } catch (Throwable ex) {
+            throw new RedisKeeperRuntimeException(
+                    new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
+                            String.format("Release keeper failed for %s", replId)), ex);
         }
     }
 
