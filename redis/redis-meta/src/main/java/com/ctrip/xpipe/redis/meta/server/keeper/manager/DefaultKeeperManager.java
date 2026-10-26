@@ -264,7 +264,9 @@ public class DefaultKeeperManager extends AbstractCurrentMetaObserver implements
 
 			ShardMetaComparator shardMetaComparator = (ShardMetaComparator) comparator;
 			ShardMeta shard = shardMetaComparator.getCurrent();
-			boolean shardEmptyAfterChange = shard.getKeepers().isEmpty();
+			// getCurrent() is the meta before this change; keepers left afterwards come from getFuture()
+			ShardMeta future = shardMetaComparator.getFuture();
+			boolean shardEmptyAfterChange = future == null || future.getKeepers() == null || future.getKeepers().isEmpty();
 			shardMetaComparator.accept(new ShardComparatorVisitor(clusterType, clusterDbId, shard.getDbId(), shardEmptyAfterChange));
 
 		}
