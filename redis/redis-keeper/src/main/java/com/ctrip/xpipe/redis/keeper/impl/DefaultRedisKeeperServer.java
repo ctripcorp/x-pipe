@@ -52,6 +52,9 @@ import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import com.ctrip.xpipe.redis.keeper.store.DefaultFullSyncListener;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
+import com.ctrip.xpipe.redis.keeper.store.DirectStoreDeleter;
+import com.ctrip.xpipe.redis.keeper.store.ReplicationStoreDeleter;
+import com.ctrip.xpipe.redis.keeper.store.TfsStoreDeleter;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
 import com.ctrip.xpipe.redis.keeper.store.searcher.GtidCommandSearcher;
 import com.ctrip.xpipe.redis.keeper.util.KeeperReplIdAwareThreadFactory;
@@ -238,8 +241,11 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	protected ReplicationStoreManager createReplicationStoreManager(CKStore ckStore,NioEventLoopGroup masterEventLoopGroup, KeeperConfig keeperConfig, ClusterId clusterId, ShardId shardId, ReplId replId,
 																	KeeperMeta currentKeeperMeta, File baseDir, KeeperMonitor keeperMonitor) {
+		// shared TFS store: destroy deletes it only when nobody can still be using it
+		ReplicationStoreDeleter storeDeleter = tfsMode ? new TfsStoreDeleter(asyncFileSystem, 0)
+				: new DirectStoreDeleter(asyncFileSystem);
 		DefaultReplicationStoreManager manager = new DefaultReplicationStoreManager(this.ckStore, masterEventLoopGroup, keeperConfig, replId,
-				currentKeeperMeta.getId(), baseDir, keeperMonitor, syncRateManager, redisOpParser, asyncFileSystem);
+				currentKeeperMeta.getId(), baseDir, keeperMonitor, syncRateManager, redisOpParser, asyncFileSystem, storeDeleter);
 		if (pubSubParseHook != null) {
 			manager.setPubSubParseHook(pubSubParseHook);
 		}
@@ -1267,7 +1273,29 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	public void destroy() throws Exception {
 		this.keepersMonitorManager.remove(this);
-		this.replicationStoreManager.destroy();
+		if(shouldDestroy()) {
+			this.replicationStoreManager.destroy();
+		}else {
+			release();
+		}
+	}
+
+	/**
+	 * A BM keeper's store is private, so it always destroys. A TFS keeper destroys only if it actually
+	 * held the shared store (ACTIVE/BACKUP); whether nobody else still uses it is checked inside
+	 * destroy by {@link TfsStoreDeleter}.
+	 */
+	private boolean shouldDestroy() {
+		if (!isTfsMode()) {
+			return true;
+		}
+		RedisKeeperServerState state = this.redisKeeperServerState;
+		KeeperState keeperState = state == null ? null : state.keeperState();
+		if (keeperState == null || !(keeperState.isActive() || keeperState.isBackup())) {
+			logger.info("[shouldDestroy][not active/backup, release instead]{}, state={}", this.getReplId(), keeperState);
+			return false;
+		}
+		return true;
 	}
 
 	@Override

@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.container;
 
 import com.ctrip.xpipe.api.command.CommandFuture;
+import com.ctrip.xpipe.redis.core.entity.GcOrphanStoreResult;
 import com.ctrip.xpipe.redis.core.entity.KeeperDiskInfo;
 import com.ctrip.xpipe.redis.core.entity.KeeperInstanceMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
@@ -137,6 +138,29 @@ public class KeeperContainerController extends AbstractController {
 
         logger.info("[release]{},{},{}", clusterName, shardName, keeperTransMeta);
         keeperContainerService.release(ReplId.from(keeperTransMeta.getReplId()));
+    }
+
+    /** keeper-tfs-m7: raw TFS store-root directory listing for the metaserver's orphan GC round. */
+    @GetMapping(value = "/gc/dirs")
+    public List<String> listGcDirs() {
+        logger.info("[listGcDirs]");
+        return keeperContainerService.listStoreDirNames();
+    }
+
+    /** keeper-tfs-m7: fallback delete of a TFS store this container has no live keeper for. */
+    @RequestMapping(value = "/gc/{repl_id}", method = RequestMethod.PUT)
+    public GcOrphanStoreResult gc(@PathVariable("repl_id") long replId,
+                                   @RequestParam(value = "requestId", required = false) String requestId) {
+        logger.info("[gc][{}]{}", requestId, replId);
+        return keeperContainerService.gcOrphanStore(replId, requestId);
+    }
+
+    /** keeper-tfs-m7: batch form of {@link #gc} — one request for a whole GC-round candidate list. */
+    @RequestMapping(value = "/gc", method = RequestMethod.PUT)
+    public List<GcOrphanStoreResult> gcBatch(@RequestBody List<Long> replIds,
+                                              @RequestParam(value = "requestId", required = false) String requestId) {
+        logger.info("[gcBatch][{}]{}", requestId, replIds);
+        return keeperContainerService.gcOrphanStores(replIds, requestId);
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE + "/start", method = RequestMethod.PUT)

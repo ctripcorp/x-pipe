@@ -4,6 +4,7 @@ import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
 import com.ctrip.xpipe.observer.NodeAdded;
+import com.ctrip.xpipe.redis.core.entity.GcOrphanStoreResult;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
@@ -111,10 +112,22 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
      */
     private boolean managerMetaDestroyed;
 
+    /** Removes baseDir on {@link #destroy()}: {@link DirectStoreDeleter} for BM, {@link TfsStoreDeleter} for TFS. */
+    private final ReplicationStoreDeleter storeDeleter;
+
+    /** BM-style manager: destroy removes baseDir directly. */
     public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
                                           SyncRateManager syncRateManager, RedisOpParser redisOpParser,
                                           AsyncFileSystem asyncFileSystem) {
+        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, asyncFileSystem,
+                new DirectStoreDeleter(asyncFileSystem));
+    }
+
+    public DefaultReplicationStoreManager(KeeperConfig keeperConfig, ReplId replId,
+                                          String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
+                                          SyncRateManager syncRateManager, RedisOpParser redisOpParser,
+                                          AsyncFileSystem asyncFileSystem, ReplicationStoreDeleter storeDeleter) {
         super(MoreExecutors.directExecutor());
         this.replId = replId;
         this.keeperRunid = keeperRunid;
@@ -124,13 +137,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         this.redisOpParser = redisOpParser;
         this.syncRateManager = syncRateManager;
         this.asyncFileSystem = Objects.requireNonNull(asyncFileSystem, "asyncFileSystem");
+        this.storeDeleter = Objects.requireNonNull(storeDeleter, "storeDeleter");
     }
 
     public DefaultReplicationStoreManager(CKStore ckStore, NioEventLoopGroup masterEventLoopGroup, KeeperConfig keeperConfig, ReplId replId,
                                           String keeperRunid, File baseDir, KeeperMonitor keeperMonitor,
                                           SyncRateManager syncRateManager, RedisOpParser redisOpParser,
-                                          AsyncFileSystem asyncFileSystem) {
-        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, asyncFileSystem);
+                                          AsyncFileSystem asyncFileSystem, ReplicationStoreDeleter storeDeleter) {
+        this(keeperConfig, replId, keeperRunid, baseDir, keeperMonitor, syncRateManager, redisOpParser, asyncFileSystem, storeDeleter);
         this.ckStore = ckStore;
         this.masterEventLoopGroup = masterEventLoopGroup;
     }
@@ -671,10 +685,14 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     public synchronized void destroy() throws Exception {
         logger.info("[destroy]{}", this);
         release();
-        // close/rmdir: baseDir is private to this keeper instance in BM mode, shared in TFS — callers
-        // that must not delete a shared store use release() instead.
-        AsyncFileSystemHelper.await(() -> asyncFileSystem.rmdir(this.baseDir.getAbsolutePath(), true),
-                "rmdir replication store manager baseDir " + baseDir);
+        GcOrphanStoreResult result = storeDeleter.delete(baseDir, replId);
+        if (result.status == GcOrphanStoreResult.Status.FAILED) {
+            throw new IOException("destroy replication store failed: " + baseDir + ", " + result);
+        }
+        if (result.status == GcOrphanStoreResult.Status.SKIPPED) {
+            // TFS store may still be in use elsewhere: released only, same as release().
+            logger.warn("[destroy][store kept, released only]{} {}", baseDir, result);
+        }
     }
 
     @Override
