@@ -136,6 +136,22 @@ public class DefaultKeeperStateControllerTest extends AbstractMetaServerTest{
 		Assert.assertFalse(deleteCommand.isBeginExecute());
 	}
 
+	/** A stale keeper found on the target port is only released on TFS, removed on BM. */
+	@Test
+	public void testAddKeeperCommandReleasesStaleKeeperOnlyOnTfs() {
+		for (boolean bm : new boolean[]{true, false}) {
+			DefaultKeeperStateController controller = new DefaultKeeperStateController() {
+				@Override
+				protected boolean isBm(KeeperTransMeta keeperTransMeta) {
+					return bm;
+				}
+			};
+			AddKeeperCommand command = (AddKeeperCommand) controller.createAddKeeperCommand(keeperContainerService,
+					new KeeperTransMeta(getClusterDbId(), getShardDbId(), new KeeperMeta()), scheduled, 1000);
+			Assert.assertEquals("bm=" + bm, !bm, command.isReleaseStaleKeeper());
+		}
+	}
+
 	@Test
 	public void testSequentialExecInsideShard() throws Exception {
 		AtomicInteger counter = new AtomicInteger();

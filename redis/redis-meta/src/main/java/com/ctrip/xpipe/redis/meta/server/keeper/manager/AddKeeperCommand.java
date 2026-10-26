@@ -20,6 +20,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.RoleCommand;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Role;
 import com.ctrip.xpipe.redis.core.protocal.pojo.SlaveRole;
 import com.ctrip.xpipe.retry.RetryDelay;
+import com.ctrip.xpipe.utils.VisibleForTesting;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -32,6 +33,9 @@ public class AddKeeperCommand extends AbstractKeeperCommand<SlaveRole>{
 
 	private XpipeNettyClientKeyedObjectPool clientKeyedObjectPool;
 
+	/** TFS: a stale keeper on the port may still share a live store elsewhere, so it is only released. */
+	private boolean releaseStaleKeeper;
+
 	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
 							XpipeNettyClientKeyedObjectPool clientKeyedObjectPool, ScheduledExecutorService scheduled,
 							int timeoutMilli) {
@@ -40,8 +44,27 @@ public class AddKeeperCommand extends AbstractKeeperCommand<SlaveRole>{
 	}
 
 	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
+							XpipeNettyClientKeyedObjectPool clientKeyedObjectPool, ScheduledExecutorService scheduled,
+							int timeoutMilli, boolean releaseStaleKeeper) {
+		this(keeperContainerService, keeperTransMeta, clientKeyedObjectPool, scheduled, timeoutMilli);
+		this.releaseStaleKeeper = releaseStaleKeeper;
+	}
+
+	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
 							ScheduledExecutorService scheduled, int timeoutMilli, int checkIntervalMilli) {
 		super(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkIntervalMilli);
+	}
+
+	public AddKeeperCommand(KeeperContainerService keeperContainerService, KeeperTransMeta keeperTransMeta,
+							ScheduledExecutorService scheduled, int timeoutMilli, int checkIntervalMilli,
+							boolean releaseStaleKeeper) {
+		this(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkIntervalMilli);
+		this.releaseStaleKeeper = releaseStaleKeeper;
+	}
+
+	@VisibleForTesting
+	boolean isReleaseStaleKeeper() {
+		return releaseStaleKeeper;
 	}
 
 	@Override
@@ -50,9 +73,14 @@ public class AddKeeperCommand extends AbstractKeeperCommand<SlaveRole>{
 			int usePort = keeperTransMeta.getKeeperMeta().getPort();
 			KeeperInstanceMeta keeperInstanceMeta = keeperContainerService.infoPort(usePort);
 			if (null != keeperInstanceMeta.getReplId() && !keeperInstanceMeta.getReplId().equals(keeperTransMeta.getReplId())) {
-				getLogger().info("[preKeeperContainerOperation][{}-{}][remove unknown keeper use the same port] found:{}",
-						keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId(), keeperInstanceMeta);
-				keeperContainerService.removeKeeper(keeperInstanceMeta);
+				getLogger().info("[preKeeperContainerOperation][{}-{}][{} unknown keeper use the same port] found:{}",
+						keeperTransMeta.getClusterDbId(), keeperTransMeta.getShardDbId(),
+						releaseStaleKeeper ? "release" : "remove", keeperInstanceMeta);
+				if (releaseStaleKeeper) {
+					keeperContainerService.releaseKeeper(keeperInstanceMeta);
+				} else {
+					keeperContainerService.removeKeeper(keeperInstanceMeta);
+				}
 			}
 		} catch (Throwable th) {
 			if (getLogger().isDebugEnabled()) {
