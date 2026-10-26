@@ -196,10 +196,29 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     /**
+     * 对整份 Meta 按机房填充容器 KeeperContainer 的实时 IP，供 Meta 不是本地构建的部署形态使用
+     * （如无 DB 的 Console：Meta 从有 DB 的 Console 拉取，但本机房 ZK 由自己监听，地址以本地为准）。
+     *
+     * <p>调用方须保证传入的 Meta 尚未发布（如刚反序列化出来的对象）。
+     */
+    protected void fillContainerKeeperIp(XpipeMeta xpipeMeta) {
+        if (null == xpipeMeta || null == xpipeMeta.getDcs()) {
+            return;
+        }
+        for (DcMeta dcMeta : xpipeMeta.getDcs().values()) {
+            fillContainerKeeperIp(dcMeta);
+        }
+    }
+
+    /**
      * 把容器 KeeperContainer 的实时 IP 就地写入 {@link KeeperContainerMeta#setIp}，使下发给 Checker
      * 的 Meta 自带可直连地址，Checker 不必各自反查 ZK。
      *
-     * <p>就地改写是安全的：每轮 {@code loadCache} 都从 DB 重建 DcMeta，这里拿到的对象还未发布。
+     * <p>就地改写是安全的：每轮 {@code loadCache} 都重建 DcMeta（从 DB 构建或从上游 Console 反序列化），
+     * 这里拿到的对象还未发布。
+     *
+     * <p>本地查不到时保留原 IP：Meta 若来自上游 Console，其中可能已带有上游填好的地址；
+     * 只有最终仍为占位值的容器才计为未解析。
      *
      * <p>容器形态只看 {@code hostname} 是否有值 —— 与 {@code MetaUtils.theSame}、
      * {@code DefaultKeeperAdvancedService.isPodContainer} 口径一致；物理机 hostname 为空，IP 原样保留。
@@ -234,9 +253,10 @@ public abstract class AbstractMetaCache implements MetaCache {
                 : resolveHostnameToIp(addressService, dcMeta.getId());
         if (hostnameToIp.isEmpty()) {
             // 地址服务缺失或该机房缓存未就绪：这批容器一个都填不上，全量上报而非静默返回
-            logger.warn("[fillContainerKeeperIp][{}] no address cache, {} container keepers unresolved",
+            logger.warn("[fillContainerKeeperIp][{}] no address cache, {} container keepers",
                     dcMeta.getId(), containers.size());
-            containers.forEach(containerMeta -> unresolved.add(containerMeta.getHostname()));
+            containers.stream().filter(this::isPlaceholderIp)
+                    .forEach(containerMeta -> unresolved.add(containerMeta.getHostname()));
             reportUnresolvedContainers(dcMeta.getId(), unresolved);
             return;
         }
@@ -244,13 +264,20 @@ public abstract class AbstractMetaCache implements MetaCache {
         for (KeeperContainerMeta containerMeta : containers) {
             String ip = hostnameToIp.get(containerMeta.getHostname());
             if (StringUtil.isEmpty(ip)) {
-                unresolved.add(containerMeta.getHostname());
+                if (isPlaceholderIp(containerMeta)) {
+                    unresolved.add(containerMeta.getHostname());
+                }
                 continue;
             }
             containerMeta.setIp(ip);
         }
 
         reportUnresolvedContainers(dcMeta.getId(), unresolved);
+    }
+
+    private boolean isPlaceholderIp(KeeperContainerMeta containerMeta) {
+        String ip = containerMeta.getIp();
+        return StringUtil.isEmpty(ip) || XPipeConsoleConstant.DEFAULT_IP.equals(ip);
     }
 
     private void reportUnresolvedContainers(String dcId, Set<String> unresolved) {
