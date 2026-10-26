@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -154,26 +155,70 @@ class StorageUtil {
         }
     }
 
+    // Called on the submitting thread, before the task is handed to the executor.
     private static <T> java.util.function.Supplier<T> wrapSupplier(java.util.function.Supplier<T> task) {
+        long taskId = traceEnqueue();
         return () -> {
+            traceIoTask("dequeue", taskId);
             try {
                 return task.get();
             } catch (Throwable t) {
                 logger.warn("async storage IO task failed", t);
                 throw t;
+            } finally {
+                traceIoTask("done", taskId);
             }
         };
     }
 
     private static Runnable wrapRunnable(Runnable task) {
+        long taskId = traceEnqueue();
         return () -> {
+            traceIoTask("dequeue", taskId);
             try {
                 task.run();
             } catch (Throwable t) {
                 logger.warn("async storage IO task failed", t);
                 throw t;
+            } finally {
+                traceIoTask("done", taskId);
             }
         };
+    }
+
+    // ---- IO task DEBUG trace (keeper-tfs-m6 §18): op only on enqueue, dequeue / done carry the id ----
+
+    private static final AtomicLong IO_TASK_ID = new AtomicLong();
+
+    private static final long NO_TRACE = 0L;
+
+    // TailCache's private wrapper of the same name only forwards; report its caller instead.
+    private static final String AWAIT_IO_CACHE_PREP = "awaitIoCachePrep";
+
+    // Returns NO_TRACE when DEBUG is off, so nothing is traced for this task.
+    private static long traceEnqueue() {
+        if (!logger.isDebugEnabled()) {
+            return NO_TRACE;
+        }
+        long taskId = IO_TASK_ID.incrementAndGet();
+        logger.debug("[ioTask][enqueue] id={} op={}", taskId, callerOp());
+        return taskId;
+    }
+
+    private static void traceIoTask(String stage, long taskId) {
+        if (taskId != NO_TRACE) {
+            logger.debug("[ioTask][{}] id={}", stage, taskId);
+        }
+    }
+
+    // First frame outside StorageUtil, e.g. "TailCacheFileSystem.transferToInternal".
+    private static String callerOp() {
+        return StackWalker.getInstance().walk(frames -> frames
+                .filter(f -> !f.getClassName().equals(StorageUtil.class.getName())
+                        && !f.getMethodName().equals(AWAIT_IO_CACHE_PREP))
+                .findFirst()
+                .map(f -> f.getClassName().substring(f.getClassName().lastIndexOf('.') + 1) + "." + f.getMethodName())
+                .orElse("unknown"));
     }
 
     static String asyncFileKey(String path) {
