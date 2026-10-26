@@ -73,7 +73,9 @@ public class DefaultKeeperStateController extends AbstractLifecycle implements K
 
 	protected Command<?> createAddKeeperCommand(KeeperContainerService keeperContainerService,
 			KeeperTransMeta keeperTransMeta, ScheduledExecutorService scheduled, int addKeeperSuccessTimeoutMilli) {
-		return new AddKeeperCommand(keeperContainerService, keeperTransMeta, clientKeyedObjectPool, scheduled, addKeeperSuccessTimeoutMilli);
+		// TFS: never destroy a stale keeper found on the target port, its shared store may be live elsewhere
+		return new AddKeeperCommand(keeperContainerService, keeperTransMeta, clientKeyedObjectPool, scheduled,
+				addKeeperSuccessTimeoutMilli, !isBm(keeperTransMeta));
 	}
 
 	@Override

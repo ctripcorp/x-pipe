@@ -836,4 +836,36 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
         verify(keeperStateController, never()).removeKeeper(any(), anyBoolean());
     }
 
+    /** All keepers of a shard removed: nothing is left afterwards, so every removal is a purge. */
+    @Test
+    public void testRemoveAllKeepersOfShardPurges() {
+        DcMeta current = getDcMeta("jq");
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
+        future.getClusters().get("cluster1").getShards().get("shard1").getKeepers().clear();
+
+        handleClustersModified(current, future);
+
+        verify(keeperStateController, times(2)).removeKeeper(any(), eq(true));
+        verify(keeperStateController, never()).removeKeeper(any(), eq(false));
+    }
+
+    /** Some keepers left in the shard: the removed one is only released. */
+    @Test
+    public void testRemoveSomeKeepersOfShardReleases() {
+        DcMeta current = getDcMeta("jq");
+        DcMeta future = MetaCloneFacade.INSTANCE.clone(current);
+        future.getClusters().get("cluster1").getShards().get("shard1").getKeepers().remove(0);
+
+        handleClustersModified(current, future);
+
+        verify(keeperStateController, times(1)).removeKeeper(any(), eq(false));
+        verify(keeperStateController, never()).removeKeeper(any(), eq(true));
+    }
+
+    private void handleClustersModified(DcMeta current, DcMeta future) {
+        DcMetaComparator comparator = new DcMetaComparator(current, future);
+        comparator.compare();
+        comparator.getMofified().forEach(c -> manager.handleClusterModified((ClusterMetaComparator) c));
+    }
+
 }

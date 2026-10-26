@@ -222,4 +222,25 @@ public class AddKeeperCommandTest extends AbstractMetaServerTest{
 		}
 	}
 
+	/** TFS: the stale keeper's shared store may be live elsewhere, so it is released, never removed. */
+	@Test
+	public void testReleaseWildKeeperBeforeAddInTfs() throws Exception {
+		addKeeperCommand = new AddKeeperCommand(keeperContainerService, keeperTransMeta, scheduled, timeoutMilli, checkInterval, true);
+		SlaveRole keeperRole = new SlaveRole(SERVER_ROLE.KEEPER, "127.0.0.1", randomPort(), MASTER_STATE.REDIS_REPL_CONNECTED, 0);
+		KeeperInstanceMeta instanceMeta = new KeeperInstanceMeta(new ReplId(2L), keeperTransMeta.getKeeperMeta());
+		Mockito.when(keeperContainerService.infoPort(keeperPort)).thenReturn(instanceMeta);
+
+		Server server = null;
+		try {
+			server = startServer(keeperPort, ByteBufUtils.readToString(keeperRole.format()));
+			SlaveRole real = addKeeperCommand.execute().get();
+			Mockito.verify(keeperContainerService, Mockito.times(1)).releaseKeeper(instanceMeta);
+			Mockito.verify(keeperContainerService, Mockito.never()).removeKeeper(Mockito.any());
+			Mockito.verify(keeperContainerService, Mockito.times(1)).addOrStartKeeper(keeperTransMeta);
+			Assert.assertEquals(keeperRole, real);
+		} finally {
+			if (null != server) server.stop();
+		}
+	}
+
 }
