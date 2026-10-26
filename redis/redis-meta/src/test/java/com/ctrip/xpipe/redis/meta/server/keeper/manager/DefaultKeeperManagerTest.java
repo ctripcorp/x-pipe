@@ -109,7 +109,7 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
 
         checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
         verify(keeperStateController, times(1)).addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, metaKeeper));
-        verify(keeperStateController, times(0)).removeKeeper(any());
+        verify(keeperStateController, times(0)).removeKeeper(any(), anyBoolean());
     }
 
     @Test
@@ -122,7 +122,7 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
 
         checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
         verify(keeperStateController, times(1)).addKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, metaKeeper));
-        verify(keeperStateController, times(0)).removeKeeper(any());
+        verify(keeperStateController, times(0)).removeKeeper(any(), anyBoolean());
     }
 
     @Test
@@ -136,7 +136,8 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
 
         checker.doCheckShard(new ClusterMeta(clusterId).setDbId(clusterDbId), shardMeta);
         verify(keeperStateController, times(0)).addKeeper(any());
-        verify(keeperStateController, times(1)).removeKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, surviveKeeper));
+        // dead-keeper cleanup never purges
+        verify(keeperStateController, times(1)).removeKeeper(new KeeperTransMeta(clusterDbId, shardDbId, shardDbId, surviveKeeper), false);
     }
 
     @Test
@@ -832,7 +833,7 @@ public class DefaultKeeperManagerTest extends AbstractMetaServerTest {
         });
         // allow redundant addAndStart keeper/applier job since the job is idempotent
         verify(keeperStateController, times(6)).addKeeper(any());
-        verify(keeperStateController, never()).removeKeeper(any());
+        verify(keeperStateController, never()).removeKeeper(any(), anyBoolean());
     }
 
 }

@@ -5,10 +5,13 @@ import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
 import com.ctrip.xpipe.api.lifecycle.ComponentRegistry;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperTransMeta;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.store.ClusterId;
 import com.ctrip.xpipe.redis.core.store.ReplId;
+import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.redis.core.store.ShardId;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.RedisKeeperServerState;
 import com.ctrip.xpipe.redis.keeper.config.DefaultKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.KeeperContainerConfig;
@@ -25,6 +28,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -159,6 +163,88 @@ public class KeeperContainerServiceTest extends AbstractTest {
 
         assertFalse(fullStorePath.contains("replication_store_"));
         assertEquals(new File(storeDir.trim().replaceAll("/+$", ""), someReplId.toString()).getPath(), fullStorePath);
+    }
+
+    @Test
+    public void testRemoveKeeperDestroys() throws Exception {
+        keeperContainerService.setRedisKeeperServers(new HashMap<>(Collections.singletonMap(someReplId.toString(), redisKeeperServer)));
+
+        keeperContainerService.remove(someReplId);
+
+        verify(componentRegistry, times(1)).remove(redisKeeperServer);
+        verify(redisKeeperServer, times(1)).destroy();
+        verify(redisKeeperServer, never()).release();
+    }
+
+    @Test
+    public void testRemoveKeeperNotFoundIsNoop() throws Exception {
+        keeperContainerService.remove(someReplId);
+
+        verifyNoInteractions(redisKeeperServer);
+    }
+
+    @Test
+    public void testReleaseKeeperDoesNotDestroy() throws Exception {
+        keeperContainerService.setRedisKeeperServers(new HashMap<>(Collections.singletonMap(someReplId.toString(), redisKeeperServer)));
+
+        keeperContainerService.release(someReplId);
+
+        verify(componentRegistry, times(1)).remove(redisKeeperServer);
+        verify(redisKeeperServer, times(1)).release();
+        verify(redisKeeperServer, never()).destroy();
+    }
+
+    @Test
+    public void testReleaseKeeperNotFoundIsNoop() throws Exception {
+        keeperContainerService.release(someReplId);
+
+        verifyNoInteractions(redisKeeperServer);
+    }
+
+    @Test
+    public void testRemoveTfsActiveWithOpenableMetaDestroys() throws Exception {
+        keeperContainerService.setRedisKeeperServers(new HashMap<>(Collections.singletonMap(someReplId.toString(), redisKeeperServer)));
+        when(redisKeeperServer.isTfsMode()).thenReturn(true);
+        RedisKeeperServerState state = mock(RedisKeeperServerState.class);
+        when(state.keeperState()).thenReturn(KeeperState.ACTIVE);
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(state);
+        when(redisKeeperServer.getReplicationStoreManager()).thenReturn(mock(ReplicationStoreManager.class));
+
+        keeperContainerService.remove(someReplId);
+
+        verify(redisKeeperServer, times(1)).destroy();
+        verify(redisKeeperServer, never()).release();
+    }
+
+    @Test
+    public void testRemoveTfsNotActiveOrBackupReleasesInstead() throws Exception {
+        keeperContainerService.setRedisKeeperServers(new HashMap<>(Collections.singletonMap(someReplId.toString(), redisKeeperServer)));
+        when(redisKeeperServer.isTfsMode()).thenReturn(true);
+        RedisKeeperServerState state = mock(RedisKeeperServerState.class);
+        when(state.keeperState()).thenReturn(KeeperState.PREPARE);
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(state);
+
+        keeperContainerService.remove(someReplId);
+
+        verify(redisKeeperServer, times(1)).release();
+        verify(redisKeeperServer, never()).destroy();
+    }
+
+    @Test
+    public void testRemoveTfsMetaNotOpenableReleasesInstead() throws Exception {
+        keeperContainerService.setRedisKeeperServers(new HashMap<>(Collections.singletonMap(someReplId.toString(), redisKeeperServer)));
+        when(redisKeeperServer.isTfsMode()).thenReturn(true);
+        RedisKeeperServerState state = mock(RedisKeeperServerState.class);
+        when(state.keeperState()).thenReturn(KeeperState.BACKUP);
+        when(redisKeeperServer.getRedisKeeperServerState()).thenReturn(state);
+        ReplicationStoreManager manager = mock(ReplicationStoreManager.class);
+        doThrow(new java.io.IOException("simulated fenced/EIO")).when(manager).verifyMetaFileOpenable();
+        when(redisKeeperServer.getReplicationStoreManager()).thenReturn(manager);
+
+        keeperContainerService.remove(someReplId);
+
+        verify(redisKeeperServer, times(1)).release();
+        verify(redisKeeperServer, never()).destroy();
     }
 
     @Test

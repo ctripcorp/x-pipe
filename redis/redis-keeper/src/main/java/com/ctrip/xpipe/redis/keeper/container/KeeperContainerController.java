@@ -132,6 +132,13 @@ public class KeeperContainerController extends AbstractController {
         keeperContainerService.remove(ReplId.from(keeperTransMeta.getReplId()));
     }
 
+    @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE + "/release", method = RequestMethod.PUT)
+    public void release(@PathVariable String clusterName, @PathVariable String shardName, @RequestBody KeeperTransMeta keeperTransMeta) {
+
+        logger.info("[release]{},{},{}", clusterName, shardName, keeperTransMeta);
+        keeperContainerService.release(ReplId.from(keeperTransMeta.getReplId()));
+    }
+
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE + "/start", method = RequestMethod.PUT)
     public void start(@PathVariable String clusterName, @PathVariable String shardName, @RequestBody KeeperTransMeta keeperTransMeta) {
 

@@ -64,8 +64,8 @@ public class TestProfile extends AbstractProfile implements ApplicationContextAw
 		return new KeeperStateController() {
 			
 			@Override
-			public void removeKeeper(KeeperTransMeta keeperTransMeta) {
-				logger.info("[removeKeeper][test do nothing]{}", keeperTransMeta);
+			public void removeKeeper(KeeperTransMeta keeperTransMeta, boolean purge) {
+				logger.info("[removeKeeper][test do nothing]{}, purge={}", keeperTransMeta, purge);
 			}
 			
 			@Override

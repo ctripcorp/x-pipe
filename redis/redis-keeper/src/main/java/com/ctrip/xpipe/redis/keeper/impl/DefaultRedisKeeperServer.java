@@ -1271,6 +1271,12 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@Override
+	public void release() throws Exception {
+		this.keepersMonitorManager.remove(this);
+		this.replicationStoreManager.release();
+	}
+
+	@Override
 	public void setRdbDumper(RdbDumper newDumper, boolean force) throws SetRdbDumperException {
 		
 		if(newDumper == null){
@@ -1514,6 +1520,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	}
 
 	@VisibleForTesting
+	@Override
 	public ReplicationStoreManager getReplicationStoreManager() {
 		return replicationStoreManager;
 	}
