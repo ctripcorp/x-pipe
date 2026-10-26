@@ -3,6 +3,8 @@ package com.ctrip.xpipe.redis.keeper.config;
 import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultCommandStore;
 
+import java.util.concurrent.TimeUnit;
+
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP_CROSSREGION;
 
@@ -621,6 +623,30 @@ public class TestKeeperConfig extends AbstractCoreConfig implements KeeperConfig
 
 	public TestKeeperConfig setFsDebugFaultPathContains(String fsDebugFaultPathContains) {
 		this.fsDebugFaultPathContains = fsDebugFaultPathContains;
+		return this;
+	}
+
+	private long orphanStoreMinIdleMilliToGc = TimeUnit.DAYS.toMillis(1);
+
+	@Override
+	public long getOrphanStoreMinIdleMilliToGc() {
+		return orphanStoreMinIdleMilliToGc;
+	}
+
+	public TestKeeperConfig setOrphanStoreMinIdleMilliToGc(long orphanStoreMinIdleMilliToGc) {
+		this.orphanStoreMinIdleMilliToGc = orphanStoreMinIdleMilliToGc;
+		return this;
+	}
+
+	private int orphanStoreGcParallelism = 4;
+
+	@Override
+	public int getOrphanStoreGcParallelism() {
+		return orphanStoreGcParallelism;
+	}
+
+	public TestKeeperConfig setOrphanStoreGcParallelism(int orphanStoreGcParallelism) {
+		this.orphanStoreGcParallelism = orphanStoreGcParallelism;
 		return this;
 	}
 }

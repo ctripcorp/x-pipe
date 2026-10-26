@@ -76,4 +76,41 @@ public interface MetaServerConfig extends CoreConfig {
 		return 5;
 	}
 
+	/** Orphan-store GC round: off by default (opt-in, destructive feature). */
+	default boolean isOrphanGcEnabled() {
+		return false;
+	}
+
+	/**
+	 * Orphan-store GC round: when true (the default), compute and log candidates as usual but never
+	 * actually call the container's delete endpoint. Flip to false only after a dry-run period has
+	 * been reviewed.
+	 */
+	default boolean isOrphanGcDryRun() {
+		return true;
+	}
+
+	/**
+	 * How long a {@code DcMetaCache} load from console may go un-refreshed before the orphan-store GC
+	 * round refuses to trust it for this round (keeper-tfs-m7 §2.2①). Default 2 minutes.
+	 */
+	default long getOrphanGcMetaFreshMilli() {
+		return 120_000L;
+	}
+
+	/** Orphan-store GC round period. Not time-sensitive — default 1 hour. */
+	default long getOrphanGcRoundIntervalMilli() {
+		return 3_600_000L;
+	}
+
+	/**
+	 * Orphan-store GC round: how many {@code tfsFsId} groups may be processed concurrently. Groups are
+	 * independent (different containers, different occupied sets), so this is pure fan-out — kept
+	 * modest by default (4) since it's a background task that should never compete meaningfully with
+	 * normal traffic for container-side resources.
+	 */
+	default int getOrphanGcGroupParallelism() {
+		return 4;
+	}
+
 }

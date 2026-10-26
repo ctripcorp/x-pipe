@@ -10,6 +10,8 @@ import com.ctrip.xpipe.redis.core.config.AbstractCoreConfig;
 import com.ctrip.xpipe.redis.keeper.impl.AbstractRedisMasterReplication;
 import io.netty.util.internal.PlatformDependent;
 
+import java.util.concurrent.TimeUnit;
+
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP;
 import static com.ctrip.xpipe.redis.core.protocal.GapAllowedSync.DEFAULT_XSYNC_MAXGAP_CROSSREGION;
 
@@ -78,6 +80,10 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	public static final String KEY_PREPARE_WATCH_REOPEN_INTERVAL_MILLI = "keeper.prepare.watch.reopen.interval.milli";
 	public static final String KEY_PREPARE_WATCH_CLOSE_HOLD_MILLI = "keeper.prepare.watch.close.hold.milli";
 	public static final String KEY_PUBSUB_PARSE_ENABLED = "keeper.pubsub.parse.enabled";
+
+	public static final String KEY_ORPHAN_STORE_MIN_IDLE_MILLI_TO_GC = "keeper.orphan.store.min.idle.milli.to.gc";
+
+	public static final String KEY_ORPHAN_STORE_GC_PARALLELISM = "keeper.orphan.store.gc.parallelism";
 
 	private static String KEY_REDIS_RATE_LIMITE_MIN = "redis.rate.limit.min";
 	private static String KEY_REDIS_RATE_LIMITE_MAX = "redis.rate.limit.max";
@@ -438,6 +444,16 @@ public class DefaultKeeperConfig extends AbstractCoreConfig implements KeeperCon
 	@Override
 	public String getFsDebugFaultPathContains() {
 		return getProperty(KEY_FS_DEBUG_FAULT_PATH_CONTAINS, "");
+	}
+
+	@Override
+	public long getOrphanStoreMinIdleMilliToGc() {
+		return getLongProperty(KEY_ORPHAN_STORE_MIN_IDLE_MILLI_TO_GC, TimeUnit.DAYS.toMillis(1));
+	}
+
+	@Override
+	public int getOrphanStoreGcParallelism() {
+		return getIntProperty(KEY_ORPHAN_STORE_GC_PARALLELISM, 4);
 	}
 
 	static long defaultAsyncTailCacheMaxSizeBytes() {

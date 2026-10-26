@@ -209,4 +209,22 @@ public interface KeeperConfig extends CoreConfig{
 	String getFsDebugFaultOps();
 
 	String getFsDebugFaultPathContains();
+
+	/**
+	 * Orphan-store GC fallback (metaserver-triggered, see {@code gcOrphanStore}): a candidate's
+	 * {@code store_manager_meta.properties} must not have been modified within this long, or it is
+	 * left alone this round. A live manager keeps refreshing this file's mtime (periodic meta flush),
+	 * so "too fresh" is the local, file-system-truth signal that someone might still be using it —
+	 * independent of whatever the metaserver's meta-based candidate list says. Default 1 day.
+	 */
+	long getOrphanStoreMinIdleMilliToGc();
+
+	/**
+	 * Orphan-store GC fallback: how many replIds within one {@code gcOrphanStores} batch may run
+	 * concurrently. Each replId's safety checks and file ops are already fully independent of every
+	 * other's; this only lets their IO waits overlap instead of serializing a batch that can have
+	 * dozens to low hundreds of entries. Kept modest by default (4) — this is a background task that
+	 * should never meaningfully compete with normal replication traffic for TFS IOPS.
+	 */
+	int getOrphanStoreGcParallelism();
 }
