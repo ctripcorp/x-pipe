@@ -1,7 +1,9 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.session;
 
+import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.endpoint.HostPort;
+import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStateCache;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelector;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
@@ -19,12 +21,18 @@ import java.util.Set;
  * exactly the Keepers that get a health-check instance -- including same-region non-TFS Keepers,
  * and regardless of {@code keeper.delay.check.enabled}, which never takes part in instance,
  * session or capability-cache lifecycle.
+ *
+ * Recycling a session also drops the Keeper's entry in {@link KeeperStateCache}: entries are only
+ * written through this Keeper's session, so the session's lifetime bounds the entry's.
  */
 @Component
 public class DefaultKeeperSessionManager extends AbstractInstanceSessionManager implements KeeperSessionManager {
 
     @Autowired
     private KeeperCheckSelector keeperSelector;
+
+    @Autowired
+    private KeeperStateCache keeperStateCache;
 
     @Override
     public RedisSession findOrCreateSession(HostPort hostPort) {
@@ -56,9 +64,22 @@ public class DefaultKeeperSessionManager extends AbstractInstanceSessionManager 
         return keepersInUse;
     }
 
+    @Override
+    protected void onSessionRecycled(Endpoint endpoint) {
+        if (keeperStateCache != null) {
+            keeperStateCache.remove(new HostPort(endpoint.getHost(), endpoint.getPort()));
+        }
+    }
+
     @VisibleForTesting
     public DefaultKeeperSessionManager setKeeperSelector(KeeperCheckSelector keeperSelector) {
         this.keeperSelector = keeperSelector;
+        return this;
+    }
+
+    @VisibleForTesting
+    public DefaultKeeperSessionManager setKeeperStateCache(KeeperStateCache keeperStateCache) {
+        this.keeperStateCache = keeperStateCache;
         return this;
     }
 }

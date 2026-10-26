@@ -34,6 +34,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.interaction.processor.r
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperDelayActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperDelayCheckAcceptanceTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperMetricDelayListenerTest;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperstate.KeeperStateActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionContextTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionTest;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRuleTest;
@@ -153,6 +154,7 @@ import org.junit.runners.Suite;
         KeeperDelayActionTest.class,
         KeeperDelayCheckAcceptanceTest.class,
         KeeperMetricDelayListenerTest.class,
+        KeeperStateActionTest.class,
         MetricDelayListenerTest.class,
         CRDTDelayActionControllerTest.class,
         CurrentDcSentinelHelloCollectorTest.class,

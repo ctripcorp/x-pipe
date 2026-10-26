@@ -108,6 +108,31 @@ public class DefaultConsoleConfigTest extends AbstractConsoleTest {
         Assert.assertEquals(checkConfigBean.isKeeperDelayCheckEnabled(), consoleConfig.isKeeperDelayCheckEnabled());
     }
 
+    /** 角色采集开关与延迟开关相互独立，默认关闭。 */
+    @Test
+    public void testKeeperStateCheckEnabled() {
+        Assert.assertFalse(checkConfigBean.isKeeperStateCheckEnabled());
+        Assert.assertEquals(checkConfigBean.isKeeperStateCheckEnabled(), consoleConfig.isKeeperStateCheckEnabled());
+
+        properties.put(CheckConfigBean.KEY_KEEPER_STATE_CHECK_ENABLED, "true");
+        Assert.assertTrue(checkConfigBean.isKeeperStateCheckEnabled());
+        Assert.assertEquals(checkConfigBean.isKeeperStateCheckEnabled(), consoleConfig.isKeeperStateCheckEnabled());
+        Assert.assertFalse("不得联动延迟开关", checkConfigBean.isKeeperDelayCheckEnabled());
+
+        properties.put(CheckConfigBean.KEY_KEEPER_STATE_CHECK_ENABLED, "false");
+        Assert.assertFalse(checkConfigBean.isKeeperStateCheckEnabled());
+    }
+
+    @Test
+    public void testKeeperStateCheckInterval() {
+        Assert.assertEquals(5000, checkConfigBean.getKeeperStateCheckIntervalMilli());
+        Assert.assertEquals(5000, consoleConfig.getKeeperStateCheckIntervalMilli());
+
+        properties.put(CheckConfigBean.KEY_KEEPER_STATE_CHECK_INTERVAL_MILLI, "3000");
+        Assert.assertEquals(3000, checkConfigBean.getKeeperStateCheckIntervalMilli());
+        Assert.assertEquals(3000, consoleConfig.getKeeperStateCheckIntervalMilli());
+    }
+
     @Test
     public void testKeeperCapabilityRefreshInterval() {
         Assert.assertEquals(60000, consoleConfig.getKeeperCapabilityRefreshIntervalMilli());

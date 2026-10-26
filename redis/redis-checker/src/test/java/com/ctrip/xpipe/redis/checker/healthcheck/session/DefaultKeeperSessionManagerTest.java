@@ -9,12 +9,10 @@ import com.ctrip.xpipe.netty.commands.NettyClient;
 import com.ctrip.xpipe.pool.XpipeNettyClientKeyedObjectPool;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
+import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStateCache;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelector;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
@@ -137,6 +135,35 @@ public class DefaultKeeperSessionManagerTest {
         keeperSessionManager.removeUnusedInstances();
 
         Assert.assertEquals(hostPorts(LOCAL_KEEPER_1, SAME_REGION_KEEPER), sessionAddresses(keeperSessionManager));
+    }
+
+    /** 回收 session 时一并删掉该 Keeper 的角色缓存；仍在用的 Keeper 条目保留。 */
+    @Test
+    public void recyclingSessionEvictsKeeperState() {
+        KeeperStateCache keeperStateCache = new KeeperStateCache(checkerConfig);
+        keeperSessionManager.setKeeperStateCache(keeperStateCache);
+        createKeeperSessions(LOCAL_KEEPER_1, CROSS_REGION_KEEPER);
+        keeperStateCache.update(LOCAL_KEEPER_1, KeeperState.ACTIVE);
+        keeperStateCache.update(CROSS_REGION_KEEPER, KeeperState.ACTIVE);
+
+        keeperSessionManager.removeUnusedInstances();
+
+        Assert.assertEquals(KeeperState.ACTIVE, keeperStateCache.getState(LOCAL_KEEPER_1));
+        Assert.assertNull("已回收 Keeper 的条目必须删除", keeperStateCache.getState(CROSS_REGION_KEEPER));
+    }
+
+    /** meta 不可用时不回收 session，也不得删角色缓存。 */
+    @Test
+    public void metaUnavailableKeepsKeeperState() {
+        KeeperStateCache keeperStateCache = new KeeperStateCache(checkerConfig);
+        keeperSessionManager.setKeeperStateCache(keeperStateCache);
+        createKeeperSessions(CROSS_REGION_KEEPER);
+        keeperStateCache.update(CROSS_REGION_KEEPER, KeeperState.BACKUP);
+        Mockito.when(metaCache.getXpipeMeta()).thenReturn(null);
+
+        keeperSessionManager.removeUnusedInstances();
+
+        Assert.assertEquals(KeeperState.BACKUP, keeperStateCache.getState(CROSS_REGION_KEEPER));
     }
 
     @Test

@@ -11,8 +11,8 @@ import com.ctrip.xpipe.redis.checker.RelationsService;
 import com.ctrip.xpipe.redis.checker.cluster.GroupCheckerLeaderElector;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.*;
-import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.inforeplid.InfoReplIdActionFactory;
+import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingActionFactory;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.redisconf.RedisCheckRule;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.CompositeHealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.config.DefaultHealthCheckConfig;
@@ -21,13 +21,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.leader.SiteLeaderAwareHealthChe
 import com.ctrip.xpipe.redis.checker.healthcheck.session.KeeperSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.util.ClusterTypeSupporterSeparator;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperContainerMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisCheckRuleMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.keeper.KeeperDiskTypeUtils;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.StringUtil;
@@ -61,6 +55,9 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     private RedisSessionManager redisSessionManager;
 
     private KeeperSessionManager keeperSessionManager;
+
+    @VisibleForTesting
+    public static final int KEEPER_ACTION_FACTORY_COUNT = 2;
 
     private List<KeeperHealthCheckActionFactory<?>> keeperHealthCheckActionFactories = Collections.emptyList();
 
@@ -175,19 +172,23 @@ public class DefaultHealthCheckInstanceFactory implements HealthCheckInstanceFac
     private void initActionsForKeeper(DefaultKeeperHealthCheckInstance instance) {
         List<KeeperHealthCheckActionFactory<?>> supportedFactories = keeperHealthCheckActionFactories.stream()
                 .filter(factory -> factory.supportInstnace(instance))
-                .collect(java.util.stream.Collectors.toList());
-        if (supportedFactories.size() != 1) {
-            throw new IllegalStateException("Keeper instance must have exactly one delay action factory, actual: "
-                    + supportedFactories.size());
+                .toList();
+        // Keeper 只挂两个 action：延迟（KeeperDelayAction）与角色采集（KeeperStateAction）
+        if (supportedFactories.size() != KEEPER_ACTION_FACTORY_COUNT) {
+            throw new IllegalStateException("Keeper instance must have exactly " + KEEPER_ACTION_FACTORY_COUNT
+                    + " action factories, actual: " + supportedFactories.size());
         }
 
-        KeeperHealthCheckActionFactory<?> factory = supportedFactories.get(0);
-        HealthCheckAction action = factory.create(instance);
-        if (action == null) {
-            throw new IllegalStateException("Keeper delay action factory returned null");
+        // 中途失败时已登记的 action 由调用方 create() 的 cleanupKeeperInstance 统一回滚
+        for (KeeperHealthCheckActionFactory<?> factory : supportedFactories) {
+            HealthCheckAction action = factory.create(instance);
+            if (action == null) {
+                throw new IllegalStateException("Keeper action factory returned null: "
+                        + factory.getClass().getSimpleName());
+            }
+            instance.register(action);
+            keeperFactoriesByAction.put(action, factory);
         }
-        instance.register(action);
-        keeperFactoriesByAction.put(action, factory);
     }
 
     private void cleanupKeeperInstance(KeeperHealthCheckInstance instance, boolean rollback) {

@@ -137,6 +137,16 @@ public class DefaultConsoleConfig implements ConsoleConfig, ConfigChangeListener
     }
 
     @Override
+    public boolean isKeeperStateCheckEnabled() {
+        return checkConfigBean.isKeeperStateCheckEnabled();
+    }
+
+    @Override
+    public int getKeeperStateCheckIntervalMilli() {
+        return checkConfigBean.getKeeperStateCheckIntervalMilli();
+    }
+
+    @Override
     public int getKeeperCapabilityRefreshIntervalMilli() {
         return checkConfigBean.getKeeperCapabilityRefreshIntervalMilli();
     }

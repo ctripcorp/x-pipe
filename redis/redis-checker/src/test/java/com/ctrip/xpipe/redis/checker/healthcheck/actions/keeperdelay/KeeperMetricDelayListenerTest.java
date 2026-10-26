@@ -7,6 +7,7 @@ import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStateCache;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
@@ -39,6 +40,7 @@ public class KeeperMetricDelayListenerTest {
     @Mock private FoundationService foundationService;
     @Mock private MetaCache metaCache;
     @Mock private MetricProxy proxy;
+    @Mock private KeeperStateCache keeperStateCache;
 
     private KeeperMetricDelayListener listener;
     private DefaultKeeperHealthCheckInstance instance;
@@ -53,6 +55,7 @@ public class KeeperMetricDelayListenerTest {
         ReflectionTestUtils.setField(listener, "foundationService", foundationService);
         ReflectionTestUtils.setField(listener, "metaCache", metaCache);
         ReflectionTestUtils.setField(listener, "proxy", proxy);
+        ReflectionTestUtils.setField(listener, "keeperStateCache", keeperStateCache);
 
         when(foundationService.getDataCenter()).thenReturn(CURRENT_DC);
         when(metaCache.isCrossRegion(ACTIVE_DC, KEEPER_DC)).thenReturn(true);
@@ -86,20 +89,24 @@ public class KeeperMetricDelayListenerTest {
         verify(metaCache).isCrossRegion(ACTIVE_DC, KEEPER_DC);
     }
 
-    /** role 来自 INFO replication 采到的实时状态；未采到时打 unknown 而非漏 tag。 */
+    /** role 取打点时刻 KeeperStateCache 中的状态；未采到或过期时打 unknown 而非漏 tag。 */
     @Test
-    public void testRoleTagFollowsKeeperState() {
-        listener.onAction(context(1000L, KeeperState.ACTIVE));
+    public void testRoleTagFollowsKeeperStateCache() {
+        when(keeperStateCache.getState(KEEPER)).thenReturn(KeeperState.ACTIVE);
+        listener.onAction(context(1000L));
         Assert.assertEquals("active", capturedPoint.get().getTags().get("role"));
 
-        listener.onAction(context(1000L, KeeperState.BACKUP));
+        when(keeperStateCache.getState(KEEPER)).thenReturn(KeeperState.BACKUP);
+        listener.onAction(context(1000L));
         Assert.assertEquals("backup", capturedPoint.get().getTags().get("role"));
 
         // PREPARE 等过渡态既非 active 也非 backup，原样打出
-        listener.onAction(context(1000L, KeeperState.PREPARE));
+        when(keeperStateCache.getState(KEEPER)).thenReturn(KeeperState.PREPARE);
+        listener.onAction(context(1000L));
         Assert.assertEquals("prepare", capturedPoint.get().getTags().get("role"));
 
-        listener.onAction(context(1000L, null));
+        when(keeperStateCache.getState(KEEPER)).thenReturn(null);
+        listener.onAction(context(1000L));
         Assert.assertEquals("unknown", capturedPoint.get().getTags().get("role"));
     }
 
@@ -143,11 +150,7 @@ public class KeeperMetricDelayListenerTest {
     }
 
     private KeeperDelayActionContext context(long delayNanos) {
-        return context(delayNanos, null);
-    }
-
-    private KeeperDelayActionContext context(long delayNanos, KeeperState keeperState) {
-        KeeperDelayActionContext context = new KeeperDelayActionContext(instance, delayNanos, keeperState);
+        KeeperDelayActionContext context = new KeeperDelayActionContext(instance, delayNanos);
         ReflectionTestUtils.setField(context, "recvTimeMilli", RECV_TIME_MILLI);
         return context;
     }

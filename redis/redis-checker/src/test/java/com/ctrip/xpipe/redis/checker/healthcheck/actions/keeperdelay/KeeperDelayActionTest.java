@@ -13,7 +13,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.capability.KeeperCapabilityCach
 import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperInstanceInfo;
-import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStateCache;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import org.junit.After;
 import org.junit.Assert;
@@ -49,7 +48,6 @@ public class KeeperDelayActionTest {
     @Mock private CheckerConfig checkerConfig;
     @Mock private FoundationService foundationService;
     @Mock private KeeperCapabilityCache capabilityCache;
-    @Mock private KeeperStateCache keeperStateCache;
     @Mock private ScheduledExecutorService scheduled;
     @Mock private ScheduledFuture<Object> scheduledFuture;
     @Mock private ExecutorService executors;
@@ -85,7 +83,7 @@ public class KeeperDelayActionTest {
         when(listener.supportInstance(instance)).thenReturn(true);
 
         action = new KeeperDelayAction(scheduled, instance, executors, foundationService,
-                checkerConfig, capabilityCache, keeperStateCache);
+                checkerConfig, capabilityCache);
         action.addListener(listener);
         action.initialize();
         action.start();

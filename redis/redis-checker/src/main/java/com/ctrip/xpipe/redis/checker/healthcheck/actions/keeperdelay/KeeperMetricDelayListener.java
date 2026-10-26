@@ -6,6 +6,7 @@ import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStateCache;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.utils.ServicesUtil;
@@ -35,6 +36,9 @@ public class KeeperMetricDelayListener implements KeeperDelayActionListener {
     @Autowired
     private MetaCache metaCache;
 
+    @Autowired
+    private KeeperStateCache keeperStateCache;
+
     private MetricProxy proxy = ServicesUtil.getMetricProxy();
 
     private MetricData getPoint(KeeperDelayActionContext context) {
@@ -50,12 +54,14 @@ public class KeeperMetricDelayListener implements KeeperDelayActionListener {
         data.addTag("crossDc", String.valueOf(
                 !foundationService.getDataCenter().equalsIgnoreCase(info.getDcId())));
         data.addTag("crossRegion", String.valueOf(metaCache.isCrossRegion(info.getActiveDc(), info.getDcId())));
-        data.addTag("role", role(context.getKeeperState()));
+        data.addTag("role", role(keeperStateCache.getState(info.getHostPort())));
         return data;
     }
 
     /**
-     * ACTIVE / BACKUP 之外还有 PREPARE、PRE_ACTIVE 等过渡态，它们既非 active 也非 backup，
+     * 取打点时刻 {@link KeeperStateCache} 中的角色，未采到或已过期打 unknown。
+     *
+     * <p>ACTIVE / BACKUP 之外还有 PREPARE、PRE_ACTIVE 等过渡态，它们既非 active 也非 backup，
      * 原样打出比归到两者任一更忠实。
      */
     private String role(KeeperState state) {

@@ -196,8 +196,8 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     /**
-     * 把容器 KeeperContainer 的实时 IP 就地写入 {@link KeeperContainerMeta#setIp}，使下发给 Checker /
-     * MetaServer 的 Meta 自带可直连地址，消费方不必各自反查 ZK。
+     * 把容器 KeeperContainer 的实时 IP 就地写入 {@link KeeperContainerMeta#setIp}，使下发给 Checker
+     * 的 Meta 自带可直连地址，Checker 不必各自反查 ZK。
      *
      * <p>就地改写是安全的：每轮 {@code loadCache} 都从 DB 重建 DcMeta，这里拿到的对象还未发布。
      *
@@ -349,7 +349,7 @@ public abstract class AbstractMetaCache implements MetaCache {
     }
 
     /**
-     * 分片 Meta 只按 cluster 分片：KeeperContainer 与 route / metaServer / sentinel 一样整份携带。
+     * 分片 Meta 只按 cluster 分片：KeeperContainer 与 route / sentinel 等 dc 级配置一样整份携带。
      * Checker 的 TFS 判定是 {@code KeeperMeta.keeperContainerId} → 同 DcMeta 的 KeeperContainer 点查，
      * 缺少 container 只会静默退化，不能按 part 过滤（spec keeper-tfs-m5 D47）。
      */
