@@ -93,12 +93,4 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	 */
 	void closeReadOnlyMetaHandle();
 
-	/**
-	 * Open (read-only, no mkdir/create) the manager meta file as a liveness probe, with no effect on
-	 * the cached meta or {@code latest.store.dir} — unlike {@link #reloadLatestStoreDir()}, which is
-	 * PrepareStoreWatcher's D48 protocol only. Throws if the file can't be opened (fenced/EIO on a
-	 * TFS lease collapses here, same as a permanently-destroyed or stopped manager).
-	 */
-	void verifyMetaFileOpenable() throws IOException;
-
 }

@@ -759,41 +759,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         return meta.getProperty(LATEST_STORE_DIR);
     }
 
-    @Override
-    public synchronized void verifyMetaFileOpenable() throws IOException {
-        if (managerMetaDestroyed) {
-            throw new IOException("replication store manager destroyed, refuse manager meta: " + this);
-        }
-        if (getLifecycleState().isStopping() || getLifecycleState().isPositivelyStopped()) {
-            throw new IOException("replication store manager stopped, refuse manager meta: " + this);
-        }
-        if (managerMetaAsyncFile != null) {
-            // The handle object being non-null doesn't prove the FS link is still healthy — a fenced
-            // TFS lease only surfaces as EIO when actually used. Write the current content back
-            // through the existing handle directly (not saveMeta: same content, no cache touch, no
-            // extra logging) — a real I/O round-trip instead of just trusting the cached reference.
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            currentMeta().store(out, null);
-            AsyncFileSystemHelper.writeAllBytes(asyncFileSystem, managerMetaAsyncFile, out.toByteArray(),
-                    "verify manager meta openable " + metaFile.getAbsolutePath());
-            return;
-        }
-        // Never create anything: confirm the file is actually there first (exists() only stats).
-        if (!AsyncFileSystemHelper.await(() -> asyncFileSystem.exists(metaFile.getAbsolutePath()),
-                "check manager meta exists " + metaFile.getAbsolutePath())) {
-            throw new IOException("manager meta file missing: " + metaFile.getAbsolutePath());
-        }
-        // File exists and we don't hold it yet: write-open probes whether some other client already
-        // holds it. CREATE is a no-op since the file is confirmed present. A live writer elsewhere
-        // (another client/container on the shared TFS store) surfaces as EBUSY/EIO here; our own
-        // in-process writerOpen guard can't false-positive since managerMetaAsyncFile == null.
-        AsyncFile probe = AsyncFileSystemHelper.awaitOpen(asyncFileSystem,
-                () -> asyncFileSystem.open(metaFile.getAbsolutePath(), AbstractStorageFile.OpenMode.READ_WRITE,
-                        AbstractStorageFile.ReplaceMode.ATOMIC, true, replId.toString()),
-                "verify manager meta openable " + metaFile.getAbsolutePath());
-        AsyncFileSystemHelper.closeHandle(asyncFileSystem, probe, replId, "close manager meta verify probe " + metaFile.getAbsolutePath());
-    }
-
     private void checkNotReadOnly() {
         if (readOnly) {
             throw new IllegalStateException(READ_ONLY_STORE_MSG);
