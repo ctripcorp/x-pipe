@@ -7,6 +7,8 @@ import com.ctrip.xpipe.metric.MetricData;
 import com.ctrip.xpipe.metric.MetricProxy;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStateCache;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
@@ -38,6 +40,7 @@ public class KeeperMetricDelayListenerTest {
     @Mock private FoundationService foundationService;
     @Mock private MetaCache metaCache;
     @Mock private MetricProxy proxy;
+    @Mock private KeeperStateCache keeperStateCache;
 
     private KeeperMetricDelayListener listener;
     private DefaultKeeperHealthCheckInstance instance;
@@ -52,6 +55,7 @@ public class KeeperMetricDelayListenerTest {
         ReflectionTestUtils.setField(listener, "foundationService", foundationService);
         ReflectionTestUtils.setField(listener, "metaCache", metaCache);
         ReflectionTestUtils.setField(listener, "proxy", proxy);
+        ReflectionTestUtils.setField(listener, "keeperStateCache", keeperStateCache);
 
         when(foundationService.getDataCenter()).thenReturn(CURRENT_DC);
         when(metaCache.isCrossRegion(ACTIVE_DC, KEEPER_DC)).thenReturn(true);
@@ -74,7 +78,7 @@ public class KeeperMetricDelayListenerTest {
         Assert.assertEquals(KEEPER, point.getHostPort());
         Assert.assertEquals(1234.567, point.getValue(), 0.0);
         Assert.assertEquals(RECV_TIME_MILLI, point.getTimestampMilli());
-        Assert.assertEquals(new HashSet<>(Arrays.asList("type", "isNew", "crossDc", "crossRegion")),
+        Assert.assertEquals(new HashSet<>(Arrays.asList("type", "isNew", "crossDc", "crossRegion", "role")),
                 point.getTags().keySet());
         Assert.assertEquals("keeper", point.getTags().get("type"));
         Assert.assertEquals("0", point.getTags().get("isNew"));
@@ -83,6 +87,27 @@ public class KeeperMetricDelayListenerTest {
         Assert.assertNull(point.getTags().get("state"));
         Assert.assertNull(point.getTags().get("srcShardId"));
         verify(metaCache).isCrossRegion(ACTIVE_DC, KEEPER_DC);
+    }
+
+    /** role 取打点时刻 KeeperStateCache 中的状态；未采到或过期时打 unknown 而非漏 tag。 */
+    @Test
+    public void testRoleTagFollowsKeeperStateCache() {
+        when(keeperStateCache.getState(KEEPER)).thenReturn(KeeperState.ACTIVE);
+        listener.onAction(context(1000L));
+        Assert.assertEquals("active", capturedPoint.get().getTags().get("role"));
+
+        when(keeperStateCache.getState(KEEPER)).thenReturn(KeeperState.BACKUP);
+        listener.onAction(context(1000L));
+        Assert.assertEquals("backup", capturedPoint.get().getTags().get("role"));
+
+        // PREPARE 等过渡态既非 active 也非 backup，原样打出
+        when(keeperStateCache.getState(KEEPER)).thenReturn(KeeperState.PREPARE);
+        listener.onAction(context(1000L));
+        Assert.assertEquals("prepare", capturedPoint.get().getTags().get("role"));
+
+        when(keeperStateCache.getState(KEEPER)).thenReturn(null);
+        listener.onAction(context(1000L));
+        Assert.assertEquals("unknown", capturedPoint.get().getTags().get("role"));
     }
 
     @Test
@@ -97,7 +122,7 @@ public class KeeperMetricDelayListenerTest {
     }
 
     @Test
-    public void testSampleLostUsesSameUnitConversion() {
+    public void testLargeDelayUsesSameUnitConversion() {
         listener.onAction(context(TimeUnit.MILLISECONDS.toNanos(99_999L)));
 
         Assert.assertEquals(99_999_000.0, capturedPoint.get().getValue(), 0.0);

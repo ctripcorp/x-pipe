@@ -35,10 +35,16 @@ import com.ctrip.xpipe.redis.console.service.*;
 import com.ctrip.xpipe.redis.console.service.impl.*;
 import com.ctrip.xpipe.redis.console.sso.UserAccessFilter;
 import com.ctrip.xpipe.redis.console.util.DefaultMetaServerConsoleServiceManagerWrapper;
+import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
+import com.ctrip.xpipe.redis.core.keeper.container.DefaultCurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.route.RouteChooseStrategyFactory;
 import com.ctrip.xpipe.redis.core.route.impl.DefaultRouteChooseStrategyFactory;
 import com.ctrip.xpipe.spring.AbstractProfile;
+import com.ctrip.xpipe.zk.ZkClient;
+import com.ctrip.xpipe.zk.impl.DefaultZkClient;
+import com.ctrip.xpipe.zk.impl.DefaultZkConfig;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.*;
 
@@ -58,9 +64,36 @@ import org.springframework.context.annotation.*;
 @ConsoleServerMode(ConsoleServerModeCondition.SERVER_MODE.CONSOLE)
 public class ConsoleContextConfig implements XPipeMvcRegistrations {
 
+	public static final String KEEPER_CONTAINER_ZK_CLIENT = "keeperContainerZkClient";
+
 	@Bean
 	public DefaultMetaServerConsoleServiceManagerWrapper getMetaServerConsoleServiceManagerWraper(ConsoleConfig config) {
 		return new DefaultMetaServerConsoleServiceManagerWrapper(config);
+	}
+
+	/**
+	 * keepercontainer 地址反查只服务 Console 系模式：CONSOLE_CHECKER 经继承获得本 Bean，
+	 * CHECKER 模式的 {@code CheckerContextConfig} 不继承本类，天然不装配、不连该 ZK。
+	 */
+	@Bean(KEEPER_CONTAINER_ZK_CLIENT)
+	@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
+	public ZkClient keeperContainerZkClient(ConsoleConfig consoleConfig) {
+		DefaultZkConfig zkConfig = new DefaultZkConfig(consoleConfig.getZkConnectionString());
+		zkConfig.setZkNameSpace(consoleConfig.getKeeperContainerZkNameSpace());
+		ZkClient zkClient = new DefaultZkClient(zkConfig);
+		consoleConfig.addListener(zkClient);
+		return zkClient;
+	}
+
+	/** 同上：仅 Console 系模式装配；Checker 不再 watch ZK 反查容器 Keeper IP。 */
+	@Bean
+	@Profile(AbstractProfile.PROFILE_NAME_PRODUCTION)
+	public CurrentDcKeeperContainerAddressService keeperContainerAddressService(
+			ConsoleConfig consoleConfig,
+			@Qualifier(KEEPER_CONTAINER_ZK_CLIENT) ZkClient zkClient) {
+		return new DefaultCurrentDcKeeperContainerAddressService(zkClient,
+				consoleConfig::getKeeperContainerAddressMaxRemovedPercent,
+				consoleConfig::getKeeperContainerAddressMinRemovedHostnames);
 	}
 
 	@Bean

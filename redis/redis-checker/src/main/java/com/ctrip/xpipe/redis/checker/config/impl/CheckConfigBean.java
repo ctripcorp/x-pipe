@@ -35,6 +35,8 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public static final String KEY_KEEPER_DELAY_CHECK_ENABLED = "keeper.delay.check.enabled";
 
+    public static final String KEY_KEEPER_STATE_CHECK_ENABLED = "keeper.state.check.enabled";
+
     public static final String KEY_KEEPER_CAPABILITY_REFRESH_INTERVAL_MILLI = "keeper.capability.refresh.interval.milli";
 
     public static final String KEY_REDIS_REPL_DISKLESS_MINIMUM_VERSION = "redis.repl.diskless.minimum.version";
@@ -175,6 +177,10 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public boolean isKeeperDelayCheckEnabled() {
         return getBooleanProperty(KEY_KEEPER_DELAY_CHECK_ENABLED, false);
+    }
+
+    public boolean isKeeperStateCheckEnabled() {
+        return getBooleanProperty(KEY_KEEPER_STATE_CHECK_ENABLED, false);
     }
 
     public int getKeeperCapabilityRefreshIntervalMilli() {

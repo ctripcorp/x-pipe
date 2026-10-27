@@ -55,13 +55,17 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
 
     private TestKeeperActionFactory keeperActionFactory;
 
+    /** 生产上 Keeper 固定挂两个 action，测试里用一个正常 factory 凑齐数量。 */
+    private TestKeeperActionFactory companionFactory;
+
     @Before
     public void beforeDefaultHealthCheckRedisInstanceFactoryTest() {
         oldMetaCache = endpointFactory.getMetaCache();
         metaCache = mock(MetaCache.class);
         endpointFactory.setMetaCache(metaCache);
         keeperActionFactory = new TestKeeperActionFactory(false);
-        factory.setKeeperHealthCheckActionFactories(Collections.singletonList(keeperActionFactory));
+        companionFactory = new TestKeeperActionFactory(false);
+        factory.setKeeperHealthCheckActionFactories(Arrays.asList(keeperActionFactory, companionFactory));
     }
 
     @After
@@ -103,8 +107,8 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
         Assert.assertNotNull(first.getHealthCheckConfig());
         Assert.assertTrue(first.isTfs());
         Assert.assertFalse(second.isTfs());
-        Assert.assertEquals(1, first.getHealthCheckActions().size());
-        Assert.assertEquals(1, second.getHealthCheckActions().size());
+        Assert.assertEquals(2, first.getHealthCheckActions().size());
+        Assert.assertEquals(2, second.getHealthCheckActions().size());
         Assert.assertTrue(first.getLifecycleState().isStarted());
         Assert.assertTrue(second.getLifecycleState().isStarted());
         TestKeeperAction firstAction = (TestKeeperAction) first.getHealthCheckActions().get(0);
@@ -153,7 +157,7 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
     @Test
     public void testKeeperCreateFailureRollsBack() {
         TestKeeperActionFactory failingFactory = new TestKeeperActionFactory(true);
-        factory.setKeeperHealthCheckActionFactories(Collections.singletonList(failingFactory));
+        factory.setKeeperHealthCheckActionFactories(Arrays.asList(companionFactory, failingFactory));
 
         try {
             factory.create(normalKeeperMeta());
@@ -165,6 +169,8 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
         Assert.assertEquals(1, failingFactory.actions.size());
         TestKeeperAction action = failingFactory.actions.get(0);
         KeeperHealthCheckInstance instance = action.getActionInstance();
+        // 另一个已创建的 action 也要一起回滚
+        Assert.assertTrue(companionFactory.actions.get(0).destroyed);
         Assert.assertTrue(action.destroyed);
         Assert.assertFalse(action.resourceAllocated);
         Assert.assertTrue(action.disposed);
@@ -178,7 +184,7 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
     @Test
     public void testKeeperInitializeFailureUsesFactoryDestroy() {
         TestKeeperActionFactory failingFactory = new TestKeeperActionFactory(true, false, false);
-        factory.setKeeperHealthCheckActionFactories(Collections.singletonList(failingFactory));
+        factory.setKeeperHealthCheckActionFactories(Arrays.asList(companionFactory, failingFactory));
 
         try {
             factory.create(normalKeeperMeta());
@@ -189,6 +195,7 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
 
         TestKeeperAction action = failingFactory.actions.get(0);
         KeeperHealthCheckInstance instance = action.getActionInstance();
+        Assert.assertTrue(companionFactory.actions.get(0).destroyed);
         Assert.assertTrue(action.destroyed);
         Assert.assertFalse(action.resourceAllocated);
         Assert.assertTrue(instance.getHealthCheckActions().isEmpty());
@@ -199,7 +206,8 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
     @Test
     public void testKeeperRemoveFailureRetainsCleanupOwnership() {
         TestKeeperActionFactory failingFactory = new TestKeeperActionFactory(false, false, true);
-        factory.setKeeperHealthCheckActionFactories(Collections.singletonList(failingFactory));
+        // 失败的排在前面：清理在第一个 action 处中断，两个 action 都应保持登记
+        factory.setKeeperHealthCheckActionFactories(Arrays.asList(failingFactory, companionFactory));
         KeeperHealthCheckInstance instance = factory.create(normalKeeperMeta());
         TestKeeperAction action = failingFactory.actions.get(0);
 
@@ -211,6 +219,7 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
         }
 
         Assert.assertSame(action, instance.getHealthCheckActions().get(0));
+        Assert.assertEquals(2, instance.getHealthCheckActions().size());
         Assert.assertNotNull(instance.getEndpoint());
         Assert.assertNotNull(instance.getRedisSession());
         Assert.assertTrue(action.getLifecycleState().isStarted());
@@ -222,6 +231,26 @@ public class DefaultHealthCheckInstanceFactoryTest extends AbstractCheckerIntegr
         Assert.assertTrue(instance.getHealthCheckActions().isEmpty());
         Assert.assertNull(instance.getEndpoint());
         Assert.assertNull(instance.getRedisSession());
+    }
+
+    /** Keeper factory 必须恰好两个：少装或多装都在建实例时失败，且不留下半成品。 */
+    @Test
+    public void testKeeperFactoryCountMustBeExactlyTwo() {
+        Assert.assertEquals(2, DefaultHealthCheckInstanceFactory.KEEPER_ACTION_FACTORY_COUNT);
+        for (List<KeeperHealthCheckActionFactory<?>> factories : Arrays.<List<KeeperHealthCheckActionFactory<?>>>asList(
+                Collections.singletonList(keeperActionFactory),
+                Arrays.asList(keeperActionFactory, companionFactory, new TestKeeperActionFactory(false)))) {
+            factory.setKeeperHealthCheckActionFactories(factories);
+            try {
+                factory.create(normalKeeperMeta());
+                Assert.fail("Keeper create should fail with " + factories.size() + " factories");
+            } catch (IllegalStateException expected) {
+                Assert.assertNotNull(expected.getCause());
+                Assert.assertTrue(expected.getCause().getMessage().contains("exactly 2"));
+            }
+        }
+        Assert.assertTrue("数量不符时不得创建任何 action", keeperActionFactory.actions.isEmpty());
+        Assert.assertTrue(companionFactory.actions.isEmpty());
     }
 
     @Test

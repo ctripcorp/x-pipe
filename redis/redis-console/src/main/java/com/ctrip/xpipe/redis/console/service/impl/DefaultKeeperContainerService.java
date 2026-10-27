@@ -115,10 +115,15 @@ public class DefaultKeeperContainerService extends AbstractService implements Ke
                 HttpMethod.POST, requestEntity, Void.class);
     }
 
+    /**
+     * {@code /keepers/rdb/release} 与 {@code /keepers/election/reset} 同属 KeeperContainer 的管理面，
+     * 固定走 {@link KeeperContainerAddressInfo#KEEPER_CONTAINER_PORT}。入参 {@code port} 是 Keeper
+     * 实例自身的 redis 端口，打到那里只会等到超时 —— 它自引入起就未被使用，故此处忽略。
+     */
     @Override
     public void releaseRdb(String dcName, String ip, String hostname, int port, Long replId) {
-        HostPort address = resolveAddress(dcName, ip, hostname, port);
-        
+        HostPort address = resolveAddress(dcName, ip, hostname, KeeperContainerAddressInfo.KEEPER_CONTAINER_PORT);
+
         KeeperTransMeta keeperInstanceMeta = new KeeperTransMeta();
         keeperInstanceMeta.setReplId(replId);
         

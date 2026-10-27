@@ -18,11 +18,13 @@ import com.ctrip.xpipe.redis.checker.healthcheck.config.HealthCheckConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
+import com.ctrip.xpipe.redis.checker.healthcheck.keeperstate.KeeperStateCache;
 import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelector;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.DefaultKeeperSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.*;
+import com.ctrip.xpipe.redis.core.meta.KeeperState;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.protocal.cmd.AbstractConfigCommand.REDIS_CONFIG_TYPE;
 import org.junit.After;
@@ -40,6 +42,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Mockito.*;
 
@@ -82,6 +85,7 @@ public class KeeperDelayCheckAcceptanceTest {
     private DefaultKeeperHealthCheckInstance instance;
     private KeeperCapabilityCache capabilityCache;
     private KeeperCapabilityRefreshManager refreshManager;
+    private KeeperStateCache keeperStateCache;
     private KeeperDelayAction action;
     private final List<MetricData> points = new ArrayList<>();
 
@@ -111,7 +115,10 @@ public class KeeperDelayCheckAcceptanceTest {
             return null;
         }).when(proxy).writeBinMultiDataPoint(any(MetricData.class));
 
+        when(checkerConfig.getRedisConfCheckIntervalMilli()).thenReturn(5000);
+
         capabilityCache = new KeeperCapabilityCache();
+        keeperStateCache = new KeeperStateCache(checkerConfig);
         refreshManager = newRefreshManager();
         action = newAction(instance);
         refreshManager.start();
@@ -145,11 +152,30 @@ public class KeeperDelayCheckAcceptanceTest {
         Assert.assertEquals("0", point.getTags().get("isNew"));
         Assert.assertNull(point.getTags().get("state"));
         Assert.assertNull(point.getTags().get("srcShardId"));
+        Assert.assertEquals("未采到角色时打 unknown", "unknown", point.getTags().get("role"));
         Assert.assertEquals(TFS_KEEPER, point.getHostPort());
         Assert.assertTrue("delay 必须是正的微秒值", point.getValue() > 0);
         Assert.assertEquals("Keeper 链路不发 publish", 0, session.publishCount);
         Assert.assertEquals("check 周期不得发 CONFIG GET", 1, session.configCount(PREPARE_WATCH));
         Assert.assertEquals(1, session.configCount(PUBSUB_PARSE));
+    }
+
+    /** role 取打点时刻 KeeperStateCache 中的状态，随缓存翻转。 */
+    @Test
+    public void roleTagFollowsKeeperStateCache() {
+        refreshTick();
+        answerCapability(true, true);
+        driveCheck(action);
+
+        keeperStateCache.update(TFS_KEEPER, KeeperState.ACTIVE);
+        session.deliver(Long.toHexString(System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(2)));
+        driveCheck(action);
+        Assert.assertEquals("active", points.get(points.size() - 1).getTags().get("role"));
+
+        keeperStateCache.update(TFS_KEEPER, KeeperState.BACKUP);
+        session.deliver(Long.toHexString(System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(2)));
+        driveCheck(action);
+        Assert.assertEquals("backup", points.get(points.size() - 1).getTags().get("role"));
     }
 
     @Test
@@ -169,19 +195,40 @@ public class KeeperDelayCheckAcceptanceTest {
         Assert.assertTrue(action.getLifecycleState().isStarted());
     }
 
+    /**
+     * 从未收到样本时超时不打点；收到过之后 Keeper 失联，延迟按「当前时间 - 上一个样本到达时间」
+     * 节节攀升，而非 SAMPLE_LOST。
+     */
+    @SuppressWarnings("unchecked")
     @Test
-    public void lostSampleReportsRedisContractValueAsKeeperPoint() {
+    public void expiredSampleReportsGrowingElapsedDelay() {
         when(healthCheckConfig.getDelayConfig(anyString(), anyString(), anyString())).thenReturn(delayConfig(-1001));
         refreshTick();
         answerCapability(true, true);
 
         driveCheck(action);
-        Assert.assertTrue(points.isEmpty());
+        driveCheck(action);
+        Assert.assertTrue("从未采到过，超时不打点", points.isEmpty());
+
+        session.deliver(Long.toHexString(System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(2)));
+        AtomicReference<KeeperDelayActionContext> context =
+                (AtomicReference<KeeperDelayActionContext>)
+                        ReflectionTestUtils.getField(action, "context");
+        Assert.assertNotNull(context);
+        long lastRecv = System.currentTimeMillis() - 3000;
+        ReflectionTestUtils.setField(context.get(), "recvTimeMilli", lastRecv, long.class);
+        driveCheck(action);
+        ReflectionTestUtils.setField(context.get(), "recvTimeMilli", lastRecv - 3000, long.class);
         driveCheck(action);
 
-        Assert.assertEquals(1, points.size());
-        Assert.assertEquals(99_999_000.0, points.get(0).getValue(), 0.0);
-        Assert.assertEquals("keeper", points.get(0).getTags().get("type"));
+        Assert.assertEquals(2, points.size());
+        MetricData first = points.get(0);
+        MetricData second = points.get(1);
+        // 打点单位是微秒
+        Assert.assertTrue("约 3s，实际 " + first.getValue(), first.getValue() >= 3_000_000 && first.getValue() < 4_000_000);
+        Assert.assertTrue("约 6s，实际 " + second.getValue(), second.getValue() >= 6_000_000 && second.getValue() < 7_000_000);
+        Assert.assertTrue("超时点带当前时间戳", second.getTimestampMilli() > lastRecv);
+        Assert.assertEquals("keeper", second.getTags().get("type"));
     }
 
     // ---------- T-KV.2 范围与隔离门禁 ----------
@@ -346,6 +393,7 @@ public class KeeperDelayCheckAcceptanceTest {
         ReflectionTestUtils.setField(listener, "foundationService", foundationService);
         ReflectionTestUtils.setField(listener, "metaCache", metaCache);
         ReflectionTestUtils.setField(listener, "proxy", proxy);
+        ReflectionTestUtils.setField(listener, "keeperStateCache", keeperStateCache);
         KeeperDelayAction created = new KeeperDelayAction(scheduled, target, executors, foundationService,
                 checkerConfig, capabilityCache);
         created.addController(new KeeperDelayActionController());

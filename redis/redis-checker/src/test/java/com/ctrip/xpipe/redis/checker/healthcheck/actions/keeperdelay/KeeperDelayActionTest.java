@@ -4,7 +4,8 @@ import com.ctrip.xpipe.api.foundation.FoundationService;
 import com.ctrip.xpipe.cluster.ClusterType;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
-import com.ctrip.xpipe.redis.checker.healthcheck.*;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
+import com.ctrip.xpipe.redis.checker.healthcheck.RedisInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.delay.DelayConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.ping.PingService;
@@ -24,11 +25,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -129,17 +126,54 @@ public class KeeperDelayActionTest {
         verify(session, never()).ConfigGet(any(), anyString());
     }
 
+    /** 从未收到过样本时超时不上报任何点（不再上报 SAMPLE_LOST）。 */
     @Test
-    public void testInitThenExpireWithoutPublisher() {
+    public void testInitThenExpireWithoutPublisherReportsNothing() {
         when(config.getDelayConfig(anyString(), anyString(), anyString())).thenReturn(delayConfig(-1001));
 
         action.doTask();
-        verify(listener, never()).onAction(any());
+        action.doTask();
         action.doTask();
 
-        ArgumentCaptor<KeeperDelayActionContext> context = ArgumentCaptor.forClass(KeeperDelayActionContext.class);
-        verify(listener).onAction(context.capture());
-        Assert.assertEquals(TimeUnit.MILLISECONDS.toNanos(99_999), context.getValue().getResult().longValue());
+        verify(listener, never()).onAction(any());
+    }
+
+    /** 超时后延迟取「当前时间 - 上一个样本的 recvTimeMilli」，随失联时长攀升，而非 SAMPLE_LOST。 */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testExpireReportsElapsedSinceLastSample() {
+        action.doTask();
+        ArgumentCaptor<RedisSession.SubscribeCallback> callback =
+                ArgumentCaptor.forClass(RedisSession.SubscribeCallback.class);
+        verify(session).subscribeIfAbsent(callback.capture(), eq(action.subscribeChannel()));
+        callback.getValue().message(action.subscribeChannel(), Long.toHexString(System.nanoTime() - 1_000_000));
+
+        // 上一个样本在 5s 前到达，超过 1s 的过期窗口
+        AtomicReference<KeeperDelayActionContext> context =
+                (AtomicReference<KeeperDelayActionContext>) ReflectionTestUtils.getField(action, "context");
+        Assert.assertNotNull(context);
+        ReflectionTestUtils.setField(context.get(), "recvTimeMilli", System.currentTimeMillis() - 5000, long.class);
+        action.doTask();
+
+        ReflectionTestUtils.setField(context.get(), "recvTimeMilli", System.currentTimeMillis() - 8000, long.class);
+        action.doTask();
+
+        ArgumentCaptor<KeeperDelayActionContext> contexts = ArgumentCaptor.forClass(KeeperDelayActionContext.class);
+        verify(listener, times(2)).onAction(contexts.capture());
+        KeeperDelayActionContext first = contexts.getAllValues().get(0);
+        KeeperDelayActionContext second = contexts.getAllValues().get(1);
+        Assert.assertSame(instance, first.instance());
+        assertBetweenMillis(5000, first.getResult());
+        assertBetweenMillis(8000, second.getResult());
+        Assert.assertTrue("失联越久延迟越大", second.getResult() > first.getResult());
+        Assert.assertNotSame("超时点是新样本，带当前时间戳", context.get(), second);
+    }
+
+    /** 允许测试执行本身耗时 1s 内的误差。 */
+    private void assertBetweenMillis(long expectedMilli, long actualNanos) {
+        long actualMilli = TimeUnit.NANOSECONDS.toMillis(actualNanos);
+        Assert.assertTrue("expected ~" + expectedMilli + "ms but was " + actualMilli + "ms",
+                actualMilli >= expectedMilli && actualMilli < expectedMilli + 1000);
     }
 
     @Test

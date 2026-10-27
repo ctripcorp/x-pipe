@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.RedisHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.sentinel.SentinelHello;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.exception.SentinelsException;
-import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.QuorumConfig;
 import com.ctrip.xpipe.redis.core.protocal.pojo.Sentinel;
@@ -55,15 +54,12 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
     private CheckerConfig checkerConfig;
 
     @Mock
-    private CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService;
-
-    @Mock
     private EventMonitor eventMonitor;
 
     @Before
     public void init() throws Exception {
         resetSentinels = new ResetSentinels(new SentinelHelloCollectContext(), metaCache,
-                keyedObjectPool, scheduled, resetExecutor, sentinelManager, checkerConfig, currentDcKeeperContainerAddressService);
+                keyedObjectPool, scheduled, resetExecutor, sentinelManager, checkerConfig);
         resetSentinels.setKeyedObjectPool(getXpipeNettyClientKeyedObjectPool()).setScheduled(scheduled).setEventMonitor(eventMonitor);
     }
 
@@ -1950,29 +1946,11 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
     private static final String KEEPER_HOSTNAME = "kc-pod-1";
 
     @Test
-    public void containerKeeperUnresolvedSkipsResetAndAlerts() throws Exception {
-        // 容器 keeper 与 master 断开：sentinel 仍记着它，master slave 列表里没有它
+    public void containerKeeperMatchedByMetaIpIsTreatedAsKeeper() throws Exception {
+        // meta ip 已由 Console 填充为真实 IP，与 sentinel 汇报的 slave 地址比对即可认出 keeper
         prepareContainerKeeperRound();
-        when(currentDcKeeperContainerAddressService.getIpByHostname(KEEPER_HOSTNAME)).thenReturn(null);
 
-        try {
-            resetSentinels.checkResetCommands().execute().get(5000, TimeUnit.MILLISECONDS);
-            Assert.fail("chain should stop when keeper ip unresolved");
-        } catch (ExecutionException e) {
-            // 链路异常被 CommandChainException 包装，按消息确认停在 keeper 解析
-            Assert.assertTrue(String.valueOf(e.getCause()), String.valueOf(e.getCause().getMessage()).contains("keeper container ip unresolved"));
-        }
-
-        verify(eventMonitor, times(1)).logAlertEvent(ResetSentinels.ALERT_SENTINEL_RESET_KEEPER_UNRESOLVED);
-        verify(sentinelManager, never()).reset(any(), any());
-    }
-
-    @Test
-    public void containerKeeperResolvedIsTreatedAsKeeper() throws Exception {
-        prepareContainerKeeperRound();
-        when(currentDcKeeperContainerAddressService.getIpByHostname(KEEPER_HOSTNAME)).thenReturn(LOCAL_HOST);
-
-        // 解析后按 IP 认出 keeper，不产生 invalid slave，不走 checkMaster（master 端口无监听，若走到会失败）
+        // 认出 keeper，不产生 invalid slave，不走 checkMaster（master 端口无监听，若走到会失败）
         try {
             resetSentinels.checkResetCommands().execute().get(5000, TimeUnit.MILLISECONDS);
         } catch (Throwable th) {
@@ -1983,12 +1961,12 @@ public class ResetSentinelsTest extends AbstractCheckerTest {
         verify(sentinelManager, never()).reset(any(), any());
     }
 
-    /** 3 个 sentinel 均汇报 slave [6380, 容器 keeper 8000]；meta 中 8000 为容器 keeper，master 端口无监听 */
+    /** 3 个 sentinel 均汇报 slave [6380, 容器 keeper 8000]；meta 中 8000 为容器 keeper（ip 已填好），master 端口无监听 */
     private void prepareContainerKeeperRound() throws Exception {
         RedisHealthCheckInstance instance = newRandomRedisHealthCheckInstance("currentDc", "activeDc", randomPort());
         when(checkerConfig.getDefaultSentinelQuorumConfig()).thenReturn(new QuorumConfig(3, 2));
 
-        KeeperMeta containerKeeper = keeperMeta("0.0.0.0", 8000);
+        KeeperMeta containerKeeper = keeperMeta(LOCAL_HOST, 8000);
         containerKeeper.setHostname(KEEPER_HOSTNAME);
         when(metaCache.getKeeperOfDcClusterShard(anyString(), anyString(), anyString())).thenReturn(Lists.newArrayList(containerKeeper));
 

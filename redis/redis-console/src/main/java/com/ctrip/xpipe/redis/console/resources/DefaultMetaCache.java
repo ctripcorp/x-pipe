@@ -9,6 +9,7 @@ import com.ctrip.xpipe.redis.console.config.ConsoleConfig;
 import com.ctrip.xpipe.redis.console.console.impl.ConsoleServiceManager;
 import com.ctrip.xpipe.redis.console.exception.DataNotFoundException;
 import com.ctrip.xpipe.redis.console.model.RedisCheckRuleTbl;
+import com.ctrip.xpipe.redis.console.service.CrossDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.console.service.RedisCheckRuleService;
 import com.ctrip.xpipe.redis.console.service.meta.DcMetaService;
 import com.ctrip.xpipe.redis.core.entity.*;
@@ -58,6 +59,17 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
 
     @Autowired
     private RouteChooseStrategyFactory routeChooseStrategyFactory;
+
+    /**
+     * 容器 KeeperContainer 的 hostname→IP 来源；缺失时跳过填充，不影响 Meta 加载。
+     *
+     * <p>必须 {@code @Lazy}：该服务经 RemoteDcKeeperContainerAddressCache → ConsoleServiceManager
+     * 又回到本类，构成依赖环（与上面的 consoleServiceManager 同一个环）。注入代理延后到首次调用，
+     * 而那时 Meta 加载已在独立线程上周期执行，不在 Bean 初始化路径上。
+     */
+    @Autowired(required = false)
+    @Lazy
+    private CrossDcKeeperContainerAddressService keeperContainerAddressService;
 
     private RouteChooseStrategy strategy = null;
 
@@ -250,6 +262,16 @@ public class DefaultMetaCache extends AbstractMetaCache implements MetaCache, Co
         }
 
         return localStrategy;
+    }
+
+    @Override
+    protected CrossDcKeeperContainerAddressService keeperContainerAddressService() {
+        return keeperContainerAddressService;
+    }
+
+    @VisibleForTesting
+    public void setKeeperContainerAddressService(CrossDcKeeperContainerAddressService addressService) {
+        this.keeperContainerAddressService = addressService;
     }
 
     @Override

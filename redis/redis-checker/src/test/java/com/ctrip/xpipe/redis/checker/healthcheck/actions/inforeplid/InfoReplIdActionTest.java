@@ -11,7 +11,6 @@ import com.ctrip.xpipe.redis.checker.healthcheck.session.Callbackable;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.CrossRegionKeeperSessionManager;
 import com.ctrip.xpipe.redis.checker.healthcheck.session.RedisSession;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.keeper.container.CurrentDcKeeperContainerAddressService;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.After;
 import org.junit.Assert;
@@ -26,17 +25,12 @@ import org.unidal.tuple.Triple;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * InfoReplId 的链式检查：两条 INFO 命令按序执行，五个终止分支、编号新旧、以及 stop 后的丢弃。
- * 容器 keeper 的 meta ip 是占位值，slave 的 master_host 必须与 hostname 反查后的 IP 比对。
+ * Console 下发前已把容器 keeper 的 hostname 解析为真实 IP 填入 meta ip，slave 的 master_host 直接与 meta ip 比对。
  *
  * 测试只替换 session 的异步回调边界（{@link RedisSession#infoReplication}）并显式触发回调，
  * 命令、链、推进逻辑全部走真实实现；不依赖真实网络与真实定时。
@@ -70,9 +64,6 @@ public class InfoReplIdActionTest {
 
     @Mock
     private CrossRegionKeeperSessionManager crossRegionKeeperSessionManager;
-
-    @Mock
-    private CurrentDcKeeperContainerAddressService currentDcKeeperContainerAddressService;
 
     @Mock
     private MetaCache metaCache;
@@ -118,7 +109,7 @@ public class InfoReplIdActionTest {
         captureInfoCallbacks();
 
         action = new InfoReplIdAction(scheduled, instance, executors,
-                crossRegionKeeperSessionManager, metaCache, currentDcKeeperContainerAddressService);
+                crossRegionKeeperSessionManager, metaCache);
         action.addListener(listener);
         LifecycleHelper.initializeIfPossible(action);
         LifecycleHelper.startIfPossible(action);
@@ -211,7 +202,7 @@ public class InfoReplIdActionTest {
     }
 
     @Test
-    public void containerKeeperMatchedByResolvedIp() {
+    public void containerKeeperMatchedByMetaIp() {
         String resolvedIp = "10.0.0.2";
         stubContainerKeeper(resolvedIp);
 
@@ -222,8 +213,8 @@ public class InfoReplIdActionTest {
     }
 
     @Test
-    public void containerKeeperUnresolvedIpIsNotInMeta() {
-        Mockito.when(currentDcKeeperContainerAddressService.getIpByHostname(CONTAINER_HOSTNAME)).thenReturn(null);
+    public void containerKeeperWithPlaceholderIpIsNotInMeta() {
+        // Console 未解析到时 meta 保留占位 IP，与 slave 上报的真实 master_host 匹配不上
         Mockito.when(metaCache.getKeeperOfDcClusterShard(DC_ID, CLUSTER_ID, SHARD_ID))
                 .thenReturn(Collections.singletonList(containerKeeper()));
 
@@ -234,10 +225,9 @@ public class InfoReplIdActionTest {
     }
 
     @Test
-    public void containerKeeperNotMatchedWhenSlaveHostDiffersFromResolvedIp() {
-        Mockito.when(currentDcKeeperContainerAddressService.getIpByHostname(CONTAINER_HOSTNAME)).thenReturn("10.0.0.2");
+    public void containerKeeperNotMatchedWhenSlaveHostDiffersFromMetaIp() {
         Mockito.when(metaCache.getKeeperOfDcClusterShard(DC_ID, CLUSTER_ID, SHARD_ID))
-                .thenReturn(Collections.singletonList(containerKeeper()));
+                .thenReturn(Collections.singletonList(containerKeeper().setIp("10.0.0.2")));
 
         runSlave(redisInfo(SLAVE_REPL_ID, null, "10.0.0.9", KEEPER.getPort()));
 
@@ -247,9 +237,8 @@ public class InfoReplIdActionTest {
 
     @Test
     public void containerKeeperNotMatchedByPlaceholderIp() {
-        Mockito.when(currentDcKeeperContainerAddressService.getIpByHostname(CONTAINER_HOSTNAME)).thenReturn("10.0.0.2");
         Mockito.when(metaCache.getKeeperOfDcClusterShard(DC_ID, CLUSTER_ID, SHARD_ID))
-                .thenReturn(Collections.singletonList(containerKeeper()));
+                .thenReturn(Collections.singletonList(containerKeeper().setIp("10.0.0.2")));
 
         runSlave(redisInfo(SLAVE_REPL_ID, null, PLACEHOLDER_IP, KEEPER.getPort()));
 
@@ -258,7 +247,7 @@ public class InfoReplIdActionTest {
     }
 
     @Test
-    public void containerKeeperMatchedAfterResolvedIpChanged() {
+    public void containerKeeperMatchedAfterMetaIpChanged() {
         String resolvedIp = "10.0.0.3";
         stubContainerKeeper(resolvedIp);
 
@@ -411,7 +400,7 @@ public class InfoReplIdActionTest {
         // -1 不可能是任何真实编号（从 1 开始），于是走「陈旧丢弃」分支，断言只针对 future 本身
         DefaultCommandFuture<String> slaveFuture = new DefaultCommandFuture<>();
         KeeperReplIdCommand keeperStage = new KeeperReplIdCommand(instance, slaveFuture,
-                crossRegionKeeperSessionManager, currentDcKeeperContainerAddressService, metaCache, executors);
+                crossRegionKeeperSessionManager, metaCache, executors);
         DefaultCommandFuture<Object> chainFuture = new DefaultCommandFuture<>();
         chainFuture.setFailure(new CommandChainException("sequence chain, fail stop",
                 new RuntimeException("slave boom"), Collections.emptyList()));
@@ -427,7 +416,7 @@ public class InfoReplIdActionTest {
     public void keeperStageFutureIsNotTouchedWhenThatStageItselfFailed() {
         DefaultCommandFuture<String> slaveFuture = new DefaultCommandFuture<>();
         KeeperReplIdCommand keeperStage = new KeeperReplIdCommand(instance, slaveFuture,
-                crossRegionKeeperSessionManager, currentDcKeeperContainerAddressService, metaCache, executors);
+                crossRegionKeeperSessionManager, metaCache, executors);
         keeperStage.future().setFailure(new KeeperNotInMetaException("keeper not in meta"));
         DefaultCommandFuture<Object> chainFuture = new DefaultCommandFuture<>();
         chainFuture.setFailure(new CommandChainException("sequence chain, fail stop",
@@ -483,9 +472,8 @@ public class InfoReplIdActionTest {
     }
 
     private void stubContainerKeeper(String resolvedIp) {
-        Mockito.when(currentDcKeeperContainerAddressService.getIpByHostname(CONTAINER_HOSTNAME)).thenReturn(resolvedIp);
         Mockito.when(metaCache.getKeeperOfDcClusterShard(DC_ID, CLUSTER_ID, SHARD_ID))
-                .thenReturn(Collections.singletonList(containerKeeper()));
+                .thenReturn(Collections.singletonList(containerKeeper().setIp(resolvedIp)));
         Mockito.when(crossRegionKeeperSessionManager.findOrCreateSession(new HostPort(resolvedIp, KEEPER.getPort())))
                 .thenReturn(keeperSession);
     }

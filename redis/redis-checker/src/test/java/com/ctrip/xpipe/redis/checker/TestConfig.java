@@ -110,6 +110,11 @@ public class TestConfig implements CheckerConfig, AlertConfig {
     }
 
     @Override
+    public boolean isKeeperStateCheckEnabled() {
+        return false;
+    }
+
+    @Override
     public int getKeeperCapabilityRefreshIntervalMilli() {
         return 60000;
     }

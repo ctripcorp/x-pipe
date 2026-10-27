@@ -6,12 +6,7 @@ import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperInstanceInfo;
 import com.ctrip.xpipe.redis.checker.healthcheck.capability.KeeperCapabilityCache;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.HealthCheckEndpointFactory;
-import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
-import com.ctrip.xpipe.redis.core.entity.DcMeta;
-import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
-import com.ctrip.xpipe.redis.core.entity.RedisMeta;
-import com.ctrip.xpipe.redis.core.entity.ShardMeta;
-import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import com.ctrip.xpipe.redis.core.meta.clone.MetaCloneFacade;
 import com.ctrip.xpipe.redis.core.meta.comparator.ClusterMetaComparator;
@@ -99,6 +94,24 @@ public class KeeperMetaChangeManagerTest {
         order.verify(instances).removeKeeper(address);
         order.verify(instances).getOrCreate(future.findCluster("cluster").findShard("shard").getKeepers().get(0));
         Mockito.verify(cache).invalidate(address);
+    }
+
+    @Test
+    public void testContainerKeeperIpChangeIsRemoveBeforeAdd() {
+        // pod 重建换 IP：hostname 不变（身份不变），ip 变化归为 modified，旧地址先删、新地址后建
+        DcMeta current = meta(containerKeeper("pod-0", "10.0.0.1", 6380));
+        manager.compare(current);
+        DcMeta future = cloneMeta(current);
+        KeeperMeta futureKeeper = future.findCluster("cluster").findShard("shard").getKeepers().get(0);
+        futureKeeper.setIp("10.0.0.2");
+
+        manager.compare(future);
+
+        InOrder order = Mockito.inOrder(instances);
+        order.verify(instances).removeKeeper(new HostPort("10.0.0.1", 6380));
+        order.verify(instances).getOrCreate(futureKeeper);
+        Mockito.verify(cache).invalidate(new HostPort("10.0.0.1", 6380));
+        Mockito.verify(instances, Mockito.never()).removeKeeper(new HostPort("10.0.0.2", 6380));
     }
 
     @Test
@@ -207,6 +220,10 @@ public class KeeperMetaChangeManagerTest {
 
     private KeeperMeta keeper(String ip, int port, long containerId) {
         return new KeeperMeta().setIp(ip).setPort(port).setKeeperContainerId(containerId);
+    }
+
+    private KeeperMeta containerKeeper(String hostname, String ip, int port) {
+        return new KeeperMeta().setHostname(hostname).setIp(ip).setPort(port).setKeeperContainerId(1L);
     }
 
     private ClusterMeta cluster(DcMeta dc) {

@@ -32,6 +32,9 @@ public class ConsoleMetaCacheWithoutDB extends DefaultMetaCache {
                 try {
                     XpipeMeta xpipeMeta = consolePortalService.getXpipeAllMeta(getVersion());
                     checkMeta(xpipeMeta, config.maxRemovedDcsCnt(), config.maxRemovedClustersPercent());
+                    // 本机房 ZK 由本 Console 自行监听，以本地地址覆盖上游填的 KeeperContainer IP，
+                    // 再分片下发给同机房 Checker；须在 refreshMetaParts 之前，分片 XML 由此 Meta 生成
+                    fillContainerKeeperIp(xpipeMeta);
                     refreshMetaParts(xpipeMeta);
                     refreshMeta(xpipeMeta);
                 } catch (Throwable th) {

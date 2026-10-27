@@ -25,6 +25,9 @@ import com.ctrip.xpipe.spring.AbstractProfile;
 import org.springframework.context.annotation.*;
 
 /**
+ * CONSOLE_CHECKER 模式。{@code keeperContainerZkClient} / {@code keeperContainerAddressService}
+ * 继承自 {@link ConsoleContextConfig}，与 CONSOLE 模式共用；CHECKER 模式不装配。
+ *
  * @author lishanglin
  * date 2021/3/13
  */
