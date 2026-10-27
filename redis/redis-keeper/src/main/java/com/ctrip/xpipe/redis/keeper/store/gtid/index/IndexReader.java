@@ -105,7 +105,8 @@ public class IndexReader extends AbstractIndex implements Closeable {
                         log.debug("nexGno {} > indexEntry {}, locate offset {},coninute gtid set {}", nexGno, indexEntry, offset, gtidSet);
                     }
                     break;
-                } else if (nexGno >= indexEntry.getStartGno() && nexGno <= indexEntry.getEndGno()) {
+                } else if (nexGno > indexEntry.getStartGno()) {
+                    // 严格落在 entry 内部才停，与 xredis gtidSeqXsync 一致
                     // 读block 获取
                     try(BlockReader blockReader = new BlockReader(indexEntry.getBlockStartOffset(), indexEntry.getBlockEndOffset(),
                             new File(generateBlockName()))) {
@@ -113,16 +114,18 @@ public class IndexReader extends AbstractIndex implements Closeable {
                         offset = blockReader.seek((int) index) + indexEntry.getCmdStartOffset() + getStartOffset();
                         gtidSet = calculateGtidSet(i, nexGno - 1);
                         if(log.isDebugEnabled()) {
-                            log.debug("nexGno {} >= indexEntry {}, locate offset {},coninute gtid set {}", nexGno, indexEntry, offset, gtidSet);
+                            log.debug("nexGno {} > startGno of indexEntry {}, locate offset {},coninute gtid set {}", nexGno, indexEntry, offset, gtidSet);
                         }
                         finish = true;
                         break;
                     }
-                } else if(nexGno < indexEntry.getStartGno()) {
+                } else {
+                    // nexGno <= startGno：整个 entry 都要发，继续往前找
+                    // 例如请求里没有新 master 的 uuid（nexGno=1），需要回到旧 uuid 的 entry 上定位
                     offset = indexEntry.getCmdStartOffset() + getStartOffset();
                     gtidSet = calculateGtidSet(i);
                     if(log.isDebugEnabled()) {
-                        log.debug("nexGno {} < indexEntry {}, locate offset {},coninute gtid set {}", nexGno, indexEntry, offset, gtidSet);
+                        log.debug("nexGno {} <= startGno of indexEntry {}, locate offset {},coninute gtid set {}", nexGno, indexEntry, offset, gtidSet);
                     }
                 }
             }
