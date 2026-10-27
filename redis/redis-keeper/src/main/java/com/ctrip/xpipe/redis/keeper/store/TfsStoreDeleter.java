@@ -36,17 +36,18 @@ public final class TfsStoreDeleter implements ReplicationStoreDeleter {
         AsyncFile meta = null;
         try {
             try {
+
+                long newest = getCurrentDirLastModified(baseDir);
+                if (tooFresh(newest)) {
+                    return GcOrphanStoreResult.skip(replId.id(), "store dir without meta modified too recently");
+                }
+
                 if (!AsyncFileSystemHelper.await(() -> fs.exists(metaPath), "delete store meta exists " + metaPath)) {
                     return deleteWithoutMeta(baseDir, replId);
                 }
                 // Fails if another writer holds the meta file; once open, blocks writers until finally.
                 meta = AsyncFileSystemHelper.awaitOpen(fs, () -> fs.open(metaPath, AbstractStorageFile.OpenMode.READ_WRITE,
                         AbstractStorageFile.ReplaceMode.ATOMIC, true, replId.toString()), "delete store open meta " + metaPath);
-                AsyncFile held = meta;
-                long mtime = AsyncFileSystemHelper.await(() -> fs.lastModified(held), "delete store meta mtime " + metaPath);
-                if (tooFresh(mtime)) {
-                    return GcOrphanStoreResult.skip(replId.id(), "meta modified too recently");
-                }
             } catch (Throwable th) {
                 logger.warn("[delete][meta not usable, skip]{}", baseDir, th);
                 return GcOrphanStoreResult.skip(replId.id(), "meta not usable: " + th.getMessage());
@@ -76,18 +77,20 @@ public final class TfsStoreDeleter implements ReplicationStoreDeleter {
         if (!baseDir.exists()) {
             return GcOrphanStoreResult.notFound(replId.id());
         }
-        long newest = baseDir.lastModified();
-        File[] children = baseDir.listFiles();
+        return rmdir(baseDir) ? GcOrphanStoreResult.deleted(replId.id())
+                : GcOrphanStoreResult.fail(replId.id(), "rmdir store dir without meta failed");
+    }
+
+
+    private long getCurrentDirLastModified(File dir){
+        long newest = dir.lastModified();
+        File[] children = dir.listFiles();
         if (children != null) {
             for (File child : children) {
                 newest = Math.max(newest, child.lastModified());
             }
         }
-        if (tooFresh(newest)) {
-            return GcOrphanStoreResult.skip(replId.id(), "store dir without meta modified too recently");
-        }
-        return rmdir(baseDir) ? GcOrphanStoreResult.deleted(replId.id())
-                : GcOrphanStoreResult.fail(replId.id(), "rmdir store dir without meta failed");
+        return newest;
     }
 
     private boolean tooFresh(long mtime) {

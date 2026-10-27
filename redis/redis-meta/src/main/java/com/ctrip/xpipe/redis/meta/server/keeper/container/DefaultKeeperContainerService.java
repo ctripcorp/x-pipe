@@ -18,10 +18,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestOperations;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
@@ -169,15 +167,12 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
     }
 
     @Override
-    public GcOrphanStoreResult gcOrphanStore(Long replId, String requestId) {
+    public GcOrphanStoreResult gcOrphanStore(Long replId) {
         try {
             String ip = resolveAddress();
-            String url = UriComponentsBuilder.fromUriString("http://{ip}:{port}/keepers/gc/{replId}")
-                    .queryParamIfPresent("requestId", Optional.ofNullable(requestId))
-                    .buildAndExpand(ip, keeperContainerMeta.getPort(), replId)
-                    .toUriString();
-            ResponseEntity<GcOrphanStoreResult> result = restTemplate.exchange(url,
-                    HttpMethod.PUT, new HttpEntity<>(createHeaders()), GcOrphanStoreResult.class);
+            ResponseEntity<GcOrphanStoreResult> result = restTemplate.exchange("http://{ip}:{port}/keepers/gc/{replId}",
+                    HttpMethod.PUT, new HttpEntity<>(createHeaders()), GcOrphanStoreResult.class,
+                    ip, keeperContainerMeta.getPort(), replId);
             return result.getBody();
         } catch (HttpStatusCodeException ex) {
             throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);
@@ -185,15 +180,12 @@ public class DefaultKeeperContainerService implements KeeperContainerService {
     }
 
     @Override
-    public List<GcOrphanStoreResult> gcOrphanStores(List<Long> replIds, String requestId) {
+    public List<GcOrphanStoreResult> gcOrphanStores(List<Long> replIds) {
         try {
             String ip = resolveAddress();
-            String url = UriComponentsBuilder.fromUriString("http://{ip}:{port}/keepers/gc")
-                    .queryParamIfPresent("requestId", Optional.ofNullable(requestId))
-                    .buildAndExpand(ip, keeperContainerMeta.getPort())
-                    .toUriString();
-            ResponseEntity<List<GcOrphanStoreResult>> result = restTemplate.exchange(url,
-                    HttpMethod.PUT, new HttpEntity<>(replIds, createHeaders()), gcOrphanStoreResultListType);
+            ResponseEntity<List<GcOrphanStoreResult>> result = restTemplate.exchange("http://{ip}:{port}/keepers/gc",
+                    HttpMethod.PUT, new HttpEntity<>(replIds, createHeaders()), gcOrphanStoreResultListType,
+                    ip, keeperContainerMeta.getPort());
             return result.getBody();
         } catch (HttpStatusCodeException ex) {
             throw KeeperContainerErrorParser.parseErrorFromHttpException(ex);

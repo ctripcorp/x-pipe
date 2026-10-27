@@ -14,6 +14,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -28,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -70,6 +70,7 @@ public class OrphanStoreGcTaskTest {
         when(config.isOrphanGcEnabled()).thenReturn(true);
         when(config.isOrphanGcDryRun()).thenReturn(false);
         when(config.getOrphanGcMetaFreshMilli()).thenReturn(120_000L);
+        when(config.getOrphanGcBatchSize()).thenReturn(10);
         when(currentClusterServer.isLeader()).thenReturn(true);
         when(metaCache.getLastSuccessfulLoadMilli()).thenReturn(System.currentTimeMillis());
         when(metaCache.getKeeperContainers()).thenReturn(Arrays.asList(tfsContainerA, tfsContainerB, bmContainer));
@@ -198,7 +199,7 @@ public class OrphanStoreGcTaskTest {
         task.doGcRound();
 
         // replId 1 is occupied -> excluded from the batch; replId 2 is not -> included, one batch call
-        verify(serviceA, times(1)).gcOrphanStores(eq(Collections.singletonList(2L)), anyString());
+        verify(serviceA, times(1)).gcOrphanStores(eq(Collections.singletonList(2L)));
     }
 
     @Test
@@ -215,7 +216,7 @@ public class OrphanStoreGcTaskTest {
 
         task.doGcRound();
 
-        verify(serviceA, never()).gcOrphanStores(any(), anyString());
+        verify(serviceA, never()).gcOrphanStores(any());
     }
 
     @Test
@@ -227,7 +228,7 @@ public class OrphanStoreGcTaskTest {
         when(unreachable.listStoreDirNames()).thenThrow(new RuntimeException("connect refused"));
         KeeperContainerService reachable = mock(KeeperContainerService.class);
         when(reachable.listStoreDirNames()).thenReturn(Collections.singletonList("repl_5"));
-        when(reachable.gcOrphanStores(eq(Collections.singletonList(5L)), anyString()))
+        when(reachable.gcOrphanStores(eq(Collections.singletonList(5L))))
                 .thenReturn(Collections.singletonList(GcOrphanStoreResult.deleted(5L)));
 
         when(keeperContainerServiceFactory.getOrCreateKeeperContainerService(tfsContainerA)).thenReturn(unreachable);
@@ -235,7 +236,7 @@ public class OrphanStoreGcTaskTest {
 
         task.doGcRound();
 
-        verify(reachable, times(1)).gcOrphanStores(eq(Collections.singletonList(5L)), anyString());
+        verify(reachable, times(1)).gcOrphanStores(eq(Collections.singletonList(5L)));
     }
 
     @Test
@@ -253,7 +254,84 @@ public class OrphanStoreGcTaskTest {
 
         task.doGcRound();
 
-        verify(serviceA, never()).gcOrphanStores(any(), anyString());
+        verify(serviceA, never()).gcOrphanStores(any());
+    }
+
+    // ---- chunked batch gc ----
+
+    private KeeperContainerService representativeListing(String... dirs) {
+        KeeperContainerService serviceA = mock(KeeperContainerService.class);
+        when(serviceA.listStoreDirNames()).thenReturn(Arrays.asList(dirs));
+        when(keeperContainerServiceFactory.getOrCreateKeeperContainerService(tfsContainerA)).thenReturn(serviceA);
+        return serviceA;
+    }
+
+    @Test
+    public void testDoGcGroupSendsCandidatesInChunks() {
+        when(config.getOrphanGcBatchSize()).thenReturn(2);
+        when(metaCache.getClusters()).thenReturn(new HashSet<>(Collections.singletonList(new ClusterMeta().setDbId(1L))));
+        KeeperContainerService serviceA = representativeListing("repl_1", "repl_2", "repl_3", "repl_4", "repl_5");
+
+        task.doGcRound();
+
+        InOrder inOrder = inOrder(serviceA);
+        inOrder.verify(serviceA).gcOrphanStores(Arrays.asList(1L, 2L));
+        inOrder.verify(serviceA).gcOrphanStores(Arrays.asList(3L, 4L));
+        inOrder.verify(serviceA).gcOrphanStores(Collections.singletonList(5L));
+        verify(serviceA, times(3)).gcOrphanStores(any());
+    }
+
+    @Test
+    public void testDoGcGroupStopsAtNextChunkWhenLeadershipLost() {
+        when(config.getOrphanGcBatchSize()).thenReturn(2);
+        when(metaCache.getClusters()).thenReturn(new HashSet<>(Collections.singletonList(new ClusterMeta().setDbId(1L))));
+        KeeperContainerService serviceA = representativeListing("repl_1", "repl_2", "repl_3", "repl_4");
+        // round, group task, first chunk -> leader; second chunk -> lost
+        when(currentClusterServer.isLeader()).thenReturn(true, true, true, false);
+
+        task.doGcRound();
+
+        verify(serviceA, times(1)).gcOrphanStores(Arrays.asList(1L, 2L));
+        verify(serviceA, times(1)).gcOrphanStores(any());
+    }
+
+    @Test
+    public void testDoGcGroupSkipsReplIdOccupiedAfterCandidatesComputed() {
+        when(config.getOrphanGcBatchSize()).thenReturn(2);
+        ClusterMeta before = new ClusterMeta().setDbId(1L);
+        ClusterMeta after = new ClusterMeta().setDbId(1L)
+                .addShard(new ShardMeta().setId("s3").setDbId(3L).addKeeper(keeperOn(tfsContainerB)));
+        // round + first chunk see the old meta; the second chunk sees shard 3 assigned to a keeper
+        when(metaCache.getClusters()).thenReturn(
+                new HashSet<>(Collections.singletonList(before)),
+                new HashSet<>(Collections.singletonList(before)),
+                new HashSet<>(Collections.singletonList(after)));
+        KeeperContainerService serviceA = representativeListing("repl_1", "repl_2", "repl_3", "repl_4");
+
+        task.doGcRound();
+
+        verify(serviceA).gcOrphanStores(Arrays.asList(1L, 2L));
+        verify(serviceA).gcOrphanStores(Collections.singletonList(4L));
+        verify(serviceA, times(2)).gcOrphanStores(any());
+    }
+
+    @Test
+    public void testDoGcGroupStopsWhenChunkCallFails() {
+        when(config.getOrphanGcBatchSize()).thenReturn(2);
+        when(metaCache.getClusters()).thenReturn(new HashSet<>(Collections.singletonList(new ClusterMeta().setDbId(1L))));
+        KeeperContainerService serviceA = representativeListing("repl_1", "repl_2", "repl_3", "repl_4");
+        when(serviceA.gcOrphanStores(Arrays.asList(1L, 2L))).thenThrow(new RuntimeException("read timeout"));
+
+        task.doGcRound();
+
+        verify(serviceA, times(1)).gcOrphanStores(any());
+    }
+
+    @Test
+    public void testGroupIsSortedByContainerId() {
+        Map<String, List<KeeperContainerMeta>> grouped = task.groupTfsContainersByFsId(Arrays.asList(tfsContainerB, tfsContainerA));
+
+        assertEquals(Arrays.asList(tfsContainerA, tfsContainerB), grouped.get("fs1"));
     }
 
 }

@@ -89,6 +89,8 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 
 	public static final String KEY_ORPHAN_GC_GROUP_PARALLELISM = "metaserver.orphan.gc.group.parallelism";
 
+	public static final String KEY_ORPHAN_GC_BATCH_SIZE = "metaserver.orphan.gc.batch.size";
+
 	public static final String DEFAULT_TFS_GATEWAY_HOST = "mock://tfs-gateway";
 
 	public static final long DEFAULT_TFS_GATEWAY_APP_ID = 0L;
@@ -306,6 +308,11 @@ public class DefaultMetaServerConfig extends AbstractCoreConfig implements MetaS
 	@Override
 	public int getOrphanGcGroupParallelism() {
 		return getIntProperty(KEY_ORPHAN_GC_GROUP_PARALLELISM, 4);
+	}
+
+	@Override
+	public int getOrphanGcBatchSize() {
+		return getIntProperty(KEY_ORPHAN_GC_BATCH_SIZE, 10);
 	}
 
 	public void setDefaultServerPort(int defaultServerPort) {
