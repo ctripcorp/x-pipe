@@ -91,8 +91,8 @@ public class AsyncReferenceFileRegion implements ReferenceFileRegion {
         long wrote = 0;
         while (remaining > 0) {
             final long transferredSoFar = wrote;
-            final long remainingBytes = remaining;
-            long transferredOnce = AsyncFileSystemHelper.await(() -> asyncFileSystem.transferTo(asyncSegmentFile, logicalPosition + position + transferredSoFar, remainingBytes, target),
+            final long requestBytes = Math.min(remaining, AsyncFileSystemHelper.TRANSFER_MAX_BYTES);
+            long transferredOnce = AsyncFileSystemHelper.await(() -> asyncFileSystem.transferTo(asyncSegmentFile, logicalPosition + position + transferredSoFar, requestBytes, target),
                     "transfer command segment " + logicalPosition);
             if (transferredOnce <= 0) {
                 break;

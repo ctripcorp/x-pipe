@@ -25,6 +25,19 @@ import static org.mockito.Mockito.when;
 public class AsyncFileSystemHelperTest extends AbstractTest {
 
     @Test
+    public void parseTransferMaxBytesFallsBackToDefault() {
+        long def = AsyncFileSystemHelper.DEFAULT_TRANSFER_MAX_BYTES;
+        Assert.assertEquals(1024L * 1024L, def);
+        Assert.assertEquals(def, AsyncFileSystemHelper.parseTransferMaxBytes(null));
+        Assert.assertEquals(2097152L, AsyncFileSystemHelper.parseTransferMaxBytes("2097152"));
+        Assert.assertEquals(4096L, AsyncFileSystemHelper.parseTransferMaxBytes(" 4096 "));
+        Assert.assertEquals(def, AsyncFileSystemHelper.parseTransferMaxBytes("1m"));
+        Assert.assertEquals(def, AsyncFileSystemHelper.parseTransferMaxBytes(""));
+        Assert.assertEquals(def, AsyncFileSystemHelper.parseTransferMaxBytes("0"));
+        Assert.assertEquals(def, AsyncFileSystemHelper.parseTransferMaxBytes("-1"));
+    }
+
+    @Test
     public void awaitOpenTimeoutAbandonsLateSuccessAndCloses() throws Exception {
         AsyncFileSystem fs = mock(AsyncFileSystem.class);
         AsyncFile lateFile = mock(AsyncFile.class);

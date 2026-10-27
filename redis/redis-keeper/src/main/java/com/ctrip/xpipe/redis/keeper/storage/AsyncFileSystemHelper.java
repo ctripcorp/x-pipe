@@ -48,6 +48,12 @@ public final class AsyncFileSystemHelper {
 
     public static final long DEFAULT_IO_TIMEOUT_MILLIS = 1000L;
 
+    public static final String KEY_TRANSFER_MAX_BYTES = "keeper.fs.transfer.max.bytes";
+
+    public static final long DEFAULT_TRANSFER_MAX_BYTES = 1024L * 1024L;
+
+    public static final long TRANSFER_MAX_BYTES = parseTransferMaxBytes(System.getProperty(KEY_TRANSFER_MAX_BYTES));
+
     /** D7: total write invocations including the original (retry ×1 ⇒ 2). Loop always calls write on each attempt. */
     private static final int WRITE_SYNC_THROW_MAX_ATTEMPTS = 2;
 
@@ -73,6 +79,26 @@ public final class AsyncFileSystemHelper {
     }
 
     private AsyncFileSystemHelper() {
+    }
+
+    static long parseTransferMaxBytes(String raw) {
+        if (raw == null) {
+            return DEFAULT_TRANSFER_MAX_BYTES;
+        }
+        long value;
+        try {
+            value = Long.parseLong(raw.trim());
+        } catch (NumberFormatException e) {
+            logger.warn("[parseTransferMaxBytes] not a number {}={}, use default {}", KEY_TRANSFER_MAX_BYTES, raw,
+                    DEFAULT_TRANSFER_MAX_BYTES);
+            return DEFAULT_TRANSFER_MAX_BYTES;
+        }
+        if (value <= 0) {
+            logger.warn("[parseTransferMaxBytes] non-positive {}={}, use default {}", KEY_TRANSFER_MAX_BYTES, raw,
+                    DEFAULT_TRANSFER_MAX_BYTES);
+            return DEFAULT_TRANSFER_MAX_BYTES;
+        }
+        return value;
     }
 
     /**
