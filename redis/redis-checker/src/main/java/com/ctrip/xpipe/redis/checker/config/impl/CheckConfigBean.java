@@ -37,8 +37,6 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public static final String KEY_KEEPER_STATE_CHECK_ENABLED = "keeper.state.check.enabled";
 
-    public static final String KEY_KEEPER_STATE_CHECK_INTERVAL_MILLI = "keeper.state.check.interval.milli";
-
     public static final String KEY_KEEPER_CAPABILITY_REFRESH_INTERVAL_MILLI = "keeper.capability.refresh.interval.milli";
 
     public static final String KEY_REDIS_REPL_DISKLESS_MINIMUM_VERSION = "redis.repl.diskless.minimum.version";
@@ -183,11 +181,6 @@ public class CheckConfigBean extends AbstractConfigBean {
 
     public boolean isKeeperStateCheckEnabled() {
         return getBooleanProperty(KEY_KEEPER_STATE_CHECK_ENABLED, false);
-    }
-
-    /** 不宜超过 MetaServer 的 keeper 切换耗时（ZK session 过期约 5s），否则切换窗口内 role 基本是旧值。 */
-    public int getKeeperStateCheckIntervalMilli() {
-        return getIntProperty(KEY_KEEPER_STATE_CHECK_INTERVAL_MILLI, 5000);
     }
 
     public int getKeeperCapabilityRefreshIntervalMilli() {

@@ -42,7 +42,7 @@ public class KeeperStateCacheTest {
 
     @Before
     public void setUp() {
-        when(checkerConfig.getKeeperStateCheckIntervalMilli()).thenReturn(2000);
+        when(checkerConfig.getRedisConfCheckIntervalMilli()).thenReturn(2000);
         cache = new KeeperStateCache(checkerConfig);
     }
 
@@ -84,7 +84,7 @@ public class KeeperStateCacheTest {
     /** 周期配成 0 时若直接用它算过期窗口，样本会立刻失效，该 tag 永远打不出来。 */
     @Test
     public void testZeroIntervalStillKeepsFreshSample() {
-        when(checkerConfig.getKeeperStateCheckIntervalMilli()).thenReturn(0);
+        when(checkerConfig.getRedisConfCheckIntervalMilli()).thenReturn(0);
 
         cache.update(KEEPER, KeeperState.ACTIVE);
         Assert.assertEquals(Boolean.TRUE, cache.isActive(KEEPER));

@@ -114,7 +114,7 @@ public class KeeperDelayCheckAcceptanceTest {
             return null;
         }).when(proxy).writeBinMultiDataPoint(any(MetricData.class));
 
-        when(checkerConfig.getKeeperStateCheckIntervalMilli()).thenReturn(5000);
+        when(checkerConfig.getRedisConfCheckIntervalMilli()).thenReturn(5000);
 
         capabilityCache = new KeeperCapabilityCache();
         keeperStateCache = new KeeperStateCache(checkerConfig);

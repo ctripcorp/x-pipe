@@ -34,8 +34,6 @@ public interface CheckerConfig {
 
     boolean isKeeperStateCheckEnabled();
 
-    int getKeeperStateCheckIntervalMilli();
-
     int getKeeperCapabilityRefreshIntervalMilli();
 
     long getHealthMarkCompensateIntervalMill();

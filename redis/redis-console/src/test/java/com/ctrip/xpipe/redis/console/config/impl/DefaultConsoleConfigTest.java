@@ -124,16 +124,6 @@ public class DefaultConsoleConfigTest extends AbstractConsoleTest {
     }
 
     @Test
-    public void testKeeperStateCheckInterval() {
-        Assert.assertEquals(5000, checkConfigBean.getKeeperStateCheckIntervalMilli());
-        Assert.assertEquals(5000, consoleConfig.getKeeperStateCheckIntervalMilli());
-
-        properties.put(CheckConfigBean.KEY_KEEPER_STATE_CHECK_INTERVAL_MILLI, "3000");
-        Assert.assertEquals(3000, checkConfigBean.getKeeperStateCheckIntervalMilli());
-        Assert.assertEquals(3000, consoleConfig.getKeeperStateCheckIntervalMilli());
-    }
-
-    @Test
     public void testKeeperCapabilityRefreshInterval() {
         Assert.assertEquals(60000, consoleConfig.getKeeperCapabilityRefreshIntervalMilli());
         Assert.assertEquals(60000, checkConfigBean.getKeeperCapabilityRefreshIntervalMilli());

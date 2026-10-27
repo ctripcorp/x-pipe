@@ -65,12 +65,12 @@ public class KeeperStateAction extends AbstractHealthCheckAction<KeeperHealthChe
     }
 
     /**
-     * 独立于 Redis 复制检查的周期，取 {@code keeper.state.check.interval.milli}；{@code KeeperStateCache}
+     * 与 {@code RedisMasterCheckAction} 同配置：{@code redis.conf.check.interval}；{@code KeeperStateCache}
      * 的过期窗口按同一配置计算。与其他 action 一样只在启动时读取，修改后随实例重建生效。
      */
     @Override
     protected int getBaseCheckInterval() {
-        return Math.max(MIN_CHECK_INTERVAL_MILLI, checkerConfig.getKeeperStateCheckIntervalMilli());
+        return Math.max(MIN_CHECK_INTERVAL_MILLI, instance.getHealthCheckConfig().getRedisConfCheckIntervalMilli());
     }
 
     @Override

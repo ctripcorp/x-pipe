@@ -46,7 +46,7 @@ public class KeeperStateCache implements KeeperStateActionListener {
 
     private static final Logger logger = LoggerFactory.getLogger(KeeperStateCache.class);
 
-    /** 两个采集周期（{@code keeper.state.check.interval.milli}）内没有新样本即视为失效。 */
+    /** 两个采集周期（与 {@code KeeperStateAction} 同为 {@code redis.conf.check.interval}）内没有新样本即视为失效。 */
     private static final int EXPIRE_INTERVALS = 2;
 
     /** 兜底窗口：配置为 0 或负数时若按原值计算，任何样本都会立刻过期，该 tag 将永久打不出来。 */
@@ -197,7 +197,7 @@ public class KeeperStateCache implements KeeperStateActionListener {
 
     private boolean isExpired(Sample sample) {
         long maxAge = Math.max(MIN_EXPIRE_MILLI,
-                (long) EXPIRE_INTERVALS * checkerConfig.getKeeperStateCheckIntervalMilli());
+                (long) EXPIRE_INTERVALS * checkerConfig.getRedisConfCheckIntervalMilli());
         return System.currentTimeMillis() - sample.timeMilli >= maxAge;
     }
 

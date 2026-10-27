@@ -56,7 +56,7 @@ public class KeeperStateActionTest {
         instance.setTfs(true);
         instance.setHealthCheckConfig(config);
 
-        when(checkerConfig.getKeeperStateCheckIntervalMilli()).thenReturn(5000);
+        when(config.getRedisConfCheckIntervalMilli()).thenReturn(5000);
         doReturn(scheduledFuture).when(scheduled)
                 .scheduleWithFixedDelay(any(Runnable.class), anyLong(), anyLong(), any(TimeUnit.class));
         lenient().doAnswer(invocation -> {
@@ -78,9 +78,9 @@ public class KeeperStateActionTest {
         }
     }
 
-    /** 周期取专用配置，不跟 Redis 复制检查的 checkIntervalMilli 走；KeeperStateCache 过期按同一配置计算。 */
+    /** 周期与 RedisMasterCheckAction 同为 redis.conf.check.interval，不跟 Redis 复制检查的 checkIntervalMilli 走。 */
     @Test
-    public void testScheduledWithKeeperStateInterval() {
+    public void testScheduledWithRedisConfCheckInterval() {
         verify(scheduled).scheduleWithFixedDelay(any(Runnable.class), anyLong(), eq(5000L),
                 eq(TimeUnit.MILLISECONDS));
         verify(config, never()).checkIntervalMilli();
@@ -89,7 +89,7 @@ public class KeeperStateActionTest {
     /** 误配为 0 / 负数时兜底到 1s，避免高频刷命令或调度报错。 */
     @Test
     public void testIntervalClampedToMinimum() throws Exception {
-        when(checkerConfig.getKeeperStateCheckIntervalMilli()).thenReturn(0);
+        when(config.getRedisConfCheckIntervalMilli()).thenReturn(0);
         KeeperStateAction clamped = new KeeperStateAction(scheduled, instance, executors, checkerConfig);
         clamped.initialize();
         clamped.start();
