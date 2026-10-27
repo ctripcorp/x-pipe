@@ -63,7 +63,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         when(channel.closeFuture()).thenReturn(new DefaultChannelPromise(channel));
         when(channel.remoteAddress()).thenReturn(localhostInetAdress(randomPort()));
         when(keeperRepl.replId()).thenReturn("test-repl-id");
-        when(redisKeeperServer.getKeeperRepl()).thenReturn(keeperRepl);
+        when(redisKeeperServer.getOrCreateKeeperRepl()).thenReturn(keeperRepl);
 
         RedisClient redisClient = new DefaultRedisClient(channel, redisKeeperServer);
         redisSlave= new DefaultRedisSlave(redisClient);
@@ -82,7 +82,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         redisSlave.sendMessage(Unpooled.wrappedBuffer(randomString(10).getBytes()));
 
         //should fail
-        shouldThrowException(() -> redisSlave.onCommand(null, 0L, mock(DefaultReferenceFileRegion.class)));
+        shouldThrowException(() -> redisSlave.onCommand(mock(DefaultReferenceFileRegion.class)));
         shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), new OffsetReplicationProgress(0L)));
         shouldThrowException(() -> redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L)));
 
@@ -90,7 +90,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
         //all should fail
         shouldThrowException(() -> redisSlave.sendMessage(randomString(10).getBytes()));
         shouldThrowException(() -> redisSlave.sendMessage(Unpooled.wrappedBuffer(randomString(10).getBytes())));
-        shouldThrowException(() -> redisSlave.onCommand(null, 0L, mock(DefaultReferenceFileRegion.class)));
+        shouldThrowException(() -> redisSlave.onCommand(mock(DefaultReferenceFileRegion.class)));
         shouldThrowException(() -> redisSlave.beginWriteRdb(mock(EofType.class), new OffsetReplicationProgress(0L)));
         shouldThrowException(() -> redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L)));
 
@@ -229,7 +229,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
 
     @Test
     public void testSlaveClosedWhenSendCommandFail() throws Exception {
-        when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
+        when(redisKeeperServer.getOrCreateReplicationStore()).thenReturn(replicationStore);
         doThrow(new IOException("File for offset 0 does not exist")).when(replicationStore).addCommandsListener(any(), any());
 
         redisSlave.beginWriteRdb(new LenEofType(1000), new OffsetReplicationProgress(0));
@@ -240,7 +240,7 @@ public class DefaultRedisSlaveTest extends AbstractRedisKeeperTest {
 
     @Test
     public void testMultiBeginWritingCmds() throws Exception {
-        when(redisKeeperServer.getReplicationStore()).thenReturn(replicationStore);
+        when(redisKeeperServer.getOrCreateReplicationStore()).thenReturn(replicationStore);
         redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L));
         redisSlave.beginWriteCommands(new OffsetReplicationProgress(0L));
 

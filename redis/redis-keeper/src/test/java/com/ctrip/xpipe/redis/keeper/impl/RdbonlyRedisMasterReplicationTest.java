@@ -66,7 +66,7 @@ public class RdbonlyRedisMasterReplicationTest extends AbstractRedisKeeperContex
         when(keeperServer.getKeeperMonitor()).thenReturn(keeperMonitor);
         when(keeperMonitor.getMasterStats()).thenReturn(masterStats);
         when(keeperMonitor.getReplicationStoreStats()).thenReturn(replicationStoreStats);
-        when(keeperServer.getReplicationStore()).thenReturn(replicationStore);
+        when(keeperServer.getOrCreateReplicationStore()).thenReturn(replicationStore);
 
         target = new DefaultEndPoint("localhost", randomPort());
         this.keeperRedisMaster = new DefaultRedisMaster(keeperServer, target, masterEventLoopGroup, rdbEventLoopGroup, masterConfigEventLoopGroup,

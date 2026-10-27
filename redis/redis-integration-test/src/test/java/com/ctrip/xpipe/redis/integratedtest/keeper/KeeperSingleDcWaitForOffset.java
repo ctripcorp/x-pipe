@@ -30,8 +30,10 @@ public class KeeperSingleDcWaitForOffset extends AbstractKeeperIntegratedSingleD
 
         sleep(2000);
 
-        //make sure redis has more log
+        //make sure redis has more log — wait slaves (via active keeper) catch up so their
+        // offset exceeds disconnected backup and triggers waitForOffset on xslaveof
         sendMessageToMaster(redisMaster, 1);
+        waitSlavesReplOffsetCatchUp(redisMaster, getRedisSlaves());
 
         xslaveof(backupKeeper.getIp(), backupKeeper.getPort(), getRedisSlaves());
 

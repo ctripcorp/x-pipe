@@ -48,15 +48,13 @@ public class DefaultGapAllowedSync extends AbstractReplicationStoreGapAllowedSyn
 
 	@Override
 	protected void doWhenFullSyncToNonFreshReplicationStore(String replId) throws IOException {
-
+		// Establish-then-destroy: never close old store here. Manager.create() releases the
+		// previous lease only after the new store is successfully recorded; on create failure
+		// the old store must stay open and remain getCurrent().
 		ReplicationStore oldStore = currentReplicationStore;
-		if(oldStore != null){
-			try {
-				getLogger().info("[doWhenFullSyncToNonFreshReplicationStore][full sync][replication store out of time, destroy]{}, {}", this, currentReplicationStore);
-				oldStore.close();
-			} catch (Exception e) {
-				getLogger().error("[handleRedisReponse]" + oldStore, e);
-			}
+		if (oldStore != null) {
+			getLogger().info("[doWhenFullSyncToNonFreshReplicationStore][full sync][replication store out of time, replace]{}, {}",
+					this, oldStore);
 			notifyReFullSync();
 		}
 		getLogger().info("[doWhenFullSyncToNonFreshReplicationStore][set keepermeta]{}", replId);

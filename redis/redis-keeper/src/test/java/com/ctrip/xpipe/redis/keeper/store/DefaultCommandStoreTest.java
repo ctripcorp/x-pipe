@@ -1,7 +1,8 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
-import com.ctrip.xpipe.netty.filechannel.DefaultReferenceFileRegion;
+import com.ctrip.xpipe.api.codec.Codec;
+import com.ctrip.xpipe.netty.filechannel.ReferenceFileRegion;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParser;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserFactory;
 import com.ctrip.xpipe.redis.core.redis.operation.RedisOpParserManager;
@@ -10,14 +11,19 @@ import com.ctrip.xpipe.redis.core.redis.operation.parser.GeneralRedisOpParser;
 import com.ctrip.xpipe.redis.core.store.*;
 import com.ctrip.xpipe.redis.keeper.AbstractRedisKeeperTest;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncSegmentFile;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStore;
+import com.ctrip.xpipe.redis.core.store.ratelimit.ReplDelayConfig;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReader;
 import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderWriterFactory;
-import com.ctrip.xpipe.redis.keeper.store.gtid.index.AbstractIndex;
+import com.ctrip.xpipe.redis.keeper.store.cmd.CoalescingOffsetNotifier;
+import com.ctrip.xpipe.utils.OffsetNotifier;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.EventLoop;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.After;
 import org.junit.Assert;
@@ -29,17 +35,18 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.WritableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,35 +87,45 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	@Mock
 	private CKStore ckStore;
 
-	@Mock
-	private NioEventLoopGroup nioEventLoopGroup;
 
 	private AtomicInteger failed = new AtomicInteger(0);
 
 
 	@Before
-	public void beforeDefaultCommandStoreTest() throws Exception	 {
-
-		String testDir = getTestFileDir();
-		commandTemplate = new File(testDir, getTestName()+"_");
+	public void beforeDefaultCommandStoreTest() {
+		commandTemplate = new File(getTestFileDir(), getTestName() + "_");
 		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
 		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
 		opParser = new GeneralRedisOpParser(redisOpParserManager);
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
+	}
+
+	@After
+	public void afterDefaultCommandStoreTest() throws IOException {
+		closeCommandStore();
+	}
+
+	/** Default store: field maxFileSize, buildIndex=true. Closes previous writer first (single-writer). */
+	private void initCommandStore() throws IOException {
+		initCommandStore(maxFileSize);
+	}
+
+	private void initCommandStore(int fileSize) throws IOException {
+		openCommandStore(createDefaultCommandStore(commandTemplate, fileSize, commandReaderWriterFactory,
+				createkeeperMonitor(), opParser, gtidCmdFilter));
+	}
+
+	/** Take ownership of a constructed store: close previous writer, then initialize. */
+	private void openCommandStore(DefaultCommandStore store) throws IOException {
+		closeCommandStore();
+		commandStore = store;
 		commandStore.initialize();
 	}
 
-
-	@Test
-	public void testLoadIdxFromFile() throws Exception {
-		File baseDir = new File("./src/test/resources/DefaultCommandStoreTest");
-		String prefix = "abcdefg_";
-		commandStore = new DefaultCommandStore(new File(baseDir, prefix), maxFileSize, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
-		commandStore.initialize();
-		List<CommandFileOffsetGtidIndex> idxList = commandStore.getIndexList();
-		logger.info("[testLoadIdxFromFile] idxList {}", idxList);
-
-		Assert.assertEquals(6, idxList.size());
+	private void closeCommandStore() throws IOException {
+		if (commandStore != null) {
+			commandStore.close();
+			commandStore = null;
+		}
 	}
 
 	@Test
@@ -117,16 +134,14 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		final int initDataKeep = 20;
 		final AtomicInteger dataKeep = new AtomicInteger(initDataKeep);
 		int gcAfterCreateMilli = 60000;
-		File commandTemplate = new File(getTestFileDir(), getTestName()+"_");
 
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, () -> 3600, gcAfterCreateMilli, () -> dataKeep.get(), DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
-				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig()){
+		openCommandStore(new DefaultCommandStore(null, getKeeperConfig(), commandTemplate, maxFileSize, () -> false, () -> 3600, gcAfterCreateMilli, () -> dataKeep.get(), DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true, 0L, asyncFileSystem(), () -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId()){
 			@Override
 			public long totalLength() {
 				return initDataKeep * maxFileSize;
 			}
-		};
-		commandStore.initialize();
+		});
 
 		Assert.assertFalse(commandStore.canDeleteCmdFile(maxFileSize * 10, 0, maxFileSize, new Date().getTime() - 600000));
 
@@ -140,11 +155,8 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 
 	@Test
 	public void testNotifyImmediatelyWhenCoalescingDisabled() throws Exception {
-		commandStore.close();
-		commandStore = new DefaultCommandStore(commandTemplate, maxFileSize, () -> 3600, 0, () -> 20,
-				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> false,
-				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
-		commandStore.initialize();
+		openCommandStore(createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, maxFileSize, () -> false, () -> 3600, 0, () -> 20,
+				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> false, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true));
 		ReflectionTestUtils.setField(commandStore, "buildIndex", false);
 
 		commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[] { 'a' }));
@@ -152,8 +164,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	}
 
 	@Test
-	public void testInterruptClose() throws InterruptedException{
-		
+	public void testInterruptClose() throws Exception {
+		initCommandStore();
+
 		Thread thread = new Thread(new AbstractExceptionLogTask() {
 			
 			@Override
@@ -176,7 +189,8 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	}
 	
 	@Test
-	public void testLengthEqual() throws InterruptedException{
+	public void testLengthEqual() throws Exception {
+		initCommandStore();
 		ReflectionTestUtils.setField(commandStore, "buildIndex", false);
 		final int runTimes = 1000; 
 		final AtomicLong realLength = new AtomicLong();
@@ -237,8 +251,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	
 	
 	@Test
-	public void testGetAsSoonAsMessageWritten() throws IOException, InterruptedException {
+	public void testGetAsSoonAsMessageWritten() throws Exception {
 
+		initCommandStore();
 		final StringBuilder sb = new StringBuilder();
 		final Semaphore semaphore = new Semaphore(0);
 
@@ -251,9 +266,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 				commandStore.addCommandsListener(new OffsetReplicationProgress(0), new CommandsListener() {
 
 					@Override
-					public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object referenceFileRegion) {
+					public ChannelFuture onCommand(Object referenceFileRegion) {
 
-						sb.append(readFileChannelInfoMessageAsString((DefaultReferenceFileRegion)referenceFileRegion));
+						sb.append(readReferenceFileRegionAsString((ReferenceFileRegion) referenceFileRegion));
 						semaphore.release();
 						return null;
 					}
@@ -296,64 +311,179 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 
 	}
 
+	/**
+	 * Reproduce KeeperSingleDcSlaveof#testSlaveof stall: reader already on tail
+	 * ({@code openedEnd=MAX}), then writer rolls and appends a new segment.
+	 * Distinguishes A ({@code totalLength} stuck) vs B ({@code transferTo} returns 0).
+	 */
 	@Test
-	public void testConcurrentRotateGetFileLength() throws IOException, InterruptedException, ExecutionException, Exception {
+	public void testPreopenedTailReaderSeesDataAfterRotate() throws Exception {
+		initCommandStore();
+		ReflectionTestUtils.setField(commandStore, "buildIndex", false);
 
-		final AtomicReference<DefaultCommandStore> commandStore = new AtomicReference<>();
-		final int appendCount = 10;
+		byte[] oldSeg = new byte[2000];
+		Arrays.fill(oldSeg, (byte) 'A');
+		commandStore.appendCommands(Unpooled.wrappedBuffer(oldSeg));
+		Assert.assertEquals(2000L, commandStore.totalLength());
+
+		OffsetNotifier notifier = (OffsetNotifier) ReflectionTestUtils.getField(commandStore, "offsetNotifier");
+		OffsetCommandReader reader = (OffsetCommandReader) commandReaderWriterFactory.createCmdReader(
+				new OffsetReplicationProgress(0), commandStore, notifier, new ReplDelayConfig() {},
+				DEFAULT_COMMAND_READER_FLYING_THRESHOLD);
+		commandStore.addReader(reader);
+
+		ByteArrayOutputStream drained = new ByteArrayOutputStream();
+		WritableByteChannel drainCh = allBytesChannel(drained);
+		long got = drainReader(reader, drainCh, 2000);
+		Assert.assertEquals("reader should catch up to old tail before rotate", 2000L, got);
+
+		AsyncSegmentFile readHandle = (AsyncSegmentFile) ReflectionTestUtils.getField(reader, "readAsyncSegmentFile");
+		long openedStartBefore = (Long) ReflectionTestUtils.getField(readHandle, "openedSegmentStartOffset");
+		long openedEndBefore = (Long) ReflectionTestUtils.getField(readHandle, "openedSegmentEndOffset");
+		logger.info("[pre-rotate] reader opened=[{}, {}) totalLength={}",
+				openedStartBefore, openedEndBefore, commandStore.totalLength());
+
+		commandStore.rotateFileIfNecessary();
+
+		AsyncFileSystem fs = commandStore.getAsyncFileSystem();
+		AsyncSegmentFile writerHandle = commandStore.getAsyncSegmentFile();
+		long writerStartAfterRotate = fs.getCurrentSegmentStartOffset(writerHandle);
+		long writerSegSizeAfterRotate = fs.sizeOfSegment(writerHandle, writerStartAfterRotate).get(5, TimeUnit.SECONDS);
+		logger.info("[post-rotate] writerStart={} writerSegSize={} totalLength={} list={}",
+				writerStartAfterRotate, writerSegSizeAfterRotate, commandStore.totalLength(), fs.list(writerHandle));
+
+		byte[] newTail = new byte[8000];
+		Arrays.fill(newTail, (byte) 'B');
+		commandStore.appendCommands(Unpooled.wrappedBuffer(newTail));
+
+		long writerStart = fs.getCurrentSegmentStartOffset(writerHandle);
+		long writerSegSize = fs.sizeOfSegment(writerHandle, writerStart).get(5, TimeUnit.SECONDS);
+		long totalAfter = commandStore.totalLength();
+		logger.info("[post-write] writerStart={} writerSegSize={} totalLength={} list={}",
+				writerStart, writerSegSize, totalAfter, fs.list(writerHandle));
+
+		long openedStartAfter = (Long) ReflectionTestUtils.getField(readHandle, "openedSegmentStartOffset");
+		long openedEndAfter = (Long) ReflectionTestUtils.getField(readHandle, "openedSegmentEndOffset");
+		logger.info("[post-write] reader opened=[{}, {})", openedStartAfter, openedEndAfter);
+
+		boolean hypothesisA = totalAfter <= 2000;
+		ReferenceFileRegion region = reader.read(50);
+		long transferred = 0;
+		if (region != null && region != ReferenceFileRegion.EOF) {
+			transferred = region.transferTo(drainCh, 0);
+			reader.flushed(region);
+		}
+		boolean hypothesisB = !hypothesisA && (region == null || transferred <= 0);
+
+		logger.info("[A/B] totalAfter={} region={} regionCount={} transferred={} A={} B={}",
+				totalAfter, region == null ? "null" : region.getClass().getSimpleName(),
+				region == null || region == ReferenceFileRegion.EOF ? -1 : region.count(),
+				transferred, hypothesisA, hypothesisB);
 
 		try {
-			String testDir = getTestFileDir();
-			File commandTemplate = new File(testDir, getTestName()+"_");
-			commandStore.set(new DefaultCommandStore(commandTemplate, 1, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig()));
-			commandStore.get().initialize();
-			final AtomicBoolean appendResult = new AtomicBoolean(false);
-			final SettableFuture<Void> future = SettableFuture.create();
-
-			executors.execute(new Runnable() {
-
-				@Override
-				public void run() {
-
-					try {
-						for (int i = 0; i < appendCount; i++) {
-							commandStore.get().appendCommands(Unpooled.wrappedBuffer(randomString(10).getBytes()));
-						}
-					} catch (IOException e) {
-						logger.error("[run]", e);
-					} finally {
-						appendResult.set(true);
-					}
-				}
-			});
-
-			executors.execute(new Runnable() {
-
-				@Override
-				public void run() {
-
-					while (!appendResult.get()) {
-						try {
-							commandStore.get().totalLength();
-						} catch (Exception e) {
-							future.setException(e);
-						}
-					}
-					future.set(null);
-				}
-			});
-
-			future.get();
-		} finally {
-			if (commandStore.get() != null) {
-				commandStore.get().close();
+			if (hypothesisA) {
+				Assert.fail("A: totalLength stuck at " + totalAfter + " after writing 8000 bytes past rotate");
 			}
+			if (hypothesisB) {
+				Assert.fail("B: totalLength=" + totalAfter + " but transferTo=" + transferred
+						+ " readerOpened=[" + openedStartAfter + "," + openedEndAfter + ")");
+			}
+			Assert.assertEquals(10000L, totalAfter);
+			Assert.assertTrue("reader should receive new tail after rotate", transferred > 0);
+		} finally {
+			reader.close();
 		}
 	}
 
-	@Test
-	public void testReadNotFromZero() throws IOException, InterruptedException {
+	private static WritableByteChannel allBytesChannel(ByteArrayOutputStream out) {
+		return new WritableByteChannel() {
+			private boolean open = true;
 
+			@Override
+			public int write(ByteBuffer src) {
+				int n = src.remaining();
+				byte[] buf = new byte[n];
+				src.get(buf);
+				out.write(buf, 0, n);
+				return n;
+			}
+
+			@Override
+			public boolean isOpen() {
+				return open;
+			}
+
+			@Override
+			public void close() {
+				open = false;
+			}
+		};
+	}
+
+	private static long drainReader(OffsetCommandReader reader, WritableByteChannel ch, long expect)
+			throws IOException {
+		long got = 0;
+		for (int i = 0; i < 64 && got < expect; i++) {
+			ReferenceFileRegion region = reader.read(50);
+			if (region == null || region == ReferenceFileRegion.EOF) {
+				break;
+			}
+			got += region.transferTo(ch, 0);
+			reader.flushed(region);
+		}
+		return got;
+	}
+
+	@Test
+	public void testConcurrentRotateGetFileLength() throws Exception {
+
+		final int appendCount = 10;
+		initCommandStore(1);
+
+		final DefaultCommandStore store = commandStore;
+		final AtomicBoolean appendResult = new AtomicBoolean(false);
+		final SettableFuture<Void> future = SettableFuture.create();
+
+		executors.execute(new Runnable() {
+
+			@Override
+			public void run() {
+
+				try {
+					for (int i = 0; i < appendCount; i++) {
+						store.appendCommands(Unpooled.wrappedBuffer(randomString(10).getBytes()));
+					}
+				} catch (IOException e) {
+					logger.error("[run]", e);
+				} finally {
+					appendResult.set(true);
+				}
+			}
+		});
+
+		executors.execute(new Runnable() {
+
+			@Override
+			public void run() {
+
+				while (!appendResult.get()) {
+					try {
+						store.totalLength();
+					} catch (Exception e) {
+						future.setException(e);
+					}
+				}
+				future.set(null);
+			}
+		});
+
+		future.get();
+	}
+
+	@Test
+	public void testReadNotFromZero() throws Exception {
+
+		initCommandStore();
 		StringBuilder sb = new StringBuilder();
 		ReflectionTestUtils.setField(commandStore, "buildIndex", false);
 
@@ -396,11 +526,12 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 					commandStore.addCommandsListener(new OffsetReplicationProgress(offset), new CommandsListener() {
 
 						@Override
-						public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object referenceFileRegion) {
+						public ChannelFuture onCommand(Object referenceFileRegion) {
 
 							logger.debug("[onCommand]{}", referenceFileRegion);
-							result.append(readFileChannelInfoMessageAsString((DefaultReferenceFileRegion)referenceFileRegion));
-							semaphore.release((int) ((DefaultReferenceFileRegion)referenceFileRegion).count());
+							ReferenceFileRegion region = (ReferenceFileRegion) referenceFileRegion;
+							result.append(readReferenceFileRegionAsString(region));
+							semaphore.release((int) region.count());
 							return null;
 						}
 
@@ -435,8 +566,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	}
 
 	@Test
-	public void testReadWrite() throws IOException, InterruptedException {
+	public void testReadWrite() throws Exception {
 
+		initCommandStore();
 		StringBuilder sb = new StringBuilder();
 		AtomicInteger totalWritten = new AtomicInteger();
 
@@ -459,14 +591,37 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		Assert.assertTrue(sb.toString().equals(result));
 	}
 
+	@Test
+	public void testAsyncSegmentWriteRollAndRead() throws Exception {
+		// maxFileSize=5, asyncWriteMaxBytes=2：CommandStore 仅在每次 appendCommands 写前 rotate，
+		// 同一次 append 内不中途 roll。
+		openCommandStore(createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 5, () -> false, () -> 3600, 0,
+				() -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> false, commandReaderWriterFactory,
+				createkeeperMonitor(), opParser, gtidCmdFilter, false, () -> 2));
+
+		String first = "abcde";
+		commandStore.appendCommands(Unpooled.wrappedBuffer(first.getBytes(Codec.defaultCharset)));
+		Assert.assertEquals(first.length(), commandStore.totalLength());
+		Assert.assertTrue(new File(commandTemplate.getParentFile(), commandTemplate.getName() + "0").isFile());
+		Assert.assertFalse(new File(commandTemplate.getParentFile(), commandTemplate.getName() + "5").isFile());
+
+		String second = "fg";
+		commandStore.appendCommands(Unpooled.wrappedBuffer(second.getBytes(Codec.defaultCharset)));
+		String expected = first + second;
+		Assert.assertEquals(expected.length(), commandStore.totalLength());
+		Assert.assertTrue(new File(commandTemplate.getParentFile(), commandTemplate.getName() + "0").isFile());
+		Assert.assertTrue(new File(commandTemplate.getParentFile(), commandTemplate.getName() + "5").isFile());
+		Assert.assertEquals(expected, readCommandStoreTilNoMessage(commandStore, expected.length()));
+	}
+
 
 	@Test
 	public void testGcOldCmdFile() throws Exception {
 		AtomicInteger maxSecondsKeepCmdFile = new AtomicInteger(60);
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, maxSecondsKeepCmdFile::get, 0,
-				() -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
-		commandStore.initialize();
+		openCommandStore(createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 100, () -> false, maxSecondsKeepCmdFile::get, 0,
+				() -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory, createkeeperMonitor(),
+				opParser, gtidCmdFilter, true));
 		appendCommandsToStore(10, 100);
 
 		commandStore.gc();
@@ -480,36 +635,12 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	}
 
 	@Test
-	public void testDelCmdFileDeletesIndexV2CompanionFiles() throws Exception {
-		appendCommandsToStore(1, 50);
-
-		File baseDir = commandTemplate.getParentFile();
-		File[] cmdFiles = baseDir.listFiles((dir, name) -> name.startsWith(commandTemplate.getName()));
-		Assert.assertNotNull(cmdFiles);
-		Assert.assertEquals(1, cmdFiles.length);
-		File cmdFile = cmdFiles[0];
-
-		new File(baseDir, AbstractIndex.INDEX + cmdFile.getName()).createNewFile();
-		new File(baseDir, AbstractIndex.BLOCK + cmdFile.getName()).createNewFile();
-		new File(baseDir, AbstractIndex.INDEX_V2 + cmdFile.getName()).createNewFile();
-		new File(baseDir, AbstractIndex.BLOCK_V2 + cmdFile.getName()).createNewFile();
-
-		ReflectionTestUtils.invokeMethod(commandStore, "delCmdFile", cmdFile);
-
-		Assert.assertFalse(cmdFile.exists());
-		Assert.assertFalse(new File(baseDir, AbstractIndex.INDEX + cmdFile.getName()).exists());
-		Assert.assertFalse(new File(baseDir, AbstractIndex.BLOCK + cmdFile.getName()).exists());
-		Assert.assertFalse(new File(baseDir, AbstractIndex.INDEX_V2 + cmdFile.getName()).exists());
-		Assert.assertFalse(new File(baseDir, AbstractIndex.BLOCK_V2 + cmdFile.getName()).exists());
-	}
-
-	@Test
 	public void testGc() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD,() -> true, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
-		commandStore.initialize();
+		openCommandStore(createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 100, () -> false, () -> 3600, 0,
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory,
+				createkeeperMonitor(), opParser, gtidCmdFilter, true));
 		appendCommandsToStore(3, 100);
 
 		commandStore.gc();
@@ -524,9 +655,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testRetainCommands() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
-		commandStore.initialize();
+		openCommandStore(createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 100, () -> false, () -> 3600, 0,
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory,
+				createkeeperMonitor(), opParser, gtidCmdFilter, true));
 		appendCommandsToStore(3, 100);
 
 		commandStore.retainCommands(buildCommandGuarantee(0, 100000, () -> true, () -> 0));
@@ -539,9 +670,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testRetainCommandsButTimeout() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
-		commandStore.initialize();
+		openCommandStore(createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 100, () -> false, () -> 3600, 0,
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true));
 		appendCommandsToStore(3, 100);
 
 		commandStore.retainCommands(buildCommandGuarantee(0, 1, () -> true, () -> 0));
@@ -555,9 +686,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testRetainCommandsButListenerClosed() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD,() -> true, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
-		commandStore.initialize();
+		openCommandStore(createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 100, () -> false, () -> 3600, 0,
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true, commandReaderWriterFactory,
+				createkeeperMonitor(), opParser, gtidCmdFilter, true));
 		appendCommandsToStore(3, 100);
 
 		commandStore.retainCommands(buildCommandGuarantee(0, 100000, () -> false, () -> 0));
@@ -571,9 +702,9 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	public void testRetainCommandsAndFinish() throws Exception {
 		int fileNumToKeep = 2;
 
-		commandStore = new DefaultCommandStore(commandTemplate, 100, () -> 3600, 0,
-				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD,() -> true, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
-		commandStore.initialize();
+		openCommandStore(createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, 100, () -> false, () -> 3600, 0,
+				() -> fileNumToKeep, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true));
 		appendCommandsToStore(3, 100);
 
 		commandStore.retainCommands(buildCommandGuarantee(0, 100000, () -> true, () -> 10));
@@ -591,7 +722,7 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			}
 
 			@Override
-			public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
+			public ChannelFuture onCommand(Object cmd) {
 				return null;
 			}
 
@@ -622,21 +753,50 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		});
 	}
 
-	@After
-	public void afterDefaultCommandStoreTest() throws IOException {
-		commandStore.close();
+	private String readReferenceFileRegionAsString(ReferenceFileRegion referenceFileRegion) {
+		try {
+			OneByteWritableByteChannel channel = new OneByteWritableByteChannel();
+			referenceFileRegion.transferTo(channel, 0L);
+			return new String(channel.getResult(), Codec.defaultCharset);
+		} catch (IOException e) {
+			throw new IllegalStateException(String.format("[read]%s", referenceFileRegion), e);
+		}
+	}
+
+	private static class OneByteWritableByteChannel implements WritableByteChannel {
+
+		private final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+		private boolean open = true;
+
+		@Override
+		public int write(ByteBuffer src) {
+			if (!src.hasRemaining()) {
+				return 0;
+			}
+			output.write(src.get());
+			return 1;
+		}
+
+		@Override
+		public boolean isOpen() {
+			return open;
+		}
+
+		@Override
+		public void close() {
+			open = false;
+		}
+
+		byte[] getResult() {
+			return output.toByteArray();
+		}
 	}
 
 	@Test
 	public void testIndex() throws Exception {
-		String testDir = getTestFileDir();
-		commandTemplate = new File(testDir, getTestName()+"_");
-		RedisOpParserManager redisOpParserManager = new DefaultRedisOpParserManager();
-		RedisOpParserFactory.getInstance().registerParsers(redisOpParserManager);
-		opParser = new GeneralRedisOpParser(redisOpParserManager);
 		Mockito.when(gtidCmdFilter.gtidSetContains(anyString(), anyLong())).thenReturn(false);
-		commandStore = new DefaultCommandStore(commandTemplate, 18067200, commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, getKeeperConfig());
-		commandStore.initialize();
+		initCommandStore(18067200);
 
 		String filePath = "src/test/resources/GtidTest/appendonly.aof";
 		int length = 1024 * 8;
@@ -659,32 +819,263 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 	}
 
 	@Test
-	public void testIndexOffsetCorrectnessWithRotationAndFlush() throws Exception {
-		writeCmdWithRotation(true);
+	public void testIndexOffsetCorrectnessWithRotation() throws Exception {
+		writeCmdWithRotation();
 	}
 
 	@Test
-	public void testIndexOffsetCorrectnessWithRotationAndNoFlush() throws Exception {
-		writeCmdWithRotation(false);
+	public void testCoalescedNotifyWakesReaderByTimerOnMasterEventLoop() throws Exception {
+		NioEventLoopGroup masterEventLoopGroup = new NioEventLoopGroup(1);
+		try {
+			TestKeeperConfig keeperConfig = new TestKeeperConfig()
+					.setCommandOffsetNotifyBytesThreshold(1 << 20)
+					.setCommandOffsetNotifyTimeMilliThreshold(300);
+			openCommandStore(new DefaultCommandStore(ckStore, masterEventLoopGroup, keeperConfig,
+					commandTemplate, maxFileSize, () -> false, () -> 3600, 0, () -> 20,
+					DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+					commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, false,
+					0L, asyncFileSystem(), () -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId()));
+
+			long begin = System.nanoTime();
+			Assert.assertEquals(10, commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[10])));
+			Assert.assertEquals(10, commandStore.totalLength());
+
+			Assert.assertFalse("below bytes threshold must not notify at once", commandStore.awaitCommandsOffset(9, 50));
+			Assert.assertTrue("timer on master event loop must notify", commandStore.awaitCommandsOffset(9, 5000));
+			Assert.assertTrue(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin) >= 250);
+		} finally {
+			closeCommandStore();
+			masterEventLoopGroup.shutdownGracefully(0, 1, TimeUnit.SECONDS).syncUninterruptibly();
+		}
 	}
 
-	private void writeCmdWithRotation(boolean flush) throws Exception {
-		// 1. 构造一个启用索引、滑动窗口、且 maxFileSize 很小的 CommandStore
+	@Test
+	public void testMultiChunkWriteNotifiesOnceAndFailedWriteDoesNot() throws Exception {
+		int chunkBytes = 16;
+		openCommandStore(createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, maxFileSize, () -> false,
+				() -> 3600, 0, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, false, () -> chunkBytes));
+		CoalescingOffsetNotifier coalescer = Mockito.mock(CoalescingOffsetNotifier.class);
+		ReflectionTestUtils.setField(commandStore, "offsetNotifyCoalescer", coalescer);
+
+		int length = chunkBytes * 6 + 5;
+		Assert.assertEquals(length, commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[length])));
+		Assert.assertEquals(length, commandStore.totalLength());
+		Mockito.verify(coalescer, Mockito.times(1)).onWritten(length, length - 1);
+		Mockito.verifyNoMoreInteractions(coalescer);
+
+		CommandWriter realWriter = commandStore.getCommandWriter();
+		CommandWriter failingWriter = Mockito.mock(CommandWriter.class);
+		Mockito.when(failingWriter.write(Mockito.any(ByteBuf.class))).thenThrow(new IOException("inject write fail"));
+		ReflectionTestUtils.setField(commandStore, "cmdWriter", failingWriter);
+		try {
+			commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[10]));
+			Assert.fail("write failure must propagate");
+		} catch (IOException expected) {
+			Assert.assertEquals("inject write fail", expected.getMessage());
+		} finally {
+			ReflectionTestUtils.setField(commandStore, "cmdWriter", realWriter);
+		}
+		Mockito.verifyNoMoreInteractions(coalescer);
+	}
+
+	/** spec §13.21: writer 只负责写，绕过 onlyAppendCommand 直接写 writer 不会唤醒 reader。 */
+	@Test
+	public void testWriterDoesNotNotifyOffset() throws Exception {
+		openCommandStore(createDefaultCommandStore(null, getKeeperConfig(), commandTemplate, maxFileSize, () -> false,
+				() -> 3600, 0, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> false,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, false,
+				() -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES));
+
+		Assert.assertEquals(10, commandStore.getCommandWriter().write(Unpooled.wrappedBuffer(new byte[10])));
+		Assert.assertEquals(10, commandStore.totalLength());
+		Assert.assertFalse("writer must not notify", commandStore.awaitCommandsOffset(9, 50));
+
+		Assert.assertEquals(1, commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[1])));
+		Assert.assertTrue("onlyAppendCommand notifies the end offset", commandStore.awaitCommandsOffset(10, 0));
+	}
+
+	/** spec §13.21: 有 master event loop 但开关关闭时，每次写入立即通知，不走定时。 */
+	@Test
+	public void testCoalescingDisabledNotifiesEachWriteWithMasterEventLoop() throws Exception {
+		NioEventLoopGroup masterEventLoopGroup = new NioEventLoopGroup(1);
+		try {
+			TestKeeperConfig keeperConfig = new TestKeeperConfig()
+					.setCommandOffsetNotifyBytesThreshold(1 << 20)
+					.setCommandOffsetNotifyTimeMilliThreshold(60000);
+			openCoalescingCommandStore(masterEventLoopGroup, keeperConfig, () -> false);
+
+			Assert.assertEquals(10, commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[10])));
+			Assert.assertTrue(commandStore.awaitCommandsOffset(9, 0));
+			Assert.assertEquals(5, commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[5])));
+			Assert.assertTrue(commandStore.awaitCommandsOffset(14, 0));
+		} finally {
+			closeCommandStore();
+			masterEventLoopGroup.shutdownGracefully(0, 1, TimeUnit.SECONDS).syncUninterruptibly();
+		}
+	}
+
+	/** spec §13.21: 运行期修改开关与两个阈值，下一次写入即生效（阈值从 keeperConfig 每次读取）。 */
+	@Test
+	public void testSwitchAndThresholdsTakeEffectOnNextWrite() throws Exception {
+		NioEventLoopGroup masterEventLoopGroup = new NioEventLoopGroup(1);
+		try {
+			TestKeeperConfig keeperConfig = new TestKeeperConfig()
+					.setCommandOffsetNotifyBytesThreshold(1 << 20)
+					.setCommandOffsetNotifyTimeMilliThreshold(60000);
+			AtomicBoolean enabled = new AtomicBoolean(true);
+			openCoalescingCommandStore(masterEventLoopGroup, keeperConfig, enabled::get);
+
+			// 不足 bytes 阈值、time 阈值 60s：不通知
+			commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[10]));
+			Assert.assertFalse(commandStore.awaitCommandsOffset(9, 100));
+
+			// 调小 bytes 阈值：下一次写入累计 pending 达到阈值，立即通知，并取消 60s 的定时
+			keeperConfig.setCommandOffsetNotifyBytesThreshold(8);
+			commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[1]));
+			Assert.assertTrue(commandStore.awaitCommandsOffset(10, 0));
+
+			// bytes 阈值调回、time 阈值调小：下一次写入按新 time 阈值排定时
+			keeperConfig.setCommandOffsetNotifyBytesThreshold(1 << 20);
+			keeperConfig.setCommandOffsetNotifyTimeMilliThreshold(50);
+			commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[1]));
+			Assert.assertTrue("timer with new time threshold", commandStore.awaitCommandsOffset(11, 5000));
+
+			// 关闭开关：下一次写入立即通知
+			keeperConfig.setCommandOffsetNotifyTimeMilliThreshold(60000);
+			enabled.set(false);
+			commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[1]));
+			Assert.assertTrue(commandStore.awaitCommandsOffset(12, 0));
+		} finally {
+			closeCommandStore();
+			masterEventLoopGroup.shutdownGracefully(0, 1, TimeUnit.SECONDS).syncUninterruptibly();
+		}
+	}
+
+	/** spec §13.22 / §15.2: close 先发出 pending 通知，再关闭 cmdWriter。 */
+	@Test
+	public void testCloseNotifiesPendingBeforeClosingWriter() throws Exception {
+		NioEventLoopGroup masterEventLoopGroup = new NioEventLoopGroup(1);
+		try {
+			TestKeeperConfig keeperConfig = new TestKeeperConfig()
+					.setCommandOffsetNotifyBytesThreshold(1 << 20)
+					.setCommandOffsetNotifyTimeMilliThreshold(60000);
+			openCoalescingCommandStore(masterEventLoopGroup, keeperConfig, () -> true);
+
+			commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[10]));
+			Assert.assertFalse(commandStore.awaitCommandsOffset(9, 50));
+
+			OffsetNotifier notifier = (OffsetNotifier) ReflectionTestUtils.getField(commandStore, "offsetNotifier");
+			CommandWriter realWriter = commandStore.getCommandWriter();
+			CommandWriter closeObserver = Mockito.mock(CommandWriter.class);
+			AtomicBoolean notifiedBeforeWriterClose = new AtomicBoolean(false);
+			Mockito.doAnswer(inv -> {
+				notifiedBeforeWriterClose.set(notifier.await(9, 0));
+				realWriter.close();
+				return null;
+			}).when(closeObserver).close();
+			ReflectionTestUtils.setField(commandStore, "cmdWriter", closeObserver);
+
+			closeCommandStore();
+
+			Mockito.verify(closeObserver).close();
+			Assert.assertTrue("pending offset must be notified before cmdWriter close", notifiedBeforeWriterClose.get());
+		} finally {
+			closeCommandStore();
+			masterEventLoopGroup.shutdownGracefully(0, 1, TimeUnit.SECONDS).syncUninterruptibly();
+		}
+	}
+
+	/** spec §13.22: master event loop 已关闭、schedule 被拒时，写入照常成功并立即通知。 */
+	@Test
+	public void testScheduleRejectedStillWritesAndNotifies() throws Exception {
+		NioEventLoopGroup masterEventLoopGroup = new NioEventLoopGroup(1);
+		try {
+			TestKeeperConfig keeperConfig = new TestKeeperConfig()
+					.setCommandOffsetNotifyBytesThreshold(1 << 20)
+					.setCommandOffsetNotifyTimeMilliThreshold(60000);
+			openCoalescingCommandStore(masterEventLoopGroup, keeperConfig, () -> true);
+			masterEventLoopGroup.shutdownGracefully(0, 1, TimeUnit.SECONDS).syncUninterruptibly();
+
+			Assert.assertEquals(10, commandStore.appendCommands(Unpooled.wrappedBuffer(new byte[10])));
+			Assert.assertEquals(10, commandStore.totalLength());
+			Assert.assertTrue("rejected schedule falls back to immediate notify", commandStore.awaitCommandsOffset(9, 0));
+		} finally {
+			closeCommandStore();
+			masterEventLoopGroup.shutdownGracefully(0, 1, TimeUnit.SECONDS).syncUninterruptibly();
+		}
+	}
+
+	private void openCoalescingCommandStore(NioEventLoopGroup masterEventLoopGroup, TestKeeperConfig keeperConfig,
+											BooleanSupplier coalescingEnabled) throws IOException {
+		openCommandStore(new DefaultCommandStore(ckStore, masterEventLoopGroup, keeperConfig,
+				commandTemplate, maxFileSize, () -> false, () -> 3600, 0, () -> 20,
+				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, coalescingEnabled,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, false,
+				0L, asyncFileSystem(), () -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId()));
+	}
+
+	/**
+	 * T-H3.CP6.3: cmdWriter / indexStore close failures must not skip
+	 * {@code closeHandle(asyncSegmentFile)}.
+	 */
+	@Test
+	public void closeStillClosesSegmentWhenPriorStepsFail() throws Exception {
+		AsyncFileSystem spyFs = Mockito.spy(asyncFileSystem());
+		openCommandStore(new DefaultCommandStore(null, getKeeperConfig(), commandTemplate, maxFileSize,
+				() -> false, () -> 3600, 0, () -> 20, DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true, 0L,
+				spyFs, () -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId()));
+
+		AsyncSegmentFile segment = commandStore.getAsyncSegmentFile();
+		Assert.assertNotNull(segment);
+
+		IndexStore realIndex = (IndexStore) ReflectionTestUtils.getField(commandStore, "indexStore");
+		CommandWriter realWriter = commandStore.getCommandWriter();
+
+		IndexStore failingIndex = Mockito.mock(IndexStore.class);
+		CommandWriter failingWriter = Mockito.mock(CommandWriter.class);
+		Mockito.doThrow(new IOException("index boom")).when(failingIndex).close();
+		Mockito.doThrow(new IOException("writer boom")).when(failingWriter).close();
+
+		ReflectionTestUtils.setField(commandStore, "cmdWriter", failingWriter);
+		ReflectionTestUtils.setField(commandStore, "indexStore", failingIndex);
+
+		try {
+			commandStore.close();
+			Mockito.verify(failingWriter).close();
+			Mockito.verify(failingIndex).close();
+			Mockito.verify(spyFs, Mockito.atLeastOnce()).close(segment);
+		} finally {
+			closeQuietly(realIndex);
+			closeQuietly(realWriter);
+			commandStore = null;
+		}
+	}
+
+	private void closeQuietly(AutoCloseable closeable) {
+		if (closeable == null) {
+			return;
+		}
+		try {
+			closeable.close();
+		} catch (Exception e) {
+			System.out.println("[closeQuietly] cleanup " + closeable + ": " + e);
+		}
+	}
+
+	private void writeCmdWithRotation() throws Exception {
+		// 1. index-enabled CommandStore with a small maxFileSize
 		int smallMaxFileSize = 300;
 		failed.set(0);
 		Mockito.when(gtidCmdFilter.gtidSetContains(anyString(), anyLong())).thenReturn(false);
-		TestKeeperConfig keeperConfig = createRotationTestKeeperConfig(flush);
-		EventLoop mockEventLoop = Mockito.mock(EventLoop.class);
-		Mockito.when(mockEventLoop.inEventLoop()).thenReturn(true);
-		Mockito.when(nioEventLoopGroup.next()).thenReturn(mockEventLoop);
+		TestKeeperConfig keeperConfig = new TestKeeperConfig();
 
-		commandTemplate = new File(getTestFileDir(), getTestName()+"_");
-		commandStore = new DefaultCommandStore(ckStore, nioEventLoopGroup,keeperConfig,
-				commandTemplate, smallMaxFileSize,() -> false, () -> 3600, 0, () -> 20,
-				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,  // 启用滑动窗口
-				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter,true
-		);
-		commandStore.initialize();
+		openCommandStore(new DefaultCommandStore(ckStore, keeperConfig,
+				commandTemplate, smallMaxFileSize, () -> false, () -> 3600, 0, () -> 20,
+				DEFAULT_COMMAND_READER_FLYING_THRESHOLD, () -> true,
+				commandReaderWriterFactory, createkeeperMonitor(), opParser, gtidCmdFilter, true,
+				0L, asyncFileSystem(), () -> AsyncCommandStore.DEFAULT_ASYNC_WRITE_MAX_BYTES, getReplId()));
 
 		// 用于记录每条命令的 GTID、完整字节内容以及预期的全局起始偏移
 		class CmdRecord {
@@ -727,7 +1118,6 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			// 记录预期偏移（写入前的全局偏移）
 			long expectedStart = globalOffset.get();
 
-			// 写入命令（内部会走滑动窗口，可能不立即落盘）
 			commandStore.appendCommands(cmdBuf);
 
 			// 记录命令信息
@@ -740,21 +1130,11 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			globalOffset.addAndGet(cmdBytes.length);
 			gno++;
 
-			// 与索引侧 StreamCommandReader.currentOffset 一致；totalLength() 不含滑动窗口 pending
+			Assert.assertEquals(globalOffset.get(), commandStore.totalLength());
 			if (globalOffset.get() >= smallMaxFileSize) {
-				commandStore.flushSlidingWindow();
 				commandStore.rotateFileIfNecessary();
 				rotated = true;
 			}
-		}
-		int recordsBeforeRotation = records.size();
-
-		// no-flush 场景：滚动完成后再 mock，仅拦截滚动后的 flush
-		if (!flush) {
-			DefaultCommandStore store = this.commandStore;
-			CommandStore spy = Mockito.spy(store);
-			Mockito.doNothing().when(spy).flushSlidingWindow();
-			this.commandStore = (DefaultCommandStore) spy;
 		}
 
 		// 3. 滚动后继续写入几条命令，验证新文件的偏移也正确
@@ -779,9 +1159,6 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			gno++;
 		}
 
-		// 确保最终所有数据落盘（close 前会 flush）
-		commandStore.flushSlidingWindow();
-
 		// 4. 验证每条命令的索引偏移与文件内容匹配
 		for (int i = 0; i < records.size(); i++) {
 			CmdRecord rec = records.get(i);
@@ -799,41 +1176,15 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 			Assert.assertEquals("Start offset mismatch for " + rec.gtid,
 					rec.expectedStartOffset, startBacklogOffset);
 
-			// flush 场景校验全部；no-flush 仅校验滚动后仍在窗口内的命令（滚动前已落盘）
-			if (flush || i >= recordsBeforeRotation) {
-				byte[] fileData = readFileRange(commandStore, startBacklogOffset, endBacklogOffset);
-				if (!Arrays.equals(rec.rawBytes, fileData)) {
-					failed.addAndGet(1);
-				}
+			byte[] fileData = readFileRange(commandStore, startBacklogOffset, endBacklogOffset);
+			if (!Arrays.equals(rec.rawBytes, fileData)) {
+				failed.addAndGet(1);
 			}
 		}
 
-		if(flush){
-			Assert.assertTrue("flush Failed to read expected bytes",failed.get() == 0);
-		}else {
-			Assert.assertTrue("no flush Failed to read expected bytes", failed.get() > 0);
-		}
+		Assert.assertEquals("Failed to read expected bytes", 0, failed.get());
 
-		// 清理
 		failed.set(0);
-		commandStore.close();
-	}
-
-	/**
-	 * no-flush 场景需禁用 TimerSlidingWindow 按时间的自动刷盘（默认 4ms），
-	 * 否则整包跑时写入间隔变长会在 mock flushSlidingWindow 之前落盘，导致 failed==0 误判。
-	 * batch 阈值保持默认即可，旋转条件用 globalOffset 而非 totalLength()。
-	 */
-	private TestKeeperConfig createRotationTestKeeperConfig(boolean flush) {
-		if (flush) {
-			return new TestKeeperConfig();
-		}
-		return new TestKeeperConfig() {
-			@Override
-			public long getCmdBatchFlushIntervalMillis() {
-				return 3_600_000L;
-			}
-		};
 	}
 
 	// 辅助方法：写入 RESP Bulk String
@@ -845,32 +1196,40 @@ public class DefaultCommandStoreTest extends AbstractRedisKeeperTest {
 		buf.writeBytes("\r\n".getBytes());
 	}
 
-	// 从 CommandStore 中读取指定全局偏移范围的字节
+	// 从 CommandStore 中读取指定全局偏移范围的字节（read-mode AsyncSegmentFile + position）
 	private byte[] readFileRange(CommandStore store, long startOffset, long endOffset) throws IOException {
-		// 先找到包含 startOffset 的文件
-		CommandFile cf = store.findFileForOffset(startOffset);
-		Assert.assertNotNull("No file for offset " + startOffset, cf);
+		AsyncCommandStore asyncStore = (AsyncCommandStore) store;
+		AsyncFileSystem fs = asyncStore.getAsyncFileSystem();
+		int length = (int) (endOffset - startOffset);
 		byte[] data = new byte[0];
+		AsyncSegmentFile readSeg = null;
 		try {
-			File file = cf.getFile();
-			long fileStartOffset = cf.getStartOffset();
-			long localStart = startOffset - fileStartOffset;
-			int length = (int) (endOffset - startOffset);
-
-			data = new byte[length];
-			try (FileInputStream fis = new FileInputStream(file);
-				 FileChannel channel = fis.getChannel()) {
-				channel.position(localStart);
-				ByteBuffer buf = ByteBuffer.allocate(length);
-				int read = channel.read(buf);
-				if (length != read) {
+			readSeg = AsyncFileSystemHelper.awaitOpen(fs,
+					fs.open(asyncStore.getCommandBaseDir().getAbsolutePath(),
+							asyncStore.getCommandFileNamePrefix(),
+							asyncStore.getCommandIndexPrefixes(),
+							false,
+							asyncStore.getFileSystemReplId().toString()),
+					"open read segment for test");
+			AsyncFileSystemHelper.await(fs.position(readSeg, startOffset),
+					"position read segment to " + startOffset);
+			ByteBuf buf = AsyncFileSystemHelper.await(fs.read(readSeg, length),
+					"read [" + startOffset + "," + endOffset + ")");
+			try {
+				data = new byte[buf.readableBytes()];
+				buf.readBytes(data);
+				if (data.length != length) {
 					failed.addAndGet(1);
 				}
-				buf.flip();
-				buf.get(data);
+			} finally {
+				buf.release();
 			}
-		}catch (Exception e) {
+		} catch (Exception e) {
 			failed.addAndGet(1);
+		} finally {
+			if (readSeg != null) {
+				AsyncFileSystemHelper.await(fs.close(readSeg), "close read segment for test");
+			}
 		}
 		return data;
 	}

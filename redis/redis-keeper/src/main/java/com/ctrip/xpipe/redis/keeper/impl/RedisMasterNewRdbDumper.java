@@ -64,8 +64,6 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
 
     @Override
     protected void doExecute() throws Exception {
-        startRdbOnlyReplication();
-
         future().addListener(new CommandFutureListener<Void>() {
 
             @Override
@@ -79,6 +77,12 @@ public class RedisMasterNewRdbDumper extends AbstractRdbDumper {
                 }
             }
         });
+
+        try {
+            startRdbOnlyReplication();
+        } catch (Throwable th) {
+            dumpFail(th);
+        }
     }
 
     protected void releaseResource() {

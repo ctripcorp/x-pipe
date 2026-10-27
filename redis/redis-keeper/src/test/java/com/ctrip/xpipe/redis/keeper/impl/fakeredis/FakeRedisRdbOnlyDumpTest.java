@@ -6,6 +6,7 @@ import com.ctrip.xpipe.redis.core.protocal.cmd.InMemoryGapAllowedSync;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.keeper.AbstractFakeRedisTest;
 import com.ctrip.xpipe.redis.keeper.RedisKeeperServer;
+import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStore;
 import org.junit.Assert;
 import org.junit.Test;
@@ -38,7 +39,14 @@ public class FakeRedisRdbOnlyDumpTest extends AbstractFakeRedisTest {
         backupDcKeeperServer.releaseRdb();
         waitConditionUntilTimeOut(() -> allCommandsSize * 2 == firstSlave.getCommands().length);
         activeDcKeeperServer.getReplicationStore().gc();
-        backupDcKeeperServer.getReplicationStore().gc();
+        TestKeeperConfig backupConfig = (TestKeeperConfig) backupDcKeeperServer.getKeeperConfig();
+        int originKeepSeconds = backupConfig.getReplicationStoreCommandFileKeepTimeSeconds();
+        backupConfig.setReplicationStoreCommandFileKeepTimeSeconds(0);
+        try {
+            backupDcKeeperServer.getReplicationStore().gc();
+        } finally {
+            backupConfig.setReplicationStoreCommandFileKeepTimeSeconds(originKeepSeconds);
+        }
 
         activeKeeperFirstAvailableOffset = activeDcKeeperServer.getReplicationStore().getMetaStore().backlogOffsetToReplOffset(activeDcKeeperServer.getReplicationStore().backlogBeginOffset());
         backupKeeperFirstAvailableOffset = backupDcKeeperServer.getReplicationStore().getMetaStore().backlogOffsetToReplOffset(backupDcKeeperServer.getReplicationStore().backlogBeginOffset());

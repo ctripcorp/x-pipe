@@ -61,7 +61,13 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
 
     @Override
     protected void doExecute() throws Throwable {
+        // get semantics (m6 spec §9.3): never constructs a store
         ReplicationStore store = this.redisKeeperServer.getReplicationStore();
+        if (store == null) {
+            logger.info("[doExecute][{}]{}", redisKeeperServer.getReplId(), RedisKeeperServer.ERR_REPLICATION_STORE_NOT_OPENED);
+            future().setFailure(new XpipeRuntimeException(RedisKeeperServer.ERR_REPLICATION_STORE_NOT_OPENED));
+            return;
+        }
         CommandsGuarantee guarantee = null;
         cmdKeyItems = new ArrayList<>();
         try {
@@ -95,7 +101,7 @@ public class GtidCommandSearcher extends AbstractCommand<List<CmdKeyItem>> imple
     }
 
     @Override
-    public ChannelFuture onCommand(CommandFile currentFile, long filePosition, Object cmd) {
+    public ChannelFuture onCommand(Object cmd) {
         if (cmd instanceof FileRegion) {
             FileRegion fileRegion = (FileRegion) cmd;
             try {

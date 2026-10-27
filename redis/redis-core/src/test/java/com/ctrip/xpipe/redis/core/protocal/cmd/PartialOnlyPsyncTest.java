@@ -4,6 +4,7 @@ import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.command.CommandFutureListener;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.endpoint.DefaultEndPoint;
+import com.ctrip.xpipe.exception.XpipeRuntimeException;
 import com.ctrip.xpipe.netty.NettyPoolUtil;
 import com.ctrip.xpipe.redis.core.AbstractRedisTest;
 import com.ctrip.xpipe.redis.core.protocal.PsyncObserver;
@@ -14,6 +15,7 @@ import com.ctrip.xpipe.redis.core.store.RdbStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStore;
 import com.ctrip.xpipe.redis.core.store.ReplicationStoreManager;
 import com.ctrip.xpipe.simpleserver.Server;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -111,5 +113,26 @@ public class PartialOnlyPsyncTest extends AbstractRedisTest {
 		latch.await(1000, TimeUnit.SECONDS);
 		verify(replicationStore, times(1)).psyncContinueFrom(replId, offset);
     }
+
+	/**
+	 * T-S.6⑤ / AC-8: BACKUP PartialOnly refullsync — create failure must keep old store usable
+	 * (no bypass close; same establish-then-destroy contract as ACTIVE).
+	 */
+	@Test
+	public void testRefullsyncCreateFailureDoesNotCloseOldStore() throws Exception {
+		when(replicationStore.isFresh()).thenReturn(false);
+		when(replicationStoreManager.create()).thenThrow(new IOException("injected create fail"));
+
+		PartialOnlyGapAllowedSync gasync = new PartialOnlyGapAllowedSync(
+				null, null, replicationStoreManager, scheduled);
+		try {
+			gasync.doOnFullSync();
+			Assert.fail("expected only-partial-sync termination");
+		} catch (XpipeRuntimeException e) {
+			Assert.assertTrue(e.getMessage().contains("only partial sync allow"));
+		}
+		verify(replicationStore, never()).close();
+		verify(replicationStoreManager, times(1)).create();
+	}
 
 }

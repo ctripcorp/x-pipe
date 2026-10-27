@@ -137,8 +137,9 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 	protected void doBecomeBackup(Endpoint masterAddress){
 		
 		logger.info("[doBecomeBackup]{}", this);
+		redisKeeperServer.resetReplAfterLongTimeDown();
 		try{
-			redisKeeperServer.getReplicationStore().getMetaStore().becomeBackup();
+			redisKeeperServer.getOrCreateReplicationStore().getMetaStore().becomeBackup();
 		}catch(Exception e){
 			logger.error("[activedoBecomeBackupToBackup]" + this, e);
 		}
@@ -150,13 +151,21 @@ public abstract class AbstractRedisKeeperServerState implements RedisKeeperServe
 		
 		logger.info("[doBecomeActive]{}", this);
 		try{
-			ReplicationStore replicationStore = redisKeeperServer.getReplicationStore();
+			ReplicationStore replicationStore = redisKeeperServer.getOrCreateReplicationStore();
 			replicationStore.getMetaStore().becomeActive();
 		}catch(Exception e){
 			logger.error("[doBecomeActive]" + this + "," + masterAddress, e);
 		}
 		redisKeeperServer.setRedisKeeperServerState(new RedisKeeperServerStateActive(redisKeeperServer, masterAddress));
 		reconnectMaster();
+	}
+
+	/**
+	 * Active/Backup/Unknown/Pre* → PREPARE (lease release orchestrated by RedisKeeperServer).
+	 */
+	protected void doBecomePrepare(Endpoint masterAddress) {
+		logger.info("[doBecomePrepare]{}", this);
+		redisKeeperServer.doBecomePrepare(masterAddress);
 	}
 
 	@Override

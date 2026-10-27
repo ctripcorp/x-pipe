@@ -1,13 +1,14 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
+import com.ctrip.xpipe.endpoint.DefaultEndPoint;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
+import com.ctrip.xpipe.redis.core.protocal.cmd.SlaveOfCommand;
 import com.ctrip.xpipe.redis.keeper.config.KeeperConfig;
 import com.ctrip.xpipe.redis.keeper.config.TestKeeperConfig;
 import com.ctrip.xpipe.redis.keeper.impl.DefaultRedisKeeperServer;
 import com.ctrip.xpipe.redis.keeper.store.DefaultReplicationStoreManager;
-import com.ctrip.xpipe.redis.keeper.store.gtid.index.BlockWriter;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -84,6 +85,8 @@ public class KeeperXsyncV2IndexTest extends AbstractKeeperIntegratedSingleDc {
         sendMixedCommands(500, 200);
         expectedGtid = new GtidSet(getGtidSet(master.getIp(), master.getPort(), "gtid_executed"));
         sleep(10000);
+        // 切换后的写入也要同步到 slave（slave 已改指到新 active）
+        assertGtid(master);
 
         // 通过 locateContinueGtidSet 验证 v2 索引的 GTID 定位能力
         verifyGtidPosition(backupKeeperMeta, expectedGtid);
@@ -106,11 +109,11 @@ public class KeeperXsyncV2IndexTest extends AbstractKeeperIntegratedSingleDc {
         assertGtid(master);
         assertV2IndexFilesExist(activeKeeperMeta, true);
 
-        // 2. 动态修改配置，回退到 v1 读取（同时可停止双写）
+        // 2. 在线回滚读路径：readV2=false 读 V1；须保持 dualWrite=true 继续写 V1
+        //    （dualWrite=false 是 V2-only 生产态，与 readV2=false 组合会写 V2、读 V1，gtid_executed 停更）
         keeperConfig.setReadV2(false);
-        keeperConfig.setDualWrite(false);
 
-        // 3. 执行 Keeper 切换，让新 active 使用修改后的配置重新初始化
+        // 3. 执行 Keeper 切换，让新 active 使用修改后的配置
         switchActiveKeeper(activeKeeperMeta, backupKeeperMeta);
         activeKeeperMeta = backupKeeperMeta; // 新的 active
         backupKeeperMeta = getKeepersBackup().iterator().next();
@@ -121,13 +124,12 @@ public class KeeperXsyncV2IndexTest extends AbstractKeeperIntegratedSingleDc {
         sleep(10_000);
         assertGtid(master);
 
-        // 5. 验证通过 v1 索引仍能正确定位
+        // 5. 验证通过 v1 索引仍能正确定位（INFO gtid_executed 走 getIndexGtidSet → V1）
         GtidSet executed = new GtidSet(getGtidSet(master.getIp(), master.getPort(), "gtid_executed"));
         verifyGtidPosition(activeKeeperMeta, executed);
 
         // 6. 恢复配置（避免影响后续测试）
         keeperConfig.setReadV2(true);
-        keeperConfig.setDualWrite(true);
     }
 
     @Test
@@ -261,8 +263,19 @@ public class KeeperXsyncV2IndexTest extends AbstractKeeperIntegratedSingleDc {
         oldActive.setActive(false);
         newActive.setActive(true);
         makeKeeperRight();
+        // 模拟 metaserver 把 redis slave 改指到新 active：
+        // 旧 active 降级时 closeSlaves("keeper downgrade")，slave 重连回 BACKUP 后 psync 会被一直挂起
+        redirectSlavesTo(newActive);
         // 等待新 active 状态生效
         Thread.sleep(TimeUnit.SECONDS.toMillis(2));
+    }
+
+    private void redirectSlavesTo(KeeperMeta keeper) throws Exception {
+        for (RedisMeta slave : getRedisSlaves()) {
+            new SlaveOfCommand(getXpipeNettyClientKeyedObjectPool().getKeyPool(
+                    new DefaultEndPoint(slave.getIp(), slave.getPort())),
+                    keeper.getIp(), keeper.getPort(), scheduled).execute().get();
+        }
     }
 
     private void assertV2IndexFilesExist(KeeperMeta keeperMeta, boolean shouldExist) {
@@ -308,8 +321,11 @@ public class KeeperXsyncV2IndexTest extends AbstractKeeperIntegratedSingleDc {
 
     private void assertGtid(RedisMeta master) throws ExecutionException, InterruptedException {
         String masterGtid = getGtidSet(master.getIp(), master.getPort(), "gtid_set");
-        String activeKeeperGtid = getGtidSet(activeKeeper.getIp(),activeKeeper.getPort(), "gtid_executed");
-        String backGtidSet = getGtidSet(backupKeeper.getIp(),backupKeeper.getPort(), "gtid_executed");
+        // 按当前 meta 取角色，切换后字段 activeKeeper / backupKeeper 已过期
+        KeeperMeta currentActive = getKeeperActive();
+        KeeperMeta currentBackup = getKeepersBackup().iterator().next();
+        String activeKeeperGtid = getGtidSet(currentActive.getIp(), currentActive.getPort(), "gtid_executed");
+        String backGtidSet = getGtidSet(currentBackup.getIp(), currentBackup.getPort(), "gtid_executed");
         logger.info("masterGtid:{}", masterGtid);
         logger.info("activeKeeperGtid:{}", activeKeeperGtid);
         logger.info("backGtidSet:{}", backGtidSet);

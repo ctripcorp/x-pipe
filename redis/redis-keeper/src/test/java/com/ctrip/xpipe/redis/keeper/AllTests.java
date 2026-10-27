@@ -8,6 +8,7 @@ import com.ctrip.xpipe.redis.keeper.handler.CommandHandlerManagerTest;
 import com.ctrip.xpipe.redis.keeper.handler.applier.ApplierCommandHandlerTest;
 import com.ctrip.xpipe.redis.keeper.handler.keeper.*;
 import com.ctrip.xpipe.redis.keeper.health.DiskHealthCheckerTest;
+import com.ctrip.xpipe.redis.keeper.health.job.DiskReadWriteCheckJobTest;
 import com.ctrip.xpipe.redis.keeper.impl.*;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.*;
 import com.ctrip.xpipe.redis.keeper.impl.fakeredis.xsync.XsyncForKeeperAndKeeperTest;
@@ -18,6 +19,7 @@ import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultKeeperStatsTest;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultMasterStatsTest;
 import com.ctrip.xpipe.redis.keeper.monitor.impl.DefaultReplicationStoreStatsTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.GapAllowedSyncTest;
+import com.ctrip.xpipe.redis.keeper.protocal.cmd.PartialOnlyGapAllowedSyncTest;
 import com.ctrip.xpipe.redis.keeper.protocal.cmd.PsyncTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.CompositeLeakyBucketTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.DefaultLeakyBucketTest;
@@ -25,15 +27,53 @@ import com.ctrip.xpipe.redis.keeper.ratelimit.LeakyBucketBasedMasterReplicationL
 import com.ctrip.xpipe.redis.keeper.ratelimit.RateLimitTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.FixSyncRateManagerTest;
 import com.ctrip.xpipe.redis.keeper.ratelimit.impl.ProgressiveSyncRateLimiterTest;
+import com.ctrip.xpipe.redis.keeper.container.ContainerResourceManagerTest;
+import com.ctrip.xpipe.redis.keeper.container.KeeperContainerControllerUnclosedHandlesTest;
+import com.ctrip.xpipe.redis.keeper.container.UnclosedHandleMetricReporterTest;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperDeferredCloseTest;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperReopenReportTest;
+import com.ctrip.xpipe.redis.keeper.storage.StoreCloseUnclosedHandleTest;
+import com.ctrip.xpipe.redis.keeper.storage.ReplicationStoreManagerStopReleaseFailureTest;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperTimeoutNoCancelTest;
+import com.ctrip.xpipe.redis.keeper.storage.MetaWriteFailureRestoreTest;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractMetaStoreFlushTest;
+import com.ctrip.xpipe.redis.keeper.storage.AbstractMetaStoreSizeIfMatchTest;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelperTest;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystemChannelFactoryTest;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystemDebugChannelTest;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncTFSBasedFileSystemTest;
+import com.ctrip.xpipe.redis.keeper.storage.DebugFileChannelEndToEndTest;
+import com.ctrip.xpipe.redis.keeper.storage.DebugFileChannelTest;
+import com.ctrip.xpipe.redis.keeper.storage.DeferredHandleCloserTest;
+import com.ctrip.xpipe.redis.keeper.storage.FileFaultInjectorTest;
+import com.ctrip.xpipe.redis.keeper.storage.TailCacheFileSystemTest;
 import com.ctrip.xpipe.redis.keeper.store.*;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.ck.CKStoreTransactionBatchTest;
-import com.ctrip.xpipe.redis.keeper.store.cmd.GtidSetStreamCommandReaderTest;
+import com.ctrip.xpipe.redis.keeper.store.cmd.AsyncReferenceFileRegionTest;
+import com.ctrip.xpipe.redis.keeper.store.cmd.CoalescingOffsetNotifierTest;
+import com.ctrip.xpipe.redis.keeper.store.cmd.OffsetCommandReaderTest;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.BlockEntryTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.DefaultIndexStoreTest;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.IndexWriterBlockReleaseTest;
+import com.ctrip.xpipe.redis.keeper.store.gtid.index.IndexEntryTest;
 import com.ctrip.xpipe.redis.keeper.store.gtid.index.StreamCommandReaderTest;
-import com.ctrip.xpipe.redis.keeper.store.gtid.index.TimerSlidingWindowTest;
+import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreReadOnlyTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.DefaultMetaStoreTest;
 import com.ctrip.xpipe.redis.keeper.store.meta.TestAbstractMetaStoreTest;
+import com.ctrip.xpipe.redis.keeper.prepare.KeeperHandleReworkAcceptanceTest;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareCmdParserChainRebuiltTest;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareCmdParserTest;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcherCmdPrefixTest;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcherLocateMissTest;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcherPhaseTest;
+import com.ctrip.xpipe.redis.keeper.prepare.PrepareStoreWatcherTest;
+import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubParseHookTest;
+import com.ctrip.xpipe.redis.keeper.pubsub.KeeperPubSubRegistryTest;
+import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCmdChainLocateTest;
+import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCmdOffsetSnapshotTest;
+import com.ctrip.xpipe.redis.keeper.store.readonly.ReadOnlyCommandStoreTest;
+import com.ctrip.xpipe.redis.keeper.store.readonly.ReopenOffsetCommandReaderTest;
 import com.ctrip.xpipe.redis.keeper.store.searcher.GtidCommandSearcherTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -51,11 +91,13 @@ import org.junit.runners.Suite.SuiteClasses;
         FakeRedisHalfRdbServerFail.class,
         PsyncTest.class,
         GapAllowedSyncTest.class,
+        PartialOnlyGapAllowedSyncTest.class,
         DefaultRedisClientTest.class,
         CommandHandlerManagerTest.class,
         RedisKeeperServerStateBackupTest.class,
         RedisKeeperServerStateActiveTest.class,
         RedisKeeperServerStateUnknownTest.class,
+        RedisKeeperServerStatePrepareTest.class,
         DefaultRedisMasterReplicationTest.class,
         RdbonlyRedisMasterReplicationTest.class,
         GapAllowedRdbonlyRedisMasterReplicationTest.class,
@@ -64,15 +106,36 @@ import org.junit.runners.Suite.SuiteClasses;
         KeeperContainerServiceTest.class,
         DefaultKeeperContainerConfigTest.class,
         DefaultReplicationStoreManagerTest.class,
+        DefaultReplicationStoreManagerReadOnlyTest.class,
         DefaultRedisKeeperServerTest.class,
+        DefaultRedisKeeperServerPrepareWatchTest.class,
+        DefaultRedisKeeperServerStoreGetSemanticsTest.class,
         DefaultReplicationStoreTest.class,
+        DefaultReplicationStoreReadOnlyTest.class,
+        DefaultReplicationStoreReadOnlyCmdOpenTest.class,
         GapAllowedReplicationStoreTest.class,
         DefaultRdbStoreTest.class,
-//
+
         DefaultRdbStoreEofMarkTest.class,
         DefaultCommandStoreTest.class,
+        ReadOnlyCmdOffsetSnapshotTest.class,
+        ReadOnlyCommandStoreTest.class,
+        ReadOnlyCmdChainLocateTest.class,
+        ReopenOffsetCommandReaderTest.class,
+        PrepareStoreWatcherTest.class,
+        PrepareStoreWatcherPhaseTest.class,
+        PrepareStoreWatcherLocateMissTest.class,
+        PrepareStoreWatcherCmdPrefixTest.class,
+        KeeperHandleReworkAcceptanceTest.class,
+        PrepareCmdParserTest.class,
+        PrepareCmdParserChainRebuiltTest.class,
+        KeeperPubSubRegistryTest.class,
+        KeeperPubSubParseHookTest.class,
+        PublishCommandHandlerTest.class,
+        SubscribeCommandHandlerTest.class,
         DefaultRedisSlaveTest.class,
         RoleCommandHandlerTest.class,
+        PrepareObservationHandlerTest.class,
         DefaultKeeperConfigTest.class,
         FakeRedisExceptionTest.class,
         FakeRedisRdbDumperTest.class,
@@ -82,6 +145,8 @@ import org.junit.runners.Suite.SuiteClasses;
         KeeperCommandHandlerTest.class,
         InfoHandlerTest.class,
         ConfigHandlerTest.class,
+        KeeperPrepareCapabilityTest.class,
+        KeeperStageOneAcceptanceTest.class,
         ApplierCommandHandlerTest.class,
         FakeRedisRdbOnlyDumpTest.class,
 
@@ -92,23 +157,29 @@ import org.junit.runners.Suite.SuiteClasses;
         LeakyBucketBasedMasterReplicationListenerTest.class,
         DefaultReplicationStoreStatsTest.class,
         DefaultMetaStoreTest.class,
+        DefaultMetaStoreReadOnlyTest.class,
         TestAbstractMetaStoreTest.class,
         PsyncFailReasonTest.class,
         DefaultMasterStatsTest.class,
         PsyncForKeeperTest.class,
         PsyncKeeperServerStateObserverTest.class,
 
-        GtidSetStreamCommandReaderTest.class,
         GtidCommandSearcherTest.class,
 
         DefaultIndexStoreTest.class,
+        BlockEntryTest.class,
+        IndexWriterBlockReleaseTest.class,
+        IndexEntryTest.class,
         StreamCommandReaderTest.class,
-
         CKStoreTest.class,
         CKStoreTransactionBatchTest.class,
-        TimerSlidingWindowTest.class,
+        CoalescingOffsetNotifierTest.class,
+        OffsetCommandReaderTest.class,
+        AsyncReferenceFileRegionTest.class,
+        AsyncRdbReferenceFileRegionTest.class,
 
         DiskHealthCheckerTest.class,
+        DiskReadWriteCheckJobTest.class,
 
         RordbReplicationSupportTest.class,
 
@@ -118,6 +189,29 @@ import org.junit.runners.Suite.SuiteClasses;
         GapAllowSyncHandlerTest.class,
         GapAllowXSyncHandlerTest.class,
         GtidxHandlerTest.class,
+
+        AsyncFileSystemHelperTest.class,
+        AsyncFileSystemHelperDeferredCloseTest.class,
+        AsyncFileSystemHelperReopenReportTest.class,
+        StoreCloseUnclosedHandleTest.class,
+        ReplicationStoreManagerStopReleaseFailureTest.class,
+        AsyncFileSystemHelperTimeoutNoCancelTest.class,
+        MetaWriteFailureRestoreTest.class,
+        AbstractMetaStoreFlushTest.class,
+        AbstractMetaStoreSizeIfMatchTest.class,
+        DefaultReplicationStoreManagerMetaFlushTest.class,
+        DefaultReplicationStoreRdbSizeAlignTest.class,
+        ContainerResourceManagerTest.class,
+        UnclosedHandleMetricReporterTest.class,
+        KeeperContainerControllerUnclosedHandlesTest.class,
+        AsyncTFSBasedFileSystemTest.class,
+        AsyncTFSBasedFileSystemChannelFactoryTest.class,
+        FileFaultInjectorTest.class,
+        DebugFileChannelTest.class,
+        AsyncTFSBasedFileSystemDebugChannelTest.class,
+        DebugFileChannelEndToEndTest.class,
+        DeferredHandleCloserTest.class,
+        TailCacheFileSystemTest.class,
 
         XsyncForKeeperAndKeeperTest.class,
         XsyncForKeeperSlaveTest.class,

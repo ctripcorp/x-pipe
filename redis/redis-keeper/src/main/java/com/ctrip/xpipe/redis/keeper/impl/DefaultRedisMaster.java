@@ -130,7 +130,7 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 	@Override
 	public ReplicationStore getCurrentReplicationStore() {
 
-		return redisKeeperServer.getReplicationStore();
+		return redisKeeperServer.getOrCreateReplicationStore();
 	}
 
 	@Override
