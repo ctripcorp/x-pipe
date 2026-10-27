@@ -42,6 +42,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.mockito.Mockito.*;
 
@@ -194,19 +195,40 @@ public class KeeperDelayCheckAcceptanceTest {
         Assert.assertTrue(action.getLifecycleState().isStarted());
     }
 
+    /**
+     * 从未收到样本时超时不打点；收到过之后 Keeper 失联，延迟按「当前时间 - 上一个样本到达时间」
+     * 节节攀升，而非 SAMPLE_LOST。
+     */
+    @SuppressWarnings("unchecked")
     @Test
-    public void lostSampleReportsRedisContractValueAsKeeperPoint() {
+    public void expiredSampleReportsGrowingElapsedDelay() {
         when(healthCheckConfig.getDelayConfig(anyString(), anyString(), anyString())).thenReturn(delayConfig(-1001));
         refreshTick();
         answerCapability(true, true);
 
         driveCheck(action);
-        Assert.assertTrue(points.isEmpty());
+        driveCheck(action);
+        Assert.assertTrue("从未采到过，超时不打点", points.isEmpty());
+
+        session.deliver(Long.toHexString(System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(2)));
+        AtomicReference<KeeperDelayActionContext> context =
+                (AtomicReference<KeeperDelayActionContext>)
+                        ReflectionTestUtils.getField(action, "context");
+        Assert.assertNotNull(context);
+        long lastRecv = System.currentTimeMillis() - 3000;
+        ReflectionTestUtils.setField(context.get(), "recvTimeMilli", lastRecv, long.class);
+        driveCheck(action);
+        ReflectionTestUtils.setField(context.get(), "recvTimeMilli", lastRecv - 3000, long.class);
         driveCheck(action);
 
-        Assert.assertEquals(1, points.size());
-        Assert.assertEquals(99_999_000.0, points.get(0).getValue(), 0.0);
-        Assert.assertEquals("keeper", points.get(0).getTags().get("type"));
+        Assert.assertEquals(2, points.size());
+        MetricData first = points.get(0);
+        MetricData second = points.get(1);
+        // 打点单位是微秒
+        Assert.assertTrue("约 3s，实际 " + first.getValue(), first.getValue() >= 3_000_000 && first.getValue() < 4_000_000);
+        Assert.assertTrue("约 6s，实际 " + second.getValue(), second.getValue() >= 6_000_000 && second.getValue() < 7_000_000);
+        Assert.assertTrue("超时点带当前时间戳", second.getTimestampMilli() > lastRecv);
+        Assert.assertEquals("keeper", second.getTags().get("type"));
     }
 
     // ---------- T-KV.2 范围与隔离门禁 ----------

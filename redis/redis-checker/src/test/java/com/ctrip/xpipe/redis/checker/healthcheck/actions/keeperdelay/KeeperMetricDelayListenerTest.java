@@ -122,7 +122,7 @@ public class KeeperMetricDelayListenerTest {
     }
 
     @Test
-    public void testSampleLostUsesSameUnitConversion() {
+    public void testLargeDelayUsesSameUnitConversion() {
         listener.onAction(context(TimeUnit.MILLISECONDS.toNanos(99_999L)));
 
         Assert.assertEquals(99_999_000.0, capturedPoint.get().getValue(), 0.0);

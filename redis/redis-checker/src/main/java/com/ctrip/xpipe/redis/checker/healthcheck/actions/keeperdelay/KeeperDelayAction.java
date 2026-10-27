@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongSupplier;
 
@@ -23,7 +24,6 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
     private static final Logger logger = LoggerFactory.getLogger(KeeperDelayAction.class);
     protected static final KeeperDelayActionContext INIT_CONTEXT =
             new KeeperDelayActionContext(null, HealthStatus.UNSET_TIME);
-    public static final long SAMPLE_LOST = 99999L * 1000 * 1000;
 
     private final CheckerConfig checkerConfig;
     private final KeeperCapabilityCache capabilityCache;
@@ -94,8 +94,11 @@ public class KeeperDelayAction extends AbstractHealthCheckAction<KeeperHealthChe
                 logger.warn("[expire][{}] last update time: {}", instance.getCheckInfo().getHostPort(),
                         DateTimeUtils.timeAsString(current.getRecvTimeMilli()));
             }
-            if (checkerConfig.isKeeperDelayCheckEnabled()) {
-                notifyListeners(new KeeperDelayActionContext(instance, SAMPLE_LOST));
+            // 超时不上报 SAMPLE_LOST：延迟取「当前时间 - 上一个样本的 recvTimeMilli」，随失联时长持续攀升；
+            // 从未采到过样本则无从推算，不上报
+            if (current != INIT_CONTEXT && checkerConfig.isKeeperDelayCheckEnabled()) {
+                long elapsedMilli = System.currentTimeMillis() - current.getRecvTimeMilli();
+                notifyListeners(new KeeperDelayActionContext(instance, TimeUnit.MILLISECONDS.toNanos(elapsedMilli)));
             }
             return;
         }
