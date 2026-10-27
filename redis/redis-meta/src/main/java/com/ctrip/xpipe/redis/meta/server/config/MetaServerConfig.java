@@ -113,4 +113,13 @@ public interface MetaServerConfig extends CoreConfig {
 		return 4;
 	}
 
+	/**
+	 * Orphan-store GC round: replIds per gc request. Leadership, meta freshness and occupancy are
+	 * re-checked before every chunk, so this bounds how much one stale leader can still send; also
+	 * keeps one request well under the 5s container client timeout. Default 10.
+	 */
+	default int getOrphanGcBatchSize() {
+		return 10;
+	}
+
 }

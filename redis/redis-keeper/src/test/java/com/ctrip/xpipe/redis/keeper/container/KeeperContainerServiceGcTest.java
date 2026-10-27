@@ -115,7 +115,7 @@ public class KeeperContainerServiceGcTest extends AbstractRedisKeeperTest {
         writeMeta(10L, TimeUnit.MINUTES.toMillis(1)); // too fresh -> skipped
         // 11L: nothing on disk -> not found
 
-        List<GcOrphanStoreResult> results = keeperContainerService.gcOrphanStores(Arrays.asList(9L, 10L, 11L), "req-batch");
+        List<GcOrphanStoreResult> results = keeperContainerService.gcOrphanStores(Arrays.asList(9L, 10L, 11L));
 
         assertEquals(3, results.size());
         assertEquals(GcOrphanStoreResult.Status.DELETED, results.get(0).status);
@@ -160,7 +160,7 @@ public class KeeperContainerServiceGcTest extends AbstractRedisKeeperTest {
 
     @Test
     public void testGcOrphanStoreNotFoundWhenNothingThere() {
-        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(42L, "req-1");
+        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(42L);
 
         assertEquals(GcOrphanStoreResult.Status.NOT_FOUND, result.status);
         assertFalse(replDir(42L).exists());
@@ -170,7 +170,7 @@ public class KeeperContainerServiceGcTest extends AbstractRedisKeeperTest {
     public void testGcOrphanStoreSkipsWhenMetaTooFresh() throws Exception {
         writeMeta(3L, TimeUnit.MINUTES.toMillis(1));
 
-        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(3L, "req-2");
+        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(3L);
 
         assertEquals(GcOrphanStoreResult.Status.SKIPPED, result.status);
         assertTrue(new File(replDir(3L), ReplicationStoreDeleter.META_FILE).exists());
@@ -180,7 +180,7 @@ public class KeeperContainerServiceGcTest extends AbstractRedisKeeperTest {
     public void testGcOrphanStoreDeletesMetaThenDataWhenOldEnough() throws Exception {
         writeMeta(4L, TimeUnit.DAYS.toMillis(2));
 
-        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(4L, "req-3");
+        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(4L);
 
         assertEquals(GcOrphanStoreResult.Status.DELETED, result.status);
         assertFalse(replDir(4L).exists());
@@ -193,7 +193,7 @@ public class KeeperContainerServiceGcTest extends AbstractRedisKeeperTest {
         servers.put(ReplId.from(5L).toString(), redisKeeperServer);
         ReflectionTestUtils.setField(keeperContainerService, "redisKeeperServers", servers);
 
-        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(5L, "req-4");
+        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(5L);
 
         assertEquals(GcOrphanStoreResult.Status.SKIPPED, result.status);
         assertTrue(new File(replDir(5L), ReplicationStoreDeleter.META_FILE).exists());
@@ -204,7 +204,7 @@ public class KeeperContainerServiceGcTest extends AbstractRedisKeeperTest {
         when(keeperContainerConfig.isTfsMode()).thenReturn(false);
         writeMeta(6L, TimeUnit.DAYS.toMillis(2));
 
-        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(6L, "req-5");
+        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(6L);
 
         assertEquals(GcOrphanStoreResult.Status.SKIPPED, result.status);
         assertTrue(new File(replDir(6L), ReplicationStoreDeleter.META_FILE).exists());
@@ -237,7 +237,7 @@ public class KeeperContainerServiceGcTest extends AbstractRedisKeeperTest {
             return invocation.callRealMethod();
         }).when(spyFs).lastModified(org.mockito.ArgumentMatchers.any(AsyncFile.class));
 
-        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(7L, "req-6");
+        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(7L);
 
         assertNotNull("writer must not open the meta file while gc holds it", writerOpenFailure.get());
         assertEquals(GcOrphanStoreResult.Status.DELETED, result.status);
@@ -250,7 +250,7 @@ public class KeeperContainerServiceGcTest extends AbstractRedisKeeperTest {
         writeMeta(8L, TimeUnit.DAYS.toMillis(2));
         AsyncFile writer = openMetaWriter(8L);
         try {
-            GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(8L, "req-7");
+            GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(8L);
 
             assertEquals(GcOrphanStoreResult.Status.SKIPPED, result.status);
             assertTrue(new File(metaPath(8L)).exists());
@@ -264,7 +264,7 @@ public class KeeperContainerServiceGcTest extends AbstractRedisKeeperTest {
     public void testGcOrphanStoreReleasesHandleWhenSkipped() throws Exception {
         writeMeta(12L, TimeUnit.MINUTES.toMillis(1));
 
-        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(12L, "req-8");
+        GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(12L);
 
         assertEquals(GcOrphanStoreResult.Status.SKIPPED, result.status);
         AsyncFileSystemHelper.closeHandle(fs, openMetaWriter(12L), null, "test close writer");

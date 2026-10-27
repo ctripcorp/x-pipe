@@ -393,7 +393,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
      * Fallback GC for a TFS store with no live keeper on this container; the delete itself is the same
      * {@link TfsStoreDeleter} destroy uses, with the orphan idle threshold.
      */
-    public GcOrphanStoreResult gcOrphanStore(Long replId, String requestId) {
+    public GcOrphanStoreResult gcOrphanStore(Long replId) {
         if (!keeperContainerConfig.isTfsMode()) {
             return GcOrphanStoreResult.skip(replId, "not tfs mode");
         }
@@ -405,12 +405,12 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
                 ReplId.from(replId).toString());
         GcOrphanStoreResult result = new TfsStoreDeleter(containerResourceManager.getAsyncFileSystem(),
                 keeperConfig.getOrphanStoreMinIdleMilliToGc()).delete(baseDir, ReplId.from(replId));
-        logger.info("[gcOrphanStore][{}]{}", requestId, result);
+        logger.info("[gcOrphanStore]{}", result);
         return result;
     }
 
     /**
-     * Batches {@link #gcOrphanStore(Long, String)} over the transport <b>and</b> runs each replId's
+     * Batches {@link #gcOrphanStore(Long)} over the transport <b>and</b> runs each replId's
      * safety-check-then-delete concurrently on {@link #gcExecutor} — one request/response for a batch
      * that can have dozens to low hundreds of candidates, with their IO waits overlapping instead of
      * serialized. Every replId's checks and file ops are independent of every other's (different
@@ -423,10 +423,10 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
      * Results line up with {@code replIds} by index, not completion order, so callers never have to
      * care that this ran concurrently.
      */
-    public List<GcOrphanStoreResult> gcOrphanStores(List<Long> replIds, String requestId) {
+    public List<GcOrphanStoreResult> gcOrphanStores(List<Long> replIds) {
         List<Future<GcOrphanStoreResult>> futures = new ArrayList<>(replIds.size());
         for (Long replId : replIds) {
-            futures.add(gcExecutor.submit(() -> gcOrphanStore(replId, requestId)));
+            futures.add(gcExecutor.submit(() -> gcOrphanStore(replId)));
         }
 
         List<GcOrphanStoreResult> results = new ArrayList<>(replIds.size());
@@ -437,7 +437,7 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
             } catch (Throwable th) {
                 // gcOrphanStore itself never throws; this is only reachable via executor-level failure
                 // (rejection, interruption) — never silently drop a candidate from the result list.
-                logger.error("[gcOrphanStores][{}][{}] gc task failed", requestId, replId, th);
+                logger.error("[gcOrphanStores][{}] gc task failed", replId, th);
                 results.add(GcOrphanStoreResult.fail(replId, th.getMessage()));
             }
         }

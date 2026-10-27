@@ -27,12 +27,12 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -125,31 +125,29 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
      */
     @VisibleForTesting
     protected void doGcRound() {
-        String requestId = newRequestId();
-
         if (!config.isOrphanGcEnabled()) {
-            logger.debug("[doGcRound][{}] disabled, skip", requestId);
+            logger.debug("[doGcRound] disabled, skip");
             return;
         }
         if (!isLeader()) {
-            logger.info("[doGcRound][{}] not leader, skip", requestId);
+            logger.info("[doGcRound] not leader, skip");
             return;
         }
         if (!isMetaFreshEnough()) {
-            logger.warn("[doGcRound][{}] meta not refreshed recently enough, abort this round", requestId);
+            logger.warn("[doGcRound] meta not refreshed recently enough, abort this round");
             return;
         }
 
         Set<ClusterMeta> clusters = metaCache.getClusters();
         if (clusters == null || clusters.isEmpty()) {
-            logger.warn("[doGcRound][{}] empty meta, abort this round", requestId);
+            logger.warn("[doGcRound] empty meta, abort this round");
             return;
         }
 
         List<KeeperContainerMeta> allContainers = metaCache.getKeeperContainers();
         Map<String, List<KeeperContainerMeta>> containersByFsId = groupTfsContainersByFsId(allContainers);
         if (containersByFsId.isEmpty()) {
-            logger.info("[doGcRound][{}] no tfs containers known, skip", requestId);
+            logger.info("[doGcRound] no tfs containers known, skip");
             return;
         }
 
@@ -163,13 +161,13 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
             Set<Long> occupied = occupiedReplIdsByFsId.getOrDefault(fsId, Collections.emptySet());
             groupFutures.add(CompletableFuture.runAsync(() -> {
                 if (!isLeader()) {
-                    logger.info("[doGcRound][{}][fsId={}] lost leadership, abort this group", requestId, fsId);
+                    logger.info("[doGcRound][fsId={}] lost leadership, abort this group", fsId);
                     return;
                 }
-                doGcGroup(requestId, fsId, containers, occupied);
+                doGcGroup(fsId, containers, occupied);
             }, groupExecutor).exceptionally(th -> {
                 // One group's bug must never take down the rest of the round.
-                logger.error("[doGcRound][{}][fsId={}] group task failed", requestId, fsId, th);
+                logger.error("[doGcRound][fsId={}] group task failed", fsId, th);
                 return null;
             }));
         }
@@ -181,10 +179,10 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
      * what current meta still occupies, then either log (dry-run) or ask the same representative to
      * gc each remaining candidate.
      */
-    private void doGcGroup(String requestId, String fsId, List<KeeperContainerMeta> containers, Set<Long> occupied) {
-        Pair<KeeperContainerMeta, List<String>> probed = findReachableRepresentative(requestId, fsId, containers);
+    private void doGcGroup(String fsId, List<KeeperContainerMeta> containers, Set<Long> occupied) {
+        Pair<KeeperContainerMeta, List<String>> probed = findReachableRepresentative(fsId, containers);
         if (probed == null) {
-            logger.warn("[doGcGroup][{}][fsId={}] no reachable container in this group, skip this round", requestId, fsId);
+            logger.warn("[doGcGroup][fsId={}] no reachable container in this group, skip this round", fsId);
             return;
         }
         KeeperContainerMeta representative = probed.getKey();
@@ -192,7 +190,7 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
         KeeperContainerService representativeService = keeperContainerServiceFactory.getOrCreateKeeperContainerService(representative);
 
         if (dirNames.isEmpty()) {
-            logger.debug("[doGcGroup][{}][fsId={}] nothing on {}", requestId, fsId, representative);
+            logger.debug("[doGcGroup][fsId={}] nothing on {}", fsId, representative);
             return;
         }
 
@@ -204,54 +202,90 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
             }
         }
         if (candidates.isEmpty()) {
-            logger.debug("[doGcGroup][{}][fsId={}] {} dirs, none orphaned", requestId, fsId, dirNames.size());
+            logger.debug("[doGcGroup][fsId={}] {} dirs, none orphaned", fsId, dirNames.size());
             return;
         }
-        logger.info("[doGcGroup][{}][fsId={}] {} dirs on {}, {} candidate(s) after meta filter: {}",
-                requestId, fsId, dirNames.size(), representative, candidates.size(), candidates);
+        logger.info("[doGcGroup][fsId={}] {} dirs on {}, {} candidate(s) after meta filter: {}",
+                fsId, dirNames.size(), representative, candidates.size(), candidates);
 
         if (config.isOrphanGcDryRun()) {
-            logger.info("[doGcGroup][{}][fsId={}][dry-run] would gc {} candidate(s) via {}: {}",
-                    requestId, fsId, candidates.size(), representative, candidates);
+            logger.info("[doGcGroup][fsId={}][dry-run] would gc {} candidate(s) via {}: {}",
+                    fsId, candidates.size(), representative, candidates);
             return;
         }
-        if (!isLeader()) {
-            logger.info("[doGcGroup][{}][fsId={}] lost leadership before batch gc, abort", requestId, fsId);
-            return;
+        gcInChunks(fsId, representativeService, representative, candidates);
+    }
+
+    /**
+     * Sends candidates {@code getOrphanGcBatchSize} at a time. Before each chunk: still leader, meta
+     * still fresh, and drop replIds the latest meta has re-occupied — so a long group outlives this
+     * metaserver's leadership (or a meta change) by at most one chunk. A failed chunk ends the group
+     * for this round; the next round picks up whatever is left.
+     */
+    private void gcInChunks(String fsId, KeeperContainerService service,
+                            KeeperContainerMeta representative, List<Long> candidates) {
+        int batchSize = Math.max(1, config.getOrphanGcBatchSize());
+        for (int from = 0; from < candidates.size(); from += batchSize) {
+            if (!isLeader()) {
+                logger.info("[doGcGroup][fsId={}] lost leadership, abort at {}/{}", fsId, from, candidates.size());
+                return;
+            }
+            if (!isMetaFreshEnough()) {
+                logger.warn("[doGcGroup][fsId={}] meta no longer fresh, abort at {}/{}", fsId, from, candidates.size());
+                return;
+            }
+            Set<Long> occupied = currentOccupied(fsId);
+            if (occupied == null) {
+                logger.warn("[doGcGroup][fsId={}] meta became empty, abort at {}/{}", fsId, from, candidates.size());
+                return;
+            }
+            List<Long> chunk = new ArrayList<>(candidates.subList(from, Math.min(from + batchSize, candidates.size())));
+            chunk.removeAll(occupied);
+            if (!chunk.isEmpty() && !gcBatch(fsId, service, representative, chunk)) {
+                return;
+            }
         }
-        gcBatch(requestId, fsId, representativeService, representative, candidates);
+    }
+
+    /** Occupied replIds of {@code fsId} by the latest meta; null if meta is empty (never "nothing occupied"). */
+    private Set<Long> currentOccupied(String fsId) {
+        Set<ClusterMeta> clusters = metaCache.getClusters();
+        if (clusters == null || clusters.isEmpty()) {
+            return null;
+        }
+        return occupiedReplIdsByFsId(clusters, indexContainersById(metaCache.getKeeperContainers()))
+                .getOrDefault(fsId, Collections.emptySet());
     }
 
     /** Tries containers in order; the first one that lists the shared mount is the representative. */
     private Pair<KeeperContainerMeta, List<String>> findReachableRepresentative(
-            String requestId, String fsId, List<KeeperContainerMeta> containers) {
+            String fsId, List<KeeperContainerMeta> containers) {
         for (KeeperContainerMeta candidate : containers) {
             try {
                 List<String> dirNames = keeperContainerServiceFactory.getOrCreateKeeperContainerService(candidate).listStoreDirNames();
                 return Pair.from(candidate, dirNames == null ? Collections.<String>emptyList() : dirNames);
             } catch (Throwable th) {
-                logger.warn("[findReachableRepresentative][{}][fsId={}] {} unreachable, try next", requestId, fsId, candidate, th);
+                logger.warn("[findReachableRepresentative][fsId={}] {} unreachable, try next", fsId, candidate, th);
             }
         }
         return null;
     }
 
     /**
-     * One request for the whole group's candidate list instead of one per replId — a group can have
-     * dozens to low hundreds of candidates after a long-idle shared mount, and each replId already pays
-     * for its own independent safety checks server-side (see {@code KeeperContainerService
-     * .gcOrphanStore}); batching only removes the redundant network round trips, not any of those
-     * per-replId checks.
+     * One request per chunk instead of one per replId; each replId still gets its own safety checks
+     * server-side (see {@code KeeperContainerService.gcOrphanStore}). False if the call failed.
      */
-    private void gcBatch(String requestId, String fsId, KeeperContainerService service,
-                          KeeperContainerMeta representative, List<Long> replIds) {
+    private boolean gcBatch(String fsId, KeeperContainerService service,
+                            KeeperContainerMeta representative, List<Long> replIds) {
         try {
-            List<GcOrphanStoreResult> results = service.gcOrphanStores(replIds, requestId);
-            logger.info("[doGcGroup][{}][fsId={}] batch gc {} candidate(s) via {} -> {}",
-                    requestId, fsId, replIds.size(), representative, results);
+            List<GcOrphanStoreResult> results = service.gcOrphanStores(replIds);
+            logger.info("[doGcGroup][fsId={}] batch gc {} candidate(s) via {} -> {}",
+                    fsId, replIds.size(), representative, results);
+            return true;
         } catch (Throwable th) {
-            logger.warn("[doGcGroup][{}][fsId={}] batch gc call failed via {}, replIds={}",
-                    requestId, fsId, representative, replIds, th);
+            logger.warn("[doGcGroup][fsId={}] batch gc call failed via {}, replIds={}",
+                    fsId, representative, replIds, th);
+            return false;
         }
     }
 
@@ -272,6 +306,9 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
             }
             result.computeIfAbsent(container.getTfsFsId(), k -> new ArrayList<>()).add(container);
         }
+        // Same order on every metaserver, so a stale and a new leader pick the same representative.
+        result.values().forEach(group -> group.sort(Comparator.comparing(KeeperContainerMeta::getId,
+                Comparator.nullsLast(Comparator.naturalOrder()))));
         return result;
     }
 
@@ -342,10 +379,6 @@ public class OrphanStoreGcTask implements MetaServerLeaderAware, TopElement {
     private boolean isMetaFreshEnough() {
         long age = System.currentTimeMillis() - metaCache.getLastSuccessfulLoadMilli();
         return age <= config.getOrphanGcMetaFreshMilli();
-    }
-
-    private String newRequestId() {
-        return "orphan-gc-" + UUID.randomUUID();
     }
 
     @VisibleForTesting

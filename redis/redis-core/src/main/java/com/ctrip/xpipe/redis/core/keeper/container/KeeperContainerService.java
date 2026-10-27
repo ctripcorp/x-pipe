@@ -52,14 +52,14 @@ public interface KeeperContainerService {
 	 * Deletes {@code store_manager_meta.properties} before the rest of the directory, so a crash
 	 * mid-gc never leaves a store that still looks live. Never throws; see {@link GcOrphanStoreResult}.
 	 */
-	GcOrphanStoreResult gcOrphanStore(Long replId, String requestId);
+	GcOrphanStoreResult gcOrphanStore(Long replId);
 
 	/**
-	 * Batch form of {@link #gcOrphanStore(Long, String)} — one request/response for the whole
+	 * Batch form of {@link #gcOrphanStore(Long)} — one request/response for the whole
 	 * candidate list from one orphan-GC round, instead of a network round trip per replId (a group can
 	 * have dozens to low hundreds of candidates after a long-idle shared mount). Every replId still
 	 * gets its own independent safety checks and its own entry in the result list in the same order;
 	 * this only batches the transport, not the decision.
 	 */
-	List<GcOrphanStoreResult> gcOrphanStores(List<Long> replIds, String requestId);
+	List<GcOrphanStoreResult> gcOrphanStores(List<Long> replIds);
 }

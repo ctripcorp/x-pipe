@@ -149,18 +149,16 @@ public class KeeperContainerController extends AbstractController {
 
     /** keeper-tfs-m7: fallback delete of a TFS store this container has no live keeper for. */
     @RequestMapping(value = "/gc/{repl_id}", method = RequestMethod.PUT)
-    public GcOrphanStoreResult gc(@PathVariable("repl_id") long replId,
-                                   @RequestParam(value = "requestId", required = false) String requestId) {
-        logger.info("[gc][{}]{}", requestId, replId);
-        return keeperContainerService.gcOrphanStore(replId, requestId);
+    public GcOrphanStoreResult gc(@PathVariable("repl_id") long replId) {
+        logger.info("[gc]{}", replId);
+        return keeperContainerService.gcOrphanStore(replId);
     }
 
-    /** keeper-tfs-m7: batch form of {@link #gc} — one request for a whole GC-round candidate list. */
+    /** keeper-tfs-m7: batch form of {@link #gc} — one request for a GC-round candidate chunk. */
     @RequestMapping(value = "/gc", method = RequestMethod.PUT)
-    public List<GcOrphanStoreResult> gcBatch(@RequestBody List<Long> replIds,
-                                              @RequestParam(value = "requestId", required = false) String requestId) {
-        logger.info("[gcBatch][{}]{}", requestId, replIds);
-        return keeperContainerService.gcOrphanStores(replIds, requestId);
+    public List<GcOrphanStoreResult> gcBatch(@RequestBody List<Long> replIds) {
+        logger.info("[gcBatch]{}", replIds);
+        return keeperContainerService.gcOrphanStores(replIds);
     }
 
     @RequestMapping(value = "/clusters/" + CLUSTER_NAME_PATH_VARIABLE + "/shards/" + SHARD_NAME_PATH_VARIABLE + "/start", method = RequestMethod.PUT)
