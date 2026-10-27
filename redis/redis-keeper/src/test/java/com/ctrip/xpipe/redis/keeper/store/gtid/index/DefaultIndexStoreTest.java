@@ -1853,6 +1853,98 @@ public class DefaultIndexStoreTest {
     }
 
     @Test
+    public void testV2LocateContinue_NewUuidAbsentInRequest_ShouldNotSkipOldUuidTail() throws Exception {
+        // 切主后场景：旧 master oldUuid:1-10，新 master newUuid:1-3，各自一个 index entry
+        // 从节点只到 oldUuid:1-9，没有 newUuid，应从 oldUuid:10 续传
+        String oldUuid = "398de9592a3429e5b2c63b51a35e45a700bc725d";
+        String newUuid = "51867ad84eb671722bf96ebd4866535a4807ec32";
+        baseDir = Paths.get(tempDir, "IndexStoreTest-newUuidAbsent").toString();
+        cleanDir(baseDir);
+        String cmdName = "cmd_new_uuid_absent_0";
+        File cmdFile = new File(baseDir, cmdName);
+        DefaultIndexStore store = createV2Store(cmdFile, cmdName);
+        defaultIndexStore = store;
+
+        writeGtidRangeCommand(oldUuid, 1, 10);
+        writeGtidRangeCommand(newUuid, 1, 3);
+        Assert.assertEquals(new GtidSet(oldUuid + ":1-10," + newUuid + ":1-3"), store.getIndexGtidSet());
+
+        Pair<Long, GtidSet> point = store.locateContinueGtidSet(new GtidSet(oldUuid + ":1-9"));
+
+        // newUuid 的 nexGno=1 == startGno，整个 entry 要发，继续往前到 oldUuid entry 内定位
+        // （修复前用 >= 判断在 newUuid:1 处停下，oldUuid:10 被当作 gap 跳过）
+        Assert.assertEquals(new GtidSet(oldUuid + ":1-9"), point.getValue());
+        RedisOp nextOp = IndexTestTool.readBytebufAfter(cmdFile.getPath(), point.getKey());
+        Assert.assertEquals(oldUuid + ":10", nextOp.getOpGtid());
+    }
+
+    @Test
+    public void testV2LocateContinue_NewUuidCaughtUp_OldUuidTailTreatedAsGap() throws Exception {
+        // 请求在新 uuid 上已追平、旧 uuid 上落后：与 xredis gtidSeqXsync 一致，在最后一个 entry 即停，
+        // 返回 offset=-1 + 全量 backlog gtid set，旧 uuid 的缺口交给上层按 gap/maxgap 处理
+        // （从节点已有新 master 写入，再回放旧 master 尾巴会乱序，不能补）
+        String oldUuid = "398de9592a3429e5b2c63b51a35e45a700bc725d";
+        String newUuid = "51867ad84eb671722bf96ebd4866535a4807ec32";
+        baseDir = Paths.get(tempDir, "IndexStoreTest-newUuidCaughtUp").toString();
+        cleanDir(baseDir);
+        String cmdName = "cmd_new_uuid_caught_up_0";
+        File cmdFile = new File(baseDir, cmdName);
+        DefaultIndexStore store = createV2Store(cmdFile, cmdName);
+        defaultIndexStore = store;
+
+        writeGtidRangeCommand(oldUuid, 1, 10);
+        writeGtidRangeCommand(newUuid, 1, 3);
+
+        Pair<Long, GtidSet> point = store.locateContinueGtidSet(new GtidSet(oldUuid + ":1-5," + newUuid + ":1-3"));
+
+        Assert.assertEquals(-1L, (long) point.getKey());
+        Assert.assertEquals(new GtidSet(oldUuid + ":1-10," + newUuid + ":1-3"), point.getValue());
+    }
+
+    @Test
+    public void testV2LocateContinue_AlignWithXredisGtidSeqXsync() throws Exception {
+        // 移植自 xredis-gtid gtid_test.c test_gtidSeqXsync
+        // seq: A:100-101 | B:100 | B:101-103，B 拆成两个 entry
+        // xredis 返回"待发送"集合，keeper 返回"已有"集合：keeper 期望 = backlog - xredis cont
+        String a = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        String b = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        String c = "cccccccccccccccccccccccccccccccccccccccc";
+        baseDir = Paths.get(tempDir, "IndexStoreTest-alignXredis").toString();
+        cleanDir(baseDir);
+        String cmdName = "cmd_align_xredis_0";
+        File cmdFile = new File(baseDir, cmdName);
+        DefaultIndexStore store = createV2Store(cmdFile, cmdName);
+        defaultIndexStore = store;
+
+        writeGtidRangeCommand(a, 100, 101);
+        writeGtidRangeCommand(b, 100, 100);
+        store.getIndexWriterV2().flushIndexEntry();
+        writeGtidRangeCommand(b, 101, 103);
+
+        // xredis: req={} -> offset=A:100, cont=A:100-101,B:100-103
+        assertLocateContinue(store, cmdFile, "", "", a + ":100");
+        // xredis: req=B:1-99,C:1-50 -> offset=A:100, cont=A:100-101,B:100-103
+        assertLocateContinue(store, cmdFile, b + ":1-99," + c + ":1-50", "", a + ":100");
+        // xredis: req=B:1-100,C:1-50 -> offset=B:101, cont=B:101-103
+        assertLocateContinue(store, cmdFile, b + ":1-100," + c + ":1-50", a + ":100-101," + b + ":100", b + ":101");
+        // xredis: req=A:1-100,B:1-50 -> offset=A:101, cont=A:101,B:100-103
+        assertLocateContinue(store, cmdFile, a + ":1-100," + b + ":1-50", a + ":100", a + ":101");
+        // xredis: req=A:1-50,B:1-103,C:1-50 -> offset=-1, cont={}
+        Pair<Long, GtidSet> point = store.locateContinueGtidSet(new GtidSet(a + ":1-50," + b + ":1-103," + c + ":1-50"));
+        Assert.assertEquals(-1L, (long) point.getKey());
+        Assert.assertEquals(new GtidSet(a + ":100-101," + b + ":100-103"), point.getValue());
+        // xredis 第 6 个 case 依赖 gtidSeqTrim 段内裁剪；keeper 按整个 cmd 文件 GC，无对应场景
+    }
+
+    private void assertLocateContinue(DefaultIndexStore store, File cmdFile, String request,
+                                      String expectedGtidSet, String expectedNextGtid) throws IOException {
+        Pair<Long, GtidSet> point = store.locateContinueGtidSet(new GtidSet(request));
+        Assert.assertEquals("request: " + request, new GtidSet(expectedGtidSet), point.getValue());
+        RedisOp nextOp = IndexTestTool.readBytebufAfter(cmdFile.getPath(), point.getKey());
+        Assert.assertEquals("request: " + request, expectedNextGtid, nextOp.getOpGtid());
+    }
+
+    @Test
     public void testDeleteAllIndexFile_IncludesV2() throws IOException {
         write(filePath);
         defaultIndexStore.closeWriter();
