@@ -1,0 +1,34 @@
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/cmd/AsyncReferenceFileRegionTest.java
+  s_48fba8a115cc7c::t_d994b0616aaf9b 1-119
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelper.java
+  s_48fba8a115cc7c::t_309793a3e573eb 84-87,89,91,95,102-103
+  s_48fba8a115cc7c::t_3726714f11ee1b 51-56
+  s_48fba8a115cc7c::t_86646cc00205ba 88,90,92-94,96-101
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/storage/AsyncFileSystemHelperTest.java
+  s_48fba8a115cc7c::t_b82cced0effc93 27-39
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/AsyncRdbReferenceFileRegion.java
+  s_48fba8a115cc7c::t_ddc11ef8c0e975 101-102
+redis/redis-keeper/src/main/java/com/ctrip/xpipe/redis/keeper/store/cmd/AsyncReferenceFileRegion.java
+  s_48fba8a115cc7c::t_23448d5cde8edb 94-95
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/AllTests.java
+  s_48fba8a115cc7c::t_4c8243a0a405d1 178-179
+  s_48fba8a115cc7c::t_61363e47224b5d 53
+redis/redis-keeper/src/test/java/com/ctrip/xpipe/redis/keeper/store/AsyncRdbReferenceFileRegionTest.java
+  s_48fba8a115cc7c::t_473ba90610fb90 1-130
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.51-trip",
+  "base_commit_sha": "7050c3a3496ba0f5cbafae5109ffc9dcb284f5de",
+  "prompts": {},
+  "sessions": {
+    "s_48fba8a115cc7c": {
+      "agent_id": {
+        "tool": "kiro-desktop",
+        "id": "sess_20e4a44c-b4a6-4448-9f38-decef3bbc1ea",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sl_li <si_li@trip.com>"
+    }
+  }
+}
