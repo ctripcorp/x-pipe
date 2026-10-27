@@ -154,19 +154,8 @@ public abstract class AbstractInstanceSessionManager implements InstanceSessionM
                     logger.error("[removeUnusedRedises] close failed, endpoint: {}", endpoint, e);
                 }
                 sessions.remove(endpoint);
-                try {
-                    onSessionRecycled(endpoint);
-                } catch (Exception e) {
-                    logger.error("[removeUnusedRedises] recycle hook failed, endpoint: {}", endpoint, e);
-                }
             }
         });
-    }
-
-    /**
-     * 实例已不在使用、其 session 被回收后回调，供子类一并清理按该地址缓存的数据。默认不做任何事。
-     */
-    protected void onSessionRecycled(Endpoint endpoint) {
     }
 
     protected abstract Set<HostPort> getInUseInstances();

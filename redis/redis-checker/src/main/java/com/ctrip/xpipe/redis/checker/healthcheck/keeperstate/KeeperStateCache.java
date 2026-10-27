@@ -1,17 +1,32 @@
 package com.ctrip.xpipe.redis.checker.healthcheck.keeperstate;
 
+import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.redis.checker.config.CheckerConfig;
 import com.ctrip.xpipe.redis.checker.healthcheck.HealthCheckAction;
 import com.ctrip.xpipe.redis.checker.healthcheck.KeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperstate.KeeperStateActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperstate.KeeperStateActionListener;
+import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelector;
+import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
+import com.ctrip.xpipe.redis.core.entity.XpipeMeta;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
+import com.ctrip.xpipe.utils.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
+
+import static com.ctrip.xpipe.redis.checker.resource.Resource.REDIS_COMMAND_EXECUTOR;
 
 /**
  * TFS Keeper 的实时 ACTIVE / BACKUP 状态。作为 {@link KeeperStateActionListener} 接收
@@ -23,11 +38,13 @@ import java.util.concurrent.ConcurrentMap;
  *
  * <p>条目会过期：Keeper 降级或失联、或采集开关关闭后不应继续按陈旧的 ACTIVE 标记判断，过期即视为未采到。
  *
- * <p>本缓存不自行扫描回收：action 停止时经 {@link #stopWatch} 删除；Keeper 不再被检查时，
- * {@code DefaultKeeperSessionManager} 回收其 session 的同时也会删除对应条目。
+ * <p>条目回收：action 停止时经 {@link #stopWatch} 删除；另有定时任务按 {@link KeeperCheckSelector}
+ * 的在用集合清掉已不在检查范围内的 Keeper 与过期样本，兜住 action 未能正常停止、或停止后仍有在途通知写回的情况。
  */
 @Component
 public class KeeperStateCache implements KeeperStateActionListener {
+
+    private static final Logger logger = LoggerFactory.getLogger(KeeperStateCache.class);
 
     /** 两个采集周期（{@code keeper.state.check.interval.milli}）内没有新样本即视为失效。 */
     private static final int EXPIRE_INTERVALS = 2;
@@ -35,13 +52,44 @@ public class KeeperStateCache implements KeeperStateActionListener {
     /** 兜底窗口：配置为 0 或负数时若按原值计算，任何样本都会立刻过期，该 tag 将永久打不出来。 */
     private static final long MIN_EXPIRE_MILLI = 1000L;
 
+    @VisibleForTesting
+    static long cleanUpIntervalSeconds = 30;
+
     private final ConcurrentMap<HostPort, Sample> samples = new ConcurrentHashMap<>();
 
     private final CheckerConfig checkerConfig;
 
     @Autowired
+    private MetaCache metaCache;
+
+    @Autowired
+    private KeeperCheckSelector keeperSelector;
+
+    @Resource(name = REDIS_COMMAND_EXECUTOR)
+    private ScheduledExecutorService scheduled;
+
+    private ScheduledFuture<?> future;
+
+    @Autowired
     public KeeperStateCache(CheckerConfig checkerConfig) {
         this.checkerConfig = checkerConfig;
+    }
+
+    @PostConstruct
+    public void postConstruct() {
+        future = scheduled.scheduleWithFixedDelay(new AbstractExceptionLogTask() {
+            @Override
+            protected void doRun() {
+                removeUnusedKeepers();
+            }
+        }, cleanUpIntervalSeconds, cleanUpIntervalSeconds, TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    public void preDestroy() {
+        if (null != future) {
+            future.cancel(true);
+        }
     }
 
     /**
@@ -101,6 +149,43 @@ public class KeeperStateCache implements KeeperStateActionListener {
         return null == state ? null : state.isActive();
     }
 
+    /**
+     * 清掉已不在检查范围内的 Keeper 与过期样本。读侧本就把过期样本当作未采到，这里只回收内存；
+     * meta 不可用时只按过期清理，不据此判定「无 Keeper 在用」。
+     */
+    @VisibleForTesting
+    void removeUnusedKeepers() {
+        if (samples.isEmpty()) {
+            return;
+        }
+        Set<HostPort> inUse = getInUseKeepers();
+        for (Map.Entry<HostPort, Sample> entry : samples.entrySet()) {
+            HostPort keeper = entry.getKey();
+            Sample sample = entry.getValue();
+            boolean unused = null != inUse && !inUse.contains(keeper);
+            if (unused || isExpired(sample)) {
+                // 条件删除：判定之后若有新样本写入，不能把它一起删掉
+                if (samples.remove(keeper, sample)) {
+                    logger.debug("[removeUnusedKeepers] remove {}, unused: {}", keeper, unused);
+                }
+            }
+        }
+    }
+
+    /** 口径同 {@code DefaultKeeperSessionManager}：null 表示 meta 不可用、无法判定在用集合 */
+    private Set<HostPort> getInUseKeepers() {
+        XpipeMeta xpipeMeta = null == metaCache ? null : metaCache.getXpipeMeta();
+        if (null == keeperSelector || null == xpipeMeta || null == xpipeMeta.getDcs()
+                || xpipeMeta.getDcs().isEmpty()) {
+            return null;
+        }
+        Set<HostPort> inUse = new HashSet<>();
+        for (KeeperMeta keeperMeta : keeperSelector.select(xpipeMeta)) {
+            inUse.add(new HostPort(keeperMeta.getIp(), keeperMeta.getPort()));
+        }
+        return inUse;
+    }
+
     /** 按请求发出时间取新者：晚发出的结果才能覆盖早发出的，与到达顺序无关。 */
     private void record(HostPort keeper, KeeperState state, long requestTimeMilli) {
         if (null == keeper) {
@@ -114,6 +199,18 @@ public class KeeperStateCache implements KeeperStateActionListener {
         long maxAge = Math.max(MIN_EXPIRE_MILLI,
                 (long) EXPIRE_INTERVALS * checkerConfig.getKeeperStateCheckIntervalMilli());
         return System.currentTimeMillis() - sample.timeMilli >= maxAge;
+    }
+
+    @VisibleForTesting
+    KeeperStateCache setMetaCache(MetaCache metaCache) {
+        this.metaCache = metaCache;
+        return this;
+    }
+
+    @VisibleForTesting
+    KeeperStateCache setKeeperSelector(KeeperCheckSelector keeperSelector) {
+        this.keeperSelector = keeperSelector;
+        return this;
     }
 
     private static final class Sample {

@@ -9,7 +9,10 @@ import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperdelay.KeeperDelay
 import com.ctrip.xpipe.redis.checker.healthcheck.actions.keeperstate.KeeperStateActionContext;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperHealthCheckInstance;
 import com.ctrip.xpipe.redis.checker.healthcheck.impl.DefaultKeeperInstanceInfo;
+import com.ctrip.xpipe.redis.checker.healthcheck.meta.KeeperCheckSelector;
+import com.ctrip.xpipe.redis.core.entity.*;
 import com.ctrip.xpipe.redis.core.meta.KeeperState;
+import com.ctrip.xpipe.redis.core.meta.MetaCache;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.Collections;
 import java.util.Map;
 
 import static org.mockito.Mockito.mock;
@@ -28,7 +32,11 @@ public class KeeperStateCacheTest {
 
     private static final HostPort KEEPER = new HostPort("10.0.0.1", 6380);
 
+    private static final String DC = "jq";
+
     @Mock private CheckerConfig checkerConfig;
+
+    @Mock private MetaCache metaCache;
 
     private KeeperStateCache cache;
 
@@ -92,6 +100,64 @@ public class KeeperStateCacheTest {
 
         expire(KEEPER);
         Assert.assertNull("过期样本按未采到处理", cache.getState(KEEPER));
+    }
+
+    /** 不在检查范围内的 Keeper 与过期样本被定时清理；仍在用且新鲜的保留。 */
+    @Test
+    public void testRemoveUnusedKeepersDropsUnusedAndExpired() {
+        HostPort removedKeeper = new HostPort("10.0.0.2", 6380);
+        HostPort staleKeeper = new HostPort("10.0.0.3", 6380);
+        useKeepers(KEEPER, staleKeeper);
+
+        cache.update(KEEPER, KeeperState.ACTIVE);
+        cache.update(removedKeeper, KeeperState.BACKUP);
+        cache.update(staleKeeper, KeeperState.BACKUP);
+        expire(staleKeeper);
+
+        cache.removeUnusedKeepers();
+
+        Assert.assertEquals(Collections.singleton(KEEPER), samples().keySet());
+        Assert.assertEquals(Boolean.TRUE, cache.isActive(KEEPER));
+    }
+
+    /** meta 不可用时无法判定在用集合，只按过期清理，不得清空全部。 */
+    @Test
+    public void testRemoveUnusedKeepersKeepsFreshWhenMetaUnavailable() {
+        cache.setMetaCache(metaCache).setKeeperSelector(new KeeperCheckSelector(metaCache, DC));
+        when(metaCache.getXpipeMeta()).thenReturn(null);
+        HostPort staleKeeper = new HostPort("10.0.0.3", 6380);
+        cache.update(KEEPER, KeeperState.ACTIVE);
+        cache.update(staleKeeper, KeeperState.BACKUP);
+        expire(staleKeeper);
+
+        cache.removeUnusedKeepers();
+
+        Assert.assertEquals(Collections.singleton(KEEPER), samples().keySet());
+    }
+
+    /** meta 明确不含任何 Keeper 时全部回收，口径同 DefaultKeeperSessionManager。 */
+    @Test
+    public void testRemoveUnusedKeepersClearsAllWhenNoKeeperInUse() {
+        useKeepers();
+        cache.update(KEEPER, KeeperState.ACTIVE);
+
+        cache.removeUnusedKeepers();
+
+        Assert.assertTrue(samples().isEmpty());
+    }
+
+    /** 判定之后写入的新样本不能被一起删掉：清理用的是条件删除。 */
+    @Test
+    public void testRemoveUnusedKeepersDoesNotDropConcurrentlyRefreshedSample() {
+        useKeepers(KEEPER);
+        cache.update(KEEPER, KeeperState.ACTIVE);
+        Object stale = samples().get(KEEPER);
+        // 时间严格更新，确保新样本替换旧样本而非被 merge 视作同一时刻
+        cache.onAction(success(KeeperState.BACKUP, System.currentTimeMillis() + 1));
+
+        Assert.assertFalse("旧样本已被替换，条件删除不得命中", samples().remove(KEEPER, stale));
+        cache.removeUnusedKeepers();
+        Assert.assertEquals(KeeperState.BACKUP, cache.getState(KEEPER));
     }
 
     /** 作为 listener：成功写入角色，失败退回未知。 */
@@ -174,6 +240,21 @@ public class KeeperStateCacheTest {
 
     private KeeperStateActionContext failure(long requestTimeMilli) {
         return new KeeperStateActionContext(instance(), new RuntimeException("timeout"), requestTimeMilli);
+    }
+
+    /** 构造只含给定 Keeper 的 meta：ONE_WAY、ActiveDc 即本 Checker 所在机房，全部会被 selector 选中。 */
+    private void useKeepers(HostPort... keepers) {
+        ShardMeta shard = new ShardMeta().setId("shard").setDbId(1L);
+        for (HostPort keeper : keepers) {
+            shard.addKeeper(new KeeperMeta().setIp(keeper.getHost()).setPort(keeper.getPort()));
+        }
+        ClusterMeta cluster = new ClusterMeta().setId("cluster").setType(ClusterType.ONE_WAY.toString())
+                .setActiveDc(DC);
+        cluster.addShard(shard);
+        DcMeta dcMeta = new DcMeta(DC);
+        dcMeta.addCluster(cluster);
+        when(metaCache.getXpipeMeta()).thenReturn(new XpipeMeta().addDc(dcMeta));
+        cache.setMetaCache(metaCache).setKeeperSelector(new KeeperCheckSelector(metaCache, DC));
     }
 
     private DefaultKeeperHealthCheckInstance instance() {
