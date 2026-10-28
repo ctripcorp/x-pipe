@@ -65,7 +65,11 @@ public class RedisKeeperServerStateBackup extends AbstractRedisKeeperServerState
 
 	@Override
 	public boolean psync(final RedisClient redisClient, final String []args) throws Exception {
-		
+
+		if (redisKeeperServer.isTfsMode()) {
+			return true;
+		}
+
 		logger.info("[psync][server state backup, ask slave to wait]{}, {}", redisClient, this);
 		
 		if(redisKeeperServer.compareAndDo(this, new AbstractExceptionLogTask() {
