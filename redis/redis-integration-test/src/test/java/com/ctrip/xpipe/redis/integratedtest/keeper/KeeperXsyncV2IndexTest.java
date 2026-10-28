@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.integratedtest.keeper;
 
+import com.ctrip.xpipe.endpoint.HostPort;
 import com.ctrip.xpipe.gtid.GtidSet;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.RedisMeta;
@@ -115,9 +116,15 @@ public class KeeperXsyncV2IndexTest extends AbstractKeeperIntegratedSingleDc {
         activeKeeperMeta = backupKeeperMeta; // 新的 active
         backupKeeperMeta = getKeepersBackup().iterator().next();
         waitKeeperConnected(activeKeeperMeta, backupKeeperMeta);
-
+        for (RedisMeta slave: getRedisSlaves()) {
+            setRedisMaster(slave, new HostPort(activeKeeperMeta.getIp(), activeKeeperMeta.getPort()));
+        }
         // 4. 回滚后继续写入数据
         sendMixedCommands(500, 200);
+
+        logger.info("master:{}",master);
+        logger.info("active keeper:{}",activeKeeperMeta);
+        logger.info("backup keeper:{}",backupKeeperMeta);
         sleep(10_000);
         assertGtid(master);
 
