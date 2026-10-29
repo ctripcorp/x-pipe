@@ -531,6 +531,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 	@Override
 	protected void doDispose() throws Exception {
 		try {
+			this.keepersMonitorManager.remove(this);
 			LifecycleHelper.disposeIfPossible(keeperRedisMaster);
 			this.ckStore.dispose();
 			this.leaderElector.dispose();
@@ -852,12 +853,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			AsyncFileSystemHelper.runWithIoTimeout(AsyncFileSystemHelper.PREPARE_IO_TIMEOUT_MILLIS, () -> {
 				closeSlaves("prepare");
 				try {
-					if (replicationStoreManager.getLifecycleState().canStop()) {
-						replicationStoreManager.stop();
-					} else {
-						// Already stopped (or never started): still drop lease reference.
-						replicationStoreManager.releaseCurrentStore();
-					}
+					LifecycleHelper.stopIfPossible(replicationStoreManager);
+					// stop no longer frees the store: hand the lease back explicitly
+					replicationStoreManager.release();
 				} catch (IOException e) {
 					throw e;
 				} catch (Exception e) {
@@ -939,6 +937,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 		try {
 			LifecycleHelper.stopIfPossible(replicationStoreManager);
+			replicationStoreManager.release();
 		} catch (Throwable th) {
 			logger.error("[rollbackReenter][stop manager]{}", this, th);
 		}
@@ -992,11 +991,9 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		stopPrepareCmdParser();
 		stopPrepareWatcher();
 		try {
-			if (replicationStoreManager.getLifecycleState().canStop()) {
-				replicationStoreManager.stop();
-			} else {
-				replicationStoreManager.releaseCurrentStore();
-			}
+			LifecycleHelper.stopIfPossible(replicationStoreManager);
+			// before resetReadOnlyIfStopped: setReadOnly(false) requires currentStore == null
+			replicationStoreManager.release();
 		} catch (IOException e) {
 			throw e;
 		} catch (Exception e) {
@@ -1009,9 +1006,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		try {
 			stopPrepareCmdParser();
 			stopPrepareWatcher();
-			if (replicationStoreManager.getLifecycleState().canStop()) {
-				replicationStoreManager.stop();
-			}
+			LifecycleHelper.stopIfPossible(replicationStoreManager);
+			replicationStoreManager.release();
 			resetReadOnlyIfStopped();
 		} catch (Throwable nested) {
 			logger.error("[rollbackPrepareWatch]{}", this, nested);
@@ -1272,7 +1268,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void destroy() throws Exception {
-		this.keepersMonitorManager.remove(this);
 		if(shouldDestroy()) {
 			this.replicationStoreManager.destroy();
 		}else {
@@ -1300,7 +1295,6 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 
 	@Override
 	public void release() throws Exception {
-		this.keepersMonitorManager.remove(this);
 		this.replicationStoreManager.release();
 	}
 

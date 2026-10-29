@@ -107,6 +107,8 @@ public class KeeperContainerServiceGcTest extends AbstractRedisKeeperTest {
             out.write("latest.store.dir=x".getBytes());
         }
         assertTrue(metaFile.setLastModified(System.currentTimeMillis() - ageMillis));
+        // TfsStoreDeleter checks the newest mtime of the directory and its children first.
+        assertTrue(dir.setLastModified(System.currentTimeMillis() - ageMillis));
     }
 
     @Test
@@ -235,7 +237,7 @@ public class KeeperContainerServiceGcTest extends AbstractRedisKeeperTest {
                 writerOpenFailure.set(th);
             }
             return invocation.callRealMethod();
-        }).when(spyFs).lastModified(org.mockito.ArgumentMatchers.any(AsyncFile.class));
+        }).when(spyFs).delete(org.mockito.ArgumentMatchers.any(AsyncFile.class));
 
         GcOrphanStoreResult result = keeperContainerService.gcOrphanStore(7L);
 

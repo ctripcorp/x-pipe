@@ -112,6 +112,7 @@ import org.junit.runners.Suite.SuiteClasses;
         DefaultRedisKeeperServerPrepareWatchTest.class,
         DefaultRedisKeeperServerStoreGetSemanticsTest.class,
         DefaultRedisKeeperServerDestroyTest.class,
+        TfsStoreDeleterTest.class,
         DefaultReplicationStoreTest.class,
         DefaultReplicationStoreReadOnlyTest.class,
         DefaultReplicationStoreReadOnlyCmdOpenTest.class,

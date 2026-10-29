@@ -1,5 +1,6 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
+import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
@@ -257,29 +258,12 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         return store;
     }
 
-    /**
-     * PREPARE / Server stop: cancel GC → best-effort flush → close store handles (not destroy)
-     * → close manager-meta long-lived handle (reopen lazily after start).
-     * <p>
-     * {@code releaseCurrentStore} failures are swallowed (align {@link #doDispose}): prefer reaching
-     * Lifecycle STOPPED over propagating — {@link com.ctrip.xpipe.lifecycle.AbstractLifecycle#stop}
-     * rollback would leave STARTED with GC/store/meta already torn down. Manager-meta close is in
-     * {@code finally}. Failures are recorded for {@link #takeStopReleaseFailed()}.
-     */
+    /** Cancel GC / meta flush → best-effort flush. Store resources are freed only by {@link #release()}. */
     @Override
     protected void doStop() throws Exception {
         cancelGcFuture();
         cancelMetaFlushFuture();
         flushStoreBestEffort();
-        boolean storeReleased = false;
-        try {
-            storeReleased = releaseCurrentStore(false);
-        } catch (Exception e) {
-            logger.warn("[doStop][releaseCurrentStore]", e);
-        } finally {
-            boolean metaClosed = closeManagerMetaFile();
-            stopReleaseFailed.set(!storeReleased || !metaClosed);
-        }
     }
 
     @Override
@@ -287,17 +271,11 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         return stopReleaseFailed.getAndSet(false);
     }
 
+    /** Stops background threads only; store resources are freed only by {@link #release()}. */
     @Override
     protected void doDispose() throws Exception {
         cancelGcFuture();
         cancelMetaFlushFuture();
-        try {
-            releaseCurrentStore();
-        } catch (Exception e) {
-            logger.warn("[doDispose][releaseCurrentStore]", e);
-        } finally {
-            closeManagerMetaFile();
-        }
         if (scheduled != null) {
             scheduled.shutdownNow();
         }
@@ -364,7 +342,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             if (existing != null && existing.checkOk()) {
                 return existing;
             }
-            throw new IOException("replication store manager stopped, refuse createIfNotExist: " + this);
+            throw new IOException("replication store manager " + (managerMetaDestroyed ? "destroyed" : "stopped") + ", refuse createIfNotExist: " + this);
         }
 
         // Heal only when getCurrent() == null (no store / !checkOk). IO / unexpected failures must propagate
@@ -385,7 +363,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             throw new ReplicationStoreManagerStateException("can not create", toString(), getLifecycleState().getPhaseName());
         }
         if (refuseOpenOrCreate()) {
-            throw new IOException("replication store manager stopped, refuse create: " + this);
+            throw new IOException("replication store manager " + (managerMetaDestroyed ? "destroyed" : "stopped") + ", refuse create: " + this);
         }
 
         keeperMonitor.getReplicationStoreStats().increateReplicationStoreCreateCount();
@@ -432,7 +410,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     /** STOPPING window or after stop/dispose — refuse reopen / create / self-heal (T-S.12). */
     private boolean refuseOpenOrCreate() {
-        return getLifecycleState().isStopping() || getLifecycleState().isPositivelyStopped();
+        return managerMetaDestroyed || getLifecycleState().isStopping() || getLifecycleState().isPositivelyStopped();
     }
 
     /**
@@ -666,32 +644,45 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         }
     }
 
+    /**
+     * The only place store resources are freed: close the current store and the manager-meta handle.
+     * Call after stop(); reopen is refused by the stopped lifecycle, not permanently. Idempotent.
+     * Failures are recorded for {@link #takeStopReleaseFailed()}.
+     */
     @Override
     public synchronized void release() throws Exception {
         logger.info("[release]{}", this);
-        // Permanent refuse reopen before close so create/getCurrent/gc cannot race a new open.
-        managerMetaDestroyed = true;
+        boolean storeReleased = false;
         try {
             // Drain in-flight atomic replace (TMP_REP_*) before closing.
-            releaseCurrentStore();
+            storeReleased = releaseCurrentStore(false);
         } catch (Exception e) {
             logger.warn("[release][releaseCurrentStore]", e);
         } finally {
-            closeManagerMetaFile();
+            boolean metaClosed = closeManagerMetaFile();
+            stopReleaseFailed.set(!storeReleased || !metaClosed);
         }
     }
 
+    /**
+     * Permanently refuse reopen, take the still-open meta write handle, release the store, then delete
+     * through that handle. A failed delete is left to the orphan-store GC: every handle of this process is
+     * closed by then (store by release, meta by the deleter), so the GC can open the meta itself.
+     */
     @Override
     public synchronized void destroy() throws Exception {
         logger.info("[destroy]{}", this);
-        release();
-        GcOrphanStoreResult result = storeDeleter.delete(baseDir, replId);
-        if (result.status == GcOrphanStoreResult.Status.FAILED) {
-            throw new IOException("destroy replication store failed: " + baseDir + ", " + result);
+        managerMetaDestroyed = true;
+        cancelGcFuture();
+        cancelMetaFlushFuture();
+        AsyncFile heldMeta = readOnly ? null : managerMetaAsyncFile;
+        if (heldMeta != null) {
+            managerMetaAsyncFile = null;
         }
-        if (result.status == GcOrphanStoreResult.Status.SKIPPED) {
-            // TFS store may still be in use elsewhere: released only, same as release().
-            logger.warn("[destroy][store kept, released only]{} {}", baseDir, result);
+        release();
+        GcOrphanStoreResult result = storeDeleter.delete(baseDir, replId, heldMeta);
+        if (result.status != GcOrphanStoreResult.Status.DELETED && result.status != GcOrphanStoreResult.Status.NOT_FOUND) {
+            logger.warn("[destroy][left to orphan gc]{} {}", baseDir, result);
         }
     }
 

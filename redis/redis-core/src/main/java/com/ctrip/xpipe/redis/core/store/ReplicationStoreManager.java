@@ -33,7 +33,8 @@ public interface ReplicationStoreManager  extends Destroyable, Observable, Lifec
 	ReplId getReplId();
 
 	/**
-	 * Close the current store and the manager-meta file, permanently refusing reopen on this instance.
+	 * The only place store resources are freed (stop/dispose don't): close the current store and the manager-meta
+	 * file. Call after stop(); reopen is refused by the stopped lifecycle, not permanently.
 	 * Unlike {@link #destroy()}, never deletes {@link #getBaseDir()} — for a shared TFS store, the
 	 * directory outlives this keeper instance. {@code destroy()} is {@code release()} followed by rmdir.
 	 */

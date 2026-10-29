@@ -101,6 +101,14 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
 
     @Override
     protected void doDispose() throws Exception {
+        // process exit: registry has stopped every keeper, nothing writes; free stores before the FS goes down
+        for (RedisKeeperServer keeperServer : redisKeeperServers.values()) {
+            try {
+                keeperServer.release();
+            } catch (Throwable th) {
+                logger.warn("[doDispose][release]{}", keeperServer, th);
+            }
+        }
         this.searcherExecutor.shutdown();
         this.gcExecutor.shutdown();
         containerResourceManager.shutdownAsyncFileSystem();
@@ -168,6 +176,12 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
                             } catch (Throwable th) {
                                 logger.info("[add][rollback] dispose fail", th);
                             }
+                        }
+                        try {
+                            // stop/dispose no longer free the store
+                            redisKeeperServer.release();
+                        } catch (Throwable th) {
+                            logger.info("[add][rollback] release fail", th);
                         }
                         if (!redisKeeperServers.containsKey(keeperServerKey)) {
                             containerResourceManager.releasePort(keeperMeta.getPort());
@@ -305,6 +319,8 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
 
         try {
             keeperServer.stop();
+            // stop no longer frees the store: hand the TFS lease back; /start reopens lazily
+            keeperServer.release();
         } catch (Throwable ex) {
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,

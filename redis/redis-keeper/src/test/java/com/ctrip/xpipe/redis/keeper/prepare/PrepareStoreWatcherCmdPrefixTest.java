@@ -230,7 +230,9 @@ public class PrepareStoreWatcherCmdPrefixTest extends AbstractRedisKeeperTest {
 
 		watcher.stop();
 		LifecycleHelper.stopIfPossible(occupying);
+		occupying.release();
 		LifecycleHelper.stopIfPossible(watching);
+		watching.release();
 		watching.setReadOnly(false);
 		LifecycleHelper.startIfPossible(watching);
 		DefaultReplicationStore reopened = (DefaultReplicationStore) watching.getCurrent();
@@ -343,6 +345,7 @@ public class PrepareStoreWatcherCmdPrefixTest extends AbstractRedisKeeperTest {
 	private void stopDispose(DefaultReplicationStoreManager manager) {
 		try {
 			LifecycleHelper.stopIfPossible(manager);
+			manager.release();
 		} catch (Throwable th) {
 			logger.info("[stopDispose][stop]{}", manager, th);
 		}

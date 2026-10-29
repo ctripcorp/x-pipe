@@ -2,6 +2,7 @@ package com.ctrip.xpipe.redis.keeper.store;
 
 import com.ctrip.xpipe.redis.core.entity.GcOrphanStoreResult;
 import com.ctrip.xpipe.redis.core.store.ReplId;
+import com.ctrip.xpipe.redis.keeper.storage.AsyncFile;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystem;
 import com.ctrip.xpipe.redis.keeper.storage.AsyncFileSystemHelper;
 import org.slf4j.Logger;
@@ -29,5 +30,12 @@ public final class DirectStoreDeleter implements ReplicationStoreDeleter {
             logger.warn("[delete][rmdir failed]{}", baseDir, th);
             return GcOrphanStoreResult.fail(replId.id(), "rmdir failed: " + th.getMessage());
         }
+    }
+
+    /** Private store: no ownership check, just close the handle so rmdir doesn't race it. */
+    @Override
+    public GcOrphanStoreResult delete(File baseDir, ReplId replId, AsyncFile heldMeta) {
+        AsyncFileSystemHelper.closeHandle(fs, heldMeta, replId, "destroy close meta " + baseDir);
+        return delete(baseDir, replId);
     }
 }

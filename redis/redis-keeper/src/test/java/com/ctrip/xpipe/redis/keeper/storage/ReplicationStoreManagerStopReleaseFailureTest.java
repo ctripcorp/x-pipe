@@ -59,6 +59,7 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
     public void tearDownManager() {
         try {
             LifecycleHelper.stopIfPossible(manager);
+            manager.release();
             LifecycleHelper.disposeIfPossible(manager);
         } catch (Exception e) {
             logger.info("[tearDown] stop / dispose", e);
@@ -93,6 +94,7 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
 
     private void stopAndAssertFailure(AbstractStorageFile deferred) throws Exception {
         LifecycleHelper.stopIfPossible(manager);
+        manager.release();
         assertTrue(manager.getLifecycleState().isPositivelyStopped());
         assertNull(manager.getOpenedStore());
         assertTrue(closer.isPending(deferred));
@@ -131,6 +133,7 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
         failTwiceThenClose(rdbWrite);
 
         LifecycleHelper.stopIfPossible(manager);
+        manager.release();
         assertTrue(manager.getLifecycleState().isPositivelyStopped());
         assertTrue(closer.isPending(rdbWrite));
         assertFalse(manager.takeStopReleaseFailed());
@@ -139,6 +142,7 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
     @Test
     public void testDeferredReadOnlyManagerMetaHandleIsNotRecorded() throws Exception {
         LifecycleHelper.stopIfPossible(manager);
+        manager.release();
         assertFalse(manager.takeStopReleaseFailed());
         manager.setReadOnly(true);
         LifecycleHelper.startIfPossible(manager);
@@ -148,6 +152,7 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
         failTwiceThenClose(managerMeta);
 
         LifecycleHelper.stopIfPossible(manager);
+        manager.release();
         assertTrue(closer.isPending(managerMeta));
         assertFalse(manager.takeStopReleaseFailed());
     }
@@ -156,8 +161,10 @@ public class ReplicationStoreManagerStopReleaseFailureTest extends AbstractRedis
     public void testFailureOfEarlierStopIsNotReportedByNextStop() throws Exception {
         failTwiceThenClose(cmdSegment());
         LifecycleHelper.stopIfPossible(manager);
+        manager.release();
         LifecycleHelper.startIfPossible(manager);
         LifecycleHelper.stopIfPossible(manager);
+        manager.release();
         assertFalse(manager.takeStopReleaseFailed());
     }
 
