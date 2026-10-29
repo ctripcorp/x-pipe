@@ -1,6 +1,5 @@
 package com.ctrip.xpipe.redis.keeper.store;
 
-import com.ctrip.xpipe.api.monitor.EventMonitor;
 import com.ctrip.xpipe.concurrent.AbstractExceptionLogTask;
 import com.ctrip.xpipe.exception.ExceptionUtils;
 import com.ctrip.xpipe.observer.AbstractLifecycleObservable;
@@ -104,14 +103,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     /** Long-lived handle for {@link #META_FILE}; lazy open, closed on stop/dispose (Phase S / T-S.5). */
     private AsyncFile managerMetaAsyncFile;
-
-    private final AtomicBoolean stopReleaseFailed = new AtomicBoolean();
-
-    /**
-     * Permanent gate after {@link #destroy()}: unlike stop (lazy reopen on start), destroy must never
-     * reopen manager-meta (avoids open between close and rmdir, or after baseDir gone).
-     */
-    private boolean managerMetaDestroyed;
 
     /** Removes baseDir on {@link #destroy()}: {@link DirectStoreDeleter} for BM, {@link TfsStoreDeleter} for TFS. */
     private final ReplicationStoreDeleter storeDeleter;
@@ -228,7 +219,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
      * @return {@code currentStore} read under the monitor, or null when the whole tick must be skipped
      */
     synchronized ReplicationStore flushManagerMeta() {
-        if (readOnly || !getLifecycleState().isStarted() || managerMetaDestroyed) {
+        if (readOnly || !getLifecycleState().isStarted()) {
             return null;
         }
         ReplicationStore store = currentStore.get();
@@ -264,11 +255,6 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
         cancelGcFuture();
         cancelMetaFlushFuture();
         flushStoreBestEffort();
-    }
-
-    @Override
-    public boolean takeStopReleaseFailed() {
-        return stopReleaseFailed.getAndSet(false);
     }
 
     /** Stops background threads only; store resources are freed only by {@link #release()}. */
@@ -342,7 +328,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             if (existing != null && existing.checkOk()) {
                 return existing;
             }
-            throw new IOException("replication store manager " + (managerMetaDestroyed ? "destroyed" : "stopped") + ", refuse createIfNotExist: " + this);
+            throw new IOException("replication store manager stopped, refuse createIfNotExist: " + this);
         }
 
         // Heal only when getCurrent() == null (no store / !checkOk). IO / unexpected failures must propagate
@@ -363,7 +349,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             throw new ReplicationStoreManagerStateException("can not create", toString(), getLifecycleState().getPhaseName());
         }
         if (refuseOpenOrCreate()) {
-            throw new IOException("replication store manager " + (managerMetaDestroyed ? "destroyed" : "stopped") + ", refuse create: " + this);
+            throw new IOException("replication store manager stopped, refuse create: " + this);
         }
 
         keeperMonitor.getReplicationStoreStats().increateReplicationStoreCreateCount();
@@ -410,7 +396,7 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
 
     /** STOPPING window or after stop/dispose — refuse reopen / create / self-heal (T-S.12). */
     private boolean refuseOpenOrCreate() {
-        return managerMetaDestroyed || getLifecycleState().isStopping() || getLifecycleState().isPositivelyStopped();
+        return getLifecycleState().isStopping() || getLifecycleState().isPositivelyStopped();
     }
 
     /**
@@ -491,14 +477,11 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     }
 
     /**
-     * Sole entry for manager-meta handle. Synchronized + lifecycle / destroy gate: refuse open/use while
-     * stopping or after stop/dispose (handle closed in {@link #closeManagerMetaFile()}), and after
-     * {@link #destroy()} (permanent). After {@code start()} again (not destroyed), first save/load reopens lazily.
+     * Sole entry for manager-meta handle. Synchronized + lifecycle gate: refuse open/use while stopping or
+     * after stop/dispose (handle closed in {@link #release()}). After {@code start()} again, first save/load
+     * reopens lazily; a disposed manager is never initialized again, so destroy needs no extra gate.
      */
     private synchronized AsyncFile getOrOpenManagerMetaFile() throws IOException {
-        if (managerMetaDestroyed) {
-            throw new IOException("replication store manager destroyed, refuse manager meta: " + this);
-        }
         if (getLifecycleState().isStopping() || getLifecycleState().isPositivelyStopped()) {
             throw new IOException("replication store manager stopped, refuse manager meta: " + this);
         }
@@ -647,10 +630,9 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
     /**
      * The only place store resources are freed: close the current store and the manager-meta handle.
      * Call after stop(); reopen is refused by the stopped lifecycle, not permanently. Idempotent.
-     * Failures are recorded for {@link #takeStopReleaseFailed()}.
      */
     @Override
-    public synchronized void release() throws Exception {
+    public synchronized boolean release() throws Exception {
         logger.info("[release]{}", this);
         boolean storeReleased = false;
         try {
@@ -660,21 +642,23 @@ public class DefaultReplicationStoreManager extends AbstractLifecycleObservable 
             logger.warn("[release][releaseCurrentStore]", e);
         } finally {
             boolean metaClosed = closeManagerMetaFile();
-            stopReleaseFailed.set(!storeReleased || !metaClosed);
+            return !storeReleased || !metaClosed;
         }
     }
 
     /**
-     * Permanently refuse reopen, take the still-open meta write handle, release the store, then delete
-     * through that handle. A failed delete is left to the orphan-store GC: every handle of this process is
-     * closed by then (store by release, meta by the deleter), so the GC can open the meta itself.
+     * Only after dispose: tasks are cancelled and the disposed lifecycle refuses any reopen for good. Take
+     * the still-open meta write handle, release the store, then delete through that handle. A failed delete
+     * is left to the orphan-store GC: every handle of this process is closed by then (store by release,
+     * meta by the deleter), so the GC can open the meta itself.
      */
     @Override
     public synchronized void destroy() throws Exception {
         logger.info("[destroy]{}", this);
-        managerMetaDestroyed = true;
-        cancelGcFuture();
-        cancelMetaFlushFuture();
+        if (!getLifecycleState().isDisposed()) {
+            logger.warn("[destroy][not disposed, skip]{}", this);
+            return;
+        }
         AsyncFile heldMeta = readOnly ? null : managerMetaAsyncFile;
         if (heldMeta != null) {
             managerMetaAsyncFile = null;

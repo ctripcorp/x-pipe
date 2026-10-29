@@ -1,6 +1,7 @@
 package com.ctrip.xpipe.redis.keeper.impl;
 
 import com.ctrip.xpipe.api.cluster.LeaderElectorManager;
+import com.ctrip.xpipe.api.lifecycle.LifecycleState;
 import com.ctrip.xpipe.redis.core.entity.ClusterMeta;
 import com.ctrip.xpipe.redis.core.entity.KeeperMeta;
 import com.ctrip.xpipe.redis.core.entity.ShardMeta;
@@ -83,5 +84,17 @@ public class DefaultRedisKeeperServerDestroyTest {
 
         verify(manager, times(1)).release();
         verify(manager, never()).destroy();
+    }
+
+    /** Earlier steps fail (event loops were never created here), later steps still run: the manager is disposed. */
+    @Test
+    public void testDisposeIsBestEffort() throws Exception {
+        LifecycleState stopped = mock(LifecycleState.class);
+        when(stopped.canDispose()).thenReturn(true);
+        when(manager.getLifecycleState()).thenReturn(stopped);
+
+        server(true, KeeperState.ACTIVE).doDispose();
+
+        verify(manager, times(1)).dispose();
     }
 }

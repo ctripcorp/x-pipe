@@ -177,12 +177,8 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
                                 logger.info("[add][rollback] dispose fail", th);
                             }
                         }
-                        try {
-                            // stop/dispose no longer free the store
-                            redisKeeperServer.release();
-                        } catch (Throwable th) {
-                            logger.info("[add][rollback] release fail", th);
-                        }
+                        // stop/dispose no longer free the store
+                        releaseQuietly(redisKeeperServer);
                         if (!redisKeeperServers.containsKey(keeperServerKey)) {
                             containerResourceManager.releasePort(keeperMeta.getPort());
                         }
@@ -351,6 +347,17 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
                             String.format("Remove keeper failed for %s", replId)), ex);
+        } finally {
+            releaseQuietly(keeperServer);
+        }
+    }
+
+    /** Stop the manager (its gc may still run after a failed server stop) and free the store; never throws. */
+    private void releaseQuietly(RedisKeeperServer keeperServer) {
+        try {
+            keeperServer.release();
+        } catch (Throwable th) {
+            logger.error("[releaseQuietly]{}", keeperServer, th);
         }
     }
 
@@ -374,13 +381,13 @@ public class KeeperContainerService extends AbstractLifecycle implements TopElem
 
             // 2. remove keeper
             removeKeeperCache(keeperServerKey);
-
-            // 3. close external resources without deleting them
-            keeperServer.release();
         } catch (Throwable ex) {
             throw new RedisKeeperRuntimeException(
                     new ErrorMessage<>(KeeperContainerErrorCode.INTERNAL_EXCEPTION,
                             String.format("Release keeper failed for %s", replId)), ex);
+        } finally {
+            // 3. close external resources without deleting them, even if stop/dispose failed
+            releaseQuietly(keeperServer);
         }
     }
 

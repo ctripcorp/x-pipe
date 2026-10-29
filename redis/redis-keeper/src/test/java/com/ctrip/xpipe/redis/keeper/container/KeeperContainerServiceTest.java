@@ -170,7 +170,7 @@ public class KeeperContainerServiceTest extends AbstractTest {
 
         verify(componentRegistry, times(1)).remove(redisKeeperServer);
         verify(redisKeeperServer, times(1)).destroy();
-        verify(redisKeeperServer, never()).release();
+        verify(redisKeeperServer, times(1)).release(); // finally always hands the store back; idempotent after destroy
     }
 
     @Test
@@ -191,6 +191,39 @@ public class KeeperContainerServiceTest extends AbstractTest {
         verify(redisKeeperServer, never()).destroy();
     }
 
+    /** stop/dispose failed: the store / lease is still handed back, the keeper stays cached for a retry. */
+    @Test
+    public void testReleaseKeeperStopFailsStillReleasesAndKeepsCache() throws Exception {
+        keeperContainerService.setRedisKeeperServers(new HashMap<>(Collections.singletonMap(someReplId.toString(), redisKeeperServer)));
+        when(componentRegistry.remove(redisKeeperServer)).thenThrow(new IllegalStateException("stop failed"));
+
+        try {
+            keeperContainerService.release(someReplId);
+            org.junit.Assert.fail("release failure must reach metaserver");
+        } catch (RedisKeeperRuntimeException expected) {
+            // ignore
+        }
+        verify(redisKeeperServer, times(1)).release();
+        assertTrue(keeperContainerService.list().contains(redisKeeperServer));
+    }
+
+    /** remove whose stop/dispose failed never deletes the store, only hands it back; keeper stays cached. */
+    @Test
+    public void testRemoveKeeperStopFailsReleasesWithoutDestroy() throws Exception {
+        keeperContainerService.setRedisKeeperServers(new HashMap<>(Collections.singletonMap(someReplId.toString(), redisKeeperServer)));
+        when(componentRegistry.remove(redisKeeperServer)).thenThrow(new IllegalStateException("stop failed"));
+
+        try {
+            keeperContainerService.remove(someReplId);
+            org.junit.Assert.fail("remove failure must reach metaserver");
+        } catch (RedisKeeperRuntimeException expected) {
+            // ignore
+        }
+        verify(redisKeeperServer, never()).destroy();
+        verify(redisKeeperServer, times(1)).release();
+        assertTrue(keeperContainerService.list().contains(redisKeeperServer));
+    }
+
     @Test
     public void testReleaseKeeperNotFoundIsNoop() throws Exception {
         keeperContainerService.release(someReplId);
@@ -208,7 +241,7 @@ public class KeeperContainerServiceTest extends AbstractTest {
 
         verify(componentRegistry, times(1)).remove(redisKeeperServer);
         verify(redisKeeperServer, times(1)).destroy();
-        verify(redisKeeperServer, never()).release();
+        verify(redisKeeperServer, times(1)).release(); // finally always hands the store back; idempotent after destroy
     }
 
     @Test
