@@ -68,7 +68,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
-import io.netty.util.internal.ConcurrentSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -79,10 +78,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import static com.ctrip.xpipe.redis.core.store.FULLSYNC_FAIL_CAUSE.FULLSYNC_PROGRESS_NOT_SUPPORTED;
-import static com.ctrip.xpipe.redis.keeper.SLAVE_STATE.*;
 
 /**
  * @author wenchao.meng
@@ -506,7 +503,8 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		}
 		keeperMonitor.stop();
 		clearClients();
-		this.leaderElector.stop();
+		// IfPossible: a retry after a stop that failed past this point must not throw on the stopped elector
+		LifecycleHelper.stopIfPossible(leaderElector);
 		LifecycleHelper.stopIfPossible(keeperRedisMaster);
 		stopServer();
 		leavePrepareWatch();
@@ -528,24 +526,42 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 		redisClients.clear();
 	}
 
+	/**
+	 * Best effort: each step on its own, so one failure never leaks the threads behind it.
+	 */
 	@Override
 	protected void doDispose() throws Exception {
-		try {
-			this.keepersMonitorManager.remove(this);
+		disposeQuietly("monitor", () -> keepersMonitorManager.remove(this));
+		disposeQuietly("master", () -> {
 			LifecycleHelper.disposeIfPossible(keeperRedisMaster);
-			this.ckStore.dispose();
-			this.leaderElector.dispose();
-			masterConfigEventLoopGroup.shutdownGracefully();
-			masterEventLoopGroup.shutdownGracefully();
-			rdbOnlyEventLoopGroup.shutdownGracefully();
-			bossGroup.shutdownGracefully();
-			workerGroup.shutdownGracefully();
-			replicationStoreManager.dispose();
-			this.scheduled.shutdownNow();
-			this.clientExecutors.shutdownNow();
-			super.doDispose();
-		} finally {
-			this.pubSubRegistry.close();
+		});
+		disposeQuietly("ckStore", () -> ckStore.dispose());
+		disposeQuietly("leaderElector", () -> {
+			LifecycleHelper.disposeIfPossible(leaderElector);
+		});
+		disposeQuietly("masterConfigEventLoopGroup", () -> masterConfigEventLoopGroup.shutdownGracefully());
+		disposeQuietly("masterEventLoopGroup", () -> masterEventLoopGroup.shutdownGracefully());
+		disposeQuietly("rdbOnlyEventLoopGroup", () -> rdbOnlyEventLoopGroup.shutdownGracefully());
+		disposeQuietly("bossGroup", () -> bossGroup.shutdownGracefully());
+		disposeQuietly("workerGroup", () -> workerGroup.shutdownGracefully());
+		disposeQuietly("replicationStoreManager", () -> {
+			LifecycleHelper.disposeIfPossible(replicationStoreManager);
+		});
+		disposeQuietly("scheduled", () -> scheduled.shutdownNow());
+		disposeQuietly("clientExecutors", () -> clientExecutors.shutdownNow());
+		disposeQuietly("pubSubRegistry", () -> pubSubRegistry.close());
+		super.doDispose();
+	}
+
+	private interface DisposeStep {
+		void run() throws Exception;
+	}
+
+	private void disposeQuietly(String name, DisposeStep step) {
+		try {
+			step.run();
+		} catch (Throwable th) {
+			logger.error("[doDispose][{}]{}", name, this, th);
 		}
 	}
 
@@ -850,12 +866,13 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 			// existing slaves / store (avoids serving sync while closing).
 			stopAndDisposeMaster();
 			setRedisKeeperServerState(new RedisKeeperServerStatePrepare(this, masterAddress));
+			AtomicBoolean releaseFailed = new AtomicBoolean(false);
 			AsyncFileSystemHelper.runWithIoTimeout(AsyncFileSystemHelper.PREPARE_IO_TIMEOUT_MILLIS, () -> {
 				closeSlaves("prepare");
 				try {
 					LifecycleHelper.stopIfPossible(replicationStoreManager);
 					// stop no longer frees the store: hand the lease back explicitly
-					replicationStoreManager.release();
+					releaseFailed.set(replicationStoreManager.release());
 				} catch (IOException e) {
 					throw e;
 				} catch (Exception e) {
@@ -863,7 +880,7 @@ public class DefaultRedisKeeperServer extends AbstractRedisServer implements Red
 				}
 			});
 			startPrepareWatchIfEnabled();
-			if (replicationStoreManager.takeStopReleaseFailed()) {
+			if (releaseFailed.get()) {
 				throw new XpipeRuntimeException("[doBecomePrepare] lease release incomplete");
 			}
 			logger.info("[doBecomePrepare][done]");

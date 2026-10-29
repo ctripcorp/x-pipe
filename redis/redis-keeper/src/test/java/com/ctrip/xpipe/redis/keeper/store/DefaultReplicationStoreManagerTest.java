@@ -655,6 +655,9 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			DefaultReplicationStore store = (DefaultReplicationStore) replicationStoreManager.create();
 			Assert.assertTrue(store.getBaseDir().exists());
 
+			// production order: stop + dispose (container deRegister) before destroy
+			LifecycleHelper.stopIfPossible(replicationStoreManager);
+			LifecycleHelper.disposeIfPossible(replicationStoreManager);
 			clearInvocations(fileSystem);
 			replicationStoreManager.destroy();
 
@@ -776,11 +779,11 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 		doThrow(new IOException("injected releaseCurrentStore fail")).when(manager).releaseCurrentStore(false);
 		clearInvocations(fileSystem);
 		LifecycleHelper.stopIfPossible(manager);
-		manager.release();
+		boolean releaseFailed = manager.release();
 		Assert.assertTrue(manager.getLifecycleState().isPositivelyStopped());
 		// releaseCurrentStore is stubbed: the only close in release's finally is manager-meta.
 		verify(fileSystem, atLeastOnce()).close(any(AsyncFile.class));
-		Assert.assertTrue(manager.takeStopReleaseFailed());
+		Assert.assertTrue(releaseFailed);
 		try {
 			LifecycleHelper.disposeIfPossible(manager);
 		} catch (Throwable ignore) {
@@ -806,7 +809,8 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			LifecycleHelper.startIfPossible(manager);
 			manager.create();
 			LifecycleHelper.stopIfPossible(manager);
-			Assert.assertTrue("stop keeps the meta handle", manager.isManagerMetaHandleOpen());
+			LifecycleHelper.disposeIfPossible(manager);
+			Assert.assertTrue("stop / dispose keep the meta handle", manager.isManagerMetaHandleOpen());
 
 			clearInvocations(fileSystem);
 			manager.destroy();
@@ -864,15 +868,21 @@ public class DefaultReplicationStoreManagerTest extends AbstractRedisKeeperTest 
 			LifecycleHelper.initializeIfPossible(manager);
 			LifecycleHelper.startIfPossible(manager);
 			manager.create();
+			// destroy before dispose is a no-op: the store is kept
 			manager.destroy();
-			Assert.assertTrue(manager.getLifecycleState().isStarted());
+			Assert.assertTrue(manager.getBaseDir().exists());
 
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
+			manager.destroy();
+
+			// the disposed lifecycle is the permanent gate: no create, no reopen of manager meta
 			clearInvocations(fileSystem);
 			try {
 				manager.create();
 				Assert.fail("create must refuse manager meta after destroy");
-			} catch (IOException e) {
-				Assert.assertTrue(e.getMessage().contains("destroyed"));
+			} catch (ReplicationStoreManagerStateException e) {
+				// disposed: refused before any manager-meta access
 				logger.info("[testDestroyRefusesManagerMetaReopen] expected: {}", e.getMessage());
 			}
 			verify(fileSystem, never()).open(contains("store_manager_meta.properties"),

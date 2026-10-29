@@ -120,6 +120,8 @@ public class DefaultReplicationStoreManagerReadOnlyTest extends AbstractRedisKee
 			assertReadOnlyStore(() -> manager.recordLatestStore("poison"));
 			assertReadOnlyStore(manager::gc);
 
+			LifecycleHelper.stopIfPossible(manager);
+			LifecycleHelper.disposeIfPossible(manager);
 			manager.destroy();
 			Assert.assertFalse(store.getBaseDir().exists());
 		} finally {

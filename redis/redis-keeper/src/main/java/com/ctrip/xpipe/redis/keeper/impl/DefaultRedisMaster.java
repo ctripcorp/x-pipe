@@ -1,6 +1,7 @@
 
 package com.ctrip.xpipe.redis.keeper.impl;
 
+import com.ctrip.xpipe.lifecycle.LifecycleHelper;
 import com.ctrip.xpipe.api.command.CommandFuture;
 import com.ctrip.xpipe.api.endpoint.Endpoint;
 import com.ctrip.xpipe.api.proxy.ProxyConnectProtocol;
@@ -108,17 +109,18 @@ public class DefaultRedisMaster extends AbstractLifecycle implements RedisMaster
 		masterConfigClientPool.start();
 	}
 
+	// IfPossible: a retry after a half-done stop/dispose, or a start that failed midway, must not throw on state
 	@Override
 	protected void doStop() throws Exception {
-		redisMasterReplication.stop();
-		masterConfigClientPool.stop();
+		LifecycleHelper.stopIfPossible(redisMasterReplication);
+		LifecycleHelper.stopIfPossible(masterConfigClientPool);
 		super.doStop();
 	}
-	
+
 	@Override
 	protected void doDispose() throws Exception {
-		redisMasterReplication.dispose();
-		masterConfigClientPool.dispose();
+		LifecycleHelper.disposeIfPossible(redisMasterReplication);
+		LifecycleHelper.disposeIfPossible(masterConfigClientPool);
 		super.doDispose();
 	}
 

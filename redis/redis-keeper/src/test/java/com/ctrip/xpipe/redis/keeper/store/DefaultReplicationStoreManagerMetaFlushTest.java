@@ -380,14 +380,20 @@ public class DefaultReplicationStoreManagerMetaFlushTest extends AbstractRedisKe
         verify(manager.getOpenedStore(), never()).flushMeta();
     }
 
+    /** destroy before dispose is refused, so a running manager keeps its store; after dispose the tick never runs. */
     @Test
-    public void testTickSkipsAfterDestroyWithoutStop() throws Exception {
+    public void testDestroyBeforeDisposeIsSkippedAndTickSkipsAfterDispose() throws Exception {
         ReplicationStore store = startWithStore();
         manager.destroy();
+        assertSame("destroy before dispose must not touch the store", store, manager.getOpenedStore());
+
+        LifecycleHelper.stopIfPossible(manager);
+        LifecycleHelper.disposeIfPossible(manager);
         clearInvocations(fs);
         manager.flushMetaPeriodically();
         assertNoWriteNorOpen();
         verify(store, never()).flushMeta();
+        manager.release();
     }
 
     @Test
